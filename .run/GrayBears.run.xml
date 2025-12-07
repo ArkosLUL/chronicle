@@ -4,7 +4,7 @@
     <working_directory value="$PROJECT_DIR$/golang" />
     <parameters value="parse ../ignoredlogs/graybears/WoWCombatLog.txt ../ignoredlogs/graybears/WoWRawCombatLog.txt" />
     <kind value="PACKAGE" />
-    <package value="github.com/Emyrk/chronicle/golang/cmd/chronicle" />
+    <package value="github.com/Emyrk/chronicle/combatlog/cmd/chronicle" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/golang/cmd/chronicle/main.go" />
     <method v="2" />

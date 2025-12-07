@@ -1,6 +1,6 @@
 PHONY: install
 install:
-	(cd ./golang && go install ./cmd/chronicle)
+	(cd ./combatlog && go install ./cmd/chronicle)
 
 wasm:
-	(cd ./golang && GOOS=js GOARCH=wasm go build -o ../site/parser.wasm ./cmd/wasm/)
+	(cd ./combatlog && GOOS=js GOARCH=wasm go build -o ../site/parser.wasm ./cmd/wasm/)

@@ -1,4 +1,4 @@
-module github.com/Emyrk/chronicle/combatlog
+module github.com/Emyrk/chronicle
 
 go 1.25.3
 

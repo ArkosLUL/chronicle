@@ -1,0 +1,16 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./queries"
+    schema: "dump.sql"
+    gen:
+      go:
+        sql_package: "pgx/v5"
+        package: "database"
+        out: "./genqueries"
+        emit_interface: true
+        emit_json_tags: true
+        emit_db_tags: true
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        overrides:

@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Gophercraft/core/format/content"
 
@@ -21,6 +22,17 @@ func ClientFiles() *serpent.Command {
 			vol, err := content.Open(path)
 			if err != nil {
 				return fmt.Errorf("opening wow path %s: %w", path, err)
+			}
+
+			files, err := vol.ListFiles()
+			if err != nil {
+				return fmt.Errorf("listing files: %w", err)
+			}
+
+			for _, f := range files {
+				if strings.Contains(f, "Item") {
+					fmt.Println(f)
+				}
 			}
 
 			fmt.Println(vol.Build())

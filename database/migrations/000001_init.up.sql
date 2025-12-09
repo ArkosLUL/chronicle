@@ -22,7 +22,11 @@ CREATE TABLE spell_templates (
   school spell_school NOT NULL,
   -- TODO: direct_damage, dot, hot, etc. Do we need that here?
 --   spell_type TEXT NOT NULL,
-  description TEXT NULL
+  description TEXT NULL,
+
+
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
 );
 
 CREATE TABLE item_templates (
@@ -42,8 +46,12 @@ CREATE TABLE item_templates (
   bind_type SMALLINT NULL,
   stack_size SMALLINT DEFAULT 1,
   -- TODO: Extra flavor text
-  description TEXT NULL
+  description TEXT NULL,
   -- TODO: base stats + item stats
+
+  -- TODO: Add 'source' being the game api, the turtle wow db, or items.dbc
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
 );
 
 COMMENT ON TABLE item_templates IS

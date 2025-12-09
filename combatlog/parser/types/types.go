@@ -6,7 +6,7 @@ import (
   "strconv"
   "strings"
 
-  "github.com/Emyrk/chronicle/combatlog/internal/ptr"
+  "github.com/Emyrk/chronicle/internal/ptr"
 )
 
 // Conjure Water(10140)(Rank 7)

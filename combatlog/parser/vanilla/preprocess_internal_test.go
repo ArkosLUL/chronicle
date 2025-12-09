@@ -1,11 +1,9 @@
-package vanilla_test
+package vanilla
 
 import (
   "testing"
 
-  "github.com/Emyrk/chronicle/combatlog/internal/testutil"
   "github.com/Emyrk/chronicle/combatlog/parser/types"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/require"
 )
@@ -13,10 +11,12 @@ import (
 func TestYouReplacements(t *testing.T) {
   t.Parallel()
 
-  state := vanilla.NewState(testutil.Logger(t), types.Unit{
-    Name: "Doyd",
-    Gid:  0x000000000001C7AC,
-  })
+  replacer := &youReplacer{
+    Me: types.Unit{
+      Name: "Doyd",
+      Gid:  0x000000000001C7AC,
+    },
+  }
 
   exps := map[string]string{
     "Power Word: Fortitude fades from you.":                                                          "Power Word: Fortitude fades from 0x000000000001C7AC.",
@@ -50,7 +50,7 @@ func TestYouReplacements(t *testing.T) {
   for input, expected := range exps {
     t.Run(input, func(t *testing.T) {
       // content starts with a space. Handle it here for easier reading in the map.
-      output, err := state.Preprocess(input)
+      output, err := replacer.Preprocess(input)
       require.NoError(t, err)
       assert.Equal(t, expected, output)
     })

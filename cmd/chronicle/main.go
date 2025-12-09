@@ -7,7 +7,7 @@ import (
   "os/signal"
   "syscall"
 
-  "github.com/Emyrk/chronicle/combatlog/cli"
+  "github.com/Emyrk/chronicle/cmd/cli"
 )
 
 func main() {

@@ -3,8 +3,8 @@ package types_test
 import (
   "testing"
 
-  "github.com/Emyrk/chronicle/combatlog/internal/ptr"
   "github.com/Emyrk/chronicle/combatlog/parser/types"
+  "github.com/Emyrk/chronicle/internal/ptr"
   "github.com/stretchr/testify/require"
 )
 

@@ -116,9 +116,11 @@ func (p *Parser) Advance() ([]messages.Message, error) {
       return nil, fmt.Errorf("timestamp is zero for message type: %s", reflect.TypeOf(msg).String())
     }
 
-    err = p.state.Process(msg)
-    if err != nil {
-      return nil, fmt.Errorf("state process failed: %v", err)
+    if p.state != nil {
+      err = p.state.Process(msg)
+      if err != nil {
+        return nil, fmt.Errorf("state process failed: %v", err)
+      }
     }
   }
   return msgs, err

@@ -7,7 +7,7 @@ import (
   "os"
   "strconv"
 
-  "github.com/Emyrk/chronicle/combatlog/internal/version"
+  "github.com/Emyrk/chronicle/internal/version"
   "github.com/google/uuid"
   "github.com/rs/zerolog"
   slogzerolog "github.com/samber/slog-zerolog/v2"

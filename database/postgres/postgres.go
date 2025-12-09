@@ -15,7 +15,6 @@ import (
   "github.com/cenkalti/backoff"
   "github.com/jackc/pgx/v5/pgxpool"
   "github.com/moby/moby/pkg/namesgenerator"
-  "github.com/ory/dockertest/v3"
   "github.com/ory/dockertest/v3/docker"
   "golang.org/x/xerrors"
 

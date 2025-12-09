@@ -1,61 +1,61 @@
 package merge_test
 
 import (
-  "bufio"
-  "bytes"
-  "strings"
-  "testing"
-  "time"
+	"bufio"
+	"bytes"
+	"strings"
+	"testing"
+	"time"
 
-  "github.com/Emyrk/chronicle/combatlog/internal/testutil"
-  "github.com/Emyrk/chronicle/combatlog/parser/lines"
-  "github.com/Emyrk/chronicle/combatlog/parser/merge"
-  "github.com/stretchr/testify/require"
+	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/merge"
+	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMerge(t *testing.T) {
-  t.Parallel()
+	t.Parallel()
 
-  logger := testutil.Logger(t)
-  m := merge.NewMerger(logger)
+	logger := testutil.Logger(t)
+	m := merge.NewMerger(logger)
 
-  var out bytes.Buffer
+	var out bytes.Buffer
 
-  err := m.MergeLogs(
-    t.Context(),
-    strings.NewReader(formattedLog),
-    strings.NewReader(rawLog),
-    &out,
-  )
-  require.NoError(t, err)
+	err := m.MergeLogs(
+		t.Context(),
+		strings.NewReader(formattedLog),
+		strings.NewReader(rawLog),
+		&out,
+	)
+	require.NoError(t, err)
 
-  lc := 0
-  liner := lines.NewLiner()
-  scanner := bufio.NewScanner(&out)
-  lastTs := time.Time{}
-  for scanner.Scan() {
-    lc++
-    line := scanner.Text()
-    ts, _, err := liner.Line(line)
-    require.NoError(t, err)
+	lc := 0
+	liner := lines.NewLiner()
+	scanner := bufio.NewScanner(&out)
+	lastTs := time.Time{}
+	for scanner.Scan() {
+		lc++
+		line := scanner.Text()
+		ts, _, err := liner.Line(line)
+		require.NoError(t, err)
 
-    eq := ts.Equal(lastTs)
-    if !eq {
-      require.True(t, ts.After(lastTs), "out of order timestamps: %v before %v", ts, lastTs)
-    }
+		eq := ts.Equal(lastTs)
+		if !eq {
+			require.True(t, ts.After(lastTs), "out of order timestamps: %v before %v", ts, lastTs)
+		}
 
-    lastTs = ts
-  }
+		lastTs = ts
+	}
 
-  fl := strings.Split(formattedLog, "\n")
-  rl := strings.Split(rawLog, "\n")
+	fl := strings.Split(formattedLog, "\n")
+	rl := strings.Split(rawLog, "\n")
 
-  // Expect the merged log to have the same number of lines as the sum of the inputs
-  require.Equal(t, len(fl)+len(rl), lc)
+	// Expect the merged log to have the same number of lines as the sum of the inputs
+	require.Equal(t, len(fl)+len(rl), lc)
 }
 
 const (
-  formattedLog = `11/18 07:20:42.699  COMBATANT_GUID: 18.11.25 07:20:42&Maldrissa&0x00000000000EB167
+	formattedLog = `11/18 07:20:42.699  COMBATANT_GUID: 18.11.25 07:20:42&Maldrissa&0x00000000000EB167
 11/18 07:20:42.699  COMBATANT_INFO: 18.11.25 07:20:42&Maldrissa&WARLOCK&Orc&3&Chotuk&Exalted with Doordash&Uber Eats&5&nil&nil&nil&nil&6266:0:96:0&nil&6568:0:237:0&4915:0:0:0&nil&nil&nil&nil&nil&nil&4695:0:0:0&4925:0:0:0&nil&11287:0:0:0&5976:0:0:0&0000000000000000000}000000000000000000}0505001100000000
 11/18 07:20:42.731  CAST: Unknown casts LOGINEFFECT(836) on Unknown.
 11/18 07:20:42.747  ZONE_INFO: 18.11.25 07:20:42&hillsbrad foothills&0
@@ -76,7 +76,7 @@ const (
 11/20 22:08:03.347  CAST: 0x00000000000FC54E(Porfiria) casts Call Pet(883).
 11/20 22:08:04.288  CAST: 0x00000000000C4F17(Zvz) casts Riding Turtle(30174).`
 
-  rawLog = `11/18 07:20:42.731  CAST: 0x00000000000EB167(Unknown) casts LOGINEFFECT(836) on 0x00000000000EB167(Unknown).
+	rawLog = `11/18 07:20:42.731  CAST: 0x00000000000EB167(Unknown) casts LOGINEFFECT(836) on 0x00000000000EB167(Unknown).
 11/18 07:20:42.920  CAST: 0xF1400844930090A2(Unknown) casts Blood Pact(7804)(Rank 2) on 0xF1400844930090A2(Unknown).
 11/18 07:20:43.703  CAST: 0x00000000000E8AB6(Mooshuggah) casts Skinning(8618) on 0xF13000092F003EE0(Gray Bear).
 11/18 07:20:46.282  CAST: 0x00000000000E8AB6(Mooshuggah) casts Flame Shock(8052)(Rank 2) on 0xF13000092F00408E(Gray Bear).

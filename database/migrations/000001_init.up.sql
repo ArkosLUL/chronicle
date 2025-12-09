@@ -19,7 +19,7 @@ CREATE TABLE spell_templates (
   id INT PRIMARY KEY,
   name TEXT NOT NULL,
   -- TODO: make this an enum
-  school TEXT NOT NULL,
+  school spell_school NOT NULL,
   -- TODO: direct_damage, dot, hot, etc. Do we need that here?
 --   spell_type TEXT NOT NULL,
   description TEXT NULL

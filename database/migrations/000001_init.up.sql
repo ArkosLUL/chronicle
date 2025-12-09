@@ -66,6 +66,8 @@ CREATE TABLE item_effects (
   id uuid PRIMARY KEY,
   item_id INT NOT NULL REFERENCES item_templates(id),
   effect_type item_effect_type NOT NULL ,
+  -- effect_index is used to order the effects for tooltip consistency
+  effect_index SMALLINT NULL,
   spell_id INT NOT NULL REFERENCES spell_templates(id)
   -- TODO: proc chance data in another table?
 );

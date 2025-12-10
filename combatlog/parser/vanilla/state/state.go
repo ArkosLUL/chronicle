@@ -1,12 +1,15 @@
 package state
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"slices"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -14,7 +17,6 @@ import (
 
 type State struct {
 	logger *slog.Logger
-	Me     types.Unit
 
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone     zone.Zone
@@ -28,17 +30,43 @@ type State struct {
 	reg *encounters.Registry
 }
 
-func NewState(logger *slog.Logger, me types.Unit) *State {
+func New(logger *slog.Logger) *State {
 	s := &State{
 		logger:      logger,
-		Me:          me,
 		Units:       unitdb.New(),
 		CurrentZone: zone.Zone{},
 		reg:         DefaultRegistry(logger),
 		Instances:   []encounters.Instance{},
 	}
-	//s.Fights = NewFights(s)
 	return s
+}
+
+func (s *State) Consume(ctx context.Context, p *vanilla.Parser) error {
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		msgs, err := p.Advance()
+		if err != nil {
+			if vanilla.IsFatalError(err) {
+				return fmt.Errorf("fatal parser error: %w", err)
+			}
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			s.logger.Error("Error advancing parser", slog.String("error", err.Error()))
+		}
+		for _, msg := range msgs {
+			if up, ok := msg.(messages.UnparsedLine); ok {
+				s.logger.Warn("Unparsed line", slog.String("line", up.Content))
+			}
+			err = s.Process(msg)
+			if err != nil {
+				return fmt.Errorf("state process: %w", err)
+			}
+		}
+	}
+
 }
 
 func (s *State) Process(m messages.Message) error {

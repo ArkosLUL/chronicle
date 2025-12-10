@@ -16,14 +16,16 @@ type Cathedral struct {
 	logger *slog.Logger
 	db     *unitdb.Units
 
-	Characters encounters.Characters
+	CurrentZone zone.Zone
+	Characters  encounters.Characters
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 	c := &Cathedral{
-		logger:     logger,
-		db:         db,
-		Characters: encounters.NewCharacters(),
+		logger:      logger,
+		db:          db,
+		Characters:  encounters.NewCharacters(),
+		CurrentZone: z,
 	}
 
 	return c

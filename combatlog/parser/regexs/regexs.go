@@ -67,6 +67,10 @@ var (
 	// 11/18 18:59:08.532  CAST: Chotuk casts Fire Shield(2947)(Rank 1) on Maldrissa.
 	ReV2CastsRankTarget = regexp.MustCompile(`(.+[^\s]) (channels|casts|begins to cast) (.+[^\s]) on (.+[^\s])\.`)
 	ReV2Cast            = regexp.MustCompile(`(.+[^\s]) (channels|fails casting|casts|begins to cast) (.+[^\s])\.`)
+
+	// Scarlet Wizard dies, 0x000000000001C7AC gains 100 experience. (+50 exp Rested bonus)
+	ReUnitDieDestroyedExp = regexp.MustCompile(`(.+[^\s]) (dies|is destroyed), (.+[^\s]) gains (\d)+ experience\.( \(\+\d+ exp Rested bonus\))`)
+	ReDurabilityLoss      = regexp.MustCompile(`(.+[^\s])'s equipped items suffer a (\d+)% durability loss.`)
 )
 
 // ???

@@ -11,5 +11,7 @@ func CathedralHostiles() map[uint32]string {
 		3977: "High Inquisitor Whitemane",
 		4542: "High Inquisitor Fairbanks",
 		4295: "Scarlet Myrmidon",
+
+		4298: "Scarlet Defender", // Is this in the instance?
 	}
 }

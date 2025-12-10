@@ -792,6 +792,30 @@ func (p *Parser) fHonorableKill(ts time.Time, content string) ([]messages.Messag
 	}), nil
 }
 
+func (p *Parser) fUnitDieDestroyedExperience(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.ReUnitDieDestroyedExp).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, victim := matches.UnitOrGUID()
+	// TODO: capture experience amount
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("UnitSlay: %w", err)
+	}
+
+	if victim.IsZero() {
+		return messages.Skip(ts, "UnitDieDestroyed: not using guids"), nil
+	}
+
+	return set(messages.Slain{
+		MessageBase: messages.Base(ts),
+		Victim:      victim,
+		Killer:      nil,
+	}), nil
+}
+
 func (p *Parser) fUnitDieDestroyed(ts time.Time, content string) ([]messages.Message, error) {
 	matches, ok := types.FromRegex(regexs.ReUnitDieDestroyed).Match(content)
 	if !ok {
@@ -956,4 +980,25 @@ func (p *Parser) fFallDamage(ts time.Time, content string) ([]messages.Message, 
 		Target:      target,
 		Amount:      amount,
 	}), nil
+}
+
+func (p *Parser) fDurabilityLoss(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.ReDurabilityLoss).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, target := matches.UnitOrGUID()
+	amount := matches.Int32()
+	var _ = amount
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("FallDamage: %w", err)
+	}
+
+	if target.IsZero() {
+		return messages.Skip(ts, "FallDamage: not using guids"), nil
+	}
+
+	return messages.Skip(ts, "durability not implemented"), nil
 }

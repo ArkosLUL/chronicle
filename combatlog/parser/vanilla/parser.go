@@ -67,7 +67,6 @@ func (p *Parser) init() error {
 			slog.String("guid", me.Gid.String()),
 			slog.Int("lines_read", lc),
 		)
-		//p.state = state.NewState(p.logger, me)
 		p.scanner = scan
 		p.you = &youReplacer{Me: me}
 	})
@@ -114,13 +113,6 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 		if msg.Date().IsZero() {
 			return nil, fmt.Errorf("timestamp is zero for message type: %s", reflect.TypeOf(msg).String())
 		}
-
-		//if p.state != nil {
-		//	err = p.state.Process(msg)
-		//	if err != nil {
-		//		return nil, fmt.Errorf("state process failed: %v", err)
-		//	}
-		//}
 	}
 	return msgs, err
 }
@@ -161,12 +153,14 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fSpellCastPerformUnknown,                      // ✓
 		p.fHonorableKill,                                // ✓ (TODO: add currency gain for honor)
 		p.fUnitDieDestroyed,                             // ✓
+		p.fUnitDieDestroyedExperience,                   // ✓ (TODO: add experience gain)
 		p.fUnitSlay,                                     // ✓
 		p.fAuraDispel,                                   // ✓
 		p.fAuraInterrupt,                                // ✓
 		p.fCreates,                                      // ✓
 		p.fGainsAttack,                                  // x TODO: need to determine a message type
 		p.fFallDamage,                                   // ✓
+		p.fDurabilityLoss,                               // ✓
 	} {
 		m, err := parser(ts, content)
 		if err != nil {

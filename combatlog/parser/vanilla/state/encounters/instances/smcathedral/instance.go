@@ -1,6 +1,7 @@
 package smcathedral
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -15,29 +16,15 @@ type Cathedral struct {
 	logger *slog.Logger
 	db     *unitdb.Units
 
-	// All possible encounters in this instance
-	encounters []encounters.Encounter
-
-	// Fight tracking
-	fights           *encounters.Fights
-	currentEncounter encounters.Encounter
-	currentZone      zone.Zone
+	Characters encounters.Characters
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 	c := &Cathedral{
-		logger:      logger,
-		db:          db,
-		fights:      encounters.NewFights(logger, db, z, CathedralHostiles()),
-		currentZone: z,
+		logger:     logger,
+		db:         db,
+		Characters: encounters.NewCharacters(),
 	}
-
-	// Define all encounters in this instance
-	//c.encounters = []encounters.Encounter{
-	//	NewWhitemaneEncounter(),
-	//	NewMograineEncounter(),
-	//	// Add more encounters as needed
-	//}
 
 	return c
 }
@@ -51,28 +38,16 @@ func (c *Cathedral) MatchesZone(z zone.Zone) bool {
 }
 
 func (c *Cathedral) Process(m messages.Message) error {
+	// Add all affected characters to the instance's character list
+	c.Characters.AddAll(m.Date(), m.Affects()...)
+
 	// Process the message through fight tracking
-	err := c.fights.Process(m)
-	if err != nil {
-		return err
+	for _, ch := range c.Characters {
+		err := ch.Process(m)
+		if err != nil {
+			return fmt.Errorf("processing character %s: %w", ch.ID.String(), err)
+		}
 	}
 
-	// If we have a current fight, try to detect which encounter it is
-	//if c.fights.CurrentFight != nil && c.fights.CurrentFight.IsStarted() {
-	//	c.detectEncounter(m)
-	//}
-
 	return nil
-}
-
-func (c *Cathedral) Encounters() []encounters.Encounter {
-	return c.encounters
-}
-
-func (c *Cathedral) CurrentEncounter() encounters.Encounter {
-	return c.currentEncounter
-}
-
-func (c *Cathedral) AllFights() []*encounters.Fight {
-	return c.fights.Fights
 }

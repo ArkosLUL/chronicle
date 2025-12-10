@@ -1,160 +1,206 @@
 package messages
 
 import (
-  "time"
+	"time"
 
-  "github.com/Emyrk/chronicle/combatlog/parser/guid"
-  "github.com/Emyrk/chronicle/combatlog/parser/types"
-  "github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
-  "github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
-  "github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
-  "github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
 
 type Message interface {
-  isMessage()
-  Date() time.Time
+	isMessage()
+	Date() time.Time
+	Affects() []guid.GUID
 }
 
 type MessageBase struct {
-  Timestamp time.Time `json:"timestamp"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 func Base(ts time.Time) MessageBase {
-  return MessageBase{
-    Timestamp: ts,
-  }
+	return MessageBase{
+		Timestamp: ts,
+	}
 }
 
 func (m MessageBase) String(content string) string {
-  return m.Timestamp.Format("02/01 15:04:05.000") + "  " + content
+	return m.Timestamp.Format("02/01 15:04:05.000") + "  " + content
 }
 func (MessageBase) isMessage() {}
 
 func (m MessageBase) Date() time.Time {
-  return m.Timestamp
+	return m.Timestamp
 }
 
 type SkippedMessage struct {
-  MessageBase
-  Reason string
+	MessageBase
+	Reason string
 }
 
+func (SkippedMessage) Affects() []guid.GUID { return nil }
+
 func Skip(ts time.Time, reason string) []Message {
-  return set(SkippedMessage{
-    MessageBase: Base(ts),
-    Reason:      reason,
-  })
+	return set(SkippedMessage{
+		MessageBase: Base(ts),
+		Reason:      reason,
+	})
 }
 
 func (m SkippedMessage) String() string {
-  return "SkippedMessage: " + m.Reason
+	return "SkippedMessage: " + m.Reason
 }
 
 type UnparsedLine struct {
-  MessageBase
-  Content string
+	MessageBase
+	Content string
 }
 
+func (UnparsedLine) Affects() []guid.GUID { return nil }
+
 func Unparsed(ts time.Time, content string) []Message {
-  return set(&UnparsedLine{
-    MessageBase: Base(ts),
-    Content:     content,
-  })
+	return set(&UnparsedLine{
+		MessageBase: Base(ts),
+		Content:     content,
+	})
 }
 
 func NotHandled() ([]Message, error) {
-  return nil, nil
+	return nil, nil
 }
 
 func set(m ...Message) []Message {
-  return m
+	return m
 }
 
 type Cast struct {
-  castv2.CastV2
-  MessageBase
+	castv2.CastV2
+	MessageBase
+}
+
+func (c Cast) Affects() []guid.GUID {
+	if c.Target == nil {
+		return []guid.GUID{c.Caster.Gid}
+	}
+	return []guid.GUID{c.Caster.Gid, c.Target.Gid}
 }
 
 type Unit struct {
-  MessageBase
-  unitinfo.Info
+	MessageBase
+	unitinfo.Info
 }
+
+func (u Unit) Affects() []guid.GUID { return []guid.GUID{u.Guid} }
 
 type Combatant struct {
-  MessageBase
-  combatant.Combatant
+	MessageBase
+	combatant.Combatant
 }
+
+func (c Combatant) Affects() []guid.GUID { return []guid.GUID{c.Guid} }
 
 type Zone struct {
-  MessageBase
-  zone.Zone
+	MessageBase
+	zone.Zone
 }
 
+func (z Zone) Affects() []guid.GUID { return nil }
+
 type ResourceChange struct {
-  MessageBase
-  Target    guid.GUID
-  Amount    int32
-  Resource  types.Resource
-  Caster    *guid.GUID
-  SpellName *string
-  // 10/29 22:12:55.926  Naga (Kryaa) gains 35 Happiness from Kryaa 's Feed Pet Effect.
-  // 10/17 21:36:12.823  Sfantu 's Nosferatu loses 52 happiness.
-  Direction string // "gains" or "loses"
+	MessageBase
+	Target    guid.GUID
+	Amount    int32
+	Resource  types.Resource
+	Caster    *guid.GUID
+	SpellName *string
+	// 10/29 22:12:55.926  Naga (Kryaa) gains 35 Happiness from Kryaa 's Feed Pet Effect.
+	// 10/17 21:36:12.823  Sfantu 's Nosferatu loses 52 happiness.
+	Direction string // "gains" or "loses"
+}
+
+func (r ResourceChange) Affects() []guid.GUID {
+	ids := []guid.GUID{r.Target}
+	if r.Caster != nil {
+		ids = append(ids, *r.Caster)
+	}
+	return ids
 }
 
 type Damage struct {
-  MessageBase
-  // SpellName is nil for things like environmental and melee damage
-  SpellName *string
-  Caster    guid.GUID
-  Target    guid.GUID
-  HitType   types.HitType
-  Amount    int32
-  School    types.School
-  Trailer   types.Trailer
+	MessageBase
+	// SpellName is nil for things like environmental and melee damage
+	SpellName *string
+	Caster    guid.GUID
+	Target    guid.GUID
+	HitType   types.HitType
+	Amount    int32
+	School    types.School
+	Trailer   types.Trailer
 }
+
+func (d Damage) Affects() []guid.GUID { return []guid.GUID{d.Caster, d.Target} }
 
 type FallDamage struct {
-  // TODO: Can this just be damage if we add HitTypeFall?
-  MessageBase
-  Target guid.GUID
-  Amount int32
+	// TODO: Can this just be damage if we add HitTypeFall?
+	MessageBase
+	Target guid.GUID
+	Amount int32
 }
+
+func (d FallDamage) Affects() []guid.GUID { return []guid.GUID{d.Target} }
 
 type Heal struct {
-  MessageBase
-  Caster    guid.GUID
-  Target    guid.GUID
-  SpellName string
-  Amount    int32
-  HitType   types.HitType
+	MessageBase
+	Caster    guid.GUID
+	Target    guid.GUID
+	SpellName string
+	Amount    int32
+	HitType   types.HitType
 }
 
+func (h Heal) Affects() []guid.GUID { return []guid.GUID{h.Caster, h.Target} }
+
 type Slain struct {
-  MessageBase
-  Victim guid.GUID
-  Killer *guid.GUID
+	MessageBase
+	Victim guid.GUID
+	Killer *guid.GUID
+}
+
+func (s Slain) Affects() []guid.GUID {
+	ids := []guid.GUID{s.Victim}
+	if s.Killer != nil {
+		ids = append(ids, *s.Killer)
+	}
+	return ids
 }
 
 type Aura struct {
-  MessageBase
-  Target      guid.GUID
-  SpellName   string
-  Amount      int32
-  Application types.AuraApplication
+	MessageBase
+	Target      guid.GUID
+	SpellName   string
+	Amount      int32
+	Application types.AuraApplication
 }
+
+func (a Aura) Affects() []guid.GUID { return []guid.GUID{a.Target} }
 
 type Interrupt struct {
-  MessageBase
-  Caster guid.GUID
-  // SpellName is the spell that was interrupted
-  SpellName string
-  Target    guid.GUID
+	MessageBase
+	Caster guid.GUID
+	// SpellName is the spell that was interrupted
+	SpellName string
+	Target    guid.GUID
 }
 
+func (i Interrupt) Affects() []guid.GUID { return []guid.GUID{i.Caster, i.Target} }
+
 type Create struct {
-  MessageBase
-  Caster  guid.GUID
-  Created string
+	MessageBase
+	Caster  guid.GUID
+	Created string
 }
+
+func (c Create) Affects() []guid.GUID { return []guid.GUID{c.Caster} }

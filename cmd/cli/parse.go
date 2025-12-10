@@ -58,20 +58,19 @@ func ParseCmd() *serpent.Command {
 			for _, inst := range state.Instances {
 				logger.Info("Parsed instance",
 					slog.String("name", inst.Name()),
-					slog.Int("fights", len(inst.AllFights())),
 				)
 
-				for _, fight := range inst.AllFights() {
-					if !fight.IsDone() {
-						continue
-					}
-					logger.Info(" Fight",
-						slog.String("start", fight.Start.Date().String()),
-						slog.String("end", fight.End.Date().String()),
-						slog.Int("duration_seconds", int(fight.End.Date().Sub(fight.Start.Date()).Seconds())),
-					)
-					fmt.Println(fight)
-				}
+				//for _, fight := range inst.AllFights() {
+				//	if !fight.IsDone() {
+				//		continue
+				//	}
+				//	logger.Info(" Fight",
+				//		slog.String("start", fight.Start.Date().String()),
+				//		slog.String("end", fight.End.Date().String()),
+				//		slog.Int("duration_seconds", int(fight.End.Date().Sub(fight.Start.Date()).Seconds())),
+				//	)
+				//	fmt.Println(fight)
+				//}
 			}
 			//fmt.Println("Final parser state:")
 			//fmt.Println(state)

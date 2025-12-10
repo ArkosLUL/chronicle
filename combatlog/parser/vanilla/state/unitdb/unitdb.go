@@ -1,4 +1,4 @@
-package state
+package unitdb
 
 import (
   "github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -12,7 +12,7 @@ type Units struct {
   Players map[guid.GUID]combatant.Combatant
 }
 
-func NewUnits() *Units {
+func New() *Units {
   return &Units{
     Info:    make(map[guid.GUID]unitinfo.Info),
     Players: make(map[guid.GUID]combatant.Combatant),

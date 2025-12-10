@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 )
 
@@ -21,6 +22,7 @@ type Parser struct {
 	logger  *slog.Logger
 	scanner merge.Scan
 	liner   *lines.Liner
+	state   *state.State
 	you     *youReplacer
 
 	setup       sync.Once
@@ -43,9 +45,9 @@ func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan) *P
 	}
 }
 
-//func (p *Parser) State() *state.State {
-//	return p.state
-//}
+func (p *Parser) State() *state.State {
+	return p.state
+}
 
 // Merger returns a configured merger for this parser.
 func Merger(logger *slog.Logger) *merge.Merger {
@@ -66,7 +68,7 @@ func (p *Parser) init() error {
 			slog.String("guid", me.Gid.String()),
 			slog.Int("lines_read", lc),
 		)
-		//p.state = state.NewState(p.logger, me)
+		p.state = state.NewState(p.logger, me)
 		p.scanner = scan
 		p.you = &youReplacer{Me: me}
 	})
@@ -114,12 +116,12 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 			return nil, fmt.Errorf("timestamp is zero for message type: %s", reflect.TypeOf(msg).String())
 		}
 
-		//if p.state != nil {
-		//	err = p.state.Process(msg)
-		//	if err != nil {
-		//		return nil, fmt.Errorf("state process failed: %v", err)
-		//	}
-		//}
+		if p.state != nil {
+			err = p.state.Process(msg)
+			if err != nil {
+				return nil, fmt.Errorf("state process failed: %v", err)
+			}
+		}
 	}
 	return msgs, err
 }

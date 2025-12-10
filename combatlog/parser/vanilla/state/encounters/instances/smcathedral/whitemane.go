@@ -31,7 +31,7 @@ func NewWhitemaneEncounterCustom() *WhitemaneEncounter {
 				mograineDead := false
 
 				for gid, lives := range f.Lives {
-					info, ok := f.db.Get(gid)
+					info, ok := f.DB.Get(gid)
 					if !ok {
 						continue
 					}
@@ -71,7 +71,7 @@ func (w *WhitemaneEncounter) OnEnd(f *encounters.Fight, result encounters.FightR
 func (w *WhitemaneEncounter) Process(f *encounters.Fight, m messages.Message) error {
 	// Example: Track if Whitemane resurrects Mograine
 	if slain, ok := m.(messages.Slain); ok {
-		info, exists := f.db.Get(slain.Victim)
+		info, exists := f.DB.Get(slain.Victim)
 		if exists && info.Name == BossMograine {
 			w.mograineKilledFirst = true
 		}
@@ -79,7 +79,7 @@ func (w *WhitemaneEncounter) Process(f *encounters.Fight, m messages.Message) er
 
 	// Example: Detect resurrection spell
 	if cast, ok := m.(messages.Cast); ok {
-		casterInfo, exists := f.db.Get(cast.Caster.Gid)
+		casterInfo, exists := f.DB.Get(cast.Caster.Gid)
 		if exists && casterInfo.Name == BossWhitemane {
 			// Check if it's a resurrection spell (you'd need to know the spell name)
 			// if cast.Spell.Name == "Scarlet Resurrection" {

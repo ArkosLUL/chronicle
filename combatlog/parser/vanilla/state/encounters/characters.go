@@ -11,6 +11,11 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
+const (
+	ReasonTimeout = "timeout"
+	ReasonSlain   = "slain"
+)
+
 type Characters map[guid.GUID]*Character
 
 func NewCharacters() Characters {
@@ -101,14 +106,14 @@ func (c *Character) Process(m messages.Message) error {
 	defer func() {
 		// Timeouts always end activity.
 		if c.Activity.IsActive() && c.Activity.NextTimeout.Before(m.Date()) {
-			c.Activity.End("timeout", m)
+			c.Activity.End(ReasonTimeout, m)
 		}
 	}()
 
 	switch data := m.(type) {
 	case messages.Slain:
 		if c.ID == data.Victim {
-			c.Activity.End("slain", m)
+			c.Activity.End(ReasonSlain, m)
 			c.LastSlain = m
 		}
 
@@ -201,15 +206,15 @@ func (ap *ActivePeriods) IsActive() bool {
 	return ap.Periods[len(ap.Periods)-1].End == nil
 }
 
-func (ap *ActivePeriods) LastInactiveMessage() messages.Message {
+func (ap *ActivePeriods) LastInactive() (string, messages.Message) {
 	if len(ap.Periods) == 0 {
-		return nil
+		return "", nil
 	}
 	last := ap.Periods[len(ap.Periods)-1]
 	if last.End == nil {
-		return nil
+		return "", nil
 	}
-	return last.End.Timestamp
+	return last.End.Explanation, last.End.Timestamp
 }
 
 type Active struct {

@@ -27,11 +27,12 @@ func TestCharacters(t *testing.T) {
 12/9 17:11:35.780  UNIT_INFO: 09.12.25 17:11:35&0xF1300010C7009C09&0&Scarlet Myrmidon&0&&
 12/9 17:11:41.572  UNIT_INFO: 09.12.25 17:11:41&0x000000000008CD28&1&Shamum&1&&
 -- These logs are from earlier. The mob reset
---12/9 17:11:41.572  0xF1300010C7009C09 hits 0x000000000008CD28 for 90.
---12/9 17:11:43.247  0xF1300010C7009C09 misses 0x000000000008CD28.
---12/9 17:11:43.445  0xF1300010C7009C09 crits 0x000000000008CD28 for 168.
---12/9 17:11:45.020  0xF1300010C7009C09 hits 0x000000000008CD28 for 168.
---12/9 17:11:45.251  0xF1300010C7009C09 hits 0x000000000008CD28 for 81.
+12/9 17:11:41.572  0xF1300010C7009C09 hits 0x000000000008CD28 for 90.
+12/9 17:11:43.247  0xF1300010C7009C09 misses 0x000000000008CD28.
+12/9 17:11:43.445  0xF1300010C7009C09 crits 0x000000000008CD28 for 168.
+12/9 17:11:45.020  0xF1300010C7009C09 hits 0x000000000008CD28 for 168.
+12/9 17:11:45.251  0xF1300010C7009C09 hits 0x000000000008CD28 for 81.
+-- Earlier logs end
 12/9 17:13:05.838  CAST: 0x000000000001C7AC(Doyd) casts LOGINEFFECT(836) on 0x000000000001C7AC(Doyd).
 12/9 17:13:10.985  UNIT_INFO: 09.12.25 17:13:10&0x000000000001C7AC&1&Doyd&1&&
 12/9 17:13:10.985  0x000000000001C7AC hits 0xF1300010C7009C09 for 153.
@@ -141,16 +142,23 @@ func TestCharacters(t *testing.T) {
 
 		require.Len(t, cars, 3, "expected to find 4 characters in total")
 
-		// Shamum is just a unit info, he did nothing
+		// Shamum
 		require.False(t, shamum.Activity.IsActive(), "shamum should not be active")
-		require.Len(t, shamum.Activity.Periods, 0, "shamum should have no activity periods")
+		require.Len(t, shamum.Activity.Periods, 1, "shamum has timed out period")
+		require.Nil(t, shamum.LastSlain, "shamum should have no last slain message")
+		reason, _ := shamum.Activity.LastInactive()
+		require.Equal(t, encounters.ReasonTimeout, reason)
 
 		// The scarlet mob died
 		require.False(t, myrm.Activity.IsActive(), "scarlet myrmidon should not be active")
-		require.Len(t, myrm.Activity.Periods, 1, "scarlet myrmidon should have 1 activity period")
+		require.Len(t, myrm.Activity.Periods, 2, "scarlet myrmidon should have 2 activity period, first was a timeout")
 		require.NotNil(t, myrm.LastSlain, "scarlet myrmidon should have a last slain message")
-		slain, _ := myrm.Activity.LastInactiveMessage().(messages.Slain)
+		_, msg := myrm.Activity.LastInactive()
+		slain, _ := msg.(messages.Slain)
 		require.Equal(t, guid.GUID(0xF1300010C7009C09), slain.Victim)
+
+		// Check the first period too
+		require.Equal(t, encounters.ReasonTimeout, myrm.Activity.Periods[0].End.Explanation)
 
 		// Doyd is still active.
 		// TODO: Should we mark him inactive if he kills who he is attacking?

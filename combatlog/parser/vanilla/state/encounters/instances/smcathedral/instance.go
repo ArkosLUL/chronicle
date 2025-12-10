@@ -28,16 +28,16 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 	c := &Cathedral{
 		logger:      logger,
 		db:          db,
-		fights:      encounters.NewFights(logger, db, z),
+		fights:      encounters.NewFights(logger, db, z, CathedralHostiles()),
 		currentZone: z,
 	}
 
 	// Define all encounters in this instance
-	c.encounters = []encounters.Encounter{
-		NewWhitemaneEncounter(),
-		NewMograineEncounter(),
-		// Add more encounters as needed
-	}
+	//c.encounters = []encounters.Encounter{
+	//	NewWhitemaneEncounter(),
+	//	NewMograineEncounter(),
+	//	// Add more encounters as needed
+	//}
 
 	return c
 }
@@ -58,38 +58,11 @@ func (c *Cathedral) Process(m messages.Message) error {
 	}
 
 	// If we have a current fight, try to detect which encounter it is
-	if c.fights.CurrentFight != nil && c.fights.CurrentFight.IsStarted() {
-		c.detectEncounter(m)
-	}
+	//if c.fights.CurrentFight != nil && c.fights.CurrentFight.IsStarted() {
+	//	c.detectEncounter(m)
+	//}
 
 	return nil
-}
-
-func (c *Cathedral) detectEncounter(m messages.Message) {
-	// If we already detected an encounter, don't re-detect
-	if c.currentEncounter != nil {
-		return
-	}
-
-	// Try to detect which encounter this is
-	for _, encounter := range c.encounters {
-		if encounter.Detect(c.fights.CurrentFight, m) {
-			c.currentEncounter = encounter
-			c.logger.Info("detected encounter",
-				slog.String("encounter", encounter.Name()),
-				slog.String("instance", c.Name()),
-			)
-
-			// Call the encounter's OnStart hook
-			if err := encounter.OnStart(c.fights.CurrentFight); err != nil {
-				c.logger.Error("encounter OnStart failed",
-					slog.String("encounter", encounter.Name()),
-					slog.Any("error", err),
-				)
-			}
-			break
-		}
-	}
 }
 
 func (c *Cathedral) Encounters() []encounters.Encounter {

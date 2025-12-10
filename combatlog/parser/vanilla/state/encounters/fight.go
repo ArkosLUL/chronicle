@@ -16,16 +16,17 @@ import (
 )
 
 type Fights struct {
-	Logger *slog.Logger
-	db     *unitdb.Units
+	Logger        *slog.Logger
+	db            *unitdb.Units
+	HostileLookup map[uint32]string
 
 	Fights       []*Fight
 	CurrentFight *Fight
 	Zone         zone.Zone
 }
 
-func NewFights(logger *slog.Logger, db *unitdb.Units, zone zone.Zone) *Fights {
-	current := NewFight(logger, db)
+func NewFights(logger *slog.Logger, db *unitdb.Units, zone zone.Zone, hostiles map[uint32]string) *Fights {
+	current := NewFight(logger, db, zone, hostiles)
 	return &Fights{
 		Logger:       logger,
 		db:           db,
@@ -33,7 +34,8 @@ func NewFights(logger *slog.Logger, db *unitdb.Units, zone zone.Zone) *Fights {
 		Fights: []*Fight{
 			current,
 		},
-		Zone: zone,
+		Zone:          zone,
+		HostileLookup: hostiles,
 	}
 }
 
@@ -49,7 +51,7 @@ func (fs *Fights) Process(m messages.Message) error {
 	// damage. But start collecting participants & units right away.
 	if fs.CurrentFight.IsDone() {
 		last := fs.CurrentFight
-		fs.CurrentFight = NewFight(fs.Logger, fs.db)
+		fs.CurrentFight = NewFight(fs.Logger, fs.db, fs.Zone, fs.HostileLookup)
 		fs.CurrentFight.PreviousFight = last
 		fs.Fights = append(fs.Fights, fs.CurrentFight)
 	}
@@ -65,7 +67,8 @@ type Fight struct {
 	// Lives keeps track of the life spans of units during the fight.
 	// A unit can be revived during a fight, so multiple lives are possible.
 	// TODO: portals too maybe? Like hearth
-	Lives map[guid.GUID]Lives
+	Lives         map[guid.GUID]*Lives
+	HostileLookup map[uint32]string
 
 	CurrentZone zone.Zone
 
@@ -74,11 +77,13 @@ type Fight struct {
 	End   messages.Message
 }
 
-func NewFight(logger *slog.Logger, db *unitdb.Units) *Fight {
+func NewFight(logger *slog.Logger, db *unitdb.Units, currentZone zone.Zone, hostiles map[uint32]string) *Fight {
 	return &Fight{
-		Logger: logger,
-		DB:     db,
-		Lives:  make(map[guid.GUID]Lives),
+		Logger:        logger,
+		DB:            db,
+		Lives:         make(map[guid.GUID]*Lives),
+		HostileLookup: hostiles,
+		CurrentZone:   currentZone,
 	}
 }
 
@@ -171,9 +176,9 @@ func (f *Fight) Slain(slain messages.Slain) error {
 		f.BumpUnit(*slain.Killer, slain)
 	}
 
-	_, err := f.UnitLives(slain.Victim, slain)
-	if err != nil {
-		return fmt.Errorf("slain: %w", err)
+	life := f.BumpUnit(slain.Victim, slain)
+	if life.IsActive() {
+		life.EndLife(slain)
 	}
 
 	if f.IsStarted() {
@@ -214,47 +219,71 @@ func (f *Fight) CastV2(c messages.Cast) error {
 	return nil
 }
 
+func (f *Fight) isHostile(gid guid.GUID) bool {
+	if !gid.IsCreature() {
+		return false
+	}
+
+	if gid.IsPlayer() {
+		return false
+	}
+
+	entry, ok := gid.GetEntry()
+	if !ok {
+		return false
+	}
+
+	_, isHostile := f.HostileLookup[entry]
+	return isHostile
+}
+
 func (f *Fight) Damage(d messages.Damage) error {
 	f.BumpUnit(d.Caster, d)
 	f.BumpUnit(d.Target, d)
 
-	if d.HitType.Has(types.HitTypeHit) || d.HitType.Has(types.HitTypeCrit) {
-		_, err := f.UnitLives(d.Caster, d)
-		if err != nil {
-			return fmt.Errorf("damage: %w", err)
-		}
+	if !f.isHostile(d.Target) && !f.isHostile(d.Caster) {
+		return nil // only start fights for known hostiles
 	}
 
-	if !d.HitType.Has(types.HitTypePeriodic) {
-		// Start fight on direct damage, not DoTs
-		if f.PreviousFight == nil {
-			f.StartFight(d)
-		} else {
-			recentlyInactive := func(id guid.GUID) bool {
-				exists, ok := f.PreviousFight.Lives[d.Caster]
-				if !ok {
-					return false
-				}
-
-				if exists.IsActive() {
-					return false
-				}
-
-				lastActivity := exists.LastInactiveMessage()
-				if lastActivity == nil {
-					return false
-				}
-				if d.Date().Sub(lastActivity.Date()) < time.Second {
-					return true
-				}
+	if f.PreviousFight == nil {
+		f.StartFight(d)
+	} else {
+		recentlyInactive := func(id guid.GUID) bool {
+			exists, ok := f.PreviousFight.Lives[d.Caster]
+			if !ok {
 				return false
 			}
 
-			if !recentlyInactive(d.Target) || !recentlyInactive(d.Caster) {
-				f.StartFight(d)
+			if exists.IsActive() {
+				return false
 			}
+
+			lastActivity := exists.LastInactiveMessage()
+			if lastActivity == nil {
+				return false
+			}
+			if d.Date().Sub(lastActivity.Date()) < time.Second {
+				return true
+			}
+			return false
+		}
+
+		if !recentlyInactive(d.Target) && !recentlyInactive(d.Caster) {
+			f.StartFight(d)
+		} else {
+			return nil
 		}
 	}
+
+	_, err := f.UnitLives(d.Target, d)
+	if err != nil {
+		return fmt.Errorf("damage target: %w", err)
+	}
+	_, err = f.UnitLives(d.Caster, d)
+	if err != nil {
+		return fmt.Errorf("damage caster: %w", err)
+	}
+
 	return nil
 }
 
@@ -285,7 +314,7 @@ func (fs *Fights) String() string {
 	return b.String()
 }
 
-func (f *Fight) BumpUnit(id guid.GUID, msg messages.Message) Lives {
+func (f *Fight) BumpUnit(id guid.GUID, msg messages.Message) *Lives {
 	if life, ok := f.Lives[id]; ok {
 		life.Bump(msg)
 		return life
@@ -296,7 +325,7 @@ func (f *Fight) BumpUnit(id guid.GUID, msg messages.Message) Lives {
 	return life
 }
 
-func (f *Fight) UnitLives(id guid.GUID, msg messages.Message) (Lives, error) {
+func (f *Fight) UnitLives(id guid.GUID, msg messages.Message) (*Lives, error) {
 	lives := f.BumpUnit(id, msg)
 	if !lives.IsActive() {
 		err := lives.StartLife(msg)
@@ -322,6 +351,14 @@ func (f *Fight) RemainingUnits() RemainingUnits {
 	summary := RemainingUnits{}
 
 	for gid, lives := range f.Lives {
+		if f.isHostile(gid) {
+			if lives.IsActive() {
+				summary.HostileActive++
+			} else {
+				summary.HostileInactive++
+			}
+			continue
+		}
 
 		info, haveInfo := f.DB.Get(gid)
 		if !haveInfo {

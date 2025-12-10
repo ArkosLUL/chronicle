@@ -109,3 +109,11 @@ func (g GUID) GetEntry() (uint32, bool) {
 	}
 	return 0, false
 }
+
+func MustEntry(id GUID) uint32 {
+	entry, ok := id.GetEntry()
+	if !ok {
+		panic("GUID is not a creature")
+	}
+	return entry
+}

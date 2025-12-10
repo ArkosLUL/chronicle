@@ -81,7 +81,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 		return nil, AsFatalError(fmt.Errorf("init: %w", err))
 	}
 
-	ts, content, err := p.scanner()
+	ts, original, err := p.scanner()
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 		return nil, AsFatalError(fmt.Errorf("log dates went backwards: last %v, current %v", p.lastLogDate, ts))
 	}
 
-	content, err = p.you.Preprocess(content)
+	content, err := p.you.Preprocess(original)
 	if err != nil {
 		return nil, fmt.Errorf("preprocess line failed: %v", err)
 	}

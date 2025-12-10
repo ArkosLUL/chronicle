@@ -3,10 +3,12 @@ package state
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -15,12 +17,15 @@ type State struct {
 	Me     types.Unit
 
 	// CurrentZone is the zone the player is currently in.
-	CurrentZone zone.Zone
+	CurrentZone     zone.Zone
+	CurrentInstance encounters.Instance
+	Instances       []encounters.Instance
+
 	// Units holds information about all units seen so far.
 	// Friendly/Foe/Relationships, etc.
 	Units *unitdb.Units
 
-	Fights *Fights
+	reg *encounters.Registry
 }
 
 func NewState(logger *slog.Logger, me types.Unit) *State {
@@ -29,6 +34,8 @@ func NewState(logger *slog.Logger, me types.Unit) *State {
 		Me:          me,
 		Units:       unitdb.New(),
 		CurrentZone: zone.Zone{},
+		reg:         DefaultRegistry(logger),
+		Instances:   []encounters.Instance{},
 	}
 	//s.Fights = NewFights(s)
 	return s
@@ -50,7 +57,14 @@ func (s *State) Process(m messages.Message) error {
 		//s.Slain(typed)
 	}
 
-	return s.Fights.Process(m)
+	// encounter processing would go here
+	if s.CurrentInstance != nil {
+		err := s.CurrentInstance.Process(m)
+		if err != nil {
+			return fmt.Errorf("instance process: %w", err)
+		}
+	}
+	return nil
 }
 
 func (s *State) Combatant(c messages.Combatant) {
@@ -73,6 +87,33 @@ func (s *State) Zone(z messages.Zone) {
 
 	if s.CurrentZone.Equal(z.Zone) {
 		return
+	}
+
+	if s.CurrentInstance != nil && !slices.ContainsFunc(s.Instances, func(instance encounters.Instance) bool {
+		// TODO: Is pointer comparison sufficient here?
+		return instance == s.CurrentInstance
+	}) {
+		s.Instances = append(s.Instances, s.CurrentInstance)
+	}
+
+	matched := false
+	for _, inst := range s.Instances {
+		if inst.MatchesZone(z.Zone) {
+			s.CurrentInstance = inst
+			matched = true
+			s.logger.Info("Matched existing instance",
+				slog.String("name", inst.Name()),
+			)
+		}
+	}
+
+	if !matched {
+		s.CurrentInstance = s.reg.GetInstance(z.Zone, s.Units)
+		if s.CurrentInstance != nil {
+			s.logger.Info("Matched new instance",
+				slog.String("name", s.CurrentInstance.Name()),
+			)
+		}
 	}
 
 	s.logger.Info(fmt.Sprintf("Zone changed to %q (instance %d)", z.Name, z.InstanceID),

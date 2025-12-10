@@ -54,16 +54,3 @@ func (r *Registry) AllInstances() []string {
 	}
 	return names
 }
-
-// DefaultRegistry returns a registry with all known instances
-func DefaultRegistry(logger *slog.Logger) *Registry {
-	r := NewRegistry(logger)
-	
-	// Register instances here as you add them
-	// Example:
-	// r.Register("Scarlet Monastery Cathedral", smcathedral.New)
-	// r.Register("Molten Core", moltencore.New)
-	// r.Register("Onyxia's Lair", onyxia.New)
-	
-	return r
-}

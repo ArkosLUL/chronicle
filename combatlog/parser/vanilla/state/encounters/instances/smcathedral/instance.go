@@ -2,6 +2,7 @@ package smcathedral
 
 import (
 	"log/slog"
+	"strings"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -18,9 +19,9 @@ type Cathedral struct {
 	encounters []encounters.Encounter
 
 	// Fight tracking
-	fights            *encounters.Fights
-	currentEncounter  encounters.Encounter
-	currentZone       zone.Zone
+	fights           *encounters.Fights
+	currentEncounter encounters.Encounter
+	currentZone      zone.Zone
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
@@ -46,7 +47,7 @@ func (c *Cathedral) Name() string {
 }
 
 func (c *Cathedral) MatchesZone(z zone.Zone) bool {
-	return z.Name == "Scarlet Monastery"
+	return strings.ToLower(z.Name) == "scarlet monastery cathedral"
 }
 
 func (c *Cathedral) Process(m messages.Message) error {
@@ -78,7 +79,7 @@ func (c *Cathedral) detectEncounter(m messages.Message) {
 				slog.String("encounter", encounter.Name()),
 				slog.String("instance", c.Name()),
 			)
-			
+
 			// Call the encounter's OnStart hook
 			if err := encounter.OnStart(c.fights.CurrentFight); err != nil {
 				c.logger.Error("encounter OnStart failed",

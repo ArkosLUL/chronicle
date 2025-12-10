@@ -59,7 +59,7 @@ func (fs *Fights) Process(m messages.Message) error {
 
 type Fight struct {
 	Logger        *slog.Logger
-	db            *unitdb.Units // Reference to parent state
+	DB            *unitdb.Units // Reference to parent state
 	PreviousFight *Fight
 
 	// Lives keeps track of the life spans of units during the fight.
@@ -77,9 +77,8 @@ type Fight struct {
 func NewFight(logger *slog.Logger, db *unitdb.Units) *Fight {
 	return &Fight{
 		Logger: logger,
-		db:     db,
+		DB:     db,
 		Lives:  make(map[guid.GUID]Lives),
-		//CurrentZone: s.CurrentZone,
 	}
 }
 
@@ -93,7 +92,7 @@ func (f *Fight) Process(m messages.Message) error {
 	case messages.Zone:
 		f.Zone(typed)
 	case messages.Damage:
-		f.Damage(typed)
+		err = f.Damage(typed)
 	case messages.FallDamage:
 		//f.FallDamage(typed)
 	case messages.Cast:
@@ -260,7 +259,7 @@ func (f *Fight) Damage(d messages.Damage) error {
 }
 
 func (f *Fight) getUnit(gid guid.GUID) (unitinfo.Info, bool) {
-	return f.s.Units.Get(gid)
+	return f.DB.Get(gid)
 }
 
 // String returns a summary of the fights
@@ -324,7 +323,7 @@ func (f *Fight) RemainingUnits() RemainingUnits {
 
 	for gid, lives := range f.Lives {
 
-		info, haveInfo := f.s.Units.Get(gid)
+		info, haveInfo := f.DB.Get(gid)
 		if !haveInfo {
 			f.Logger.Warn("unknown unit", slog.String("gid", gid.String()))
 			if lives.IsActive() {
@@ -381,7 +380,7 @@ func (f *Fight) String() string {
 	if len(f.Lives) > 0 {
 		b.WriteString(fmt.Sprintf("\nParticipants: %d\n", len(f.Lives)))
 		for guid, _ := range f.Lives {
-			info, ok := f.s.Units.Get(guid)
+			info, ok := f.DB.Get(guid)
 			if !ok {
 				b.WriteString(fmt.Sprintf("  - Unknown (%s)\n", guid))
 				continue

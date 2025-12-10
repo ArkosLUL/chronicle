@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -10,6 +11,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
+
+func ToString(msg Message) string {
+	return fmt.Sprintf("[%T] %s", msg, msg.Date().Format("15:04:05.000"))
+}
 
 type Message interface {
 	isMessage()
@@ -27,7 +32,7 @@ func Base(ts time.Time) MessageBase {
 	}
 }
 
-func (m MessageBase) String(content string) string {
+func (m MessageBase) Serialize(content string) string {
 	return m.Timestamp.Format("02/01 15:04:05.000") + "  " + content
 }
 func (MessageBase) isMessage() {}

@@ -2,6 +2,8 @@ package encounters
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -50,6 +52,31 @@ func NewCharacter(id guid.GUID, now time.Time) *Character {
 			NextTimeout: now.Add(defaultTimeout),
 		},
 	}
+}
+
+func (c *Character) NamedString(name string) string {
+	if c == nil {
+		return "<nil Character>"
+	}
+
+	id := fmt.Sprintf("ID: %s", c.ID)
+	if name != "" {
+		id = fmt.Sprintf("Name: %s, ID: %s", name, id)
+	}
+
+	var str strings.Builder
+	str.WriteString(fmt.Sprintf("Character(%s)", id))
+	if c.LastSlain != nil {
+		str.WriteString(fmt.Sprintf(", LastSlain: %s", messages.ToString(c.LastSlain)))
+	}
+	str.WriteString("\n")
+	str.WriteString(fmt.Sprintf("Activity: %s\n", c.Activity.String()))
+
+	return str.String()
+}
+
+func (c *Character) String() string {
+	return c.NamedString("")
 }
 
 // RecentlySlain returns if the character was slain within the last second.
@@ -120,6 +147,22 @@ type ActivePeriods struct {
 	TimeoutBump  time.Duration
 }
 
+func (ap *ActivePeriods) String() string {
+	var str strings.Builder
+	str.WriteString(fmt.Sprintf("%d Periods", len(ap.Periods)))
+	str.WriteString(fmt.Sprintf(", Active=%t", ap.IsActive()))
+	if ap.LastActivity != nil {
+		str.WriteString(fmt.Sprintf(", LatAct=%s", messages.ToString(ap.LastActivity)))
+	}
+
+	str.WriteString("\n")
+	for _, p := range ap.Periods {
+		str.WriteString(fmt.Sprintf("  %s\n", p.String()))
+	}
+
+	return str.String()
+}
+
 func (ap *ActivePeriods) Bump(m messages.Message) {
 	ap.LastActivity = m
 	ap.NextTimeout = m.Date().Add(ap.TimeoutBump)
@@ -158,12 +201,39 @@ func (ap *ActivePeriods) IsActive() bool {
 	return ap.Periods[len(ap.Periods)-1].End == nil
 }
 
+func (ap *ActivePeriods) LastInactiveMessage() messages.Message {
+	if len(ap.Periods) == 0 {
+		return nil
+	}
+	last := ap.Periods[len(ap.Periods)-1]
+	if last.End == nil {
+		return nil
+	}
+	return last.End.Timestamp
+}
+
 type Active struct {
 	Start *ExplainedTimestamp
 	End   *ExplainedTimestamp
 }
 
+func (a Active) String() string {
+	if a.Start == nil && a.End == nil {
+		return "Inactive(Start:<nil>, End:<nil>)"
+	}
+
+	if a.End == nil {
+		return fmt.Sprintf("Active(Start: %s, End: <nil>)", a.Start)
+	}
+
+	return fmt.Sprintf("Inactive(Start: %s, End: %s)", a.Start, a.End)
+}
+
 type ExplainedTimestamp struct {
 	Timestamp   messages.Message
 	Explanation string
+}
+
+func (et ExplainedTimestamp) String() string {
+	return fmt.Sprintf("%s (Reason: %s)", messages.ToString(et.Timestamp), et.Explanation)
 }

@@ -42,7 +42,7 @@ func (c *BlackrockSpire) Name() string {
 }
 
 func (c *BlackrockSpire) MatchesZone(z zone.Zone) bool {
-	return strings.ToLower(z.Name) == "blackrock spire&"
+	return strings.ToLower(z.Name) == "blackrock spire"
 }
 
 func (c *BlackrockSpire) Process(m messages.Message) error {

@@ -106,7 +106,7 @@ func (c *Character) Process(m messages.Message) error {
 	defer func() {
 		// Timeouts always end activity.
 		if c.Activity.IsActive() && c.Activity.NextTimeout.Before(m.Date()) {
-			c.Activity.End(ReasonTimeout, m)
+			c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.NextTimeout))
 		}
 	}()
 

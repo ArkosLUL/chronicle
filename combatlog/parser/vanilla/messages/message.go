@@ -209,3 +209,15 @@ type Create struct {
 }
 
 func (c Create) Affects() []guid.GUID { return []guid.GUID{c.Caster} }
+
+type Timeout struct {
+	MessageBase
+}
+
+func TimedOut(ts time.Time) Message {
+	return Timeout{
+		MessageBase: Base(ts),
+	}
+}
+
+func (t Timeout) Affects() []guid.GUID { return []guid.GUID{} }

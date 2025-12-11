@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"slices"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
@@ -36,7 +35,7 @@ func New(logger *slog.Logger) *State {
 		Units:       unitdb.New(),
 		CurrentZone: zone.Zone{},
 		reg:         DefaultRegistry(logger),
-		Instances:   []encounters.Instance{},
+		Instances:   make([]encounters.Instance, 0),
 	}
 	return s
 }
@@ -113,14 +112,8 @@ func (s *State) Zone(z messages.Zone) {
 	}()
 
 	if s.CurrentZone.Equal(z.Zone) {
+		// Zone unchanged
 		return
-	}
-
-	if s.CurrentInstance != nil && !slices.ContainsFunc(s.Instances, func(instance encounters.Instance) bool {
-		// TODO: Is pointer comparison sufficient here?
-		return instance == s.CurrentInstance
-	}) {
-		s.Instances = append(s.Instances, s.CurrentInstance)
 	}
 
 	matched := false
@@ -140,6 +133,7 @@ func (s *State) Zone(z messages.Zone) {
 			s.logger.Info("Matched new instance",
 				slog.String("name", s.CurrentInstance.Name()),
 			)
+			s.Instances = append(s.Instances, s.CurrentInstance)
 		}
 	}
 

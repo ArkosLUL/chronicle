@@ -1,6 +1,7 @@
 package encounters
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
@@ -25,7 +26,13 @@ func NewRegistry(logger *slog.Logger) *Registry {
 }
 
 // Register adds an instance factory to the registry
-func (r *Registry) Register(name string, factory InstanceFactory) {
+func (r *Registry) Register(factory InstanceFactory) {
+	// temporary instance to get the name
+	tmp := factory(nil, nil, zone.Zone{})
+	name := tmp.Name()
+	if _, exists := r.factories[name]; exists {
+		panic(fmt.Sprintf("instance factory named %s already exists", name))
+	}
 	r.factories[name] = factory
 	r.logger.Debug("registered instance", slog.String("name", name))
 }

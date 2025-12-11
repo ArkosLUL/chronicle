@@ -15,8 +15,8 @@ func (f FatalError) Unwrap() error {
 }
 
 func IsFatalError(err error) bool {
-  var nonFatalError FatalError
-  ok := errors.As(err, &nonFatalError)
+  var fatal FatalError
+  ok := errors.As(err, &fatal)
   return ok
 }
 

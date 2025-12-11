@@ -5,6 +5,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/blackrockspire"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/smcathedral"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/smlibrary"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -24,6 +25,7 @@ func DefaultRegistry(logger *slog.Logger) *encounters.Registry {
 	// Example:
 	r.Register(wrap(smcathedral.New))
 	r.Register(wrap(smlibrary.New))
+	r.Register(wrap(blackrockspire.New))
 	// r.Register("Molten Core", moltencore.New)
 	// r.Register("Onyxia's Lair", onyxia.New)
 

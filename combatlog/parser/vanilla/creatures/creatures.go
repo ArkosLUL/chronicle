@@ -1,4 +1,4 @@
-package state
+package creatures
 
 import (
 	"context"
@@ -6,42 +6,36 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"slices"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
-type State struct {
+type Creatures struct {
 	logger *slog.Logger
 
 	// CurrentZone is the zone the player is currently in.
-	CurrentZone     zone.Zone
-	CurrentInstance encounters.Instance
-	Instances       []encounters.Instance
+	CurrentZone zone.Zone
+	ZonedUnits  map[string]map[uint32]string
 
 	// Units holds information about all units seen so far.
 	// Friendly/Foe/Relationships, etc.
 	Units *unitdb.Units
-
-	reg *encounters.Registry
 }
 
-func New(logger *slog.Logger) *State {
-	s := &State{
+func New(logger *slog.Logger) *Creatures {
+	s := &Creatures{
 		logger:      logger,
 		Units:       unitdb.New(),
 		CurrentZone: zone.Zone{},
-		reg:         DefaultRegistry(logger),
-		Instances:   []encounters.Instance{},
+		ZonedUnits:  map[string]map[uint32]string{},
 	}
 	return s
 }
 
-func (s *State) Consume(ctx context.Context, p *vanilla.Parser) error {
+func (s *Creatures) Consume(ctx context.Context, p *vanilla.Parser) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -68,41 +62,50 @@ func (s *State) Consume(ctx context.Context, p *vanilla.Parser) error {
 	}
 }
 
-func (s *State) Process(m messages.Message) error {
+func (s *Creatures) Process(m messages.Message) error {
 	switch typed := m.(type) {
 	case messages.Zone:
 		s.Zone(typed)
-	case messages.Damage:
-		//s.Damage(typed)
-	case messages.Cast:
-		//s.CastV2(typed)
 	case messages.Combatant:
 		s.Combatant(typed)
 	case messages.Unit:
 		s.Unit(typed)
-	case messages.Slain:
-		//s.Slain(typed)
 	}
 
-	// encounter processing would go here
-	if s.CurrentInstance != nil {
-		err := s.CurrentInstance.Process(m)
-		if err != nil {
-			return fmt.Errorf("instance process: %w", err)
+	for _, gid := range m.Affects() {
+		if !gid.IsCreature() {
+			continue
 		}
+
+		entry, ok := gid.GetEntry()
+		if !ok {
+			continue
+		}
+
+		unit, ok := s.Units.Get(gid)
+		if !ok {
+			s.logger.Error("Could not find unit", slog.String("gid", gid.String()))
+			continue
+		}
+
+		if s.ZonedUnits[s.CurrentZone.Name] == nil {
+			s.ZonedUnits[s.CurrentZone.Name] = map[uint32]string{}
+		}
+		s.ZonedUnits[s.CurrentZone.Name][entry] = unit.Name
 	}
+
 	return nil
 }
 
-func (s *State) Combatant(c messages.Combatant) {
+func (s *Creatures) Combatant(c messages.Combatant) {
 	s.Units.UpdatePlayer(c.Combatant)
 }
 
-func (s *State) Unit(u messages.Unit) {
+func (s *Creatures) Unit(u messages.Unit) {
 	s.Units.Update(u.Info)
 }
 
-func (s *State) Zone(z messages.Zone) {
+func (s *Creatures) Zone(z messages.Zone) {
 	if z.Name == "" {
 		// Ignore empty zones
 		return
@@ -114,33 +117,6 @@ func (s *State) Zone(z messages.Zone) {
 
 	if s.CurrentZone.Equal(z.Zone) {
 		return
-	}
-
-	if s.CurrentInstance != nil && !slices.ContainsFunc(s.Instances, func(instance encounters.Instance) bool {
-		// TODO: Is pointer comparison sufficient here?
-		return instance == s.CurrentInstance
-	}) {
-		s.Instances = append(s.Instances, s.CurrentInstance)
-	}
-
-	matched := false
-	for _, inst := range s.Instances {
-		if inst.MatchesZone(z.Zone) {
-			s.CurrentInstance = inst
-			matched = true
-			s.logger.Info("Matched existing instance",
-				slog.String("name", inst.Name()),
-			)
-		}
-	}
-
-	if !matched {
-		s.CurrentInstance = s.reg.GetInstance(z.Zone, s.Units)
-		if s.CurrentInstance != nil {
-			s.logger.Info("Matched new instance",
-				slog.String("name", s.CurrentInstance.Name()),
-			)
-		}
 	}
 
 	s.logger.Info(fmt.Sprintf("Zone changed to %q (instance %d)", z.Name, z.InstanceID),

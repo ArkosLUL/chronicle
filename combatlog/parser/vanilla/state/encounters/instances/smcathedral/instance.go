@@ -11,6 +11,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
+var _ encounters.Instance = (*Cathedral)(nil)
+
 // Cathedral is the Scarlet Monastery Cathedral instance
 type Cathedral struct {
 	logger *slog.Logger
@@ -29,6 +31,10 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 	}
 
 	return c
+}
+
+func (c *Cathedral) CharactersList() encounters.Characters {
+	return c.Characters
 }
 
 func (c *Cathedral) Name() string {

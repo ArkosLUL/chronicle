@@ -15,4 +15,7 @@ type Instance interface {
 
 	// Process handles a message for this instance
 	Process(m messages.Message) error
+
+	// Remove this in favor of parsed characters
+	CharactersList() Characters
 }

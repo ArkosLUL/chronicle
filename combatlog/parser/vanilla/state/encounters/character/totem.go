@@ -127,3 +127,15 @@ func (c *Totem) StartActivity(reason string, m messages.Message) error {
 		},
 	})
 }
+
+func (c *Totem) processTimeout(m messages.Message) {
+	if c.Activity.IsActive() && c.Activity.CurrentActivity().NextTimeout.Before(m.Date()) {
+		c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.CurrentActivity().NextTimeout))
+	}
+
+	// Totem expires after max lifetime. Grant 1 second of leeway. (latency, etc)
+	maxLife := c.Activity.flavoredCurrentActivity().Extra.MaxLifeTime.Add(time.Second)
+	if c.Activity.IsActive() && maxLife.Before(m.Date()) {
+		c.Activity.End(ReasonTimeout, messages.TimedOut(maxLife))
+	}
+}

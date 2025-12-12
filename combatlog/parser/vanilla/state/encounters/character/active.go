@@ -21,11 +21,18 @@ type ActivePeriods[special CharacterPeriodData] struct {
 	All *Characters
 }
 
-func (ap *ActivePeriods[SpecialCharacterData]) CurrentActivity() *Active {
+func (ap *ActivePeriods[_]) CurrentActivity() *Active {
 	if len(ap.Periods) == 0 {
 		return nil
 	}
 	return &(ap.Periods[len(ap.Periods)-1].Active)
+}
+
+func (ap *ActivePeriods[special]) flavoredCurrentActivity() *flavoredActive[special] {
+	if len(ap.Periods) == 0 {
+		return nil
+	}
+	return ap.Periods[len(ap.Periods)-1]
 }
 
 func (ap *ActivePeriods[SpecialCharacterData]) String() string {

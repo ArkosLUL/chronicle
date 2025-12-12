@@ -10,9 +10,16 @@ type Totem struct {
 	ID             uint32
 	Name           string
 	NormalDuration time.Duration
-	// Totemic Mastery indicates the totem can benefit from the Totemic Mastery
-	// talent. This affects the duration of the totem.
-	TotemicMastery bool
+	// Modifier is a factor which can be applied to the totem's duration from
+	// any source. Such as Totemic Mastery talent.
+	Modifier   float64
+	StaticBump time.Duration
+}
+
+func (tot Totem) MaxDuration() time.Duration {
+	// TODO: Idk how the static bump interacts with the modifier. This is a guess.
+	modified := float64(tot.NormalDuration) * (1 + tot.Modifier)
+	return time.Duration(modified) + tot.StaticBump
 }
 
 func IsTotem(id guid.GUID) (Totem, bool) {
@@ -29,8 +36,29 @@ func IsTotem(id guid.GUID) (Totem, bool) {
 
 var totems = make(map[uint32]Totem)
 
+const (
+	modifierTotemicMastery = 0.2
+
+	staticEarthfurySetBump = time.Second * 15
+)
+
 func init() {
-	register("Fire Nova Totem", false,
+	// Talent "improved Searing Totem" does not exist in the game.
+	// https://database.turtle-wow.org/?spell=16127
+	// Earthfury set has a set effect for +15 seconds duration
+	// https://database.turtle-wow.org/?itemset=666
+	register("Searing Totem", 0,
+		variant{id: 2523, duration: 30 * time.Second, staticBump: staticEarthfurySetBump},
+		variant{id: 3902, duration: 35 * time.Second, staticBump: staticEarthfurySetBump},
+		variant{id: 3903, duration: 40 * time.Second, staticBump: staticEarthfurySetBump},
+		variant{id: 3904, duration: 45 * time.Second, staticBump: staticEarthfurySetBump},
+		variant{id: 7400, duration: 50 * time.Second, staticBump: staticEarthfurySetBump},
+		variant{id: 7402, duration: 55 * time.Second, staticBump: staticEarthfurySetBump},
+	)
+
+	// Fire nova totem can be faster based on "Improved Fire Totem".
+	// We should watch for the damage log to kill it.
+	register("Fire Nova Totem", 0,
 		variant{id: 5879, duration: 5 * time.Second},
 		variant{id: 6110, duration: 5 * time.Second},
 		variant{id: 6111, duration: 5 * time.Second},
@@ -38,13 +66,15 @@ func init() {
 		variant{id: 7845, duration: 5 * time.Second},
 	)
 
-	register("Fire Resistance Totem", true,
+	register("Fire Resistance Totem",
+		modifierTotemicMastery,
 		variant{id: 5927, duration: 120 * time.Second},
 		variant{id: 7424, duration: 120 * time.Second},
 		variant{id: 7425, duration: 120 * time.Second},
 	)
 
-	register("Mana Spring Totem", true,
+	register("Mana Spring Totem",
+		modifierTotemicMastery,
 		variant{id: 3573, duration: 60 * time.Second},
 		variant{id: 7414, duration: 60 * time.Second},
 		variant{id: 7415, duration: 60 * time.Second},
@@ -54,12 +84,12 @@ func init() {
 
 	// Comes from "Enamored Water Spirit" item
 	// https://database.turtle-wow.org/?item=20503
-	register("Ancient Mana Spring Totem", false,
+	register("Ancient Mana Spring Totem", 0,
 		variant{id: 15304, duration: 24 * time.Second},
 	)
 
 	// BWL has corrupted variants
-	register("Corrupted", false,
+	register("Corrupted", 0,
 		// TODO: Idk the durations of these, or how they work.
 		variant{nameOverride: "Corrupted Fire Nova Totem", id: 14662, duration: 0},
 		variant{nameOverride: "Corrupted Healing Stream Totem", id: 14664, duration: 0},
@@ -74,10 +104,11 @@ type variant struct {
 	nameOverride string
 	id           uint32
 	duration     time.Duration
-	spellID      uint32
+	// Some effects increase by X seconds
+	staticBump time.Duration
 }
 
-func register(name string, totMast bool, variants ...variant) {
+func register(name string, mod float64, variants ...variant) {
 	for _, v := range variants {
 		actualName := name
 		if v.nameOverride != "" {
@@ -87,7 +118,8 @@ func register(name string, totMast bool, variants ...variant) {
 			ID:             v.id,
 			Name:           actualName,
 			NormalDuration: v.duration,
-			TotemicMastery: totMast,
+			Modifier:       mod,
+			StaticBump:     v.staticBump,
 		}
 	}
 }

@@ -1,15 +1,15 @@
 package encounters
 
 import (
-	"errors"
-	"fmt"
-	"strings"
-	"time"
+  "errors"
+  "fmt"
+  "strings"
+  "time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+  "github.com/Emyrk/chronicle/combatlog/parser/guid"
+  "github.com/Emyrk/chronicle/combatlog/parser/types"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 const (
@@ -29,13 +29,13 @@ func NewCharacters(db *unitdb.Units) *Characters {
 	}
 }
 
-func (c Characters) AddAll(now time.Time, ids ...guid.GUID) {
+func (c Characters) AddAll(ids ...guid.GUID) {
 	for _, id := range ids {
-		c.Add(now, id)
+		c.Add(id)
 	}
 }
 
-func (c Characters) Add(now time.Time, id guid.GUID) *Character {
+func (c Characters) Add(id guid.GUID) *Character {
 	char, exists := c.All[id]
 	if !exists {
 		// TODO: When making a new character, we should have a hook for special
@@ -44,7 +44,7 @@ func (c Characters) Add(now time.Time, id guid.GUID) *Character {
 		//  - Totems: have a fixed lifetime & despawn after recall or owner died
 		//  - Pets: Die when their owner dies
 
-		char = NewCharacter(id, now)
+		char = NewCharacter(id, c)
 		c.All[id] = char
 	}
 	return char
@@ -57,7 +57,7 @@ func (c Characters) Add(now time.Time, id guid.GUID) *Character {
 // for general types.
 func (c Characters) Process(m messages.Message) error {
 	// Add all affected characters to the instance's character list
-	c.AddAll(m.Date(), m.Affects()...)
+	c.AddAll(m.Affects()...)
 
 	for _, char := range c.All {
 		err := char.Process(m)
@@ -69,7 +69,8 @@ func (c Characters) Process(m messages.Message) error {
 }
 
 type Character struct {
-	ID guid.GUID
+	All Characters
+	ID  guid.GUID
 	// A character's activity periods.
 	Activity *ActivePeriods
 
@@ -78,19 +79,18 @@ type Character struct {
 	LastSlain messages.Message
 }
 
-func NewCharacter(id guid.GUID, now time.Time) *Character {
-	const defaultTimeout = time.Second * 60
-	//if totem, ok := totems.IsTotem(id) {
-	//
-	//}
-	return &Character{
-		ID: id,
-		Activity: &ActivePeriods{
-			Periods:     make([]Active, 0),
-			TimeoutBump: defaultTimeout,
-			NextTimeout: now.Add(defaultTimeout),
-		},
+func NewCharacter(id guid.GUID, all Characters) *Character {
+	me := &Character{
+		All: all,
+		ID:  id,
 	}
+
+	me.Activity = &ActivePeriods{
+		Periods: make([]*Active, 0),
+		Me:      me,
+		All:     all,
+	}
+	return me
 }
 
 func (c *Character) NamedString(name string) string {
@@ -178,27 +178,32 @@ func (c *Character) Process(m messages.Message) error {
 }
 
 func (c *Character) processTimeout(m messages.Message) {
-	if c.Activity.IsActive() && c.Activity.NextTimeout.Before(m.Date()) {
-		c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.NextTimeout))
+	if c.Activity.IsActive() && c.Activity.CurrentActivity().NextTimeout.Before(m.Date()) {
+		c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.CurrentActivity().NextTimeout))
 	}
 }
 
 type ActivePeriods struct {
-	Periods      []Active
-	LastActivity messages.Message
-	NextTimeout  time.Time
-	TimeoutBump  time.Duration
-	// MaxLifetime if set defines the timestamp in which the character will cease to
-	// exist. Totems are an example of this.
-	MaxLifetime time.Time
+	Periods []*Active
+
+	// Reference to the parent's state
+	Me  *Character
+	All Characters
+}
+
+func (ap *ActivePeriods) CurrentActivity() *Active {
+	if len(ap.Periods) == 0 {
+		return nil
+	}
+	return ap.Periods[len(ap.Periods)-1]
 }
 
 func (ap *ActivePeriods) String() string {
 	var str strings.Builder
 	str.WriteString(fmt.Sprintf("%d Periods", len(ap.Periods)))
 	str.WriteString(fmt.Sprintf(", Active=%t", ap.IsActive()))
-	if ap.LastActivity != nil {
-		str.WriteString(fmt.Sprintf(", LatAct=%s", messages.ToString(ap.LastActivity)))
+	if ap.CurrentActivity().LastActivity != nil {
+		str.WriteString(fmt.Sprintf(", LatAct=%s", messages.ToString(ap.CurrentActivity().LastActivity)))
 	}
 
 	str.WriteString("\n")
@@ -210,8 +215,9 @@ func (ap *ActivePeriods) String() string {
 }
 
 func (ap *ActivePeriods) Bump(m messages.Message) {
-	ap.LastActivity = m
-	ap.NextTimeout = m.Date().Add(ap.TimeoutBump)
+	if ap.IsActive() {
+		ap.CurrentActivity().Bump(m)
+	}
 }
 
 func (ap *ActivePeriods) End(reason string, m messages.Message) {
@@ -228,23 +234,30 @@ func (ap *ActivePeriods) Start(reason string, m messages.Message) error {
 	if ap.IsActive() {
 		return errors.New("life already active")
 	}
-	ap.Periods = append(ap.Periods, Active{
+	const defaultTimeout = time.Second * 60
+	act := &Active{
 		Start: &ExplainedTimestamp{
 			Timestamp:   m,
 			Explanation: reason,
 		},
+		LastActivity: m,
+		NextTimeout:  m.Date().Add(defaultTimeout),
+		TimeoutBump:  defaultTimeout,
+		MaxLifetime:  time.Time{},
+		// End will occur at the end of the period.
 		End: nil,
-	})
+	}
+
+	Totems(ap, m, act)
+
+	ap.Periods = append(ap.Periods, act)
 	return nil
 }
 
 // IsActive returns if the unit is currently known to be alive.
 func (ap *ActivePeriods) IsActive() bool {
-	if len(ap.Periods) == 0 {
-		return false
-	}
-
-	return ap.Periods[len(ap.Periods)-1].End == nil
+	act := ap.CurrentActivity()
+	return act != nil && act.End == nil
 }
 
 func (ap *ActivePeriods) LastInactive() (string, messages.Message) {
@@ -261,6 +274,18 @@ func (ap *ActivePeriods) LastInactive() (string, messages.Message) {
 type Active struct {
 	Start *ExplainedTimestamp
 	End   *ExplainedTimestamp
+
+	LastActivity messages.Message
+	NextTimeout  time.Time
+	TimeoutBump  time.Duration
+	// MaxLifetime if set defines the timestamp in which the character will cease to
+	// exist. Totems are an example of this.
+	MaxLifetime time.Time
+}
+
+func (a *Active) Bump(m messages.Message) {
+	a.LastActivity = m
+	a.NextTimeout = m.Date().Add(a.TimeoutBump)
 }
 
 func (a Active) String() string {

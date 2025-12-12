@@ -91,6 +91,9 @@ func AggregateFights(inst encounters.Instance) ([]Fight, diagnostic.Diagnostics)
 
 		// Collect all completed activity periods for this character
 		for _, period := range char.Activity.Periods {
+			if period == nil {
+				continue
+			}
 			// Only include periods that have ended
 			// If a period has no end... what do we do?
 			if period.End == nil {
@@ -104,7 +107,7 @@ func AggregateFights(inst encounters.Instance) ([]Fight, diagnostic.Diagnostics)
 
 			allActivities = append(allActivities, activityWithChar{
 				charID:   id,
-				activity: period,
+				activity: *period,
 			})
 		}
 	}

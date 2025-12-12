@@ -50,6 +50,11 @@ func (c Characters) Add(now time.Time, id guid.GUID) *Character {
 	return char
 }
 
+// TODO: Maybe a "synthetic" boolean should exist on message base. This would
+// allow inserting custom messages for totems/pets that indicate their death/recall.
+// This would have to be returned here to be added to the message stream.
+// Idk how feasible that is though. Maybe the original processor can handle this
+// for general types.
 func (c Characters) Process(m messages.Message) error {
 	// Add all affected characters to the instance's character list
 	c.AddAll(m.Date(), m.Affects()...)

@@ -50,12 +50,6 @@ func (c Characters) AddAll(ids ...guid.GUID) {
 func (c Characters) Add(id guid.GUID) Character {
 	char, exists := c.All[id]
 	if !exists {
-		// TODO: When making a new character, we should have a hook for special
-		// types.
-		// E.g:
-		//  - Totems: have a fixed lifetime & despawn after recall or owner died
-		//  - Pets: Die when their owner dies
-
 		for _, factory := range characterFactories {
 			if specialChar, ok := factory(id, &c); ok {
 				char = specialChar
@@ -83,6 +77,8 @@ func (c Characters) Process(m messages.Message) error {
 	c.AddAll(m.Affects()...)
 
 	for _, char := range c.All {
+		// TODO: Dead characters that will never return should be removed from processing?
+		// Or at least have some kind of speedup
 		err := char.Process(m)
 		if err != nil {
 			return fmt.Errorf("processing character %s: %w", char.ID().String(), err)

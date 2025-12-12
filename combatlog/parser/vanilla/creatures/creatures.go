@@ -13,6 +13,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
+// Creatures consumes parsed combat logs and builds a list of all creatures seen
+// in each zone by their entry ID and name.
+//
+// Helpful for programmatically seeing which mobs exist in which zones.
 type Creatures struct {
 	logger *slog.Logger
 

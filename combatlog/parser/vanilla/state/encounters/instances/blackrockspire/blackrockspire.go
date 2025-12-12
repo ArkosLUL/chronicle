@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -19,7 +20,7 @@ type BlackrockSpire struct {
 	db     *unitdb.Units
 
 	CurrentZone zone.Zone
-	Characters  encounters.Characters
+	Characters  *encounters.Characters
 	*encounters.Identifier
 }
 
@@ -27,7 +28,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *BlackrockSpire {
 	c := &BlackrockSpire{
 		logger:      logger,
 		db:          db,
-		Characters:  encounters.NewCharacters(),
+		Characters:  encounters.NewCharacters(db),
 		CurrentZone: z,
 		// TODO: Populate hostile identifiers
 		Identifier: encounters.NewIdentifier(nil),
@@ -36,8 +37,8 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *BlackrockSpire {
 	return c
 }
 
-func (c *BlackrockSpire) CharactersList() encounters.Characters {
-	return c.Characters
+func (c *BlackrockSpire) CharactersList() map[guid.GUID]*encounters.Character {
+	return c.Characters.All
 }
 
 func (c *BlackrockSpire) Name() string {
@@ -49,16 +50,9 @@ func (c *BlackrockSpire) MatchesZone(z zone.Zone) bool {
 }
 
 func (c *BlackrockSpire) Process(m messages.Message) error {
-	// Add all affected characters to the instance's character list
-	c.Characters.AddAll(m.Date(), m.Affects()...)
-
-	// Process the message through fight tracking
-	for _, ch := range c.Characters {
-		err := ch.Process(m)
-		if err != nil {
-			return fmt.Errorf("processing character %s: %w", ch.ID.String(), err)
-		}
+	err := c.Characters.Process(m)
+	if err != nil {
+		return fmt.Errorf("processing characters: %w", err)
 	}
-
 	return nil
 }

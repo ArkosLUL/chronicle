@@ -67,24 +67,6 @@ func (l *Liner) guessYear(line string) error {
 
 	l.Year = now.Year()
 	return nil
-
-	//thisToNow := now.Sub(this)
-	//beforeToNow := now.Sub(before)
-	//
-	//if thisToNow < 0 {
-	//
-	//}
-	//
-	//var _, _ = fromThis, fromBefore
-	//toThis := time.Since(this).Abs()
-	//toBefore := time.Since(before).Abs()
-	//
-	//// Select the closest year
-	//if toBefore < toThis {
-	//	l.Year = now.Year() - 1
-	//} else {
-	//	l.Year = now.Year()
-	//}
 }
 
 func (l *Liner) Line(line string) (time.Time, string, error) {

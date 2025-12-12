@@ -9,6 +9,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 const (
@@ -16,10 +17,16 @@ const (
 	ReasonSlain   = "slain"
 )
 
-type Characters map[guid.GUID]*Character
+type Characters struct {
+	All map[guid.GUID]*Character
+	db  *unitdb.Units
+}
 
-func NewCharacters() Characters {
-	return make(Characters)
+func NewCharacters(db *unitdb.Units) *Characters {
+	return &Characters{
+		db:  db,
+		All: make(map[guid.GUID]*Character),
+	}
 }
 
 func (c Characters) AddAll(now time.Time, ids ...guid.GUID) {
@@ -29,12 +36,31 @@ func (c Characters) AddAll(now time.Time, ids ...guid.GUID) {
 }
 
 func (c Characters) Add(now time.Time, id guid.GUID) *Character {
-	char, exists := c[id]
+	char, exists := c.All[id]
 	if !exists {
+		// TODO: When making a new character, we should have a hook for special
+		// types.
+		// E.g:
+		//  - Totems: have a fixed lifetime & despawn after recall or owner died
+		//  - Pets: Die when their owner dies
+
 		char = NewCharacter(id, now)
-		c[id] = char
+		c.All[id] = char
 	}
 	return char
+}
+
+func (c Characters) Process(m messages.Message) error {
+	// Add all affected characters to the instance's character list
+	c.AddAll(m.Date(), m.Affects()...)
+
+	for _, char := range c.All {
+		err := char.Process(m)
+		if err != nil {
+			return fmt.Errorf("processing character %s: %w", char.ID.String(), err)
+		}
+	}
+	return nil
 }
 
 type Character struct {

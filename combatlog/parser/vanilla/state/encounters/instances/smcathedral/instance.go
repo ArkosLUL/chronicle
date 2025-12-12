@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -19,7 +20,7 @@ type Cathedral struct {
 	db     *unitdb.Units
 
 	CurrentZone zone.Zone
-	Characters  encounters.Characters
+	Characters  *encounters.Characters
 	*encounters.Identifier
 }
 
@@ -27,7 +28,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 	c := &Cathedral{
 		logger:      logger,
 		db:          db,
-		Characters:  encounters.NewCharacters(),
+		Characters:  encounters.NewCharacters(db),
 		CurrentZone: z,
 		Identifier:  encounters.NewIdentifier(CathedralHostiles()),
 	}
@@ -35,8 +36,8 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 	return c
 }
 
-func (c *Cathedral) CharactersList() encounters.Characters {
-	return c.Characters
+func (c *Cathedral) CharactersList() map[guid.GUID]*encounters.Character {
+	return c.Characters.All
 }
 
 func (c *Cathedral) Name() string {
@@ -48,15 +49,10 @@ func (c *Cathedral) MatchesZone(z zone.Zone) bool {
 }
 
 func (c *Cathedral) Process(m messages.Message) error {
-	// Add all affected characters to the instance's character list
-	c.Characters.AddAll(m.Date(), m.Affects()...)
-
 	// Process the message through fight tracking
-	for _, ch := range c.Characters {
-		err := ch.Process(m)
-		if err != nil {
-			return fmt.Errorf("processing character %s: %w", ch.ID.String(), err)
-		}
+	err := c.Characters.Process(m)
+	if err != nil {
+		return fmt.Errorf("processing characters: %w", err)
 	}
 
 	return nil

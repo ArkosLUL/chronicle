@@ -23,7 +23,7 @@ type Instance interface {
 
 	// CharactersList returns the list of characters in this instance and their
 	// associated activity and additional data.
-	CharactersList() Characters
+	CharactersList() map[guid.GUID]*Character
 	// Identify returns any hard coded identity information for the given GUID in the
 	// instance.
 	Identify(id guid.GUID) Identity

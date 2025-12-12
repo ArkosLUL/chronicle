@@ -4,6 +4,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 )
 
 type Identity struct {
@@ -23,7 +24,7 @@ type Instance interface {
 
 	// CharactersList returns the list of characters in this instance and their
 	// associated activity and additional data.
-	CharactersList() map[guid.GUID]*Character
+	CharactersList() map[guid.GUID]character.Character
 	// Identify returns any hard coded identity information for the given GUID in the
 	// instance.
 	Identify(id guid.GUID) Identity

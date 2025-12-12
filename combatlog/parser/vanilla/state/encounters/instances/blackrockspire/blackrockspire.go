@@ -9,6 +9,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -20,7 +21,7 @@ type BlackrockSpire struct {
 	db     *unitdb.Units
 
 	CurrentZone zone.Zone
-	Characters  *encounters.Characters
+	Characters  *character.Characters
 	*encounters.Identifier
 }
 
@@ -28,7 +29,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *BlackrockSpire {
 	c := &BlackrockSpire{
 		logger:      logger,
 		db:          db,
-		Characters:  encounters.NewCharacters(db),
+		Characters:  character.NewCharacters(db),
 		CurrentZone: z,
 		Identifier:  encounters.NewIdentifier(BlackrockSpireHostiles()),
 	}
@@ -36,7 +37,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *BlackrockSpire {
 	return c
 }
 
-func (c *BlackrockSpire) CharactersList() map[guid.GUID]*encounters.Character {
+func (c *BlackrockSpire) CharactersList() map[guid.GUID]character.Character {
 	return c.Characters.All
 }
 

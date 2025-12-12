@@ -20,6 +20,7 @@ type Library struct {
 
 	CurrentZone zone.Zone
 	Characters  encounters.Characters
+	*encounters.Identifier
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Library {
@@ -28,6 +29,8 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Library {
 		db:          db,
 		Characters:  encounters.NewCharacters(),
 		CurrentZone: z,
+    // TODO: Populate hostile identifiers
+		Identifier:  encounters.NewIdentifier(nil),
 	}
 
 	return c

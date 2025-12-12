@@ -20,6 +20,7 @@ type Cathedral struct {
 
 	CurrentZone zone.Zone
 	Characters  encounters.Characters
+	*encounters.Identifier
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
@@ -28,6 +29,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 		db:          db,
 		Characters:  encounters.NewCharacters(),
 		CurrentZone: z,
+		Identifier:  encounters.NewIdentifier(CathedralHostiles()),
 	}
 
 	return c

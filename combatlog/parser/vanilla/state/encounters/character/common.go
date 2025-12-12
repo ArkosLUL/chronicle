@@ -14,7 +14,7 @@ type CommonCharacterData struct {
 	// All common data should be in the common struct
 }
 
-func NewCommonCharacter(id guid.GUID, all Characters) *Common {
+func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
 	return &Common{
 		Base: NewBaseCharacter[CommonCharacterData](id, all),
 	}

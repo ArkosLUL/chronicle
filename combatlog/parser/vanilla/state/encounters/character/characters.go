@@ -65,7 +65,7 @@ func (c Characters) Add(id guid.GUID) Character {
 
 		if char == nil {
 			// Just assume they are a normal character then
-			char = NewCommonCharacter(id, c)
+			char = NewCommonCharacter(id, &c)
 		}
 
 		c.All[id] = char

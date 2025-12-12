@@ -20,16 +20,35 @@ type Message interface {
 	isMessage()
 	Date() time.Time
 	Affects() []guid.GUID
+	IsSynthetic() bool
 }
 
 type MessageBase struct {
 	Timestamp time.Time `json:"timestamp"`
+	Synthetic bool      `json:"synthetic,omitempty"`
 }
 
-func Base(ts time.Time) MessageBase {
-	return MessageBase{
+func WithSynthetic() func(*MessageBase) {
+	return func(mb *MessageBase) {
+		mb.Synthetic = true
+	}
+}
+
+func Base(ts time.Time, opts ...func(m *MessageBase)) MessageBase {
+	b := MessageBase{
 		Timestamp: ts,
 	}
+	for _, opt := range opts {
+		opt(&b)
+	}
+	return b
+}
+
+// IsSynthetic indicates whether this message was synthetically generated,
+// meaning these were not sourced from the original combat log. There is no
+// mapping to a line in the log file.
+func (m MessageBase) IsSynthetic() bool {
+	return m.Synthetic
 }
 
 func (m MessageBase) Serialize(content string) string {
@@ -216,7 +235,7 @@ type Timeout struct {
 
 func TimedOut(ts time.Time) Message {
 	return Timeout{
-		MessageBase: Base(ts),
+		MessageBase: Base(ts, WithSynthetic()),
 	}
 }
 

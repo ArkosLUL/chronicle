@@ -80,6 +80,9 @@ type Character struct {
 
 func NewCharacter(id guid.GUID, now time.Time) *Character {
 	const defaultTimeout = time.Second * 60
+	//if totem, ok := totems.IsTotem(id) {
+	//
+	//}
 	return &Character{
 		ID: id,
 		Activity: &ActivePeriods{
@@ -135,10 +138,8 @@ func (c *Character) ContainsMe(ids ...guid.GUID) bool {
 
 func (c *Character) Process(m messages.Message) error {
 	defer func() {
-		// Timeouts always end activity.
-		if c.Activity.IsActive() && c.Activity.NextTimeout.Before(m.Date()) {
-			c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.NextTimeout))
-		}
+		// Timeouts should be checked on every timestamp
+		c.processTimeout(m)
 	}()
 
 	switch data := m.(type) {
@@ -176,11 +177,20 @@ func (c *Character) Process(m messages.Message) error {
 	return nil
 }
 
+func (c *Character) processTimeout(m messages.Message) {
+	if c.Activity.IsActive() && c.Activity.NextTimeout.Before(m.Date()) {
+		c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.NextTimeout))
+	}
+}
+
 type ActivePeriods struct {
 	Periods      []Active
 	LastActivity messages.Message
 	NextTimeout  time.Time
 	TimeoutBump  time.Duration
+	// MaxLifetime if set defines the timestamp in which the character will cease to
+	// exist. Totems are an example of this.
+	MaxLifetime time.Time
 }
 
 func (ap *ActivePeriods) String() string {

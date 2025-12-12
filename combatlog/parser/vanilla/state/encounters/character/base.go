@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
-type Base[data SpecialCharacterData] struct {
-	All Characters
+type Base[data CharacterPeriodData] struct {
+	All *Characters
 	id  guid.GUID
 	// A character's activity periods.
 	Activity *ActivePeriods[data]
@@ -33,8 +34,11 @@ type BaseCharacterData struct {
 }
 
 func (c *Base[_]) ID() guid.GUID { return c.id }
+func (c *Base[_]) Info(id guid.GUID) (unitinfo.Info, bool) {
+	return c.All.db.Get(id)
+}
 
-func NewBaseCharacter[data SpecialCharacterData](id guid.GUID, all Characters) *Base[data] {
+func NewBaseCharacter[data CharacterPeriodData](id guid.GUID, all *Characters) *Base[data] {
 	me := &Base[data]{
 		All: all,
 		id:  id,
@@ -95,4 +99,24 @@ func (c *Base[_]) processTimeout(m messages.Message) {
 	if c.Activity.IsActive() && c.Activity.CurrentActivity().NextTimeout.Before(m.Date()) {
 		c.Activity.End(ReasonTimeout, messages.TimedOut(c.Activity.CurrentActivity().NextTimeout))
 	}
+}
+
+func (c *Base[data]) EndActivity(reason string, m messages.Message) {
+	c.Activity.End(reason, m)
+}
+
+func (c *Base[data]) StartActivity(reason string, m messages.Message) error {
+	const defaultTimeout = time.Second * 60
+	return c.Activity.Start(&flavoredActive[data]{
+		Active: Active{
+			Start: &ExplainedTimestamp{
+				Timestamp:   m,
+				Explanation: reason,
+			},
+			End:          nil,
+			LastActivity: m,
+			NextTimeout:  m.Date().Add(defaultTimeout),
+			TimeoutBump:  defaultTimeout,
+		},
+	})
 }

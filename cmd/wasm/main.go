@@ -54,31 +54,31 @@ type TimelineOutput struct {
 
 // InstanceFights represents all fights in an instance
 type InstanceFights struct {
-	InstanceName string       `json:"instanceName"`
-	Fights       []FightData  `json:"fights"`
+	InstanceName string      `json:"instanceName"`
+	Fights       []FightData `json:"fights"`
 }
 
 // FightData represents a single fight with hostiles
 type FightData struct {
-	Start    time.Time              `json:"start"`
-	End      time.Time              `json:"end"`
-	Duration float64                `json:"duration"` // in seconds
-	Hostiles []FightCharacterData   `json:"hostiles"`
+	Start    time.Time            `json:"start"`
+	End      time.Time            `json:"end"`
+	Duration float64              `json:"duration"` // in seconds
+	Hostiles []FightCharacterData `json:"hostiles"`
 }
 
 // FightCharacterData represents a character in a fight
 type FightCharacterData struct {
-	CharacterID   string           `json:"characterId"`
-	CharacterName string           `json:"characterName"`
-	Periods       []FightPeriod    `json:"periods"`
+	CharacterID   string        `json:"characterId"`
+	CharacterName string        `json:"characterName"`
+	Periods       []FightPeriod `json:"periods"`
 }
 
 // FightPeriod represents an activity period within a fight
 type FightPeriod struct {
-	Start       time.Time  `json:"start"`
-	End         time.Time  `json:"end"`
-	StartReason string     `json:"startReason"`
-	EndReason   string     `json:"endReason"`
+	Start       time.Time `json:"start"`
+	End         time.Time `json:"end"`
+	StartReason string    `json:"startReason"`
+	EndReason   string    `json:"endReason"`
 }
 
 func parseLogsFunc(this js.Value, args []js.Value) interface{} {
@@ -215,7 +215,7 @@ func convertFightsToData(instanceName string, fights []fight.Fight, s *state.Sta
 
 	for _, f := range fights {
 		duration := f.End.Sub(f.Start).Seconds()
-		
+
 		fightData := FightData{
 			Start:    f.Start,
 			End:      f.End,

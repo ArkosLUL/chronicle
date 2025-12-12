@@ -10,15 +10,15 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
-type SpecialCharacterData interface {
+type CharacterPeriodData interface {
 }
 
-type ActivePeriods[special SpecialCharacterData] struct {
+type ActivePeriods[special CharacterPeriodData] struct {
 	Periods []*flavoredActive[special]
 
 	// Reference to the parent's state
 	Me  guid.GUID
-	All Characters
+	All *Characters
 }
 
 func (ap *ActivePeriods[SpecialCharacterData]) CurrentActivity() *Active {
@@ -95,7 +95,7 @@ type Active struct {
 	TimeoutBump  time.Duration
 }
 
-type flavoredActive[special SpecialCharacterData] struct {
+type flavoredActive[special CharacterPeriodData] struct {
 	Active
 
 	//// MaxLifetime if set defines the timestamp in which the character will cease to

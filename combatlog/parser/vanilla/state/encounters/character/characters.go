@@ -8,6 +8,12 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
+type characterFactory func(id guid.GUID, chars *Characters) (Character, bool)
+
+var characterFactories = []characterFactory{
+	NewTotemCharacter,
+}
+
 type Character interface {
 	ID() guid.GUID
 	String() string
@@ -18,8 +24,9 @@ type Character interface {
 }
 
 const (
-	ReasonTimeout = "timeout"
-	ReasonSlain   = "slain"
+	ReasonTimeout    = "timeout"
+	ReasonSlain      = "slain"
+	ReasonOwnerSlain = "owner_slain"
 )
 
 type Characters struct {
@@ -49,7 +56,18 @@ func (c Characters) Add(id guid.GUID) Character {
 		//  - Totems: have a fixed lifetime & despawn after recall or owner died
 		//  - Pets: Die when their owner dies
 
-		char = NewCommonCharacter(id, c)
+		for _, factory := range characterFactories {
+			if specialChar, ok := factory(id, &c); ok {
+				char = specialChar
+				break
+			}
+		}
+
+		if char == nil {
+			// Just assume they are a normal character then
+			char = NewCommonCharacter(id, c)
+		}
+
 		c.All[id] = char
 	}
 	return char

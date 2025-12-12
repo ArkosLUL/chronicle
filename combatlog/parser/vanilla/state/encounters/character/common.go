@@ -1,8 +1,6 @@
 package character
 
 import (
-	"time"
-
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -31,7 +29,7 @@ func (c *Common) Process(m messages.Message) error {
 	switch data := m.(type) {
 	case messages.Slain:
 		if c.id == data.Victim {
-			c.Activity.End(ReasonSlain, m)
+			c.EndActivity(ReasonSlain, m)
 			c.LastSlain = m
 		}
 
@@ -57,19 +55,7 @@ func (c *Common) Process(m messages.Message) error {
 		c.Activity.Bump(m)
 		// Damage indicates activity.
 		if !c.Activity.IsActive() {
-			const defaultTimeout = time.Second * 60
-			return c.Activity.Start(&flavoredActive[CommonCharacterData]{
-				Active: Active{
-					Start: &ExplainedTimestamp{
-						Timestamp:   m,
-						Explanation: "damage",
-					},
-					End:          nil,
-					LastActivity: m,
-					NextTimeout:  m.Date().Add(defaultTimeout),
-					TimeoutBump:  defaultTimeout,
-				},
-			})
+			return c.StartActivity("damage", m)
 		}
 	}
 	return nil

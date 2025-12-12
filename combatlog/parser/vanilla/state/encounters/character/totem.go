@@ -5,22 +5,48 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
 type Totem struct {
 	*Base[TotemCharacterData]
-}
-
-type TotemCharacterData struct {
 	Self totems.Totem
 }
 
-func NewTotemCharacter(id guid.GUID, all Characters) *Totem {
+type TotemCharacterData struct {
+	MaxLifeTime time.Time
+}
+
+func NewTotemCharacter(id guid.GUID, all *Characters) (Character, bool) {
+	self, ok := totems.IsTotem(id)
+	if !ok {
+		return nil, false
+	}
+
 	return &Totem{
 		Base: NewBaseCharacter[TotemCharacterData](id, all),
+		Self: self,
+	}, true
+}
+
+func (c *Totem) Owner() *unitinfo.Info {
+	myInfo, ok := c.Info(c.Base.ID())
+	if !ok {
+		return nil
 	}
+
+	if myInfo.Owner == nil {
+		return nil
+	}
+
+	ownerInfo, ok := c.Info(*myInfo.Owner)
+	if !ok {
+		return nil
+	}
+
+	return &ownerInfo
 }
 
 // TODO: REDO PROCESS FOR TOTEMS
@@ -40,10 +66,13 @@ func (c *Totem) Process(m messages.Message) error {
 			c.LastSlain = m
 		}
 
-		if data.Killer != nil && c.id == *data.Killer {
-			// Being the killer does not indicate activity.
-			// Could be killed from a dot for example.
+		owner := c.Owner()
+		if owner != nil && data.Victim == owner.Guid {
+			// Owner slain, totem should end activity
+			c.Activity.End(ReasonOwnerSlain, m)
+			c.LastSlain = m
 		}
+
 	case messages.Damage:
 		if !c.ContainsMe(data.Target, data.Caster) {
 			return nil
@@ -78,4 +107,23 @@ func (c *Totem) Process(m messages.Message) error {
 		}
 	}
 	return nil
+}
+
+func (c *Totem) StartActivity(reason string, m messages.Message) error {
+	const totemTimeout = time.Second * 30
+	return c.Activity.Start(&flavoredActive[TotemCharacterData]{
+		Active: Active{
+			Start: &ExplainedTimestamp{
+				Timestamp:   m,
+				Explanation: reason,
+			},
+			End:          nil,
+			LastActivity: m,
+			NextTimeout:  m.Date().Add(totemTimeout),
+			TimeoutBump:  totemTimeout,
+		},
+		Extra: TotemCharacterData{
+			MaxLifeTime: m.Date().Add(c.Self.MaxDuration()),
+		},
+	})
 }

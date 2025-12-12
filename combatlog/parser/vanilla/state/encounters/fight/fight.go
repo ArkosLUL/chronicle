@@ -183,6 +183,7 @@ func AggregateFights(inst encounters.Instance) ([]Fight, diagnostic.Diagnostics)
 
 // finalizeFight converts the activity map into the Hostiles slice for a fight.
 func finalizeFight(fight *Fight, activities map[guid.GUID][]encounters.Active) {
+	// TODO: Trim back timeouts to last activity?
 	fight.Hostiles = make(map[guid.GUID]CharacterFight, len(activities))
 	for charID, periods := range activities {
 		fight.Hostiles[charID] = CharacterFight{

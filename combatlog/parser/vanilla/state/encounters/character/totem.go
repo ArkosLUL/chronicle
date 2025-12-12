@@ -31,6 +31,7 @@ func NewTotemCharacter(id guid.GUID, all *Characters) (Character, bool) {
 	}, true
 }
 
+// Owner info might not yet be available.
 func (c *Totem) Owner() *unitinfo.Info {
 	myInfo, ok := c.Info(c.Base.ID())
 	if !ok {
@@ -72,14 +73,32 @@ func (c *Totem) Process(m messages.Message) error {
 			c.Activity.End(ReasonOwnerSlain, m)
 			c.LastSlain = m
 		}
-
-	case messages.Damage:
+	case messages.Heal:
 		if !c.ContainsMe(data.Target, data.Caster) {
 			return nil
 		}
 
-		// Damage can tick after death, so ignore if recently slain.
-		if c.RecentlySlain(m) {
+		return c.StartActivity("healing", m)
+	case messages.ResourceChange:
+		if data.Caster != nil && *data.Caster == c.id {
+			// Mana and health spring totems
+			return c.StartActivity("resource gen", m)
+		}
+
+		//12/11 12:16:19.738  CAST: 0x00000000000C270C(Noflex) casts Totemic Recall(45513).
+		//12/11 12:16:19.738  0x00000000000C270C gains 44 Mana from 0x00000000000C270C's Totemic Recall.
+		owner := c.Owner()
+		if owner != nil &&
+			data.Caster != nil &&
+			*data.Caster == owner.Guid && data.Target == owner.Guid &&
+			data.SpellName != nil && *data.SpellName == "Totemic Recall" {
+			// Owner casted totemic recall, totem should end activity
+			c.Activity.End(ReasonSlain, m)
+			return nil
+		}
+
+	case messages.Damage:
+		if !c.ContainsMe(data.Target, data.Caster) {
 			return nil
 		}
 
@@ -88,29 +107,21 @@ func (c *Totem) Process(m messages.Message) error {
 			return nil
 		}
 
-		c.Activity.Bump(m)
-		// Damage indicates activity.
-		if !c.Activity.IsActive() {
-			const defaultTimeout = time.Second * 60
-			return c.Activity.Start(&flavoredActive[TotemCharacterData]{
-				Active: Active{
-					Start: &ExplainedTimestamp{
-						Timestamp:   m,
-						Explanation: "damage",
-					},
-					End:          nil,
-					LastActivity: m,
-					NextTimeout:  m.Date().Add(defaultTimeout),
-					TimeoutBump:  defaultTimeout,
-				},
-			})
-		}
+		return c.StartActivity("damage", m)
 	}
 	return nil
 }
 
 func (c *Totem) StartActivity(reason string, m messages.Message) error {
+	if c.Activity.IsActive() {
+		return nil
+	}
+	// Ignore recently slain, totems can't be revived
+	if c.RecentlySlain(m) {
+		return nil
+	}
 	const totemTimeout = time.Second * 30
+	c.Activity.Bump(m)
 	return c.Activity.Start(&flavoredActive[TotemCharacterData]{
 		Active: Active{
 			Start: &ExplainedTimestamp{

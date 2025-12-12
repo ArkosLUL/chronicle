@@ -98,7 +98,7 @@ func CreaturesCmd() *serpent.Command {
 			for z, units := range output.ZonedUnits {
 				fmt.Println("Zone:", z)
 				for id, name := range units {
-					fmt.Printf("  ID: %d, Name: %s\n", id, name)
+					fmt.Printf("  %d: %q,\n", id, name)
 				}
 				fmt.Println()
 			}

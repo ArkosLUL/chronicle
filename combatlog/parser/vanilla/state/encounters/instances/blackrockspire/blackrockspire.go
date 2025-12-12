@@ -30,8 +30,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *BlackrockSpire {
 		db:          db,
 		Characters:  encounters.NewCharacters(db),
 		CurrentZone: z,
-		// TODO: Populate hostile identifiers
-		Identifier: encounters.NewIdentifier(nil),
+		Identifier:  encounters.NewIdentifier(BlackrockSpireHostiles()),
 	}
 
 	return c

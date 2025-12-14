@@ -15,7 +15,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
 func main() {
@@ -26,10 +25,10 @@ func main() {
 
 // CharacterTimeline represents a character's activity in an instance
 type CharacterTimeline struct {
-	CharacterID   string          `json:"characterId"`
-	CharacterName string          `json:"characterName"`
-	IsPlayer      bool            `json:"isPlayer"`
-	Periods       []period.Period `json:"periods"`
+	CharacterID   string           `json:"characterId"`
+	CharacterName string           `json:"characterName"`
+	IsPlayer      bool             `json:"isPlayer"`
+	Periods       []ActivityPeriod `json:"periods"`
 }
 
 // ActivityPeriod represents a time period when a character was active
@@ -174,7 +173,7 @@ func convertCharacterToTimeline(gid guid.GUID, char character.Character, s *stat
 	timeline := CharacterTimeline{
 		CharacterID: gid.String(),
 		IsPlayer:    gid.IsPlayer(),
-		Periods:     make([]period.Period, 0),
+		Periods:     make([]ActivityPeriod, 0),
 	}
 
 	// Try to get character name from unitdb
@@ -187,7 +186,24 @@ func convertCharacterToTimeline(gid guid.GUID, char character.Character, s *stat
 	}
 
 	// Convert activity periods using the Character interface
-	timeline.Periods = char.Periods()
+	// Convert activity periods using the Character interface
+	periods := char.Periods()
+	for _, period := range periods {
+		activityPeriod := ActivityPeriod{}
+
+		if period.Start != nil {
+			activityPeriod.Start = period.Start.Timestamp.Date()
+			activityPeriod.StartReason = period.Start.Reason
+		}
+
+		if period.End != nil {
+			endTime := period.End.Timestamp.Date()
+			activityPeriod.End = &endTime
+			activityPeriod.EndReason = period.End.Reason
+		}
+
+		timeline.Periods = append(timeline.Periods, activityPeriod)
+	}
 
 	return timeline
 }

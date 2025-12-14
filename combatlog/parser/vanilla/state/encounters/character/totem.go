@@ -101,8 +101,8 @@ func (c *Totem) Process(m messages.Message) error {
 		cur.HandleTimeout(m.Date())
 	}
 
-	if c.RecentlySlain(m) {
-		return nil
+	if c.LastSlain != nil {
+		return nil // Totems can't be revived
 	}
 
 	switch data := m.(type) {

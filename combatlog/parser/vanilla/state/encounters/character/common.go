@@ -46,6 +46,7 @@ type characterBase interface {
 
 	Owner() (guid.GUID, bool)
 	Lookup() *Characters
+	ContainsMe(ids ...guid.GUID) bool
 }
 
 // processCommonActivity handles the basics of activity processing for a character.
@@ -80,12 +81,12 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			return nil
 		}
 
+		isMe := c.ContainsMe(data.Caster, data.Target)
+		// Owner counts if we are active, and the owner is doing something.
 		owner, hasOwner := c.Owner()
-		casterIsOwnerOrMe := (hasOwner && owner == data.Caster) || data.Caster == c.ID()
-		targetIsOwnerOrMe := (hasOwner && owner == data.Target) || data.Target == c.ID()
+		ownerConditions := hasOwner && c.IsActive() && (owner == data.Caster || owner == data.Target)
 
-		if casterIsOwnerOrMe || targetIsOwnerOrMe {
-			// The caster is either my owner or me.
+		if isMe || ownerConditions {
 			if data.HitType.Has(types.HitTypePeriodic) {
 				// Cannot start an activity, but will bump.
 				c.Bump("periodic damage", data)
@@ -95,6 +96,7 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			c.Start("direct damage", data)
 			return nil
 		}
+		return nil
 	}
 	return nil
 }

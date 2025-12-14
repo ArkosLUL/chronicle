@@ -69,9 +69,9 @@ type FightData struct {
 
 // FightCharacterData represents a character in a fight
 type FightCharacterData struct {
-	CharacterID   string          `json:"characterId"`
-	CharacterName string          `json:"characterName"`
-	Periods       []period.Period `json:"periods"`
+	CharacterID   string        `json:"characterId"`
+	CharacterName string        `json:"characterName"`
+	Periods       []FightPeriod `json:"periods"`
 }
 
 // FightPeriod represents an activity period within a fight
@@ -227,8 +227,8 @@ func convertFightsToData(instanceName string, fights []fight.Fight, s *state.Sta
 				period := FightPeriod{
 					Start:       activity.Start.Timestamp.Date(),
 					End:         activity.End.Timestamp.Date(),
-					StartReason: activity.Start.Explanation,
-					EndReason:   activity.End.Explanation,
+					StartReason: activity.Start.Reason,
+					EndReason:   activity.End.Reason,
 				}
 				charData.Periods = append(charData.Periods, period)
 			}

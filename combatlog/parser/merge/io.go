@@ -18,7 +18,8 @@ func FromIOReader(lines *lines.Liner, m io.Reader) Scan {
 			}
 
 			text := scanner.Text()
-			if strings.TrimSpace(text) == "" {
+			text = strings.TrimSpace(text)
+			if text == "" {
 				// Skip empty lines
 				continue
 			}

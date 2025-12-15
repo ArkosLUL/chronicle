@@ -6,9 +6,13 @@ import (
 	"io"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
 
 type SortSummary struct {
@@ -54,8 +58,39 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 		sum.Total++
 	}
 
+	// Sort primarily by timestamp. Then prioritize:
+	// 1. Zone info lines, zone changes context for everything else
+	// 2. Unit info lines, unit db should be poplulated asap
+	// 3. Combatant lines, same idea as above
+	// Finally, lexicographically by content to ensure stable sort
 	slices.SortFunc(buffer, func(a, b logLine) int {
-		return int(a.Date.UnixMilli() - b.Date.UnixMilli())
+		am, bm := a.Date.UnixMilli(), b.Date.UnixMilli()
+		if am != bm {
+			return int(am - bm)
+		}
+
+		_, az := zone.IsZoneInfo(a.Content)
+		_, bz := zone.IsZoneInfo(b.Content)
+		cz := compareBooleans(az, bz)
+		if cz != 0 {
+			return cz
+		}
+
+		_, au := unitinfo.IsUnitInfo(a.Content)
+		_, bu := unitinfo.IsUnitInfo(b.Content)
+		cu := compareBooleans(au, bu)
+		if cu != 0 {
+			return cu
+		}
+
+		_, ac := combatant.IsCombatant(a.Content)
+		_, bc := combatant.IsCombatant(b.Content)
+		cc := compareBooleans(ac, bc)
+		if cc != 0 {
+			return cc
+		}
+
+		return strings.Compare(a.Content, b.Content)
 	})
 
 	for _, line := range buffer {
@@ -71,4 +106,15 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 	}
 
 	return sum, nil
+}
+
+func compareBooleans(a, b bool) int {
+	if a == b {
+		return 0
+	}
+	// True should be less than false so it's sorted first
+	if a && !b {
+		return -1
+	}
+	return 1
 }

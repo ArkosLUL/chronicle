@@ -65,10 +65,8 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			return nil
 		}
 
-		if data.Killer != nil && c.ID() == *data.Killer {
-			// Being the killer does not indicate activity.
-			// Could be killed from a dot for example.
-		}
+		// Being the killer does not indicate activity.
+		// Could be killed from a dot for example.
 	case messages.Damage:
 		// Damage can tick after death, so ignore if recently slain.
 		if c.RecentlySlain(m) {

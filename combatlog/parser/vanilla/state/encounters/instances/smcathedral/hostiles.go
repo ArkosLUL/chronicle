@@ -4,7 +4,7 @@ import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 
 func CathedralHostiles() map[uint32]encounters.Identity {
 	hostile := make(map[uint32]encounters.Identity)
-	for k, _ := range map[uint32]string{
+	for k := range map[uint32]string{
 		4540: "Scarlet Monk",
 		4299: "Scarlet Chaplain",
 		4301: "Scarlet Centurion",

@@ -51,7 +51,6 @@ func (pc *PeriodCollector[M]) Start(p M, reason string, m messages.Message) {
 
 	p.Begin(reason, m)
 	pc.History = append(pc.History, p)
-	return
 }
 
 // End ends the current period if one is active.

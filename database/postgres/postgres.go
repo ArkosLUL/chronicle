@@ -28,6 +28,8 @@ import (
 var openPortMutex sync.Mutex
 
 // Open creates a new PostgreSQL server using a Docker container.
+//
+//nolint:errcheck
 func Open() (string, func(), error) {
 	if os.Getenv("DB_FROM") != "" {
 		// In CI, creating a Docker container for each test is slow.
@@ -170,6 +172,8 @@ func Open() (string, func(), error) {
 }
 
 // getFreePort asks the kernel for a free open port that is ready to use.
+//
+//nolint:errcheck
 func getFreePort() (port int, err error) {
 	// Binding to port 0 tells the OS to grab a port for us:
 	// https://stackoverflow.com/questions/1365265/on-localhost-how-do-i-pick-a-free-port-number

@@ -4,7 +4,7 @@ import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 
 func BlackrockSpireHostiles() map[uint32]encounters.Identity {
 	hostile := make(map[uint32]encounters.Identity)
-	for k, _ := range map[uint32]string{
+	for k := range map[uint32]string{
 		9816:  "Pyroguard Emberseer",
 		10161: "Rookery Whelp",
 		10742: "Blackhand Dragon Handler",

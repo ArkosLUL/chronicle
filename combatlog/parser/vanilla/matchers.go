@@ -935,7 +935,7 @@ func (p *Parser) fCreates(ts time.Time, content string) ([]messages.Message, err
 	_, caster := matches.UnitOrGUID()
 	created := matches.String()
 	if err := matches.Error(); err != nil {
-		return nil, fmt.Errorf("Creates: %w", err)
+		return nil, fmt.Errorf("creates: %w", err)
 	}
 
 	if caster.IsZero() {

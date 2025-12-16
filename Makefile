@@ -24,3 +24,7 @@ database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/qu
 .PHONY: test
 test:
 	gotestsum --format testname -- -race $$(go list ./... | grep -v cmd/wasm)
+
+.PHONY: lint
+lint:
+	golangci-lint run

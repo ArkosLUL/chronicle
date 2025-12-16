@@ -5,12 +5,9 @@ go 1.25.3
 require (
 	github.com/Gophercraft/core v0.5.2-0.20240410205646-00865bbdb78a
 	github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e
-	github.com/arl/math32 v0.2.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/coder/quartz v0.3.0
 	github.com/coder/serpent v0.11.0
-	github.com/cybriq/gotiny v0.0.5
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
@@ -20,8 +17,6 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/samber/slog-zerolog/v2 v2.9.0
 	github.com/stretchr/testify v1.11.1
-	github.com/superp00t/etc v0.9.2
-	github.com/ulikunitz/xz v0.5.15
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028
 )
 
@@ -38,9 +33,12 @@ require (
 	github.com/Velocidex/go-pe v0.1.0 // indirect
 	github.com/abice/go-enum v0.9.2 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/coder/pretty v0.0.0-20230908205945-e89ba86370e0 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
+	github.com/cybriq/gotiny v0.0.5 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/cli v27.4.1+incompatible // indirect
 	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
@@ -86,6 +84,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/superp00t/etc v0.9.2 // indirect
+	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect

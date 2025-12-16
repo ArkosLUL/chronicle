@@ -1,9 +1,11 @@
 package blackrockspire
 
-import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+import (
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+)
 
-func BlackrockSpireHostiles() map[uint32]encounters.Identity {
-	hostile := make(map[uint32]encounters.Identity)
+func BlackrockSpireHostiles() map[uint32]instances.Identity {
+	hostile := make(map[uint32]instances.Identity)
 	for k := range map[uint32]string{
 		9816:  "Pyroguard Emberseer",
 		10161: "Rookery Whelp",
@@ -31,7 +33,7 @@ func BlackrockSpireHostiles() map[uint32]encounters.Identity {
 		10319: "Blackhand Iron Guard",
 		9819:  "Blackhand Veteran",
 	} {
-		hostile[k] = encounters.Identity{Hostile: true}
+		hostile[k] = instances.Identity{Hostile: true}
 	}
 	return hostile
 }

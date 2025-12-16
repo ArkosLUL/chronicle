@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
 )
@@ -117,7 +118,7 @@ func parseLogsFunc(this js.Value, args []js.Value) interface{} {
 	}
 
 	p := vanilla.NewFromScanner(logger, liner, scan)
-	output := state.New(logger)
+	output := encounters.New(logger)
 	err = output.Consume(context.Background(), p)
 	if err != nil {
 		return map[string]interface{}{

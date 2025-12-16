@@ -8,7 +8,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/diagnostic"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
@@ -72,7 +72,7 @@ type CharacterFight struct {
 //
 // Activities are considered part of the same fight if they start within
 // the cooldown window (60 seconds) of the current fight's end time.
-func AggregateFights(inst encounters.Instance) ([]Fight, diagnostic.Diagnostics) {
+func AggregateFights(inst instances.Instance) ([]Fight, diagnostic.Diagnostics) {
 	characters := inst.CharactersList()
 	var diags diagnostic.Diagnostics
 

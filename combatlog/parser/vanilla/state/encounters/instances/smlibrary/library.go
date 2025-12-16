@@ -8,12 +8,12 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
-var _ encounters.Instance = (*Library)(nil)
+var _ instances.Instance = (*Library)(nil)
 
 // Library is the Scarlet Monastery Library instance
 type Library struct {
@@ -22,7 +22,7 @@ type Library struct {
 
 	CurrentZone zone.Zone
 	Characters  *character.Characters
-	*encounters.Identifier
+	*instances.Identifier
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Library {
@@ -32,7 +32,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Library {
 		Characters:  character.NewCharacters(db),
 		CurrentZone: z,
 		// TODO: Populate hostile identifiers
-		Identifier: encounters.NewIdentifier(nil),
+		Identifier: instances.NewIdentifier(nil),
 	}
 
 	return c

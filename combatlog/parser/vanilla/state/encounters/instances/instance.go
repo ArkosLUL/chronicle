@@ -1,4 +1,4 @@
-package encounters
+package instances
 
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"

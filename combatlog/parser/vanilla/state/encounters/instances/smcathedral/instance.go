@@ -8,12 +8,12 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
-var _ encounters.Instance = (*Cathedral)(nil)
+var _ instances.Instance = (*Cathedral)(nil)
 
 // Cathedral is the Scarlet Monastery Cathedral instance
 type Cathedral struct {
@@ -22,7 +22,7 @@ type Cathedral struct {
 
 	CurrentZone zone.Zone
 	Characters  *character.Characters
-	*encounters.Identifier
+	*instances.Identifier
 }
 
 func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
@@ -31,7 +31,7 @@ func New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Cathedral {
 		db:          db,
 		Characters:  character.NewCharacters(db),
 		CurrentZone: z,
-		Identifier:  encounters.NewIdentifier(CathedralHostiles()),
+		Identifier:  instances.NewIdentifier(CathedralHostiles()),
 	}
 
 	return c

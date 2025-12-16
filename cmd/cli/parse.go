@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/creatures"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
 
 	"github.com/coder/serpent"
@@ -34,7 +34,7 @@ func ParseCmd() *serpent.Command {
 			}
 
 			p := vanilla.NewFromScanner(logger, liner, scan)
-			output := state.New(logger)
+			output := encounters.New(logger)
 			err = output.Consume(ctx, p)
 			if err != nil {
 				return err

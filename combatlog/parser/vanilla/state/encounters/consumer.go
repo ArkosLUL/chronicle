@@ -1,4 +1,4 @@
-package state
+package encounters
 
 import (
 	"context"
@@ -10,7 +10,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -19,14 +20,14 @@ type State struct {
 
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone     zone.Zone
-	CurrentInstance encounters.Instance
-	Instances       []encounters.Instance
+	CurrentInstance instances.Instance
+	Instances       []instances.Instance
 
 	// Units holds information about all units seen so far.
 	// Friendly/Foe/Relationships, etc.
 	Units *unitdb.Units
 
-	reg *encounters.Registry
+	reg *registry.Registry
 }
 
 func New(logger *slog.Logger) *State {
@@ -34,8 +35,8 @@ func New(logger *slog.Logger) *State {
 		logger:      logger,
 		Units:       unitdb.New(),
 		CurrentZone: zone.Zone{},
-		reg:         DefaultRegistry(logger),
-		Instances:   make([]encounters.Instance, 0),
+		reg:         registry.DefaultRegistry(logger),
+		Instances:   make([]instances.Instance, 0),
 	}
 	return s
 }

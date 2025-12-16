@@ -34,8 +34,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'golang/go.mod'
-          cache-dependency-path: golang/go.sum
+          go-version-file: 'go.mod'
+          cache-dependency-path: go.sum
       - name: Build WASM
         run: |
           make wasm

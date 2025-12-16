@@ -1,4 +1,4 @@
-package main
+package chronicled
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Emyrk/chronicle/cmd/chronicle/cli"
+	"github.com/Emyrk/chronicle/cmd/chronicled/cli"
 )
 
 func main() {

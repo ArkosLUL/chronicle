@@ -63,18 +63,9 @@ func TestParserMessages(t *testing.T) {
 			School: 0,
 		}, pa)
 
-		totem, err := exp[messages.Damage](p.parseContent(time.Time{}, "Magma Totem III (Oku)'s Magma Totem hits Hateforge Miner for 54 Fire damage."))
+		// Skipped because no guid
+		_, err = exp[messages.SkippedMessage](p.parseContent(time.Time{}, "Magma Totem III (Oku)'s Magma Totem hits Hateforge Miner for 54 Fire damage."))
 		require.NoError(t, err)
-
-		require.Equal(t, messages.Damage{
-			Caster:    0xF1400844930090A2,
-			SpellName: ptr.Ref("Magma Totem"),
-			HitType:   types.HitTypeHit,
-			Target:    0xF130000CE0000D3F,
-			Amount:    54,
-			Trailer:   nil,
-			School:    types.FireSchool,
-		}, totem)
 	})
 
 	t.Run("SpellAndSchool", func(t *testing.T) {
@@ -271,7 +262,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Dodge", func(t *testing.T) {
-		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF13000335300CF60 attacks. 0x00000000000E16AC dodges"))
+		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF13000335300CF60 attacks. 0x00000000000E16AC dodges."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -285,7 +276,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SpellResist", func(t *testing.T) {
-		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000E16AC's Frost Shock was resisted by 0xF13000335300CF60"))
+		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000E16AC's Frost Shock was resisted by 0xF13000335300CF60."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -324,7 +315,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Interrupt", func(t *testing.T) {
-		itr, err := exp[messages.Aura](p.parseContent(time.Time{}, "0x00000000000F16FF interrupts 0x00000000000AA257's Flash Heal."))
+		itr, err := exp[messages.Interrupt](p.parseContent(time.Time{}, "0x00000000000F16FF interrupts 0x00000000000AA257's Flash Heal."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Interrupt{

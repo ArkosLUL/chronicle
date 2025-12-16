@@ -40,7 +40,7 @@ var (
 	ReAuraFade               = regexp.MustCompile(`(.+[^\s]) fades from (.+[^\s])\.`)
 
 	ReAuraDispel    = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) is removed\.`)
-	ReAuraInterrupt = regexp.MustCompile(`(.+[^\s]) interrupts (.+[^\s])\s's (.+[^\s])\.`)
+	ReAuraInterrupt = regexp.MustCompile(`(.+[^\s]) interrupts (.+[^\s])'s (.+[^\s])\.`)
 
 	ReSpellCastPerformDurability = regexp.MustCompile(`(.+[^\s]) (casts|performs) (.+[^\s]) on (.+[^\s]): (.+)\.`)
 	ReSpellCastPerform           = regexp.MustCompile(`(.+[^\s]) (casts|performs) (.+[^\s]) on (.+[^\s])\.`)

@@ -20,3 +20,7 @@ database/dump.sql: $(wildcard database/migrations/*.sql)
 
 database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/queries/*.sql)
 	./database/generate.sh
+
+.PHONY: test
+test:
+	gotestsum --format testname -- -race $$(go list ./... | grep -v cmd/wasm)

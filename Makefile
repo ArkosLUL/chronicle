@@ -4,7 +4,7 @@ install:
 
 .PHONY: wasm
 wasm:
-	GOOS=js GOARCH=wasm go build -o ./site/parser.wasm ./cmd/wasm/
+	GOOS=js GOARCH=wasm go build -tags wasm -o ./site/parser.wasm ./cmd/wasm/
 
 .PHONY: serve
 serve: wasm

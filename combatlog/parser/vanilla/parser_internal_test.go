@@ -347,6 +347,17 @@ func TestParserMessages(t *testing.T) {
 			Amount:      1,
 			Application: types.AuraApplicationGains,
 		}, dod)
+
+		// Sometimes there is a double space?
+		sp, err := exp[messages.Aura](p.parseContent(time.Time{}, "0x0000000000049036 gains Shadow Protection  (1)."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Aura{
+			MessageBase: messages.MessageBase{},
+			Target:      0x0000000000049036,
+			SpellName:   "Shadow Protection",
+			Amount:      1,
+			Application: types.AuraApplicationGains,
+		}, sp)
 	})
 
 	t.Run("AuraRemoved", func(t *testing.T) {

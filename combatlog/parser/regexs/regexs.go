@@ -36,7 +36,7 @@ var (
 	ReHeal     = regexp.MustCompile(`(.+[^\s])'s (.+?) (critically )?heals (.+[^\s]) for (\d+)\.`)
 	ReGain     = regexp.MustCompile(`(.+[^\s]) (gains|loses) (\d+) (Health|health|Mana|Rage|Energy|Happiness|happiness|Focus) from (.+[^\s])'s (.+[^\s])\.`)
 
-	ReAuraGainHarmfulHelpful = regexp.MustCompile(`(.+[^\s]) (is afflicted by|gains) (.+[^\s]) \((\d+)\)\.`)
+	ReAuraGainHarmfulHelpful = regexp.MustCompile(`(.+[^\s]) (is afflicted by|gains) (.+[^\s])\s+\((\d+)\)\.`)
 	ReAuraFade               = regexp.MustCompile(`(.+[^\s]) fades from (.+[^\s])\.`)
 
 	ReAuraDispel    = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) is removed\.`)

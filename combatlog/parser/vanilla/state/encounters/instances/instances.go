@@ -1,0 +1,27 @@
+package instances
+
+var (
+	ScarletMonasteryCathedral = (&CommonFactory{
+		Name:     "Scarlet Monastery Cathedral",
+		ZoneName: "scarlet monastery cathedral",
+		Hostiles: FromMap(CathedralHostiles()),
+	}).New
+
+	BlackrockSpire = (&CommonFactory{
+		Name:     "Blackrock Spire",
+		ZoneName: "blackrock spire",
+		Hostiles: FromMap(BlackrockSpireHostiles()),
+	}).New
+
+	MoltenCore = (&CommonFactory{
+		Name:     "Molten Core",
+		ZoneName: "molten core",
+		Hostiles: FromMap(MoltenCoreHostiles()),
+	}).New
+
+	TowerOfKarazhan = (&CommonFactory{
+		Name:     "Tower of Karazhan",
+		ZoneName: "tower of karazhan",
+		Hostiles: FromMap(TowerOfKarazhanHostiles()),
+	}).New
+)

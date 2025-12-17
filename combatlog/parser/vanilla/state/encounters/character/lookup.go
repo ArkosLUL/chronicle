@@ -13,6 +13,7 @@ type characterFactory func(id guid.GUID, chars *Characters) (Character, bool)
 
 var characterFactories = []characterFactory{
 	NewTotemCharacter,
+	NewCritterCharacter,
 }
 
 type Characters struct {

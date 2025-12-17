@@ -6,9 +6,6 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/blackrockspire"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/smcathedral"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/smlibrary"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -21,9 +18,10 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 
 	// Register instances here as you add them
 	// Example:
-	r.Register(wrap(smcathedral.New))
-	r.Register(wrap(smlibrary.New))
-	r.Register(wrap(blackrockspire.New))
+	r.Register(wrap(instances.ScarletMonasteryCathedral))
+	r.Register(wrap(instances.BlackrockSpire))
+	r.Register(wrap(instances.MoltenCore))
+	r.Register(wrap(instances.TowerOfKarazhan))
 	// r.Register("Molten Core", moltencore.New)
 	// r.Register("Onyxia's Lair", onyxia.New)
 

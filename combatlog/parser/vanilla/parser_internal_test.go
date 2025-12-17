@@ -62,7 +62,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0x0000000000062A1B,
+			Caster:    ptr.Ref[guid.GUID](0x0000000000062A1B),
 			SpellName: ptr.Ref("Hamstring"),
 			HitType:   types.HitTypeHit,
 			Target:    0xF1300033F000CFD0,
@@ -73,7 +73,7 @@ func TestParserMessages(t *testing.T) {
 		pa, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF13000342E024B85's Shoot hits 0x0000000000024225 for 0. (183 absorbed)"))
 		require.NoError(t, err)
 		require.Equal(t, messages.Damage{
-			Caster:    0xF13000342E024B85,
+			Caster:    ptr.Ref[guid.GUID](0xF13000342E024B85),
 			SpellName: ptr.Ref("Shoot"),
 			HitType:   types.HitTypeHit,
 			Target:    0x0000000000024225,
@@ -97,7 +97,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0x0000000000016541,
+			Caster:    ptr.Ref[guid.GUID](0x0000000000016541),
 			SpellName: ptr.Ref("Fire Strike"),
 			HitType:   types.HitTypeHit,
 			Target:    0x000000000001B1F2,
@@ -117,7 +117,7 @@ func TestParserMessages(t *testing.T) {
 			Resource:  types.ResourceEnergy,
 			Caster:    ptr.Ref[guid.GUID](0x000000000005B81F),
 			SpellName: ptr.Ref("Relentless Strikes"),
-			Direction: "gains",
+			Direction: types.ChangeDirectionGain,
 		}, rg)
 
 		//msg, err := p.fGain(time.Time{}, "Testplayer gains Blood Pact (1).")
@@ -139,7 +139,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0x00000000000F5027,
+			Caster:    ptr.Ref[guid.GUID](0x00000000000F5027),
 			Target:    0xF130002F7F00CB61,
 			Amount:    13,
 			School:    types.NatureSchool,
@@ -204,6 +204,13 @@ func TestParserMessages(t *testing.T) {
 			MessageBase: messages.MessageBase{},
 			Victim:      0xF1300010CA009C13,
 		}, xp)
+
+		killed, err := exp[messages.Slain](p.parseContent(time.Time{}, "0xF13000CBB227934D is killed by Fiery Hatching."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Slain{
+			MessageBase: messages.MessageBase{},
+			Victim:      0xF13000CBB227934D,
+		}, killed)
 	})
 
 	t.Run("DamageReflect", func(t *testing.T) {
@@ -211,7 +218,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:  0x00000000000E6001,
+			Caster:  ptr.Ref[guid.GUID](0x00000000000E6001),
 			Target:  0x00000000000F2C1C,
 			HitType: types.HitTypeReflect | types.HitTypeHit,
 			Amount:  1,
@@ -225,7 +232,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0x00000000000AB2A9,
+			Caster:    ptr.Ref[guid.GUID](0x00000000000AB2A9),
 			SpellName: ptr.Ref("Arcane Shot"),
 			HitType:   types.HitTypeMiss,
 			Target:    0x000000000000D995,
@@ -239,7 +246,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0xF130000A4627936B,
+			Caster:    ptr.Ref[guid.GUID](0xF130000A4627936B),
 			SpellName: ptr.Ref("Earthbind"),
 			HitType:   types.HitTypeImmune,
 			Target:    0x00000000000AE8FE,
@@ -253,7 +260,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:  0x00000000000E5B85,
+			Caster:  ptr.Ref[guid.GUID](0x00000000000E5B85),
 			HitType: types.HitTypeImmune,
 			Target:  0xF13000ED412739B3,
 			Amount:  0,
@@ -266,7 +273,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0xF13000342E024B85,
+			Caster:    ptr.Ref[guid.GUID](0xF13000342E024B85),
 			SpellName: ptr.Ref("Shoot"),
 			HitType:   types.HitTypeFullAbsorb,
 			Target:    0x0000000000024225,
@@ -276,12 +283,14 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("FallDamage", func(t *testing.T) {
-		fall, err := exp[messages.FallDamage](p.parseContent(time.Time{}, "0x000000000001C7AC falls and loses 333 health."))
+		fall, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x000000000001C7AC falls and loses 333 health."))
 		require.NoError(t, err)
 
-		require.Equal(t, messages.FallDamage{
-			Target: 0x000000000001C7AC,
-			Amount: 333,
+		require.Equal(t, messages.Damage{
+			Target:          0x000000000001C7AC,
+			Amount:          333,
+			HitType:         types.HitTypeEnvironment,
+			EnvironmentType: ptr.Ref(types.EnvironmentTypeFall),
 		}, fall)
 	})
 
@@ -290,7 +299,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:  0xF13000335300CF60,
+			Caster:  ptr.Ref[guid.GUID](0xF13000335300CF60),
 			Target:  0x00000000000E16AC,
 			HitType: types.HitTypeDodge,
 			Amount:  0,
@@ -303,7 +312,7 @@ func TestParserMessages(t *testing.T) {
 		split, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000D8985's Soul Link causes 0xF1400A5C5100000F 62 damage."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Damage{
-			Caster:    0x00000000000D8985,
+			Caster:    ptr.Ref[guid.GUID](0x00000000000D8985),
 			Target:    0xF1400A5C5100000F,
 			SpellName: ptr.Ref("Soul Link"),
 			HitType:   types.HitTypeSplit,
@@ -318,7 +327,7 @@ func TestParserMessages(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
-			Caster:    0x00000000000E16AC,
+			Caster:    ptr.Ref[guid.GUID](0x00000000000E16AC),
 			Target:    0xF13000335300CF60,
 			SpellName: ptr.Ref("Frost Shock"),
 			HitType:   types.HitTypeFullResist,
@@ -417,6 +426,40 @@ func TestParserMessages(t *testing.T) {
 			Amount:        2,
 			FromSpellName: "Windfury Weapon",
 		}, rg)
+	})
+
+	t.Run("Pet Eat", func(t *testing.T) {
+		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0x00000000000F8E0C's pet begins eating a Roasted Quail."))
+		require.NoError(t, err)
+	})
+
+	t.Run("Reputation", func(t *testing.T) {
+		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0x000000000001C80A's Hydraxian Waterlords reputation has increased by 20."))
+		require.NoError(t, err)
+	})
+
+	t.Run("LavaSwimming", func(t *testing.T) {
+		dmg, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000D8985 loses 344 health for swimming in lava. (152 resisted) (114 absorbed)"))
+		require.NoError(t, err)
+		require.Equal(t, messages.Damage{
+			SpellName:       nil,
+			Caster:          nil,
+			Target:          0x00000000000D8985,
+			HitType:         types.HitTypeEnvironment,
+			Amount:          344,
+			School:          types.None,
+			EnvironmentType: ptr.Ref(types.EnvironmentTypeLava),
+			Trailer: types.Trailer{
+				{
+					Amount:  ptr.Ref(uint32(152)),
+					HitType: types.HitTypePartialResist,
+				},
+				{
+					Amount:  ptr.Ref(uint32(114)),
+					HitType: types.HitTypePartialAbsorb,
+				},
+			},
+		}, dmg)
 	})
 }
 

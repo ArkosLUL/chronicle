@@ -222,7 +222,7 @@ func (p *Parser) fDamageSpellHitOrCrit(hasSchool bool, ts time.Time, content str
 
 	sp := messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     hitType,
 		Target:      target,
@@ -256,7 +256,7 @@ func (p *Parser) fDamagePeriodic(ts time.Time, content string) ([]messages.Messa
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		Target:      target,
 		Amount:      amount,
 		School:      school,
@@ -287,7 +287,7 @@ func (p *Parser) fDamageShield(ts time.Time, content string) ([]messages.Message
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		Target:      target,
 		// Reflected damage from something like thorns?
 		// TODO: Verify this
@@ -342,7 +342,7 @@ func (p *Parser) fDamageHitOrCrit(hasScool bool, ts time.Time, content string) (
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		HitType:     hitType,
 		Target:      target,
 		Amount:      amount,
@@ -474,7 +474,7 @@ func (p *Parser) fDamageSpellSplit(ts time.Time, content string) ([]messages.Mes
 	// Return spell cast & SpellDamage Message
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     types.HitTypeSplit,
 		Target:      target,
@@ -506,7 +506,7 @@ func (p *Parser) fDamageSpellMiss(ts time.Time, content string) ([]messages.Mess
 	//attacker, spellID, victim := matches[1], matches[2], matches[4]
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     types.HitTypeMiss,
 		Target:      target,
@@ -536,7 +536,7 @@ func (p *Parser) fDamageSpellBlockParryEvadeDodgeResistDeflect(ts time.Time, con
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     hitType,
 		Target:      target,
@@ -567,7 +567,7 @@ func (p *Parser) fDamageSpellAbsorb(ts time.Time, content string) ([]messages.Me
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     types.HitTypeFullAbsorb,
 		Target:      target,
@@ -607,7 +607,7 @@ func (p *Parser) fDamageReflect(ts time.Time, content string) ([]messages.Messag
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     types.HitTypeReflect,
 		Target:      target,
@@ -645,7 +645,7 @@ func (p *Parser) fDamageSpellImmune(ts time.Time, content string) ([]messages.Me
 	}
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		SpellName:   ptr.Ref(spellName),
 		HitType:     types.HitTypeImmune,
 		Target:      target,
@@ -677,7 +677,7 @@ func (p *Parser) fDamageMiss(ts time.Time, content string) ([]messages.Message, 
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		Target:      target,
 		HitType:     types.HitTypeMiss,
 		Amount:      0,
@@ -705,7 +705,7 @@ func (p *Parser) fDamageBlockParryEvadeDodgeDeflect(ts time.Time, content string
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		Target:      target,
 		HitType:     hitType,
 	}), nil
@@ -731,7 +731,7 @@ func (p *Parser) fDamageAbsorbResist(ts time.Time, content string) ([]messages.M
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		Target:      target,
 		HitType:     hitType,
 	}), nil
@@ -754,7 +754,7 @@ func (p *Parser) fDamageImmune(ts time.Time, content string) ([]messages.Message
 
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
-		Caster:      caster,
+		Caster:      ptr.Ref(caster),
 		Target:      target,
 		HitType:     types.HitTypeImmune,
 		Amount:      0,
@@ -989,22 +989,21 @@ func (p *Parser) fCreates(ts time.Time, content string) ([]messages.Message, err
 }
 
 func (p *Parser) fGainsAttack(ts time.Time, content string) ([]messages.Message, error) {
-  matches, ok := types.FromRegex(regexs.ReGainsAttack).Match(content)
-  if !ok {
-    return messages.NotHandled()
-  }
+	matches, ok := types.FromRegex(regexs.ReGainsAttack).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
 
+	_, caster := matches.UnitOrGUID()
+	amount := matches.Int32()
+	spellName := matches.String()
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("GainsAttack: %w", err)
+	}
 
-  _, caster := matches.UnitOrGUID()
-  amount := matches.Int32()
-  spellName := matches.String()
-  if err := matches.Error(); err != nil {
-    return nil, fmt.Errorf("GainsAttack: %w", err)
-  }
-
-  if caster.IsZero() {
-    return messages.Skip(ts, "GainsAttack: not using guids"), nil
-  }
+	if caster.IsZero() {
+		return messages.Skip(ts, "GainsAttack: not using guids"), nil
+	}
 
 	return set(messages.ExtraAttack{
 		MessageBase:   messages.Base(ts),
@@ -1031,10 +1030,40 @@ func (p *Parser) fFallDamage(ts time.Time, content string) ([]messages.Message, 
 		return messages.Skip(ts, "FallDamage: not using guids"), nil
 	}
 
-	return set(messages.FallDamage{
-		MessageBase: messages.Base(ts),
-		Target:      target,
-		Amount:      amount,
+	return set(messages.Damage{
+		MessageBase:     messages.Base(ts),
+		Target:          target,
+		HitType:         types.HitTypeEnvironment,
+		Amount:          amount,
+		EnvironmentType: ptr.Ref(types.EnvironmentTypeFall),
+	}), nil
+}
+
+func (p *Parser) fLavaSwimming(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.ReLavaSwimming).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, target := matches.UnitOrGUID()
+	amount := matches.Int32()
+	trailer := matches.Trailer()
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("FallDamage: %w", err)
+	}
+
+	if target.IsZero() {
+		return messages.Skip(ts, "FallDamage: not using guids"), nil
+	}
+
+	return set(messages.Damage{
+		MessageBase:     messages.Base(ts),
+		Target:          target,
+		HitType:         types.HitTypeEnvironment,
+		Amount:          amount,
+		Trailer:         trailer,
+		EnvironmentType: ptr.Ref(types.EnvironmentTypeLava),
 	}), nil
 }
 
@@ -1098,3 +1127,48 @@ func (p *Parser) fResourceDrain(ts time.Time, content string) ([]messages.Messag
 		Direction:   types.ChangeDirectionLoss,
 	}), nil
 }
+
+func (p *Parser) fReputationChange(ts time.Time, content string) ([]messages.Message, error) {
+	_, ok := types.FromRegex(regexs.ReReputationChange).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	return messages.Skip(ts, "reputation changes are only for 'me'"), nil
+}
+
+func (p *Parser) fPetEats(ts time.Time, content string) ([]messages.Message, error) {
+	_, ok := types.FromRegex(regexs.RePetEats).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	return messages.Skip(ts, "pet food is not important"), nil
+}
+
+func (p *Parser) fKilledBy(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.ReKilledBy).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, victim := matches.UnitOrGUID()
+	spellName := matches.String()
+	var _ = spellName // Ignored for now
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("KilledBy: %w", err)
+	}
+
+	if victim.IsZero() {
+		return messages.Skip(ts, "KilledBy: not using guids"), nil
+	}
+
+	return set(messages.Slain{
+		MessageBase: messages.Base(ts),
+		Victim:      victim,
+		Killer:      nil,
+	}), nil
+}
+
+// "0x00000000000992BB loses 304 health for swimming in lava. (304 resisted)

@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// ENUM(fall,lava)
+type EnvironmentType string
+
 // ENUM(Gain,Loss)
 type ChangeDirection string
 

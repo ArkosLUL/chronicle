@@ -181,6 +181,10 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fDurabilityLoss,                               // ✓
 		p.fUsesConsumable,                               // ✓
 		p.fResourceDrain,                                // ✓
+		p.fReputationChange,                             // ✓
+		p.fPetEats,                                      // ✓
+		p.fKilledBy,                                     // ✓
+		p.fLavaSwimming,                                 // ✓
 	} {
 		startMatch := time.Now()
 		m, err := parser(ts, content)

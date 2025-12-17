@@ -79,10 +79,10 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			return nil
 		}
 
-		isMe := c.ContainsMe(data.Caster, data.Target)
+		isMe := c.ContainsMe(data.Affects()...)
 		// Owner counts if we are active, and the owner is doing something.
 		owner, hasOwner := c.Owner()
-		ownerConditions := hasOwner && c.IsActive() && (owner == data.Caster || owner == data.Target)
+		ownerConditions := hasOwner && c.IsActive() && ((data.Caster != nil && owner == *data.Caster) || owner == data.Target)
 
 		if isMe || ownerConditions {
 			if data.HitType.Has(types.HitTypePeriodic) {

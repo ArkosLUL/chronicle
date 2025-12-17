@@ -164,25 +164,23 @@ func (r ResourceChange) Affects() []guid.GUID {
 type Damage struct {
 	MessageBase
 	// SpellName is nil for things like environmental and melee damage
-	SpellName *string
-	Caster    guid.GUID
-	Target    guid.GUID
-	HitType   types.HitType
-	Amount    int32
-	School    types.School
-	Trailer   types.Trailer
+	SpellName       *string
+	Caster          *guid.GUID
+	Target          guid.GUID
+	HitType         types.HitType
+	Amount          int32
+	School          types.School
+	Trailer         types.Trailer
+	EnvironmentType *types.EnvironmentType
 }
 
-func (d Damage) Affects() []guid.GUID { return []guid.GUID{d.Caster, d.Target} }
-
-type FallDamage struct {
-	// TODO: Can this just be damage if we add HitTypeFall?
-	MessageBase
-	Target guid.GUID
-	Amount int32
+func (d Damage) Affects() []guid.GUID {
+	ids := []guid.GUID{d.Target}
+	if d.Caster != nil {
+		ids = append(ids, *d.Caster)
+	}
+	return ids
 }
-
-func (d FallDamage) Affects() []guid.GUID { return []guid.GUID{d.Target} }
 
 type Heal struct {
 	MessageBase

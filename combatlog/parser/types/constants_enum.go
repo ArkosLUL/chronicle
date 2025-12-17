@@ -144,6 +144,44 @@ func ParseChangeDirection(name string) (ChangeDirection, error) {
 }
 
 const (
+	// EnvironmentTypeFall is a EnvironmentType of type fall.
+	EnvironmentTypeFall EnvironmentType = "fall"
+	// EnvironmentTypeLava is a EnvironmentType of type lava.
+	EnvironmentTypeLava EnvironmentType = "lava"
+)
+
+var ErrInvalidEnvironmentType = errors.New("not a valid EnvironmentType")
+
+// String implements the Stringer interface.
+func (x EnvironmentType) String() string {
+	return string(x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x EnvironmentType) IsValid() bool {
+	_, err := ParseEnvironmentType(string(x))
+	return err == nil
+}
+
+var _EnvironmentTypeValue = map[string]EnvironmentType{
+	"fall": EnvironmentTypeFall,
+	"lava": EnvironmentTypeLava,
+}
+
+// ParseEnvironmentType attempts to convert a string to a EnvironmentType.
+func ParseEnvironmentType(name string) (EnvironmentType, error) {
+	if x, ok := _EnvironmentTypeValue[name]; ok {
+		return x, nil
+	}
+	// Case insensitive parse, do a separate lookup to prevent unnecessary cost of lowercasing a string if we don't need to.
+	if x, ok := _EnvironmentTypeValue[strings.ToLower(name)]; ok {
+		return x, nil
+	}
+	return EnvironmentType(""), fmt.Errorf("%s is %w", name, ErrInvalidEnvironmentType)
+}
+
+const (
 	// HeroClassesDRUID is a HeroClasses of type DRUID.
 	HeroClassesDRUID HeroClasses = "DRUID"
 	// HeroClassesHUNTER is a HeroClasses of type HUNTER.

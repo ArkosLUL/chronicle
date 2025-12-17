@@ -73,7 +73,12 @@ var (
 	ReDurabilityLoss      = regexp.MustCompile(`(.+[^\s])'s equipped items suffer a (\d+)% durability loss.`)
 	ReUsesConsumable      = regexp.MustCompile(`(.+[^\s]) uses (.+[^\s])\.`)
 	// "0x0000000000079B43's Arcane Power drains 88 Mana from 0x0000000000079B43.
-	ReResourceDrain = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) drains (\d+) (Mana) from (.+[^\s])\.`)
+	ReResourceDrain    = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) drains (\d+) (Mana) from (.+[^\s])\.`)
+	ReReputationChange = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) reputation has (increased|decreased) by (\d+)\.`)
+
+	RePetEats      = regexp.MustCompile(`(.+[^\s])'s pet begins eating a (.+[^\s])\.`)
+	ReKilledBy     = regexp.MustCompile(`(.+[^\s]) is killed by (.+[^\s])\.`)
+	ReLavaSwimming = regexp.MustCompile(`(.+[^\s]) loses (\d+) health for swimming in lava\.\s?(.*)`)
 )
 
 // ???

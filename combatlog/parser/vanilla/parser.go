@@ -185,6 +185,8 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fPetEats,                                      // ✓
 		p.fKilledBy,                                     // ✓
 		p.fLavaSwimming,                                 // ✓
+		p.fFullResist,                                   // x TODO: Unsure what to do with this, there is no target
+    p.fFullImmune,                                   // ✓
 	} {
 		startMatch := time.Now()
 		m, err := parser(ts, content)

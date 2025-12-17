@@ -79,6 +79,8 @@ var (
 	RePetEats      = regexp.MustCompile(`(.+[^\s])'s pet begins eating a (.+[^\s])\.`)
 	ReKilledBy     = regexp.MustCompile(`(.+[^\s]) is killed by (.+[^\s])\.`)
 	ReLavaSwimming = regexp.MustCompile(`(.+[^\s]) loses (\d+) health for swimming in lava\.\s?(.*)`)
+	ReFullResist   = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) was resisted\.`)
+	ReFullImmune   = regexp.MustCompile(`(.+[^\s]) is immune to (.+[^\s])'s (.+[^\s])\.`)
 )
 
 // ???

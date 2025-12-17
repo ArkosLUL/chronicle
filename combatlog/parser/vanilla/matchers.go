@@ -1171,4 +1171,42 @@ func (p *Parser) fKilledBy(ts time.Time, content string) ([]messages.Message, er
 	}), nil
 }
 
-// "0x00000000000992BB loses 304 health for swimming in lava. (304 resisted)
+func (p *Parser) fFullResist(ts time.Time, content string) ([]messages.Message, error) {
+	_, ok := types.FromRegex(regexs.ReFullResist).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	return messages.Skip(ts, "not sure what to do with full resist"), nil
+}
+
+func (p *Parser) fFullImmune(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.ReFullImmune).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, target := matches.UnitOrGUID()
+	_, caster := matches.UnitOrGUID()
+	spellName := matches.String()
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("FullImmune: %w", err)
+	}
+
+	if caster.IsZero() || target.IsZero() {
+		return messages.Skip(ts, "FullImmune: not using guids"), nil
+	}
+
+	return set(messages.Damage{
+		MessageBase:     messages.Base(ts),
+		SpellName:       ptr.Ref(spellName),
+		Caster:          ptr.Ref(caster),
+		Target:          target,
+		HitType:         types.HitTypeImmune,
+		Amount:          0,
+		School:          0,
+		Trailer:         nil,
+		EnvironmentType: nil,
+	}), nil
+}

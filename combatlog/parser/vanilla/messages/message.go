@@ -164,13 +164,15 @@ func (r ResourceChange) Affects() []guid.GUID {
 type Damage struct {
 	MessageBase
 	// SpellName is nil for things like environmental and melee damage
-	SpellName       *string
-	Caster          *guid.GUID
-	Target          guid.GUID
-	HitType         types.HitType
-	Amount          int32
-	School          types.School
-	Trailer         types.Trailer
+	SpellName *string
+	Caster    *guid.GUID
+	Target    guid.GUID
+	HitType   types.HitType
+	Amount    int32
+	School    types.School
+	Trailer   types.Trailer
+	// EnvironmentType is only set when the hit type is environmental.
+	// It adds some context, but not strictly necessary.
 	EnvironmentType *types.EnvironmentType
 }
 

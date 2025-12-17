@@ -461,6 +461,27 @@ func TestParserMessages(t *testing.T) {
 			},
 		}, dmg)
 	})
+
+	t.Run("FullResist", func(t *testing.T) {
+		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0xF130002F5600DD1D's Lucifron's Curse was resisted."))
+		require.NoError(t, err)
+	})
+
+	t.Run("FullImmune", func(t *testing.T) {
+		dmg, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF130000059279638 is immune to 0xF13000FDFC278C2C's Molten Bulwark."))
+		require.NoError(t, err)
+
+		require.Equal(t, messages.Damage{
+			SpellName:       ptr.Ref("Molten Bulwark"),
+			Caster:          ptr.Ref[guid.GUID](0xF13000FDFC278C2C),
+			Target:          0xF130000059279638,
+			HitType:         types.HitTypeImmune,
+			Amount:          0,
+			School:          0,
+			Trailer:         nil,
+			EnvironmentType: nil,
+		}, dmg)
+	})
 }
 
 func exp[T messages.Message](msg []messages.Message, err error) (T, error) {

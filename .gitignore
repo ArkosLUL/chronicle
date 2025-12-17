@@ -95,3 +95,4 @@ __debug_bin*
 # Ignore plans written by AI agents.
 PLAN.md
 ignoredlogs
+*.pprof

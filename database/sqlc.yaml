@@ -14,3 +14,10 @@ sql:
         emit_enum_valid_method: true
         emit_all_enum_values: true
         overrides:
+          # Override for non-nullable UUID columns
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"
+          # Override for nullable UUID columns
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"
+            nullable: true

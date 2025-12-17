@@ -6,10 +6,14 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type sqlcQuerier interface {
 	DeleteThisQuery(ctx context.Context) error
+	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

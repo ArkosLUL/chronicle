@@ -16,7 +16,7 @@ gen: database/dump.sql database/querier.go wasm
 	go generate ./...
 
 database/dump.sql: $(wildcard database/migrations/*.sql)
-	go run ./database/gen/dump/main.go
+	go run ./database/gen/dump/*.go
 
 database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/queries/*.sql)
 	./database/generate.sh

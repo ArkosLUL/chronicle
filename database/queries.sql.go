@@ -4,7 +4,11 @@
 
 package database
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 const deleteThisQuery = `-- name: DeleteThisQuery :exec
 SELECT id, name, quality, item_level, required_level, class, sub_class, inventory_slot, icon, unique_limit, bind_type, stack_size, description, created_at, updated_at FROM item_templates
@@ -13,4 +17,40 @@ SELECT id, name, quality, item_level, required_level, class, sub_class, inventor
 func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, deleteThisQuery)
 	return err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT
+  id, username
+FROM
+  users
+WHERE
+  id = $1
+`
+
+func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(&i.ID, &i.Username)
+	return i, err
+}
+
+const insertUser = `-- name: InsertUser :one
+INSERT INTO
+  users(id, username)
+VALUES
+  ($1, $2)
+RETURNING id, username
+`
+
+type InsertUserParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	Username string    `db:"username" json:"username"`
+}
+
+func (q *sqlQuerier) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, insertUser, arg.ID, arg.Username)
+	var i User
+	err := row.Scan(&i.ID, &i.Username)
+	return i, err
 }

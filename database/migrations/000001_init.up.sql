@@ -1,5 +1,10 @@
 BEGIN;
 
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  username TEXT NOT NULL
+);
+
 CREATE TYPE spell_school AS ENUM (
   'physical',
   'fire',

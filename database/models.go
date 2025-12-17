@@ -8,6 +8,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -149,7 +150,7 @@ func AllSpellSchoolValues() []SpellSchool {
 }
 
 type ItemEffect struct {
-	ID          pgtype.UUID    `db:"id" json:"id"`
+	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`
 	EffectType  ItemEffectType `db:"effect_type" json:"effect_type"`
 	EffectIndex pgtype.Int2    `db:"effect_index" json:"effect_index"`
@@ -184,4 +185,9 @@ type SpellTemplate struct {
 	Description pgtype.Text      `db:"description" json:"description"`
 	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+}
+
+type User struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	Username string    `db:"username" json:"username"`
 }

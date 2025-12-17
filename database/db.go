@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/Emyrk/chronicle/database/migrations"
@@ -12,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lib/pq"
-	"github.com/rs/zerolog"
 	"golang.org/x/xerrors"
 )
 
@@ -47,9 +47,9 @@ func PoolConfig(dbURL string) (*pgxpool.Config, error) {
 	return cfg, nil
 }
 
-func NewPostgresDB(ctx context.Context, logger zerolog.Logger, dbURL string) (Store, error) {
-	logger = logger.With().Str("db_url", dbURL).Logger()
-	logger.Info().Msg("connecting to postgres database")
+func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (Store, error) {
+	logger = logger.With("db_url", dbURL)
+	logger.Info("connecting to postgres database")
 
 	cfg, err := PoolConfig(dbURL)
 	if err != nil {

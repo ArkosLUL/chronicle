@@ -15,7 +15,6 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
@@ -143,7 +142,7 @@ func parseLogsFunc(this js.Value, args []js.Value) interface{} {
 	}
 }
 
-func convertStateToTimeline(s *state.State) TimelineOutput {
+func convertStateToTimeline(s *encounters.State) TimelineOutput {
 	var output TimelineOutput
 	output.Instances = make([]InstanceTimeline, 0, len(s.Instances))
 	output.Fights = make([]InstanceFights, 0, len(s.Instances))
@@ -173,7 +172,7 @@ func convertStateToTimeline(s *state.State) TimelineOutput {
 	return output
 }
 
-func convertCharacterToTimeline(gid guid.GUID, char character.Character, s *state.State) CharacterTimeline {
+func convertCharacterToTimeline(gid guid.GUID, char character.Character, s *encounters.State) CharacterTimeline {
 	timeline := CharacterTimeline{
 		CharacterID: gid.String(),
 		IsPlayer:    gid.IsPlayer(),
@@ -212,7 +211,7 @@ func convertCharacterToTimeline(gid guid.GUID, char character.Character, s *stat
 	return timeline
 }
 
-func convertFightsToData(instanceName string, fights []fight.Fight, s *state.State) InstanceFights {
+func convertFightsToData(instanceName string, fights []fight.Fight, s *encounters.State) InstanceFights {
 	instanceFights := InstanceFights{
 		InstanceName: instanceName,
 		Fights:       make([]FightData, 0, len(fights)),

@@ -24,9 +24,6 @@ func ClientFiles() *serpent.Command {
 				return fmt.Errorf("opening wow path %s: %w", path, err)
 			}
 
-
-
-
 			files, err := vol.ListFiles()
 			if err != nil {
 				return fmt.Errorf("listing files: %w", err)

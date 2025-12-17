@@ -186,13 +186,14 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fKilledBy,                                     // ✓
 		p.fLavaSwimming,                                 // ✓
 		p.fFullResist,                                   // x TODO: Unsure what to do with this, there is no target
-    p.fFullImmune,                                   // ✓
+		p.fFullImmune,                                   // ✓
+		p.fPetHappiness,                                 // ✓
+		p.fPetDismissed,                                 // ✓
 	} {
 		startMatch := time.Now()
 		m, err := parser(ts, content)
 		if err != nil {
-			// TODO: Create a "DiagnosticError" like in terraform. Use that instead to raise and handle errors.
-			return messages.Skip(ts, err.Error()), nil
+			return nil, err
 		}
 
 		if len(m) == 0 {

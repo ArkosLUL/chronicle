@@ -81,6 +81,8 @@ var (
 	ReLavaSwimming = regexp.MustCompile(`(.+[^\s]) loses (\d+) health for swimming in lava\.\s?(.*)`)
 	ReFullResist   = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) was resisted\.`)
 	ReFullImmune   = regexp.MustCompile(`(.+[^\s]) is immune to (.+[^\s])'s (.+[^\s])\.`)
+	ReHappiness    = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) (gains|loses) (\d+) happiness\.`)
+	RePetDismissed = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) is dismissed\.`)
 )
 
 // ???

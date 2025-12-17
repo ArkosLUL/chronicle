@@ -211,6 +211,13 @@ func TestParserMessages(t *testing.T) {
 			MessageBase: messages.MessageBase{},
 			Victim:      0xF13000CBB227934D,
 		}, killed)
+
+		dismissed, err := exp[messages.Slain](p.parseContent(time.Time{}, "0x00000000000E3B4D's 0xF14009B5AD000004 is dismissed."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Slain{
+			Victim: 0xF14009B5AD000004,
+			Killer: ptr.Ref[guid.GUID](0x00000000000E3B4D),
+		}, dismissed)
 	})
 
 	t.Run("DamageReflect", func(t *testing.T) {

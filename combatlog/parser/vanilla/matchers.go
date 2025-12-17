@@ -903,6 +903,30 @@ func (p *Parser) fUnitSlay(ts time.Time, content string) ([]messages.Message, er
 	}), nil
 }
 
+func (p *Parser) fPetDismissed(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.RePetDismissed).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, owner := matches.UnitOrGUID()
+	_, target := matches.UnitOrGUID()
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("UnitSlay: %w", err)
+	}
+
+	if owner.IsZero() || target.IsZero() {
+		return messages.Skip(ts, "PetDismissed: not using guids"), nil
+	}
+
+	return set(messages.Slain{
+		MessageBase: messages.Base(ts),
+		Victim:      target,
+		Killer:      ptr.Ref(owner),
+	}), nil
+}
+
 /**
  * Misc
  */
@@ -1178,6 +1202,15 @@ func (p *Parser) fFullResist(ts time.Time, content string) ([]messages.Message, 
 	}
 
 	return messages.Skip(ts, "not sure what to do with full resist"), nil
+}
+
+func (p *Parser) fPetHappiness(ts time.Time, content string) ([]messages.Message, error) {
+	_, ok := types.FromRegex(regexs.ReHappiness).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	return messages.Skip(ts, "pet happiness does not use guids"), nil
 }
 
 func (p *Parser) fFullImmune(ts time.Time, content string) ([]messages.Message, error) {

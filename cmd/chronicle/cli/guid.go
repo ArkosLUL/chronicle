@@ -29,11 +29,13 @@ func GuidCmd() *serpent.Command {
 
 			_, _ = fmt.Fprintf(os.Stdout, "GUID: %s\n", id.String())
 			_, _ = fmt.Fprintf(os.Stdout, "IsPlayer: %t\n", id.IsPlayer())
+			_, _ = fmt.Fprintf(os.Stdout, "IsObject: %t\n", id.IsObject())
 			_, _ = fmt.Fprintf(os.Stdout, "IsVehicle: %t\n", id.IsVehicle())
 			_, _ = fmt.Fprintf(os.Stdout, "IsPet: %t\n", id.IsPet())
 			_, _ = fmt.Fprintf(os.Stdout, "IsCreature: %t\n", id.IsCreature())
 			_, _ = fmt.Fprintf(os.Stdout, "IsAnyCreature: %t\n", id.IsAnyCreature())
 			_, _ = fmt.Fprintf(os.Stdout, "IsUnit: %t\n", id.IsUnit())
+
 			entry, ok := id.GetEntry()
 			if ok {
 				_, _ = fmt.Fprintf(os.Stdout, "Entry: %d\n", entry)

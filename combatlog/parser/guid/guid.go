@@ -76,6 +76,10 @@ func (g GUID) IsPlayer() bool {
 	return g.GetHigh()&0x00F0 == 0x0000
 }
 
+func (g GUID) IsObject() bool {
+	return g.GetHigh()&0x00F0 == 0x0010
+}
+
 // IsPet returns true if the GUID represents a pet
 func (g GUID) IsPet() bool {
 	return g.GetHigh()&0x00F0 == 0x0040
@@ -103,7 +107,7 @@ func (g GUID) IsUnit() bool {
 
 // GetEntry returns the entry ID for creatures, or false if not a creature
 func (g GUID) GetEntry() (uint32, bool) {
-	if g.IsAnyCreature() {
+	if g.IsAnyCreature() || g.IsObject() {
 		rotated := bits.RotateLeft64(uint64(g), -24)
 		return uint32(rotated & 0x0000000000FFFFFF), true
 	}

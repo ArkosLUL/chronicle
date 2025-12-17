@@ -96,10 +96,7 @@ func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
 		opt(&o)
 	}
 
-	var db database.Store
-	var ps pubsub.Pubsub
-
-	connectionURL := os.Getenv("CODER_PG_CONNECTION_URL")
+	connectionURL := os.Getenv("CHRONICLE_PG_CONNECTION_URL")
 	if connectionURL == "" && o.url != "" {
 		connectionURL = o.url
 	}
@@ -122,23 +119,23 @@ func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
 	dbName := dbNameFromConnectionURL(t, connectionURL)
 	setDBTimezone(t, connectionURL, dbName, o.fixedTimezone)
 
-	db, err := database.NewPostgresDB(t.Context(), o.logger, connectionURL)
+	pool, err := database.NewPostgresDB(t.Context(), o.logger, connectionURL)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_ = db.Close()
+		pool.Close()
 	})
 
 	if o.dumpOnFailure {
 		t.Cleanup(func() { DumpOnFailure(t, connectionURL) })
 	}
 
-	ps, err = pubsub.New(context.Background(), o.logger, sqlDB, connectionURL)
+	ps, err := pubsub.New(context.Background(), o.logger, pool, connectionURL)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = ps.Close()
 	})
 
-	return db, ps
+	return database.New(pool), ps
 }
 
 // setRandDBTimezone sets the timezone of the database to the given timezone.
@@ -317,16 +314,4 @@ func normalizeDump(schema []byte) []byte {
 	schema = regexp.MustCompile(`(?im)\n{3,}`).ReplaceAll(schema, []byte("\n\n"))
 
 	return schema
-}
-
-// Deprecated: disable foreign keys was created to aid in migrating off
-// of the test-only in-memory database. Do not use this in new code.
-func DisableForeignKeysAndTriggers(t *testing.T, db database.Store) {
-	err := db.DisableForeignKeysAndTriggers(context.Background())
-	if t != nil {
-		require.NoError(t, err)
-	}
-	if err != nil {
-		panic(err)
-	}
 }

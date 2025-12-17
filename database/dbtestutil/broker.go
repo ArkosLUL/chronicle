@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/lib/pq"
 	"golang.org/x/xerrors"
 
@@ -25,9 +27,9 @@ var chronicleTestingSQLInit string
 
 type Broker struct {
 	sync.Mutex
-	uuid           uuid.UUID
-	chronicleTestingDB *sql.DB
-	refCount       int
+	uuid               uuid.UUID
+	chronicleTestingDB *pgx.Conn
+	refCount           int
 	// we keep a reference to the stdin of the cleaner so that Go doesn't garbage collect it.
 	cleanerFD any
 }
@@ -59,7 +61,7 @@ func (b *Broker) Create(t TBSubset, opts ...OpenOption) (ConnectionParams, error
 	}
 	dbName := now + "_" + dbSuffix
 
-	_, err = b.chronicleTestingDB.Exec(
+	_, err = b.chronicleTestingDB.Exec(context.Background(),
 		"INSERT INTO test_databases (name, process_uuid, test_package, test_name) VALUES ($1, $2, $3, $4)",
 		dbName, b.uuid, packageName, testName)
 	if err != nil {
@@ -93,12 +95,12 @@ func (b *Broker) Create(t TBSubset, opts ...OpenOption) (ConnectionParams, error
 
 func (b *Broker) clean(t TBSubset, dbName string) func() {
 	return func() {
-		_, err := b.chronicleTestingDB.Exec("DROP DATABASE " + dbName + ";")
+		_, err := b.chronicleTestingDB.Exec(context.Background(), "DROP DATABASE "+dbName+";")
 		if err != nil {
 			t.Logf("failed to clean up database %q: %s\n", dbName, err.Error())
 			return
 		}
-		_, err = b.chronicleTestingDB.Exec("UPDATE test_databases SET dropped_at = CURRENT_TIMESTAMP WHERE name = $1", dbName)
+		_, err = b.chronicleTestingDB.Exec(context.Background(), "UPDATE test_databases SET dropped_at = CURRENT_TIMESTAMP WHERE name = $1", dbName)
 		if err != nil {
 			t.Logf("failed to mark test database '%s' dropped: %s\n", dbName, err.Error())
 		}
@@ -121,31 +123,47 @@ func (b *Broker) init(t TBSubset) error {
 	if errDefaultConnectionParamsInit != nil {
 		return xerrors.Errorf("init default connection params: %w", errDefaultConnectionParamsInit)
 	}
+
+	adminDB, err := pgx.Connect(context.Background(), defaultConnectionParams.DSN())
+	if err != nil {
+		return xerrors.Errorf("open admin postgres connection: %w", err)
+	}
+	defer adminDB.Close(context.Background())
+
+	row := adminDB.QueryRow(context.Background(), fmt.Sprintf(`
+    SELECT 1 FROM pg_database WHERE datname = '%s'
+`, ChronicleTestingDBName))
+	err = row.Scan(nil)
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		_, err = adminDB.Exec(context.Background(), fmt.Sprintf("CREATE DATABASE %s;", ChronicleTestingDBName))
+		if err != nil {
+			return xerrors.Errorf("create chronicle testing database: %w", err)
+		}
+	}
+
 	chronicleTestingParams := defaultConnectionParams
 	chronicleTestingParams.DBName = ChronicleTestingDBName
-	chronicleTestingDB, err := sql.Open("postgres", chronicleTestingParams.DSN())
+	chronicleTestingDB, err := pgx.Connect(context.Background(), chronicleTestingParams.DSN())
 	if err != nil {
 		return xerrors.Errorf("open postgres connection: %w", err)
 	}
 
 	// chronicleTestingSQLInit is idempotent, so we can run it every time.
-	_, err = chronicleTestingDB.Exec(chronicleTestingSQLInit)
+	_, err = chronicleTestingDB.Exec(context.Background(), chronicleTestingSQLInit)
 	var pqErr *pq.Error
 	if xerrors.As(err, &pqErr) && pqErr.Code == "3D000" {
 		// database does not exist.
-		if closeErr := chronicleTestingDB.Close(); closeErr != nil {
-			return xerrors.Errorf("close postgres connection: %w", closeErr)
-		}
+		chronicleTestingDB.Close(context.Background())
 		err = createChronicleTestingDB(t)
 		if err != nil {
 			return xerrors.Errorf("create chronicle testing db: %w", err)
 		}
-		chronicleTestingDB, err = sql.Open("postgres", chronicleTestingParams.DSN())
+		chronicleTestingDB, err = pgx.Connect(context.Background(), chronicleTestingParams.DSN())
 		if err != nil {
 			return xerrors.Errorf("open postgres connection: %w", err)
 		}
 	} else if err != nil {
-		_ = chronicleTestingDB.Close()
+		chronicleTestingDB.Close(context.Background())
 		return xerrors.Errorf("ping '%s' database: %w", ChronicleTestingDBName, err)
 	}
 	b.chronicleTestingDB = chronicleTestingDB
@@ -165,12 +183,12 @@ func (b *Broker) init(t TBSubset) error {
 }
 
 func createChronicleTestingDB(t TBSubset) error {
-	db, err := sql.Open("postgres", defaultConnectionParams.DSN())
+	db, err := pgx.Connect(context.Background(), defaultConnectionParams.DSN())
 	if err != nil {
 		return xerrors.Errorf("open postgres connection: %w", err)
 	}
 	defer func() {
-		_ = db.Close()
+		_ = db.Close(context.Background())
 	}()
 	err = createAndInitDatabase(t, defaultConnectionParams, db, ChronicleTestingDBName, func(testDB *sql.DB) error {
 		_, err := testDB.Exec(chronicleTestingSQLInit)
@@ -188,7 +206,7 @@ func (b *Broker) decRef() {
 	b.refCount--
 	if b.refCount == 0 {
 		// ensures we don't leave go routines around for GoLeak to find.
-		_ = b.chronicleTestingDB.Close()
+		_ = b.chronicleTestingDB.Close(context.Background())
 		b.chronicleTestingDB = nil
 	}
 }

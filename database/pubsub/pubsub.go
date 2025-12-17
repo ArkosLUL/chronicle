@@ -2,7 +2,6 @@ package pubsub
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/xerrors"
@@ -204,7 +204,7 @@ type PGPubsub struct {
 	logger     *slog.Logger
 	listenDone chan struct{}
 	pgListener pqListener
-	db         *sql.DB
+	db         *pgxpool.Pool
 
 	qMu    sync.Mutex
 	queues map[string]*queueSet
@@ -361,7 +361,7 @@ func (p *PGPubsub) Publish(event string, message []byte) error {
 	// This is safe because we are calling pq.QuoteLiteral. pg_notify doesn't
 	// support the first parameter being a prepared statement.
 	//nolint:gosec
-	_, err := p.db.ExecContext(context.Background(), `select pg_notify(`+pq.QuoteLiteral(event)+`, $1)`, message)
+	_, err := p.db.Exec(context.Background(), `select pg_notify(`+pq.QuoteLiteral(event)+`, $1)`, message)
 	if err != nil {
 		p.publishesTotal.WithLabelValues("false").Inc()
 		return xerrors.Errorf("exec pg_notify: %w", err)
@@ -501,19 +501,19 @@ func (p *PGPubsub) startListener(ctx context.Context, connectURL string) error {
 	)
 
 	// Create a custom connector if the database driver supports it.
-	connectorCreator, ok := p.db.Driver().(database.ConnectorCreator)
-	if ok {
-		connector, err = connectorCreator.Connector(connectURL)
-		if err != nil {
-			return xerrors.Errorf("create custom connector: %w", err)
-		}
-	} else {
-		// use the default pq connector otherwise
-		connector, err = pq.NewConnector(connectURL)
-		if err != nil {
-			return xerrors.Errorf("create pq connector: %w", err)
-		}
+	//connectorCreator, ok := p.db.(database.ConnectorCreator)
+	//if ok {
+	//	connector, err = connectorCreator.Connector(connectURL)
+	//	if err != nil {
+	//		return xerrors.Errorf("create custom connector: %w", err)
+	//	}
+	//} else {
+	// use the default pq connector otherwise
+	connector, err = pq.NewConnector(connectURL)
+	if err != nil {
+		return xerrors.Errorf("create pq connector: %w", err)
 	}
+	//}
 
 	// Set the dialer if the connector supports it.
 	dc, ok := connector.(database.DialerConnector)
@@ -675,8 +675,8 @@ func (p *PGPubsub) Collect(metrics chan<- prometheus.Metric) {
 }
 
 // New creates a new Pubsub implementation using a PostgreSQL connection.
-func New(startCtx context.Context, logger *slog.Logger, db *sql.DB, connectURL string) (*PGPubsub, error) {
-	p := newWithoutListener(logger, db)
+func New(startCtx context.Context, logger *slog.Logger, pool *pgxpool.Pool, connectURL string) (*PGPubsub, error) {
+	p := newWithoutListener(logger, pool)
 	if err := p.startListener(startCtx, connectURL); err != nil {
 		return nil, err
 	}
@@ -686,11 +686,11 @@ func New(startCtx context.Context, logger *slog.Logger, db *sql.DB, connectURL s
 }
 
 // newWithoutListener creates a new PGPubsub without creating the pqListener.
-func newWithoutListener(logger *slog.Logger, db *sql.DB) *PGPubsub {
+func newWithoutListener(logger *slog.Logger, pool *pgxpool.Pool) *PGPubsub {
 	return &PGPubsub{
 		logger:          logger,
 		listenDone:      make(chan struct{}),
-		db:              db,
+		db:              pool,
 		queues:          make(map[string]*queueSet),
 		latencyMeasurer: NewLatencyMeasurer(logger.With("name", "latency-measurer")),
 

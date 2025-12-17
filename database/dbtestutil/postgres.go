@@ -15,9 +15,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/migrations"
+	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gofrs/flock"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"golang.org/x/xerrors"
@@ -103,7 +107,7 @@ func initDefaultConnection(t TBSubset) error {
 		// by subsequent tests. It'll keep on running until the user terminates
 		// it manually.
 		container, _, err := openContainer(t, DBContainerOptions{
-			Name: "coder-test-postgres",
+			Name: "chronicle-test-postgres",
 			Port: 5432,
 		})
 		if err != nil {
@@ -166,6 +170,7 @@ type TBSubset interface {
 	Cleanup(func())
 	Helper()
 	Logf(format string, args ...any)
+	Log(args ...interface{})
 	TempDir() string
 }
 
@@ -185,14 +190,14 @@ func Open(t TBSubset, opts ...OpenOption) (string, error) {
 // If templateDBName is empty, it will create a new template database based on
 // the current migrations, and name it "tpl_<migrations_hash>". Or if it's
 // already been created, it will use that.
-func createDatabaseFromTemplate(t TBSubset, connParams ConnectionParams, db *sql.DB, newDBName string, templateDBName string) error {
+func createDatabaseFromTemplate(t TBSubset, connParams ConnectionParams, db pgxConn, newDBName string, templateDBName string) error {
 	t.Helper()
 
 	emptyTemplateDBName := templateDBName == ""
 	if emptyTemplateDBName {
 		templateDBName = fmt.Sprintf("tpl_%s", migrations.GetMigrationsHash()[:32])
 	}
-	_, err := db.Exec("CREATE DATABASE " + newDBName + " WITH TEMPLATE " + templateDBName)
+	_, err := db.Exec(context.Background(), "CREATE DATABASE "+newDBName+" WITH TEMPLATE "+templateDBName)
 	if err == nil {
 		// Template database already exists and we successfully created the new database.
 		return nil
@@ -209,8 +214,9 @@ func createDatabaseFromTemplate(t TBSubset, connParams ConnectionParams, db *sql
 	}
 
 	// The templateDBName is empty, so we need to create the template database.
-	err = createAndInitDatabase(t, connParams, db, templateDBName, func(tplDb *sql.DB) error {
-		if err := migrations.Up(tplDb); err != nil {
+	err = createAndInitDatabase(t, connParams, db, templateDBName, func(db *sql.DB) error {
+		// TODO: This is wrong
+		if err := migrations.UpFromSQLDB(db); err != nil {
 			return xerrors.Errorf("migrate template db: %w", err)
 		}
 		return nil
@@ -220,41 +226,47 @@ func createDatabaseFromTemplate(t TBSubset, connParams ConnectionParams, db *sql
 	}
 
 	// Try to create the database again now that a template exists.
-	if _, err = db.Exec("CREATE DATABASE " + newDBName + " WITH TEMPLATE " + templateDBName); err != nil {
+	if _, err = db.Exec(context.Background(), "CREATE DATABASE "+newDBName+" WITH TEMPLATE "+templateDBName); err != nil {
 		return xerrors.Errorf("create db with template after migrations: %w", err)
 	}
 	return nil
 }
 
-func createAndInitDatabase(t TBSubset, connParams ConnectionParams, db *sql.DB, name string, initialize func(*sql.DB) error) error {
+type pgxConn interface {
+	database.DBTX
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+}
+
+var _ pgxConn = (*pgxpool.Pool)(nil)
+var _ pgxConn = (*pgx.Conn)(nil)
+
+func createAndInitDatabase(t TBSubset, connParams ConnectionParams, pool pgxConn, name string, initialize func(*sql.DB) error) error {
 	// We will use a tx to obtain a lock, so another test or process doesn't race with us.
-	tx, err := db.BeginTx(context.Background(), nil)
+	tx, err := pool.BeginTx(context.Background(), pgx.TxOptions{})
 	if err != nil {
 		return xerrors.Errorf("begin tx: %w", err)
 	}
 	// we only use the transaction for locking and querying, so it's fine to always roll it back.
 	defer func() {
-		err := tx.Rollback()
+		err := tx.Rollback(context.Background())
 		if err != nil && !errors.Is(err, sql.ErrTxDone) {
 			t.Logf("create database: failed to rollback tx: %s\n", err.Error())
 		}
 	}()
 	// 2137 is an arbitrary number. We just need a lock that is unique to creating
 	// the database.
-	_, err = tx.Exec("SELECT pg_advisory_xact_lock(2137)")
+	_, err = tx.Exec(context.Background(), "SELECT pg_advisory_xact_lock(2137)")
 	if err != nil {
 		return xerrors.Errorf("acquire lock: %w", err)
 	}
 
 	// Someone else might have created the db while we were waiting.
-	dbExistsRes, err := tx.Query("SELECT 1 FROM pg_database WHERE datname = $1", name)
+	dbExistsRes, err := tx.Query(context.Background(), "SELECT 1 FROM pg_database WHERE datname = $1", name)
 	if err != nil {
 		return xerrors.Errorf("check if db exists: %w", err)
 	}
 	dbAlreadyExists := dbExistsRes.Next()
-	if err := dbExistsRes.Close(); err != nil {
-		return xerrors.Errorf("close tpl db exists res: %w", err)
-	}
+	dbExistsRes.Close()
 	if dbAlreadyExists {
 		return nil
 	}
@@ -267,10 +279,10 @@ func createAndInitDatabase(t TBSubset, connParams ConnectionParams, db *sql.DB, 
 	tmpDBName := "tmp_" + name
 	// We're using db instead of tx here because you can't run `DROP DATABASE` inside
 	// a transaction.
-	if _, err := db.Exec("DROP DATABASE IF EXISTS " + tmpDBName); err != nil {
+	if _, err := pool.Exec(context.Background(), "DROP DATABASE IF EXISTS "+tmpDBName); err != nil {
 		return xerrors.Errorf("drop tmp db: %w", err)
 	}
-	if _, err := db.Exec("CREATE DATABASE " + tmpDBName); err != nil {
+	if _, err := pool.Exec(context.Background(), "CREATE DATABASE "+tmpDBName); err != nil {
 		return xerrors.Errorf("create tmp db: %w", err)
 	}
 	tmpDbURL := ConnectionParams{
@@ -295,7 +307,7 @@ func createAndInitDatabase(t TBSubset, connParams ConnectionParams, db *sql.DB, 
 	if err := tmpDb.Close(); err != nil {
 		return xerrors.Errorf("close template db: %w", err)
 	}
-	if _, err := db.Exec("ALTER DATABASE " + tmpDBName + " RENAME TO " + name); err != nil {
+	if _, err := pool.Exec(context.Background(), "ALTER DATABASE "+tmpDBName+" RENAME TO "+name); err != nil {
 		return xerrors.Errorf("rename tmp db: %w", err)
 	}
 	return nil
@@ -324,7 +336,7 @@ func openContainer(t TBSubset, opts DBContainerOptions) (container, func(), erro
 		// racing with us.
 		nameHash := sha256.Sum256([]byte(opts.Name))
 		nameHashStr := hex.EncodeToString(nameHash[:])
-		lock := flock.New(filepath.Join(os.TempDir(), "coder-postgres-container-"+nameHashStr[:8]))
+		lock := flock.New(filepath.Join(os.TempDir(), "chronicle-postgres-container-"+nameHashStr[:8]))
 		if err := lock.Lock(); err != nil {
 			return container{}, nil, xerrors.Errorf("lock: %w", err)
 		}
@@ -467,24 +479,14 @@ func OpenContainerized(t TBSubset, opts DBContainerOptions) (string, func(), err
 	// of any useful context.
 	var retryErr error
 	err = container.Pool.Retry(func() error {
-		db, err := sql.Open("postgres", dbURL)
+		_, err := database.NewPostgresDB(context.Background(), testutil.Logger(t), dbURL)
 		if err != nil {
-			retryErr = xerrors.Errorf("open postgres: %w", err)
-			return retryErr
-		}
-		defer db.Close()
-
-		err = db.Ping()
-		if err != nil {
-			retryErr = xerrors.Errorf("ping postgres: %w", err)
-			return retryErr
-		}
-
-		err = migrations.Up(db)
-		if err != nil {
-			retryErr = xerrors.Errorf("migrate db: %w", err)
-			// Only try to migrate once.
-			return backoff.Permanent(retryErr)
+			if strings.Contains(err.Error(), "migrate") {
+				retryErr = xerrors.Errorf("migrate db: %w", err)
+				// Only try to migrate once.
+				return backoff.Permanent(retryErr)
+			}
+			return err
 		}
 
 		return nil

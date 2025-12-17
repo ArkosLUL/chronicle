@@ -39,8 +39,8 @@ func TestPGPubsub_Metrics(t *testing.T) {
 	metrics, err := registry.Gather()
 	gatherCount++
 	require.NoError(t, err)
-	require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "coder_pubsub_current_events"))
-	require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "coder_pubsub_current_subscribers"))
+	require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "chronicle_pubsub_current_events"))
+	require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "chronicle_pubsub_current_subscribers"))
 
 	event := "test"
 	data := "testing"
@@ -61,18 +61,18 @@ func TestPGPubsub_Metrics(t *testing.T) {
 		metrics, err = registry.Gather()
 		gatherCount++
 		assert.NoError(t, err)
-		return testutil.PromGaugeHasValue(t, metrics, 1, "coder_pubsub_current_events") &&
-			testutil.PromGaugeHasValue(t, metrics, 1, "coder_pubsub_current_subscribers") &&
-			testutil.PromGaugeHasValue(t, metrics, 1, "coder_pubsub_connected") &&
-			testutil.PromCounterHasValue(t, metrics, gatherCount, "coder_pubsub_publishes_total", "true") &&
-			testutil.PromCounterHasValue(t, metrics, gatherCount, "coder_pubsub_subscribes_total", "true") &&
-			testutil.PromCounterHasValue(t, metrics, gatherCount, "coder_pubsub_messages_total", "normal") &&
-			testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "coder_pubsub_received_bytes_total") &&
-			testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "coder_pubsub_published_bytes_total") &&
-			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "coder_pubsub_send_latency_seconds") &&
-			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "coder_pubsub_receive_latency_seconds") &&
-			testutil.PromCounterHasValue(t, metrics, gatherCount, "coder_pubsub_latency_measures_total") &&
-			!testutil.PromCounterGathered(t, metrics, "coder_pubsub_latency_measure_errs_total")
+		return testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_events") &&
+			testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_subscribers") &&
+			testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_connected") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_publishes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_subscribes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_messages_total", "normal") &&
+			testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "chronicle_pubsub_received_bytes_total") &&
+			testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "chronicle_pubsub_published_bytes_total") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_send_latency_seconds") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_receive_latency_seconds") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_latency_measures_total") &&
+			!testutil.PromCounterGathered(t, metrics, "chronicle_pubsub_latency_measure_errs_total")
 	}, testutil.WaitShort, testutil.IntervalFast)
 
 	colossalSize := 7600
@@ -98,19 +98,19 @@ func TestPGPubsub_Metrics(t *testing.T) {
 		metrics, err = registry.Gather()
 		gatherCount++
 		assert.NoError(t, err)
-		return testutil.PromGaugeHasValue(t, metrics, 1, "coder_pubsub_current_events") &&
-			testutil.PromGaugeHasValue(t, metrics, 2, "coder_pubsub_current_subscribers") &&
-			testutil.PromGaugeHasValue(t, metrics, 1, "coder_pubsub_connected") &&
-			testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "coder_pubsub_publishes_total", "true") &&
-			testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "coder_pubsub_subscribes_total", "true") &&
-			testutil.PromCounterHasValue(t, metrics, gatherCount, "coder_pubsub_messages_total", "normal") &&
-			testutil.PromCounterHasValue(t, metrics, 1, "coder_pubsub_messages_total", "colossal") &&
-			testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "coder_pubsub_received_bytes_total") &&
-			testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "coder_pubsub_published_bytes_total") &&
-			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "coder_pubsub_send_latency_seconds") &&
-			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "coder_pubsub_receive_latency_seconds") &&
-			testutil.PromCounterHasValue(t, metrics, gatherCount, "coder_pubsub_latency_measures_total") &&
-			!testutil.PromCounterGathered(t, metrics, "coder_pubsub_latency_measure_errs_total")
+		return testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_events") &&
+			testutil.PromGaugeHasValue(t, metrics, 2, "chronicle_pubsub_current_subscribers") &&
+			testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_connected") &&
+			testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "chronicle_pubsub_publishes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "chronicle_pubsub_subscribes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_messages_total", "normal") &&
+			testutil.PromCounterHasValue(t, metrics, 1, "chronicle_pubsub_messages_total", "colossal") &&
+			testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "chronicle_pubsub_received_bytes_total") &&
+			testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "chronicle_pubsub_published_bytes_total") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_send_latency_seconds") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_receive_latency_seconds") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_latency_measures_total") &&
+			!testutil.PromCounterGathered(t, metrics, "chronicle_pubsub_latency_measure_errs_total")
 	}, testutil.WaitShort, testutil.IntervalFast)
 }
 

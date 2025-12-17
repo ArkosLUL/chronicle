@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"embed"
 	"errors"
 	"fmt"
@@ -22,7 +23,7 @@ import (
 //go:embed *.sql
 var migrations embed.FS
 
-func setup(pool *pgxpool.Pool) (source.Driver, *migrate.Migrate, error) {
+func setup(db *sql.DB) (source.Driver, *migrate.Migrate, error) {
 	sourceDriver, err := iofs.New(migrations, ".")
 	if err != nil {
 		return nil, nil, fmt.Errorf("create iofs: %w", err)
@@ -33,7 +34,6 @@ func setup(pool *pgxpool.Pool) (source.Driver, *migrate.Migrate, error) {
 	// we don't want.  Instead, create just a connection that will get closed
 	// when migration is done.
 
-	db := stdlib.OpenDBFromPool(pool)
 	dbDriver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("wrap postgres connection: %w", err)
@@ -47,8 +47,7 @@ func setup(pool *pgxpool.Pool) (source.Driver, *migrate.Migrate, error) {
 	return sourceDriver, m, nil
 }
 
-// Up runs SQL migrations to ensure the database schema is up-to-date.
-func Up(db *pgxpool.Pool) (retErr error) {
+func UpFromSQLDB(db *sql.DB) (retErr error) {
 	_, m, err := setup(db)
 	if err != nil {
 		return fmt.Errorf("migrate setup: %w", err)
@@ -78,9 +77,14 @@ func Up(db *pgxpool.Pool) (retErr error) {
 	return nil
 }
 
+// Up runs SQL migrations to ensure the database schema is up-to-date.
+func Up(pool *pgxpool.Pool) (retErr error) {
+	return UpFromSQLDB(stdlib.OpenDBFromPool(pool))
+}
+
 // Down runs all down SQL migrations.
-func Down(db *pgxpool.Pool) error {
-	_, m, err := setup(db)
+func Down(pool *pgxpool.Pool) error {
+	_, m, err := setup(stdlib.OpenDBFromPool(pool))
 	if err != nil {
 		return xerrors.Errorf("migrate setup: %w", err)
 	}

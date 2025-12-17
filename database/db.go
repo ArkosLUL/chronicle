@@ -47,7 +47,7 @@ func PoolConfig(dbURL string) (*pgxpool.Config, error) {
 	return cfg, nil
 }
 
-func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (Store, error) {
+func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgxpool.Pool, error) {
 	logger = logger.With("db_url", dbURL)
 	logger.Info("connecting to postgres database")
 
@@ -73,7 +73,7 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (Stor
 		return nil, fmt.Errorf("migrate up: %w", err)
 	}
 
-	return New(pool), nil
+	return pool, nil
 }
 
 // New creates a new database store using a SQL database connection.

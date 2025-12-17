@@ -23,7 +23,7 @@ func WithWriter(w io.Writer) LoggerOpt {
 	}
 }
 
-func Logger(t testing.TB, opts ...LoggerOpt) *slog.Logger {
+func Logger(t zerolog.TestingLog, opts ...LoggerOpt) *slog.Logger {
 	config := &options{}
 	for _, opt := range opts {
 		opt(config)

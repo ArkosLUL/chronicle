@@ -12,14 +12,13 @@ import (
 	"strings"
 
 	"github.com/Emyrk/chronicle/database/migrations"
-	"github.com/Emyrk/chronicle/database/postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const minimumPostgreSQLVersion = 13
 
 func main() {
-	connection, closeFn, err := postgres.Open()
+	connection, closeFn, err := Open()
 	if err != nil {
 		panic(err)
 	}

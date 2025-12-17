@@ -26,6 +26,12 @@ type Parser struct {
 
 	setup       sync.Once
 	lastLogDate time.Time
+	metrics     Metrics
+}
+
+type Metrics struct {
+	TotalParseDuration time.Duration
+	TotalLinesParsed   int64
 }
 
 func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
@@ -42,6 +48,10 @@ func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan) *P
 		scanner: scan,
 		liner:   liner,
 	}
+}
+
+func (p *Parser) Metrics() Metrics {
+	return p.metrics
 }
 
 //func (p *Parser) State() *state.State {
@@ -78,6 +88,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	if err != nil {
 		return nil, AsFatalError(fmt.Errorf("init: %w", err))
 	}
+	now := time.Now()
 
 	ts, original, err := p.scanner()
 	if err != nil {
@@ -114,6 +125,8 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 			return nil, fmt.Errorf("timestamp is zero for message type: %s", reflect.TypeOf(msg).String())
 		}
 	}
+	p.metrics.TotalParseDuration += time.Since(now)
+	p.metrics.TotalLinesParsed++
 	return msgs, err
 }
 

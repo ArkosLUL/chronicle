@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"runtime/pprof"
 	"strconv"
 
 	"github.com/Emyrk/chronicle/internal/version"
@@ -45,6 +46,36 @@ func versionCmd() *serpent.Command {
 			return nil
 		},
 	}
+}
+
+func ProfileCommand() (serpent.Option, func(next serpent.HandlerFunc) serpent.HandlerFunc) {
+	var profilePath string
+	return serpent.Option{
+			Name:        "profile-dump",
+			Description: "Enable profiling and dump to the specified file.",
+			Required:    false,
+			Flag:        "profile-dump",
+			Default:     "",
+			Value:       serpent.StringOf(&profilePath),
+		}, func(next serpent.HandlerFunc) serpent.HandlerFunc {
+			return func(i *serpent.Invocation) error {
+				if profilePath == "" {
+					return next(i)
+				}
+
+				cpuFile, err := os.Create(profilePath)
+				if err != nil {
+					return fmt.Errorf("could not create CPU profile: %v", err)
+				}
+
+				err = pprof.StartCPUProfile(cpuFile)
+				if err != nil {
+					return fmt.Errorf("could not start CPU profile: %v", err)
+				}
+				defer pprof.StopCPUProfile()
+				return next(i)
+			}
+		}
 }
 
 func getLogger(i *serpent.Invocation) *slog.Logger {

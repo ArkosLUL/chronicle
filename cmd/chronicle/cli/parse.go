@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
@@ -14,9 +15,13 @@ import (
 )
 
 func ParseCmd() *serpent.Command {
+	profileOpt, profileMW := ProfileCommand()
 	cmd := &serpent.Command{
 		Use:        "parse <file> <file>",
-		Middleware: serpent.RequireNArgs(2),
+		Middleware: serpent.Chain(serpent.RequireNArgs(2), profileMW),
+		Options: serpent.OptionSet{
+			profileOpt,
+		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx := i.Context()
 			logger := getLogger(i)
@@ -61,6 +66,12 @@ func ParseCmd() *serpent.Command {
 				}
 			}
 
+			mets := p.Metrics()
+			logger.Info("Parsing complete",
+				slog.Int64("total_lines_parsed", mets.TotalLinesParsed),
+				slog.Duration("total_parse_duration", mets.TotalParseDuration),
+				slog.Duration("average_line_parse_duration", mets.TotalParseDuration/time.Duration(mets.TotalLinesParsed)),
+			)
 			return nil
 		},
 	}

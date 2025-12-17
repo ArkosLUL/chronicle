@@ -69,8 +69,9 @@ func ParseCmd() *serpent.Command {
 			mets := p.Metrics()
 			logger.Info("Parsing complete",
 				slog.Int64("total_lines_parsed", mets.TotalLinesParsed),
-				slog.Duration("total_parse_duration", mets.TotalParseDuration),
-				slog.Duration("average_line_parse_duration", mets.TotalParseDuration/time.Duration(mets.TotalLinesParsed)),
+				slog.String("total_parse_duration", mets.TotalParseDuration.String()),
+				slog.String("average_line_parse_duration", (mets.TotalParseDuration/time.Duration(mets.TotalLinesParsed)).String()),
+				slog.String("total_unmatched_time", mets.UnmatchedTime.String()),
 			)
 			return nil
 		},

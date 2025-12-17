@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// ENUM(Gain,Loss)
+type ChangeDirection string
+
 // ENUM(casts, begins to cast, channels, fails casting)
 type CastActions string
 
@@ -127,3 +130,14 @@ func ParseSchool(s string) (School, error) {
 
 // ENUM(Unknown,Gains,Fades,Removed)
 type AuraApplication string
+
+func ParseResourceChange(s string) (ChangeDirection, error) {
+	switch strings.ToLower(s) {
+	case "gains":
+		return ChangeDirectionGain, nil
+	case "loses", "drains":
+		return ChangeDirectionLoss, nil
+	default:
+		return "", errors.New("invalid resource change direction")
+	}
+}

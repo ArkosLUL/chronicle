@@ -8,6 +8,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount.go"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
@@ -133,6 +134,13 @@ type Zone struct {
 
 func (z Zone) Affects() []guid.GUID { return nil }
 
+type CombatCount struct {
+	MessageBase
+	combatcount.Count
+}
+
+func (c CombatCount) Affects() []guid.GUID { return []guid.GUID{} }
+
 type ResourceChange struct {
 	MessageBase
 	Target    guid.GUID
@@ -142,7 +150,7 @@ type ResourceChange struct {
 	SpellName *string
 	// 10/29 22:12:55.926  Naga (Kryaa) gains 35 Happiness from Kryaa 's Feed Pet Effect.
 	// 10/17 21:36:12.823  Sfantu 's Nosferatu loses 52 happiness.
-	Direction string // "gains" or "loses"
+	Direction types.ChangeDirection
 }
 
 func (r ResourceChange) Affects() []guid.GUID {

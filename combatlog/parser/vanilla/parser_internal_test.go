@@ -299,6 +299,20 @@ func TestParserMessages(t *testing.T) {
 		}, dod)
 	})
 
+	t.Run("SpellSplit", func(t *testing.T) {
+		split, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000D8985's Soul Link causes 0xF1400A5C5100000F 62 damage."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Damage{
+			Caster:    0x00000000000D8985,
+			Target:    0xF1400A5C5100000F,
+			SpellName: ptr.Ref("Soul Link"),
+			HitType:   types.HitTypeSplit,
+			Amount:    62,
+			School:    0,
+			Trailer:   nil,
+		}, split)
+	})
+
 	t.Run("SpellResist", func(t *testing.T) {
 		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000E16AC's Frost Shock was resisted by 0xF13000335300CF60."))
 		require.NoError(t, err)
@@ -338,6 +352,17 @@ func TestParserMessages(t *testing.T) {
 		}, dod)
 	})
 
+	t.Run("AuraFade", func(t *testing.T) {
+		fade, err := exp[messages.Aura](p.parseContent(time.Time{}, "Rejuvenation fades from 0x00000000000A2D75."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Aura{
+			Target:      0x00000000000A2D75,
+			SpellName:   "Rejuvenation",
+			Amount:      0,
+			Application: types.AuraApplicationFades,
+		}, fade)
+	})
+
 	t.Run("Interrupt", func(t *testing.T) {
 		itr, err := exp[messages.Interrupt](p.parseContent(time.Time{}, "0x00000000000F16FF interrupts 0x00000000000AA257's Flash Heal."))
 		require.NoError(t, err)
@@ -367,6 +392,20 @@ func TestParserMessages(t *testing.T) {
 	t.Run("DurabilityLoss", func(t *testing.T) {
 		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0x000000000001C7AC's equipped items suffer a 10% durability loss."))
 		require.NoError(t, err)
+	})
+
+	t.Run("ResourceDrain", func(t *testing.T) {
+		re, err := exp[messages.ResourceChange](p.parseContent(time.Time{}, "0x0000000000095229's Arcane Power drains 58 Mana from 0x0000000000095229."))
+		require.NoError(t, err)
+
+		require.Equal(t, messages.ResourceChange{
+			Target:    0x0000000000095229,
+			Amount:    58,
+			Resource:  types.ResourceMana,
+			Caster:    ptr.Ref(guid.GUID(0x0000000000095229)),
+			SpellName: ptr.Ref("Arcane Power"),
+			Direction: types.ChangeDirectionLoss,
+		}, re)
 	})
 
 	//t.Run("Gains Attack", func(t *testing.T) {

@@ -104,6 +104,46 @@ func ParseCastActions(name string) (CastActions, error) {
 }
 
 const (
+	// ChangeDirectionGain is a ChangeDirection of type Gain.
+	ChangeDirectionGain ChangeDirection = "Gain"
+	// ChangeDirectionLoss is a ChangeDirection of type Loss.
+	ChangeDirectionLoss ChangeDirection = "Loss"
+)
+
+var ErrInvalidChangeDirection = errors.New("not a valid ChangeDirection")
+
+// String implements the Stringer interface.
+func (x ChangeDirection) String() string {
+	return string(x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x ChangeDirection) IsValid() bool {
+	_, err := ParseChangeDirection(string(x))
+	return err == nil
+}
+
+var _ChangeDirectionValue = map[string]ChangeDirection{
+	"Gain": ChangeDirectionGain,
+	"gain": ChangeDirectionGain,
+	"Loss": ChangeDirectionLoss,
+	"loss": ChangeDirectionLoss,
+}
+
+// ParseChangeDirection attempts to convert a string to a ChangeDirection.
+func ParseChangeDirection(name string) (ChangeDirection, error) {
+	if x, ok := _ChangeDirectionValue[name]; ok {
+		return x, nil
+	}
+	// Case insensitive parse, do a separate lookup to prevent unnecessary cost of lowercasing a string if we don't need to.
+	if x, ok := _ChangeDirectionValue[strings.ToLower(name)]; ok {
+		return x, nil
+	}
+	return ChangeDirection(""), fmt.Errorf("%s is %w", name, ErrInvalidChangeDirection)
+}
+
+const (
 	// HeroClassesDRUID is a HeroClasses of type DRUID.
 	HeroClassesDRUID HeroClasses = "DRUID"
 	// HeroClassesHUNTER is a HeroClasses of type HUNTER.

@@ -32,6 +32,9 @@ type Parser struct {
 type Metrics struct {
 	TotalParseDuration time.Duration
 	TotalLinesParsed   int64
+
+	// UnmatchedTime is the total time spent attempting to match lines that did not result in a successful parse.
+	UnmatchedTime time.Duration
 }
 
 func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
@@ -131,12 +134,14 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 }
 
 func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message, error) {
+	start := time.Now()
 	for _, parser := range []parseLine{
 		p.fCombatantInfo,                // ✓
 		p.fUnitInfo,                     // ✓
 		p.fZoneInfo,                     // ✓
 		p.fV2Casts,                      // ✓
 		p.fLoot,                         // ✓
+		p.fCombatCount,                  // ✓
 		p.fBugDamageSpellHitOrCrit,      // ✓
 		p.fSpellCastAttempt,             // ✓
 		p.fGain,                         // ✓
@@ -149,7 +154,7 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fHeal,                         // ✓
 		p.fAuraGainHarmfulHelpful,       // ✓
 		p.fAuraFade,                     // ✓
-		p.fDamageSpellSplit,             // x TODO: need an example
+		p.fDamageSpellSplit,             // ✓
 		p.fDamageSpellMiss,              // ✓
 		p.fDamageSpellBlockParryEvadeDodgeResistDeflect, // ✓
 		p.fDamageSpellAbsorb,                            // ✓
@@ -174,7 +179,10 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fGainsAttack,                                  // x TODO: need to determine a message type
 		p.fFallDamage,                                   // ✓
 		p.fDurabilityLoss,                               // ✓
+		p.fUsesConsumable,                               // ✓
+		p.fResourceDrain,                                // ✓
 	} {
+		startMatch := time.Now()
 		m, err := parser(ts, content)
 		if err != nil {
 			// TODO: Create a "DiagnosticError" like in terraform. Use that instead to raise and handle errors.
@@ -185,6 +193,7 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 			continue
 		}
 
+		p.metrics.UnmatchedTime += startMatch.Sub(start)
 		return m, nil
 	}
 

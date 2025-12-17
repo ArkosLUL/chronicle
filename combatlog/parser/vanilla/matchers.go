@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount.go"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
@@ -100,6 +101,22 @@ func (p *Parser) fCombatantInfo(ts time.Time, content string) ([]messages.Messag
 	}), nil
 }
 
+func (p *Parser) fCombatCount(ts time.Time, content string) ([]messages.Message, error) {
+	if !strings.HasPrefix(content, combatcount.PrefixCombatCount) {
+		return messages.NotHandled()
+	}
+
+	cbt, err := combatcount.ParseCombatCount(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
+	}
+
+	return set(messages.CombatCount{
+		Count:       cbt,
+		MessageBase: messages.Base(ts),
+	}), nil
+}
+
 func (p *Parser) fBugDamageSpellHitOrCrit(ts time.Time, content string) ([]messages.Message, error) {
 	if !regexs.ReBugDamageSpellHitOrCrit.MatchString(content) {
 		return messages.NotHandled()
@@ -130,7 +147,7 @@ func (p *Parser) fGain(ts time.Time, content string) ([]messages.Message, error)
 	}
 
 	_, targetGUID := matched.UnitOrGUID()
-	direction := matched.String()
+	direction := matched.ResourceChange()
 	amount := matched.Int32()
 	resource := matched.Resource()
 	_, casterGUID := matched.UnitOrGUID()
@@ -433,16 +450,38 @@ func (p *Parser) fAuraFade(ts time.Time, content string) ([]messages.Message, er
  * Spell Damage cont
  */
 func (p *Parser) fDamageSpellSplit(ts time.Time, content string) ([]messages.Message, error) {
-	// TODO: What is this? Warlock soul link? Disc priest capstone talent?
-	matches := regexs.ReDamageSpellSplit.FindStringSubmatch(content)
-	if matches == nil {
+	// 0x00000000000D8985's Soul Link causes 0xF1400A5C5100000F 62 damage.
+	matches, ok := types.FromRegex(regexs.ReDamageSpellSplit).Match(content)
+	if !ok {
 		return messages.NotHandled()
+	}
+
+	_, caster := matches.UnitOrGUID()
+	spellName := matches.String()
+	_, target := matches.UnitOrGUID()
+	amount := matches.Int32()
+	trailer := matches.Trailer()
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("DamageSpellSplit: %w", err)
+	}
+
+	if caster.IsZero() || target.IsZero() {
+		return messages.Skip(ts, "DamageSpellSplit: not using guids"), nil
 	}
 
 	//attacker, spellID, victim, amount, trailer := matches[1], matches[2], matches[3], matches[4], matches[5]
 
 	// Return spell cast & SpellDamage Message
-	return messages.Unparsed(ts, "DamageSpellSplit not implemented"), nil
+	return set(messages.Damage{
+		MessageBase: messages.Base(ts),
+		Caster:      caster,
+		SpellName:   ptr.Ref(spellName),
+		HitType:     types.HitTypeSplit,
+		Target:      target,
+		Amount:      amount,
+		School:      0,
+		Trailer:     trailer,
+	}), nil
 }
 
 func (p *Parser) fDamageSpellMiss(ts time.Time, content string) ([]messages.Message, error) {
@@ -1001,4 +1040,44 @@ func (p *Parser) fDurabilityLoss(ts time.Time, content string) ([]messages.Messa
 	}
 
 	return messages.Skip(ts, "durability not implemented"), nil
+}
+
+func (p *Parser) fUsesConsumable(ts time.Time, content string) ([]messages.Message, error) {
+	_, ok := types.FromRegex(regexs.ReUsesConsumable).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	return messages.Skip(ts, "consumables sourced from castsv2"), nil
+}
+
+func (p *Parser) fResourceDrain(ts time.Time, content string) ([]messages.Message, error) {
+	matches, ok := types.FromRegex(regexs.ReResourceDrain).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, caster := matches.UnitOrGUID()
+	spellName := matches.String()
+	amount := matches.Int32()
+	resource := matches.Resource()
+	_, target := matches.UnitOrGUID()
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("ResourceDrain: %w", err)
+	}
+
+	if caster.IsZero() || target.IsZero() {
+		return messages.Skip(ts, "ResourceDrain: not using guids"), nil
+	}
+
+	return set(messages.ResourceChange{
+		MessageBase: messages.Base(ts),
+		Target:      target,
+		Amount:      amount,
+		Resource:    resource,
+		Caster:      ptr.Ref(caster),
+		SpellName:   ptr.Ref(spellName),
+		Direction:   types.ChangeDirectionLoss,
+	}), nil
 }

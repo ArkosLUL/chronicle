@@ -53,15 +53,16 @@ func (m *Matched) UnitOrGUID() (string, guid.GUID) {
 	return val, guid.GUID(0)
 }
 
-func (m *Matched) Skip()                 { m.pop() }
-func (m *Matched) GUID() guid.GUID       { return parse(m, guid.FromString) }
-func (m *Matched) Spell() Spell          { return parse(m, ParseSpell) }
-func (m *Matched) Resource() Resource    { return parse(m, ParseResource) }
-func (m *Matched) HitType() HitType      { return parse(m, ParseHitMask) }
-func (m *Matched) ShortHitType() HitType { return parse(m, ParseHitOrCritShort) }
-func (m *Matched) Unit() Unit            { return parse(m, ParseUnit) }
-func (m *Matched) Trailer() Trailer      { return parse(m, ParseTrailer) }
-func (m *Matched) School() School        { return parse(m, ParseSchool) }
+func (m *Matched) Skip()                           { m.pop() }
+func (m *Matched) GUID() guid.GUID                 { return parse(m, guid.FromString) }
+func (m *Matched) Spell() Spell                    { return parse(m, ParseSpell) }
+func (m *Matched) Resource() Resource              { return parse(m, ParseResource) }
+func (m *Matched) ResourceChange() ChangeDirection { return parse(m, ParseResourceChange) }
+func (m *Matched) HitType() HitType                { return parse(m, ParseHitMask) }
+func (m *Matched) ShortHitType() HitType           { return parse(m, ParseHitOrCritShort) }
+func (m *Matched) Unit() Unit                      { return parse(m, ParseUnit) }
+func (m *Matched) Trailer() Trailer                { return parse(m, ParseTrailer) }
+func (m *Matched) School() School                  { return parse(m, ParseSchool) }
 
 func (m *Matched) Rest() []string {
 	rest := m.Values[m.Index-1:]

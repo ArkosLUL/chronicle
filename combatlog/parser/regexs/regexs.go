@@ -16,7 +16,7 @@ var (
 	ReDamageSpellHitOrCrit                         = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) (cr|h)its (.+[^\s]) for (\d+)\.\s?(.*)`)
 	ReDamageSpellHitOrCritSchool                   = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) (cr|h)its (.+[^\s]) for (\d+) ([a-zA-Z]+) damage\.\s?(.*)`)
 	ReDamagePeriodic                               = regexp.MustCompile(`(.+[^\s]) suffers (\d+) ([a-zA-Z]+) damage from (.+[^\s])'s (.+[^\s])\.\s?(.*)`)
-	ReDamageSpellSplit                             = regexp.MustCompile(`(.+[^\s])\s's (.+[^\s]) causes (.+[^\s]) (\d+) damage\.\s?(.*)`)
+	ReDamageSpellSplit                             = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) causes (.+[^\s]) (\d+) damage\.\s?(.*)`)
 	ReDamageSpellMiss                              = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) misse(s|d) (.+[^\s])\.`)
 	ReDamageSpellBlockParryEvadeDodgeResistDeflect = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) was (blocked|parried|evaded|dodged|resisted|deflected) by (.+[^\s])\.`)
 	ReDamageSpellAbsorb                            = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) is absorbed by (.+[^\s])\.`)
@@ -71,6 +71,9 @@ var (
 	// Scarlet Wizard dies, 0x000000000001C7AC gains 100 experience. (+50 exp Rested bonus)
 	ReUnitDieDestroyedExp = regexp.MustCompile(`(.+[^\s]) (dies|is destroyed), (.+[^\s]) gains (\d)+ experience\.( \(\+\d+ exp Rested bonus\))`)
 	ReDurabilityLoss      = regexp.MustCompile(`(.+[^\s])'s equipped items suffer a (\d+)% durability loss.`)
+	ReUsesConsumable      = regexp.MustCompile(`(.+[^\s]) uses (.+[^\s])\.`)
+	// "0x0000000000079B43's Arcane Power drains 88 Mana from 0x0000000000079B43.
+	ReResourceDrain = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) drains (\d+) (Mana) from (.+[^\s])\.`)
 )
 
 // ???

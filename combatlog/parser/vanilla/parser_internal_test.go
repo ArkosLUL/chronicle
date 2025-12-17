@@ -408,52 +408,17 @@ func TestParserMessages(t *testing.T) {
 		}, re)
 	})
 
-	//t.Run("Gains Attack", func(t *testing.T) {
-	//	rg, err := exp[SkippedMessage](p.fGainsAttack(time.Time{}, "Lonsell gains 1 extra attack through Windfury Totem."))
-	//	require.NoError(t, err)
-	//	var _ = rg
-	//})
-}
+	t.Run("Gains Attack", func(t *testing.T) {
+		rg, err := exp[messages.ExtraAttack](p.parseContent(time.Time{}, "0x00000000000523FD gains 2 extra attacks through Windfury Weapon."))
+		require.NoError(t, err)
 
-//func TestParseRealLogs(t *testing.T) {
-//	t.Parallel()
-//
-//	t.Skip("expected to fail")
-//
-//	logFile, err := os.OpenFile("testdata/reallogs/MoltenCore.txt", os.O_RDONLY, 0644)
-//	require.NoError(t, err)
-//	// nolint:errcheck
-//	defer logFile.Close()
-//
-//	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
-//	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zerologLogger}.NewZerologHandler())
-//	p := NewParser(logger)
-//
-//	failed := map[string]error{}
-//	scanner := bufio.NewScanner(logFile)
-//	for scanner.Scan() {
-//		line := scanner.Text()
-//		msg, err := p.LogLine(line)
-//		if err != nil {
-//			failed[line] = err
-//			continue
-//		}
-//
-//		if sm, ok := msg[0].(SkippedMessage); ok {
-//			var _ = sm
-//			continue
-//		}
-//		//fmt.Printf("%s: %s\n", reflect.TypeOf(msg).String(), msg[0].String())
-//	}
-//
-//	failedList := []string{}
-//	for line, err := range failed {
-//		failedList = append(failedList, "\n"+line)
-//		var _ = err
-//		//failedList = append(failedList, fmt.Sprintf("\nLine: %s\n  Error: %v", line, err))
-//	}
-//	require.Empty(t, failedList)
-//}
+		require.Equal(t, messages.ExtraAttack{
+			Caster:        0x00000000000523FD,
+			Amount:        2,
+			FromSpellName: "Windfury Weapon",
+		}, rg)
+	})
+}
 
 func exp[T messages.Message](msg []messages.Message, err error) (T, error) {
 	var empty T

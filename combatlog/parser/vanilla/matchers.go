@@ -989,12 +989,29 @@ func (p *Parser) fCreates(ts time.Time, content string) ([]messages.Message, err
 }
 
 func (p *Parser) fGainsAttack(ts time.Time, content string) ([]messages.Message, error) {
-	matches := regexs.ReGainsAttack.FindStringSubmatch(content)
-	if matches == nil {
-		return messages.NotHandled()
-	}
+  matches, ok := types.FromRegex(regexs.ReGainsAttack).Match(content)
+  if !ok {
+    return messages.NotHandled()
+  }
 
-	return messages.Unparsed(ts, "GainsAttack not implemented"), nil
+
+  _, caster := matches.UnitOrGUID()
+  amount := matches.Int32()
+  spellName := matches.String()
+  if err := matches.Error(); err != nil {
+    return nil, fmt.Errorf("GainsAttack: %w", err)
+  }
+
+  if caster.IsZero() {
+    return messages.Skip(ts, "GainsAttack: not using guids"), nil
+  }
+
+	return set(messages.ExtraAttack{
+		MessageBase:   messages.Base(ts),
+		Caster:        caster,
+		Amount:        amount,
+		FromSpellName: spellName,
+	}), nil
 }
 
 func (p *Parser) fFallDamage(ts time.Time, content string) ([]messages.Message, error) {

@@ -176,7 +176,7 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		p.fAuraDispel,                                   // ✓
 		p.fAuraInterrupt,                                // ✓
 		p.fCreates,                                      // ✓
-		p.fGainsAttack,                                  // x TODO: need to determine a message type
+		p.fGainsAttack,                                  // ✓
 		p.fFallDamage,                                   // ✓
 		p.fDurabilityLoss,                               // ✓
 		p.fUsesConsumable,                               // ✓

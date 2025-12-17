@@ -237,6 +237,17 @@ type Create struct {
 
 func (c Create) Affects() []guid.GUID { return []guid.GUID{c.Caster} }
 
+// ExtraAttack is a bit strange, but it's a unique message that triggers when extra
+// white attacks are granted via some proc.
+type ExtraAttack struct {
+	MessageBase
+	Caster        guid.GUID
+	Amount        int32
+	FromSpellName string
+}
+
+func (e ExtraAttack) Affects() []guid.GUID { return []guid.GUID{e.Caster} }
+
 type Timeout struct {
 	MessageBase
 }

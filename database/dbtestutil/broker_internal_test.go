@@ -9,5 +9,5 @@ import (
 func TestGetTestPackageName(t *testing.T) {
 	t.Parallel()
 	packageName := getTestPackageName(t)
-	require.Equal(t, "Emyrk/chronicle/database/dbtestutil", packageName)
+	require.Equal(t, "database/dbtestutil", packageName)
 }

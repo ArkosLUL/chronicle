@@ -4,10 +4,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Emyrk/chronicle/database"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
+
+	"github.com/Emyrk/chronicle/database"
 )
 
 type DBTx struct {

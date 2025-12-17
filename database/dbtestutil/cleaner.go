@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	slogzerolog "github.com/samber/slog-zerolog/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/coder/retry"
@@ -117,7 +119,9 @@ func (c *cleaner) init(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("failed to parse parent UUID '%s': %w", parentUUIDStr, err)
 	}
-	c.logger = c.logger.With(slog.String("name", "dbtestcleaner"), slog.String("parent_uuid", parentUUIDStr))
+	zl := zerolog.New(&zerolog.ConsoleWriter{Out: os.Stderr})
+	c.logger = slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zl}.NewZerologHandler())
+	c.logger = c.logger.With("name", "dbtestcleaner", "parent_uuid", parentUUIDStr)
 
 	c.db, err = sql.Open("postgres", dsn)
 	if err != nil {

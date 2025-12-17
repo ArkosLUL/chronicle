@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql/driver"
 
-	"github.com/Emyrk/chronicle/database"
 	"github.com/lib/pq"
 	"golang.org/x/xerrors"
+
+	"github.com/Emyrk/chronicle/database"
 )
 
 var _ database.DialerConnector = &Connector{}

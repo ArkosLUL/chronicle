@@ -15,18 +15,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"golang.org/x/xerrors"
-
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/xerrors"
 )
 
 type options struct {
 	fixedTimezone string
 	dumpOnFailure bool
-	returnSQLDB   func(*sql.DB)
 	logger        *slog.Logger
 	url           string
 }
@@ -59,23 +57,6 @@ func WithURL(u string) Option {
 	}
 }
 
-func withReturnSQLDB(f func(*sql.DB)) Option {
-	return func(o *options) {
-		o.returnSQLDB = f
-	}
-}
-
-func NewDBWithSQLDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub, *sql.DB) {
-	t.Helper()
-
-	var sqlDB *sql.DB
-	opts = append(opts, withReturnSQLDB(func(db *sql.DB) {
-		sqlDB = db
-	}))
-	db, ps := NewDB(t, opts...)
-	return db, ps, sqlDB
-}
-
 var DefaultTimezone = "America/St_Johns"
 
 // NowInDefaultTimezone returns the current time rounded to the nearest microsecond in the default timezone
@@ -91,12 +72,12 @@ func NowInDefaultTimezone() time.Time {
 func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
 	t.Helper()
 
-	o := options{logger: testutil.Logger(t).With("service", "pubsub")}
+	o := options{logger: testutil.Logger(t).With("name", "pubsub")}
 	for _, opt := range opts {
 		opt(&o)
 	}
 
-	connectionURL := os.Getenv("CHRONICLE_PG_CONNECTION_URL")
+	connectionURL := os.Getenv("CODER_PG_CONNECTION_URL")
 	if connectionURL == "" && o.url != "" {
 		connectionURL = o.url
 	}
@@ -115,16 +96,15 @@ func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
 		// - It includes a daylight savings time component
 		o.fixedTimezone = DefaultTimezone
 	}
-
 	dbName := dbNameFromConnectionURL(t, connectionURL)
 	setDBTimezone(t, connectionURL, dbName, o.fixedTimezone)
 
 	pool, err := database.NewPostgresDB(t.Context(), o.logger, connectionURL)
 	require.NoError(t, err)
+
 	t.Cleanup(func() {
 		pool.Close()
 	})
-
 	if o.dumpOnFailure {
 		t.Cleanup(func() { DumpOnFailure(t, connectionURL) })
 	}

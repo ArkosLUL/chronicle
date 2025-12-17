@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
@@ -11,7 +12,10 @@ import (
 type Pattern regexp.Regexp
 
 func FromRegex(re *regexp.Regexp) *Pattern {
+	// This was an idea to turn on more strict matching.
+	//re = regexp.MustCompile(re.String() + "$")
 	p := Pattern(*re)
+
 	return &p
 }
 
@@ -34,6 +38,12 @@ type Matched struct {
 	Values []string
 	Index  int
 	errs   []error
+
+	// usingUUIDs & foundYou is a hard coded check to see if "you" or "your" was used
+	// in place of the player's name when uuids are involved. This would mean the
+	// preprocessor failed to replace "you" with the player's guid.
+	usingUUIDs bool
+	foundYou   bool
 }
 
 func CustomMatch[T any](m *Matched, parser func(string) (T, error)) T {
@@ -48,8 +58,15 @@ func (m *Matched) UnitOrGUID() (string, guid.GUID) {
 			m.errs = append(m.errs, err)
 			return "", 0
 		}
+		m.usingUUIDs = true
 		return "", gid
 	}
+
+	lv := strings.ToLower(val)
+	if lv == "you" || lv == "your" {
+		m.foundYou = true
+	}
+
 	return val, guid.GUID(0)
 }
 
@@ -93,10 +110,14 @@ func (m *Matched) Uint32() uint32 {
 }
 
 func (m *Matched) Error() error {
-	if len(m.errs) == 0 {
-		return nil
+	var extra error = nil
+	if m.usingUUIDs && m.foundYou {
+		extra = errors.New("found 'you' or 'your' where a unit name was expected while using UUIDs; preprocessor may have failed to replace 'you' with the player's guid")
 	}
-	return errors.Join(m.errs...)
+	if len(m.errs) == 0 {
+		return extra
+	}
+	return errors.Join(append(m.errs, extra)...)
 }
 
 // nolint: unused

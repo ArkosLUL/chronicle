@@ -37,7 +37,7 @@ var (
 	ReGain     = regexp.MustCompile(`(.+[^\s]) (gains|loses) (\d+) (Health|health|Mana|Rage|Energy|Happiness|happiness|Focus) from (.+[^\s])'s (.+[^\s])\.`)
 
 	ReAuraGainHarmfulHelpful = regexp.MustCompile(`(.+[^\s]) (is afflicted by|gains) (.+[^\s])\s+\((\d+)\)\.`)
-	ReAuraFade               = regexp.MustCompile(`(.+[^\s]) fades from (.+[^\s])\.`)
+	ReAuraFade               = regexp.MustCompile(`(.+[^\s])  ?fades from (.+[^\s])\.`)
 
 	ReAuraDispel    = regexp.MustCompile(`(.+[^\s])'s (.+[^\s]) is removed\.`)
 	ReAuraInterrupt = regexp.MustCompile(`(.+[^\s]) interrupts (.+[^\s])'s (.+[^\s])\.`)

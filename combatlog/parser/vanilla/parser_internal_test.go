@@ -347,17 +347,6 @@ func TestParserMessages(t *testing.T) {
 			Amount:      1,
 			Application: types.AuraApplicationGains,
 		}, dod)
-
-		// Sometimes there is a double space?
-		sp, err := exp[messages.Aura](p.parseContent(time.Time{}, "0x0000000000049036 gains Shadow Protection  (1)."))
-		require.NoError(t, err)
-		require.Equal(t, messages.Aura{
-			MessageBase: messages.MessageBase{},
-			Target:      0x0000000000049036,
-			SpellName:   "Shadow Protection",
-			Amount:      1,
-			Application: types.AuraApplicationGains,
-		}, sp)
 	})
 
 	t.Run("AuraRemoved", func(t *testing.T) {
@@ -381,6 +370,27 @@ func TestParserMessages(t *testing.T) {
 			Amount:      0,
 			Application: types.AuraApplicationFades,
 		}, fade)
+
+		// Sometimes there is a double space?
+		sp, err := exp[messages.Aura](p.parseContent(time.Time{}, "0x0000000000049036 gains Shadow Protection  (1)."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Aura{
+			MessageBase: messages.MessageBase{},
+			Target:      0x0000000000049036,
+			SpellName:   "Shadow Protection",
+			Amount:      1,
+			Application: types.AuraApplicationGains,
+		}, sp)
+
+		sp, err = exp[messages.Aura](p.parseContent(time.Time{}, "Shadow Protection  fades from 0x0000000000049036."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Aura{
+			MessageBase: messages.MessageBase{},
+			Target:      0x0000000000049036,
+			SpellName:   "Shadow Protection",
+			Amount:      0,
+			Application: types.AuraApplicationFades,
+		}, sp)
 	})
 
 	t.Run("Interrupt", func(t *testing.T) {
@@ -493,6 +503,41 @@ func TestParserMessages(t *testing.T) {
 			EnvironmentType: nil,
 		}, dmg)
 	})
+}
+
+func TestPreProcess(t *testing.T) {
+	t.Parallel()
+
+	pre := youReplacer{Me: types.Unit{
+		Name: "Doyd",
+		Gid:  0x000000000001C7AC,
+	}}
+
+	tc := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "nochange",
+			expected: "nochange",
+		},
+		{
+			input:    "Your Greater Heal heals 0x000000000002A904 for 2460",
+			expected: "0x000000000001C7AC's Greater Heal heals 0x000000000002A904 for 2460",
+		},
+		{
+			input:    "You gain 16 Mana from Holy Champion",
+			expected: "0x000000000001C7AC gains 16 Mana from 0x000000000001C7AC's Holy Champion",
+		},
+	}
+
+	for _, test := range tc {
+		t.Run(test.input, func(t *testing.T) {
+			result, err := pre.Preprocess(test.input)
+			require.NoError(t, err)
+			require.Equal(t, test.expected, result)
+		})
+	}
 }
 
 func exp[T messages.Message](msg []messages.Message, err error) (T, error) {

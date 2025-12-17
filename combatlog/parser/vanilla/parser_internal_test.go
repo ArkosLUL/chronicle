@@ -17,6 +17,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func BenchmarkParsing(b *testing.B) {
+	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
+	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zerologLogger}.NewZerologHandler())
+	p, err := New(logger, strings.NewReader(""))
+	require.NoError(b, err)
+
+	someLogs := []string{
+		"CAST: 0xF14000847E002E7C(Whisper) casts Prowl(24453)(Rank 3) on 0xF14000847E002E7C(Whisper).",
+		"CAST: 0x000000000002594C(Zoie) casts Blink(1953).",
+		"Power Word: Shield fades from 0xF13000EF272748C7.",
+		"UNIT_INFO: 13.12.25 19:51:05&0x000000000002594C&1&Zoie&1&&,27681=1,21850=1,21564=1,23028=1,25895=1,22783=1,25898=1,25894=1,17539=1,45489=1,17628=1,56544=1,17535=1,17538=1,10225=1",
+		"0x000000000008B2C1 crits 0xF13000EF272748C7 for 182.",
+		"0x0000000000079B43's Arcane Missiles crits 0xF13000EF272748C7 for 683 Arcane damage. (227 resisted)",
+		"Tree of Life Aura fades from 0x0000000000067457.",
+	}
+
+	b.Run("RandomLogs", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := p.parseContent(time.Time{}, someLogs[i%len(someLogs)])
+			require.NoError(b, err)
+		}
+	})
+}
+
 func TestParserMessages(t *testing.T) {
 	t.Parallel()
 

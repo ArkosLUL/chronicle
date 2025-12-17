@@ -179,7 +179,6 @@ func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message,
 		if err != nil {
 			// TODO: Create a "DiagnosticError" like in terraform. Use that instead to raise and handle errors.
 			return messages.Skip(ts, err.Error()), nil
-			//return nil, fmt.Errorf("parse line failed: %v", err)
 		}
 
 		if len(m) == 0 {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -26,15 +27,12 @@ type Parser struct {
 
 	setup       sync.Once
 	lastLogDate time.Time
-	metrics     Metrics
-}
 
-type Metrics struct {
-	TotalParseDuration time.Duration
-	TotalLinesParsed   int64
-
-	// UnmatchedTime is the total time spent attempting to match lines that did not result in a successful parse.
-	UnmatchedTime time.Duration
+	metrics Metrics
+	// Used for human readable metrics output
+	matchers     []parseLine
+	matcherNames []string
+	initMatchers sync.Once
 }
 
 func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
@@ -50,6 +48,14 @@ func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan) *P
 		logger:  logger,
 		scanner: scan,
 		liner:   liner,
+		metrics: Metrics{
+			PreProcessDuration: 0,
+			TotalParseDuration: 0,
+			TotalLinesParsed:   0,
+			UnmatchedTime:      0,
+			MatchingTime:       make(map[string]time.Duration),
+			UnmatchingTime:     make(map[string]time.Duration),
+		},
 	}
 }
 
@@ -106,11 +112,13 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 		return nil, AsFatalError(fmt.Errorf("log dates went backwards: last %v, current %v", p.lastLogDate, ts))
 	}
 
+	preNow := time.Now()
 	content, err := p.you.Preprocess(original)
 	if err != nil {
 		return nil, fmt.Errorf("preprocess line failed: %v", err)
 	}
 	content = strings.TrimSpace(content)
+	p.metrics.PreProcessDuration += time.Since(preNow)
 
 	if content == "" {
 		// Maybe the preprocessing removed all content, it does not matter.
@@ -135,61 +143,71 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 
 func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message, error) {
 	start := time.Now()
-	for _, parser := range []parseLine{
-		p.fCombatantInfo,                // ✓
-		p.fUnitInfo,                     // ✓
-		p.fZoneInfo,                     // ✓
-		p.fV2Casts,                      // ✓
-		p.fLoot,                         // ✓
-		p.fCombatCount,                  // ✓
-		p.fBugDamageSpellHitOrCrit,      // ✓
-		p.fSpellCastAttempt,             // ✓
-		p.fGain,                         // ✓
-		p.fDamageSpellHitOrCritNoSchool, // ✓
-		p.fDamageSpellHitOrCritSchool,   // ✓
-		p.fDamagePeriodic,               // ✓
-		p.fDamageShield,                 // ✓
-		p.fDamageHitOrCritNoSchool,      // ✓
-		p.fDamageHitOrCritSchool,        // ✓
-		p.fHeal,                         // ✓
-		p.fAuraGainHarmfulHelpful,       // ✓
-		p.fAuraFade,                     // ✓
-		p.fDamageSpellSplit,             // ✓
-		p.fDamageSpellMiss,              // ✓
-		p.fDamageSpellBlockParryEvadeDodgeResistDeflect, // ✓
-		p.fDamageSpellAbsorb,                            // ✓
-		p.fDamageSpellAbsorbSelf,                        // x TODO: need an example
-		p.fDamageReflect,                                // ✓
-		p.fDamageProcResist,                             // x TODO: need an example
-		p.fDamageSpellImmune,                            // ✓
-		p.fDamageMiss,                                   // ✓
-		p.fDamageBlockParryEvadeDodgeDeflect,            // ✓
-		p.fDamageAbsorbResist,                           // ✓
-		p.fDamageImmune,                                 // ✓
-		p.fSpellCastPerformDurability,                   // x TODO: need an example
-		p.fSpellCastPerform,                             // ✓
-		p.fSpellCastPerformUnknown,                      // ✓
-		p.fHonorableKill,                                // ✓ (TODO: add currency gain for honor)
-		p.fUnitDieDestroyed,                             // ✓
-		p.fUnitDieDestroyedExperience,                   // ✓ (TODO: add experience gain)
-		p.fUnitSlay,                                     // ✓
-		p.fAuraDispel,                                   // ✓
-		p.fAuraInterrupt,                                // ✓
-		p.fCreates,                                      // ✓
-		p.fGainsAttack,                                  // ✓
-		p.fFallDamage,                                   // ✓
-		p.fDurabilityLoss,                               // ✓
-		p.fUsesConsumable,                               // ✓
-		p.fResourceDrain,                                // ✓
-		p.fReputationChange,                             // ✓
-		p.fPetEats,                                      // ✓
-		p.fKilledBy,                                     // ✓
-		p.fLavaSwimming,                                 // ✓
-		p.fFullResist,                                   // x TODO: Unsure what to do with this, there is no target
-		p.fFullImmune,                                   // ✓
-		p.fPetHappiness,                                 // ✓
-		p.fPetDismissed,                                 // ✓
-	} {
+	p.initMatchers.Do(func() {
+		p.matchers = []parseLine{
+			p.fCombatantInfo,                // ✓
+			p.fUnitInfo,                     // ✓
+			p.fZoneInfo,                     // ✓
+			p.fV2Casts,                      // ✓
+			p.fLoot,                         // ✓
+			p.fCombatCount,                  // ✓
+			p.fBugDamageSpellHitOrCrit,      // ✓
+			p.fSpellCastAttempt,             // ✓
+			p.fGain,                         // ✓
+			p.fDamageSpellHitOrCritNoSchool, // ✓
+			p.fDamageSpellHitOrCritSchool,   // ✓
+			p.fDamagePeriodic,               // ✓
+			p.fDamageShield,                 // ✓
+			p.fDamageHitOrCritNoSchool,      // ✓
+			p.fDamageHitOrCritSchool,        // ✓
+			p.fHeal,                         // ✓
+			p.fAuraGainHarmfulHelpful,       // ✓
+			p.fAuraFade,                     // ✓
+			p.fDamageSpellSplit,             // ✓
+			p.fDamageSpellMiss,              // ✓
+			p.fDamageSpellBlockParryEvadeDodgeResistDeflect, // ✓
+			p.fDamageSpellAbsorb,                            // ✓
+			p.fDamageSpellAbsorbSelf,                        // x TODO: need an example
+			p.fDamageReflect,                                // ✓
+			p.fDamageProcResist,                             // x TODO: need an example
+			p.fDamageSpellImmune,                            // ✓
+			p.fDamageMiss,                                   // ✓
+			p.fDamageBlockParryEvadeDodgeDeflect,            // ✓
+			p.fDamageAbsorbResist,                           // ✓
+			p.fDamageImmune,                                 // ✓
+			p.fSpellCastPerformDurability,                   // x TODO: need an example
+			p.fSpellCastPerform,                             // ✓
+			p.fSpellCastPerformUnknown,                      // ✓
+			p.fHonorableKill,                                // ✓ (TODO: add currency gain for honor)
+			p.fUnitDieDestroyed,                             // ✓
+			p.fUnitDieDestroyedExperience,                   // ✓ (TODO: add experience gain)
+			p.fUnitSlay,                                     // ✓
+			p.fAuraDispel,                                   // ✓
+			p.fAuraInterrupt,                                // ✓
+			p.fCreates,                                      // ✓
+			p.fGainsAttack,                                  // ✓
+			p.fFallDamage,                                   // ✓
+			p.fDurabilityLoss,                               // ✓
+			p.fUsesConsumable,                               // ✓
+			p.fResourceDrain,                                // ✓
+			p.fReputationChange,                             // ✓
+			p.fPetEats,                                      // ✓
+			p.fKilledBy,                                     // ✓
+			p.fLavaSwimming,                                 // ✓
+			p.fFullResist,                                   // x TODO: Unsure what to do with this, there is no target
+			p.fFullImmune,                                   // ✓
+			p.fPetHappiness,                                 // ✓
+			p.fPetDismissed,                                 // ✓
+		}
+		p.matcherNames = make([]string, 0, len(p.matchers))
+
+		for _, f := range p.matchers {
+			p.matcherNames = append(p.matcherNames, runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name())
+		}
+	})
+
+	for i, parser := range p.matchers {
+		matcherName := p.matcherNames[i]
 		startMatch := time.Now()
 		m, err := parser(ts, content)
 		if err != nil {
@@ -197,9 +215,11 @@ func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message,
 		}
 
 		if len(m) == 0 {
+			p.metrics.UnmatchingTime[matcherName] += time.Since(startMatch)
 			continue
 		}
 
+		p.metrics.MatchingTime[matcherName] += time.Since(startMatch)
 		p.metrics.UnmatchedTime += startMatch.Sub(start)
 		return m, nil
 	}

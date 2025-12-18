@@ -16,12 +16,22 @@ import (
 )
 
 func ParseCmd() *serpent.Command {
+	var (
+		dumpMetrics bool
+	)
 	profileOpt, profileMW := ProfileCommand()
 	cmd := &serpent.Command{
 		Use:        "parse <file> <file>",
 		Middleware: serpent.Chain(serpent.RequireNArgs(2), profileMW),
 		Options: serpent.OptionSet{
 			profileOpt,
+			{
+				Name:        "dump-metrics",
+				Description: "Print metrics information after parsing.",
+				Required:    false,
+				Flag:        "metrics",
+				Value:       serpent.BoolOf(&dumpMetrics),
+			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx := i.Context()
@@ -81,6 +91,9 @@ func ParseCmd() *serpent.Command {
 				slog.String("average_line_parse_duration", (mets.TotalParseDuration/time.Duration(mets.TotalLinesParsed)).String()),
 				slog.String("total_unmatched_time", mets.UnmatchedTime.String()),
 			)
+			if dumpMetrics {
+				fmt.Println(mets.Format())
+			}
 			return nil
 		},
 	}

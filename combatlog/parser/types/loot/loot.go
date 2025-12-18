@@ -1,45 +1,45 @@
 package loot
 
 import (
-  "fmt"
-  "strings"
-  "time"
+	"fmt"
+	"strings"
+	"time"
 
-  "github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 )
 
 const (
-  PrefixLoot = "LOOT:"
+	PrefixLoot = "LOOT:"
 )
 
 func IsLoot(content string) (string, bool) {
-  return types.Is(PrefixLoot, content)
+	return types.Is(PrefixLoot, content)
 }
 
 type Loot struct {
-  Seen time.Time
-  // TODO: Parse the rest
+	Seen time.Time
+	// TODO: Parse the rest
 }
 
 func ParseLootInfo(content string) (Loot, error) {
-  trimmed, ok := IsLoot(content)
-  if !ok {
-    return Loot{}, fmt.Errorf("not a LOOT message")
-  }
+	trimmed, ok := IsLoot(content)
+	if !ok {
+		return Loot{}, fmt.Errorf("not a LOOT message")
+	}
 
-  parts := strings.Split(trimmed, "&")
+	parts := strings.Split(trimmed, "&")
 
-  if len(parts) < 2 {
-    return Loot{}, fmt.Errorf("insufficient arguments in LOOT message, got %d, want at least 2", len(parts))
-  }
+	if len(parts) < 2 {
+		return Loot{}, fmt.Errorf("insufficient arguments in LOOT message, got %d, want at least 2", len(parts))
+	}
 
-  ts, _ := parts[0], parts[1]
-  seen, err := time.Parse(types.AddonDateFormat, ts)
-  if err != nil {
-    return Loot{}, fmt.Errorf("invalid date format %q: %w", ts, err)
-  }
+	ts, _ := parts[0], parts[1]
+	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
+	if err != nil {
+		return Loot{}, fmt.Errorf("invalid date format %q: %w", ts, err)
+	}
 
-  return Loot{
-    Seen: seen,
-  }, nil
+	return Loot{
+		Seen: seen,
+	}, nil
 }

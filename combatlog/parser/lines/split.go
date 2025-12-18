@@ -14,8 +14,9 @@ const (
 )
 
 type Liner struct {
-	Year  int
-	clock quartz.Clock
+	Year     int
+	clock    quartz.Clock
+	location *time.Location
 }
 
 func NewLiner() *Liner {
@@ -85,7 +86,7 @@ func (l *Liner) parse(year int, line string) (time.Time, string, error) {
 	if len(parts) != 3 {
 		return time.Time{}, "", errors.New("invalid line format")
 	}
-	ts, err := time.Parse("2006 "+LogDateFormat, strconv.Itoa(year)+" "+parts[0]+" "+parts[1])
+	ts, err := time.ParseInLocation("2006 "+LogDateFormat, strconv.Itoa(year)+" "+parts[0]+" "+parts[1], time.UTC)
 	return ts, strings.TrimPrefix(parts[2], " "), err
 }
 

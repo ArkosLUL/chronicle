@@ -12,20 +12,26 @@ import (
 type characterFactory func(id guid.GUID, chars *Characters) (Character, bool)
 
 var characterFactories = []characterFactory{
+	// Global
 	NewTotemCharacter,
 	NewCritterCharacter,
+	// Molten Core
 	NewCoreHoundCharacter,
+	NewMajordomoCharacter,
 }
 
 type Characters struct {
 	All map[guid.GUID]Character
-	db  *unitdb.Units
+	// ByEntry only works on creatures
+	ByEntry map[uint32][]Character
+	db      *unitdb.Units
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {
 	return &Characters{
-		db:  db,
-		All: make(map[guid.GUID]Character),
+		db:      db,
+		All:     make(map[guid.GUID]Character),
+		ByEntry: make(map[uint32][]Character),
 	}
 }
 
@@ -60,6 +66,11 @@ func (c Characters) Add(id guid.GUID) Character {
 		}
 
 		c.All[id] = char
+		if id.IsAnyCreature() {
+			if entry, ok := id.GetEntry(); ok {
+				c.ByEntry[entry] = append(c.ByEntry[entry], char)
+			}
+		}
 	}
 	return char
 }

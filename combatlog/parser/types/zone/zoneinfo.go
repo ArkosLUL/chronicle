@@ -36,7 +36,7 @@ func ParseZoneInfo(content string) (Zone, error) {
 	}
 
 	ts, name, id := parts[0], parts[1], parts[2]
-	seen, err := time.Parse(types.AddonDateFormat, ts)
+	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
 	if err != nil {
 		return Zone{}, fmt.Errorf("invalid date format %q: %w", ts, err)
 	}

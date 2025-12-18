@@ -17,7 +17,7 @@ const (
 	majorDomoEntry   = 12018
 )
 
-func NewMajordomoCharacter(id guid.GUID, all *Characters) (Character, bool) {
+func NewMajordomoPartyCharacter(id guid.GUID, all *Characters) (Character, bool) {
 	if !id.IsCreature() {
 		return nil, false
 	}

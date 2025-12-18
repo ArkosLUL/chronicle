@@ -95,6 +95,10 @@ func (c *Totem) OwnerInfo() (unitinfo.Info, bool) {
 // - look for owner "recall"
 // - look for owner death?
 func (c *Totem) Process(m messages.Message) error {
+	if c.LastSlain != nil {
+		return nil // Totems can't be revived
+	}
+
 	// Timeouts should be checked on every timestamp
 	cur, ok := c.Activity.Current()
 	if ok {
@@ -133,7 +137,7 @@ func (c *Totem) Process(m messages.Message) error {
 }
 
 func (c *Totem) Start(reason string, m messages.Message) {
-	if c.RecentlySlain(m) {
+	if c.LastSlain != nil {
 		return // Totems can't be revived
 	}
 	now := m.Date()

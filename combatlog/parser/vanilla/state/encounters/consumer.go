@@ -1,14 +1,10 @@
 package encounters
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
@@ -39,33 +35,6 @@ func New(logger *slog.Logger) *State {
 		Instances:   make([]instances.Instance, 0),
 	}
 	return s
-}
-
-func (s *State) Consume(ctx context.Context, p *vanilla.Parser) error {
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		msgs, err := p.Advance()
-		if err != nil {
-			if vanilla.IsFatalError(err) {
-				return fmt.Errorf("fatal parser error: %w", err)
-			}
-			if errors.Is(err, io.EOF) {
-				return nil
-			}
-			s.logger.Error("Error advancing parser", slog.String("error", err.Error()))
-		}
-		for _, msg := range msgs {
-			if up, ok := msg.(messages.UnparsedLine); ok {
-				s.logger.Warn("Unparsed line", slog.String("line", up.Content))
-			}
-			err = s.Process(msg)
-			if err != nil {
-				return fmt.Errorf("state process: %w", err)
-			}
-		}
-	}
 }
 
 func (s *State) Process(m messages.Message) error {

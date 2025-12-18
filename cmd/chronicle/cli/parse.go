@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -40,7 +41,8 @@ func ParseCmd() *serpent.Command {
 
 			p := vanilla.NewFromScanner(logger, liner, scan)
 			output := encounters.New(logger)
-			err = output.Consume(ctx, p)
+			c := consumers.New(logger, output)
+			err = c.ConsumeAll(ctx, p)
 			if err != nil {
 				return err
 			}
@@ -65,6 +67,12 @@ func ParseCmd() *serpent.Command {
 					fmt.Println(f.NamedString(output.Units))
 				}
 			}
+
+			consumerLog := logger.With("component", "consumers")
+			for k, v := range c.Times() {
+				consumerLog = consumerLog.With(slog.String(k+"_duration", v.String()))
+			}
+			consumerLog.Info("Consumer processing times")
 
 			mets := p.Metrics()
 			logger.Info("Parsing complete",

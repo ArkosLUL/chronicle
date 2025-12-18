@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
+	"github.com/Emyrk/chronicle/combatlog/parser/regexs/compiled"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
@@ -118,7 +119,7 @@ func (p *Parser) fCombatCount(ts time.Time, content string) ([]messages.Message,
 }
 
 func (p *Parser) fBugDamageSpellHitOrCrit(ts time.Time, content string) ([]messages.Message, error) {
-	if !regexs.ReBugDamageSpellHitOrCrit.MatchString(content) {
+	if !compiled.CompiledReBugDamageSpellHitOrCrit.MatchString(content) {
 		return messages.NotHandled()
 	}
 
@@ -132,8 +133,9 @@ func (p *Parser) fBugDamageSpellHitOrCrit(ts time.Time, content string) ([]messa
 // 10/29 22:09:42.175  Randgriz casts Flash Heal on Katrix.
 // 10/29 22:09:42.175  Randgriz 's Flash Heal critically heals Katrix for 2534.
 func (p *Parser) fSpellCastAttempt(ts time.Time, content string) ([]messages.Message, error) {
-	matches := regexs.ReSpellCastAttempt.FindStringSubmatch(content)
-	if matches == nil {
+	//matched := regexs.CompiledCompiledReSpellCastAttempt.MatchString(content)
+	matched := regexs.ReSpellCastAttempt.MatchString(content)
+	if !matched {
 		return messages.NotHandled()
 	}
 

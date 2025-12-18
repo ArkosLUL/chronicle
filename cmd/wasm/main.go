@@ -120,7 +120,7 @@ func parseLogsFunc(this js.Value, args []js.Value) interface{} {
 	p := vanilla.NewFromScanner(logger, liner, scan)
 	output := encounters.New(logger)
 	c := consumers.New(logger, output)
-	err = c.ConsumeAll(ctx, p)
+	err = c.ConsumeAll(context.Background(), p)
 	if err != nil {
 		return map[string]interface{}{
 			"error": fmt.Sprintf("Failed to consume parser: %v", err),

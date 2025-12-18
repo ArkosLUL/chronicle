@@ -9,6 +9,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
+type CompiledRegex interface {
+	MatchString(s string) bool
+}
+
 type Pattern regexp.Regexp
 
 func FromRegex(re *regexp.Regexp) *Pattern {

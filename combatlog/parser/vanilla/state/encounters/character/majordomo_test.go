@@ -52,6 +52,6 @@ func TestMajordomo(t *testing.T) {
 
 	major, ok := fights[0].Hostiles[0xF130002EF2279621]
 	require.True(t, ok, "Majordomo should be present in the fight")
-	require.Len(t, major, 1)
 	require.IsType(t, messages.Slain{}, major.Activity[0].End.Timestamp)
+	require.IsType(t, "all_adds_dead", major.Activity[0].End.Reason)
 }

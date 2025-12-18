@@ -35,7 +35,7 @@ func BenchmarkParsing(b *testing.B) {
 
 	b.Run("RandomLogs", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, err := p.parseContent(time.Time{}, someLogs[i%len(someLogs)])
+			_, err := p.ParseContent(time.Time{}, someLogs[i%len(someLogs)])
 			require.NoError(b, err)
 		}
 	})
@@ -58,7 +58,7 @@ func TestParserMessages(t *testing.T) {
 
 	// With school: 0xF1400844930090A2's Firebolt hits 0xF130000950003FB5 for 38 Fire damage
 	t.Run("SpellHit", func(t *testing.T) {
-		sh, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x0000000000062A1B's Hamstring hits 0xF1300033F000CFD0 for 27."))
+		sh, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x0000000000062A1B's Hamstring hits 0xF1300033F000CFD0 for 27."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -70,7 +70,7 @@ func TestParserMessages(t *testing.T) {
 			Trailer:   nil,
 		}, sh)
 
-		pa, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF13000342E024B85's Shoot hits 0x0000000000024225 for 0. (183 absorbed)"))
+		pa, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF13000342E024B85's Shoot hits 0x0000000000024225 for 0. (183 absorbed)"))
 		require.NoError(t, err)
 		require.Equal(t, messages.Damage{
 			Caster:    ptr.Ref[guid.GUID](0xF13000342E024B85),
@@ -88,12 +88,12 @@ func TestParserMessages(t *testing.T) {
 		}, pa)
 
 		// Skipped because no guid
-		_, err = exp[messages.SkippedMessage](p.parseContent(time.Time{}, "Magma Totem III (Oku)'s Magma Totem hits Hateforge Miner for 54 Fire damage."))
+		_, err = exp[messages.SkippedMessage](p.ParseContent(time.Time{}, "Magma Totem III (Oku)'s Magma Totem hits Hateforge Miner for 54 Fire damage."))
 		require.NoError(t, err)
 	})
 
 	t.Run("SpellAndSchool", func(t *testing.T) {
-		ss, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x0000000000016541's Fire Strike hits 0x000000000001B1F2 for 2 Fire damage."))
+		ss, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x0000000000016541's Fire Strike hits 0x000000000001B1F2 for 2 Fire damage."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -108,7 +108,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Resource Gain", func(t *testing.T) {
-		rg, err := exp[messages.ResourceChange](p.parseContent(time.Time{}, "0x000000000005B81F gains 20 Energy from 0x000000000005B81F's Relentless Strikes."))
+		rg, err := exp[messages.ResourceChange](p.ParseContent(time.Time{}, "0x000000000005B81F gains 20 Energy from 0x000000000005B81F's Relentless Strikes."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.ResourceChange{
@@ -135,7 +135,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("PeriodicDamage", func(t *testing.T) {
-		sh, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF130002F7F00CB61 suffers 13 Nature damage from 0x00000000000F5027's Insect Swarm. (4 resisted)"))
+		sh, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF130002F7F00CB61 suffers 13 Nature damage from 0x00000000000F5027's Insect Swarm. (4 resisted)"))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -155,7 +155,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Heal", func(t *testing.T) {
-		h, err := exp[messages.Heal](p.parseContent(time.Time{}, "0x00000000000DF543's Lesser Healing Wave heals 0x0000000000024225 for 393."))
+		h, err := exp[messages.Heal](p.ParseContent(time.Time{}, "0x00000000000DF543's Lesser Healing Wave heals 0x0000000000024225 for 393."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Heal{
 			Caster:    0x00000000000DF543,
@@ -165,7 +165,7 @@ func TestParserMessages(t *testing.T) {
 			HitType:   types.HitTypeHit,
 		}, h)
 
-		hc, err := exp[messages.Heal](p.parseContent(time.Time{}, "0x000000000001C80A's Flash Heal critically heals 0x0000000000024225 for 1048."))
+		hc, err := exp[messages.Heal](p.ParseContent(time.Time{}, "0x000000000001C80A's Flash Heal critically heals 0x0000000000024225 for 1048."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Heal{
 			Caster:    0x000000000001C80A,
@@ -177,20 +177,20 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Slain", func(t *testing.T) {
-		sl, err := exp[messages.Slain](p.parseContent(time.Time{}, "0xF130002D53024BA6 is slain by 0x000000000001C7AC!"))
+		sl, err := exp[messages.Slain](p.ParseContent(time.Time{}, "0xF130002D53024BA6 is slain by 0x000000000001C7AC!"))
 		require.NoError(t, err)
 		require.Equal(t, messages.Slain{
 			Victim: 0xF130002D53024BA6,
 			Killer: ptr.Ref[guid.GUID](0x000000000001C7AC),
 		}, sl)
 
-		death, err := exp[messages.Slain](p.parseContent(time.Time{}, "0xF130001EA527931D is destroyed."))
+		death, err := exp[messages.Slain](p.ParseContent(time.Time{}, "0xF130001EA527931D is destroyed."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Slain{
 			Victim: 0xF130001EA527931D,
 		}, death)
 
-		pvp, err := exp[messages.Slain](p.parseContent(time.Time{}, "0x000000000001C80A dies, honorable kill Rank: Knight-Champion  (Estimated Honor Points: 17)"))
+		pvp, err := exp[messages.Slain](p.ParseContent(time.Time{}, "0x000000000001C80A dies, honorable kill Rank: Knight-Champion  (Estimated Honor Points: 17)"))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Slain{
@@ -198,21 +198,21 @@ func TestParserMessages(t *testing.T) {
 			Killer: nil,
 		}, pvp)
 
-		xp, err := exp[messages.Slain](p.parseContent(time.Time{}, "0xF1300010CA009C13 dies, 0x000000000001C7AC gains 100 experience. (+50 exp Rested bonus)"))
+		xp, err := exp[messages.Slain](p.ParseContent(time.Time{}, "0xF1300010CA009C13 dies, 0x000000000001C7AC gains 100 experience. (+50 exp Rested bonus)"))
 		require.NoError(t, err)
 		require.Equal(t, messages.Slain{
 			MessageBase: messages.MessageBase{},
 			Victim:      0xF1300010CA009C13,
 		}, xp)
 
-		killed, err := exp[messages.Slain](p.parseContent(time.Time{}, "0xF13000CBB227934D is killed by Fiery Hatching."))
+		killed, err := exp[messages.Slain](p.ParseContent(time.Time{}, "0xF13000CBB227934D is killed by Fiery Hatching."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Slain{
 			MessageBase: messages.MessageBase{},
 			Victim:      0xF13000CBB227934D,
 		}, killed)
 
-		dismissed, err := exp[messages.Slain](p.parseContent(time.Time{}, "0x00000000000E3B4D's 0xF14009B5AD000004 is dismissed."))
+		dismissed, err := exp[messages.Slain](p.ParseContent(time.Time{}, "0x00000000000E3B4D's 0xF14009B5AD000004 is dismissed."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Slain{
 			Victim: 0xF14009B5AD000004,
@@ -221,7 +221,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("DamageReflect", func(t *testing.T) {
-		dr, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000E6001 reflects 1 Arcane damage to 0x00000000000F2C1C."))
+		dr, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x00000000000E6001 reflects 1 Arcane damage to 0x00000000000F2C1C."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -235,7 +235,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SpellMiss", func(t *testing.T) {
-		mis, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000AB2A9's Arcane Shot missed 0x000000000000D995."))
+		mis, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x00000000000AB2A9's Arcane Shot missed 0x000000000000D995."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -249,7 +249,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SpellImmune", func(t *testing.T) {
-		mis, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF130000A4627936B's Earthbind fails. 0x00000000000AE8FE is immune."))
+		mis, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF130000A4627936B's Earthbind fails. 0x00000000000AE8FE is immune."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -263,7 +263,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("DamageImmune", func(t *testing.T) {
-		mis, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000E5B85 attacks but 0xF13000ED412739B3 is immune."))
+		mis, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x00000000000E5B85 attacks but 0xF13000ED412739B3 is immune."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -276,7 +276,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SpellAbsorb", func(t *testing.T) {
-		mis, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF13000342E024B85's Shoot is absorbed by 0x0000000000024225."))
+		mis, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF13000342E024B85's Shoot is absorbed by 0x0000000000024225."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -290,7 +290,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("FallDamage", func(t *testing.T) {
-		fall, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x000000000001C7AC falls and loses 333 health."))
+		fall, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x000000000001C7AC falls and loses 333 health."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -302,7 +302,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Dodge", func(t *testing.T) {
-		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF13000335300CF60 attacks. 0x00000000000E16AC dodges."))
+		dod, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF13000335300CF60 attacks. 0x00000000000E16AC dodges."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -316,7 +316,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SpellSplit", func(t *testing.T) {
-		split, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000D8985's Soul Link causes 0xF1400A5C5100000F 62 damage."))
+		split, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x00000000000D8985's Soul Link causes 0xF1400A5C5100000F 62 damage."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Damage{
 			Caster:    ptr.Ref[guid.GUID](0x00000000000D8985),
@@ -330,7 +330,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SpellResist", func(t *testing.T) {
-		dod, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000E16AC's Frost Shock was resisted by 0xF13000335300CF60."))
+		dod, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x00000000000E16AC's Frost Shock was resisted by 0xF13000335300CF60."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{
@@ -345,7 +345,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("AuraGain", func(t *testing.T) {
-		dod, err := exp[messages.Aura](p.parseContent(time.Time{}, "0xF1400158E8000023 gains Strike Together (1)."))
+		dod, err := exp[messages.Aura](p.ParseContent(time.Time{}, "0xF1400158E8000023 gains Strike Together (1)."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Aura{
@@ -357,7 +357,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("AuraRemoved", func(t *testing.T) {
-		dod, err := exp[messages.Aura](p.parseContent(time.Time{}, "0x00000000000CB034's Frost Shock is removed."))
+		dod, err := exp[messages.Aura](p.ParseContent(time.Time{}, "0x00000000000CB034's Frost Shock is removed."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Aura{
@@ -369,7 +369,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("AuraFade", func(t *testing.T) {
-		fade, err := exp[messages.Aura](p.parseContent(time.Time{}, "Rejuvenation fades from 0x00000000000A2D75."))
+		fade, err := exp[messages.Aura](p.ParseContent(time.Time{}, "Rejuvenation fades from 0x00000000000A2D75."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Aura{
 			Target:      0x00000000000A2D75,
@@ -379,7 +379,7 @@ func TestParserMessages(t *testing.T) {
 		}, fade)
 
 		// Sometimes there is a double space?
-		sp, err := exp[messages.Aura](p.parseContent(time.Time{}, "0x0000000000049036 gains Shadow Protection  (1)."))
+		sp, err := exp[messages.Aura](p.ParseContent(time.Time{}, "0x0000000000049036 gains Shadow Protection  (1)."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Aura{
 			MessageBase: messages.MessageBase{},
@@ -389,7 +389,7 @@ func TestParserMessages(t *testing.T) {
 			Application: types.AuraApplicationGains,
 		}, sp)
 
-		sp, err = exp[messages.Aura](p.parseContent(time.Time{}, "Shadow Protection  fades from 0x0000000000049036."))
+		sp, err = exp[messages.Aura](p.ParseContent(time.Time{}, "Shadow Protection  fades from 0x0000000000049036."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Aura{
 			MessageBase: messages.MessageBase{},
@@ -401,7 +401,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Interrupt", func(t *testing.T) {
-		itr, err := exp[messages.Interrupt](p.parseContent(time.Time{}, "0x00000000000F16FF interrupts 0x00000000000AA257's Flash Heal."))
+		itr, err := exp[messages.Interrupt](p.ParseContent(time.Time{}, "0x00000000000F16FF interrupts 0x00000000000AA257's Flash Heal."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Interrupt{
@@ -412,7 +412,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Creates", func(t *testing.T) {
-		crt, err := exp[messages.Create](p.parseContent(time.Time{}, "0x0000000000024225 creates Runecloth Bandage."))
+		crt, err := exp[messages.Create](p.ParseContent(time.Time{}, "0x0000000000024225 creates Runecloth Bandage."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Create{
@@ -422,17 +422,17 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("SkipNamedCast", func(f *testing.T) {
-		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "CAST: Aeowar begins to cast Swift Red Rocket Car(45050)."))
+		_, err := exp[messages.SkippedMessage](p.ParseContent(time.Time{}, "CAST: Aeowar begins to cast Swift Red Rocket Car(45050)."))
 		require.NoError(t, err)
 	})
 
 	t.Run("DurabilityLoss", func(t *testing.T) {
-		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0x000000000001C7AC's equipped items suffer a 10% durability loss."))
+		_, err := exp[messages.SkippedMessage](p.ParseContent(time.Time{}, "0x000000000001C7AC's equipped items suffer a 10% durability loss."))
 		require.NoError(t, err)
 	})
 
 	t.Run("ResourceDrain", func(t *testing.T) {
-		re, err := exp[messages.ResourceChange](p.parseContent(time.Time{}, "0x0000000000095229's Arcane Power drains 58 Mana from 0x0000000000095229."))
+		re, err := exp[messages.ResourceChange](p.ParseContent(time.Time{}, "0x0000000000095229's Arcane Power drains 58 Mana from 0x0000000000095229."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.ResourceChange{
@@ -446,7 +446,7 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Gains Attack", func(t *testing.T) {
-		rg, err := exp[messages.ExtraAttack](p.parseContent(time.Time{}, "0x00000000000523FD gains 2 extra attacks through Windfury Weapon."))
+		rg, err := exp[messages.ExtraAttack](p.ParseContent(time.Time{}, "0x00000000000523FD gains 2 extra attacks through Windfury Weapon."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.ExtraAttack{
@@ -457,17 +457,17 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Pet Eat", func(t *testing.T) {
-		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0x00000000000F8E0C's pet begins eating a Roasted Quail."))
+		_, err := exp[messages.SkippedMessage](p.ParseContent(time.Time{}, "0x00000000000F8E0C's pet begins eating a Roasted Quail."))
 		require.NoError(t, err)
 	})
 
 	t.Run("Reputation", func(t *testing.T) {
-		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0x000000000001C80A's Hydraxian Waterlords reputation has increased by 20."))
+		_, err := exp[messages.SkippedMessage](p.ParseContent(time.Time{}, "0x000000000001C80A's Hydraxian Waterlords reputation has increased by 20."))
 		require.NoError(t, err)
 	})
 
 	t.Run("LavaSwimming", func(t *testing.T) {
-		dmg, err := exp[messages.Damage](p.parseContent(time.Time{}, "0x00000000000D8985 loses 344 health for swimming in lava. (152 resisted) (114 absorbed)"))
+		dmg, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x00000000000D8985 loses 344 health for swimming in lava. (152 resisted) (114 absorbed)"))
 		require.NoError(t, err)
 		require.Equal(t, messages.Damage{
 			SpellName:       nil,
@@ -491,12 +491,12 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("FullResist", func(t *testing.T) {
-		_, err := exp[messages.SkippedMessage](p.parseContent(time.Time{}, "0xF130002F5600DD1D's Lucifron's Curse was resisted."))
+		_, err := exp[messages.SkippedMessage](p.ParseContent(time.Time{}, "0xF130002F5600DD1D's Lucifron's Curse was resisted."))
 		require.NoError(t, err)
 	})
 
 	t.Run("FullImmune", func(t *testing.T) {
-		dmg, err := exp[messages.Damage](p.parseContent(time.Time{}, "0xF130000059279638 is immune to 0xF13000FDFC278C2C's Molten Bulwark."))
+		dmg, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF130000059279638 is immune to 0xF13000FDFC278C2C's Molten Bulwark."))
 		require.NoError(t, err)
 
 		require.Equal(t, messages.Damage{

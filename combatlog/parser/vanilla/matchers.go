@@ -951,6 +951,10 @@ func (p *Parser) fAuraDispel(ts time.Time, content string) ([]messages.Message, 
 		return nil, fmt.Errorf("AuraDispel: %w", err)
 	}
 
+	if target.IsZero() {
+		return messages.Skip(ts, "AuraDispel: not using guids"), nil
+	}
+
 	return set(messages.Aura{
 		MessageBase: messages.Base(ts),
 		Target:      target,

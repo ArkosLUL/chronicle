@@ -118,7 +118,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 		return messages.Skip(ts, "empty line"), nil
 	}
 
-	msgs, err := p.parseContent(ts, content)
+	msgs, err := p.ParseContent(ts, content)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	return msgs, err
 }
 
-func (p *Parser) parseContent(ts time.Time, content string) ([]messages.Message, error) {
+func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message, error) {
 	start := time.Now()
 	for _, parser := range []parseLine{
 		p.fCombatantInfo,                // ✓

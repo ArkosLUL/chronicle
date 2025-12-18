@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 
 	"github.com/coder/serpent"
 )
@@ -17,9 +19,67 @@ func ExtractCmd() *serpent.Command {
 		Use: "extract <file>",
 		Children: []*serpent.Command{
 			ExtractByTime(),
+			ExtractByUtility(),
 		},
 	}
 
+	return cmd
+}
+
+// TODO: This is jank
+func ExtractByUtility() *serpent.Command {
+	cmd := &serpent.Command{
+		Use:     "utility <file>",
+		Options: serpent.OptionSet{},
+		Handler: func(i *serpent.Invocation) error {
+			ctx := i.Context()
+			logger := getLogger(i)
+
+			files, err := openFileReaders(i.Args[0])
+			if err != nil {
+				return err
+			}
+			defer func() { closeFiles(files...) }()
+			input := bufio.NewScanner(files[0])
+
+			p := vanilla.Parser{}
+
+			liner := lines.NewLiner()
+			for input.Scan() {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+
+				txt := input.Text()
+				ts, content, err := liner.Line(txt)
+				if err != nil {
+					logger.Warn("skipping failed line", slog.String("line", txt), slog.String("error", err.Error()))
+					continue
+				}
+
+				msgs, err := p.ParseContent(ts, content)
+				if err != nil {
+					logger.Warn("skipping failed parse", slog.String("line", txt), slog.String("error", err.Error()))
+					continue
+				}
+				if len(msgs) == 0 {
+					continue
+				}
+
+				if len(msgs) == 1 {
+					_, ok := msgs[0].(messages.SkippedMessage)
+					if ok {
+						continue
+					}
+				}
+
+				_, _ = fmt.Fprintln(i.Stdout, liner.FmtLine(ts, content))
+				//fmt.Println(reflect.TypeOf(msgs[0]).String())
+			}
+
+			return nil
+		},
+	}
 	return cmd
 }
 
@@ -30,8 +90,8 @@ func ExtractByTime() *serpent.Command {
 		useUTC bool
 	)
 	cmd := &serpent.Command{
-		// chronicle extract by-time ignoredlogs/raid/WoWRawCombatLog.txt --start 14:12:40 --end 14:15:18
-		Use: "by-time <file>",
+		// chronicle extract time ignoredlogs/raid/WoWRawCombatLog.txt --start 14:12:40 --end 14:15:18
+		Use: "time <file>",
 		Options: serpent.OptionSet{
 			{
 				Name:        "use-utc",

@@ -1,0 +1,165 @@
+12/13 20:12:45.117  COMBATANT_INFO: 13.12.25 20:12:45&Nimichop&DRUID&Tauren&2&nil&Eternal Saints&New Saint&9&208429:3004:0:0&61012:0:0:0&19139:3017:0:0&69107:0:0:0&50427:0:0:0&205849:92:0:0&208430:1843:2157:0&208431:2503:0:0&61188:1886:0:0&208432:0:0:0&13098:0:0:0&61051:0:0:0&61299:0:0:0&19289:0:0:0&61010:0:0:0&84603:2646:0:0&nil&51802:0:0:0&5976:0:0:0&nil&0x000000000004C53D&nil
+12/13 20:12:48.833  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:12:53.876  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:12:54.516  Jeli gains 241 health from your Renew.
+12/13 20:12:57.502  Jeli gains 241 health from your Renew.
+12/13 20:12:57.826  PLAYERS_IN_COMBAT: 7/32
+12/13 20:12:58.861  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:00.719  You gain 7 Mana from Holy Champion.
+12/13 20:13:01.238  You hit Core Hound for 97.
+12/13 20:13:02.903  You gain 1 Mana from Holy Champion.
+12/13 20:13:03.155  You fail to cast Mind Control: Invalid target.
+12/13 20:13:03.849  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:03.904  You gain 1 Mana from Holy Champion.
+12/13 20:13:04.581  You hit Core Hound for 96.
+12/13 20:13:04.909  You gain 1 Mana from Holy Champion.
+12/13 20:13:04.909  You gain 59 Mana from Judgement of Wisdom.
+12/13 20:13:04.909  Your Holy Nova heals Valsha for 494.
+12/13 20:13:04.909  Your Holy Nova heals you for 433.
+12/13 20:13:04.924  You gain Faithful (1).
+12/13 20:13:05.925  You gain 1 Mana from Holy Champion.
+12/13 20:13:06.946  You gain 1 Mana from Holy Champion.
+12/13 20:13:07.099  PLAYERS_IN_COMBAT: 31/32
+12/13 20:13:07.283  You gain 13 Mana from Holy Champion.
+12/13 20:13:07.939  You gain 1 Mana from Holy Champion.
+12/13 20:13:07.987  Your Flash Heal heals Milkpumper for 619.
+12/13 20:13:08.862  You gain 6 Mana from Holy Champion.
+12/13 20:13:08.928  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:08.956  You gain 1 Mana from Holy Champion.
+12/13 20:13:09.908  You gain 2 Mana from Holy Champion.
+12/13 20:13:10.102  Your Flash Heal heals Tuktukbuduk for 619.
+12/13 20:13:10.268  COMBATANT_INFO: 13.12.25 20:13:10&Milkpumper&SHAMAN&Tauren&2&nil&Eternal Saints&Eternal Raider&4&191374:1503:0:0&18404:104:0:0&191375:0:0:0&nil&191376:1892:0:0&191377:92:0:0&191378:1843:0:0&191379:1843:0:0&18812:1886:0:0&191380:1843:0:0&58209:104:0:0&19325:104:0:0&13965:0:0:0&11815:0:0:0&191780:1889:0:0&nil&58242:1704:0:0&58146:0:0:0&nil&nil&0x000000000007C4E9&nil
+12/13 20:13:10.932  You gain 2 Mana from Holy Champion.
+12/13 20:13:11.721  Your Flash Heal heals Lyda for 600.
+12/13 20:13:11.892  You gain 2 Mana from Holy Champion.
+12/13 20:13:12.924  You gain 2 Mana from Holy Champion.
+12/13 20:13:13.659  Your Flash Heal heals Porkins for 663.
+12/13 20:13:13.872  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:13.940  You gain 1 Mana from Holy Champion.
+12/13 20:13:14.912  You gain 1 Mana from Holy Champion.
+12/13 20:13:15.166  You fail to cast Flash Heal: Interrupted.
+12/13 20:13:15.934  You gain 2 Mana from Holy Champion.
+12/13 20:13:16.881  You gain 2 Mana from Holy Champion.
+12/13 20:13:17.915  You gain 1 Mana from Holy Champion.
+12/13 20:13:18.858  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:18.937  You gain 1 Mana from Holy Champion.
+12/13 20:13:19.491  Your Flash Heal heals Jeli for 674.
+12/13 20:13:19.920  You gain 1 Mana from Holy Champion.
+12/13 20:13:20.909  You gain 2 Mana from Holy Champion.
+12/13 20:13:21.921  You gain 1 Mana from Holy Champion.
+12/13 20:13:22.919  You gain 2 Mana from Holy Champion.
+12/13 20:13:23.864  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:23.912  You gain 1 Mana from Holy Champion.
+12/13 20:13:24.931  You gain 2 Mana from Holy Champion.
+12/13 20:13:25.885  You gain 1 Mana from Holy Champion.
+12/13 20:13:26.919  You gain 1 Mana from Holy Champion.
+12/13 20:13:27.865  Milkpumper gains 242 health from your Renew.
+12/13 20:13:27.900  You gain 2 Mana from Holy Champion.
+12/13 20:13:28.706  COMBATANT_INFO: 13.12.25 20:13:28&Jeli&WARLOCK&Scourge&3&Aezlissa&Eternal Saints&Eternal Raider&4&16929:2544:0:0&18814:426:0:0&196572:0:0:0&nil&166950:426:0:0&16806:1344:0:0&16930:2544:0:0&16803:3025:0:0&16804:432:0:0&10019:426:0:0&56032:426:0:0&18403:426:0:0&13968:0:0:0&60461:0:0:0&195580:1888:0:0&17103:2504:0:0&61268:0:0:0&17077:0:0:0&5976:0:0:0&nil&0x00000000000D8985&0xF1300000592793C4
+12/13 20:13:28.866  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:28.925  You gain 2 Mana from Holy Champion.
+12/13 20:13:29.948  You gain 1 Mana from Holy Champion.
+12/13 20:13:30.500  PLAYERS_IN_COMBAT: 0/32
+12/13 20:13:30.847  Milkpumper gains 242 health from your Renew.
+12/13 20:13:30.897  You gain 1 Mana from Holy Champion.
+12/13 20:13:31.868  You gain 2 Mana from Holy Champion.
+12/13 20:13:32.927  You gain 2 Mana from Holy Champion.
+12/13 20:13:33.009  Your Flash Heal heals Cielcin for 1143.
+12/13 20:13:33.889  Milkpumper gains 242 health from your Renew.
+12/13 20:13:33.889  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:33.912  You gain 2 Mana from Holy Champion.
+12/13 20:13:34.897  You gain 2 Mana from Holy Champion.
+12/13 20:13:35.880  You gain 2 Mana from Holy Champion.
+12/13 20:13:36.545  Cielcin gains 241 health from your Renew.
+12/13 20:13:36.848  Milkpumper gains 242 health from your Renew.
+12/13 20:13:36.883  You gain 2 Mana from Holy Champion.
+12/13 20:13:37.127  PLAYERS_IN_COMBAT: 1/32
+12/13 20:13:37.892  You gain 1 Mana from Holy Champion.
+12/13 20:13:38.882  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:39.876  Milkpumper gains 242 health from your Renew.
+12/13 20:13:43.855  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:48.888  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:52.128  PLAYERS_IN_COMBAT: 0/32
+12/13 20:13:53.867  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:13:58.872  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:03.856  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:08.853  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:13.881  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:14.596  PLAYERS_IN_COMBAT: 29/32
+12/13 20:14:16.153  You fail to cast Power Word: Shield: Not yet recovered.
+12/13 20:14:17.897  You gain 5 Mana from Holy Champion.
+12/13 20:14:18.851  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:19.663  Your Flash Heal heals Senson for 668.
+12/13 20:14:20.014  You gain 5 Mana from Holy Champion.
+12/13 20:14:21.591  Your Flash Heal heals Cartmanheal for 613.
+12/13 20:14:22.144  PLAYERS_IN_COMBAT: 31/32
+12/13 20:14:22.299  You gain 6 Mana from Holy Champion.
+12/13 20:14:23.895  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:24.678  You are afflicted by Impending Doom (1).
+12/13 20:14:28.867  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:29.884  COMBATANT_INFO: 13.12.25 20:14:29&Nerp&WARRIOR&Gnome&2&nil&Eternal Saints&Eternal Raider&4&nil&18404:107:0:0&196653:0:0:0&60058:0:0:0&61275:928:0:0&47245:92:0:0&196654:0:0:0&61246:904:0:0&47243:904:0:0&21998:904:0:0&9533:107:0:0&17713:107:0:0&61243:0:0:0&11815:0:0:0&61010:849:0:0&58214:1900:0:0&196656:1900:0:0&58239:0:0:0&5976:0:0:0&nil&0x00000000000A2D75&nil
+12/13 20:14:30.238  Senson gains 242 health from your Renew.
+12/13 20:14:31.326  You fail to cast Flash Heal: Interrupted.
+12/13 20:14:32.235  Your Impending Doom is removed.
+12/13 20:14:32.237  COMBATANT_INFO: 13.12.25 20:14:32&Karza&ROGUE&Orc&3&nil&Eternal Saints&Eternal Raider&4&23257:0:0:0&18404:92:0:0&16823:0:0:0&nil&22879:928:0:0&20190:92:0:0&nil&180034:904:0:0&19587:1887:0:0&191250:1887:0:0&19325:92:0:0&19510:92:0:0&61243:0:0:0&13965:0:0:0&20068:849:0:0&14024:1900:0:0&18392:1900:0:0&18680:0:0:0&19505:0:0:0&nil&0x00000000000CD014&nil
+12/13 20:14:32.789  You cast Dispel Magic on Dubolom.
+12/13 20:14:33.182  Senson gains 242 health from your Renew.
+12/13 20:14:33.848  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:34.362  You cast Dispel Magic on Nerp.
+12/13 20:14:36.245  Senson gains 242 health from your Renew.
+12/13 20:14:37.600  Your Flash Heal heals Dorsia for 650.
+12/13 20:14:38.862  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:39.176  Your Flash Heal heals Eladrias for 630.
+12/13 20:14:39.225  Senson gains 242 health from your Renew.
+12/13 20:14:40.776  Your Flash Heal heals Nimichop for 662.
+12/13 20:14:42.213  Senson gains 242 health from your Renew.
+12/13 20:14:42.340  Your Flash Heal critically heals Tuktukbuduk for 958.
+12/13 20:14:43.893  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:44.159  Your Flash Heal heals Grolin for 620.
+12/13 20:14:44.659  You are afflicted by Impending Doom (1).
+12/13 20:14:45.685  COMBATANT_INFO: 13.12.25 20:14:45&Milkpumper&SHAMAN&Tauren&2&nil&Eternal Saints&Eternal Raider&4&191374:1503:0:0&18404:104:0:0&nil&nil&191376:1892:0:0&191377:92:0:0&191378:1843:0:0&191379:1843:0:0&18812:1886:0:0&191380:1843:0:0&58209:104:0:0&19325:104:0:0&13965:0:0:0&11815:0:0:0&191780:1889:0:0&191385:1900:0:0&58242:1704:0:0&58146:0:0:0&nil&nil&0x000000000007C4E9&nil
+12/13 20:14:45.760  You gain 8 Mana from Holy Champion.
+12/13 20:14:47.073  You cast Dispel Magic on Cielcin.
+12/13 20:14:47.628  You gain 11 Mana from Holy Champion.
+12/13 20:14:48.529  Senson gains 242 health from your Renew.
+12/13 20:14:48.607  You fail to cast Dispel Magic: Nothing to dispel.
+12/13 20:14:48.861  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:48.916  You cast Dispel Magic on Mejiro.
+12/13 20:14:49.708  You are afflicted by Lucifron's Curse (1).
+12/13 20:14:49.960  You gain 10 Mana from Holy Champion.
+12/13 20:14:50.539  You cast Dispel Magic on Zoie.
+12/13 20:14:51.521  Senson gains 242 health from your Renew.
+12/13 20:14:51.634  You are afflicted by Frost Shock (1).
+12/13 20:14:52.081  You cast Dispel Magic on Dubolom (Flamewaker Protector).
+12/13 20:14:52.178  You gain 20 Mana from Holy Champion.
+12/13 20:14:53.606  Your Hydraxian Waterlords reputation has increased by 100.
+12/13 20:14:53.681  You cast Dispel Magic on Genzx.
+12/13 20:14:53.872  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:54.351  Your Frost Shock is removed.
+12/13 20:14:54.351  Your Impending Doom is removed.
+12/13 20:14:54.620  You gain 34 Mana from Holy Champion.
+12/13 20:14:55.290  You fail to cast Dispel Magic: Nothing to dispel.
+12/13 20:14:57.847  Your Flash Heal heals Jeli for 681.
+12/13 20:14:58.891  You gain 10 Mana from Holy Champion.
+12/13 20:14:58.891  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:14:59.410  Your Flash Heal heals Nerp for 616.
+12/13 20:14:59.539  You fail to cast Flash Heal: Not enough mana.
+12/13 20:14:59.609  You fail to cast Flash Heal: Not enough mana.
+12/13 20:14:59.609  You fail to cast Flash Heal: Not enough mana.
+12/13 20:15:00.580  You fail to cast Flash Heal: Not enough mana.
+12/13 20:15:00.580  You fail to cast Flash Heal: Not enough mana.
+12/13 20:15:01.863  You gain 1611 Mana from Restore Mana.
+12/13 20:15:02.987  You gain 9 Mana from Holy Champion.
+12/13 20:15:03.852  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:15:04.109  Your Flash Heal heals Cielcin for 611.
+12/13 20:15:05.318  You cast Dispel Magic on Porkins (Flamewaker Protector).
+12/13 20:15:06.889  You cast Dispel Magic on Jeli.
+12/13 20:15:07.190  COMBATANT_INFO: 13.12.25 20:15:07&Valsha&MAGE&BloodElf&3&nil&Eternal Saints&Eternal Raider&4&16914:0:0:0&61703:0:0:0&184225:3017:0:0&nil&55478:426:0:0&184262:0:0:0&16915:426:0:0&nil&47081:432:0:0&169209:931:0:0&61004:2082:0:0&60622:2082:0:0&18820:0:0:0&60464:0:0:0&55056:0:0:0&61006:2504:0:0&19142:0:0:0&61019:0:0:0&nil&nil&0x0000000000079B43&nil
+12/13 20:15:08.850  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:15:09.362  You cast Dispel Magic on Tuktukbuduk.
+12/13 20:15:09.469  You gain 9 Mana from Holy Champion.
+12/13 20:15:11.787  COMBATANT_INFO: 13.12.25 20:15:11&Valheru&HUNTER&BloodElf&3&Whisper&Eternal Saints&Eternal Officer&1&171339:1508:0:0&18404:92:0:0&171340:3017:0:0&60058:0:0:0&171341:928:0:0&171342:92:0:0&nil&171344:1887:0:0&16850:3011:0:0&171345:1887:0:0&61262:92:0:0&17063:92:0:0&13965:0:0:0&18473:0:0:0&177160:849:0:0&177159:2646:0:0&nil&18713:2523:0:0&5976:0:0:0&nil&0x000000000002EE33&0xF14000847E000001
+12/13 20:15:13.867  You gain 36 Mana from Christee's Greater Blessing of Wisdom.
+12/13 20:15:16.054  You gain 59 Mana from Judgement of Wisdom.
+12/13 20:15:16.434  You fail to perform Shoot: Interrupted.
+12/13 20:15:16.638  You fail to cast Renew: Not yet recovered.

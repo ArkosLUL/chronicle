@@ -25,5 +25,16 @@ func NewCoreHoundCharacter(id guid.GUID, all *Characters) (Character, bool) {
 }
 
 func (c *CoreHound) Process(m messages.Message) error {
+	switch data := m.(type) {
+	case messages.Damage:
+		// CoreHounds when they die can still be attacked, but all damage is resisted or
+		// absorbed, resulting in 0 damage. This means the corehound is still dead. If we
+		// ignore 0 damage events, then we all is fixed. If the corehound is revived,
+		// then direct damage will correctly resurrect it.
+		if data.Amount == 0 {
+			return nil
+		}
+	}
+
 	return c.Common.Process(m)
 }

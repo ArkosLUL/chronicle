@@ -1,116 +1,116 @@
 package pubsub_test
 
 import (
-  "context"
-  "testing"
+	"context"
+	"testing"
 
-  "github.com/Emyrk/chronicle/database"
-  "github.com/Emyrk/chronicle/database/dbtestutil"
-  "github.com/Emyrk/chronicle/database/pubsub"
-  "github.com/Emyrk/chronicle/internal/testutil"
-  "github.com/prometheus/client_golang/prometheus"
-  "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/require"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/dbtestutil"
+	"github.com/Emyrk/chronicle/database/pubsub"
+	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPGPubsub_Metrics(t *testing.T) {
-  t.Parallel()
+	t.Parallel()
 
-  logger := testutil.Logger(t)
-  connectionURL, err := dbtestutil.Open(t)
-  require.NoError(t, err)
-  ctx := testutil.Context(t, testutil.WaitLong)
-  db, err := database.NewPostgresDB(ctx, logger, connectionURL)
-  require.NoError(t, err)
-  defer db.Close()
-  registry := prometheus.NewRegistry()
+	logger := testutil.Logger(t)
+	connectionURL, err := dbtestutil.Open(t)
+	require.NoError(t, err)
+	ctx := testutil.Context(t, testutil.WaitLong)
+	db, err := database.NewPostgresDB(ctx, logger, connectionURL)
+	require.NoError(t, err)
+	defer db.Close()
+	registry := prometheus.NewRegistry()
 
-  uut, err := pubsub.New(ctx, logger, db, connectionURL)
-  require.NoError(t, err)
-  defer uut.Close()
+	uut, err := pubsub.New(ctx, logger, db, connectionURL)
+	require.NoError(t, err)
+	defer uut.Close()
 
-  err = registry.Register(uut)
-  require.NoError(t, err)
+	err = registry.Register(uut)
+	require.NoError(t, err)
 
-  // each Gather measures pubsub latency by publishing a message & subscribing to it
-  var gatherCount float64
+	// each Gather measures pubsub latency by publishing a message & subscribing to it
+	var gatherCount float64
 
-  metrics, err := registry.Gather()
-  gatherCount++
-  require.NoError(t, err)
-  require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "chronicle_pubsub_current_events"))
-  require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "chronicle_pubsub_current_subscribers"))
+	metrics, err := registry.Gather()
+	gatherCount++
+	require.NoError(t, err)
+	require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "chronicle_pubsub_current_events"))
+	require.True(t, testutil.PromGaugeHasValue(t, metrics, 0, "chronicle_pubsub_current_subscribers"))
 
-  event := "test"
-  data := "testing"
-  messageChannel := make(chan []byte)
-  unsub0, err := uut.Subscribe(event, func(_ context.Context, message []byte) {
-    messageChannel <- message
-  })
-  require.NoError(t, err)
-  defer unsub0()
-  go func() {
-    err := uut.Publish(event, []byte(data))
-    assert.NoError(t, err)
-  }()
-  _ = testutil.TryReceive(ctx, t, messageChannel)
+	event := "test"
+	data := "testing"
+	messageChannel := make(chan []byte)
+	unsub0, err := uut.Subscribe(event, func(_ context.Context, message []byte) {
+		messageChannel <- message
+	})
+	require.NoError(t, err)
+	defer unsub0()
+	go func() {
+		err := uut.Publish(event, []byte(data))
+		assert.NoError(t, err)
+	}()
+	_ = testutil.TryReceive(ctx, t, messageChannel)
 
-  require.Eventually(t, func() bool {
-    latencyBytes := gatherCount * pubsub.LatencyMessageLength
-    metrics, err = registry.Gather()
-    gatherCount++
-    assert.NoError(t, err)
-    return testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_events") &&
-      testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_subscribers") &&
-      testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_connected") &&
-      testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_publishes_total", "true") &&
-      testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_subscribes_total", "true") &&
-      testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_messages_total", "normal") &&
-      testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "chronicle_pubsub_received_bytes_total") &&
-      testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "chronicle_pubsub_published_bytes_total") &&
-      testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_send_latency_seconds") &&
-      testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_receive_latency_seconds") &&
-      testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_latency_measures_total") &&
-      !testutil.PromCounterGathered(t, metrics, "chronicle_pubsub_latency_measure_errs_total")
-  }, testutil.WaitShort, testutil.IntervalFast)
+	require.Eventually(t, func() bool {
+		latencyBytes := gatherCount * pubsub.LatencyMessageLength
+		metrics, err = registry.Gather()
+		gatherCount++
+		assert.NoError(t, err)
+		return testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_events") &&
+			testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_subscribers") &&
+			testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_connected") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_publishes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_subscribes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_messages_total", "normal") &&
+			testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "chronicle_pubsub_received_bytes_total") &&
+			testutil.PromCounterHasValue(t, metrics, float64(len(data))+latencyBytes, "chronicle_pubsub_published_bytes_total") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_send_latency_seconds") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_receive_latency_seconds") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_latency_measures_total") &&
+			!testutil.PromCounterGathered(t, metrics, "chronicle_pubsub_latency_measure_errs_total")
+	}, testutil.WaitShort, testutil.IntervalFast)
 
-  colossalSize := 7600
-  colossalData := make([]byte, colossalSize)
-  for i := range colossalData {
-    colossalData[i] = 'q'
-  }
-  unsub1, err := uut.Subscribe(event, func(_ context.Context, message []byte) {
-    messageChannel <- message
-  })
-  require.NoError(t, err)
-  defer unsub1()
-  go func() {
-    err := uut.Publish(event, colossalData)
-    assert.NoError(t, err)
-  }()
-  // should get 2 messages because we have 2 subs
-  _ = testutil.TryReceive(ctx, t, messageChannel)
-  _ = testutil.TryReceive(ctx, t, messageChannel)
+	colossalSize := 7600
+	colossalData := make([]byte, colossalSize)
+	for i := range colossalData {
+		colossalData[i] = 'q'
+	}
+	unsub1, err := uut.Subscribe(event, func(_ context.Context, message []byte) {
+		messageChannel <- message
+	})
+	require.NoError(t, err)
+	defer unsub1()
+	go func() {
+		err := uut.Publish(event, colossalData)
+		assert.NoError(t, err)
+	}()
+	// should get 2 messages because we have 2 subs
+	_ = testutil.TryReceive(ctx, t, messageChannel)
+	_ = testutil.TryReceive(ctx, t, messageChannel)
 
-  require.Eventually(t, func() bool {
-    latencyBytes := gatherCount * pubsub.LatencyMessageLength
-    metrics, err = registry.Gather()
-    gatherCount++
-    assert.NoError(t, err)
-    return testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_events") &&
-      testutil.PromGaugeHasValue(t, metrics, 2, "chronicle_pubsub_current_subscribers") &&
-      testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_connected") &&
-      testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "chronicle_pubsub_publishes_total", "true") &&
-      testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "chronicle_pubsub_subscribes_total", "true") &&
-      testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_messages_total", "normal") &&
-      testutil.PromCounterHasValue(t, metrics, 1, "chronicle_pubsub_messages_total", "colossal") &&
-      testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "chronicle_pubsub_received_bytes_total") &&
-      testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "chronicle_pubsub_published_bytes_total") &&
-      testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_send_latency_seconds") &&
-      testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_receive_latency_seconds") &&
-      testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_latency_measures_total") &&
-      !testutil.PromCounterGathered(t, metrics, "chronicle_pubsub_latency_measure_errs_total")
-  }, testutil.WaitShort, testutil.IntervalFast)
+	require.Eventually(t, func() bool {
+		latencyBytes := gatherCount * pubsub.LatencyMessageLength
+		metrics, err = registry.Gather()
+		gatherCount++
+		assert.NoError(t, err)
+		return testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_current_events") &&
+			testutil.PromGaugeHasValue(t, metrics, 2, "chronicle_pubsub_current_subscribers") &&
+			testutil.PromGaugeHasValue(t, metrics, 1, "chronicle_pubsub_connected") &&
+			testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "chronicle_pubsub_publishes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, 1+gatherCount, "chronicle_pubsub_subscribes_total", "true") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_messages_total", "normal") &&
+			testutil.PromCounterHasValue(t, metrics, 1, "chronicle_pubsub_messages_total", "colossal") &&
+			testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "chronicle_pubsub_received_bytes_total") &&
+			testutil.PromCounterHasValue(t, metrics, float64(colossalSize+len(data))+latencyBytes, "chronicle_pubsub_published_bytes_total") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_send_latency_seconds") &&
+			testutil.PromGaugeAssertion(t, metrics, func(in float64) bool { return in > 0 }, "chronicle_pubsub_receive_latency_seconds") &&
+			testutil.PromCounterHasValue(t, metrics, gatherCount, "chronicle_pubsub_latency_measures_total") &&
+			!testutil.PromCounterGathered(t, metrics, "chronicle_pubsub_latency_measure_errs_total")
+	}, testutil.WaitShort, testutil.IntervalFast)
 }
 
 //func TestPGPubsubDriver(t *testing.T) {

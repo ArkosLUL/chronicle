@@ -34,6 +34,7 @@ func TestYouReplacements(t *testing.T) {
     "You fail to cast Renew: A more powerful spell is already active.":                               "",
     "You have slain Stormpike Bowman!":                                                               "Stormpike Bowman is slain by 0x000000000001C7AC.",
     "Your Eviscerate hits Stormpike Bowman for 1088.":                                                "0x000000000001C7AC's Eviscerate hits Stormpike Bowman for 1088.",
+    "0x00000000000AAB93's Flash of Light heals you for 370.":                                         "0x00000000000AAB93's Flash of Light heals 0x000000000001C7AC for 370.",
   }
 
   // Ignore "You" in names

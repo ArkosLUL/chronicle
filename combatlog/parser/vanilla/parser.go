@@ -128,6 +128,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 
 	msgs, err := p.ParseContent(ts, content)
 	if err != nil {
+		fmt.Println(original)
 		return nil, err
 	}
 

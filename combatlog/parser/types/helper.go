@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,31 +12,71 @@ import (
 
 type CompiledRegex interface {
 	MatchString(s string) bool
+	FindString(s string) (CompiledRegexMatch, bool)
 }
 
-type Pattern regexp.Regexp
+type CompiledRegexMatch interface {
+	CaptureByIndex(idx int) string
+}
+
+type compiledRegexActual[T CompiledRegexMatch] interface {
+	MatchString(s string) bool
+	FindString(s string) (T, bool)
+}
+
+type wrap[T CompiledRegexMatch] struct {
+	compiledRegexActual[T]
+}
+
+func (w wrap[T]) FindString(s string) (CompiledRegexMatch, bool) {
+	return w.compiledRegexActual.FindString(s)
+}
+
+func FromCompiled[T CompiledRegexMatch](comp compiledRegexActual[T]) *Pattern {
+	return &Pattern{
+		comp: wrap[T]{compiledRegexActual: comp},
+	}
+}
+
+type Pattern struct {
+	re   *regexp.Regexp
+	comp CompiledRegex
+}
 
 func FromRegex(re *regexp.Regexp) *Pattern {
 	// This was an idea to turn on more strict matching.
 	//re = regexp.MustCompile(re.String() + "$")
-	p := Pattern(*re)
+	p := &Pattern{
+		re: re,
+	}
 
-	return &p
+	return p
 }
 
 func (p *Pattern) Match(content string) (*Matched, bool) {
-	matches := p.regexp().FindStringSubmatch(content)
-	if matches != nil {
-		matches = matches[1:] // Remove the full match
+	var matches []string
+	if p.comp != nil {
+		m, ok := p.comp.FindString(content)
+		if !ok {
+			return nil, false
+		}
+		total := reflect.TypeOf(m).Elem().NumField()
+		matches = make([]string, total)
+		for i := 0; i < total; i++ {
+			matches[i] = m.CaptureByIndex(i)
+		}
+
+	} else if p.re != nil {
+		matches = p.re.FindStringSubmatch(content)
+		if matches != nil {
+			matches = matches[1:]
+		}
 	}
+
 	return &Matched{
 		Values: matches,
 		Index:  1, // First match is at index 1
-	}, matches != nil
-}
-
-func (p *Pattern) regexp() *regexp.Regexp {
-	return (*regexp.Regexp)(p)
+	}, len(matches) > 0
 }
 
 type Matched struct {

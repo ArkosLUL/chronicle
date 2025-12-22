@@ -18,6 +18,8 @@ var characterFactories = []characterFactory{
 	// Molten Core
 	NewCoreHoundCharacter,
 	NewMajordomoPartyCharacter,
+	// Onyxia
+	NewOnyxiaCharacter,
 }
 
 type Characters struct {

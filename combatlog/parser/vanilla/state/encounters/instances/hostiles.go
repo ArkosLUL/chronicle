@@ -147,3 +147,15 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 	}
 	return hostile
 }
+
+func OnyxiaHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	for k := range map[uint32]string{
+		12129: "Onyxian Warder",
+		10184: "Onyxia",
+		11262: "Onyxian Whelp",
+	} {
+		hostile[k] = Identity{Hostile: true}
+	}
+	return hostile
+}

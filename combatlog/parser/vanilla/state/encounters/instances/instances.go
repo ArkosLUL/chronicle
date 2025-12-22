@@ -24,4 +24,10 @@ var (
 		ZoneName: "tower of karazhan",
 		Hostiles: FromMap(TowerOfKarazhanHostiles()),
 	}).New
+
+	Onyxia = (&CommonFactory{
+		Name:     "Onyxia's Lair",
+		ZoneName: "onyxia's lair",
+		Hostiles: FromMap(OnyxiaHostiles()),
+	}).New
 )

@@ -4,8 +4,8 @@ import "github.com/Emyrk/chronicle/combatlog/parser/guid"
 
 // TotemTracking keeps track of what shaman owns what totems.
 type TotemTracking struct {
-  OwnerToTotems map[guid.GUID]guid.GUID
-  TotemsToOwner map[guid.GUID]guid.GUID
+	OwnerToTotems map[guid.GUID]guid.GUID
+	TotemsToOwner map[guid.GUID]guid.GUID
 }
 
 // Raw logs
@@ -20,8 +20,8 @@ type TotemTracking struct {
 // We have to grab this from the normal logs... Ugggh.
 
 func NewTotemTracking() *TotemTracking {
-  return &TotemTracking{
-    OwnerToTotems: make(map[guid.GUID]guid.GUID),
-    TotemsToOwner: make(map[guid.GUID]guid.GUID),
-  }
+	return &TotemTracking{
+		OwnerToTotems: make(map[guid.GUID]guid.GUID),
+		TotemsToOwner: make(map[guid.GUID]guid.GUID),
+	}
 }

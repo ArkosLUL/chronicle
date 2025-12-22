@@ -1,18 +1,18 @@
 package castv2
 
 import (
-  "fmt"
+	"fmt"
 
-  "github.com/Emyrk/chronicle/combatlog/parser/regexs"
-  "github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 )
 
 const (
-  PrefixCast = "CAST:"
+	PrefixCast = "CAST:"
 )
 
 func IsCast(content string) (string, bool) {
-  return types.Is(PrefixCast, content)
+	return types.Is(PrefixCast, content)
 }
 
 // CastV2 is the v2 format of a cast log line.
@@ -28,68 +28,68 @@ func IsCast(content string) (string, bool) {
 // 11/18 19:08:30.447  CAST: 0x000000000001C7AC(Doyd) begins to cast Throw(2764) on 0xF130016738272AB6(Junglepaw Panther).
 // 11/18 19:09:00.402  CAST: 0x000000000001C7AC(Doyd) channels First Aid(7927)(Rank 6) on 0x000000000001C7AC(Doyd).
 type CastV2 struct {
-  Caster types.Unit
-  Action types.CastActions
-  Target *types.Unit
-  Spell  types.Spell
+	Caster types.Unit
+	Action types.CastActions
+	Target *types.Unit
+	Spell  types.Spell
 }
 
 func ParseCast(content string) (CastV2, error) {
-  trimmed, ok := IsCast(content)
-  if !ok {
-    return CastV2{}, fmt.Errorf("not a CAST message")
-  }
+	trimmed, ok := IsCast(content)
+	if !ok {
+		return CastV2{}, fmt.Errorf("not a CAST message")
+	}
 
-  matched, ok := types.FromRegex(regexs.ReV2CastsRankTarget).Match(trimmed)
-  if ok {
-    return parseCastWithTarget(matched)
-  }
+	matched, ok := types.FromRegex(regexs.ReV2CastsRankTarget).Match(trimmed)
+	if ok {
+		return parseCastWithTarget(matched)
+	}
 
-  matched, ok = types.FromRegex(regexs.ReV2Cast).Match(trimmed)
-  if ok {
-    return parseCastSimple(matched)
-  }
+	matched, ok = types.FromRegex(regexs.ReV2Cast).Match(trimmed)
+	if ok {
+		return parseCastSimple(matched)
+	}
 
-  return CastV2{}, fmt.Errorf("CAST failed: %s", content)
+	return CastV2{}, fmt.Errorf("CAST failed: %s", content)
 }
 
 // parseCastWithTarget is just the simple + target match
 // The rest is the same order
 func parseCastWithTarget(matched *types.Matched) (CastV2, error) {
-  c, err := parseCastSimple(matched)
-  if err != nil {
-    return CastV2{}, err
-  }
-  target := matched.Unit()
-  c.Target = &target
-  return c, matched.Error()
+	c, err := parseCastSimple(matched)
+	if err != nil {
+		return CastV2{}, err
+	}
+	target := matched.Unit()
+	c.Target = &target
+	return c, matched.Error()
 }
 
 func parseCastSimple(matched *types.Matched) (CastV2, error) {
-  caster := matched.Unit()
-  action := matched.String()
-  spell := matched.String()
+	caster := matched.Unit()
+	action := matched.String()
+	spell := matched.String()
 
-  act, err := types.ParseCastActions(action)
-  if err != nil {
-    return CastV2{}, fmt.Errorf("action: %v", err)
-  }
+	act, err := types.ParseCastActions(action)
+	if err != nil {
+		return CastV2{}, fmt.Errorf("action: %v", err)
+	}
 
-  sp, err := types.ParseSpell(spell)
-  if err != nil {
-    return CastV2{}, fmt.Errorf("spell: %v", err)
-  }
+	sp, err := types.ParseSpell(spell)
+	if err != nil {
+		return CastV2{}, fmt.Errorf("spell: %v", err)
+	}
 
-  return CastV2{
-    Caster: caster,
-    Action: act,
-    Target: nil,
-    Spell:  sp,
-  }, matched.Error()
+	return CastV2{
+		Caster: caster,
+		Action: act,
+		Target: nil,
+		Spell:  sp,
+	}, matched.Error()
 }
 
 func (c CastV2) HasGUIDs() bool {
-  return !c.Caster.Gid.IsZero() && (c.Target == nil || !c.Target.Gid.IsZero())
+	return !c.Caster.Gid.IsZero() && (c.Target == nil || !c.Target.Gid.IsZero())
 }
 
 // CastV2 v2 formats -- Raw has GUID(name)

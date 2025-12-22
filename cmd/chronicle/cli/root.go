@@ -30,7 +30,7 @@ func RootCmd() *serpent.Command {
 		GuidCmd(),
 		SortCmd(),
 		ClientFiles(),
-    ExtractCmd(),
+		ExtractCmd(),
 	)
 
 	return cmd

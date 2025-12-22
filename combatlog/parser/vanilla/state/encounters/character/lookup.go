@@ -17,7 +17,7 @@ var characterFactories = []characterFactory{
 	NewCritterCharacter,
 	// Molten Core
 	NewCoreHoundCharacter,
-  NewMajordomoPartyCharacter,
+	NewMajordomoPartyCharacter,
 }
 
 type Characters struct {

@@ -65,12 +65,8 @@ func (p *Pattern) Match(content string) (*Matched, bool) {
 		for i := 0; i < total; i++ {
 			matches[i] = m.CaptureByIndex(i)
 		}
-		matches = matches[1:]
 	} else if p.re != nil {
 		matches = p.re.FindStringSubmatch(content)
-		if matches != nil {
-			matches = matches[1:]
-		}
 	}
 
 	return &Matched{
@@ -127,7 +123,7 @@ func (m *Matched) Trailer() Trailer                { return parse(m, ParseTraile
 func (m *Matched) School() School                  { return parse(m, ParseSchool) }
 
 func (m *Matched) Rest() []string {
-	rest := m.Values[m.Index-1:]
+	rest := m.Values[m.Index:]
 	m.Index = len(m.Values) + 1
 	return rest
 }
@@ -167,19 +163,19 @@ func (m *Matched) Error() error {
 
 // nolint: unused
 func (m *Matched) peek() string {
-	if m.Index-1 >= len(m.Values) {
+	if m.Index >= len(m.Values) {
 		m.errs = append(m.errs, errors.New("index out of range"))
 		return ""
 	}
-	return m.Values[m.Index-1]
+	return m.Values[m.Index]
 }
 
 func (m *Matched) pop() string {
-	if m.Index-1 >= len(m.Values) {
+	if m.Index >= len(m.Values) {
 		m.errs = append(m.errs, errors.New("index out of range"))
 		return ""
 	}
-	val := m.Values[m.Index-1]
+	val := m.Values[m.Index]
 	m.Index++
 	return val
 }

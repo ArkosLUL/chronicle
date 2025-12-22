@@ -8,6 +8,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs/compiled"
+	"github.com/Emyrk/chronicle/combatlog/parser/regexs/compiled/matchers"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
@@ -134,7 +135,7 @@ func (p *Parser) fBugDamageSpellHitOrCrit(ts time.Time, content string) ([]messa
 // 10/29 22:09:42.175  Randgriz 's Flash Heal critically heals Katrix for 2534.
 func (p *Parser) fSpellCastAttempt(ts time.Time, content string) ([]messages.Message, error) {
 	//matched := regexs.CompiledCompiledReSpellCastAttempt.MatchString(content)
-	matched := regexs.ReSpellCastAttempt.MatchString(content)
+	matched := compiled.CompiledReSpellCastAttempt.MatchString(content)
 	if !matched {
 		return messages.NotHandled()
 	}
@@ -143,7 +144,7 @@ func (p *Parser) fSpellCastAttempt(ts time.Time, content string) ([]messages.Mes
 }
 
 func (p *Parser) fGain(ts time.Time, content string) ([]messages.Message, error) {
-	matched, ok := types.FromRegex(regexs.ReGain).Match(content)
+	matched, ok := matchers.ReGain().Match(content)
 	if !ok {
 		return messages.NotHandled()
 	}

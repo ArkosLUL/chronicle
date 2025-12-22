@@ -17,3 +17,7 @@ func ReCreates() *types.Pattern {
   return types.FromCompiled[*compiled.ReCreatesResult](compiled.CompiledReCreates)
 }
 
+func ReGain() *types.Pattern {
+  return types.FromCompiled[*compiled.ReGainResult](compiled.CompiledReGain)
+}
+

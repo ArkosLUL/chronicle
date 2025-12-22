@@ -142,6 +142,13 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 }
 
 func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message, error) {
+	if p.metrics.UnmatchingTime == nil {
+		p.metrics.UnmatchingTime = make(map[string]time.Duration)
+	}
+	if p.metrics.MatchingTime == nil {
+		p.metrics.MatchingTime = make(map[string]time.Duration)
+	}
+
 	start := time.Now()
 	p.initMatchers.Do(func() {
 		p.matchers = []parseLine{

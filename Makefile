@@ -1,6 +1,7 @@
 .PHONY: install
 install:
 	go install ./cmd/chronicle
+	go install ./cmd/chronicled
 
 .PHONY: wasm
 wasm:

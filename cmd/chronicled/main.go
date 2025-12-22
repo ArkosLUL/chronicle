@@ -1,4 +1,4 @@
-package chronicled
+package main
 
 import (
 	"context"

@@ -1,36 +1,67 @@
 package api
 
 import (
-	"context"
+  "context"
+  "fmt"
+  "net/http"
 
-	"github.com/Emyrk/chronicle/api/httpmw"
-	"github.com/go-chi/chi/v5"
-	"github.com/prometheus/client_golang/prometheus"
+  "github.com/Emyrk/chronicle/api/chronauth"
+  "github.com/Emyrk/chronicle/api/httpapi"
+  "github.com/Emyrk/chronicle/api/httpmw"
+  "github.com/go-chi/chi/v5"
+  "github.com/go-pkgz/auth/v2/token"
+  "github.com/prometheus/client_golang/prometheus"
 )
 
 type Options struct {
-	Registry *prometheus.Registry
+  Registry  *prometheus.Registry
+  AccessURL string
 }
 
 type API struct {
-	Opts *Options
+  Opts *Options
 }
 
 func New(ctx context.Context, opts Options) (*API, error) {
-	if opts.Registry == nil {
-		opts.Registry = prometheus.NewRegistry()
-	}
-	return &API{
-		Opts: &opts,
-	}, nil
+  if opts.Registry == nil {
+    opts.Registry = prometheus.NewRegistry()
+  }
+  return &API{
+    Opts: &opts,
+  }, nil
 }
 
 func (api *API) Routes() chi.Router {
-	r := chi.NewRouter()
-	r.Use(
-		httpmw.NoWWW(),
-		httpmw.PrometheusMW(api.Opts.Registry),
-	)
+  service := chronauth.Service(api.Opts.AccessURL)
+  authMW := service.Middleware()
 
-	return r
+  r := chi.NewRouter()
+  r.Use(
+    httpmw.NoWWW(),
+    httpmw.PrometheusMW(api.Opts.Registry),
+  )
+
+  r.Get("/", func(writer http.ResponseWriter, request *http.Request) {
+    _, _ = fmt.Fprintf(writer, "Hello, %s!", request.URL.Path[1:])
+  })
+
+  r.With(authMW.Auth).Get("/private", func(w http.ResponseWriter, r *http.Request) {
+    usr, err := token.GetUserInfo(r)
+    if err != nil {
+      http.Error(w, "Unauthorized", http.StatusUnauthorized)
+      return
+    }
+    httpapi.Write(r.Context(), w, http.StatusOK, usr)
+  })
+
+  r.Get("/", func(writer http.ResponseWriter, request *http.Request) {
+    _, _ = fmt.Fprintf(writer, "Hello, %s!", request.URL.Path[1:])
+  })
+
+  // Auth routes
+  authRoutes, avaRoutes := service.Handlers()
+  r.Mount("/auth", authRoutes)
+  r.Mount("/ava", avaRoutes)
+
+  return r
 }

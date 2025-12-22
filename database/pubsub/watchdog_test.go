@@ -1,13 +1,11 @@
 package pubsub_test
 
 import (
-	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"cdr.dev/slog/sloggers/slogtest"
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/coder/quartz"
@@ -75,7 +73,7 @@ func TestWatchdog_Timeout(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Context(t, testutil.WaitShort)
 	mClock := quartz.NewMock(t)
-	logger := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true}).Leveled(slog.LevelDebug)
+	logger := testutil.Logger(t)
 	fPS := newFakePubsub()
 
 	// trap the ticker calls

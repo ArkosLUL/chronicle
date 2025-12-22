@@ -3,13 +3,13 @@ package pubsub_test
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/dbtestutil"
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/internal/testutil"
@@ -34,7 +34,7 @@ func TestPubsub(t *testing.T) {
 
 		connectionURL, err := dbtestutil.Open(t)
 		require.NoError(t, err)
-		db, err := sql.Open("postgres", connectionURL)
+		db, err := database.NewPostgresDB(ctx, logger, connectionURL)
 		require.NoError(t, err)
 		defer db.Close()
 		pubsub, err := pubsub.New(ctx, logger, db, connectionURL)
@@ -62,7 +62,7 @@ func TestPubsub(t *testing.T) {
 		logger := testutil.Logger(t)
 		connectionURL, err := dbtestutil.Open(t)
 		require.NoError(t, err)
-		db, err := sql.Open("postgres", connectionURL)
+		db, err := database.NewPostgresDB(ctx, logger, connectionURL)
 		require.NoError(t, err)
 		defer db.Close()
 		pubsub, err := pubsub.New(ctx, logger, db, connectionURL)
@@ -77,7 +77,7 @@ func TestPubsub(t *testing.T) {
 		logger := testutil.Logger(t)
 		connectionURL, err := dbtestutil.Open(t)
 		require.NoError(t, err)
-		db, err := sql.Open("postgres", connectionURL)
+		db, err := database.NewPostgresDB(ctx, logger, connectionURL)
 		require.NoError(t, err)
 		defer db.Close()
 		pubsub, err := pubsub.New(ctx, logger, db, connectionURL)
@@ -113,7 +113,7 @@ func TestPubsub_ordering(t *testing.T) {
 
 	connectionURL, err := dbtestutil.Open(t)
 	require.NoError(t, err)
-	db, err := sql.Open("postgres", connectionURL)
+	db, err := database.NewPostgresDB(ctx, logger, connectionURL)
 	require.NoError(t, err)
 	defer db.Close()
 	ps, err := pubsub.New(ctx, logger, db, connectionURL)
@@ -158,13 +158,15 @@ func TestPubsub_Disconnect(t *testing.T) {
 	connectionURL, closePg, err := dbtestutil.OpenContainerized(t, dbtestutil.DBContainerOptions{Port: disconnectTestPort})
 	require.NoError(t, err)
 	defer closePg()
-	db, err := sql.Open("postgres", connectionURL)
+	ctx := testutil.Context(t, testutil.WaitLong)
+	logger := testutil.Logger(t)
+
+	db, err := database.NewPostgresDB(ctx, logger, connectionURL)
 	require.NoError(t, err)
 	defer db.Close()
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), testutil.WaitSuperLong)
 	defer cancelFunc()
-	logger := testutil.Logger(t)
 	ps, err := pubsub.New(ctx, logger, db, connectionURL)
 	require.NoError(t, err)
 	defer ps.Close()
@@ -295,17 +297,17 @@ func TestMeasureLatency(t *testing.T) {
 		logger := testutil.Logger(t)
 		connectionURL, err := dbtestutil.Open(t)
 		require.NoError(t, err)
-		db, err := sql.Open("postgres", connectionURL)
+		db, err := database.NewPostgresDB(ctx, logger, connectionURL)
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			_ = db.Close()
+			db.Close()
 		})
 		ps, err := pubsub.New(ctx, logger, db, connectionURL)
 		require.NoError(t, err)
 
 		return ps, func() {
 			_ = ps.Close()
-			_ = db.Close()
+			db.Close()
 			cancel()
 		}
 	}

@@ -12,6 +12,8 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@nivo/bar": "^0.99.0",
+    "@nivo/core": "^0.99.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@storybook/nextjs-vite": "^10.1.10",
     "@storybook/vue3-vite": "^10.1.10",

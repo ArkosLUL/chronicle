@@ -77,6 +77,17 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /*  WoW Colors : https://wowwiki-archive.fandom.com/wiki/Class_colors*/
+  --color-class-warrior: #C79C6E;
+  --color-class-mage: #69CCF0;
+  --color-class-rogue: #FFF569;
+  --color-class-priest: #FFFFFF;
+  --color-class-warlock: #9482C9;
+  --color-class-hunter: #ABD473;
+  --color-class-shaman: #0070DE;
+  --color-class-paladin: #F58CBA;
+  --color-class-druid: #FF7D0A;
 }
 
 .dark {

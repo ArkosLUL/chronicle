@@ -56,46 +56,6 @@ const denseMockData: PlayerMetricChartData[] = [
   { playerName: "Pcn", className: "Mage", specialization: "Arcane", value: 6.9 },
 ]
 
-// Simple icon component (you'd use real WoW spec icons in production)
-const SpecIcon = ({ className, spec }: { className: string; spec: string }) => {
-  const getIconEmoji = (className: string) => {
-    const iconMap: Record<string, string> = {
-      'Death Knight': '⚔️',
-      'Demon Hunter': '😈',
-      'Druid': '🐻',
-      'Evoker': '🐉',
-      'Hunter': '🏹',
-      'Mage': '✨',
-      'Monk': '🥋',
-      'Paladin': '⚡',
-      'Priest': '✝️',
-      'Rogue': '🗡️',
-      'Shaman': '⚡',
-      'Warlock': '💀',
-      'Warrior': '🛡️',
-    }
-    return iconMap[className] || '⚔️'
-  }
-
-  return (
-    <div
-      style={{
-        width: '24px',
-        height: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '16px',
-        borderRadius: '4px',
-        background: 'oklch(0.269 0 0)',
-      }}
-      title={`${spec} ${className}`}
-    >
-      {getIconEmoji(className)}
-    </div>
-  )
-}
-
 export const Default: Story = {
   args: {
     data: mockRaidData,
@@ -105,7 +65,6 @@ export const Default: Story = {
 export const WithIcons: Story = {
   args: {
     data: mockRaidData,
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
   },
 }
 
@@ -113,7 +72,6 @@ export const DenseLayout: Story = {
   args: {
     data: denseMockData,
     barHeight: 32,
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
   },
 }
 
@@ -121,13 +79,14 @@ export const VeryDense: Story = {
   args: {
     data: denseMockData,
     barHeight: 24,
+    height: 400,
   },
 }
 
 export const CustomHeight: Story = {
   args: {
     data: mockRaidData.slice(0, 5),
-    height: 400,
+    maxHeight: 400,
   },
 }
 

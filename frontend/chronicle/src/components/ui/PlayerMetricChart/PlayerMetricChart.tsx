@@ -1,4 +1,3 @@
-import { ResponsiveBar } from '@nivo/bar'
 import { useMemo } from 'react'
 
 export interface PlayerMetricChartData {
@@ -8,195 +7,177 @@ export interface PlayerMetricChartData {
   value: number
 }
 
-interface PlayerMetricChartProps {
+interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   data: PlayerMetricChartData[]
-  height?: number
   /**
-   * Height of each bar in pixels. Lower values make the chart more dense.
-   * @default 40
+   * Height of each row in pixels
+   * @default 36
    */
-  barHeight?: number
+  rowHeight?: number
+  /**
+   * Show rank numbers
+   * @default true
+   */
+  showRank?: boolean
 }
 
 export function PlayerMetricChart({
-    data,
-    height,
-    barHeight = 40,
-  }: PlayerMetricChartProps) {
-  // Transform data for Nivo
-  const chartData = useMemo(
-    () =>
-      data.map((item) => ({
-        ...item,
-        id: item.playerName,
-        color: `var(--color-class-${item.className.toLowerCase()})`,
-      })).sort((a,b) => a.value - b.value), // Sort by value
-    [data]
-  )
+  data,
+  rowHeight = 36,
+  showRank = true,
+  className,
+  style,
+  ...divProps
+}: PlayerMetricChartProps) {
+  const summedValue = useMemo(() => {
+    return data.reduce((sum, item) => sum + item.value, 0)
+  }, [data])
 
-  // Calculate chart height based on data length if not provided
-  const chartHeight = height ?? Math.max(data.length * barHeight + 80, 300)
+  const maximumValue = useMemo(() => {
+    return Math.max(...data.map((item) => item.value))
+  }, [data])
 
-  // Get CSS custom properties for theme integration
-  const styles = getComputedStyle(document.documentElement)
-  const textColor = styles.getPropertyValue('--color-foreground').trim() || 'oklch(0.145 0 0)'
-  const gridColor = styles.getPropertyValue('--color-border').trim() || 'oklch(0.922 0 0)'
-  const mutedColor = styles.getPropertyValue('--color-muted-foreground').trim() || 'oklch(0.556 0 0)'
+  // Sort by value descending and calculate percentages
+  const chartData = useMemo(() => {
+    const sorted = [...data].sort((a, b) => b.value - a.value)
+    return sorted.map((item, index) => ({
+      ...item,
+      rank: index + 1,
+      color: `var(--color-class-${item.className.toLowerCase()})`,
+    }))
+  }, [data])
+
+  const formatDPS = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000).toLocaleString()} DPS`
+    return `${value.toLocaleString()} DPS`
+  }
 
   return (
-    <div style={{ height: chartHeight, width: '100%' }}>
-      <ResponsiveBar
-        data={chartData}
-        keys={['value']}
-        indexBy="playerName"
-        layout="horizontal"
-        margin={{ top: 20, right: 30, bottom: 40, left: 180 }}
-        padding={0.2}
-        valueScale={{ type: 'linear' }}
-        indexScale={{ type: 'band', round: true }}
-        colors={(bar) => bar.data.color}
-        borderRadius={4}
-        borderWidth={0}
-        axisTop={null}
-        axisRight={null}
-        axisBottom={{
-          tickSize: 5,
-          tickPadding: 5,
-          tickRotation: 0,
-          legend: 'DPS',
-          legendPosition: 'middle',
-          legendOffset: 32,
-          tickValues: 5,
-          format: (value) => {
-            if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
-            if (value >= 1000) return `${(value / 1000).toFixed(0)}k`
-            return value.toString()
-          },
-        }}
-        axisLeft={{
-          tickSize: 0,
-          tickPadding: 12,
-          tickRotation: 0,
-          renderTick: (tick) => {
-            const playerData = chartData.find((d) => d.playerName === tick.value)
-            if (!playerData) return null
-
-            return (
-              <g transform={`translate(${tick.x - 10},${tick.y})`}>
-                {/* Custom icon if provided */}
-                {/*<img src={"/icons/class_mage.png"} />*/}
-
-                <foreignObject x={-160} y={-12} width={24} height={24}>
-                  <img src={`/icons/class_${playerData.className.toLowerCase()}.png`} />
-                </foreignObject>
-                {/* Player name */}
-                <text
-                  x={-10}
-                  y={0}
-                  dy="0.35em"
-                  textAnchor="end"
-                  style={{
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    fill: textColor,
-                  }}
-                >
-                  {tick.value}
-                </text>
-                {/* Specialization */}
-                <text
-                  x={-10}
-                  y={0}
-                  dy="1.5em"
-                  textAnchor="end"
-                  style={{
-                    fontSize: '11px',
-                    fill: mutedColor,
-                  }}
-                >
-                  {playerData.specialization}
-                </text>
-              </g>
-            )
-          },
-        }}
-        enableGridY={false}
-        enableGridX={true}
-        gridXValues={5}
-        enableLabel={true}
-        label={(d) => {
-          const value = d.value as number
-          if (value >= 1000000) return `${(value / 1000000).toFixed(2)}M`
-          if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
-          return value.toString()
-        }}
-        labelSkipWidth={12}
-        labelSkipHeight={12}
-        labelTextColor="oklch(0.985 0 0)"
-        theme={{
-          axis: {
-            ticks: {
-              text: {
-                fill: mutedColor,
-                fontSize: 12,
-              },
-            },
-            legend: {
-              text: {
-                fill: textColor,
-                fontSize: 13,
-                fontWeight: 600,
-              },
-            },
-          },
-          grid: {
-            line: {
-              stroke: gridColor,
-              strokeWidth: 1,
-            },
-          },
-          tooltip: {
-            container: {
+    <div
+      style={{
+        height: "400px",
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        background: 'oklch(0.145 0 0)',
+        borderRadius: '8px',
+        ...style,
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}>
+        {chartData.map((player) => (
+          <div
+            key={player.playerName}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              height: rowHeight,
+              position: 'relative',
               background: 'oklch(0.205 0 0)',
-              color: 'oklch(0.985 0 0)',
-              fontSize: '12px',
-              borderRadius: '6px',
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-              padding: '8px 12px',
-            },
-          },
-        }}
-        tooltip={({ data }) => {
-          const playerData = data as PlayerMetricChartData & { color: string }
-          return (
+              borderRadius: '4px',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Colored bar background */}
             <div
               style={{
-                background: 'oklch(0.205 0 0)',
-                color: 'oklch(0.985 0 0)',
-                padding: '10px 14px',
-                borderRadius: '6px',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-                border: `2px solid ${playerData.color}`,
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: `${(player.value / maximumValue) * 100}%`,
+                background: player.color,
+                opacity: 0.85,
+                transition: 'width 0.3s ease',
+              }}
+            />
+
+            {/* Content overlay */}
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                padding: '0 12px',
+                zIndex: 1,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                {/* {false && <div style={{ width: '20px', height: '20px' }}>{renderIcon(playerData)}</div>} */}
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{playerData.playerName}</div>
-                  <div style={{ fontSize: '11px', color: 'oklch(0.708 0 0)' }}>
-                    {playerData.specialization} {playerData.className}
-                  </div>
-                </div>
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '4px' }}>
-                {playerData.value.toLocaleString()} DPS
-              </div>
+              {/* Rank */}
+              {showRank && (
+                <span
+                  style={{
+                    width: '32px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: 'oklch(0.708 0 0)',
+                  }}
+                >
+                  #{player.rank}
+                </span>
+              )}
+
+              {/* Icon */}
+              <img
+                src={`/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
+                alt={player.specialization}
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  marginRight: '8px',
+                  borderRadius: '2px',
+                }}
+                onError={(e) => {
+                  // Fallback to class icon if spec icon not found
+                  e.currentTarget.src = `/icons/class_${player.className.toLowerCase()}.png`
+                }}
+              />
+
+              {/* Spec name */}
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--color-primary-foreground)',//'oklch(0.985 0 0)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {player.playerName}
+              </span>
+
+              {/* DPS value */}
+              <span
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'oklch(0.985 0 0)',
+                  background: 'oklch(0.205 0 0 / 0.7)',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  marginRight: '12px',
+                }}
+              >
+                {formatDPS(player.value)}
+              </span>
+
+              {/* Percentage */}
+              <span
+                style={{
+                  width: '50px',
+                  textAlign: 'right',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'oklch(0.708 0 0)',
+                }}
+              >
+                {((player.value/summedValue)*100).toFixed(2)}%
+              </span>
             </div>
-          )
-        }}
-        animate={true}
-        motionConfig="gentle"
-      />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

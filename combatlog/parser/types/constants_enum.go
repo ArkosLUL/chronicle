@@ -144,6 +144,50 @@ func ParseChangeDirection(name string) (ChangeDirection, error) {
 }
 
 const (
+	// EncounterTypeUNKNOWN is a EncounterType of type UNKNOWN.
+	EncounterTypeUNKNOWN EncounterType = "UNKNOWN"
+	// EncounterTypeTRASH is a EncounterType of type TRASH.
+	EncounterTypeTRASH EncounterType = "TRASH"
+	// EncounterTypeBOSS is a EncounterType of type BOSS.
+	EncounterTypeBOSS EncounterType = "BOSS"
+)
+
+var ErrInvalidEncounterType = errors.New("not a valid EncounterType")
+
+// String implements the Stringer interface.
+func (x EncounterType) String() string {
+	return string(x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x EncounterType) IsValid() bool {
+	_, err := ParseEncounterType(string(x))
+	return err == nil
+}
+
+var _EncounterTypeValue = map[string]EncounterType{
+	"UNKNOWN": EncounterTypeUNKNOWN,
+	"unknown": EncounterTypeUNKNOWN,
+	"TRASH":   EncounterTypeTRASH,
+	"trash":   EncounterTypeTRASH,
+	"BOSS":    EncounterTypeBOSS,
+	"boss":    EncounterTypeBOSS,
+}
+
+// ParseEncounterType attempts to convert a string to a EncounterType.
+func ParseEncounterType(name string) (EncounterType, error) {
+	if x, ok := _EncounterTypeValue[name]; ok {
+		return x, nil
+	}
+	// Case insensitive parse, do a separate lookup to prevent unnecessary cost of lowercasing a string if we don't need to.
+	if x, ok := _EncounterTypeValue[strings.ToLower(name)]; ok {
+		return x, nil
+	}
+	return EncounterType(""), fmt.Errorf("%s is %w", name, ErrInvalidEncounterType)
+}
+
+const (
 	// EnvironmentTypeFall is a EnvironmentType of type fall.
 	EnvironmentTypeFall EnvironmentType = "fall"
 	// EnvironmentTypeLava is a EnvironmentType of type lava.

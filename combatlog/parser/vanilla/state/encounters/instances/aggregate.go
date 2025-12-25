@@ -1,4 +1,4 @@
-package fight
+package instances
 
 import (
 	"fmt"
@@ -8,10 +8,22 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/diagnostic"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
+
+// Encounter represents a named combat period in the logs.
+type Encounter struct {
+	// Name is the identifier for this encounter.
+	Name string
+	Type types.EncounterType
+
+	// Period identifies the start/end of combat
+	Combat Fight
+	// If it is not a kill, it is a wipe (or reset)
+	IsKill bool
+}
 
 // Fight represents a single combat encounter with one or more hostile creatures.
 // A fight starts when the first hostile becomes active and ends when the last
@@ -28,6 +40,15 @@ type Fight struct {
 
 	// End is the latest end time across all hostile activity periods.
 	End time.Time
+}
+
+func (f Fight) IsKill() bool {
+	for _, h := range f.Hostiles {
+		if !h.Activity[len(h.Activity)-1].Slain {
+			return false
+		}
+	}
+	return true
 }
 
 func (f Fight) NamedString(db *unitdb.Units) string {
@@ -72,7 +93,7 @@ type CharacterFight struct {
 //
 // Activities are considered part of the same fight if they start within
 // the cooldown window (60 seconds) of the current fight's end time.
-func AggregateFights(inst instances.Instance) ([]Fight, diagnostic.Diagnostics) {
+func AggregateFights(inst Instance) ([]Fight, diagnostic.Diagnostics) {
 	characters := inst.CharactersList()
 	var diags diagnostic.Diagnostics
 
@@ -84,7 +105,7 @@ func AggregateFights(inst instances.Instance) ([]Fight, diagnostic.Diagnostics) 
 
 	var allActivities []activityWithChar
 	for id, char := range characters {
-		info := inst.Identify(id)
+		info := inst.IdentifyUnit(id)
 		if !info.Hostile {
 			// Skip non-hostile characters
 			continue

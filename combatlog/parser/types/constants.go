@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// TODO: Can add like "Event" for gauntlet/suppression room style stuff
+// ENUM(UNKNOWN,TRASH,BOSS)
+type EncounterType string
+
 // ENUM(fall,lava)
 type EnvironmentType string
 

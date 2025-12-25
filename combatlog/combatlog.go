@@ -1,52 +1,65 @@
 package combatlog
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"io"
-	"log/slog"
+  "context"
+  "fmt"
+  "io"
+  "log/slog"
 
-	"github.com/Emyrk/chronicle/combatlog/consumers"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
+  "github.com/Emyrk/chronicle/combatlog/consumers"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 type Output struct {
-	Fights map[string][]fight.Fight
+  // Units spans all instances
+  Units *unitdb.Units
+
+  Instances map[string]InstanceOutput
+}
+
+type InstanceOutput struct {
+  Encounters []instances.Encounter
 }
 
 func CombatLogs(ctx context.Context, logger *slog.Logger, formatted, raw io.Reader) (*Output, error) {
-	m := vanilla.Merger(logger)
-	liner, scan, err := m.LineScanner(ctx, formatted, raw)
-	if err != nil {
-		return nil, fmt.Errorf("create line scanner: %w", err)
-	}
+  m := vanilla.Merger(logger)
+  liner, scan, err := m.LineScanner(ctx, formatted, raw)
+  if err != nil {
+    return nil, fmt.Errorf("create line scanner: %w", err)
+  }
 
-	output := Output{
-		Fights: make(map[string][]fight.Fight),
-	}
-	p := vanilla.NewFromScanner(logger, liner, scan)
+  output := Output{
+    Instances: make(map[string]InstanceOutput),
+  }
+  p := vanilla.NewFromScanner(logger, liner, scan)
 
-	// Encounters/Fights
-	enc := encounters.New(logger)
+  // Encounters/Fights
+  enc := encounters.New(logger)
 
-	c := consumers.New(logger, enc)
-	err = c.ConsumeAll(ctx, p)
-	if err != nil {
-		return nil, fmt.Errorf("consume all: %w", err)
-	}
+  c := consumers.New(logger, enc)
+  err = c.ConsumeAll(ctx, p)
+  if err != nil {
+    return nil, fmt.Errorf("consume all: %w", err)
+  }
 
-	// Aggregation
-	for _, inst := range enc.Instances {
-		fights, diags := fight.AggregateFights(inst)
-		if diags.HasErrors() {
-			return nil, errors.Join(diags.Errs()...)
-		}
+  // Take the DB from the encounters consumer
+  output.Units = enc.Units
 
-		output.Fights[inst.Name()] = append(output.Fights[inst.Name()], fights...)
-	}
+  // Aggregation from consumers. This output needs to be stored somewhere.
+  for _, inst := range enc.Instances {
+    key := inst.Zone().ID()
+    encrs, err := inst.Finalize(ctx)
+    if err != nil {
+      return nil, fmt.Errorf("finalize instance: %w", err)
+    }
 
-	return &output, nil
+    output.Instances[key] = InstanceOutput{
+      Encounters: encrs,
+    }
+  }
+
+  return &output, nil
 }

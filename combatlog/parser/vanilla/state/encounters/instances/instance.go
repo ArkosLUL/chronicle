@@ -1,6 +1,8 @@
 package instances
 
 import (
+	"context"
+
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -9,6 +11,8 @@ import (
 
 type Identity struct {
 	Hostile bool
+	// EncounterName, if set, will be used to identify a named encounter.
+	EncounterName string
 }
 
 // Instance represents a dungeon or raid instance
@@ -25,9 +29,13 @@ type Instance interface {
 	// CharactersList returns the list of characters in this instance and their
 	// associated activity and additional data.
 	CharactersList() map[guid.GUID]character.Character
-	// Identify returns any hard coded identity information for the given GUID in the
+	// IdentifyUnit returns any hard coded identity information for the given GUID in the
 	// instance.
-	Identify(id guid.GUID) Identity
+	IdentifyUnit(id guid.GUID) Identity
+	// Zone returns the zone of this instance
+	Zone() zone.Zone
+
+	Finalize(ctx context.Context) ([]Encounter, error)
 }
 
 type Identifier struct {
@@ -40,7 +48,7 @@ func NewIdentifier(byEntryId map[uint32]Identity) *Identifier {
 	}
 }
 
-func (i *Identifier) Identify(id guid.GUID) Identity {
+func (i *Identifier) IdentifyUnit(id guid.GUID) Identity {
 	if id.IsPlayer() {
 		return Identity{Hostile: false}
 	}

@@ -54,12 +54,16 @@ func (pc *PeriodCollector[M]) Start(p M, reason string, m messages.Message) {
 }
 
 // End ends the current period if one is active.
-func (pc *PeriodCollector[M]) End(reason string, m messages.Message) {
+func (pc *PeriodCollector[M]) End(reason string, m messages.Message, slain bool) {
 	cur, ok := pc.Current()
 	if !ok {
 		return
 	}
-	cur.Close(reason, m)
+	if slain {
+		cur.Slain(reason, m)
+	} else {
+		cur.Close(reason, m)
+	}
 }
 
 func (pc *PeriodCollector[M]) Bump(reason string, m messages.Message) {

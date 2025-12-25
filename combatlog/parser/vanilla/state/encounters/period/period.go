@@ -9,6 +9,7 @@ import (
 
 type IsPeriod interface {
 	Begin(reason string, ts messages.Message)
+	Slain(reason string, ts messages.Message)
 	Close(reason string, ts messages.Message)
 	Timeout(reason string, date time.Time)
 	Bump(reason string, ts messages.Message)
@@ -33,6 +34,8 @@ type Period struct {
 	Start      *Moment
 	End        *Moment
 	LastActive *Moment
+	// Slain is set to true if the unit was slain to terminate the period.
+	Slain bool
 }
 
 func (p Period) IsActive() bool {
@@ -81,6 +84,11 @@ func (p *WorkingPeriod[M]) Begin(reason string, ts messages.Message) {
 		return
 	}
 	p.Start = m
+}
+
+func (p *WorkingPeriod[M]) Killed(reason string, ts messages.Message) {
+	p.Close(reason, ts)
+	p.Slain = true
 }
 
 func (p *WorkingPeriod[M]) Close(reason string, ts messages.Message) {

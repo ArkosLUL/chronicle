@@ -75,7 +75,7 @@ func (c *Base[_]) Periods() []period.Period {
 }
 
 func (c *Base[_]) Died(reason string, m messages.Message) {
-	c.Activity.End(reason, m)
+	c.Activity.End(reason, m, true)
 	c.LastSlain = m
 }
 

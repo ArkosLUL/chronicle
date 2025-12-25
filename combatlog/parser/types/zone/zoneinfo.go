@@ -23,6 +23,10 @@ type Zone struct {
 	InstanceID uint32
 }
 
+func (z Zone) ID() string {
+	return fmt.Sprintf("%s:%d", z.Name, z.InstanceID)
+}
+
 func ParseZoneInfo(content string) (Zone, error) {
 	trimmed, ok := IsZoneInfo(content)
 	if !ok {

@@ -7,6 +7,7 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
+  
   tags: ['autodocs'],
 } satisfies Meta<typeof PlayerMetricChart>
 
@@ -23,7 +24,10 @@ const mockRaidData: PlayerMetricChartData[] = [
   { playerName: 'Markshot', className: 'Hunter', specialization: 'Marksmanship', value: 482.2 },
   { playerName: 'Afflicted', className: 'Warlock', specialization: 'Affliction', value: 716.3 },
   { playerName: 'Ragesmash', className: 'Warrior', specialization: 'Fury', value: 412.3 },
-]
+].map((item, index) => ({
+  ...item,
+  playerID: `player-${index + 1}`,
+}))
 
 // Dense data set with many players
 const denseMockData: PlayerMetricChartData[] = [
@@ -54,7 +58,10 @@ const denseMockData: PlayerMetricChartData[] = [
   { playerName: "Lhian", className: "Paladin", specialization: "Retribution", value: 26.5 },
   { playerName: "Cigan", className: "Warrior", specialization: "Fury", value: 8.8 },
   { playerName: "Pcn", className: "Mage", specialization: "Arcane", value: 6.9 },
-]
+].map((item, index) => ({
+  ...item,
+  playerID: `player-${index + 1}`,
+}))
 
 const mockRaidHealingData: PlayerMetricChartData[] = [
   { playerName: 'Moonfury', className: 'Druid', specialization: 'Restoration', value: 360.5, stackedValue: 52.0 },
@@ -62,33 +69,53 @@ const mockRaidHealingData: PlayerMetricChartData[] = [
   { playerName: 'Stormbringer', className: 'Shaman', specialization: 'Restoration', value: 451.1, stackedValue: 100.5 },
   { playerName: 'Repel', className: 'Priest', specialization: 'Holy', value: 299.3, stackedValue: 120.5 },
   { playerName: 'Darkman', className: 'Priest', specialization: 'Shadow', value: 45.3, stackedValue: 151.2 },
-]
+].map((item, index) => ({
+  ...item,
+  playerID: `player-${index + 1}`,
+}))
 
 
 export const Default: Story = {
   args: {
     data: mockRaidData,
+    type: 'damage',
   },
 }
 
 export const Dense: Story = {
   args: {
+    ...Default.args,
     data: denseMockData,
   },
 }
 
 export const CustomDimensions: Story = {
   args: {
+    ...Default.args,
     data: denseMockData,
     style: {
       height: '300px',
-      width: '400px',
+      width: '450px',
     }
   },
 }
 
-export const OverHealing: Story = {
+export const NoRank: Story = {
   args: {
+    ...Default.args,
+    data: denseMockData,
+    style: {
+      height: '300px',
+      width: '450px',
+    },
+    showRank: false,
+  },
+}
+
+export const Healing: Story = {
+  args: {
+    ...Default.args,
     data: mockRaidHealingData,
+    type: 'healing',
   },
 }

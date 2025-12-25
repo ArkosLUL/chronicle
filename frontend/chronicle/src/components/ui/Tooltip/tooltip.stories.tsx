@@ -6,7 +6,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/Tooltip/tooltip";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 /**

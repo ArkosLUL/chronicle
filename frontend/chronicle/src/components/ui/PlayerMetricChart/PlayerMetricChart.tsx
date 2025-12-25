@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/Tooltip/tooltip";
 import { useMouse } from '@/hooks/useMouse';
 
 export interface PlayerMetricChartData {
@@ -27,6 +27,7 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
    * @default 36
    */
   rowHeight?: number
+  type: 'damage' | 'healing'
 }
 
 export function PlayerMetricChart({
@@ -34,6 +35,7 @@ export function PlayerMetricChart({
   rowHeight = 30,
   className,
   style,
+  type,
   ...divProps
 }: PlayerMetricChartProps) {
   const summedValue = useMemo(() => {
@@ -72,6 +74,7 @@ export function PlayerMetricChart({
             rowHeight={rowHeight}
             maximumValue={maximumValue}
             summedValue={summedValue}
+            showRank={type === 'damage' || type === 'healing'}
           />
         })}
       </div>
@@ -84,13 +87,15 @@ export interface PlayerMetricRowProps {
   rowHeight: number
   maximumValue: number
   summedValue: number
+  showRank: boolean
 }
 
 export function PlayerMetricRow({
   player,
   rowHeight,
   maximumValue,
-  summedValue
+  summedValue,
+  showRank,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   return (
@@ -151,7 +156,7 @@ export function PlayerMetricRow({
             }}
           >
             {/* Rank */}
-            <span
+          {showRank && (<span
               style={{
                 width: '32px',
                 fontSize: '13px',
@@ -160,6 +165,7 @@ export function PlayerMetricRow({
             >
               #{player.rank}
             </span>
+            )}
 
             {/* Icon */}
             <img

@@ -117,5 +117,9 @@ export const Healing: Story = {
     ...Default.args,
     data: mockRaidHealingData,
     type: 'healing',
+    style: {
+      height: '300px',
+      width: '450px',
+    },
   },
 }

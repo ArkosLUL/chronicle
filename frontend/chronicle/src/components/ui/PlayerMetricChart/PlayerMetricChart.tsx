@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/Tooltip/tooltip";
 import { useMouse } from '@/hooks/useMouse';
 
+export type ChartType = 'damage' | 'healing'
+
 export interface PlayerMetricChartData {
   playerID: string
   playerName: string
@@ -27,7 +29,7 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
    * @default 36
    */
   rowHeight?: number
-  type: 'damage' | 'healing'
+  type: ChartType
 }
 
 export function PlayerMetricChart({
@@ -75,6 +77,7 @@ export function PlayerMetricChart({
             maximumValue={maximumValue}
             summedValue={summedValue}
             showRank={type === 'damage' || type === 'healing'}
+            type={type}
           />
         })}
       </div>
@@ -88,6 +91,7 @@ export interface PlayerMetricRowProps {
   maximumValue: number
   summedValue: number
   showRank: boolean
+  type: ChartType
 }
 
 export function PlayerMetricRow({
@@ -96,6 +100,7 @@ export function PlayerMetricRow({
   maximumValue,
   summedValue,
   showRank,
+  type,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   return (
@@ -155,7 +160,8 @@ export function PlayerMetricRow({
               zIndex: 1,
             }}
           >
-            {/* Rank */}
+
+          {/* Rank */}
           {showRank && (<span
               style={{
                 width: '32px',
@@ -198,8 +204,11 @@ export function PlayerMetricRow({
             </span>
 
             {/* DPS value */}
-            <span
+            {formatValue(type, player)}
+
+            {/* {player.stackedValue && (<span
               style={{
+                minWidth: '5em',
                 fontSize: '12px',
                 fontWeight: 600,
                 color: 'oklch(0.985 0 0)',
@@ -208,9 +217,11 @@ export function PlayerMetricRow({
                 borderRadius: '4px',
                 marginRight: '12px',
               }}
-            >
-              {player.value}/s
-            </span>
+              >
+                {formatValue(type, player)}
+              </span>
+            )} */}
+
 
             {/* Percentage */}
             <span
@@ -237,4 +248,40 @@ export function PlayerMetricRow({
     </Tooltip>
   </TooltipProvider>
 )
+}
+
+function formatValue(type: ChartType, player: PlayerMetricChartData){
+  const styles = {
+    fontSize: '0.7em',
+    fontWeight: 600,
+    color: 'oklch(0.985 0 0)',
+    background: 'oklch(0.205 0 0 / 0.7)',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    marginRight: '12px',
+  }
+
+  switch (type) {
+    // case 'healing':
+      // return <span
+      //   style={{
+      //     ...styles
+      //   }}
+      //   >
+      //   {player.value.toFixed(1)}/s &nbsp;
+      //   <span
+      //   style={{color: 'var(--class-muted-foreground)', fontSize: '0.8em'}}>
+      //   {`(+${player.stackedValue?.toFixed(1) ?? 0}/s)`}
+      //   </span>
+      // </span>
+    // case 'damage':
+    default:
+      return (<span
+        style={{
+          ...styles
+        }}
+      >
+        {player.value.toFixed(1)}/s
+      </span>)
+  }
 }

@@ -1,6 +1,7 @@
 package diagnostic
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 )
@@ -77,6 +78,13 @@ func (d Diagnostics) HasErrors() bool {
 		}
 	}
 	return false
+}
+
+func (d Diagnostics) Error() string {
+	if !d.HasErrors() {
+		return "no errors"
+	}
+	return errors.Join(d.Errs()...).Error()
 }
 
 func (d Diagnostics) Errs() []error {

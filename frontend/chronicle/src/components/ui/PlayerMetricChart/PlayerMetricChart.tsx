@@ -5,6 +5,8 @@ export interface PlayerMetricChartData {
   className: string
   specialization: string
   value: number
+  // stackValue is used for over healing.
+  stackedValue?: number
 }
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
@@ -25,7 +27,7 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
 
 export function PlayerMetricChart({
   data,
-  rowHeight = 36,
+  rowHeight = 30,
   showRank = true,
   metricSuffix = <span style={{ fontSize: '0.9em' }}>/s</span>,
   className,
@@ -37,7 +39,7 @@ export function PlayerMetricChart({
   }, [data])
 
   const maximumValue = useMemo(() => {
-    return Math.max(...data.map((item) => item.value))
+    return Math.max(...data.map((item) => item.value + (item.stackedValue || 0)))
   }, [data])
 
   // Sort by value descending and calculate percentages
@@ -88,6 +90,22 @@ export function PlayerMetricChart({
                 transition: 'width 0.3s ease',
               }}
             />
+            
+            {/* Stacked value */}
+            {player.stackedValue && (
+             <div
+              style={{
+                position: 'absolute',
+                left: `${(player.value / maximumValue) * 100}%`,
+                top: 0,
+                bottom: 0,
+                width: `${(player.stackedValue / maximumValue) * 100}%`,
+                background: `${player.color}`,
+                opacity: 0.3,
+                transition: 'width 0.3s ease',
+              }}
+            />)
+            }
 
             {/* Content overlay */}
             <div

@@ -56,30 +56,24 @@ const denseMockData: PlayerMetricChartData[] = [
   { playerName: "Pcn", className: "Mage", specialization: "Arcane", value: 6.9 },
 ]
 
+const mockRaidHealingData: PlayerMetricChartData[] = [
+  { playerName: 'Moonfury', className: 'Druid', specialization: 'Restoration', value: 360.5, stackedValue: 52.0 },
+  { playerName: 'Retribution', className: 'Paladin', specialization: 'Holy', value: 252.2, stackedValue: 89.0 },
+  { playerName: 'Stormbringer', className: 'Shaman', specialization: 'Restoration', value: 451.1, stackedValue: 100.5 },
+  { playerName: 'Repel', className: 'Priest', specialization: 'Holy', value: 299.3, stackedValue: 120.5 },
+  { playerName: 'Darkman', className: 'Priest', specialization: 'Shadow', value: 45.3, stackedValue: 151.2 },
+]
+
+
 export const Default: Story = {
   args: {
     data: mockRaidData,
   },
 }
 
-export const WithIcons: Story = {
-  args: {
-    data: mockRaidData,
-  },
-}
-
-export const DenseLayout: Story = {
+export const Dense: Story = {
   args: {
     data: denseMockData,
-    barHeight: 32,
-  },
-}
-
-export const VeryDense: Story = {
-  args: {
-    data: denseMockData,
-    barHeight: 24,
-    height: 400,
   },
 }
 
@@ -93,14 +87,8 @@ export const CustomDimensions: Story = {
   },
 }
 
-export const WithoutValues: Story = {
+export const OverHealing: Story = {
   args: {
-    data: mockRaidData,
-  },
-}
-
-export const SmallDataset: Story = {
-  args: {
-    data: mockRaidData.slice(0, 3),
+    data: mockRaidHealingData,
   },
 }

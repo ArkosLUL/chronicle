@@ -214,7 +214,8 @@
   --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
 
   /* Custom */
-  --class-muted-foreground: oklch(0.7010 0 0);
+  --class-foreground: oklch(0.9219 0 0);
+  --class-muted-foreground: oklch(0.8010 0 0);
   /* End custom */
 }
 

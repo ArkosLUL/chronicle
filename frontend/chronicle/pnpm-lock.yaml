@@ -66,6 +66,9 @@ importers:
       '@storybook/addon-onboarding':
         specifier: ^10.1.10
         version: 10.1.10(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
+      '@storybook/addon-themes':
+        specifier: ^10.1.10
+        version: 10.1.10(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
       '@storybook/addon-vitest':
         specifier: ^10.1.10
         version: 10.1.10(@vitest/browser-playwright@4.0.16)(@vitest/browser@4.0.16(rolldown-vite@7.2.5(@types/node@24.10.4)(jiti@2.6.1))(vitest@4.0.16))(@vitest/runner@4.0.16)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vitest@4.0.16)
@@ -910,6 +913,11 @@ packages:
 
   '@storybook/addon-onboarding@10.1.10':
     resolution: {integrity: sha512-CtfoHqgdm63NsGyYBcr1UhJV6m213ckU3aKTYJRS+3NLkx18BIME9biJwiTiRK4Pm4jbc69V21JzLumFcaiJbw==}
+    peerDependencies:
+      storybook: ^10.1.10
+
+  '@storybook/addon-themes@10.1.10':
+    resolution: {integrity: sha512-YlTzREQnUFZ6wepo4MppiobkFrsF1EuObh+vaEhjEj5Cs1oH+kqP5Db+rXi8rbrxnVXaWKmDgqZMtB7kVN4Dnw==}
     peerDependencies:
       storybook: ^10.1.10
 
@@ -3612,6 +3620,11 @@ snapshots:
   '@storybook/addon-onboarding@10.1.10(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))':
     dependencies:
       storybook: 10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+
+  '@storybook/addon-themes@10.1.10(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))':
+    dependencies:
+      storybook: 10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      ts-dedent: 2.2.0
 
   '@storybook/addon-vitest@10.1.10(@vitest/browser-playwright@4.0.16)(@vitest/browser@4.0.16(rolldown-vite@7.2.5(@types/node@24.10.4)(jiti@2.6.1))(vitest@4.0.16))(@vitest/runner@4.0.16)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vitest@4.0.16)':
     dependencies:

@@ -19,12 +19,15 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
    * @default true
    */
   showRank?: boolean
+
+  metricSuffix?: string | React.ReactNode
 }
 
 export function PlayerMetricChart({
   data,
   rowHeight = 36,
   showRank = true,
+  metricSuffix = <span style={{ fontSize: '0.9em' }}>/s</span>,
   className,
   style,
   ...divProps
@@ -46,11 +49,6 @@ export function PlayerMetricChart({
       color: `var(--color-class-${item.className.toLowerCase()})`,
     }))
   }, [data])
-
-  const formatDPS = (value: number) => {
-    if (value >= 1000000) return `${(value / 1000).toLocaleString()} DPS`
-    return `${value.toLocaleString()} DPS`
-  }
 
   return (
     <div
@@ -161,7 +159,7 @@ export function PlayerMetricChart({
                   marginRight: '12px',
                 }}
               >
-                {formatDPS(player.value)}
+                {player.value}{metricSuffix}
               </span>
 
               {/* Percentage */}

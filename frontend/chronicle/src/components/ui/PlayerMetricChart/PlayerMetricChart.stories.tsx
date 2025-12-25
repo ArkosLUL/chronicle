@@ -83,10 +83,13 @@ export const VeryDense: Story = {
   },
 }
 
-export const CustomHeight: Story = {
+export const CustomDimensions: Story = {
   args: {
-    data: mockRaidData.slice(0, 5),
-    maxHeight: 400,
+    data: denseMockData,
+    style: {
+      height: '300px',
+      width: '400px',
+    }
   },
 }
 

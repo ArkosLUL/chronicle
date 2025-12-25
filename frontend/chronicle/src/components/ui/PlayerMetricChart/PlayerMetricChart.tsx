@@ -8,12 +8,16 @@ import {
 import { useMouse } from '@/hooks/useMouse';
 
 export interface PlayerMetricChartData {
+  playerID: string
   playerName: string
   className: string
   specialization: string
   value: number
   // stackValue is used for over healing.
   stackedValue?: number
+  // TODO: Add a function that returns the tooltip for a given row.
+  // It should have a table breakdown of the data.
+  // tooltipFunction?: (PlayerMetricChartData)
 }
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
@@ -90,12 +94,11 @@ export function PlayerMetricRow({
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   return (
-  <TooltipProvider key={player.playerName}>
+  <TooltipProvider key={player.playerID + player.playerName}>
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
         <div
           ref={ref}
-          key={player.playerName}
           style={{
             display: 'flex',
             alignItems: 'center',

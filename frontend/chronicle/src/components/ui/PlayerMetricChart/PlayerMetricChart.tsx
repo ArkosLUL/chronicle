@@ -46,18 +46,16 @@ export function PlayerMetricChart({
     return sorted.map((item, index) => ({
       ...item,
       rank: index + 1,
-      color: `var(--color-class-${item.className.toLowerCase()})`,
+      color: `var(--class-${item.className.toLowerCase()})`,
     }))
   }, [data])
 
   return (
     <div
       style={{
-        height: "400px",
+        height: "400px", // Default
         overflowY: 'auto',
         overflowX: 'hidden',
-        borderRadius: '8px',
-        backgroundColor: 'var(--background)',
         ...style,
       }}
       className={className}
@@ -72,9 +70,9 @@ export function PlayerMetricChart({
               alignItems: 'center',
               height: rowHeight,
               position: 'relative',
-              // background: 'oklch(0.205 0 0)',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius)',
               overflow: 'hidden',
+              color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
             }}
           >
             {/* Colored bar background */}
@@ -85,7 +83,7 @@ export function PlayerMetricChart({
                 top: 0,
                 bottom: 0,
                 width: `${(player.value / maximumValue) * 100}%`,
-                background: player.color,
+                background: `linear-gradient(to right, oklch(0 0 0 / 0.3), oklch(0 0 0 / 0.15)), ${player.color}`,
                 opacity: 0.85,
                 transition: 'width 0.3s ease',
               }}
@@ -109,7 +107,6 @@ export function PlayerMetricChart({
                     width: '32px',
                     fontSize: '13px',
                     fontWeight: 500,
-                    color: 'oklch(0.708 0 0)',
                   }}
                 >
                   #{player.rank}
@@ -138,7 +135,6 @@ export function PlayerMetricChart({
                   flex: 1,
                   fontSize: '13px',
                   fontWeight: 500,
-                  color: 'var(--color-primary-foreground)',//'oklch(0.985 0 0)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -169,7 +165,7 @@ export function PlayerMetricChart({
                   textAlign: 'right',
                   fontSize: '13px',
                   fontWeight: 500,
-                  color: 'oklch(0.708 0 0)',
+                  color: 'var(--class-muted-foreground)',
                 }}
               >
                 {((player.value/summedValue)*100).toFixed(2)}%

@@ -9,7 +9,7 @@ import (
 
 type IsPeriod interface {
 	Begin(reason string, ts messages.Message)
-	Slain(reason string, ts messages.Message)
+	Killed(reason string, ts messages.Message)
 	Close(reason string, ts messages.Message)
 	Timeout(reason string, date time.Time)
 	Bump(reason string, ts messages.Message)

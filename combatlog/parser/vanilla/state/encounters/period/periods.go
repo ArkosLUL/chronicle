@@ -1,11 +1,11 @@
 package period
 
 import (
-	"fmt"
-	"strings"
-	"time"
+  "fmt"
+  "strings"
+  "time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
 //func x() {
@@ -15,87 +15,87 @@ import (
 //}
 
 func NewCollector[M IsPeriod]() *PeriodCollector[M] {
-	return &PeriodCollector[M]{
-		History: make([]M, 0),
-	}
+  return &PeriodCollector[M]{
+    History: make([]M, 0),
+  }
 }
 
 // PeriodCollector accumulates periods over time. Periods may start/end and later
 // start/end again; the collector simply appends each new period to History.
 type PeriodCollector[M IsPeriod] struct {
-	History []M
+  History []M
 }
 
 func (pc *PeriodCollector[M]) Current() (M, bool) {
-	if len(pc.History) == 0 {
-		var m M
-		return m, false
-	}
-	return pc.History[len(pc.History)-1], true
+  if len(pc.History) == 0 {
+    var m M
+    return m, false
+  }
+  return pc.History[len(pc.History)-1], true
 }
 
 func (pc *PeriodCollector[M]) IsActive() bool {
-	cur, ok := pc.Current()
-	if !ok {
-		return false
-	}
-	return cur.IsActive()
+  cur, ok := pc.Current()
+  if !ok {
+    return false
+  }
+  return cur.IsActive()
 }
 
 // Start appends a new period. Returns false if a period is already active.
 func (pc *PeriodCollector[M]) Start(p M, reason string, m messages.Message) {
-	if pc.IsActive() {
-		pc.Bump(reason, m)
-		return
-	}
+  if pc.IsActive() {
+    pc.Bump(reason, m)
+    return
+  }
 
-	p.Begin(reason, m)
-	pc.History = append(pc.History, p)
+  p.Begin(reason, m)
+  pc.History = append(pc.History, p)
 }
 
 // End ends the current period if one is active.
 func (pc *PeriodCollector[M]) End(reason string, m messages.Message, slain bool) {
-	cur, ok := pc.Current()
-	if !ok {
-		return
-	}
-	if slain {
-		cur.Slain(reason, m)
-	} else {
-		cur.Close(reason, m)
-	}
+  cur, ok := pc.Current()
+  if !ok {
+    return
+  }
+  if slain {
+    cur.Killed(reason, m)
+  } else {
+    cur.Close(reason, m)
+  }
 }
 
 func (pc *PeriodCollector[M]) Bump(reason string, m messages.Message) {
-	cur, ok := pc.Current()
-	if !ok {
-		return
-	}
-	cur.Bump(reason, m)
+  cur, ok := pc.Current()
+  if !ok {
+    return
+  }
+  cur.Bump(reason, m)
 }
 
 // Timeout ends the current period due to inactivity (or other timeout reasons).
 func (pc *PeriodCollector[M]) Timeout(reason string, now time.Time) {
-	cur, ok := pc.Current()
-	if !ok {
-		return
-	}
-	cur.Timeout(reason, now)
+  cur, ok := pc.Current()
+  if !ok {
+    return
+  }
+  cur.Timeout(reason, now)
 }
 
 func (pc *PeriodCollector[M]) String() string {
-	var str strings.Builder
-	str.WriteString(fmt.Sprintf("%d Periods", len(pc.History)))
-	str.WriteString(fmt.Sprintf(", Active=%t", pc.IsActive()))
-	if prd, ok := pc.Current(); ok && prd.IsActive() {
-		tmp := prd.Get().LastActive
-		str.WriteString(fmt.Sprintf(", LatAct=%s", tmp.String()))
-	}
+  var str strings.Builder
+  str.WriteString(fmt.Sprintf("%d Periods", len(pc.History)))
+  str.WriteString(fmt.Sprintf(", Active=%t", pc.IsActive()))
+  if prd, ok := pc.Current(); ok && prd.IsActive() {
+    tmp := prd.Get().LastActive
+    str.WriteString(fmt.Sprintf(", LatAct=%s", tmp.String()))
+  }
 
-	str.WriteString("\n")
-	for _, p := range pc.History {
-		str.WriteString(fmt.Sprintf("  %s\n", p.String()))
-	}
+  str.WriteString("\n")
+  for _, p := range pc.History {
+    str.WriteString(fmt.Sprintf("  %s\n", p.String()))
+  }
 
-	return str.String()
+  return str.String()
 }

@@ -6,6 +6,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
+var _ IsPeriod = (*InactivityPeriod)(nil)
+
 // InactivityTimer tracks an inactivity-based timeout for a working period.
 //
 // NextTimeout is the wall-clock time at which the period should be considered

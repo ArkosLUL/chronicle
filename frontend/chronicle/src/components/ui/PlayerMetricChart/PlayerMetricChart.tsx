@@ -58,10 +58,12 @@ export function PlayerMetricChart({
         height: "400px",
         overflowY: 'auto',
         overflowX: 'hidden',
-        background: 'oklch(0.145 0 0)',
         borderRadius: '8px',
+        backgroundColor: 'var(--background)',
         ...style,
       }}
+      className={className}
+      {...divProps}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}>
         {chartData.map((player) => (
@@ -72,7 +74,7 @@ export function PlayerMetricChart({
               alignItems: 'center',
               height: rowHeight,
               position: 'relative',
-              background: 'oklch(0.205 0 0)',
+              // background: 'oklch(0.205 0 0)',
               borderRadius: '4px',
               overflow: 'hidden',
             }}

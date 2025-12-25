@@ -16,23 +16,12 @@ interface PlayerMetricChartProps {
    * @default 40
    */
   barHeight?: number
-  /**
-   * Whether to show the DPS value on the bars
-   * @default true
-   */
-  showValues?: boolean
-  /**
-   * Custom icon renderer for class specialization
-   */
-  renderIcon?: (data: PlayerMetricChartData) => React.ReactNode
 }
 
 export function PlayerMetricChart({
     data,
     height,
     barHeight = 40,
-    showValues = true,
-    renderIcon,
   }: PlayerMetricChartProps) {
   // Transform data for Nivo
   const chartData = useMemo(
@@ -41,8 +30,7 @@ export function PlayerMetricChart({
         ...item,
         id: item.playerName,
         color: `var(--color-class-${item.className.toLowerCase()})`,
-        // color: getCssVar(`--class-${item.className.toLowerCase()}`),
-      })),
+      })).sort((a,b) => a.value - b.value), // Sort by value
     [data]
   )
 
@@ -103,7 +91,7 @@ export function PlayerMetricChart({
                 </foreignObject>
                 {/* Player name */}
                 <text
-                  x={renderIcon ? -130 : -10}
+                  x={-10}
                   y={0}
                   dy="0.35em"
                   textAnchor="end"
@@ -117,7 +105,7 @@ export function PlayerMetricChart({
                 </text>
                 {/* Specialization */}
                 <text
-                  x={renderIcon ? -130 : -10}
+                  x={-10}
                   y={0}
                   dy="1.5em"
                   textAnchor="end"
@@ -135,7 +123,7 @@ export function PlayerMetricChart({
         enableGridY={false}
         enableGridX={true}
         gridXValues={5}
-        enableLabel={showValues}
+        enableLabel={true}
         label={(d) => {
           const value = d.value as number
           if (value >= 1000000) return `${(value / 1000000).toFixed(2)}M`
@@ -192,7 +180,7 @@ export function PlayerMetricChart({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                {renderIcon && <div style={{ width: '20px', height: '20px' }}>{renderIcon(playerData)}</div>}
+                {/* {false && <div style={{ width: '20px', height: '20px' }}>{renderIcon(playerData)}</div>} */}
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '13px' }}>{playerData.playerName}</div>
                   <div style={{ fontSize: '11px', color: 'oklch(0.708 0 0)' }}>

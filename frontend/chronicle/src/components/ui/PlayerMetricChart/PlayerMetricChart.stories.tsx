@@ -15,31 +15,45 @@ type Story = StoryObj<typeof meta>
 
 // Mock data representing a raid DPS parse
 const mockRaidData: PlayerMetricChartData[] = [
-  // { playerName: 'Arathís', className: 'Demon Hunter', specialization: 'Havoc', value: 2456789 },
-  { playerName: 'Shadowmeld', className: 'Rogue', specialization: 'Subtlety', value: 2398654 },
-  { playerName: 'Blazewing', className: 'Mage', specialization: 'Fire', value: 2287431 },
-  { playerName: 'Moonfury', className: 'Druid', specialization: 'Balance', value: 2156234 },
-  { playerName: 'Retribution', className: 'Paladin', specialization: 'Retribution', value: 2098765 },
-  // { playerName: 'Frostblade', className: 'Death Knight', specialization: 'Frost', value: 2045678 },
-  { playerName: 'Stormbringer', className: 'Shaman', specialization: 'Enhancement', value: 1987432 },
-  { playerName: 'Markshot', className: 'Hunter', specialization: 'Marksmanship', value: 1934567 },
-  { playerName: 'Afflicted', className: 'Warlock', specialization: 'Affliction', value: 1876543 },
-  // { playerName: 'Windwalker', className: 'Monk', specialization: 'Windwalker', value: 1823456 },
-  { playerName: 'Ragesmash', className: 'Warrior', specialization: 'Fury', value: 1789234 },
-  // { playerName: 'Preservation', className: 'Evoker', specialization: 'Augmentation', value: 1645678 },
+  { playerName: 'Shadowmeld', className: 'Rogue', specialization: 'Subtlety', value: 800.1 },
+  { playerName: 'Blazewing', className: 'Mage', specialization: 'Fire', value: 512.2 },
+  { playerName: 'Moonfury', className: 'Druid', specialization: 'Balance', value: 101.5 },
+  { playerName: 'Retribution', className: 'Paladin', specialization: 'Retribution', value: 253.2 },
+  { playerName: 'Stormbringer', className: 'Shaman', specialization: 'Enhancement', value: 450.1 },
+  { playerName: 'Markshot', className: 'Hunter', specialization: 'Marksmanship', value: 482.2 },
+  { playerName: 'Afflicted', className: 'Warlock', specialization: 'Affliction', value: 716.3 },
+  { playerName: 'Ragesmash', className: 'Warrior', specialization: 'Fury', value: 412.3 },
 ]
 
 // Dense data set with many players
 const denseMockData: PlayerMetricChartData[] = [
   ...mockRaidData,
-  { playerName: 'Icyveins', className: 'Mage', specialization: 'Frost', value: 1598765 },
-  // { playerName: 'Demonbane', className: 'Demon Hunter', specialization: 'Vengeance', value: 1523456 },
-  { playerName: 'Thunderfist', className: 'Shaman', specialization: 'Elemental', value: 1487654 },
-  { playerName: 'Wildshape', className: 'Druid', specialization: 'Feral', value: 1456789 },
-  { playerName: 'Darkpact', className: 'Warlock', specialization: 'Demonology', value: 1398765 },
-  { playerName: 'Holystrike', className: 'Priest', specialization: 'Shadow', value: 1345678 },
-  { playerName: 'Beastmaster', className: 'Hunter', specialization: 'Beast Mastery', value: 1298765 },
-  { playerName: 'Backstabber', className: 'Rogue', specialization: 'Assassination', value: 1256789 },
+  { playerName: 'Icyveins', className: 'Mage', specialization: 'Frost', value: 11.11 },
+  { playerName: 'Thunderfist', className: 'Shaman', specialization: 'Elemental', value: 1111.2 },
+  { playerName: 'Wildshape', className: 'Druid', specialization: 'Feral', value: 1210.1 },
+  { playerName: 'Darkpact', className: 'Warlock', specialization: 'Demonology', value: 148.2 },
+  { playerName: 'Holystrike', className: 'Priest', specialization: 'Shadow', value: 210.2 },
+  { playerName: 'Beastmaster', className: 'Hunter', specialization: 'Beast Mastery', value: 218.3 },
+  { playerName: 'Backstabber', className: 'Rogue', specialization: 'Assassination', value: 410.2 },
+  { playerName: "Saberslash", className: "Rogue", specialization: "Combat", value: 1339.9 },
+  { playerName: "Sentur", className: "Warrior", specialization: "Fury", value: 1158.5 },
+  { playerName: "Ragelisa", className: "Mage", specialization: "Fire", value: 1111.2 },
+  { playerName: "Lonsell", className: "Warlock", specialization: "Destruction", value: 1009.2 },
+  { playerName: "Katrix", className: "Hunter", specialization: "Marksmanship", value: 873.7 },
+  { playerName: "Multifaker", className: "Rogue", specialization: "Assassination", value: 860.3 },
+  { playerName: "Riczaocrl", className: "Mage", specialization: "Frost", value: 834.5 },
+  { playerName: "Kryaa", className: "Priest", specialization: "Shadow", value: 743.6 },
+  { playerName: "Blyte", className: "Warlock", specialization: "Affliction", value: 733.0 },
+  { playerName: "Shovelrry", className: "Warrior", specialization: "Arms", value: 731.2 },
+  { playerName: "Nevlen", className: "Hunter", specialization: "Beast Mastery", value: 629.4 },
+  { playerName: "Owlboom", className: "Druid", specialization: "Balance", value: 587.8 },
+  { playerName: "Corta", className: "Rogue", specialization: "Combat", value: 572.0 },
+  { playerName: "Neziko", className: "Mage", specialization: "Fire", value: 537.1 },
+  { playerName: "Blackwingz", className: "Hunter", specialization: "Survival", value: 328.5 },
+  { playerName: "Bling", className: "Rogue", specialization: "Assassination", value: 33.3 },
+  { playerName: "Lhian", className: "Paladin", specialization: "Retribution", value: 26.5 },
+  { playerName: "Cigan", className: "Warrior", specialization: "Fury", value: 8.8 },
+  { playerName: "Pcn", className: "Mage", specialization: "Arcane", value: 6.9 },
 ]
 
 // Simple icon component (you'd use real WoW spec icons in production)
@@ -107,8 +121,6 @@ export const VeryDense: Story = {
   args: {
     data: denseMockData,
     barHeight: 24,
-    showValues: false,
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
   },
 }
 
@@ -116,31 +128,17 @@ export const CustomHeight: Story = {
   args: {
     data: mockRaidData.slice(0, 5),
     height: 400,
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
   },
 }
 
 export const WithoutValues: Story = {
   args: {
     data: mockRaidData,
-    showValues: false,
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
   },
 }
 
 export const SmallDataset: Story = {
   args: {
     data: mockRaidData.slice(0, 3),
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
-  },
-}
-
-export const CustomClassColors: Story = {
-  args: {
-    data: mockRaidData.slice(0, 6).map((item, index) => ({
-      ...item,
-      classColor: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe'][index],
-    })),
-    renderIcon: (data: PlayerMetricChartData) => <SpecIcon className={data.className} spec={data.specialization} />,
   },
 }

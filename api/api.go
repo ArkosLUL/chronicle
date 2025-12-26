@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
@@ -14,12 +15,15 @@ import (
 )
 
 type Options struct {
+	Logger    *slog.Logger
 	Registry  *prometheus.Registry
 	AccessURL string
+	DevOAuth  bool
 }
 
 type API struct {
-	Opts *Options
+	Opts       *Options
+	AppContext context.Context
 }
 
 func New(ctx context.Context, opts Options) (*API, error) {
@@ -27,12 +31,16 @@ func New(ctx context.Context, opts Options) (*API, error) {
 		opts.Registry = prometheus.NewRegistry()
 	}
 	return &API{
-		Opts: &opts,
+		Opts:       &opts,
+		AppContext: ctx,
 	}, nil
 }
 
 func (api *API) Routes() chi.Router {
-	service := chronauth.Service(api.Opts.AccessURL)
+	service := chronauth.Service(api.AppContext, api.Opts.Logger, chronauth.Options{
+		AccessURL: api.Opts.AccessURL,
+		DevServer: api.Opts.DevOAuth,
+	})
 	authMW := service.Middleware()
 
 	r := chi.NewRouter()

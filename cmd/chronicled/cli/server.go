@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -16,6 +17,7 @@ func ServerCmd() *serpent.Command {
 	var (
 		httpAddress string
 		accessURL   string
+		devAuth     bool
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -36,6 +38,14 @@ func ServerCmd() *serpent.Command {
 				Default:     "",
 				Value:       serpent.StringOf(&accessURL),
 			},
+			{
+				Name:        "dev-auth",
+				Description: "Enable dev oauth auth.",
+				Required:    false,
+				Flag:        "dev-auth",
+				Default:     "false",
+				Value:       serpent.BoolOf(&devAuth),
+			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancel := context.WithCancel(i.Context())
@@ -49,13 +59,20 @@ func ServerCmd() *serpent.Command {
 			}
 
 			if accessURL == "" {
-				accessURL = serverLn.Addr().String()
+				addr := serverLn.Addr().(*net.TCPAddr)
+				if addr.IP.IsUnspecified() {
+					accessURL = fmt.Sprintf("localhost:%d", addr.Port)
+				} else {
+					accessURL = serverLn.Addr().String()
+				}
 				logger.Info("access url not specified, using server address", slog.String("url", accessURL))
 			}
 
 			handler, err := api.New(ctx, api.Options{
+				Logger:    logger,
 				Registry:  reg,
 				AccessURL: accessURL,
+				DevOAuth:  devAuth,
 			})
 			if err != nil {
 				return err

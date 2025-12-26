@@ -29,3 +29,6 @@ test:
 .PHONY: lint
 lint:
 	golangci-lint run
+
+publish:
+	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths

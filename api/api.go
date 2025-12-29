@@ -9,12 +9,14 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-pkgz/auth/v2/token"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Options struct {
+	DB        database.Store
 	Logger    *slog.Logger
 	Registry  *prometheus.Registry
 	AccessURL string

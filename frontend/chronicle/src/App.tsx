@@ -1,14 +1,14 @@
-import { Button } from "@/components/ui/button"
+import { Routes, Route, Navigate } from "react-router-dom"
+import { Login } from "./pages/Login"
+import { Home } from "./pages/Home"
 
 function App() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      <img src={"/icons/class_mage.png"} />
-      <Button>Click me</Button>
-      <div>
-        test
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Home />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   )
 }
 

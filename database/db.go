@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/database/migrations"
@@ -40,26 +41,51 @@ type sqlQuerier struct {
 	db  DBTX
 }
 
+type pool struct {
+	applicationMode bool
+}
+
 // https://github.com/jackc/pgx/issues/288#issuecomment-901975396
-func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
+func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	cfg, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse postgres db url: %w", err)
+		return nil, nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
 
+	p := &pool{
+		applicationMode: false,
+	}
+
+	// TODO: Migrations do not yet have the function to set an actor.
 	cfg.PrepareConn = func(ctx context.Context, conn *pgx.Conn) (bool, error) {
-		actID := Actor(ctx)
-		_, err := conn.Exec(ctx, "select set_actor($1)", actID)
-		if err != nil {
-			return false, fmt.Errorf("set actor: %w", err)
+		if !p.applicationMode {
+			return true, nil
 		}
+
+		_, err := conn.Exec(ctx, "SET ROLE application;")
+		if err != nil {
+			return false, err
+		}
+
+		actID := Actor(ctx)
+		_, err = conn.Exec(ctx, "select set_actor($1)", actID)
+		if err != nil {
+			if !strings.Contains(err.Error(), "ERROR: function set_actor(unknown) does not exist") {
+				return false, fmt.Errorf("set actor: %w", err)
+			}
+		}
+
 		return true, nil
 	}
 
 	cfg.AfterRelease = func(conn *pgx.Conn) bool {
+		if !p.applicationMode {
+			return true
+		}
+
 		_, err := conn.Exec(context.Background(), "select set_actor($1)", uuid.Nil)
 		if err != nil {
 			logger.Error("cleanup connection",
@@ -69,14 +95,16 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 		}
 		return err == nil
 	}
-	return cfg, nil
+	return cfg, func() {
+		p.applicationMode = true
+	}, nil
 }
 
 func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgxpool.Pool, error) {
 	logger = logger.With("db_url", dbURL)
 	logger.Info("connecting to postgres database")
 
-	cfg, err := PoolConfig(logger, dbURL)
+	cfg, ready, err := PoolConfig(logger, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
@@ -97,6 +125,9 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgx
 	if err != nil {
 		return nil, fmt.Errorf("migrate up: %w", err)
 	}
+
+	// Turn on RLS
+	ready()
 
 	return pool, nil
 }

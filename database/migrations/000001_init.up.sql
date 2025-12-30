@@ -1,8 +1,11 @@
 BEGIN;
 
+-- Always use the application role from the app
+CREATE ROLE application NOLOGIN;
+
 CREATE OR REPLACE FUNCTION set_actor(actor_id uuid) RETURNS void AS $$
 BEGIN
-  PERFORM set_config('app.current_actor', actor_id, false);
+  PERFORM set_config('app.current_actor', actor_id::text, false);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -10,6 +13,11 @@ CREATE TABLE users (
   id UUID PRIMARY KEY,
   username TEXT NOT NULL
 );
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY user_isolation_policy ON users
+  USING (id = current_setting('app.current_actor', true)::uuid);
 
 CREATE TYPE spell_school AS ENUM (
   'physical',

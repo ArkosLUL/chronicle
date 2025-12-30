@@ -24,8 +24,6 @@ import (
 	"github.com/coder/retry"
 
 	"github.com/Emyrk/chronicle/database/migrations"
-
-	_ "github.com/moby/moby"
 )
 
 const postgresImage = "us-docker.pkg.dev/coder-v2-images-public/public/postgres"

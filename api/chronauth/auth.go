@@ -15,6 +15,11 @@ import (
 	"github.com/go-pkgz/auth/v2/token"
 )
 
+const (
+	JWTCookieName  = "JWT"
+	XSRFCookieName = "XSRF-TOKEN"
+)
+
 type Options struct {
 	AccessURL string
 	DevServer bool
@@ -33,21 +38,22 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 		panic("database is required")
 	}
 
+	persist := &Persister{appCtx: ctx, db: opts.Database, logger: logger}
 	srv := auth.NewService(auth.Opts{
 		SecretReader: token.SecretFunc(func(id string) (string, error) { // secret key for JWT
 			// TODO: A real secret
 			return "secret", nil
 		}),
+		JWTCookieName:  JWTCookieName,
+		XSRFCookieName: XSRFCookieName,
+		Validator:      persist,
+		ClaimsUpd:      persist,
 		SecureCookies:  strings.Contains(opts.AccessURL, "https:"),
 		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
 		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
 		Issuer:         "chronicle",
 		URL:            opts.AccessURL,
 		AvatarStore:    avatar.NewNoOp(), // NewLocalFS("/tmp"),
-		Validator: token.ValidatorFunc(func(_ string, claims token.Claims) bool {
-			// allow only dev_* names
-			return claims.User != nil && strings.HasPrefix(claims.User.Name, "dev_")
-		}),
 		Logger: authlogger.Func(func(format string, args ...interface{}) {
 			logger.Info(fmt.Sprintf(format, args...),
 				slog.String("service", "auth"),
@@ -56,7 +62,7 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 	})
 
 	if opts.Discord.ClientID != "" {
-		srv.AddProvider( "discord", opts.Discord.ClientID, opts.Discord.ClientSecret)
+		srv.AddProvider("discord", opts.Discord.ClientID, opts.Discord.ClientSecret)
 	}
 
 	if opts.DevServer {

@@ -60,7 +60,9 @@ func (api *API) Routes() chi.Router {
 		)
 
 		r.Group(func(r chi.Router) {
-			r.Use(httpmw.Authenticated())
+			r.Use(httpmw.Authenticated(service.TokenService()))
+
+			r.Get("/whoami", api.WhoAmI)
 		})
 	})
 

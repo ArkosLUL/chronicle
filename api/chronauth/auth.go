@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/pproflabel"
 	"github.com/go-pkgz/auth/v2"
 	"github.com/go-pkgz/auth/v2/avatar"
+	authlogger "github.com/go-pkgz/auth/v2/logger"
 	"github.com/go-pkgz/auth/v2/token"
 )
 
@@ -40,11 +41,19 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 			// allow only dev_* names
 			return claims.User != nil && strings.HasPrefix(claims.User.Name, "dev_")
 		}),
+		Logger: authlogger.Func(func(format string, args ...interface{}) {
+			logger.Info(fmt.Sprintf(format, args...),
+				slog.String("service", "auth"),
+			)
+		}),
 	})
 
 	if opts.DevServer {
 		srv.AddDevProvider("localhost", 3333)
-		logger.Info("starting dev oauth server", slog.Any("url", fmt.Sprintf("localhost:3333")))
+		logger.Info("starting dev oauth server",
+			slog.String("url", fmt.Sprintf("localhost:3333")),
+			slog.String("access-url", opts.AccessURL),
+		)
 
 		provider, err := srv.DevAuth()
 		if err != nil {

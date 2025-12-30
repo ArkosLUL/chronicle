@@ -12,8 +12,8 @@ import (
 	"text/template" // html/template escapes some nonces
 	"time"
 
-  "github.com/Emyrk/chronicle/internal/version"
-  "golang.org/x/xerrors"
+	"github.com/Emyrk/chronicle/internal/version"
+	"golang.org/x/xerrors"
 )
 
 type handler struct {

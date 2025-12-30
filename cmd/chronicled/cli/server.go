@@ -80,9 +80,9 @@ func ServerCmd() *serpent.Command {
 			if accessURL == "" {
 				addr := serverLn.Addr().(*net.TCPAddr)
 				if addr.IP.IsUnspecified() {
-					accessURL = fmt.Sprintf("localhost:%d", addr.Port)
+					accessURL = fmt.Sprintf("http://localhost:%d", addr.Port)
 				} else {
-					accessURL = serverLn.Addr().String()
+					accessURL = fmt.Sprintf("http://%s", serverLn.Addr().String())
 				}
 				logger.Info("access url not specified, using server address", slog.String("url", accessURL))
 			}

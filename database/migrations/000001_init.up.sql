@@ -1,23 +1,23 @@
 BEGIN;
 
 -- Always use the application role from the app
-DO $$
-  DECLARE
-    schema TEXT := current_schema();
-  BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'application') THEN
-      CREATE ROLE application NOLOGIN;
-      EXECUTE format('GRANT USAGE ON SCHEMA %s TO application', schema);
-      GRANT SELECT, INSERT, UPDATE, DELETE ON users TO application;
-    END IF;
-  END
-$$ LANGUAGE plpgsql;
+-- DO $$
+--   DECLARE
+--     schema TEXT := current_schema();
+--   BEGIN
+--     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'application') THEN
+--       CREATE ROLE application NOLOGIN;
+--       EXECUTE format('GRANT USAGE ON SCHEMA %s TO application', schema);
+--       GRANT SELECT, INSERT, UPDATE, DELETE ON users TO application;
+--     END IF;
+--   END
+-- $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION set_actor(actor_id uuid) RETURNS void AS $$
-BEGIN
-  PERFORM set_config('app.current_actor', actor_id::text, false);
-END;
-$$ LANGUAGE plpgsql;
+-- CREATE OR REPLACE FUNCTION set_actor(actor_id uuid) RETURNS void AS $$
+-- BEGIN
+--   PERFORM set_config('app.current_actor', actor_id::text, false);
+-- END;
+-- $$ LANGUAGE plpgsql;
 
 CREATE TABLE users (
   id UUID PRIMARY KEY,

@@ -1,7 +1,17 @@
 BEGIN;
 
 -- Always use the application role from the app
-CREATE ROLE application NOLOGIN;
+DO $$
+  DECLARE
+    schema TEXT := current_schema();
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'application') THEN
+      CREATE ROLE application NOLOGIN;
+      EXECUTE format('GRANT USAGE ON SCHEMA %s TO application', schema);
+      GRANT SELECT, INSERT, UPDATE, DELETE ON users TO application;
+    END IF;
+  END
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION set_actor(actor_id uuid) RETURNS void AS $$
 BEGIN
@@ -14,10 +24,11 @@ CREATE TABLE users (
   username TEXT NOT NULL
 );
 
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY user_isolation_policy ON users
-  USING (id = current_setting('app.current_actor', true)::uuid);
+-- RLS example if I decide to use it
+-- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY user_isolation_policy ON users
+--   USING (id = current_setting('app.current_actor', true)::uuid);
 
 CREATE TYPE spell_school AS ENUM (
   'physical',

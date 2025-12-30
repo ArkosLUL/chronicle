@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/database/migrations"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -59,42 +57,42 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), err
 		applicationMode: false,
 	}
 
-	// TODO: Migrations do not yet have the function to set an actor.
-	cfg.PrepareConn = func(ctx context.Context, conn *pgx.Conn) (bool, error) {
-		if !p.applicationMode {
-			return true, nil
-		}
-
-		_, err := conn.Exec(ctx, "SET ROLE application;")
-		if err != nil {
-			return false, err
-		}
-
-		actID := Actor(ctx)
-		_, err = conn.Exec(ctx, "select set_actor($1)", actID)
-		if err != nil {
-			if !strings.Contains(err.Error(), "ERROR: function set_actor(unknown) does not exist") {
-				return false, fmt.Errorf("set actor: %w", err)
-			}
-		}
-
-		return true, nil
-	}
-
-	cfg.AfterRelease = func(conn *pgx.Conn) bool {
-		if !p.applicationMode {
-			return true
-		}
-
-		_, err := conn.Exec(context.Background(), "select set_actor($1)", uuid.Nil)
-		if err != nil {
-			logger.Error("cleanup connection",
-				slog.String("error", err.Error()),
-				slog.String("service", "database"),
-			)
-		}
-		return err == nil
-	}
+	//// TODO: Migrations do not yet have the function to set an actor.
+	//cfg.PrepareConn = func(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	//	if !p.applicationMode {
+	//		return true, nil
+	//	}
+	//
+	//	_, err := conn.Exec(ctx, "SET ROLE application;")
+	//	if err != nil {
+	//		return false, err
+	//	}
+	//
+	//	actID := Actor(ctx)
+	//	_, err = conn.Exec(ctx, "select set_actor($1)", actID)
+	//	if err != nil {
+	//		if !strings.Contains(err.Error(), "ERROR: function set_actor(unknown) does not exist") {
+	//			return false, fmt.Errorf("set actor: %w", err)
+	//		}
+	//	}
+	//
+	//	return true, nil
+	//}
+	//
+	//cfg.AfterRelease = func(conn *pgx.Conn) bool {
+	//	if !p.applicationMode {
+	//		return true
+	//	}
+	//
+	//	_, err := conn.Exec(context.Background(), "select set_actor($1)", uuid.Nil)
+	//	if err != nil {
+	//		logger.Error("cleanup connection",
+	//			slog.String("error", err.Error()),
+	//			slog.String("service", "database"),
+	//		)
+	//	}
+	//	return err == nil
+	//}
 	return cfg, func() {
 		p.applicationMode = true
 	}, nil

@@ -44,16 +44,17 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 			// TODO: A real secret
 			return "secret", nil
 		}),
-		JWTCookieName:  JWTCookieName,
-		XSRFCookieName: XSRFCookieName,
-		Validator:      persist,
-		ClaimsUpd:      persist,
-		SecureCookies:  strings.Contains(opts.AccessURL, "https:"),
-		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
-		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
-		Issuer:         "chronicle",
-		URL:            opts.AccessURL,
-		AvatarStore:    avatar.NewNoOp(), // NewLocalFS("/tmp"),
+		XSRFIgnoreMethods: []string{"GET"},
+		JWTCookieName:     JWTCookieName,
+		XSRFCookieName:    XSRFCookieName,
+		Validator:         persist,
+		ClaimsUpd:         persist,
+		SecureCookies:     strings.Contains(opts.AccessURL, "https:"),
+		TokenDuration:     time.Minute * 5, // token expires in 5 minutes
+		CookieDuration:    time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
+		Issuer:            "chronicle",
+		URL:               opts.AccessURL,
+		AvatarStore:       avatar.NewNoOp(), // NewLocalFS("/tmp"),
 		Logger: authlogger.Func(func(format string, args ...interface{}) {
 			logger.Info(fmt.Sprintf(format, args...),
 				slog.String("service", "auth"),

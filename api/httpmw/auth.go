@@ -10,8 +10,8 @@ import (
 
 type chronicleUserCtxKey struct{}
 
-func User(r *http.Request) *token.User {
-	return r.Context().Value(chronicleUserCtxKey{}).(*token.User)
+func User(r *http.Request) token.User {
+	return r.Context().Value(chronicleUserCtxKey{}).(token.User)
 }
 
 func Authenticated(srv *token.Service) func(http.Handler) http.Handler {

@@ -32,3 +32,6 @@ lint:
 
 publish:
 	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths
+
+develop:
+	go run --tags static ./cmd/chronicled server --dev-auth

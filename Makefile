@@ -33,5 +33,12 @@ lint:
 publish:
 	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths
 
-develop:
+frontend/chronicle/dist: $(wildcard frontend/*)
+	(cd frontend/chronicle; pnpm install; pnpm build)
+
+.PHONY: build-site
+build-site: frontend/chronicle/dist
+
+.PHONY: develop
+develop: build-site
 	go run --tags static ./cmd/chronicled server --dev-auth

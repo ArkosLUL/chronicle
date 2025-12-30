@@ -40,6 +40,7 @@ type sqlQuerier struct {
 	db  DBTX
 }
 
+// https://github.com/jackc/pgx/issues/288#issuecomment-901975396
 func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))

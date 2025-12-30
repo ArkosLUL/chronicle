@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/Emyrk/chronicle/api"
+	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/coder/serpent"
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,6 +24,7 @@ func ServerCmd() *serpent.Command {
 		accessURL   string
 		devAuth     bool
 		postgresURL string
+		discord     chronauth.DiscordOAuth
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -59,6 +61,24 @@ func ServerCmd() *serpent.Command {
 				Default:     "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable",
 				Value:       serpent.StringOf(&postgresURL),
 			},
+			{
+				Name:        "Discord OAuth Client ID",
+				Description: "Discord OAuth Client ID to use for authentication.",
+				Required:    false,
+				Flag:        "discord-client-id",
+				Env:         "CHRONICLE_DISCORD_CLIENT_ID",
+				Default:     "",
+				Value:       serpent.StringOf(&discord.ClientID),
+			},
+			{
+				Name:        "Discord OAuth Client Secret",
+				Description: "Discord OAuth Client Secret to use for authentication.",
+				Required:    false,
+				Flag:        "discord-client-secret",
+				Env:         "CHRONICLE_DISCORD_CLIENT_SECRET",
+				Default:     "",
+				Value:       serpent.StringOf(&discord.ClientSecret),
+			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancel := context.WithCancel(i.Context())
@@ -93,6 +113,7 @@ func ServerCmd() *serpent.Command {
 				AccessURL: accessURL,
 				DevOAuth:  devAuth,
 				DB:        db,
+				Discord:   discord,
 			})
 			if err != nil {
 				return err

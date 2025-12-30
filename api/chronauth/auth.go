@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/pproflabel"
 	"github.com/go-pkgz/auth/v2"
 	"github.com/go-pkgz/auth/v2/avatar"
@@ -17,6 +18,8 @@ import (
 type Options struct {
 	AccessURL string
 	DevServer bool
+	Database  database.Store
+	Discord   DiscordOAuth
 }
 
 func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Service {
@@ -25,6 +28,9 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 	}
 	if opts.DevServer && !strings.Contains(opts.AccessURL, "localhost") {
 		panic(fmt.Sprintf("dev server can only be used with localhost access url, not %s", opts.AccessURL))
+	}
+	if opts.Database == nil {
+		panic("database is required")
 	}
 
 	srv := auth.NewService(auth.Opts{
@@ -48,6 +54,10 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 			)
 		}),
 	})
+
+	if opts.Discord.ClientID != "" {
+		srv.AddProvider( "discord", opts.Discord.ClientID, opts.Discord.ClientSecret)
+	}
 
 	if opts.DevServer {
 		srv.AddDevProvider("localhost", 3333)

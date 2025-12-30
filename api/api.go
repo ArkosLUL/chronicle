@@ -21,6 +21,7 @@ type Options struct {
 	Registry  *prometheus.Registry
 	AccessURL string
 	DevOAuth  bool
+	Discord   chronauth.DiscordOAuth
 }
 
 type API struct {
@@ -42,6 +43,8 @@ func (api *API) Routes() chi.Router {
 	service := chronauth.Service(api.AppContext, api.Opts.Logger, chronauth.Options{
 		AccessURL: api.Opts.AccessURL,
 		DevServer: api.Opts.DevOAuth,
+		Database:  api.Opts.DB,
+		Discord:   api.Opts.Discord,
 	})
 	authMW := service.Middleware()
 
@@ -56,9 +59,9 @@ func (api *API) Routes() chi.Router {
 			authMW.Trace,
 		)
 
-    r.Group(func(r chi.Router) {
-      r.Use(httpmw.Authenticated())
-    })
+		r.Group(func(r chi.Router) {
+			r.Use(httpmw.Authenticated())
+		})
 	})
 
 	r.With(authMW.Auth).Get("/private", func(w http.ResponseWriter, r *http.Request) {

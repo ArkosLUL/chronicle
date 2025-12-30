@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PlayerMetricChart, type PlayerMetricChartData } from './PlayerMetricChart'
 
 const meta = {
@@ -108,7 +108,6 @@ export const NoRank: Story = {
       height: '300px',
       width: '450px',
     },
-    showRank: false,
   },
 }
 

@@ -22,7 +22,10 @@ export function useMouse<T extends HTMLElement = HTMLElement>(
   }, []);
 
   // Handle mouse movement using native MouseEvent
-  const handleMouseMove = useCallback((event: MouseEvent) => {
+  const handleMouseMove = useCallback((event: Event) => {
+    if (!(event instanceof MouseEvent)) {
+      return;
+    }
     if (element) {
       const rect = element.getBoundingClientRect();
       // Calculate coordinates relative to the element

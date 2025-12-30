@@ -134,7 +134,7 @@ func Open() (string, func(), error) {
 	// of any useful context.
 	var retryErr error
 	err = pool.Retry(func() error {
-		cfg, err := database.PoolConfig(dbURL)
+		cfg, err := database.PoolConfig(nil, dbURL)
 		if err != nil {
 			return fmt.Errorf("parse postgres db url: %w", err)
 		}

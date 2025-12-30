@@ -51,6 +51,16 @@ func (api *API) Routes() chi.Router {
 		httpmw.PrometheusMW(api.Opts.Registry),
 	)
 
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(
+			authMW.Trace,
+		)
+
+    r.Group(func(r chi.Router) {
+      r.Use(httpmw.Authenticated())
+    })
+	})
+
 	r.With(authMW.Auth).Get("/private", func(w http.ResponseWriter, r *http.Request) {
 		usr, err := token.GetUserInfo(r)
 		if err != nil {

@@ -1,5 +1,11 @@
 BEGIN;
 
+CREATE OR REPLACE FUNCTION set_actor(actor_id uuid) RETURNS void AS $$
+BEGIN
+  PERFORM set_config('app.current_actor', actor_id, false);
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE users (
   id UUID PRIMARY KEY,
   username TEXT NOT NULL

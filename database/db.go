@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
 
 	"github.com/Emyrk/chronicle/database/migrations"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -38,12 +40,34 @@ type sqlQuerier struct {
 	db  DBTX
 }
 
-func PoolConfig(dbURL string) (*pgxpool.Config, error) {
+func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 	cfg, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
 
+	cfg.PrepareConn = func(ctx context.Context, conn *pgx.Conn) (bool, error) {
+		actID := Actor(ctx)
+		_, err := conn.Exec(ctx, "select set_actor($1)", actID)
+		if err != nil {
+			return false, fmt.Errorf("set actor: %w", err)
+		}
+		return true, nil
+	}
+
+	cfg.AfterRelease = func(conn *pgx.Conn) bool {
+		_, err := conn.Exec(context.Background(), "select set_actor($1)", uuid.Nil)
+		if err != nil {
+			logger.Error("cleanup connection",
+				slog.String("error", err.Error()),
+				slog.String("service", "database"),
+			)
+		}
+		return err == nil
+	}
 	return cfg, nil
 }
 
@@ -51,7 +75,7 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgx
 	logger = logger.With("db_url", dbURL)
 	logger.Info("connecting to postgres database")
 
-	cfg, err := PoolConfig(dbURL)
+	cfg, err := PoolConfig(logger, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}

@@ -32,6 +32,7 @@ func Service(ctx context.Context, logger *slog.Logger, opts Options) *auth.Servi
 			// TODO: A real secret
 			return "secret", nil
 		}),
+		SecureCookies:  strings.Contains(opts.AccessURL, "https:"),
 		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
 		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
 		Issuer:         "chronicle",

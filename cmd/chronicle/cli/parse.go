@@ -10,7 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 
 	"github.com/coder/serpent"
 )
@@ -62,7 +62,7 @@ func ParseCmd() *serpent.Command {
 					slog.String("name", inst.Name()),
 				)
 
-				fights, diags := fight.AggregateFights(inst)
+				fights, diags := instances.AggregateFights(inst)
 				if diags.HasErrors() {
 					return errors.Join(diags.Errs()...)
 				}

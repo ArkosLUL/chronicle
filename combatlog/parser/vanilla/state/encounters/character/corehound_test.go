@@ -9,7 +9,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/fight"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +45,7 @@ func TestCoreHoundDeath(t *testing.T) {
 	}
 
 	// Analyze the results here as needed.
-	fights, diags := fight.AggregateFights(output.CurrentInstance)
+	fights, diags := instances.AggregateFights(output.CurrentInstance)
 	require.False(t, diags.HasErrors(), "diagnostics should not have errors: %v", diags.Errs())
 	require.Len(t, fights, 2)
 }

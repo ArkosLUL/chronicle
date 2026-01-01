@@ -107,10 +107,15 @@ func ServerCmd() *serpent.Command {
 				logger.Info("access url not specified, using server address", slog.String("url", accessURL))
 			}
 
+      au, err := url.Parse(accessURL)
+      if err != nil {
+        return fmt.Errorf("invalid access url: %w", err)
+      }
+
 			handler, err := api.New(ctx, api.Options{
 				Logger:    logger,
 				Registry:  reg,
-				AccessURL: accessURL,
+				AccessURL: au,
 				DevOAuth:  devAuth,
 				DB:        db,
 				Discord:   discord,

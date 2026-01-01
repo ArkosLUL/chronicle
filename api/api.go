@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/httpapi"
@@ -12,6 +14,8 @@ import (
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-pkgz/auth/v2/token"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -19,7 +23,7 @@ type Options struct {
 	DB        database.Store
 	Logger    *slog.Logger
 	Registry  *prometheus.Registry
-	AccessURL string
+	AccessURL *url.URL
 	DevOAuth  bool
 	Discord   chronauth.DiscordOAuth
 }
@@ -46,7 +50,8 @@ func (api *API) Routes() chi.Router {
 		Database:  api.Opts.DB,
 		Discord:   api.Opts.Discord,
 	})
-	authMW := service.Middleware()
+	var _ = service
+	//authMW := service.Middleware()
 
 	r := chi.NewRouter()
 	r.Use(
@@ -56,29 +61,49 @@ func (api *API) Routes() chi.Router {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(
-			authMW.Trace,
+		//authMW.Trace,
 		)
 
 		r.Group(func(r chi.Router) {
-			r.Use(httpmw.Authenticated(service.TokenService()))
+			//r.Use(httpmw.Authenticated(service.TokenService()))
 
 			r.Get("/whoami", api.WhoAmI)
 		})
 	})
 
-	r.With(authMW.Auth).Get("/private", func(w http.ResponseWriter, r *http.Request) {
-		usr, err := token.GetUserInfo(r)
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		httpapi.Write(r.Context(), w, http.StatusOK, usr)
-	})
+	r.With(). //authMW.Auth).
+			Get("/private", func(w http.ResponseWriter, r *http.Request) {
+			usr, err := token.GetUserInfo(r)
+			if err != nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			httpapi.Write(r.Context(), w, http.StatusOK, usr)
+		})
 
 	// Auth routes
-	authRoutes, avaRoutes := service.Handlers()
-	r.Mount("/auth", authRoutes)
-	r.Mount("/ava", avaRoutes)
+	r.Route("/auth", func(r chi.Router) {
+		for _, p := range goth.GetProviders() {
+			r.Get(fmt.Sprintf("/%s/callback", p.Name()), func(w http.ResponseWriter, r *http.Request) {
+				user, err := gothic.CompleteUserAuth(w, r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				fmt.Println(user)
+				httpapi.Write(r.Context(), w, http.StatusOK, user)
+			})
+		}
+
+		r.Get("/list", func(w http.ResponseWriter, r *http.Request) {
+			arr := []string{}
+			for _, p := range goth.GetProviders() {
+				arr = append(arr, p.Name())
+			}
+			httpapi.Write(r.Context(), w, http.StatusOK, arr)
+		})
+	})
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 
 	return r

@@ -1,21 +1,31 @@
 package chronauth
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/go-pkgz/auth/v2"
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/discord"
 )
 
 const (
 	JWTCookieName  = "JWT"
 	XSRFCookieName = "XSRF-TOKEN"
+
+	SessionName = "chronicle_session"
 )
 
 type Options struct {
@@ -27,6 +37,9 @@ type Options struct {
 
 type Service struct {
 	Providers goth.Providers
+	Store     sessions.Store
+	Database  database.Store
+	logger    *slog.Logger
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
@@ -49,76 +62,256 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
 		providers[d.Name()] = d
 	}
 
+	store := sessions.NewCookieStore([]byte("secret"))
+
 	return &Service{
 		Providers: providers,
+		Store:     store,
+		Database:  opts.Database,
+		logger:    logger.With(slog.String("service", "auth")),
 	}
 }
 
-func (s *Service) CallbackHandler() {
-
+func (s *Service) GetProvider(r *http.Request) (goth.Provider, error) {
+	name := chi.URLParam(r, "provider")
+	provider, ok := s.Providers[name]
+	if !ok {
+		return nil, fmt.Errorf("provider %s not found", name)
+	}
+	return provider, nil
 }
 
-func dService(ctx context.Context, logger *slog.Logger, opts Options) *auth.Service {
-	if opts.DevServer && !strings.Contains(opts.AccessURL.String(), "localhost") {
-		panic(fmt.Sprintf("dev server can only be used with localhost access url, not %s", opts.AccessURL))
-	}
-	if opts.Database == nil {
-		panic("database is required")
+func (s *Service) StoreInSession(key string, value string, req *http.Request, res http.ResponseWriter) error {
+	session, _ := s.Store.New(req, SessionName)
+
+	if err := updateSessionValue(session, key, value); err != nil {
+		return err
 	}
 
-	if opts.Discord.ClientID != "" {
-		dcallback, err := opts.AccessURL.Parse("/auth/discord/callback")
-		if err != nil {
-			panic(err)
+	return session.Save(req, res)
+}
+
+func (s *Service) GetFromSession(key string, req *http.Request) (string, error) {
+	session, _ := s.Store.Get(req, SessionName)
+	value, err := getSessionValue(session, key)
+	if err != nil {
+		return "", errors.New("could not find a matching session for this request")
+	}
+
+	return value, nil
+}
+
+func (s *Service) GetAuthURL(res http.ResponseWriter, req *http.Request) (string, error) {
+	provider, err := s.GetProvider(req)
+	if err != nil {
+		return "", err
+	}
+	sess, err := provider.BeginAuth(gothic.SetState(req))
+	if err != nil {
+		return "", err
+	}
+
+	url, err := sess.GetAuthURL()
+	if err != nil {
+		return "", err
+	}
+
+	err = s.StoreInSession(provider.Name(), sess.Marshal(), req, res)
+
+	if err != nil {
+		return "", err
+	}
+
+	return url, err
+}
+
+func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (goth.User, error) {
+	provider, err := s.GetProvider(req)
+	if err != nil {
+		return goth.User{}, err
+	}
+
+	value, err := s.GetFromSession(provider.Name(), req)
+	if err != nil {
+		return goth.User{}, err
+	}
+	defer s.Logout(res, req)
+	sess, err := provider.UnmarshalSession(value)
+	if err != nil {
+		return goth.User{}, err
+	}
+
+	err = validateState(req, sess)
+	if err != nil {
+		return goth.User{}, err
+	}
+
+	user, err := provider.FetchUser(sess)
+	if err == nil {
+		// user can be found with existing session data
+		return user, err
+	}
+
+	params := req.URL.Query()
+	if params.Encode() == "" && req.Method == "POST" {
+		req.ParseForm()
+		params = req.Form
+	}
+
+	// get new token and retry fetch
+	_, err = sess.Authorize(provider, params)
+	if err != nil {
+		return goth.User{}, err
+	}
+
+	err = s.StoreInSession(provider.Name(), sess.Marshal(), req, res)
+
+	if err != nil {
+		return goth.User{}, err
+	}
+
+	gu, err := provider.FetchUser(sess)
+	if err != nil {
+		return goth.User{}, err
+	}
+
+	s.logger.Debug("new oauth login",
+		slog.String("provider", provider.Name()),
+		slog.String("email", gu.Email),
+		slog.String("name", gu.Name),
+		slog.String("id", gu.UserID),
+	)
+	return gu, err
+}
+
+// Logout invalidates a user session.
+func (s *Service) Logout(res http.ResponseWriter, req *http.Request) error {
+	session, err := s.Store.Get(req, SessionName)
+	if err != nil {
+		return err
+	}
+	session.Options.MaxAge = -1
+	session.Values = make(map[interface{}]interface{})
+	err = session.Save(req, res)
+	if err != nil {
+		return errors.New("Could not delete user session ")
+	}
+	return nil
+}
+
+func (s *Service) BeginAuthHandler(res http.ResponseWriter, req *http.Request) {
+	url, err := s.GetAuthURL(res, req)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(res, err)
+		return
+	}
+
+	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
+}
+
+func (s *Service) Handler() http.Handler {
+	mux := chi.NewRouter()
+	mux.Get("/list", func(w http.ResponseWriter, r *http.Request) {
+		list := make([]string, 0, len(s.Providers))
+		for _, p := range s.Providers {
+			list = append(list, p.Name())
 		}
-		goth.UseProviders(
-			discord.New(opts.Discord.ClientID, opts.Discord.ClientSecret, dcallback.String(), "email"),
-		)
+		httpapi.Write(r.Context(), w, http.StatusOK, list)
+	})
+	mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {
+		// Login url
+		if gothUser, err := s.CompleteUserAuth(w, r); err == nil {
+			httpapi.Write(r.Context(), w, http.StatusOK, gothUser)
+			return
+		}
+		s.BeginAuthHandler(w, r)
+	})
+	mux.Get("/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
+		user, err := s.CompleteUserAuth(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// TODO: Upsert user, make an access token, and send that token as a cookie.
+		//   Switch to chronicle handling the auth
+
+		httpapi.Write(r.Context(), w, http.StatusOK, user)
+	})
+	mux.Get("/{provider}/logout", func(w http.ResponseWriter, r *http.Request) {
+		_ = s.Logout(w, r)
+		w.Header().Set("Location", "/")
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	})
+
+	return mux
+}
+
+func (s *Service) provider(w http.ResponseWriter, r *http.Request) (goth.Provider, bool) {
+	name := chi.URLParam(r, "provider")
+	provider, ok := s.Providers[name]
+	if !ok {
+		httpapi.Write(r.Context(), w, http.StatusInternalServerError, fmt.Errorf("provider %s not found", name))
+		return nil, false
+	}
+	return provider, ok
+}
+
+func updateSessionValue(session *sessions.Session, key, value string) error {
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	if _, err := gz.Write([]byte(value)); err != nil {
+		return err
+	}
+	if err := gz.Flush(); err != nil {
+		return err
+	}
+	if err := gz.Close(); err != nil {
+		return err
 	}
 
-	//persist := &Persister{appCtx: ctx, db: opts.Database, logger: logger}
-	//srv := auth.NewService(auth.Opts{
-	//	SecretReader: token.SecretFunc(func(id string) (string, error) { // secret key for JWT
-	//		// TODO: A real secret
-	//		return "secret", nil
-	//	}),
-	//	XSRFIgnoreMethods: []string{"GET"},
-	//	JWTCookieName:     JWTCookieName,
-	//	XSRFCookieName:    XSRFCookieName,
-	//	Validator:         persist,
-	//	ClaimsUpd:         persist,
-	//	SecureCookies:     strings.Contains(opts.AccessURL, "https:"),
-	//	TokenDuration:     time.Minute * 5, // token expires in 5 minutes
-	//	CookieDuration:    time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
-	//	Issuer:            "chronicle",
-	//	URL:               opts.AccessURL,
-	//	AvatarStore:       avatar.NewNoOp(), // NewLocalFS("/tmp"),
-	//	Logger: authlogger.Func(func(format string, args ...interface{}) {
-	//		logger.Info(fmt.Sprintf(format, args...),
-	//			slog.String("service", "auth"),
-	//		)
-	//	}),
-	//})
-	//
-	//if opts.Discord.ClientID != "" {
-	//	srv.AddProvider("discord", opts.Discord.ClientID, opts.Discord.ClientSecret)
-	//}
+	session.Values[key] = b.String()
+	return nil
+}
 
-	//if opts.DevServer {
-	//	srv.AddDevProvider("localhost", 3333)
-	//	logger.Info("starting dev oauth server",
-	//		slog.String("url", fmt.Sprintf("localhost:3333")),
-	//		slog.String("access-url", opts.AccessURL),
-	//	)
-	//
-	//	provider, err := srv.DevAuth()
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	pproflabel.Go(ctx, pproflabel.Service(pproflabel.ServiceOAuthDevServer), func(ctx context.Context) {
-	//		provider.Run(ctx)
-	//	})
-	//}
+func getSessionValue(session *sessions.Session, key string) (string, error) {
+	value := session.Values[key]
+	if value == nil {
+		return "", fmt.Errorf("could not find a matching session for this request")
+	}
 
+	rdata := strings.NewReader(value.(string))
+	r, err := gzip.NewReader(rdata)
+	if err != nil {
+		return "", err
+	}
+	s, err := io.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+
+	return string(s), nil
+}
+
+// validateState ensures that the state token param from the original
+// AuthURL matches the one included in the current (callback) request.
+func validateState(req *http.Request, sess goth.Session) error {
+	rawAuthURL, err := sess.GetAuthURL()
+	if err != nil {
+		return err
+	}
+
+	authURL, err := url.Parse(rawAuthURL)
+	if err != nil {
+		return err
+	}
+
+	reqState := gothic.GetState(req)
+
+	originalState := authURL.Query().Get("state")
+	if originalState != "" && (originalState != reqState) {
+		return errors.New("state token mismatch")
+	}
 	return nil
 }

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -14,8 +13,6 @@ import (
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-pkgz/auth/v2/token"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -44,14 +41,12 @@ func New(ctx context.Context, opts Options) (*API, error) {
 }
 
 func (api *API) Routes() chi.Router {
-	service := chronauth.Service(api.AppContext, api.Opts.Logger, chronauth.Options{
+	service := chronauth.New(api.AppContext, api.Opts.Logger, chronauth.Options{
 		AccessURL: api.Opts.AccessURL,
 		DevServer: api.Opts.DevOAuth,
 		Database:  api.Opts.DB,
 		Discord:   api.Opts.Discord,
 	})
-	var _ = service
-	//authMW := service.Middleware()
 
 	r := chi.NewRouter()
 	r.Use(
@@ -82,28 +77,7 @@ func (api *API) Routes() chi.Router {
 		})
 
 	// Auth routes
-	r.Route("/auth", func(r chi.Router) {
-		for _, p := range goth.GetProviders() {
-			r.Get(fmt.Sprintf("/%s/callback", p.Name()), func(w http.ResponseWriter, r *http.Request) {
-				user, err := gothic.CompleteUserAuth(w, r)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				fmt.Println(user)
-				httpapi.Write(r.Context(), w, http.StatusOK, user)
-			})
-		}
-
-		r.Get("/list", func(w http.ResponseWriter, r *http.Request) {
-			arr := []string{}
-			for _, p := range goth.GetProviders() {
-				arr = append(arr, p.Name())
-			}
-			httpapi.Write(r.Context(), w, http.StatusOK, arr)
-		})
-	})
+	r.Mount("/auth", service.Handler())
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 
 	return r

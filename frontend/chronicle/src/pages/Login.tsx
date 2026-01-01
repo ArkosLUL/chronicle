@@ -24,7 +24,7 @@ export function Login() {
     // Redirect to OAuth login endpoint
     // The 'from' parameter tells the auth service where to redirect after login
     const returnUrl = window.location.origin + "/"
-    window.location.href = `/auth/${providerName}/callback?from=${encodeURIComponent(returnUrl)}`
+    window.location.href = `/auth/${providerName}?from=${encodeURIComponent(returnUrl)}`
   }
 
   return (

@@ -25,7 +25,8 @@ const (
 	JWTCookieName  = "JWT"
 	XSRFCookieName = "XSRF-TOKEN"
 
-	SessionName = "chronicle_session"
+	OAuthSessionName = "chronicle_oauth_session"
+	AuthSessionName  = "chronicle_auth_session"
 )
 
 type Options struct {
@@ -33,6 +34,8 @@ type Options struct {
 	DevServer bool
 	Database  database.Store
 	Discord   DiscordOAuth
+
+	Sessions SessionOptions
 }
 
 type Service struct {
@@ -40,6 +43,8 @@ type Service struct {
 	Store     sessions.Store
 	Database  database.Store
 	logger    *slog.Logger
+
+	sessions *Sessions
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
@@ -63,12 +68,22 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
 	}
 
 	store := sessions.NewCookieStore([]byte("secret"))
+	store.Options.HttpOnly = true
+	store.Options.Secure = opts.AccessURL.Scheme == "https"
+	if !store.Options.Secure {
+		logger.Warn("using non-secure cookie store; this is not recommended for production environments")
+	}
 
+	sess, err := NewSessions(opts.Sessions)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create sessions: %v", err))
+	}
 	return &Service{
 		Providers: providers,
 		Store:     store,
 		Database:  opts.Database,
 		logger:    logger.With(slog.String("service", "auth")),
+		sessions:  sess,
 	}
 }
 
@@ -82,7 +97,7 @@ func (s *Service) GetProvider(r *http.Request) (goth.Provider, error) {
 }
 
 func (s *Service) StoreInSession(key string, value string, req *http.Request, res http.ResponseWriter) error {
-	session, _ := s.Store.New(req, SessionName)
+	session, _ := s.Store.New(req, OAuthSessionName)
 
 	if err := updateSessionValue(session, key, value); err != nil {
 		return err
@@ -92,7 +107,7 @@ func (s *Service) StoreInSession(key string, value string, req *http.Request, re
 }
 
 func (s *Service) GetFromSession(key string, req *http.Request) (string, error) {
-	session, _ := s.Store.Get(req, SessionName)
+	session, _ := s.Store.Get(req, OAuthSessionName)
 	value, err := getSessionValue(session, key)
 	if err != nil {
 		return "", errors.New("could not find a matching session for this request")
@@ -186,16 +201,19 @@ func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (
 
 // Logout invalidates a user session.
 func (s *Service) Logout(res http.ResponseWriter, req *http.Request) error {
-	session, err := s.Store.Get(req, SessionName)
-	if err != nil {
-		return err
+	for _, cookieName := range []string{AuthSessionName, OAuthSessionName} {
+		session, err := s.Store.Get(req, cookieName)
+		if err != nil {
+			return err
+		}
+		session.Options.MaxAge = -1
+		session.Values = make(map[interface{}]interface{})
+		err = session.Save(req, res)
+		if err != nil {
+			return errors.New("Could not delete user session ")
+		}
 	}
-	session.Options.MaxAge = -1
-	session.Values = make(map[interface{}]interface{})
-	err = session.Save(req, res)
-	if err != nil {
-		return errors.New("Could not delete user session ")
-	}
+
 	return nil
 }
 
@@ -212,6 +230,7 @@ func (s *Service) BeginAuthHandler(res http.ResponseWriter, req *http.Request) {
 
 func (s *Service) Handler() http.Handler {
 	mux := chi.NewRouter()
+
 	mux.Get("/list", func(w http.ResponseWriter, r *http.Request) {
 		list := make([]string, 0, len(s.Providers))
 		for _, p := range s.Providers {
@@ -221,15 +240,34 @@ func (s *Service) Handler() http.Handler {
 	})
 	mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {
 		// Login url
-		if gothUser, err := s.CompleteUserAuth(w, r); err == nil {
-			httpapi.Write(r.Context(), w, http.StatusOK, gothUser)
+		sess, ok := s.Authenticated(w, r)
+		if !ok {
 			return
 		}
+		if sess != nil {
+			return // Already authenticated
+		}
+		//if gothUser, err := s.CompleteUserAuth(w, r); err == nil {
+		//	httpapi.Write(r.Context(), w, http.StatusOK, gothUser)
+		//	return
+		//}
 		s.BeginAuthHandler(w, r)
 	})
 
 	mux.Get("/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
-		_, ok := s.provider(w, r)
+		sess, ok := s.Authenticated(w, r)
+		if !ok {
+			return
+		}
+
+		if sess != nil {
+			// Already authenticated
+			httpapi.Write(r.Context(), w, http.StatusOK, sess)
+			return
+		}
+
+		ctx := r.Context()
+		_, ok = s.provider(w, r)
 		if !ok {
 			return
 		}
@@ -244,6 +282,25 @@ func (s *Service) Handler() http.Handler {
 		//   Switch to chronicle handling the auth
 		session, ok := s.Signup(w, r, user)
 		if !ok {
+			return
+		}
+
+		jwt, err := s.sessions.CreateSession(ctx, session)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		auth, err := s.Store.New(r, AuthSessionName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		auth.Values["jwt"] = jwt
+		err = auth.Save(r, w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

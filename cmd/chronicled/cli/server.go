@@ -12,10 +12,12 @@ import (
 
 	"github.com/Emyrk/chronicle/api"
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/coder/serpent"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/xerrors"
+
+	"github.com/coder/serpent"
 )
 
 func ServerCmd() *serpent.Command {
@@ -25,6 +27,7 @@ func ServerCmd() *serpent.Command {
 		devAuth     bool
 		postgresURL string
 		discord     chronauth.DiscordOAuth
+		secretPem   string
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -79,6 +82,15 @@ func ServerCmd() *serpent.Command {
 				Default:     "",
 				Value:       serpent.StringOf(&discord.ClientSecret),
 			},
+			{
+				Name:        "JWT Secret PEM",
+				Description: "PEM encoded private key to use for signing JWTs.",
+				Required:    false,
+				Flag:        "jwt-secret-pem",
+				Env:         "CHRONICLE_JWT_SECRET_PEM",
+				Default:     "",
+				Value:       serpent.StringOf(&secretPem),
+			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancel := context.WithCancel(i.Context())
@@ -107,18 +119,28 @@ func ServerCmd() *serpent.Command {
 				logger.Info("access url not specified, using server address", slog.String("url", accessURL))
 			}
 
-      au, err := url.Parse(accessURL)
-      if err != nil {
-        return fmt.Errorf("invalid access url: %w", err)
-      }
+			au, err := url.Parse(accessURL)
+			if err != nil {
+				return fmt.Errorf("invalid access url: %w", err)
+			}
+
+			if secretPem == "" {
+				sec, err := authkeys.GenerateKey()
+				if err != nil {
+					return fmt.Errorf("generate jwt secret: %w", err)
+				}
+				secretPem = string(authkeys.MarshalPrivateKey(sec))
+				logger.Warn("using ephemeral JWT secret; this is not recommended for production environments")
+			}
 
 			handler, err := api.New(ctx, api.Options{
+				DB:        db,
 				Logger:    logger,
 				Registry:  reg,
 				AccessURL: au,
 				DevOAuth:  devAuth,
-				DB:        db,
 				Discord:   discord,
+				SecretPEM: []byte(secretPem),
 			})
 			if err != nil {
 				return err

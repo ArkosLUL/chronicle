@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-pkgz/auth/v2/token"
+	context2 "github.com/gorilla/context"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -23,6 +24,7 @@ type Options struct {
 	AccessURL *url.URL
 	DevOAuth  bool
 	Discord   chronauth.DiscordOAuth
+	SecretPEM []byte // Used for JWTs
 }
 
 type API struct {
@@ -46,10 +48,15 @@ func (api *API) Routes() chi.Router {
 		DevServer: api.Opts.DevOAuth,
 		Database:  api.Opts.DB,
 		Discord:   api.Opts.Discord,
+		Sessions: chronauth.SessionOptions{
+			SecretPEM: api.Opts.SecretPEM,
+			Registry:  api.Opts.Registry,
+		},
 	})
 
 	r := chi.NewRouter()
 	r.Use(
+		context2.ClearHandler,
 		httpmw.NoWWW(),
 		httpmw.PrometheusMW(api.Opts.Registry),
 	)

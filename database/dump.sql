@@ -59,9 +59,32 @@ CREATE TABLE spell_templates (
     updated_at timestamp without time zone
 );
 
+CREATE TABLE user_auth_links (
+    id uuid NOT NULL,
+    linked_id text NOT NULL,
+    user_id uuid NOT NULL,
+    provider text NOT NULL,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
+);
+
+CREATE TABLE user_auth_session (
+    id uuid NOT NULL,
+    user_auth_id uuid NOT NULL,
+    access_token text NOT NULL,
+    access_token_secret text NOT NULL,
+    refresh_token text NOT NULL,
+    expires_at timestamp without time zone NOT NULL,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
+);
+
 CREATE TABLE users (
     id uuid NOT NULL,
-    username text NOT NULL
+    username text NOT NULL,
+    email text NOT NULL,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 ALTER TABLE ONLY item_effects
@@ -73,13 +96,27 @@ ALTER TABLE ONLY item_templates
 ALTER TABLE ONLY spell_templates
     ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY user_auth_links
+    ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY user_auth_session
+    ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+CREATE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_spell_id_fkey FOREIGN KEY (spell_id) REFERENCES spell_templates(id);
+
+ALTER TABLE ONLY user_auth_links
+    ADD CONSTRAINT user_auth_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+ALTER TABLE ONLY user_auth_session
+    ADD CONSTRAINT user_auth_session_user_auth_id_fkey FOREIGN KEY (user_auth_id) REFERENCES user_auth_links(id);
 
 

@@ -39,22 +39,14 @@ type sqlQuerier struct {
 	db  DBTX
 }
 
-type pool struct {
-	applicationMode bool
-}
-
 // https://github.com/jackc/pgx/issues/288#issuecomment-901975396
-func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), error) {
+func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	cfg, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		return nil, nil, fmt.Errorf("parse postgres db url: %w", err)
-	}
-
-	p := &pool{
-		applicationMode: false,
+		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
 
 	//// TODO: Migrations do not yet have the function to set an actor.
@@ -93,16 +85,14 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), err
 	//	}
 	//	return err == nil
 	//}
-	return cfg, func() {
-		p.applicationMode = true
-	}, nil
+	return cfg, nil
 }
 
 func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgxpool.Pool, error) {
 	logger = logger.With("db_url", dbURL)
 	logger.Info("connecting to postgres database")
 
-	cfg, ready, err := PoolConfig(logger, dbURL)
+	cfg, err := PoolConfig(logger, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
@@ -125,7 +115,7 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgx
 	}
 
 	// Turn on RLS
-	ready()
+	//ready()
 
 	return pool, nil
 }

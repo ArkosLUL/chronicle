@@ -227,7 +227,13 @@ func (s *Service) Handler() http.Handler {
 		}
 		s.BeginAuthHandler(w, r)
 	})
+
 	mux.Get("/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
+		_, ok := s.provider(w, r)
+		if !ok {
+			return
+		}
+
 		user, err := s.CompleteUserAuth(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -236,8 +242,12 @@ func (s *Service) Handler() http.Handler {
 
 		// TODO: Upsert user, make an access token, and send that token as a cookie.
 		//   Switch to chronicle handling the auth
+		session, ok := s.Signup(w, r, user)
+		if !ok {
+			return
+		}
 
-		httpapi.Write(r.Context(), w, http.StatusOK, user)
+		httpapi.Write(r.Context(), w, http.StatusOK, session)
 	})
 	mux.Get("/{provider}/logout", func(w http.ResponseWriter, r *http.Request) {
 		_ = s.Logout(w, r)

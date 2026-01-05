@@ -21,8 +21,37 @@ BEGIN;
 
 CREATE TABLE users (
   id UUID PRIMARY KEY,
-  username TEXT NOT NULL
+  username TEXT NOT NULL,
+  email TEXT NOT NULL,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
 );
+
+CREATE TABLE user_auth_links (
+  id uuid PRIMARY KEY,
+  linked_id TEXT NOT NULL,
+  user_id UUID NOT NULL REFERENCES users(id),
+  provider  TEXT NOT NULL,
+
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+CREATE TABLE user_auth_session (
+  id uuid PRIMARY KEY,
+  user_auth_id uuid NOT NULL REFERENCES user_auth_links(id),
+
+  access_token TEXT NOT NULL,
+  access_token_secret TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Unique pairing of linked_id + provider
+CREATE INDEX user_auths_unique_linked_id ON user_auth_links(linked_id, provider);
 
 -- RLS example if I decide to use it
 -- ALTER TABLE users ENABLE ROW LEVEL SECURITY;

@@ -188,6 +188,29 @@ type SpellTemplate struct {
 }
 
 type User struct {
-	ID       uuid.UUID `db:"id" json:"id"`
-	Username string    `db:"username" json:"username"`
+	ID        uuid.UUID        `db:"id" json:"id"`
+	Username  string           `db:"username" json:"username"`
+	Email     string           `db:"email" json:"email"`
+	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+}
+
+type UserAuthLink struct {
+	ID        uuid.UUID        `db:"id" json:"id"`
+	LinkedID  string           `db:"linked_id" json:"linked_id"`
+	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
+	Provider  string           `db:"provider" json:"provider"`
+	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+}
+
+type UserAuthSession struct {
+	ID                uuid.UUID        `db:"id" json:"id"`
+	UserAuthID        uuid.UUID        `db:"user_auth_id" json:"user_auth_id"`
+	AccessToken       string           `db:"access_token" json:"access_token"`
+	AccessTokenSecret string           `db:"access_token_secret" json:"access_token_secret"`
+	RefreshToken      string           `db:"refresh_token" json:"refresh_token"`
+	ExpiresAt         pgtype.Timestamp `db:"expires_at" json:"expires_at"`
+	CreatedAt         pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 }

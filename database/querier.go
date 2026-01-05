@@ -12,8 +12,11 @@ import (
 
 type sqlcQuerier interface {
 	DeleteThisQuery(ctx context.Context) error
+	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
+	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
+	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteThisQuery = `-- name: DeleteThisQuery :exec
@@ -19,9 +20,38 @@ func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
 	return err
 }
 
+const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one
+SELECT
+  id, linked_id, user_id, provider, created_at, updated_at
+FROM
+  user_auth_links
+WHERE
+  linked_id = $1 AND
+  provider = $2
+`
+
+type GetUserAuthByLinkedIDParams struct {
+	LinkedID string `db:"linked_id" json:"linked_id"`
+	Provider string `db:"provider" json:"provider"`
+}
+
+func (q *sqlQuerier) GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error) {
+	row := q.db.QueryRow(ctx, getUserAuthByLinkedID, arg.LinkedID, arg.Provider)
+	var i UserAuthLink
+	err := row.Scan(
+		&i.ID,
+		&i.LinkedID,
+		&i.UserID,
+		&i.Provider,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-  id, username
+  id, username, email, created_at, updated_at
 FROM
   users
 WHERE
@@ -31,26 +61,129 @@ WHERE
 func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
-	err := row.Scan(&i.ID, &i.Username)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
 const insertUser = `-- name: InsertUser :one
 INSERT INTO
-  users(id, username)
+  users(id, username, email, created_at, updated_at)
 VALUES
-  ($1, $2)
-RETURNING id, username
+  ($1, $2, $3, $4, $5)
+RETURNING id, username, email, created_at, updated_at
 `
 
 type InsertUserParams struct {
-	ID       uuid.UUID `db:"id" json:"id"`
-	Username string    `db:"username" json:"username"`
+	ID        uuid.UUID        `db:"id" json:"id"`
+	Username  string           `db:"username" json:"username"`
+	Email     string           `db:"email" json:"email"`
+	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 }
 
 func (q *sqlQuerier) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, insertUser, arg.ID, arg.Username)
+	row := q.db.QueryRow(ctx, insertUser,
+		arg.ID,
+		arg.Username,
+		arg.Email,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
 	var i User
-	err := row.Scan(&i.ID, &i.Username)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertUserAuth = `-- name: InsertUserAuth :one
+INSERT INTO
+  user_auth_links(id, linked_id, user_id, provider, created_at, updated_at)
+VALUES
+  ($1, $2, $3, $4, $5, $6)
+RETURNING id, linked_id, user_id, provider, created_at, updated_at
+`
+
+type InsertUserAuthParams struct {
+	ID        uuid.UUID        `db:"id" json:"id"`
+	LinkedID  string           `db:"linked_id" json:"linked_id"`
+	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
+	Provider  string           `db:"provider" json:"provider"`
+	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error) {
+	row := q.db.QueryRow(ctx, insertUserAuth,
+		arg.ID,
+		arg.LinkedID,
+		arg.UserID,
+		arg.Provider,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i UserAuthLink
+	err := row.Scan(
+		&i.ID,
+		&i.LinkedID,
+		&i.UserID,
+		&i.Provider,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertUserAuthSession = `-- name: InsertUserAuthSession :one
+INSERT INTO
+  user_auth_session(id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at
+`
+
+type InsertUserAuthSessionParams struct {
+	ID                uuid.UUID        `db:"id" json:"id"`
+	UserAuthID        uuid.UUID        `db:"user_auth_id" json:"user_auth_id"`
+	AccessToken       string           `db:"access_token" json:"access_token"`
+	AccessTokenSecret string           `db:"access_token_secret" json:"access_token_secret"`
+	RefreshToken      string           `db:"refresh_token" json:"refresh_token"`
+	ExpiresAt         pgtype.Timestamp `db:"expires_at" json:"expires_at"`
+	CreatedAt         pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error) {
+	row := q.db.QueryRow(ctx, insertUserAuthSession,
+		arg.ID,
+		arg.UserAuthID,
+		arg.AccessToken,
+		arg.AccessTokenSecret,
+		arg.RefreshToken,
+		arg.ExpiresAt,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i UserAuthSession
+	err := row.Scan(
+		&i.ID,
+		&i.UserAuthID,
+		&i.AccessToken,
+		&i.AccessTokenSecret,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }

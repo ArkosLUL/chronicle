@@ -19,6 +19,8 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/discord"
+	"github.com/markbates/goth/providers/openidConnect"
+	"github.com/oauth2-proxy/mockoidc"
 )
 
 const (
@@ -78,6 +80,25 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
 	if err != nil {
 		panic(fmt.Sprintf("failed to create sessions: %v", err))
 	}
+
+	if opts.DevServer {
+		oidc, err := mockoidc.Run()
+		if err != nil {
+			panic(fmt.Sprintf("failed to start mock oidc server: %v", err))
+		}
+
+		callback, err := opts.AccessURL.Parse("/auth/dev-oidc/callback")
+		if err != nil {
+			panic(err)
+		}
+
+		op, err := openidConnect.NewNamed("dev-oidc", oidc.ClientID, oidc.ClientSecret, callback.String(), oidc.DiscoveryEndpoint(), "openid", "profile", "email")
+		if err != nil {
+			panic(fmt.Sprintf("failed to create mock oidc provider: %v", err))
+		}
+		providers[op.Name()] = op
+	}
+
 	return &Service{
 		Providers: providers,
 		Store:     store,

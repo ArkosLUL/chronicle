@@ -100,18 +100,18 @@ func (a *Sessions) ValidateSession(payload string) (uuid.UUID, uuid.UUID, error)
 		return uuid.Nil, uuid.Nil, fmt.Errorf("validate claims: %w", err)
 	}
 
-	userID, err := uuid.Parse(claims.Subject)
-	if err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("parse subject: %w", err)
-	}
-
-	sessionID, err := uuid.Parse(claims.ID)
-	if err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("parse subject: %w", err)
-	}
+	//userID, err := uuid.Parse(claims.Subject)
+	//if err != nil {
+	//	return uuid.Nil, uuid.Nil, fmt.Errorf("parse subject: %w", err)
+	//}
+	//
+	//sessionID, err := uuid.Parse(claims.ID)
+	//if err != nil {
+	//	return uuid.Nil, uuid.Nil, fmt.Errorf("parse subject: %w", err)
+	//}
 
 	valid = true
-	return userID, sessionID, nil
+	return Claims, nil
 }
 
 func (a *Sessions) CreateSession(ctx context.Context, session database.UserAuthSession) (string, error) {

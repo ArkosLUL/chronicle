@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/Emyrk/chronicle/api/httpapi"
@@ -257,6 +258,7 @@ func (s *Service) Handler() http.Handler {
 		for _, p := range s.Providers {
 			list = append(list, p.Name())
 		}
+		sort.Strings(list)
 		httpapi.Write(r.Context(), w, http.StatusOK, list)
 	})
 	mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {

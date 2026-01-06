@@ -23,8 +23,8 @@ CREATE TABLE users (
   id UUID PRIMARY KEY,
   username TEXT NOT NULL,
   email TEXT NOT NULL,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
 );
 
 CREATE TABLE user_auth_links (
@@ -33,8 +33,8 @@ CREATE TABLE user_auth_links (
   user_id UUID NOT NULL REFERENCES users(id),
   provider  TEXT NOT NULL,
 
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
 );
 
 CREATE TABLE user_auth_session (
@@ -46,8 +46,8 @@ CREATE TABLE user_auth_session (
   refresh_token TEXT NOT NULL,
   expires_at TIMESTAMP NOT NULL,
 
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
 );
 
 -- Unique pairing of linked_id + provider
@@ -84,8 +84,8 @@ CREATE TABLE spell_templates (
   description TEXT NULL,
 
 
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
 );
 
 CREATE TABLE item_templates (
@@ -109,8 +109,8 @@ CREATE TABLE item_templates (
   -- TODO: base stats + item stats
 
   -- TODO: Add 'source' being the game api, the turtle wow db, or items.dbc
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
 );
 
 COMMENT ON TABLE item_templates IS

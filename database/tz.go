@@ -8,14 +8,14 @@ import (
 
 func Timestamptz(t time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{
-		Time:  t,
+		Time:  t.UTC(),
 		Valid: true,
 	}
 }
 
 func Timestamp(t time.Time) pgtype.Timestamp {
 	return pgtype.Timestamp{
-		Time:  t,
+		Time:  t.UTC(),
 		Valid: true,
 	}
 }

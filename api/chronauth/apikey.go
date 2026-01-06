@@ -112,7 +112,6 @@ func (a *Sessions) ValidateSession(payload string) (claims.Claims, error) {
 
 func (a *Sessions) CreateSession(ctx context.Context, session database.UserAuthSession) (string, error) {
 	c := &claims.Claims{
-
 		Issuer:    a.Issuer,
 		Subject:   session.UserAuthID,
 		Audience:  []string{a.Issuer},

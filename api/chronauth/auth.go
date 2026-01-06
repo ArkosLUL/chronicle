@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Emyrk/chronicle/api/chronauth/fakeoidc"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/go-chi/chi/v5"
@@ -20,8 +21,6 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/discord"
-	"github.com/markbates/goth/providers/openidConnect"
-	"github.com/oauth2-proxy/mockoidc"
 )
 
 const (
@@ -83,21 +82,12 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 	}
 
 	if opts.DevServer {
-		oidc, err := mockoidc.Run()
+		devProv, err := fakeoidc.Run(ctx, opts.AccessURL)
 		if err != nil {
 			return nil, fmt.Errorf("mock oidc: %w", err)
 		}
 
-		callback, err := opts.AccessURL.Parse("/auth/dev-oidc/callback")
-		if err != nil {
-			return nil, fmt.Errorf("parse dev-oidc callback URL: %s", err)
-		}
-
-		op, err := openidConnect.NewNamed("dev-oidc", oidc.ClientID, oidc.ClientSecret, callback.String(), oidc.DiscoveryEndpoint(), "openid", "profile", "email")
-		if err != nil {
-			return nil, fmt.Errorf("new openid connect: %w", err)
-		}
-		providers[op.Name()] = op
+		providers[devProv.Name()] = devProv
 	}
 
 	return &Service{
@@ -209,7 +199,7 @@ func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (
 
 	gu, err := provider.FetchUser(sess)
 	if err != nil {
-		return goth.User{}, err
+		return goth.User{}, fmt.Errorf("fetch user: %w", err)
 	}
 
 	s.logger.Debug("new oauth login",

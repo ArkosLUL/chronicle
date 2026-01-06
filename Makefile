@@ -43,9 +43,12 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 build-site: frontend/chronicle/dist
 
 .PHONY: develop
-develop: build-site
+develop: build-site create-db
 	go run --tags static ./cmd/chronicled server --dev-auth
 
+.PHONY: create-db
+create-db:
+	PGPASSWORD='postgres' createdb -U postgres -h localhost chronicle || true
 
 .PHONY: test-postgres-docker
 test-postgres-docker:

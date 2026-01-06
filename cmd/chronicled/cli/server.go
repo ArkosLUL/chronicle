@@ -61,7 +61,7 @@ func ServerCmd() *serpent.Command {
 				Description: "Postgres URL to connect to.",
 				Required:    false,
 				Flag:        "postgres-url",
-				Default:     "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable",
+				Default:     "postgresql://postgres:postgres@localhost:5432/chronicle?sslmode=disable",
 				Value:       serpent.StringOf(&postgresURL),
 			},
 			{

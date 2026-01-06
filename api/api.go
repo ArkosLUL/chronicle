@@ -1,17 +1,18 @@
 package api
 
 import (
-  "context"
-  "log/slog"
-  "net/url"
+	"context"
+	"log/slog"
+	"net/url"
 
-  "github.com/Emyrk/chronicle/api/chronauth"
-  "github.com/Emyrk/chronicle/api/httpmw"
-  "github.com/Emyrk/chronicle/database"
-  "github.com/Emyrk/chronicle/frontend"
-  "github.com/go-chi/chi/v5"
-  context2 "github.com/gorilla/context"
-  "github.com/prometheus/client_golang/prometheus"
+	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/frontend"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	context2 "github.com/gorilla/context"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Options struct {
@@ -60,6 +61,8 @@ func (api *API) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(
 		context2.ClearHandler,
+		// TODO: Finish cors options
+		cors.Handler(cors.Options{}),
 		httpmw.NoWWW(),
 		httpmw.PrometheusMW(api.Opts.Registry),
 	)

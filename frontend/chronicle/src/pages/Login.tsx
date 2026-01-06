@@ -22,9 +22,22 @@ export function Login() {
 
   const handleLogin = (providerName: string) => {
     // Redirect to OAuth login endpoint
-    // The 'from' parameter tells the auth service where to redirect after login
-    const returnUrl = window.location.origin + "/"
-    window.location.href = `/auth/${providerName}?from=${encodeURIComponent(returnUrl)}`
+    // Check for 'from' in query params, then referrer, then default to "/"
+    const params = new URLSearchParams(window.location.search)
+    let redirectUri = params.get("from")
+    if (!redirectUri && document.referrer) {
+      try {
+        const referrerUrl = new URL(document.referrer)
+        // Only use referrer if it's from the same origin
+        if (referrerUrl.origin === window.location.origin) {
+          redirectUri = referrerUrl.pathname + referrerUrl.search
+        }
+      } catch {
+        // Invalid referrer URL, ignore
+      }
+    }
+    redirectUri = redirectUri || "/"
+    window.location.href = `/auth/${providerName}?from=${encodeURIComponent(redirectUri)}`
   }
 
   return (

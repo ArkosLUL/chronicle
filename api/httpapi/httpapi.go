@@ -25,6 +25,9 @@ func Write(_ context.Context, rw http.ResponseWriter, status int, response inter
 	}
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 	rw.WriteHeader(status)
+	if status == http.StatusNoContent {
+		return
+	}
 	_, err = rw.Write(buf.Bytes())
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)

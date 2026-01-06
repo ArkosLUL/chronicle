@@ -138,7 +138,7 @@ func (s *Service) GetAuthURL(res http.ResponseWriter, req *http.Request) (string
 		return "", err
 	}
 
-	url, err := sess.GetAuthURL()
+	u, err := sess.GetAuthURL()
 	if err != nil {
 		return "", err
 	}
@@ -149,7 +149,7 @@ func (s *Service) GetAuthURL(res http.ResponseWriter, req *http.Request) (string
 		return "", err
 	}
 
-	return url, err
+	return u, err
 }
 
 func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (goth.User, error) {
@@ -229,15 +229,32 @@ func (s *Service) Logout(res http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func (s *Service) BeginAuthHandler(res http.ResponseWriter, req *http.Request) {
-	url, err := s.GetAuthURL(res, req)
+func (s *Service) BeginAuthHandler(w http.ResponseWriter, req *http.Request) {
+	u, err := s.GetAuthURL(w, req)
 	if err != nil {
-		res.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(res, err)
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, err)
 		return
 	}
 
-	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
+	from := req.URL.Query().Get("from")
+	if from == "" {
+		from = "/"
+	}
+
+	sess, err := s.Store.New(req, "from")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sess.Values["from"] = from
+	err = sess.Save(req, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, req, u, http.StatusTemporaryRedirect)
 }
 
 func (s *Service) Handler() http.Handler {
@@ -317,7 +334,19 @@ func (s *Service) Handler() http.Handler {
 			return
 		}
 
-		httpapi.Write(r.Context(), w, http.StatusOK, session)
+		redirectTo := "/"
+		redirect, _ := s.Store.Get(r, "from")
+		if redirect != nil {
+			raw, _ := redirect.Values["from"]
+			fromStr, _ := raw.(string)
+			if fromStr != "" {
+				redirectTo = fromStr
+			}
+			delete(redirect.Values, "from")
+			_ = redirect.Save(r, w)
+		}
+		http.Redirect(w, r, redirectTo, http.StatusTemporaryRedirect)
+		//httpapi.Write(r.Context(), w, http.StatusOK, session)
 	})
 	mux.Get("/{provider}/logout", func(w http.ResponseWriter, r *http.Request) {
 		_ = s.Logout(w, r)

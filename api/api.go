@@ -1,20 +1,17 @@
 package api
 
 import (
-	"context"
-	"log/slog"
-	"net/http"
-	"net/url"
+  "context"
+  "log/slog"
+  "net/url"
 
-	"github.com/Emyrk/chronicle/api/chronauth"
-	"github.com/Emyrk/chronicle/api/httpapi"
-	"github.com/Emyrk/chronicle/api/httpmw"
-	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/frontend"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-pkgz/auth/v2/token"
-	context2 "github.com/gorilla/context"
-	"github.com/prometheus/client_golang/prometheus"
+  "github.com/Emyrk/chronicle/api/chronauth"
+  "github.com/Emyrk/chronicle/api/httpmw"
+  "github.com/Emyrk/chronicle/database"
+  "github.com/Emyrk/chronicle/frontend"
+  "github.com/go-chi/chi/v5"
+  context2 "github.com/gorilla/context"
+  "github.com/prometheus/client_golang/prometheus"
 )
 
 type Options struct {
@@ -73,21 +70,9 @@ func (api *API) Routes() chi.Router {
 		)
 
 		r.Group(func(r chi.Router) {
-			//r.Use(httpmw.Authenticated(service.TokenService()))
-
 			r.Get("/whoami", api.WhoAmI)
 		})
 	})
-
-	r.With(). //authMW.Auth).
-			Get("/private", func(w http.ResponseWriter, r *http.Request) {
-			usr, err := token.GetUserInfo(r)
-			if err != nil {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			httpapi.Write(r.Context(), w, http.StatusOK, usr)
-		})
 
 	// Auth routes
 	r.Mount("/auth", api.Auth.Handler())

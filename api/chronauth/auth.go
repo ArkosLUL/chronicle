@@ -321,8 +321,24 @@ func (s *Service) Handler() http.Handler {
 	})
 	mux.Get("/{provider}/logout", func(w http.ResponseWriter, r *http.Request) {
 		_ = s.Logout(w, r)
-		w.Header().Set("Location", "/")
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		//w.Header().Set("Location", "/")
+		//w.WriteHeader(http.StatusTemporaryRedirect)
+		httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
+	})
+
+	mux.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
+		user, ok := s.Authenticated(w, r)
+		if !ok {
+			return
+		}
+
+		if user != nil {
+			// TODO: Delete sessions
+			_ = s.Logout(w, r)
+		}
+
+		httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
+		return
 	})
 
 	return mux

@@ -57,7 +57,6 @@ func New(ctx context.Context, opts Options) (*API, error) {
 }
 
 func (api *API) Routes() chi.Router {
-
 	r := chi.NewRouter()
 	r.Use(
 		context2.ClearHandler,

@@ -1,16 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export function NavBar() {
   const location = useLocation();
-  const { data: isAuthenticated, isLoading } = useQuery({
-    queryKey: ["whoami"],
-    queryFn: async () => {
-      const response = await fetch("/api/v1/whoami");
-      return response.ok;
-    },
-    retry: false,
-  });
+  const { isAuthenticated, isLoading, logout } = useAuth();
 
   return (
     <nav className="flex items-center justify-between p-4 bg-gray-800 text-white">
@@ -19,12 +12,12 @@ export function NavBar() {
       </Link>
       <div>
         {isLoading ? null : isAuthenticated ? (
-          <a
-            href="/auth/logout"
+          <button
+            onClick={logout}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
           >
             Logout
-          </a>
+          </button>
         ) : (
           <Link
             to={`/login?from=${encodeURIComponent(location.pathname + location.search)}`}

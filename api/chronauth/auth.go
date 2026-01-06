@@ -50,12 +50,12 @@ type Service struct {
 	sessions *Sessions
 }
 
-func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
+func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, error) {
 	if opts.DevServer && !strings.Contains(opts.AccessURL.String(), "localhost") {
-		panic(fmt.Sprintf("dev server can only be used with localhost access url, not %s", opts.AccessURL))
+		return nil, fmt.Errorf("dev server can only be used with localhost access url, not %s", opts.AccessURL)
 	}
 	if opts.Database == nil {
-		panic("database is required")
+		return nil, fmt.Errorf("no database store provided")
 	}
 
 	providers := make(goth.Providers)
@@ -63,7 +63,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
 		const name = "discord"
 		dcallback, err := opts.AccessURL.Parse(fmt.Sprintf("/auth/%s/callback", name))
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("parse discord auth callback URL: %s", err)
 		}
 		d := discord.New(opts.Discord.ClientID, opts.Discord.ClientSecret, dcallback.String(), "email")
 		d.SetName(name)
@@ -79,23 +79,23 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
 
 	sess, err := NewSessions(opts.Sessions)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create sessions: %v", err))
+		return nil, fmt.Errorf("new sessions: %w", err)
 	}
 
 	if opts.DevServer {
 		oidc, err := mockoidc.Run()
 		if err != nil {
-			panic(fmt.Sprintf("failed to start mock oidc server: %v", err))
+			return nil, fmt.Errorf("mock oidc: %w", err)
 		}
 
 		callback, err := opts.AccessURL.Parse("/auth/dev-oidc/callback")
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("parse dev-oidc callback URL: %s", err)
 		}
 
 		op, err := openidConnect.NewNamed("dev-oidc", oidc.ClientID, oidc.ClientSecret, callback.String(), oidc.DiscoveryEndpoint(), "openid", "profile", "email")
 		if err != nil {
-			panic(fmt.Sprintf("failed to create mock oidc provider: %v", err))
+			return nil, fmt.Errorf("new openid connect: %w", err)
 		}
 		providers[op.Name()] = op
 	}
@@ -106,7 +106,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) *Service {
 		Database:  opts.Database,
 		logger:    logger.With(slog.String("service", "auth")),
 		sessions:  sess,
-	}
+	}, nil
 }
 
 func (s *Service) GetProvider(r *http.Request) (goth.Provider, error) {

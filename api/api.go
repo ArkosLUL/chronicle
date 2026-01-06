@@ -29,6 +29,7 @@ type Options struct {
 
 type API struct {
 	Opts       *Options
+	Auth       *chronauth.Service
 	AppContext context.Context
 }
 
@@ -36,23 +37,28 @@ func New(ctx context.Context, opts Options) (*API, error) {
 	if opts.Registry == nil {
 		opts.Registry = prometheus.NewRegistry()
 	}
+	service, err := chronauth.New(ctx, opts.Logger, chronauth.Options{
+		AccessURL: opts.AccessURL,
+		DevServer: opts.DevOAuth,
+		Database:  opts.DB,
+		Discord:   opts.Discord,
+		Sessions: chronauth.SessionOptions{
+			SecretPEM: opts.SecretPEM,
+			Registry:  opts.Registry,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &API{
 		Opts:       &opts,
 		AppContext: ctx,
+		Auth:       service,
 	}, nil
 }
 
 func (api *API) Routes() chi.Router {
-	service := chronauth.New(api.AppContext, api.Opts.Logger, chronauth.Options{
-		AccessURL: api.Opts.AccessURL,
-		DevServer: api.Opts.DevOAuth,
-		Database:  api.Opts.DB,
-		Discord:   api.Opts.Discord,
-		Sessions: chronauth.SessionOptions{
-			SecretPEM: api.Opts.SecretPEM,
-			Registry:  api.Opts.Registry,
-		},
-	})
 
 	r := chi.NewRouter()
 	r.Use(
@@ -84,7 +90,7 @@ func (api *API) Routes() chi.Router {
 		})
 
 	// Auth routes
-	r.Mount("/auth", service.Handler())
+	r.Mount("/auth", api.Auth.Handler())
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 
 	return r

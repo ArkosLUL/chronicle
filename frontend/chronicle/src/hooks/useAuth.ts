@@ -15,7 +15,6 @@ export function useAuth() {
   const logout = async () => {
     await fetch("/auth/logout");
     queryClient.invalidateQueries();
-    window.location.href = "/";
   };
 
   return {

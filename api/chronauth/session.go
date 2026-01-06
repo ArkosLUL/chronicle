@@ -3,16 +3,11 @@ package chronauth
 import (
 	"net/http"
 
-	"github.com/google/uuid"
+	"github.com/Emyrk/chronicle/api/chronauth/claims"
 )
 
-type AuthenticatedResponse struct {
-	UserID    uuid.UUID
-	SessionID uuid.UUID
-}
-
 // TODO: Better errors
-func (s *Service) Authenticated(w http.ResponseWriter, r *http.Request) (*AuthenticatedResponse, bool) {
+func (s *Service) Authenticated(w http.ResponseWriter, r *http.Request) (*claims.Claims, bool) {
 	auth, err := s.Store.Get(r, AuthSessionName)
 	if err != nil {
 		// TODO: Error to try again
@@ -34,7 +29,7 @@ func (s *Service) Authenticated(w http.ResponseWriter, r *http.Request) (*Authen
 		return nil, false
 	}
 
-	uid, sid, err := s.sessions.ValidateSession(jwtStr)
+	claims, err := s.sessions.ValidateSession(jwtStr)
 	if err != nil {
 		// TODO: Error to try again
 		_ = s.Logout(w, r)
@@ -42,8 +37,5 @@ func (s *Service) Authenticated(w http.ResponseWriter, r *http.Request) (*Authen
 		return nil, false
 	}
 
-	return &AuthenticatedResponse{
-		UserID:    uid,
-		SessionID: sid,
-	}, true
+	return &claims, true
 }

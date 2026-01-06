@@ -8,19 +8,13 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
+	"github.com/Emyrk/chronicle/api/chronauth/claims"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
-
-type Claims struct {
-	jwt.Claims
-
-	Provider string `json:"provider,omitempty"`
-}
 
 type SessionOptions struct {
 	SecretPEM []byte
@@ -73,7 +67,7 @@ func NewSessions(opts SessionOptions) (*Sessions, error) {
 }
 
 // ValidateSession returns the user ID && session id if the session is valid
-func (a *Sessions) ValidateSession(payload string) (uuid.UUID, uuid.UUID, error) {
+func (a *Sessions) ValidateSession(payload string) (claims.Claims, error) {
 	valid := false
 	defer func() {
 		a.validateSessionGauge.WithLabelValues(strconv.FormatBool(valid)).Inc()
@@ -83,22 +77,24 @@ func (a *Sessions) ValidateSession(payload string) (uuid.UUID, uuid.UUID, error)
 		jose.PS512,
 	})
 	if err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("parse token: %w", err)
+		return claims.Claims{}, fmt.Errorf("parse token: %w", err)
 	}
 
-	claims := Claims{}
-	err = token.Claims(a.Validator, &claims)
+	userClaims := claims.Claims{}
+	err = token.Claims(a.Validator, &userClaims)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("parse claims: %w", err)
+		return claims.Claims{}, fmt.Errorf("parse claims: %w", err)
 	}
 
-	err = claims.Validate(jwt.Expected{
+	err = userClaims.Validate(claims.Expected{
 		Issuer: a.Issuer,
 		Time:   time.Now(),
 	})
 	if err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("validate claims: %w", err)
+		return claims.Claims{}, fmt.Errorf("validate claims: %w", err)
 	}
+
+	// TODO: Validate oauth expirartion
 
 	//userID, err := uuid.Parse(claims.Subject)
 	//if err != nil {
@@ -111,20 +107,22 @@ func (a *Sessions) ValidateSession(payload string) (uuid.UUID, uuid.UUID, error)
 	//}
 
 	valid = true
-	return Claims, nil
+	return userClaims, nil
 }
 
 func (a *Sessions) CreateSession(ctx context.Context, session database.UserAuthSession) (string, error) {
-	c := &Claims{
-		Claims: jwt.Claims{
-			Issuer:    a.Issuer,
-			Subject:   session.UserAuthID.String(),
-			Audience:  []string{a.Issuer},
-			Expiry:    jwt.NewNumericDate(session.ExpiresAt.Time),
-			NotBefore: jwt.NewNumericDate(session.CreatedAt.Time.Add(time.Minute * -1)),
-			IssuedAt:  jwt.NewNumericDate(session.CreatedAt.Time),
-			ID:        session.ID.String(),
-		},
+	c := &claims.Claims{
+
+		Issuer:    a.Issuer,
+		Subject:   session.UserAuthID,
+		Audience:  []string{a.Issuer},
+		Expiry:    jwt.NewNumericDate(session.ExpiresAt.Time),
+		NotBefore: jwt.NewNumericDate(session.CreatedAt.Time.Add(time.Minute * -1)),
+		IssuedAt:  jwt.NewNumericDate(session.CreatedAt.Time),
+		ID:        session.ID,
+
+		OAuthExpire: jwt.NewNumericDate(session.ExpiresAt.Time),
+		Refreshable: session.RefreshToken != "",
 	}
 	payload, err := jwt.Signed(a.Signer).Claims(c).Serialize()
 	if err != nil {

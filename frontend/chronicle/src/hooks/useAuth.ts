@@ -7,6 +7,8 @@ export function useAuth() {
 
   const logout = async () => {
     await fetch("/auth/logout");
+    window.location.reload();
+    // Queries should be invalid from a reload
     queryClient.invalidateQueries();
   };
 

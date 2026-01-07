@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Settings, Upload, LogOut } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../ui/button";
 import {
@@ -11,9 +12,20 @@ import {
   NavigationMenuTrigger,
 } from "../ui/NavigationMenu/navigation-menu";
 
+type NavItem = {
+  title: string;
+  icon: LucideIcon;
+} & ({ href: string } | { onClick: () => void });
+
 export function NavBar() {
   const location = useLocation();
   const { isAuthenticated, isLoading, logout } = useAuth();
+
+  const accountMenuItems: NavItem[] = [
+    { title: "Settings", href: "/settings", icon: Settings },
+    { title: "Upload", href: "/upload", icon: Upload },
+    { title: "Sign Out", onClick: logout, icon: LogOut },
+  ];
 
   return (
     <nav className="flex items-center justify-between p-4 border-b">
@@ -22,35 +34,28 @@ export function NavBar() {
       </Link>
       <div>
         {isLoading ? null : isAuthenticated ? (
-          <NavigationMenu>
+          <NavigationMenu className="justify-end">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Account</NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="w-40">
+                  <ul className="grid w-[200px] gap-4">
                     <li>
-                      <NavigationMenuLink asChild>
-                        <Link to="/settings">
-                          <Settings />
-                          Settings
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link to="/upload">
-                          <Upload />
-                          Upload
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <button onClick={logout} className="w-full">
-                          <LogOut />
-                          Sign Out
-                        </button>
-                      </NavigationMenuLink>
+                      {accountMenuItems.map((item) => (
+                        <NavigationMenuLink key={item.title} asChild>
+                          {"href" in item ? (
+                            <Link to={item.href} className="flex-row items-center gap-2">
+                              <item.icon />
+                              {item.title}
+                            </Link>
+                          ) : (
+                            <button onClick={item.onClick} className="flex-row items-center gap-2 w-full">
+                              <item.icon />
+                              {item.title}
+                            </button>
+                          )}
+                        </NavigationMenuLink>
+                      ))}
                     </li>
                   </ul>
                 </NavigationMenuContent>

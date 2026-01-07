@@ -41,7 +41,7 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex min-h-svh flex-col items-center justify-center">
       <div className="w-full max-w-md space-y-8 px-4">
         <div className="text-center">
           <img 
@@ -52,13 +52,13 @@ export function Login() {
           <h1 className="mt-6 text-3xl font-bold tracking-tight">
             Welcome to Chronicle
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             Sign in with your account to continue
           </p>
         </div>
 
-        <div className="space-y-4 rounded-lg bg-white p-8 shadow-md dark:bg-gray-950">
-          {loading ? (
+        <div className="space-y-4 rounded-lg  p-8 dark:bg-gray-950">
+          {(true || loading) ? (
             <div className="text-center text-gray-600 dark:text-gray-400">
               Loading authentication providers...
             </div>

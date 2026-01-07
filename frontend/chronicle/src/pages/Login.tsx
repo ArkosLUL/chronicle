@@ -2,14 +2,15 @@ import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert"
 import { useAuthProviders } from "@/api/queries"
 import { useAuth } from "@/hooks/useAuth"
 
 export function Login() {
   const navigate = useNavigate()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
-  const { data: providers = [], isLoading: providersLoading } = useAuthProviders()
-  const loading = authLoading || providersLoading
+  const { data: providers = [], isLoading: providersLoading, isError: providersError, error: providersErrorMsg } = useAuthProviders()
+  const loading = (authLoading || providersLoading) && !providersError
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -56,6 +57,13 @@ export function Login() {
             <div className="text-center text-muted-foreground">
               Loading authentication providers...
             </div>
+          ) : providersError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {providersErrorMsg?.message || "Failed to load authentication providers"}
+              </AlertDescription>
+            </Alert>
           ) : providers.length === 0 ? (
             <div className="text-center text-muted-foreground">
               No authentication providers configured

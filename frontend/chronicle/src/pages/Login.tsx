@@ -1,10 +1,21 @@
+import { useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
 import { useAuthProviders } from "@/api/queries"
+import { useAuth } from "@/hooks/useAuth"
 
 export function Login() {
-  const { data: providers = [], isLoading: loading } = useAuthProviders()
-  console.log("Auth providers:", providers)
+  const navigate = useNavigate()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { data: providers = [], isLoading: providersLoading } = useAuthProviders()
+  const loading = authLoading || providersLoading
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleLogin = (providerName: string) => {
     // Redirect to OAuth login endpoint

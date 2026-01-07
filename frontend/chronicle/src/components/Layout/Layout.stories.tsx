@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { http, HttpResponse } from "msw"
 import { MemoryRouter, Routes, Route } from "react-router-dom"
 import { Layout } from "./Layout"

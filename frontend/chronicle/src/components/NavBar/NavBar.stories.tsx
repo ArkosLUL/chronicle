@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { http, HttpResponse, delay } from "msw"
 import { MemoryRouter } from "react-router-dom"
 import { NavBar } from "./NavBar"

@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "./ui/button";
 
 export function NavBar() {
   const location = useLocation();
   const { isAuthenticated, isLoading, logout } = useAuth();
 
   return (
-    <nav className="flex items-center justify-between p-4 bg-gray-800 text-white">
+    <nav className="flex items-center justify-between p-4 border-b">
       <Link to="/" className="text-xl font-bold">
         Chronicle
       </Link>
@@ -14,16 +15,17 @@ export function NavBar() {
         {isLoading ? null : isAuthenticated ? (
           <button
             onClick={logout}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
+            className="px-4 py-"
           >
             Logout
           </button>
         ) : (
           <Link
             to={`/login?from=${encodeURIComponent(location.pathname + location.search)}`}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
           >
-            Login
+            <Button>
+              Login
+            </Button>
           </Link>
         )}
       </div>

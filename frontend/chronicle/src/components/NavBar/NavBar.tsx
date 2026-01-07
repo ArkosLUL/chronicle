@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 export function NavBar() {
   const location = useLocation();
@@ -29,7 +29,7 @@ export function NavBar() {
             to={`/login?from=${encodeURIComponent(location.pathname + location.search)}`}
           >
             <Button>
-              Login
+              Sign In
             </Button>
           </Link>
         )}

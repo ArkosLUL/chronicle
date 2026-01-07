@@ -7,15 +7,22 @@ import (
 	storage_go "github.com/supabase-community/storage-go"
 )
 
+type FileOptions = storage_go.FileOptions
+type UrlOptions = storage_go.UrlOptions
+type BucketOptions = storage_go.BucketOptions
+type FileUploadResponse = storage_go.FileUploadResponse
+type Bucket = storage_go.Bucket
+type MessageResponse = storage_go.MessageResponse
+
 var _ ObjectStorage = (*storage_go.Client)(nil)
 
 type ObjectStorage interface {
-	UploadFile(bucketId string, relativePath string, data io.Reader, fileOptions ...storage_go.FileOptions) (storage_go.FileUploadResponse, error)
-	DownloadFile(bucketId string, filePath string, urlOptions ...storage_go.UrlOptions) ([]byte, error)
-	RemoveFile(bucketId string, paths []string) ([]storage_go.FileUploadResponse, error)
-	CreateBucket(id string, options storage_go.BucketOptions) (storage_go.Bucket, error)
-	DeleteBucket(id string) (storage_go.MessageResponse, error)
-	EmptyBucket(id string) (storage_go.MessageResponse, error)
+	UploadFile(bucketId string, relativePath string, data io.Reader, fileOptions ...FileOptions) (FileUploadResponse, error)
+	DownloadFile(bucketId string, filePath string, urlOptions ...UrlOptions) ([]byte, error)
+	RemoveFile(bucketId string, paths []string) ([]FileUploadResponse, error)
+	CreateBucket(id string, options BucketOptions) (Bucket, error)
+	DeleteBucket(id string) (MessageResponse, error)
+	EmptyBucket(id string) (MessageResponse, error)
 }
 
 func Supabase(projectID, projectAPIKey string) (ObjectStorage, error) {

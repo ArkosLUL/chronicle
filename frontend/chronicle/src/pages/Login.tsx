@@ -38,9 +38,6 @@ export function Login() {
           <h1 className="mt-6 text-3xl font-bold tracking-tight">
             Welcome to Chronicle
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with your account to continue
-          </p>
         </div>
 
         <Card className="p-8">

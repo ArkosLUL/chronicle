@@ -31,7 +31,7 @@ export function Login() {
       <div className="w-full max-w-md space-y-8 px-4">
         <div className="text-center">
           <img 
-            src="/icons/class_mage.png" 
+            src="/chronicle/logo.png" 
             alt="Chronicle Logo" 
             className="mx-auto h-20 w-20"
           />

@@ -9,7 +9,12 @@ export function NavBar() {
   return (
     <nav className="flex items-center justify-between p-4 border-b">
       <Link to="/" className="text-xl font-bold">
-        Chronicle
+          {/* <img 
+            src="/chronicle/logomark.png" 
+            alt="Chronicle Logo" 
+            className="mx-auto h-20"
+          /> */}
+          Chronicle
       </Link>
       <div>
         {isLoading ? null : isAuthenticated ? (

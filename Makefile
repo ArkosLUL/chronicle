@@ -39,11 +39,8 @@ publish:
 frontend/chronicle/dist: $(wildcard frontend/**)
 	(cd frontend/chronicle; pnpm install; pnpm build)
 
-.PHONY: build-site
-build-site: frontend/chronicle/dist
-
 .PHONY: develop
-develop: build-site create-db
+develop: frontend/chronicle/dist create-db
 	go run --tags static ./cmd/chronicled server --dev-auth
 
 .PHONY: create-db

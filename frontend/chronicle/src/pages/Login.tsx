@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/Card/Card"
 
 export function Login() {
   const [providers, setProviders] = useState<string[]>([])
@@ -57,13 +58,13 @@ export function Login() {
           </p>
         </div>
 
-        <div className="space-y-4 rounded-lg  p-8 dark:bg-gray-950">
-          {(true || loading) ? (
-            <div className="text-center text-gray-600 dark:text-gray-400">
+        <Card className="">
+          {(loading) ? (
+            <div className="text-center text-muted-foreground">
               Loading authentication providers...
             </div>
           ) : providers.length === 0 ? (
-            <div className="text-center text-gray-600 dark:text-gray-400">
+            <div className="text-center text-muted-foreground">
               No authentication providers configured
             </div>
           ) : (
@@ -83,7 +84,7 @@ export function Login() {
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
         <p className="text-center text-xs text-gray-500 dark:text-gray-500">
           Authentication is handled by external identity providers

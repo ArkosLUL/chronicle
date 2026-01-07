@@ -1,2 +1,52 @@
-<!-- Allows live tweaking -->
-<script src="https://tweakcn.com/live-preview.min.js"></script>
+<!-- Tweakcn theme handler (custom implementation to bypass origin check) -->
+<script>
+(function() {
+  function applyThemeStyles(styles, mode) {
+    var root = document.documentElement;
+    root.classList.toggle('dark', mode === 'dark');
+    
+    var values = styles.light || {};
+    for (var key in values) {
+      if (values[key]) root.style.setProperty('--' + key, values[key]);
+    }
+    
+    if (mode === 'dark' && styles.dark) {
+      for (var key in styles.dark) {
+        if (styles.dark[key]) root.style.setProperty('--' + key, styles.dark[key]);
+      }
+    }
+  }
+  
+  function sendToParent(data) {
+    if (window.parent !== window) {
+      window.parent.postMessage(data, '*');
+    }
+  }
+  
+  window.addEventListener('message', function(e) {
+    var type = e.data && e.data.type;
+    if (!type || type.indexOf('TWEAKCN_') !== 0) return;
+    
+    console.log('[story] received:', type);
+    
+    switch(type) {
+      case 'TWEAKCN_PING':
+        sendToParent({ type: 'TWEAKCN_PONG' });
+        break;
+      case 'TWEAKCN_CHECK_SHADCN':
+        sendToParent({ type: 'TWEAKCN_SHADCN_STATUS', payload: { supported: true } });
+        break;
+      case 'TWEAKCN_THEME_UPDATE':
+        var payload = e.data.payload;
+        if (payload && payload.themeState) {
+          applyThemeStyles(payload.themeState.styles, payload.themeState.currentMode);
+          sendToParent({ type: 'TWEAKCN_THEME_APPLIED' });
+        }
+        break;
+    }
+  });
+  
+  sendToParent({ type: 'TWEAKCN_EMBED_LOADED' });
+  console.log('[story] tweakcn handler loaded');
+})();
+</script>

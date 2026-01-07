@@ -1,25 +1,10 @@
-import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
+import { useAuthProviders } from "@/api/queries"
 
 export function Login() {
-  const [providers, setProviders] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Fetch available auth providers from the backend
-    // /auth/list returns a simple array of provider names: ["dev", "github", etc.]
-    fetch("/auth/list")
-      .then((res) => res.json())
-      .then((data: string[]) => {
-        setProviders(data || [])
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error("Failed to fetch auth providers:", err)
-        setLoading(false)
-      })
-  }, [])
+  const { data: providers = [], isLoading: loading } = useAuthProviders()
+  console.log("Auth providers:", providers)
 
   const handleLogin = (providerName: string) => {
     // Redirect to OAuth login endpoint
@@ -58,7 +43,7 @@ export function Login() {
           </p>
         </div>
 
-        <Card className="">
+        <Card className="p-8">
           {(loading) ? (
             <div className="text-center text-muted-foreground">
               Loading authentication providers...
@@ -69,7 +54,7 @@ export function Login() {
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
+              <p className="text-sm text-center mb-4 text-muted-foreground">
                 Choose a provider to sign in:
               </p>
               {providers.map((provider) => (
@@ -86,7 +71,7 @@ export function Login() {
           )}
         </Card>
 
-        <p className="text-center text-xs text-gray-500 dark:text-gray-500">
+        <p className="text-center text-xs text-muted-foreground">
           Authentication is handled by external identity providers
         </p>
       </div>

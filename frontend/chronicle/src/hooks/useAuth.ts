@@ -1,16 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useWhoami } from "@/api/queries";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useAuth() {
   const queryClient = useQueryClient();
-
-  const { data: isAuthenticated, isLoading } = useQuery({
-    queryKey: ["whoami"],
-    queryFn: async () => {
-      const response = await fetch("/api/v1/whoami");
-      return response.ok;
-    },
-    retry: false,
-  });
+  const { data: isAuthenticated, isLoading } = useWhoami();
 
   const logout = async () => {
     await fetch("/auth/logout");
@@ -23,3 +16,4 @@ export function useAuth() {
     logout,
   };
 }
+

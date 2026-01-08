@@ -15,7 +15,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	//uc := chronauth.MustAuthenticatedClaims(ctx)
 
-	first, header, err := r.FormFile("log_one")
+	first, header, err := r.FormFile("combat_log_1")
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
 			Message: "Failed to get first file from form",
@@ -31,7 +31,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	second, header, err := r.FormFile("log_second")
+	second, header, err := r.FormFile("combat_log_2")
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
 			Message: "Failed to get second file from form",

@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { Upload as UploadIcon, FileText, Info } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Upload() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [combatLog, setCombatLog] = useState<File | null>(null);
-  const [raidRoster, setRaidRoster] = useState<File | null>(null);
+  const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -15,10 +19,37 @@ export function Upload() {
     setter(file);
   };
 
-  const handleUpload = () => {
-    if (!combatLog || !raidRoster) return;
-    // TODO: Implement upload logic
-    console.log("Uploading:", { combatLog, raidRoster });
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleUpload = async () => {
+    if (!combatLog || !rawCombatLog) return;
+
+    setUploading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("combat_log_1", combatLog);
+    formData.append("combat_log_2", rawCombatLog);
+
+    try {
+      const response = await fetch("/api/v1/raidlogs/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Upload failed");
+      }
+
+      // TODO: Handle success (redirect to raid log page?)
+      console.log("Upload successful");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -30,8 +61,36 @@ export function Upload() {
         </p>
       </div>
 
-      {/* File Selection */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Auth Check */}
+      {!authLoading && !isAuthenticated ? (
+        <Card className="p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div>
+              <h2 className="font-semibold text-lg">Authentication Required</h2>
+              <p className="text-muted-foreground mt-1">
+                You must be logged in to upload raid logs.
+              </p>
+            </div>
+            <Link to="/login?from=/upload">
+              <Button>
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Upload Failed</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* File Selection */}
+          <div className="grid gap-6 md:grid-cols-2">
         <Card className="p-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -74,25 +133,25 @@ export function Upload() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-muted-foreground" />
-              <h2 className="font-semibold">Raid Roster</h2>
+              <h2 className="font-semibold">Raw Combat Log</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Select your raid roster export file
+              Select your WoWRawCombatLog.txt
             </p>
             <label className="block">
               <input
                 type="file"
                 accept=".txt,.csv"
-                onChange={(e) => handleFileSelect(e, setRaidRoster)}
+                onChange={(e) => handleFileSelect(e, setRawCombatLog)}
                 className="hidden"
               />
               <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                {raidRoster ? (
+                {rawCombatLog ? (
                   <div className="space-y-1">
                     <FileText className="h-8 w-8 mx-auto text-primary" />
-                    <p className="text-sm font-medium">{raidRoster.name}</p>
+                    <p className="text-sm font-medium">{rawCombatLog.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(raidRoster.size / 1024).toFixed(2)} KB
+                      {(rawCombatLog.size / 1024).toFixed(2)} KB
                     </p>
                   </div>
                 ) : (
@@ -111,12 +170,14 @@ export function Upload() {
 
       <Button
         onClick={handleUpload}
-        disabled={!combatLog || !raidRoster}
+        disabled={!combatLog || !rawCombatLog || uploading}
         className="w-full md:w-auto"
       >
         <UploadIcon className="h-4 w-4 mr-2" />
-        Upload Files
+        {uploading ? "Uploading..." : "Upload Files"}
       </Button>
+        </>
+      )}
 
       {/* Requirements */}
       <Card className="p-6">

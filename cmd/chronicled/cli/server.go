@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/xerrors"
 
@@ -28,6 +29,7 @@ func ServerCmd() *serpent.Command {
 		postgresURL string
 		discord     chronauth.DiscordOAuth
 		secretPem   string
+		storageFlag string
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -91,6 +93,16 @@ func ServerCmd() *serpent.Command {
 				Default:     "",
 				Value:       serpent.StringOf(&secretPem),
 			},
+			{
+				Name:        "Storage",
+				Description: "What storage to use for file storage.",
+				Required:    false,
+				Flag:        "storage",
+				Env:         "CHRONICLE_FILE_STORAGE",
+				// Otherwise set to "supabaseProject:supabaseKey"
+				Default: "local",
+				Value:   serpent.StringOf(&storageFlag),
+			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancel := context.WithCancel(i.Context())
@@ -133,9 +145,27 @@ func ServerCmd() *serpent.Command {
 				logger.Warn("using ephemeral JWT secret; this is not recommended for production environments")
 			}
 
+			var files storage.ObjectStorage
+			if storageFlag == "local" {
+				files, err = storage.NewLocalStorage()
+				if err != nil {
+					return fmt.Errorf("provision local storage: %w", err)
+				}
+			} else {
+				parts := strings.Split(storageFlag, ":")
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid storage flag format; expected 'supabaseProject:supabaseKey'")
+				}
+				files, err = storage.Supabase(parts[0], parts[1])
+				if err != nil {
+					return fmt.Errorf("provision supabase storage: %w", err)
+				}
+			}
+
 			handler, err := api.New(ctx, api.Options{
-				DB:        db,
 				Logger:    logger,
+				Storage:   files,
+				DB:        db,
 				Registry:  reg,
 				AccessURL: au,
 				DevOAuth:  devAuth,

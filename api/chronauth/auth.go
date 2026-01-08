@@ -216,7 +216,8 @@ func (s *Service) Logout(res http.ResponseWriter, req *http.Request) error {
 	for _, cookieName := range []string{AuthSessionName, OAuthSessionName} {
 		session, err := s.Store.Get(req, cookieName)
 		if err != nil {
-			return err
+			// Nothing to really do
+			continue
 		}
 		session.Options.MaxAge = -1
 		session.Values = make(map[interface{}]interface{})
@@ -259,6 +260,82 @@ func (s *Service) BeginAuthHandler(w http.ResponseWriter, req *http.Request) {
 
 func (s *Service) Handler() http.Handler {
 	mux := chi.NewRouter()
+	mux.Group(func(r chi.Router) {
+		r.Use(s.Authenticated(true))
+
+		mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {
+			cl, ok := AuthenticatedClaims(r.Context())
+			if ok && cl != nil {
+				return // Already authenticated
+			}
+
+			s.BeginAuthHandler(w, r)
+		})
+
+		mux.Get("/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
+			cl, ok := AuthenticatedClaims(r.Context())
+			if !ok || cl == nil {
+				// If authenticated, skip all this
+				ctx := r.Context()
+				_, ok = s.provider(w, r)
+				if !ok {
+					return
+				}
+
+				user, err := s.CompleteUserAuth(w, r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				// TODO: Upsert user, make an access token, and send that token as a cookie.
+				//   Switch to chronicle handling the auth
+				session, ok := s.Signup(w, r, user)
+				if !ok {
+					return
+				}
+
+				jwt, err := s.sessions.CreateSession(ctx, session)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				auth, err := s.Store.New(r, AuthSessionName)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				auth.Values["jwt"] = jwt
+				err = auth.Save(r, w)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			redirectTo := "/"
+			redirect, _ := s.Store.Get(r, "from")
+			if redirect != nil {
+				raw, _ := redirect.Values["from"]
+				fromStr, _ := raw.(string)
+				if fromStr != "" {
+					redirectTo = fromStr
+				}
+				delete(redirect.Values, "from")
+				_ = redirect.Save(r, w)
+			}
+			http.Redirect(w, r, redirectTo, http.StatusTemporaryRedirect)
+			//httpapi.Write(r.Context(), w, http.StatusOK, session)
+		})
+
+		mux.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
+			_ = s.Logout(w, r)
+			httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
+			return
+		})
+	})
 
 	mux.Get("/list", func(w http.ResponseWriter, r *http.Request) {
 		list := make([]string, 0, len(s.Providers))
@@ -267,107 +344,6 @@ func (s *Service) Handler() http.Handler {
 		}
 		sort.Strings(list)
 		httpapi.Write(r.Context(), w, http.StatusOK, list)
-	})
-	mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {
-		// Login url
-		sess, ok := s.Authenticated(w, r)
-		if !ok {
-			return
-		}
-		if sess != nil {
-			return // Already authenticated
-		}
-		//if gothUser, err := s.CompleteUserAuth(w, r); err == nil {
-		//	httpapi.Write(r.Context(), w, http.StatusOK, gothUser)
-		//	return
-		//}
-		s.BeginAuthHandler(w, r)
-	})
-
-	mux.Get("/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
-		sess, ok := s.Authenticated(w, r)
-		if !ok {
-			return
-		}
-
-		if sess != nil {
-			// Already authenticated
-			httpapi.Write(r.Context(), w, http.StatusOK, sess)
-			return
-		}
-
-		ctx := r.Context()
-		_, ok = s.provider(w, r)
-		if !ok {
-			return
-		}
-
-		user, err := s.CompleteUserAuth(w, r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// TODO: Upsert user, make an access token, and send that token as a cookie.
-		//   Switch to chronicle handling the auth
-		session, ok := s.Signup(w, r, user)
-		if !ok {
-			return
-		}
-
-		jwt, err := s.sessions.CreateSession(ctx, session)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		auth, err := s.Store.New(r, AuthSessionName)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		auth.Values["jwt"] = jwt
-		err = auth.Save(r, w)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		redirectTo := "/"
-		redirect, _ := s.Store.Get(r, "from")
-		if redirect != nil {
-			raw, _ := redirect.Values["from"]
-			fromStr, _ := raw.(string)
-			if fromStr != "" {
-				redirectTo = fromStr
-			}
-			delete(redirect.Values, "from")
-			_ = redirect.Save(r, w)
-		}
-		http.Redirect(w, r, redirectTo, http.StatusTemporaryRedirect)
-		//httpapi.Write(r.Context(), w, http.StatusOK, session)
-	})
-	mux.Get("/{provider}/logout", func(w http.ResponseWriter, r *http.Request) {
-		_ = s.Logout(w, r)
-		//w.Header().Set("Location", "/")
-		//w.WriteHeader(http.StatusTemporaryRedirect)
-		httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
-	})
-
-	mux.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
-		user, ok := s.Authenticated(w, r)
-		if !ok {
-			return
-		}
-
-		if user != nil {
-			// TODO: Delete sessions
-			_ = s.Logout(w, r)
-		}
-
-		httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
-		return
 	})
 
 	return mux

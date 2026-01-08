@@ -12,7 +12,7 @@ import (
 type authenticatedKey struct{}
 
 func AuthenticatedClaims(ctx context.Context) (*claims.Claims, bool) {
-	v := ctx.Value(&authenticatedKey{})
+	v := ctx.Value(authenticatedKey{})
 	if v == nil {
 		return nil, false
 	}

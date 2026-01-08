@@ -16,7 +16,7 @@ serve: wasm
 	@cd site && python3 -m http.server 8080
 
 .PHONY: gen
-gen: database/dump.sql database/querier.go wasm
+gen: database/dump.sql database/querier.go wasm frontend/chronicle/src/api/typesGenerated.ts
 	go generate ./...
 
 database/dump.sql: $(wildcard database/migrations/*.sql)
@@ -89,3 +89,9 @@ test-postgres-docker:
 		echo "$(date) - waiting for database to start"
 		sleep 0.5
 	done
+
+frontend/chronicle/src/api/typesGenerated.ts: $(wildcard scripts/apitypings/*) $(shell find ./api/chroniclesdk $(FIND_EXCLUSIONS) -type f -name '*.go')
+	# -C sets the directory for the go run command
+	go run -C ./scripts/apitypings main.go > $@
+	#(cd frontend/chronicle/ && pnpm exec biome format --write src/api/typesGenerated.ts)
+	touch "$@"

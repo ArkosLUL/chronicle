@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { http, HttpResponse, delay } from "msw"
+import { MemoryRouter } from "react-router-dom"
 import { Login } from "./Login"
 
 const meta: Meta<typeof Login> = {
   title: "Pages/Login",
   component: Login,
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   parameters: {
     layout: "fullscreen",
   },

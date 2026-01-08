@@ -18,6 +18,16 @@ CREATE TYPE spell_school AS ENUM (
     'nature'
 );
 
+CREATE TABLE files (
+    id uuid NOT NULL,
+    owner uuid NOT NULL,
+    hash text NOT NULL,
+    size_bytes bigint NOT NULL,
+    mime_type text NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
+);
+
 CREATE TABLE item_effects (
     id uuid NOT NULL,
     item_id integer NOT NULL,
@@ -40,8 +50,8 @@ CREATE TABLE item_templates (
     bind_type smallint,
     stack_size smallint DEFAULT 1,
     description text,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 COMMENT ON TABLE item_templates IS 'Items without data such as enchants.';
@@ -55,8 +65,8 @@ CREATE TABLE spell_templates (
     name text NOT NULL,
     school spell_school NOT NULL,
     description text,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 CREATE TABLE user_auth_links (
@@ -64,8 +74,8 @@ CREATE TABLE user_auth_links (
     linked_id text NOT NULL,
     user_id uuid NOT NULL,
     provider text NOT NULL,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 CREATE TABLE user_auth_session (
@@ -74,18 +84,30 @@ CREATE TABLE user_auth_session (
     access_token text NOT NULL,
     access_token_secret text NOT NULL,
     refresh_token text NOT NULL,
-    expires_at timestamp without time zone NOT NULL,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 CREATE TABLE users (
     id uuid NOT NULL,
     username text NOT NULL,
     email text NOT NULL,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
+
+CREATE TABLE wow_logs (
+    id uuid NOT NULL,
+    owner uuid NOT NULL,
+    first_log_file uuid NOT NULL,
+    second_log_file uuid,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
+);
+
+ALTER TABLE ONLY files
+    ADD CONSTRAINT files_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
@@ -105,7 +127,15 @@ ALTER TABLE ONLY user_auth_session
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY wow_logs
+    ADD CONSTRAINT wow_logs_pkey PRIMARY KEY (id);
+
+CREATE INDEX files_unique_owner_hash ON files USING btree (owner, hash);
+
 CREATE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
+
+ALTER TABLE ONLY files
+    ADD CONSTRAINT files_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
@@ -118,5 +148,14 @@ ALTER TABLE ONLY user_auth_links
 
 ALTER TABLE ONLY user_auth_session
     ADD CONSTRAINT user_auth_session_user_auth_id_fkey FOREIGN KEY (user_auth_id) REFERENCES user_auth_links(id);
+
+ALTER TABLE ONLY wow_logs
+    ADD CONSTRAINT wow_logs_first_log_file_fkey FOREIGN KEY (first_log_file) REFERENCES files(id);
+
+ALTER TABLE ONLY wow_logs
+    ADD CONSTRAINT wow_logs_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
+
+ALTER TABLE ONLY wow_logs
+    ADD CONSTRAINT wow_logs_second_log_file_fkey FOREIGN KEY (second_log_file) REFERENCES files(id);
 
 

@@ -149,6 +149,16 @@ func AllSpellSchoolValues() []SpellSchool {
 	}
 }
 
+type File struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Owner     uuid.UUID          `db:"owner" json:"owner"`
+	Hash      string             `db:"hash" json:"hash"`
+	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
+	MimeType  string             `db:"mime_type" json:"mime_type"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`
@@ -163,54 +173,63 @@ type ItemTemplate struct {
 	ID   int32  `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 	// 0 grey, 1 white, 2 green, 3 blue, 4 purple, 5 legendary, 6 artifact
-	Quality       int16            `db:"quality" json:"quality"`
-	ItemLevel     int16            `db:"item_level" json:"item_level"`
-	RequiredLevel pgtype.Int2      `db:"required_level" json:"required_level"`
-	Class         int16            `db:"class" json:"class"`
-	SubClass      int16            `db:"sub_class" json:"sub_class"`
-	InventorySlot int16            `db:"inventory_slot" json:"inventory_slot"`
-	Icon          pgtype.Text      `db:"icon" json:"icon"`
-	UniqueLimit   pgtype.Int2      `db:"unique_limit" json:"unique_limit"`
-	BindType      pgtype.Int2      `db:"bind_type" json:"bind_type"`
-	StackSize     pgtype.Int2      `db:"stack_size" json:"stack_size"`
-	Description   pgtype.Text      `db:"description" json:"description"`
-	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	Quality       int16              `db:"quality" json:"quality"`
+	ItemLevel     int16              `db:"item_level" json:"item_level"`
+	RequiredLevel pgtype.Int2        `db:"required_level" json:"required_level"`
+	Class         int16              `db:"class" json:"class"`
+	SubClass      int16              `db:"sub_class" json:"sub_class"`
+	InventorySlot int16              `db:"inventory_slot" json:"inventory_slot"`
+	Icon          pgtype.Text        `db:"icon" json:"icon"`
+	UniqueLimit   pgtype.Int2        `db:"unique_limit" json:"unique_limit"`
+	BindType      pgtype.Int2        `db:"bind_type" json:"bind_type"`
+	StackSize     pgtype.Int2        `db:"stack_size" json:"stack_size"`
+	Description   pgtype.Text        `db:"description" json:"description"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type SpellTemplate struct {
-	ID          int32            `db:"id" json:"id"`
-	Name        string           `db:"name" json:"name"`
-	School      SpellSchool      `db:"school" json:"school"`
-	Description pgtype.Text      `db:"description" json:"description"`
-	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt   pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID          int32              `db:"id" json:"id"`
+	Name        string             `db:"name" json:"name"`
+	School      SpellSchool        `db:"school" json:"school"`
+	Description pgtype.Text        `db:"description" json:"description"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type User struct {
-	ID        uuid.UUID        `db:"id" json:"id"`
-	Username  string           `db:"username" json:"username"`
-	Email     string           `db:"email" json:"email"`
-	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Username  string             `db:"username" json:"username"`
+	Email     string             `db:"email" json:"email"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type UserAuthLink struct {
-	ID        uuid.UUID        `db:"id" json:"id"`
-	LinkedID  string           `db:"linked_id" json:"linked_id"`
-	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
-	Provider  string           `db:"provider" json:"provider"`
-	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID        uuid.UUID          `db:"id" json:"id"`
+	LinkedID  string             `db:"linked_id" json:"linked_id"`
+	UserID    uuid.UUID          `db:"user_id" json:"user_id"`
+	Provider  string             `db:"provider" json:"provider"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type UserAuthSession struct {
-	ID                uuid.UUID        `db:"id" json:"id"`
-	UserAuthID        uuid.UUID        `db:"user_auth_id" json:"user_auth_id"`
-	AccessToken       string           `db:"access_token" json:"access_token"`
-	AccessTokenSecret string           `db:"access_token_secret" json:"access_token_secret"`
-	RefreshToken      string           `db:"refresh_token" json:"refresh_token"`
-	ExpiresAt         pgtype.Timestamp `db:"expires_at" json:"expires_at"`
-	CreatedAt         pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt         pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID                uuid.UUID          `db:"id" json:"id"`
+	UserAuthID        uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	AccessToken       string             `db:"access_token" json:"access_token"`
+	AccessTokenSecret string             `db:"access_token_secret" json:"access_token_secret"`
+	RefreshToken      string             `db:"refresh_token" json:"refresh_token"`
+	ExpiresAt         pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type WoWLog struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	Owner         uuid.UUID          `db:"owner" json:"owner"`
+	FirstLogFile  uuid.UUID          `db:"first_log_file" json:"first_log_file"`
+	SecondLogFile uuid.UUID          `db:"second_log_file" json:"second_log_file"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }

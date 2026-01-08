@@ -11,6 +11,14 @@ import (
 
 type authenticatedKey struct{}
 
+func MustAuthenticatedClaims(ctx context.Context) *claims.Claims {
+	c, ok := AuthenticatedClaims(ctx)
+	if !ok || c == nil {
+		panic("authenticated claims not found")
+	}
+	return c
+}
+
 func AuthenticatedClaims(ctx context.Context) (*claims.Claims, bool) {
 	v := ctx.Value(authenticatedKey{})
 	if v == nil {

@@ -92,6 +92,20 @@ func (l *LocalStorage) DeleteBucket(id string) (storage_go.MessageResponse, erro
 	return storage_go.MessageResponse{Message: "Bucket deleted"}, nil
 }
 
+func (l *LocalStorage) ListBuckets() ([]storage_go.Bucket, error) {
+	entries, err := os.ReadDir(l.basePath)
+	if err != nil {
+		return nil, fmt.Errorf("read storage dir: %w", err)
+	}
+	var buckets []storage_go.Bucket
+	for _, entry := range entries {
+		if entry.IsDir() {
+			buckets = append(buckets, storage_go.Bucket{Id: entry.Name(), Name: entry.Name()})
+		}
+	}
+	return buckets, nil
+}
+
 func (l *LocalStorage) EmptyBucket(id string) (storage_go.MessageResponse, error) {
 	bucketPath := l.bucketPath(id)
 	entries, err := os.ReadDir(bucketPath)
@@ -104,4 +118,19 @@ func (l *LocalStorage) EmptyBucket(id string) (storage_go.MessageResponse, error
 		}
 	}
 	return storage_go.MessageResponse{Message: "Bucket emptied"}, nil
+}
+
+func (l *LocalStorage) MoveFile(bucketId string, srcPath string, destPath string) (storage_go.FileUploadResponse, error) {
+	src := l.filePath(bucketId, srcPath)
+	dest := l.filePath(bucketId, destPath)
+
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		return storage_go.FileUploadResponse{}, fmt.Errorf("create dest dir: %w", err)
+	}
+
+	if err := os.Rename(src, dest); err != nil {
+		return storage_go.FileUploadResponse{}, fmt.Errorf("move file: %w", err)
+	}
+
+	return storage_go.FileUploadResponse{Key: filepath.Join(bucketId, destPath)}, nil
 }

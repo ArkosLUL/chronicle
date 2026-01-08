@@ -10,6 +10,18 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 )
 
+func InternalServerError(rw http.ResponseWriter, err error) {
+	var details string
+	if err != nil {
+		details = err.Error()
+	}
+
+	Write(context.Background(), rw, http.StatusInternalServerError, chroniclesdk.Response{
+		Message: "An internal server error occurred.",
+		Detail:  details,
+	})
+}
+
 func Write(_ context.Context, rw http.ResponseWriter, status int, response interface{}) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)

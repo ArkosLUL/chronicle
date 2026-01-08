@@ -45,7 +45,7 @@ CREATE TABLE user_auth_session (
   access_token TEXT NOT NULL,
   access_token_secret TEXT NOT NULL,
   refresh_token TEXT NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
 
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ
@@ -53,6 +53,31 @@ CREATE TABLE user_auth_session (
 
 -- Unique pairing of linked_id + provider
 CREATE INDEX user_auths_unique_linked_id ON user_auth_links(linked_id, provider);
+
+CREATE TABLE files (
+  id uuid PRIMARY KEY,
+  owner uuid NOT NULL REFERENCES users(id),
+
+  hash TEXT NOT NULL,
+  size_bytes BIGINT NOT NULL,
+  mime_type TEXT NOT NULL,
+
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
+CREATE INDEX files_unique_owner_hash ON files(owner, hash);
+
+CREATE TABLE wow_logs (
+  id uuid PRIMARY KEY,
+  owner uuid NOT NULL REFERENCES users(id),
+
+  first_log_file uuid NOT NULL REFERENCES files(id),
+  second_log_file uuid NULL REFERENCES files(id),
+
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
 
 -- RLS example if I decide to use it
 -- ALTER TABLE users ENABLE ROW LEVEL SECURITY;

@@ -12,10 +12,3 @@ func Timestamptz(t time.Time) pgtype.Timestamptz {
 		Valid: true,
 	}
 }
-
-func Timestamp(t time.Time) pgtype.Timestamp {
-	return pgtype.Timestamp{
-		Time:  t.UTC(),
-		Valid: true,
-	}
-}

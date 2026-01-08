@@ -64,9 +64,9 @@ func New(ctx context.Context, opts Options) (*API, error) {
 		RaidLogs: rw,
 		DB:       opts.DB,
 	})
-  if err != nil {
-    return nil, fmt.Errorf("chronicle: %w", err)
-  }
+	if err != nil {
+		return nil, fmt.Errorf("chronicle: %w", err)
+	}
 
 	return &API{
 		Opts:       &opts,
@@ -79,6 +79,7 @@ func New(ctx context.Context, opts Options) (*API, error) {
 func (api *API) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(
+		httpmw.Recover(api.Opts.Logger),
 		context2.ClearHandler,
 		// TODO: Finish cors options
 		cors.Handler(cors.Options{}),
@@ -94,6 +95,9 @@ func (api *API) Routes() chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Use(api.Auth.Authenticated(false))
 			r.Get("/whoami", api.WhoAmI)
+			r.Route("/raidlogs", func(r chi.Router) {
+				r.Post("/upload", api.WoWLogUpload)
+			})
 		})
 	})
 

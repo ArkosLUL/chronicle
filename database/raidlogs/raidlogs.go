@@ -7,7 +7,10 @@ import (
 	"github.com/Emyrk/chronicle/database/storage"
 )
 
-const bucketID = "raidlogs"
+const (
+	BucketRaidLogs  = "raidlogs"
+	BucketTemporary = "temporary"
+)
 
 type RaidLogStorage struct {
 	logger   *slog.Logger
@@ -22,10 +25,21 @@ func NewRaidLogStorage(logger *slog.Logger, db database.Store, s storage.ObjectS
 		Storage:  s,
 	}
 
-	_, err := rl.Storage.CreateBucket(bucketID, storage.BucketOptions{
+	const raidLogLimit = "100mb"
+	raidLogMimes := []string{"text/plain"}
+	_, err := rl.Storage.CreateBucket(BucketRaidLogs, storage.BucketOptions{
 		Public:           false,
-		FileSizeLimit:    "100mb",
-		AllowedMimeTypes: []string{"text/plain"},
+		FileSizeLimit:    raidLogLimit,
+		AllowedMimeTypes: raidLogMimes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = rl.Storage.CreateBucket(BucketTemporary, storage.BucketOptions{
+		Public:           false,
+		FileSizeLimit:    raidLogLimit,
+		AllowedMimeTypes: raidLogMimes,
 	})
 	if err != nil {
 		return nil, err

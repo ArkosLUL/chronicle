@@ -44,8 +44,8 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 				ID:        uuid.New(),
 				Username:  name,
 				Email:     user.Email,
-				CreatedAt: database.Timestamp(now),
-				UpdatedAt: database.Timestamp(now),
+				CreatedAt: database.Timestamptz(now),
+				UpdatedAt: database.Timestamptz(now),
 			})
 			if err != nil {
 				return err
@@ -56,8 +56,8 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 				LinkedID:  user.UserID,
 				UserID:    userRow.ID,
 				Provider:  provider.Name(),
-				CreatedAt: database.Timestamp(now),
-				UpdatedAt: database.Timestamp(now),
+				CreatedAt: database.Timestamptz(now),
+				UpdatedAt: database.Timestamptz(now),
 			})
 			if err != nil {
 				return err
@@ -79,9 +79,9 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 			AccessToken:       user.AccessToken,
 			AccessTokenSecret: user.AccessTokenSecret,
 			RefreshToken:      user.RefreshToken,
-			ExpiresAt:         database.Timestamp(user.ExpiresAt),
-			CreatedAt:         database.Timestamp(now),
-			UpdatedAt:         database.Timestamp(now),
+			ExpiresAt:         database.Timestamptz(user.ExpiresAt),
+			CreatedAt:         database.Timestamptz(now),
+			UpdatedAt:         database.Timestamptz(now),
 		})
 		if err != nil {
 			return err

@@ -23,6 +23,8 @@ type ObjectStorage interface {
 	CreateBucket(id string, options BucketOptions) (Bucket, error)
 	DeleteBucket(id string) (MessageResponse, error)
 	EmptyBucket(id string) (MessageResponse, error)
+	MoveFile(bucketId string, sourceKey string, destinationKey string) (FileUploadResponse, error)
+	ListBuckets() ([]Bucket, error)
 }
 
 func Supabase(projectID, projectAPIKey string) (ObjectStorage, error) {
@@ -32,5 +34,6 @@ func Supabase(projectID, projectAPIKey string) (ObjectStorage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("test connection to storage service: %w", err)
 	}
+
 	return storageClient, nil
 }

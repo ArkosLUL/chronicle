@@ -1,5 +1,7 @@
 package chroniclesdk
 
+import "github.com/google/uuid"
+
 // Response represents a generic HTTP response.
 type Response struct {
 	// Message is an actionable message that depicts actions the request took.
@@ -14,4 +16,9 @@ type Response struct {
 	// - "database: too many open connections"
 	// - "stat: too many open files"
 	Detail string `json:"detail,omitempty"`
+}
+
+type LogUploadResponse struct {
+	LogID uuid.UUID    `json:"log_id"`
+	Files [2]uuid.UUID `json:"files"`
 }

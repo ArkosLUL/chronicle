@@ -11,6 +11,115 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const insertFile = `-- name: InsertFile :one
+INSERT INTO
+  files(
+    id,
+    owner,
+    hash,
+    size_bytes,
+    mime_type,
+    created_at,
+    updated_at
+  )
+VALUES
+  (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7
+   )
+RETURNING id, owner, hash, size_bytes, mime_type, created_at, updated_at
+`
+
+type InsertFileParams struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Owner     uuid.UUID          `db:"owner" json:"owner"`
+	Hash      string             `db:"hash" json:"hash"`
+	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
+	MimeType  string             `db:"mime_type" json:"mime_type"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) InsertFile(ctx context.Context, arg InsertFileParams) (File, error) {
+	row := q.db.QueryRow(ctx, insertFile,
+		arg.ID,
+		arg.Owner,
+		arg.Hash,
+		arg.SizeBytes,
+		arg.MimeType,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Hash,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertWowLog = `-- name: InsertWowLog :one
+INSERT INTO
+  wow_logs(
+    id,
+    owner,
+    first_log_file,
+    second_log_file,
+    created_at,
+    updated_at
+  )
+VALUES
+  (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6
+  )
+RETURNING id, owner, first_log_file, second_log_file, created_at, updated_at
+`
+
+type InsertWowLogParams struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	Owner         uuid.UUID          `db:"owner" json:"owner"`
+	FirstLogFile  uuid.UUID          `db:"first_log_file" json:"first_log_file"`
+	SecondLogFile uuid.UUID          `db:"second_log_file" json:"second_log_file"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) InsertWowLog(ctx context.Context, arg InsertWowLogParams) (WoWLog, error) {
+	row := q.db.QueryRow(ctx, insertWowLog,
+		arg.ID,
+		arg.Owner,
+		arg.FirstLogFile,
+		arg.SecondLogFile,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i WoWLog
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.FirstLogFile,
+		&i.SecondLogFile,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const deleteThisQuery = `-- name: DeleteThisQuery :exec
 SELECT id, name, quality, item_level, required_level, class, sub_class, inventory_slot, icon, unique_limit, bind_type, stack_size, description, created_at, updated_at FROM item_templates
 `
@@ -80,11 +189,11 @@ RETURNING id, username, email, created_at, updated_at
 `
 
 type InsertUserParams struct {
-	ID        uuid.UUID        `db:"id" json:"id"`
-	Username  string           `db:"username" json:"username"`
-	Email     string           `db:"email" json:"email"`
-	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Username  string             `db:"username" json:"username"`
+	Email     string             `db:"email" json:"email"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 func (q *sqlQuerier) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
@@ -115,12 +224,12 @@ RETURNING id, linked_id, user_id, provider, created_at, updated_at
 `
 
 type InsertUserAuthParams struct {
-	ID        uuid.UUID        `db:"id" json:"id"`
-	LinkedID  string           `db:"linked_id" json:"linked_id"`
-	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
-	Provider  string           `db:"provider" json:"provider"`
-	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID        uuid.UUID          `db:"id" json:"id"`
+	LinkedID  string             `db:"linked_id" json:"linked_id"`
+	UserID    uuid.UUID          `db:"user_id" json:"user_id"`
+	Provider  string             `db:"provider" json:"provider"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 func (q *sqlQuerier) InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error) {
@@ -153,14 +262,14 @@ RETURNING id, user_auth_id, access_token, access_token_secret, refresh_token, ex
 `
 
 type InsertUserAuthSessionParams struct {
-	ID                uuid.UUID        `db:"id" json:"id"`
-	UserAuthID        uuid.UUID        `db:"user_auth_id" json:"user_auth_id"`
-	AccessToken       string           `db:"access_token" json:"access_token"`
-	AccessTokenSecret string           `db:"access_token_secret" json:"access_token_secret"`
-	RefreshToken      string           `db:"refresh_token" json:"refresh_token"`
-	ExpiresAt         pgtype.Timestamp `db:"expires_at" json:"expires_at"`
-	CreatedAt         pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt         pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID                uuid.UUID          `db:"id" json:"id"`
+	UserAuthID        uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	AccessToken       string             `db:"access_token" json:"access_token"`
+	AccessTokenSecret string             `db:"access_token_secret" json:"access_token_secret"`
+	RefreshToken      string             `db:"refresh_token" json:"refresh_token"`
+	ExpiresAt         pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error) {

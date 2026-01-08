@@ -41,6 +41,7 @@ CREATE TABLE user_auth_links (
 CREATE TABLE user_auth_session (
   id uuid PRIMARY KEY,
   user_auth_id uuid NOT NULL REFERENCES user_auth_links(id),
+  user_id uuid NOT NULL REFERENCES users(id),
 
   access_token TEXT NOT NULL,
   access_token_secret TEXT NOT NULL,

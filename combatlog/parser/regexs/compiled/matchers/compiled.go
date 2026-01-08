@@ -5,10 +5,6 @@ import (
   "github.com/Emyrk/chronicle/combatlog/parser/types"
 )
 
-func ReSpellCastAttempt() *types.Pattern {
-  return types.FromCompiled[*compiled.ReSpellCastAttemptResult](compiled.CompiledReSpellCastAttempt)
-}
-
 func ReBugDamageSpellHitOrCrit() *types.Pattern {
   return types.FromCompiled[*compiled.ReBugDamageSpellHitOrCritResult](compiled.CompiledReBugDamageSpellHitOrCrit)
 }
@@ -19,5 +15,9 @@ func ReCreates() *types.Pattern {
 
 func ReGain() *types.Pattern {
   return types.FromCompiled[*compiled.ReGainResult](compiled.CompiledReGain)
+}
+
+func ReSpellCastAttempt() *types.Pattern {
+  return types.FromCompiled[*compiled.ReSpellCastAttemptResult](compiled.CompiledReSpellCastAttempt)
 }
 

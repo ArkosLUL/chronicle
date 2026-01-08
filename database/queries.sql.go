@@ -255,14 +255,15 @@ func (q *sqlQuerier) InsertUserAuth(ctx context.Context, arg InsertUserAuthParam
 
 const insertUserAuthSession = `-- name: InsertUserAuthSession :one
 INSERT INTO
-  user_auth_session(id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
+  user_auth_session(id, user_id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, user_auth_id, user_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at
 `
 
 type InsertUserAuthSessionParams struct {
 	ID                uuid.UUID          `db:"id" json:"id"`
+	UserID            uuid.UUID          `db:"user_id" json:"user_id"`
 	UserAuthID        uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
 	AccessToken       string             `db:"access_token" json:"access_token"`
 	AccessTokenSecret string             `db:"access_token_secret" json:"access_token_secret"`
@@ -275,6 +276,7 @@ type InsertUserAuthSessionParams struct {
 func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error) {
 	row := q.db.QueryRow(ctx, insertUserAuthSession,
 		arg.ID,
+		arg.UserID,
 		arg.UserAuthID,
 		arg.AccessToken,
 		arg.AccessTokenSecret,
@@ -287,6 +289,7 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 	err := row.Scan(
 		&i.ID,
 		&i.UserAuthID,
+		&i.UserID,
 		&i.AccessToken,
 		&i.AccessTokenSecret,
 		&i.RefreshToken,

@@ -217,6 +217,7 @@ type UserAuthLink struct {
 type UserAuthSession struct {
 	ID                uuid.UUID          `db:"id" json:"id"`
 	UserAuthID        uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	UserID            uuid.UUID          `db:"user_id" json:"user_id"`
 	AccessToken       string             `db:"access_token" json:"access_token"`
 	AccessTokenSecret string             `db:"access_token_secret" json:"access_token_secret"`
 	RefreshToken      string             `db:"refresh_token" json:"refresh_token"`

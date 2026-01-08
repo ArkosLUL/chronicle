@@ -71,10 +71,10 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 				slog.String("id", userRow.ID.String()),
 			)
 		}
-
 		// Save the user session
 		session, err = tx.InsertUserAuthSession(ctx, database.InsertUserAuthSessionParams{
 			ID:                uuid.New(),
+			UserID:            linked.UserID,
 			UserAuthID:        linked.ID,
 			AccessToken:       user.AccessToken,
 			AccessTokenSecret: user.AccessTokenSecret,

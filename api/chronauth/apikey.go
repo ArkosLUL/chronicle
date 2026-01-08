@@ -113,7 +113,7 @@ func (a *Sessions) ValidateSession(payload string) (claims.Claims, error) {
 func (a *Sessions) CreateSession(ctx context.Context, session database.UserAuthSession) (string, error) {
 	c := &claims.Claims{
 		Issuer:    a.Issuer,
-		Subject:   session.UserAuthID,
+		Subject:   session.UserID,
 		Audience:  []string{a.Issuer},
 		Expiry:    jwt.NewNumericDate(session.ExpiresAt.Time),
 		NotBefore: jwt.NewNumericDate(session.CreatedAt.Time.Add(time.Minute * -1)),
@@ -122,6 +122,7 @@ func (a *Sessions) CreateSession(ctx context.Context, session database.UserAuthS
 
 		OAuthExpire: jwt.NewNumericDate(session.ExpiresAt.Time),
 		Refreshable: session.RefreshToken != "",
+		SessionID:   session.UserAuthID,
 	}
 	payload, err := jwt.Signed(a.Signer).Claims(c).Serialize()
 	if err != nil {

@@ -108,9 +108,10 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 				return fmt.Errorf("stat temp file: %w", err)
 			}
 
+			fmt.Println(cl.Subject.String())
 			dbFile, err := tx.InsertFile(ctx, database.InsertFileParams{
 				ID:        tmpIDs[i],
-				Owner:     cl.ID,
+				Owner:     cl.Subject,
 				Hash:      hashes[i],
 				SizeBytes: info.Size(),
 				MimeType:  "text/plain", // logs are only plaintext
@@ -125,9 +126,10 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 		// Insert the log entry
 		var err error
+		fmt.Println(cl.Subject.String())
 		log, err = tx.InsertWowLog(ctx, database.InsertWowLogParams{
 			ID:            uuid.New(),
-			Owner:         cl.ID,
+			Owner:         cl.Subject,
 			FirstLogFile:  dbFiles[0].ID,
 			SecondLogFile: dbFiles[1].ID,
 			CreatedAt:     database.Timestamptz(now),

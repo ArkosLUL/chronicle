@@ -27,9 +27,9 @@ WHERE
 
 -- name: InsertUserAuthSession :one
 INSERT INTO
-  user_auth_session(id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
+  user_auth_session(id, user_id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *
 ;
 

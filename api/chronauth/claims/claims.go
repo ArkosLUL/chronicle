@@ -18,4 +18,5 @@ type Claims struct {
 	Provider    string           `json:"provider,omitempty"`
 	OAuthExpire *jwt.NumericDate `json:"oexp,omitempty"`
 	Refreshable bool             `json:"refreshable,omitempty"`
+	SessionID   uuid.UUID        `json:"sid,omitempty"`
 }

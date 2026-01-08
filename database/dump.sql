@@ -81,6 +81,7 @@ CREATE TABLE user_auth_links (
 CREATE TABLE user_auth_session (
     id uuid NOT NULL,
     user_auth_id uuid NOT NULL,
+    user_id uuid NOT NULL,
     access_token text NOT NULL,
     access_token_secret text NOT NULL,
     refresh_token text NOT NULL,
@@ -148,6 +149,9 @@ ALTER TABLE ONLY user_auth_links
 
 ALTER TABLE ONLY user_auth_session
     ADD CONSTRAINT user_auth_session_user_auth_id_fkey FOREIGN KEY (user_auth_id) REFERENCES user_auth_links(id);
+
+ALTER TABLE ONLY user_auth_session
+    ADD CONSTRAINT user_auth_session_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 ALTER TABLE ONLY wow_logs
     ADD CONSTRAINT wow_logs_first_log_file_fkey FOREIGN KEY (first_log_file) REFERENCES files(id);

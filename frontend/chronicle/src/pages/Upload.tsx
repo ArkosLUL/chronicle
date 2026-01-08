@@ -20,36 +20,50 @@ export function Upload() {
   };
 
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const handleUpload = async () => {
     if (!combatLog || !rawCombatLog) return;
 
     setUploading(true);
+    setUploadProgress(0);
     setError(null);
 
     const formData = new FormData();
     formData.append("combat_log_1", combatLog);
     formData.append("combat_log_2", rawCombatLog);
 
-    try {
-      const response = await fetch("/api/v1/raidlogs/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Upload failed");
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
       }
+    });
 
-      // TODO: Handle success (redirect to raid log page?)
-      console.log("Upload successful");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
+    xhr.addEventListener("load", () => {
       setUploading(false);
-    }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        // TODO: Handle success (redirect to raid log page?)
+        console.log("Upload successful");
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          setError(data.message || "Upload failed");
+        } catch {
+          setError("Upload failed");
+        }
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      setUploading(false);
+      setError("Upload failed - network error");
+    });
+
+    xhr.open("POST", "/api/v1/raidlogs/upload");
+    xhr.send(formData);
   };
 
   return (
@@ -167,6 +181,21 @@ export function Upload() {
           </div>
         </Card>
       </div>
+
+      {uploading && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Uploading...</span>
+            <span>{uploadProgress}%</span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <Button
         onClick={handleUpload}

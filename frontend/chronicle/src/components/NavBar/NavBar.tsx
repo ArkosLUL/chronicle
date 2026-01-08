@@ -22,7 +22,7 @@ export function NavBar() {
   const { isAuthenticated, isLoading, logout } = useAuth();
 
   const accountMenuItems: NavItem[] = [
-    { title: "Settings", href: "/settings", icon: Settings },
+    { title: "Settings", href: "/account/settings", icon: Settings },
     { title: "Upload", href: "/upload", icon: Upload },
     { title: "Sign Out", onClick: logout, icon: LogOut },
   ];

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle } from "lucide-react";
+import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
@@ -22,6 +22,7 @@ export function Upload() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{ message: string } | null>(null);
 
   const handleUpload = async () => {
     if (!combatLog || !rawCombatLog) return;
@@ -29,6 +30,7 @@ export function Upload() {
     setUploading(true);
     setUploadProgress(0);
     setError(null);
+    setSuccess(null);
 
     const formData = new FormData();
     formData.append("combat_log_1", combatLog);
@@ -45,8 +47,12 @@ export function Upload() {
     xhr.addEventListener("load", () => {
       setUploading(false);
       if (xhr.status >= 200 && xhr.status < 300) {
-        // TODO: Handle success (redirect to raid log page?)
-        console.log("Upload successful");
+        try {
+          const data = JSON.parse(xhr.responseText);
+          setSuccess({ message: data.message || "Upload successful" });
+        } catch {
+          setSuccess({ message: "Upload successful" });
+        }
       } else {
         try {
           const data = JSON.parse(xhr.responseText);
@@ -91,6 +97,19 @@ export function Upload() {
                 Sign In
               </Button>
             </Link>
+          </div>
+        </Card>
+      ) : success ? (
+        <Card className="p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <CheckCircle className="h-12 w-12 text-green-500" />
+            <div>
+              <h2 className="font-semibold text-lg">Upload Successful</h2>
+              <p className="text-muted-foreground mt-1">{success.message}</p>
+            </div>
+            <Button onClick={() => setSuccess(null)} variant="outline">
+              Upload Another
+            </Button>
           </div>
         </Card>
       ) : (

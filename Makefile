@@ -15,10 +15,6 @@ serve: wasm
 	@echo "Starting development server at http://localhost:8080"
 	@cd site && python3 -m http.server 8080
 
-.PHONY: gen
-gen: gen/db wasm frontend/chronicle/src/api/typesGenerated.ts
-	go generate ./...
-
 database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/queries/*.sql)
 	./database/generate.sh
 
@@ -97,14 +93,14 @@ frontend/chronicle/src/api/typesGenerated.ts: $(wildcard scripts/apitypings/*) $
 # as a target for jobs that need to run after the database is generated.
 DB_GEN_FILES := \
 	database/dump.sql \
-	database/querier.go \
-	database/unique_constraint.go
+	database/querier.go
 
 database/dump.sql: $(wildcard database/migrations/*.sql)
 	go run ./database/gen/dump/*.go
 
-#database/unique_constraint.go: $(database/dump.sql)
-#	go run ./scripts/dbgen/*.go
-
 gen/db: $(DB_GEN_FILES)
 .PHONY: gen/db
+
+.PHONY: gen
+gen: gen/db wasm database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
+	go generate ./...

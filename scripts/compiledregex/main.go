@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
@@ -27,6 +28,12 @@ func main() {
 		"ReGain":                    regexs.ReGain,
 	}
 
+	order := make([]string, 0, len(compile))
+	for name := range compile {
+		order = append(order, name)
+	}
+	sort.Strings(order)
+
 	var out strings.Builder
 	out.WriteString("package matchers \n\n")
 	out.WriteString(`import (
@@ -34,7 +41,8 @@ func main() {
   "github.com/Emyrk/chronicle/combatlog/parser/types"
 )`)
 	out.WriteString("\n\n")
-	for name, pattern := range compile {
+	for _, name := range order {
+		pattern := compile[name]
 		err := regengo.Compile(regengo.Options{
 			Pattern:    pattern.String(),
 			Name:       name,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -19,6 +20,8 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/raidlogs"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 )
 
 type Chronicle struct {
@@ -28,12 +31,15 @@ type Chronicle struct {
 	logger             *slog.Logger
 	TemporaryDirectory string
 
-	mu sync.Mutex
+	queue *river.Client[pgx.Tx]
+	mu    sync.Mutex
 }
 
 type Options struct {
 	RaidLogs *raidlogs.RaidLogStorage
 	DB       database.Store
+
+	Queue RiverQueueOptions
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
@@ -43,6 +49,12 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		DB:                 opts.DB,
 		logger:             logger,
 		TemporaryDirectory: filepath.Join(os.TempDir(), "chronicle_uploads"),
+	}
+
+	// River async job queue
+	err := c.StartQueues(ctx, opts)
+	if err != nil {
+		return nil, fmt.Errorf("start queues: %w", err)
 	}
 
 	_ = c.clearTemporaryFiles()
@@ -164,6 +176,12 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Both files are now fully uploaded in the database and object storage
 	return &log, nil
+}
+
+func (c *Chronicle) Close() error {
+	qerr := c.queue.Stop(c.AppContext)
+
+	return errors.Join(qerr)
 }
 
 func (c *Chronicle) clearTemporaryFiles() error {

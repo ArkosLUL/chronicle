@@ -20,14 +20,15 @@ import (
 )
 
 type Options struct {
-	Logger    *slog.Logger
-	Storage   storage.ObjectStorage
-	DB        database.Store
-	Registry  *prometheus.Registry
-	AccessURL *url.URL
-	DevOAuth  bool
-	Discord   chronauth.DiscordOAuth
-	SecretPEM []byte // Used for JWTs
+	Logger     *slog.Logger
+	Storage    storage.ObjectStorage
+	DB         database.Store
+	Registry   *prometheus.Registry
+	AccessURL  *url.URL
+	DevOAuth   bool
+	Discord    chronauth.DiscordOAuth
+	SecretPEM  []byte // Used for JWTs
+	RiverQueue chronicle.RiverQueueOptions
 }
 
 type API struct {

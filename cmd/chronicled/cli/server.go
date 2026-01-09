@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/api"
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
+	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/prometheus/client_golang/prometheus"
@@ -201,6 +202,9 @@ func ServerCmd() *serpent.Command {
 				DevOAuth:  devAuth,
 				Discord:   discord,
 				SecretPEM: []byte(secretPem),
+				RiverQueue: chronicle.RiverQueueOptions{
+					DBURL: postgresURL,
+				},
 			})
 			if err != nil {
 				return err

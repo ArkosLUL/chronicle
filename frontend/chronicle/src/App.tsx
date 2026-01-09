@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom"
-import { Login } from "./pages/Login"
+import { Login } from "./pages/Login/Login"
 import { Home } from "./pages/Home"
 import { Empty } from "./pages/Empty"
-import { Upload } from "./pages/Upload"
+import { Upload } from "./pages/Upload/Upload"
 import { 
   AccountLayout, 
   ProfileSettings, 

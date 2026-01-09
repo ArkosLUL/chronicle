@@ -53,7 +53,7 @@ CREATE TABLE user_auth_session (
 );
 
 -- Unique pairing of linked_id + provider
-CREATE INDEX user_auths_unique_linked_id ON user_auth_links(linked_id, provider);
+CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links(linked_id, provider);
 
 CREATE TABLE files (
   id uuid PRIMARY KEY,
@@ -67,7 +67,7 @@ CREATE TABLE files (
   updated_at TIMESTAMPTZ
 );
 
-CREATE INDEX files_unique_owner_hash ON files(owner, hash);
+CREATE UNIQUE INDEX files_unique_owner_hash ON files(owner, hash);
 
 CREATE TABLE wow_logs (
   id uuid PRIMARY KEY,

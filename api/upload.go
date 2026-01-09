@@ -29,6 +29,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 			Message: "First log file is too large, exceeds maximum allowed size of 50 MB",
 			Detail:  fmt.Sprintf("file size: %d bytes", header.Size),
 		})
+		return
 	}
 
 	second, header, err := r.FormFile("combat_log_2")
@@ -45,6 +46,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 			Message: "First log file is too large, exceeds maximum allowed size of 50 MB",
 			Detail:  fmt.Sprintf("file size: %d bytes", header.Size),
 		})
+		return
 	}
 
 	log, err := api.Chronicle.UploadLogs(ctx, first, second)

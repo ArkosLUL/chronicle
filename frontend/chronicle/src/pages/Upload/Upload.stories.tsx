@@ -77,7 +77,10 @@ export const UploadFailed: Story = {
     isAuthenticated: true,
     combatLog: mockFile,
     rawCombatLog: mockRawFile,
-    error: "Invalid combat log format. Please ensure you're uploading the correct file.",
+    error: { 
+      message: "Invalid combat log format", 
+      detail: "Expected header 'COMBAT_LOG_VERSION' at line 1, but found 'INVALID_HEADER'. Please ensure you're uploading the correct WoWCombatLog.txt file." 
+    },
   },
 }
 

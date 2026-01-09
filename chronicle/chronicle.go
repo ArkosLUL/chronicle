@@ -125,7 +125,6 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 		// Insert the log entry
 		var err error
-		fmt.Println(cl.Subject.String())
 		log, err = tx.InsertWowLog(ctx, database.InsertWowLogParams{
 			ID:            uuid.New(),
 			Owner:         cl.Subject,

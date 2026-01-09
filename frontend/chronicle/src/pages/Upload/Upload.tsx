@@ -13,7 +13,7 @@ export interface UploadViewProps {
   rawCombatLog: File | null;
   uploading: boolean;
   uploadProgress: number;
-  error: string | null;
+  error: { message: string; detail?: string } | null;
   success: { message: string } | null;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>, type: "combat" | "raw") => void;
   onUpload: () => void;
@@ -79,7 +79,14 @@ export function UploadView({
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Upload Failed</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error.message}
+                {error.detail && (
+                  <pre className="mt-2 font-mono text-xs bg-destructive/10 p-2 rounded whitespace-pre-wrap break-words">
+                    {error.detail}
+                  </pre>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -255,7 +262,7 @@ export function Upload() {
   const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; detail?: string } | null>(null);
   const [success, setSuccess] = useState<{ message: string } | null>(null);
 
   const handleFileSelect = (
@@ -302,16 +309,19 @@ export function Upload() {
       } else {
         try {
           const data = JSON.parse(xhr.responseText);
-          setError(data.message || "Upload failed");
+          setError({ 
+            message: data.message || "Upload failed",
+            detail: data.detail 
+          });
         } catch {
-          setError("Upload failed");
+          setError({ message: "Upload failed" });
         }
       }
     });
 
     xhr.addEventListener("error", () => {
       setUploading(false);
-      setError("Upload failed - network error");
+      setError({ message: "Upload failed - network error" });
     });
 
     xhr.open("POST", "/api/v1/raidlogs/upload");

@@ -41,7 +41,7 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 
 .PHONY: develop
 develop: frontend/chronicle/dist create-db
-	go run --tags static ./cmd/chronicled server --dev-auth
+	go run --tags static ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
 
 .PHONY: create-db
 create-db:

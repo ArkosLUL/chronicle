@@ -8,3 +8,11 @@ pnpm dlx shadcn@latest add @storybook/alert-story
 ```
 
 https://registry.lloydrichards.dev/storybook/?path=/story/ui-menubar--with-submenu
+
+
+Fun:
+https://www.shadcn.io/components
+
+
+Cool idea:
+https://www.shadcn.io/components/dock/dock

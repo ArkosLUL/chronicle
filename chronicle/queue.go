@@ -4,11 +4,22 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Emyrk/chronicle/chronicle/worker"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
+)
+
+const (
+	QueueLogParsing = "log-parsing"
+)
+
+const (
+	PriorityHighest = 1
+	PriorityHigh    = 2
+	PriorityDefault = 3
+	PriorityLow     = 4
 )
 
 type RiverQueueOptions struct {
@@ -30,7 +41,19 @@ func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
 		return fmt.Errorf("new pool: %w", err)
 	}
 
-	riverClient, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
+	driver := riverpgxv5.New(pool)
+
+	migrator, err := rivermigrate.New(driver, nil)
+	if err != nil {
+		return fmt.Errorf("new river migrator: %w", err)
+	}
+
+	_, err = migrator.Migrate(ctx, rivermigrate.DirectionUp, nil)
+	if err != nil {
+		return fmt.Errorf("migrate river queues: %w", err)
+	}
+
+	riverClient, err := river.NewClient(driver, &river.Config{
 		Queues:  c.queues(opts.Queue),
 		Workers: c.workers(),
 	})
@@ -59,6 +82,8 @@ func (c *Chronicle) queues(opts RiverQueueOptions) map[string]river.QueueConfig 
 func (c *Chronicle) workers() *river.Workers {
 	workers := river.NewWorkers()
 
-	river.AddWorker(workers, &worker.WorkerLogParse{})
+	river.AddWorker(workers, &WorkerLogParse{
+		parent: c,
+	})
 	return workers
 }

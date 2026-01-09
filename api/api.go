@@ -64,6 +64,7 @@ func New(ctx context.Context, opts Options) (*API, error) {
 	chr, err := chronicle.New(ctx, opts.Logger, chronicle.Options{
 		RaidLogs: rw,
 		DB:       opts.DB,
+		Queue:    opts.RiverQueue,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("chronicle: %w", err)
@@ -104,6 +105,13 @@ func (api *API) Routes() chi.Router {
 
 	// Auth routes
 	r.Mount("/auth", api.Auth.Handler())
+
+	// River UI
+	r.Group(func(r chi.Router) {
+		r.Use(api.Auth.Authenticated(false))
+		r.Mount("/river", api.Chronicle.Handler())
+	})
+
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 
 	return r

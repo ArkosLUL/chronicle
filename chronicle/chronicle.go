@@ -31,8 +31,9 @@ type Chronicle struct {
 	logger             *slog.Logger
 	TemporaryDirectory string
 
-	queue *river.Client[pgx.Tx]
-	mu    sync.Mutex
+	queue   *river.Client[pgx.Tx]
+	mu      sync.Mutex
+	handler http.Handler
 }
 
 type Options struct {
@@ -56,6 +57,12 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 	if err != nil {
 		return nil, fmt.Errorf("start queues: %w", err)
 	}
+
+	handler, err := c.webUI(ctx)
+	if err != nil {
+		return nil, err
+	}
+	c.handler = handler
 
 	_ = c.clearTemporaryFiles()
 	return c, nil

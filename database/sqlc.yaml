@@ -23,3 +23,6 @@ sql:
           - db_type: "uuid"
             go_type: "github.com/google/uuid.UUID"
             nullable: true
+          - db_type: "wow_log_group_files"
+            go_type:
+              type: "[]LogFile"

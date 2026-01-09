@@ -18,6 +18,8 @@ CREATE TYPE spell_school AS ENUM (
     'nature'
 );
 
+CREATE DOMAIN wow_log_group_files AS jsonb;
+
 CREATE TABLE item_effects (
     id uuid NOT NULL,
     item_id integer NOT NULL,

@@ -34,4 +34,29 @@ export interface Response {
     readonly detail?: string;
 }
 
+// From chroniclesdk/log.go
+export interface WoWLogFile {
+    readonly id: string;
+    readonly owner: string;
+    readonly wow_log_id: string;
+    readonly hash: string;
+    readonly size_bytes: number;
+    readonly mime_type: string;
+    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
+    readonly created_at: unknown;
+    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
+    readonly updated_at: unknown;
+}
+
+// From chroniclesdk/log.go
+export interface WoWLogGroup {
+    readonly id: string;
+    readonly owner: string;
+    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
+    readonly created_at: unknown;
+    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
+    readonly updated_at: unknown;
+    readonly files: readonly WoWLogFile[];
+}
+
 

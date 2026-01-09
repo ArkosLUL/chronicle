@@ -80,6 +80,9 @@ CREATE TABLE log_file (
 
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file(owner, hash);
 
+-- Used for sqlc typing
+CREATE DOMAIN wow_log_group_files AS jsonb;
+
 -- RLS example if I decide to use it
 -- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 --

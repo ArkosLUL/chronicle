@@ -99,6 +99,7 @@ func (api *API) Routes() chi.Router {
 			r.Get("/whoami", api.WhoAmI)
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Post("/upload", api.WoWLogUpload)
+				r.Get("/", api.WoWLogGroups)
 			})
 		})
 	})

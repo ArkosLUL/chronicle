@@ -103,8 +103,8 @@ DB_GEN_FILES := \
 database/dump.sql: $(wildcard database/migrations/*.sql)
 	go run ./database/gen/dump/*.go
 
-database/unique_constraint.go: $(database/dump.sql)
-	go run ./scripts/dbgen/*.go
+#database/unique_constraint.go: $(database/dump.sql)
+#	go run ./scripts/dbgen/*.go
 
 gen/db: $(DB_GEN_FILES)
 .PHONY: gen/db

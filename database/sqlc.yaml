@@ -14,7 +14,7 @@ sql:
         emit_enum_valid_method: true
         emit_all_enum_values: true
         rename:
-          wow_log: "WoWLog"
+          wow_log_group: "WoWLogGroup"
         overrides:
           # Override for non-nullable UUID columns
           - db_type: "uuid"

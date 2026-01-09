@@ -19,6 +19,7 @@ import (
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/raidlogs"
+	"github.com/Emyrk/chronicle/internal/cleanup"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -68,11 +69,14 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 	return c, nil
 }
 
-func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*database.WoWLog, error) {
+func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*database.WoWLogGroup, []database.LogFile, error) {
+	clean := cleanup.New()
+	defer clean.Do()
+
 	now := time.Now()
 	cl, ok := chronauth.AuthenticatedClaims(ctx)
 	if !ok {
-		return nil, fmt.Errorf("upload file, no authenticated user")
+		return nil, nil, fmt.Errorf("upload file, no authenticated user")
 	}
 
 	// Save the files locally to disk first, then upload them to object storage.
@@ -85,13 +89,14 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 	rdrs := []io.Reader{one, two}
 	hashes := make([]string, 0, len(tmpIDs))
 	tmpFiles := make([]*os.File, 0, len(tmpIDs))
+	dbFiles := make([]database.LogFile, 0, len(tmpIDs))
 
 	for i, tmp := range tmpIDs {
 		rdr := rdrs[i]
 		tmpPath := filepath.Join(c.TemporaryDirectory, tmp.String())
 		f, err := os.Create(tmpPath)
 		if err != nil {
-			return nil, fmt.Errorf("create temp file: %w", err)
+			return nil, nil, fmt.Errorf("create temp file: %w", err)
 		}
 		defer f.Close()
 		tmpFiles = append(tmpFiles, f)
@@ -100,32 +105,43 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		writer := io.MultiWriter(f, h)
 
 		if _, err := io.Copy(writer, rdr); err != nil {
-			return nil, fmt.Errorf("write temp file: %w", err)
+			return nil, nil, fmt.Errorf("write temp file: %w", err)
 		}
 
 		err = tmpFiles[i].Sync()
 		if err != nil {
-			return nil, fmt.Errorf("flush temp file: %w", err)
+			return nil, nil, fmt.Errorf("flush temp file: %w", err)
 		}
 
 		// Reset so it can be read back
 		_, err = tmpFiles[i].Seek(0, io.SeekStart)
 		if err != nil {
-			return nil, fmt.Errorf("seek temp file: %w", err)
+			return nil, nil, fmt.Errorf("seek temp file: %w", err)
 		}
 
 		hashes = append(hashes, hex.EncodeToString(h.Sum(nil)))
 	}
 
 	if hashes[0] == hashes[1] {
-		return nil, fmt.Errorf("the same file was uploaded twice; please upload two different log files")
+		return nil, nil, fmt.Errorf("the same file was uploaded twice; please upload two different log files")
 	}
 
-	var log database.WoWLog
+	var group database.WoWLogGroup
 	// tmpFiles and hashes are the files that were uploaded now on local disk.
 	err := c.DB.InTx(func(tx database.Store) error {
+		// Insert the log grouo
+		var err error
+		group, err = tx.InsertWoWLogGroup(ctx, database.InsertWoWLogGroupParams{
+			ID:        uuid.New(),
+			Owner:     cl.Subject,
+			CreatedAt: database.Timestamptz(now),
+			UpdatedAt: database.Timestamptz(now),
+		})
+		if err != nil {
+			return err
+		}
+
 		// Insert both files
-		dbFiles := make([]database.File, 0, len(hashes))
 		for i, _ := range hashes {
 			tmpFile := tmpFiles[i]
 			info, err := tmpFile.Stat()
@@ -133,10 +149,11 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 				return fmt.Errorf("stat temp file: %w", err)
 			}
 
-			dbFile, err := tx.InsertFile(ctx, database.InsertFileParams{
+			dbFile, err := tx.InsertLogFile(ctx, database.InsertLogFileParams{
 				ID:        tmpIDs[i],
 				Owner:     cl.Subject,
 				Hash:      hashes[i],
+				WowLogID:  group.ID,
 				SizeBytes: info.Size(),
 				MimeType:  "text/plain", // logs are only plaintext
 				CreatedAt: database.Timestamptz(now),
@@ -153,36 +170,34 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 			dbFiles = append(dbFiles, dbFile)
 		}
 
-		// Insert the log entry
-		var err error
-		log, err = tx.InsertWowLog(ctx, database.InsertWowLogParams{
-			ID:            uuid.New(),
-			Owner:         cl.Subject,
-			FirstLogFile:  dbFiles[0].ID,
-			SecondLogFile: dbFiles[1].ID,
-			CreatedAt:     database.Timestamptz(now),
-			UpdatedAt:     database.Timestamptz(now),
-		})
-		if err != nil {
-			return err
-		}
-
 		return nil
 	}, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	clean.Add(func() { _ = c.DB.DeleteWoWLogGroup(ctx, group.ID) })
 
 	// Now store the logs in object storage
 	for i := range tmpIDs {
-		_, err := c.RaidLogs.Storage.UploadFile(raidlogs.BucketRaidLogs, filepath.Join("logs", tmpIDs[i].String()), tmpFiles[i])
+		storageObject, err := c.RaidLogs.Storage.UploadFile(raidlogs.BucketRaidLogs, filepath.Join("logs", tmpIDs[i].String()), tmpFiles[i])
 		if err != nil {
-			return nil, fmt.Errorf("upload log file to object storage: %w", err)
+			return nil, nil, fmt.Errorf("upload log file to object storage: %w", err)
 		}
+		clean.Add(func() { _, _ = c.RaidLogs.Storage.RemoveFile(raidlogs.BucketRaidLogs, []string{storageObject.Key}) })
 	}
 
+	res, err := c.EnqueueParseLog(ctx, group)
+	if err != nil {
+		return nil, nil, fmt.Errorf("enqueue log parse job: %w", err)
+	}
+	clean.Add(func() { _, _ = c.queue.JobDelete(ctx, res.Job.ID) })
+
+	// All worked! Do not do any cleanup work
+	clean.Clear()
+
 	// Both files are now fully uploaded in the database and object storage
-	return &log, nil
+	return &group, dbFiles, nil
 }
 
 func (c *Chronicle) Close() error {

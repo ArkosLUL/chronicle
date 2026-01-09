@@ -6,14 +6,14 @@ type UniqueConstraint string
 
 // UniqueConstraint enums.
 const (
-	UniqueFilesPkey               UniqueConstraint = "files_pkey"                  // ALTER TABLE ONLY files ADD CONSTRAINT files_pkey PRIMARY KEY (id);
 	UniqueItemEffectsPkey         UniqueConstraint = "item_effects_pkey"           // ALTER TABLE ONLY item_effects ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 	UniqueItemTemplatesPkey       UniqueConstraint = "item_templates_pkey"         // ALTER TABLE ONLY item_templates ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
+	UniqueLogFilePkey             UniqueConstraint = "log_file_pkey"               // ALTER TABLE ONLY log_file ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
 	UniqueSpellTemplatesPkey      UniqueConstraint = "spell_templates_pkey"        // ALTER TABLE ONLY spell_templates ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
 	UniqueUserAuthLinksPkey       UniqueConstraint = "user_auth_links_pkey"        // ALTER TABLE ONLY user_auth_links ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 	UniqueUserAuthSessionPkey     UniqueConstraint = "user_auth_session_pkey"      // ALTER TABLE ONLY user_auth_session ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
 	UniqueUsersPkey               UniqueConstraint = "users_pkey"                  // ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-	UniqueWowLogsPkey             UniqueConstraint = "wow_logs_pkey"               // ALTER TABLE ONLY wow_logs ADD CONSTRAINT wow_logs_pkey PRIMARY KEY (id);
-	UniqueFilesUniqueOwnerHash    UniqueConstraint = "files_unique_owner_hash"     // CREATE UNIQUE INDEX files_unique_owner_hash ON files USING btree (owner, hash);
+	UniqueWowLogGroupsPkey        UniqueConstraint = "wow_log_groups_pkey"         // ALTER TABLE ONLY wow_log_groups ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
+	UniqueFilesUniqueOwnerHash    UniqueConstraint = "files_unique_owner_hash"     // CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 	UniqueUserAuthsUniqueLinkedID UniqueConstraint = "user_auths_unique_linked_id" // CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 )

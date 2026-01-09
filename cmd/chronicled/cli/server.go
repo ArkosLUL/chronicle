@@ -59,6 +59,7 @@ func ServerCmd() *serpent.Command {
 		discord     chronauth.DiscordOAuth
 		secretPem   string
 		storageFlag string
+		riverOpts   chronicle.RiverQueueOptions
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -132,6 +133,15 @@ func ServerCmd() *serpent.Command {
 				Default: "local",
 				Value:   serpent.StringOf(&storageFlag),
 			},
+			{
+				Name:        "Log Parsing Worker Count",
+				Description: "Number of workers to use for parsing raid log files.",
+				Required:    false,
+				Flag:        "log-parse-worker-count",
+				Env:         "CHRONICLE_LOG_PARSING_WORKERS",
+				Default:     "1",
+				Value:       serpent.Int64Of(&riverOpts.LogParsingWorkers),
+			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancel := context.WithCancel(i.Context())
@@ -193,18 +203,17 @@ func ServerCmd() *serpent.Command {
 				}
 			}
 
+			riverOpts.DBURL = postgresURL
 			handler, err := api.New(ctx, api.Options{
-				Logger:    logger,
-				Storage:   files,
-				DB:        db,
-				Registry:  reg,
-				AccessURL: au,
-				DevOAuth:  devAuth,
-				Discord:   discord,
-				SecretPEM: []byte(secretPem),
-				RiverQueue: chronicle.RiverQueueOptions{
-					DBURL: postgresURL,
-				},
+				Logger:     logger,
+				Storage:    files,
+				DB:         db,
+				Registry:   reg,
+				AccessURL:  au,
+				DevOAuth:   devAuth,
+				Discord:    discord,
+				SecretPEM:  []byte(secretPem),
+				RiverQueue: riverOpts,
 			})
 			if err != nil {
 				return err

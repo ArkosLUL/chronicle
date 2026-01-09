@@ -55,9 +55,20 @@ CREATE TABLE user_auth_session (
 -- Unique pairing of linked_id + provider
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links(linked_id, provider);
 
-CREATE TABLE files (
+CREATE TABLE wow_log_groups (
+    id uuid PRIMARY KEY,
+    owner uuid NOT NULL REFERENCES users(id),
+
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+);
+
+CREATE TABLE log_file (
   id uuid PRIMARY KEY,
   owner uuid NOT NULL REFERENCES users(id),
+  -- Files only exist in the context of a wow log
+  wow_log_id uuid NULL REFERENCES wow_log_groups(id)
+    ON DELETE CASCADE,
 
   hash TEXT NOT NULL,
   size_bytes BIGINT NOT NULL,
@@ -67,18 +78,7 @@ CREATE TABLE files (
   updated_at TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX files_unique_owner_hash ON files(owner, hash);
-
-CREATE TABLE wow_logs (
-  id uuid PRIMARY KEY,
-  owner uuid NOT NULL REFERENCES users(id),
-
-  first_log_file uuid NOT NULL REFERENCES files(id),
-  second_log_file uuid NULL REFERENCES files(id),
-
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
+CREATE UNIQUE INDEX files_unique_owner_hash ON log_file(owner, hash);
 
 -- RLS example if I decide to use it
 -- ALTER TABLE users ENABLE ROW LEVEL SECURITY;

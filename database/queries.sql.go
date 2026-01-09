@@ -11,12 +11,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const insertFile = `-- name: InsertFile :one
+const deleteWoWLogGroup = `-- name: DeleteWoWLogGroup :exec
+DELETE FROM
+  wow_log_groups
+WHERE
+  id = $1
+`
+
+func (q *sqlQuerier) DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWoWLogGroup, id)
+	return err
+}
+
+const insertLogFile = `-- name: InsertLogFile :one
 INSERT INTO
-  files(
+  log_file(
     id,
     owner,
     hash,
+    wow_log_id,
     size_bytes,
     mime_type,
     created_at,
@@ -30,35 +43,39 @@ VALUES
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8
    )
-RETURNING id, owner, hash, size_bytes, mime_type, created_at, updated_at
+RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at
 `
 
-type InsertFileParams struct {
+type InsertLogFileParams struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
 	Hash      string             `db:"hash" json:"hash"`
+	WowLogID  uuid.UUID          `db:"wow_log_id" json:"wow_log_id"`
 	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
 	MimeType  string             `db:"mime_type" json:"mime_type"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-func (q *sqlQuerier) InsertFile(ctx context.Context, arg InsertFileParams) (File, error) {
-	row := q.db.QueryRow(ctx, insertFile,
+func (q *sqlQuerier) InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error) {
+	row := q.db.QueryRow(ctx, insertLogFile,
 		arg.ID,
 		arg.Owner,
 		arg.Hash,
+		arg.WowLogID,
 		arg.SizeBytes,
 		arg.MimeType,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
-	var i File
+	var i LogFile
 	err := row.Scan(
 		&i.ID,
 		&i.Owner,
+		&i.WowLogID,
 		&i.Hash,
 		&i.SizeBytes,
 		&i.MimeType,
@@ -68,13 +85,11 @@ func (q *sqlQuerier) InsertFile(ctx context.Context, arg InsertFileParams) (File
 	return i, err
 }
 
-const insertWowLog = `-- name: InsertWowLog :one
+const insertWoWLogGroup = `-- name: InsertWoWLogGroup :one
 INSERT INTO
-  wow_logs(
+  wow_log_groups(
     id,
     owner,
-    first_log_file,
-    second_log_file,
     created_at,
     updated_at
   )
@@ -83,37 +98,29 @@ VALUES
     $1,
     $2,
     $3,
-    $4,
-    $5,
-    $6
+    $4
   )
-RETURNING id, owner, first_log_file, second_log_file, created_at, updated_at
+RETURNING id, owner, created_at, updated_at
 `
 
-type InsertWowLogParams struct {
-	ID            uuid.UUID          `db:"id" json:"id"`
-	Owner         uuid.UUID          `db:"owner" json:"owner"`
-	FirstLogFile  uuid.UUID          `db:"first_log_file" json:"first_log_file"`
-	SecondLogFile uuid.UUID          `db:"second_log_file" json:"second_log_file"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+type InsertWoWLogGroupParams struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Owner     uuid.UUID          `db:"owner" json:"owner"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-func (q *sqlQuerier) InsertWowLog(ctx context.Context, arg InsertWowLogParams) (WoWLog, error) {
-	row := q.db.QueryRow(ctx, insertWowLog,
+func (q *sqlQuerier) InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error) {
+	row := q.db.QueryRow(ctx, insertWoWLogGroup,
 		arg.ID,
 		arg.Owner,
-		arg.FirstLogFile,
-		arg.SecondLogFile,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
-	var i WoWLog
+	var i WoWLogGroup
 	err := row.Scan(
 		&i.ID,
 		&i.Owner,
-		&i.FirstLogFile,
-		&i.SecondLogFile,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

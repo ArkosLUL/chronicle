@@ -23,8 +23,9 @@ const (
 )
 
 type RiverQueueOptions struct {
-	DBURL      string
-	InsertOnly bool
+	DBURL             string
+	InsertOnly        bool
+	LogParsingWorkers int64
 }
 
 func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
@@ -55,7 +56,7 @@ func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
 
 	riverClient, err := river.NewClient(driver, &river.Config{
 		Queues:  c.queues(opts.Queue),
-		Workers: c.workers(),
+		Workers: c.workers(opts.Queue),
 	})
 	if err != nil {
 		return fmt.Errorf("new river client: %w", err)
@@ -76,14 +77,18 @@ func (c *Chronicle) queues(opts RiverQueueOptions) map[string]river.QueueConfig 
 	}
 	return map[string]river.QueueConfig{
 		river.QueueDefault: {MaxWorkers: 5},
+		QueueLogParsing:    {MaxWorkers: int(opts.LogParsingWorkers)},
 	}
 }
 
-func (c *Chronicle) workers() *river.Workers {
+func (c *Chronicle) workers(opts RiverQueueOptions) *river.Workers {
 	workers := river.NewWorkers()
 
-	river.AddWorker(workers, &WorkerLogParse{
-		parent: c,
-	})
+	if opts.LogParsingWorkers > 0 {
+		river.AddWorker(workers, &WorkerLogParse{
+			parent: c,
+		})
+	}
+
 	return workers
 }

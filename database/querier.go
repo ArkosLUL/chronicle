@@ -12,13 +12,14 @@ import (
 
 type sqlcQuerier interface {
 	DeleteThisQuery(ctx context.Context) error
+	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
-	InsertFile(ctx context.Context, arg InsertFileParams) (File, error)
+	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
-	InsertWowLog(ctx context.Context, arg InsertWowLogParams) (WoWLog, error)
+	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

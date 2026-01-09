@@ -18,16 +18,6 @@ CREATE TYPE spell_school AS ENUM (
     'nature'
 );
 
-CREATE TABLE files (
-    id uuid NOT NULL,
-    owner uuid NOT NULL,
-    hash text NOT NULL,
-    size_bytes bigint NOT NULL,
-    mime_type text NOT NULL,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone
-);
-
 CREATE TABLE item_effects (
     id uuid NOT NULL,
     item_id integer NOT NULL,
@@ -59,6 +49,17 @@ COMMENT ON TABLE item_templates IS 'Items without data such as enchants.';
 COMMENT ON COLUMN item_templates.id IS 'Matches the item id in WoW.';
 
 COMMENT ON COLUMN item_templates.quality IS '0 grey, 1 white, 2 green, 3 blue, 4 purple, 5 legendary, 6 artifact';
+
+CREATE TABLE log_file (
+    id uuid NOT NULL,
+    owner uuid NOT NULL,
+    wow_log_id uuid,
+    hash text NOT NULL,
+    size_bytes bigint NOT NULL,
+    mime_type text NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
+);
 
 CREATE TABLE spell_templates (
     id integer NOT NULL,
@@ -98,23 +99,21 @@ CREATE TABLE users (
     updated_at timestamp with time zone
 );
 
-CREATE TABLE wow_logs (
+CREATE TABLE wow_log_groups (
     id uuid NOT NULL,
     owner uuid NOT NULL,
-    first_log_file uuid NOT NULL,
-    second_log_file uuid,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
-
-ALTER TABLE ONLY files
-    ADD CONSTRAINT files_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY item_templates
     ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY log_file
+    ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY spell_templates
     ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
@@ -128,21 +127,24 @@ ALTER TABLE ONLY user_auth_session
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY wow_logs
-    ADD CONSTRAINT wow_logs_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY wow_log_groups
+    ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX files_unique_owner_hash ON files USING btree (owner, hash);
+CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
-
-ALTER TABLE ONLY files
-    ADD CONSTRAINT files_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_spell_id_fkey FOREIGN KEY (spell_id) REFERENCES spell_templates(id);
+
+ALTER TABLE ONLY log_file
+    ADD CONSTRAINT log_file_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
+
+ALTER TABLE ONLY log_file
+    ADD CONSTRAINT log_file_wow_log_id_fkey FOREIGN KEY (wow_log_id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
@@ -153,13 +155,7 @@ ALTER TABLE ONLY user_auth_session
 ALTER TABLE ONLY user_auth_session
     ADD CONSTRAINT user_auth_session_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
-ALTER TABLE ONLY wow_logs
-    ADD CONSTRAINT wow_logs_first_log_file_fkey FOREIGN KEY (first_log_file) REFERENCES files(id);
-
-ALTER TABLE ONLY wow_logs
-    ADD CONSTRAINT wow_logs_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
-
-ALTER TABLE ONLY wow_logs
-    ADD CONSTRAINT wow_logs_second_log_file_fkey FOREIGN KEY (second_log_file) REFERENCES files(id);
+ALTER TABLE ONLY wow_log_groups
+    ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
 

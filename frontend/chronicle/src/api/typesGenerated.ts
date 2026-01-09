@@ -3,10 +3,7 @@
 // From chroniclesdk/response.go
 export interface LogUploadResponse {
     readonly log_id: string;
-    readonly files: [
-        string,
-        string
-    ];
+    readonly file_ids: readonly string[];
 }
 
 // From chroniclesdk/response.go

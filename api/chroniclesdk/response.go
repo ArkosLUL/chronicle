@@ -22,6 +22,6 @@ type Response struct {
 }
 
 type LogUploadResponse struct {
-	LogID uuid.UUID    `json:"log_id"`
-	Files [2]uuid.UUID `json:"files"`
+	LogID uuid.UUID   `json:"log_id"`
+	Files []uuid.UUID `json:"file_ids"`
 }

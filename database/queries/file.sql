@@ -1,9 +1,10 @@
--- name: InsertFile :one
+-- name: InsertLogFile :one
 INSERT INTO
-  files(
+  log_file(
     id,
     owner,
     hash,
+    wow_log_id,
     size_bytes,
     mime_type,
     created_at,
@@ -17,18 +18,17 @@ VALUES
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8
    )
 RETURNING *
 ;
 
--- name: InsertWowLog :one
+-- name: InsertWoWLogGroup :one
 INSERT INTO
-  wow_logs(
+  wow_log_groups(
     id,
     owner,
-    first_log_file,
-    second_log_file,
     created_at,
     updated_at
   )
@@ -37,9 +37,14 @@ VALUES
     $1,
     $2,
     $3,
-    $4,
-    $5,
-    $6
+    $4
   )
 RETURNING *
+;
+
+-- name: DeleteWoWLogGroup :exec
+DELETE FROM
+  wow_log_groups
+WHERE
+  id = $1
 ;

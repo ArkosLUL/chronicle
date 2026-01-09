@@ -149,16 +149,6 @@ func AllSpellSchoolValues() []SpellSchool {
 	}
 }
 
-type File struct {
-	ID        uuid.UUID          `db:"id" json:"id"`
-	Owner     uuid.UUID          `db:"owner" json:"owner"`
-	Hash      string             `db:"hash" json:"hash"`
-	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
-	MimeType  string             `db:"mime_type" json:"mime_type"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`
@@ -186,6 +176,17 @@ type ItemTemplate struct {
 	Description   pgtype.Text        `db:"description" json:"description"`
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type LogFile struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Owner     uuid.UUID          `db:"owner" json:"owner"`
+	WowLogID  uuid.UUID          `db:"wow_log_id" json:"wow_log_id"`
+	Hash      string             `db:"hash" json:"hash"`
+	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
+	MimeType  string             `db:"mime_type" json:"mime_type"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type SpellTemplate struct {
@@ -226,11 +227,9 @@ type UserAuthSession struct {
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-type WoWLog struct {
-	ID            uuid.UUID          `db:"id" json:"id"`
-	Owner         uuid.UUID          `db:"owner" json:"owner"`
-	FirstLogFile  uuid.UUID          `db:"first_log_file" json:"first_log_file"`
-	SecondLogFile uuid.UUID          `db:"second_log_file" json:"second_log_file"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+type WoWLogGroup struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Owner     uuid.UUID          `db:"owner" json:"owner"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }

@@ -8,12 +8,14 @@ import (
 	"hash"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/raidlogs"
 	"github.com/google/uuid"
@@ -96,6 +98,10 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		hashes = append(hashes, hex.EncodeToString(h.Sum(nil)))
 	}
 
+	if hashes[0] == hashes[1] {
+		return nil, fmt.Errorf("the same file was uploaded twice; please upload two different log files")
+	}
+
 	var log database.WoWLog
 	// tmpFiles and hashes are the files that were uploaded now on local disk.
 	err := c.DB.InTx(func(tx database.Store) error {
@@ -118,6 +124,11 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 				UpdatedAt: database.Timestamptz(now),
 			})
 			if err != nil {
+				if database.IsUniqueViolation(err, database.UniqueFilesUniqueOwnerHash) {
+					return httpapi.NewAPIError(err,
+						"A log file with the same contents has already been uploaded by you",
+						http.StatusBadRequest).CTA("Log files cannot be uploaded multiple times, delete the conflicting file or choose another one.")
+				}
 				return err
 			}
 			dbFiles = append(dbFiles, dbFile)

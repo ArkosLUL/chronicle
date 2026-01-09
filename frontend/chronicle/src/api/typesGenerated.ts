@@ -23,6 +23,11 @@ export interface Response {
      */
     readonly message: string;
     /**
+     * CallToAction is an optional field that suggests next steps to the user
+     * based on the Message. This field is intended to guide users on what to do
+     */
+    readonly call_to_action?: string;
+    /**
      * Detail is a debug message that provides further insight into why the
      * action failed. This information can be technical and a regular golang
      * err.Error() text.

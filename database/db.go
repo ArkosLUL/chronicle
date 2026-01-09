@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/lib/pq"
 	"golang.org/x/xerrors"
 )
 
@@ -216,12 +215,4 @@ func (q *sqlQuerier) runTx(function func(Store) error, txOpts *pgx.TxOptions) er
 		return xerrors.Errorf("commit transaction: %w", err)
 	}
 	return nil
-}
-
-func IsSerializedError(err error) bool {
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		return pqErr.Code.Name() == "serialization_failure"
-	}
-	return false
 }

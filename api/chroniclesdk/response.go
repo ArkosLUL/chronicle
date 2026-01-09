@@ -10,6 +10,9 @@ type Response struct {
 	// - "A user has been created."
 	// - "Failed to create a user."
 	Message string `json:"message"`
+	// CallToAction is an optional field that suggests next steps to the user
+	// based on the Message. This field is intended to guide users on what to do
+	CallToAction string `json:"call_to_action,omitempty"`
 	// Detail is a debug message that provides further insight into why the
 	// action failed. This information can be technical and a regular golang
 	// err.Error() text.

@@ -51,9 +51,15 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 
 	log, err := api.Chronicle.UploadLogs(ctx, first, second)
 	if err != nil {
-		httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
-			Message: "Failed to process uploaded log files",
-			Detail:  err.Error(),
+
+	}
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to process uploaded log files",
+				Detail:  err.Error(),
+			},
+			Status: http.StatusInternalServerError,
 		})
 		return
 	}

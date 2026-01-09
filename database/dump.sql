@@ -131,9 +131,9 @@ ALTER TABLE ONLY users
 ALTER TABLE ONLY wow_logs
     ADD CONSTRAINT wow_logs_pkey PRIMARY KEY (id);
 
-CREATE INDEX files_unique_owner_hash ON files USING btree (owner, hash);
+CREATE UNIQUE INDEX files_unique_owner_hash ON files USING btree (owner, hash);
 
-CREATE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
+CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 
 ALTER TABLE ONLY files
     ADD CONSTRAINT files_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);

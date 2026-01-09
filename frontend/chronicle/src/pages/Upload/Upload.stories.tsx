@@ -1,11 +1,30 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { http, HttpResponse, delay } from "msw"
 import { MemoryRouter } from "react-router-dom"
-import { Upload } from "./Upload"
+import { UploadView } from "./Upload"
 
-const meta: Meta<typeof Upload> = {
+const mockFile = new File(["content"], "WoWCombatLog.txt", { type: "text/plain" });
+Object.defineProperty(mockFile, "size", { value: 1024 * 1024 * 5 }); // 5MB
+
+const mockRawFile = new File(["content"], "WoWRawCombatLog.txt", { type: "text/plain" });
+Object.defineProperty(mockRawFile, "size", { value: 1024 * 500 }); // 500KB
+
+const defaultProps = {
+  isAuthenticated: true,
+  authLoading: false,
+  combatLog: null,
+  rawCombatLog: null,
+  uploading: false,
+  uploadProgress: 0,
+  error: null,
+  success: null,
+  onFileSelect: () => {},
+  onUpload: () => {},
+  onReset: () => {},
+};
+
+const meta: Meta<typeof UploadView> = {
   title: "Pages/Upload",
-  component: Upload,
+  component: UploadView,
   decorators: [
     (Story) => (
       <MemoryRouter>
@@ -16,71 +35,55 @@ const meta: Meta<typeof Upload> = {
   parameters: {
     layout: "fullscreen",
   },
+  args: defaultProps,
 }
 
 export default meta
-type Story = StoryObj<typeof Upload>
+type Story = StoryObj<typeof UploadView>
 
 export const NotAuthenticated: Story = {
-  parameters: {
-    msw: {
-      handlers: [
-        http.get("/api/v1/whoami", () => new HttpResponse(null, { status: 401 })),
-      ],
-    },
+  args: {
+    isAuthenticated: false,
+    authLoading: false,
   },
 }
 
 export const Authenticated: Story = {
-  parameters: {
-    msw: {
-      handlers: [
-        http.get("/api/v1/whoami", () => HttpResponse.json({ id: "1", name: "User" })),
-      ],
-    },
+  args: {
+    isAuthenticated: true,
+  },
+}
+
+export const WithFilesSelected: Story = {
+  args: {
+    isAuthenticated: true,
+    combatLog: mockFile,
+    rawCombatLog: mockRawFile,
   },
 }
 
 export const UploadInProgress: Story = {
-  parameters: {
-    msw: {
-      handlers: [
-        http.get("/api/v1/whoami", () => HttpResponse.json({ id: "1", name: "User" })),
-        http.post("/api/v1/raidlogs/upload", async () => {
-          await delay("infinite")
-          return HttpResponse.json({})
-        }),
-      ],
-    },
+  args: {
+    isAuthenticated: true,
+    combatLog: mockFile,
+    rawCombatLog: mockRawFile,
+    uploading: true,
+    uploadProgress: 45,
   },
 }
 
 export const UploadFailed: Story = {
-  parameters: {
-    msw: {
-      handlers: [
-        http.get("/api/v1/whoami", () => HttpResponse.json({ id: "1", name: "User" })),
-        http.post("/api/v1/raidlogs/upload", () => 
-          HttpResponse.json({ message: "Invalid combat log format" }, { status: 400 })
-        ),
-      ],
-    },
+  args: {
+    isAuthenticated: true,
+    combatLog: mockFile,
+    rawCombatLog: mockRawFile,
+    error: "Invalid combat log format. Please ensure you're uploading the correct file.",
   },
 }
 
 export const UploadSucceeded: Story = {
-  parameters: {
-    msw: {
-      handlers: [
-        http.get("/api/v1/whoami", () => HttpResponse.json({ id: "1", name: "User" })),
-        http.post("/api/v1/raidlogs/upload", () => 
-          HttpResponse.json({ 
-            log_id: "123e4567-e89b-12d3-a456-426614174000",
-            files: ["file1", "file2"],
-            message: "Raid log uploaded successfully" 
-          })
-        ),
-      ],
-    },
+  args: {
+    isAuthenticated: true,
+    success: { message: "Raid log uploaded successfully. Processing will begin shortly." },
   },
 }

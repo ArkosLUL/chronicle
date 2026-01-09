@@ -6,72 +6,33 @@ import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
 import { useAuth } from "@/hooks/useAuth";
 
-export function Upload() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [combatLog, setCombatLog] = useState<File | null>(null);
-  const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
+export interface UploadViewProps {
+  isAuthenticated: boolean;
+  authLoading: boolean;
+  combatLog: File | null;
+  rawCombatLog: File | null;
+  uploading: boolean;
+  uploadProgress: number;
+  error: string | null;
+  success: { message: string } | null;
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>, type: "combat" | "raw") => void;
+  onUpload: () => void;
+  onReset: () => void;
+}
 
-  const handleFileSelect = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: (file: File | null) => void
-  ) => {
-    const file = e.target.files?.[0] || null;
-    setter(file);
-  };
-
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ message: string } | null>(null);
-
-  const handleUpload = async () => {
-    if (!combatLog || !rawCombatLog) return;
-
-    setUploading(true);
-    setUploadProgress(0);
-    setError(null);
-    setSuccess(null);
-
-    const formData = new FormData();
-    formData.append("combat_log_1", combatLog);
-    formData.append("combat_log_2", rawCombatLog);
-
-    const xhr = new XMLHttpRequest();
-    
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) {
-        setUploadProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    });
-
-    xhr.addEventListener("load", () => {
-      setUploading(false);
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          setSuccess({ message: data.message || "Upload successful" });
-        } catch {
-          setSuccess({ message: "Upload successful" });
-        }
-      } else {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          setError(data.message || "Upload failed");
-        } catch {
-          setError("Upload failed");
-        }
-      }
-    });
-
-    xhr.addEventListener("error", () => {
-      setUploading(false);
-      setError("Upload failed - network error");
-    });
-
-    xhr.open("POST", "/api/v1/raidlogs/upload");
-    xhr.send(formData);
-  };
-
+export function UploadView({
+  isAuthenticated,
+  authLoading,
+  combatLog,
+  rawCombatLog,
+  uploading,
+  uploadProgress,
+  error,
+  success,
+  onFileSelect,
+  onUpload,
+  onReset,
+}: UploadViewProps) {
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
       <div>
@@ -107,7 +68,7 @@ export function Upload() {
               <h2 className="font-semibold text-lg">Upload Successful</h2>
               <p className="text-muted-foreground mt-1">{success.message}</p>
             </div>
-            <Button onClick={() => setSuccess(null)} variant="outline">
+            <Button onClick={onReset} variant="outline">
               Upload Another
             </Button>
           </div>
@@ -137,7 +98,7 @@ export function Upload() {
               <input
                 type="file"
                 accept=".txt"
-                onChange={(e) => handleFileSelect(e, setCombatLog)}
+                onChange={(e) => onFileSelect(e, "combat")}
                 className="hidden"
               />
               <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
@@ -175,7 +136,7 @@ export function Upload() {
               <input
                 type="file"
                 accept=".txt,.csv"
-                onChange={(e) => handleFileSelect(e, setRawCombatLog)}
+                onChange={(e) => onFileSelect(e, "raw")}
                 className="hidden"
               />
               <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
@@ -217,7 +178,7 @@ export function Upload() {
       )}
 
       <Button
-        onClick={handleUpload}
+        onClick={onUpload}
         disabled={!combatLog || !rawCombatLog || uploading}
         className="w-full md:w-auto"
       >
@@ -285,5 +246,98 @@ export function Upload() {
         </div>
       </Card>
     </div>
+  );
+}
+
+export function Upload() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [combatLog, setCombatLog] = useState<File | null>(null);
+  const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{ message: string } | null>(null);
+
+  const handleFileSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "combat" | "raw"
+  ) => {
+    const file = e.target.files?.[0] || null;
+    if (type === "combat") {
+      setCombatLog(file);
+    } else {
+      setRawCombatLog(file);
+    }
+  };
+
+  const handleUpload = () => {
+    if (!combatLog || !rawCombatLog) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+    setError(null);
+    setSuccess(null);
+
+    const formData = new FormData();
+    formData.append("combat_log_1", combatLog);
+    formData.append("combat_log_2", rawCombatLog);
+
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      setUploading(false);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          setSuccess({ message: data.message || "Upload successful" });
+        } catch {
+          setSuccess({ message: "Upload successful" });
+        }
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          setError(data.message || "Upload failed");
+        } catch {
+          setError("Upload failed");
+        }
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      setUploading(false);
+      setError("Upload failed - network error");
+    });
+
+    xhr.open("POST", "/api/v1/raidlogs/upload");
+    xhr.send(formData);
+  };
+
+  const handleReset = () => {
+    setSuccess(null);
+    setCombatLog(null);
+    setRawCombatLog(null);
+    setError(null);
+  };
+
+  return (
+    <UploadView
+      isAuthenticated={isAuthenticated}
+      authLoading={authLoading}
+      combatLog={combatLog}
+      rawCombatLog={rawCombatLog}
+      uploading={uploading}
+      uploadProgress={uploadProgress}
+      error={error}
+      success={success}
+      onFileSelect={handleFileSelect}
+      onUpload={handleUpload}
+      onReset={handleReset}
+    />
   );
 }

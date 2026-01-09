@@ -108,7 +108,6 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 				return fmt.Errorf("stat temp file: %w", err)
 			}
 
-			fmt.Println(cl.Subject.String())
 			dbFile, err := tx.InsertFile(ctx, database.InsertFileParams{
 				ID:        tmpIDs[i],
 				Owner:     cl.Subject,

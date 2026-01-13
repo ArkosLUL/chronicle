@@ -2,6 +2,8 @@ package chronicle
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,8 +13,10 @@ import (
 	"github.com/riverqueue/river/rivertype"
 )
 
+const KindLogParse = "log-parse"
+
 type ArgsLogParse struct {
-	LogID uuid.UUID
+	LogID uuid.UUID `json:"log_group_id"`
 }
 
 func (ArgsLogParse) InsertOpts() river.InsertOpts {
@@ -33,7 +37,7 @@ func (ArgsLogParse) InsertOpts() river.InsertOpts {
 	}
 }
 
-func (a ArgsLogParse) Kind() string { return "log-parse" }
+func (a ArgsLogParse) Kind() string { return KindLogParse }
 
 type WorkerLogParse struct {
 	parent *Chronicle
@@ -42,6 +46,22 @@ type WorkerLogParse struct {
 }
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
+	db := w.parent.DB
+
+	files, err := db.GetWoWLogFilesByGroupID(ctx, job.Args.LogID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			w.parent.logger.Warn("log parse job for non-existent log group", "log_id", job.Args.LogID)
+
+			return nil
+		}
+
+		return fmt.Errorf("fetch log group: %w", err)
+	}
+
+	if len(files) != 2 {
+		return river.JobCancel(fmt.Errorf("log group does not have exactly 2 files, has %d", len(files)))
+	}
 
 	return nil
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/database/raidlogs"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/go-chi/chi/v5"
@@ -56,15 +55,10 @@ func New(ctx context.Context, opts Options) (*API, error) {
 		return nil, err
 	}
 
-	rw, err := raidlogs.NewRaidLogStorage(opts.Logger, opts.DB, opts.Storage)
-	if err != nil {
-		return nil, fmt.Errorf("raidlog storage: %w", err)
-	}
-
 	chr, err := chronicle.New(ctx, opts.Logger, chronicle.Options{
-		RaidLogs: rw,
-		DB:       opts.DB,
-		Queue:    opts.RiverQueue,
+		Storage: opts.Storage,
+		DB:      opts.DB,
+		Queue:   opts.RiverQueue,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("chronicle: %w", err)
@@ -100,6 +94,8 @@ func (api *API) Routes() chi.Router {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Post("/upload", api.WoWLogUpload)
 				r.Get("/", api.WoWLogGroups)
+				r.Get("/{logID}", api.WoWLogGroup)
+				r.Delete("/{logID}", api.WoWLogDeleteGroup)
 			})
 		})
 	})

@@ -19,7 +19,6 @@ const defaultProps = {
   success: null,
   onFileSelect: () => {},
   onUpload: () => {},
-  onReset: () => {},
 };
 
 const meta: Meta<typeof UploadView> = {
@@ -87,6 +86,9 @@ export const UploadFailed: Story = {
 export const UploadSucceeded: Story = {
   args: {
     isAuthenticated: true,
-    success: { message: "Raid log uploaded successfully. Processing will begin shortly." },
+    success: { 
+      message: "Raid log uploaded successfully. Processing will begin shortly.", 
+      logId: "550e8400-e29b-41d4-a716-446655440000" 
+    },
   },
 }

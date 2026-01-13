@@ -16,18 +16,25 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/database/raidlogs"
+	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/internal/cleanup"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 )
 
+const (
+	BucketRaidLogs  = "raidlogs"
+	BucketTemporary = "temporary"
+)
+
 type Chronicle struct {
 	AppContext         context.Context
-	RaidLogs           *raidlogs.RaidLogStorage
+	Storage            storage.ObjectStorage
 	DB                 database.Store
 	logger             *slog.Logger
 	TemporaryDirectory string
@@ -38,8 +45,8 @@ type Chronicle struct {
 }
 
 type Options struct {
-	RaidLogs *raidlogs.RaidLogStorage
-	DB       database.Store
+	Storage storage.ObjectStorage
+	DB      database.Store
 
 	Queue RiverQueueOptions
 }
@@ -47,14 +54,19 @@ type Options struct {
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
 	c := &Chronicle{
 		AppContext:         ctx,
-		RaidLogs:           opts.RaidLogs,
+		Storage:            opts.Storage,
 		DB:                 opts.DB,
 		logger:             logger,
 		TemporaryDirectory: filepath.Join(os.TempDir(), "chronicle_uploads"),
 	}
 
+	err := c.initStorage()
+	if err != nil {
+		return nil, fmt.Errorf("init storage: %w", err)
+	}
+
 	// River async job queue
-	err := c.StartQueues(ctx, opts)
+	err = c.StartQueues(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("start queues: %w", err)
 	}
@@ -67,6 +79,29 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 
 	_ = c.clearTemporaryFiles()
 	return c, nil
+}
+
+func (c *Chronicle) initStorage() error {
+	const raidLogLimit = "100mb"
+	raidLogMimes := []string{"text/plain"}
+	_, err := c.Storage.CreateBucket(BucketRaidLogs, storage.BucketOptions{
+		Public:           false,
+		FileSizeLimit:    raidLogLimit,
+		AllowedMimeTypes: raidLogMimes,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Storage.CreateBucket(BucketTemporary, storage.BucketOptions{
+		Public:           false,
+		FileSizeLimit:    raidLogLimit,
+		AllowedMimeTypes: raidLogMimes,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*database.WoWLogGroup, []database.LogFile, error) {
@@ -180,11 +215,11 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Now store the logs in object storage
 	for i := range tmpIDs {
-		storageObject, err := c.RaidLogs.Storage.UploadFile(raidlogs.BucketRaidLogs, filepath.Join("logs", tmpIDs[i].String()), tmpFiles[i])
+		storageObject, err := c.Storage.UploadFile(BucketRaidLogs, filepath.Join("logs", tmpIDs[i].String()), tmpFiles[i])
 		if err != nil {
 			return nil, nil, fmt.Errorf("upload log file to object storage: %w", err)
 		}
-		clean.Add(func() { _, _ = c.RaidLogs.Storage.RemoveFile(raidlogs.BucketRaidLogs, []string{storageObject.Key}) })
+		clean.Add(func() { _, _ = c.Storage.RemoveFile(BucketRaidLogs, []string{storageObject.Key}) })
 	}
 
 	res, err := c.EnqueueParseLog(ctx, group)
@@ -198,6 +233,56 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Both files are now fully uploaded in the database and object storage
 	return &group, dbFiles, nil
+}
+
+func (c *Chronicle) WoWLogGroup(ctx context.Context, groupID uuid.UUID) (*chroniclesdk.WoWLogGroupState, error) {
+	group, err := c.DB.GetWoWLogGroupByID(ctx, groupID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch log group: %w", err)
+	}
+
+	opts := river.NewJobListParams().Where(`args->>'log_group_id' = @group_id`, map[string]any{
+		"group_id": groupID.String(),
+	}).
+		Queues(QueueLogParsing).
+		Kinds(KindLogParse).
+		OrderBy(river.JobListOrderByScheduledAt, river.SortOrderDesc)
+
+	list, err := c.queue.JobList(ctx, opts)
+	if err != nil {
+		return nil, fmt.Errorf("fetch log parse jobs: %w", err)
+	}
+
+	if len(list.Jobs) == 0 {
+		return nil, fmt.Errorf("no log parse job found for log group %s", groupID)
+	}
+
+	currentJob := list.Jobs[0]
+	return &chroniclesdk.WoWLogGroupState{
+		WoWLogGroup: db2sdk.WoWLogGroupRow(group),
+		Status:      db2sdk.JobStatus(*currentJob),
+	}, nil
+}
+
+func (c *Chronicle) DeleteWoWLogGroup(ctx context.Context, logID uuid.UUID) error {
+	files, err := c.DB.GetWoWLogFilesByGroupID(ctx, logID)
+	if err != nil {
+		return fmt.Errorf("fetch log files: %w", err)
+	}
+
+	for _, file := range files {
+		_, err := c.Storage.RemoveFile(BucketRaidLogs, []string{file.ID.String()})
+		if err != nil {
+			return fmt.Errorf("remove file: %w", err)
+		}
+	}
+
+	err = c.DB.DeleteWoWLogGroup(ctx, logID)
+	if err != nil {
+		return fmt.Errorf("delete log group: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Chronicle) Close() error {

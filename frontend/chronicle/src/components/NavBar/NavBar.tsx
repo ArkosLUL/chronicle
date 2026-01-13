@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut } from "lucide-react";
+import { Settings, Upload, LogOut, FileText } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../ui/button";
@@ -22,8 +22,9 @@ export function NavBar() {
   const { isAuthenticated, isLoading, logout } = useAuth();
 
   const accountMenuItems: NavItem[] = [
-    { title: "Settings", href: "/account/settings", icon: Settings },
+    { title: "My Logs", href: "/logs", icon: FileText },
     { title: "Upload", href: "/upload", icon: Upload },
+    { title: "Settings", href: "/account/settings", icon: Settings },
     { title: "Sign Out", onClick: logout, icon: LogOut },
   ];
 

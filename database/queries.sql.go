@@ -23,6 +23,93 @@ func (q *sqlQuerier) DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error 
 	return err
 }
 
+const getWoWLogFilesByGroupID = `-- name: GetWoWLogFilesByGroupID :many
+SELECT
+  id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at
+FROM
+  log_file
+WHERE
+  wow_log_id = $1
+ORDER BY
+  created_at DESC
+`
+
+func (q *sqlQuerier) GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error) {
+	rows, err := q.db.Query(ctx, getWoWLogFilesByGroupID, wowLogID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogFile
+	for rows.Next() {
+		var i LogFile
+		if err := rows.Scan(
+			&i.ID,
+			&i.Owner,
+			&i.WowLogID,
+			&i.Hash,
+			&i.SizeBytes,
+			&i.MimeType,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWoWLogGroupByID = `-- name: GetWoWLogGroupByID :one
+SELECT
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  COALESCE(
+      jsonb_agg(
+      jsonb_build_object(
+        'id', json_file.id,
+        'owner', json_file.owner,
+        'wow_log_id', json_file.wow_log_id,
+        'hash', json_file.hash,
+        'size_bytes', json_file.size_bytes,
+        'mime_type', json_file.mime_type,
+        'created_at', json_file.created_at,
+        'updated_at', json_file.updated_at
+      )
+      ORDER BY json_file.created_at
+               ) FILTER (WHERE json_file.id IS NOT NULL),
+      '[]'::jsonb
+  )::wow_log_group_files AS files
+FROM
+  wow_log_groups
+LEFT JOIN log_file json_file
+    ON json_file.wow_log_id = wow_log_groups.id
+WHERE
+  wow_log_groups.id = $1
+GROUP BY
+  wow_log_groups.id
+`
+
+type GetWoWLogGroupByIDRow struct {
+	WoWLogGroup WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
+	Files       []LogFile   `db:"files" json:"files"`
+}
+
+func (q *sqlQuerier) GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error) {
+	row := q.db.QueryRow(ctx, getWoWLogGroupByID, id)
+	var i GetWoWLogGroupByIDRow
+	err := row.Scan(
+		&i.WoWLogGroup.ID,
+		&i.WoWLogGroup.Owner,
+		&i.WoWLogGroup.CreatedAt,
+		&i.WoWLogGroup.UpdatedAt,
+		&i.Files,
+	)
+	return i, err
+}
+
 const getWoWLogGroupsByOwner = `-- name: GetWoWLogGroupsByOwner :many
 SELECT
   wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
@@ -48,6 +135,8 @@ LEFT JOIN log_file json_file
     ON json_file.wow_log_id = wow_log_groups.id
 WHERE
   wow_log_groups.owner = $1
+GROUP BY
+  wow_log_groups.id
 ORDER BY
   wow_log_groups.created_at DESC
 `

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
@@ -14,10 +14,9 @@ export interface UploadViewProps {
   uploading: boolean;
   uploadProgress: number;
   error: { message: string; call_to_action?: string; detail?: string } | null;
-  success: { message: string } | null;
+  success: { message: string; logId: string } | null;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>, type: "combat" | "raw") => void;
   onUpload: () => void;
-  onReset: () => void;
 }
 
 export function UploadView({
@@ -31,15 +30,24 @@ export function UploadView({
   success,
   onFileSelect,
   onUpload,
-  onReset,
 }: UploadViewProps) {
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Upload Raid Logs</h1>
-        <p className="text-muted-foreground mt-2">
-          Upload your combat log and raid roster to analyze your raid performance.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Upload Raid Logs</h1>
+          <p className="text-muted-foreground mt-2">
+            Upload your combat log and raid roster to analyze your raid performance.
+          </p>
+        </div>
+        {isAuthenticated && (
+          <Link to="/logs">
+            <Button variant="outline">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              View My Logs
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Auth Check */}
@@ -68,9 +76,11 @@ export function UploadView({
               <h2 className="font-semibold text-lg">Upload Successful</h2>
               <p className="text-muted-foreground mt-1">{success.message}</p>
             </div>
-            <Button onClick={onReset} variant="outline">
-              Upload Another
-            </Button>
+            <Link to={`/logs/${success.logId}`}>
+              <Button>
+                View Upload
+              </Button>
+            </Link>
           </div>
         </Card>
       ) : (
@@ -266,7 +276,7 @@ export function Upload() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<{ message: string; call_to_action?: string; detail?: string } | null>(null);
-  const [success, setSuccess] = useState<{ message: string } | null>(null);
+  const [success, setSuccess] = useState<{ message: string; logId: string } | null>(null);
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -305,9 +315,12 @@ export function Upload() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const data = JSON.parse(xhr.responseText);
-          setSuccess({ message: data.message || "Upload successful" });
+          setSuccess({ 
+            message: "Your logs are being processed.", 
+            logId: data.log_id 
+          });
         } catch {
-          setSuccess({ message: "Upload successful" });
+          setSuccess({ message: "Upload successful", logId: "" });
         }
       } else {
         try {
@@ -332,13 +345,6 @@ export function Upload() {
     xhr.send(formData);
   };
 
-  const handleReset = () => {
-    setSuccess(null);
-    setCombatLog(null);
-    setRawCombatLog(null);
-    setError(null);
-  };
-
   return (
     <UploadView
       isAuthenticated={isAuthenticated}
@@ -351,7 +357,6 @@ export function Upload() {
       success={success}
       onFileSelect={handleFileSelect}
       onUpload={handleUpload}
-      onReset={handleReset}
     />
   );
 }

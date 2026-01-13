@@ -3,6 +3,8 @@ import { Login } from "./pages/Login/Login"
 import { Home } from "./pages/Home"
 import { Empty } from "./pages/Empty"
 import { Upload } from "./pages/Upload/Upload"
+import { LogsList } from "./pages/Logs/LogsList"
+import { LogDetail } from "./pages/Logs/LogDetail"
 import { 
   AccountLayout, 
   ProfileSettings, 
@@ -20,6 +22,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/empty" element={<Empty />} />
         <Route path="/upload" element={<Upload />} />
+        <Route path="/logs" element={<LogsList />} />
+        <Route path="/logs/:logId" element={<LogDetail />} />
         <Route path="/account" element={<AccountLayout />}>
           <Route index element={<Navigate to="/account/settings" replace />} />
           <Route path="settings" element={<ProfileSettings />} />

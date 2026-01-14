@@ -103,33 +103,26 @@ func MoltenCoreHostiles() map[uint32]Identity {
 		57643: "Image of Sorcerer-Thane Thaurissan",
 		12101: "Lava Surger",
 		12100: "Lava Reaver",
-		12098: "Sulfuron Harbinger",
 		11672: "Core Rager",
 		11663: "Flamewaker Healer",
 		11658: "Molten Giant",
-		12057: "Garr",
-		65020: "Basalthar",
 		52152: "Shadowforge Blazeweaver",
 		11666: "Firewalker",
 		11665: "Lava Annihilator",
 		11659: "Molten Destroyer",
 		12265: "Lava Spawn",
 		11662: "Flamewaker Priest",
-		65021: "Smoldaris",
 		11667: "Flameguard",
 		11664: "Flamewaker Elite",
 		12099: "Firesworn",
 		12076: "Lava Elemental",
 		12143: "Son of Flame",
-		11988: "Golemagg the Incinerator",
 		52151: "Shadowforge Hierophant",
 		11668: "Firelord",
-		57642: "Sorcerer-Thane Thaurissan",
 		11673: "Ancient Core Hound",
 		11669: "Flame Imp",
 		52147: "Large Incendic Egg",
 		11671: "Core Hound",
-		52145: "Incindis",
 		12119: "Flamewaker Protector",
 
 		// What the heck are these?
@@ -144,6 +137,15 @@ func MoltenCoreHostiles() map[uint32]Identity {
 		11502: "Ragnaros",
 		12056: "Baron Geddon",
 		12018: "Majordomo Executus",
+		52145: "Incindis",
+		12057: "Garr",
+		11988: "Golemagg the Incinerator",
+		// Basalthar & Smoldaris are a duo
+		65020: "Basalthar",
+		65021: "Smoldaris",
+
+		57642: "Sorcerer-Thane Thaurissan",
+		12098: "Sulfuron Harbinger",
 	})
 
 	return hostile
@@ -153,9 +155,7 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		61194: "Shadowbane Ragefang",
-		61222: "Lord Blackwald II",
 		61208: "Skitterweb Venomfang",
-		61224: "Grizikil",
 		61211: "Shadowbane Glutton",
 		14881: "Spider",
 		61209: "Skitterweb Leaper",
@@ -169,18 +169,21 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		61199: "Shattercage Magiskull",
 		61202: "Haunted Blacksmith",
 		61204: "Dark Rider Champion",
-		61221: "Brood Queen Araxxna",
 		61198: "Shattercage Spearman",
 		61192: "Shadowbane Darkcaster",
 		61191: "Shadowbane Alpha",
-		61223: "Clawlord Howlfang",
 		61195: "Grellkin Shadow Weaver",
-		61225: "Moroes",
 		61200: "Phantom Guardsman",
 		61205: "Phantom Servant",
 		61193: "Shadowbane Ambusher",
 	})
-	LoadBosses(hostile, map[uint32]string{})
+	LoadBosses(hostile, map[uint32]string{
+		61221: "Brood Queen Araxxna",
+		61224: "Grizikil",
+		61223: "Clawlord Howlfang",
+		61222: "Lord Blackwald II",
+		61225: "Moroes",
+	})
 	return hostile
 }
 

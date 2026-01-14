@@ -1,13 +1,21 @@
 package chronicle
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
+	"os"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
@@ -47,6 +55,7 @@ type WorkerLogParse struct {
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
 	db := w.parent.DB
+	storage := w.parent.Storage
 
 	files, err := db.GetWoWLogFilesByGroupID(ctx, job.Args.LogID)
 	if err != nil {
@@ -61,6 +70,39 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	if len(files) != 2 {
 		return river.JobCancel(fmt.Errorf("log group does not have exactly 2 files, has %d", len(files)))
+	}
+
+	rdrs := make([]io.Reader, 0, len(files))
+	for _, file := range files {
+		fd, err := storage.DownloadFile(BucketRaidLogs, w.parent.logPath(file.ID))
+		if err != nil {
+			err = fmt.Errorf("download log file %s: %w", file.ID, err)
+			if errors.Is(err, os.ErrNotExist) {
+				err = river.JobCancel(err)
+			}
+			return err
+		}
+		rdrs = append(rdrs, bytes.NewReader(fd))
+	}
+
+	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
+
+	m := vanilla.Merger(logger)
+	liner, scan, err := m.LineScanner(ctx, rdrs[0], rdrs[1])
+	if err != nil {
+		return fmt.Errorf("create line scanner: %w", err)
+	}
+
+	p := vanilla.NewFromScanner(logger, liner, scan)
+	output := encounters.New(logger)
+	c := consumers.New(logger, output)
+	err = c.ConsumeAll(ctx, p)
+	if err != nil {
+		err = fmt.Errorf("consume log: %w", err)
+		if !errors.Is(err, context.Canceled) {
+			err = river.JobCancel(err)
+		}
+		return err
 	}
 
 	return nil

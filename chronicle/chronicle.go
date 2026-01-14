@@ -81,6 +81,10 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 	return c, nil
 }
 
+func (c *Chronicle) logPath(fileID uuid.UUID) string {
+	return filepath.Join("logs", fileID.String())
+}
+
 func (c *Chronicle) initStorage() error {
 	const raidLogLimit = "100mb"
 	raidLogMimes := []string{"text/plain"}
@@ -215,7 +219,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Now store the logs in object storage
 	for i := range tmpIDs {
-		storageObject, err := c.Storage.UploadFile(BucketRaidLogs, filepath.Join("logs", tmpIDs[i].String()), tmpFiles[i])
+		storageObject, err := c.Storage.UploadFile(BucketRaidLogs, c.logPath(tmpIDs[i]), tmpFiles[i])
 		if err != nil {
 			return nil, nil, fmt.Errorf("upload log file to object storage: %w", err)
 		}

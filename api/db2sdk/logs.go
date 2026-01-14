@@ -63,6 +63,8 @@ func WoWLogFile(file database.LogFile) chroniclesdk.WoWLogFile {
 func JobStatus(status rivertype.JobRow) chroniclesdk.JobStatus {
 	return chroniclesdk.JobStatus{
 		ID:          status.ID,
+		Attempt:     status.Attempt,
+		MaxAttempts: status.MaxAttempts,
 		State:       status.State,
 		ScheduledAt: status.ScheduledAt,
 		AttemptedAt: status.AttemptedAt,

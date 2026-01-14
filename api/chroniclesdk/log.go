@@ -36,6 +36,8 @@ type WoWLogGroupState struct {
 
 type JobStatus struct {
 	ID          int64                    `json:"id"`
+	Attempt     int                      `json:"attempt"`
+	MaxAttempts int                      `json:"max_attempts"`
 	State       rivertype.JobState       `json:"state"`
 	CreatedAt   time.Time                `json:"created_at"`
 	ScheduledAt time.Time                `json:"scheduled_at"`

@@ -3,8 +3,8 @@ POSTGRES_IMAGE   ?= us-docker.pkg.dev/coder-v2-images-public/public/postgres:$(P
 
 GIT_TAG := $(shell git describe --tags --abbrev=0)
 GIT_COMMIT := $(shell git describe --always)
-BUILD_TIME := $(shell TZ='America/Chicago' date +"%m-%d-%y %H:%M")
-LD_BUILD_FLAGS=-ldflags="-X 'github.com/Emyrk/chronicle/internal/version.GitTag=$(GIT_TAG)' -X 'github.com/Emyrk/chronicle/internal/version.GitCommit=$(GIT_COMMIT)' -X 'github.com/Emyrk/chronicle/internal/version.BuildTime=$(BUILD_TIME)'"
+BUILD_TIME := $(shell TZ='America/Chicago' date +"%m-%d-%y_%H:%M")
+LD_BUILD_FLAGS=-ldflags=-X=github.com/Emyrk/chronicle/internal/version.GitTag=$(GIT_TAG)\ -X=github.com/Emyrk/chronicle/internal/version.GitCommit=$(GIT_COMMIT)\ -X=github.com/Emyrk/chronicle/internal/version.BuildTime=$(BUILD_TIME)
 
 .PHONY: install
 install:
@@ -42,7 +42,7 @@ develop: frontend/chronicle/dist create-db
 	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
 
 build: frontend/chronicle/dist
-	go build --tags static  $(LD_BUILD_FLAGS) -o bin/chronicle ./cmd/chronicled
+	go build --tags static  $(LD_BUILD_FLAGS) -o bin/chronicled ./cmd/chronicled
 
 .PHONY: create-db
 create-db:

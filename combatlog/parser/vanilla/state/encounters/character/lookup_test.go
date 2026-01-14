@@ -124,7 +124,7 @@ func TestCharacters(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, m := range msgs {
-				err = cars.Process(m)
+				_, err = cars.Process(m)
 				require.NoError(t, err)
 			}
 		}

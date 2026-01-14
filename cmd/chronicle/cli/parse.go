@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 
 	"github.com/coder/serpent"
 )
@@ -62,18 +60,7 @@ func ParseCmd() *serpent.Command {
 					slog.String("name", inst.Name()),
 				)
 
-				fights, diags := instances.AggregateFights(inst)
-				if diags.HasErrors() {
-					return errors.Join(diags.Errs()...)
-				}
-
-				for _, diag := range diags {
-					logger.Warn("Fight aggregation diagnostic",
-						slog.String("summary", diag.Summary),
-						slog.String("details", diag.Detail),
-					)
-				}
-				for _, f := range fights {
+				for _, f := range inst.Fights() {
 					fmt.Println(f.NamedString(output.Units))
 				}
 			}

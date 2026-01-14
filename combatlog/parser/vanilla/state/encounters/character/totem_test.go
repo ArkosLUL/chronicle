@@ -37,7 +37,7 @@ func TestTotemicRecall(t *testing.T) {
 		}
 		require.NoError(t, err)
 		for _, msg := range msgs {
-			err := c.Process(msg)
+			_, err := c.Process(msg)
 			require.NoError(t, err)
 		}
 	}

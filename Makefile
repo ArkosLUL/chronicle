@@ -1,6 +1,11 @@
 POSTGRES_VERSION ?= 17
 POSTGRES_IMAGE   ?= us-docker.pkg.dev/coder-v2-images-public/public/postgres:$(POSTGRES_VERSION)
 
+GIT_TAG := $(shell git describe --tags --abbrev=0)
+GIT_COMMIT := $(shell git describe --always)
+BUILD_TIME := $(shell TZ='America/Chicago' date +"%m-%d-%y %H:%M")
+LD_BUILD_FLAGS=-ldflags="-X 'github.com/Emyrk/chronicle/internal/version.GitTag=$(GIT_TAG)' -X 'github.com/Emyrk/chronicle/internal/version.GitCommit=$(GIT_COMMIT)' -X 'github.com/Emyrk/chronicle/internal/version.BuildTime=$(BUILD_TIME)'"
+
 .PHONY: install
 install:
 	go install ./cmd/chronicle
@@ -34,7 +39,10 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 
 .PHONY: develop
 develop: frontend/chronicle/dist create-db
-	go run --tags static ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
+	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
+
+build: frontend/chronicle/dist
+	go build --tags static  $(LD_BUILD_FLAGS) -o bin/chronicle ./cmd/chronicled
 
 .PHONY: create-db
 create-db:

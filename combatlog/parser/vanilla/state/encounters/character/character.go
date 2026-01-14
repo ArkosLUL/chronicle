@@ -27,6 +27,7 @@ type Character interface {
 	Periods() []period.Period
 	RecentlySlain(m messages.Message) bool
 	IsActive() bool
+	CurrentPeriod() (period.Period, bool)
 }
 
 type Base[M period.IsPeriod] struct {
@@ -60,6 +61,14 @@ func (c *Base[_]) ContainsMe(ids ...guid.GUID) bool {
 		}
 	}
 	return false
+}
+
+func (c *Base[_]) CurrentPeriod() (period.Period, bool) {
+	cur, ok := c.Activity.Current()
+	if !ok {
+		return period.Period{}, false
+	}
+	return cur.Get(), true
 }
 
 func (c *Base[_]) IsActive() bool {

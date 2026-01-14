@@ -18,6 +18,27 @@ type IsPeriod interface {
 	String() string
 }
 
+func PeriodsDuring(periods []Period, start, end time.Time) ([]Period, error) {
+	// Minor buffer allowed
+	start = start.Add(-1 * time.Millisecond)
+	end = end.Add(1 * time.Millisecond)
+
+	var result []Period
+	for _, p := range periods {
+		if p.Start == nil || p.End == nil {
+			return nil, fmt.Errorf("invalid period with nil start and/or end")
+		}
+
+		pStart := p.Start.Timestamp.Date()
+		pEnd := p.End.Timestamp.Date()
+
+		if pStart.After(start) && pEnd.Before(end) {
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
 // Period represents a contiguous span of time within an encounter during which
 // some meaningful activity is considered to be occurring.
 //

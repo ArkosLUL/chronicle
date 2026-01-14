@@ -25,6 +25,12 @@ type Encounter struct {
 	IsKill bool
 }
 
+type OngoingFight struct {
+	Hostiles map[guid.GUID]any
+	Start    *period.Moment
+	End      *period.Moment
+}
+
 // Fight represents a single combat encounter with one or more hostile creatures.
 // A fight starts when the first hostile becomes active and ends when the last
 // hostile becomes inactive. Hostiles with overlapping activity periods are

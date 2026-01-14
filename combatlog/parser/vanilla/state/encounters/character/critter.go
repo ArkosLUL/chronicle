@@ -40,6 +40,9 @@ func (c Critter) Process(m messages.Message) error {
 func (c Critter) Periods() []period.Period {
 	return []period.Period{}
 }
+func (c Critter) CurrentPeriod() (period.Period, bool) {
+	return period.Period{}, false
+}
 
 func (c Critter) RecentlySlain(m messages.Message) bool {
 	return false

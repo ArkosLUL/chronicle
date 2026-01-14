@@ -113,37 +113,47 @@ func (q *sqlQuerier) GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetW
 const getWoWLogGroupsByOwner = `-- name: GetWoWLogGroupsByOwner :many
 SELECT
   wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
-  COALESCE(
-      jsonb_agg(
-      jsonb_build_object(
-        'id', json_file.id,
-        'owner', json_file.owner,
-        'wow_log_id', json_file.wow_log_id,
-        'hash', json_file.hash,
-        'size_bytes', json_file.size_bytes,
-        'mime_type', json_file.mime_type,
-        'created_at', json_file.created_at,
-        'updated_at', json_file.updated_at
-      )
-      ORDER BY json_file.created_at
-               ) FILTER (WHERE json_file.id IS NOT NULL),
-      '[]'::jsonb
-  )::wow_log_group_files AS files
+  files_agg.files,
+  latest_job.output AS processing_output
 FROM
   wow_log_groups
-LEFT JOIN log_file json_file
-    ON json_file.wow_log_id = wow_log_groups.id
+    LEFT JOIN LATERAL (
+    SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', lf.id,
+        'owner', lf.owner,
+        'wow_log_id', lf.wow_log_id,
+        'hash', lf.hash,
+        'size_bytes', lf.size_bytes,
+        'mime_type', lf.mime_type,
+        'created_at', lf.created_at,
+        'updated_at', lf.updated_at
+      )
+      ORDER BY lf.created_at) FILTER (WHERE lf.id IS NOT NULL),
+      '[]'::jsonb
+    )::wow_log_group_files AS files
+    FROM log_file lf
+    WHERE lf.wow_log_id = wow_log_groups.id
+    ) files_agg ON true
+
+    LEFT JOIN LATERAL (
+    SELECT rj.metadata->'output' AS output
+    FROM river_job rj
+    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
+    ORDER BY rj.created_at DESC
+    LIMIT 1
+    ) latest_job ON true
 WHERE
   wow_log_groups.owner = $1
-GROUP BY
-  wow_log_groups.id
 ORDER BY
   wow_log_groups.created_at DESC
 `
 
 type GetWoWLogGroupsByOwnerRow struct {
-	WoWLogGroup WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
-	Files       []LogFile   `db:"files" json:"files"`
+	WoWLogGroup      WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
+	Files            []LogFile   `db:"files" json:"files"`
+	ProcessingOutput interface{} `db:"processing_output" json:"processing_output"`
 }
 
 func (q *sqlQuerier) GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]GetWoWLogGroupsByOwnerRow, error) {
@@ -161,6 +171,7 @@ func (q *sqlQuerier) GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID
 			&i.WoWLogGroup.CreatedAt,
 			&i.WoWLogGroup.UpdatedAt,
 			&i.Files,
+			&i.ProcessingOutput,
 		); err != nil {
 			return nil, err
 		}

@@ -40,6 +40,26 @@ func CathedralHostiles() map[uint32]Identity {
 	return hostile
 }
 
+func SMLibraryHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		4287: "Scarlet Gallant",
+		4288: "Scarlet Beastmaster",
+		4304: "Scarlet Tracking Hound",
+		4296: "Scarlet Adept",
+		4291: "Scarlet Diviner",
+		4540: "Scarlet Monk",
+		4299: "Scarlet Chaplain",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		3974:  "Houndmaster Loksey",
+		61983: "Brother Wystan",
+		6487:  "Arcanist Doan",
+	})
+
+	return hostile
+}
+
 func BlackrockSpireHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{

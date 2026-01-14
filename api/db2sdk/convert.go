@@ -28,11 +28,12 @@ func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGro
 	switch g := any(group).(type) {
 	case database.GetWoWLogGroupsByOwnerRow:
 		return chroniclesdk.WoWLogGroup{
-			ID:        g.WoWLogGroup.ID,
-			Owner:     g.WoWLogGroup.Owner,
-			CreatedAt: g.WoWLogGroup.CreatedAt,
-			UpdatedAt: g.WoWLogGroup.UpdatedAt,
-			Files:     slice.List(g.Files, WoWLogFile),
+			ID:               g.WoWLogGroup.ID,
+			Owner:            g.WoWLogGroup.Owner,
+			CreatedAt:        g.WoWLogGroup.CreatedAt,
+			UpdatedAt:        g.WoWLogGroup.UpdatedAt,
+			Files:            slice.List(g.Files, WoWLogFile),
+			ProcessingOutput: g.ProcessingOutput,
 		}
 	case database.GetWoWLogGroupByIDRow:
 		return chroniclesdk.WoWLogGroup{

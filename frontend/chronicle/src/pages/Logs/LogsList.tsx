@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { FileText, Clock, LogIn, Loader2, Upload as UploadIcon } from "lucide-react";
+import { FileText, Clock, LogIn, Loader2, Upload as UploadIcon, Castle, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useLogGroups, type WoWLogGroup } from "@/api/queries";
+import { useLogGroups, type WoWLogGroup, type WoWParsedLogJobOutput } from "@/api/queries";
 
 function formatDate(timestamp: unknown): string {
   if (!timestamp) return "Unknown";
@@ -24,6 +24,18 @@ function formatBytes(bytes: number): string {
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
+
+function parseParsedOutput(output: unknown): WoWParsedLogJobOutput | null {
+  if (!output || typeof output !== "object") {
+    return null;
+  }
+  const parsed = output as WoWParsedLogJobOutput;
+  // Check if it has the expected shape
+  if (!Array.isArray(parsed.instances)) {
+    return null;
+  }
+  return parsed;
 }
 
 export interface LogsListViewProps {
@@ -114,32 +126,55 @@ export function LogsListView({
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
-          {logs?.map((log) => (
-            <Link key={log.id} to={`/logs/${log.id}`} className="block">
-              <Card className="p-4 hover:bg-accent transition-colors cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium">Log Upload</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatDate(log.created_at)}</span>
+          {logs?.map((log) => {
+            const parsedOutput = parseParsedOutput(log.processing_output);
+            const instanceNames = parsedOutput?.instances.map(i => i.name) ?? [];
+            const failedInstances = Object.keys(parsedOutput?.instance_failures ?? {});
+            
+            return (
+              <Link key={log.id} to={`/logs/${log.id}`} className="block">
+                <Card className="p-4 hover:bg-accent transition-colors cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                      <div>
+                        <h3 className="font-medium">Log Upload</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDate(log.created_at)}</span>
+                        </div>
+                        {/* Parsed instances info */}
+                        {(instanceNames.length > 0 || failedInstances.length > 0) && (
+                          <ul className="mt-2 ml-1 space-y-1 text-sm">
+                            {instanceNames.map((name) => (
+                              <li key={name} className="flex items-center gap-2">
+                                <Castle className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                <span>{name}</span>
+                              </li>
+                            ))}
+                            {failedInstances.length > 0 && (
+                              <li className="flex items-center gap-2 text-destructive">
+                                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                <span>{failedInstances.length} failed to parse</span>
+                              </li>
+                            )}
+                          </ul>
+                        )}
                       </div>
                     </div>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <p>{log.files?.length || 0} files</p>
+                      <p>
+                        {log.files?.reduce((acc, f) => acc + f.size_bytes, 0)
+                          ? formatBytes(log.files.reduce((acc, f) => acc + f.size_bytes, 0))
+                          : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right text-sm text-muted-foreground">
-                    <p>{log.files?.length || 0} files</p>
-                    <p>
-                      {log.files?.reduce((acc, f) => acc + f.size_bytes, 0)
-                        ? formatBytes(log.files.reduce((acc, f) => acc + f.size_bytes, 0))
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

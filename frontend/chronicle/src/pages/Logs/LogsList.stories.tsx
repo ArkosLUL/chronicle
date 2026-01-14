@@ -1,7 +1,59 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MemoryRouter } from "react-router-dom";
 import { LogsListView } from "./LogsList";
-import type { WoWLogGroup } from "@/api/queries";
+import type { WoWLogGroup, WoWParsedLogJobOutput } from "@/api/queries";
+
+// Parsed output for Scarlet Monastery Cathedral
+const cathedralParsedOutput: WoWParsedLogJobOutput = {
+  instances: [
+    {
+      id: "c52bdaae-bb0c-4952-a6d3-6848c6f639c8",
+      name: "Scarlet Monastery Cathedral",
+      realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
+      log_group_id: "550e8400-e29b-41d4-a716-446655440000",
+      encounters: [],
+    },
+  ],
+  instance_failures: {},
+};
+
+// Parsed output with multiple instances
+const multiInstanceParsedOutput: WoWParsedLogJobOutput = {
+  instances: [
+    {
+      id: "c52bdaae-bb0c-4952-a6d3-6848c6f639c8",
+      name: "Scarlet Monastery Cathedral",
+      realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
+      log_group_id: "550e8400-e29b-41d4-a716-446655440001",
+      encounters: [],
+    },
+    {
+      id: "d63bdaae-bb0c-4952-a6d3-6848c6f639c9",
+      name: "Scarlet Monastery Library",
+      realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
+      log_group_id: "550e8400-e29b-41d4-a716-446655440001",
+      encounters: [],
+    },
+  ],
+  instance_failures: {},
+};
+
+// Parsed output with failures
+const failedParsedOutput: WoWParsedLogJobOutput = {
+  instances: [
+    {
+      id: "e74bdaae-bb0c-4952-a6d3-6848c6f639ca",
+      name: "Deadmines",
+      realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
+      log_group_id: "550e8400-e29b-41d4-a716-446655440002",
+      encounters: [],
+    },
+  ],
+  instance_failures: {
+    "Unknown Instance_0": "Failed to parse",
+    "Corrupted Data_1": "Invalid timestamp",
+  },
+};
 
 const mockLogs: WoWLogGroup[] = [
   {
@@ -31,6 +83,7 @@ const mockLogs: WoWLogGroup[] = [
         updated_at: { Time: "2026-01-10T14:30:00Z", Valid: true },
       },
     ],
+    processing_output: cathedralParsedOutput,
   },
   {
     id: "550e8400-e29b-41d4-a716-446655440001",
@@ -49,6 +102,7 @@ const mockLogs: WoWLogGroup[] = [
         updated_at: { Time: "2026-01-09T20:15:00Z", Valid: true },
       },
     ],
+    processing_output: multiInstanceParsedOutput,
   },
   {
     id: "550e8400-e29b-41d4-a716-446655440002",
@@ -77,8 +131,15 @@ const mockLogs: WoWLogGroup[] = [
         updated_at: { Time: "2026-01-08T10:00:00Z", Valid: true },
       },
     ],
+    processing_output: failedParsedOutput,
   },
 ];
+
+// Logs without any parsed output (still processing or no output)
+const mockLogsNoParsedOutput: WoWLogGroup[] = mockLogs.map(log => ({
+  ...log,
+  processing_output: undefined,
+}));
 
 const defaultProps = {
   isAuthenticated: true,
@@ -149,5 +210,19 @@ export const LoadError: Story = {
     isAuthenticated: true,
     logs: undefined,
     logsError: new Error("Failed to fetch logs. Please try again later."),
+  },
+};
+
+export const WithParsedInstances: Story = {
+  args: {
+    isAuthenticated: true,
+    logs: mockLogs,
+  },
+};
+
+export const NoParsedOutput: Story = {
+  args: {
+    isAuthenticated: true,
+    logs: mockLogsNoParsedOutput,
   },
 };

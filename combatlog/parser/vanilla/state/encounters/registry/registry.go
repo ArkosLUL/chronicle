@@ -17,14 +17,18 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r := NewRegistry(logger)
 
 	// Register instances here as you add them
-	// Example:
+	// 5 man
 	r.Register(wrap(instances.ScarletMonasteryCathedral))
+	r.Register(wrap(instances.ScarletMonasteryLibrary))
+
 	r.Register(wrap(instances.BlackrockSpire))
-	r.Register(wrap(instances.MoltenCore))
+
+	// 10 man
 	r.Register(wrap(instances.TowerOfKarazhan))
+
+	// 40 man
+	r.Register(wrap(instances.MoltenCore))
 	r.Register(wrap(instances.Onyxia))
-	// r.Register("Molten Core", moltencore.New)
-	// r.Register("Onyxia's Lair", onyxia.New)
 
 	return r
 }

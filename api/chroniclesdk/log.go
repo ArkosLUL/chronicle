@@ -13,7 +13,8 @@ type WoWLogGroup struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 
-	Files []WoWLogFile `json:"files"`
+	Files            []WoWLogFile `json:"files"`
+	ProcessingOutput any          `json:"processing_output,omitempty"`
 }
 
 type WoWLogFile struct {

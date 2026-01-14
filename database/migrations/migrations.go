@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"embed"
@@ -17,6 +18,8 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/riverqueue/river/riverdriver/riverdatabasesql"
+	"github.com/riverqueue/river/rivermigrate"
 	"golang.org/x/xerrors"
 )
 
@@ -68,10 +71,30 @@ func UpFromSQLDB(db *sql.DB) (retErr error) {
 	if err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			// It's OK if no changes happened!
-			return nil
+		} else {
+			return fmt.Errorf("up: %w", err)
 		}
+	}
 
-		return fmt.Errorf("up: %w", err)
+	err = RiverMigrateFromSQLDB(db)
+	if err != nil {
+		return xerrors.Errorf("river migrate: %w", err)
+	}
+
+	return nil
+}
+
+func RiverMigrateFromSQLDB(db *sql.DB) error {
+	driver := riverdatabasesql.New(db)
+
+	migrator, err := rivermigrate.New(driver, nil)
+	if err != nil {
+		return xerrors.Errorf("create river sql migrator: %w", err)
+	}
+
+	_, err = migrator.Migrate(context.Background(), rivermigrate.DirectionUp, nil)
+	if err != nil {
+		return xerrors.Errorf("migrate river sql: %w", err)
 	}
 
 	return nil

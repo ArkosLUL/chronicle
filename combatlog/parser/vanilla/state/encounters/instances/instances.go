@@ -7,6 +7,12 @@ var (
 		Hostiles: FromMap(CathedralHostiles()),
 	}).New
 
+	ScarletMonasteryLibrary = (&CommonFactory{
+		Name:     "Scarlet Monastery Library",
+		ZoneName: "scarlet monastery library",
+		Hostiles: FromMap(SMLibraryHostiles()),
+	}).New
+
 	BlackrockSpire = (&CommonFactory{
 		Name:     "Blackrock Spire",
 		ZoneName: "blackrock spire",

@@ -9,11 +9,14 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/database"
@@ -60,9 +63,33 @@ type WorkerLogParse struct {
 	river.WorkerDefaults[ArgsLogParse]
 }
 
+func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (io.Reader, error) {
+	storage := w.parent.Storage
+	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
+
+	fd, err := storage.DownloadFile(BucketRaidLogs, w.parent.logPath(fileID))
+	if err != nil {
+		err = fmt.Errorf("download log file %s: %w", fileID, err)
+		if errors.Is(err, os.ErrNotExist) {
+			err = river.JobCancel(err)
+		}
+		return nil, err
+	}
+
+	fileData := &bytes.Buffer{}
+	_, err = sorter.SortLogs(ctx, logger, bytes.NewReader(fd), fileData)
+	if err != nil {
+		return nil, fmt.Errorf("sort log file %s: %w", fileID, err)
+	}
+
+	// Help GC
+	fd = nil
+
+	return fileData, nil
+}
+
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
 	db := w.parent.DB
-	storage := w.parent.Storage
 
 	files, err := db.GetWoWLogFilesByGroupID(ctx, job.Args.LogID)
 	if err != nil {
@@ -79,20 +106,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return river.JobCancel(fmt.Errorf("log group does not have exactly 2 files, has %d", len(files)))
 	}
 
-	rdrs := make([]io.Reader, 0, len(files))
-	for _, file := range files {
-		fd, err := storage.DownloadFile(BucketRaidLogs, w.parent.logPath(file.ID))
+	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
+	rdrs := make([]io.Reader, len(files))
+	for i, file := range files {
+		rdrs[i], err = w.loadAndSortFile(ctx, file.ID)
 		if err != nil {
-			err = fmt.Errorf("download log file %s: %w", file.ID, err)
-			if errors.Is(err, os.ErrNotExist) {
-				err = river.JobCancel(err)
-			}
 			return err
 		}
-		rdrs = append(rdrs, bytes.NewReader(fd))
 	}
-
-	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 
 	m := vanilla.Merger(logger)
 	liner, scan, err := m.LineScanner(ctx, rdrs[0], rdrs[1])
@@ -171,6 +192,19 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			return river.JobCancel(fmt.Errorf("insert finalized encounters: %w", err))
 		}
 	}
+
+	slices.SortFunc(jobOut.Instances, func(a, b chroniclesdk.WoWParsedInstance) int {
+		if len(a.Encounters) == 0 && len(b.Encounters) == 0 {
+			return strings.Compare(a.Name, b.Name)
+		}
+		if len(a.Encounters) == 0 {
+			return 1
+		}
+		if len(b.Encounters) == 0 {
+			return -1
+		}
+		return int(a.Encounters[0].StartTime.Unix() - b.Encounters[0].StartTime.Unix())
+	})
 	_ = river.RecordOutput(ctx, jobOut)
 
 	return nil

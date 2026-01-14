@@ -8,6 +8,17 @@ CREATE TYPE item_effect_type AS ENUM (
     'proc'
 );
 
+CREATE TYPE river_job_state AS ENUM (
+    'available',
+    'cancelled',
+    'completed',
+    'discarded',
+    'pending',
+    'retryable',
+    'running',
+    'scheduled'
+);
+
 CREATE TYPE spell_school AS ENUM (
     'physical',
     'fire',
@@ -19,6 +30,22 @@ CREATE TYPE spell_school AS ENUM (
 );
 
 CREATE DOMAIN wow_log_group_files AS jsonb;
+
+CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) RETURNS boolean
+    LANGUAGE sql IMMUTABLE
+    AS $$
+    SELECT CASE state
+        WHEN 'available' THEN get_bit(bitmask, 7)
+        WHEN 'cancelled' THEN get_bit(bitmask, 6)
+        WHEN 'completed' THEN get_bit(bitmask, 5)
+        WHEN 'discarded' THEN get_bit(bitmask, 4)
+        WHEN 'pending'   THEN get_bit(bitmask, 3)
+        WHEN 'retryable' THEN get_bit(bitmask, 2)
+        WHEN 'running'   THEN get_bit(bitmask, 1)
+        WHEN 'scheduled' THEN get_bit(bitmask, 0)
+        ELSE 0
+    END = 1;
+$$;
 
 CREATE TABLE item_effects (
     id uuid NOT NULL,
@@ -86,6 +113,89 @@ CREATE TABLE parsed_log_group (
 
 COMMENT ON TABLE parsed_log_group IS 'A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.';
 
+CREATE UNLOGGED TABLE river_client (
+    id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    paused_at timestamp with time zone,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT name_length CHECK (((char_length(id) > 0) AND (char_length(id) < 128)))
+);
+
+CREATE UNLOGGED TABLE river_client_queue (
+    river_client_id text NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    max_workers bigint DEFAULT 0 NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    num_jobs_completed bigint DEFAULT 0 NOT NULL,
+    num_jobs_running bigint DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT name_length CHECK (((char_length(name) > 0) AND (char_length(name) < 128))),
+    CONSTRAINT num_jobs_completed_zero_or_positive CHECK ((num_jobs_completed >= 0)),
+    CONSTRAINT num_jobs_running_zero_or_positive CHECK ((num_jobs_running >= 0))
+);
+
+CREATE TABLE river_job (
+    id bigint NOT NULL,
+    state river_job_state DEFAULT 'available'::river_job_state NOT NULL,
+    attempt smallint DEFAULT 0 NOT NULL,
+    max_attempts smallint NOT NULL,
+    attempted_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    finalized_at timestamp with time zone,
+    scheduled_at timestamp with time zone DEFAULT now() NOT NULL,
+    priority smallint DEFAULT 1 NOT NULL,
+    args jsonb NOT NULL,
+    attempted_by text[],
+    errors jsonb[],
+    kind text NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    queue text DEFAULT 'default'::text NOT NULL,
+    tags character varying(255)[] DEFAULT '{}'::character varying[] NOT NULL,
+    unique_key bytea,
+    unique_states bit(8),
+    CONSTRAINT finalized_or_finalized_at_null CHECK ((((finalized_at IS NULL) AND (state <> ALL (ARRAY['cancelled'::river_job_state, 'completed'::river_job_state, 'discarded'::river_job_state]))) OR ((finalized_at IS NOT NULL) AND (state = ANY (ARRAY['cancelled'::river_job_state, 'completed'::river_job_state, 'discarded'::river_job_state]))))),
+    CONSTRAINT kind_length CHECK (((char_length(kind) > 0) AND (char_length(kind) < 128))),
+    CONSTRAINT max_attempts_is_positive CHECK ((max_attempts > 0)),
+    CONSTRAINT priority_in_range CHECK (((priority >= 1) AND (priority <= 4))),
+    CONSTRAINT queue_length CHECK (((char_length(queue) > 0) AND (char_length(queue) < 128)))
+);
+
+CREATE SEQUENCE river_job_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE river_job_id_seq OWNED BY river_job.id;
+
+CREATE UNLOGGED TABLE river_leader (
+    elected_at timestamp with time zone NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    leader_id text NOT NULL,
+    name text DEFAULT 'default'::text NOT NULL,
+    CONSTRAINT leader_id_length CHECK (((char_length(leader_id) > 0) AND (char_length(leader_id) < 128))),
+    CONSTRAINT name_length CHECK ((name = 'default'::text))
+);
+
+CREATE TABLE river_migration (
+    line text NOT NULL,
+    version bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT line_length CHECK (((char_length(line) > 0) AND (char_length(line) < 128))),
+    CONSTRAINT version_gte_1 CHECK ((version >= 1))
+);
+
+CREATE TABLE river_queue (
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    paused_at timestamp with time zone,
+    updated_at timestamp with time zone NOT NULL
+);
+
 CREATE TABLE spell_templates (
     id integer NOT NULL,
     name text NOT NULL,
@@ -142,6 +252,8 @@ CREATE TABLE wow_servers (
     name text NOT NULL
 );
 
+ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
@@ -159,6 +271,24 @@ ALTER TABLE ONLY log_instances
 
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY river_client
+    ADD CONSTRAINT river_client_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY river_client_queue
+    ADD CONSTRAINT river_client_queue_pkey PRIMARY KEY (river_client_id, name);
+
+ALTER TABLE ONLY river_job
+    ADD CONSTRAINT river_job_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY river_leader
+    ADD CONSTRAINT river_leader_pkey PRIMARY KEY (name);
+
+ALTER TABLE ONLY river_migration
+    ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
+
+ALTER TABLE ONLY river_queue
+    ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
 
 ALTER TABLE ONLY spell_templates
     ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
@@ -182,6 +312,18 @@ ALTER TABLE ONLY wow_servers
     ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
+
+CREATE INDEX river_job_args_index ON river_job USING gin (args);
+
+CREATE INDEX river_job_kind ON river_job USING btree (kind);
+
+CREATE INDEX river_job_metadata_index ON river_job USING gin (metadata);
+
+CREATE INDEX river_job_prioritized_fetching_index ON river_job USING btree (state, queue, priority, scheduled_at, id);
+
+CREATE INDEX river_job_state_and_finalized_at_index ON river_job USING btree (state, finalized_at) WHERE (finalized_at IS NOT NULL);
+
+CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 
@@ -208,6 +350,9 @@ ALTER TABLE ONLY log_instances
 
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id);
+
+ALTER TABLE ONLY river_client_queue
+    ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);

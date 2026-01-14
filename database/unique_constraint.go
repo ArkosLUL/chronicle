@@ -12,6 +12,12 @@ const (
 	UniqueLogFilePkey             UniqueConstraint = "log_file_pkey"               // ALTER TABLE ONLY log_file ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
 	UniqueLogInstancesPkey        UniqueConstraint = "log_instances_pkey"          // ALTER TABLE ONLY log_instances ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
 	UniqueParsedLogGroupPkey      UniqueConstraint = "parsed_log_group_pkey"       // ALTER TABLE ONLY parsed_log_group ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
+	UniqueRiverClientPkey         UniqueConstraint = "river_client_pkey"           // ALTER TABLE ONLY river_client ADD CONSTRAINT river_client_pkey PRIMARY KEY (id);
+	UniqueRiverClientQueuePkey    UniqueConstraint = "river_client_queue_pkey"     // ALTER TABLE ONLY river_client_queue ADD CONSTRAINT river_client_queue_pkey PRIMARY KEY (river_client_id, name);
+	UniqueRiverJobPkey            UniqueConstraint = "river_job_pkey"              // ALTER TABLE ONLY river_job ADD CONSTRAINT river_job_pkey PRIMARY KEY (id);
+	UniqueRiverLeaderPkey         UniqueConstraint = "river_leader_pkey"           // ALTER TABLE ONLY river_leader ADD CONSTRAINT river_leader_pkey PRIMARY KEY (name);
+	UniqueRiverMigrationPkey1     UniqueConstraint = "river_migration_pkey1"       // ALTER TABLE ONLY river_migration ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
+	UniqueRiverQueuePkey          UniqueConstraint = "river_queue_pkey"            // ALTER TABLE ONLY river_queue ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
 	UniqueSpellTemplatesPkey      UniqueConstraint = "spell_templates_pkey"        // ALTER TABLE ONLY spell_templates ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
 	UniqueUserAuthLinksPkey       UniqueConstraint = "user_auth_links_pkey"        // ALTER TABLE ONLY user_auth_links ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 	UniqueUserAuthSessionPkey     UniqueConstraint = "user_auth_session_pkey"      // ALTER TABLE ONLY user_auth_session ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
@@ -20,5 +26,6 @@ const (
 	UniqueWowServerRealmsPkey     UniqueConstraint = "wow_server_realms_pkey"      // ALTER TABLE ONLY wow_server_realms ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
 	UniqueWowServersPkey          UniqueConstraint = "wow_servers_pkey"            // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 	UniqueFilesUniqueOwnerHash    UniqueConstraint = "files_unique_owner_hash"     // CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
+	UniqueRiverJobUniqueIndex     UniqueConstraint = "river_job_unique_idx"        // CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
 	UniqueUserAuthsUniqueLinkedID UniqueConstraint = "user_auths_unique_linked_id" // CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 )

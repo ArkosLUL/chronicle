@@ -76,6 +76,82 @@ func AllItemEffectTypeValues() []ItemEffectType {
 	}
 }
 
+type RiverJobState string
+
+const (
+	RiverJobStateAvailable RiverJobState = "available"
+	RiverJobStateCancelled RiverJobState = "cancelled"
+	RiverJobStateCompleted RiverJobState = "completed"
+	RiverJobStateDiscarded RiverJobState = "discarded"
+	RiverJobStatePending   RiverJobState = "pending"
+	RiverJobStateRetryable RiverJobState = "retryable"
+	RiverJobStateRunning   RiverJobState = "running"
+	RiverJobStateScheduled RiverJobState = "scheduled"
+)
+
+func (e *RiverJobState) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RiverJobState(s)
+	case string:
+		*e = RiverJobState(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RiverJobState: %T", src)
+	}
+	return nil
+}
+
+type NullRiverJobState struct {
+	RiverJobState RiverJobState `json:"river_job_state"`
+	Valid         bool          `json:"valid"` // Valid is true if RiverJobState is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRiverJobState) Scan(value interface{}) error {
+	if value == nil {
+		ns.RiverJobState, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RiverJobState.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRiverJobState) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RiverJobState), nil
+}
+
+func (e RiverJobState) Valid() bool {
+	switch e {
+	case RiverJobStateAvailable,
+		RiverJobStateCancelled,
+		RiverJobStateCompleted,
+		RiverJobStateDiscarded,
+		RiverJobStatePending,
+		RiverJobStateRetryable,
+		RiverJobStateRunning,
+		RiverJobStateScheduled:
+		return true
+	}
+	return false
+}
+
+func AllRiverJobStateValues() []RiverJobState {
+	return []RiverJobState{
+		RiverJobStateAvailable,
+		RiverJobStateCancelled,
+		RiverJobStateCompleted,
+		RiverJobStateDiscarded,
+		RiverJobStatePending,
+		RiverJobStateRetryable,
+		RiverJobStateRunning,
+		RiverJobStateScheduled,
+	}
+}
+
 type SpellSchool string
 
 const (
@@ -209,6 +285,67 @@ type LogInstance struct {
 // A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.
 type ParsedLogGroup struct {
 	ID uuid.UUID `db:"id" json:"id"`
+}
+
+type RiverClient struct {
+	ID        string             `db:"id" json:"id"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	Metadata  []byte             `db:"metadata" json:"metadata"`
+	PausedAt  pgtype.Timestamptz `db:"paused_at" json:"paused_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type RiverClientQueue struct {
+	RiverClientID    string             `db:"river_client_id" json:"river_client_id"`
+	Name             string             `db:"name" json:"name"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	MaxWorkers       int64              `db:"max_workers" json:"max_workers"`
+	Metadata         []byte             `db:"metadata" json:"metadata"`
+	NumJobsCompleted int64              `db:"num_jobs_completed" json:"num_jobs_completed"`
+	NumJobsRunning   int64              `db:"num_jobs_running" json:"num_jobs_running"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type RiverJob struct {
+	ID           int64              `db:"id" json:"id"`
+	State        RiverJobState      `db:"state" json:"state"`
+	Attempt      int16              `db:"attempt" json:"attempt"`
+	MaxAttempts  int16              `db:"max_attempts" json:"max_attempts"`
+	AttemptedAt  pgtype.Timestamptz `db:"attempted_at" json:"attempted_at"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	FinalizedAt  pgtype.Timestamptz `db:"finalized_at" json:"finalized_at"`
+	ScheduledAt  pgtype.Timestamptz `db:"scheduled_at" json:"scheduled_at"`
+	Priority     int16              `db:"priority" json:"priority"`
+	Args         []byte             `db:"args" json:"args"`
+	AttemptedBy  []string           `db:"attempted_by" json:"attempted_by"`
+	Errors       [][]byte           `db:"errors" json:"errors"`
+	Kind         string             `db:"kind" json:"kind"`
+	Metadata     []byte             `db:"metadata" json:"metadata"`
+	Queue        string             `db:"queue" json:"queue"`
+	Tags         []string           `db:"tags" json:"tags"`
+	UniqueKey    []byte             `db:"unique_key" json:"unique_key"`
+	UniqueStates pgtype.Bits        `db:"unique_states" json:"unique_states"`
+}
+
+type RiverLeader struct {
+	ElectedAt pgtype.Timestamptz `db:"elected_at" json:"elected_at"`
+	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	LeaderID  string             `db:"leader_id" json:"leader_id"`
+	Name      string             `db:"name" json:"name"`
+}
+
+type RiverMigration struct {
+	Line      string             `db:"line" json:"line"`
+	Version   int64              `db:"version" json:"version"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type RiverQueue struct {
+	Name      string             `db:"name" json:"name"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	Metadata  []byte             `db:"metadata" json:"metadata"`
+	PausedAt  pgtype.Timestamptz `db:"paused_at" json:"paused_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type SpellTemplate struct {

@@ -124,6 +124,8 @@ export interface WoWLogGroup {
     // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
     readonly updated_at: unknown;
     readonly files: readonly WoWLogFile[];
+    // empty interface{} type, falling back to unknown
+    readonly processing_output?: unknown;
 }
 
 // From chroniclesdk/log.go

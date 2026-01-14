@@ -3,12 +3,12 @@ package chronicle
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Emyrk/chronicle/database"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
-	"github.com/riverqueue/river/rivermigrate"
 )
 
 const (
@@ -44,19 +44,13 @@ func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
 
 	driver := riverpgxv5.New(pool)
 
-	migrator, err := rivermigrate.New(driver, nil)
-	if err != nil {
-		return fmt.Errorf("new river migrator: %w", err)
-	}
-
-	_, err = migrator.Migrate(ctx, rivermigrate.DirectionUp, nil)
-	if err != nil {
-		return fmt.Errorf("migrate river queues: %w", err)
-	}
-
 	riverClient, err := river.NewClient(driver, &river.Config{
 		Queues:  c.queues(opts.Queue),
 		Workers: c.workers(opts.Queue),
+		// Retain all jobs
+		// TODO: Create our own reaper to clean up old jobs after a certain period
+		CompletedJobRetentionPeriod: -1,
+		JobTimeout:                  time.Minute * 10,
 	})
 	if err != nil {
 		return fmt.Errorf("new river client: %w", err)

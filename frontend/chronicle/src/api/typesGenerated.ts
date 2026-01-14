@@ -3,6 +3,8 @@
 // From chroniclesdk/log.go
 export interface JobStatus {
     readonly id: number;
+    readonly attempt: number;
+    readonly max_attempts: number;
     readonly state: RiverJobState;
     readonly created_at: string;
     readonly scheduled_at: string;

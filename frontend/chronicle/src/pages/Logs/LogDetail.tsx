@@ -285,10 +285,14 @@ export function LogDetailView({
               Processing Status
             </h2>
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <StatusBadge state={log.status.state} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Attempt</p>
+                  <p className="font-medium">{log.status.attempt} / {log.status.max_attempts}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Job Type</p>
@@ -349,31 +353,57 @@ export function LogDetailView({
                 </div>
               )}
 
-              {log.status.state === RIVER_STATES.discarded && log.status.errors.length > 0 && (
-                <div className="p-4 bg-destructive/10 rounded-lg space-y-2">
-                  <p className="text-sm font-medium text-destructive">Processing failed</p>
-                  {log.status.errors.map((error, idx) => (
-                    <div key={idx} className="text-sm">
-                      <p className="text-muted-foreground">
-                        Attempt {error.attempt} at {formatDate(error.at)}:
-                      </p>
-                      <p className="font-mono text-xs text-destructive whitespace-pre-wrap break-words">
-                        {error.error}
-                      </p>
-                      {error.trace && (
-                        <details className="mt-1">
-                          <summary className="text-xs text-muted-foreground cursor-pointer">
-                            Stack trace
-                          </summary>
-                          <pre className="text-xs text-muted-foreground mt-1 overflow-x-auto">
-                            {error.trace}
-                          </pre>
-                        </details>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {(log.status.state === RIVER_STATES.discarded || log.status.state === RIVER_STATES.cancelled) && log.status.errors.length > 0 && (() => {
+                const currentAttemptErrors = log.status.errors.filter(e => e.attempt === log.status.attempt);
+                const previousAttemptErrors = log.status.errors.filter(e => e.attempt !== log.status.attempt);
+                
+                const renderError = (error: typeof log.status.errors[number], idx: number) => (
+                  <div key={idx} className="text-sm">
+                    <p className="text-muted-foreground">
+                      Attempt {error.attempt} at {formatDate(error.at)}:
+                    </p>
+                    <p className="font-mono text-xs text-destructive whitespace-pre-wrap break-words">
+                      {error.error}
+                    </p>
+                    {error.trace && (
+                      <details className="mt-1">
+                        <summary className="text-xs text-muted-foreground cursor-pointer">
+                          Stack trace
+                        </summary>
+                        <pre className="text-xs text-muted-foreground mt-1 overflow-x-auto">
+                          {error.trace}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                );
+                
+                return (
+                  <div className="p-4 bg-destructive/10 rounded-lg space-y-3">
+                    <p className="text-sm font-medium text-destructive">
+                      {log.status.state === RIVER_STATES.cancelled ? "Job was cancelled" : "Processing failed"}
+                      {" "}(Attempt {log.status.attempt})
+                    </p>
+                    
+                    {currentAttemptErrors.length > 0 && (
+                      <div className="space-y-2">
+                        {currentAttemptErrors.map(renderError)}
+                      </div>
+                    )}
+                    
+                    {previousAttemptErrors.length > 0 && (
+                      <details className="mt-2">
+                        <summary className="text-xs text-muted-foreground cursor-pointer">
+                          Previous attempt errors ({previousAttemptErrors.length})
+                        </summary>
+                        <div className="mt-2 space-y-2 pl-2 border-l-2 border-muted">
+                          {previousAttemptErrors.map(renderError)}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </Card>
 

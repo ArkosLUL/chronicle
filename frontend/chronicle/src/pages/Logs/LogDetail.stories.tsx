@@ -7,6 +7,8 @@ const mockJobStatus: JobStatus = {
   id: 12345,
   state: "pending",
   kind: "parse_log",
+  attempt: 1,
+  max_attempts: 3,
   created_at: "2026-01-10T14:30:00Z",
   scheduled_at: "2026-01-10T14:30:00Z",
   attempted_at: null,
@@ -229,19 +231,21 @@ export const Failed: Story = {
       status: {
         ...mockJobStatus,
         state: "discarded",
+        attempt: 3,
+        max_attempts: 3,
         attempted_at: "2026-01-10T14:31:00Z",
         finalized_at: "2026-01-10T14:35:00Z",
         errors: [
           {
             at: "2026-01-10T14:32:00Z",
             attempt: 1,
-            error: "Invalid log format: expected COMBAT_LOG_VERSION header",
+            error: "Connection timeout while processing log file",
             trace: "",
           },
           {
             at: "2026-01-10T14:34:00Z",
             attempt: 2,
-            error: "Invalid log format: expected COMBAT_LOG_VERSION header",
+            error: "Database connection failed during processing",
             trace: "",
           },
           {
@@ -264,6 +268,36 @@ export const Cancelled: Story = {
         ...mockJobStatus,
         state: "cancelled",
         finalized_at: "2026-01-10T14:33:00Z",
+      },
+    },
+  },
+};
+
+export const CancelledWithErrors: Story = {
+  args: {
+    log: {
+      ...mockLog,
+      status: {
+        ...mockJobStatus,
+        state: "cancelled",
+        attempt: 2,
+        max_attempts: 3,
+        attempted_at: "2026-01-10T14:31:00Z",
+        finalized_at: "2026-01-10T14:33:00Z",
+        errors: [
+          {
+            at: "2026-01-10T14:31:30Z",
+            attempt: 1,
+            error: "Connection timeout during processing",
+            trace: "",
+          },
+          {
+            at: "2026-01-10T14:32:00Z",
+            attempt: 2,
+            error: "Job cancelled by user request",
+            trace: "",
+          },
+        ],
       },
     },
   },

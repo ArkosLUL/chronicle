@@ -1,15 +1,36 @@
 package api
 
 import (
-  "fmt"
-  "net/http"
+	"fmt"
+	"net/http"
 
-  "github.com/Emyrk/chronicle/api/chroniclesdk"
-  "github.com/Emyrk/chronicle/api/httpapi"
-  "github.com/google/uuid"
+	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/google/uuid"
 )
 
 const MaxLogFileSize = 50 * 1024 * 1024 // 50 MB
+
+func (api *API) WoWLogReparse(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logID := httpmw.LogID(ctx)
+
+	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to enqueue log re-parse",
+				Detail:  err.Error(),
+			},
+			Status: http.StatusInternalServerError,
+		})
+
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusAccepted, res.Job.ID)
+}
 
 func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -61,10 +82,10 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  fileIDs := make([]uuid.UUID, 0, len(files))
-  for _, f := range files {
-    fileIDs = append(fileIDs, f.ID)
-  }
+	fileIDs := make([]uuid.UUID, 0, len(files))
+	for _, f := range files {
+		fileIDs = append(fileIDs, f.ID)
+	}
 
 	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
 		LogID: group.ID,

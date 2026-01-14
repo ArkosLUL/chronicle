@@ -7,9 +7,8 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/internal/slice"
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 func (api *API) WoWLogGroups(w http.ResponseWriter, r *http.Request) {
@@ -34,16 +33,7 @@ func (api *API) WoWLogGroups(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) WoWLogGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	logIDStr := chi.URLParam(r, "logID")
-	logID, err := uuid.Parse(logIDStr)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid log ID format",
-			Detail:  err.Error(),
-		})
-		return
-	}
+	logID := httpmw.LogID(ctx)
 
 	resp, err := api.Chronicle.WoWLogGroup(ctx, logID)
 	if err != nil {
@@ -63,18 +53,9 @@ func (api *API) WoWLogGroup(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) WoWLogDeleteGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logID := httpmw.LogID(ctx)
 
-	logIDStr := chi.URLParam(r, "logID")
-	logID, err := uuid.Parse(logIDStr)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid log ID format",
-			Detail:  err.Error(),
-		})
-		return
-	}
-
-	err = api.Chronicle.DeleteWoWLogGroup(ctx, logID)
+	err := api.Chronicle.DeleteWoWLogGroup(ctx, logID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

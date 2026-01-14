@@ -84,11 +84,16 @@ func (c *Chronicle) queues(opts RiverQueueOptions) map[string]river.QueueConfig 
 func (c *Chronicle) workers(opts RiverQueueOptions) *river.Workers {
 	workers := river.NewWorkers()
 
-	if opts.LogParsingWorkers > 0 {
-		river.AddWorker(workers, &WorkerLogParse{
-			parent: c,
-		})
+	if opts.LogParsingWorkers <= 0 {
+		return workers
 	}
+
+	river.AddWorker(workers, &WorkerLogParse{
+		parent: c,
+	})
+	river.AddWorker(workers, &WorkerLogReparse{
+		parent: c,
+	})
 
 	return workers
 }

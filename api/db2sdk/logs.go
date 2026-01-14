@@ -69,5 +69,6 @@ func JobStatus(status rivertype.JobRow) chroniclesdk.JobStatus {
 		CreatedAt:   status.CreatedAt,
 		FinalizedAt: status.FinalizedAt,
 		Errors:      status.Errors,
+		Kind:        status.Kind,
 	}
 }

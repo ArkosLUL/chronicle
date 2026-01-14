@@ -245,7 +245,7 @@ func (c *Chronicle) WoWLogGroup(ctx context.Context, groupID uuid.UUID) (*chroni
 		"group_id": groupID.String(),
 	}).
 		Queues(QueueLogParsing).
-		Kinds(KindLogParse).
+		Kinds(KindLogParse, KindLogReparse).
 		OrderBy(river.JobListOrderByScheduledAt, river.SortOrderDesc)
 
 	list, err := c.queue.JobList(ctx, opts)

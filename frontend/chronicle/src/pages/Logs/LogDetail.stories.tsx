@@ -6,6 +6,7 @@ import type { WoWLogGroupState, JobStatus } from "@/api/queries";
 const mockJobStatus: JobStatus = {
   id: 12345,
   state: "pending",
+  kind: "parse_log",
   created_at: "2026-01-10T14:30:00Z",
   scheduled_at: "2026-01-10T14:30:00Z",
   attempted_at: null,
@@ -53,6 +54,10 @@ const defaultProps = {
   isDeleting: false,
   showDeleteConfirm: false,
   setShowDeleteConfirm: () => {},
+  onReparse: () => console.log("Reparse clicked"),
+  isReparsing: false,
+  onRefresh: () => console.log("Refresh clicked"),
+  isRefreshing: false,
 };
 
 const meta: Meta<typeof LogDetailView> = {
@@ -150,6 +155,51 @@ export const Completed: Story = {
     },
   },
 };
+
+export const ReparseInProgress: Story = {
+  args: {
+    log: {
+      ...mockLog,
+      status: {
+        ...mockJobStatus,
+        kind: "reparse_log",
+        state: "running",
+        attempted_at: "2026-01-10T15:00:00Z",
+      },
+    },
+  },
+};
+
+export const ReparseCompleted: Story = {
+  args: {
+    log: {
+      ...mockLog,
+      status: {
+        ...mockJobStatus,
+        kind: "reparse_log",
+        state: "completed",
+        attempted_at: "2026-01-10T15:00:00Z",
+        finalized_at: "2026-01-10T15:02:00Z",
+      },
+    },
+  },
+};
+
+export const Reparsing: Story = {
+  args: {
+    log: {
+      ...mockLog,
+      status: {
+        ...mockJobStatus,
+        state: "completed",
+        finalized_at: "2026-01-10T14:35:00Z",
+      },
+    },
+    isReparsing: true,
+  },
+};
+
+
 
 export const Retryable: Story = {
   args: {

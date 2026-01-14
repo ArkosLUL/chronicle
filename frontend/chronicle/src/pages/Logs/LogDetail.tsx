@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { 
   FileText, 
   Clock, 
@@ -13,12 +14,14 @@ import {
   Trash2,
   PauseCircle,
   XCircle,
-  RotateCcw
+  RotateCcw,
+  RefreshCw,
+  Play
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useLogGroup, useDeleteLogGroup, type WoWLogGroupState, type WoWLogFile, type RiverJobState } from "@/api/queries";
+import { useLogGroup, useDeleteLogGroup, useReparseLogGroup, type WoWLogGroupState, type WoWLogFile, type RiverJobState } from "@/api/queries";
 
 function formatDate(timestamp: unknown): string {
   if (!timestamp) return "Unknown";
@@ -52,6 +55,26 @@ const RIVER_STATES = {
   running: "running",
   scheduled: "scheduled",
 } as const;
+
+// Terminal states where no more processing will occur
+const TERMINAL_STATES = [
+  RIVER_STATES.completed,
+  RIVER_STATES.discarded,
+  RIVER_STATES.cancelled,
+];
+
+function isJobComplete(state: RiverJobState): boolean {
+  return TERMINAL_STATES.includes(state as typeof TERMINAL_STATES[number]);
+}
+
+function formatJobKind(kind: string): string {
+  // Convert snake_case or camelCase to readable format
+  return kind
+    .replace(/_/g, " ")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+}
 
 function StatusBadge({ state }: { state: RiverJobState }) {
   switch (state) {
@@ -119,6 +142,10 @@ export interface LogDetailViewProps {
   isDeleting: boolean;
   showDeleteConfirm: boolean;
   setShowDeleteConfirm: (show: boolean) => void;
+  onReparse: () => void;
+  isReparsing: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 export function LogDetailView({
@@ -131,6 +158,10 @@ export function LogDetailView({
   isDeleting,
   showDeleteConfirm,
   setShowDeleteConfirm,
+  onReparse,
+  isReparsing,
+  onRefresh,
+  isRefreshing,
 }: LogDetailViewProps) {
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -212,7 +243,39 @@ export function LogDetailView({
                 Uploaded {formatDate(log.created_at)}
               </p>
             </div>
-            <StatusBadge state={log.status.state} />
+            <div className="flex items-center gap-2">
+              <StatusBadge state={log.status.state} />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={onReparse}
+              disabled={isReparsing || !isJobComplete(log.status.state)}
+            >
+              {isReparsing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Reparsing...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Reparse
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Processing Status Card */}
@@ -222,10 +285,14 @@ export function LogDetailView({
               Processing Status
             </h2>
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <StatusBadge state={log.status.state} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Job Type</p>
+                  <p className="font-medium">{formatJobKind(log.status.kind)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Job ID</p>
@@ -440,19 +507,55 @@ export function LogDetail() {
   const { logId } = useParams<{ logId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { data: log, isLoading: logLoading, error: logError } = useLogGroup(logId || "", {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { 
+    data: log, 
+    isLoading: logLoading, 
+    error: logError,
+    refetch,
+    isRefetching,
+  } = useLogGroup(logId || "", {
     enabled: isAuthenticated && !!logId,
   });
+
   const deleteLogGroup = useDeleteLogGroup();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const reparseLogGroup = useReparseLogGroup();
 
   const handleDelete = () => {
     if (!logId) return;
     deleteLogGroup.mutate(logId, {
       onSuccess: () => {
+        toast.success("Log deleted");
         navigate("/logs");
       },
+      onError: (error) => {
+        toast.error("Failed to delete log", {
+          description: error.message,
+        });
+      },
     });
+  };
+
+  const handleReparse = () => {
+    if (!logId) return;
+    reparseLogGroup.mutate(logId, {
+      onSuccess: () => {
+        toast.success("Reparse started", {
+          description: "Your log is being reprocessed.",
+        });
+        refetch();
+      },
+      onError: (error) => {
+        toast.error("Failed to reparse", {
+          description: error.message,
+        });
+      },
+    });
+  };
+
+  const handleRefresh = () => {
+    refetch();
   };
 
   return (
@@ -466,6 +569,10 @@ export function LogDetail() {
       isDeleting={deleteLogGroup.isPending}
       showDeleteConfirm={showDeleteConfirm}
       setShowDeleteConfirm={setShowDeleteConfirm}
+      onReparse={handleReparse}
+      isReparsing={reparseLogGroup.isPending}
+      onRefresh={handleRefresh}
+      isRefreshing={isRefetching}
     />
   );
 }

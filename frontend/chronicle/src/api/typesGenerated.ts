@@ -9,6 +9,7 @@ export interface JobStatus {
     readonly attempted_at: string | null;
     readonly finalized_at: string | null;
     readonly errors: readonly RiverAttemptError[];
+    readonly kind: string;
 }
 
 // From chroniclesdk/response.go

@@ -42,4 +42,5 @@ type JobStatus struct {
 	AttemptedAt *time.Time               `json:"attempted_at"`
 	FinalizedAt *time.Time               `json:"finalized_at"`
 	Errors      []rivertype.AttemptError `json:"errors"`
+	Kind        string                   `json:"kind"`
 }

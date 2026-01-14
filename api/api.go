@@ -94,8 +94,13 @@ func (api *API) Routes() chi.Router {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Post("/upload", api.WoWLogUpload)
 				r.Get("/", api.WoWLogGroups)
-				r.Get("/{logID}", api.WoWLogGroup)
-				r.Delete("/{logID}", api.WoWLogDeleteGroup)
+				r.Route("/{logID}", func(r chi.Router) {
+          r.Use(httpmw.LogIDMiddleware)
+					r.Post("/reparse", api.WoWLogReparse)
+					r.Get("/", api.WoWLogGroup)
+					r.Delete("/", api.WoWLogDeleteGroup)
+				})
+
 			})
 		})
 	})

@@ -86,3 +86,24 @@ export function useDeleteLogGroup() {
     },
   });
 }
+
+export function useReparseLogGroup() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (logId: string) => {
+      const response = await fetch(`/api/v1/raidlogs/${logId}/reparse`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to reparse log" }));
+        throw new Error(error.message || "Failed to reparse log");
+      }
+      return response.json() as Promise<WoWLogGroupState>;
+    },
+    onSuccess: (_data, logId) => {
+      // Invalidate to refetch with new job status
+      queryClient.invalidateQueries({ queryKey: ["logGroup", logId] });
+    },
+  });
+}

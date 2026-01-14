@@ -11,6 +11,7 @@ import (
 )
 
 type sqlcQuerier interface {
+	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
 	DeleteThisQuery(ctx context.Context) error
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
@@ -18,7 +19,10 @@ type sqlcQuerier interface {
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
 	GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]GetWoWLogGroupsByOwnerRow, error)
+	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogEncounter, error)
+	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
 	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
+	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)

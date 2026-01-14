@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/dbstatic"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
@@ -22,6 +23,10 @@ import (
 )
 
 const KindLogParse = "log-parse"
+
+type OutputLogParse struct {
+	InstanceFailures map[string]string
+}
 
 type ArgsLogParse struct {
 	LogID uuid.UUID `json:"log_group_id"`
@@ -105,7 +110,65 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return err
 	}
 
+	jobOut := OutputLogParse{
+		InstanceFailures: make(map[string]string),
+	}
+
+	err = db.InsertParsedLogGroup(ctx, job.Args.LogID)
+	if err != nil {
+		return river.JobCancel(fmt.Errorf("insert parsed log group: %w", err))
+	}
+
+	for i, inst := range output.Instances {
+		encs, err := inst.Finalize(ctx)
+		if err != nil {
+			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = err.Error()
+			continue
+		}
+
+		err = db.InTx(func(tx database.Store) error {
+			dbinstance, err := tx.InsertInstance(ctx, database.InsertInstanceParams{
+				ID: uuid.New(),
+				// TODO: Detect this from the logs
+				RealmID:    dbstatic.RealmAmbershire(),
+				LogGroupID: job.Args.LogID,
+				Name:       inst.Name(),
+			})
+			if err != nil {
+				return fmt.Errorf("insert instance: %w", err)
+			}
+
+			// Store the encounters into the database
+			var _ = encs
+			for _, enc := range encs {
+				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
+					ID:         uuid.New(),
+					InstanceID: dbinstance.ID,
+					Name:       enc.Name,
+					Kill:       enc.IsKill,
+					StartTime:  database.Timestamptz(enc.Combat.Start),
+					EndTime:    database.Timestamptz(enc.Combat.End),
+				})
+				if err != nil {
+					return fmt.Errorf("insert encounter: %w", err)
+				}
+
+				var _ = dbencounter
+			}
+
+			return nil
+		}, nil)
+		if err != nil {
+			return river.JobCancel(fmt.Errorf("insert finalized encounters: %w", err))
+		}
+	}
+	_ = river.RecordOutput(ctx, jobOut)
+
 	return nil
+}
+
+func (w *WorkerLogParse) save() {
+
 }
 
 func (w *WorkerLogParse) NextRetry(job *river.Job[ArgsLogParse]) time.Time {

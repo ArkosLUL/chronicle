@@ -245,14 +245,7 @@ func (c *Chronicle) WoWLogGroup(ctx context.Context, groupID uuid.UUID) (*chroni
 		return nil, fmt.Errorf("fetch log group: %w", err)
 	}
 
-	opts := river.NewJobListParams().Where(`args->>'log_group_id' = @group_id`, map[string]any{
-		"group_id": groupID.String(),
-	}).
-		Queues(QueueLogParsing).
-		Kinds(KindLogParse, KindLogReparse).
-		OrderBy(river.JobListOrderByScheduledAt, river.SortOrderDesc)
-
-	list, err := c.queue.JobList(ctx, opts)
+	list, err := c.ListLogGroupJobs(ctx, groupID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch log parse jobs: %w", err)
 	}

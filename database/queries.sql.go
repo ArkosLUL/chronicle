@@ -285,6 +285,100 @@ func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
 	return err
 }
 
+const deleteAllParsedLogsByGroupID = `-- name: DeleteAllParsedLogsByGroupID :exec
+DELETE FROM
+  parsed_log_group
+WHERE
+  id = $1
+`
+
+func (q *sqlQuerier) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAllParsedLogsByGroupID, id)
+	return err
+}
+
+const insertEncounter = `-- name: InsertEncounter :one
+INSERT INTO
+  log_encounters (id, instance_id, name, kill, start_time, end_time)
+VALUES
+  ($1, $2, $3, $4, $5, $6)
+RETURNING id, instance_id, name, kill, start_time, end_time
+`
+
+type InsertEncounterParams struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
+	Name       string             `db:"name" json:"name"`
+	Kill       bool               `db:"kill" json:"kill"`
+	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
+}
+
+func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogEncounter, error) {
+	row := q.db.QueryRow(ctx, insertEncounter,
+		arg.ID,
+		arg.InstanceID,
+		arg.Name,
+		arg.Kill,
+		arg.StartTime,
+		arg.EndTime,
+	)
+	var i LogEncounter
+	err := row.Scan(
+		&i.ID,
+		&i.InstanceID,
+		&i.Name,
+		&i.Kill,
+		&i.StartTime,
+		&i.EndTime,
+	)
+	return i, err
+}
+
+const insertInstance = `-- name: InsertInstance :one
+INSERT INTO
+  log_instances (id, realm_id, log_group_id, name)
+VALUES
+  ($1, $2, $3, $4)
+RETURNING id, realm_id, log_group_id, name
+`
+
+type InsertInstanceParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RealmID    uuid.UUID `db:"realm_id" json:"realm_id"`
+	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	Name       string    `db:"name" json:"name"`
+}
+
+func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
+	row := q.db.QueryRow(ctx, insertInstance,
+		arg.ID,
+		arg.RealmID,
+		arg.LogGroupID,
+		arg.Name,
+	)
+	var i LogInstance
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.LogGroupID,
+		&i.Name,
+	)
+	return i, err
+}
+
+const insertParsedLogGroup = `-- name: InsertParsedLogGroup :exec
+INSERT INTO
+  parsed_log_group (id)
+VALUES
+  ($1)
+`
+
+func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, insertParsedLogGroup, id)
+	return err
+}
+
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one
 SELECT
   id, linked_id, user_id, provider, created_at, updated_at

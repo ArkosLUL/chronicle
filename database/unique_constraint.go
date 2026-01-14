@@ -8,12 +8,17 @@ type UniqueConstraint string
 const (
 	UniqueItemEffectsPkey         UniqueConstraint = "item_effects_pkey"           // ALTER TABLE ONLY item_effects ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 	UniqueItemTemplatesPkey       UniqueConstraint = "item_templates_pkey"         // ALTER TABLE ONLY item_templates ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
+	UniqueLogEncountersPkey       UniqueConstraint = "log_encounters_pkey"         // ALTER TABLE ONLY log_encounters ADD CONSTRAINT log_encounters_pkey PRIMARY KEY (id);
 	UniqueLogFilePkey             UniqueConstraint = "log_file_pkey"               // ALTER TABLE ONLY log_file ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
+	UniqueLogInstancesPkey        UniqueConstraint = "log_instances_pkey"          // ALTER TABLE ONLY log_instances ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
+	UniqueParsedLogGroupPkey      UniqueConstraint = "parsed_log_group_pkey"       // ALTER TABLE ONLY parsed_log_group ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
 	UniqueSpellTemplatesPkey      UniqueConstraint = "spell_templates_pkey"        // ALTER TABLE ONLY spell_templates ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
 	UniqueUserAuthLinksPkey       UniqueConstraint = "user_auth_links_pkey"        // ALTER TABLE ONLY user_auth_links ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 	UniqueUserAuthSessionPkey     UniqueConstraint = "user_auth_session_pkey"      // ALTER TABLE ONLY user_auth_session ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
 	UniqueUsersPkey               UniqueConstraint = "users_pkey"                  // ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 	UniqueWowLogGroupsPkey        UniqueConstraint = "wow_log_groups_pkey"         // ALTER TABLE ONLY wow_log_groups ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
+	UniqueWowServerRealmsPkey     UniqueConstraint = "wow_server_realms_pkey"      // ALTER TABLE ONLY wow_server_realms ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
+	UniqueWowServersPkey          UniqueConstraint = "wow_servers_pkey"            // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 	UniqueFilesUniqueOwnerHash    UniqueConstraint = "files_unique_owner_hash"     // CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 	UniqueUserAuthsUniqueLinkedID UniqueConstraint = "user_auths_unique_linked_id" // CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 )

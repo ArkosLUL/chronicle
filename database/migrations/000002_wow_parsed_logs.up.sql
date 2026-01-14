@@ -1,0 +1,56 @@
+BEGIN;
+
+CREATE TABLE wow_servers (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL
+)
+;
+
+CREATE TABLE wow_server_realms (
+  id UUID PRIMARY KEY,
+  server_id UUID NOT NULL REFERENCES wow_servers(id),
+  name TEXT NOT NULL
+)
+;
+
+INSERT INTO wow_servers (id, name) VALUES
+  ('10ac9e23-ff74-43ed-83ad-96c123017097', 'turtle-wow')
+;
+
+INSERT INTO wow_server_realms (id, server_id, name) VALUES
+  ('851d2fd3-f9c5-4623-b714-924b59d916aa', '10ac9e23-ff74-43ed-83ad-96c123017097', 'Ambershire'),
+  ('f94d3103-1cd8-40e9-ad91-a2366de33354', '10ac9e23-ff74-43ed-83ad-96c123017097', 'Tel''Abim'),
+  ('bcf173a7-c94a-49fe-8930-27435d722fb7','10ac9e23-ff74-43ed-83ad-96c123017097','Nordanaar')
+;
+
+CREATE TABLE parsed_log_group (
+  id UUID PRIMARY KEY REFERENCES wow_log_groups(id)
+)
+;
+
+COMMENT ON TABLE parsed_log_group IS
+  'A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.'
+;
+
+CREATE TABLE log_instances (
+  id UUID PRIMARY KEY,
+  realm_id UUID NOT NULL REFERENCES wow_server_realms(id),
+  log_group_id UUID NOT NULL REFERENCES parsed_log_group(id)
+    ON DELETE CASCADE ,
+  name TEXT NOT NULL
+)
+;
+
+CREATE TABLE log_encounters (
+  id UUID PRIMARY KEY,
+  instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
+
+  name TEXT NOT NULL,
+  kill BOOLEAN NOT NULL,
+  start_time TIMESTAMPTZ NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL
+)
+;
+
+
+COMMIT;

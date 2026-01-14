@@ -60,8 +60,12 @@ func ParseCmd() *serpent.Command {
 					slog.String("name", inst.Name()),
 				)
 
-				for _, f := range inst.Fights() {
-					fmt.Println(f.NamedString(output.Units))
+				enc, err := inst.Finalize(ctx)
+				if err != nil {
+					return fmt.Errorf("finalizing instance %q: %w", inst.Name(), err)
+				}
+				for _, e := range enc {
+					fmt.Println(e.NamedString(output.Units))
 				}
 			}
 

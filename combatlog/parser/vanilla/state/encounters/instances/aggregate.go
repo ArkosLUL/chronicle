@@ -25,6 +25,29 @@ type Encounter struct {
 	IsKill bool
 }
 
+func (e Encounter) NamedString(db *unitdb.Units) string {
+	var str strings.Builder
+	str.WriteString(fmt.Sprintf("%s Fight [Kill=%t]: against %d units\n", e.Type, e.IsKill, len(e.Combat.Hostiles)))
+	str.WriteString(fmt.Sprintf("  Start: %s\n", e.Combat.Start.Format("15:04:05.000")))
+	str.WriteString(fmt.Sprintf("  End:   %s\n", e.Combat.End.Format("15:04:05.000")))
+	str.WriteString("  Hostiles:\n")
+	for charID, charFight := range e.Combat.Hostiles {
+		unit, ok := db.Get(charID)
+		unitName := "Unknown"
+		if !ok {
+			unitName = unit.Name
+		}
+		str.WriteString(fmt.Sprintf("    - %s (ID: %s) with %d activity periods\n", unitName, charID.String(), len(charFight.Activity)))
+		for _, activity := range charFight.Activity {
+			str.WriteString(fmt.Sprintf("        * From %s to %s\n",
+				activity.Start.Timestamp.Date().Format("15:04:05.000"),
+				activity.End.Timestamp.Date().Format("15:04:05.000"),
+			))
+		}
+	}
+	return str.String()
+}
+
 type OngoingFight struct {
 	Hostiles map[guid.GUID]any
 	Start    *period.Moment

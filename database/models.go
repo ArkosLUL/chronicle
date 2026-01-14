@@ -178,6 +178,15 @@ type ItemTemplate struct {
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type LogEncounter struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
+	Name       string             `db:"name" json:"name"`
+	Kill       bool               `db:"kill" json:"kill"`
+	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
+}
+
 type LogFile struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
@@ -187,6 +196,18 @@ type LogFile struct {
 	MimeType  string             `db:"mime_type" json:"mime_type"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type LogInstance struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RealmID    uuid.UUID `db:"realm_id" json:"realm_id"`
+	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	Name       string    `db:"name" json:"name"`
+}
+
+// A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.
+type ParsedLogGroup struct {
+	ID uuid.UUID `db:"id" json:"id"`
 }
 
 type SpellTemplate struct {
@@ -232,4 +253,15 @@ type WoWLogGroup struct {
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type WowServer struct {
+	ID   uuid.UUID `db:"id" json:"id"`
+	Name string    `db:"name" json:"name"`
+}
+
+type WowServerRealm struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	ServerID uuid.UUID `db:"server_id" json:"server_id"`
+	Name     string    `db:"name" json:"name"`
 }

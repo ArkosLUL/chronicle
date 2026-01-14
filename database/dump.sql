@@ -52,6 +52,15 @@ COMMENT ON COLUMN item_templates.id IS 'Matches the item id in WoW.';
 
 COMMENT ON COLUMN item_templates.quality IS '0 grey, 1 white, 2 green, 3 blue, 4 purple, 5 legendary, 6 artifact';
 
+CREATE TABLE log_encounters (
+    id uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    name text NOT NULL,
+    kill boolean NOT NULL,
+    start_time timestamp with time zone NOT NULL,
+    end_time timestamp with time zone NOT NULL
+);
+
 CREATE TABLE log_file (
     id uuid NOT NULL,
     owner uuid NOT NULL,
@@ -62,6 +71,19 @@ CREATE TABLE log_file (
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
+
+CREATE TABLE log_instances (
+    id uuid NOT NULL,
+    realm_id uuid NOT NULL,
+    log_group_id uuid NOT NULL,
+    name text NOT NULL
+);
+
+CREATE TABLE parsed_log_group (
+    id uuid NOT NULL
+);
+
+COMMENT ON TABLE parsed_log_group IS 'A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.';
 
 CREATE TABLE spell_templates (
     id integer NOT NULL,
@@ -108,14 +130,34 @@ CREATE TABLE wow_log_groups (
     updated_at timestamp with time zone
 );
 
+CREATE TABLE wow_server_realms (
+    id uuid NOT NULL,
+    server_id uuid NOT NULL,
+    name text NOT NULL
+);
+
+CREATE TABLE wow_servers (
+    id uuid NOT NULL,
+    name text NOT NULL
+);
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY item_templates
     ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY log_encounters
+    ADD CONSTRAINT log_encounters_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY log_instances
+    ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY parsed_log_group
+    ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY spell_templates
     ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
@@ -132,6 +174,12 @@ ALTER TABLE ONLY users
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY wow_server_realms
+    ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY wow_servers
+    ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
+
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
@@ -142,11 +190,23 @@ ALTER TABLE ONLY item_effects
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_spell_id_fkey FOREIGN KEY (spell_id) REFERENCES spell_templates(id);
 
+ALTER TABLE ONLY log_encounters
+    ADD CONSTRAINT log_encounters_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_wow_log_id_fkey FOREIGN KEY (wow_log_id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instances
+    ADD CONSTRAINT log_instances_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES parsed_log_group(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instances
+    ADD CONSTRAINT log_instances_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
+
+ALTER TABLE ONLY parsed_log_group
+    ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id);
 
 ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
@@ -159,5 +219,8 @@ ALTER TABLE ONLY user_auth_session
 
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
+
+ALTER TABLE ONLY wow_server_realms
+    ADD CONSTRAINT wow_server_realms_server_id_fkey FOREIGN KEY (server_id) REFERENCES wow_servers(id);
 
 

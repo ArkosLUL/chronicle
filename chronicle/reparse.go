@@ -50,6 +50,34 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 		return fmt.Errorf("fetch log group: %w", err)
 	}
 
+	err = db.DeleteAllParsedLogsByGroupID(ctx, job.Args.LogID)
+	if err != nil {
+		return fmt.Errorf("delete parsed logs for group: %w", err)
+	}
+
+	list, err := w.parent.ListLogGroupJobs(ctx, job.Args.LogID)
+	if err != nil {
+		return fmt.Errorf("list existing log group jobs: %w", err)
+	}
+
+	for _, existingJob := range list.Jobs {
+		if existingJob.ID == job.ID {
+			continue
+		}
+
+		if job.State == rivertype.JobStateAvailable ||
+			job.State == rivertype.JobStatePending ||
+			job.State == rivertype.JobStateRunning ||
+			job.State == rivertype.JobStateScheduled ||
+			job.State == rivertype.JobStateRetryable {
+			// Cancel existing jobs that are not the current one
+			_, err = w.parent.queue.JobCancel(ctx, existingJob.ID)
+			if err != nil {
+				return fmt.Errorf("cancel existing job %s: %w", existingJob.ID, err)
+			}
+		}
+	}
+
 	res, err := w.parent.EnqueueParseLog(ctx, logGroup.WoWLogGroup)
 	if err != nil {
 		return fmt.Errorf("enqueue log parse job: %w", err)
@@ -69,4 +97,19 @@ func (c *Chronicle) EnqueueReParseLog(ctx context.Context, logID uuid.UUID) (*ri
 	})
 
 	return res, err
+}
+
+func (c *Chronicle) ListLogGroupJobs(ctx context.Context, groupID uuid.UUID) (*river.JobListResult, error) {
+	opts := river.NewJobListParams().Where(`args->>'log_group_id' = @group_id`, map[string]any{
+		"group_id": groupID.String(),
+	}).
+		Queues(QueueLogParsing).
+		Kinds(KindLogParse, KindLogReparse).
+		OrderBy(river.JobListOrderByScheduledAt, river.SortOrderDesc)
+
+	list, err := c.queue.JobList(ctx, opts)
+	if err != nil {
+		return nil, fmt.Errorf("fetch log parse jobs: %w", err)
+	}
+	return list, nil
 }

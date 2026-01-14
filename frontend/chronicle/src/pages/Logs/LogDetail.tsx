@@ -16,12 +16,27 @@ import {
   XCircle,
   RotateCcw,
   RefreshCw,
-  Play
+  Play,
+  Swords,
+  Castle,
+  ExternalLink,
+  Skull,
+  Shield,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useLogGroup, useDeleteLogGroup, useReparseLogGroup, type WoWLogGroupState, type WoWLogFile, type RiverJobState } from "@/api/queries";
+import { 
+  useLogGroup, 
+  useDeleteLogGroup, 
+  useReparseLogGroup, 
+  type WoWLogGroupState, 
+  type WoWLogFile, 
+  type RiverJobState,
+  type WoWParsedLogJobOutput,
+  type WoWParsedInstance,
+  type WoWEncounter,
+} from "@/api/queries";
 
 function formatDate(timestamp: unknown): string {
   if (!timestamp) return "Unknown";
@@ -63,8 +78,38 @@ const TERMINAL_STATES = [
   RIVER_STATES.cancelled,
 ];
 
+// Job kinds
+const JOB_KINDS = {
+  logParse: "log-parse",
+} as const;
+
 function isJobComplete(state: RiverJobState): boolean {
   return TERMINAL_STATES.includes(state as typeof TERMINAL_STATES[number]);
+}
+
+function parseLogParseOutput(output: Record<string, string> | undefined, kind: string): WoWParsedLogJobOutput | null {
+  if (kind !== JOB_KINDS.logParse || !output) {
+    return null;
+  }
+  // The output from the API is Record<string, string>, but it's actually WoWParsedLogJobOutput
+  // Cast it appropriately
+  const parsed = output as unknown as WoWParsedLogJobOutput;
+  if (!parsed.instances) {
+    return null;
+  }
+  return parsed;
+}
+
+function formatDuration(start: string, end: string): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const diffMs = endDate.getTime() - startDate.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  const seconds = Math.floor((diffMs % 60000) / 1000);
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
 }
 
 function formatJobKind(kind: string): string {
@@ -130,6 +175,160 @@ function StatusBadge({ state }: { state: RiverJobState }) {
         </div>
       );
   }
+}
+
+function BossEncounterRow({ encounter }: { encounter: WoWEncounter }) {
+  return (
+    <div className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50 transition-colors">
+      <div className="flex items-center gap-2 min-w-0">
+        {encounter.kill ? (
+          <Skull className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+        ) : (
+          <Shield className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
+        )}
+        <span className="font-medium text-sm truncate">{encounter.name}</span>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        <span className="text-xs text-muted-foreground">
+          {formatDuration(encounter.start_time, encounter.end_time)}
+        </span>
+        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+          encounter.kill 
+            ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" 
+            : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+        }`}>
+          {encounter.kill ? "Kill" : "Wipe"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function InstanceCard({ instance }: { instance: WoWParsedInstance }) {
+  const bossFights = instance.encounters.filter(e => e.boss);
+  const trashFights = instance.encounters.filter(e => !e.boss);
+  const bossKills = bossFights.filter(e => e.kill).length;
+  const bossWipes = bossFights.filter(e => !e.kill).length;
+  const trashKills = trashFights.filter(e => e.kill).length;
+  const trashWipes = trashFights.filter(e => !e.kill).length;
+  
+  // Stub URL for now - will be replaced with actual route
+  const instanceUrl = `/instances/${instance.id}`;
+  
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="p-3 bg-muted/30 border-b">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Castle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <h3 className="font-semibold truncate">{instance.name}</h3>
+          </div>
+          <Link to={instanceUrl}>
+            <Button variant="outline" size="sm" className="h-7 text-xs">
+              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              View
+            </Button>
+          </Link>
+        </div>
+      </div>
+      
+      {/* Content Grid */}
+      <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Boss Fights Section */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Swords className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Boss Fights
+            </span>
+            {bossFights.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({bossKills} kill{bossKills !== 1 ? "s" : ""}, {bossWipes} wipe{bossWipes !== 1 ? "s" : ""})
+              </span>
+            )}
+          </div>
+          {bossFights.length > 0 ? (
+            <div className="space-y-0.5">
+              {bossFights.map((encounter) => (
+                <BossEncounterRow key={encounter.id} encounter={encounter} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic px-2">No boss fights</p>
+          )}
+        </div>
+        
+        {/* Trash Fights Section */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Trash
+            </span>
+              <span className="text-xs text-muted-foreground ml-1">
+                ({trashKills} kill{trashKills !== 1 ? "s" : ""}, {trashWipes} wipe{trashWipes !== 1 ? "s" : ""})
+              </span>
+          </div>
+          {trashFights.length > 0 ? (
+            <div className="px-2 py-1.5 bg-muted/30 rounded text-sm">
+              {trashFights.length} Trash fight{trashFights.length !== 1 ? "s" : ""}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic px-2">No trash fights</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ParsedInstancesSection({ log }: { log: WoWLogGroupState }) {
+  const parsedOutput = parseLogParseOutput(log.status.output, log.status.kind);
+  
+  // Only show for log-parse jobs with output
+  if (!parsedOutput) {
+    return null;
+  }
+  
+  const { instances, instance_failures: instanceFailures } = parsedOutput;
+  const hasFailures = Object.keys(instanceFailures || {}).length > 0;
+  
+  return (
+    <Card className="p-6">
+      <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
+        <Swords className="h-5 w-5 text-muted-foreground" />
+        Detected Instances
+      </h2>
+      
+      {instances.length === 0 && !hasFailures ? (
+        <p className="text-muted-foreground text-sm">
+          No instances were found in this log.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {instances.map((instance) => (
+            <InstanceCard key={instance.id} instance={instance} />
+          ))}
+          
+          {hasFailures && (
+            <div className="p-4 bg-destructive/10 rounded-lg">
+              <p className="text-sm font-medium text-destructive mb-2">
+                Some instances failed to parse
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {Object.entries(instanceFailures || {}).map(([name, error]) => (
+                  <li key={name}>
+                    <span className="font-mono">{name}</span>: {error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
 }
 
 export interface LogDetailViewProps {
@@ -406,6 +605,9 @@ export function LogDetailView({
               })()}
             </div>
           </Card>
+
+          {/* Parsed Instances Section - only shows for log-parse jobs with output */}
+          <ParsedInstancesSection log={log} />
 
           {/* Files Card */}
           <Card className="p-6">

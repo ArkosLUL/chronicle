@@ -50,10 +50,14 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 	for _, fight := range c.completedFights {
 		encounterName := ""
 		encounterType := types.EncounterTypeTRASH
+		boss := false
 		for _, h := range fight.Hostiles {
 			id := c.IdentifyUnit(h.ID)
 			if !id.Hostile {
 				continue
+			}
+			if id.Boss {
+				boss = true
 			}
 
 			// TODO: Do this better
@@ -73,6 +77,7 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 			Type:   encounterType,
 			Combat: fight,
 			IsKill: fight.IsKill(),
+			Boss:   boss,
 		})
 	}
 

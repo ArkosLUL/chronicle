@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -110,8 +112,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return err
 	}
 
-	jobOut := OutputLogParse{
+	jobOut := chroniclesdk.WoWParsedLogJobOutput{
 		InstanceFailures: make(map[string]string),
+		Instances:        make([]chroniclesdk.WoWParsedInstance, 0),
 	}
 
 	err = db.InsertParsedLogGroup(ctx, job.Args.LogID)
@@ -139,13 +142,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 
 			// Store the encounters into the database
-			var _ = encs
+			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(encs))
 			for _, enc := range encs {
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
 					ID:         uuid.New(),
 					InstanceID: dbinstance.ID,
 					Name:       enc.Name,
 					Kill:       enc.IsKill,
+					Boss:       enc.Boss,
 					StartTime:  database.Timestamptz(enc.Combat.Start),
 					EndTime:    database.Timestamptz(enc.Combat.End),
 				})
@@ -153,8 +157,13 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					return fmt.Errorf("insert encounter: %w", err)
 				}
 
-				var _ = dbencounter
+				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
 			}
+
+			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWParsedInstance{
+				WoWInstance: db2sdk.WoWInstance(dbinstance),
+				Encounters:  sdkEncounters,
+			})
 
 			return nil
 		}, nil)

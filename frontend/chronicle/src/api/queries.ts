@@ -6,6 +6,10 @@ import type {
   JobStatus as JobStatusGenerated,
   RiverJobState as RiverJobStateGenerated,
   RiverAttemptError as RiverAttemptErrorGenerated,
+  WoWParsedLogJobOutput as WoWParsedLogJobOutputGenerated,
+  WoWParsedInstance as WoWParsedInstanceGenerated,
+  WoWEncounter as WoWEncounterGenerated,
+  WoWInstance as WoWInstanceGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -15,6 +19,10 @@ export type WoWLogGroupState = WoWLogGroupStateGenerated;
 export type JobStatus = JobStatusGenerated;
 export type RiverJobState = RiverJobStateGenerated;
 export type RiverAttemptError = RiverAttemptErrorGenerated;
+export type WoWParsedLogJobOutput = WoWParsedLogJobOutputGenerated;
+export type WoWParsedInstance = WoWParsedInstanceGenerated;
+export type WoWEncounter = WoWEncounterGenerated;
+export type WoWInstance = WoWInstanceGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({

@@ -8,7 +8,7 @@ func LoadAdds(src map[uint32]Identity, adds map[uint32]string) {
 
 func LoadBosses(src map[uint32]Identity, bosses map[uint32]string) {
 	for k, name := range bosses {
-		src[k] = Identity{Hostile: true, EncounterName: name}
+		src[k] = Identity{Hostile: true, EncounterName: name, Boss: true}
 	}
 }
 

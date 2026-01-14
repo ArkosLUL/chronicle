@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/riverqueue/river/rivertype"
 )
 
 type WoWLogGroup struct {
@@ -28,21 +27,35 @@ type WoWLogFile struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type WoWInstance struct {
+	ID         uuid.UUID `json:"id"`
+	RealmID    uuid.UUID `json:"realm_id"`
+	LogGroupID uuid.UUID `json:"log_group_id"`
+	Name       string    `json:"name"`
+}
+
+type WoWEncounter struct {
+	ID         uuid.UUID `json:"id"`
+	InstanceID uuid.UUID `json:"instance_id"`
+	Boss       bool      `json:"boss"`
+	Name       string    `json:"name"`
+	Kill       bool      `json:"kill"`
+	StartTime  time.Time `json:"start_time"`
+	EndTime    time.Time `json:"end_time"`
+}
+
 type WoWLogGroupState struct {
 	WoWLogGroup
 
 	Status JobStatus `json:"status"`
 }
 
-type JobStatus struct {
-	ID          int64                    `json:"id"`
-	Attempt     int                      `json:"attempt"`
-	MaxAttempts int                      `json:"max_attempts"`
-	State       rivertype.JobState       `json:"state"`
-	CreatedAt   time.Time                `json:"created_at"`
-	ScheduledAt time.Time                `json:"scheduled_at"`
-	AttemptedAt *time.Time               `json:"attempted_at"`
-	FinalizedAt *time.Time               `json:"finalized_at"`
-	Errors      []rivertype.AttemptError `json:"errors"`
-	Kind        string                   `json:"kind"`
+type WoWParsedLogJobOutput struct {
+	InstanceFailures map[string]string   `json:"instance_failures"`
+	Instances        []WoWParsedInstance `json:"instances"`
+}
+
+type WoWParsedInstance struct {
+	WoWInstance
+	Encounters []WoWEncounter `json:"encounters"`
 }

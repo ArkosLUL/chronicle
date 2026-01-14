@@ -23,6 +23,7 @@ type Encounter struct {
 	Combat Fight
 	// If it is not a kill, it is a wipe (or reset)
 	IsKill bool
+  Boss bool
 }
 
 func (e Encounter) NamedString(db *unitdb.Units) string {

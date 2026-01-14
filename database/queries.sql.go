@@ -299,10 +299,10 @@ func (q *sqlQuerier) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.U
 
 const insertEncounter = `-- name: InsertEncounter :one
 INSERT INTO
-  log_encounters (id, instance_id, name, kill, start_time, end_time)
+  log_encounters (id, instance_id, name, kill, boss, start_time, end_time)
 VALUES
-  ($1, $2, $3, $4, $5, $6)
-RETURNING id, instance_id, name, kill, start_time, end_time
+  ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, instance_id, name, kill, boss, start_time, end_time
 `
 
 type InsertEncounterParams struct {
@@ -310,6 +310,7 @@ type InsertEncounterParams struct {
 	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
 	Name       string             `db:"name" json:"name"`
 	Kill       bool               `db:"kill" json:"kill"`
+	Boss       bool               `db:"boss" json:"boss"`
 	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
 }
@@ -320,6 +321,7 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 		arg.InstanceID,
 		arg.Name,
 		arg.Kill,
+		arg.Boss,
 		arg.StartTime,
 		arg.EndTime,
 	)
@@ -329,6 +331,7 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 		&i.InstanceID,
 		&i.Name,
 		&i.Kill,
+		&i.Boss,
 		&i.StartTime,
 		&i.EndTime,
 	)

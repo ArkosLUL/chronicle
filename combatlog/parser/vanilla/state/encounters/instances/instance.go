@@ -13,6 +13,8 @@ type Identity struct {
 	Hostile bool
 	// EncounterName, if set, will be used to identify a named encounter.
 	EncounterName string
+	// Boss indicates if the unit is considered a boss for encounter purposes.
+	Boss bool
 }
 
 // Instance represents a dungeon or raid instance

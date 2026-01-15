@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"net/url"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/database"
@@ -88,6 +90,7 @@ func (api *API) Routes() chi.Router {
 		//authMW.Trace,
 		)
 
+		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
 		r.Group(func(r chi.Router) {
 			r.Use(api.Auth.Authenticated(false))
 			r.Get("/whoami", api.WhoAmI)
@@ -95,7 +98,7 @@ func (api *API) Routes() chi.Router {
 				r.Post("/upload", api.WoWLogUpload)
 				r.Get("/", api.WoWLogGroups)
 				r.Route("/{logID}", func(r chi.Router) {
-          r.Use(httpmw.LogIDMiddleware)
+					r.Use(httpmw.LogIDMiddleware)
 					r.Post("/reparse", api.WoWLogReparse)
 					r.Get("/", api.WoWLogGroup)
 					r.Delete("/", api.WoWLogDeleteGroup)

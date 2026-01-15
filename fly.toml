@@ -1,0 +1,75 @@
+app = "chronicle"
+kill_signal = "SIGINT"
+kill_timeout = 120
+mounts = []
+primary_region = "dfw"
+processes = []
+
+[build]
+  image = "emyrk/chronicled:latest"
+
+[deploy]
+  strategy = "immediate"
+
+[env]
+  CHRONICLE_ACCESS_URL = "https://chronicleclassic.com"
+  CHRONICLE_JSON_LOGS = "true"
+  CHRONICLE_ENABLE_PROMETHEUS="true"
+  CHRONICLE_ENABLE_PPROF = "true"
+  CHRONICLE_HTTP_ADDRESS = "0.0.0.0:9090"
+
+# Should set this up!
+#[[statics]]
+#  guest_path = "/app/public"
+#  url_prefix = "/public"
+
+[metrics]
+  port = 9091       # default for most prometheus clients
+  path = "/metrics" # default for most prometheus clients
+
+[profile]
+  port = 6060
+  path = "/pprof"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 6060
+  processes = ["app"]       # or your process-group if you use them
+
+  [[services.ports]]
+    port = 6060
+    handlers = ["http"]
+
+[[services]]
+  internal_port = 9090
+  processes = ["app"]
+  protocol = "tcp"
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[http_checks]]
+    interval = 10000
+    timeout = 2000
+    grace_period = "1m"
+    method = "get"
+    path = "/api/v1/healthz"
+    protocol = "http"
+    tls_skip_verify = false
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[experimental]
+  cmd = ["server"]

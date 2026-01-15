@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"net/url"
 	"regexp"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/xerrors"
 
 	"github.com/coder/serpent"
@@ -52,14 +54,18 @@ N3BZeV4tW5UPWN4Px3cyMnv4afIuY1ehS5RI6Y5dA6lTqPs0Qa6dfnw=
 
 func ServerCmd() *serpent.Command {
 	var (
-		httpAddress string
-		accessURL   string
-		devAuth     bool
-		postgresURL string
-		discord     chronauth.DiscordOAuth
-		secretPem   string
-		storageFlag string
-		riverOpts   chronicle.RiverQueueOptions
+		httpAddress       string
+		accessURL         string
+		devAuth           bool
+		postgresURL       string
+		discord           chronauth.DiscordOAuth
+		secretPem         string
+		storageFlag       string
+		riverOpts         chronicle.RiverQueueOptions
+		prometheusEnabled bool
+		promtheusAddress  string
+		pprofEnabled      bool
+		pprofAddress      string
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -69,6 +75,7 @@ func ServerCmd() *serpent.Command {
 				Description: "Address to serve the api on.",
 				Required:    false,
 				Flag:        "http-address",
+				Env:         "CHRONICLE_HTTP_ADDRESS",
 				Default:     "0.0.0.0:3000",
 				Value:       serpent.StringOf(&httpAddress),
 			},
@@ -77,6 +84,7 @@ func ServerCmd() *serpent.Command {
 				Description: "Access url to access the server from outside the cluster.",
 				Required:    false,
 				Flag:        "access-url",
+				Env:         "CHRONICLE_ACCESS_URL",
 				Default:     "",
 				Value:       serpent.StringOf(&accessURL),
 			},
@@ -141,6 +149,42 @@ func ServerCmd() *serpent.Command {
 				Env:         "CHRONICLE_LOG_PARSING_WORKERS",
 				Default:     "1",
 				Value:       serpent.Int64Of(&riverOpts.LogParsingWorkers),
+			},
+			{
+				Name:        "Prometheus Enabled",
+				Description: "Enable Prometheus metrics server.",
+				Required:    false,
+				Flag:        "prometheus-enabled",
+				Env:         "CHRONICLE_PROMETHEUS_ENABLED",
+				Default:     "false",
+				Value:       serpent.BoolOf(&prometheusEnabled),
+			},
+			{
+				Name:        "Prometheus Address",
+				Description: "Address for Prometheus metrics server to listen on.",
+				Required:    false,
+				Flag:        "prometheus-address",
+				Env:         "CHRONICLE_PROMETHEUS_ADDRESS",
+				Default:     "0.0.0.0:9091",
+				Value:       serpent.StringOf(&promtheusAddress),
+			},
+			{
+				Name:        "Pprof Enabled",
+				Description: "Enable pprof server.",
+				Required:    false,
+				Flag:        "pprof-enabled",
+				Env:         "CHRONICLE_PPROF_ENABLED",
+				Default:     "false",
+				Value:       serpent.BoolOf(&pprofEnabled),
+			},
+			{
+				Name:        "Pprof Address",
+				Description: "Address for pprof server to listen on.",
+				Required:    false,
+				Flag:        "pprof-address",
+				Env:         "CHRONICLE_PPROF_ADDRESS",
+				Default:     "0.0.0.0:6060",
+				Value:       serpent.StringOf(&pprofAddress),
 			},
 		},
 		Handler: func(i *serpent.Invocation) error {
@@ -217,6 +261,14 @@ func ServerCmd() *serpent.Command {
 			})
 			if err != nil {
 				return err
+			}
+
+			if prometheusEnabled {
+				launchPrometheus(ctx, logger, promtheusAddress, registry)
+			}
+
+			if pprofEnabled {
+				launchPprof(ctx, logger, pprofAddress)
 			}
 
 			closeServer := ServeHandler(ctx, logger, handler.Routes(), serverLn, "api")
@@ -316,4 +368,45 @@ func escapePostgresURLUserInfo(v string) (string, error) {
 	}
 
 	return v, nil
+}
+
+func launchPrometheus(ctx context.Context, logger *slog.Logger, address string, registry *prometheus.Registry) {
+	srv := http.Server{
+		Addr:    address,
+		Handler: promhttp.HandlerFor(registry, promhttp.HandlerOpts{}),
+		BaseContext: func(listener net.Listener) context.Context {
+			return ctx
+		},
+	}
+	go func() {
+		logger.Info("Starting prometheus server", slog.String("address", address))
+		err := srv.ListenAndServe()
+		if err != nil {
+			logger.Error("prometheus server", slog.String("service", "prometheus"), slog.String("error", err.Error()))
+		}
+	}()
+}
+
+func launchPprof(ctx context.Context, logger *slog.Logger, address string) {
+	mux := http.NewServeMux()
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+	srv := http.Server{
+		Addr:    address,
+		Handler: mux,
+		BaseContext: func(listener net.Listener) context.Context {
+			return ctx
+		},
+	}
+	go func() {
+		logger.Info("Starting pprof server", slog.String("address", address))
+		err := srv.ListenAndServe()
+		if err != nil {
+			logger.Error("pprof server", slog.String("service", "pprof"), slog.String("error", err.Error()))
+		}
+	}()
 }

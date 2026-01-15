@@ -93,6 +93,7 @@ jobs:
     name: Build and Push Docker Image
     needs: [golangci-lint, test]
     runs-on: ubuntu-latest
+    environment: actions
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -118,6 +119,7 @@ jobs:
     if: github.ref_type == 'tag'
     needs: docker-push
     runs-on: ubuntu-latest
+    environment: actions
     steps:
       - name: Checkout
         uses: actions/checkout@v4

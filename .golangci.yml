@@ -3,4 +3,6 @@ version: "2"
 linters:
   exclusions:
     paths:
-      - cmd/wasm/main.go
+      - "cmd/wasm/main\\.go$"
+      - "database/gen/dump/.*"
+      - "database/dbtestutil/.*"

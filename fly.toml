@@ -69,6 +69,3 @@ kill_timeout = '2m0s'
 [[metrics]]
   port = 9091
   path = '/metrics'
-
-[experimental]
-  cmd = ["server"]

@@ -101,6 +101,7 @@ func ServerCmd() *serpent.Command {
 				Description: "Postgres URL to connect to.",
 				Required:    false,
 				Flag:        "postgres-url",
+				Env:         "CHRONICLE_POSTGRES_URL",
 				Default:     "postgresql://postgres:postgres@localhost:5432/chronicle?sslmode=disable",
 				Value:       serpent.StringOf(&postgresURL),
 			},
@@ -264,7 +265,7 @@ func ServerCmd() *serpent.Command {
 			}
 
 			if prometheusEnabled {
-				launchPrometheus(ctx, logger, promtheusAddress, registry)
+				launchPrometheus(ctx, logger, promtheusAddress, reg)
 			}
 
 			if pprofEnabled {

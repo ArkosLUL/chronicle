@@ -1,9 +1,0 @@
-builds:
-  - id: chronicled
-    main: ./cmd/chronicled
-    flags:
-      - -tags=static
-    ldflags:
-      - -X=github.com/Emyrk/chronicle/internal/version.GitTag={{ .Git.Tag }}
-      - -X=github.com/Emyrk/chronicle/internal/version.GitCommit={{ .Git.ShortCommit }}
-      - -X=github.com/Emyrk/chronicle/internal/version.BuildTime={{ .Date }}

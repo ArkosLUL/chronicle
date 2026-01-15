@@ -31,13 +31,6 @@ test:
 lint:
 	golangci-lint run
 
-.PHONY: publish-dry-run publish
-publish-dry-run: frontend/chronicle/dist
-	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths --push=false
-
-publish: frontend/chronicle/dist
-	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths
-
 frontend/chronicle/dist: $(wildcard frontend/**)
 	(cd frontend/chronicle; pnpm install; pnpm build)
 
@@ -45,7 +38,11 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 develop: frontend/chronicle/dist create-db
 	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
 
-build: frontend/chronicle/dist
+.PHONY: build
+build: build-backend frontend/chronicle/dist
+
+.PHONY: build-backend
+build-backend:
 	go build --tags static  $(LD_BUILD_FLAGS) -o bin/chronicled ./cmd/chronicled
 
 .PHONY: create-db

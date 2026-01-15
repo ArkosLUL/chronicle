@@ -1,0 +1,37 @@
+# Stage 1: Build frontend
+FROM node:20.19.1-alpine AS frontend
+
+RUN apk --no-cache add make && npm install -g pnpm@9
+
+WORKDIR /chronicle/frontend/chronicle
+COPY frontend/chronicle/package.json frontend/chronicle/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY frontend/chronicle/ ./
+RUN pnpm build
+
+# Stage 2: Build Go binary
+FROM golang:1.25.4-alpine3.22 AS backend
+
+RUN apk --no-cache add make git
+
+WORKDIR /chronicle
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+COPY --from=frontend /chronicle/frontend/chronicle/dist ./frontend/chronicle/dist
+
+RUN make build-backend
+
+# Stage 3: Final minimal image
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+WORKDIR /app
+
+COPY --from=frontend /chronicle/frontend/chronicle/dist ./frontend/chronicle/dist
+COPY --from=backend /chronicle/bin/chronicled ./
+
+RUN chmod +x ./chronicled
+ENTRYPOINT ["./chronicled", "server"]

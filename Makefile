@@ -31,7 +31,11 @@ test:
 lint:
 	golangci-lint run
 
-publish:
+.PHONY: publish-dry-run publish
+publish-dry-run: frontend/chronicle/dist
+	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths --push=false
+
+publish: frontend/chronicle/dist
 	KO_DOCKER_REPO=emyrk go tool ko build ./cmd/chronicled --base-import-paths
 
 frontend/chronicle/dist: $(wildcard frontend/**)

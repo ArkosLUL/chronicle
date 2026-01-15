@@ -86,10 +86,9 @@ test-postgres-docker:
 		-c synchronous_commit=off \
 		-c full_page_writes=off \
 		-c log_statement=all
-	while ! pg_isready -h 127.0.0.1
-	do
-		echo "$(date) - waiting for database to start"
-		sleep 0.5
+	while ! pg_isready -h 127.0.0.1; do \
+		echo "$$(date) - waiting for database to start"; \
+		sleep 0.5; \
 	done
 
 frontend/chronicle/src/api/typesGenerated.ts: $(wildcard scripts/apitypings/*) $(shell find ./api/chroniclesdk $(FIND_EXCLUSIONS) -type f -name '*.go')

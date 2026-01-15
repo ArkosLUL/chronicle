@@ -1,75 +1,71 @@
-app = "chronicle"
-kill_signal = "SIGINT"
-kill_timeout = 120
-mounts = []
-primary_region = "dfw"
-processes = []
+# fly.toml app configuration file generated for chronicleclassic on 2026-01-15T16:53:56-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'chronicleclassic'
+primary_region = 'dfw'
+kill_signal = 'SIGINT'
+kill_timeout = '2m0s'
+
+[experimental]
+  cmd = ['server']
 
 [build]
-  image = "emyrk/chronicled:latest"
+  image = 'emyrk/chronicled:latest'
 
 [deploy]
-  strategy = "immediate"
+  strategy = 'immediate'
 
 [env]
-  CHRONICLE_ACCESS_URL = "https://chronicleclassic.com"
-  CHRONICLE_JSON_LOGS = "true"
-  CHRONICLE_ENABLE_PROMETHEUS="true"
-  CHRONICLE_ENABLE_PPROF = "true"
-  CHRONICLE_HTTP_ADDRESS = "0.0.0.0:9090"
+  CHRONICLE_ACCESS_URL = 'https://chronicleclassic.com'
+  CHRONICLE_ENABLE_PPROF = 'true'
+  CHRONICLE_ENABLE_PROMETHEUS = 'true'
+  CHRONICLE_HTTP_ADDRESS = '0.0.0.0:8080'
+  CHRONICLE_JSON_LOGS = 'true'
 
-# Should set this up!
-#[[statics]]
-#  guest_path = "/app/public"
-#  url_prefix = "/public"
-
-[metrics]
-  port = 9091       # default for most prometheus clients
-  path = "/metrics" # default for most prometheus clients
-
-[profile]
-  port = 6060
-  path = "/pprof"
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
 [[services]]
-  protocol = "tcp"
+  protocol = 'tcp'
   internal_port = 6060
-  processes = ["app"]       # or your process-group if you use them
+  processes = ['app']
 
   [[services.ports]]
     port = 6060
-    handlers = ["http"]
+    handlers = ['http']
 
 [[services]]
+  protocol = 'tcp'
   internal_port = 9090
-  processes = ["app"]
-  protocol = "tcp"
+  processes = ['app']
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
   [services.concurrency]
+    type = 'connections'
     hard_limit = 25
     soft_limit = 20
-    type = "connections"
-
-  [[services.ports]]
-    force_https = true
-    handlers = ["http"]
-    port = 80
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-
-  [[http_checks]]
-    interval = 10000
-    timeout = 2000
-    grace_period = "1m"
-    method = "get"
-    path = "/api/v1/healthz"
-    protocol = "http"
-    tls_skip_verify = false
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
 
-[experimental]
-  cmd = ["server"]
+[[metrics]]
+  port = 9091
+  path = '/metrics'

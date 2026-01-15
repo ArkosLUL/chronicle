@@ -36,7 +36,7 @@ func TestInt63n(t *testing.T) {
 
 	// Expect a panic if max is negative
 	require.PanicsWithValue(t, "invalid argument to Int63n", func() {
-		cryptorand.Int63n(0)
+		_, _ = cryptorand.Int63n(0)
 	})
 }
 
@@ -57,7 +57,7 @@ func TestIntn(t *testing.T) {
 
 	// Expect a panic if max is negative
 	require.PanicsWithValue(t, "invalid argument to Intn", func() {
-		cryptorand.Intn(0)
+		_, _ = cryptorand.Intn(0)
 	})
 }
 

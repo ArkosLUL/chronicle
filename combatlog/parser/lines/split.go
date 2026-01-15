@@ -14,9 +14,8 @@ const (
 )
 
 type Liner struct {
-	Year     int
-	clock    quartz.Clock
-	location *time.Location
+	Year  int
+	clock quartz.Clock
 }
 
 func NewLiner() *Liner {

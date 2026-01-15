@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
@@ -125,7 +124,10 @@ func (c *Common) Process(m messages.Message) error {
 	}
 
 	if actChange {
-		c.FightProcess(m)
+		err = c.FightProcess(m)
+		if err != nil {
+			return fmt.Errorf("processing fight: %w", err)
+		}
 	}
 
 	return nil
@@ -151,8 +153,6 @@ func (c *Common) Fights() []Fight {
 	copy(fights, c.completedFights)
 	return fights
 }
-
-const fightCooldown = 100 * time.Millisecond
 
 // FightProcess updates live fight state based on character activity changes.
 // Call this after Characters.Process returns true (activity changed).

@@ -7,22 +7,6 @@ import (
 	"github.com/riverqueue/river/rivertype"
 )
 
-// logGroupRow is an interface that matches both GetWoWLogGroupsByOwnerRow and GetWoWLogGroupByIDRow
-type logGroupRow interface {
-	GetWoWLogGroup() database.WoWLogGroup
-	GetFiles() []database.LogFile
-}
-
-func (r wrapGetWoWLogGroupsByOwnerRow) GetWoWLogGroup() database.WoWLogGroup { return r.WoWLogGroup }
-func (r wrapGetWoWLogGroupsByOwnerRow) GetFiles() []database.LogFile         { return r.Files }
-
-type wrapGetWoWLogGroupsByOwnerRow database.GetWoWLogGroupsByOwnerRow
-
-func (r wrapGetWoWLogGroupByIDRow) GetWoWLogGroup() database.WoWLogGroup { return r.WoWLogGroup }
-func (r wrapGetWoWLogGroupByIDRow) GetFiles() []database.LogFile         { return r.Files }
-
-type wrapGetWoWLogGroupByIDRow database.GetWoWLogGroupByIDRow
-
 func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGroupByIDRow](group T) chroniclesdk.WoWLogGroup {
 	// Use type switch to handle both types
 	switch g := any(group).(type) {

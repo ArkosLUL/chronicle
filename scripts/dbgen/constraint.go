@@ -84,6 +84,7 @@ func generateConstraints(dumpPath, outputPath string, outputConstraintType const
 	if err != nil {
 		return err
 	}
+	//nolint:errcheck
 	defer dump.Close()
 
 	var allConstraints []constraint

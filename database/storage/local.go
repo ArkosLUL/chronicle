@@ -46,6 +46,7 @@ func (l *LocalStorage) UploadFile(bucketId string, relativePath string, data io.
 	if err != nil {
 		return storage_go.FileUploadResponse{}, fmt.Errorf("create file: %w", err)
 	}
+	//nolint:errcheck
 	defer f.Close()
 
 	if _, err := io.Copy(f, data); err != nil {

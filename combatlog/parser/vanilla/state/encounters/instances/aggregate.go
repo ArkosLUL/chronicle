@@ -23,7 +23,7 @@ type Encounter struct {
 	Combat Fight
 	// If it is not a kill, it is a wipe (or reset)
 	IsKill bool
-  Boss bool
+	Boss   bool
 }
 
 func (e Encounter) NamedString(db *unitdb.Units) string {
@@ -146,7 +146,7 @@ func AggregateFights(inst Instance) ([]Fight, diagnostic.Diagnostics) {
 			// Only include periods that have ended
 			// If a period has no end... what do we do?
 			if prd.IsActive() {
-				diags.Append(&diagnostic.Diagnostic{
+				diags = diags.Append(&diagnostic.Diagnostic{
 					Severity: diagnostic.DiagWarning,
 					Summary:  "Skipping active period with no end time",
 					Detail:   fmt.Sprintf("Character %s has an active period with no end time; skipping it for fight aggregation", id.String()),

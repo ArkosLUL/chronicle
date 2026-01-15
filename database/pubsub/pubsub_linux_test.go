@@ -3,6 +3,7 @@ package pubsub_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -39,6 +40,7 @@ func TestPubsub(t *testing.T) {
 		defer db.Close()
 		pubsub, err := pubsub.New(ctx, logger, db, connectionURL)
 		require.NoError(t, err)
+		//nolint:errcheck
 		defer pubsub.Close()
 		event := "test"
 		data := "testing"
@@ -67,6 +69,7 @@ func TestPubsub(t *testing.T) {
 		defer db.Close()
 		pubsub, err := pubsub.New(ctx, logger, db, connectionURL)
 		require.NoError(t, err)
+		//nolint:errcheck
 		defer pubsub.Close()
 		cancelFunc()
 	})
@@ -82,6 +85,7 @@ func TestPubsub(t *testing.T) {
 		defer db.Close()
 		pubsub, err := pubsub.New(ctx, logger, db, connectionURL)
 		require.NoError(t, err)
+		//nolint:errcheck
 		defer pubsub.Close()
 
 		// Provided context must only be active during NewPubsub, not after.
@@ -118,6 +122,7 @@ func TestPubsub_ordering(t *testing.T) {
 	defer db.Close()
 	ps, err := pubsub.New(ctx, logger, db, connectionURL)
 	require.NoError(t, err)
+	//nolint:errcheck
 	defer ps.Close()
 	event := "test"
 	messageChannel := make(chan []byte, 100)
@@ -169,11 +174,12 @@ func TestPubsub_Disconnect(t *testing.T) {
 	defer cancelFunc()
 	ps, err := pubsub.New(ctx, logger, db, connectionURL)
 	require.NoError(t, err)
+	//nolint:errcheck
 	defer ps.Close()
 	event := "test"
 
 	// buffer responses so that when the test completes, goroutines don't get blocked & leak
-	errors := make(chan error, pubsub.BufferSize)
+	errList := make(chan error, pubsub.BufferSize)
 	messages := make(chan string, pubsub.BufferSize)
 	readOne := func() (m string, e error) {
 		t.Helper()
@@ -186,7 +192,7 @@ func TestPubsub_Disconnect(t *testing.T) {
 		select {
 		case <-ctx.Done():
 			t.Fatal("timed out")
-		case e = <-errors:
+		case e = <-errList:
 			// OK
 		}
 		return m, e
@@ -194,7 +200,7 @@ func TestPubsub_Disconnect(t *testing.T) {
 
 	cancelSub, err := ps.SubscribeWithErr(event, func(ctx context.Context, msg []byte, err error) {
 		messages <- string(msg)
-		errors <- err
+		errList <- err
 	})
 	require.NoError(t, err)
 	defer cancelSub()
@@ -272,7 +278,7 @@ func TestPubsub_Disconnect(t *testing.T) {
 	gotDroppedErr := false
 	for {
 		m, err := readOne()
-		if xerrors.Is(err, pubsub.ErrDroppedMessages) {
+		if errors.Is(err, pubsub.ErrDroppedMessages) {
 			gotDroppedErr = true
 			continue
 		}

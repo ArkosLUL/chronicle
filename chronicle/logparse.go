@@ -83,6 +83,7 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) 
 	}
 
 	// Help GC
+	//nolint:ineffassign
 	fd = nil
 
 	return fileData, nil
@@ -208,10 +209,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	_ = river.RecordOutput(ctx, jobOut)
 
 	return nil
-}
-
-func (w *WorkerLogParse) save() {
-
 }
 
 func (w *WorkerLogParse) NextRetry(job *river.Job[ArgsLogParse]) time.Time {

@@ -35,13 +35,11 @@ func New() *Damage {
 func (d *Damage) Process(m messages.Message) error {
 	switch data := m.(type) {
 	case messages.Damage:
-		from := "unknown"
+		from := "Auto Attack"
 		if data.SpellName != nil {
 			from = *data.SpellName
 		} else if data.EnvironmentType != nil {
 			from = data.EnvironmentType.String()
-		} else {
-			from = "Auto Attack"
 		}
 		d.Events = append(d.Events, Event{
 			Timestamp: data.Timestamp,

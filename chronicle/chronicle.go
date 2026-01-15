@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"log/slog"
 	"net/http"
@@ -122,6 +121,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 	// This allows us to hash them and store in the database first, and keep them tracked.
 	tmpIDs := []uuid.UUID{uuid.New(), uuid.New()}
 
+	//nolint:errcheck
 	defer c.clearTemporaryFiles()
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -137,10 +137,11 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		if err != nil {
 			return nil, nil, fmt.Errorf("create temp file: %w", err)
 		}
+		//nolint:errcheck
 		defer f.Close()
 		tmpFiles = append(tmpFiles, f)
 
-		var h hash.Hash = sha256.New()
+		var h = sha256.New()
 		writer := io.MultiWriter(f, h)
 
 		if _, err := io.Copy(writer, rdr); err != nil {
@@ -181,7 +182,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		}
 
 		// Insert both files
-		for i, _ := range hashes {
+		for i := range hashes {
 			tmpFile := tmpFiles[i]
 			info, err := tmpFile.Stat()
 			if err != nil {

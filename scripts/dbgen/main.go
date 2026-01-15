@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"golang.org/x/xerrors"
 )
 
@@ -67,7 +69,7 @@ func nameFromSnakeCase(s string) string {
 		case "fkey":
 			// ignore
 		default:
-			ret += strings.Title(ss)
+			ret += cases.Title(language.AmericanEnglish).String(ss)
 		}
 	}
 	return ret

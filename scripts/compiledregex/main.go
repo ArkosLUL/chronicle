@@ -60,7 +60,7 @@ func main() {
 	}
 
 	path := filepath.Join(*outDir, "matchers", "compiled.go")
-	os.MkdirAll(filepath.Dir(path), 0755)
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
 	err := os.WriteFile(path, []byte(out.String()), 0644)
 	if err != nil {
 		panic(err)

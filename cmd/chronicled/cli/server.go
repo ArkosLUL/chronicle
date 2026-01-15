@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -198,6 +199,7 @@ func ServerCmd() *serpent.Command {
 			if err != nil {
 				return err
 			}
+			//nolint:errcheck
 			defer db.Close()
 
 			serverLn, err := ProvisionListener(logger, httpAddress)
@@ -220,15 +222,16 @@ func ServerCmd() *serpent.Command {
 				return fmt.Errorf("invalid access url: %w", err)
 			}
 
-			if secretPem == "" {
+			switch secretPem {
+			case "dev":
+				secretPem = testPem
+			case "":
 				sec, err := authkeys.GenerateKey()
 				if err != nil {
 					return fmt.Errorf("generate jwt secret: %w", err)
 				}
 				secretPem = string(authkeys.MarshalPrivateKey(sec))
 				logger.Warn("using ephemeral JWT secret; this is not recommended for production environments")
-			} else if secretPem == "dev" {
-				secretPem = testPem
 			}
 
 			var files storage.ObjectStorage
@@ -315,9 +318,10 @@ func ServeHandler(ctx context.Context, logger *slog.Logger, handler http.Handler
 	}
 
 	go func() {
+		//nolint:errcheck
 		defer ln.Close()
 		logger.Info("http server listening", slog.String("addr", ln.Addr().String()), slog.String("name", name))
-		if err := srv.Serve(ln); err != nil && !xerrors.Is(err, http.ErrServerClosed) {
+		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("http server serve", slog.String("addr", ln.Addr().String()), slog.String("name", name), slog.String("error", err.Error()))
 		}
 	}()

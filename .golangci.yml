@@ -6,3 +6,4 @@ linters:
       - "cmd/wasm/main\\.go$"
       - "database/gen/dump/.*"
       - "database/dbtestutil/.*"
+      - "combatlog/parser/regexs/compiled/"

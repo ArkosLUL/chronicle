@@ -73,7 +73,7 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 			// Cancel existing jobs that are not the current one
 			_, err = w.parent.queue.JobCancel(ctx, existingJob.ID)
 			if err != nil {
-				return fmt.Errorf("cancel existing job %s: %w", existingJob.ID, err)
+				return fmt.Errorf("cancel existing job %d: %w", existingJob.ID, err)
 			}
 		}
 	}

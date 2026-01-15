@@ -162,6 +162,7 @@ func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (
 	if err != nil {
 		return goth.User{}, err
 	}
+	//nolint:errcheck
 	defer s.Logout(res, req)
 	sess, err := provider.UnmarshalSession(value)
 	if err != nil {
@@ -181,7 +182,7 @@ func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (
 
 	params := req.URL.Query()
 	if params.Encode() == "" && req.Method == "POST" {
-		req.ParseForm()
+		_ = req.ParseForm()
 		params = req.Form
 	}
 
@@ -223,7 +224,7 @@ func (s *Service) Logout(res http.ResponseWriter, req *http.Request) error {
 		session.Values = make(map[interface{}]interface{})
 		err = session.Save(req, res)
 		if err != nil {
-			return errors.New("Could not delete user session ")
+			return errors.New("could not delete user session ")
 		}
 	}
 
@@ -234,7 +235,7 @@ func (s *Service) BeginAuthHandler(w http.ResponseWriter, req *http.Request) {
 	u, err := s.GetAuthURL(w, req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, err)
+		_, _ = fmt.Fprintln(w, err)
 		return
 	}
 
@@ -318,7 +319,7 @@ func (s *Service) Handler() http.Handler {
 			redirectTo := "/"
 			redirect, _ := s.Store.Get(r, "from")
 			if redirect != nil {
-				raw, _ := redirect.Values["from"]
+				raw := redirect.Values["from"]
 				fromStr, _ := raw.(string)
 				if fromStr != "" {
 					redirectTo = fromStr
@@ -333,7 +334,6 @@ func (s *Service) Handler() http.Handler {
 		mux.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
 			_ = s.Logout(w, r)
 			httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
-			return
 		})
 	})
 

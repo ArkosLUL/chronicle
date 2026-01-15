@@ -42,6 +42,7 @@ type sqlQuerier struct {
 func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		var _ = logger
 	}
 	cfg, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {

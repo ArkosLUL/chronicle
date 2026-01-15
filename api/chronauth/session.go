@@ -33,14 +33,14 @@ func WithClaims(ctx context.Context, c *claims.Claims) context.Context {
 }
 
 var (
-	notAuthorized = errors.New("not authorized")
+	ErrNotAuthorized = errors.New("not authorized")
 )
 
 func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fail := func(err error) {
-				if errors.Is(err, notAuthorized) {
+				if errors.Is(err, ErrNotAuthorized) {
 					http.Error(w, err.Error(), http.StatusUnauthorized)
 					return
 				}
@@ -63,7 +63,7 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 
 			jwt, ok := auth.Values["jwt"]
 			if !ok {
-				fail(notAuthorized)
+				fail(ErrNotAuthorized)
 				return
 			}
 
@@ -71,7 +71,7 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 			if !ok {
 				// TODO: Error to try again
 				_ = s.Logout(w, r)
-				fail(notAuthorized)
+				fail(ErrNotAuthorized)
 				return
 			}
 
@@ -79,7 +79,7 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 			if err != nil {
 				// TODO: Error to try again
 				_ = s.Logout(w, r)
-				fail(fmt.Errorf("Invalid session (%s): %w", err.Error(), notAuthorized))
+				fail(fmt.Errorf("invalid session (%s): %w", err.Error(), ErrNotAuthorized))
 				return
 			}
 

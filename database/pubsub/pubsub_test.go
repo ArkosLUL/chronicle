@@ -27,6 +27,7 @@ func TestPGPubsub_Metrics(t *testing.T) {
 
 	uut, err := pubsub.New(ctx, logger, db, connectionURL)
 	require.NoError(t, err)
+	//nolint:errcheck
 	defer uut.Close()
 
 	err = registry.Register(uut)

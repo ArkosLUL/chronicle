@@ -64,7 +64,7 @@ jobs:
         run: go install gotest.tools/gotestsum@latest
 
       - name: Run postgres
-        run: test-postgres-docker
+        run: make test-postgres-docker
 
       - name: Run tests with gotestsum
         run: |

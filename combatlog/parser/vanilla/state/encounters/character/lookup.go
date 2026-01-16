@@ -27,6 +27,9 @@ type Characters struct {
 	// ByEntry only works on creatures
 	ByEntry map[uint32][]Character
 	db      *unitdb.Units
+
+	// active is a quick lookup for active characters
+	active map[guid.GUID]struct{}
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {
@@ -34,6 +37,7 @@ func NewCharacters(db *unitdb.Units) *Characters {
 		db:      db,
 		All:     make(map[guid.GUID]Character),
 		ByEntry: make(map[uint32][]Character),
+		active:  make(map[guid.GUID]struct{}),
 	}
 }
 
@@ -79,6 +83,8 @@ func (c Characters) Add(id guid.GUID) (_ Character, newChar bool) {
 			}
 		}
 	}
+
+	c.trackActive(char)
 	return char, newChar
 }
 
@@ -101,9 +107,22 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 			return activityChange, fmt.Errorf("processing character %s: %w", char.ID().String(), err)
 		}
 
+		c.trackActive(char)
 		if before != char.IsActive() {
 			activityChange = true
 		}
 	}
 	return activityChange, nil
+}
+
+func (c Characters) trackActive(char Character) {
+	if char.IsActive() {
+		c.active[char.ID()] = struct{}{}
+	} else {
+		delete(c.active, char.ID())
+	}
+}
+
+func (c Characters) ActiveCharactersCount() int {
+	return len(c.active)
 }

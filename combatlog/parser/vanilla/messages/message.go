@@ -176,6 +176,18 @@ type Damage struct {
 	EnvironmentType *types.EnvironmentType
 }
 
+func (d Damage) SourceName() string {
+	if d.SpellName != nil {
+		return *d.SpellName
+	}
+
+	if d.EnvironmentType != nil {
+		return d.EnvironmentType.String()
+	}
+
+	return "Auto Attack"
+}
+
 func (d Damage) Affects() []guid.GUID {
 	ids := []guid.GUID{d.Target}
 	if d.Caster != nil {

@@ -12,8 +12,13 @@ import (
 
 var _ consumers.Consumer = (*Damage)(nil)
 
+type ActiveDetector interface {
+	ActiveCharactersCount() int
+}
+
 type Damage struct {
-	Events []Event
+	Events   []Event
+	detector ActiveDetector
 }
 
 type Event struct {
@@ -26,9 +31,10 @@ type Event struct {
 	From string
 }
 
-func New() *Damage {
+func New(detector ActiveDetector) *Damage {
 	return &Damage{
-		Events: make([]Event, 0),
+		Events:   make([]Event, 0),
+		detector: detector,
 	}
 }
 

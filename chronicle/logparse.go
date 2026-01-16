@@ -123,8 +123,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	}
 
 	p := vanilla.NewFromScanner(logger, liner, scan)
-	output := encounters.New(logger)
-	c := consumers.New(logger, output)
+  // encounters
+	encs := encounters.New(logger)
+
+
+	c := consumers.New(logger, encs)
 	err = c.ConsumeAll(ctx, p)
 	if err != nil {
 		err = fmt.Errorf("consume log: %w", err)
@@ -144,7 +147,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return river.JobCancel(fmt.Errorf("insert parsed log group: %w", err))
 	}
 
-	for i, inst := range output.Instances {
+	for i, inst := range encs.Instances {
 		encs, err := inst.Finalize(ctx)
 		if err != nil {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = err.Error()

@@ -9,9 +9,16 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/diagnostic"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
+
+type OngoingFight struct {
+	Hostiles map[guid.GUID]any
+	Start    *period.Moment
+	End      *period.Moment
+}
 
 // Encounter represents a named combat period in the logs.
 type Encounter struct {
@@ -24,6 +31,8 @@ type Encounter struct {
 	// If it is not a kill, it is a wipe (or reset)
 	IsKill bool
 	Boss   bool
+
+	Damage *combatmetrics.DamageSummary
 }
 
 func (e Encounter) NamedString(db *unitdb.Units) string {
@@ -47,12 +56,6 @@ func (e Encounter) NamedString(db *unitdb.Units) string {
 		}
 	}
 	return str.String()
-}
-
-type OngoingFight struct {
-	Hostiles map[guid.GUID]any
-	Start    *period.Moment
-	End      *period.Moment
 }
 
 // Fight represents a single combat encounter with one or more hostile creatures.

@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -33,6 +34,7 @@ type Common struct {
 	// Live fight tracking
 	currentFight    *OngoingFight
 	completedFights []Fight
+	combatValues    *combatmetrics.Metrics
 }
 
 func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
@@ -71,12 +73,19 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 				encounterName = info.Name
 			}
 		}
+
+		summary, err := c.combatValues.DamageSummary(ctx, fight.Start, fight.End)
+		if err != nil {
+			return nil, fmt.Errorf("computing damage summaryr: %w", err)
+		}
+
 		encounters = append(encounters, Encounter{
 			Name:   encounterName,
 			Type:   encounterType,
 			Combat: fight,
 			IsKill: fight.IsKill(),
 			Boss:   boss,
+			Damage: summary,
 		})
 	}
 
@@ -90,15 +99,19 @@ type CommonFactory struct {
 }
 
 func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Common {
-	return &Common{
+	characters := character.NewCharacters(db)
+	c := &Common{
 		name:          f.Name,
 		zoneNameMatch: f.ZoneName,
 		logger:        logger,
 		db:            db,
 		CurrentZone:   z,
-		Characters:    character.NewCharacters(db),
+		Characters:    characters,
 		Identifier:    f.Hostiles(),
+		combatValues:  combatmetrics.New(characters),
 	}
+
+	return c
 }
 
 func (c *Common) Zone() zone.Zone {
@@ -124,7 +137,7 @@ func (c *Common) Process(m messages.Message) error {
 	}
 
 	if actChange {
-		err = c.FightProcess(m)
+		err = c.CharacterActivityChange()
 		if err != nil {
 			return fmt.Errorf("processing fight: %w", err)
 		}
@@ -135,6 +148,7 @@ func (c *Common) Process(m messages.Message) error {
 
 // InFight returns true if there is an active fight with at least one active hostile.
 func (c *Common) InFight() bool {
+	// TODO: OPTIMIZE THIS PLEASE
 	if c.currentFight == nil {
 		return false
 	}
@@ -154,9 +168,9 @@ func (c *Common) Fights() []Fight {
 	return fights
 }
 
-// FightProcess updates live fight state based on character activity changes.
+// CharacterActivityChange updates live fight state based on character activity changes.
 // Call this after Characters.Process returns true (activity changed).
-func (c *Common) FightProcess(m messages.Message) error {
+func (c *Common) CharacterActivityChange() error {
 	if c.currentFight == nil {
 		c.currentFight = &OngoingFight{
 			Hostiles: make(map[guid.GUID]any),

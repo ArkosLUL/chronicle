@@ -92,7 +92,7 @@ func (c *Chronicle) initStorage() error {
 		FileSizeLimit:    raidLogLimit,
 		AllowedMimeTypes: raidLogMimes,
 	})
-	if err != nil {
+	if err != nil && err.Error() != "The resource already exists" {
 		return err
 	}
 
@@ -101,7 +101,7 @@ func (c *Chronicle) initStorage() error {
 		FileSizeLimit:    raidLogLimit,
 		AllowedMimeTypes: raidLogMimes,
 	})
-	if err != nil {
+	if err != nil && err.Error() != "The resource already exists" {
 		return err
 	}
 	return nil

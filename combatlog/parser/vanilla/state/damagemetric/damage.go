@@ -17,8 +17,7 @@ type ActiveDetector interface {
 }
 
 type Damage struct {
-	Events   []Event
-	detector ActiveDetector
+	Events []Event
 }
 
 type Event struct {
@@ -31,10 +30,9 @@ type Event struct {
 	From string
 }
 
-func New(detector ActiveDetector) *Damage {
+func New() *Damage {
 	return &Damage{
-		Events:   make([]Event, 0),
-		detector: detector,
+		Events: make([]Event, 0),
 	}
 }
 

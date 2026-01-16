@@ -53,5 +53,23 @@ CREATE TABLE log_encounters (
 )
 ;
 
+CREATE TABLE encounter_damage_units_summary (
+  encounter_id UUID NOT NULL REFERENCES log_encounters(id) ON DELETE CASCADE,
+  unit_guid BIGINT NOT NULL,        -- guid.GUID as uint64
+
+  -- Aggregated damage done
+  damage_done_total BIGINT NOT NULL DEFAULT 0,
+  -- Aggregated damage taken
+  damage_taken_total BIGINT NOT NULL DEFAULT 0,
+  -- JSONB for ability breakdown if needed later
+  damage_done_abilities JSONB,
+  damage_taken_abilities JSONB,
+
+  is_player BOOLEAN NOT NULL,
+  owner_guid BIGINT,
+
+  PRIMARY KEY (encounter_id, unit_guid)
+);
+
 
 COMMIT;

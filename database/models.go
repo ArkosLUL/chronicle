@@ -225,6 +225,17 @@ func AllSpellSchoolValues() []SpellSchool {
 	}
 }
 
+type EncounterDamageUnitsSummary struct {
+	EncounterID          uuid.UUID   `db:"encounter_id" json:"encounter_id"`
+	UnitGuid             int64       `db:"unit_guid" json:"unit_guid"`
+	DamageDoneTotal      int64       `db:"damage_done_total" json:"damage_done_total"`
+	DamageTakenTotal     int64       `db:"damage_taken_total" json:"damage_taken_total"`
+	DamageDoneAbilities  []byte      `db:"damage_done_abilities" json:"damage_done_abilities"`
+	DamageTakenAbilities []byte      `db:"damage_taken_abilities" json:"damage_taken_abilities"`
+	IsPlayer             bool        `db:"is_player" json:"is_player"`
+	OwnerGuid            pgtype.Int8 `db:"owner_guid" json:"owner_guid"`
+}
+
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`

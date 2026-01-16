@@ -27,3 +27,20 @@ VALUES
   ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *
 ;
+
+-- name: InsertEncounterDamageSummary :one
+INSERT INTO
+  encounter_damage_units_summary(
+    encounter_id,
+    unit_guid,
+    damage_done_total,
+    damage_taken_total,
+    damage_done_abilities,
+    damage_taken_abilities,
+    is_player,
+    owner_guid
+  )
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING *
+;

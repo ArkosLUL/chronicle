@@ -47,6 +47,17 @@ CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) R
     END = 1;
 $$;
 
+CREATE TABLE encounter_damage_units_summary (
+    encounter_id uuid NOT NULL,
+    unit_guid bigint NOT NULL,
+    damage_done_total bigint DEFAULT 0 NOT NULL,
+    damage_taken_total bigint DEFAULT 0 NOT NULL,
+    damage_done_abilities jsonb,
+    damage_taken_abilities jsonb,
+    is_player boolean NOT NULL,
+    owner_guid bigint
+);
+
 CREATE TABLE item_effects (
     id uuid NOT NULL,
     item_id integer NOT NULL,
@@ -254,6 +265,9 @@ CREATE TABLE wow_servers (
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
+ALTER TABLE ONLY encounter_damage_units_summary
+    ADD CONSTRAINT encounter_damage_units_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
@@ -326,6 +340,9 @@ CREATE INDEX river_job_state_and_finalized_at_index ON river_job USING btree (st
 CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
+
+ALTER TABLE ONLY encounter_damage_units_summary
+    ADD CONSTRAINT encounter_damage_units_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_encounters(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);

@@ -349,6 +349,59 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 	return i, err
 }
 
+const insertEncounterDamageSummary = `-- name: InsertEncounterDamageSummary :one
+INSERT INTO
+  encounter_damage_units_summary(
+    encounter_id,
+    unit_guid,
+    damage_done_total,
+    damage_taken_total,
+    damage_done_abilities,
+    damage_taken_abilities,
+    is_player,
+    owner_guid
+  )
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
+`
+
+type InsertEncounterDamageSummaryParams struct {
+	EncounterID          uuid.UUID   `db:"encounter_id" json:"encounter_id"`
+	UnitGuid             int64       `db:"unit_guid" json:"unit_guid"`
+	DamageDoneTotal      int64       `db:"damage_done_total" json:"damage_done_total"`
+	DamageTakenTotal     int64       `db:"damage_taken_total" json:"damage_taken_total"`
+	DamageDoneAbilities  []byte      `db:"damage_done_abilities" json:"damage_done_abilities"`
+	DamageTakenAbilities []byte      `db:"damage_taken_abilities" json:"damage_taken_abilities"`
+	IsPlayer             bool        `db:"is_player" json:"is_player"`
+	OwnerGuid            pgtype.Int8 `db:"owner_guid" json:"owner_guid"`
+}
+
+func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitsSummary, error) {
+	row := q.db.QueryRow(ctx, insertEncounterDamageSummary,
+		arg.EncounterID,
+		arg.UnitGuid,
+		arg.DamageDoneTotal,
+		arg.DamageTakenTotal,
+		arg.DamageDoneAbilities,
+		arg.DamageTakenAbilities,
+		arg.IsPlayer,
+		arg.OwnerGuid,
+	)
+	var i EncounterDamageUnitsSummary
+	err := row.Scan(
+		&i.EncounterID,
+		&i.UnitGuid,
+		&i.DamageDoneTotal,
+		&i.DamageTakenTotal,
+		&i.DamageDoneAbilities,
+		&i.DamageTakenAbilities,
+		&i.IsPlayer,
+		&i.OwnerGuid,
+	)
+	return i, err
+}
+
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
   log_instances (id, realm_id, log_group_id, name)

@@ -231,7 +231,7 @@ func ServerCmd() *serpent.Command {
 				if err != nil {
 					return fmt.Errorf("generate jwt secret: %w", err)
 				}
-        secretPem = base64.StdEncoding.EncodeToString(authkeys.MarshalPrivateKey(sec))
+				secretPem = base64.StdEncoding.EncodeToString(authkeys.MarshalPrivateKey(sec))
 				logger.Warn("using ephemeral JWT secret; this is not recommended for production environments")
 			}
 
@@ -252,6 +252,10 @@ func ServerCmd() *serpent.Command {
 				}
 			}
 
+			decodedSecret, err := base64.StdEncoding.DecodeString(secretPem)
+			if err != nil {
+				return fmt.Errorf("decode jwt secret pem: %w", err)
+			}
 			riverOpts.DBURL = postgresURL
 			handler, err := api.New(ctx, api.Options{
 				Logger:     logger,
@@ -261,7 +265,7 @@ func ServerCmd() *serpent.Command {
 				AccessURL:  au,
 				DevOAuth:   devAuth,
 				Discord:    discord,
-				SecretPEM:  []byte(secretPem),
+				SecretPEM:  decodedSecret,
 				RiverQueue: riverOpts,
 			})
 			if err != nil {

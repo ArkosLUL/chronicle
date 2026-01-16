@@ -108,23 +108,44 @@ function EncounterSidebar({
   encounters,
   trashGroups,
   selectedIds,
+  lastSelectedId,
   onSelect,
   onCollapse,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
   selectedIds: string[];
-  onSelect: (id: string, multiSelect: boolean) => void;
+  lastSelectedId: string | null;
+  onSelect: (id: string, mode: 'single' | 'toggle' | 'range') => void;
   onCollapse: () => void;
 }) {
-  const [trashOpen, setTrashOpen] = useState(false);
-  const [expandedTrashGroup, setExpandedTrashGroup] = useState<string | null>(null);
-
   const bossEncounters = encounters.filter((e) => e.boss);
   const totalTrash = trashGroups.reduce((sum, g) => sum + g.encounters.length, 0);
 
+  // Check which trash groups have selected encounters
+  const groupsWithSelectedTrash = trashGroups
+    .filter(g => g.encounters.some(e => selectedIds.includes(e.id)))
+    .map(g => g.name);
+  const hasSelectedTrash = groupsWithSelectedTrash.length > 0;
+
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [manualExpandedGroup, setManualExpandedGroup] = useState<string | null>(null);
+
+  // Keep trash expanded if any trash is selected
+  const effectiveTrashOpen = trashOpen || hasSelectedTrash;
+  
+  // A group is expanded if manually expanded OR has a selected encounter
+  const isGroupExpanded = (groupName: string) => 
+    manualExpandedGroup === groupName || groupsWithSelectedTrash.includes(groupName);
+
   const handleClick = (id: string, e: React.MouseEvent) => {
-    onSelect(id, e.metaKey || e.ctrlKey);
+    if (e.shiftKey && lastSelectedId) {
+      onSelect(id, 'range');
+    } else if (e.metaKey || e.ctrlKey) {
+      onSelect(id, 'toggle');
+    } else {
+      onSelect(id, 'single');
+    }
   };
 
   const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -141,7 +162,7 @@ function EncounterSidebar({
             )}
           </h3>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            {modifierKey}+click to select multiple
+            {modifierKey}+click or Shift+click
           </p>
         </div>
         <Button
@@ -187,25 +208,27 @@ function EncounterSidebar({
 
       {/* Trash section */}
       {totalTrash > 0 && (
-        <Collapsible open={trashOpen} onOpenChange={setTrashOpen} className="mt-4">
+        <Collapsible open={effectiveTrashOpen} onOpenChange={setTrashOpen} className="mt-4">
           <CollapsibleTrigger asChild>
             <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left hover:bg-muted opacity-60">
-              {trashOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {effectiveTrashOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               <span>Trash</span>
               <span className="text-muted-foreground">({totalTrash})</span>
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="ml-2 mt-1 space-y-1">
-              {trashGroups.map((group) => (
+              {trashGroups.map((group) => {
+                const expanded = isGroupExpanded(group.name);
+                return (
                 <Collapsible
                   key={group.name}
-                  open={expandedTrashGroup === group.name}
-                  onOpenChange={(open) => setExpandedTrashGroup(open ? group.name : null)}
+                  open={expanded}
+                  onOpenChange={(open) => setManualExpandedGroup(open ? group.name : null)}
                 >
                   <CollapsibleTrigger asChild>
                     <button className="w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs text-left hover:bg-muted opacity-70">
-                      {expandedTrashGroup === group.name ? (
+                      {expanded ? (
                         <ChevronDown className="h-3 w-3" />
                       ) : (
                         <ChevronRight className="h-3 w-3" />
@@ -244,7 +267,8 @@ function EncounterSidebar({
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
-              ))}
+              );
+              })}
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -372,14 +396,31 @@ export function InstancePageView({
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>(
     selectedEncounterIds || (defaultEncounter ? [defaultEncounter.id] : [])
   );
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(
+    defaultEncounter?.id || null
+  );
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const selectedIds = selectedEncounterIds ?? internalSelectedIds;
   
-  const handleSelect = (id: string, multiSelect: boolean) => {
+  const handleSelect = (id: string, mode: 'single' | 'toggle' | 'range') => {
     const update = onSelectEncounters ?? setInternalSelectedIds;
     
-    if (multiSelect) {
+    if (mode === 'range' && lastSelectedId) {
+      // Select all encounters between lastSelectedId and id
+      const allIds = instance.encounters.map(e => e.id);
+      const lastIdx = allIds.indexOf(lastSelectedId);
+      const currentIdx = allIds.indexOf(id);
+      
+      if (lastIdx !== -1 && currentIdx !== -1) {
+        const start = Math.min(lastIdx, currentIdx);
+        const end = Math.max(lastIdx, currentIdx);
+        const rangeIds = allIds.slice(start, end + 1);
+        // Merge with existing selection
+        const newSelection = [...new Set([...selectedIds, ...rangeIds])];
+        update(newSelection);
+      }
+    } else if (mode === 'toggle') {
       // Toggle selection
       if (selectedIds.includes(id)) {
         // Don't allow deselecting the last one
@@ -389,9 +430,11 @@ export function InstancePageView({
       } else {
         update([...selectedIds, id]);
       }
+      setLastSelectedId(id);
     } else {
       // Single select replaces
       update([id]);
+      setLastSelectedId(id);
     }
   };
 
@@ -432,6 +475,7 @@ export function InstancePageView({
             encounters={instance.encounters}
             trashGroups={trashGroups}
             selectedIds={selectedIds}
+            lastSelectedId={lastSelectedId}
             onSelect={handleSelect}
           />
         ) : (

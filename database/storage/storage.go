@@ -28,7 +28,7 @@ type ObjectStorage interface {
 }
 
 func Supabase(projectID, projectAPIKey string) (ObjectStorage, error) {
-	storageClient := storage_go.NewClient("https://<project-reference-id>.supabase.co/storage/v1", "<project-secret-api-key>", nil)
+	storageClient := storage_go.NewClient(fmt.Sprintf("https://%s.supabase.co/storage/v1", projectID), projectAPIKey, nil)
 
 	_, err := storageClient.ListBuckets()
 	if err != nil {

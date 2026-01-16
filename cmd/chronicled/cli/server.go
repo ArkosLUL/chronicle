@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -224,13 +225,13 @@ func ServerCmd() *serpent.Command {
 
 			switch secretPem {
 			case "dev":
-				secretPem = testPem
+				secretPem = base64.StdEncoding.EncodeToString([]byte(testPem))
 			case "":
 				sec, err := authkeys.GenerateKey()
 				if err != nil {
 					return fmt.Errorf("generate jwt secret: %w", err)
 				}
-				secretPem = string(authkeys.MarshalPrivateKey(sec))
+        secretPem = base64.StdEncoding.EncodeToString(authkeys.MarshalPrivateKey(sec))
 				logger.Warn("using ephemeral JWT secret; this is not recommended for production environments")
 			}
 

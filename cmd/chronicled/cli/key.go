@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
@@ -20,7 +21,7 @@ func GenerateSecretKey() *serpent.Command {
 
 			output := authkeys.MarshalPrivateKey(sec)
 
-			_, _ = fmt.Fprintf(i.Stdout, "Generated Secret Key:\n%s\n", output)
+			_, _ = fmt.Fprintf(i.Stdout, "Generated Secret Key:\n%s\n", base64.StdEncoding.EncodeToString(output))
 			return nil
 		},
 	}

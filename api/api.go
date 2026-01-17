@@ -95,15 +95,24 @@ func (api *API) Routes() chi.Router {
 			r.Use(api.Auth.Authenticated(false))
 			r.Get("/whoami", api.WhoAmI)
 			r.Route("/raidlogs", func(r chi.Router) {
-				r.Post("/upload", api.WoWLogUpload)
-				r.Get("/", api.WoWLogGroups)
-				r.Route("/{logID}", func(r chi.Router) {
-					r.Use(httpmw.LogIDMiddleware)
-					r.Post("/reparse", api.WoWLogReparse)
-					r.Get("/", api.WoWLogGroup)
-					r.Delete("/", api.WoWLogDeleteGroup)
+				r.Route("/logs", func(r chi.Router) {
+					r.Post("/upload", api.WoWLogUpload)
+					r.Get("/", api.WoWLogGroups)
+					r.Route("/{logID}", func(r chi.Router) {
+						r.Use(httpmw.LogIDMiddleware)
+						r.Post("/reparse", api.WoWLogReparse)
+						r.Get("/", api.WoWLogGroup)
+						r.Delete("/", api.WoWLogDeleteGroup)
+					})
 				})
 
+				r.Route("/instances", func(r chi.Router) {
+					r.Route("/{instance_id}", func(r chi.Router) {
+						r.Use(httpmw.InstanceIDMiddleware)
+						r.Get("/", api.Instance)
+						r.Get("/damage-summary", api.InstanceDamageSummaries)
+					})
+				})
 			})
 		})
 	})

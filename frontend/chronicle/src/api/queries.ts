@@ -52,7 +52,7 @@ export function useLogGroups(options?: Omit<UseQueryOptions<WoWLogGroup[]>, "que
   return useQuery({
     queryKey: ["logGroups"],
     queryFn: async () => {
-      const response = await fetch("/api/v1/raidlogs/");
+      const response = await fetch("/api/v1/raidlogs/logs/");
       if (!response.ok) throw new Error("Failed to fetch logs");
       return response.json() as Promise<WoWLogGroup[]>;
     },
@@ -64,7 +64,7 @@ export function useLogGroup(logId: string, options?: Omit<UseQueryOptions<WoWLog
   return useQuery({
     queryKey: ["logGroup", logId],
     queryFn: async () => {
-      const response = await fetch(`/api/v1/raidlogs/${logId}`);
+      const response = await fetch(`/api/v1/raidlogs/logs/${logId}`);
       if (!response.ok) throw new Error("Failed to fetch log details");
       return response.json() as Promise<WoWLogGroupState>;
     },
@@ -77,7 +77,7 @@ export function useDeleteLogGroup() {
   
   return useMutation({
     mutationFn: async (logId: string) => {
-      const response = await fetch(`/api/v1/raidlogs/${logId}`, {
+      const response = await fetch(`/api/v1/raidlogs/logs/${logId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -100,7 +100,7 @@ export function useReparseLogGroup() {
   
   return useMutation({
     mutationFn: async (logId: string) => {
-      const response = await fetch(`/api/v1/raidlogs/${logId}/reparse`, {
+      const response = await fetch(`/api/v1/raidlogs/logs/${logId}/reparse`, {
         method: "POST",
       });
       if (!response.ok) {

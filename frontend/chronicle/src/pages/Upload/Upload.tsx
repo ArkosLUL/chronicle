@@ -341,7 +341,7 @@ export function Upload() {
       setError({ message: "Upload failed - network error" });
     });
 
-    xhr.open("POST", "/api/v1/raidlogs/upload");
+    xhr.open("POST", "/api/v1/raidlogs/logs/upload");
     xhr.send(formData);
   };
 

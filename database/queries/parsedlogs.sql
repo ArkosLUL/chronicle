@@ -44,3 +44,30 @@ VALUES
   ($1, $2, $3, $4, $5, $6, $7, sqlc.narg('owner_guid')::wow_guid)
 RETURNING *
 ;
+
+-- name: Instance :one
+SELECT
+  *
+FROM
+  log_instances
+WHERE
+  id = $1
+;
+
+-- name: EncountersByInstanceID :many
+SELECT
+  *
+FROM
+  log_encounters
+WHERE
+  instance_id = $1
+;
+
+-- name: DamageSummariesByInstanceID :many
+SELECT
+  *
+FROM
+  encounter_damage_unit_summary
+WHERE
+  encounter_id IN (SELECT encounter_id FROM log_instances WHERE id = @log_instance_id)
+;

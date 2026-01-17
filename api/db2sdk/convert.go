@@ -3,6 +3,7 @@ package db2sdk
 import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/maps"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -54,6 +55,13 @@ func WoWInstance(instance database.LogInstance) chroniclesdk.WoWInstance {
 	}
 }
 
+func WowInstanceWithEncounters(instance database.LogInstance, encounters []database.LogEncounter) chroniclesdk.WoWParsedInstance {
+	return chroniclesdk.WoWParsedInstance{
+		WoWInstance: WoWInstance(instance),
+		Encounters:  slice.List(encounters, WoWEncounter),
+	}
+}
+
 func WoWEncounter(encounter database.LogEncounter) chroniclesdk.WoWEncounter {
 	return chroniclesdk.WoWEncounter{
 		ID:         encounter.ID,
@@ -79,5 +87,22 @@ func JobStatus(status rivertype.JobRow) chroniclesdk.JobStatus {
 		Errors:      status.Errors,
 		Kind:        status.Kind,
 		Output:      status.Output(),
+	}
+}
+
+func Ability(ability database.Ability) chroniclesdk.Ability {
+	return chroniclesdk.Ability(ability)
+}
+
+func EncounterDamageSummary(summary database.EncounterDamageUnitSummary) chroniclesdk.EncounterDamageSummary {
+	return chroniclesdk.EncounterDamageSummary{
+		EncounterID:          summary.EncounterID,
+		UnitGuid:             summary.UnitGuid,
+		DamageDoneTotal:      summary.DamageDoneTotal,
+		DamageTakenTotal:     summary.DamageTakenTotal,
+		DamageDoneAbilities:  maps.Map(summary.DamageDoneAbilities, Ability),
+		DamageTakenAbilities: maps.Map(summary.DamageTakenAbilities, Ability),
+		IsPlayer:             summary.IsPlayer,
+		OwnerGuid:            summary.OwnerGuid,
 	}
 }

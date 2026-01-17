@@ -297,6 +297,44 @@ func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
 	return err
 }
 
+const damageSummariesByInstanceID = `-- name: DamageSummariesByInstanceID :many
+SELECT
+  encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
+FROM
+  encounter_damage_unit_summary
+WHERE
+  encounter_id IN (SELECT encounter_id FROM log_instances WHERE id = $1)
+`
+
+func (q *sqlQuerier) DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]EncounterDamageUnitSummary, error) {
+	rows, err := q.db.Query(ctx, damageSummariesByInstanceID, logInstanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EncounterDamageUnitSummary
+	for rows.Next() {
+		var i EncounterDamageUnitSummary
+		if err := rows.Scan(
+			&i.EncounterID,
+			&i.UnitGuid,
+			&i.DamageDoneTotal,
+			&i.DamageTakenTotal,
+			&i.DamageDoneAbilities,
+			&i.DamageTakenAbilities,
+			&i.IsPlayer,
+			&i.OwnerGuid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteAllParsedLogsByGroupID = `-- name: DeleteAllParsedLogsByGroupID :exec
 DELETE FROM
   parsed_log_group
@@ -307,6 +345,43 @@ WHERE
 func (q *sqlQuerier) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteAllParsedLogsByGroupID, id)
 	return err
+}
+
+const encountersByInstanceID = `-- name: EncountersByInstanceID :many
+SELECT
+  id, instance_id, name, kill, boss, start_time, end_time
+FROM
+  log_encounters
+WHERE
+  instance_id = $1
+`
+
+func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogEncounter, error) {
+	rows, err := q.db.Query(ctx, encountersByInstanceID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogEncounter
+	for rows.Next() {
+		var i LogEncounter
+		if err := rows.Scan(
+			&i.ID,
+			&i.InstanceID,
+			&i.Name,
+			&i.Kill,
+			&i.Boss,
+			&i.StartTime,
+			&i.EndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertEncounter = `-- name: InsertEncounter :one
@@ -445,6 +520,27 @@ VALUES
 func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, insertParsedLogGroup, id)
 	return err
+}
+
+const instance = `-- name: Instance :one
+SELECT
+  id, realm_id, log_group_id, name
+FROM
+  log_instances
+WHERE
+  id = $1
+`
+
+func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstance, error) {
+	row := q.db.QueryRow(ctx, instance, id)
+	var i LogInstance
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.LogGroupID,
+		&i.Name,
+	)
+	return i, err
 }
 
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one

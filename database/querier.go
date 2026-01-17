@@ -11,9 +11,11 @@ import (
 )
 
 type sqlcQuerier interface {
+	DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]EncounterDamageUnitSummary, error)
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
 	DeleteThisQuery(ctx context.Context) error
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
+	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogEncounter, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
@@ -28,6 +30,7 @@ type sqlcQuerier interface {
 	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
+	Instance(ctx context.Context, id uuid.UUID) (LogInstance, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

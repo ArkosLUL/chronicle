@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 
@@ -53,7 +54,12 @@ func HandleResponseError(ctx context.Context, rw http.ResponseWriter, err error,
 	if apiErr, ok := IsAPIError(err); ok {
 		Write(ctx, rw, apiErr.Status, apiErr.Response)
 	} else {
-		Write(ctx, rw, def.Status, chroniclesdk.Response{
+		status := def.Status
+		if errors.Is(err, sql.ErrNoRows) {
+			status = http.StatusNotFound
+		}
+
+		Write(ctx, rw, status, chroniclesdk.Response{
 			Message: def.Response.Message,
 			Detail:  def.Response.Detail,
 		})

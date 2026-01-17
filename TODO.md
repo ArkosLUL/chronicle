@@ -7,5 +7,5 @@
   -  UnitName("0xF130001D29279311owner") to find the name of its owner, or UnitExists("0xF130001D29279311owner")
   - UNIT_INFO: <seen>&<guid>&<name>&<can_cooperator>&<owner> 
 - Log `UnitCanCooperate` for who is friendly and foe.
-
+- Add enemy list on every instance page.
 

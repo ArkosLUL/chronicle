@@ -13,6 +13,13 @@ import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/P
 import { cn } from "@/lib/utils";
 
 // Types for the Instance page
+export interface EnemyUnit {
+  id: string;
+  name: string;
+  damageTaken: number; // damage taken from players
+  damageDone: number;  // damage done to players
+}
+
 export interface Encounter {
   id: string;
   name: string;
@@ -23,6 +30,7 @@ export interface Encounter {
   dps?: PlayerMetricChartData[];
   healing?: PlayerMetricChartData[];
   damageTaken?: PlayerMetricChartData[];
+  enemies?: EnemyUnit[];
 }
 
 export interface Instance {
@@ -103,6 +111,28 @@ function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageT
   }
 
   return Array.from(playerMap.values());
+}
+
+// Merge enemies from multiple encounters by summing damage values
+function mergeEnemies(encounters: Encounter[]): EnemyUnit[] {
+  const enemyMap = new Map<string, EnemyUnit>();
+
+  for (const encounter of encounters) {
+    const enemies = encounter.enemies;
+    if (!enemies) continue;
+
+    for (const enemy of enemies) {
+      const existing = enemyMap.get(enemy.id);
+      if (existing) {
+        existing.damageTaken += enemy.damageTaken;
+        existing.damageDone += enemy.damageDone;
+      } else {
+        enemyMap.set(enemy.id, { ...enemy });
+      }
+    }
+  }
+
+  return Array.from(enemyMap.values()).sort((a, b) => b.damageTaken - a.damageTaken);
 }
 
 // Sidebar component for encounter navigation
@@ -295,6 +325,17 @@ function formatDurationMs(ms: number): string {
   return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 }
 
+// Format large numbers compactly
+function formatDamageNumber(value: number): string {
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}M`;
+  }
+  if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}K`;
+  }
+  return value.toLocaleString();
+}
+
 // Main encounter detail view
 function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   const isSingle = encounters.length === 1;
@@ -304,6 +345,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   const mergedDps = mergeMetrics(encounters, 'dps');
   const mergedHealing = mergeMetrics(encounters, 'healing');
   const mergedDamageTaken = mergeMetrics(encounters, 'damageTaken');
+  const mergedEnemies = mergeEnemies(encounters);
   
   const totalDurationMs = computeTotalDuration(encounters);
 
@@ -340,6 +382,38 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
           <span>{formatDurationMs(totalDurationMs)}</span>
         </div>
       </div>
+
+      {/* Enemies fought */}
+      {mergedEnemies.length > 0 && (
+        <Collapsible className="mb-6">
+          <Card className="p-4">
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between text-left">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Skull className="h-4 w-4" />
+                  Enemies ({mergedEnemies.length})
+                </h3>
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {mergedEnemies.map((enemy) => (
+                  <div
+                    key={enemy.id}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md text-sm"
+                  >
+                    <span className="font-medium">{enemy.name}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {formatDamageNumber(enemy.damageTaken)} dmg taken
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
 
       {/* Metrics - 2 column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -521,8 +595,9 @@ function transformToInstance(
   const encounters: Encounter[] = apiInstance.encounters.map((enc) => {
     const encounterDamage = damageByEncounter.get(enc.id) || [];
     
-    // Transform to chart data - only include players for now
+    // Separate players from enemies
     const playerDamage = encounterDamage.filter((d) => d.is_player);
+    const enemyDamage = encounterDamage.filter((d) => !d.is_player && !d.owner_guid);
     
     const dps: PlayerMetricChartData[] = playerDamage.map((d) => ({
       playerID: String(d.unit_guid),
@@ -540,6 +615,17 @@ function transformToInstance(
       value: d.damage_taken_total,
     }));
 
+    // Extract enemy units (non-players without owners, i.e. not pets)
+    const enemies: EnemyUnit[] = enemyDamage
+      .map((d) => ({
+        id: String(d.unit_guid),
+        name: `Enemy ${d.unit_guid}`, // TODO: fetch actual enemy names
+        damageTaken: d.damage_taken_total, // damage they took from players
+        damageDone: d.damage_done_total,   // damage they dealt to players
+      }))
+      .filter((e) => e.damageTaken > 0 || e.damageDone > 0)
+      .sort((a, b) => b.damageTaken - a.damageTaken); // sort by damage taken (most damaged first)
+
     return {
       id: enc.id,
       name: enc.name,
@@ -549,6 +635,7 @@ function transformToInstance(
       end_time: enc.end_time,
       dps: dps.filter((d) => d.value > 0),
       damageTaken: damageTaken.filter((d) => d.value > 0),
+      enemies,
       // healing: [] // TODO: add healing data when available
     };
   });

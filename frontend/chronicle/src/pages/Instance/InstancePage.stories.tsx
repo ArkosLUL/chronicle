@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { InstancePageView, type Instance, type Encounter } from "./InstancePage";
+import { InstancePageView, type Instance, type Encounter, type EnemyUnit } from "./InstancePage";
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 
 const meta = {
@@ -87,6 +87,55 @@ function mockHealingData(healerCount: number = 10): PlayerMetricChartData[] {
   }).sort((a, b) => b.value - a.value);
 }
 
+// Mock enemy data generator
+function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
+  // Define some thematic adds based on encounter
+  const addsByEncounter: Record<string, string[]> = {
+    "Lucifron": ["Flamewaker Protector", "Flamewaker Protector"],
+    "Magmadar": [],
+    "Gehennas": ["Flamewaker", "Flamewaker"],
+    "Garr": ["Firesworn", "Firesworn", "Firesworn", "Firesworn", "Firesworn", "Firesworn", "Firesworn", "Firesworn"],
+    "Baron Geddon": [],
+    "Shazzrah": [],
+    "Sulfuron Harbinger": ["Flamewaker Priest", "Flamewaker Priest", "Flamewaker Priest", "Flamewaker Priest"],
+    "Golemagg the Incinerator": ["Core Rager", "Core Rager"],
+    "Majordomo Executus": ["Flamewaker Healer", "Flamewaker Healer", "Flamewaker Healer", "Flamewaker Healer", "Flamewaker Elite", "Flamewaker Elite", "Flamewaker Elite", "Flamewaker Elite"],
+    "Ragnaros": ["Son of Flame", "Son of Flame", "Son of Flame", "Son of Flame", "Son of Flame", "Son of Flame", "Son of Flame", "Son of Flame"],
+    "Onyxia": ["Onyxian Whelp", "Onyxian Whelp", "Onyxian Whelp", "Onyxian Whelp", "Onyxian Whelp", "Onyxian Whelp"],
+    "High Inquisitor Fairbanks": [],
+    "Scarlet Commander Mograine": [],
+    "High Inquisitor Whitemane": ["Scarlet Commander Mograine"],
+  };
+
+  const adds = addsByEncounter[encounterName] || [];
+  const enemies: EnemyUnit[] = [];
+
+  // Add the main boss/enemy
+  if (boss) {
+    enemies.push({
+      id: `enemy-${encounterName.toLowerCase().replace(/\s+/g, '-')}`,
+      name: encounterName,
+      damageTaken: Math.round(500000 + Math.random() * 200000),
+      damageDone: Math.round(150000 + Math.random() * 50000),
+    });
+  }
+
+  // Add the adds
+  const addCounts = new Map<string, number>();
+  adds.forEach((addName, i) => {
+    const count = (addCounts.get(addName) || 0) + 1;
+    addCounts.set(addName, count);
+    enemies.push({
+      id: `enemy-add-${i}-${addName.toLowerCase().replace(/\s+/g, '-')}`,
+      name: addName,
+      damageTaken: Math.round(50000 + Math.random() * 30000),
+      damageDone: Math.round(20000 + Math.random() * 15000),
+    });
+  });
+
+  return enemies;
+}
+
 // Create encounter with timestamps
 function createEncounter(
   id: string,
@@ -112,6 +161,7 @@ function createEncounter(
       dps: mockDpsData(40),
       healing: mockHealingData(10),
       damageTaken: mockDpsData(40).map((d) => ({ ...d, value: d.value * 0.3 })),
+      enemies: mockEnemyData(name, boss),
     }),
   };
 }

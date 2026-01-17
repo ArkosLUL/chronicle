@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -123,11 +124,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	}
 
 	p := vanilla.NewFromScanner(logger, liner, scan)
-  // encounters
-	encs := encounters.New(logger)
+	// encounters
+	encountersState := encounters.New(logger)
 
-
-	c := consumers.New(logger, encs)
+	c := consumers.New(logger, encountersState)
 	err = c.ConsumeAll(ctx, p)
 	if err != nil {
 		err = fmt.Errorf("consume log: %w", err)
@@ -147,7 +147,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return river.JobCancel(fmt.Errorf("insert parsed log group: %w", err))
 	}
 
-	for i, inst := range encs.Instances {
+	for i, inst := range encountersState.Instances {
 		encs, err := inst.Finalize(ctx)
 		if err != nil {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = err.Error()
@@ -180,6 +180,29 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				})
 				if err != nil {
 					return fmt.Errorf("insert encounter: %w", err)
+				}
+
+				//tx.insert
+				//enc.Damage
+				for unitID, unit := range enc.Damage.Units {
+					var ownerGuid *guid.GUID
+					info, ok := encountersState.Units.Get(unitID)
+					if ok {
+						ownerGuid = info.Owner
+					}
+					_, err = tx.InsertEncounterDamageSummary(ctx, database.InsertEncounterDamageSummaryParams{
+						EncounterID:          dbencounter.ID,
+						UnitGuid:             unitID,
+						DamageDoneTotal:      unit.TotalDamageDone,
+						DamageTakenTotal:     unit.TotalDamageTaken,
+						DamageDoneAbilities:  unit.DamageDone,
+						DamageTakenAbilities: unit.DamageTaken,
+						IsPlayer:             unitID.IsPlayer(),
+						OwnerGuid:            ownerGuid,
+					})
+					if err != nil {
+						return fmt.Errorf("insert encounter damage summary: %w", err)
+					}
 				}
 
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))

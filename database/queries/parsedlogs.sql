@@ -30,7 +30,7 @@ RETURNING *
 
 -- name: InsertEncounterDamageSummary :one
 INSERT INTO
-  encounter_damage_units_summary(
+  encounter_damage_unit_summary(
     encounter_id,
     unit_guid,
     damage_done_total,
@@ -41,6 +41,6 @@ INSERT INTO
     owner_guid
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8)
+  ($1, $2, $3, $4, $5, $6, $7, sqlc.narg('owner_guid')::wow_guid)
 RETURNING *
 ;

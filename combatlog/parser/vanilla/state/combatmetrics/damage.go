@@ -8,6 +8,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
 type DamageSummary struct {
@@ -23,8 +25,8 @@ func NewDamageSummary() *DamageSummary {
 func (s *DamageSummary) Unit(id guid.GUID) *Unit {
 	if _, ok := s.Units[id]; !ok {
 		s.Units[id] = &Unit{
-			DamageDone:  make(map[string]*Ability),
-			DamageTaken: make(map[string]*Ability),
+			DamageDone:  make(map[string]database.Ability),
+			DamageTaken: make(map[string]database.Ability),
 		}
 	}
 	return s.Units[id]
@@ -34,13 +36,11 @@ func (s *DamageSummary) Process(m messages.Message) error {
 	switch data := m.(type) {
 	case messages.Damage:
 		target := s.Unit(data.Target)
-		taken := target.Taken(data.SourceName())
-		taken.AddDamage(data)
+		target.Taken(data)
 
 		if data.Caster != nil {
 			caster := s.Unit(*data.Caster)
-			done := caster.Done(data.SourceName())
-			done.AddDamage(data)
+			caster.Done(data)
 			return nil
 		}
 
@@ -55,38 +55,32 @@ func (s *DamageSummary) Process(m messages.Message) error {
 }
 
 type Unit struct {
-	DamageDone  map[string]*Ability
-	DamageTaken map[string]*Ability
+	TotalDamageDone  int64 `json:"total_damage_done"`
+	TotalDamageTaken int64 `json:"total_damage_taken"`
+
+	DamageDone  map[string]database.Ability `json:"damage_done"`
+	DamageTaken map[string]database.Ability `json:"damage_taken"`
 }
 
-type Ability struct {
-	Total   int64
-	Hit     int64
-	Crit    int64
-	Miss    int64
-	Dodge   int64
-	Immune  int64
-	Parried int64
+type Ability database.Ability
 
-	// Partial resists and other stuff?
-	Other int64
-}
-
-func (u *Unit) Taken(source string) *Ability {
-	if u.DamageTaken[source] == nil {
-		u.DamageTaken[source] = &Ability{}
+func (u *Unit) Taken(m messages.Damage) {
+	source := m.SourceName()
+	if _, ok := u.DamageTaken[source]; !ok {
+		u.DamageTaken[source] = database.Ability{}
 	}
-	return u.DamageTaken[source]
+	u.TotalDamageTaken += (ptr.Ref(Ability(u.DamageTaken[source]))).AddDamage(m)
 }
 
-func (u *Unit) Done(ability string) *Ability {
-	if u.DamageDone[ability] == nil {
-		u.DamageDone[ability] = &Ability{}
+func (u *Unit) Done(m messages.Damage) {
+	source := m.SourceName()
+	if _, ok := u.DamageDone[source]; !ok {
+		u.DamageDone[source] = database.Ability{}
 	}
-	return u.DamageDone[ability]
+	u.TotalDamageDone += (ptr.Ref(Ability(u.DamageDone[source]))).AddDamage(m)
 }
 
-func (a *Ability) AddDamage(m messages.Damage) {
+func (a *Ability) AddDamage(m messages.Damage) int64 {
 	a.Total += int64(m.Amount)
 	if m.HitType.Has(types.HitTypeMiss) {
 		a.Miss++
@@ -103,6 +97,7 @@ func (a *Ability) AddDamage(m messages.Damage) {
 	} else {
 		a.Other++
 	}
+	return int64(m.Amount)
 }
 
 func (met *Metrics) DamageSummary(ctx context.Context, start, end time.Time) (*DamageSummary, error) {

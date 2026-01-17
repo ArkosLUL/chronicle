@@ -63,5 +63,11 @@ CREATE UNIQUE INDEX files_unique_owner_hash ON log_file(owner, hash);
 
 -- Used for sqlc typing
 CREATE DOMAIN wow_log_group_files AS jsonb;
+CREATE DOMAIN wow_guid AS TEXT
+  CHECK (
+    VALUE ~ '^0x[0-9A-Fa-f]{16}$'
+    )
+;
+
 
 COMMIT;

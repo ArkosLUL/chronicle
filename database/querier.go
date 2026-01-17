@@ -20,7 +20,7 @@ type sqlcQuerier interface {
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
 	GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]GetWoWLogGroupsByOwnerRow, error)
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogEncounter, error)
-	InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitsSummary, error)
+	InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitSummary, error)
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
 	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error

@@ -1,10 +1,13 @@
 package guid
 
 import (
+	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/bits"
+
+	"golang.org/x/xerrors"
 )
 
 // GUID represents a World of Warcraft GUID as a 64-bit unsigned integer
@@ -120,4 +123,22 @@ func MustEntry(id GUID) uint32 {
 		panic("GUID is not a creature")
 	}
 	return entry
+}
+
+func (a *GUID) Scan(src interface{}) error {
+	var err error
+	switch v := src.(type) {
+	case string:
+		*a, err = FromString(v)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return xerrors.Errorf("unexpected type %T", src)
+	}
+}
+
+func (a GUID) Value() (driver.Value, error) {
+	return a.String(), nil
 }

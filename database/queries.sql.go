@@ -7,6 +7,7 @@ package database
 import (
 	"context"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -351,7 +352,7 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertEncounterDamageSummary = `-- name: InsertEncounterDamageSummary :one
 INSERT INTO
-  encounter_damage_units_summary(
+  encounter_damage_unit_summary(
     encounter_id,
     unit_guid,
     damage_done_total,
@@ -362,22 +363,22 @@ INSERT INTO
     owner_guid
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8)
+  ($1, $2, $3, $4, $5, $6, $7, $8::wow_guid)
 RETURNING encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
 `
 
 type InsertEncounterDamageSummaryParams struct {
-	EncounterID          uuid.UUID   `db:"encounter_id" json:"encounter_id"`
-	UnitGuid             int64       `db:"unit_guid" json:"unit_guid"`
-	DamageDoneTotal      int64       `db:"damage_done_total" json:"damage_done_total"`
-	DamageTakenTotal     int64       `db:"damage_taken_total" json:"damage_taken_total"`
-	DamageDoneAbilities  []byte      `db:"damage_done_abilities" json:"damage_done_abilities"`
-	DamageTakenAbilities []byte      `db:"damage_taken_abilities" json:"damage_taken_abilities"`
-	IsPlayer             bool        `db:"is_player" json:"is_player"`
-	OwnerGuid            pgtype.Int8 `db:"owner_guid" json:"owner_guid"`
+	EncounterID          uuid.UUID          `db:"encounter_id" json:"encounter_id"`
+	UnitGuid             guid.GUID          `db:"unit_guid" json:"unit_guid"`
+	DamageDoneTotal      int64              `db:"damage_done_total" json:"damage_done_total"`
+	DamageTakenTotal     int64              `db:"damage_taken_total" json:"damage_taken_total"`
+	DamageDoneAbilities  map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`
+	DamageTakenAbilities map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
+	IsPlayer             bool               `db:"is_player" json:"is_player"`
+	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
 }
 
-func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitsSummary, error) {
+func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitSummary, error) {
 	row := q.db.QueryRow(ctx, insertEncounterDamageSummary,
 		arg.EncounterID,
 		arg.UnitGuid,
@@ -388,7 +389,7 @@ func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg Inser
 		arg.IsPlayer,
 		arg.OwnerGuid,
 	)
-	var i EncounterDamageUnitsSummary
+	var i EncounterDamageUnitSummary
 	err := row.Scan(
 		&i.EncounterID,
 		&i.UnitGuid,

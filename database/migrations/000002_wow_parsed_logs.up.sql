@@ -53,9 +53,9 @@ CREATE TABLE log_encounters (
 )
 ;
 
-CREATE TABLE encounter_damage_units_summary (
+CREATE TABLE encounter_damage_unit_summary (
   encounter_id UUID NOT NULL REFERENCES log_encounters(id) ON DELETE CASCADE,
-  unit_guid BIGINT NOT NULL,        -- guid.GUID as uint64
+  unit_guid wow_guid NOT NULL,
 
   -- Aggregated damage done
   damage_done_total BIGINT NOT NULL DEFAULT 0,
@@ -66,7 +66,8 @@ CREATE TABLE encounter_damage_units_summary (
   damage_taken_abilities JSONB,
 
   is_player BOOLEAN NOT NULL,
-  owner_guid BIGINT,
+  -- owner_guid is nullable
+  owner_guid wow_guid,
 
   PRIMARY KEY (encounter_id, unit_guid)
 );

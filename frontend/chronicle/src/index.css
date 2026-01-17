@@ -80,6 +80,7 @@
   --color-class-shaman: var(--class-shaman);
   --color-class-paladin: var(--class-paladin);
   --color-class-druid: var(--class-druid);
+  --color-class-druid: var(--class-unknown);
 
   /* Foreground color over classes, eg text. */
   --color-class-foreground: var(--class-foreground);
@@ -152,6 +153,7 @@
   --class-shaman: #0070DE;
   --class-paladin: #F58CBA;
   --class-druid: #FF7D0A;
+  --class-unknown: #A0A0A0;
 
   /* Foreground color over classes, eg text. */
   --class-foreground: oklch(0.9219 0 0);

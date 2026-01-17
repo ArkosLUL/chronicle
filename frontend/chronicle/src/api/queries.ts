@@ -10,6 +10,8 @@ import type {
   WoWParsedInstance as WoWParsedInstanceGenerated,
   WoWEncounter as WoWEncounterGenerated,
   WoWInstance as WoWInstanceGenerated,
+  EncounterDamageSummary as EncounterDamageSummaryGenerated,
+  Ability as AbilityGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -23,6 +25,8 @@ export type WoWParsedLogJobOutput = WoWParsedLogJobOutputGenerated;
 export type WoWParsedInstance = WoWParsedInstanceGenerated;
 export type WoWEncounter = WoWEncounterGenerated;
 export type WoWInstance = WoWInstanceGenerated;
+export type EncounterDamageSummary = EncounterDamageSummaryGenerated;
+export type Ability = AbilityGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -113,5 +117,29 @@ export function useReparseLogGroup() {
       // Invalidate to refetch with new job status
       queryClient.invalidateQueries({ queryKey: ["logGroup", logId] });
     },
+  });
+}
+
+export function useInstance(instanceId: string, options?: Omit<UseQueryOptions<WoWParsedInstance>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["instance", instanceId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}`);
+      if (!response.ok) throw new Error("Failed to fetch instance");
+      return response.json() as Promise<WoWParsedInstance>;
+    },
+    ...options,
+  });
+}
+
+export function useInstanceDamageSummary(instanceId: string, options?: Omit<UseQueryOptions<EncounterDamageSummary[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["instance", instanceId, "damageSummary"],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}/damage-summary`);
+      if (!response.ok) throw new Error("Failed to fetch damage summary");
+      return response.json() as Promise<EncounterDamageSummary[]>;
+    },
+    ...options,
   });
 }

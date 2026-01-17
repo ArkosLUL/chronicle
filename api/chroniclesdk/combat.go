@@ -5,6 +5,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type Unit struct {
+	Name string `json:"name"`
+}
+
 type EncounterDamageSummary struct {
 	EncounterID          uuid.UUID          `json:"encounter_id"`
 	UnitGuid             guid.GUID          `json:"unit_guid"`

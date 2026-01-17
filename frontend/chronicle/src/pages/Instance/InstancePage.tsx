@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Heart, Shield, PanelLeftClose, PanelLeft } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Heart, Shield, PanelLeftClose, PanelLeft, Loader2 } from "lucide-react";
+import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary, type WoWEncounter } from "@/api/queries";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -499,5 +501,132 @@ export function InstancePageView({
         )}
       </div>
     </div>
+  );
+}
+
+// Helper to transform API data to view data
+function transformToInstance(
+  apiInstance: { id: string; name: string; encounters: readonly WoWEncounter[] },
+  damageSummary: EncounterDamageSummary[]
+): Instance {
+  // Group damage summaries by encounter
+  const damageByEncounter = new Map<string, EncounterDamageSummary[]>();
+  for (const summary of damageSummary) {
+    const existing = damageByEncounter.get(summary.encounter_id) || [];
+    existing.push(summary);
+    damageByEncounter.set(summary.encounter_id, existing);
+  }
+
+  // Map encounters with damage data
+  const encounters: Encounter[] = apiInstance.encounters.map((enc) => {
+    const encounterDamage = damageByEncounter.get(enc.id) || [];
+    
+    // Transform to chart data - only include players for now
+    const playerDamage = encounterDamage.filter((d) => d.is_player);
+    
+    const dps: PlayerMetricChartData[] = playerDamage.map((d) => ({
+      playerID: String(d.unit_guid),
+      playerName: `Player ${d.unit_guid}`, // TODO: fetch actual player names
+      className: "Unknown", // TODO: fetch class info - using Warrior as default
+      specialization: "",
+      value: d.damage_done_total,
+    }));
+
+    const damageTaken: PlayerMetricChartData[] = playerDamage.map((d) => ({
+      playerID: String(d.unit_guid),
+      playerName: `Player ${d.unit_guid}`,
+      className: "Unknown", // TODO: fetch class info - using Warrior as default
+      specialization: "",
+      value: d.damage_taken_total,
+    }));
+
+    return {
+      id: enc.id,
+      name: enc.name,
+      boss: enc.boss,
+      kill: enc.kill,
+      start_time: enc.start_time,
+      end_time: enc.end_time,
+      dps: dps.filter((d) => d.value > 0),
+      damageTaken: damageTaken.filter((d) => d.value > 0),
+      // healing: [] // TODO: add healing data when available
+    };
+  });
+
+  // Compute instance timing from encounters
+  const sortedEncounters = [...apiInstance.encounters].sort(
+    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
+  const startTime = sortedEncounters[0]?.start_time || new Date().toISOString();
+  const endTime = sortedEncounters[sortedEncounters.length - 1]?.end_time;
+
+  return {
+    id: apiInstance.id,
+    name: apiInstance.name,
+    startTime,
+    endTime,
+    encounters,
+  };
+}
+
+// Connected component that fetches data
+export function InstancePage() {
+  const { instanceId } = useParams<{ instanceId: string }>();
+  const navigate = useNavigate();
+
+  const { data: apiInstance, isLoading: instanceLoading, error: instanceError } = useInstance(
+    instanceId || "",
+    { enabled: !!instanceId }
+  );
+
+  const { data: damageSummary, isLoading: damageLoading } = useInstanceDamageSummary(
+    instanceId || "",
+    { enabled: !!instanceId }
+  );
+
+  const instance = useMemo(() => {
+    if (!apiInstance) return null;
+    return transformToInstance(apiInstance, damageSummary || []);
+  }, [apiInstance, damageSummary]);
+
+  const isLoading = instanceLoading || damageLoading;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">Loading instance data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (instanceError || !instance) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <Link
+          to="/logs"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Logs
+        </Link>
+        <Card className="p-6">
+          <p className="text-destructive">
+            {instanceError?.message || "Failed to load instance"}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <InstancePageView
+      instance={instance}
+      onBack={() => navigate(-1)}
+    />
   );
 }

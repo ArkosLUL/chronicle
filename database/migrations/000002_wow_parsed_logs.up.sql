@@ -24,7 +24,7 @@ INSERT INTO wow_server_realms (id, server_id, name) VALUES
 ;
 
 CREATE TABLE parsed_log_group (
-  id UUID PRIMARY KEY REFERENCES wow_log_groups(id)
+  id UUID PRIMARY KEY REFERENCES wow_log_groups(id) ON DELETE CASCADE
 )
 ;
 
@@ -70,6 +70,18 @@ CREATE TABLE encounter_damage_unit_summary (
   owner_guid wow_guid,
 
   PRIMARY KEY (encounter_id, unit_guid)
+);
+
+CREATE TABLE instance_units (
+  instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
+  unit_guid wow_guid NOT NULL,
+
+  is_player BOOLEAN NOT NULL,
+  -- entry matches the creature id in the game
+  entry INT,
+  owner_guid wow_guid,
+
+  PRIMARY KEY (instance_id, unit_guid)
 );
 
 

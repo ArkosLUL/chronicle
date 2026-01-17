@@ -143,6 +143,11 @@ func (c *Common) Process(m messages.Message) error {
 		}
 	}
 
+	err = c.combatValues.Process(m)
+	if err != nil {
+		return fmt.Errorf("processing combat metrics: %w", err)
+	}
+
 	return nil
 }
 

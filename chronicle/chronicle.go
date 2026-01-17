@@ -21,6 +21,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/internal/cleanup"
+	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -220,7 +221,9 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Now store the logs in object storage
 	for i := range tmpIDs {
-		storageObject, err := c.Storage.UploadFile(BucketRaidLogs, c.logPath(tmpIDs[i]), tmpFiles[i])
+		storageObject, err := c.Storage.UploadFile(BucketRaidLogs, c.logPath(tmpIDs[i]), tmpFiles[i], storage.FileOptions{
+			ContentType: ptr.Ref("text/plain;charset=UTF-8"),
+		})
 		if err != nil {
 			return nil, nil, fmt.Errorf("upload log file to object storage: %w", err)
 		}

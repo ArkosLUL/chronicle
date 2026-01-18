@@ -237,6 +237,14 @@ type EncounterDamageUnitSummary struct {
 	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
 }
 
+type InstanceUnit struct {
+	InstanceID uuid.UUID  `db:"instance_id" json:"instance_id"`
+	UnitGuid   guid.GUID  `db:"unit_guid" json:"unit_guid"`
+	IsPlayer   bool       `db:"is_player" json:"is_player"`
+	Entry      int32      `db:"entry" json:"entry"`
+	OwnerGuid  *guid.GUID `db:"owner_guid" json:"owner_guid"`
+}
+
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`

@@ -61,6 +61,14 @@ CREATE TABLE encounter_damage_unit_summary (
     owner_guid wow_guid
 );
 
+CREATE TABLE instance_units (
+    instance_id uuid NOT NULL,
+    unit_guid wow_guid NOT NULL,
+    is_player boolean NOT NULL,
+    entry integer NOT NULL,
+    owner_guid wow_guid
+);
+
 CREATE TABLE item_effects (
     id uuid NOT NULL,
     item_id integer NOT NULL,
@@ -271,6 +279,9 @@ ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq
 ALTER TABLE ONLY encounter_damage_unit_summary
     ADD CONSTRAINT encounter_damage_unit_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
 
+ALTER TABLE ONLY instance_units
+    ADD CONSTRAINT instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
@@ -347,6 +358,9 @@ CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (
 ALTER TABLE ONLY encounter_damage_unit_summary
     ADD CONSTRAINT encounter_damage_unit_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_encounters(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY instance_units
+    ADD CONSTRAINT instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
 
@@ -369,7 +383,7 @@ ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
 
 ALTER TABLE ONLY parsed_log_group
-    ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id);
+    ADD CONSTRAINT parsed_log_group_id_fkey FOREIGN KEY (id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY river_client_queue
     ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;

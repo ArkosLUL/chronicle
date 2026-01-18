@@ -71,3 +71,10 @@ FROM
 WHERE
   encounter_id IN (SELECT encounter_id FROM log_instances WHERE id = @log_instance_id)
 ;
+
+-- name: InsertInstanceUnits :batchexec
+INSERT INTO
+  instance_units (instance_id, unit_guid, is_player, entry, owner_guid)
+VALUES
+  ($1, $2, $3, $4, $5)
+;

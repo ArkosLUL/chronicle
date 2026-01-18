@@ -7,6 +7,7 @@ type UniqueConstraint string
 // UniqueConstraint enums.
 const (
 	UniqueEncounterDamageUnitSummaryPkey UniqueConstraint = "encounter_damage_unit_summary_pkey" // ALTER TABLE ONLY encounter_damage_unit_summary ADD CONSTRAINT encounter_damage_unit_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
+	UniqueInstanceUnitsPkey              UniqueConstraint = "instance_units_pkey"                // ALTER TABLE ONLY instance_units ADD CONSTRAINT instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
 	UniqueItemEffectsPkey                UniqueConstraint = "item_effects_pkey"                  // ALTER TABLE ONLY item_effects ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 	UniqueItemTemplatesPkey              UniqueConstraint = "item_templates_pkey"                // ALTER TABLE ONLY item_templates ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
 	UniqueLogEncountersPkey              UniqueConstraint = "log_encounters_pkey"                // ALTER TABLE ONLY log_encounters ADD CONSTRAINT log_encounters_pkey PRIMARY KEY (id);

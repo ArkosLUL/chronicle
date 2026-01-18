@@ -208,6 +208,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
 			}
 
+			// TODO: Insert instance units
+
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWParsedInstance{
 				WoWInstance: db2sdk.WoWInstance(dbinstance),
 				Encounters:  sdkEncounters,

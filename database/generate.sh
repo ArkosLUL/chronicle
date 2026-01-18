@@ -41,6 +41,9 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 		echo "$fi"
 	done
 
+
+	cp genqueries/batch.go .
+
 	# Move the files we want.
 	mv genqueries/querier.go .
 	mv genqueries/models.go .

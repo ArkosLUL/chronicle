@@ -78,7 +78,7 @@ CREATE TABLE instance_units (
 
   is_player BOOLEAN NOT NULL,
   -- entry matches the creature id in the game
-  entry INT,
+  entry INT NOT NULL, -- Players will just be set to 0
   owner_guid wow_guid,
 
   PRIMARY KEY (instance_id, unit_guid)

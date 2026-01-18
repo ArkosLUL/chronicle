@@ -111,6 +111,11 @@ export interface RiverAttemptError {
 // From rivertype/river_type.go
 export type RiverJobState = string;
 
+// From chroniclesdk/combat.go
+export interface Unit {
+    readonly name: string;
+}
+
 // From chroniclesdk/log.go
 export interface WoWEncounter {
     readonly id: string;

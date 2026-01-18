@@ -8,6 +8,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
@@ -49,10 +50,16 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 
 	encounters := make([]Encounter, 0, len(c.completedFights))
 	for _, fight := range c.completedFights {
+		unitInfo := make(map[guid.GUID]unitinfo.Info)
 		encounterName := ""
 		encounterType := types.EncounterTypeTRASH
 		boss := false
 		for _, h := range fight.Hostiles {
+			info, hasInfo := c.db.Get(h.ID)
+			if hasInfo {
+				unitInfo[h.ID] = info
+			}
+
 			id := c.IdentifyUnit(h.ID)
 			if !id.Hostile {
 				continue
@@ -68,9 +75,16 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 				break
 			}
 
-			info, ok := c.db.Get(h.ID)
-			if ok {
+			if hasInfo {
 				encounterName = info.Name
+			}
+		}
+
+		// Also add the "other" units to the unit info mapping
+		for id := range fight.Other {
+			info, ok := c.db.Get(id)
+			if ok {
+				unitInfo[id] = info
 			}
 		}
 
@@ -80,12 +94,13 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 		}
 
 		encounters = append(encounters, Encounter{
-			Name:   encounterName,
-			Type:   encounterType,
-			Combat: fight,
-			IsKill: fight.IsKill(),
-			Boss:   boss,
-			Damage: summary,
+			Name:        encounterName,
+			Type:        encounterType,
+			Combat:      fight,
+			IsKill:      fight.IsKill(),
+			Boss:        boss,
+			Damage:      summary,
+			UnitMapping: unitInfo,
 		})
 	}
 
@@ -179,6 +194,7 @@ func (c *Common) CharacterActivityChange() error {
 	if c.currentFight == nil {
 		c.currentFight = &OngoingFight{
 			Hostiles: make(map[guid.GUID]any),
+			Other:    map[guid.GUID]struct{}{},
 			Start:    nil,
 			End:      nil,
 		}
@@ -189,6 +205,9 @@ func (c *Common) CharacterActivityChange() error {
 	var latestEnd *period.Moment
 	for _, char := range c.Characters.All {
 		if info := c.IdentifyUnit(char.ID()); !info.Hostile {
+			if c.currentFight != nil {
+				c.currentFight.Other[char.ID()] = struct{}{}
+			}
 			// Only consider hostile characters for fights
 			continue
 		}
@@ -265,6 +284,8 @@ func (c *Common) finalizeFight() error {
 			Activity: during,
 		}
 	}
+
+	fight.Other = c.currentFight.Other
 	c.currentFight = nil
 	// End the fight
 	c.completedFights = append(c.completedFights, fight)

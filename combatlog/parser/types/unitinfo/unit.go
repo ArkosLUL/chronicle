@@ -23,6 +23,8 @@ type Info struct {
 	Guid         guid.GUID
 	IsPlayer     bool
 	Name         string
+	Level        int
+	Challenges   []string
 	CanCooperate bool
 	Owner        *guid.GUID
 }
@@ -46,6 +48,7 @@ func ParseUnitInfo(content string) (Info, error) {
 		return Info{}, fmt.Errorf("insufficient arguments in UNIT_INFO message, got %d, want at least 5", len(parts))
 	}
 
+	// TODO: LEvel and challenges
 	ts, guidStr, isPlayerStr, name, coop, owner := parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
 	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
 	if err != nil {

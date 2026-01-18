@@ -24,6 +24,11 @@ func (us *Units) Get(gid guid.GUID) (unitinfo.Info, bool) {
 	return u, ok
 }
 
+func (us *Units) GetPlayer(gid guid.GUID) (combatant.Combatant, bool) {
+	c, ok := us.Players[gid]
+	return c, ok
+}
+
 func (us *Units) Update(u unitinfo.Info) {
 	us.Info[u.Guid] = u
 }

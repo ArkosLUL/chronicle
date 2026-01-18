@@ -148,7 +148,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	}
 
 	for i, inst := range encountersState.Instances {
-		encs, err := inst.Finalize(ctx)
+		finalized, err := inst.Finalize(ctx)
 		if err != nil {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = err.Error()
 			continue
@@ -167,8 +167,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 
 			// Store the encounters into the database
-			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(encs))
-			for _, enc := range encs {
+			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(finalized.Encounters))
+			for _, enc := range finalized.Encounters {
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
 					ID:         uuid.New(),
 					InstanceID: dbinstance.ID,
@@ -208,7 +208,45 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
 			}
 
-			// TODO: Insert instance units
+			seenUnits := make([]database.InsertInstanceUnitsParams, 0, len(finalized.SeenUnits))
+			seenPlayers := make([]database.InsertInstancePlayersParams, 0, len(finalized.SeenUnits))
+			for id, info := range finalized.SeenUnits {
+				if id.IsPlayer() {
+					playerData, ok := encountersState.Units.GetPlayer(id)
+					if ok {
+						return fmt.Errorf("getting player info for %s: %w", id.String(), err)
+					}
+
+					seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
+						InstanceID: dbinstance.ID,
+						UnitGuid:   id,
+						Name:       info.Name,
+						Level:      -1,
+						Class:      database.WowPlayableClass(playerData.HeroClass),
+						Race:       database.WowPlayableRace(playerData.Race),
+					})
+					continue
+				}
+
+				entry, _ := id.GetEntry()
+				seenUnits = append(seenUnits, database.InsertInstanceUnitsParams{
+					InstanceID: dbinstance.ID,
+					UnitGuid:   id,
+					Name:       info.Name,
+					Entry:      int32(entry),
+					OwnerGuid:  info.Owner,
+				})
+			}
+
+			unitsRes := tx.InsertInstanceUnits(ctx, seenUnits)
+			if err := unitsRes.Close(); err != nil {
+				return fmt.Errorf("insert instance units: %w", err)
+			}
+
+			playerRes := tx.InsertInstancePlayers(ctx, seenPlayers)
+			if err := playerRes.Close(); err != nil {
+				return fmt.Errorf("insert instance players: %w", err)
+			}
 
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWParsedInstance{
 				WoWInstance: db2sdk.WoWInstance(dbinstance),

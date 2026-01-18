@@ -18,9 +18,69 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const insertInstancePlayers = `-- name: InsertInstancePlayers :batchexec
+INSERT INTO
+  instance_players (instance_id, unit_guid, name, level, class, race)
+VALUES
+  ($1, $2, $3, $4, $5, $6)
+`
+
+type InsertInstancePlayersBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InsertInstancePlayersParams struct {
+	InstanceID uuid.UUID        `db:"instance_id" json:"instance_id"`
+	UnitGuid   guid.GUID        `db:"unit_guid" json:"unit_guid"`
+	Name       string           `db:"name" json:"name"`
+	Level      int32            `db:"level" json:"level"`
+	Class      WowPlayableClass `db:"class" json:"class"`
+	Race       WowPlayableRace  `db:"race" json:"race"`
+}
+
+func (q *sqlQuerier) InsertInstancePlayers(ctx context.Context, arg []InsertInstancePlayersParams) *InsertInstancePlayersBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.InstanceID,
+			a.UnitGuid,
+			a.Name,
+			a.Level,
+			a.Class,
+			a.Race,
+		}
+		batch.Queue(insertInstancePlayers, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InsertInstancePlayersBatchResults{br, len(arg), false}
+}
+
+func (b *InsertInstancePlayersBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InsertInstancePlayersBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const insertInstanceUnits = `-- name: InsertInstanceUnits :batchexec
 INSERT INTO
-  instance_units (instance_id, unit_guid, is_player, entry, owner_guid)
+  instance_units (instance_id, unit_guid, name, entry, owner_guid)
 VALUES
   ($1, $2, $3, $4, $5)
 `
@@ -34,7 +94,7 @@ type InsertInstanceUnitsBatchResults struct {
 type InsertInstanceUnitsParams struct {
 	InstanceID uuid.UUID  `db:"instance_id" json:"instance_id"`
 	UnitGuid   guid.GUID  `db:"unit_guid" json:"unit_guid"`
-	IsPlayer   bool       `db:"is_player" json:"is_player"`
+	Name       string     `db:"name" json:"name"`
 	Entry      int32      `db:"entry" json:"entry"`
 	OwnerGuid  *guid.GUID `db:"owner_guid" json:"owner_guid"`
 }
@@ -45,7 +105,7 @@ func (q *sqlQuerier) InsertInstanceUnits(ctx context.Context, arg []InsertInstan
 		vals := []interface{}{
 			a.InstanceID,
 			a.UnitGuid,
-			a.IsPlayer,
+			a.Name,
 			a.Entry,
 			a.OwnerGuid,
 		}

@@ -543,6 +543,77 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstance, e
 	return i, err
 }
 
+const instancePlayersByInstanceID = `-- name: InstancePlayersByInstanceID :many
+SELECT
+  instance_id, unit_guid, name, level, class, race
+FROM
+  instance_players
+WHERE
+  instance_id = $1
+`
+
+func (q *sqlQuerier) InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstancePlayer, error) {
+	rows, err := q.db.Query(ctx, instancePlayersByInstanceID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InstancePlayer
+	for rows.Next() {
+		var i InstancePlayer
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.UnitGuid,
+			&i.Name,
+			&i.Level,
+			&i.Class,
+			&i.Race,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const instanceUnitsByInstanceID = `-- name: InstanceUnitsByInstanceID :many
+SELECT
+  instance_id, unit_guid, name, entry, owner_guid
+FROM
+  instance_units
+WHERE
+  instance_id = $1
+`
+
+func (q *sqlQuerier) InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstanceUnit, error) {
+	rows, err := q.db.Query(ctx, instanceUnitsByInstanceID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InstanceUnit
+	for rows.Next() {
+		var i InstanceUnit
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.UnitGuid,
+			&i.Name,
+			&i.Entry,
+			&i.OwnerGuid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one
 SELECT
   id, linked_id, user_id, provider, created_at, updated_at

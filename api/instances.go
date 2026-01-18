@@ -38,7 +38,29 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpapi.Write(ctx, w, http.StatusOK, db2sdk.WowInstanceWithEncounters(inst, encounters))
+	units, err := db.InstanceUnitsByInstanceID(ctx, instanceID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch instance units",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	players, err := db.InstancePlayersByInstanceID(ctx, instanceID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch instance players",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, db2sdk.WowDecoratedInstance(inst, units, players, encounters))
 }
 
 func (api *API) InstanceDamageSummaries(w http.ResponseWriter, r *http.Request) {

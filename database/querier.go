@@ -24,6 +24,7 @@ type sqlcQuerier interface {
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogEncounter, error)
 	InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitSummary, error)
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
+	InsertInstancePlayers(ctx context.Context, arg []InsertInstancePlayersParams) *InsertInstancePlayersBatchResults
 	InsertInstanceUnits(ctx context.Context, arg []InsertInstanceUnitsParams) *InsertInstanceUnitsBatchResults
 	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
@@ -32,6 +33,8 @@ type sqlcQuerier interface {
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
 	Instance(ctx context.Context, id uuid.UUID) (LogInstance, error)
+	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstancePlayer, error)
+	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstanceUnit, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

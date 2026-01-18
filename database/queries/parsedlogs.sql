@@ -74,7 +74,32 @@ WHERE
 
 -- name: InsertInstanceUnits :batchexec
 INSERT INTO
-  instance_units (instance_id, unit_guid, is_player, entry, owner_guid)
+  instance_units (instance_id, unit_guid, name, entry, owner_guid)
 VALUES
   ($1, $2, $3, $4, $5)
+;
+
+-- name: InsertInstancePlayers :batchexec
+INSERT INTO
+  instance_players (instance_id, unit_guid, name, level, class, race)
+VALUES
+  ($1, $2, $3, $4, $5, $6)
+;
+
+-- name: InstanceUnitsByInstanceID :many
+SELECT
+  *
+FROM
+  instance_units
+WHERE
+  instance_id = $1
+;
+
+-- name: InstancePlayersByInstanceID :many
+SELECT
+  *
+FROM
+  instance_players
+WHERE
+  instance_id = $1
 ;

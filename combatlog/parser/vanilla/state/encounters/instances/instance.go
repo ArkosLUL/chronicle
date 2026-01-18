@@ -43,7 +43,7 @@ type Instance interface {
 	// InFight returns true if there is an active fight with at least one active hostile.
 	InFight() bool
 
-	Finalize(ctx context.Context) ([]Encounter, error)
+	Finalize(ctx context.Context) (*FinalizedInstance, error)
 }
 
 type Identifier struct {

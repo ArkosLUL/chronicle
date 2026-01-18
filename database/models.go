@@ -226,6 +226,176 @@ func AllSpellSchoolValues() []SpellSchool {
 	}
 }
 
+type WowPlayableClass string
+
+const (
+	WowPlayableClassWARRIOR     WowPlayableClass = "WARRIOR"
+	WowPlayableClassPALADIN     WowPlayableClass = "PALADIN"
+	WowPlayableClassHUNTER      WowPlayableClass = "HUNTER"
+	WowPlayableClassROGUE       WowPlayableClass = "ROGUE"
+	WowPlayableClassPRIEST      WowPlayableClass = "PRIEST"
+	WowPlayableClassDEATHKNIGHT WowPlayableClass = "DEATH_KNIGHT"
+	WowPlayableClassSHAMAN      WowPlayableClass = "SHAMAN"
+	WowPlayableClassMAGE        WowPlayableClass = "MAGE"
+	WowPlayableClassWARLOCK     WowPlayableClass = "WARLOCK"
+	WowPlayableClassDRUID       WowPlayableClass = "DRUID"
+	WowPlayableClassMONK        WowPlayableClass = "MONK"
+	WowPlayableClassDEMONHUNTER WowPlayableClass = "DEMON_HUNTER"
+)
+
+func (e *WowPlayableClass) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = WowPlayableClass(s)
+	case string:
+		*e = WowPlayableClass(s)
+	default:
+		return fmt.Errorf("unsupported scan type for WowPlayableClass: %T", src)
+	}
+	return nil
+}
+
+type NullWowPlayableClass struct {
+	WowPlayableClass WowPlayableClass `json:"wow_playable_class"`
+	Valid            bool             `json:"valid"` // Valid is true if WowPlayableClass is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullWowPlayableClass) Scan(value interface{}) error {
+	if value == nil {
+		ns.WowPlayableClass, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.WowPlayableClass.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullWowPlayableClass) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.WowPlayableClass), nil
+}
+
+func (e WowPlayableClass) Valid() bool {
+	switch e {
+	case WowPlayableClassWARRIOR,
+		WowPlayableClassPALADIN,
+		WowPlayableClassHUNTER,
+		WowPlayableClassROGUE,
+		WowPlayableClassPRIEST,
+		WowPlayableClassDEATHKNIGHT,
+		WowPlayableClassSHAMAN,
+		WowPlayableClassMAGE,
+		WowPlayableClassWARLOCK,
+		WowPlayableClassDRUID,
+		WowPlayableClassMONK,
+		WowPlayableClassDEMONHUNTER:
+		return true
+	}
+	return false
+}
+
+func AllWowPlayableClassValues() []WowPlayableClass {
+	return []WowPlayableClass{
+		WowPlayableClassWARRIOR,
+		WowPlayableClassPALADIN,
+		WowPlayableClassHUNTER,
+		WowPlayableClassROGUE,
+		WowPlayableClassPRIEST,
+		WowPlayableClassDEATHKNIGHT,
+		WowPlayableClassSHAMAN,
+		WowPlayableClassMAGE,
+		WowPlayableClassWARLOCK,
+		WowPlayableClassDRUID,
+		WowPlayableClassMONK,
+		WowPlayableClassDEMONHUNTER,
+	}
+}
+
+type WowPlayableRace string
+
+const (
+	WowPlayableRaceScourge  WowPlayableRace = "Scourge"
+	WowPlayableRaceOrc      WowPlayableRace = "Orc"
+	WowPlayableRaceTroll    WowPlayableRace = "Troll"
+	WowPlayableRaceTauren   WowPlayableRace = "Tauren"
+	WowPlayableRaceGoblin   WowPlayableRace = "Goblin"
+	WowPlayableRaceHuman    WowPlayableRace = "Human"
+	WowPlayableRaceGnome    WowPlayableRace = "Gnome"
+	WowPlayableRaceDwarf    WowPlayableRace = "Dwarf"
+	WowPlayableRaceNightElf WowPlayableRace = "NightElf"
+	WowPlayableRaceBloodElf WowPlayableRace = "BloodElf"
+)
+
+func (e *WowPlayableRace) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = WowPlayableRace(s)
+	case string:
+		*e = WowPlayableRace(s)
+	default:
+		return fmt.Errorf("unsupported scan type for WowPlayableRace: %T", src)
+	}
+	return nil
+}
+
+type NullWowPlayableRace struct {
+	WowPlayableRace WowPlayableRace `json:"wow_playable_race"`
+	Valid           bool            `json:"valid"` // Valid is true if WowPlayableRace is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullWowPlayableRace) Scan(value interface{}) error {
+	if value == nil {
+		ns.WowPlayableRace, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.WowPlayableRace.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullWowPlayableRace) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.WowPlayableRace), nil
+}
+
+func (e WowPlayableRace) Valid() bool {
+	switch e {
+	case WowPlayableRaceScourge,
+		WowPlayableRaceOrc,
+		WowPlayableRaceTroll,
+		WowPlayableRaceTauren,
+		WowPlayableRaceGoblin,
+		WowPlayableRaceHuman,
+		WowPlayableRaceGnome,
+		WowPlayableRaceDwarf,
+		WowPlayableRaceNightElf,
+		WowPlayableRaceBloodElf:
+		return true
+	}
+	return false
+}
+
+func AllWowPlayableRaceValues() []WowPlayableRace {
+	return []WowPlayableRace{
+		WowPlayableRaceScourge,
+		WowPlayableRaceOrc,
+		WowPlayableRaceTroll,
+		WowPlayableRaceTauren,
+		WowPlayableRaceGoblin,
+		WowPlayableRaceHuman,
+		WowPlayableRaceGnome,
+		WowPlayableRaceDwarf,
+		WowPlayableRaceNightElf,
+		WowPlayableRaceBloodElf,
+	}
+}
+
 type EncounterDamageUnitSummary struct {
 	EncounterID          uuid.UUID          `db:"encounter_id" json:"encounter_id"`
 	UnitGuid             guid.GUID          `db:"unit_guid" json:"unit_guid"`
@@ -237,10 +407,20 @@ type EncounterDamageUnitSummary struct {
 	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
 }
 
+type InstancePlayer struct {
+	InstanceID uuid.UUID        `db:"instance_id" json:"instance_id"`
+	UnitGuid   guid.GUID        `db:"unit_guid" json:"unit_guid"`
+	Name       string           `db:"name" json:"name"`
+	Level      int32            `db:"level" json:"level"`
+	Class      WowPlayableClass `db:"class" json:"class"`
+	Race       WowPlayableRace  `db:"race" json:"race"`
+}
+
+// Stores all units (NPCs, not players) that participated in an instance.
 type InstanceUnit struct {
 	InstanceID uuid.UUID  `db:"instance_id" json:"instance_id"`
 	UnitGuid   guid.GUID  `db:"unit_guid" json:"unit_guid"`
-	IsPlayer   bool       `db:"is_player" json:"is_player"`
+	Name       string     `db:"name" json:"name"`
 	Entry      int32      `db:"entry" json:"entry"`
 	OwnerGuid  *guid.GUID `db:"owner_guid" json:"owner_guid"`
 }

@@ -73,15 +73,59 @@ CREATE TABLE encounter_damage_unit_summary (
 );
 
 CREATE TABLE instance_units (
+  -- TODO: Level, class, spec, etc.
   instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
   unit_guid wow_guid NOT NULL,
+  name TEXT NOT NULL,
 
-  is_player BOOLEAN NOT NULL,
   -- entry matches the creature id in the game
-  entry INT NOT NULL, -- Players will just be set to 0
+  entry INT NOT NULL,
+
+  -- owner_guid is nullable
   owner_guid wow_guid,
 
   PRIMARY KEY (instance_id, unit_guid)
+);
+
+COMMENT ON TABLE instance_units IS
+  'Stores all units (NPCs, not players) that participated in an instance.';
+
+CREATE TYPE wow_playable_class AS ENUM
+  (
+    'WARRIOR',
+    'PALADIN',
+    'HUNTER',
+    'ROGUE',
+    'PRIEST',
+    'DEATH_KNIGHT',
+    'SHAMAN',
+    'MAGE',
+    'WARLOCK',
+    'DRUID',
+    'MONK',
+    'DEMON_HUNTER'
+  );
+
+CREATE TYPE wow_playable_race AS ENUM (
+  'Scourge',
+  'Orc',
+  'Troll',
+  'Tauren',
+  'Goblin',
+  'Human',
+  'Gnome',
+  'Dwarf',
+  'NightElf',
+  'BloodElf'
+);
+
+CREATE TABLE instance_players (
+  instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
+  unit_guid wow_guid NOT NULL,
+  name TEXT NOT NULL,
+  level INT NOT NULL,
+  class wow_playable_class NOT NULL,
+  race wow_playable_race NOT NULL
 );
 
 

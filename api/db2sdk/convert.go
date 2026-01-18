@@ -2,6 +2,8 @@ package db2sdk
 
 import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/maps"
 	"github.com/Emyrk/chronicle/internal/slice"
@@ -55,10 +57,24 @@ func WoWInstance(instance database.LogInstance) chroniclesdk.WoWInstance {
 	}
 }
 
-func WowInstanceWithEncounters(instance database.LogInstance, encounters []database.LogEncounter) chroniclesdk.WoWParsedInstance {
+func WowDecoratedInstance(instance database.LogInstance, units []database.InstanceUnit, players []database.InstancePlayer, encounters []database.LogEncounter) chroniclesdk.WoWParsedInstance {
 	return chroniclesdk.WoWParsedInstance{
 		WoWInstance: WoWInstance(instance),
 		Encounters:  slice.List(encounters, WoWEncounter),
+		Units: maps.MapFromSlice(units, func(u database.InstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.InstanceUnit) chroniclesdk.InstanceUnit {
+			return chroniclesdk.InstanceUnit{
+				Name:  u.Name,
+				Owner: u.OwnerGuid,
+				Entry: uint32(u.Entry),
+			}
+		}),
+		Players: maps.MapFromSlice(players, func(u database.InstancePlayer) guid.GUID { return u.UnitGuid }, func(u database.InstancePlayer) chroniclesdk.InstancePlayer {
+			return chroniclesdk.InstancePlayer{
+				Name:  u.Name,
+				Class: types.HeroClasses(u.Class),
+				Race:  types.HeroRaces(u.Race),
+			}
+		}),
 	}
 }
 

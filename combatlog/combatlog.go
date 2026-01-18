@@ -54,13 +54,13 @@ func CombatLogs(ctx context.Context, logger *slog.Logger, formatted, raw io.Read
 	// Aggregation from consumers. This output needs to be stored somewhere.
 	for _, inst := range enc.Instances {
 		key := inst.Zone().ID()
-		encrs, err := inst.Finalize(ctx)
+		finalized, err := inst.Finalize(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("finalize instance: %w", err)
 		}
 
 		output.Instances[key] = InstanceOutput{
-			Encounters:     encrs,
+			Encounters:     finalized.Encounters,
 			DamageTracking: dmg,
 		}
 	}

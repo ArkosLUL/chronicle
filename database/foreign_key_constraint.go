@@ -7,6 +7,7 @@ type ForeignKeyConstraint string
 // ForeignKeyConstraint enums.
 const (
 	ForeignKeyEncounterDamageUnitSummaryEncounterID ForeignKeyConstraint = "encounter_damage_unit_summary_encounter_id_fkey" // ALTER TABLE ONLY encounter_damage_unit_summary ADD CONSTRAINT encounter_damage_unit_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_encounters(id) ON DELETE CASCADE;
+	ForeignKeyInstancePlayersInstanceID             ForeignKeyConstraint = "instance_players_instance_id_fkey"               // ALTER TABLE ONLY instance_players ADD CONSTRAINT instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 	ForeignKeyInstanceUnitsInstanceID               ForeignKeyConstraint = "instance_units_instance_id_fkey"                 // ALTER TABLE ONLY instance_units ADD CONSTRAINT instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 	ForeignKeyItemEffectsItemID                     ForeignKeyConstraint = "item_effects_item_id_fkey"                       // ALTER TABLE ONLY item_effects ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
 	ForeignKeyItemEffectsSpellID                    ForeignKeyConstraint = "item_effects_spell_id_fkey"                      // ALTER TABLE ONLY item_effects ADD CONSTRAINT item_effects_spell_id_fkey FOREIGN KEY (spell_id) REFERENCES spell_templates(id);

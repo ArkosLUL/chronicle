@@ -7,7 +7,6 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -31,8 +30,6 @@ type Encounter struct {
 	// If it is not a kill, it is a wipe (or reset)
 	IsKill bool
 	Boss   bool
-
-	UnitMapping map[guid.GUID]unitinfo.Info
 
 	Damage *combatmetrics.DamageSummary
 }

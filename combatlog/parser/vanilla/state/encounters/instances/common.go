@@ -38,7 +38,12 @@ type Common struct {
 	combatValues    *combatmetrics.Metrics
 }
 
-func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
+type FinalizedInstance struct {
+	Encounters []Encounter
+	SeenUnits  map[guid.GUID]unitinfo.Info
+}
+
+func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	if false && c.currentFight != nil {
 		// TODO: We need to end any ongoing fight with what timestamp?
 		// Finalize any current fight that hasn't been completed yet
@@ -48,16 +53,16 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 		}
 	}
 
+	seenUnits := make(map[guid.GUID]unitinfo.Info)
 	encounters := make([]Encounter, 0, len(c.completedFights))
 	for _, fight := range c.completedFights {
-		unitInfo := make(map[guid.GUID]unitinfo.Info)
 		encounterName := ""
 		encounterType := types.EncounterTypeTRASH
 		boss := false
 		for _, h := range fight.Hostiles {
 			info, hasInfo := c.db.Get(h.ID)
 			if hasInfo {
-				unitInfo[h.ID] = info
+				seenUnits[h.ID] = info
 			}
 
 			id := c.IdentifyUnit(h.ID)
@@ -84,7 +89,7 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 		for id := range fight.Other {
 			info, ok := c.db.Get(id)
 			if ok {
-				unitInfo[id] = info
+				seenUnits[id] = info
 			}
 		}
 
@@ -94,17 +99,19 @@ func (c *Common) Finalize(ctx context.Context) ([]Encounter, error) {
 		}
 
 		encounters = append(encounters, Encounter{
-			Name:        encounterName,
-			Type:        encounterType,
-			Combat:      fight,
-			IsKill:      fight.IsKill(),
-			Boss:        boss,
-			Damage:      summary,
-			UnitMapping: unitInfo,
+			Name:   encounterName,
+			Type:   encounterType,
+			Combat: fight,
+			IsKill: fight.IsKill(),
+			Boss:   boss,
+			Damage: summary,
 		})
 	}
 
-	return encounters, nil
+	return &FinalizedInstance{
+		Encounters: encounters,
+		SeenUnits:  seenUnits,
+	}, nil
 }
 
 type CommonFactory struct {

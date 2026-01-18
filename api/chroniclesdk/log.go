@@ -3,9 +3,13 @@ package chroniclesdk
 import (
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type GUIDString = guid.GUID
 
 type WoWLogGroup struct {
 	ID        uuid.UUID          `json:"id"`
@@ -56,7 +60,21 @@ type WoWParsedLogJobOutput struct {
 	Instances        []WoWParsedInstance `json:"instances"`
 }
 
+type InstanceUnit struct {
+	Name  string     `json:"name"`
+	Owner *guid.GUID `json:"owner"`
+	Entry uint32     `json:"entry"`
+}
+
+type InstancePlayer struct {
+	Name  string            `json:"name"`
+	Class types.HeroClasses `json:"class"`
+	Race  types.HeroRaces   `json:"race"`
+}
+
 type WoWParsedInstance struct {
 	WoWInstance
-	Encounters []WoWEncounter `json:"encounters"`
+	Encounters []WoWEncounter                `json:"encounters"`
+	Units      map[GUIDString]InstanceUnit   `json:"units"`
+	Players    map[GUIDString]InstancePlayer `json:"players"`
 }

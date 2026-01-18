@@ -34,6 +34,34 @@ CREATE DOMAIN wow_guid AS text
 
 CREATE DOMAIN wow_log_group_files AS jsonb;
 
+CREATE TYPE wow_playable_class AS ENUM (
+    'WARRIOR',
+    'PALADIN',
+    'HUNTER',
+    'ROGUE',
+    'PRIEST',
+    'DEATH_KNIGHT',
+    'SHAMAN',
+    'MAGE',
+    'WARLOCK',
+    'DRUID',
+    'MONK',
+    'DEMON_HUNTER'
+);
+
+CREATE TYPE wow_playable_race AS ENUM (
+    'Scourge',
+    'Orc',
+    'Troll',
+    'Tauren',
+    'Goblin',
+    'Human',
+    'Gnome',
+    'Dwarf',
+    'NightElf',
+    'BloodElf'
+);
+
 CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) RETURNS boolean
     LANGUAGE sql IMMUTABLE
     AS $$
@@ -61,13 +89,24 @@ CREATE TABLE encounter_damage_unit_summary (
     owner_guid wow_guid
 );
 
+CREATE TABLE instance_players (
+    instance_id uuid NOT NULL,
+    unit_guid wow_guid NOT NULL,
+    name text NOT NULL,
+    level integer NOT NULL,
+    class wow_playable_class NOT NULL,
+    race wow_playable_race NOT NULL
+);
+
 CREATE TABLE instance_units (
     instance_id uuid NOT NULL,
     unit_guid wow_guid NOT NULL,
-    is_player boolean NOT NULL,
+    name text NOT NULL,
     entry integer NOT NULL,
     owner_guid wow_guid
 );
+
+COMMENT ON TABLE instance_units IS 'Stores all units (NPCs, not players) that participated in an instance.';
 
 CREATE TABLE item_effects (
     id uuid NOT NULL,
@@ -357,6 +396,9 @@ CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (
 
 ALTER TABLE ONLY encounter_damage_unit_summary
     ADD CONSTRAINT encounter_damage_unit_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_encounters(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY instance_players
+    ADD CONSTRAINT instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY instance_units
     ADD CONSTRAINT instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;

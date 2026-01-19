@@ -37,3 +37,5 @@ sql:
           - db_type: "wow_guid"
             go_type: "*github.com/Emyrk/chronicle/combatlog/parser/guid.GUID"
             nullable: true
+          - column: "log_encounters.remaining"
+            go_type: "github.com/Emyrk/chronicle/combatlog/parser/guid.GUIDs"

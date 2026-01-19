@@ -28,8 +28,9 @@ type Encounter struct {
 	// Period identifies the start/end of combat
 	Combat Fight
 	// If it is not a kill, it is a wipe (or reset)
-	IsKill bool
-	Boss   bool
+	IsKill    bool
+	Remaining []guid.GUID
+	Boss      bool
 
 	Damage *combatmetrics.DamageSummary
 }
@@ -75,13 +76,14 @@ type Fight struct {
 	End time.Time
 }
 
-func (f Fight) IsKill() bool {
+func (f Fight) Remaining() []guid.GUID {
+	remaining := make([]guid.GUID, 0)
 	for _, h := range f.Hostiles {
 		if !h.Activity[len(h.Activity)-1].Slain {
-			return false
+			remaining = append(remaining, h.ID)
 		}
 	}
-	return true
+	return remaining
 }
 
 func (f Fight) NamedString(db *unitdb.Units) string {

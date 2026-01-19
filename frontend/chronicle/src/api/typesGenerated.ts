@@ -156,6 +156,7 @@ export interface WoWEncounter {
     readonly boss: boolean;
     readonly name: string;
     readonly kill: boolean;
+    readonly remaining?: readonly GUID[];
     readonly start_time: string;
     readonly end_time: string;
 }
@@ -171,9 +172,9 @@ export type WoWEnvironmentType = "fall" | "lava";
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["fall", "lava"];
 
 // From types/constants.go
-export type WoWHeroClasses = "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "WARLOCK" | "WARRIOR";
+export type WoWHeroClasses = "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";
 
-export const WoWHeroClasseses: WoWHeroClasses[] = ["DRUID", "HUNTER", "MAGE", "PALADIN", "PRIEST", "ROGUE", "SHAMAN", "WARLOCK", "WARRIOR"];
+export const WoWHeroClasseses: WoWHeroClasses[] = ["DRUID", "HUNTER", "MAGE", "PALADIN", "PRIEST", "ROGUE", "SHAMAN", "UNKNOWN", "WARLOCK", "WARRIOR"];
 
 // From types/constants.go
 export type WoWHeroGender = 3 | 2 | 0 | 1;
@@ -181,9 +182,9 @@ export type WoWHeroGender = 3 | 2 | 0 | 1;
 export const WoWHeroGenders: WoWHeroGender[] = [3, 2, 0, 1];
 
 // From types/constants.go
-export type WoWHeroRaces = "BloodElf" | "Dwarf" | "Gnome" | "Goblin" | "Human" | "NightElf" | "Orc" | "Scourge" | "Tauren" | "Troll";
+export type WoWHeroRaces = "BloodElf" | "Dwarf" | "Gnome" | "Goblin" | "Human" | "NightElf" | "Orc" | "Scourge" | "Tauren" | "Troll" | "Unknown";
 
-export const WoWHeroRaceses: WoWHeroRaces[] = ["BloodElf", "Dwarf", "Gnome", "Goblin", "Human", "NightElf", "Orc", "Scourge", "Tauren", "Troll"];
+export const WoWHeroRaceses: WoWHeroRaces[] = ["BloodElf", "Dwarf", "Gnome", "Goblin", "Human", "NightElf", "Orc", "Scourge", "Tauren", "Troll", "Unknown"];
 
 // From types/constants.go
 export type WoWHitType = 4 | 512 | 32768 | 2048 | 16384 | 1024 | 128 | 262144 | 16 | 256 | 2 | 8192 | 65536 | 32 | 0 | 1 | 4096 | 64 | 131072 | 8 | 2097152 | 1048576 | 524288;

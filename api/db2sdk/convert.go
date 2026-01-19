@@ -82,9 +82,10 @@ func WoWEncounter(encounter database.LogEncounter) chroniclesdk.WoWEncounter {
 	return chroniclesdk.WoWEncounter{
 		ID:         encounter.ID,
 		InstanceID: encounter.InstanceID,
+		Boss:       encounter.Boss,
 		Name:       encounter.Name,
 		Kill:       encounter.Kill,
-		Boss:       encounter.Boss,
+		Remaining:  encounter.Remaining.Elements,
 		StartTime:  encounter.StartTime.Time,
 		EndTime:    encounter.EndTime.Time,
 	}

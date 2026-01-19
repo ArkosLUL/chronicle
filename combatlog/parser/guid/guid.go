@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/bits"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/xerrors"
 )
 
@@ -142,3 +143,5 @@ func (a *GUID) Scan(src interface{}) error {
 func (a GUID) Value() (driver.Value, error) {
 	return a.String(), nil
 }
+
+type GUIDs pgtype.Array[GUID]

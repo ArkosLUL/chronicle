@@ -40,13 +40,14 @@ type WoWInstance struct {
 }
 
 type WoWEncounter struct {
-	ID         uuid.UUID `json:"id"`
-	InstanceID uuid.UUID `json:"instance_id"`
-	Boss       bool      `json:"boss"`
-	Name       string    `json:"name"`
-	Kill       bool      `json:"kill"`
-	StartTime  time.Time `json:"start_time"`
-	EndTime    time.Time `json:"end_time"`
+	ID         uuid.UUID   `json:"id"`
+	InstanceID uuid.UUID   `json:"instance_id"`
+	Boss       bool        `json:"boss"`
+	Name       string      `json:"name"`
+	Kill       bool        `json:"kill"`
+	Remaining  []guid.GUID `json:"remaining,omitempty"`
+	StartTime  time.Time   `json:"start_time"`
+	EndTime    time.Time   `json:"end_time"`
 }
 
 type WoWLogGroupState struct {

@@ -147,6 +147,7 @@ CREATE TABLE log_encounters (
     instance_id uuid NOT NULL,
     name text NOT NULL,
     kill boolean NOT NULL,
+    remaining wow_guid[] NOT NULL,
     boss boolean NOT NULL,
     start_time timestamp with time zone NOT NULL,
     end_time timestamp with time zone NOT NULL

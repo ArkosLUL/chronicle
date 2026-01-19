@@ -32,6 +32,7 @@ export interface Encounter {
   healing?: PlayerMetricChartData[];
   damageTaken?: PlayerMetricChartData[];
   enemies?: EnemyUnit[];
+  remaining?: string[]; // GUIDs of enemies that did not die
 }
 
 export interface Instance {
@@ -118,9 +119,23 @@ function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageT
   return Array.from(playerMap.values());
 }
 
+// Merged enemy with kill status
+interface MergedEnemy extends EnemyUnit {
+  killed: boolean;
+}
+
 // Merge enemies from multiple encounters by summing damage values
-function mergeEnemies(encounters: Encounter[]): EnemyUnit[] {
-  const enemyMap = new Map<string, EnemyUnit>();
+function mergeEnemies(encounters: Encounter[]): MergedEnemy[] {
+  const enemyMap = new Map<string, MergedEnemy>();
+  // Collect all remaining GUIDs across encounters
+  const remainingSet = new Set<string>();
+  for (const encounter of encounters) {
+    if (encounter.remaining) {
+      for (const guid of encounter.remaining) {
+        remainingSet.add(guid);
+      }
+    }
+  }
 
   for (const encounter of encounters) {
     const enemies = encounter.enemies;
@@ -132,7 +147,10 @@ function mergeEnemies(encounters: Encounter[]): EnemyUnit[] {
         existing.damageTaken += enemy.damageTaken;
         existing.damageDone += enemy.damageDone;
       } else {
-        enemyMap.set(enemy.id, { ...enemy });
+        enemyMap.set(enemy.id, {
+          ...enemy,
+          killed: !remainingSet.has(enemy.id),
+        });
       }
     }
   }
@@ -495,8 +513,17 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
                 {mergedEnemies.map((enemy) => (
                   <div
                     key={enemy.id}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md text-sm"
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm",
+                      enemy.killed
+                        ? "bg-green-500/15 border border-green-500/30"
+                        : "bg-red-500/15 border border-red-500/30"
+                    )}
                   >
+                    <span className={cn(
+                      "w-2 h-2 rounded-full flex-shrink-0",
+                      enemy.killed ? "bg-green-500" : "bg-red-500"
+                    )} />
                     <span className="font-medium">{enemy.name}</span>
                     <span className="text-muted-foreground text-xs">
                       {formatDamageNumber(enemy.damageTaken)} dmg taken
@@ -638,6 +665,7 @@ const classDisplayNames: Record<WoWHeroClasses, string> = {
   SHAMAN: "Shaman",
   WARLOCK: "Warlock",
   WARRIOR: "Warrior",
+  UNKNOWN: "Unknown",
 };
 
 // Helper to get player name from lookup, with fallback

@@ -98,13 +98,15 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			return nil, fmt.Errorf("computing damage summary: %w", err)
 		}
 
+		remaining := fight.Remaining()
 		encounters = append(encounters, Encounter{
-			Name:   encounterName,
-			Type:   encounterType,
-			Combat: fight,
-			IsKill: fight.IsKill(),
-			Boss:   boss,
-			Damage: summary,
+			Name:      encounterName,
+			Type:      encounterType,
+			Combat:    fight,
+			IsKill:    len(remaining) == 0,
+			Remaining: remaining,
+			Boss:      boss,
+			Damage:    summary,
 		})
 	}
 

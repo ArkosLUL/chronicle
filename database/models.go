@@ -465,6 +465,7 @@ type LogEncounter struct {
 	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
 	Name       string             `db:"name" json:"name"`
 	Kill       bool               `db:"kill" json:"kill"`
+	Remaining  guid.GUIDs         `db:"remaining" json:"remaining"`
 	Boss       bool               `db:"boss" json:"boss"`
 	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`

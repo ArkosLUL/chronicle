@@ -47,6 +47,7 @@ CREATE TABLE log_encounters (
 
   name TEXT NOT NULL,
   kill BOOLEAN NOT NULL,
+  remaining wow_guid[] NOT NULL,
   boss BOOLEAN NOT NULL,
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ NOT NULL

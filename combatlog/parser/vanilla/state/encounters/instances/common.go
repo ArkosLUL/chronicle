@@ -59,7 +59,10 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		encounterName := ""
 		encounterType := types.EncounterTypeTRASH
 		boss := false
-		for _, h := range fight.Hostiles {
+		for hid, h := range fight.Hostiles {
+			if hid != h.ID {
+				panic("inconsistent hostile ID mapping")
+			}
 			info, hasInfo := c.db.Get(h.ID)
 			if hasInfo {
 				seenUnits[h.ID] = info
@@ -77,10 +80,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			if id.EncounterName != "" {
 				encounterName = id.EncounterName
 				encounterType = types.EncounterTypeBOSS
-				break
-			}
-
-			if hasInfo {
+			} else if id.EncounterName == "" {
 				encounterName = info.Name
 			}
 		}
@@ -143,7 +143,7 @@ func (c *Common) Zone() zone.Zone {
 }
 
 func (c *Common) CharactersList() map[guid.GUID]character.Character {
-	return c.Characters.All
+	return c.Characters.All.Map()
 }
 
 func (c *Common) Name() string {
@@ -182,7 +182,7 @@ func (c *Common) InFight() bool {
 		return false
 	}
 	for id := range c.currentFight.Hostiles {
-		char, ok := c.Characters.All[id]
+		char, ok := c.Characters.All.Get(id)
 		if ok && char.IsActive() {
 			return true
 		}
@@ -212,7 +212,7 @@ func (c *Common) CharacterActivityChange() error {
 	// First handle the start time
 	activeTotal := 0
 	var latestEnd *period.Moment
-	for _, char := range c.Characters.All {
+	for _, char := range c.Characters.All.Map() {
 		if info := c.IdentifyUnit(char.ID()); !info.Hostile {
 			if c.currentFight != nil {
 				c.currentFight.Other[char.ID()] = struct{}{}

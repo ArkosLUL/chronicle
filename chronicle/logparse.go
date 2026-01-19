@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -181,6 +182,24 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				})
 				if err != nil {
 					return fmt.Errorf("insert encounter: %w", err)
+				}
+
+				encounterFights := make([]database.InsertEncounterCharacterFightsParams, 0)
+				for hostileID, hostileFight := range enc.Combat.Hostiles {
+					data, err := json.Marshal(hostileFight.Activity)
+					if err != nil {
+						return fmt.Errorf("marshal encounter hostile fight periods: %w", err)
+					}
+					encounterFights = append(encounterFights, database.InsertEncounterCharacterFightsParams{
+						ID:          hostileID,
+						EncounterID: dbencounter.ID,
+						Periods:     data,
+					})
+				}
+
+				res := tx.InsertEncounterCharacterFights(ctx, encounterFights)
+				if err := res.Close(); err != nil {
+					return fmt.Errorf("insert encounter character fights: %w", err)
 				}
 
 				//tx.insert

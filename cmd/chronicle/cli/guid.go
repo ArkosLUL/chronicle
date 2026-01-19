@@ -28,6 +28,7 @@ func GuidCmd() *serpent.Command {
 			}
 
 			_, _ = fmt.Fprintf(os.Stdout, "GUID: %s\n", id.String())
+			_, _ = fmt.Fprintf(os.Stdout, "As Number: %d\n", id)
 			_, _ = fmt.Fprintf(os.Stdout, "IsPlayer: %t\n", id.IsPlayer())
 			_, _ = fmt.Fprintf(os.Stdout, "IsObject: %t\n", id.IsObject())
 			_, _ = fmt.Fprintf(os.Stdout, "IsVehicle: %t\n", id.IsVehicle())

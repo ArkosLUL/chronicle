@@ -64,7 +64,7 @@ func ParseCmd() *serpent.Command {
 				if err != nil {
 					return fmt.Errorf("finalizing instance %q: %w", inst.Name(), err)
 				}
-				for _, e := range enc {
+				for _, e := range enc.Encounters {
 					fmt.Println(e.NamedString(output.Units))
 				}
 			}

@@ -46,7 +46,8 @@ func main() {
 	// Serpent has some types referenced in the codersdk.
 	// We want the referenced types generated.
 	referencePackages := map[string]string{
-		"github.com/riverqueue/river/rivertype": "River",
+		"github.com/riverqueue/river/rivertype":                                       "River",
+		"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period": "",
 	}
 	for pkg, prefix := range referencePackages {
 		err = gen.IncludeReference(pkg, prefix)

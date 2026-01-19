@@ -52,11 +52,11 @@ func PeriodsDuring(periods []Period, start, end time.Time) ([]Period, error) {
 // the moment at which the period was closed, while LastActive will remain set to
 // the final moment of actual activity and may therefore differ from End.
 type Period struct {
-	Start      *Moment
-	End        *Moment
-	LastActive *Moment
+	Start      *Moment `json:"start"`
+	End        *Moment `json:"end"`
+	LastActive *Moment `json:"last_active"`
 	// Slain is set to true if the unit was slain to terminate the period.
-	Slain bool
+	Slain bool `json:"slain"`
 }
 
 func (p Period) IsActive() bool {
@@ -64,10 +64,10 @@ func (p Period) IsActive() bool {
 }
 
 type Moment struct {
-	Timestamp messages.Message
+	Timestamp messages.Message `json:"timestamp"`
 	// Reason is a human-readable string describing why this moment was recorded.
 	// This should never be used programmatically.
-	Reason string
+	Reason string `json:"reason"`
 }
 
 type PeriodMeta interface {

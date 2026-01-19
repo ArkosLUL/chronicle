@@ -26,10 +26,10 @@ sql:
           - db_type: "wow_log_group_files"
             go_type:
               type: "[]LogFile"
-          - column: "encounter_damage_unit_summary.damage_done_abilities"
+          - column: "log_instance_encounter_damage_unit_summary.damage_done_abilities"
             go_type:
               type: "map[string]Ability"
-          - column: "encounter_damage_unit_summary.damage_taken_abilities"
+          - column: "log_instance_encounter_damage_unit_summary.damage_taken_abilities"
             go_type:
               type: "map[string]Ability"
           - db_type: "wow_guid"
@@ -37,5 +37,5 @@ sql:
           - db_type: "wow_guid"
             go_type: "*github.com/Emyrk/chronicle/combatlog/parser/guid.GUID"
             nullable: true
-          - column: "log_encounters.remaining"
+          - column: "log_instance_encounters.remaining"
             go_type: "github.com/Emyrk/chronicle/combatlog/parser/guid.GUIDs"

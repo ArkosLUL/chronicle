@@ -215,6 +215,13 @@ function createEncounter(
   const startTime = new Date(baseTime.getTime() + startMinutes * 60 * 1000);
   const endTime = new Date(startTime.getTime() + durationSeconds * 1000);
 
+  const enemies = withMetrics ? mockEnemyData(name, boss) : [];
+
+  // Remaining enemies are those that weren't killed
+  const remaining = enemies
+    .filter((_, i) => !kill || (i !== 0 && Math.random() < 0.2))
+    .map(e => e.id);
+
   return {
     id,
     name,
@@ -226,7 +233,8 @@ function createEncounter(
       dps: mockDpsData(40),
       healing: mockHealingData(10),
       damageTaken: mockDpsData(40).map((d) => ({ ...d, value: d.value * 0.3 })),
-      enemies: mockEnemyData(name, boss),
+      enemies,
+      remaining: kill ? [] : remaining, // No remaining if it's a kill
     }),
   };
 }

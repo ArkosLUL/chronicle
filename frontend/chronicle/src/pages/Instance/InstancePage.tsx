@@ -143,6 +143,7 @@ function mergeEnemies(encounters: Encounter[]): MergedEnemy[] {
 
     for (const enemy of enemies) {
       const existing = enemyMap.get(enemy.id);
+      
       if (existing) {
         existing.damageTaken += enemy.damageTaken;
         existing.damageDone += enemy.damageDone;

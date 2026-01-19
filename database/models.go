@@ -402,35 +402,6 @@ func AllWowPlayableRaceValues() []WowPlayableRace {
 	}
 }
 
-type EncounterDamageUnitSummary struct {
-	EncounterID          uuid.UUID          `db:"encounter_id" json:"encounter_id"`
-	UnitGuid             guid.GUID          `db:"unit_guid" json:"unit_guid"`
-	DamageDoneTotal      int64              `db:"damage_done_total" json:"damage_done_total"`
-	DamageTakenTotal     int64              `db:"damage_taken_total" json:"damage_taken_total"`
-	DamageDoneAbilities  map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`
-	DamageTakenAbilities map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
-	IsPlayer             bool               `db:"is_player" json:"is_player"`
-	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
-}
-
-type InstancePlayer struct {
-	InstanceID uuid.UUID        `db:"instance_id" json:"instance_id"`
-	UnitGuid   guid.GUID        `db:"unit_guid" json:"unit_guid"`
-	Name       string           `db:"name" json:"name"`
-	Level      int32            `db:"level" json:"level"`
-	Class      WowPlayableClass `db:"class" json:"class"`
-	Race       WowPlayableRace  `db:"race" json:"race"`
-}
-
-// Stores all units (NPCs, not players) that participated in an instance.
-type InstanceUnit struct {
-	InstanceID uuid.UUID  `db:"instance_id" json:"instance_id"`
-	UnitGuid   guid.GUID  `db:"unit_guid" json:"unit_guid"`
-	Name       string     `db:"name" json:"name"`
-	Entry      int32      `db:"entry" json:"entry"`
-	OwnerGuid  *guid.GUID `db:"owner_guid" json:"owner_guid"`
-}
-
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`
@@ -460,17 +431,6 @@ type ItemTemplate struct {
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-type LogEncounter struct {
-	ID         uuid.UUID          `db:"id" json:"id"`
-	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
-	Name       string             `db:"name" json:"name"`
-	Kill       bool               `db:"kill" json:"kill"`
-	Remaining  guid.GUIDs         `db:"remaining" json:"remaining"`
-	Boss       bool               `db:"boss" json:"boss"`
-	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
-}
-
 type LogFile struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
@@ -487,6 +447,52 @@ type LogInstance struct {
 	RealmID    uuid.UUID `db:"realm_id" json:"realm_id"`
 	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
 	Name       string    `db:"name" json:"name"`
+}
+
+type LogInstanceEncounter struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
+	Name       string             `db:"name" json:"name"`
+	Kill       bool               `db:"kill" json:"kill"`
+	Remaining  guid.GUIDs         `db:"remaining" json:"remaining"`
+	Boss       bool               `db:"boss" json:"boss"`
+	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
+}
+
+type LogInstanceEncounterCharacterFight struct {
+	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
+	ID          guid.GUID `db:"id" json:"id"`
+	Periods     []byte    `db:"periods" json:"periods"`
+}
+
+type LogInstanceEncounterDamageUnitSummary struct {
+	EncounterID          uuid.UUID          `db:"encounter_id" json:"encounter_id"`
+	UnitGuid             guid.GUID          `db:"unit_guid" json:"unit_guid"`
+	DamageDoneTotal      int64              `db:"damage_done_total" json:"damage_done_total"`
+	DamageTakenTotal     int64              `db:"damage_taken_total" json:"damage_taken_total"`
+	DamageDoneAbilities  map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`
+	DamageTakenAbilities map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
+	IsPlayer             bool               `db:"is_player" json:"is_player"`
+	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
+}
+
+type LogInstancePlayer struct {
+	InstanceID uuid.UUID        `db:"instance_id" json:"instance_id"`
+	UnitGuid   guid.GUID        `db:"unit_guid" json:"unit_guid"`
+	Name       string           `db:"name" json:"name"`
+	Level      int32            `db:"level" json:"level"`
+	Class      WowPlayableClass `db:"class" json:"class"`
+	Race       WowPlayableRace  `db:"race" json:"race"`
+}
+
+// Stores all units (NPCs, not players) that participated in an instance.
+type LogInstanceUnit struct {
+	InstanceID uuid.UUID  `db:"instance_id" json:"instance_id"`
+	UnitGuid   guid.GUID  `db:"unit_guid" json:"unit_guid"`
+	Name       string     `db:"name" json:"name"`
+	Entry      int32      `db:"entry" json:"entry"`
+	OwnerGuid  *guid.GUID `db:"owner_guid" json:"owner_guid"`
 }
 
 // A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.

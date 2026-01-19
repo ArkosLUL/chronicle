@@ -80,36 +80,6 @@ CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) R
     END = 1;
 $$;
 
-CREATE TABLE encounter_damage_unit_summary (
-    encounter_id uuid NOT NULL,
-    unit_guid wow_guid NOT NULL,
-    damage_done_total bigint DEFAULT 0 NOT NULL,
-    damage_taken_total bigint DEFAULT 0 NOT NULL,
-    damage_done_abilities jsonb,
-    damage_taken_abilities jsonb,
-    is_player boolean NOT NULL,
-    owner_guid wow_guid
-);
-
-CREATE TABLE instance_players (
-    instance_id uuid NOT NULL,
-    unit_guid wow_guid NOT NULL,
-    name text NOT NULL,
-    level integer NOT NULL,
-    class wow_playable_class NOT NULL,
-    race wow_playable_race NOT NULL
-);
-
-CREATE TABLE instance_units (
-    instance_id uuid NOT NULL,
-    unit_guid wow_guid NOT NULL,
-    name text NOT NULL,
-    entry integer NOT NULL,
-    owner_guid wow_guid
-);
-
-COMMENT ON TABLE instance_units IS 'Stores all units (NPCs, not players) that participated in an instance.';
-
 CREATE TABLE item_effects (
     id uuid NOT NULL,
     item_id integer NOT NULL,
@@ -142,17 +112,6 @@ COMMENT ON COLUMN item_templates.id IS 'Matches the item id in WoW.';
 
 COMMENT ON COLUMN item_templates.quality IS '0 grey, 1 white, 2 green, 3 blue, 4 purple, 5 legendary, 6 artifact';
 
-CREATE TABLE log_encounters (
-    id uuid NOT NULL,
-    instance_id uuid NOT NULL,
-    name text NOT NULL,
-    kill boolean NOT NULL,
-    remaining wow_guid[] NOT NULL,
-    boss boolean NOT NULL,
-    start_time timestamp with time zone NOT NULL,
-    end_time timestamp with time zone NOT NULL
-);
-
 CREATE TABLE log_file (
     id uuid NOT NULL,
     owner uuid NOT NULL,
@@ -163,6 +122,53 @@ CREATE TABLE log_file (
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
+
+CREATE TABLE log_instance_encounter_character_fight (
+    encounter_id uuid NOT NULL,
+    id wow_guid NOT NULL,
+    periods jsonb NOT NULL
+);
+
+CREATE TABLE log_instance_encounter_damage_unit_summary (
+    encounter_id uuid NOT NULL,
+    unit_guid wow_guid NOT NULL,
+    damage_done_total bigint DEFAULT 0 NOT NULL,
+    damage_taken_total bigint DEFAULT 0 NOT NULL,
+    damage_done_abilities jsonb,
+    damage_taken_abilities jsonb,
+    is_player boolean NOT NULL,
+    owner_guid wow_guid
+);
+
+CREATE TABLE log_instance_encounters (
+    id uuid NOT NULL,
+    instance_id uuid NOT NULL,
+    name text NOT NULL,
+    kill boolean NOT NULL,
+    remaining wow_guid[] NOT NULL,
+    boss boolean NOT NULL,
+    start_time timestamp with time zone NOT NULL,
+    end_time timestamp with time zone NOT NULL
+);
+
+CREATE TABLE log_instance_players (
+    instance_id uuid NOT NULL,
+    unit_guid wow_guid NOT NULL,
+    name text NOT NULL,
+    level integer NOT NULL,
+    class wow_playable_class NOT NULL,
+    race wow_playable_race NOT NULL
+);
+
+CREATE TABLE log_instance_units (
+    instance_id uuid NOT NULL,
+    unit_guid wow_guid NOT NULL,
+    name text NOT NULL,
+    entry integer NOT NULL,
+    owner_guid wow_guid
+);
+
+COMMENT ON TABLE log_instance_units IS 'Stores all units (NPCs, not players) that participated in an instance.';
 
 CREATE TABLE log_instances (
     id uuid NOT NULL,
@@ -318,23 +324,26 @@ CREATE TABLE wow_servers (
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
-ALTER TABLE ONLY encounter_damage_unit_summary
-    ADD CONSTRAINT encounter_damage_unit_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
-
-ALTER TABLE ONLY instance_units
-    ADD CONSTRAINT instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
-
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY item_templates
     ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY log_encounters
-    ADD CONSTRAINT log_encounters_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY log_instance_encounter_character_fight
+    ADD CONSTRAINT log_instance_encounter_character_fight_pkey PRIMARY KEY (encounter_id, id);
+
+ALTER TABLE ONLY log_instance_encounter_damage_unit_summary
+    ADD CONSTRAINT log_instance_encounter_damage_unit_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
+
+ALTER TABLE ONLY log_instance_encounters
+    ADD CONSTRAINT log_instance_encounters_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY log_instance_units
+    ADD CONSTRAINT log_instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
@@ -397,29 +406,32 @@ CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) W
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 
-ALTER TABLE ONLY encounter_damage_unit_summary
-    ADD CONSTRAINT encounter_damage_unit_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_encounters(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY instance_players
-    ADD CONSTRAINT instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY instance_units
-    ADD CONSTRAINT instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
-
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
 
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_spell_id_fkey FOREIGN KEY (spell_id) REFERENCES spell_templates(id);
 
-ALTER TABLE ONLY log_encounters
-    ADD CONSTRAINT log_encounters_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
-
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_wow_log_id_fkey FOREIGN KEY (wow_log_id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_encounter_character_fight
+    ADD CONSTRAINT log_instance_encounter_character_fight_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_encounter_damage_unit_summary
+    ADD CONSTRAINT log_instance_encounter_damage_unit_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_encounters
+    ADD CONSTRAINT log_instance_encounters_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_players
+    ADD CONSTRAINT log_instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_units
+    ADD CONSTRAINT log_instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES parsed_log_group(id) ON DELETE CASCADE;

@@ -41,7 +41,7 @@ CREATE TABLE log_instances (
 )
 ;
 
-CREATE TABLE log_encounters (
+CREATE TABLE log_instance_encounters (
   id UUID PRIMARY KEY,
   instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
 
@@ -54,8 +54,17 @@ CREATE TABLE log_encounters (
 )
 ;
 
-CREATE TABLE encounter_damage_unit_summary (
-  encounter_id UUID NOT NULL REFERENCES log_encounters(id) ON DELETE CASCADE,
+CREATE TABLE log_instance_encounter_character_fight (
+  encounter_id UUID NOT NULL REFERENCES log_instance_encounters(id) ON DELETE CASCADE,
+  id wow_guid NOT NULL,
+  periods jsonb NOT NULL,
+
+  PRIMARY KEY (encounter_id, id)
+)
+;
+
+CREATE TABLE log_instance_encounter_damage_unit_summary (
+  encounter_id UUID NOT NULL REFERENCES log_instance_encounters(id) ON DELETE CASCADE,
   unit_guid wow_guid NOT NULL,
 
   -- Aggregated damage done
@@ -73,7 +82,7 @@ CREATE TABLE encounter_damage_unit_summary (
   PRIMARY KEY (encounter_id, unit_guid)
 );
 
-CREATE TABLE instance_units (
+CREATE TABLE log_instance_units (
   -- TODO: Level, class, spec, etc.
   instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
   unit_guid wow_guid NOT NULL,
@@ -88,7 +97,7 @@ CREATE TABLE instance_units (
   PRIMARY KEY (instance_id, unit_guid)
 );
 
-COMMENT ON TABLE instance_units IS
+COMMENT ON TABLE log_instance_units IS
   'Stores all units (NPCs, not players) that participated in an instance.';
 
 CREATE TYPE wow_playable_class AS ENUM
@@ -122,7 +131,7 @@ CREATE TYPE wow_playable_race AS ENUM (
   'Unknown'
 );
 
-CREATE TABLE instance_players (
+CREATE TABLE log_instance_players (
   instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
   unit_guid wow_guid NOT NULL,
   name TEXT NOT NULL,

@@ -26,6 +26,17 @@ func TestParseUnitInfo(t *testing.T) {
 				Owner:        nil,
 			},
 		},
+		{
+			input: "UNIT_INFO: 17.01.26 19:58:23&0xF13000CBB2279364&0&Small Incendic Egg&0&&62na",
+			exp: unitinfo.Info{
+				Seen:         time.Date(2026, 1, 17, 19, 58, 23, 0, time.UTC),
+				Guid:         0xF13000CBB2279364,
+				IsPlayer:     false,
+				Name:         "Small Incendic Egg",
+				CanCooperate: false,
+				Owner:        nil,
+			},
+		},
 	}
 
 	for _, c := range cases {

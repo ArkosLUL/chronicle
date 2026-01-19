@@ -24,7 +24,7 @@ var characterFactories = []characterFactory{
 }
 
 type Characters struct {
-	All map[guid.GUID]Character
+	All *OrdererCharacters
 	// ByEntry only works on creatures
 	ByEntry map[uint32][]Character
 	db      *unitdb.Units
@@ -36,7 +36,7 @@ type Characters struct {
 func NewCharacters(db *unitdb.Units) *Characters {
 	return &Characters{
 		db:      db,
-		All:     make(map[guid.GUID]Character),
+		All:     NewOrdererCharacters(),
 		ByEntry: make(map[uint32][]Character),
 		active:  make(map[guid.GUID]struct{}),
 	}
@@ -53,7 +53,7 @@ func (c Characters) AddAll(ids ...guid.GUID) bool {
 }
 
 func (c Characters) Get(id guid.GUID) (Character, bool) {
-	char, exists := c.All[id]
+	char, exists := c.All.Get(id)
 	return char, exists
 }
 
@@ -62,7 +62,7 @@ func (c Characters) GetInfo(id guid.GUID) (unitinfo.Info, bool) {
 }
 
 func (c Characters) Add(id guid.GUID) (_ Character, newChar bool) {
-	char, exists := c.All[id]
+	char, exists := c.All.Get(id)
 	if !exists {
 		newChar = true
 		for _, factory := range characterFactories {
@@ -77,7 +77,7 @@ func (c Characters) Add(id guid.GUID) (_ Character, newChar bool) {
 			char = NewCommonCharacter(id, &c)
 		}
 
-		c.All[id] = char
+		c.All.Add(char)
 		if id.IsAnyCreature() {
 			if entry, ok := id.GetEntry(); ok {
 				c.ByEntry[entry] = append(c.ByEntry[entry], char)
@@ -98,21 +98,26 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 	// Add all affected characters to the instance's character list
 	activityChange := c.AddAll(m.Affects()...)
 
-	for _, char := range c.All {
+	err := c.All.ForEach(func(char Character) error {
 		before := char.IsActive()
 
 		// TODO: Dead characters that will never return should be removed from processing?
 		// Or at least have some kind of speedup
 		err := char.Process(m)
 		if err != nil {
-			return activityChange, fmt.Errorf("processing character %s: %w", char.ID().String(), err)
+			return fmt.Errorf("processing character %s: %w", char.ID().String(), err)
 		}
 
 		c.trackActive(char)
 		if before != char.IsActive() {
 			activityChange = true
 		}
+		return nil
+	})
+	if err != nil {
+		return activityChange, err
 	}
+
 	return activityChange, nil
 }
 

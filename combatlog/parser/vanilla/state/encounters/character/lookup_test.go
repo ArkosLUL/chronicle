@@ -129,22 +129,22 @@ func TestCharacters(t *testing.T) {
 			}
 		}
 
-		doydChar, ok := cars.All[0x000000000001C7AC] // Doyd
+		doydChar, ok := cars.All.Get(0x000000000001C7AC) // Doyd
 		require.True(t, ok, "expected to find Doyd in characters")
 		doyd, ok := doydChar.(*character.Common)
 		require.True(t, ok, "expected Doyd to be a Common character")
 
-		myrmChar, ok := cars.All[0xF1300010C7009C09] // Scarlet Myrmidon
+		myrmChar, ok := cars.All.Get(0xF1300010C7009C09) // Scarlet Myrmidon
 		require.True(t, ok, "expected to find Scarlet Myrmidon in characters")
 		myrm, ok := myrmChar.(*character.Common)
 		require.True(t, ok, "expected Scarlet Myrmidon to be a Common character")
 
-		shamumChar, ok := cars.All[0x000000000008CD28] // Shamum
+		shamumChar, ok := cars.All.Get(0x000000000008CD28) // Shamum
 		require.True(t, ok, "expected to find Shamum in characters")
 		shamum, ok := shamumChar.(*character.Common)
 		require.True(t, ok, "expected Shamum to be a Common character")
 
-		require.Len(t, cars.All, 3, "expected to find 3 characters in total")
+		require.Equal(t, 3, cars.All.Len(), "expected to find 3 characters in total")
 
 		// Shamum :: Times out
 		require.False(t, shamum.Activity.IsActive(), "shamum should not be active")

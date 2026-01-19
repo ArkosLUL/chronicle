@@ -233,6 +233,7 @@ export interface WoWLogGroupState extends WoWLogGroup {
 
 // From chroniclesdk/log.go
 export interface WoWParsedInstance extends WoWInstance {
+    readonly fights: Record<string, Record<string, (Record<string, string>)[]>>;
     readonly encounters: readonly WoWEncounter[];
     readonly units: Record<string, InstanceUnit>;
     readonly players: Record<string, InstancePlayer>;

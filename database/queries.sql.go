@@ -301,20 +301,20 @@ const damageSummariesByInstanceID = `-- name: DamageSummariesByInstanceID :many
 SELECT
   encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
 FROM
-  encounter_damage_unit_summary
+  log_instance_encounter_damage_unit_summary
 WHERE
   encounter_id IN (SELECT encounter_id FROM log_instances WHERE id = $1)
 `
 
-func (q *sqlQuerier) DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]EncounterDamageUnitSummary, error) {
+func (q *sqlQuerier) DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]LogInstanceEncounterDamageUnitSummary, error) {
 	rows, err := q.db.Query(ctx, damageSummariesByInstanceID, logInstanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []EncounterDamageUnitSummary
+	var items []LogInstanceEncounterDamageUnitSummary
 	for rows.Next() {
-		var i EncounterDamageUnitSummary
+		var i LogInstanceEncounterDamageUnitSummary
 		if err := rows.Scan(
 			&i.EncounterID,
 			&i.UnitGuid,
@@ -351,20 +351,20 @@ const encountersByInstanceID = `-- name: EncountersByInstanceID :many
 SELECT
   id, instance_id, name, kill, remaining, boss, start_time, end_time
 FROM
-  log_encounters
+  log_instance_encounters
 WHERE
   instance_id = $1
 `
 
-func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogEncounter, error) {
+func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error) {
 	rows, err := q.db.Query(ctx, encountersByInstanceID, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []LogEncounter
+	var items []LogInstanceEncounter
 	for rows.Next() {
-		var i LogEncounter
+		var i LogInstanceEncounter
 		if err := rows.Scan(
 			&i.ID,
 			&i.InstanceID,
@@ -385,9 +385,38 @@ func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid
 	return items, nil
 }
 
+const getInstanceEncounterCharacterFights = `-- name: GetInstanceEncounterCharacterFights :many
+SELECT
+  encounter_id, id, periods
+FROM
+  log_instance_encounter_character_fight
+WHERE
+  encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
+`
+
+func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterCharacterFight, error) {
+	rows, err := q.db.Query(ctx, getInstanceEncounterCharacterFights, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogInstanceEncounterCharacterFight
+	for rows.Next() {
+		var i LogInstanceEncounterCharacterFight
+		if err := rows.Scan(&i.EncounterID, &i.ID, &i.Periods); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertEncounter = `-- name: InsertEncounter :one
 INSERT INTO
-  log_encounters (id, instance_id, name, kill, remaining, boss, start_time, end_time)
+  log_instance_encounters (id, instance_id, name, kill, remaining, boss, start_time, end_time)
 VALUES
   ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, instance_id, name, kill, remaining, boss, start_time, end_time
@@ -404,7 +433,7 @@ type InsertEncounterParams struct {
 	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
 }
 
-func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogEncounter, error) {
+func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error) {
 	row := q.db.QueryRow(ctx, insertEncounter,
 		arg.ID,
 		arg.InstanceID,
@@ -415,7 +444,7 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 		arg.StartTime,
 		arg.EndTime,
 	)
-	var i LogEncounter
+	var i LogInstanceEncounter
 	err := row.Scan(
 		&i.ID,
 		&i.InstanceID,
@@ -431,7 +460,7 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertEncounterDamageSummary = `-- name: InsertEncounterDamageSummary :one
 INSERT INTO
-  encounter_damage_unit_summary(
+  log_instance_encounter_damage_unit_summary(
     encounter_id,
     unit_guid,
     damage_done_total,
@@ -457,7 +486,7 @@ type InsertEncounterDamageSummaryParams struct {
 	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
 }
 
-func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitSummary, error) {
+func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (LogInstanceEncounterDamageUnitSummary, error) {
 	row := q.db.QueryRow(ctx, insertEncounterDamageSummary,
 		arg.EncounterID,
 		arg.UnitGuid,
@@ -468,7 +497,7 @@ func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg Inser
 		arg.IsPlayer,
 		arg.OwnerGuid,
 	)
-	var i EncounterDamageUnitSummary
+	var i LogInstanceEncounterDamageUnitSummary
 	err := row.Scan(
 		&i.EncounterID,
 		&i.UnitGuid,
@@ -551,20 +580,20 @@ const instancePlayersByInstanceID = `-- name: InstancePlayersByInstanceID :many
 SELECT
   instance_id, unit_guid, name, level, class, race
 FROM
-  instance_players
+  log_instance_players
 WHERE
   instance_id = $1
 `
 
-func (q *sqlQuerier) InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstancePlayer, error) {
+func (q *sqlQuerier) InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error) {
 	rows, err := q.db.Query(ctx, instancePlayersByInstanceID, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []InstancePlayer
+	var items []LogInstancePlayer
 	for rows.Next() {
-		var i InstancePlayer
+		var i LogInstancePlayer
 		if err := rows.Scan(
 			&i.InstanceID,
 			&i.UnitGuid,
@@ -587,20 +616,20 @@ const instanceUnitsByInstanceID = `-- name: InstanceUnitsByInstanceID :many
 SELECT
   instance_id, unit_guid, name, entry, owner_guid
 FROM
-  instance_units
+  log_instance_units
 WHERE
   instance_id = $1
 `
 
-func (q *sqlQuerier) InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstanceUnit, error) {
+func (q *sqlQuerier) InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error) {
 	rows, err := q.db.Query(ctx, instanceUnitsByInstanceID, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []InstanceUnit
+	var items []LogInstanceUnit
 	for rows.Next() {
-		var i InstanceUnit
+		var i LogInstanceUnit
 		if err := rows.Scan(
 			&i.InstanceID,
 			&i.UnitGuid,

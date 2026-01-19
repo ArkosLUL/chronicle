@@ -60,6 +60,17 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//fights, err := db.GetInstanceEncounterCharacterFights(ctx, instanceID)
+	//if err != nil {
+	//	httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+	//		Response: chroniclesdk.Response{
+	//			Message: "Failed to fetch instance encounter character fights",
+	//			Detail:  err.Error(),
+	//		},
+	//	})
+	//	return
+	//}
+
 	httpapi.Write(ctx, w, http.StatusOK, db2sdk.WowDecoratedInstance(inst, units, players, encounters))
 }
 

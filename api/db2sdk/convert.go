@@ -57,18 +57,18 @@ func WoWInstance(instance database.LogInstance) chroniclesdk.WoWInstance {
 	}
 }
 
-func WowDecoratedInstance(instance database.LogInstance, units []database.InstanceUnit, players []database.InstancePlayer, encounters []database.LogEncounter) chroniclesdk.WoWParsedInstance {
+func WowDecoratedInstance(instance database.LogInstance, units []database.LogInstanceUnit, players []database.LogInstancePlayer, encounters []database.LogInstanceEncounter) chroniclesdk.WoWParsedInstance {
 	return chroniclesdk.WoWParsedInstance{
 		WoWInstance: WoWInstance(instance),
 		Encounters:  slice.List(encounters, WoWEncounter),
-		Units: maps.MapFromSlice(units, func(u database.InstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.InstanceUnit) chroniclesdk.InstanceUnit {
+		Units: maps.MapFromSlice(units, func(u database.LogInstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.LogInstanceUnit) chroniclesdk.InstanceUnit {
 			return chroniclesdk.InstanceUnit{
 				Name:  u.Name,
 				Owner: u.OwnerGuid,
 				Entry: uint32(u.Entry),
 			}
 		}),
-		Players: maps.MapFromSlice(players, func(u database.InstancePlayer) guid.GUID { return u.UnitGuid }, func(u database.InstancePlayer) chroniclesdk.InstancePlayer {
+		Players: maps.MapFromSlice(players, func(u database.LogInstancePlayer) guid.GUID { return u.UnitGuid }, func(u database.LogInstancePlayer) chroniclesdk.InstancePlayer {
 			return chroniclesdk.InstancePlayer{
 				Name:  u.Name,
 				Class: types.HeroClasses(u.Class),
@@ -78,7 +78,7 @@ func WowDecoratedInstance(instance database.LogInstance, units []database.Instan
 	}
 }
 
-func WoWEncounter(encounter database.LogEncounter) chroniclesdk.WoWEncounter {
+func WoWEncounter(encounter database.LogInstanceEncounter) chroniclesdk.WoWEncounter {
 	return chroniclesdk.WoWEncounter{
 		ID:         encounter.ID,
 		InstanceID: encounter.InstanceID,
@@ -111,7 +111,7 @@ func Ability(ability database.Ability) chroniclesdk.Ability {
 	return chroniclesdk.Ability(ability)
 }
 
-func EncounterDamageSummary(summary database.EncounterDamageUnitSummary) chroniclesdk.EncounterDamageSummary {
+func EncounterDamageSummary(summary database.LogInstanceEncounterDamageUnitSummary) chroniclesdk.EncounterDamageSummary {
 	return chroniclesdk.EncounterDamageSummary{
 		EncounterID:          summary.EncounterID,
 		UnitGuid:             summary.UnitGuid,

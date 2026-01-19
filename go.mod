@@ -8,7 +8,7 @@ require (
 	github.com/KromDaniel/regengo v0.5.3
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/coder/guts v1.6.3-0.20260119001608-85e588a5c6e2
+	github.com/coder/guts v1.6.3-0.20260119194949-fc5c1a15676f
 	github.com/coder/quartz v0.3.0
 	github.com/coder/retry v1.5.1
 	github.com/coder/serpent v0.12.0

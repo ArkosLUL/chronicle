@@ -18,9 +18,63 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const insertEncounterCharacterFights = `-- name: InsertEncounterCharacterFights :batchexec
+INSERT INTO
+  log_instance_encounter_character_fight (id, encounter_id, periods)
+VALUES
+  ($1, $2, $3)
+`
+
+type InsertEncounterCharacterFightsBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InsertEncounterCharacterFightsParams struct {
+	ID          guid.GUID `db:"id" json:"id"`
+	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
+	Periods     []byte    `db:"periods" json:"periods"`
+}
+
+func (q *sqlQuerier) InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.ID,
+			a.EncounterID,
+			a.Periods,
+		}
+		batch.Queue(insertEncounterCharacterFights, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InsertEncounterCharacterFightsBatchResults{br, len(arg), false}
+}
+
+func (b *InsertEncounterCharacterFightsBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InsertEncounterCharacterFightsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const insertInstancePlayers = `-- name: InsertInstancePlayers :batchexec
 INSERT INTO
-  instance_players (instance_id, unit_guid, name, level, class, race)
+  log_instance_players (instance_id, unit_guid, name, level, class, race)
 VALUES
   ($1, $2, $3, $4, $5, $6)
 `
@@ -80,7 +134,7 @@ func (b *InsertInstancePlayersBatchResults) Close() error {
 
 const insertInstanceUnits = `-- name: InsertInstanceUnits :batchexec
 INSERT INTO
-  instance_units (instance_id, unit_guid, name, entry, owner_guid)
+  log_instance_units (instance_id, unit_guid, name, entry, owner_guid)
 VALUES
   ($1, $2, $3, $4, $5)
 `

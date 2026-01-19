@@ -11,18 +11,20 @@ import (
 )
 
 type sqlcQuerier interface {
-	DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]EncounterDamageUnitSummary, error)
+	DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]LogInstanceEncounterDamageUnitSummary, error)
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
 	DeleteThisQuery(ctx context.Context) error
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
-	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogEncounter, error)
+	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
+	GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterCharacterFight, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
 	GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]GetWoWLogGroupsByOwnerRow, error)
-	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogEncounter, error)
-	InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (EncounterDamageUnitSummary, error)
+	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error)
+	InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults
+	InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (LogInstanceEncounterDamageUnitSummary, error)
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
 	InsertInstancePlayers(ctx context.Context, arg []InsertInstancePlayersParams) *InsertInstancePlayersBatchResults
 	InsertInstanceUnits(ctx context.Context, arg []InsertInstanceUnitsParams) *InsertInstanceUnitsBatchResults
@@ -33,8 +35,8 @@ type sqlcQuerier interface {
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
 	Instance(ctx context.Context, id uuid.UUID) (LogInstance, error)
-	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstancePlayer, error)
-	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]InstanceUnit, error)
+	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
+	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

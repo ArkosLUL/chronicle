@@ -22,7 +22,7 @@ RETURNING *
 
 -- name: InsertEncounter :one
 INSERT INTO
-  log_encounters (id, instance_id, name, kill, remaining, boss, start_time, end_time)
+  log_instance_encounters (id, instance_id, name, kill, remaining, boss, start_time, end_time)
 VALUES
   ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *
@@ -30,7 +30,7 @@ RETURNING *
 
 -- name: InsertEncounterDamageSummary :one
 INSERT INTO
-  encounter_damage_unit_summary(
+  log_instance_encounter_damage_unit_summary(
     encounter_id,
     unit_guid,
     damage_done_total,
@@ -58,7 +58,7 @@ WHERE
 SELECT
   *
 FROM
-  log_encounters
+  log_instance_encounters
 WHERE
   instance_id = $1
 ;
@@ -67,30 +67,46 @@ WHERE
 SELECT
   *
 FROM
-  encounter_damage_unit_summary
+  log_instance_encounter_damage_unit_summary
 WHERE
   encounter_id IN (SELECT encounter_id FROM log_instances WHERE id = @log_instance_id)
 ;
 
 -- name: InsertInstanceUnits :batchexec
 INSERT INTO
-  instance_units (instance_id, unit_guid, name, entry, owner_guid)
+  log_instance_units (instance_id, unit_guid, name, entry, owner_guid)
 VALUES
   ($1, $2, $3, $4, $5)
 ;
 
 -- name: InsertInstancePlayers :batchexec
 INSERT INTO
-  instance_players (instance_id, unit_guid, name, level, class, race)
+  log_instance_players (instance_id, unit_guid, name, level, class, race)
 VALUES
   ($1, $2, $3, $4, $5, $6)
+;
+
+-- name: InsertEncounterCharacterFights :batchexec
+INSERT INTO
+  log_instance_encounter_character_fight (id, encounter_id, periods)
+VALUES
+  ($1, $2, $3)
+;
+
+-- name: GetInstanceEncounterCharacterFights :many
+SELECT
+  *
+FROM
+  log_instance_encounter_character_fight
+WHERE
+  encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
 ;
 
 -- name: InstanceUnitsByInstanceID :many
 SELECT
   *
 FROM
-  instance_units
+  log_instance_units
 WHERE
   instance_id = $1
 ;
@@ -99,7 +115,7 @@ WHERE
 SELECT
   *
 FROM
-  instance_players
+  log_instance_players
 WHERE
   instance_id = $1
 ;

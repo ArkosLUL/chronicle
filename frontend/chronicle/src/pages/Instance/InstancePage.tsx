@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Heart, Shield, PanelLeftClose, PanelLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Loader2 } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary, type WoWEncounter } from "@/api/queries";
 import type { InstancePlayer, InstanceUnit, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -337,15 +337,108 @@ function formatDamageNumber(value: number): string {
   return value.toLocaleString();
 }
 
+// Panel type definitions
+export type PanelType = 'damage_done' | 'damage_taken';
+
+export interface PanelConfig {
+  type: PanelType;
+  label: string;
+  icon: React.ReactNode;
+  chartType: 'damage' | 'healing';
+  dataKey: 'dps' | 'healing' | 'damageTaken';
+}
+
+export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
+  damage_done: {
+    label: 'Damage Done',
+    icon: <Swords className="h-4 w-4" />,
+    chartType: 'damage',
+    dataKey: 'dps',
+  },
+  damage_taken: {
+    label: 'Damage Taken',
+    icon: <Shield className="h-4 w-4" />,
+    chartType: 'damage',
+    dataKey: 'damageTaken',
+  },
+};
+
+export const PANEL_OPTIONS: { value: PanelType; label: string }[] = Object.entries(PANEL_CONFIGS).map(
+  ([value, config]) => ({ value: value as PanelType, label: config.label })
+);
+
+interface MetricPanelProps {
+  panelType: PanelType;
+  onPanelTypeChange: (type: PanelType) => void;
+  encounters: Encounter[];
+  durationMs: number;
+}
+
+function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs }: MetricPanelProps) {
+  const [perSecond, setPerSecond] = useState(false);
+  const config = PANEL_CONFIGS[panelType];
+  const data = mergeMetrics(encounters, config.dataKey);
+
+  // Show per-second toggle for damage-related panels
+  const showPerSecondToggle = config.chartType === 'damage';
+
+  if (data.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium flex items-center gap-2">
+          {config.icon}
+          {config.label}
+        </h3>
+        <div className="flex items-center gap-3">
+          {showPerSecondToggle && (
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={perSecond}
+                onChange={(e) => setPerSecond(e.target.checked)}
+                className="w-3.5 h-3.5 cursor-pointer"
+              />
+              Per Second
+            </label>
+          )}
+          <select
+            value={panelType}
+            onChange={(e) => onPanelTypeChange(e.target.value as PanelType)}
+            className="text-xs bg-muted border border-border rounded px-2 py-1 cursor-pointer hover:bg-muted/80"
+          >
+            {PANEL_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <PlayerMetricChart
+        data={data}
+        type={config.chartType}
+        duration_millis={durationMs}
+        perSecond={perSecond}
+        style={{ height: "400px" }}
+      />
+    </Card>
+  );
+}
+
 // Main encounter detail view
 function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
   
+  // Panel state - each panel can be configured independently
+  const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
+  const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
+  
   // Merge metrics across all selected encounters
-  const mergedDps = mergeMetrics(encounters, 'dps');
-  const mergedHealing = mergeMetrics(encounters, 'healing');
-  const mergedDamageTaken = mergeMetrics(encounters, 'damageTaken');
   const mergedEnemies = mergeEnemies(encounters);
   
   const totalDurationMs = computeTotalDuration(encounters);
@@ -418,43 +511,18 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
 
       {/* Metrics - 2 column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {mergedDps.length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-              <Swords className="h-4 w-4" />
-              Damage Done
-            </h3>
-            <PlayerMetricChart data={mergedDps} type="damage" duration_millis={totalDurationMs} style={{ height: "400px" }} />
-          </Card>
-        )}
-
-        {mergedHealing.length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Healing
-            </h3>
-            <PlayerMetricChart data={mergedHealing} type="healing" duration_millis={totalDurationMs} style={{ height: "400px" }} />
-          </Card>
-        )}
-
-        {mergedDamageTaken.length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Damage Taken
-            </h3>
-            <PlayerMetricChart data={mergedDamageTaken} type="damage" duration_millis={totalDurationMs} style={{ height: "400px" }} />
-          </Card>
-        )}
-
-        {mergedDps.length === 0 && mergedHealing.length === 0 && mergedDamageTaken.length === 0 && (
-          <Card className="p-8 col-span-full">
-            <p className="text-muted-foreground text-center">
-              No detailed metrics available for the selected encounter(s).
-            </p>
-          </Card>
-        )}
+        <MetricPanel
+          panelType={panel1Type}
+          onPanelTypeChange={setPanel1Type}
+          encounters={encounters}
+          durationMs={totalDurationMs}
+        />
+        <MetricPanel
+          panelType={panel2Type}
+          onPanelTypeChange={setPanel2Type}
+          encounters={encounters}
+          durationMs={totalDurationMs}
+        />
       </div>
     </div>
   );

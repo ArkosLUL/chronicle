@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	lineLimit = 500
+	// Addon needs to more quickly announce the player's identity to reduce this.
+	lineLimit = 3000
 )
 
 type scanLine struct {

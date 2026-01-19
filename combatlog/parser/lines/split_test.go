@@ -106,3 +106,12 @@ func TestLinerRoundTrip(t *testing.T) {
 		require.Equal(t, line, serialized, content)
 	}
 }
+
+func TestJanuary(t *testing.T) {
+	t.Parallel()
+	line := `1/17 21:18:18.560  0x00000000000BCAAC gains 30 Mana from 0x00000000000F4671's Greater Blessing of Wisdom.`
+	liner := lines.NewLiner()
+	d, _, err := liner.Line(line)
+	require.NoError(t, err)
+	require.Equal(t, d.Month(), time.January)
+}

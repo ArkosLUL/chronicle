@@ -3,53 +3,66 @@ package character
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
-var _ Character = (*SpawnOfIncindis)(nil)
-
-// SpawnOfIncindis should not have any meaningful activity, so this is a no-op implementation.
-type SpawnOfIncindis struct {
-	id guid.GUID
+type Incindis struct {
+	*Common
+	all *Characters
 }
 
-func NewSpawnOfIncindisCharacter(id guid.GUID, _ *Characters) (Character, bool) {
+const (
+	incindis          = 52145
+	spawnOfIncindis   = 52148
+	flameskinIncindis = 52149
+	eggIncindis       = 52146
+)
+
+func NewIncindisCharacter(id guid.GUID, all *Characters) (Character, bool) {
 	if !id.IsCreature() {
 		return nil, false
 	}
 
-	if entry, ok := id.GetEntry(); !ok || entry != 52148 {
+	entry, ok := id.GetEntry()
+	if !ok {
 		return nil, false
 	}
 
-	return &SpawnOfIncindis{
-		id: id,
+	if entry != incindis {
+		return nil, false
+	}
+
+	return &Incindis{
+		Common: NewCommonCharacter(id, all),
+		all:    all,
 	}, true
 }
 
-func (c SpawnOfIncindis) ID() guid.GUID {
-	return c.id
-}
+func (c *Incindis) Process(m messages.Message) error {
+	wasActive := c.IsActive()
 
-func (c SpawnOfIncindis) String() string {
-	return "Spawn Of Incindis"
-}
+	err := c.Common.Process(m)
+	if err != nil {
+		return err
+	}
 
-func (c SpawnOfIncindis) Process(m messages.Message) error {
+	if wasActive && !c.IsActive() {
+		// Incindis went inactive, so kill off the ads that spawn
+		for _, add := range c.all.ByEntry[spawnOfIncindis] {
+			if com, ok := add.(*Common); ok {
+				com.Died("incindis_inactive", m)
+			}
+		}
+		for _, add := range c.all.ByEntry[eggIncindis] {
+			if com, ok := add.(*Common); ok {
+				com.Died("incindis_inactive", m)
+			}
+		}
+		for _, add := range c.all.ByEntry[flameskinIncindis] {
+			if com, ok := add.(*Common); ok {
+				com.Died("incindis_inactive", m)
+			}
+		}
+	}
+
 	return nil
-}
-
-func (c SpawnOfIncindis) Periods() []period.Period {
-	return []period.Period{}
-}
-func (c SpawnOfIncindis) CurrentPeriod() (period.Period, bool) {
-	return period.Period{}, false
-}
-
-func (c SpawnOfIncindis) RecentlySlain(m messages.Message) bool {
-	return false
-}
-
-func (c SpawnOfIncindis) IsActive() bool {
-	return false
 }

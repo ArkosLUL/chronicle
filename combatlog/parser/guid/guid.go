@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math/bits"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/lib/pq"
 	"golang.org/x/xerrors"
 )
 
@@ -144,4 +144,30 @@ func (a GUID) Value() (driver.Value, error) {
 	return a.String(), nil
 }
 
-type GUIDs pgtype.Array[GUID]
+type GUIDs []GUID
+
+// Value implements database/sql/driver.Valuer for encoding to PostgreSQL.
+// Encodes as a PostgreSQL text array literal: {0x...,0x...}
+func (g GUIDs) Value() (driver.Value, error) {
+	return pq.Array(g).Value()
+}
+
+// Scan implements database/sql.Scanner for decoding from PostgreSQL.
+func (g *GUIDs) Scan(src interface{}) error {
+	var ids []string
+	err := pq.Array(&ids).Scan(src)
+	if err != nil {
+		return err
+	}
+
+	gids := make([]GUID, 0, len(ids))
+	for _, idStr := range ids {
+		gid, err := FromString(idStr)
+		if err != nil {
+			return err
+		}
+		gids = append(gids, gid)
+	}
+	*g = gids
+	return nil
+}

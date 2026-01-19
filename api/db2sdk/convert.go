@@ -85,7 +85,7 @@ func WoWEncounter(encounter database.LogEncounter) chroniclesdk.WoWEncounter {
 		Boss:       encounter.Boss,
 		Name:       encounter.Name,
 		Kill:       encounter.Kill,
-		Remaining:  encounter.Remaining.Elements,
+		Remaining:  encounter.Remaining,
 		StartTime:  encounter.StartTime.Time,
 		EndTime:    encounter.EndTime.Time,
 	}

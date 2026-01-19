@@ -18,6 +18,7 @@ var characterFactories = []characterFactory{
 	// Molten Core
 	NewCoreHoundCharacter,
 	NewMajordomoPartyCharacter,
+	NewSpawnOfIncindisCharacter,
 	// Onyxia
 	NewOnyxiaCharacter,
 }

@@ -694,7 +694,7 @@ function getUnitName(guidStr: string, units: Record<string, InstanceUnit>): stri
     return unit.name;
   }
   // Fallback: try to show a short version of the GUID
-  return `Enemy ${guidStr.slice(-6)}`;
+  return `Enemy ${guidStr}`;
 }
 
 // Helper to transform API data to view data
@@ -772,6 +772,7 @@ function transformToInstance(
       dps: dps.filter((d) => d.value > 0),
       damageTaken: damageTaken.filter((d) => d.value > 0),
       enemies,
+      remaining: enc.remaining as string[] | undefined,
       // healing: [] // TODO: add healing data when available
     };
   });

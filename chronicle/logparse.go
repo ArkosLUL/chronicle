@@ -24,7 +24,6 @@ import (
 	"github.com/Emyrk/chronicle/database/dbstatic"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -170,17 +169,12 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			// Store the encounters into the database
 			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(finalized.Encounters))
 			for _, enc := range finalized.Encounters {
-				remaining := guid.GUIDs{
-					Elements: enc.Remaining,
-					Dims:     []pgtype.ArrayDimension{{Length: int32(len(enc.Remaining)), LowerBound: 1}},
-					Valid:    true,
-				}
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
 					ID:         uuid.New(),
 					InstanceID: dbinstance.ID,
 					Name:       enc.Name,
 					Kill:       enc.IsKill,
-					Remaining:  remaining,
+					Remaining:  enc.Remaining,
 					Boss:       enc.Boss,
 					StartTime:  database.Timestamptz(enc.Combat.Start),
 					EndTime:    database.Timestamptz(enc.Combat.End),

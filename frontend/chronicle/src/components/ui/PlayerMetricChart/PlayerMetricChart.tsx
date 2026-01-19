@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/Tooltip/tooltip";
 import { useMouse } from '@/hooks/useMouse';
 
-export type ChartType = 'damage' | 'healing'
+export type ChartType = 'damage' | 'healing' | 'taken'
 
 export interface PlayerMetricChartData {
   playerID: string
@@ -30,6 +30,9 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
    */
   rowHeight?: number
   type: ChartType
+  // If perSecond is true, value is DPS/HPS
+  perSecond?: boolean
+  duration_millis?: number
 }
 
 export function PlayerMetricChart({
@@ -38,25 +41,36 @@ export function PlayerMetricChart({
   className,
   style,
   type,
+  perSecond,
+  duration_millis,
   ...divProps
 }: PlayerMetricChartProps) {
+  const computedData = useMemo(() => {
+    return data.map((item) => ({
+      ...item,
+      value: perSecond ? (item.value / duration_millis!) * 1000 : item.value,
+      stackedValue: item.stackedValue ? (perSecond ? (item.stackedValue / duration_millis!) * 1000 : item.stackedValue) : undefined,
+    }))
+  }, [data, perSecond, duration_millis])
+
+
   const summedValue = useMemo(() => {
-    return data.reduce((sum, item) => sum + item.value, 0)
-  }, [data])
+    return computedData.reduce((sum, item) => sum + item.value, 0)
+  }, [computedData])
 
   const maximumValue = useMemo(() => {
-    return Math.max(...data.map((item) => item.value + (item.stackedValue || 0)))
-  }, [data])
+    return Math.max(...computedData.map((item) => item.value + (item.stackedValue || 0)))
+  }, [computedData])
 
   // Sort by value descending and calculate percentages
   const chartData = useMemo(() => {
-    const sorted = [...data].sort((a, b) => b.value - a.value)
+    const sorted = [...computedData].sort((a, b) => b.value - a.value)
     return sorted.map((item, index) => ({
       ...item,
       rank: index + 1,
       color: `var(--class-${item.className.toLowerCase()})`,
     }))
-  }, [data])
+  }, [computedData])
 
   return (
     <div
@@ -76,8 +90,9 @@ export function PlayerMetricChart({
             rowHeight={rowHeight}
             maximumValue={maximumValue}
             summedValue={summedValue}
-            showRank={type === 'damage' || type === 'healing'}
+            showRank={type === 'damage' || type === 'healing' || type === 'taken'}
             type={type}
+            suffix={perSecond ? '/s' : ''}
           />
         })}
       </div>
@@ -92,6 +107,7 @@ export interface PlayerMetricRowProps {
   summedValue: number
   showRank: boolean
   type: ChartType
+  suffix?: string
 }
 
 export function PlayerMetricRow({
@@ -101,6 +117,7 @@ export function PlayerMetricRow({
   summedValue,
   showRank,
   type,
+  suffix,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   return (
@@ -204,7 +221,7 @@ export function PlayerMetricRow({
             </span>
 
             {/* DPS value */}
-            {formatValue(type, player)}
+            {formatValue(type, player, suffix)}
 
             {/* {player.stackedValue && (<span
               style={{
@@ -250,7 +267,7 @@ export function PlayerMetricRow({
 )
 }
 
-function formatValue(type: ChartType, player: PlayerMetricChartData){
+function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: string) {
   const styles = {
     fontSize: '0.7em',
     fontWeight: 600,
@@ -281,7 +298,7 @@ function formatValue(type: ChartType, player: PlayerMetricChartData){
           ...styles
         }}
       >
-        {player.value.toFixed(1)}/s
+        {player.value.toFixed(1)}{suffix}
       </span>)
   }
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PlayerMetricChart, type PlayerMetricChartData } from './PlayerMetricChart'
 
@@ -7,12 +8,24 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
-  
   tags: ['autodocs'],
+  argTypes: {
+    perSecond: {
+      control: 'boolean',
+      description: 'Show values as per-second (DPS/HPS)',
+    },
+    duration_millis: {
+      control: 'number',
+      description: 'Duration in milliseconds (used when perSecond is true)',
+    },
+  },
 } satisfies Meta<typeof PlayerMetricChart>
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+// Standard fight duration: 3 minutes 30 seconds
+const STANDARD_DURATION_MILLIS = 3.5 * 60 * 1000 // 210,000ms
 
 // Mock data representing a raid DPS parse
 const mockRaidData: PlayerMetricChartData[] = [
@@ -120,5 +133,74 @@ export const Healing: Story = {
       height: '300px',
       width: '450px',
     },
+  },
+}
+
+// Interactive story with per-second toggle
+export const WithPerSecondToggle: Story = {
+  args: {
+    data: denseMockData,
+    type: 'damage',
+    duration_millis: STANDARD_DURATION_MILLIS,
+    perSecond: false,
+  },
+  render: function Render(args) {
+    const [perSecond, setPerSecond] = useState(args.perSecond ?? false)
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={perSecond}
+            onChange={(e) => setPerSecond(e.target.checked)}
+            style={{ width: '18px', height: '18px' }}
+          />
+          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+            Show as {perSecond ? 'Total Damage' : 'DPS (per second)'}
+          </span>
+          <span style={{ fontSize: '12px', color: '#888' }}>
+            (Duration: {(args.duration_millis! / 1000).toFixed(1)}s)
+          </span>
+        </label>
+        <PlayerMetricChart {...args} perSecond={perSecond} />
+      </div>
+    )
+  },
+}
+
+export const HealingWithPerSecondToggle: Story = {
+  args: {
+    data: mockRaidHealingData,
+    type: 'healing',
+    duration_millis: STANDARD_DURATION_MILLIS,
+    perSecond: false,
+    style: {
+      height: '300px',
+      width: '450px',
+    },
+  },
+  render: function Render(args) {
+    const [perSecond, setPerSecond] = useState(args.perSecond ?? false)
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={perSecond}
+            onChange={(e) => setPerSecond(e.target.checked)}
+            style={{ width: '18px', height: '18px' }}
+          />
+          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+            Show as {perSecond ? 'Total Healing' : 'HPS (per second)'}
+          </span>
+          <span style={{ fontSize: '12px', color: '#888' }}>
+            (Duration: {(args.duration_millis! / 1000).toFixed(1)}s)
+          </span>
+        </label>
+        <PlayerMetricChart {...args} perSecond={perSecond} />
+      </div>
+    )
   },
 }

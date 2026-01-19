@@ -145,15 +145,13 @@ function EncounterSidebar({
   encounters,
   trashGroups,
   selectedIds,
-  lastSelectedId,
   onSelect,
   onCollapse,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
   selectedIds: string[];
-  lastSelectedId: string | null;
-  onSelect: (id: string, mode: 'single' | 'toggle' | 'range') => void;
+  onSelect: (id: string, mode: 'single' | 'toggle') => void;
   onCollapse: () => void;
 }) {
   const bossEncounters = encounters.filter((e) => e.boss);
@@ -176,9 +174,7 @@ function EncounterSidebar({
     manualExpandedGroup === groupName || groupsWithSelectedTrash.includes(groupName);
 
   const handleClick = (id: string, e: React.MouseEvent) => {
-    if (e.shiftKey && lastSelectedId) {
-      onSelect(id, 'range');
-    } else if (e.metaKey || e.ctrlKey) {
+    if (e.metaKey || e.ctrlKey) {
       onSelect(id, 'toggle');
     } else {
       onSelect(id, 'single');
@@ -199,7 +195,7 @@ function EncounterSidebar({
             )}
           </h3>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            {modifierKey}+click or Shift+click
+            {modifierKey}+click to multi-select
           </p>
         </div>
         <Button
@@ -428,7 +424,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
               <Swords className="h-4 w-4" />
               Damage Done
             </h3>
-            <PlayerMetricChart data={mergedDps} type="damage" style={{ height: "400px" }} />
+            <PlayerMetricChart data={mergedDps} type="damage" duration_millis={totalDurationMs} style={{ height: "400px" }} />
           </Card>
         )}
 
@@ -438,7 +434,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
               <Heart className="h-4 w-4" />
               Healing
             </h3>
-            <PlayerMetricChart data={mergedHealing} type="healing" style={{ height: "400px" }} />
+            <PlayerMetricChart data={mergedHealing} type="healing" duration_millis={totalDurationMs} style={{ height: "400px" }} />
           </Card>
         )}
 
@@ -448,7 +444,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
               <Shield className="h-4 w-4" />
               Damage Taken
             </h3>
-            <PlayerMetricChart data={mergedDamageTaken} type="damage" style={{ height: "400px" }} />
+            <PlayerMetricChart data={mergedDamageTaken} type="damage" duration_millis={totalDurationMs} style={{ height: "400px" }} />
           </Card>
         )}
 
@@ -477,31 +473,14 @@ export function InstancePageView({
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>(
     selectedEncounterIds || (defaultEncounter ? [defaultEncounter.id] : [])
   );
-  const [lastSelectedId, setLastSelectedId] = useState<string | null>(
-    defaultEncounter?.id || null
-  );
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const selectedIds = selectedEncounterIds ?? internalSelectedIds;
   
-  const handleSelect = (id: string, mode: 'single' | 'toggle' | 'range') => {
+  const handleSelect = (id: string, mode: 'single' | 'toggle') => {
     const update = onSelectEncounters ?? setInternalSelectedIds;
     
-    if (mode === 'range' && lastSelectedId) {
-      // Select all encounters between lastSelectedId and id
-      const allIds = instance.encounters.map(e => e.id);
-      const lastIdx = allIds.indexOf(lastSelectedId);
-      const currentIdx = allIds.indexOf(id);
-      
-      if (lastIdx !== -1 && currentIdx !== -1) {
-        const start = Math.min(lastIdx, currentIdx);
-        const end = Math.max(lastIdx, currentIdx);
-        const rangeIds = allIds.slice(start, end + 1);
-        // Merge with existing selection
-        const newSelection = [...new Set([...selectedIds, ...rangeIds])];
-        update(newSelection);
-      }
-    } else if (mode === 'toggle') {
+    if (mode === 'toggle') {
       // Toggle selection
       if (selectedIds.includes(id)) {
         // Don't allow deselecting the last one
@@ -511,11 +490,9 @@ export function InstancePageView({
       } else {
         update([...selectedIds, id]);
       }
-      setLastSelectedId(id);
     } else {
       // Single select replaces
       update([id]);
-      setLastSelectedId(id);
     }
   };
 
@@ -556,7 +533,6 @@ export function InstancePageView({
             encounters={instance.encounters}
             trashGroups={trashGroups}
             selectedIds={selectedIds}
-            lastSelectedId={lastSelectedId}
             onSelect={handleSelect}
           />
         ) : (

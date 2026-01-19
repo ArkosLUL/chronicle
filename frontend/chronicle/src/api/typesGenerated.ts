@@ -30,7 +30,7 @@ export interface EncounterDamageSummary {
 }
 
 // From chroniclesdk/log.go
-export type GUIDString = number;
+export type GUIDString = string;
 
 // From chroniclesdk/log.go
 export interface InstancePlayer {
@@ -233,8 +233,8 @@ export interface WoWLogGroupState extends WoWLogGroup {
 // From chroniclesdk/log.go
 export interface WoWParsedInstance extends WoWInstance {
     readonly encounters: readonly WoWEncounter[];
-    readonly units: Record<GUID, InstanceUnit>;
-    readonly players: Record<GUID, InstancePlayer>;
+    readonly units: Record<string, InstanceUnit>;
+    readonly players: Record<string, InstancePlayer>;
 }
 
 // From chroniclesdk/log.go

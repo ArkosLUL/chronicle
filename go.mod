@@ -8,7 +8,7 @@ require (
 	github.com/KromDaniel/regengo v0.5.3
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/coder/guts v1.6.1
+	github.com/coder/guts v1.6.3-0.20260119001608-85e588a5c6e2
 	github.com/coder/quartz v0.3.0
 	github.com/coder/retry v1.5.1
 	github.com/coder/serpent v0.12.0
@@ -38,6 +38,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9
+	golang.org/x/text v0.33.0
 	golang.org/x/tools v0.40.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 	riverqueue.com/riverui v0.14.0
@@ -280,7 +281,6 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251203150158-8fff8a5912fc // indirect
 	golang.org/x/term v0.38.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools/cmd/cover v0.1.0-deprecated // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251213004720-97cd9d5aeac2 // indirect

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InstancePageView, type Instance, type Encounter, type EnemyUnit } from "./InstancePage";
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import type { InstancePlayer, InstanceUnit, WoWHeroClasses, WoWHeroRaces } from "@/api/typesGenerated";
+import { GUID } from "@/lib/guid/guid";
 
 const meta = {
   title: "Pages/Instance",
@@ -27,36 +29,87 @@ const playerNames = [
   "Doomhammer", "Silentshot", "Ragnarok", "Felfire", "Astralwing",
 ];
 
+// WoW class mapping (uppercase for API types)
+const classMapping: { display: string; api: WoWHeroClasses }[] = [
+  { display: "Rogue", api: "ROGUE" },
+  { display: "Mage", api: "MAGE" },
+  { display: "Warlock", api: "WARLOCK" },
+  { display: "Warrior", api: "WARRIOR" },
+  { display: "Hunter", api: "HUNTER" },
+  { display: "Druid", api: "DRUID" },
+  { display: "Priest", api: "PRIEST" },
+  { display: "Paladin", api: "PALADIN" },
+  { display: "Shaman", api: "SHAMAN" },
+];
+
+const races: WoWHeroRaces[] = ["Human", "Dwarf", "NightElf", "Gnome", "Orc", "Troll", "Tauren", "Scourge"];
+
+// Generate a mock player GUID (high bits = 0x0000 for players)
+function mockPlayerGuid(index: number): GUID {
+  // Player GUIDs have high 16 bits with 0x00f0 mask = 0x0000
+  const value = BigInt(0x0000_0000_0001_0000) + BigInt(index);
+  return GUID.fromBigInt(value);
+}
+
+// Generate a mock creature GUID (high bits with 0x00f0 mask = 0x0030 for creatures)
+function mockCreatureGuid(entry: number, spawnId: number): GUID {
+  // Creature GUIDs: high = 0xF130, entry in bits 24-47, spawn in low 24
+  // Format: 0xF130_EEEE_EEXX_XXXX where E=entry (24 bits shifted), X=spawn
+  const high = BigInt(0xF130) << BigInt(48);
+  const entryBits = BigInt(entry & 0xFFFFFF) << BigInt(24);
+  const spawnBits = BigInt(spawnId & 0xFFFFFF);
+  return GUID.fromBigInt(high | entryBits | spawnBits);
+}
+
+// Generate mock players map
+function mockPlayersMap(playerCount: number): Record<string, InstancePlayer> {
+  const players: Record<string, InstancePlayer> = {};
+  for (let i = 0; i < playerCount; i++) {
+    const guid = mockPlayerGuid(i + 1);
+    const classInfo = classMapping[i % classMapping.length];
+    players[guid.toString()] = {
+      name: playerNames[i % playerNames.length] + (i >= playerNames.length ? `${Math.floor(i / playerNames.length) + 1}` : ""),
+      class: classInfo.api,
+      race: races[i % races.length],
+    };
+  }
+  return players;
+}
+
+// Specs for chart display
+const specsByClass: Record<string, string[]> = {
+  Rogue: ["Combat", "Assassination", "Subtlety"],
+  Mage: ["Fire", "Frost", "Arcane"],
+  Warlock: ["Affliction", "Demonology", "Destruction"],
+  Warrior: ["Fury", "Arms", "Protection"],
+  Hunter: ["Marksmanship", "Beast Mastery", "Survival"],
+  Druid: ["Balance", "Feral"],
+  Priest: ["Shadow"],
+  Paladin: ["Retribution"],
+  Shaman: ["Enhancement", "Elemental"],
+};
+
 // Mock DPS data generator - supports up to 40 players
 function mockDpsData(playerCount: number = 40): PlayerMetricChartData[] {
-  const classes = [
-    { className: "Rogue", specs: ["Combat", "Assassination", "Subtlety"] },
-    { className: "Mage", specs: ["Fire", "Frost", "Arcane"] },
-    { className: "Warlock", specs: ["Affliction", "Demonology", "Destruction"] },
-    { className: "Warrior", specs: ["Fury", "Arms", "Protection"] },
-    { className: "Hunter", specs: ["Marksmanship", "Beast Mastery", "Survival"] },
-    { className: "Druid", specs: ["Balance", "Feral"] },
-    { className: "Priest", specs: ["Shadow"] },
-    { className: "Paladin", specs: ["Retribution"] },
-    { className: "Shaman", specs: ["Enhancement", "Elemental"] },
-  ];
-
   // Generate with some variance to make it realistic
   return Array.from({ length: playerCount }, (_, i) => {
-    const classInfo = classes[i % classes.length];
+    const classInfo = classMapping[i % classMapping.length];
+    const guid = mockPlayerGuid(i + 1);
+    const specs = specsByClass[classInfo.display] || ["Unknown"];
     // Top players do ~800-1200 DPS, falls off toward bottom
     const baseValue = 1200 - (i * 25) + (Math.random() * 150 - 75);
     return {
-      playerID: `player-${i + 1}`,
+      playerID: guid.toString(),
       playerName: playerNames[i % playerNames.length] + (i >= playerNames.length ? `${Math.floor(i / playerNames.length) + 1}` : ""),
-      className: classInfo.className,
-      specialization: classInfo.specs[Math.floor(Math.random() * classInfo.specs.length)],
+      className: classInfo.display,
+      specialization: specs[Math.floor(Math.random() * specs.length)],
       value: Math.max(50, Math.round(baseValue * 10) / 10),
     };
   }).sort((a, b) => b.value - a.value); // Sort by DPS descending
 }
 
 // Mock Healing data generator - supports up to 15 healers
+// Healers use player GUIDs starting after DPS (offset by 100 to avoid overlap)
 function mockHealingData(healerCount: number = 10): PlayerMetricChartData[] {
   const healerClasses = [
     { className: "Priest", specs: ["Holy", "Discipline"] },
@@ -73,11 +126,12 @@ function mockHealingData(healerCount: number = 10): PlayerMetricChartData[] {
 
   return Array.from({ length: healerCount }, (_, i) => {
     const classInfo = healerClasses[i % healerClasses.length];
+    const guid = mockPlayerGuid(100 + i + 1); // Offset for healers
     const baseHealing = 500 - (i * 30) + (Math.random() * 80 - 40);
     const overhealPercent = 0.1 + Math.random() * 0.25; // 10-35% overheal
     
     return {
-      playerID: `healer-${i + 1}`,
+      playerID: guid.toString(),
       playerName: healerNames[i % healerNames.length],
       className: classInfo.className,
       specialization: classInfo.specs[Math.floor(Math.random() * classInfo.specs.length)],
@@ -87,7 +141,17 @@ function mockHealingData(healerCount: number = 10): PlayerMetricChartData[] {
   }).sort((a, b) => b.value - a.value);
 }
 
-// Mock enemy data generator
+// Simple hash function for generating consistent entry IDs from names
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash) % 100000;
+}
+
+// Mock enemy data generator - returns enemies with GUID-based IDs
 function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
   // Define some thematic adds based on encounter
   const addsByEncounter: Record<string, string[]> = {
@@ -112,8 +176,10 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
 
   // Add the main boss/enemy
   if (boss) {
+    const bossEntry = hashString(encounterName);
+    const bossGuid = mockCreatureGuid(bossEntry, 1);
     enemies.push({
-      id: `enemy-${encounterName.toLowerCase().replace(/\s+/g, '-')}`,
+      id: bossGuid.toString(),
       name: encounterName,
       damageTaken: Math.round(500000 + Math.random() * 200000),
       damageDone: Math.round(150000 + Math.random() * 50000),
@@ -121,12 +187,11 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
   }
 
   // Add the adds
-  const addCounts = new Map<string, number>();
   adds.forEach((addName, i) => {
-    const count = (addCounts.get(addName) || 0) + 1;
-    addCounts.set(addName, count);
+    const addEntry = hashString(addName);
+    const addGuid = mockCreatureGuid(addEntry, i + 2); // spawnId starts at 2
     enemies.push({
-      id: `enemy-add-${i}-${addName.toLowerCase().replace(/\s+/g, '-')}`,
+      id: addGuid.toString(),
       name: addName,
       damageTaken: Math.round(50000 + Math.random() * 30000),
       damageDone: Math.round(20000 + Math.random() * 15000),
@@ -166,14 +231,86 @@ function createEncounter(
   };
 }
 
+// Helper to build a complete instance with all lookups
+function createInstance(
+  id: string,
+  name: string,
+  realm: string,
+  startTime: string,
+  endTime: string,
+  encounters: Encounter[],
+  dpsPlayerCount: number = 40,
+  healerCount: number = 10
+): Instance {
+  // Collect all unique enemies across all encounters
+  const allEnemies: EnemyUnit[] = [];
+  for (const enc of encounters) {
+    if (enc.enemies) {
+      allEnemies.push(...enc.enemies);
+    }
+  }
+
+  // Build units lookup from enemies
+  const units: Record<string, InstanceUnit> = {};
+  for (const enemy of allEnemies) {
+    if (!units[enemy.id]) {
+      // Parse entry from the GUID if possible
+      let entry = 0;
+      try {
+        const guid = GUID.fromString(enemy.id);
+        const result = guid.getEntry();
+        if (result.ok) {
+          entry = result.entry;
+        }
+      } catch {
+        // Fallback if GUID parsing fails
+        entry = hashString(enemy.name);
+      }
+      units[enemy.id] = {
+        name: enemy.name,
+        owner: null,
+        entry,
+      };
+    }
+  }
+
+  // Build players lookup (DPS + healers)
+  const players = mockPlayersMap(dpsPlayerCount);
+  // Add healer players
+  for (let i = 0; i < healerCount; i++) {
+    const guid = mockPlayerGuid(100 + i + 1);
+    const healerClasses: WoWHeroClasses[] = ["PRIEST", "SHAMAN", "DRUID", "PALADIN"];
+    const healerNames = [
+      "Lifebinder", "Earthmender", "Natureheal", "Lightbringer", "Holylight",
+      "Soulhealer", "Renewlife", "Manaspring", "Spiritguide", "Gracetouch",
+    ];
+    players[guid.toString()] = {
+      name: healerNames[i % healerNames.length],
+      class: healerClasses[i % healerClasses.length],
+      race: races[i % races.length],
+    };
+  }
+
+  return {
+    id,
+    name,
+    realm,
+    startTime,
+    endTime,
+    encounters,
+    players,
+    units,
+  };
+}
+
 // Full Scarlet Monastery Cathedral run
-const smCathedralInstance: Instance = {
-  id: "instance-sm-cathedral",
-  name: "Scarlet Monastery Cathedral",
-  realm: "Turtle WoW",
-  startTime: "2026-01-15T19:00:00Z",
-  endTime: "2026-01-15T19:45:00Z",
-  encounters: [
+const smCathedralInstance: Instance = createInstance(
+  "instance-sm-cathedral",
+  "Scarlet Monastery Cathedral",
+  "Turtle WoW",
+  "2026-01-15T19:00:00Z",
+  "2026-01-15T19:45:00Z",
+  [
     // Trash encounters
     createEncounter("trash-1", "Scarlet Myrmidon", false, true, 2, 24, false),
     createEncounter("trash-2", "Scarlet Defender", false, true, 5, 35, false),
@@ -188,17 +325,17 @@ const smCathedralInstance: Instance = {
     createEncounter("boss-2", "Scarlet Commander Mograine", true, false, 30, 80), // Wipe
     createEncounter("boss-3", "Scarlet Commander Mograine", true, true, 35, 126),
     createEncounter("boss-4", "High Inquisitor Whitemane", true, true, 40, 180),
-  ],
-};
+  ]
+);
 
 // Molten Core raid
-const moltenCoreInstance: Instance = {
-  id: "instance-mc",
-  name: "Molten Core",
-  realm: "Turtle WoW",
-  startTime: "2026-01-15T20:00:00Z",
-  endTime: "2026-01-15T23:30:00Z",
-  encounters: [
+const moltenCoreInstance: Instance = createInstance(
+  "instance-mc",
+  "Molten Core",
+  "Turtle WoW",
+  "2026-01-15T20:00:00Z",
+  "2026-01-15T23:30:00Z",
+  [
     // Some trash
     createEncounter("mc-trash-1", "Molten Giant", false, true, 5, 45, false),
     createEncounter("mc-trash-2", "Molten Giant", false, true, 8, 50, false),
@@ -219,21 +356,21 @@ const moltenCoreInstance: Instance = {
     createEncounter("mc-boss-11", "Ragnaros", true, false, 220, 240), // Wipe
     createEncounter("mc-boss-12", "Ragnaros", true, false, 235, 200), // Wipe again
     createEncounter("mc-boss-13", "Ragnaros", true, true, 250, 300),
-  ],
-};
+  ]
+);
 
 // Minimal instance with just bosses
-const bossOnlyInstance: Instance = {
-  id: "instance-boss-only",
-  name: "Onyxia's Lair",
-  realm: "Turtle WoW",
-  startTime: "2026-01-15T21:00:00Z",
-  endTime: "2026-01-15T21:15:00Z",
-  encounters: [
+const bossOnlyInstance: Instance = createInstance(
+  "instance-boss-only",
+  "Onyxia's Lair",
+  "Turtle WoW",
+  "2026-01-15T21:00:00Z",
+  "2026-01-15T21:15:00Z",
+  [
     createEncounter("ony-1", "Onyxia", true, false, 2, 180), // Wipe
     createEncounter("ony-2", "Onyxia", true, true, 8, 240),
-  ],
-};
+  ]
+);
 
 export const Default: Story = {
   args: {

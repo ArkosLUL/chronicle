@@ -214,17 +214,39 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				if id.IsPlayer() {
 					playerData, ok := encountersState.Units.GetPlayer(id)
 					if ok {
-						return fmt.Errorf("getting player info for %s: %w", id.String(), err)
+						seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
+							InstanceID: dbinstance.ID,
+							UnitGuid:   id,
+							Name:       info.Name,
+							Level:      -1,
+							Class:      database.WowPlayableClass(playerData.HeroClass),
+							Race:       database.WowPlayableRace(playerData.Race),
+						})
+						continue
+					}
+
+					unitInfo, ok := encountersState.Units.Get(id)
+					if ok {
+						seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
+							InstanceID: dbinstance.ID,
+							UnitGuid:   id,
+							Name:       unitInfo.Name,
+							Level:      -1,
+							Class:      database.WowPlayableClassUNKNOWN,
+							Race:       database.WowPlayableRaceUnknown,
+						})
+						continue
 					}
 
 					seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
 						InstanceID: dbinstance.ID,
 						UnitGuid:   id,
-						Name:       info.Name,
+						Name:       "Unknown",
 						Level:      -1,
-						Class:      database.WowPlayableClass(playerData.HeroClass),
-						Race:       database.WowPlayableRace(playerData.Race),
+						Class:      database.WowPlayableClassUNKNOWN,
+						Race:       database.WowPlayableRaceUnknown,
 					})
+
 					continue
 				}
 

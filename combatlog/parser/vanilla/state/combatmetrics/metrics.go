@@ -1,13 +1,13 @@
 package combatmetrics
 
 import (
-  "errors"
-  "sort"
-  "time"
+	"errors"
+	"sort"
+	"time"
 
-  "github.com/Emyrk/chronicle/combatlog/consumers"
-  "github.com/Emyrk/chronicle/combatlog/parser/types"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
 var _ consumers.Consumer = (*Metrics)(nil)
@@ -75,7 +75,7 @@ func (met *Metrics) Range(start, end time.Time, each func(e messages.Message) er
 		return nil
 	}
 	if !start.Before(end) {
-		return errors.New("start time must be before end time")
+		return errors.New("start time must be before end time: " + start.String() + " >= " + end.String())
 	}
 
 	// Find first index i where evs[i].Timestamp >= start

@@ -118,17 +118,18 @@ func TypeMappings(gen *guts.GoParser) error {
 
 	err := gen.IncludeCustom(map[string]string{
 		// Serpent fields should be converted to their primitive types
-		"github.com/coder/serpent.Regexp":         "string",
-		"github.com/coder/serpent.StringArray":    "string",
-		"github.com/coder/serpent.String":         "string",
-		"github.com/coder/serpent.YAMLConfigPath": "string",
-		"github.com/coder/serpent.Strings":        "[]string",
-		"github.com/coder/serpent.Int64":          "int64",
-		"github.com/coder/serpent.Bool":           "bool",
-		"github.com/coder/serpent.Duration":       "int64",
-		"github.com/coder/serpent.URL":            "string",
-		"github.com/coder/serpent.HostPort":       "string",
-		"encoding/json.RawMessage":                "map[string]string",
+		"github.com/coder/serpent.Regexp":                        "string",
+		"github.com/coder/serpent.StringArray":                   "string",
+		"github.com/coder/serpent.String":                        "string",
+		"github.com/coder/serpent.YAMLConfigPath":                "string",
+		"github.com/coder/serpent.Strings":                       "[]string",
+		"github.com/coder/serpent.Int64":                         "int64",
+		"github.com/coder/serpent.Bool":                          "bool",
+		"github.com/coder/serpent.Duration":                      "int64",
+		"github.com/coder/serpent.URL":                           "string",
+		"github.com/coder/serpent.HostPort":                      "string",
+		"encoding/json.RawMessage":                               "map[string]string",
+		"github.com/Emyrk/chronicle/api/chroniclesdk.GUIDString": "string",
 	})
 	if err != nil {
 		return xerrors.Errorf("include custom: %w", err)

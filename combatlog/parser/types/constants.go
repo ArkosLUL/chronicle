@@ -19,10 +19,10 @@ type ChangeDirection string
 // ENUM(casts, begins to cast, channels, fails casting)
 type CastActions string
 
-// ENUM(DRUID,HUNTER,MAGE,PALADIN,PRIEST,ROGUE,SHAMAN,WARLOCK,WARRIOR)
+// ENUM(DRUID,HUNTER,MAGE,PALADIN,PRIEST,ROGUE,SHAMAN,WARLOCK,WARRIOR,UNKNOWN)
 type HeroClasses string
 
-// ENUM(Scourge,Orc,Troll,Tauren,Goblin,Human,Gnome,Dwarf,NightElf,BloodElf)
+// ENUM(Scourge,Orc,Troll,Tauren,Goblin,Human,Gnome,Dwarf,NightElf,BloodElf,Unknown)
 type HeroRaces string
 
 // ENUM(NotSet,Unknown,Male,Female)

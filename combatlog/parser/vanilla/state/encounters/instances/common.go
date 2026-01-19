@@ -95,7 +95,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 
 		summary, err := c.combatValues.DamageSummary(ctx, fight.Start, fight.End)
 		if err != nil {
-			return nil, fmt.Errorf("computing damage summaryr: %w", err)
+			return nil, fmt.Errorf("computing damage summary: %w", err)
 		}
 
 		encounters = append(encounters, Encounter{

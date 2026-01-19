@@ -35,8 +35,8 @@ func FromString(gid string) (GUID, error) {
 }
 
 func (g GUID) MarshalJSON() ([]byte, error) {
-	return g.MarshalText()
-
+	// MarshalJSON needs quoted string for JSON values
+	return json.Marshal(g.String())
 }
 
 func (g *GUID) UnmarshalJSON(data []byte) error {
@@ -48,7 +48,7 @@ func (g *GUID) UnmarshalJSON(data []byte) error {
 }
 
 func (g GUID) MarshalText() ([]byte, error) {
-	return json.Marshal(g.String())
+	return []byte(g.String()), nil
 }
 
 func (g *GUID) UnmarshalText(data []byte) error {

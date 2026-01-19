@@ -25,6 +25,8 @@ const mockParsedOutput: WoWParsedLogJobOutput = {
       name: "Scarlet Monastery Cathedral",
       realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
       log_group_id: "296c74e3-310b-4137-987d-f711471f68e6",
+      units: {},
+      players: {},
       encounters: [
         // Trash fights
         { id: "ad0f8a04-27bf-44c5-817e-e0b76288b980", boss: false, kill: true, name: "Scarlet Myrmidon", end_time: "2025-12-09T11:13:34.196-06:00", start_time: "2025-12-09T11:13:10.957-06:00", instance_id: "c52bdaae-bb0c-4952-a6d3-6848c6f639c8" },

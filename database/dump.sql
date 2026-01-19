@@ -46,7 +46,8 @@ CREATE TYPE wow_playable_class AS ENUM (
     'WARLOCK',
     'DRUID',
     'MONK',
-    'DEMON_HUNTER'
+    'DEMON_HUNTER',
+    'UNKNOWN'
 );
 
 CREATE TYPE wow_playable_race AS ENUM (
@@ -59,7 +60,8 @@ CREATE TYPE wow_playable_race AS ENUM (
     'Gnome',
     'Dwarf',
     'NightElf',
-    'BloodElf'
+    'BloodElf',
+    'Unknown'
 );
 
 CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) RETURNS boolean

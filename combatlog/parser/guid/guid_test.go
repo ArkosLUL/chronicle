@@ -1,6 +1,7 @@
 package guid_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -116,6 +117,22 @@ func TestGUID(t *testing.T) {
 			require.Equal(t, tt.isObject, tt.guid.IsObject(), "object")
 		})
 	}
+}
+
+func TestGUIDJSON(t *testing.T) {
+	t.Parallel()
+
+	type TestStruct struct {
+		ID guid.GUID `json:"id"`
+	}
+
+	testValue := TestStruct{
+		ID: guid.GUID(0xF130000CE0000D3F),
+	}
+
+	jsonData, err := json.Marshal(testValue)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"id":"0xF130000CE0000D3F"}`, string(jsonData))
 }
 
 func TestFromString(t *testing.T) {

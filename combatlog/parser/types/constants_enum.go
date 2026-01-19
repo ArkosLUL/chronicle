@@ -244,6 +244,8 @@ const (
 	HeroClassesWARLOCK HeroClasses = "WARLOCK"
 	// HeroClassesWARRIOR is a HeroClasses of type WARRIOR.
 	HeroClassesWARRIOR HeroClasses = "WARRIOR"
+	// HeroClassesUNKNOWN is a HeroClasses of type UNKNOWN.
+	HeroClassesUNKNOWN HeroClasses = "UNKNOWN"
 )
 
 var ErrInvalidHeroClasses = errors.New("not a valid HeroClasses")
@@ -279,6 +281,8 @@ var _HeroClassesValue = map[string]HeroClasses{
 	"warlock": HeroClassesWARLOCK,
 	"WARRIOR": HeroClassesWARRIOR,
 	"warrior": HeroClassesWARRIOR,
+	"UNKNOWN": HeroClassesUNKNOWN,
+	"unknown": HeroClassesUNKNOWN,
 }
 
 // ParseHeroClasses attempts to convert a string to a HeroClasses.
@@ -374,6 +378,8 @@ const (
 	HeroRacesNightElf HeroRaces = "NightElf"
 	// HeroRacesBloodElf is a HeroRaces of type BloodElf.
 	HeroRacesBloodElf HeroRaces = "BloodElf"
+	// HeroRacesUnknown is a HeroRaces of type Unknown.
+	HeroRacesUnknown HeroRaces = "Unknown"
 )
 
 var ErrInvalidHeroRaces = errors.New("not a valid HeroRaces")
@@ -411,6 +417,8 @@ var _HeroRacesValue = map[string]HeroRaces{
 	"nightelf": HeroRacesNightElf,
 	"BloodElf": HeroRacesBloodElf,
 	"bloodelf": HeroRacesBloodElf,
+	"Unknown":  HeroRacesUnknown,
+	"unknown":  HeroRacesUnknown,
 }
 
 // ParseHeroRaces attempts to convert a string to a HeroRaces.

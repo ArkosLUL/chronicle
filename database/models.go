@@ -241,6 +241,7 @@ const (
 	WowPlayableClassDRUID       WowPlayableClass = "DRUID"
 	WowPlayableClassMONK        WowPlayableClass = "MONK"
 	WowPlayableClassDEMONHUNTER WowPlayableClass = "DEMON_HUNTER"
+	WowPlayableClassUNKNOWN     WowPlayableClass = "UNKNOWN"
 )
 
 func (e *WowPlayableClass) Scan(src interface{}) error {
@@ -291,7 +292,8 @@ func (e WowPlayableClass) Valid() bool {
 		WowPlayableClassWARLOCK,
 		WowPlayableClassDRUID,
 		WowPlayableClassMONK,
-		WowPlayableClassDEMONHUNTER:
+		WowPlayableClassDEMONHUNTER,
+		WowPlayableClassUNKNOWN:
 		return true
 	}
 	return false
@@ -311,6 +313,7 @@ func AllWowPlayableClassValues() []WowPlayableClass {
 		WowPlayableClassDRUID,
 		WowPlayableClassMONK,
 		WowPlayableClassDEMONHUNTER,
+		WowPlayableClassUNKNOWN,
 	}
 }
 
@@ -327,6 +330,7 @@ const (
 	WowPlayableRaceDwarf    WowPlayableRace = "Dwarf"
 	WowPlayableRaceNightElf WowPlayableRace = "NightElf"
 	WowPlayableRaceBloodElf WowPlayableRace = "BloodElf"
+	WowPlayableRaceUnknown  WowPlayableRace = "Unknown"
 )
 
 func (e *WowPlayableRace) Scan(src interface{}) error {
@@ -375,7 +379,8 @@ func (e WowPlayableRace) Valid() bool {
 		WowPlayableRaceGnome,
 		WowPlayableRaceDwarf,
 		WowPlayableRaceNightElf,
-		WowPlayableRaceBloodElf:
+		WowPlayableRaceBloodElf,
+		WowPlayableRaceUnknown:
 		return true
 	}
 	return false
@@ -393,6 +398,7 @@ func AllWowPlayableRaceValues() []WowPlayableRace {
 		WowPlayableRaceDwarf,
 		WowPlayableRaceNightElf,
 		WowPlayableRaceBloodElf,
+		WowPlayableRaceUnknown,
 	}
 }
 

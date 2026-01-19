@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Heart, Shield, PanelLeftClose, PanelLeft, Loader2 } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary, type WoWEncounter } from "@/api/queries";
+import type { InstancePlayer, InstanceUnit, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,10 @@ export interface Instance {
   startTime: string;
   endTime?: string;
   encounters: Encounter[];
+  // GUID -> player info lookup
+  players?: Record<string, InstancePlayer>;
+  // GUID -> unit info lookup (creatures, pets, etc.)
+  units?: Record<string, InstanceUnit>;
 }
 
 interface InstancePageViewProps {
@@ -578,11 +583,61 @@ export function InstancePageView({
   );
 }
 
+// Map WoW API class names (uppercase) to display names (title case)
+const classDisplayNames: Record<WoWHeroClasses, string> = {
+  DRUID: "Druid",
+  HUNTER: "Hunter",
+  MAGE: "Mage",
+  PALADIN: "Paladin",
+  PRIEST: "Priest",
+  ROGUE: "Rogue",
+  SHAMAN: "Shaman",
+  WARLOCK: "Warlock",
+  WARRIOR: "Warrior",
+};
+
+// Helper to get player name from lookup, with fallback
+function getPlayerName(guidStr: string, players: Record<string, InstancePlayer>): string {
+  const player = players[guidStr];
+  if (player) {
+    return player.name;
+  }
+  // Fallback: try to show a short version of the GUID
+  return `Player ${guidStr.slice(-6)}`;
+}
+
+// Helper to get player class display name from lookup
+function getPlayerClass(guidStr: string, players: Record<string, InstancePlayer>): string {
+  const player = players[guidStr];
+  if (player) {
+    return classDisplayNames[player.class] || player.class;
+  }
+  return "Unknown";
+}
+
+// Helper to get unit name from lookup, with fallback
+function getUnitName(guidStr: string, units: Record<string, InstanceUnit>): string {
+  const unit = units[guidStr];
+  if (unit) {
+    return unit.name;
+  }
+  // Fallback: try to show a short version of the GUID
+  return `Enemy ${guidStr.slice(-6)}`;
+}
+
 // Helper to transform API data to view data
 function transformToInstance(
-  apiInstance: { id: string; name: string; encounters: readonly WoWEncounter[] },
+  apiInstance: {
+    id: string;
+    name: string;
+    encounters: readonly WoWEncounter[];
+    players: Record<string, InstancePlayer>;
+    units: Record<string, InstanceUnit>;
+  },
   damageSummary: EncounterDamageSummary[]
 ): Instance {
+  const { players, units } = apiInstance;
+
   // Group damage summaries by encounter
   const damageByEncounter = new Map<string, EncounterDamageSummary[]>();
   for (const summary of damageSummary) {
@@ -595,34 +650,43 @@ function transformToInstance(
   const encounters: Encounter[] = apiInstance.encounters.map((enc) => {
     const encounterDamage = damageByEncounter.get(enc.id) || [];
     
-    // Separate players from enemies
+    // Separate players from enemies using the GUID helper
     const playerDamage = encounterDamage.filter((d) => d.is_player);
     const enemyDamage = encounterDamage.filter((d) => !d.is_player && !d.owner_guid);
     
-    const dps: PlayerMetricChartData[] = playerDamage.map((d) => ({
-      playerID: String(d.unit_guid),
-      playerName: `Player ${d.unit_guid}`, // TODO: fetch actual player names
-      className: "Unknown", // TODO: fetch class info - using Warrior as default
-      specialization: "",
-      value: d.damage_done_total,
-    }));
+    const dps: PlayerMetricChartData[] = playerDamage.map((d) => {
+      const guidStr = String(d.unit_guid);
+      return {
+        playerID: guidStr,
+        playerName: getPlayerName(guidStr, players),
+        className: getPlayerClass(guidStr, players),
+        specialization: "",
+        value: d.damage_done_total,
+      };
+    });
 
-    const damageTaken: PlayerMetricChartData[] = playerDamage.map((d) => ({
-      playerID: String(d.unit_guid),
-      playerName: `Player ${d.unit_guid}`,
-      className: "Unknown", // TODO: fetch class info - using Warrior as default
-      specialization: "",
-      value: d.damage_taken_total,
-    }));
+    const damageTaken: PlayerMetricChartData[] = playerDamage.map((d) => {
+      const guidStr = String(d.unit_guid);
+      return {
+        playerID: guidStr,
+        playerName: getPlayerName(guidStr, players),
+        className: getPlayerClass(guidStr, players),
+        specialization: "",
+        value: d.damage_taken_total,
+      };
+    });
 
     // Extract enemy units (non-players without owners, i.e. not pets)
     const enemies: EnemyUnit[] = enemyDamage
-      .map((d) => ({
-        id: String(d.unit_guid),
-        name: `Enemy ${d.unit_guid}`, // TODO: fetch actual enemy names
-        damageTaken: d.damage_taken_total, // damage they took from players
-        damageDone: d.damage_done_total,   // damage they dealt to players
-      }))
+      .map((d) => {
+        const guidStr = String(d.unit_guid);
+        return {
+          id: guidStr,
+          name: getUnitName(guidStr, units),
+          damageTaken: d.damage_taken_total, // damage they took from players
+          damageDone: d.damage_done_total,   // damage they dealt to players
+        };
+      })
       .filter((e) => e.damageTaken > 0 || e.damageDone > 0)
       .sort((a, b) => b.damageTaken - a.damageTaken); // sort by damage taken (most damaged first)
 
@@ -653,6 +717,8 @@ function transformToInstance(
     startTime,
     endTime,
     encounters,
+    players,
+    units,
   };
 }
 

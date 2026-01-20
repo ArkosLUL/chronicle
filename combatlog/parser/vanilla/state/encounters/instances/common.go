@@ -71,11 +71,13 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 				boss = true
 			}
 
-			// TODO: Do this better
+			// Always take the encounter name if set
 			if id.EncounterName != "" {
 				encounterName = id.EncounterName
 				encounterType = types.EncounterTypeBOSS
-			} else if id.EncounterName == "" {
+			}
+
+			if encounterName == "" {
 				info, hasInfo := c.db.Get(h.ID)
 				if hasInfo {
 					encounterName = info.Name

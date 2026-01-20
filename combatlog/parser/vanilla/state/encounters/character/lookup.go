@@ -19,6 +19,10 @@ var characterFactories = []characterFactory{
 	NewCoreHoundCharacter,
 	NewMajordomoPartyCharacter,
 	NewIncindisCharacter,
+	NewSulfuronHarbingerCharacter,
+	NewSmoldarisBasaltharCharacter,
+	NewSorcererThaneCharacter,
+	NewRagnarosCharacter,
 	// Onyxia
 	NewOnyxiaCharacter,
 }

@@ -81,27 +81,30 @@ function formatPeriodMoment(moment: { timestamp: string; reason: string } | unde
 }
 
 // Format activity periods for tooltip display
-function formatPeriodsTooltip(periods: readonly ActivityPeriod[]): React.ReactNode {
-  if (!periods || periods.length === 0) {
-    return <span className="text-muted-foreground">No activity data</span>;
-  }
-
+function formatPeriodsTooltip(guid: string, periods: readonly ActivityPeriod[]): React.ReactNode {
   return (
     <div className="space-y-2 max-w-xs">
-      <div className="font-medium border-b border-border pb-1">
-        Activity Periods ({periods.length})
-      </div>
-      {periods.map((period, idx) => (
-        <div key={idx} className="text-xs space-y-0.5">
-          <div className="font-medium text-foreground/80">Period {idx + 1}</div>
-          <div>Start: {formatPeriodMoment(period.start)}</div>
-          <div>End: {formatPeriodMoment(period.end)}</div>
-          <div>Last Active: {formatPeriodMoment(period.last_active)}</div>
-          <div className={period.slain ? "text-green-400" : "text-red-400"}>
-            {period.slain ? "✓ Slain" : "✗ Survived"}
+      <div className="font-mono text-xs text-muted-foreground">{guid}</div>
+      {(!periods || periods.length === 0) ? (
+        <span className="text-muted-foreground">No activity data</span>
+      ) : (
+        <>
+          <div className="font-medium border-b border-border pb-1">
+            Activity Periods ({periods.length})
           </div>
-        </div>
-      ))}
+          {periods.map((period, idx) => (
+            <div key={idx} className="text-xs space-y-0.5">
+              <div className="font-medium text-foreground/80">Period {idx + 1}</div>
+              <div>Start: {formatPeriodMoment(period.start)}</div>
+              <div>End: {formatPeriodMoment(period.end)}</div>
+              <div>Last Active: {formatPeriodMoment(period.last_active)}</div>
+              <div className={period.slain ? "text-green-400" : "text-red-400"}>
+                {period.slain ? "✓ Slain" : "✗ Survived"}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -650,7 +653,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="p-3">
-                        {formatPeriodsTooltip(enemy.periods)}
+                        {formatPeriodsTooltip(enemy.id, enemy.periods)}
                       </TooltipContent>
                     </Tooltip>
                   );

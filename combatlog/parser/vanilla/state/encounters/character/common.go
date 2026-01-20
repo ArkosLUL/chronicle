@@ -19,7 +19,7 @@ type Common struct {
 
 func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
 	return &Common{
-		Base: NewBaseCharacter[*period.InactivityPeriod](id, all),
+		Base:          NewBaseCharacter[*period.InactivityPeriod](id, all),
 	}
 }
 

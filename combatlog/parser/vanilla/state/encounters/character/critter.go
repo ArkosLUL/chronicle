@@ -32,22 +32,19 @@ func (c Critter) ID() guid.GUID {
 func (c Critter) String() string {
 	return "critter"
 }
-
 func (c Critter) Process(m messages.Message) error {
 	return nil
 }
-
+func (c Critter) Died(reason string, m messages.Message) {}
 func (c Critter) Periods() []period.Period {
 	return []period.Period{}
 }
 func (c Critter) CurrentPeriod() (period.Period, bool) {
 	return period.Period{}, false
 }
-
 func (c Critter) RecentlySlain(m messages.Message) bool {
 	return false
 }
-
 func (c Critter) IsActive() bool {
 	return false
 }

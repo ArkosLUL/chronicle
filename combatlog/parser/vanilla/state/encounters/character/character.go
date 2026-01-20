@@ -23,6 +23,7 @@ const (
 type Character interface {
 	ID() guid.GUID
 	String() string
+	Died(reason string, m messages.Message)
 	Process(m messages.Message) error
 	Periods() []period.Period
 	RecentlySlain(m messages.Message) bool
@@ -38,11 +39,16 @@ type Base[M period.IsPeriod] struct {
 	Activity period.PeriodCollector[M]
 
 	// LastSlain is the last slain message for this character.
-	LastSlain messages.Message
+	LastSlain     messages.Message
+	recentlySlain time.Duration
 }
 
 func NewBaseCharacter[M period.IsPeriod](me guid.GUID, lookup *Characters) *Base[M] {
-	return &Base[M]{lookup: lookup, id: me}
+	return &Base[M]{lookup: lookup, id: me, recentlySlain: time.Second}
+}
+
+func (c *Base[_]) SetRecentlySlainDuration(d time.Duration) {
+	c.recentlySlain = d
 }
 
 func (c *Base[_]) ID() guid.GUID { return c.id }
@@ -51,7 +57,7 @@ func (c *Base[_]) RecentlySlain(m messages.Message) bool {
 	if c.LastSlain == nil {
 		return false
 	}
-	return m.Date().Sub(c.LastSlain.Date()) < time.Second
+	return m.Date().Sub(c.LastSlain.Date()) < c.recentlySlain
 }
 
 func (c *Base[_]) ContainsMe(ids ...guid.GUID) bool {

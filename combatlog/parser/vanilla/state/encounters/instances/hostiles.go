@@ -141,8 +141,8 @@ func MoltenCoreHostiles() map[uint32]Identity {
 		12057: "Garr",
 		11988: "Golemagg the Incinerator",
 		// Basalthar & Smoldaris are a duo
-		65020: "Basalthar",
-		65021: "Smoldaris",
+		65020: "Basalthar & Smoldaris",
+		65021: "Basalthar & Smoldaris",
 
 		57642: "Sorcerer-Thane Thaurissan",
 		12098: "Sulfuron Harbinger",

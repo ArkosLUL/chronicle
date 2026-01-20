@@ -100,5 +100,12 @@ func (a *Periods) Scan(src interface{}) error {
 }
 
 func (a Periods) Value() (driver.Value, error) {
-	return json.Marshal(a)
+	if a == nil {
+		return "[]", nil
+	}
+	b, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	return string(b), nil
 }

@@ -63,6 +63,11 @@ type WoWEncounter struct {
 	EndTime    time.Time   `json:"end_time"`
 }
 
+type WoWEncounterWithHostiles struct {
+	WoWEncounter
+	Hostiles []WoWEncounterHostile `json:"hostiles"`
+}
+
 type WoWEncounterHostile struct {
 	ID      guid.GUID        `json:"id"`
 	Periods []ActivityPeriod `json:"periods"`
@@ -75,8 +80,13 @@ type WoWLogGroupState struct {
 }
 
 type WoWParsedLogJobOutput struct {
-	InstanceFailures map[string]string   `json:"instance_failures"`
-	Instances        []WoWParsedInstance `json:"instances"`
+	InstanceFailures map[string]string         `json:"instance_failures"`
+	Instances        []WoWSimpleParsedInstance `json:"instances"`
+}
+
+type WoWSimpleParsedInstance struct {
+	WoWInstance
+	Encounters []WoWEncounter `json:"encounters"`
 }
 
 type InstanceUnit struct {
@@ -93,8 +103,7 @@ type InstancePlayer struct {
 
 type WoWParsedInstance struct {
 	WoWInstance
-	Encounters []WoWEncounter                      `json:"encounters"`
-	Hostiles   map[uuid.UUID][]WoWEncounterHostile `json:"hostiles"`
-	Units      map[GUIDString]InstanceUnit         `json:"units"`
-	Players    map[GUIDString]InstancePlayer       `json:"players"`
+	Encounters []WoWEncounterWithHostiles    `json:"encounters"`
+	Units      map[GUIDString]InstanceUnit   `json:"units"`
+	Players    map[GUIDString]InstancePlayer `json:"players"`
 }

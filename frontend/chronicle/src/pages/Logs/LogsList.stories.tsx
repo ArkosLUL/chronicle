@@ -14,7 +14,6 @@ const cathedralParsedOutput: WoWParsedLogJobOutput = {
       encounters: [],
       units: {},
       players: {},
-      fights: {},
     },
   ],
   instance_failures: {},
@@ -31,7 +30,6 @@ const multiInstanceParsedOutput: WoWParsedLogJobOutput = {
       encounters: [],
       units: {},
       players: {},
-      fights: {},
     },
     {
       id: "d63bdaae-bb0c-4952-a6d3-6848c6f639c9",
@@ -41,7 +39,6 @@ const multiInstanceParsedOutput: WoWParsedLogJobOutput = {
       encounters: [],
       units: {},
       players: {},
-      fights: {},
     },
   ],
   instance_failures: {},
@@ -58,7 +55,6 @@ const failedParsedOutput: WoWParsedLogJobOutput = {
       encounters: [],
       units: {},
       players: {},
-      fights: {},
     },
   ],
   instance_failures: {

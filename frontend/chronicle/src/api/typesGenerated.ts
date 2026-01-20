@@ -186,6 +186,11 @@ export type WoWEncounterType = "BOSS" | "TRASH" | "UNKNOWN";
 
 export const WoWEncounterTypes: WoWEncounterType[] = ["BOSS", "TRASH", "UNKNOWN"];
 
+// From chroniclesdk/log.go
+export interface WoWEncounterWithHostiles extends WoWEncounter {
+    readonly hostiles: readonly WoWEncounterHostile[];
+}
+
 // From types/constants.go
 export type WoWEnvironmentType = "fall" | "lava";
 
@@ -253,8 +258,7 @@ export interface WoWLogGroupState extends WoWLogGroup {
 
 // From chroniclesdk/log.go
 export interface WoWParsedInstance extends WoWInstance {
-    readonly encounters: readonly WoWEncounter[];
-    readonly hostiles: Record<string, WoWEncounterHostile[]>;
+    readonly encounters: readonly WoWEncounterWithHostiles[];
     readonly units: Record<string, InstanceUnit>;
     readonly players: Record<string, InstancePlayer>;
 }
@@ -262,7 +266,7 @@ export interface WoWParsedInstance extends WoWInstance {
 // From chroniclesdk/log.go
 export interface WoWParsedLogJobOutput {
     readonly instance_failures: Record<string, string>;
-    readonly instances: readonly WoWParsedInstance[];
+    readonly instances: readonly WoWSimpleParsedInstance[];
 }
 
 // From types/constants.go
@@ -274,6 +278,11 @@ export const WoWResources: WoWResource[] = ["Energy", "Focus", "Happiness", "Hea
 export type WoWSchool = 64 | 4 | 16 | 2 | 8 | 0 | 1 | 32;
 
 export const WoWSchools: WoWSchool[] = [64, 4, 16, 2, 8, 0, 1, 32];
+
+// From chroniclesdk/log.go
+export interface WoWSimpleParsedInstance extends WoWInstance {
+    readonly encounters: readonly WoWEncounter[];
+}
 
 // From types/trailer.go
 /**

@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Loader2 } from "lucide-react";
-import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary, type WoWEncounter } from "@/api/queries";
-import type { InstancePlayer, InstanceUnit, WoWHeroClasses } from "@/api/typesGenerated";
+import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
+import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ export interface EnemyUnit {
   name: string;
   damageTaken: number; // damage taken from players
   damageDone: number;  // damage done to players
+  periods: readonly ActivityPeriod[]; // activity periods for debugging
 }
 
 export interface Encounter {
@@ -119,9 +120,10 @@ function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageT
   return Array.from(playerMap.values());
 }
 
-// Merged enemy with kill status
-interface MergedEnemy extends EnemyUnit {
+// Merged enemy with kill status and mutable periods for merging
+interface MergedEnemy extends Omit<EnemyUnit, 'periods'> {
   killed: boolean;
+  periods: ActivityPeriod[]; // mutable for merging across encounters
 }
 
 // Merge enemies from multiple encounters by summing damage values
@@ -147,9 +149,12 @@ function mergeEnemies(encounters: Encounter[]): MergedEnemy[] {
       if (existing) {
         existing.damageTaken += enemy.damageTaken;
         existing.damageDone += enemy.damageDone;
+        // Concatenate periods from multiple encounters
+        existing.periods = [...existing.periods, ...enemy.periods];
       } else {
         enemyMap.set(enemy.id, {
           ...enemy,
+          periods: [...enemy.periods], // make mutable copy
           killed: !remainingSet.has(enemy.id),
         });
       }
@@ -703,7 +708,7 @@ function transformToInstance(
   apiInstance: {
     id: string;
     name: string;
-    encounters: readonly WoWEncounter[];
+    encounters: readonly WoWEncounterWithHostiles[];
     players: Record<string, InstancePlayer>;
     units: Record<string, InstanceUnit>;
   },
@@ -723,9 +728,14 @@ function transformToInstance(
   const encounters: Encounter[] = apiInstance.encounters.map((enc) => {
     const encounterDamage = damageByEncounter.get(enc.id) || [];
     
-    // Separate players from enemies using the GUID helper
+    // Filter player damage entries
     const playerDamage = encounterDamage.filter((d) => d.is_player);
-    const enemyDamage = encounterDamage.filter((d) => !d.is_player && !d.owner_guid);
+    
+    // Build a lookup for damage data by GUID
+    const damageByGuid = new Map<string, EncounterDamageSummary>();
+    for (const d of encounterDamage) {
+      damageByGuid.set(String(d.unit_guid), d);
+    }
     
     const dps: PlayerMetricChartData[] = playerDamage.map((d) => {
       const guidStr = String(d.unit_guid);
@@ -749,18 +759,19 @@ function transformToInstance(
       };
     });
 
-    // Extract enemy units (non-players without owners, i.e. not pets)
-    const enemies: EnemyUnit[] = enemyDamage
-      .map((d) => {
-        const guidStr = String(d.unit_guid);
+    // Build enemies from encounter hostiles (instead of inferring from damage data)
+    const enemies: EnemyUnit[] = enc.hostiles
+      .map((hostile) => {
+        const guidStr = String(hostile.id);
+        const damage = damageByGuid.get(guidStr);
         return {
           id: guidStr,
           name: getUnitName(guidStr, units),
-          damageTaken: d.damage_taken_total, // damage they took from players
-          damageDone: d.damage_done_total,   // damage they dealt to players
+          damageTaken: damage?.damage_taken_total ?? 0, // damage they took from players
+          damageDone: damage?.damage_done_total ?? 0,   // damage they dealt to players
+          periods: hostile.periods,
         };
       })
-      .filter((e) => e.damageTaken > 0 || e.damageDone > 0)
       .sort((a, b) => b.damageTaken - a.damageTaken); // sort by damage taken (most damaged first)
 
     return {

@@ -142,7 +142,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	jobOut := chroniclesdk.WoWParsedLogJobOutput{
 		InstanceFailures: make(map[string]string),
-		Instances:        make([]chroniclesdk.WoWParsedInstance, 0),
+		Instances:        make([]chroniclesdk.WoWSimpleParsedInstance, 0),
 	}
 
 	err = db.InsertParsedLogGroup(ctx, job.Args.LogID)
@@ -246,7 +246,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return err
 			}
 
-			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWParsedInstance{
+			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{
 				WoWInstance: db2sdk.WoWInstance(dbinstance),
 				Encounters:  sdkEncounters,
 			})
@@ -258,7 +258,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 	}
 
-	slices.SortFunc(jobOut.Instances, func(a, b chroniclesdk.WoWParsedInstance) int {
+	slices.SortFunc(jobOut.Instances, func(a, b chroniclesdk.WoWSimpleParsedInstance) int {
 		if len(a.Encounters) == 0 && len(b.Encounters) == 0 {
 			return strings.Compare(a.Name, b.Name)
 		}
@@ -284,15 +284,17 @@ type logParseInstanceBuilder struct {
 	db         *unitdb.Units
 	instanceID uuid.UUID
 
-	units    []database.InsertInstanceUnitsParams
-	players  []database.InsertInstancePlayersParams
-	inserted bool
+	accounted map[guid.GUID]struct{}
+	units     []database.InsertInstanceUnitsParams
+	players   []database.InsertInstancePlayersParams
+	inserted  bool
 }
 
 func newInstanceBuilder(db *unitdb.Units, instanceID uuid.UUID) *logParseInstanceBuilder {
 	return &logParseInstanceBuilder{
 		db:         db,
 		instanceID: instanceID,
+		accounted:  make(map[guid.GUID]struct{}),
 
 		units:   make([]database.InsertInstanceUnitsParams, 0),
 		players: make([]database.InsertInstancePlayersParams, 0),
@@ -321,6 +323,10 @@ func (w *logParseInstanceBuilder) insert(ctx context.Context, tx database.Store)
 
 func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 	for _, id := range ids {
+		if _, ok := w.accounted[id]; ok {
+			continue
+		}
+		w.accounted[id] = struct{}{}
 		if id.IsPlayer() {
 			playerData, ok := w.db.GetPlayer(id)
 			if ok {

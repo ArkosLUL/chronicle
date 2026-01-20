@@ -183,6 +183,7 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
       name: encounterName,
       damageTaken: Math.round(500000 + Math.random() * 200000),
       damageDone: Math.round(150000 + Math.random() * 50000),
+      periods: [{ slain: true }], // mock period - boss was killed
     });
   }
 
@@ -195,6 +196,7 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
       name: addName,
       damageTaken: Math.round(50000 + Math.random() * 30000),
       damageDone: Math.round(20000 + Math.random() * 15000),
+      periods: [{ slain: true }], // mock period - add was killed
     });
   });
 

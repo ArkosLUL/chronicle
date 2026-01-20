@@ -7,7 +7,6 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/maps"
 	"github.com/Emyrk/chronicle/internal/slice"
-	"github.com/google/uuid"
 	"github.com/riverqueue/river/rivertype"
 )
 
@@ -66,12 +65,7 @@ func WowDecoratedInstance(instance database.LogInstance,
 ) chroniclesdk.WoWParsedInstance {
 	return chroniclesdk.WoWParsedInstance{
 		WoWInstance: WoWInstance(instance),
-		Encounters:  slice.List(encounters, WoWEncounter),
-		Hostiles: maps.MapFromSlice(fights, func(h database.LogInstanceEncounterHostile) uuid.UUID {
-			return h.EncounterID
-		}, func(h database.LogInstanceEncounterHostile) []chroniclesdk.WoWEncounterHostile {
-			return slice.List(fights, WoWHostile)
-		}),
+		Encounters:  WoWEncountersWithHostiles(encounters, fights),
 		Units: maps.MapFromSlice(units, func(u database.LogInstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.LogInstanceUnit) chroniclesdk.InstanceUnit {
 			return chroniclesdk.InstanceUnit{
 				Name:  u.Name,
@@ -126,6 +120,19 @@ func WoWEncounter(encounter database.LogInstanceEncounter) chroniclesdk.WoWEncou
 		StartTime:  encounter.StartTime.Time,
 		EndTime:    encounter.EndTime.Time,
 	}
+}
+
+func WoWEncountersWithHostiles(encounter []database.LogInstanceEncounter, hostiles []database.LogInstanceEncounterHostile) []chroniclesdk.WoWEncounterWithHostiles {
+	output := make([]chroniclesdk.WoWEncounterWithHostiles, 0, len(encounter))
+	for _, e := range encounter {
+		output = append(output, chroniclesdk.WoWEncounterWithHostiles{
+			WoWEncounter: WoWEncounter(e),
+			Hostiles: slice.List(slice.Filter(hostiles, func(h database.LogInstanceEncounterHostile) bool {
+				return h.EncounterID == e.ID
+			}), WoWHostile),
+		})
+	}
+	return output
 }
 
 func JobStatus(status rivertype.JobRow) chroniclesdk.JobStatus {

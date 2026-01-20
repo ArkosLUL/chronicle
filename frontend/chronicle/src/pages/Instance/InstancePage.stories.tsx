@@ -251,6 +251,15 @@ function createEncounter(
     value: enemy.damageDone,
   })).filter((e) => e.value > 0).sort((a, b) => b.value - a.value);
 
+  // Build enemy damage taken metrics (damage taken by enemies)
+  const enemyDamageTaken = enemies.map((enemy) => ({
+    playerID: enemy.id,
+    playerName: enemy.name,
+    className: "Enemy",
+    specialization: "",
+    value: enemy.damageTaken,
+  })).filter((e) => e.value > 0).sort((a, b) => b.value - a.value);
+
   return {
     id,
     name,
@@ -263,6 +272,7 @@ function createEncounter(
       healing: mockHealingData(10),
       damageTaken: mockDpsData(40).map((d) => ({ ...d, value: d.value * 0.3 })),
       enemyDamageDone,
+      enemyDamageTaken,
       enemies,
       remaining: kill ? [] : remaining, // No remaining if it's a kill
     }),

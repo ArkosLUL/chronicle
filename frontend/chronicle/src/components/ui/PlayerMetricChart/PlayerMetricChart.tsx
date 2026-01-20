@@ -17,6 +17,8 @@ export interface PlayerMetricChartData {
   value: number
   // stackValue is used for over healing.
   stackedValue?: number
+  // dimmed reduces visual prominence (used for filtering)
+  dimmed?: boolean
   // TODO: Add a function that returns the tooltip for a given row.
   // It should have a table breakdown of the data.
   // tooltipFunction?: (PlayerMetricChartData)
@@ -63,8 +65,15 @@ export function PlayerMetricChart({
   }, [computedData])
 
   // Sort by value descending and calculate percentages
+  // Dimmed items are sorted to the bottom
   const chartData = useMemo(() => {
-    const sorted = [...computedData].sort((a, b) => b.value - a.value)
+    const sorted = [...computedData].sort((a, b) => {
+      // Non-dimmed items come first
+      if (a.dimmed !== b.dimmed) {
+        return a.dimmed ? 1 : -1;
+      }
+      return b.value - a.value;
+    })
     return sorted.map((item, index) => ({
       ...item,
       rank: index + 1,
@@ -101,7 +110,7 @@ export function PlayerMetricChart({
 }
 
 export interface PlayerMetricRowProps {
-  player: PlayerMetricChartData & {color:string, rank:number}
+  player: PlayerMetricChartData & {color:string, rank:number, dimmed?: boolean}
   rowHeight: number
   maximumValue: number
   summedValue: number
@@ -120,6 +129,7 @@ export function PlayerMetricRow({
   suffix,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
+  const isDimmed = player.dimmed ?? false;
   return (
   <TooltipProvider key={player.playerID + player.playerName}>
     <Tooltip delayDuration={0}>
@@ -134,6 +144,8 @@ export function PlayerMetricRow({
             borderRadius: 'var(--radius)',
             overflow: 'hidden',
             color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
+            opacity: isDimmed ? 0.35 : 1,
+            transition: 'opacity 0.2s ease',
           }}
         >
           {/* Colored bar background */}

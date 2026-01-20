@@ -33,7 +33,8 @@ export interface Encounter {
   dps?: PlayerMetricChartData[];
   healing?: PlayerMetricChartData[];
   damageTaken?: PlayerMetricChartData[];
-  enemyDamageDone?: PlayerMetricChartData[]; // damage done by enemies
+  enemyDamageDone?: PlayerMetricChartData[]; // damage dealt by enemies to players
+  enemyDamageTaken?: PlayerMetricChartData[]; // damage taken by enemies from players
   enemies?: EnemyUnit[];
   remaining?: string[]; // GUIDs of enemies that did not die
 }
@@ -132,7 +133,7 @@ function groupTrashEncounters(encounters: Encounter[]): TrashGroup[] {
 }
 
 // Merge metrics from multiple encounters by summing values per unit
-function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone'): PlayerMetricChartData[] {
+function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone' | 'enemyDamageTaken'): PlayerMetricChartData[] {
   const playerMap = new Map<string, PlayerMetricChartData>();
 
   for (const encounter of encounters) {
@@ -397,14 +398,14 @@ function formatDamageNumber(value: number): string {
 }
 
 // Panel type definitions
-export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done';
+export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done' | 'enemy_damage_taken';
 
 export interface PanelConfig {
   type: PanelType;
   label: string;
   icon: React.ReactNode;
   chartType: 'damage' | 'healing';
-  dataKey: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone';
+  dataKey: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone' | 'enemyDamageTaken';
 }
 
 export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
@@ -421,10 +422,16 @@ export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
     dataKey: 'damageTaken',
   },
   enemy_damage_done: {
-    label: 'Enemy Damage',
+    label: 'Enemy Damage Done',
     icon: <Skull className="h-4 w-4" />,
     chartType: 'damage',
     dataKey: 'enemyDamageDone',
+  },
+  enemy_damage_taken: {
+    label: 'Enemy Damage Taken',
+    icon: <Skull className="h-4 w-4" />,
+    chartType: 'damage',
+    dataKey: 'enemyDamageTaken',
   },
 };
 
@@ -437,12 +444,24 @@ interface MetricPanelProps {
   onPanelTypeChange: (type: PanelType) => void;
   encounters: Encounter[];
   durationMs: number;
+  selectedEnemyIds?: Set<string>;
 }
 
-function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs }: MetricPanelProps) {
+function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, selectedEnemyIds }: MetricPanelProps) {
   const [perSecond, setPerSecond] = useState(false);
   const config = PANEL_CONFIGS[panelType];
-  const data = mergeMetrics(encounters, config.dataKey);
+  let data = mergeMetrics(encounters, config.dataKey);
+  
+  // For enemy panels, apply filtering based on selected enemies
+  const isEnemyPanel = panelType === 'enemy_damage_done' || panelType === 'enemy_damage_taken';
+  const hasEnemyFilter = selectedEnemyIds && selectedEnemyIds.size > 0 && isEnemyPanel;
+  if (hasEnemyFilter) {
+    data = data.map(d => ({
+      ...d,
+      // Grey out non-selected enemies by reducing their visual prominence
+      dimmed: !selectedEnemyIds.has(d.playerID),
+    }));
+  }
 
   // Show per-second toggle for damage-related panels
   const showPerSecondToggle = config.chartType === 'damage';
@@ -451,12 +470,32 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs }: M
     return null;
   }
 
+  // Calculate total (exclude dimmed items if filtering is active)
+  const totalValue = data
+    .filter(d => !d.dimmed)
+    .reduce((sum, d) => sum + d.value, 0);
+  
+  // Format the total based on perSecond setting
+  const displayTotal = perSecond 
+    ? formatDamageNumber(totalValue / durationMs * 1000)
+    : formatDamageNumber(totalValue);
+
   return (
     <Card className="p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1">
         <h3 className="text-sm font-medium flex items-center gap-2">
           {config.icon}
-          {config.label}
+          <select
+            value={panelType}
+            onChange={(e) => onPanelTypeChange(e.target.value as PanelType)}
+            className="text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground"
+          >
+            {PANEL_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </h3>
         <div className="flex items-center gap-3">
           {showPerSecondToggle && (
@@ -467,21 +506,13 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs }: M
                 onChange={(e) => setPerSecond(e.target.checked)}
                 className="w-3.5 h-3.5 cursor-pointer"
               />
-              Per Second
+              /s
             </label>
           )}
-          <select
-            value={panelType}
-            onChange={(e) => onPanelTypeChange(e.target.value as PanelType)}
-            className="text-xs bg-muted border border-border rounded px-2 py-1 cursor-pointer hover:bg-muted/80"
-          >
-            {PANEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
         </div>
+      </div>
+      <div className="text-xs text-muted-foreground mb-2">
+        Total: <span className="font-medium text-foreground">{displayTotal}{perSecond ? '/s' : ''}</span>
       </div>
       <PlayerMetricChart
         data={data}
@@ -502,6 +533,27 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   // Panel state - each panel can be configured independently
   const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
   const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
+  
+  // Selected enemies for filtering Enemy Damage panel
+  const [selectedEnemyIds, setSelectedEnemyIds] = useState<Set<string>>(new Set());
+  
+  // Toggle enemy selection
+  const toggleEnemySelection = (enemyId: string) => {
+    setSelectedEnemyIds(prev => {
+      const next = new Set(prev);
+      if (next.has(enemyId)) {
+        next.delete(enemyId);
+      } else {
+        next.add(enemyId);
+      }
+      return next;
+    });
+  };
+  
+  // Clear all enemy selections
+  const clearEnemySelection = () => {
+    setSelectedEnemyIds(new Set());
+  };
   
   // Merge metrics across all selected encounters
   const mergedEnemies = mergeEnemies(encounters);
@@ -551,38 +603,58 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
                 <h3 className="text-sm font-medium flex items-center gap-2">
                   <Skull className="h-4 w-4" />
                   Enemies ({mergedEnemies.length})
+                  {selectedEnemyIds.size > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      • {selectedEnemyIds.size} selected
+                    </span>
+                  )}
                 </h3>
                 <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="flex flex-wrap gap-2 mt-3">
-                {mergedEnemies.map((enemy) => (
-                  <Tooltip key={enemy.id}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-help",
-                          enemy.killed
-                            ? "bg-green-500/15 border border-green-500/30"
-                            : "bg-red-500/15 border border-red-500/30"
-                        )}
-                      >
-                        <span className={cn(
-                          "w-2 h-2 rounded-full flex-shrink-0",
-                          enemy.killed ? "bg-green-500" : "bg-red-500"
-                        )} />
-                        <span className="font-medium">{enemy.name}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {formatDamageNumber(enemy.damageTaken)} dmg taken
-                        </span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="p-3">
-                      {formatPeriodsTooltip(enemy.periods)}
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+                {selectedEnemyIds.size > 0 && (
+                  <button
+                    onClick={clearEnemySelection}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    Clear selection
+                  </button>
+                )}
+                {mergedEnemies.map((enemy) => {
+                  const isSelected = selectedEnemyIds.has(enemy.id);
+                  const hasSelection = selectedEnemyIds.size > 0;
+                  return (
+                    <Tooltip key={enemy.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => toggleEnemySelection(enemy.id)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
+                            enemy.killed
+                              ? "bg-green-500/15 border border-green-500/30"
+                              : "bg-red-500/15 border border-red-500/30",
+                            isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                            hasSelection && !isSelected && "opacity-50"
+                          )}
+                        >
+                          <span className={cn(
+                            "w-2 h-2 rounded-full flex-shrink-0",
+                            enemy.killed ? "bg-green-500" : "bg-red-500"
+                          )} />
+                          <span className="font-medium">{enemy.name}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {formatDamageNumber(enemy.damageTaken)} dmg taken
+                          </span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="p-3">
+                        {formatPeriodsTooltip(enemy.periods)}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
               </div>
             </CollapsibleContent>
           </Card>
@@ -596,12 +668,14 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
           onPanelTypeChange={setPanel1Type}
           encounters={encounters}
           durationMs={totalDurationMs}
+          selectedEnemyIds={selectedEnemyIds}
         />
         <MetricPanel
           panelType={panel2Type}
           onPanelTypeChange={setPanel2Type}
           encounters={encounters}
           durationMs={totalDurationMs}
+          selectedEnemyIds={selectedEnemyIds}
         />
       </div>
     </div>
@@ -833,6 +907,18 @@ function transformToInstance(
       }))
       .sort((a, b) => b.value - a.value);
 
+    // Build enemy damage taken metrics (damage taken by enemies from players)
+    const enemyDamageTaken: PlayerMetricChartData[] = enemies
+      .filter((e) => e.damageTaken > 0)
+      .map((enemy) => ({
+        playerID: enemy.id,
+        playerName: enemy.name,
+        className: "Enemy", // use "Enemy" as the class for styling
+        specialization: "",
+        value: enemy.damageTaken,
+      }))
+      .sort((a, b) => b.value - a.value);
+
     return {
       id: enc.id,
       name: enc.name,
@@ -843,6 +929,7 @@ function transformToInstance(
       dps: dps.filter((d) => d.value > 0),
       damageTaken: damageTaken.filter((d) => d.value > 0),
       enemyDamageDone,
+      enemyDamageTaken,
       enemies,
       remaining: enc.remaining as string[] | undefined,
       // healing: [] // TODO: add healing data when available

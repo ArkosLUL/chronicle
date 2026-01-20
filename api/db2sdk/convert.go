@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/maps"
 	"github.com/Emyrk/chronicle/internal/slice"
+	"github.com/google/uuid"
 	"github.com/riverqueue/river/rivertype"
 )
 
@@ -57,10 +58,20 @@ func WoWInstance(instance database.LogInstance) chroniclesdk.WoWInstance {
 	}
 }
 
-func WowDecoratedInstance(instance database.LogInstance, units []database.LogInstanceUnit, players []database.LogInstancePlayer, encounters []database.LogInstanceEncounter) chroniclesdk.WoWParsedInstance {
+func WowDecoratedInstance(instance database.LogInstance,
+	units []database.LogInstanceUnit,
+	players []database.LogInstancePlayer,
+	encounters []database.LogInstanceEncounter,
+	fights []database.LogInstanceEncounterHostile,
+) chroniclesdk.WoWParsedInstance {
 	return chroniclesdk.WoWParsedInstance{
 		WoWInstance: WoWInstance(instance),
 		Encounters:  slice.List(encounters, WoWEncounter),
+		Hostiles: maps.MapFromSlice(fights, func(h database.LogInstanceEncounterHostile) uuid.UUID {
+			return h.EncounterID
+		}, func(h database.LogInstanceEncounterHostile) []chroniclesdk.WoWEncounterHostile {
+			return slice.List(fights, WoWHostile)
+		}),
 		Units: maps.MapFromSlice(units, func(u database.LogInstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.LogInstanceUnit) chroniclesdk.InstanceUnit {
 			return chroniclesdk.InstanceUnit{
 				Name:  u.Name,
@@ -75,6 +86,32 @@ func WowDecoratedInstance(instance database.LogInstance, units []database.LogIns
 				Race:  types.HeroRaces(u.Race),
 			}
 		}),
+	}
+}
+
+func PeriodMoment(moment *database.PeriodMoment) *chroniclesdk.PeriodMoment {
+	if moment == nil {
+		return nil
+	}
+	return &chroniclesdk.PeriodMoment{
+		Timestamp: moment.Timestamp,
+		Reason:    moment.Reason,
+	}
+}
+
+func ActivityPeriod(period database.Period) chroniclesdk.ActivityPeriod {
+	return chroniclesdk.ActivityPeriod{
+		Start:      PeriodMoment(period.Start),
+		End:        PeriodMoment(period.End),
+		LastActive: PeriodMoment(period.LastActive),
+		Slain:      period.Slain,
+	}
+}
+
+func WoWHostile(hostile database.LogInstanceEncounterHostile) chroniclesdk.WoWEncounterHostile {
+	return chroniclesdk.WoWEncounterHostile{
+		ID:      hostile.ID,
+		Periods: slice.List(hostile.Periods, ActivityPeriod),
 	}
 }
 

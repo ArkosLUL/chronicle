@@ -88,7 +88,7 @@ VALUES
 
 -- name: InsertEncounterCharacterFights :batchexec
 INSERT INTO
-  log_instance_encounter_character_fight (id, encounter_id, periods)
+  log_instance_encounter_hostiles (id, encounter_id, periods)
 VALUES
   ($1, $2, $3)
 ;
@@ -97,7 +97,7 @@ VALUES
 SELECT
   *
 FROM
-  log_instance_encounter_character_fight
+  log_instance_encounter_hostiles
 WHERE
   encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
 ;

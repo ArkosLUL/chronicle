@@ -13,10 +13,10 @@ import (
 )
 
 type OngoingFight struct {
-	Hostiles map[guid.GUID]any
-	Other    map[guid.GUID]struct{}
-	Start    *period.Moment
-	End      *period.Moment
+	ActiveHostiles map[guid.GUID]struct{}
+
+	Start *period.Moment
+	End   *period.Moment
 }
 
 // Encounter represents a named combat period in the logs.
@@ -67,7 +67,6 @@ type Fight struct {
 	// Each CharacterFight contains all activity periods from that character
 	// that belong to this fight.
 	Hostiles map[guid.GUID]CharacterFight
-	Other    map[guid.GUID]struct{}
 
 	// Start is the earliest start time across all hostile activity periods.
 	Start time.Time

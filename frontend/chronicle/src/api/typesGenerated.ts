@@ -17,6 +17,14 @@ export interface Ability {
     readonly other_count: number;
 }
 
+// From chroniclesdk/log.go
+export interface ActivityPeriod {
+    readonly start?: PeriodMoment;
+    readonly end?: PeriodMoment;
+    readonly last_active?: PeriodMoment;
+    readonly slain: boolean;
+}
+
 // From chroniclesdk/combat.go
 export interface EncounterDamageSummary {
     readonly encounter_id: string;
@@ -65,6 +73,12 @@ export interface JobStatus {
 export interface LogUploadResponse {
     readonly log_id: string;
     readonly file_ids: readonly string[];
+}
+
+// From chroniclesdk/log.go
+export interface PeriodMoment {
+    readonly timestamp: string;
+    readonly reason: string;
 }
 
 // From chroniclesdk/response.go
@@ -161,6 +175,12 @@ export interface WoWEncounter {
     readonly end_time: string;
 }
 
+// From chroniclesdk/log.go
+export interface WoWEncounterHostile {
+    readonly id: GUID;
+    readonly periods: readonly ActivityPeriod[];
+}
+
 // From types/constants.go
 export type WoWEncounterType = "BOSS" | "TRASH" | "UNKNOWN";
 
@@ -233,8 +253,8 @@ export interface WoWLogGroupState extends WoWLogGroup {
 
 // From chroniclesdk/log.go
 export interface WoWParsedInstance extends WoWInstance {
-    readonly fights: Record<string, Record<string, (Record<string, string>)[]>>;
     readonly encounters: readonly WoWEncounter[];
+    readonly hostiles: Record<string, WoWEncounterHostile[]>;
     readonly units: Record<string, InstanceUnit>;
     readonly players: Record<string, InstancePlayer>;
 }

@@ -9,6 +9,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type PeriodMoment struct {
+	Timestamp time.Time `json:"timestamp"`
+	Reason    string    `json:"reason"`
+}
+
+type ActivityPeriod struct {
+	Start      *PeriodMoment `json:"start,omitempty"`
+	End        *PeriodMoment `json:"end,omitempty"`
+	LastActive *PeriodMoment `json:"last_active,omitempty"`
+
+	Slain bool `json:"slain"`
+}
+
 type GUIDString = guid.GUID
 
 type WoWLogGroup struct {
@@ -50,6 +63,11 @@ type WoWEncounter struct {
 	EndTime    time.Time   `json:"end_time"`
 }
 
+type WoWEncounterHostile struct {
+	ID      guid.GUID        `json:"id"`
+	Periods []ActivityPeriod `json:"periods"`
+}
+
 type WoWLogGroupState struct {
 	WoWLogGroup
 
@@ -75,7 +93,8 @@ type InstancePlayer struct {
 
 type WoWParsedInstance struct {
 	WoWInstance
-	Encounters []WoWEncounter                `json:"encounters"`
-	Units      map[GUIDString]InstanceUnit   `json:"units"`
-	Players    map[GUIDString]InstancePlayer `json:"players"`
+	Encounters []WoWEncounter                      `json:"encounters"`
+	Hostiles   map[uuid.UUID][]WoWEncounterHostile `json:"hostiles"`
+	Units      map[GUIDString]InstanceUnit         `json:"units"`
+	Players    map[GUIDString]InstancePlayer       `json:"players"`
 }

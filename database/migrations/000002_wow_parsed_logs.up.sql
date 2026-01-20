@@ -54,10 +54,10 @@ CREATE TABLE log_instance_encounters (
 )
 ;
 
-CREATE TABLE log_instance_encounter_character_fight (
+CREATE TABLE log_instance_encounter_hostiles (
   encounter_id UUID NOT NULL REFERENCES log_instance_encounters(id) ON DELETE CASCADE,
   id wow_guid NOT NULL,
-  periods jsonb NOT NULL,
+  periods activity_periods NOT NULL,
 
   PRIMARY KEY (encounter_id, id)
 )

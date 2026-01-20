@@ -460,12 +460,6 @@ type LogInstanceEncounter struct {
 	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
 }
 
-type LogInstanceEncounterCharacterFight struct {
-	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
-	ID          guid.GUID `db:"id" json:"id"`
-	Periods     []byte    `db:"periods" json:"periods"`
-}
-
 type LogInstanceEncounterDamageUnitSummary struct {
 	EncounterID          uuid.UUID          `db:"encounter_id" json:"encounter_id"`
 	UnitGuid             guid.GUID          `db:"unit_guid" json:"unit_guid"`
@@ -475,6 +469,12 @@ type LogInstanceEncounterDamageUnitSummary struct {
 	DamageTakenAbilities map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
 	IsPlayer             bool               `db:"is_player" json:"is_player"`
 	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
+}
+
+type LogInstanceEncounterHostile struct {
+	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
+	ID          guid.GUID `db:"id" json:"id"`
+	Periods     Periods   `db:"periods" json:"periods"`
 }
 
 type LogInstancePlayer struct {

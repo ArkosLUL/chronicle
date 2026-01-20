@@ -389,20 +389,20 @@ const getInstanceEncounterCharacterFights = `-- name: GetInstanceEncounterCharac
 SELECT
   encounter_id, id, periods
 FROM
-  log_instance_encounter_character_fight
+  log_instance_encounter_hostiles
 WHERE
   encounter_id IN (SELECT id FROM log_instance_encounters WHERE instance_id = $1)
 `
 
-func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterCharacterFight, error) {
+func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterHostile, error) {
 	rows, err := q.db.Query(ctx, getInstanceEncounterCharacterFights, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []LogInstanceEncounterCharacterFight
+	var items []LogInstanceEncounterHostile
 	for rows.Next() {
-		var i LogInstanceEncounterCharacterFight
+		var i LogInstanceEncounterHostile
 		if err := rows.Scan(&i.EncounterID, &i.ID, &i.Periods); err != nil {
 			return nil, err
 		}

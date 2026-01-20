@@ -20,7 +20,7 @@ var (
 
 const insertEncounterCharacterFights = `-- name: InsertEncounterCharacterFights :batchexec
 INSERT INTO
-  log_instance_encounter_character_fight (id, encounter_id, periods)
+  log_instance_encounter_hostiles (id, encounter_id, periods)
 VALUES
   ($1, $2, $3)
 `
@@ -34,7 +34,7 @@ type InsertEncounterCharacterFightsBatchResults struct {
 type InsertEncounterCharacterFightsParams struct {
 	ID          guid.GUID `db:"id" json:"id"`
 	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
-	Periods     []byte    `db:"periods" json:"periods"`
+	Periods     Periods   `db:"periods" json:"periods"`
 }
 
 func (q *sqlQuerier) InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults {

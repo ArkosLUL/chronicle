@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -67,5 +68,37 @@ func (a *Ability) Scan(src interface{}) error {
 }
 
 func (a Ability) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+type Periods []Period
+
+type Period struct {
+	Start      *PeriodMoment `json:"start,omitempty"`
+	End        *PeriodMoment `json:"end,omitempty"`
+	LastActive *PeriodMoment `json:"last_active,omitempty"`
+
+	Slain bool `json:"slain"`
+}
+
+type PeriodMoment struct {
+	Timestamp time.Time `json:"timestamp"`
+	Reason    string    `json:"reason"`
+}
+
+func (a *Periods) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(v), &a)
+	case []byte:
+		return json.Unmarshal(v, &a)
+	case json.RawMessage:
+		return json.Unmarshal(v, &a)
+	}
+
+	return xerrors.Errorf("unexpected type %T", src)
+}
+
+func (a Periods) Value() (driver.Value, error) {
 	return json.Marshal(a)
 }

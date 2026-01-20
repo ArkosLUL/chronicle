@@ -69,5 +69,7 @@ CREATE DOMAIN wow_guid AS TEXT
     )
 ;
 
+CREATE DOMAIN activity_periods AS jsonb;
+
 
 COMMIT;

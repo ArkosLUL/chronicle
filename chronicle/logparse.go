@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,9 +20,12 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/dbstatic"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
+	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
@@ -149,6 +151,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	}
 
 	for i, inst := range encountersState.Instances {
+		instanceID := uuid.New()
+		builder := newInstanceBuilder(encountersState.Units, instanceID)
 		finalized, err := inst.Finalize(ctx)
 		if err != nil {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = err.Error()
@@ -157,7 +161,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 		err = db.InTx(func(tx database.Store) error {
 			dbinstance, err := tx.InsertInstance(ctx, database.InsertInstanceParams{
-				ID: uuid.New(),
+				ID: instanceID,
 				// TODO: Detect this from the logs
 				RealmID:    dbstatic.RealmAmbershire(),
 				LogGroupID: job.Args.LogID,
@@ -184,16 +188,23 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					return fmt.Errorf("insert encounter: %w", err)
 				}
 
+				for _, hostile := range enc.Combat.Hostiles {
+					builder.seen(hostile.ID)
+				}
+
 				encounterFights := make([]database.InsertEncounterCharacterFightsParams, 0)
 				for hostileID, hostileFight := range enc.Combat.Hostiles {
-					data, err := json.Marshal(hostileFight.Activity)
-					if err != nil {
-						return fmt.Errorf("marshal encounter hostile fight periods: %w", err)
-					}
 					encounterFights = append(encounterFights, database.InsertEncounterCharacterFightsParams{
 						ID:          hostileID,
 						EncounterID: dbencounter.ID,
-						Periods:     data,
+						Periods: slice.List[period.Period, database.Period](hostileFight.Activity, func(p period.Period) database.Period {
+							return database.Period{
+								Start:      momentToDatabaseMoment(p.Start),
+								End:        momentToDatabaseMoment(p.End),
+								LastActive: momentToDatabaseMoment(p.LastActive),
+								Slain:      p.Slain,
+							}
+						}),
 					})
 				}
 
@@ -223,71 +234,16 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					if err != nil {
 						return fmt.Errorf("insert encounter damage summary: %w", err)
 					}
+
+					builder.seen(unitID)
 				}
 
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
 			}
 
-			seenUnits := make([]database.InsertInstanceUnitsParams, 0, len(finalized.SeenUnits))
-			seenPlayers := make([]database.InsertInstancePlayersParams, 0, len(finalized.SeenUnits))
-			for id, info := range finalized.SeenUnits {
-				if id.IsPlayer() {
-					playerData, ok := encountersState.Units.GetPlayer(id)
-					if ok {
-						seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
-							InstanceID: dbinstance.ID,
-							UnitGuid:   id,
-							Name:       info.Name,
-							Level:      -1,
-							Class:      database.WowPlayableClass(playerData.HeroClass),
-							Race:       database.WowPlayableRace(playerData.Race),
-						})
-						continue
-					}
-
-					unitInfo, ok := encountersState.Units.Get(id)
-					if ok {
-						seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
-							InstanceID: dbinstance.ID,
-							UnitGuid:   id,
-							Name:       unitInfo.Name,
-							Level:      -1,
-							Class:      database.WowPlayableClassUNKNOWN,
-							Race:       database.WowPlayableRaceUnknown,
-						})
-						continue
-					}
-
-					seenPlayers = append(seenPlayers, database.InsertInstancePlayersParams{
-						InstanceID: dbinstance.ID,
-						UnitGuid:   id,
-						Name:       "Unknown",
-						Level:      -1,
-						Class:      database.WowPlayableClassUNKNOWN,
-						Race:       database.WowPlayableRaceUnknown,
-					})
-
-					continue
-				}
-
-				entry, _ := id.GetEntry()
-				seenUnits = append(seenUnits, database.InsertInstanceUnitsParams{
-					InstanceID: dbinstance.ID,
-					UnitGuid:   id,
-					Name:       info.Name,
-					Entry:      int32(entry),
-					OwnerGuid:  info.Owner,
-				})
-			}
-
-			unitsRes := tx.InsertInstanceUnits(ctx, seenUnits)
-			if err := unitsRes.Close(); err != nil {
-				return fmt.Errorf("insert instance units: %w", err)
-			}
-
-			playerRes := tx.InsertInstancePlayers(ctx, seenPlayers)
-			if err := playerRes.Close(); err != nil {
-				return fmt.Errorf("insert instance players: %w", err)
+			err = builder.insert(ctx, tx)
+			if err != nil {
+				return err
 			}
 
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWParsedInstance{
@@ -324,6 +280,107 @@ func (w *WorkerLogParse) NextRetry(job *river.Job[ArgsLogParse]) time.Time {
 	return next.Add(time.Second * 60) // Make it a little slower to retry.
 }
 
+type logParseInstanceBuilder struct {
+	db         *unitdb.Units
+	instanceID uuid.UUID
+
+	units    []database.InsertInstanceUnitsParams
+	players  []database.InsertInstancePlayersParams
+	inserted bool
+}
+
+func newInstanceBuilder(db *unitdb.Units, instanceID uuid.UUID) *logParseInstanceBuilder {
+	return &logParseInstanceBuilder{
+		db:         db,
+		instanceID: instanceID,
+
+		units:   make([]database.InsertInstanceUnitsParams, 0),
+		players: make([]database.InsertInstancePlayersParams, 0),
+	}
+}
+
+func (w *logParseInstanceBuilder) insert(ctx context.Context, tx database.Store) error {
+	if w.inserted {
+		return fmt.Errorf("already inserted")
+	}
+	defer func() {
+		w.inserted = true
+	}()
+
+	unitsRes := tx.InsertInstanceUnits(ctx, w.units)
+	if err := unitsRes.Close(); err != nil {
+		return fmt.Errorf("insert instance units: %w", err)
+	}
+
+	playerRes := tx.InsertInstancePlayers(ctx, w.players)
+	if err := playerRes.Close(); err != nil {
+		return fmt.Errorf("insert instance players: %w", err)
+	}
+	return nil
+}
+
+func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
+	for _, id := range ids {
+		if id.IsPlayer() {
+			playerData, ok := w.db.GetPlayer(id)
+			if ok {
+				w.players = append(w.players, database.InsertInstancePlayersParams{
+					InstanceID: w.instanceID,
+					UnitGuid:   id,
+					Name:       playerData.Name,
+					Level:      -1,
+					Class:      database.WowPlayableClass(playerData.HeroClass),
+					Race:       database.WowPlayableRace(playerData.Race),
+				})
+				continue
+			}
+
+			unitInfo, ok := w.db.Get(id)
+			if ok {
+				w.players = append(w.players, database.InsertInstancePlayersParams{
+					InstanceID: w.instanceID,
+					UnitGuid:   id,
+					Name:       unitInfo.Name,
+					Level:      -1,
+					Class:      database.WowPlayableClassUNKNOWN,
+					Race:       database.WowPlayableRaceUnknown,
+				})
+				continue
+			}
+
+			w.players = append(w.players, database.InsertInstancePlayersParams{
+				InstanceID: w.instanceID,
+				UnitGuid:   id,
+				Name:       "Unknown",
+				Level:      -1,
+				Class:      database.WowPlayableClassUNKNOWN,
+				Race:       database.WowPlayableRaceUnknown,
+			})
+
+			continue
+		}
+
+		entry, _ := id.GetEntry()
+		unitInfo, ok := w.db.Get(id)
+		if ok {
+			w.units = append(w.units, database.InsertInstanceUnitsParams{
+				InstanceID: w.instanceID,
+				UnitGuid:   id,
+				Name:       unitInfo.Name,
+				Entry:      int32(entry),
+				OwnerGuid:  unitInfo.Owner,
+			})
+			continue
+		}
+		w.units = append(w.units, database.InsertInstanceUnitsParams{
+			InstanceID: w.instanceID,
+			UnitGuid:   id,
+			Name:       "Unknown",
+			Entry:      int32(entry),
+		})
+	}
+}
+
 func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup) (*rivertype.JobInsertResult, error) {
 	res, err := c.queue.Insert(ctx, ArgsLogParse{
 		LogID: log.ID,
@@ -334,4 +391,15 @@ func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGrou
 	})
 
 	return res, err
+}
+
+func momentToDatabaseMoment(t *period.Moment) *database.PeriodMoment {
+	if t == nil {
+		return nil
+	}
+
+	return &database.PeriodMoment{
+		Timestamp: t.Timestamp.Date(),
+		Reason:    t.String(),
+	}
 }

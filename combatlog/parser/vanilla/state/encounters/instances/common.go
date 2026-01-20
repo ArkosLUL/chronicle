@@ -53,7 +53,6 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		}
 	}
 
-	seenUnits := make(map[guid.GUID]unitinfo.Info)
 	encounters := make([]Encounter, 0, len(c.completedFights))
 	for _, fight := range c.completedFights {
 		encounterName := ""
@@ -62,10 +61,6 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		for hid, h := range fight.Hostiles {
 			if hid != h.ID {
 				panic("inconsistent hostile ID mapping")
-			}
-			info, hasInfo := c.db.Get(h.ID)
-			if hasInfo {
-				seenUnits[h.ID] = info
 			}
 
 			id := c.IdentifyUnit(h.ID)
@@ -81,15 +76,10 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 				encounterName = id.EncounterName
 				encounterType = types.EncounterTypeBOSS
 			} else if id.EncounterName == "" {
-				encounterName = info.Name
-			}
-		}
-
-		// Also add the "other" units to the unit info mapping
-		for id := range fight.Other {
-			info, ok := c.db.Get(id)
-			if ok {
-				seenUnits[id] = info
+				info, hasInfo := c.db.Get(h.ID)
+				if hasInfo {
+					encounterName = info.Name
+				}
 			}
 		}
 
@@ -112,7 +102,6 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 
 	return &FinalizedInstance{
 		Encounters: encounters,
-		SeenUnits:  seenUnits,
 	}, nil
 }
 
@@ -175,21 +164,6 @@ func (c *Common) Process(m messages.Message) error {
 	return nil
 }
 
-// InFight returns true if there is an active fight with at least one active hostile.
-func (c *Common) InFight() bool {
-	// TODO: OPTIMIZE THIS PLEASE
-	if c.currentFight == nil {
-		return false
-	}
-	for id := range c.currentFight.Hostiles {
-		char, ok := c.Characters.All.Get(id)
-		if ok && char.IsActive() {
-			return true
-		}
-	}
-	return false
-}
-
 // Fights returns all completed fights minus the current fight in progress.
 func (c *Common) Fights() []Fight {
 	fights := make([]Fight, len(c.completedFights))
@@ -202,10 +176,9 @@ func (c *Common) Fights() []Fight {
 func (c *Common) CharacterActivityChange() error {
 	if c.currentFight == nil {
 		c.currentFight = &OngoingFight{
-			Hostiles: make(map[guid.GUID]any),
-			Other:    map[guid.GUID]struct{}{},
-			Start:    nil,
-			End:      nil,
+			ActiveHostiles: make(map[guid.GUID]struct{}),
+			Start:          nil,
+			End:            nil,
 		}
 	}
 
@@ -214,9 +187,6 @@ func (c *Common) CharacterActivityChange() error {
 	var latestEnd *period.Moment
 	for _, char := range c.Characters.All.Map() {
 		if info := c.IdentifyUnit(char.ID()); !info.Hostile {
-			if c.currentFight != nil {
-				c.currentFight.Other[char.ID()] = struct{}{}
-			}
 			// Only consider hostile characters for fights
 			continue
 		}
@@ -229,7 +199,7 @@ func (c *Common) CharacterActivityChange() error {
 		if pd.IsActive() {
 			// If the character is active, update the fight start time if needed.
 			activeTotal++
-			c.currentFight.Hostiles[char.ID()] = struct{}{}
+			c.currentFight.ActiveHostiles[char.ID()] = struct{}{}
 
 			if c.currentFight.Start == nil {
 				c.currentFight.Start = pd.Start
@@ -240,7 +210,7 @@ func (c *Common) CharacterActivityChange() error {
 
 		if !pd.IsActive() {
 			// If the character is no longer active, check if they were part of the fight
-			if _, inFight := c.currentFight.Hostiles[char.ID()]; !inFight {
+			if _, inFight := c.currentFight.ActiveHostiles[char.ID()]; !inFight {
 				// If the character is not part of the fight, then skip
 				continue
 			}
@@ -277,7 +247,7 @@ func (c *Common) finalizeFight() error {
 		End:      c.currentFight.End.Timestamp.Date(),
 	}
 
-	for id := range c.currentFight.Hostiles {
+	for id := range c.currentFight.ActiveHostiles {
 		char, ok := c.Characters.Get(id)
 		if !ok {
 			return fmt.Errorf("could not find character for hostile %s", id)
@@ -294,7 +264,6 @@ func (c *Common) finalizeFight() error {
 		}
 	}
 
-	fight.Other = c.currentFight.Other
 	c.currentFight = nil
 	// End the fight
 	c.completedFights = append(c.completedFights, fight)

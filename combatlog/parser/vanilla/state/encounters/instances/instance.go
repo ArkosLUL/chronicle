@@ -40,9 +40,6 @@ type Instance interface {
 	// Fights returns all completed fights plus any current fight in progress.
 	// This is populated live during message processing.
 	Fights() []Fight
-	// InFight returns true if there is an active fight with at least one active hostile.
-	InFight() bool
-
 	Finalize(ctx context.Context) (*FinalizedInstance, error)
 }
 

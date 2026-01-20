@@ -80,7 +80,8 @@
   --color-class-shaman: var(--class-shaman);
   --color-class-paladin: var(--class-paladin);
   --color-class-druid: var(--class-druid);
-  --color-class-druid: var(--class-unknown);
+  --color-class-unknown: var(--class-unknown);
+  --color-class-enemy: var(--class-enemy);
 
   /* Foreground color over classes, eg text. */
   --color-class-foreground: var(--class-foreground);
@@ -154,6 +155,7 @@
   --class-paladin: #F58CBA;
   --class-druid: #FF7D0A;
   --class-unknown: #A0A0A0;
+  --class-enemy: #E53935; /* Red for enemies */
 
   /* Foreground color over classes, eg text. */
   --class-foreground: oklch(0.9219 0 0);

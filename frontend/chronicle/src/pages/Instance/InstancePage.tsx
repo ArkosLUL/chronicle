@@ -11,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible/Collapsible";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 
 // Types for the Instance page
@@ -32,6 +33,7 @@ export interface Encounter {
   dps?: PlayerMetricChartData[];
   healing?: PlayerMetricChartData[];
   damageTaken?: PlayerMetricChartData[];
+  enemyDamageDone?: PlayerMetricChartData[]; // damage done by enemies
   enemies?: EnemyUnit[];
   remaining?: string[]; // GUIDs of enemies that did not die
 }
@@ -70,6 +72,39 @@ function formatTime(timestamp: string): string {
   return new Date(timestamp).toLocaleString();
 }
 
+// Format a period moment for display
+function formatPeriodMoment(moment: { timestamp: string; reason: string } | undefined): string {
+  if (!moment) return "N/A";
+  const time = new Date(moment.timestamp).toLocaleTimeString();
+  return `${time} (${moment.reason})`;
+}
+
+// Format activity periods for tooltip display
+function formatPeriodsTooltip(periods: readonly ActivityPeriod[]): React.ReactNode {
+  if (!periods || periods.length === 0) {
+    return <span className="text-muted-foreground">No activity data</span>;
+  }
+
+  return (
+    <div className="space-y-2 max-w-xs">
+      <div className="font-medium border-b border-border pb-1">
+        Activity Periods ({periods.length})
+      </div>
+      {periods.map((period, idx) => (
+        <div key={idx} className="text-xs space-y-0.5">
+          <div className="font-medium text-foreground/80">Period {idx + 1}</div>
+          <div>Start: {formatPeriodMoment(period.start)}</div>
+          <div>End: {formatPeriodMoment(period.end)}</div>
+          <div>Last Active: {formatPeriodMoment(period.last_active)}</div>
+          <div className={period.slain ? "text-green-400" : "text-red-400"}>
+            {period.slain ? "✓ Slain" : "✗ Survived"}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Group trash encounters by name
 interface TrashGroup {
   name: string;
@@ -96,8 +131,8 @@ function groupTrashEncounters(encounters: Encounter[]): TrashGroup[] {
   }));
 }
 
-// Merge metrics from multiple encounters by summing values per player
-function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageTaken'): PlayerMetricChartData[] {
+// Merge metrics from multiple encounters by summing values per unit
+function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone'): PlayerMetricChartData[] {
   const playerMap = new Map<string, PlayerMetricChartData>();
 
   for (const encounter of encounters) {
@@ -362,14 +397,14 @@ function formatDamageNumber(value: number): string {
 }
 
 // Panel type definitions
-export type PanelType = 'damage_done' | 'damage_taken';
+export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done';
 
 export interface PanelConfig {
   type: PanelType;
   label: string;
   icon: React.ReactNode;
   chartType: 'damage' | 'healing';
-  dataKey: 'dps' | 'healing' | 'damageTaken';
+  dataKey: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone';
 }
 
 export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
@@ -384,6 +419,12 @@ export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
     icon: <Shield className="h-4 w-4" />,
     chartType: 'damage',
     dataKey: 'damageTaken',
+  },
+  enemy_damage_done: {
+    label: 'Enemy Damage',
+    icon: <Skull className="h-4 w-4" />,
+    chartType: 'damage',
+    dataKey: 'enemyDamageDone',
   },
 };
 
@@ -517,24 +558,30 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
             <CollapsibleContent>
               <div className="flex flex-wrap gap-2 mt-3">
                 {mergedEnemies.map((enemy) => (
-                  <div
-                    key={enemy.id}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm",
-                      enemy.killed
-                        ? "bg-green-500/15 border border-green-500/30"
-                        : "bg-red-500/15 border border-red-500/30"
-                    )}
-                  >
-                    <span className={cn(
-                      "w-2 h-2 rounded-full flex-shrink-0",
-                      enemy.killed ? "bg-green-500" : "bg-red-500"
-                    )} />
-                    <span className="font-medium">{enemy.name}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {formatDamageNumber(enemy.damageTaken)} dmg taken
-                    </span>
-                  </div>
+                  <Tooltip key={enemy.id}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-help",
+                          enemy.killed
+                            ? "bg-green-500/15 border border-green-500/30"
+                            : "bg-red-500/15 border border-red-500/30"
+                        )}
+                      >
+                        <span className={cn(
+                          "w-2 h-2 rounded-full flex-shrink-0",
+                          enemy.killed ? "bg-green-500" : "bg-red-500"
+                        )} />
+                        <span className="font-medium">{enemy.name}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {formatDamageNumber(enemy.damageTaken)} dmg taken
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="p-3">
+                      {formatPeriodsTooltip(enemy.periods)}
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             </CollapsibleContent>
@@ -774,6 +821,18 @@ function transformToInstance(
       })
       .sort((a, b) => b.damageTaken - a.damageTaken); // sort by damage taken (most damaged first)
 
+    // Build enemy damage done metrics (damage dealt by enemies to players)
+    const enemyDamageDone: PlayerMetricChartData[] = enemies
+      .filter((e) => e.damageDone > 0)
+      .map((enemy) => ({
+        playerID: enemy.id,
+        playerName: enemy.name,
+        className: "Enemy", // use "Enemy" as the class for styling
+        specialization: "",
+        value: enemy.damageDone,
+      }))
+      .sort((a, b) => b.value - a.value);
+
     return {
       id: enc.id,
       name: enc.name,
@@ -783,6 +842,7 @@ function transformToInstance(
       end_time: enc.end_time,
       dps: dps.filter((d) => d.value > 0),
       damageTaken: damageTaken.filter((d) => d.value > 0),
+      enemyDamageDone,
       enemies,
       remaining: enc.remaining as string[] | undefined,
       // healing: [] // TODO: add healing data when available

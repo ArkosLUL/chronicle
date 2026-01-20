@@ -174,6 +174,24 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
   const adds = addsByEncounter[encounterName] || [];
   const enemies: EnemyUnit[] = [];
 
+  // Helper to create mock period timestamps
+  const baseTime = new Date("2024-01-15T20:30:00Z");
+  const createMockPeriod = (offsetMinutes: number, durationSeconds: number, slain: boolean) => ({
+    start: {
+      timestamp: new Date(baseTime.getTime() + offsetMinutes * 60000).toISOString(),
+      reason: "Entered combat",
+    },
+    end: {
+      timestamp: new Date(baseTime.getTime() + offsetMinutes * 60000 + durationSeconds * 1000).toISOString(),
+      reason: slain ? "Unit died" : "Combat ended",
+    },
+    last_active: {
+      timestamp: new Date(baseTime.getTime() + offsetMinutes * 60000 + (durationSeconds - 2) * 1000).toISOString(),
+      reason: "Melee attack",
+    },
+    slain,
+  });
+
   // Add the main boss/enemy
   if (boss) {
     const bossEntry = hashString(encounterName);
@@ -183,7 +201,7 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
       name: encounterName,
       damageTaken: Math.round(500000 + Math.random() * 200000),
       damageDone: Math.round(150000 + Math.random() * 50000),
-      periods: [{ slain: true }], // mock period - boss was killed
+      periods: [createMockPeriod(0, 180, true)], // 3 minute fight, boss killed
     });
   }
 
@@ -196,7 +214,7 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
       name: addName,
       damageTaken: Math.round(50000 + Math.random() * 30000),
       damageDone: Math.round(20000 + Math.random() * 15000),
-      periods: [{ slain: true }], // mock period - add was killed
+      periods: [createMockPeriod(0, 30 + i * 10, true)], // adds die at different times
     });
   });
 
@@ -224,6 +242,15 @@ function createEncounter(
     .filter((_, i) => !kill || (i !== 0 && Math.random() < 0.2))
     .map(e => e.id);
 
+  // Build enemy damage done metrics (damage dealt by enemies)
+  const enemyDamageDone = enemies.map((enemy) => ({
+    playerID: enemy.id,
+    playerName: enemy.name,
+    className: "Enemy",
+    specialization: "",
+    value: enemy.damageDone,
+  })).filter((e) => e.value > 0).sort((a, b) => b.value - a.value);
+
   return {
     id,
     name,
@@ -235,6 +262,7 @@ function createEncounter(
       dps: mockDpsData(40),
       healing: mockHealingData(10),
       damageTaken: mockDpsData(40).map((d) => ({ ...d, value: d.value * 0.3 })),
+      enemyDamageDone,
       enemies,
       remaining: kill ? [] : remaining, // No remaining if it's a kill
     }),

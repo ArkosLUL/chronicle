@@ -394,7 +394,7 @@ function formatDamageNumber(value: number): string {
   if (value >= 1_000) {
     return `${(value / 1_000).toFixed(1)}K`;
   }
-  return value.toLocaleString();
+  return value.toFixed(1).toLocaleString();
 }
 
 // Panel type definitions
@@ -481,7 +481,7 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, sel
     : formatDamageNumber(totalValue);
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 gap-2">
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-sm font-medium flex items-center gap-2">
           {config.icon}
@@ -506,12 +506,12 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, sel
                 onChange={(e) => setPerSecond(e.target.checked)}
                 className="w-3.5 h-3.5 cursor-pointer"
               />
-              /s
+              Per second
             </label>
           )}
         </div>
       </div>
-      <div className="text-xs text-muted-foreground mb-2">
+      <div className="text-xs text-muted-foreground">
         Total: <span className="font-medium text-foreground">{displayTotal}{perSecond ? '/s' : ''}</span>
       </div>
       <PlayerMetricChart

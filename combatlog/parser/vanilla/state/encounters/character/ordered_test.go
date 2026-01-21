@@ -10,21 +10,24 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// mockCharacter is a minimal implementation of Character for testing
-type mockCharacter struct {
+var _ Character = (*idOnlyCharacter)(nil)
+
+// idOnlyCharacter is a minimal implementation of Character for testing ordering
+type idOnlyCharacter struct {
 	id guid.GUID
 }
 
-func (m *mockCharacter) ID() guid.GUID                        { return m.id }
-func (m *mockCharacter) String() string                       { return m.id.String() }
-func (m *mockCharacter) Process(messages.Message) error       { return nil }
-func (m *mockCharacter) Periods() []period.Period             { return nil }
-func (m *mockCharacter) RecentlySlain(messages.Message) bool  { return false }
-func (m *mockCharacter) IsActive() bool                       { return false }
-func (m *mockCharacter) CurrentPeriod() (period.Period, bool) { return period.Period{}, false }
+func (m *idOnlyCharacter) ID() guid.GUID                           { return m.id }
+func (m *idOnlyCharacter) String() string                          { return m.id.String() }
+func (m *idOnlyCharacter) Process(messages.Message) error          { return nil }
+func (m *idOnlyCharacter) Periods() []period.Period                { return nil }
+func (m *idOnlyCharacter) RecentlySlain(messages.Message) bool     { return false }
+func (m *idOnlyCharacter) IsActive() bool                          { return false }
+func (m *idOnlyCharacter) CurrentPeriod() (period.Period, bool)    { return period.Period{}, false }
+func (m2 *idOnlyCharacter) Died(reason string, m messages.Message) {}
 
-func newMockCharacter(id uint64) *mockCharacter {
-	return &mockCharacter{id: guid.GUID(id)}
+func newMockCharacter(id uint64) *idOnlyCharacter {
+	return &idOnlyCharacter{id: guid.GUID(id)}
 }
 
 func TestNewOrdererCharacters(t *testing.T) {

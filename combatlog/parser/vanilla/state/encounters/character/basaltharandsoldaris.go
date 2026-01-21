@@ -21,12 +21,12 @@ func NewSmoldarisBasaltharCharacter(id guid.GUID, all *Characters) (Character, b
 		return nil, false
 	}
 
-	if !(entry == basalthar || entry == smoldaris) {
+	if entry != basalthar && entry != smoldaris {
 		return nil, false
 	}
 
 	c := NewCommonCharacter(id, all)
-	c.Base.SetRecentlySlainDuration(time.Second * 10)
+	c.SetRecentlySlainDuration(time.Second * 10)
 	return NewAdsGoWithBossCustomCharacter(
 		c,
 		all,

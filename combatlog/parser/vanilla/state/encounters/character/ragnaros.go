@@ -21,6 +21,6 @@ func NewRagnarosCharacter(id guid.GUID, all *Characters) (Character, bool) {
 	}
 
 	c := NewCommonCharacter(id, all)
-	c.Base.SetRecentlySlainDuration(time.Second * 15)
+	c.SetRecentlySlainDuration(time.Second * 15)
 	return c, true
 }

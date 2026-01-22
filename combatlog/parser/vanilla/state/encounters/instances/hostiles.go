@@ -199,3 +199,23 @@ func OnyxiaHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func RagefireChasmHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		11323: "Searing Blade Enforcer",
+		11322: "Searing Blade Cultist",
+		11320: "Earthborer",
+		11318: "Ragefire Trogg",
+		11321: "Molten Elemental",
+		11319: "Ragefire Shaman",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		11520: "Taragaman the Hungerer",
+		11518: "Jergosh the Invoker",
+		11517: "Oggleflint",
+		11519: "Bazzalan",
+	})
+	return hostile
+}

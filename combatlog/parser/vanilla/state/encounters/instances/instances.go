@@ -36,4 +36,10 @@ var (
 		ZoneName: "onyxia's lair",
 		Hostiles: FromMap(OnyxiaHostiles()),
 	}).New
+
+	RagefireChasm = (&CommonFactory{
+		Name:     "Ragefire Chasm",
+		ZoneName: "ragefire chasm",
+		Hostiles: FromMap(RagefireChasmHostiles()),
+	}).New
 )

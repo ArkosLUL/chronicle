@@ -34,9 +34,9 @@ import {
   type WoWLogFile, 
   type RiverJobState,
   type WoWParsedLogJobOutput,
-  type WoWParsedInstance,
   type WoWEncounter,
 } from "@/api/queries";
+import type { WoWSimpleParsedInstance } from "@/api/typesGenerated";
 
 function formatDate(timestamp: unknown): string {
   if (!timestamp) return "Unknown";
@@ -204,7 +204,7 @@ function BossEncounterRow({ encounter }: { encounter: WoWEncounter }) {
   );
 }
 
-function InstanceCard({ instance }: { instance: WoWParsedInstance }) {
+function InstanceCard({ instance }: { instance: WoWSimpleParsedInstance }) {
   const bossFights = instance.encounters.filter(e => e.boss);
   const trashFights = instance.encounters.filter(e => !e.boss);
   const bossKills = bossFights.filter(e => e.kill).length;

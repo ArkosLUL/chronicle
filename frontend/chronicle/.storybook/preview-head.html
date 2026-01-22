@@ -1,3 +1,34 @@
+<!-- Dynamic Google Font loader -->
+<script>
+(function() {
+  const loadedFonts = new Set();
+  
+  function loadGoogleFont(fontFamily) {
+    const fontName = fontFamily.split(',')[0].trim().replace(/["']/g, '');
+    const systemFonts = ['ui-sans-serif', 'system-ui', 'sans-serif', 'serif', 'monospace', 'ui-serif', 'ui-monospace'];
+    if (systemFonts.some(sf => fontName.toLowerCase().includes(sf.toLowerCase()))) return;
+    if (loadedFonts.has(fontName)) return;
+    loadedFonts.add(fontName);
+    
+    const link = document.createElement('link');
+    link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}&display=swap`;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    console.log('[font-loader] Loaded:', fontName);
+  }
+  
+  const observer = new MutationObserver(() => {
+    const style = getComputedStyle(document.documentElement);
+    ['--font-sans', '--font-serif', '--font-mono'].forEach(prop => {
+      const value = style.getPropertyValue(prop);
+      if (value) loadGoogleFont(value);
+    });
+  });
+  
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+})();
+</script>
+
 <!-- Tweakcn theme handler (custom implementation to bypass origin check) -->
 <script>
 (function() {

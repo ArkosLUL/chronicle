@@ -12,11 +12,14 @@ import (
 )
 
 func main() {
+	Moonfire()
+}
 
+func Moonfire() {
 	vol, err := content.Open("/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW")
 	perr(err)
 
-	data, err := vol.ReadFile("DBFilesClient\\Spell.dbc")
+	data, err := vol.ReadFile("DBFilesClient\\Item.dbc")
 	perr(err)
 
 	db := dbc.NewDB(vol.Build())

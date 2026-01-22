@@ -44,7 +44,7 @@ type Base[M period.IsPeriod] struct {
 }
 
 func NewBaseCharacter[M period.IsPeriod](me guid.GUID, lookup *Characters) *Base[M] {
-	return &Base[M]{lookup: lookup, id: me, recentlySlain: time.Second}
+	return &Base[M]{lookup: lookup, id: me, recentlySlain: time.Second * 3}
 }
 
 func (c *Base[_]) SetRecentlySlainDuration(d time.Duration) {

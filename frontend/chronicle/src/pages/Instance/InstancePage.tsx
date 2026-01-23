@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Loader2, Users } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
 import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -10,6 +10,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible/Collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
@@ -201,6 +202,56 @@ function mergeEnemies(encounters: Encounter[]): MergedEnemy[] {
   }
 
   return Array.from(enemyMap.values()).sort((a, b) => b.damageTaken - a.damageTaken);
+}
+
+// Merged player from damage metrics
+interface MergedPlayer {
+  id: string;
+  name: string;
+  className: string;
+  damageDone: number;
+  damageTaken: number;
+}
+
+// Merge players from encounter metrics
+function mergePlayers(encounters: Encounter[]): MergedPlayer[] {
+  const playerMap = new Map<string, MergedPlayer>();
+
+  // Get players from DPS metrics (damage done)
+  const dpsData = mergeMetrics(encounters, 'dps');
+  for (const d of dpsData) {
+    const existing = playerMap.get(d.playerID);
+    if (existing) {
+      existing.damageDone += d.value;
+    } else {
+      playerMap.set(d.playerID, {
+        id: d.playerID,
+        name: d.playerName,
+        className: d.className,
+        damageDone: d.value,
+        damageTaken: 0,
+      });
+    }
+  }
+
+  // Add damage taken data
+  const damageTakenData = mergeMetrics(encounters, 'damageTaken');
+  for (const d of damageTakenData) {
+    const existing = playerMap.get(d.playerID);
+    if (existing) {
+      existing.damageTaken += d.value;
+    } else {
+      playerMap.set(d.playerID, {
+        id: d.playerID,
+        name: d.playerName,
+        className: d.className,
+        damageDone: 0,
+        damageTaken: d.value,
+      });
+    }
+  }
+
+  return Array.from(playerMap.values()).sort((a, b) => b.damageDone - a.damageDone);
 }
 
 // Sidebar component for encounter navigation
@@ -528,6 +579,12 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, sel
   );
 }
 
+// Entity selection state - can select both enemies and players
+interface EntitySelection {
+  enemyIds: Set<string>;
+  playerIds: Set<string>;
+}
+
 // Main encounter detail view
 function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   const isSingle = encounters.length === 1;
@@ -537,31 +594,68 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
   const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
   
-  // Selected enemies for filtering Enemy Damage panel
-  const [selectedEnemyIds, setSelectedEnemyIds] = useState<Set<string>>(new Set());
+  // Entity selection - both enemies and players can be selected
+  const [entitySelection, setEntitySelection] = useState<EntitySelection>({
+    enemyIds: new Set(),
+    playerIds: new Set(),
+  });
+  
+  // Active tab
+  const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
   
   // Toggle enemy selection
   const toggleEnemySelection = (enemyId: string) => {
-    setSelectedEnemyIds(prev => {
-      const next = new Set(prev);
+    setEntitySelection(prev => {
+      const next = new Set(prev.enemyIds);
       if (next.has(enemyId)) {
         next.delete(enemyId);
       } else {
         next.add(enemyId);
       }
-      return next;
+      return { ...prev, enemyIds: next };
     });
   };
   
-  // Clear all enemy selections
-  const clearEnemySelection = () => {
-    setSelectedEnemyIds(new Set());
+  // Toggle player selection
+  const togglePlayerSelection = (playerId: string) => {
+    setEntitySelection(prev => {
+      const next = new Set(prev.playerIds);
+      if (next.has(playerId)) {
+        next.delete(playerId);
+      } else {
+        next.add(playerId);
+      }
+      return { ...prev, playerIds: next };
+    });
+  };
+  
+  // Clear all selections
+  const clearEntitySelection = () => {
+    setEntitySelection({ enemyIds: new Set(), playerIds: new Set() });
   };
   
   // Merge metrics across all selected encounters
   const mergedEnemies = mergeEnemies(encounters);
+  const mergedPlayers = mergePlayers(encounters);
   
   const totalDurationMs = computeTotalDuration(encounters);
+  
+  // Helper to check if an enemy is selected
+  const isEnemySelected = (id: string) => entitySelection.enemyIds.has(id);
+  
+  // Helper to check if a player is selected
+  const isPlayerSelected = (id: string) => entitySelection.playerIds.has(id);
+  
+  // Get selected enemy IDs for MetricPanel (for backward compatibility)
+  const selectedEnemyIds = entitySelection.enemyIds;
+  
+  // Has any selection
+  const hasSelection = entitySelection.enemyIds.size > 0 || entitySelection.playerIds.size > 0;
+  
+  // Selection counts for display
+  const selectedEnemyCount = entitySelection.enemyIds.size;
+  const selectedPlayerCount = entitySelection.playerIds.size;
+  const totalSelectionCount = selectedEnemyCount + selectedPlayerCount;
 
   // Build title
   const title = isSingle
@@ -597,72 +691,131 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
         </div>
       </div>
 
-      {/* Enemies fought */}
-      {mergedEnemies.length > 0 && (
-        <Collapsible className="mb-6">
+      {/* Entity selection - Enemies and Players tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'enemies' | 'players')} className="mb-6">
+        <Collapsible>
           <Card className="p-4">
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between text-left">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                  <Skull className="h-4 w-4" />
-                  Enemies ({mergedEnemies.length})
-                  {selectedEnemyIds.size > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      • {selectedEnemyIds.size} selected
-                    </span>
-                  )}
-                </h3>
-                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="flex flex-wrap gap-2 mt-3">
-                {selectedEnemyIds.size > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <TabsList>
+                  <TabsTrigger value="enemies" className="gap-1.5">
+                    <Skull className="h-4 w-4" />
+                    Enemies ({mergedEnemies.length})
+                    {selectedEnemyCount > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
+                        {selectedEnemyCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="players" className="gap-1.5">
+                    <Users className="h-4 w-4" />
+                    Players ({mergedPlayers.length})
+                    {selectedPlayerCount > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
+                        {selectedPlayerCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+                {hasSelection && (
                   <button
-                    onClick={clearEnemySelection}
+                    onClick={clearEntitySelection}
                     className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
-                    Clear selection
+                    Clear ({totalSelectionCount})
                   </button>
                 )}
-                {mergedEnemies.map((enemy) => {
-                  const isSelected = selectedEnemyIds.has(enemy.id);
-                  const hasSelection = selectedEnemyIds.size > 0;
-                  return (
-                    <Tooltip key={enemy.id}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => toggleEnemySelection(enemy.id)}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
-                            enemy.killed
-                              ? "bg-green-500/15 border border-green-500/30"
-                              : "bg-red-500/15 border border-red-500/30",
-                            isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
-                            hasSelection && !isSelected && "opacity-50"
-                          )}
-                        >
-                          <span className={cn(
-                            "w-2 h-2 rounded-full flex-shrink-0",
-                            enemy.killed ? "bg-green-500" : "bg-red-500"
-                          )} />
-                          <span className="font-medium">{enemy.name}</span>
-                          <span className="text-muted-foreground text-xs">
-                            {formatDamageNumber(enemy.damageTaken)} dmg taken
-                          </span>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="p-3">
-                        {formatPeriodsTooltip(enemy.id, enemy.periods)}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
+              </div>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center gap-2 px-3 py-2 -mr-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <span className="text-xs">
+                    {activeTab === 'enemies' ? mergedEnemies.length : mergedPlayers.length} units
+                  </span>
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
+                </button>
+              </CollapsibleTrigger>
+            </div>
+
+            <CollapsibleContent>
+              <div className="mt-3">
+                <TabsContent value="enemies" className="mt-0">
+                  <div className="flex flex-wrap gap-2">
+                    {mergedEnemies.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No enemies in this encounter</p>
+                    ) : (
+                      mergedEnemies.map((enemy) => {
+                        const isSelected = isEnemySelected(enemy.id);
+                        return (
+                          <Tooltip key={enemy.id}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => toggleEnemySelection(enemy.id)}
+                                className={cn(
+                                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
+                                  enemy.killed
+                                    ? "bg-green-500/15 border border-green-500/30"
+                                    : "bg-red-500/15 border border-red-500/30",
+                                  isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                                  hasSelection && !isSelected && "opacity-50"
+                                )}
+                              >
+                                <span className={cn(
+                                  "w-2 h-2 rounded-full flex-shrink-0",
+                                  enemy.killed ? "bg-green-500" : "bg-red-500"
+                                )} />
+                                <span className="font-medium">{enemy.name}</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {formatDamageNumber(enemy.damageTaken)} dmg taken
+                                </span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="p-3">
+                              {formatPeriodsTooltip(enemy.id, enemy.periods)}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="players" className="mt-0">
+                  <div className="flex flex-wrap gap-2">
+                    {mergedPlayers.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No players in this encounter</p>
+                    ) : (
+                      mergedPlayers.map((player) => {
+                        const isSelected = isPlayerSelected(player.id);
+                        return (
+                          <button
+                            key={player.id}
+                            onClick={() => togglePlayerSelection(player.id)}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
+                              "bg-muted/50 border border-border hover:bg-muted",
+                              isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                              hasSelection && !isSelected && "opacity-50"
+                            )}
+                          >
+                            <span 
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: `var(--class-${player.className.toLowerCase()})` }}
+                            />
+                            <span className="font-medium">{player.name}</span>
+                            <span className="text-muted-foreground text-xs">
+                              {formatDamageNumber(player.damageDone)} dmg
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </TabsContent>
               </div>
             </CollapsibleContent>
           </Card>
         </Collapsible>
-      )}
+      </Tabs>
 
       {/* Metrics - 2 column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

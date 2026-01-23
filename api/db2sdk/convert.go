@@ -168,7 +168,7 @@ func EncounterDamageSummary(summary database.LogInstanceEncounterDamageUnitSumma
 			}
 			return cpy
 		}),
-		DamageTakenAbilities: maps.Map[guid.GUID, map[string]database.Ability, map[string]chroniclesdk.Ability](summary.DamageDoneAbilities, func(f map[string]database.Ability) map[string]chroniclesdk.Ability {
+		DamageTakenAbilities: maps.Map[guid.GUID, map[string]database.Ability, map[string]chroniclesdk.Ability](summary.DamageTakenAbilities, func(f map[string]database.Ability) map[string]chroniclesdk.Ability {
 			cpy := make(map[string]chroniclesdk.Ability, len(f))
 			for k, v := range f {
 				cpy[k] = Ability(v)

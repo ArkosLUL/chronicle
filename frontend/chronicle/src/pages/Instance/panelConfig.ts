@@ -74,7 +74,6 @@ function aggregateByUnit(targetFilter: Set<string>, records: EncounterDamageSumm
       continue;
     } 
 
-    console.log(record)
     const {total: totalDamage, filtered: damageDone} = filterAbilities(targetFilter, record.damage_done_abilities);
     const {total: totalTaken, filtered: damageTaken} = filterAbilities(targetFilter, record.damage_taken_abilities);
 
@@ -132,6 +131,24 @@ function terraformGeneral(
   selectedPlayerIds: Set<string>,
   selectedEnemyIds: Set<string>
 ) : PlayerMetricChartData[] {
+  // Filter data based on panel type and selections
+  switch (panelType) {
+    case 'damage_done':
+    case 'damage_taken':
+      data = data.filter(record => {
+        return record.is_player
+      });
+      break
+    case 'enemy_damage_done':
+    case 'enemy_damage_taken':
+      data = data.filter(record => {
+        return !record.is_player
+      });
+      break;
+    default:
+      throw new Error(`Unknown panel type: ${panelType}`);
+  }
+
   let targetFilter = selectedPlayerIds
   switch (panelType) {
     case 'damage_done':
@@ -147,25 +164,6 @@ function terraformGeneral(
   }
 
   const aggregated = aggregateByUnit(targetFilter, data);
-
-  // Filter data based on panel type and selections
-  switch (panelType) {
-    case 'damage_done':
-    case 'damage_taken':
-      data = data.filter(record => {
-        return record.is_player && (Object.keys(selectedPlayerIds).length > 0 && selectedPlayerIds.has(record.unit_guid.toString()));
-      });
-      break
-    case 'enemy_damage_done':
-    case 'enemy_damage_taken':
-      data = data.filter(record => {
-        return !record.is_player && (Object.keys(selectedEnemyIds).length > 0 && selectedEnemyIds.has(record.unit_guid.toString()));
-      });
-      break;
-    default:
-      throw new Error(`Unknown panel type: ${panelType}`);
-  }
-
   const result: PlayerMetricChartData[] = [];
   for (const [guid, stats] of aggregated) {
     const player = players[guid];
@@ -195,13 +193,12 @@ function terraformGeneral(
           className: player.class,
           specialization: "",
           value: stats.damageTakenTotal,
-          rawAbilities: stats.damageDoneAbilities,
+          rawAbilities: stats.damageTakenAbilities,
           dimmed: selectedPlayerIds.size > 0 && !selectedPlayerIds.has(guid),
         });
         break;
       case 'enemy_damage_done':
-      case 'enemy_damage_taken':
-        if (!stats.isPlayer) continue;
+        if (stats.isPlayer) continue;
         result.push({
           playerID: guid,
           playerName: enemyName || `Enemy ${guid.slice(-8)}`,
@@ -209,6 +206,18 @@ function terraformGeneral(
           specialization: "",
           value: stats.damageDoneTotal,
           rawAbilities: stats.damageDoneAbilities,
+          dimmed: selectedPlayerIds.size > 0 && !selectedEnemyIds.has(guid),
+        });
+        break;
+      case 'enemy_damage_taken':
+        if (stats.isPlayer) continue;
+        result.push({
+          playerID: guid,
+          playerName: enemyName || `Enemy ${guid.slice(-8)}`,
+          className: "CREATURE",
+          specialization: "",
+          value: stats.damageTakenTotal,
+          rawAbilities: stats.damageTakenAbilities,
           dimmed: selectedPlayerIds.size > 0 && !selectedEnemyIds.has(guid),
         });
         break;

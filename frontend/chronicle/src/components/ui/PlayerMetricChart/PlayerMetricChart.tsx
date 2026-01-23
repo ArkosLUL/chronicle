@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react'
 import {
   Tooltip,
   TooltipContent,
@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/Tooltip/tooltip";
 import { useMouse } from '@/hooks/useMouse';
 import { cn } from '@/lib/utils';
+import { X, GripHorizontal } from 'lucide-react';
 
 export type ChartType = 'damage' | 'healing' | 'taken'
 
@@ -48,6 +49,8 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   // If perSecond is true, value is DPS/HPS
   perSecond?: boolean
   duration_millis?: number
+  // Title shown on pinned tooltips (e.g., "Damage Done", "Damage Taken")
+  panelTitle?: string
 }
 
 export function PlayerMetricChart({
@@ -56,12 +59,13 @@ export function PlayerMetricChart({
   className,
   style,
   type,
+  panelTitle,
   perSecond,
   duration_millis,
   ...divProps
 }: PlayerMetricChartProps) {
-  // Track which row has a pinned tooltip
-  const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
+  // Track which rows have pinned tooltips (multiple allowed)
+  const [pinnedPlayerIds, setPinnedPlayerIds] = useState<Set<string>>(new Set())
 
   const computedData = useMemo(() => {
     return data.map((item) => ({
@@ -97,8 +101,16 @@ export function PlayerMetricChart({
     }))
   }, [computedData])
 
-  const handleRowClick = (playerId: string) => {
-    setPinnedPlayerId(prev => prev === playerId ? null : playerId)
+  const handleTogglePin = (playerId: string) => {
+    setPinnedPlayerIds(prev => {
+      const next = new Set(prev)
+      if (next.has(playerId)) {
+        next.delete(playerId)
+      } else {
+        next.add(playerId)
+      }
+      return next
+    })
   }
 
   return (
@@ -123,8 +135,9 @@ export function PlayerMetricChart({
             showRank={type === 'damage' || type === 'healing' || type === 'taken'}
             type={type}
             suffix={perSecond ? '/s' : ''}
-            isPinned={pinnedPlayerId === player.playerID}
-            onTogglePin={() => handleRowClick(player.playerID)}
+            isPinned={pinnedPlayerIds.has(player.playerID)}
+            onTogglePin={() => handleTogglePin(player.playerID)}
+            panelTitle={panelTitle}
           />
         })}
       </div>
@@ -142,6 +155,7 @@ export interface PlayerMetricRowProps {
   suffix?: string
   isPinned?: boolean
   onTogglePin?: () => void
+  panelTitle?: string
 }
 
 // Format number compactly
@@ -224,6 +238,109 @@ function AbilityBreakdownTable({ abilities, totalValue }: { abilities: AbilityBr
   )
 }
 
+// Draggable pinned tooltip component
+interface DraggablePinnedTooltipProps {
+  player: PlayerMetricChartData & { color: string }
+  initialPosition: { x: number; y: number }
+  onClose: () => void
+  panelTitle?: string
+}
+
+function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle }: DraggablePinnedTooltipProps) {
+  const [position, setPosition] = useState(initialPosition)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only start drag from the header area
+    if ((e.target as HTMLElement).closest('[data-drag-handle]')) {
+      e.preventDefault()
+      setIsDragging(true)
+      dragStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        posX: position.x,
+        posY: position.y,
+      }
+    }
+  }, [position])
+
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current) return
+      const deltaX = e.clientX - dragStartRef.current.x
+      const deltaY = e.clientY - dragStartRef.current.y
+      setPosition({
+        x: dragStartRef.current.posX + deltaX,
+        y: dragStartRef.current.posY + deltaY,
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+      dragStartRef.current = null
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging])
+
+  return (
+    <div
+      ref={tooltipRef}
+      className="fixed z-50 min-w-[340px] rounded-md border bg-popover text-popover-foreground shadow-md"
+      style={{
+        left: position.x,
+        top: position.y,
+        cursor: isDragging ? 'grabbing' : 'default',
+      }}
+      onMouseDown={handleMouseDown}
+    >
+      {/* Header with drag handle and close button */}
+      <div 
+        className="flex items-center gap-2 p-3 border-b border-border"
+        data-drag-handle
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      >
+        <GripHorizontal className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <span 
+          className="w-3 h-3 rounded-full flex-shrink-0"
+          style={{ backgroundColor: player.color }}
+        />
+        <span className="font-medium">{player.playerName}</span>
+        <span className="text-muted-foreground text-xs">
+          {player.className}
+        </span>
+        {panelTitle && (
+          <span className="text-xs text-muted-foreground border-l border-border pl-2 ml-auto">
+            {panelTitle}
+          </span>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
+          className={cn("p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors", !panelTitle && "ml-auto")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <AbilityBreakdownTable 
+        abilities={player.abilityBreakdown ?? []} 
+        totalValue={player.value}
+      />
+    </div>
+  )
+}
+
 export function PlayerMetricRow({
   player,
   rowHeight,
@@ -234,210 +351,211 @@ export function PlayerMetricRow({
   suffix,
   isPinned = false,
   onTogglePin,
+  panelTitle,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
+  const rowRef = useRef<HTMLDivElement>(null)
   const isDimmed = player.dimmed ?? false;
+  const [pinnedPosition, setPinnedPosition] = useState<{ x: number; y: number } | null>(null)
   
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
+    if (!isPinned && rowRef.current) {
+      // Calculate initial position for the pinned tooltip
+      const rect = rowRef.current.getBoundingClientRect()
+      setPinnedPosition({
+        x: rect.left + x,
+        y: rect.top + rowHeight + 5,
+      })
+    }
     onTogglePin?.()
-  }
+  }, [isPinned, onTogglePin, x, rowHeight])
+
+  const handleClose = useCallback(() => {
+    onTogglePin?.()
+  }, [onTogglePin])
+
+  // Combine refs
+  const setRefs = useCallback((element: HTMLDivElement | null) => {
+    // Set the mouse tracking ref
+    (ref as React.MutableRefObject<HTMLDivElement | null>).current = element
+    // Set our local ref
+    ;(rowRef as React.MutableRefObject<HTMLDivElement | null>).current = element
+  }, [ref])
 
   return (
-  <TooltipProvider key={player.playerID + player.playerName}>
-    <Tooltip delayDuration={0} open={isPinned ? true : undefined}>
-      <TooltipTrigger asChild>
-        <div
-          ref={ref}
-          onClick={handleClick}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            height: rowHeight,
-            position: 'relative',
-            borderRadius: 'var(--radius)',
-            overflow: 'hidden',
-            color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
-            opacity: isDimmed ? 0.35 : 1,
-            transition: 'opacity 0.2s ease',
-            cursor: 'pointer',
-          }}
-          className={cn(isPinned && "ring-2 ring-primary ring-inset")}
-        >
-          {/* Colored bar background */}
+  <>
+    <TooltipProvider key={player.playerID + player.playerName}>
+      <Tooltip delayDuration={0} open={isPinned ? false : undefined}>
+        <TooltipTrigger asChild>
           <div
+            ref={setRefs}
+            onClick={handleClick}
             style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: `${(player.value / maximumValue) * 100}%`,
-              background: `linear-gradient(to right, oklch(0 0 0 / 0.3), oklch(0 0 0 / 0.15)), ${player.color}`,
-              opacity: 0.85,
-              transition: 'width 0.3s ease',
-            }}
-          />
-          
-          {/* Stacked value */}
-          {player.stackedValue && (
-          <div
-            style={{
-              position: 'absolute',
-              left: `${(player.value / maximumValue) * 100}%`,
-              top: 0,
-              bottom: 0,
-              width: `${(player.stackedValue / maximumValue) * 100}%`,
-              background: `${player.color}`,
-              opacity: 0.3,
-              transition: 'width 0.3s ease',
-            }}
-          />)
-          }
-
-          {/* Content overlay */}
-          <div
-            style={{
-              position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              width: '100%',
-              padding: '0 12px',
-              zIndex: 1,
+              height: rowHeight,
+              position: 'relative',
+              borderRadius: 'var(--radius)',
+              overflow: 'hidden',
+              color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
+              opacity: isDimmed ? 0.35 : 1,
+              transition: 'opacity 0.2s ease',
+              cursor: 'pointer',
             }}
+            className={cn(isPinned && "ring-2 ring-primary ring-inset")}
           >
-
-          {/* Rank */}
-          {showRank && (<span
+            {/* Colored bar background */}
+            <div
               style={{
-                width: '32px',
-                fontSize: '13px',
-                fontWeight: 500,
-              }}
-            >
-              #{player.rank}
-            </span>
-            )}
-
-            {/* Icon */}
-            <img
-              src={`/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
-              alt={player.specialization}
-              style={{
-                width: '20px',
-                height: '20px',
-                marginRight: '8px',
-                borderRadius: '2px',
-              }}
-              onError={(e) => {
-                // Fallback to class icon if spec icon not found, then to unknown
-                const target = e.currentTarget;
-                const classIcon = `/icons/class_${player.className.toLowerCase()}.png`;
-                const unknownIcon = '/icons/class_unknown.png';
-                if (target.src.endsWith(unknownIcon)) {
-                  // Already at fallback, hide the image
-                  target.style.display = 'none';
-                } else if (target.src.includes('/icons/class_')) {
-                  // Class icon failed, try unknown
-                  target.src = unknownIcon;
-                } else {
-                  // Spec icon failed, try class icon
-                  target.src = classIcon;
-                }
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: `${(player.value / maximumValue) * 100}%`,
+                background: `linear-gradient(to right, oklch(0 0 0 / 0.3), oklch(0 0 0 / 0.15)), ${player.color}`,
+                opacity: 0.85,
+                transition: 'width 0.3s ease',
               }}
             />
-
-            {/* Spec name */}
-            <span
+            
+            {/* Stacked value */}
+            {player.stackedValue && (
+            <div
               style={{
-                flex: 1,
-                fontSize: '13px',
-                fontWeight: 500,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                position: 'absolute',
+                left: `${(player.value / maximumValue) * 100}%`,
+                top: 0,
+                bottom: 0,
+                width: `${(player.stackedValue / maximumValue) * 100}%`,
+                background: `${player.color}`,
+                opacity: 0.3,
+                transition: 'width 0.3s ease',
+              }}
+            />)
+            }
+
+            {/* Content overlay */}
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                padding: '0 12px',
+                zIndex: 1,
               }}
             >
-              {player.playerName}
-            </span>
 
-            {/* DPS value */}
-            {formatValue(type, player, suffix)}
-
-            {/* {player.stackedValue && (<span
-              style={{
-                minWidth: '5em',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'oklch(0.985 0 0)',
-                background: 'oklch(0.205 0 0 / 0.7)',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                marginRight: '12px',
-              }}
+            {/* Rank */}
+            {showRank && (<span
+                style={{
+                  width: '32px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
               >
-                {formatValue(type, player)}
+                #{player.rank}
               </span>
-            )} */}
+              )}
 
+              {/* Icon */}
+              <img
+                src={`/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
+                alt={player.specialization}
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  marginRight: '8px',
+                  borderRadius: '2px',
+                }}
+                onError={(e) => {
+                  // Fallback to class icon if spec icon not found, then to unknown
+                  const target = e.currentTarget;
+                  const classIcon = `/icons/class_${player.className.toLowerCase()}.png`;
+                  const unknownIcon = '/icons/class_unknown.png';
+                  if (target.src.endsWith(unknownIcon)) {
+                    // Already at fallback, hide the image
+                    target.style.display = 'none';
+                  } else if (target.src.includes('/icons/class_')) {
+                    // Class icon failed, try unknown
+                    target.src = unknownIcon;
+                  } else {
+                    // Spec icon failed, try class icon
+                    target.src = classIcon;
+                  }
+                }}
+              />
 
-            {/* Percentage */}
-            <span
-              style={{
-                width: '50px',
-                textAlign: 'right',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'var(--class-muted-foreground)',
-              }}
-            >
-              {((player.value/summedValue)*100).toFixed(2)}%
-            </span>
+              {/* Spec name */}
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {player.playerName}
+              </span>
+
+              {/* DPS value */}
+              {formatValue(type, player, suffix)}
+
+              {/* Percentage */}
+              <span
+                style={{
+                  width: '50px',
+                  textAlign: 'right',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--class-muted-foreground)',
+                }}
+              >
+                {((player.value/summedValue)*100).toFixed(2)}%
+              </span>
+            </div>
           </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent 
-        align="start"
-        alignOffset={x}
-        sideOffset={-y + 10}
-        hideWhenDetached
-        className="p-0 min-w-[340px]"
-        onPointerDownOutside={(e) => {
-          // Prevent closing when clicking inside the tooltip
-          if (isPinned) {
-            e.preventDefault()
-          }
-        }}
-      >
-        <div className="p-3 border-b border-border">
-          <div className="flex items-center gap-2">
-            <span 
-              className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: player.color }}
-            />
-            <span className="font-medium">{player.playerName}</span>
-            <span className="text-muted-foreground text-xs ml-auto">
-              {player.className}
-            </span>
+        </TooltipTrigger>
+        <TooltipContent 
+          align="start"
+          alignOffset={x}
+          sideOffset={-y + 10}
+          hideWhenDetached
+          className="p-0 min-w-[340px]"
+        >
+          <div className="p-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <span 
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: player.color }}
+              />
+              <span className="font-medium">{player.playerName}</span>
+              <span className="text-muted-foreground text-xs ml-auto">
+                {player.className}
+              </span>
+            </div>
           </div>
-          {/* <div className="flex items-center gap-4 mt-1 text-sm">
-            <span>Total: <strong>{formatCompactNumber(player.value)}</strong>{suffix}</span>
-            <span className="text-muted-foreground">
-              {((player.value/summedValue)*100).toFixed(1)}% of total
-            </span>
-          </div> */}
-          {isPinned && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Click row again to unpin
-            </p>
-          )}
-        </div>
-        <AbilityBreakdownTable 
-          abilities={player.abilityBreakdown ?? []} 
-          totalValue={player.value}
-        />
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+          <AbilityBreakdownTable 
+            abilities={player.abilityBreakdown ?? []} 
+            totalValue={player.value}
+          />
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+    
+    {/* Pinned draggable tooltip */}
+    {isPinned && pinnedPosition && (
+      <DraggablePinnedTooltip
+        player={player}
+        initialPosition={pinnedPosition}
+        onClose={handleClose}
+        panelTitle={panelTitle}
+      />
+    )}
+  </>
 )
 }
 

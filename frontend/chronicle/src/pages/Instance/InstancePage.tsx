@@ -611,6 +611,7 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, sel
         duration_millis={durationMs}
         perSecond={perSecond}
         style={{ height: "400px" }}
+        panelTitle={config.label}
       />
     </Card>
   );

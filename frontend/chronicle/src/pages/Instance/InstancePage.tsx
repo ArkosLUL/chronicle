@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Loader2, Users } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
-import type { Ability, ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, WoWHeroClasses } from "@/api/typesGenerated";
+import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible/Collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { PlayerMetricChart, type PlayerMetricChartData, type AbilityBreakdown } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import { PlayerMetricChart, type PlayerMetricChartData, type RawAbilities } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -137,35 +137,49 @@ function groupTrashEncounters(encounters: Encounter[]): TrashGroup[] {
 }
 
 // Merge ability breakdowns from multiple sources
-function mergeAbilityBreakdowns(existing: AbilityBreakdown[] | undefined, incoming: AbilityBreakdown[] | undefined): AbilityBreakdown[] {
-  if (!incoming || incoming.length === 0) return existing || [];
-  if (!existing || existing.length === 0) return [...incoming];
+// Merge two raw abilities records by summing ability stats for each GUID→ability combination
+function mergeRawAbilities(
+  existing: RawAbilities | undefined,
+  incoming: RawAbilities | undefined
+): RawAbilities | undefined {
+  if (!incoming) return existing;
+  if (!existing) return incoming;
   
-  const abilityMap = new Map<string, AbilityBreakdown>();
+  // Deep clone existing to avoid mutation
+  const result: RawAbilities = {};
   
-  // Add existing abilities
-  for (const ability of existing) {
-    abilityMap.set(ability.name, { ...ability });
-  }
-  
-  // Merge incoming abilities
-  for (const ability of incoming) {
-    const existingAbility = abilityMap.get(ability.name);
-    if (existingAbility) {
-      existingAbility.totalDamage += ability.totalDamage;
-      existingAbility.hitCount += ability.hitCount;
-      existingAbility.critCount += ability.critCount;
-      existingAbility.missCount += ability.missCount;
-      existingAbility.dodgeCount += ability.dodgeCount;
-      existingAbility.immuneCount += ability.immuneCount;
-      existingAbility.parryCount += ability.parryCount;
-      existingAbility.otherCount += ability.otherCount;
-    } else {
-      abilityMap.set(ability.name, { ...ability });
+  // Copy existing abilities
+  for (const [guid, abilities] of Object.entries(existing)) {
+    result[guid] = {};
+    for (const [name, ability] of Object.entries(abilities)) {
+      result[guid][name] = { ...ability };
     }
   }
   
-  return Array.from(abilityMap.values());
+  // Merge incoming abilities
+  for (const [guid, abilities] of Object.entries(incoming)) {
+    if (!result[guid]) {
+      result[guid] = {};
+    }
+    for (const [name, ability] of Object.entries(abilities)) {
+      const existingAbility = result[guid][name];
+      if (existingAbility) {
+        // Sum up the stats
+        existingAbility.total_damage += ability.total_damage;
+        existingAbility.hit_count += ability.hit_count;
+        existingAbility.crit_count += ability.crit_count;
+        existingAbility.miss_count += ability.miss_count;
+        existingAbility.dodge_count += ability.dodge_count;
+        existingAbility.immune_count += ability.immune_count;
+        existingAbility.parry_count += ability.parry_count;
+        existingAbility.other_count += ability.other_count;
+      } else {
+        result[guid][name] = { ...ability };
+      }
+    }
+  }
+  
+  return result;
 }
 
 // Merge metrics from multiple encounters by summing values per unit
@@ -183,12 +197,12 @@ function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageT
         if (metric.stackedValue !== undefined) {
           existing.stackedValue = (existing.stackedValue || 0) + metric.stackedValue;
         }
-        // Merge ability breakdowns
-        existing.abilityBreakdown = mergeAbilityBreakdowns(existing.abilityBreakdown, metric.abilityBreakdown);
+        // Merge raw abilities for dynamic filtering
+        existing.rawAbilities = mergeRawAbilities(existing.rawAbilities, metric.rawAbilities);
       } else {
         playerMap.set(metric.playerID, { 
           ...metric,
-          abilityBreakdown: metric.abilityBreakdown ? [...metric.abilityBreakdown] : undefined,
+          // Keep rawAbilities as-is (no need to deep clone for initial entry)
         });
       }
     }
@@ -536,15 +550,21 @@ interface MetricPanelProps {
   encounters: Encounter[];
   durationMs: number;
   selectedEnemyIds?: Set<string>;
+  selectedPlayerIds?: Set<string>;
 }
 
-function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, selectedEnemyIds }: MetricPanelProps) {
+function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, selectedEnemyIds, selectedPlayerIds }: MetricPanelProps) {
   const [perSecond, setPerSecond] = useState(false);
   const config = PANEL_CONFIGS[panelType];
   let data = mergeMetrics(encounters, config.dataKey);
   
-  // For enemy panels, apply filtering based on selected enemies
+  // Determine which filter to apply based on panel type
+  // - Player panels (damage_done, damage_taken): filter abilities by selected enemies
+  // - Enemy panels (enemy_damage_done, enemy_damage_taken): filter abilities by selected players, dim rows
   const isEnemyPanel = panelType === 'enemy_damage_done' || panelType === 'enemy_damage_taken';
+  const isPlayerPanel = panelType === 'damage_done' || panelType === 'damage_taken';
+  
+  // For enemy panels, dim non-selected enemies
   const hasEnemyFilter = selectedEnemyIds && selectedEnemyIds.size > 0 && isEnemyPanel;
   if (hasEnemyFilter) {
     data = data.map(d => ({
@@ -553,6 +573,19 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, sel
       dimmed: !selectedEnemyIds.has(d.playerID),
     }));
   }
+  
+  // Determine the filter for ability breakdowns
+  // - Player panels: filter by selected enemies (abilities keyed by enemy target)
+  // - Enemy panels: filter by selected players (abilities keyed by player target)
+  const abilityFilterGuids = useMemo(() => {
+    if (isPlayerPanel && selectedEnemyIds && selectedEnemyIds.size > 0) {
+      return selectedEnemyIds;
+    }
+    if (isEnemyPanel && selectedPlayerIds && selectedPlayerIds.size > 0) {
+      return selectedPlayerIds;
+    }
+    return undefined;
+  }, [isPlayerPanel, isEnemyPanel, selectedEnemyIds, selectedPlayerIds]);
 
   // Show per-second toggle for damage-related panels
   const showPerSecondToggle = config.chartType === 'damage';
@@ -612,6 +645,7 @@ function MetricPanel({ panelType, onPanelTypeChange, encounters, durationMs, sel
         perSecond={perSecond}
         style={{ height: "400px" }}
         panelTitle={config.label}
+        filterGuids={abilityFilterGuids}
       />
     </Card>
   );
@@ -684,8 +718,9 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
   // Helper to check if a player is selected
   const isPlayerSelected = (id: string) => entitySelection.playerIds.has(id);
   
-  // Get selected enemy IDs for MetricPanel (for backward compatibility)
+  // Get selected IDs for MetricPanel filtering
   const selectedEnemyIds = entitySelection.enemyIds;
+  const selectedPlayerIds = entitySelection.playerIds;
   
   // Has any selection
   const hasSelection = entitySelection.enemyIds.size > 0 || entitySelection.playerIds.size > 0;
@@ -863,6 +898,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
           encounters={encounters}
           durationMs={totalDurationMs}
           selectedEnemyIds={selectedEnemyIds}
+          selectedPlayerIds={selectedPlayerIds}
         />
         <MetricPanel
           panelType={panel2Type}
@@ -870,6 +906,7 @@ function EncounterDetail({ encounters }: { encounters: Encounter[] }) {
           encounters={encounters}
           durationMs={totalDurationMs}
           selectedEnemyIds={selectedEnemyIds}
+          selectedPlayerIds={selectedPlayerIds}
         />
       </div>
     </div>
@@ -1018,21 +1055,6 @@ function getUnitName(guidStr: string, units: Record<string, InstanceUnit>): stri
   return `Enemy ${guidStr}`;
 }
 
-// Convert API ability record to AbilityBreakdown array
-function convertAbilitiesToBreakdown(abilities: Record<string, Ability>): AbilityBreakdown[] {
-  return Object.entries(abilities).map(([name, ability]) => ({
-    name,
-    totalDamage: ability.total_damage,
-    hitCount: ability.hit_count,
-    critCount: ability.crit_count,
-    missCount: ability.miss_count,
-    dodgeCount: ability.dodge_count,
-    immuneCount: ability.immune_count,
-    parryCount: ability.parry_count,
-    otherCount: ability.other_count,
-  }));
-}
-
 // Helper to transform API data to view data
 function transformToInstance(
   apiInstance: {
@@ -1075,7 +1097,8 @@ function transformToInstance(
         className: getPlayerClass(guidStr, players),
         specialization: "",
         value: d.damage_done_total,
-        abilityBreakdown: convertAbilitiesToBreakdown(d.damage_done_abilities),
+        // Store raw abilities for dynamic filtering at render time
+        rawAbilities: d.damage_done_abilities,
       };
     });
 
@@ -1087,7 +1110,8 @@ function transformToInstance(
         className: getPlayerClass(guidStr, players),
         specialization: "",
         value: d.damage_taken_total,
-        abilityBreakdown: convertAbilitiesToBreakdown(d.damage_taken_abilities),
+        // Store raw abilities for dynamic filtering at render time
+        rawAbilities: d.damage_taken_abilities,
       };
     });
 
@@ -1117,7 +1141,8 @@ function transformToInstance(
           className: "Enemy", // use "Enemy" as the class for styling
           specialization: "",
           value: enemy.damageDone,
-          abilityBreakdown: damage ? convertAbilitiesToBreakdown(damage.damage_done_abilities) : [],
+          // Store raw abilities for dynamic filtering at render time
+          rawAbilities: damage?.damage_done_abilities,
         };
       })
       .sort((a, b) => b.value - a.value);
@@ -1133,7 +1158,8 @@ function transformToInstance(
           className: "Enemy", // use "Enemy" as the class for styling
           specialization: "",
           value: enemy.damageTaken,
-          abilityBreakdown: damage ? convertAbilitiesToBreakdown(damage.damage_taken_abilities) : [],
+          // Store raw abilities for dynamic filtering at render time
+          rawAbilities: damage?.damage_taken_abilities,
         };
       })
       .sort((a, b) => b.value - a.value);

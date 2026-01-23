@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { PlayerMetricChart, type PlayerMetricChartData, type AbilityBreakdown } from './PlayerMetricChart'
+import { PlayerMetricChart, type PlayerMetricChartData, type AbilityBreakdown, type RawAbilities } from './PlayerMetricChart'
 
 const meta = {
   title: 'UI/PlayerMetricChart',
@@ -329,6 +329,203 @@ export const WithAbilityBreakdown: Story = {
           </span>
         </label>
         <PlayerMetricChart {...args} perSecond={perSecond} />
+      </div>
+    )
+  },
+}
+
+// Helper to convert AbilityBreakdown[] to RawAbilities format
+// Simulates API data structure: { [targetGUID]: { [abilityName]: Ability } }
+function createRawAbilities(
+  abilities: AbilityBreakdown[],
+  targetGuids: string[]
+): RawAbilities {
+  const raw: RawAbilities = {}
+  
+  // Distribute abilities across targets
+  for (const targetGuid of targetGuids) {
+    raw[targetGuid] = {}
+    for (const ability of abilities) {
+      // Each target gets a portion of the total damage (simulating multi-target fights)
+      const portion = 1 / targetGuids.length
+      raw[targetGuid][ability.name] = {
+        total_damage: Math.round(ability.totalDamage * portion),
+        hit_count: Math.round(ability.hitCount * portion),
+        crit_count: Math.round(ability.critCount * portion),
+        miss_count: Math.round(ability.missCount * portion),
+        dodge_count: Math.round(ability.dodgeCount * portion),
+        immune_count: Math.round(ability.immuneCount * portion),
+        parry_count: Math.round(ability.parryCount * portion),
+        other_count: Math.round(ability.otherCount * portion),
+      }
+    }
+  }
+  
+  return raw
+}
+
+// Enemy GUIDs for filtering demo
+const ENEMY_GUIDS = {
+  ragnaros: 'Creature-0-12345-409-0-11502-00001',
+  majordomoExecutus: 'Creature-0-12345-409-0-12018-00002',
+  baronGeddon: 'Creature-0-12345-409-0-12056-00003',
+  garr: 'Creature-0-12345-409-0-12057-00004',
+}
+
+// Mock data with rawAbilities for filtering demo
+const mockDataWithRawAbilities: PlayerMetricChartData[] = [
+  { 
+    playerID: 'player-1',
+    playerName: 'Shadowmeld', 
+    className: 'Rogue', 
+    specialization: 'Combat', 
+    value: 140000,
+    rawAbilities: createRawAbilities(rogueAbilities, Object.values(ENEMY_GUIDS)),
+  },
+  { 
+    playerID: 'player-2',
+    playerName: 'Blazewing', 
+    className: 'Mage', 
+    specialization: 'Fire', 
+    value: 105000,
+    rawAbilities: createRawAbilities(mageAbilities, Object.values(ENEMY_GUIDS)),
+  },
+  { 
+    playerID: 'player-3',
+    playerName: 'Ragesmash', 
+    className: 'Warrior', 
+    specialization: 'Fury', 
+    value: 111000,
+    rawAbilities: createRawAbilities(warriorAbilities, Object.values(ENEMY_GUIDS)),
+  },
+  { 
+    playerID: 'player-4',
+    playerName: 'Afflicted', 
+    className: 'Warlock', 
+    specialization: 'Affliction', 
+    value: 111000,
+    rawAbilities: createRawAbilities(warlockAbilities, Object.values(ENEMY_GUIDS)),
+  },
+  { 
+    playerID: 'player-5',
+    playerName: 'Markshot', 
+    className: 'Hunter', 
+    specialization: 'Marksmanship', 
+    value: 101000,
+    rawAbilities: createRawAbilities(hunterAbilities, Object.values(ENEMY_GUIDS)),
+  },
+]
+
+/**
+ * Example demonstrating ability filtering by selected targets.
+ * Select enemies to filter which damage is shown in the ability breakdown.
+ * When no enemies are selected, all damage is shown.
+ */
+export const WithAbilityFiltering: Story = {
+  args: {
+    data: mockDataWithRawAbilities,
+    type: 'damage',
+    duration_millis: STANDARD_DURATION_MILLIS,
+    perSecond: false,
+    panelTitle: 'Damage Done',
+    style: {
+      height: '400px',
+      width: '600px',
+    },
+  },
+  render: function Render(args) {
+    const [perSecond, setPerSecond] = useState(args.perSecond ?? false)
+    const [selectedEnemies, setSelectedEnemies] = useState<Set<string>>(new Set())
+    
+    const toggleEnemy = (guid: string) => {
+      setSelectedEnemies(prev => {
+        const next = new Set(prev)
+        if (next.has(guid)) {
+          next.delete(guid)
+        } else {
+          next.add(guid)
+        }
+        return next
+      })
+    }
+    
+    const enemyNames: Record<string, string> = {
+      [ENEMY_GUIDS.ragnaros]: 'Ragnaros',
+      [ENEMY_GUIDS.majordomoExecutus]: 'Majordomo Executus',
+      [ENEMY_GUIDS.baronGeddon]: 'Baron Geddon',
+      [ENEMY_GUIDS.garr]: 'Garr',
+    }
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ fontSize: '14px', color: '#888' }}>
+          <strong>Tip:</strong> Select enemies below to filter which damage is shown in ability breakdowns.
+          Hover or click a row to see the filtered breakdown.
+        </div>
+        
+        {/* Enemy selection */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#1a1a1a', borderRadius: '8px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
+            Filter by Enemy ({selectedEnemies.size === 0 ? 'All' : selectedEnemies.size + ' selected'})
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {Object.entries(ENEMY_GUIDS).map(([key, guid]) => (
+              <button
+                key={key}
+                onClick={() => toggleEnemy(guid)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '13px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: selectedEnemies.has(guid) ? '#c53030' : '#333',
+                  color: selectedEnemies.has(guid) ? '#fff' : '#ccc',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {enemyNames[guid]}
+              </button>
+            ))}
+            {selectedEnemies.size > 0 && (
+              <button
+                onClick={() => setSelectedEnemies(new Set())}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '13px',
+                  borderRadius: '4px',
+                  border: '1px solid #555',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: '#888',
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={perSecond}
+            onChange={(e) => setPerSecond(e.target.checked)}
+            style={{ width: '18px', height: '18px' }}
+          />
+          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+            Show as {perSecond ? 'Total Damage' : 'DPS (per second)'}
+          </span>
+          <span style={{ fontSize: '12px', color: '#888' }}>
+            (Duration: {(args.duration_millis! / 1000).toFixed(1)}s)
+          </span>
+        </label>
+        
+        <PlayerMetricChart 
+          {...args} 
+          perSecond={perSecond} 
+          filterGuids={selectedEnemies.size > 0 ? selectedEnemies : undefined}
+        />
       </div>
     )
   },

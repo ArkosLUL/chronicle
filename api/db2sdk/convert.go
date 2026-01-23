@@ -157,13 +157,25 @@ func Ability(ability database.Ability) chroniclesdk.Ability {
 
 func EncounterDamageSummary(summary database.LogInstanceEncounterDamageUnitSummary) chroniclesdk.EncounterDamageSummary {
 	return chroniclesdk.EncounterDamageSummary{
-		EncounterID:          summary.EncounterID,
-		UnitGuid:             summary.UnitGuid,
-		DamageDoneTotal:      summary.DamageDoneTotal,
-		DamageTakenTotal:     summary.DamageTakenTotal,
-		DamageDoneAbilities:  maps.Map(summary.DamageDoneAbilities, Ability),
-		DamageTakenAbilities: maps.Map(summary.DamageTakenAbilities, Ability),
-		IsPlayer:             summary.IsPlayer,
-		OwnerGuid:            summary.OwnerGuid,
+		EncounterID:      summary.EncounterID,
+		UnitGuid:         summary.UnitGuid,
+		DamageDoneTotal:  summary.DamageDoneTotal,
+		DamageTakenTotal: summary.DamageTakenTotal,
+		DamageDoneAbilities: maps.Map[guid.GUID, map[string]database.Ability, map[string]chroniclesdk.Ability](summary.DamageDoneAbilities, func(f map[string]database.Ability) map[string]chroniclesdk.Ability {
+			cpy := make(map[string]chroniclesdk.Ability, len(f))
+			for k, v := range f {
+				cpy[k] = Ability(v)
+			}
+			return cpy
+		}),
+		DamageTakenAbilities: maps.Map[guid.GUID, map[string]database.Ability, map[string]chroniclesdk.Ability](summary.DamageDoneAbilities, func(f map[string]database.Ability) map[string]chroniclesdk.Ability {
+			cpy := make(map[string]chroniclesdk.Ability, len(f))
+			for k, v := range f {
+				cpy[k] = Ability(v)
+			}
+			return cpy
+		}),
+		IsPlayer:  summary.IsPlayer,
+		OwnerGuid: summary.OwnerGuid,
 	}
 }

@@ -213,8 +213,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					return fmt.Errorf("insert encounter character fights: %w", err)
 				}
 
-				//tx.insert
-				//enc.Damage
 				for unitID, unit := range enc.Damage.Units {
 					var ownerGuid *guid.GUID
 					info, ok := encountersState.Units.Get(unitID)

@@ -8,6 +8,7 @@ import {
 import { useMouse } from '@/hooks/useMouse';
 import { cn } from '@/lib/utils';
 import { X, GripHorizontal } from 'lucide-react';
+import type { Ability } from '@/api/typesGenerated';
 
 export type ChartType = 'damage' | 'healing' | 'taken'
 
@@ -24,6 +25,9 @@ export interface AbilityBreakdown {
   otherCount: number
 }
 
+// Raw abilities record type from API: { [targetGUID]: { [abilityName]: Ability } }
+export type RawAbilities = Record<string, Record<string, Ability>>;
+
 export interface PlayerMetricChartData {
   playerID: string
   playerName: string
@@ -34,8 +38,10 @@ export interface PlayerMetricChartData {
   stackedValue?: number
   // dimmed reduces visual prominence (used for filtering)
   dimmed?: boolean
-  // Ability breakdown for tooltip
+  // Ability breakdown for tooltip (computed from rawAbilities, or provided directly for stories)
   abilityBreakdown?: AbilityBreakdown[]
+  // Raw abilities data from API - used for dynamic filtering
+  rawAbilities?: RawAbilities
 }
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
@@ -51,6 +57,69 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   duration_millis?: number
   // Title shown on pinned tooltips (e.g., "Damage Done", "Damage Taken")
   panelTitle?: string
+  // Optional set of GUIDs to filter ability breakdowns by
+  // When provided, only abilities targeting these GUIDs are shown
+  filterGuids?: Set<string>
+}
+
+// Helper to compute filtered ability breakdown from raw abilities
+function computeFilteredBreakdown(
+  rawAbilities: RawAbilities | undefined,
+  existingBreakdown: AbilityBreakdown[] | undefined,
+  filterGuids?: Set<string>
+): AbilityBreakdown[] | undefined {
+  // If no raw abilities, use existing breakdown (e.g., from Storybook)
+  if (!rawAbilities) {
+    return existingBreakdown;
+  }
+  
+  const abilityMap = new Map<string, AbilityBreakdown>();
+  
+  for (const [targetGuid, abilityRecord] of Object.entries(rawAbilities)) {
+    // Skip if filtering and this GUID isn't in the filter set
+    if (filterGuids && filterGuids.size > 0 && !filterGuids.has(targetGuid)) {
+      continue;
+    }
+    
+    for (const [name, ability] of Object.entries(abilityRecord)) {
+      const existing = abilityMap.get(name);
+      if (existing) {
+        // Sum up abilities with the same name across different targets
+        existing.totalDamage += ability.total_damage;
+        existing.hitCount += ability.hit_count;
+        existing.critCount += ability.crit_count;
+        existing.missCount += ability.miss_count;
+        existing.dodgeCount += ability.dodge_count;
+        existing.immuneCount += ability.immune_count;
+        existing.parryCount += ability.parry_count;
+        existing.otherCount += ability.other_count;
+      } else {
+        abilityMap.set(name, {
+          name,
+          totalDamage: ability.total_damage,
+          hitCount: ability.hit_count,
+          critCount: ability.crit_count,
+          missCount: ability.miss_count,
+          dodgeCount: ability.dodge_count,
+          immuneCount: ability.immune_count,
+          parryCount: ability.parry_count,
+          otherCount: ability.other_count,
+        });
+      }
+    }
+  }
+  
+  // If filter resulted in no abilities, return empty array
+  if (abilityMap.size === 0 && filterGuids && filterGuids.size > 0) {
+    return [];
+  }
+  
+  // If no filtering was applied and no raw data matched, fall back to existing
+  if (abilityMap.size === 0) {
+    return existingBreakdown;
+  }
+  
+  return Array.from(abilityMap.values());
 }
 
 export function PlayerMetricChart({
@@ -62,6 +131,7 @@ export function PlayerMetricChart({
   panelTitle,
   perSecond,
   duration_millis,
+  filterGuids,
   ...divProps
 }: PlayerMetricChartProps) {
   // Track which rows have pinned tooltips (multiple allowed)
@@ -72,8 +142,10 @@ export function PlayerMetricChart({
       ...item,
       value: perSecond ? (item.value / duration_millis!) * 1000 : item.value,
       stackedValue: item.stackedValue ? (perSecond ? (item.stackedValue / duration_millis!) * 1000 : item.stackedValue) : undefined,
+      // Compute filtered ability breakdown
+      abilityBreakdown: computeFilteredBreakdown(item.rawAbilities, item.abilityBreakdown, filterGuids),
     }))
-  }, [data, perSecond, duration_millis])
+  }, [data, perSecond, duration_millis, filterGuids])
 
 
   const summedValue = useMemo(() => {

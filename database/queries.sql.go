@@ -476,14 +476,14 @@ RETURNING encounter_id, unit_guid, damage_done_total, damage_taken_total, damage
 `
 
 type InsertEncounterDamageSummaryParams struct {
-	EncounterID          uuid.UUID          `db:"encounter_id" json:"encounter_id"`
-	UnitGuid             guid.GUID          `db:"unit_guid" json:"unit_guid"`
-	DamageDoneTotal      int64              `db:"damage_done_total" json:"damage_done_total"`
-	DamageTakenTotal     int64              `db:"damage_taken_total" json:"damage_taken_total"`
-	DamageDoneAbilities  map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`
-	DamageTakenAbilities map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
-	IsPlayer             bool               `db:"is_player" json:"is_player"`
-	OwnerGuid            *guid.GUID         `db:"owner_guid" json:"owner_guid"`
+	EncounterID          uuid.UUID                        `db:"encounter_id" json:"encounter_id"`
+	UnitGuid             guid.GUID                        `db:"unit_guid" json:"unit_guid"`
+	DamageDoneTotal      int64                            `db:"damage_done_total" json:"damage_done_total"`
+	DamageTakenTotal     int64                            `db:"damage_taken_total" json:"damage_taken_total"`
+	DamageDoneAbilities  map[guid.GUID]map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`
+	DamageTakenAbilities map[guid.GUID]map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
+	IsPlayer             bool                             `db:"is_player" json:"is_player"`
+	OwnerGuid            *guid.GUID                       `db:"owner_guid" json:"owner_guid"`
 }
 
 func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (LogInstanceEncounterDamageUnitSummary, error) {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Users } from "lucide-react";
-import type { ActivityPeriod } from "@/api/typesGenerated";
+import type { ActivityPeriod, InstancePlayer, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -204,6 +204,141 @@ export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
     dataKey: 'enemyDamageTaken',
   },
 };
+
+// ============================================================================
+// Player filter component
+// ============================================================================
+
+// Class display order (matches typical raid UI)
+const CLASS_ORDER: WoWHeroClasses[] = [
+  "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", 
+  "SHAMAN", "MAGE", "WARLOCK", "DRUID"
+];
+
+// Format class name for display
+function formatClassName(cls: WoWHeroClasses): string {
+  return cls.charAt(0) + cls.slice(1).toLowerCase();
+}
+
+interface PlayerFilterProps {
+  players: Record<string, InstancePlayer>;
+  selectedPlayerIds: Set<string>;
+  onTogglePlayer: (playerId: string) => void;
+  onClearSelection: () => void;
+  onSelectAll: () => void;
+}
+
+function PlayerFilter({
+  players,
+  selectedPlayerIds,
+  onTogglePlayer,
+  onClearSelection,
+  onSelectAll,
+}: PlayerFilterProps) {
+  const playerList = Object.entries(players);
+  
+  if (playerList.length === 0) {
+    return null;
+  }
+  
+  // Group players by class
+  const playersByClass = new Map<WoWHeroClasses, Array<{ guid: string; player: InstancePlayer }>>();
+  for (const [guid, player] of playerList) {
+    const cls = player.class || "UNKNOWN";
+    const existing = playersByClass.get(cls) || [];
+    existing.push({ guid, player });
+    playersByClass.set(cls, existing);
+  }
+  
+  // Sort players within each class alphabetically
+  for (const players of playersByClass.values()) {
+    players.sort((a, b) => a.player.name.localeCompare(b.player.name));
+  }
+  
+  const hasSelection = selectedPlayerIds.size > 0;
+  const allSelected = selectedPlayerIds.size === playerList.length;
+  
+  return (
+    <Card className="p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Users className="h-4 w-4" />
+          <span>Players</span>
+          {hasSelection && (
+            <span className="text-xs text-muted-foreground">
+              ({selectedPlayerIds.size} of {playerList.length})
+            </span>
+          )}
+        </div>
+        <div className="flex gap-1">
+          {hasSelection ? (
+            <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-6 px-2 text-xs">
+              Clear
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={onSelectAll} className="h-6 px-2 text-xs">
+              Select All
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {CLASS_ORDER.filter(cls => playersByClass.has(cls)).map(cls => {
+          const classPlayers = playersByClass.get(cls)!;
+          return classPlayers.map(({ guid, player }) => {
+            const isSelected = selectedPlayerIds.has(guid);
+            return (
+              <button
+                key={guid}
+                onClick={() => onTogglePlayer(guid)}
+                className={cn(
+                  "px-2 py-0.5 rounded text-xs font-medium transition-all border",
+                  isSelected
+                    ? "border-current opacity-100"
+                    : hasSelection
+                      ? "border-transparent opacity-40 hover:opacity-70"
+                      : "border-transparent opacity-100 hover:opacity-80"
+                )}
+                style={{ 
+                  color: `var(--class-${player.class.toLowerCase()})`,
+                  backgroundColor: isSelected ? `color-mix(in oklch, var(--class-${player.class.toLowerCase()}) 15%, transparent)` : undefined,
+                }}
+                title={`${player.name} - ${formatClassName(player.class)}`}
+              >
+                {player.name}
+              </button>
+            );
+          });
+        })}
+        {/* Handle UNKNOWN class if any */}
+        {playersByClass.has("UNKNOWN") && playersByClass.get("UNKNOWN")!.map(({ guid, player }) => {
+          const isSelected = selectedPlayerIds.has(guid);
+          return (
+            <button
+              key={guid}
+              onClick={() => onTogglePlayer(guid)}
+              className={cn(
+                "px-2 py-0.5 rounded text-xs font-medium transition-all border",
+                isSelected
+                  ? "border-current opacity-100"
+                  : hasSelection
+                    ? "border-transparent opacity-40 hover:opacity-70"
+                    : "border-transparent opacity-100 hover:opacity-80"
+              )}
+              style={{ 
+                color: `var(--class-unknown)`,
+                backgroundColor: isSelected ? `color-mix(in oklch, var(--class-unknown) 15%, transparent)` : undefined,
+              }}
+              title={`${player.name} - Unknown`}
+            >
+              {player.name}
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
 
 export const PANEL_OPTIONS: { value: PanelType; label: string }[] = Object.entries(PANEL_CONFIGS).map(
   ([value, config]) => ({ value: value as PanelType, label: config.label })
@@ -473,15 +608,19 @@ interface EntitySelection {
 
 interface EncounterDetailProps {
   encounters: Encounter[];
+  players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
   onToggleEnemy: (enemyId: string) => void;
+  onTogglePlayer: (playerId: string) => void;
   onClearSelection: () => void;
 }
 
 function EncounterDetail({ 
   encounters,
+  players,
   entitySelection,
   onToggleEnemy,
+  onTogglePlayer,
   onClearSelection,
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
@@ -491,8 +630,9 @@ function EncounterDetail({
   const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
   const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
   
-  // Active tab
+  // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
+  const [isEntityPanelOpen, setIsEntityPanelOpen] = useState(false);
   
   // Merge enemies across all selected encounters
   const mergedEnemies = mergeEnemies(encounters);
@@ -501,6 +641,21 @@ function EncounterDetail({
   
   // Helper to check if an enemy is selected
   const isEnemySelected = (id: string) => entitySelection.enemyIds.has(id);
+  
+  // Helper to check if a player is selected
+  const isPlayerSelected = (id: string) => entitySelection.playerIds.has(id);
+  
+  // Build player list sorted by class and name
+  const playerList = Object.entries(players).map(([guid, player]) => ({
+    guid,
+    ...player,
+  })).sort((a, b) => {
+    // Sort by class first, then by name
+    if (a.class !== b.class) {
+      return a.class.localeCompare(b.class);
+    }
+    return a.name.localeCompare(b.name);
+  });
   
   // Has any selection
   const hasSelection = entitySelection.enemyIds.size > 0 || entitySelection.playerIds.size > 0;
@@ -545,8 +700,11 @@ function EncounterDetail({
       </div>
 
       {/* Entity selection - Enemies and Players tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'enemies' | 'players')} className="mb-6">
-        <Collapsible>
+      <Tabs value={activeTab} onValueChange={(v) => {
+        setActiveTab(v as 'enemies' | 'players');
+        setIsEntityPanelOpen(true);
+      }} className="mb-6">
+        <Collapsible open={isEntityPanelOpen} onOpenChange={setIsEntityPanelOpen}>
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -562,7 +720,7 @@ function EncounterDetail({
                   </TabsTrigger>
                   <TabsTrigger value="players" className="gap-1.5">
                     <Users className="h-4 w-4" />
-                    Players
+                    Players ({playerList.length})
                     {selectedPlayerCount > 0 && (
                       <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
                         {selectedPlayerCount}
@@ -634,7 +792,36 @@ function EncounterDetail({
 
                 <TabsContent value="players" className="mt-0">
                   <div className="flex flex-wrap gap-2">
-                    <p className="text-sm text-muted-foreground">Player filtering coming soon</p>
+                    {playerList.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No players in this instance</p>
+                    ) : (
+                      playerList.map((player) => {
+                        const isSelected = isPlayerSelected(player.guid);
+                        return (
+                          <button
+                            key={player.guid}
+                            onClick={() => onTogglePlayer(player.guid)}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
+                              "bg-muted/50 border border-border hover:bg-muted",
+                              isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                              hasSelection && !isSelected && "opacity-50"
+                            )}
+                          >
+                            <span
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: `var(--class-${player.class.toLowerCase()})` }}
+                            />
+                            <span
+                              className="font-medium"
+                              style={{ color: `var(--class-${player.class.toLowerCase()})` }}
+                            >
+                              {player.name}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                 </TabsContent>
               </div>
@@ -706,6 +893,19 @@ export function InstancePageView({
         next.add(enemyId);
       }
       return { ...prev, enemyIds: next };
+    });
+  };
+  
+  // Toggle player selection
+  const togglePlayerSelection = (playerId: string) => {
+    setEntitySelection(prev => {
+      const next = new Set(prev.playerIds);
+      if (next.has(playerId)) {
+        next.delete(playerId);
+      } else {
+        next.add(playerId);
+      }
+      return { ...prev, playerIds: next };
     });
   };
   
@@ -789,8 +989,10 @@ export function InstancePageView({
         {selectedEncounters.length > 0 ? (
           <EncounterDetail 
             encounters={selectedEncounters}
+            players={instance.players ?? {}}
             entitySelection={entitySelection}
             onToggleEnemy={toggleEnemySelection}
+            onTogglePlayer={togglePlayerSelection}
             onClearSelection={clearEntitySelection}
           />
         ) : (

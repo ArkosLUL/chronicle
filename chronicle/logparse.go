@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -219,15 +220,18 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					if ok {
 						ownerGuid = info.Owner
 					}
+
+					dd, _ := json.Marshal(unit.DamageDone)
+					dt, _ := json.Marshal(unit.DamageTaken)
 					_, err = tx.InsertEncounterDamageSummary(ctx, database.InsertEncounterDamageSummaryParams{
-						EncounterID:          dbencounter.ID,
-						UnitGuid:             unitID,
-						DamageDoneTotal:      unit.TotalDamageDone,
-						DamageTakenTotal:     unit.TotalDamageTaken,
-						DamageDoneAbilities:  unit.DamageDone,
-						DamageTakenAbilities: unit.DamageTaken,
-						IsPlayer:             unitID.IsPlayer(),
-						OwnerGuid:            ownerGuid,
+						EncounterID:      dbencounter.ID,
+						UnitGuid:         unitID,
+						DamageDoneTotal:  unit.TotalDamageDone,
+						DamageTakenTotal: unit.TotalDamageTaken,
+						DamageDone:       dd,
+						DamageTaken:      dt,
+						IsPlayer:         unitID.IsPlayer(),
+						OwnerGuid:        ownerGuid,
 					})
 					if err != nil {
 						return fmt.Errorf("insert encounter damage summary: %w", err)

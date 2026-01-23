@@ -9,7 +9,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
 type DamageSummary struct {
@@ -25,8 +24,8 @@ func NewDamageSummary() *DamageSummary {
 func (s *DamageSummary) Unit(id guid.GUID) *Unit {
 	if _, ok := s.Units[id]; !ok {
 		s.Units[id] = &Unit{
-			DamageDone:  make(map[guid.GUID]map[string]database.Ability),
-			DamageTaken: make(map[guid.GUID]map[string]database.Ability),
+			DamageDone:  make(map[guid.GUID]map[string]*Ability),
+			DamageTaken: make(map[guid.GUID]map[string]*Ability),
 		}
 	}
 	return s.Units[id]
@@ -58,8 +57,8 @@ type Unit struct {
 	TotalDamageDone  int64 `json:"total_damage_done"`
 	TotalDamageTaken int64 `json:"total_damage_taken"`
 
-	DamageDone  map[guid.GUID]map[string]database.Ability `json:"damage_done"`
-	DamageTaken map[guid.GUID]map[string]database.Ability `json:"damage_taken"`
+	DamageDone  map[guid.GUID]map[string]*Ability `json:"damage_done"`
+	DamageTaken map[guid.GUID]map[string]*Ability `json:"damage_taken"`
 }
 
 type Ability database.Ability
@@ -70,27 +69,27 @@ func (u *Unit) Taken(m messages.Damage) {
 		from = *m.Caster
 	}
 	if _, ok := u.DamageTaken[from]; !ok {
-		u.DamageTaken[from] = make(map[string]database.Ability)
+		u.DamageTaken[from] = make(map[string]*Ability)
 	}
 
 	source := m.SourceName()
 	if _, ok := u.DamageTaken[from][source]; !ok {
-		u.DamageTaken[from][source] = database.Ability{}
+		u.DamageTaken[from][source] = &Ability{}
 	}
-	u.TotalDamageTaken += (ptr.Ref(Ability(u.DamageTaken[from][source]))).AddDamage(m)
+	u.TotalDamageTaken += (u.DamageTaken[from][source]).AddDamage(m)
 }
 
 func (u *Unit) Done(m messages.Damage) {
 	target := m.Target
 	if _, ok := u.DamageDone[target]; !ok {
-		u.DamageDone[target] = make(map[string]database.Ability)
+		u.DamageDone[target] = make(map[string]*Ability)
 	}
 
 	source := m.SourceName()
 	if _, ok := u.DamageDone[target][source]; !ok {
-		u.DamageDone[target][source] = database.Ability{}
+		u.DamageDone[target][source] = &Ability{}
 	}
-	u.TotalDamageDone += (ptr.Ref(Ability(u.DamageDone[target][source]))).AddDamage(m)
+	u.TotalDamageDone += (u.DamageDone[target][source]).AddDamage(m)
 }
 
 func (a *Ability) AddDamage(m messages.Damage) int64 {

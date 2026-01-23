@@ -41,7 +41,7 @@ INSERT INTO
     owner_guid
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, sqlc.narg('owner_guid')::wow_guid)
+  ($1, $2, $3, $4, @damage_done::jsonb, @damage_taken::jsonb, $5, sqlc.narg('owner_guid')::wow_guid)
 RETURNING *
 ;
 

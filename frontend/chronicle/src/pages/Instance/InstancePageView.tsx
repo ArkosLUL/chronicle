@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Users } from "lucide-react";
-import type { ActivityPeriod, InstancePlayer, WoWHeroClasses } from "@/api/typesGenerated";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users } from "lucide-react";
+import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,10 +9,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible/Collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
+import { MetricPanel } from "./Panel";
+import type { PanelType } from "./panelConfig";
 
 // ============================================================================
 // Formatting helpers
@@ -163,186 +164,6 @@ function mergeEnemies(encounters: Encounter[]): MergedEnemy[] {
 
   return Array.from(enemyMap.values()).sort((a, b) => b.damageTaken - a.damageTaken);
 }
-
-// ============================================================================
-// Panel configuration
-// ============================================================================
-
-export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done' | 'enemy_damage_taken';
-
-export interface PanelConfig {
-  type: PanelType;
-  label: string;
-  icon: React.ReactNode;
-  chartType: 'damage' | 'healing';
-  dataKey: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone' | 'enemyDamageTaken';
-}
-
-export const PANEL_CONFIGS: Record<PanelType, Omit<PanelConfig, 'type'>> = {
-  damage_done: {
-    label: 'Damage Done',
-    icon: <Swords className="h-4 w-4" />,
-    chartType: 'damage',
-    dataKey: 'dps',
-  },
-  damage_taken: {
-    label: 'Damage Taken',
-    icon: <Shield className="h-4 w-4" />,
-    chartType: 'damage',
-    dataKey: 'damageTaken',
-  },
-  enemy_damage_done: {
-    label: 'Enemy Damage Done',
-    icon: <Skull className="h-4 w-4" />,
-    chartType: 'damage',
-    dataKey: 'enemyDamageDone',
-  },
-  enemy_damage_taken: {
-    label: 'Enemy Damage Taken',
-    icon: <Skull className="h-4 w-4" />,
-    chartType: 'damage',
-    dataKey: 'enemyDamageTaken',
-  },
-};
-
-// ============================================================================
-// Player filter component
-// ============================================================================
-
-// Class display order (matches typical raid UI)
-const CLASS_ORDER: WoWHeroClasses[] = [
-  "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", 
-  "SHAMAN", "MAGE", "WARLOCK", "DRUID"
-];
-
-// Format class name for display
-function formatClassName(cls: WoWHeroClasses): string {
-  return cls.charAt(0) + cls.slice(1).toLowerCase();
-}
-
-interface PlayerFilterProps {
-  players: Record<string, InstancePlayer>;
-  selectedPlayerIds: Set<string>;
-  onTogglePlayer: (playerId: string) => void;
-  onClearSelection: () => void;
-  onSelectAll: () => void;
-}
-
-function PlayerFilter({
-  players,
-  selectedPlayerIds,
-  onTogglePlayer,
-  onClearSelection,
-  onSelectAll,
-}: PlayerFilterProps) {
-  const playerList = Object.entries(players);
-  
-  if (playerList.length === 0) {
-    return null;
-  }
-  
-  // Group players by class
-  const playersByClass = new Map<WoWHeroClasses, Array<{ guid: string; player: InstancePlayer }>>();
-  for (const [guid, player] of playerList) {
-    const cls = player.class || "UNKNOWN";
-    const existing = playersByClass.get(cls) || [];
-    existing.push({ guid, player });
-    playersByClass.set(cls, existing);
-  }
-  
-  // Sort players within each class alphabetically
-  for (const players of playersByClass.values()) {
-    players.sort((a, b) => a.player.name.localeCompare(b.player.name));
-  }
-  
-  const hasSelection = selectedPlayerIds.size > 0;
-  const allSelected = selectedPlayerIds.size === playerList.length;
-  
-  return (
-    <Card className="p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Users className="h-4 w-4" />
-          <span>Players</span>
-          {hasSelection && (
-            <span className="text-xs text-muted-foreground">
-              ({selectedPlayerIds.size} of {playerList.length})
-            </span>
-          )}
-        </div>
-        <div className="flex gap-1">
-          {hasSelection ? (
-            <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-6 px-2 text-xs">
-              Clear
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={onSelectAll} className="h-6 px-2 text-xs">
-              Select All
-            </Button>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {CLASS_ORDER.filter(cls => playersByClass.has(cls)).map(cls => {
-          const classPlayers = playersByClass.get(cls)!;
-          return classPlayers.map(({ guid, player }) => {
-            const isSelected = selectedPlayerIds.has(guid);
-            return (
-              <button
-                key={guid}
-                onClick={() => onTogglePlayer(guid)}
-                className={cn(
-                  "px-2 py-0.5 rounded text-xs font-medium transition-all border",
-                  isSelected
-                    ? "border-current opacity-100"
-                    : hasSelection
-                      ? "border-transparent opacity-40 hover:opacity-70"
-                      : "border-transparent opacity-100 hover:opacity-80"
-                )}
-                style={{ 
-                  color: `var(--class-${player.class.toLowerCase()})`,
-                  backgroundColor: isSelected ? `color-mix(in oklch, var(--class-${player.class.toLowerCase()}) 15%, transparent)` : undefined,
-                }}
-                title={`${player.name} - ${formatClassName(player.class)}`}
-              >
-                {player.name}
-              </button>
-            );
-          });
-        })}
-        {/* Handle UNKNOWN class if any */}
-        {playersByClass.has("UNKNOWN") && playersByClass.get("UNKNOWN")!.map(({ guid, player }) => {
-          const isSelected = selectedPlayerIds.has(guid);
-          return (
-            <button
-              key={guid}
-              onClick={() => onTogglePlayer(guid)}
-              className={cn(
-                "px-2 py-0.5 rounded text-xs font-medium transition-all border",
-                isSelected
-                  ? "border-current opacity-100"
-                  : hasSelection
-                    ? "border-transparent opacity-40 hover:opacity-70"
-                    : "border-transparent opacity-100 hover:opacity-80"
-              )}
-              style={{ 
-                color: `var(--class-unknown)`,
-                backgroundColor: isSelected ? `color-mix(in oklch, var(--class-unknown) 15%, transparent)` : undefined,
-              }}
-              title={`${player.name} - Unknown`}
-            >
-              {player.name}
-            </button>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-export const PANEL_OPTIONS: { value: PanelType; label: string }[] = Object.entries(PANEL_CONFIGS).map(
-  ([value, config]) => ({ value: value as PanelType, label: config.label })
-);
 
 // ============================================================================
 // EncounterSidebar component
@@ -515,89 +336,6 @@ function EncounterSidebar({
 }
 
 // ============================================================================
-// MetricPanel component
-// ============================================================================
-
-interface MetricPanelProps {
-  panelType: PanelType;
-  onPanelTypeChange: (type: PanelType) => void;
-  encounters: Encounter[];
-  durationMs: number;
-  selectedEnemyIds?: Set<string>;
-}
-
-function MetricPanel({ panelType, onPanelTypeChange, durationMs }: MetricPanelProps) {
-  const [perSecond, setPerSecond] = useState(false);
-  const config = PANEL_CONFIGS[panelType];
-  
-  // TODO: Panel should fetch/compute its own data based on panelType
-  // For now, return empty data
-  const data: PlayerMetricChartData[] = [];
-
-  // Show per-second toggle for damage-related panels
-  const showPerSecondToggle = config.chartType === 'damage';
-
-  if (data.length === 0) {
-    return null;
-  }
-
-  // Calculate total (exclude dimmed items if filtering is active)
-  const totalValue = data
-    .filter(d => !d.dimmed)
-    .reduce((sum, d) => sum + d.value, 0);
-  
-  // Format the total based on perSecond setting
-  const displayTotal = perSecond 
-    ? formatDamageNumber(totalValue / durationMs * 1000)
-    : formatDamageNumber(totalValue);
-
-  return (
-    <Card className="p-4 gap-2">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-medium flex items-center gap-2">
-          {config.icon}
-          <select
-            value={panelType}
-            onChange={(e) => onPanelTypeChange(e.target.value as PanelType)}
-            className="text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground"
-          >
-            {PANEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </h3>
-        <div className="flex items-center gap-3">
-          {showPerSecondToggle && (
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-              <input
-                type="checkbox"
-                checked={perSecond}
-                onChange={(e) => setPerSecond(e.target.checked)}
-                className="w-3.5 h-3.5 cursor-pointer"
-              />
-              Per second
-            </label>
-          )}
-        </div>
-      </div>
-      <div className="text-xs text-muted-foreground">
-        Total: <span className="font-medium text-foreground">{displayTotal}{perSecond ? '/s' : ''}</span>
-      </div>
-      <PlayerMetricChart
-        data={data}
-        type={config.chartType}
-        duration_millis={durationMs}
-        perSecond={perSecond}
-        style={{ height: "400px" }}
-        panelTitle={config.label}
-      />
-    </Card>
-  );
-}
-
-// ============================================================================
 // EncounterDetail component
 // ============================================================================
 
@@ -607,6 +345,7 @@ interface EntitySelection {
 }
 
 interface EncounterDetailProps {
+  instanceId: string;
   encounters: Encounter[];
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
@@ -616,6 +355,7 @@ interface EncounterDetailProps {
 }
 
 function EncounterDetail({ 
+  instanceId,
   encounters,
   players,
   entitySelection,
@@ -636,6 +376,7 @@ function EncounterDetail({
   
   // Merge enemies across all selected encounters
   const mergedEnemies = mergeEnemies(encounters);
+  const mappedEnemies = new Map(mergedEnemies.map(e => [e.id, e.name]));
   
   const totalDurationMs = computeTotalDuration(encounters);
   
@@ -833,18 +574,26 @@ function EncounterDetail({
       {/* Metrics - 2 column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MetricPanel
+          instanceId={instanceId}
           panelType={panel1Type}
           onPanelTypeChange={setPanel1Type}
-          encounters={encounters}
           durationMs={totalDurationMs}
-          // selectedEnemyIds={selectedEnemyIds}
+          players={players}
+          enemies={mappedEnemies}
+          selectedPlayerIds={entitySelection.playerIds}
+          selectedEnemyIds={entitySelection.enemyIds}
+          selectedEncounters={encounters}
         />
         <MetricPanel
+          instanceId={instanceId}
           panelType={panel2Type}
           onPanelTypeChange={setPanel2Type}
-          encounters={encounters}
           durationMs={totalDurationMs}
-          // selectedEnemyIds={selectedEnemyIds}
+          players={players}
+          enemies={mappedEnemies}
+          selectedPlayerIds={entitySelection.playerIds}
+          selectedEnemyIds={entitySelection.enemyIds}
+          selectedEncounters={encounters}
         />
       </div>
     </div>
@@ -988,6 +737,7 @@ export function InstancePageView({
 
         {selectedEncounters.length > 0 ? (
           <EncounterDetail 
+            instanceId={instance.id}
             encounters={selectedEncounters}
             players={instance.players ?? {}}
             entitySelection={entitySelection}

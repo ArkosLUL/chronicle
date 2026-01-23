@@ -34,6 +34,8 @@ export interface EncounterDamageSummary {
     /**
      * DamageDoneAbilities is a map of damage done to a unit, keyed by the target's GUID string.
      */
+
+    // Record<string,  FOO> -> Record<string, FOO> (filtered)
     readonly damage_done_abilities: Record<string, Record<string, Ability>>;
     readonly damage_taken_abilities: Record<string, Record<string, Ability>>;
     readonly is_player: boolean;

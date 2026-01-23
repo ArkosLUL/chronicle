@@ -471,19 +471,19 @@ INSERT INTO
     owner_guid
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8::wow_guid)
+  ($1, $2, $3, $4, $6::jsonb, $7::jsonb, $5, $8::wow_guid)
 RETURNING encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
 `
 
 type InsertEncounterDamageSummaryParams struct {
-	EncounterID          uuid.UUID                        `db:"encounter_id" json:"encounter_id"`
-	UnitGuid             guid.GUID                        `db:"unit_guid" json:"unit_guid"`
-	DamageDoneTotal      int64                            `db:"damage_done_total" json:"damage_done_total"`
-	DamageTakenTotal     int64                            `db:"damage_taken_total" json:"damage_taken_total"`
-	DamageDoneAbilities  map[guid.GUID]map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`
-	DamageTakenAbilities map[guid.GUID]map[string]Ability `db:"damage_taken_abilities" json:"damage_taken_abilities"`
-	IsPlayer             bool                             `db:"is_player" json:"is_player"`
-	OwnerGuid            *guid.GUID                       `db:"owner_guid" json:"owner_guid"`
+	EncounterID      uuid.UUID  `db:"encounter_id" json:"encounter_id"`
+	UnitGuid         guid.GUID  `db:"unit_guid" json:"unit_guid"`
+	DamageDoneTotal  int64      `db:"damage_done_total" json:"damage_done_total"`
+	DamageTakenTotal int64      `db:"damage_taken_total" json:"damage_taken_total"`
+	IsPlayer         bool       `db:"is_player" json:"is_player"`
+	DamageDone       []byte     `db:"damage_done" json:"damage_done"`
+	DamageTaken      []byte     `db:"damage_taken" json:"damage_taken"`
+	OwnerGuid        *guid.GUID `db:"owner_guid" json:"owner_guid"`
 }
 
 func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (LogInstanceEncounterDamageUnitSummary, error) {
@@ -492,9 +492,9 @@ func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg Inser
 		arg.UnitGuid,
 		arg.DamageDoneTotal,
 		arg.DamageTakenTotal,
-		arg.DamageDoneAbilities,
-		arg.DamageTakenAbilities,
 		arg.IsPlayer,
+		arg.DamageDone,
+		arg.DamageTaken,
 		arg.OwnerGuid,
 	)
 	var i LogInstanceEncounterDamageUnitSummary

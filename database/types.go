@@ -42,7 +42,7 @@ func (t SlimLogFile) Value() (driver.Value, error) {
 }
 
 type Ability struct {
-	Total   int64 `json:"total_damage"`
+	Total   int64 `json:"total"`
 	Hit     int64 `json:"hit_count"`
 	Crit    int64 `json:"crit_count"`
 	Miss    int64 `json:"miss_count"`

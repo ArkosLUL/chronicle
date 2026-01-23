@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Tooltip,
   TooltipContent,
@@ -6,8 +6,22 @@ import {
   TooltipTrigger,
 } from "@/components/ui/Tooltip/tooltip";
 import { useMouse } from '@/hooks/useMouse';
+import { cn } from '@/lib/utils';
 
 export type ChartType = 'damage' | 'healing' | 'taken'
+
+// Ability breakdown for tooltip display
+export interface AbilityBreakdown {
+  name: string
+  totalDamage: number
+  hitCount: number
+  critCount: number
+  missCount: number
+  dodgeCount: number
+  immuneCount: number
+  parryCount: number
+  otherCount: number
+}
 
 export interface PlayerMetricChartData {
   playerID: string
@@ -19,9 +33,8 @@ export interface PlayerMetricChartData {
   stackedValue?: number
   // dimmed reduces visual prominence (used for filtering)
   dimmed?: boolean
-  // TODO: Add a function that returns the tooltip for a given row.
-  // It should have a table breakdown of the data.
-  // tooltipFunction?: (PlayerMetricChartData)
+  // Ability breakdown for tooltip
+  abilityBreakdown?: AbilityBreakdown[]
 }
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
@@ -47,6 +60,9 @@ export function PlayerMetricChart({
   duration_millis,
   ...divProps
 }: PlayerMetricChartProps) {
+  // Track which row has a pinned tooltip
+  const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
+
   const computedData = useMemo(() => {
     return data.map((item) => ({
       ...item,
@@ -81,6 +97,10 @@ export function PlayerMetricChart({
     }))
   }, [computedData])
 
+  const handleRowClick = (playerId: string) => {
+    setPinnedPlayerId(prev => prev === playerId ? null : playerId)
+  }
+
   return (
     <div
       style={{
@@ -95,6 +115,7 @@ export function PlayerMetricChart({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}>
         {chartData.map((player) => {
           return <PlayerMetricRow 
+            key={player.playerID}
             player={player} 
             rowHeight={rowHeight}
             maximumValue={maximumValue}
@@ -102,6 +123,8 @@ export function PlayerMetricChart({
             showRank={type === 'damage' || type === 'healing' || type === 'taken'}
             type={type}
             suffix={perSecond ? '/s' : ''}
+            isPinned={pinnedPlayerId === player.playerID}
+            onTogglePin={() => handleRowClick(player.playerID)}
           />
         })}
       </div>
@@ -117,6 +140,88 @@ export interface PlayerMetricRowProps {
   showRank: boolean
   type: ChartType
   suffix?: string
+  isPinned?: boolean
+  onTogglePin?: () => void
+}
+
+// Format number compactly
+function formatCompactNumber(value: number): string {
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}M`
+  }
+  if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}K`
+  }
+  return value.toFixed(0)
+}
+
+// Ability breakdown table component
+function AbilityBreakdownTable({ abilities, totalValue }: { abilities: AbilityBreakdown[], totalValue: number }) {
+  if (!abilities || abilities.length === 0) {
+    return <p className="text-xs text-muted-foreground p-2">No ability breakdown available</p>
+  }
+
+  // Sort by damage descending
+  const sorted = [...abilities].sort((a, b) => b.totalDamage - a.totalDamage)
+
+  return (
+    <div className="max-h-64 overflow-y-auto">
+      <table className="w-full text-xs text-foreground">
+        <thead className="sticky top-0 bg-popover">
+          <tr className="border-b border-border">
+            <th className="text-left py-1.5 px-2 font-medium">Ability</th>
+            <th className="text-right py-1.5 px-2 font-medium">Damage</th>
+            <th className="text-right py-1.5 px-2 font-medium">%</th>
+            <th className="text-right py-1.5 px-2 font-medium">Count</th>
+            <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
+            {/* <th className="text-right py-1.5 px-2 font-medium">Miss</th>
+            <th className="text-right py-1.5 px-2 font-medium">Dodge</th>
+            <th className="text-right py-1.5 px-2 font-medium">Parry</th>
+            <th className="text-right py-1.5 px-2 font-medium">Other</th> */}
+          </tr>
+        </thead>
+        <tbody className="text-background">
+          {sorted.map((ability) => {
+            const totalHits = ability.hitCount + ability.critCount
+            const critPercent = totalHits > 0 ? (ability.critCount / totalHits) * 100 : 0
+            const damagePercent = totalValue > 0 ? (ability.totalDamage / totalValue) * 100 : 0
+            
+            return (
+              <tr key={ability.name} className="border-b border-border/50 hover:bg-muted/50">
+                <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
+                  {ability.name}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {formatCompactNumber(ability.totalDamage)}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                  {damagePercent.toFixed(1)}%
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {totalHits}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {critPercent.toFixed(0)}%
+                </td>
+                {/* <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                  {ability.missCount > 0 ? ability.missCount : '-'}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                  {ability.dodgeCount > 0 ? ability.dodgeCount : '-'}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                  {ability.parryCount > 0 ? ability.parryCount : '-'}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                  {ability.otherCount > 0 ? ability.otherCount : '-'}
+                </td> */}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 export function PlayerMetricRow({
@@ -127,15 +232,24 @@ export function PlayerMetricRow({
   showRank,
   type,
   suffix,
+  isPinned = false,
+  onTogglePin,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   const isDimmed = player.dimmed ?? false;
+  
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    onTogglePin?.()
+  }
+
   return (
   <TooltipProvider key={player.playerID + player.playerName}>
-    <Tooltip delayDuration={0}>
+    <Tooltip delayDuration={0} open={isPinned ? true : undefined}>
       <TooltipTrigger asChild>
         <div
           ref={ref}
+          onClick={handleClick}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -146,7 +260,9 @@ export function PlayerMetricRow({
             color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
             opacity: isDimmed ? 0.35 : 1,
             transition: 'opacity 0.2s ease',
+            cursor: 'pointer',
           }}
+          className={cn(isPinned && "ring-2 ring-primary ring-inset")}
         >
           {/* Colored bar background */}
           <div
@@ -283,8 +399,42 @@ export function PlayerMetricRow({
         align="start"
         alignOffset={x}
         sideOffset={-y + 10}
-        hideWhenDetached>
-        Hello
+        hideWhenDetached
+        className="p-0 min-w-[340px]"
+        onPointerDownOutside={(e) => {
+          // Prevent closing when clicking inside the tooltip
+          if (isPinned) {
+            e.preventDefault()
+          }
+        }}
+      >
+        <div className="p-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <span 
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: player.color }}
+            />
+            <span className="font-medium">{player.playerName}</span>
+            <span className="text-muted-foreground text-xs ml-auto">
+              {player.className}
+            </span>
+          </div>
+          {/* <div className="flex items-center gap-4 mt-1 text-sm">
+            <span>Total: <strong>{formatCompactNumber(player.value)}</strong>{suffix}</span>
+            <span className="text-muted-foreground">
+              {((player.value/summedValue)*100).toFixed(1)}% of total
+            </span>
+          </div> */}
+          {isPinned && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Click row again to unpin
+            </p>
+          )}
+        </div>
+        <AbilityBreakdownTable 
+          abilities={player.abilityBreakdown ?? []} 
+          totalValue={player.value}
+        />
       </TooltipContent>
     </Tooltip>
   </TooltipProvider>

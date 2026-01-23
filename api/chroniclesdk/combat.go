@@ -6,14 +6,15 @@ import (
 )
 
 type EncounterDamageSummary struct {
-	EncounterID          uuid.UUID          `json:"encounter_id"`
-	UnitGuid             guid.GUID          `json:"unit_guid"`
-	DamageDoneTotal      int64              `json:"damage_done_total"`
-	DamageTakenTotal     int64              `json:"damage_taken_total"`
-	DamageDoneAbilities  map[string]Ability `json:"damage_done_abilities"`
-	DamageTakenAbilities map[string]Ability `json:"damage_taken_abilities"`
-	IsPlayer             bool               `json:"is_player"`
-	OwnerGuid            *guid.GUID         `json:"owner_guid"`
+	EncounterID      uuid.UUID `json:"encounter_id"`
+	UnitGuid         guid.GUID `json:"unit_guid"`
+	DamageDoneTotal  int64     `json:"damage_done_total"`
+	DamageTakenTotal int64     `json:"damage_taken_total"`
+	// DamageDoneAbilities is a map of damage done to a unit, keyed by the target's GUID string.
+	DamageDoneAbilities  map[GUIDString]map[string]Ability `json:"damage_done_abilities"`
+	DamageTakenAbilities map[GUIDString]map[string]Ability `json:"damage_taken_abilities"`
+	IsPlayer             bool                              `json:"is_player"`
+	OwnerGuid            *guid.GUID                        `json:"owner_guid"`
 }
 
 type Ability struct {

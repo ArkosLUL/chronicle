@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, Swords, Shield, PanelLeftClose, PanelLeft, Loader2, Users } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
-import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, WoWHeroClasses } from "@/api/typesGenerated";
+import type { Ability, ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, WoWHeroClasses } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible/Collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import { PlayerMetricChart, type PlayerMetricChartData, type AbilityBreakdown } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +136,38 @@ function groupTrashEncounters(encounters: Encounter[]): TrashGroup[] {
   }));
 }
 
+// Merge ability breakdowns from multiple sources
+function mergeAbilityBreakdowns(existing: AbilityBreakdown[] | undefined, incoming: AbilityBreakdown[] | undefined): AbilityBreakdown[] {
+  if (!incoming || incoming.length === 0) return existing || [];
+  if (!existing || existing.length === 0) return [...incoming];
+  
+  const abilityMap = new Map<string, AbilityBreakdown>();
+  
+  // Add existing abilities
+  for (const ability of existing) {
+    abilityMap.set(ability.name, { ...ability });
+  }
+  
+  // Merge incoming abilities
+  for (const ability of incoming) {
+    const existingAbility = abilityMap.get(ability.name);
+    if (existingAbility) {
+      existingAbility.totalDamage += ability.totalDamage;
+      existingAbility.hitCount += ability.hitCount;
+      existingAbility.critCount += ability.critCount;
+      existingAbility.missCount += ability.missCount;
+      existingAbility.dodgeCount += ability.dodgeCount;
+      existingAbility.immuneCount += ability.immuneCount;
+      existingAbility.parryCount += ability.parryCount;
+      existingAbility.otherCount += ability.otherCount;
+    } else {
+      abilityMap.set(ability.name, { ...ability });
+    }
+  }
+  
+  return Array.from(abilityMap.values());
+}
+
 // Merge metrics from multiple encounters by summing values per unit
 function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageTaken' | 'enemyDamageDone' | 'enemyDamageTaken'): PlayerMetricChartData[] {
   const playerMap = new Map<string, PlayerMetricChartData>();
@@ -151,8 +183,13 @@ function mergeMetrics(encounters: Encounter[], key: 'dps' | 'healing' | 'damageT
         if (metric.stackedValue !== undefined) {
           existing.stackedValue = (existing.stackedValue || 0) + metric.stackedValue;
         }
+        // Merge ability breakdowns
+        existing.abilityBreakdown = mergeAbilityBreakdowns(existing.abilityBreakdown, metric.abilityBreakdown);
       } else {
-        playerMap.set(metric.playerID, { ...metric });
+        playerMap.set(metric.playerID, { 
+          ...metric,
+          abilityBreakdown: metric.abilityBreakdown ? [...metric.abilityBreakdown] : undefined,
+        });
       }
     }
   }
@@ -980,6 +1017,21 @@ function getUnitName(guidStr: string, units: Record<string, InstanceUnit>): stri
   return `Enemy ${guidStr}`;
 }
 
+// Convert API ability record to AbilityBreakdown array
+function convertAbilitiesToBreakdown(abilities: Record<string, Ability>): AbilityBreakdown[] {
+  return Object.entries(abilities).map(([name, ability]) => ({
+    name,
+    totalDamage: ability.total_damage,
+    hitCount: ability.hit_count,
+    critCount: ability.crit_count,
+    missCount: ability.miss_count,
+    dodgeCount: ability.dodge_count,
+    immuneCount: ability.immune_count,
+    parryCount: ability.parry_count,
+    otherCount: ability.other_count,
+  }));
+}
+
 // Helper to transform API data to view data
 function transformToInstance(
   apiInstance: {
@@ -1022,6 +1074,7 @@ function transformToInstance(
         className: getPlayerClass(guidStr, players),
         specialization: "",
         value: d.damage_done_total,
+        abilityBreakdown: convertAbilitiesToBreakdown(d.damage_done_abilities),
       };
     });
 
@@ -1033,6 +1086,7 @@ function transformToInstance(
         className: getPlayerClass(guidStr, players),
         specialization: "",
         value: d.damage_taken_total,
+        abilityBreakdown: convertAbilitiesToBreakdown(d.damage_taken_abilities),
       };
     });
 
@@ -1054,25 +1108,33 @@ function transformToInstance(
     // Build enemy damage done metrics (damage dealt by enemies to players)
     const enemyDamageDone: PlayerMetricChartData[] = enemies
       .filter((e) => e.damageDone > 0)
-      .map((enemy) => ({
-        playerID: enemy.id,
-        playerName: enemy.name,
-        className: "Enemy", // use "Enemy" as the class for styling
-        specialization: "",
-        value: enemy.damageDone,
-      }))
+      .map((enemy) => {
+        const damage = damageByGuid.get(enemy.id);
+        return {
+          playerID: enemy.id,
+          playerName: enemy.name,
+          className: "Enemy", // use "Enemy" as the class for styling
+          specialization: "",
+          value: enemy.damageDone,
+          abilityBreakdown: damage ? convertAbilitiesToBreakdown(damage.damage_done_abilities) : [],
+        };
+      })
       .sort((a, b) => b.value - a.value);
 
     // Build enemy damage taken metrics (damage taken by enemies from players)
     const enemyDamageTaken: PlayerMetricChartData[] = enemies
       .filter((e) => e.damageTaken > 0)
-      .map((enemy) => ({
-        playerID: enemy.id,
-        playerName: enemy.name,
-        className: "Enemy", // use "Enemy" as the class for styling
-        specialization: "",
-        value: enemy.damageTaken,
-      }))
+      .map((enemy) => {
+        const damage = damageByGuid.get(enemy.id);
+        return {
+          playerID: enemy.id,
+          playerName: enemy.name,
+          className: "Enemy", // use "Enemy" as the class for styling
+          specialization: "",
+          value: enemy.damageTaken,
+          abilityBreakdown: damage ? convertAbilitiesToBreakdown(damage.damage_taken_abilities) : [],
+        };
+      })
       .sort((a, b) => b.value - a.value);
 
     return {

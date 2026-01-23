@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InstancePageView, type Instance, type Encounter, type EnemyUnit } from "./InstancePage";
-import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import type { PlayerMetricChartData, AbilityBreakdown } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { InstancePlayer, InstanceUnit, WoWHeroClasses, WoWHeroRaces } from "@/api/typesGenerated";
 import { GUID } from "@/lib/guid/guid";
 
@@ -89,6 +89,100 @@ const specsByClass: Record<string, string[]> = {
   Shaman: ["Enhancement", "Elemental"],
 };
 
+// Ability templates by class for generating realistic breakdowns
+const abilityTemplatesByClass: Record<string, { name: string; damageShare: number; critChance: number }[]> = {
+  Rogue: [
+    { name: "Backstab", damageShare: 0.30, critChance: 0.35 },
+    { name: "Sinister Strike", damageShare: 0.25, critChance: 0.28 },
+    { name: "Eviscerate", damageShare: 0.20, critChance: 0.32 },
+    { name: "Instant Poison", damageShare: 0.12, critChance: 0 },
+    { name: "Deadly Poison", damageShare: 0.08, critChance: 0 },
+    { name: "Blade Flurry", damageShare: 0.05, critChance: 0.20 },
+  ],
+  Mage: [
+    { name: "Fireball", damageShare: 0.45, critChance: 0.33 },
+    { name: "Fire Blast", damageShare: 0.18, critChance: 0.35 },
+    { name: "Scorch", damageShare: 0.15, critChance: 0.30 },
+    { name: "Ignite", damageShare: 0.12, critChance: 0 },
+    { name: "Pyroblast", damageShare: 0.10, critChance: 0.40 },
+  ],
+  Warlock: [
+    { name: "Shadow Bolt", damageShare: 0.40, critChance: 0.30 },
+    { name: "Corruption", damageShare: 0.20, critChance: 0 },
+    { name: "Curse of Agony", damageShare: 0.15, critChance: 0 },
+    { name: "Immolate", damageShare: 0.15, critChance: 0.25 },
+    { name: "Siphon Life", damageShare: 0.10, critChance: 0 },
+  ],
+  Warrior: [
+    { name: "Bloodthirst", damageShare: 0.35, critChance: 0.30 },
+    { name: "Whirlwind", damageShare: 0.22, critChance: 0.28 },
+    { name: "Heroic Strike", damageShare: 0.20, critChance: 0.27 },
+    { name: "Execute", damageShare: 0.15, critChance: 0.40 },
+    { name: "Deep Wounds", damageShare: 0.08, critChance: 0 },
+  ],
+  Hunter: [
+    { name: "Auto Shot", damageShare: 0.35, critChance: 0.23 },
+    { name: "Aimed Shot", damageShare: 0.28, critChance: 0.38 },
+    { name: "Multi-Shot", damageShare: 0.18, critChance: 0.30 },
+    { name: "Serpent Sting", damageShare: 0.12, critChance: 0 },
+    { name: "Arcane Shot", damageShare: 0.07, critChance: 0.28 },
+  ],
+  Druid: [
+    { name: "Starfire", damageShare: 0.40, critChance: 0.25 },
+    { name: "Moonfire", damageShare: 0.25, critChance: 0.20 },
+    { name: "Wrath", damageShare: 0.20, critChance: 0.22 },
+    { name: "Insect Swarm", damageShare: 0.15, critChance: 0 },
+  ],
+  Priest: [
+    { name: "Mind Blast", damageShare: 0.30, critChance: 0.25 },
+    { name: "Shadow Word: Pain", damageShare: 0.25, critChance: 0 },
+    { name: "Mind Flay", damageShare: 0.25, critChance: 0 },
+    { name: "Vampiric Embrace", damageShare: 0.10, critChance: 0 },
+    { name: "Shadow Word: Death", damageShare: 0.10, critChance: 0.30 },
+  ],
+  Paladin: [
+    { name: "Crusader Strike", damageShare: 0.30, critChance: 0.28 },
+    { name: "Judgement", damageShare: 0.25, critChance: 0.25 },
+    { name: "Seal of Command", damageShare: 0.20, critChance: 0.22 },
+    { name: "Consecration", damageShare: 0.15, critChance: 0 },
+    { name: "Exorcism", damageShare: 0.10, critChance: 0.35 },
+  ],
+  Shaman: [
+    { name: "Stormstrike", damageShare: 0.30, critChance: 0.30 },
+    { name: "Earth Shock", damageShare: 0.20, critChance: 0.25 },
+    { name: "Lightning Bolt", damageShare: 0.20, critChance: 0.22 },
+    { name: "Flame Shock", damageShare: 0.15, critChance: 0.20 },
+    { name: "Windfury", damageShare: 0.15, critChance: 0.28 },
+  ],
+};
+
+// Generate ability breakdown for a player based on their total damage
+function generateAbilityBreakdown(className: string, totalDamage: number): AbilityBreakdown[] {
+  const templates = abilityTemplatesByClass[className] || abilityTemplatesByClass["Warrior"];
+  
+  return templates.map(template => {
+    const abilityDamage = Math.round(totalDamage * template.damageShare);
+    const totalHits = Math.round(30 + Math.random() * 100); // 30-130 hits
+    const critCount = Math.round(totalHits * template.critChance * (0.8 + Math.random() * 0.4)); // ±20% variance
+    const hitCount = totalHits - critCount;
+    const missCount = Math.round(totalHits * 0.05 * Math.random()); // 0-5% miss
+    const dodgeCount = Math.round(totalHits * 0.03 * Math.random()); // 0-3% dodge
+    const parryCount = Math.round(totalHits * 0.02 * Math.random()); // 0-2% parry
+    
+    return {
+      name: template.name,
+      totalDamage: abilityDamage,
+      hitCount,
+      critCount,
+      missCount,
+      dodgeCount,
+      immuneCount: 0,
+      parryCount,
+      otherCount: Math.round(Math.random() * 3),
+    };
+  }).sort((a, b) => b.totalDamage - a.totalDamage);
+}
+
 // Mock DPS data generator - supports up to 40 players
 function mockDpsData(playerCount: number = 40): PlayerMetricChartData[] {
   // Generate with some variance to make it realistic
@@ -98,12 +192,14 @@ function mockDpsData(playerCount: number = 40): PlayerMetricChartData[] {
     const specs = specsByClass[classInfo.display] || ["Unknown"];
     // Top players do ~800-1200 DPS, falls off toward bottom
     const baseValue = 1200 - (i * 25) + (Math.random() * 150 - 75);
+    const totalDamage = Math.max(50, Math.round(baseValue * 10) / 10);
     return {
       playerID: guid.toString(),
       playerName: playerNames[i % playerNames.length] + (i >= playerNames.length ? `${Math.floor(i / playerNames.length) + 1}` : ""),
       className: classInfo.display,
       specialization: specs[Math.floor(Math.random() * specs.length)],
-      value: Math.max(50, Math.round(baseValue * 10) / 10),
+      value: totalDamage,
+      abilityBreakdown: generateAbilityBreakdown(classInfo.display, totalDamage * 1000), // Multiply for total damage
     };
   }).sort((a, b) => b.value - a.value); // Sort by DPS descending
 }

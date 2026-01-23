@@ -82,8 +82,8 @@ func (u *Unit) Taken(m messages.Damage) {
 
 func (u *Unit) Done(m messages.Damage) {
 	target := m.Target
-	if _, ok := u.DamageTaken[target]; !ok {
-		u.DamageTaken[target] = make(map[string]database.Ability)
+	if _, ok := u.DamageDone[target]; !ok {
+		u.DamageDone[target] = make(map[string]database.Ability)
 	}
 
 	source := m.SourceName()

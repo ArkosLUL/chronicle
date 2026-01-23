@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivertype"
 )
 
 const (
@@ -47,6 +48,9 @@ func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
 	riverClient, err := river.NewClient(driver, &river.Config{
 		Queues:  c.queues(opts.Queue),
 		Workers: c.workers(opts.Queue),
+		Middleware: []rivertype.Middleware{
+			NewWorkerPanicMW(c.logger),
+		},
 		// Retain all jobs
 		// TODO: Create our own reaper to clean up old jobs after a certain period
 		CompletedJobRetentionPeriod: -1,

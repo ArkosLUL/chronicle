@@ -53,16 +53,20 @@ func IsAPIError(err error) (*APIError, bool) {
 func HandleResponseError(ctx context.Context, rw http.ResponseWriter, err error, def APIError) {
 	if apiErr, ok := IsAPIError(err); ok {
 		Write(ctx, rw, apiErr.Status, apiErr.Response)
-	} else {
-		status := def.Status
-		if errors.Is(err, sql.ErrNoRows) {
-			status = http.StatusNotFound
-		}
-
-		Write(ctx, rw, status, chroniclesdk.Response{
-			Message: def.Response.Message,
-			Detail:  def.Response.Detail,
-		})
+		return
 	}
 
+	status := def.Status
+	if errors.Is(err, sql.ErrNoRows) {
+		status = http.StatusNotFound
+	}
+	if status == 0 {
+		status = http.StatusInternalServerError
+	}
+
+	Write(ctx, rw, status, chroniclesdk.Response{
+		Message: def.Response.Message,
+		Detail:  def.Response.Detail,
+	})
+	return
 }

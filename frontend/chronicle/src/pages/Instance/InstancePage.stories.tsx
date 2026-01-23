@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { InstancePageView, type Instance, type Encounter, type EnemyUnit } from "./InstancePage";
+import { type Instance, type Encounter, type EnemyUnit } from "./InstancePage";
 import type { PlayerMetricChartData, AbilityBreakdown } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { InstancePlayer, InstanceUnit, WoWHeroClasses, WoWHeroRaces } from "@/api/typesGenerated";
 import { GUID } from "@/lib/guid/guid";
+import { InstancePageView } from "./InstancePageView";
 
 const meta = {
   title: "Pages/Instance",

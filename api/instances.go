@@ -85,6 +85,7 @@ func (api *API) InstanceDamageSummaries(w http.ResponseWriter, r *http.Request) 
 				Message: "Failed to fetch damage summaries for instance",
 				Detail:  err.Error(),
 			},
+			Status: http.StatusInternalServerError,
 		})
 		return
 	}

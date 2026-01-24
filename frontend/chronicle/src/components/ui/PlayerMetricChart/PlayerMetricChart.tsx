@@ -174,45 +174,54 @@ function formatCompactNumber(value: number): string {
 }
 
 // Ability breakdown table component
-function AbilityBreakdownTable({ abilities, totalValue }: { abilities: AbilityBreakdown[], totalValue: number }) {
+// invertedColors: when true, uses bg-foreground/text-background (for tooltips with dark bg)
+function AbilityBreakdownTable({ abilities, totalValue, invertedColors = false }: { 
+  abilities: AbilityBreakdown[], 
+  totalValue: number,
+  invertedColors?: boolean 
+}) {
   if (!abilities || abilities.length === 0) {
-    return <p className="text-xs text-muted-foreground p-2">No ability breakdown available</p>
+    const emptyClass = invertedColors ? "text-background/60" : "text-muted-foreground"
+    return <p className={cn("text-xs p-2", emptyClass)}>No ability breakdown available</p>
   }
 
   // Sort by damage descending
   const sorted = [...abilities].sort((a, b) => b.totalDamage - a.totalDamage)
 
+  // Color classes based on inverted mode
+  const textClass = invertedColors ? "text-background" : "text-foreground"
+  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
+  const headerBgClass = invertedColors ? "bg-foreground" : "bg-popover"
+  const borderClass = invertedColors ? "border-background/20" : "border-border"
+  const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
+
   return (
     <div className="max-h-64 overflow-y-auto">
-      <table className="w-full text-xs text-foreground">
-        <thead className="sticky top-0 bg-popover">
-          <tr className="border-b border-border">
+      <table className={cn("w-full text-xs", textClass)}>
+        <thead className={cn("sticky top-0", headerBgClass)}>
+          <tr className={cn("border-b", borderClass)}>
             <th className="text-left py-1.5 px-2 font-medium">Ability</th>
             <th className="text-right py-1.5 px-2 font-medium">Damage</th>
             <th className="text-right py-1.5 px-2 font-medium">%</th>
             <th className="text-right py-1.5 px-2 font-medium">Count</th>
             <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
-            {/* <th className="text-right py-1.5 px-2 font-medium">Miss</th>
-            <th className="text-right py-1.5 px-2 font-medium">Dodge</th>
-            <th className="text-right py-1.5 px-2 font-medium">Parry</th>
-            <th className="text-right py-1.5 px-2 font-medium">Other</th> */}
           </tr>
         </thead>
-        <tbody className="text-background">
+        <tbody>
           {sorted.map((ability) => {
             const totalHits = ability.hitCount + ability.critCount
             const critPercent = totalHits > 0 ? (ability.critCount / totalHits) * 100 : 0
             const damagePercent = totalValue > 0 ? (ability.totalDamage / totalValue) * 100 : 0
             
             return (
-              <tr key={ability.name} className="border-b border-border/50 hover:bg-muted/50">
+              <tr key={ability.name} className={cn("border-b", borderClass.replace("20", "10"), hoverClass)}>
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
                   {ability.name}
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
                   {formatCompactNumber(ability.totalDamage)}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
                   {damagePercent.toFixed(1)}%
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
@@ -221,18 +230,6 @@ function AbilityBreakdownTable({ abilities, totalValue }: { abilities: AbilityBr
                 <td className="text-right py-1 px-2 tabular-nums">
                   {critPercent.toFixed(0)}%
                 </td>
-                {/* <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
-                  {ability.missCount > 0 ? ability.missCount : '-'}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
-                  {ability.dodgeCount > 0 ? ability.dodgeCount : '-'}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
-                  {ability.parryCount > 0 ? ability.parryCount : '-'}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
-                  {ability.otherCount > 0 ? ability.otherCount : '-'}
-                </td> */}
               </tr>
             )
           })}
@@ -299,7 +296,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle }
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-50 min-w-[340px] rounded-md border bg-popover text-popover-foreground shadow-md"
+      className="fixed z-50 min-w-[340px] rounded-md bg-foreground text-background shadow-md"
       style={{
         left: position.x,
         top: position.y,
@@ -309,21 +306,21 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle }
     >
       {/* Header with drag handle and close button */}
       <div 
-        className="flex items-center gap-2 p-3 border-b border-border"
+        className="flex items-center gap-2 p-3 border-b border-background/20"
         data-drag-handle
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        <GripHorizontal className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <GripHorizontal className="h-4 w-4 text-background/60 flex-shrink-0" />
         <span 
           className="w-3 h-3 rounded-full flex-shrink-0"
           style={{ backgroundColor: player.color }}
         />
         <span className="font-medium">{player.playerName}</span>
-        <span className="text-muted-foreground text-xs">
+        <span className="text-background/60 text-xs">
           {player.className}
         </span>
         {panelTitle && (
-          <span className="text-xs text-muted-foreground border-l border-border pl-2 ml-auto">
+          <span className="text-xs text-background/60 border-l border-background/20 pl-2 ml-auto">
             {panelTitle}
           </span>
         )}
@@ -332,7 +329,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle }
             e.stopPropagation()
             onClose()
           }}
-          className={cn("p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors", !panelTitle && "ml-auto")}
+          className={cn("p-1 rounded hover:bg-background/20 text-background/60 hover:text-background transition-colors", !panelTitle && "ml-auto")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -340,6 +337,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle }
       <AbilityBreakdownTable 
         abilities={player.abilityBreakdown ?? []} 
         totalValue={player.value}
+        invertedColors
       />
     </div>
   )
@@ -532,14 +530,14 @@ export function PlayerMetricRow({
           hideWhenDetached
           className="p-0 min-w-[340px]"
         >
-          <div className="p-3 border-b border-border">
+          <div className="p-3 border-b border-background/20">
             <div className="flex items-center gap-2">
               <span 
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: player.color }}
               />
               <span className="font-medium">{player.playerName}</span>
-              <span className="text-muted-foreground text-xs ml-auto">
+              <span className="text-background/60 text-xs ml-auto">
                 {player.className}
               </span>
             </div>
@@ -547,6 +545,7 @@ export function PlayerMetricRow({
           <AbilityBreakdownTable 
             abilities={player.abilityBreakdown ?? []} 
             totalValue={player.value}
+            invertedColors
           />
         </TooltipContent>
       </Tooltip>

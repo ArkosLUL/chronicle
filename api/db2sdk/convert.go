@@ -159,6 +159,7 @@ func EncounterDamageSummary(summary database.LogInstanceEncounterDamageUnitSumma
 	return chroniclesdk.EncounterDamageSummary{
 		EncounterID:      summary.EncounterID,
 		UnitGuid:         summary.UnitGuid,
+		UnitName:         summary.UnitName,
 		DamageDoneTotal:  summary.DamageDoneTotal,
 		DamageTakenTotal: summary.DamageTakenTotal,
 		DamageDoneAbilities: maps.Map[guid.GUID, map[string]database.Ability, map[string]chroniclesdk.Ability](summary.DamageDoneAbilities, func(f map[string]database.Ability) map[string]chroniclesdk.Ability {

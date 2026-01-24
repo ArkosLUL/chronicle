@@ -226,6 +226,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					_, err = tx.InsertEncounterDamageSummary(ctx, database.InsertEncounterDamageSummaryParams{
 						EncounterID:      dbencounter.ID,
 						UnitGuid:         unitID,
+						UnitName:         info.Name,
 						DamageDoneTotal:  unit.TotalDamageDone,
 						DamageTakenTotal: unit.TotalDamageTaken,
 						DamageDone:       dd,

@@ -299,7 +299,7 @@ func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
 
 const damageSummariesByInstanceID = `-- name: DamageSummariesByInstanceID :many
 SELECT
-  encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
+  encounter_id, unit_guid, unit_name, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
 FROM
   log_instance_encounter_damage_unit_summary
 WHERE
@@ -318,6 +318,7 @@ func (q *sqlQuerier) DamageSummariesByInstanceID(ctx context.Context, logInstanc
 		if err := rows.Scan(
 			&i.EncounterID,
 			&i.UnitGuid,
+			&i.UnitName,
 			&i.DamageDoneTotal,
 			&i.DamageTakenTotal,
 			&i.DamageDoneAbilities,
@@ -463,6 +464,7 @@ INSERT INTO
   log_instance_encounter_damage_unit_summary(
     encounter_id,
     unit_guid,
+    unit_name,
     damage_done_total,
     damage_taken_total,
     damage_done_abilities,
@@ -471,13 +473,14 @@ INSERT INTO
     owner_guid
   )
 VALUES
-  ($1, $2, $3, $4, $6::jsonb, $7::jsonb, $5, $8::wow_guid)
-RETURNING encounter_id, unit_guid, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
+  ($1, $2, $3, $4, $5, $7::jsonb, $8::jsonb, $6, $9::wow_guid)
+RETURNING encounter_id, unit_guid, unit_name, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
 `
 
 type InsertEncounterDamageSummaryParams struct {
 	EncounterID      uuid.UUID  `db:"encounter_id" json:"encounter_id"`
 	UnitGuid         guid.GUID  `db:"unit_guid" json:"unit_guid"`
+	UnitName         string     `db:"unit_name" json:"unit_name"`
 	DamageDoneTotal  int64      `db:"damage_done_total" json:"damage_done_total"`
 	DamageTakenTotal int64      `db:"damage_taken_total" json:"damage_taken_total"`
 	IsPlayer         bool       `db:"is_player" json:"is_player"`
@@ -490,6 +493,7 @@ func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg Inser
 	row := q.db.QueryRow(ctx, insertEncounterDamageSummary,
 		arg.EncounterID,
 		arg.UnitGuid,
+		arg.UnitName,
 		arg.DamageDoneTotal,
 		arg.DamageTakenTotal,
 		arg.IsPlayer,
@@ -501,6 +505,7 @@ func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg Inser
 	err := row.Scan(
 		&i.EncounterID,
 		&i.UnitGuid,
+		&i.UnitName,
 		&i.DamageDoneTotal,
 		&i.DamageTakenTotal,
 		&i.DamageDoneAbilities,

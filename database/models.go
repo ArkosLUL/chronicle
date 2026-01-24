@@ -463,6 +463,7 @@ type LogInstanceEncounter struct {
 type LogInstanceEncounterDamageUnitSummary struct {
 	EncounterID          uuid.UUID                        `db:"encounter_id" json:"encounter_id"`
 	UnitGuid             guid.GUID                        `db:"unit_guid" json:"unit_guid"`
+	UnitName             string                           `db:"unit_name" json:"unit_name"`
 	DamageDoneTotal      int64                            `db:"damage_done_total" json:"damage_done_total"`
 	DamageTakenTotal     int64                            `db:"damage_taken_total" json:"damage_taken_total"`
 	DamageDoneAbilities  map[guid.GUID]map[string]Ability `db:"damage_done_abilities" json:"damage_done_abilities"`

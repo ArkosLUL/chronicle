@@ -66,6 +66,8 @@ CREATE TABLE log_instance_encounter_hostiles (
 CREATE TABLE log_instance_encounter_damage_unit_summary (
   encounter_id UUID NOT NULL REFERENCES log_instance_encounters(id) ON DELETE CASCADE,
   unit_guid wow_guid NOT NULL,
+  -- Shortcut, helpful for things like pets and totems
+  unit_name TEXT NOT NULL,
 
   -- Aggregated damage done
   damage_done_total BIGINT NOT NULL DEFAULT 0,

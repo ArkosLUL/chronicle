@@ -128,6 +128,7 @@ CREATE TABLE log_file (
 CREATE TABLE log_instance_encounter_damage_unit_summary (
     encounter_id uuid NOT NULL,
     unit_guid wow_guid NOT NULL,
+    unit_name text NOT NULL,
     damage_done_total bigint DEFAULT 0 NOT NULL,
     damage_taken_total bigint DEFAULT 0 NOT NULL,
     damage_done_abilities jsonb,

@@ -33,6 +33,7 @@ INSERT INTO
   log_instance_encounter_damage_unit_summary(
     encounter_id,
     unit_guid,
+    unit_name,
     damage_done_total,
     damage_taken_total,
     damage_done_abilities,
@@ -41,7 +42,7 @@ INSERT INTO
     owner_guid
   )
 VALUES
-  ($1, $2, $3, $4, @damage_done::jsonb, @damage_taken::jsonb, $5, sqlc.narg('owner_guid')::wow_guid)
+  ($1, $2, $3, $4, $5, @damage_done::jsonb, @damage_taken::jsonb, $6, sqlc.narg('owner_guid')::wow_guid)
 RETURNING *
 ;
 

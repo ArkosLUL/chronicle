@@ -36,7 +36,7 @@ function filterAbilities(targetFilter: Set<string>, records: Record<string, Reco
     if (targetFilter.size === 0 || targetFilter.has(key)) {
       result[key] = records[key];
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      total += Object.entries(records[key]).reduce((sum, [_, ability]) => sum + ability.total_damage, 0);
+      total += Object.entries(records[key]).reduce((sum, [_, ability]) => sum + ability.total, 0);
     }
   }
   return { total, filtered: result };
@@ -52,6 +52,8 @@ function aggregateByUnit(targetFilter: Set<string>, records: EncounterDamageSumm
   damageDoneAbilities: RawAbilities;
   damageTakenAbilities: RawAbilities;
   isPlayer: boolean;
+  name: string;
+  ownerGuid: GUID | null;
 }> {
   const result = new Map<string, {
     damageDoneTotal: number;
@@ -60,6 +62,7 @@ function aggregateByUnit(targetFilter: Set<string>, records: EncounterDamageSumm
     damageTakenAbilities: RawAbilities;
     isPlayer: boolean;
     ownerGuid: GUID | null;
+    name: string;
   }>();
 
   for (const record of records) {
@@ -83,7 +86,8 @@ function aggregateByUnit(targetFilter: Set<string>, records: EncounterDamageSumm
       damageDoneAbilities: damageDone,
       damageTakenAbilities: damageTaken,
       isPlayer: record.is_player,
-      ownerGuid: record.owner_guid
+      ownerGuid: record.owner_guid,
+      name: record.unit_name,
     });
   }
 
@@ -109,7 +113,8 @@ function mergeAbilities(targetFilter: Set<string>, target: RawAbilities, source:
           // TODO: Check this
           // @ts-ignore
           existing[key] += ability[key];
-          total += ability[key].total_damage;
+          // @ts-ignore
+          total += ability[key].total;
         });
       } else {
         target[targetGuid][abilityName] = { ...ability };
@@ -164,16 +169,16 @@ function terraformGeneral(
   }
 
   const aggregated = aggregateByUnit(targetFilter, data);
-  const result: PlayerMetricChartData[] = [];
+  const result: Record<string, PlayerMetricChartData> = {};
   for (const [guid, stats] of aggregated) {
     const player = players[guid];
-    const enemyName = enemies.get(guid);
+    const enemyName = stats.name || enemies.get(guid);
     switch (panelType) {
       case 'damage_done':
         if (!stats.isPlayer) continue;
         if (!player) continue;
 
-        result.push({
+        result[guid] = {
           playerID: guid,
           playerName: player.name,
           className: player.class,
@@ -181,13 +186,13 @@ function terraformGeneral(
           value: stats.damageDoneTotal,
           rawAbilities: stats.damageDoneAbilities,
           dimmed: selectedPlayerIds.size > 0 && !selectedPlayerIds.has(guid),
-        });
+        };
         break;
       case 'damage_taken':
         if (!stats.isPlayer) continue;
           if (!player) continue;
 
-        result.push({
+        result[guid] = {
           playerID: guid,
           playerName: player.name,
           className: player.class,
@@ -195,11 +200,11 @@ function terraformGeneral(
           value: stats.damageTakenTotal,
           rawAbilities: stats.damageTakenAbilities,
           dimmed: selectedPlayerIds.size > 0 && !selectedPlayerIds.has(guid),
-        });
+        };
         break;
       case 'enemy_damage_done':
         if (stats.isPlayer) continue;
-        result.push({
+        result[guid] = {
           playerID: guid,
           playerName: enemyName || `Enemy ${guid.slice(-8)}`,
           className: "CREATURE",
@@ -207,11 +212,11 @@ function terraformGeneral(
           value: stats.damageDoneTotal,
           rawAbilities: stats.damageDoneAbilities,
           dimmed: selectedPlayerIds.size > 0 && !selectedEnemyIds.has(guid),
-        });
+        };
         break;
       case 'enemy_damage_taken':
         if (stats.isPlayer) continue;
-        result.push({
+        result[guid] = {
           playerID: guid,
           playerName: enemyName || `Enemy ${guid.slice(-8)}`,
           className: "CREATURE",
@@ -219,14 +224,14 @@ function terraformGeneral(
           value: stats.damageTakenTotal,
           rawAbilities: stats.damageTakenAbilities,
           dimmed: selectedPlayerIds.size > 0 && !selectedEnemyIds.has(guid),
-        });
+        };
         break;
       default:
         throw new Error(`Unknown panel type: ${panelType}`);
     }
   }
   
-  return result
+  return Object.values(result)
 }
 
 // ============================================================================

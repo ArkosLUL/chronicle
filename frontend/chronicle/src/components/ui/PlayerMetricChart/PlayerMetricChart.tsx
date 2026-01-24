@@ -40,8 +40,6 @@ export interface PlayerMetricChartData {
   dimmed?: boolean
   // Ability breakdown for tooltip (computed from rawAbilities, or provided directly for stories)
   abilityBreakdown?: AbilityBreakdown[]
-  // Raw abilities data from API - used for dynamic filtering
-  rawAbilities?: RawAbilities
 }
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {

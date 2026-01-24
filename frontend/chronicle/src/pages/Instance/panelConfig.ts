@@ -1,5 +1,5 @@
 import type { Ability, EncounterDamageSummary, InstancePlayer } from "@/api/typesGenerated";
-import type { PlayerMetricChartData, RawAbilities } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import type { AbilityBreakdown, PlayerMetricChartData, RawAbilities } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GUID } from "@/lib/guid/guid";
 
 export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done' | 'enemy_damage_taken';
@@ -126,6 +126,43 @@ function mergeAbility(target: Ability, source: Ability): Ability {
   };
 }
 
+/**
+ * Convert rawAbilities (nested by target GUID, then ability name) into a flat
+ * AbilityBreakdown[] aggregated across all targets.
+ */
+function computeAbilityBreakdown(rawAbilities: RawAbilities | undefined): AbilityBreakdown[] {
+  if (!rawAbilities) return [];
+  
+  // Aggregate abilities across all targets
+  const byAbilityName = new Map<string, Ability>();
+  
+  for (const targetAbilities of Object.values(rawAbilities)) {
+    for (const [abilityName, ability] of Object.entries(targetAbilities)) {
+      const existing = byAbilityName.get(abilityName);
+      if (existing) {
+        byAbilityName.set(abilityName, mergeAbility(existing, ability));
+      } else {
+        byAbilityName.set(abilityName, { ...ability });
+      }
+    }
+  }
+  
+  // Convert to AbilityBreakdown[] and sort by total damage descending
+  return Array.from(byAbilityName.entries())
+    .map(([name, ability]) => ({
+      name,
+      totalDamage: ability.total,
+      hitCount: ability.hit_count,
+      critCount: ability.crit_count,
+      missCount: ability.miss_count,
+      dodgeCount: ability.dodge_count,
+      immuneCount: ability.immune_count,
+      parryCount: ability.parry_count,
+      otherCount: ability.other_count,
+    }))
+    .sort((a, b) => b.totalDamage - a.totalDamage);
+}
+
 // ============================================================================
 // Panel-specific transformations
 // ============================================================================
@@ -244,6 +281,11 @@ function terraformGeneral(
     }
     
     result[ownerGuid.toString()] = owner;
+  }
+  
+  // Compute abilityBreakdown for each player from their rawAbilities
+  for (const entry of Object.values(result)) {
+    entry.abilityBreakdown = computeAbilityBreakdown(entry.rawAbilities);
   }
   
   return Object.values(result)

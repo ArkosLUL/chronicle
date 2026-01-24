@@ -157,6 +157,7 @@
   --class-druid: #FF7D0A;
   --class-unknown: #A0A0A0;
   --class-enemy: #E53935; /* Red for enemies */
+  --class-creature: #AAAAAA; /* Grey for creatures */
 
   /* Foreground color over classes, eg text. */
   --class-foreground: oklch(0.9219 0 0);

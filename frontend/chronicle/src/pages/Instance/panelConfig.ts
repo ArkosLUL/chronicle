@@ -194,6 +194,7 @@ function terraformGeneral(
       throw new Error(`Unknown panel type: ${panelType}`);
   }
 
+  let creatureType = "CREATURE";
   let targetFilter = selectedPlayerIds
   switch (panelType) {
     case 'damage_done':
@@ -203,6 +204,7 @@ function terraformGeneral(
     case 'enemy_damage_done':
     case 'enemy_damage_taken':
       targetFilter = selectedPlayerIds
+      creatureType = "ENEMY";
       break;
     default:
       throw new Error(`Unknown panel type: ${panelType}`);
@@ -234,7 +236,7 @@ function terraformGeneral(
     result[guid] = {
       playerID: guid,
       playerName: isPlayerPanel ? player.name : (enemyName || `Enemy ${guid.slice(-8)}`),
-      className: isPlayerPanel ? player.class : "CREATURE",
+      className: isPlayerPanel ? player.class : creatureType,
       specialization: "",
       value: isDonePanel ? stats.damageDoneTotal : stats.damageTakenTotal,
       rawAbilities: isDonePanel ? stats.damageDoneAbilities : stats.damageTakenAbilities,

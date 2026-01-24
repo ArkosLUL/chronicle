@@ -40,6 +40,7 @@ export interface PlayerMetricChartData {
   dimmed?: boolean
   // Ability breakdown for tooltip (computed from rawAbilities, or provided directly for stories)
   abilityBreakdown?: AbilityBreakdown[]
+  rawAbilities?: RawAbilities
 }
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
@@ -296,7 +297,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle }
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-50 min-w-[340px] rounded-md bg-foreground text-background shadow-md"
+      className="border-3 border-solid  fixed z-50 min-w-[340px] rounded-md bg-foreground text-background shadow-md"
       style={{
         left: position.x,
         top: position.y,

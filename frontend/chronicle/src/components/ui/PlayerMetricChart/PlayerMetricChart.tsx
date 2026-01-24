@@ -229,7 +229,7 @@ function AbilityBreakdownTable({ abilities, totalValue, invertedColors = false, 
                   {ability.name}
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
-                  {formatCompactNumber(displayDamage)}
+                  {displayDamage.toLocaleString()}
                 </td>
                 <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
                   {damagePercent.toFixed(1)}%

@@ -104,10 +104,10 @@ function mergeAbilities(targetFilter: Set<string>, target: RawAbilities, source:
       const existing = target[targetGuid][abilityName];
       if (existing) {
         target[targetGuid][abilityName] = mergeAbility(existing, ability);
-        total += ability.total;
       } else {
         target[targetGuid][abilityName] = { ...ability };
       }
+      total += ability.total;
     }
   }
   return total
@@ -232,6 +232,11 @@ function terraformGeneral(
 
     const enemyName = stats.name || enemies.get(guid);
     const selectionSet = isPlayerPanel ? selectedPlayerIds : selectedEnemyIds;
+
+    if(result[guid]) {
+      console.log("Duplicate GUID in damage summary:", guid);
+      continue;
+    }
 
     result[guid] = {
       playerID: guid,

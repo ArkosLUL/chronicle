@@ -140,6 +140,7 @@ export function PlayerMetricChart({
             showRank={type === 'damage' || type === 'healing' || type === 'taken'}
             type={type}
             suffix={perSecond ? '/s' : ''}
+            decimals={perSecond ? 1 : 0}
             isPinned={pinnedPlayerIds.has(player.playerID)}
             onTogglePin={() => handleTogglePin(player.playerID)}
             panelTitle={panelTitle}
@@ -158,6 +159,7 @@ export interface PlayerMetricRowProps {
   showRank: boolean
   type: ChartType
   suffix?: string
+  decimals?: number
   isPinned?: boolean
   onTogglePin?: () => void
   panelTitle?: string
@@ -352,6 +354,7 @@ export function PlayerMetricRow({
   showRank,
   type,
   suffix,
+  decimals,
   isPinned = false,
   onTogglePin,
   panelTitle,
@@ -507,7 +510,7 @@ export function PlayerMetricRow({
               </span>
 
               {/* DPS value */}
-              {formatValue(type, player, suffix)}
+              {formatValue(type, player, suffix, decimals)}
 
               {/* Percentage */}
               <span
@@ -565,7 +568,7 @@ export function PlayerMetricRow({
 )
 }
 
-function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: string) {
+function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: string, decimals: number = 1) {
   const styles = {
     fontSize: '0.7em',
     fontWeight: 600,
@@ -596,7 +599,10 @@ function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: st
           ...styles
         }}
       >
-        {player.value.toFixed(1)}{suffix}
+        {player.value.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        })}{suffix}
       </span>)
   }
 }

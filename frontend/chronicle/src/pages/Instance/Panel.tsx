@@ -78,6 +78,20 @@ export function MetricPanel({
     return config.transform(panelType, encounterFiltered, players, enemies, selectedPlayerIds, selectedEnemyIds);
   }, [panelType, config, encounterFiltered, players, enemies, selectedPlayerIds, selectedEnemyIds]);
 
+  // Create combined target names map (players + enemies)
+  const targetNames = useMemo(() => {
+    const map = new Map<string, string>();
+    // Add player names
+    for (const [guid, player] of Object.entries(players)) {
+      map.set(guid, player.name);
+    }
+    // Add enemy names
+    for (const [guid, name] of enemies) {
+      map.set(guid, name);
+    }
+    return map;
+  }, [players, enemies]);
+
   // Show per-second toggle for damage-related panels
   const showPerSecondToggle = config.chartType === 'damage';
 
@@ -132,6 +146,7 @@ export function MetricPanel({
         perSecond={perSecond}
         style={{ height: "400px" }}
         panelTitle={config.label}
+        targetNames={targetNames}
       />
     </Card>
   );

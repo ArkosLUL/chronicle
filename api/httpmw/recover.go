@@ -2,10 +2,8 @@ package httpmw
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"runtime/debug"
 
 	"github.com/Emyrk/chronicle/api/httpapi"
@@ -29,7 +27,6 @@ func Recover(log *slog.Logger) func(h http.Handler) http.Handler {
 						slog.String("stack", string(debug.Stack())),
 					)
 
-					_, _ = fmt.Fprintf(os.Stderr, string(debug.Stack()))
 					httpapi.InternalServerError(w, errors.New("a panic occured"))
 					return
 				}

@@ -43,6 +43,15 @@ export interface PlayerMetricChartData {
   rawAbilities?: RawAbilities
 }
 
+// Target breakdown for "By Target" tab display
+export interface TargetBreakdown {
+  targetGuid: string
+  targetName: string
+  totalDamage: number
+  hitCount: number
+  critCount: number
+}
+
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   data: PlayerMetricChartData[]
   /**
@@ -56,6 +65,8 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   duration_millis?: number
   // Title shown on pinned tooltips (e.g., "Damage Done", "Damage Taken")
   panelTitle?: string
+  // Map of target GUID -> target name for "By Target" breakdown
+  targetNames?: Map<string, string>
 }
 
 export function PlayerMetricChart({
@@ -67,6 +78,7 @@ export function PlayerMetricChart({
   panelTitle,
   perSecond,
   duration_millis,
+  targetNames,
   ...divProps
 }: PlayerMetricChartProps) {
   // Track which rows have pinned tooltips (multiple allowed)
@@ -146,6 +158,7 @@ export function PlayerMetricChart({
             panelTitle={panelTitle}
             perSecond={perSecond}
             durationMillis={duration_millis}
+            targetNames={targetNames}
           />
         })}
       </div>
@@ -167,17 +180,7 @@ export interface PlayerMetricRowProps {
   panelTitle?: string
   perSecond?: boolean
   durationMillis?: number
-}
-
-// Format number compactly
-function formatCompactNumber(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`
-  }
-  return value.toFixed(0)
+  targetNames?: Map<string, string>
 }
 
 // Ability breakdown table component
@@ -249,6 +252,186 @@ function AbilityBreakdownTable({ abilities, totalValue, invertedColors = false, 
   )
 }
 
+// Target breakdown table component - shows damage grouped by target
+function TargetBreakdownTable({ 
+  rawAbilities, 
+  targetNames,
+  totalValue, 
+  invertedColors = false, 
+  perSecond = false, 
+  durationMillis 
+}: { 
+  rawAbilities?: RawAbilities,
+  targetNames?: Map<string, string>,
+  totalValue: number,
+  invertedColors?: boolean,
+  perSecond?: boolean,
+  durationMillis?: number,
+}) {
+  // Compute target breakdown from rawAbilities
+  const targets = useMemo(() => {
+    if (!rawAbilities) return []
+    
+    const byTarget = new Map<string, { totalDamage: number; hitCount: number; critCount: number }>()
+    
+    for (const [targetGuid, abilities] of Object.entries(rawAbilities)) {
+      let totalDamage = 0
+      let hitCount = 0
+      let critCount = 0
+      
+      for (const ability of Object.values(abilities)) {
+        totalDamage += ability.total
+        hitCount += ability.hit_count
+        critCount += ability.crit_count
+      }
+      
+      const existing = byTarget.get(targetGuid)
+      if (existing) {
+        existing.totalDamage += totalDamage
+        existing.hitCount += hitCount
+        existing.critCount += critCount
+      } else {
+        byTarget.set(targetGuid, { totalDamage, hitCount, critCount })
+      }
+    }
+    
+    return Array.from(byTarget.entries())
+      .map(([guid, stats]) => ({
+        targetGuid: guid,
+        targetName: targetNames?.get(guid) || `Unknown (${guid.slice(-8)})`,
+        ...stats,
+      }))
+      .sort((a, b) => b.totalDamage - a.totalDamage)
+  }, [rawAbilities, targetNames])
+
+  if (targets.length === 0) {
+    const emptyClass = invertedColors ? "text-background/60" : "text-muted-foreground"
+    return <p className={cn("text-xs p-2", emptyClass)}>No target breakdown available</p>
+  }
+
+  // Color classes based on inverted mode
+  const textClass = invertedColors ? "text-background" : "text-foreground"
+  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
+  const headerBgClass = invertedColors ? "bg-foreground" : "bg-popover"
+  const borderClass = invertedColors ? "border-background/20" : "border-border"
+  const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
+
+  return (
+    <div className="max-h-64 overflow-y-auto">
+      <table className={cn("w-full text-xs", textClass)}>
+        <thead className={cn("sticky top-0", headerBgClass)}>
+          <tr className={cn("border-b", borderClass)}>
+            <th className="text-left py-1.5 px-2 font-medium">Target</th>
+            <th className="text-right py-1.5 px-2 font-medium">{perSecond ? 'DPS' : 'Damage'}</th>
+            <th className="text-right py-1.5 px-2 font-medium">%</th>
+            <th className="text-right py-1.5 px-2 font-medium">Count</th>
+            <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {targets.map((target) => {
+            const totalHits = target.hitCount + target.critCount
+            const critPercent = totalHits > 0 ? (target.critCount / totalHits) * 100 : 0
+            const displayDamage = perSecond && durationMillis ? (target.totalDamage / durationMillis) * 1000 : target.totalDamage
+            const damagePercent = totalValue > 0 ? (displayDamage / totalValue) * 100 : 0
+            
+            return (
+              <tr key={target.targetGuid} className={cn("border-b", borderClass.replace("20", "10"), hoverClass)}>
+                <td className="py-1 px-2 max-w-[150px] truncate" title={target.targetName}>
+                  {target.targetName}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {displayDamage.toLocaleString()}
+                </td>
+                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
+                  {damagePercent.toFixed(1)}%
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {totalHits}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {critPercent.toFixed(0)}%
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// Tabbed breakdown component - switches between Ability and Target views
+type BreakdownTab = 'ability' | 'target'
+
+function TabbedBreakdownTable({
+  abilities,
+  rawAbilities,
+  targetNames,
+  totalValue,
+  invertedColors = false,
+  perSecond = false,
+  durationMillis,
+}: {
+  abilities: AbilityBreakdown[],
+  rawAbilities?: RawAbilities,
+  targetNames?: Map<string, string>,
+  totalValue: number,
+  invertedColors?: boolean,
+  perSecond?: boolean,
+  durationMillis?: number,
+}) {
+  const [activeTab, setActiveTab] = useState<BreakdownTab>('ability')
+  
+  const tabClass = invertedColors 
+    ? "px-3 py-1.5 text-xs font-medium transition-colors"
+    : "px-3 py-1.5 text-xs font-medium transition-colors"
+  const activeTabClass = invertedColors
+    ? "text-background border-b-2 border-background"
+    : "text-foreground border-b-2 border-foreground"
+  const inactiveTabClass = invertedColors
+    ? "text-background/60 hover:text-background/80"
+    : "text-muted-foreground hover:text-foreground"
+  const borderClass = invertedColors ? "border-background/20" : "border-border"
+
+  return (
+    <div>
+      <div className={cn("flex border-b", borderClass)}>
+        <button
+          className={cn(tabClass, activeTab === 'ability' ? activeTabClass : inactiveTabClass)}
+          onClick={() => setActiveTab('ability')}
+        >
+          By Ability
+        </button>
+        <button
+          className={cn(tabClass, activeTab === 'target' ? activeTabClass : inactiveTabClass)}
+          onClick={() => setActiveTab('target')}
+        >
+          By Target
+        </button>
+      </div>
+      {activeTab === 'ability' ? (
+        <AbilityBreakdownTable
+          abilities={abilities}
+          totalValue={totalValue}
+          invertedColors={invertedColors}
+          perSecond={perSecond}
+          durationMillis={durationMillis}
+        />
+      ) : (
+        <TargetBreakdownTable
+          rawAbilities={rawAbilities}
+          targetNames={targetNames}
+          totalValue={totalValue}
+          invertedColors={invertedColors}
+          perSecond={perSecond}
+          durationMillis={durationMillis}
+        />
+      )}
+    </div>
+  )
+}
+
 // Draggable pinned tooltip component
 interface DraggablePinnedTooltipProps {
   player: PlayerMetricChartData & { color: string }
@@ -257,9 +440,10 @@ interface DraggablePinnedTooltipProps {
   panelTitle?: string
   perSecond?: boolean
   durationMillis?: number
+  targetNames?: Map<string, string>
 }
 
-function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, perSecond, durationMillis }: DraggablePinnedTooltipProps) {
+function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, perSecond, durationMillis, targetNames }: DraggablePinnedTooltipProps) {
   const [position, setPosition] = useState(initialPosition)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null)
@@ -346,8 +530,10 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
           <X className="h-4 w-4" />
         </button>
       </div>
-      <AbilityBreakdownTable 
+      <TabbedBreakdownTable 
         abilities={player.abilityBreakdown ?? []} 
+        rawAbilities={player.rawAbilities}
+        targetNames={targetNames}
         totalValue={player.value}
         invertedColors
         perSecond={perSecond}
@@ -371,6 +557,7 @@ export function PlayerMetricRow({
   panelTitle,
   perSecond,
   durationMillis,
+  targetNames,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   const rowRef = useRef<HTMLDivElement>(null)
@@ -559,8 +746,10 @@ export function PlayerMetricRow({
               </span>
             </div>
           </div>
-          <AbilityBreakdownTable 
+          <TabbedBreakdownTable 
             abilities={player.abilityBreakdown ?? []} 
+            rawAbilities={player.rawAbilities}
+            targetNames={targetNames}
             totalValue={player.value}
             invertedColors
             perSecond={perSecond}
@@ -579,6 +768,7 @@ export function PlayerMetricRow({
         panelTitle={panelTitle}
         perSecond={perSecond}
         durationMillis={durationMillis}
+        targetNames={targetNames}
       />
     )}
   </>

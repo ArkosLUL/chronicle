@@ -42,28 +42,22 @@ function filterAbilities(targetFilter: Set<string>, records: Record<string, Reco
   return { total, filtered: result };
 }
 
-/**
- * Aggregate damage summary records by unit GUID.
- * Returns a map of GUID -> aggregated totals and abilities.
- */
-function aggregateByUnit(targetFilter: Set<string>, records: EncounterDamageSummary[]): Map<string, {
-  damageDoneTotal: number;
+type AggregatedDamageSummary = {
+    damageDoneTotal: number;
   damageTakenTotal: number;
   damageDoneAbilities: RawAbilities;
   damageTakenAbilities: RawAbilities;
   isPlayer: boolean;
   name: string;
   ownerGuid: GUID | null;
-}> {
-  const result = new Map<string, {
-    damageDoneTotal: number;
-    damageTakenTotal: number;
-    damageDoneAbilities: RawAbilities;
-    damageTakenAbilities: RawAbilities;
-    isPlayer: boolean;
-    ownerGuid: GUID | null;
-    name: string;
-  }>();
+}
+
+/**
+ * Aggregate damage summary records by unit GUID.
+ * Returns a map of GUID -> aggregated totals and abilities.
+ */
+function aggregateByUnit(targetFilter: Set<string>, records: EncounterDamageSummary[]): Map<string, AggregatedDamageSummary> {
+  const result = new Map<string, AggregatedDamageSummary>();
 
   for (const record of records) {
     const guid = String(record.unit_guid);
@@ -170,65 +164,50 @@ function terraformGeneral(
 
   const aggregated = aggregateByUnit(targetFilter, data);
   const result: Record<string, PlayerMetricChartData> = {};
+
+  const isPlayerPanel = panelType === 'damage_done' || panelType === 'damage_taken';
+  const isDonePanel = panelType === 'damage_done' || panelType === 'enemy_damage_done';
+  let pets = new Map<string, AggregatedDamageSummary>();
+
+
   for (const [guid, stats] of aggregated) {
-    const player = players[guid];
-    const enemyName = stats.name || enemies.get(guid);
-    switch (panelType) {
-      case 'damage_done':
-        if (!stats.isPlayer) continue;
-        if (!player) continue;
-
-        result[guid] = {
-          playerID: guid,
-          playerName: player.name,
-          className: player.class,
-          specialization: "",
-          value: stats.damageDoneTotal,
-          rawAbilities: stats.damageDoneAbilities,
-          dimmed: selectedPlayerIds.size > 0 && !selectedPlayerIds.has(guid),
-        };
-        break;
-      case 'damage_taken':
-        if (!stats.isPlayer) continue;
-          if (!player) continue;
-
-        result[guid] = {
-          playerID: guid,
-          playerName: player.name,
-          className: player.class,
-          specialization: "",
-          value: stats.damageTakenTotal,
-          rawAbilities: stats.damageTakenAbilities,
-          dimmed: selectedPlayerIds.size > 0 && !selectedPlayerIds.has(guid),
-        };
-        break;
-      case 'enemy_damage_done':
-        if (stats.isPlayer) continue;
-        result[guid] = {
-          playerID: guid,
-          playerName: enemyName || `Enemy ${guid.slice(-8)}`,
-          className: "CREATURE",
-          specialization: "",
-          value: stats.damageDoneTotal,
-          rawAbilities: stats.damageDoneAbilities,
-          dimmed: selectedPlayerIds.size > 0 && !selectedEnemyIds.has(guid),
-        };
-        break;
-      case 'enemy_damage_taken':
-        if (stats.isPlayer) continue;
-        result[guid] = {
-          playerID: guid,
-          playerName: enemyName || `Enemy ${guid.slice(-8)}`,
-          className: "CREATURE",
-          specialization: "",
-          value: stats.damageTakenTotal,
-          rawAbilities: stats.damageTakenAbilities,
-          dimmed: selectedPlayerIds.size > 0 && !selectedEnemyIds.has(guid),
-        };
-        break;
-      default:
-        throw new Error(`Unknown panel type: ${panelType}`);
+    if(stats.ownerGuid != null) {
+      pets.set(guid, stats);
+      continue;
     }
+
+    // Skip mismatched entity types
+    if (isPlayerPanel !== stats.isPlayer) continue;
+
+    const player = players[guid];
+    if (isPlayerPanel && !player) continue;
+
+    const enemyName = stats.name || enemies.get(guid);
+    const selectionSet = isPlayerPanel ? selectedPlayerIds : selectedEnemyIds;
+
+
+    let value = isDonePanel ? stats.damageDoneTotal : stats.damageTakenTotal;
+    const rawAbilities = isDonePanel ? stats.damageDoneAbilities : stats.damageTakenAbilities;
+
+
+    const existing = result[guid] || null;
+    if(existing) {
+      value += existing.value;
+      // Merge abilities
+      if(existing.rawAbilities) {
+        value = mergeAbilities(targetFilter,rawAbilities, existing.rawAbilities)
+      }
+    }
+
+    result[guid] = {
+      playerID: guid,
+      playerName: isPlayerPanel ? player.name : (enemyName || `Enemy ${guid.slice(-8)}`),
+      className: isPlayerPanel ? player.class : "CREATURE",
+      specialization: "",
+      value: value,
+      rawAbilities: rawAbilities,
+      dimmed: selectedPlayerIds.size > 0 && !selectionSet.has(guid),
+    };
   }
   
   return Object.values(result)

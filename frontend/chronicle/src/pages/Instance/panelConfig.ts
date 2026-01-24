@@ -143,8 +143,8 @@ function terraformGeneral(
     case 'damage_done':
     case 'damage_taken':
       data = data.filter(record => {
-        console.log(record.owner_guid, record.owner_guid?.isPlayer)
-        return record.is_player || (record.owner_guid != null && record.owner_guid.isPlayer());
+        // This is jank
+        return record.is_player || (record.owner_guid != null && GUID.fromString(record.owner_guid.toString()).isPlayer());
       });
       break
     case 'enemy_damage_done':
@@ -225,7 +225,16 @@ function terraformGeneral(
         acc = mergeAbility(acc, value);
       }
       return acc;
-    }, {} as Ability);
+    }, {
+      total: 0,
+      hit_count: 0,
+      crit_count: 0,
+      miss_count: 0,
+      dodge_count: 0,
+      immune_count: 0,
+      parry_count: 0,
+      other_count: 0,
+    } as Ability);
     for(const target of Object.keys(abilities)) {
       if (!owner.rawAbilities[target]) {
         owner.rawAbilities[target] = {};
@@ -233,7 +242,6 @@ function terraformGeneral(
 
       owner.rawAbilities[target]["Pet: " + petStats.name] = asOneAbility;
     }
-    console.log(asOneAbility)
     
     result[ownerGuid.toString()] = owner;
   }

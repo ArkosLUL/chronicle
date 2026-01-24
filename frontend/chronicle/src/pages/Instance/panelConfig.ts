@@ -215,7 +215,7 @@ function terraformGeneral(
 
   const isPlayerPanel = panelType === 'damage_done' || panelType === 'damage_taken';
   const isDonePanel = panelType === 'damage_done' || panelType === 'enemy_damage_done';
-  let pets = new Map<string, AggregatedDamageSummary>();
+  const pets = new Map<string, AggregatedDamageSummary>();
 
 
   for (const [guid, stats] of aggregated) {
@@ -249,7 +249,7 @@ function terraformGeneral(
     };
   }
 
-  for (const [petGuid, petStats] of pets) {
+  for (const [, petStats] of pets) {
     const ownerGuid = petStats.ownerGuid;
     if (!ownerGuid) continue;
     
@@ -265,7 +265,7 @@ function terraformGeneral(
 
     owner.value = (owner.value || 0) + value;
     const asOneAbility = Object.values(abilities).reduce((acc, abilityMap) => {
-      for (const [key, value] of Object.entries(abilityMap)) {
+      for (const [, value] of Object.entries(abilityMap)) {
         acc = mergeAbility(acc, value);
       }
       return acc;

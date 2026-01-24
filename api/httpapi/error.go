@@ -68,5 +68,4 @@ func HandleResponseError(ctx context.Context, rw http.ResponseWriter, err error,
 		Message: def.Response.Message,
 		Detail:  def.Response.Detail,
 	})
-	return
 }

@@ -24,14 +24,6 @@ kill_timeout = '2m0s'
   CHRONICLE_HTTP_ADDRESS = '0.0.0.0:8080'
   CHRONICLE_JSON_LOGS = 'true'
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
-
 [[services]]
   protocol = 'tcp'
   internal_port = 6060
@@ -43,7 +35,7 @@ kill_timeout = '2m0s'
 
 [[services]]
   protocol = 'tcp'
-  internal_port = 9090
+  internal_port = 8080
   processes = ['app']
 
   [[services.ports]]
@@ -65,6 +57,10 @@ kill_timeout = '2m0s'
   memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
+
+[profile]
+port = 6060
+path = "/pprof"
 
 [[metrics]]
   port = 9091

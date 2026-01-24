@@ -66,7 +66,9 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 		if err != nil {
 			return nil, fmt.Errorf("parse discord auth callback URL: %s", err)
 		}
-		d := discord.New(opts.Discord.ClientID, opts.Discord.ClientSecret, dcallback.String(), "email")
+		d := discord.New(opts.Discord.ClientID, opts.Discord.ClientSecret, dcallback.String(),
+			"email", "identify",
+		)
 		d.SetName(name)
 		providers[d.Name()] = d
 	}

@@ -21,15 +21,16 @@ import (
 )
 
 type Options struct {
-	Logger     *slog.Logger
-	Storage    storage.ObjectStorage
-	DB         database.Store
-	Registry   *prometheus.Registry
-	AccessURL  *url.URL
-	DevOAuth   bool
-	Discord    chronauth.DiscordOAuth
-	SecretPEM  []byte // Used for JWTs
-	RiverQueue chronicle.RiverQueueOptions
+	Logger          *slog.Logger
+	Storage         storage.ObjectStorage
+	DB              database.Store
+	Registry        *prometheus.Registry
+	AccessURL       *url.URL
+	DevOAuth        bool
+	Discord         chronauth.DiscordOAuth
+	SecretPEM       []byte // Used for JWTs
+	RiverQueue      chronicle.RiverQueueOptions
+	DisallowSignups bool
 }
 
 type API struct {
@@ -52,6 +53,7 @@ func New(ctx context.Context, opts Options) (*API, error) {
 			SecretPEM: opts.SecretPEM,
 			Registry:  opts.Registry,
 		},
+		BlockSignups: opts.DisallowSignups,
 	})
 	if err != nil {
 		return nil, err

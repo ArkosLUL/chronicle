@@ -90,7 +90,6 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 }
 
 func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgxpool.Pool, error) {
-	logger = logger.With("db_url", dbURL)
 	logger.Info("connecting to postgres database")
 
 	cfg, err := PoolConfig(logger, dbURL)

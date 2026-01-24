@@ -1,6 +1,6 @@
 import type { Ability, EncounterDamageSummary, InstancePlayer } from "@/api/typesGenerated";
 import type { PlayerMetricChartData, RawAbilities } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
-import type { GUID } from "@/lib/guid/guid";
+import { GUID } from "@/lib/guid/guid";
 
 export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done' | 'enemy_damage_taken';
 
@@ -103,19 +103,27 @@ function mergeAbilities(targetFilter: Set<string>, target: RawAbilities, source:
     for (const [abilityName, ability] of Object.entries(abilities)) {
       const existing = target[targetGuid][abilityName];
       if (existing) {
-        Object.keys(ability).forEach((key) => {
-          // TODO: Check this
-          // @ts-ignore
-          existing[key] += ability[key];
-          // @ts-ignore
-          total += ability[key].total;
-        });
+        target[targetGuid][abilityName] = mergeAbility(existing, ability);
+        total += ability.total;
       } else {
         target[targetGuid][abilityName] = { ...ability };
       }
     }
   }
   return total
+}
+
+function mergeAbility(target: Ability, source: Ability): Ability {
+  return {
+    total: target.total + source.total,
+    hit_count: target.hit_count + source.hit_count,
+    crit_count: target.crit_count + source.crit_count,
+    miss_count: target.miss_count + source.miss_count,
+    dodge_count: target.dodge_count + source.dodge_count,
+    immune_count: target.immune_count + source.immune_count,
+    parry_count: target.parry_count + source.parry_count,
+    other_count: target.other_count + source.other_count,
+  };
 }
 
 // ============================================================================
@@ -135,7 +143,8 @@ function terraformGeneral(
     case 'damage_done':
     case 'damage_taken':
       data = data.filter(record => {
-        return record.is_player
+        console.log(record.owner_guid, record.owner_guid?.isPlayer)
+        return record.is_player || (record.owner_guid != null && record.owner_guid.isPlayer());
       });
       break
     case 'enemy_damage_done':
@@ -185,29 +194,48 @@ function terraformGeneral(
     const enemyName = stats.name || enemies.get(guid);
     const selectionSet = isPlayerPanel ? selectedPlayerIds : selectedEnemyIds;
 
-
-    let value = isDonePanel ? stats.damageDoneTotal : stats.damageTakenTotal;
-    const rawAbilities = isDonePanel ? stats.damageDoneAbilities : stats.damageTakenAbilities;
-
-
-    const existing = result[guid] || null;
-    if(existing) {
-      value += existing.value;
-      // Merge abilities
-      if(existing.rawAbilities) {
-        value = mergeAbilities(targetFilter,rawAbilities, existing.rawAbilities)
-      }
-    }
-
     result[guid] = {
       playerID: guid,
       playerName: isPlayerPanel ? player.name : (enemyName || `Enemy ${guid.slice(-8)}`),
       className: isPlayerPanel ? player.class : "CREATURE",
       specialization: "",
-      value: value,
-      rawAbilities: rawAbilities,
+      value: isDonePanel ? stats.damageDoneTotal : stats.damageTakenTotal,
+      rawAbilities: isDonePanel ? stats.damageDoneAbilities : stats.damageTakenAbilities,
       dimmed: selectedPlayerIds.size > 0 && !selectionSet.has(guid),
     };
+  }
+
+  for (const [petGuid, petStats] of pets) {
+    const ownerGuid = petStats.ownerGuid;
+    if (!ownerGuid) continue;
+    
+    const owner = result[ownerGuid.toString()];
+    if (!owner) continue;
+
+    const value = isDonePanel ? petStats.damageDoneTotal : petStats.damageTakenTotal;
+    const abilities = isDonePanel ? petStats.damageDoneAbilities : petStats.damageTakenAbilities;
+
+    if (owner.rawAbilities == null) {
+      owner.rawAbilities = {};
+    }
+
+    owner.value = (owner.value || 0) + value;
+    const asOneAbility = Object.values(abilities).reduce((acc, abilityMap) => {
+      for (const [key, value] of Object.entries(abilityMap)) {
+        acc = mergeAbility(acc, value);
+      }
+      return acc;
+    }, {} as Ability);
+    for(const target of Object.keys(abilities)) {
+      if (!owner.rawAbilities[target]) {
+        owner.rawAbilities[target] = {};
+      }
+
+      owner.rawAbilities[target]["Pet: " + petStats.name] = asOneAbility;
+    }
+    console.log(asOneAbility)
+    
+    result[ownerGuid.toString()] = owner;
   }
   
   return Object.values(result)

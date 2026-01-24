@@ -114,9 +114,7 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgx
 		return nil, fmt.Errorf("migrate up: %w", err)
 	}
 
-	// Turn on RLS
-	//ready()
-
+	logger.Info("connected to postgres database")
 	return pool, nil
 }
 

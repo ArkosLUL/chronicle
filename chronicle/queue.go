@@ -54,7 +54,7 @@ func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
 		// Retain all jobs
 		// TODO: Create our own reaper to clean up old jobs after a certain period
 		CompletedJobRetentionPeriod: -1,
-		JobTimeout:                  time.Minute * 10,
+		JobTimeout:                  time.Minute * 20,
 	})
 	if err != nil {
 		return fmt.Errorf("new river client: %w", err)

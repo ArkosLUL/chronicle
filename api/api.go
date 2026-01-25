@@ -100,8 +100,8 @@ func (api *API) Routes() chi.Router {
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {
-				r.Use(api.Auth.Authenticated(false))
 				r.Route("/logs", func(r chi.Router) {
+					r.Use(api.Auth.Authenticated(false))
 					r.Post("/upload", api.WoWLogUpload)
 					r.Get("/", api.WoWLogGroups)
 					r.Route("/{logID}", func(r chi.Router) {

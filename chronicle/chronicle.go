@@ -87,7 +87,7 @@ func (c *Chronicle) logPath(fileID uuid.UUID) string {
 
 func (c *Chronicle) initStorage() error {
 	const raidLogLimit = "100mb"
-	raidLogMimes := []string{"text/plain"}
+	raidLogMimes := []string{"text/plain", "text/plain;charset=UTF-8"}
 	_, err := c.Storage.CreateBucket(BucketRaidLogs, storage.BucketOptions{
 		Public:           false,
 		FileSizeLimit:    raidLogLimit,
@@ -196,7 +196,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 				Hash:      hashes[i],
 				WowLogID:  group.ID,
 				SizeBytes: info.Size(),
-				MimeType:  "text/plain", // logs are only plaintext
+				MimeType:  "text/plain;charset=UTF-8", // logs are only plaintext
 				CreatedAt: database.Timestamptz(now),
 				UpdatedAt: database.Timestamptz(now),
 			})

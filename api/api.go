@@ -92,11 +92,15 @@ func (api *API) Routes() chi.Router {
 		//authMW.Trace,
 		)
 
-		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
 		r.Group(func(r chi.Router) {
 			r.Use(api.Auth.Authenticated(false))
 			r.Get("/whoami", api.WhoAmI)
+		})
+
+		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
+		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {
+				r.Use(api.Auth.Authenticated(false))
 				r.Route("/logs", func(r chi.Router) {
 					r.Post("/upload", api.WoWLogUpload)
 					r.Get("/", api.WoWLogGroups)
@@ -107,15 +111,15 @@ func (api *API) Routes() chi.Router {
 						r.Delete("/", api.WoWLogDeleteGroup)
 					})
 				})
-			})
-		})
 
-		r.Group(func(r chi.Router) {
-			r.Route("/instances", func(r chi.Router) {
-				r.Route("/{instance_id}", func(r chi.Router) {
-					r.Use(httpmw.InstanceIDMiddleware)
-					r.Get("/", api.Instance)
-					r.Get("/damage-summary", api.InstanceDamageSummaries)
+				r.Group(func(r chi.Router) {
+					r.Route("/instances", func(r chi.Router) {
+						r.Route("/{instance_id}", func(r chi.Router) {
+							r.Use(httpmw.InstanceIDMiddleware)
+							r.Get("/", api.Instance)
+							r.Get("/damage-summary", api.InstanceDamageSummaries)
+						})
+					})
 				})
 			})
 		})

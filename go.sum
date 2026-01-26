@@ -162,10 +162,6 @@ github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb2
 github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589/go.mod h1:OuDyvmLnMCwa2ep4Jkm6nyA0ocJuZlGyk2gGseVzERM=
 github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb h1:EDmT6Q9Zs+SbUoc7Ik9EfrFqcylYqgPZ9ANSbTAntnE=
 github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb/go.mod h1:ZjrT6AXHbDs86ZSdt/osfBi5qfexBrKUdONk989Wnk4=
-github.com/coder/guts v1.6.2 h1:+47rdBU5F+LaYPrPqcsAtH8tzY70lc7ZRGMYx68Ehww=
-github.com/coder/guts v1.6.2/go.mod h1:4lculh6lY6/yNn4wDPmD2VvNkOW74d0mLFGxj9rEuXw=
-github.com/coder/guts v1.6.3-0.20260119001608-85e588a5c6e2 h1:qmtaB/QIDbDHQysTR1lrthbdFWYy5ZllCnMhLPb5K1k=
-github.com/coder/guts v1.6.3-0.20260119001608-85e588a5c6e2/go.mod h1:4lculh6lY6/yNn4wDPmD2VvNkOW74d0mLFGxj9rEuXw=
 github.com/coder/guts v1.6.3-0.20260119194949-fc5c1a15676f h1:iHgLh6SjTELXqTohtgxIzlW8fIR06pvwtCCFPL6xS+Q=
 github.com/coder/guts v1.6.3-0.20260119194949-fc5c1a15676f/go.mod h1:4lculh6lY6/yNn4wDPmD2VvNkOW74d0mLFGxj9rEuXw=
 github.com/coder/pq v1.10.5-0.20250807075151-6ad9b0a25151 h1:YAxwg3lraGNRwoQ18H7R7n+wsCqNve7Brdvj0F1rDnU=

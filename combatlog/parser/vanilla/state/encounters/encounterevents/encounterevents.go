@@ -6,46 +6,37 @@ import (
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-  "github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database"
 )
 
 type EncounterEventsInProgress EncounterEvents
 
 type EncounterEvents struct {
-	Damage chronicleproto.DamageReport
+	Damage *Builder[messages.Damage, *chronicleproto.Damage]
 	cnter  int32
+
+	firsts map[string]time.Time
 }
 
 func New() *EncounterEventsInProgress {
 	return &EncounterEventsInProgress{
-		Damage: chronicleproto.DamageReport{
-			Damages: make([]*chronicleproto.Damage, 0),
-		},
+		Damage: NewBuilder[messages.Damage, *chronicleproto.Damage](),
 	}
-}
-
-func (e *EncounterEvents) Marshal() ([]byte, error) {
-
-	return nil, nil
 }
 
 func (e *EncounterEvents) InsertParams() ([]database.InsertLogEncounterEventsParams, error) {
-  params := make([]database.InsertLogEncounterEventsParams, 1)
-  return params, nil
+	params := make([]database.InsertLogEncounterEventsParams, 1)
+	return params, nil
 }
 
 func (e *EncounterEventsInProgress) Finalize(start time.Time) (*EncounterEvents, error) {
-	for i := range e.Damage.Damages {
-		e.Damage.Damages[i].Meta.OffsetMilli = e.Damage.Damages[i].Meta.OffsetMilli - start.UnixMilli()
-	}
-
 	return (*EncounterEvents)(e), nil
 }
 
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 	switch ty := m.(type) {
 	case messages.Damage:
-		e.Damage.Damages = append(e.Damage.Damages, types2proto.Damage(e.nextIndex(), ty))
+		AddToBuilder(e.Damage, ty, e.nextIndex(), types2proto.Damage)
 	}
 	return nil
 }

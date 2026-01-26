@@ -1,6 +1,8 @@
 package types2proto
 
 import (
+	"time"
+
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
@@ -8,11 +10,11 @@ import (
 	"github.com/Emyrk/chronicle/internal/slice"
 )
 
-func Damage(idx int32, dmg messages.Damage) *chronicleproto.Damage {
+func Damage(from time.Time, idx int32, dmg messages.Damage) *chronicleproto.Damage {
 	return &chronicleproto.Damage{
 		Meta: &chronicleproto.EventMeta{
 			Index:       idx,
-			OffsetMilli: dmg.Timestamp.UnixMilli(),
+			OffsetMilli: dmg.Timestamp.UnixMilli() - from.UnixMilli(),
 		},
 		Caster:     OptionalGUID(dmg.Caster),
 		SourceName: dmg.SourceName(),

@@ -189,3 +189,57 @@ func (b *InsertInstanceUnitsBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }
+
+const insertLogEncounterEvents = `-- name: InsertLogEncounterEvents :batchexec
+INSERT INTO
+  log_instance_messages(instance_id, type, messages)
+VALUES
+  ($1, $2, $3)
+`
+
+type InsertLogEncounterEventsBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InsertLogEncounterEventsParams struct {
+	InstanceID uuid.UUID              `db:"instance_id" json:"instance_id"`
+	Type       LogInstanceMessageType `db:"type" json:"type"`
+	Messages   []byte                 `db:"messages" json:"messages"`
+}
+
+func (q *sqlQuerier) InsertLogEncounterEvents(ctx context.Context, arg []InsertLogEncounterEventsParams) *InsertLogEncounterEventsBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.InstanceID,
+			a.Type,
+			a.Messages,
+		}
+		batch.Queue(insertLogEncounterEvents, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InsertLogEncounterEventsBatchResults{br, len(arg), false}
+}
+
+func (b *InsertLogEncounterEventsBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InsertLogEncounterEventsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}

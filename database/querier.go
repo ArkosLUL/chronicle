@@ -28,6 +28,7 @@ type sqlcQuerier interface {
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
 	InsertInstancePlayers(ctx context.Context, arg []InsertInstancePlayersParams) *InsertInstancePlayersBatchResults
 	InsertInstanceUnits(ctx context.Context, arg []InsertInstanceUnitsParams) *InsertInstanceUnitsBatchResults
+	InsertLogEncounterEvents(ctx context.Context, arg []InsertLogEncounterEventsParams) *InsertLogEncounterEventsBatchResults
 	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)

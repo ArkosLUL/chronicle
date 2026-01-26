@@ -42,11 +42,11 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 	done
 
 
-	cp genqueries/batch.go .
 
 	# Move the files we want.
 	mv genqueries/querier.go .
 	mv genqueries/models.go .
+	mv genqueries/batch.go .
 
 	# Remove temporary go files.
 	rm -f genqueries/*.go

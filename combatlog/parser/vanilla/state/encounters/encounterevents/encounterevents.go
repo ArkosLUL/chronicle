@@ -6,6 +6,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+  "github.com/Emyrk/chronicle/database"
 )
 
 type EncounterEventsInProgress EncounterEvents
@@ -26,6 +27,11 @@ func New() *EncounterEventsInProgress {
 func (e *EncounterEvents) Marshal() ([]byte, error) {
 
 	return nil, nil
+}
+
+func (e *EncounterEvents) InsertParams() ([]database.InsertLogEncounterEventsParams, error) {
+  params := make([]database.InsertLogEncounterEventsParams, 1)
+  return params, nil
 }
 
 func (e *EncounterEventsInProgress) Finalize(start time.Time) (*EncounterEvents, error) {

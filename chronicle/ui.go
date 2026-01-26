@@ -11,8 +11,8 @@ import (
 	"riverqueue.com/riverui"
 )
 
-func (c *Chronicle) Handler() http.Handler {
-	return c.handler
+func (c *Chronicle) RiverUI() http.Handler {
+	return c.riverUI
 }
 
 func (c *Chronicle) webUI(ctx context.Context) (http.Handler, error) {

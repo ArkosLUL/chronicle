@@ -5,6 +5,15 @@ plugins:
     out: .
     opt:
       - paths=source_relative
+  - local: protoc-gen-connect-go
+    out: .
+    opt:
+      - paths=source_relative
+      - simple
   # TypeScript generation
-  - remote: buf.build/bufbuild/es
+#  - remote: buf.build/bufbuild/es
+#    out: ../../frontend/chronicle/src/api/proto
+  - remote: buf.build/bufbuild/es:v2.2.0
     out: ../../frontend/chronicle/src/api/proto
+    include_imports: true
+    opt: target=ts

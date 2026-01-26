@@ -85,28 +85,27 @@ func (School) EnumDescriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{0}
 }
 
-// Hello world placeholder message
-type HelloWorld struct {
+type InstanceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HelloWorld) Reset() {
-	*x = HelloWorld{}
+func (x *InstanceRequest) Reset() {
+	*x = InstanceRequest{}
 	mi := &file_chronicle_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HelloWorld) String() string {
+func (x *InstanceRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HelloWorld) ProtoMessage() {}
+func (*InstanceRequest) ProtoMessage() {}
 
-func (x *HelloWorld) ProtoReflect() protoreflect.Message {
+func (x *InstanceRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_chronicle_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -118,14 +117,14 @@ func (x *HelloWorld) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HelloWorld.ProtoReflect.Descriptor instead.
-func (*HelloWorld) Descriptor() ([]byte, []int) {
+// Deprecated: Use InstanceRequest.ProtoReflect.Descriptor instead.
+func (*InstanceRequest) Descriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HelloWorld) GetMessage() string {
+func (x *InstanceRequest) GetInstanceId() string {
 	if x != nil {
-		return x.Message
+		return x.InstanceId
 	}
 	return ""
 }
@@ -331,10 +330,11 @@ var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
 	"\n" +
-	"\x0fchronicle.proto\x12\x0echronicleproto\"&\n" +
+	"\x0fchronicle.proto\x12\x0echronicleproto\"1\n" +
+	"\x0fInstanceRequest\x12\x1e\n" +
 	"\n" +
-	"HelloWorld\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"J\n" +
+	"instanceId\x18\x01 \x01(\tR\n" +
+	"instanceId\"J\n" +
 	"\x06Tailer\x12\x1b\n" +
 	"\x06amount\x18\x01 \x01(\rH\x00R\x06amount\x88\x01\x01\x12\x18\n" +
 	"\ahitType\x18\x02 \x01(\rR\ahitTypeB\t\n" +
@@ -364,7 +364,9 @@ const file_chronicle_proto_rawDesc = "" +
 	"\n" +
 	"\x06Shadow\x10\x06\x12\n" +
 	"\n" +
-	"\x06Arcane\x10\aB/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
+	"\x06Arcane\x10\a2]\n" +
+	"\x10ChronicleService\x12I\n" +
+	"\x06Damage\x12\x1f.chronicleproto.InstanceRequest\x1a\x1c.chronicleproto.DamageReport\"\x00B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
 
 var (
 	file_chronicle_proto_rawDescOnce sync.Once
@@ -381,18 +383,20 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_chronicle_proto_goTypes = []any{
-	(School)(0),          // 0: chronicleproto.School
-	(*HelloWorld)(nil),   // 1: chronicleproto.HelloWorld
-	(*Tailer)(nil),       // 2: chronicleproto.Tailer
-	(*DamageReport)(nil), // 3: chronicleproto.DamageReport
-	(*Damage)(nil),       // 4: chronicleproto.Damage
+	(School)(0),             // 0: chronicleproto.School
+	(*InstanceRequest)(nil), // 1: chronicleproto.InstanceRequest
+	(*Tailer)(nil),          // 2: chronicleproto.Tailer
+	(*DamageReport)(nil),    // 3: chronicleproto.DamageReport
+	(*Damage)(nil),          // 4: chronicleproto.Damage
 }
 var file_chronicle_proto_depIdxs = []int32{
 	4, // 0: chronicleproto.DamageReport.damages:type_name -> chronicleproto.Damage
 	0, // 1: chronicleproto.Damage.school:type_name -> chronicleproto.School
 	2, // 2: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
+	1, // 3: chronicleproto.ChronicleService.Damage:input_type -> chronicleproto.InstanceRequest
+	3, // 4: chronicleproto.ChronicleService.Damage:output_type -> chronicleproto.DamageReport
+	4, // [4:5] is the sub-list for method output_type
+	3, // [3:4] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -413,7 +417,7 @@ func file_chronicle_proto_init() {
 			NumEnums:      1,
 			NumMessages:   4,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_chronicle_proto_goTypes,
 		DependencyIndexes: file_chronicle_proto_depIdxs,

@@ -4,9 +4,13 @@ package chronicleproto;
 
 option go_package = "github.com/Emyrk/chronicle/api/chronicleproto";
 
-// Hello world placeholder message
-message HelloWorld {
-  string message = 1;
+
+message InstanceRequest {
+  string instanceId = 1;
+  // [(buf.validate.field).string = {
+  //    min_len: 37,
+  //    max_len: 37,
+  //  }]
 }
 
 enum School {
@@ -39,4 +43,8 @@ message Damage {
   int32 amount = 6;
   School school = 7;
   repeated Tailer tailers = 8;
+}
+
+service ChronicleService {
+  rpc Damage(InstanceRequest) returns (DamageReport) {};
 }

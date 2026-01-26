@@ -41,7 +41,7 @@ type Chronicle struct {
 
 	queue   *river.Client[pgx.Tx]
 	mu      sync.Mutex
-	handler http.Handler
+	riverUI http.Handler
 }
 
 type Options struct {
@@ -71,11 +71,11 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		return nil, fmt.Errorf("start queues: %w", err)
 	}
 
-	handler, err := c.webUI(ctx)
+	riverUI, err := c.webUI(ctx)
 	if err != nil {
 		return nil, err
 	}
-	c.handler = handler
+	c.riverUI = riverUI
 
 	_ = c.clearTemporaryFiles()
 	return c, nil

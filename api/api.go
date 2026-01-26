@@ -87,6 +87,11 @@ func (api *API) Routes() chi.Router {
 		httpmw.PrometheusMW(api.Opts.Registry),
 	)
 
+	r.Route("/grpc/v1", func(r chi.Router) {
+		// Handles all gRPC requests
+		r.Mount(api.Chronicle.ChronicleGRPCHandler())
+	})
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(
 		//authMW.Trace,
@@ -131,7 +136,7 @@ func (api *API) Routes() chi.Router {
 	// River UI
 	r.Group(func(r chi.Router) {
 		r.Use(api.Auth.Authenticated(false))
-		r.Mount("/river", api.Chronicle.Handler())
+		r.Mount("/river", api.Chronicle.RiverUI())
 	})
 
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)

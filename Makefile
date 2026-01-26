@@ -11,21 +11,12 @@ install:
 	go install ./cmd/chronicle
 	go install ./cmd/chronicled
 
-.PHONY: wasm
-wasm:
-	GOOS=js GOARCH=wasm go build -tags wasm -o ./site/parser.wasm ./cmd/wasm/
-
-.PHONY: serve
-serve: wasm
-	@echo "Starting development server at http://localhost:8080"
-	@cd site && python3 -m http.server 8080
-
 database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/queries/*.sql)
 	./database/generate.sh
 
 .PHONY: test
 test:
-	gotestsum --format testname -- -race $$(go list ./... | grep -v cmd/wasm)
+	gotestsum --format testname -- -race $$(go list ./...)
 
 .PHONY: lint
 lint:
@@ -114,5 +105,5 @@ gen/proto:
 .PHONY: gen/proto
 
 .PHONY: gen
-gen: gen/db gen/proto wasm database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
+gen: gen/db gen/proto database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
 	go generate ./...

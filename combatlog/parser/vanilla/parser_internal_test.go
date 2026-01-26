@@ -475,7 +475,7 @@ func TestParserMessages(t *testing.T) {
 			Target:          0x00000000000D8985,
 			HitType:         types.HitTypeEnvironment,
 			Amount:          344,
-			School:          types.None,
+			School:          types.NoneSchool,
 			EnvironmentType: ptr.Ref(types.EnvironmentTypeLava),
 			Trailer: types.Trailer{
 				{

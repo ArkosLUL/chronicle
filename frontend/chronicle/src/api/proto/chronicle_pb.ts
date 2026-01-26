@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIiUKD0luc3RhbmNlUmVxdWVzdBISCgppbnN0YW5jZUlkGAEgASgJIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiNwoMRGFtYWdlUmVwb3J0EicKB2RhbWFnZXMYASADKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2Ui5QEKBkRhbWFnZRITCgtvZmZzZXRNaWxsaRgBIAEoBRITCgZjYXN0ZXIYAiABKAlIAIgBARIWCglzcGVsbE5hbWUYAyABKAlIAYgBARIOCgZ0YXJnZXQYBCABKAkSDwoHaGl0VHlwZRgFIAEoDRIOCgZhbW91bnQYBiABKAUSJgoGc2Nob29sGAcgASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCCADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlckIMCgpfc3BlbGxOYW1lKmMKBlNjaG9vbBIICgROb25lEAASDAoIUGh5c2ljYWwQARIICgRIb2x5EAISCAoERmlyZRADEgoKBk5hdHVyZRAEEgkKBUZyb3N0EAUSCgoGU2hhZG93EAYSCgoGQXJjYW5lEAcyXQoQQ2hyb25pY2xlU2VydmljZRJJCgZEYW1hZ2USHy5jaHJvbmljbGVwcm90by5JbnN0YW5jZVJlcXVlc3QaHC5jaHJvbmljbGVwcm90by5EYW1hZ2VSZXBvcnQiAEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIiUKD0luc3RhbmNlUmVxdWVzdBISCgppbnN0YW5jZUlkGAEgASgJIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIi8KBEhlYWwSJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YSLnAQoGRGFtYWdlEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESEwoGY2FzdGVyGAMgASgJSACIAQESEgoKc291cmNlTmFtZRgEIAEoCRIOCgZ0YXJnZXQYBSABKAkSDwoHaGl0VHlwZRgGIAEoDRIOCgZhbW91bnQYByABKAUSJgoGc2Nob29sGAggASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCSADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlciI3CgxEYW1hZ2VSZXBvcnQSJwoHZGFtYWdlcxgBIAMoCzIWLmNocm9uaWNsZXByb3RvLkRhbWFnZSpwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCDJdChBDaHJvbmljbGVTZXJ2aWNlEkkKBkRhbWFnZRIfLmNocm9uaWNsZXByb3RvLkluc3RhbmNlUmVxdWVzdBocLmNocm9uaWNsZXByb3RvLkRhbWFnZVJlcG9ydCIAQi9aLWdpdGh1Yi5jb20vRW15cmsvY2hyb25pY2xlL2FwaS9jaHJvbmljbGVwcm90b2IGcHJvdG8z");
 
 /**
  * @generated from message chronicleproto.InstanceRequest
@@ -57,6 +57,99 @@ export const TailerSchema: GenMessage<Tailer> = /*@__PURE__*/
   messageDesc(file_chronicle, 1);
 
 /**
+ * @generated from message chronicleproto.EventMeta
+ */
+export type EventMeta = Message<"chronicleproto.EventMeta"> & {
+  /**
+   * @generated from field: int32 index = 1;
+   */
+  index: number;
+
+  /**
+   * @generated from field: int64 offsetMilli = 2;
+   */
+  offsetMilli: bigint;
+};
+
+/**
+ * Describes the message chronicleproto.EventMeta.
+ * Use `create(EventMetaSchema)` to create a new message.
+ */
+export const EventMetaSchema: GenMessage<EventMeta> = /*@__PURE__*/
+  messageDesc(file_chronicle, 2);
+
+/**
+ * @generated from message chronicleproto.Heal
+ */
+export type Heal = Message<"chronicleproto.Heal"> & {
+  /**
+   * @generated from field: chronicleproto.EventMeta meta = 1;
+   */
+  meta?: EventMeta;
+};
+
+/**
+ * Describes the message chronicleproto.Heal.
+ * Use `create(HealSchema)` to create a new message.
+ */
+export const HealSchema: GenMessage<Heal> = /*@__PURE__*/
+  messageDesc(file_chronicle, 3);
+
+/**
+ * @generated from message chronicleproto.Damage
+ */
+export type Damage = Message<"chronicleproto.Damage"> & {
+  /**
+   * @generated from field: chronicleproto.EventMeta meta = 1;
+   */
+  meta?: EventMeta;
+
+  /**
+   * @generated from field: optional string caster = 3;
+   */
+  caster?: string;
+
+  /**
+   * sourceName is the spell or ability name (or environmental source)
+   *
+   * @generated from field: string sourceName = 4;
+   */
+  sourceName: string;
+
+  /**
+   * @generated from field: string target = 5;
+   */
+  target: string;
+
+  /**
+   * @generated from field: uint32 hitType = 6;
+   */
+  hitType: number;
+
+  /**
+   * @generated from field: int32 amount = 7;
+   */
+  amount: number;
+
+  /**
+   * @generated from field: chronicleproto.School school = 8;
+   */
+  school: School;
+
+  /**
+   * @generated from field: repeated chronicleproto.Tailer tailers = 9;
+   */
+  tailers: Tailer[];
+};
+
+/**
+ * Describes the message chronicleproto.Damage.
+ * Use `create(DamageSchema)` to create a new message.
+ */
+export const DamageSchema: GenMessage<Damage> = /*@__PURE__*/
+  messageDesc(file_chronicle, 4);
+
+/**
  * @generated from message chronicleproto.DamageReport
  */
 export type DamageReport = Message<"chronicleproto.DamageReport"> & {
@@ -71,105 +164,56 @@ export type DamageReport = Message<"chronicleproto.DamageReport"> & {
  * Use `create(DamageReportSchema)` to create a new message.
  */
 export const DamageReportSchema: GenMessage<DamageReport> = /*@__PURE__*/
-  messageDesc(file_chronicle, 2);
-
-/**
- * @generated from message chronicleproto.Damage
- */
-export type Damage = Message<"chronicleproto.Damage"> & {
-  /**
-   * Offset from the last message
-   *
-   * @generated from field: int32 offsetMilli = 1;
-   */
-  offsetMilli: number;
-
-  /**
-   * @generated from field: optional string caster = 2;
-   */
-  caster?: string;
-
-  /**
-   * @generated from field: optional string spellName = 3;
-   */
-  spellName?: string;
-
-  /**
-   * @generated from field: string target = 4;
-   */
-  target: string;
-
-  /**
-   * @generated from field: uint32 hitType = 5;
-   */
-  hitType: number;
-
-  /**
-   * @generated from field: int32 amount = 6;
-   */
-  amount: number;
-
-  /**
-   * @generated from field: chronicleproto.School school = 7;
-   */
-  school: School;
-
-  /**
-   * @generated from field: repeated chronicleproto.Tailer tailers = 8;
-   */
-  tailers: Tailer[];
-};
-
-/**
- * Describes the message chronicleproto.Damage.
- * Use `create(DamageSchema)` to create a new message.
- */
-export const DamageSchema: GenMessage<Damage> = /*@__PURE__*/
-  messageDesc(file_chronicle, 3);
+  messageDesc(file_chronicle, 5);
 
 /**
  * @generated from enum chronicleproto.School
  */
 export enum School {
   /**
-   * @generated from enum value: None = 0;
+   * @generated from enum value: Unknown = 0;
    */
-  None = 0,
+  Unknown = 0,
 
   /**
-   * @generated from enum value: Physical = 1;
+   * @generated from enum value: None = 1;
    */
-  Physical = 1,
+  None = 1,
 
   /**
-   * @generated from enum value: Holy = 2;
+   * @generated from enum value: Physical = 2;
    */
-  Holy = 2,
+  Physical = 2,
 
   /**
-   * @generated from enum value: Fire = 3;
+   * @generated from enum value: Holy = 3;
    */
-  Fire = 3,
+  Holy = 3,
 
   /**
-   * @generated from enum value: Nature = 4;
+   * @generated from enum value: Fire = 4;
    */
-  Nature = 4,
+  Fire = 4,
 
   /**
-   * @generated from enum value: Frost = 5;
+   * @generated from enum value: Nature = 5;
    */
-  Frost = 5,
+  Nature = 5,
 
   /**
-   * @generated from enum value: Shadow = 6;
+   * @generated from enum value: Frost = 6;
    */
-  Shadow = 6,
+  Frost = 6,
 
   /**
-   * @generated from enum value: Arcane = 7;
+   * @generated from enum value: Shadow = 7;
    */
-  Arcane = 7,
+  Shadow = 7,
+
+  /**
+   * @generated from enum value: Arcane = 8;
+   */
+  Arcane = 8,
 }
 
 /**

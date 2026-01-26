@@ -4,7 +4,6 @@ package chronicleproto;
 
 option go_package = "github.com/Emyrk/chronicle/api/chronicleproto";
 
-
 message InstanceRequest {
   string instanceId = 1;
   // [(buf.validate.field).string = {
@@ -14,14 +13,15 @@ message InstanceRequest {
 }
 
 enum School {
-  None = 0;
-  Physical = 1;
-  Holy = 2;
-  Fire = 3;
-  Nature = 4;
-  Frost = 5;
-  Shadow = 6;
-  Arcane = 7;
+  Unknown = 0;
+  None = 1;
+  Physical = 2;
+  Holy = 3;
+  Fire = 4;
+  Nature = 5;
+  Frost = 6;
+  Shadow = 7;
+  Arcane = 8;
 }
 
 message Tailer {
@@ -29,20 +29,30 @@ message Tailer {
   uint32 hitType = 2;
 }
 
-message DamageReport {
-  repeated Damage damages = 1;
+message EventMeta {
+  int32 index = 1;
+  int64 offsetMilli = 2;
+}
+
+message Heal {
+  EventMeta meta = 1;
 }
 
 message Damage {
-  // Offset from the last message
-  int32 offsetMilli = 1;
-  optional string caster = 2;
-  optional string spellName = 3;
-  string target = 4;
-  uint32 hitType = 5;
-  int32 amount = 6;
-  School school = 7;
-  repeated Tailer tailers = 8;
+  EventMeta meta = 1;
+
+  optional string caster = 3;
+  // sourceName is the spell or ability name (or environmental source)
+  string sourceName = 4;
+  string target = 5;
+  uint32 hitType = 6;
+  int32 amount = 7;
+  School school = 8;
+  repeated Tailer tailers = 9;
+}
+
+message DamageReport {
+  repeated Damage damages = 1;
 }
 
 service ChronicleService {

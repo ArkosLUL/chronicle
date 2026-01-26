@@ -8,12 +8,14 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 type OngoingFight struct {
 	ActiveHostiles map[guid.GUID]struct{}
+	Events         *encounterevents.EncounterEventsInProgress
 
 	Start *period.Moment
 	End   *period.Moment
@@ -67,6 +69,7 @@ type Fight struct {
 	// Each CharacterFight contains all activity periods from that character
 	// that belong to this fight.
 	Hostiles map[guid.GUID]CharacterFight
+	Events   *encounterevents.EncounterEvents
 
 	// Start is the earliest start time across all hostile activity periods.
 	Start time.Time

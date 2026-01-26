@@ -104,7 +104,7 @@ func ParseHitOrCritShort(s string) (HitType, error) {
 type School uint16
 
 const (
-	None           School = 0x00
+	NoneSchool     School = 0x00
 	PhysicalSchool School = 0x01
 	HolySchool     School = 0x02
 	FireSchool     School = 0x04
@@ -131,7 +131,7 @@ func ParseSchool(s string) (School, error) {
 	case "arcane":
 		return ArcaneSchool, nil
 	default:
-		return None, errors.New("invalid school")
+		return NoneSchool, errors.New("invalid school")
 	}
 }
 

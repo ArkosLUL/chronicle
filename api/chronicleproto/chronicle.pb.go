@@ -24,37 +24,40 @@ const (
 type School int32
 
 const (
-	School_None     School = 0
-	School_Physical School = 1
-	School_Holy     School = 2
-	School_Fire     School = 3
-	School_Nature   School = 4
-	School_Frost    School = 5
-	School_Shadow   School = 6
-	School_Arcane   School = 7
+	School_Unknown  School = 0
+	School_None     School = 1
+	School_Physical School = 2
+	School_Holy     School = 3
+	School_Fire     School = 4
+	School_Nature   School = 5
+	School_Frost    School = 6
+	School_Shadow   School = 7
+	School_Arcane   School = 8
 )
 
 // Enum value maps for School.
 var (
 	School_name = map[int32]string{
-		0: "None",
-		1: "Physical",
-		2: "Holy",
-		3: "Fire",
-		4: "Nature",
-		5: "Frost",
-		6: "Shadow",
-		7: "Arcane",
+		0: "Unknown",
+		1: "None",
+		2: "Physical",
+		3: "Holy",
+		4: "Fire",
+		5: "Nature",
+		6: "Frost",
+		7: "Shadow",
+		8: "Arcane",
 	}
 	School_value = map[string]int32{
-		"None":     0,
-		"Physical": 1,
-		"Holy":     2,
-		"Fire":     3,
-		"Nature":   4,
-		"Frost":    5,
-		"Shadow":   6,
-		"Arcane":   7,
+		"Unknown":  0,
+		"None":     1,
+		"Physical": 2,
+		"Holy":     3,
+		"Fire":     4,
+		"Nature":   5,
+		"Frost":    6,
+		"Shadow":   7,
+		"Arcane":   8,
 	}
 )
 
@@ -181,27 +184,28 @@ func (x *Tailer) GetHitType() uint32 {
 	return 0
 }
 
-type DamageReport struct {
+type EventMeta struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Damages       []*Damage              `protobuf:"bytes,1,rep,name=damages,proto3" json:"damages,omitempty"`
+	Index         int32                  `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	OffsetMilli   int64                  `protobuf:"varint,2,opt,name=offsetMilli,proto3" json:"offsetMilli,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DamageReport) Reset() {
-	*x = DamageReport{}
+func (x *EventMeta) Reset() {
+	*x = EventMeta{}
 	mi := &file_chronicle_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DamageReport) String() string {
+func (x *EventMeta) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DamageReport) ProtoMessage() {}
+func (*EventMeta) ProtoMessage() {}
 
-func (x *DamageReport) ProtoReflect() protoreflect.Message {
+func (x *EventMeta) ProtoReflect() protoreflect.Message {
 	mi := &file_chronicle_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -213,36 +217,87 @@ func (x *DamageReport) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DamageReport.ProtoReflect.Descriptor instead.
-func (*DamageReport) Descriptor() ([]byte, []int) {
+// Deprecated: Use EventMeta.ProtoReflect.Descriptor instead.
+func (*EventMeta) Descriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *DamageReport) GetDamages() []*Damage {
+func (x *EventMeta) GetIndex() int32 {
 	if x != nil {
-		return x.Damages
+		return x.Index
+	}
+	return 0
+}
+
+func (x *EventMeta) GetOffsetMilli() int64 {
+	if x != nil {
+		return x.OffsetMilli
+	}
+	return 0
+}
+
+type Heal struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Heal) Reset() {
+	*x = Heal{}
+	mi := &file_chronicle_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Heal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Heal) ProtoMessage() {}
+
+func (x *Heal) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Heal.ProtoReflect.Descriptor instead.
+func (*Heal) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Heal) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
 	}
 	return nil
 }
 
 type Damage struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Offset from the last message
-	OffsetMilli   int32     `protobuf:"varint,1,opt,name=offsetMilli,proto3" json:"offsetMilli,omitempty"`
-	Caster        *string   `protobuf:"bytes,2,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
-	SpellName     *string   `protobuf:"bytes,3,opt,name=spellName,proto3,oneof" json:"spellName,omitempty"`
-	Target        string    `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
-	HitType       uint32    `protobuf:"varint,5,opt,name=hitType,proto3" json:"hitType,omitempty"`
-	Amount        int32     `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
-	School        School    `protobuf:"varint,7,opt,name=school,proto3,enum=chronicleproto.School" json:"school,omitempty"`
-	Tailers       []*Tailer `protobuf:"bytes,8,rep,name=tailers,proto3" json:"tailers,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Meta   *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Caster *string                `protobuf:"bytes,3,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
+	// sourceName is the spell or ability name (or environmental source)
+	SourceName    string    `protobuf:"bytes,4,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
+	Target        string    `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
+	HitType       uint32    `protobuf:"varint,6,opt,name=hitType,proto3" json:"hitType,omitempty"`
+	Amount        int32     `protobuf:"varint,7,opt,name=amount,proto3" json:"amount,omitempty"`
+	School        School    `protobuf:"varint,8,opt,name=school,proto3,enum=chronicleproto.School" json:"school,omitempty"`
+	Tailers       []*Tailer `protobuf:"bytes,9,rep,name=tailers,proto3" json:"tailers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Damage) Reset() {
 	*x = Damage{}
-	mi := &file_chronicle_proto_msgTypes[3]
+	mi := &file_chronicle_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -254,7 +309,7 @@ func (x *Damage) String() string {
 func (*Damage) ProtoMessage() {}
 
 func (x *Damage) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[3]
+	mi := &file_chronicle_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -267,14 +322,14 @@ func (x *Damage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Damage.ProtoReflect.Descriptor instead.
 func (*Damage) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{3}
+	return file_chronicle_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Damage) GetOffsetMilli() int32 {
+func (x *Damage) GetMeta() *EventMeta {
 	if x != nil {
-		return x.OffsetMilli
+		return x.Meta
 	}
-	return 0
+	return nil
 }
 
 func (x *Damage) GetCaster() string {
@@ -284,9 +339,9 @@ func (x *Damage) GetCaster() string {
 	return ""
 }
 
-func (x *Damage) GetSpellName() string {
-	if x != nil && x.SpellName != nil {
-		return *x.SpellName
+func (x *Damage) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
 	}
 	return ""
 }
@@ -316,12 +371,56 @@ func (x *Damage) GetSchool() School {
 	if x != nil {
 		return x.School
 	}
-	return School_None
+	return School_Unknown
 }
 
 func (x *Damage) GetTailers() []*Tailer {
 	if x != nil {
 		return x.Tailers
+	}
+	return nil
+}
+
+type DamageReport struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Damages       []*Damage              `protobuf:"bytes,1,rep,name=damages,proto3" json:"damages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DamageReport) Reset() {
+	*x = DamageReport{}
+	mi := &file_chronicle_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DamageReport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DamageReport) ProtoMessage() {}
+
+func (x *DamageReport) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DamageReport.ProtoReflect.Descriptor instead.
+func (*DamageReport) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DamageReport) GetDamages() []*Damage {
+	if x != nil {
+		return x.Damages
 	}
 	return nil
 }
@@ -338,33 +437,39 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06Tailer\x12\x1b\n" +
 	"\x06amount\x18\x01 \x01(\rH\x00R\x06amount\x88\x01\x01\x12\x18\n" +
 	"\ahitType\x18\x02 \x01(\rR\ahitTypeB\t\n" +
-	"\a_amount\"@\n" +
+	"\a_amount\"C\n" +
+	"\tEventMeta\x12\x14\n" +
+	"\x05index\x18\x01 \x01(\x05R\x05index\x12 \n" +
+	"\voffsetMilli\x18\x02 \x01(\x03R\voffsetMilli\"5\n" +
+	"\x04Heal\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\"\xab\x02\n" +
+	"\x06Damage\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +
+	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01\x12\x1e\n" +
+	"\n" +
+	"sourceName\x18\x04 \x01(\tR\n" +
+	"sourceName\x12\x16\n" +
+	"\x06target\x18\x05 \x01(\tR\x06target\x12\x18\n" +
+	"\ahitType\x18\x06 \x01(\rR\ahitType\x12\x16\n" +
+	"\x06amount\x18\a \x01(\x05R\x06amount\x12.\n" +
+	"\x06school\x18\b \x01(\x0e2\x16.chronicleproto.SchoolR\x06school\x120\n" +
+	"\atailers\x18\t \x03(\v2\x16.chronicleproto.TailerR\atailersB\t\n" +
+	"\a_caster\"@\n" +
 	"\fDamageReport\x120\n" +
-	"\adamages\x18\x01 \x03(\v2\x16.chronicleproto.DamageR\adamages\"\xaf\x02\n" +
-	"\x06Damage\x12 \n" +
-	"\voffsetMilli\x18\x01 \x01(\x05R\voffsetMilli\x12\x1b\n" +
-	"\x06caster\x18\x02 \x01(\tH\x00R\x06caster\x88\x01\x01\x12!\n" +
-	"\tspellName\x18\x03 \x01(\tH\x01R\tspellName\x88\x01\x01\x12\x16\n" +
-	"\x06target\x18\x04 \x01(\tR\x06target\x12\x18\n" +
-	"\ahitType\x18\x05 \x01(\rR\ahitType\x12\x16\n" +
-	"\x06amount\x18\x06 \x01(\x05R\x06amount\x12.\n" +
-	"\x06school\x18\a \x01(\x0e2\x16.chronicleproto.SchoolR\x06school\x120\n" +
-	"\atailers\x18\b \x03(\v2\x16.chronicleproto.TailerR\atailersB\t\n" +
-	"\a_casterB\f\n" +
+	"\adamages\x18\x01 \x03(\v2\x16.chronicleproto.DamageR\adamages*p\n" +
+	"\x06School\x12\v\n" +
+	"\aUnknown\x10\x00\x12\b\n" +
+	"\x04None\x10\x01\x12\f\n" +
+	"\bPhysical\x10\x02\x12\b\n" +
+	"\x04Holy\x10\x03\x12\b\n" +
+	"\x04Fire\x10\x04\x12\n" +
 	"\n" +
-	"_spellName*c\n" +
-	"\x06School\x12\b\n" +
-	"\x04None\x10\x00\x12\f\n" +
-	"\bPhysical\x10\x01\x12\b\n" +
-	"\x04Holy\x10\x02\x12\b\n" +
-	"\x04Fire\x10\x03\x12\n" +
+	"\x06Nature\x10\x05\x12\t\n" +
+	"\x05Frost\x10\x06\x12\n" +
 	"\n" +
-	"\x06Nature\x10\x04\x12\t\n" +
-	"\x05Frost\x10\x05\x12\n" +
+	"\x06Shadow\x10\a\x12\n" +
 	"\n" +
-	"\x06Shadow\x10\x06\x12\n" +
-	"\n" +
-	"\x06Arcane\x10\a2]\n" +
+	"\x06Arcane\x10\b2]\n" +
 	"\x10ChronicleService\x12I\n" +
 	"\x06Damage\x12\x1f.chronicleproto.InstanceRequest\x1a\x1c.chronicleproto.DamageReport\"\x00B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
 
@@ -381,25 +486,29 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),             // 0: chronicleproto.School
 	(*InstanceRequest)(nil), // 1: chronicleproto.InstanceRequest
 	(*Tailer)(nil),          // 2: chronicleproto.Tailer
-	(*DamageReport)(nil),    // 3: chronicleproto.DamageReport
-	(*Damage)(nil),          // 4: chronicleproto.Damage
+	(*EventMeta)(nil),       // 3: chronicleproto.EventMeta
+	(*Heal)(nil),            // 4: chronicleproto.Heal
+	(*Damage)(nil),          // 5: chronicleproto.Damage
+	(*DamageReport)(nil),    // 6: chronicleproto.DamageReport
 }
 var file_chronicle_proto_depIdxs = []int32{
-	4, // 0: chronicleproto.DamageReport.damages:type_name -> chronicleproto.Damage
-	0, // 1: chronicleproto.Damage.school:type_name -> chronicleproto.School
-	2, // 2: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	1, // 3: chronicleproto.ChronicleService.Damage:input_type -> chronicleproto.InstanceRequest
-	3, // 4: chronicleproto.ChronicleService.Damage:output_type -> chronicleproto.DamageReport
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	3, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
+	3, // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
+	0, // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
+	2, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
+	5, // 4: chronicleproto.DamageReport.damages:type_name -> chronicleproto.Damage
+	1, // 5: chronicleproto.ChronicleService.Damage:input_type -> chronicleproto.InstanceRequest
+	6, // 6: chronicleproto.ChronicleService.Damage:output_type -> chronicleproto.DamageReport
+	6, // [6:7] is the sub-list for method output_type
+	5, // [5:6] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -408,14 +517,14 @@ func file_chronicle_proto_init() {
 		return
 	}
 	file_chronicle_proto_msgTypes[1].OneofWrappers = []any{}
-	file_chronicle_proto_msgTypes[3].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

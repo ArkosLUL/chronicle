@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
@@ -158,6 +159,13 @@ func (c *Common) Process(m messages.Message) error {
 		}
 	}
 
+	if c.currentFight != nil && c.currentFight.Start != nil {
+		err = c.currentFight.Events.Process(m)
+		if err != nil {
+			return fmt.Errorf("processing encounter messages: %w", err)
+		}
+	}
+
 	err = c.combatValues.Process(m)
 	if err != nil {
 		return fmt.Errorf("processing combat metrics: %w", err)
@@ -179,6 +187,7 @@ func (c *Common) CharacterActivityChange() error {
 	if c.currentFight == nil {
 		c.currentFight = &OngoingFight{
 			ActiveHostiles: make(map[guid.GUID]struct{}),
+			Events:         encounterevents.New(),
 			Start:          nil,
 			End:            nil,
 		}
@@ -247,6 +256,7 @@ func (c *Common) finalizeFight() error {
 		Hostiles: map[guid.GUID]CharacterFight{},
 		Start:    c.currentFight.Start.Timestamp.Date(),
 		End:      c.currentFight.End.Timestamp.Date(),
+		Events:   nil,
 	}
 
 	for id := range c.currentFight.ActiveHostiles {
@@ -265,6 +275,12 @@ func (c *Common) finalizeFight() error {
 			Activity: during,
 		}
 	}
+
+	evts, err := c.currentFight.Events.Finalize(c.currentFight.Start.Timestamp.Date())
+	if err != nil {
+		return fmt.Errorf("finalizing encounter messages: %w", err)
+	}
+	fight.Events = evts
 
 	c.currentFight = nil
 	// End the fight

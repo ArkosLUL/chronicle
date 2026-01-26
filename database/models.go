@@ -77,6 +77,61 @@ func AllItemEffectTypeValues() []ItemEffectType {
 	}
 }
 
+type LogInstanceMessageType string
+
+const (
+	LogInstanceMessageTypeDamage LogInstanceMessageType = "damage"
+)
+
+func (e *LogInstanceMessageType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LogInstanceMessageType(s)
+	case string:
+		*e = LogInstanceMessageType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LogInstanceMessageType: %T", src)
+	}
+	return nil
+}
+
+type NullLogInstanceMessageType struct {
+	LogInstanceMessageType LogInstanceMessageType `json:"log_instance_message_type"`
+	Valid                  bool                   `json:"valid"` // Valid is true if LogInstanceMessageType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullLogInstanceMessageType) Scan(value interface{}) error {
+	if value == nil {
+		ns.LogInstanceMessageType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.LogInstanceMessageType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullLogInstanceMessageType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.LogInstanceMessageType), nil
+}
+
+func (e LogInstanceMessageType) Valid() bool {
+	switch e {
+	case LogInstanceMessageTypeDamage:
+		return true
+	}
+	return false
+}
+
+func AllLogInstanceMessageTypeValues() []LogInstanceMessageType {
+	return []LogInstanceMessageType{
+		LogInstanceMessageTypeDamage,
+	}
+}
+
 type RiverJobState string
 
 const (
@@ -476,6 +531,13 @@ type LogInstanceEncounterHostile struct {
 	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
 	ID          guid.GUID `db:"id" json:"id"`
 	Periods     Periods   `db:"periods" json:"periods"`
+}
+
+type LogInstanceMessage struct {
+	InstanceID uuid.UUID              `db:"instance_id" json:"instance_id"`
+	Type       LogInstanceMessageType `db:"type" json:"type"`
+	// Gzipped protobuf-encoded messages
+	Messages []byte `db:"messages" json:"messages"`
 }
 
 type LogInstancePlayer struct {

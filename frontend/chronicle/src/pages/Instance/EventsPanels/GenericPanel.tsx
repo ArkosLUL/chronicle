@@ -23,15 +23,15 @@ export function GenericPanel<TResult>({
 
   return <>
     {children}
-    <div className="text-xs text-muted-foreground mt-2 flex items-center justify-between">
+    <div className="text-2xs mt-1 font-mono text-muted-foreground flex items-center justify-between">
       <span>
         {formatNumber(totalEvents)} events
         {eventsPerSecond > 0 && (
-          <span className="ml-1">({formatNumber(eventsPerSecond)}/s)</span>
+          <span className="ml-2">({formatNumber(eventsPerSecond)}/s)</span>
         )}
       </span>
       {processingTimeMs !== null && (
-        <span className="text-blue-500">
+        <span className="text-blue-500 mr-2">
           {processingTimeMs.toFixed(0)}ms
         </span>
       )}

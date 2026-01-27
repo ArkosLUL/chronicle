@@ -14,9 +14,8 @@ export interface DamageDoneData {
   playerName: string;
   className: string;
   specialization: string;
-  value: number;
+  target: Map<string, number>; // target guid -> damage done
 }
-
 
 // UnitDamage is unit guid -> DamageDoneData
 export type UnitDamage = Map<string, DamageDoneData>;
@@ -66,9 +65,10 @@ export const damageDoneProcessor: PanelProcessor<DamageDoneResult> = {
       playerName: context.players[damageOwner]?.name || "",
       className: context.players[damageOwner]?.class || "UNKNOWN",
       specialization: "",
-    };
+      target: new Map<string, number>(),
+    } as DamageDoneData;
 
-    existing.value += event.amount;
+    existing.target.set(event.target, (existing.target.get(event.target) || 0) + event.amount);
     encounterDamage.set(damageOwner, existing);
     state.EncounterDamage.set(encounterID, encounterDamage);
   },

@@ -1,30 +1,63 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
-import type { PanelRenderProps } from "../types";
-import type { DamageDoneResult, DamageDoneData } from "./damageDone.processor";
+import type { EntitySelection, PanelRenderProps } from "../types";
+import type { DamageDoneResult } from "./damageDone.processor";
+import { useCachedValue } from "@/hooks/useCachedValue";
 
 /**
  * Aggregate damage data across selected encounters.
  * Merges per-encounter data into a single map by player.
+ * 
+ * - If selected.enemyIds is non-empty, only sum damage dealt to those targets
+ * - If selected.playerIds is non-empty, dim players not in selection
  */
 function aggregateForEncounters(
   result: DamageDoneResult,
-  selectedEncounterIds: string[]
+  selectedEncounterIds: string[],
+  selected: EntitySelection,
 ): PlayerMetricChartData[] {
-  const aggregated = new Map<string, DamageDoneData>();
+  const aggregated = new Map<string, PlayerMetricChartData>();
+  
+  const filterByEnemy = selected.enemyIds.size > 0;
+  const hasPlayerSelection = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterDamage = result.EncounterDamage.get(encounterId);
     if (!encounterDamage) continue;
     
     for (const [playerId, data] of encounterDamage) {
+      // Calculate damage - either filtered by target or total
+      let damageValue = 0;
+      if (filterByEnemy) {
+        // Sum only damage to selected enemies
+        for (const [targetId, amount] of data.target) {
+          if (selected.enemyIds.has(targetId)) {
+            damageValue += amount;
+          }
+        }
+      } else {
+        // Sum all damage (no enemy filter)
+        for (const amount of data.target.values()) {
+          damageValue += amount;
+        }
+      }
+      
+      // Skip players with zero damage after filtering
+      if (damageValue === 0) continue;
+      
       const existing = aggregated.get(playerId);
       if (existing) {
-        existing.value += data.value;
+        existing.value += damageValue;
       } else {
-        // Copy to avoid mutating the original
-        aggregated.set(playerId, { ...data });
+        aggregated.set(playerId, {
+          playerID: data.playerID,
+          playerName: data.playerName,
+          className: data.className,
+          specialization: data.specialization,
+          value: damageValue,
+          dimmed: hasPlayerSelection && !selected.playerIds.has(playerId),
+        });
       }
     }
   }
@@ -32,25 +65,20 @@ function aggregateForEncounters(
   return Array.from(aggregated.values());
 }
 
+
 export const DamageDoneContent = (props: PanelRenderProps<DamageDoneResult>) => {
   const { result, context } = props;
   
-  // Cache the result once it has data - never update after that.
-  // This ensures the reference stays stable across re-renders.
-  const staticResultRef = useRef<DamageDoneResult | null>(null);
-  if (staticResultRef.current === null && result.EncounterDamage.size > 0) {
-    staticResultRef.current = result;
-  }
-  
-  // Use cached result (stable reference), fallback to live result if not yet cached
-  const effectiveResult = staticResultRef.current ?? result;
+  const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
+    result,
+    (r) => r.EncounterDamage.size > 0
+  );
 
   const damageData = useMemo(() => {
-    return aggregateForEncounters(effectiveResult, context.selectedEncounterIds);
-  }, [effectiveResult, context.selectedEncounterIds]);
+    return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);
+  }, [cachedResult, context.selectedEncounterIds, context.entitySelection]);
 
   // Once we have cached data, never show loading/processing states
-  const hasData = staticResultRef.current !== null;
   const effectiveProps = {
     ...props,
     loading: hasData ? false : props.loading,

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
-import { AbilityBreakout, type AbilityData } from "@/components/ui/AbilityBreakout";
+import { AbilityBreakout, type AbilityData, type TargetData } from "@/components/ui/AbilityBreakout";
 import type { DamageDoneResult } from "./damageDone.processor";
+import type { PanelContext } from "../types";
 
 /**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
@@ -44,8 +45,55 @@ function getTotalForUnit(
   return total;
 }
 
+/**
+ * Get target breakdown for a unit from EncounterDamage.
+ * Aggregates across all encounters.
+ */
+function getTargetsForUnit(
+  result: DamageDoneResult,
+  unitId: string,
+  context: PanelContext
+): TargetData[] {
+  // Aggregate targets across all encounters
+  const aggregated = new Map<string, { value: number }>();
+  
+  for (const encounterDamage of result.EncounterDamage.values()) {
+    const unitData = encounterDamage.get(unitId);
+    if (!unitData) continue;
+    
+    for (const [targetId, amount] of unitData.target) {
+      const existing = aggregated.get(targetId) || { value: 0 };
+      existing.value += amount;
+      aggregated.set(targetId, existing);
+    }
+  }
+  
+  // Convert to TargetData array with names
+  const targets: TargetData[] = [];
+  for (const [targetId, data] of aggregated) {
+    // Try to resolve target name from players or units
+    let targetName = targetId;
+    if (context.instance.players?.[targetId]) {
+      targetName = context.instance.players[targetId].name;
+    } else if (context.instance.units?.[targetId]) {
+      targetName = context.instance.units[targetId].name;
+    }
+    
+    targets.push({
+      targetId,
+      targetName,
+      value: data.value,
+      hitCount: 0, // TODO: Track hit counts per target in processor
+      critCount: 0,
+    });
+  }
+  
+  return targets.sort((a, b) => b.value - a.value);
+}
+
 export interface UseDamageDoneBreakoutOptions {
   result: DamageDoneResult | undefined;
+  context: PanelContext;
   /** Label for the value column (e.g., "Damage", "DPS") */
   valueLabel?: string;
   perSecond?: boolean;
@@ -60,6 +108,7 @@ export interface UseDamageDoneBreakoutOptions {
  */
 export function useDamageDoneBreakout({
   result,
+  context,
   valueLabel = "Damage",
   perSecond = false,
   durationMs,
@@ -83,6 +132,7 @@ export function useDamageDoneBreakout({
       }
 
       const abilities = getAbilitiesForUnit(result, playerID);
+      const targets = getTargetsForUnit(result, playerID, context);
       const totalValue = getTotalForUnit(result, playerID);
 
       // Convert to per-second if needed
@@ -93,6 +143,13 @@ export function useDamageDoneBreakout({
           }))
         : abilities;
 
+      const displayTargets = perSecond && durationMs
+        ? targets.map((t) => ({
+            ...t,
+            value: (t.value / durationMs) * 1000,
+          }))
+        : targets;
+
       const displayTotal = perSecond && durationMs
         ? (totalValue / durationMs) * 1000
         : totalValue;
@@ -102,6 +159,7 @@ export function useDamageDoneBreakout({
       return (
         <AbilityBreakout
           abilities={displayAbilities}
+          targets={displayTargets}
           totalValue={displayTotal}
           valueLabel={displayLabel}
           invertedColors
@@ -109,7 +167,7 @@ export function useDamageDoneBreakout({
         />
       );
     },
-    [result, valueLabel, perSecond, durationMs, loading, processing]
+    [result, context, valueLabel, perSecond, durationMs, loading, processing]
   );
 
   return breakout;

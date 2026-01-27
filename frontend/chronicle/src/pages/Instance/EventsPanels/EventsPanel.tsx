@@ -18,7 +18,7 @@ import { AllActivityPanel } from "./AllActivity";
 // Using `any` here to allow different result types per panel.
 // Type safety is maintained within each panel definition.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PANELS: Record<string, PanelDefinition<any>> = {
+export const PANELS: Record<string, PanelDefinition<any>> = {
   damage_done: createDamageDonePanel("players"),
   enemy_damage_done: createDamageDonePanel("enemies"),
   pet_damage_done: createDamageDonePanel("pets"),

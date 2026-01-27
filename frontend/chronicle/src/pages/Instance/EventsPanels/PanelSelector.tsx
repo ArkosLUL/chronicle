@@ -3,9 +3,9 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search, Swords, Skull, PawPrint, Shield, Heart, Activity } from "lucide-react";
+import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { EventsPanelType } from "./EventsPanel";
+import { PANELS, type EventsPanelType } from "./EventsPanel";
 
 interface PanelOption {
   value: EventsPanelType;
@@ -15,39 +15,39 @@ interface PanelOption {
 
 interface PanelCategory {
   label: string;
-  icon: React.ReactNode;
-  items: PanelOption[];
+  items: EventsPanelType[];
 }
 
-// Organize panels into categories with icons
+// Category organization - panels get their labels/icons from PANELS registry
 const PANEL_CATEGORIES: PanelCategory[] = [
   {
     label: "Damage",
-    icon: <Swords className="size-4" />,
-    items: [
-      { value: "damage_done", label: "Damage Done", icon: <Swords className="size-4" /> },
-      { value: "enemy_damage_done", label: "Enemy Damage Done", icon: <Skull className="size-4" /> },
-      { value: "pet_damage_done", label: "Pet Damage Done", icon: <PawPrint className="size-4" /> },
-      { value: "damage_taken", label: "Damage Taken", icon: <Shield className="size-4" /> },
-    ],
+    items: ["damage_done", "enemy_damage_done", "pet_damage_done", "damage_taken"],
   },
   {
     label: "Healing",
-    icon: <Heart className="size-4" />,
-    items: [{ value: "healing_done", label: "Healing Done", icon: <Heart className="size-4" /> }],
+    items: ["healing_done"],
   },
   {
     label: "Activity",
-    icon: <Activity className="size-4" />,
-    items: [{ value: "all_activity", label: "All Activity", icon: <Activity className="size-4" /> }],
+    items: ["all_activity"],
   },
 ];
 
-// Flatten for lookup
-const ALL_PANELS: PanelOption[] = PANEL_CATEGORIES.flatMap((cat) => cat.items);
+// Build panel options from registry
+function getPanelOption(value: EventsPanelType): PanelOption {
+  const panel = PANELS[value];
+  return {
+    value,
+    label: panel?.label ?? value,
+    icon: panel?.icon,
+  };
+}
 
-function getPanelForValue(value: EventsPanelType): PanelOption | undefined {
-  return ALL_PANELS.find((p) => p.value === value);
+// Get first item's icon as category icon
+function getCategoryIcon(category: PanelCategory): React.ReactNode {
+  const firstPanel = PANELS[category.items[0]];
+  return firstPanel?.icon;
 }
 
 /**
@@ -124,10 +124,11 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
     const results: { option: PanelOption; category: string; score: number }[] = [];
 
     for (const category of PANEL_CATEGORIES) {
-      for (const item of category.items) {
-        const { match, score } = fuzzyMatch(searchQuery, item.label);
+      for (const panelKey of category.items) {
+        const option = getPanelOption(panelKey);
+        const { match, score } = fuzzyMatch(searchQuery, option.label);
         if (match) {
-          results.push({ option: item, category: category.label, score });
+          results.push({ option, category: category.label, score });
         }
       }
     }
@@ -159,8 +160,8 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground transition-colors"
       >
-        {getPanelForValue(value)?.icon}
-        {getPanelForValue(value)?.label ?? value}
+        {getPanelOption(value).icon}
+        {getPanelOption(value).label}
         <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
       </button>
 
@@ -229,7 +230,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                         expandedCategory === category.label && "rotate-90"
                       )}
                     />
-                    <span className="text-muted-foreground">{category.icon}</span>
+                    <span className="text-muted-foreground">{getCategoryIcon(category)}</span>
                     {category.label}
                     <span className="text-xs text-muted-foreground ml-auto">
                       {category.items.length}
@@ -239,21 +240,24 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                   {/* Category items */}
                   {expandedCategory === category.label && (
                     <div className="ml-4 border-l pl-1">
-                      {category.items.map((item) => (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => handleSelect(item.value)}
-                          className={cn(
-                            "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
-                            "hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                            item.value === value && "bg-accent/50"
-                          )}
-                        >
-                          <span className="text-muted-foreground">{item.icon}</span>
-                          {item.label}
-                        </button>
-                      ))}
+                      {category.items.map((panelKey) => {
+                        const item = getPanelOption(panelKey);
+                        return (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => handleSelect(item.value)}
+                            className={cn(
+                              "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
+                              "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                              item.value === value && "bg-accent/50"
+                            )}
+                          >
+                            <span className="text-muted-foreground">{item.icon}</span>
+                            {item.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

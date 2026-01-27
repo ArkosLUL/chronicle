@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { DamageDoneResult } from "./damageDone.processor";
+import type { DamageDoneResult, DamageSourceType } from "./damageDone.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
-import type { DamageSourceType } from "./damageDone.processor";
+import { useDamageDoneBreakout } from "./DamageDoneBreakout";
 
 /**
  * Aggregate damage data across selected encounters.
@@ -86,6 +86,14 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
     return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);
   }, [cachedResult, context.selectedEncounterIds, context.entitySelection]);
 
+  // Create breakout function for tooltips
+  const breakout = useDamageDoneBreakout({
+    result: cachedResult,
+    valueLabel: "Damage",
+    perSecond: props.perSecond,
+    durationMs: props.durationMs,
+  });
+
   // Once we have cached data, never show loading/processing states
   const effectiveProps = {
     ...props,
@@ -101,6 +109,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
         panelTitle="Damage Done"
         duration_millis={props.durationMs}
         perSecond={props.perSecond}
+        breakout={breakout}
       />
     </GenericPanel>
   );

@@ -33,8 +33,8 @@ export interface DamageAbilityBreakout {
 
 export type DamageDoneResult = {
   EncounterDamage: Map<string, UnitDamage>;
-  // Value is unitID -> abilityID -> DamageAbilityBreakout
-  ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
+  // Value is unitID -> encounterID -> abilityID -> DamageAbilityBreakout
+  ByAbility: Map<string, Map<string, Map<string, DamageAbilityBreakout>>>;
 }
 
 /**
@@ -51,7 +51,7 @@ export function createDamageDoneProcessor(
 
     createState: () => ({
       EncounterDamage: new Map<string, UnitDamage>(),
-      ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
+      ByAbility: new Map<string, Map<string, Map<string, DamageAbilityBreakout>>>(),
     }),
 
     processEvent: (
@@ -127,15 +127,16 @@ export function createDamageDoneProcessor(
       } 
 
 
-      const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, DamageAbilityBreakout>();
-      const abilityBreakout = existingUnitBreakout.get(source) || {
+      const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, Map<string, DamageAbilityBreakout>>();
+      const existingEncounterBreakout = existingUnitBreakout.get(encounterID) || new Map<string, DamageAbilityBreakout>();
+      const abilityBreakout = existingEncounterBreakout.get(source) || {
         Total: 0,
         Count: 0,
       };
       
       abilityBreakout.Total += event.amount;
       abilityBreakout.Count += 1;
-      existingUnitBreakout.set(source, abilityBreakout);
+      existingEncounterBreakout.set(source, abilityBreakout);
       state.ByAbility.set(damageOwner, existingUnitBreakout);
     },
   };

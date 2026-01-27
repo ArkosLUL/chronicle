@@ -4,13 +4,13 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/database"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 )
 
 type Builder[M messages.Message, PM proto.Message] struct {
 	First time.Time
+	Count int64
 
 	data *proto.Buffer
 }
@@ -22,13 +22,24 @@ func NewBuilder[M messages.Message, PM proto.Message]() *Builder[M, PM] {
 	}
 }
 
-func (b *Builder[M, PM]) AsInsert(encounterID uuid.UUID, ty database.LogInstanceEncounterEventType) database.InsertLogEncounterEventsParams {
-	return database.InsertLogEncounterEventsParams{
-		EncounterID: encounterID,
-		StartTime:   database.Timestamptz(b.First),
-		Type:        ty,
-		Events:      b.data.Bytes(),
+func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
+	header := proto.NewBuffer(nil)
+	err := header.EncodeStringBytes(encounterID.String())
+	if err != nil {
+		return nil, err
 	}
+
+	err = header.EncodeVarint(uint64(b.First.UnixMilli()))
+	if err != nil {
+		return nil, err
+	}
+
+	err = header.EncodeVarint(uint64(b.Count))
+	if err != nil {
+		return nil, err
+	}
+
+	return b.data.Bytes(), nil
 }
 
 func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, idx int32, conv func(from time.Time, idx int32, message M) PM) error {

@@ -1,19 +1,19 @@
--- name: InsertLogEncounterEvents :batchexec
+-- name: InsertLogInstanceEvents :batchexec
 INSERT INTO
-  log_instance_encounter_events(encounter_id, start_time, type, events)
+  log_instance_events(instance_id, type, events)
 VALUES
-  ($1, $2, $3, $4)
+  ($1, $2, $3)
 ;
 
--- name: InstanceEncounterEvents :many
+-- name: InstanceEvents :many
 SELECT
-  log_instance_encounter_events.*
+  log_instance_events.*
 FROM
-  log_instance_encounter_events
+  log_instance_events
 LEFT JOIN
-    log_instance_encounters
-    ON log_instance_encounter_events.encounter_id = log_instance_encounters.id
+    log_instances
+    ON log_instance_events.instance_id = log_instances.id
 WHERE
   instance_id = $1 AND
-  log_instance_encounter_events.type = ANY(sqlc.arg('types') :: log_instance_encounter_event_type[])
+  log_instance_events.type = ANY(sqlc.arg('types') :: text[] :: log_instance_event_type[])
 ;

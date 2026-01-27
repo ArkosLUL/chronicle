@@ -1,16 +1,15 @@
 BEGIN;
 
-CREATE TYPE log_instance_encounter_event_type AS ENUM (
+CREATE TYPE log_instance_event_type AS ENUM (
   'damage'
   );
 
-CREATE TABLE log_instance_encounter_events(
-  encounter_id UUID NOT NULL REFERENCES log_instance_encounters(id) ON DELETE CASCADE,
-  type log_instance_encounter_event_type NOT NULL,
-  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+CREATE TABLE log_instance_events(
+  instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
+  type log_instance_event_type NOT NULL,
   events BYTEA NOT NULL
 );
 
-COMMENT ON COLUMN log_instance_encounter_events.events IS 'Gzipped protobuf-encoded events';
+COMMENT ON COLUMN log_instance_events.events IS 'Gzipped protobuf-encoded events';
 
 COMMIT;

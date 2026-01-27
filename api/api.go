@@ -89,7 +89,7 @@ func (api *API) Routes() chi.Router {
 
 	r.Route("/grpc/v1", func(r chi.Router) {
 		// Handles all gRPC requests
-		r.Mount(api.Chronicle.ChronicleGRPCHandler())
+		//r.Mount(api.Chronicle.ChronicleGRPCHandler())
 	})
 
 	r.Route("/api/v1", func(r chi.Router) {

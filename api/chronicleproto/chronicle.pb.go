@@ -381,50 +381,6 @@ func (x *Damage) GetTailers() []*Tailer {
 	return nil
 }
 
-type DamageReport struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Damages       []*Damage              `protobuf:"bytes,1,rep,name=damages,proto3" json:"damages,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DamageReport) Reset() {
-	*x = DamageReport{}
-	mi := &file_chronicle_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DamageReport) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DamageReport) ProtoMessage() {}
-
-func (x *DamageReport) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DamageReport.ProtoReflect.Descriptor instead.
-func (*DamageReport) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *DamageReport) GetDamages() []*Damage {
-	if x != nil {
-		return x.Damages
-	}
-	return nil
-}
-
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -454,9 +410,7 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06amount\x18\a \x01(\x05R\x06amount\x12.\n" +
 	"\x06school\x18\b \x01(\x0e2\x16.chronicleproto.SchoolR\x06school\x120\n" +
 	"\atailers\x18\t \x03(\v2\x16.chronicleproto.TailerR\atailersB\t\n" +
-	"\a_caster\"@\n" +
-	"\fDamageReport\x120\n" +
-	"\adamages\x18\x01 \x03(\v2\x16.chronicleproto.DamageR\adamages*p\n" +
+	"\a_caster*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -469,9 +423,7 @@ const file_chronicle_proto_rawDesc = "" +
 	"\n" +
 	"\x06Shadow\x10\a\x12\n" +
 	"\n" +
-	"\x06Arcane\x10\b2]\n" +
-	"\x10ChronicleService\x12I\n" +
-	"\x06Damage\x12\x1f.chronicleproto.InstanceRequest\x1a\x1c.chronicleproto.DamageReport\"\x00B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
+	"\x06Arcane\x10\bB/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
 
 var (
 	file_chronicle_proto_rawDescOnce sync.Once
@@ -486,7 +438,7 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),             // 0: chronicleproto.School
 	(*InstanceRequest)(nil), // 1: chronicleproto.InstanceRequest
@@ -494,21 +446,17 @@ var file_chronicle_proto_goTypes = []any{
 	(*EventMeta)(nil),       // 3: chronicleproto.EventMeta
 	(*Heal)(nil),            // 4: chronicleproto.Heal
 	(*Damage)(nil),          // 5: chronicleproto.Damage
-	(*DamageReport)(nil),    // 6: chronicleproto.DamageReport
 }
 var file_chronicle_proto_depIdxs = []int32{
 	3, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
 	3, // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
 	0, // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
 	2, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	5, // 4: chronicleproto.DamageReport.damages:type_name -> chronicleproto.Damage
-	1, // 5: chronicleproto.ChronicleService.Damage:input_type -> chronicleproto.InstanceRequest
-	6, // 6: chronicleproto.ChronicleService.Damage:output_type -> chronicleproto.DamageReport
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -524,9 +472,9 @@ func file_chronicle_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   5,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   0,
 		},
 		GoTypes:           file_chronicle_proto_goTypes,
 		DependencyIndexes: file_chronicle_proto_depIdxs,

@@ -50,9 +50,3 @@ message Damage {
   School school = 8;
   repeated Tailer tailers = 9;
 }
-
-message EncounterDamage {
-  uint64 startUnixMillis = 1;
-  repeated Damage damages = 1;
-}
-

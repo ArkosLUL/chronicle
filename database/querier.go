@@ -28,15 +28,15 @@ type sqlcQuerier interface {
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
 	InsertInstancePlayers(ctx context.Context, arg []InsertInstancePlayersParams) *InsertInstancePlayersBatchResults
 	InsertInstanceUnits(ctx context.Context, arg []InsertInstanceUnitsParams) *InsertInstanceUnitsBatchResults
-	InsertLogEncounterEvents(ctx context.Context, arg []InsertLogEncounterEventsParams) *InsertLogEncounterEventsBatchResults
 	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
+	InsertLogInstanceEvents(ctx context.Context, arg []InsertLogInstanceEventsParams) *InsertLogInstanceEventsBatchResults
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
 	Instance(ctx context.Context, id uuid.UUID) (LogInstance, error)
-	InstanceEncounterEvents(ctx context.Context, arg InstanceEncounterEventsParams) ([]LogInstanceEncounterEvent, error)
+	InstanceEvents(ctx context.Context, arg InstanceEventsParams) ([]LogInstanceEvent, error)
 	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 }

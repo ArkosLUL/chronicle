@@ -50,62 +50,6 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
 
-	// Register custom enum types so pgx knows how to encode/decode them
-	// TODO: Why do I need to do this?
-	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-		// Register the log_instance_encounter_event_type enum
-		dataType, err := conn.LoadType(ctx, "log_instance_encounter_event_type")
-		if err != nil {
-			return fmt.Errorf("load log_instance_encounter_event_type type: %w", err)
-		}
-		conn.TypeMap().RegisterType(dataType)
-
-		// Also register the array type for the enum
-		arrayType, err := conn.LoadType(ctx, "_log_instance_encounter_event_type")
-		if err != nil {
-			return fmt.Errorf("load _log_instance_encounter_event_type type: %w", err)
-		}
-		conn.TypeMap().RegisterType(arrayType)
-
-		return nil
-	}
-
-	//// TODO: Migrations do not yet have the function to set an actor.
-	//cfg.PrepareConn = func(ctx context.Context, conn *pgx.Conn) (bool, error) {
-	//	if !p.applicationMode {
-	//		return true, nil
-	//	}
-	//
-	//	_, err := conn.Exec(ctx, "SET ROLE application;")
-	//	if err != nil {
-	//		return false, err
-	//	}
-	//
-	//	actID := Actor(ctx)
-	//	_, err = conn.Exec(ctx, "select set_actor($1)", actID)
-	//	if err != nil {
-	//		if !strings.Contains(err.Error(), "ERROR: function set_actor(unknown) does not exist") {
-	//			return false, fmt.Errorf("set actor: %w", err)
-	//		}
-	//	}
-	//
-	//	return true, nil
-	//}
-	//
-	//cfg.AfterRelease = func(conn *pgx.Conn) bool {
-	//	if !p.applicationMode {
-	//		return true
-	//	}
-	//
-	//	_, err := conn.Exec(context.Background(), "select set_actor($1)", uuid.Nil)
-	//	if err != nil {
-	//		logger.Error("cleanup connection",
-	//			slog.String("error", err.Error()),
-	//			slog.String("service", "database"),
-	//		)
-	//	}
-	//	return err == nil
-	//}
 	return cfg, nil
 }
 

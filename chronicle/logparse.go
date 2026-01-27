@@ -172,12 +172,17 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return fmt.Errorf("insert instance: %w", err)
 			}
 
+			evts := inst.Events()
+			err = evts.Insert(ctx, tx, dbinstance.ID)
+			if err != nil {
+				return fmt.Errorf("insert events: %w", err)
+			}
+
 			// Store the encounters into the database
 			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(finalized.Encounters))
-			events := make([]database.InsertLogEncounterEventsParams, 0)
 			for _, enc := range finalized.Encounters {
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
-					ID:         uuid.New(),
+					ID:         enc.Combat.EncounterID,
 					InstanceID: dbinstance.ID,
 					Name:       enc.Name,
 					Kill:       enc.IsKill,
@@ -243,22 +248,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				}
 
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
-
-				ep, err := enc.Combat.Events.InsertParams(dbencounter.ID)
-				if err != nil {
-					return fmt.Errorf("prepare encounter events: %w", err)
-				}
-				events = append(events, ep...)
 			}
 
 			err = builder.insert(ctx, tx)
 			if err != nil {
 				return err
-			}
-
-			res := tx.InsertLogEncounterEvents(ctx, events)
-			if err := res.Close(); err != nil {
-				return fmt.Errorf("insert log encounter events: %w", err)
 			}
 
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{

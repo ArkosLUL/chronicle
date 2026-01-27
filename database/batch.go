@@ -12,7 +12,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -191,42 +190,40 @@ func (b *InsertInstanceUnitsBatchResults) Close() error {
 	return b.br.Close()
 }
 
-const insertLogEncounterEvents = `-- name: InsertLogEncounterEvents :batchexec
+const insertLogInstanceEvents = `-- name: InsertLogInstanceEvents :batchexec
 INSERT INTO
-  log_instance_encounter_events(encounter_id, start_time, type, events)
+  log_instance_events(instance_id, type, events)
 VALUES
-  ($1, $2, $3, $4)
+  ($1, $2, $3)
 `
 
-type InsertLogEncounterEventsBatchResults struct {
+type InsertLogInstanceEventsBatchResults struct {
 	br     pgx.BatchResults
 	tot    int
 	closed bool
 }
 
-type InsertLogEncounterEventsParams struct {
-	EncounterID uuid.UUID                     `db:"encounter_id" json:"encounter_id"`
-	StartTime   pgtype.Timestamptz            `db:"start_time" json:"start_time"`
-	Type        LogInstanceEncounterEventType `db:"type" json:"type"`
-	Events      []byte                        `db:"events" json:"events"`
+type InsertLogInstanceEventsParams struct {
+	InstanceID uuid.UUID            `db:"instance_id" json:"instance_id"`
+	Type       LogInstanceEventType `db:"type" json:"type"`
+	Events     []byte               `db:"events" json:"events"`
 }
 
-func (q *sqlQuerier) InsertLogEncounterEvents(ctx context.Context, arg []InsertLogEncounterEventsParams) *InsertLogEncounterEventsBatchResults {
+func (q *sqlQuerier) InsertLogInstanceEvents(ctx context.Context, arg []InsertLogInstanceEventsParams) *InsertLogInstanceEventsBatchResults {
 	batch := &pgx.Batch{}
 	for _, a := range arg {
 		vals := []interface{}{
-			a.EncounterID,
-			a.StartTime,
+			a.InstanceID,
 			a.Type,
 			a.Events,
 		}
-		batch.Queue(insertLogEncounterEvents, vals...)
+		batch.Queue(insertLogInstanceEvents, vals...)
 	}
 	br := q.db.SendBatch(ctx, batch)
-	return &InsertLogEncounterEventsBatchResults{br, len(arg), false}
+	return &InsertLogInstanceEventsBatchResults{br, len(arg), false}
 }
 
-func (b *InsertLogEncounterEventsBatchResults) Exec(f func(int, error)) {
+func (b *InsertLogInstanceEventsBatchResults) Exec(f func(int, error)) {
 	defer b.br.Close()
 	for t := 0; t < b.tot; t++ {
 		if b.closed {
@@ -242,7 +239,7 @@ func (b *InsertLogEncounterEventsBatchResults) Exec(f func(int, error)) {
 	}
 }
 
-func (b *InsertLogEncounterEventsBatchResults) Close() error {
+func (b *InsertLogInstanceEventsBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

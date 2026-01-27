@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -24,9 +25,9 @@ func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	evts, err := db.InstanceEncounterEvents(ctx, database.InstanceEncounterEventsParams{
+	evts, err := db.InstanceEvents(ctx, database.InstanceEventsParams{
 		InstanceID: instanceID,
-		Types:      []database.LogInstanceEncounterEventType{database.LogInstanceEncounterEventTypeDamage}, //slice.StringEnums[database.LogInstanceEncounterEventType](strings.Split(types, ",")),
+		Types:      strings.Split(types, ","),
 	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{

@@ -11,9 +11,11 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/google/uuid"
 )
 
 type OngoingFight struct {
+	EncounterID    uuid.UUID
 	ActiveHostiles map[guid.GUID]struct{}
 	Events         *encounterevents.EncounterEventsInProgress
 
@@ -65,6 +67,7 @@ func (e Encounter) NamedString(db *unitdb.Units) string {
 // hostile becomes inactive. Hostiles with overlapping activity periods are
 // grouped into the same fight.
 type Fight struct {
+	EncounterID uuid.UUID
 	// Hostiles contains all hostile characters that participated in this fight.
 	// Each CharacterFight contains all activity periods from that character
 	// that belong to this fight.

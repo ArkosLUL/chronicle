@@ -10,7 +10,7 @@ CREATE TYPE item_effect_type AS ENUM (
     'proc'
 );
 
-CREATE TYPE log_instance_encounter_event_type AS ENUM (
+CREATE TYPE log_instance_event_type AS ENUM (
     'damage'
 );
 
@@ -141,15 +141,6 @@ CREATE TABLE log_instance_encounter_damage_unit_summary (
     owner_guid wow_guid
 );
 
-CREATE TABLE log_instance_encounter_events (
-    encounter_id uuid NOT NULL,
-    type log_instance_encounter_event_type NOT NULL,
-    start_time timestamp with time zone NOT NULL,
-    events bytea NOT NULL
-);
-
-COMMENT ON COLUMN log_instance_encounter_events.events IS 'Gzipped protobuf-encoded events';
-
 CREATE TABLE log_instance_encounter_hostiles (
     encounter_id uuid NOT NULL,
     id wow_guid NOT NULL,
@@ -166,6 +157,14 @@ CREATE TABLE log_instance_encounters (
     start_time timestamp with time zone NOT NULL,
     end_time timestamp with time zone NOT NULL
 );
+
+CREATE TABLE log_instance_events (
+    instance_id uuid NOT NULL,
+    type log_instance_event_type NOT NULL,
+    events bytea NOT NULL
+);
+
+COMMENT ON COLUMN log_instance_events.events IS 'Gzipped protobuf-encoded events';
 
 CREATE TABLE log_instance_players (
     instance_id uuid NOT NULL,
@@ -437,14 +436,14 @@ ALTER TABLE ONLY log_file
 ALTER TABLE ONLY log_instance_encounter_damage_unit_summary
     ADD CONSTRAINT log_instance_encounter_damage_unit_summary_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY log_instance_encounter_events
-    ADD CONSTRAINT log_instance_encounter_events_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
-
 ALTER TABLE ONLY log_instance_encounter_hostiles
     ADD CONSTRAINT log_instance_encounter_hostiles_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_encounters
     ADD CONSTRAINT log_instance_encounters_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_events
+    ADD CONSTRAINT log_instance_events_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_players
     ADD CONSTRAINT log_instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;

@@ -7,7 +7,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/database"
 	"github.com/google/uuid"
 )
 
@@ -26,15 +25,14 @@ func New() *EncounterEventsInProgress {
 	}
 }
 
-func (e *EncounterEvents) InsertParams(encounterID uuid.UUID) ([]database.InsertLogEncounterEventsParams, error) {
-	params := []database.InsertLogEncounterEventsParams{
-		e.Damage.AsInsert(encounterID, database.LogInstanceEncounterEventTypeDamage),
+func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUID) error {
+	damagePayload, err := e.Damage.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing damage events: %w", err)
 	}
-	return params, nil
-}
 
-func (e *EncounterEventsInProgress) Finalize() (*EncounterEvents, error) {
-	return (*EncounterEvents)(e), nil
+	merge.Damage = append(merge.Damage, damagePayload...)
+	return nil
 }
 
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {

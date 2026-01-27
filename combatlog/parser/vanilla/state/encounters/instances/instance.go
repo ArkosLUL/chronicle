@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 )
 
 type Identity struct {
@@ -40,6 +41,7 @@ type Instance interface {
 	// Fights returns all completed fights plus any current fight in progress.
 	// This is populated live during message processing.
 	Fights() []Fight
+	Events() *encounterevents.Events
 	Finalize(ctx context.Context) (*FinalizedInstance, error)
 }
 

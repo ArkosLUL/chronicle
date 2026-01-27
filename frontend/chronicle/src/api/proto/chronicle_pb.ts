@@ -2,15 +2,15 @@
 // @generated from file chronicle.proto (package chronicleproto, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
-import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIiUKD0luc3RhbmNlUmVxdWVzdBISCgppbnN0YW5jZUlkGAEgASgJIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIi8KBEhlYWwSJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YSLnAQoGRGFtYWdlEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESEwoGY2FzdGVyGAMgASgJSACIAQESEgoKc291cmNlTmFtZRgEIAEoCRIOCgZ0YXJnZXQYBSABKAkSDwoHaGl0VHlwZRgGIAEoDRIOCgZhbW91bnQYByABKAUSJgoGc2Nob29sGAggASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCSADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlciI3CgxEYW1hZ2VSZXBvcnQSJwoHZGFtYWdlcxgBIAMoCzIWLmNocm9uaWNsZXByb3RvLkRhbWFnZSpwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCDJdChBDaHJvbmljbGVTZXJ2aWNlEkkKBkRhbWFnZRIfLmNocm9uaWNsZXByb3RvLkluc3RhbmNlUmVxdWVzdBocLmNocm9uaWNsZXByb3RvLkRhbWFnZVJlcG9ydCIAQi9aLWdpdGh1Yi5jb20vRW15cmsvY2hyb25pY2xlL2FwaS9jaHJvbmljbGVwcm90b2IGcHJvdG8z");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIiUKD0luc3RhbmNlUmVxdWVzdBISCgppbnN0YW5jZUlkGAEgASgJIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIi8KBEhlYWwSJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YSLnAQoGRGFtYWdlEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESEwoGY2FzdGVyGAMgASgJSACIAQESEgoKc291cmNlTmFtZRgEIAEoCRIOCgZ0YXJnZXQYBSABKAkSDwoHaGl0VHlwZRgGIAEoDRIOCgZhbW91bnQYByABKAUSJgoGc2Nob29sGAggASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCSADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlcipwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
 
 /**
  * @generated from message chronicleproto.InstanceRequest
@@ -150,23 +150,6 @@ export const DamageSchema: GenMessage<Damage> = /*@__PURE__*/
   messageDesc(file_chronicle, 4);
 
 /**
- * @generated from message chronicleproto.DamageReport
- */
-export type DamageReport = Message<"chronicleproto.DamageReport"> & {
-  /**
-   * @generated from field: repeated chronicleproto.Damage damages = 1;
-   */
-  damages: Damage[];
-};
-
-/**
- * Describes the message chronicleproto.DamageReport.
- * Use `create(DamageReportSchema)` to create a new message.
- */
-export const DamageReportSchema: GenMessage<DamageReport> = /*@__PURE__*/
-  messageDesc(file_chronicle, 5);
-
-/**
  * @generated from enum chronicleproto.School
  */
 export enum School {
@@ -221,19 +204,4 @@ export enum School {
  */
 export const SchoolSchema: GenEnum<School> = /*@__PURE__*/
   enumDesc(file_chronicle, 0);
-
-/**
- * @generated from service chronicleproto.ChronicleService
- */
-export const ChronicleService: GenService<{
-  /**
-   * @generated from rpc chronicleproto.ChronicleService.Damage
-   */
-  damage: {
-    methodKind: "unary";
-    input: typeof InstanceRequestSchema;
-    output: typeof DamageReportSchema;
-  },
-}> = /*@__PURE__*/
-  serviceDesc(file_chronicle, 0);
 

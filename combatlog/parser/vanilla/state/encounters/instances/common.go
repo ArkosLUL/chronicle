@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/google/uuid"
 )
 
 var _ Instance = (*Common)(nil)
@@ -37,6 +38,7 @@ type Common struct {
 	currentFight    *OngoingFight
 	completedFights []Fight
 	combatValues    *combatmetrics.Metrics
+	events          *encounterevents.Events
 }
 
 type FinalizedInstance struct {
@@ -125,6 +127,7 @@ func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) 
 		Characters:    characters,
 		Identifier:    f.Hostiles(),
 		combatValues:  combatmetrics.New(characters),
+		events:        encounterevents.NewEvents(),
 	}
 
 	return c
@@ -174,6 +177,10 @@ func (c *Common) Process(m messages.Message) error {
 	return nil
 }
 
+func (c *Common) Events() *encounterevents.Events {
+	return c.events
+}
+
 // Fights returns all completed fights minus the current fight in progress.
 func (c *Common) Fights() []Fight {
 	fights := make([]Fight, len(c.completedFights))
@@ -186,6 +193,7 @@ func (c *Common) Fights() []Fight {
 func (c *Common) CharacterActivityChange() error {
 	if c.currentFight == nil {
 		c.currentFight = &OngoingFight{
+			EncounterID:    uuid.New(),
 			ActiveHostiles: make(map[guid.GUID]struct{}),
 			Events:         encounterevents.New(),
 			Start:          nil,
@@ -253,10 +261,11 @@ func (c *Common) CharacterActivityChange() error {
 
 func (c *Common) finalizeFight() error {
 	fight := Fight{
-		Hostiles: map[guid.GUID]CharacterFight{},
-		Start:    c.currentFight.Start.Timestamp.Date(),
-		End:      c.currentFight.End.Timestamp.Date(),
-		Events:   nil,
+		Hostiles:    map[guid.GUID]CharacterFight{},
+		Start:       c.currentFight.Start.Timestamp.Date(),
+		End:         c.currentFight.End.Timestamp.Date(),
+		Events:      nil,
+		EncounterID: c.currentFight.EncounterID,
 	}
 
 	for id := range c.currentFight.ActiveHostiles {
@@ -276,11 +285,10 @@ func (c *Common) finalizeFight() error {
 		}
 	}
 
-	evts, err := c.currentFight.Events.Finalize()
+	err := c.currentFight.Events.Finalize(c.events, fight.EncounterID)
 	if err != nil {
 		return fmt.Errorf("finalizing encounter messages: %w", err)
 	}
-	fight.Events = evts
 
 	c.currentFight = nil
 	// End the fight

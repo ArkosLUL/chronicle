@@ -66,21 +66,28 @@ export function createDamageDoneProcessor(
       const isEnemy = !isPlayer && !isPet;
 
       // Filter by source type
-      if (sourceType === "players" && !isPlayer) return;
+      // Pet damage counts for players too!
+      if (sourceType === "players" && (!isPlayer && !isPet)) return;
       if (sourceType === "pets" && !isPet) return;
       if (sourceType === "enemies" && !isEnemy) return;
 
       // Determine the entity to attribute damage to
       let damageOwner = event.caster;
-      let ownerName = event.sourceName;
+      if((sourceType === "players" || sourceType == "pets") && isPet) {
+        damageOwner = unit!.owner!;
+      } 
+
+      // By default, use the raw GUID as name
+      let ownerName = damageOwner;
       let ownerClass = "UNKNOWN";
 
       if (sourceType === "players") {
         ownerName = context.players[damageOwner]?.name || ownerName;
         ownerClass = context.players[damageOwner]?.class || "UNKNOWN";
       } else if (sourceType === "pets") {
-        // For pets, use the pet's name and the owner's class
-        ownerName = unit?.name || ownerName;
+        // For pets, use the owner's name and the owner's class
+        ownerName = (unit?.owner && context.players[unit?.owner]?.name) || ownerName;
+        ownerName += "'s Companions";
         ownerClass = context.players[unit!.owner!]?.class || "UNKNOWN";
       } else {
         // For enemies, use the unit's name

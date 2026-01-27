@@ -5,6 +5,8 @@
 import { Swords } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps, PlayerMetricChartMap } from "./types";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import { GUID } from "@/lib/guid/guid";
+import { GenericPanel } from "./GenericPanel";
 
 export const DamageDonePanel: PanelDefinition<PlayerMetricChartMap> = {
   id: "damage_done",
@@ -18,6 +20,7 @@ export const DamageDonePanel: PanelDefinition<PlayerMetricChartMap> = {
     // Only process damage events
     if (streamType !== "damage") return;
     if (!event.caster) return;
+    if (!GUID.fromString(event.caster).isPlayer()) return;
     
     const existing: PlayerMetricChartData= state.get(event.caster) || { 
       playerID: event.caster,
@@ -31,12 +34,13 @@ export const DamageDonePanel: PanelDefinition<PlayerMetricChartMap> = {
   },
   
   render: (props: PanelRenderProps<PlayerMetricChartMap>) => {
-    console.log(props.result)
-    return <PlayerMetricChart 
+    return <GenericPanel {...props}>
+      <PlayerMetricChart 
       data={Array.from(props.result.values())} 
       type={"damage"} 
       panelTitle="Damage Done"
       duration_millis={props.durationMs}
     />
-  },
+    </GenericPanel>
+  }
 };

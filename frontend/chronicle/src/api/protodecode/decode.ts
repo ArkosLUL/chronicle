@@ -7,6 +7,7 @@ export interface PayloadHeader {
   encounterID: string;
   firstTimestamp: Date;
   count: number;
+  dataLength: number;
 }
 
 /**
@@ -94,6 +95,11 @@ export function decodePayload<T extends DescMessage>(
   console.log(`count=${count}, countBytes=${countBytes}, offset=${offset}`);
   offset += countBytes;
 
+  // Read dataLength (varint) - expected bytes of message data
+  const { value: dataLength, bytesRead: dataLenBytes } = readVarint(data, offset);
+  console.log(`dataLength=${dataLength}, dataLenBytes=${dataLenBytes}, offset=${offset}`);
+  offset += dataLenBytes;
+
   console.log(`Header done. Messages start at offset ${offset}`);
   console.log("First message bytes:", Array.from(data.slice(offset, offset + 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
 
@@ -105,6 +111,7 @@ export function decodePayload<T extends DescMessage>(
       encounterID,
       firstTimestamp,
       count,
+      dataLength,
     },
     messages,
   };

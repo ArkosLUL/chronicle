@@ -37,6 +37,7 @@ func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
 	header = protowire.AppendString(header, encounterID.String())
 	header = protowire.AppendVarint(header, uint64(b.First.UnixMilli()))
 	header = protowire.AppendVarint(header, uint64(b.Count))
+	header = protowire.AppendVarint(header, uint64(b.data.Len()))
 
 	return append(header, b.data.Bytes()...), nil
 }

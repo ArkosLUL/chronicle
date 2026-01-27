@@ -200,6 +200,8 @@ export function ProtoDecode() {
               <dd>{header.firstTimestamp.toISOString()}</dd>
               <dt className="font-medium text-muted-foreground">Message Count:</dt>
               <dd>{header.count}</dd>
+              <dt className="font-medium text-muted-foreground">Data Length:</dt>
+              <dd>{header.dataLength.toLocaleString()} bytes</dd>
             </dl>
           </CardContent>
         </Card>

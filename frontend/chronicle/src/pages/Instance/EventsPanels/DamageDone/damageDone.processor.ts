@@ -121,21 +121,23 @@ export function createDamageDoneProcessor(
       state.EncounterDamage.set(encounterID, encounterDamage);
       
       // Breakouts
-      let source = event.sourceName || "Auto Attack"
-      if((sourceType === "players") && isPet) {
-        source = source + " (Pet)";
-      } 
+      if(context.selectedEncounterIds.has(encounterID) ) {
+        let source = event.sourceName || "Auto Attack"
+        if((sourceType === "players") && isPet) {
+          source = source + " (Pet)";
+        } 
 
-      const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, DamageAbilityBreakout>();
-      const abilityBreakout = existingUnitBreakout.get(source) || {
-        Total: 0,
-        Count: 0,
-      };
-      
-      abilityBreakout.Total += event.amount;
-      abilityBreakout.Count += 1;
-      existingUnitBreakout.set(source, abilityBreakout);
-      state.ByAbility.set(damageOwner, existingUnitBreakout);
+        const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, DamageAbilityBreakout>();
+        const abilityBreakout = existingUnitBreakout.get(source) || {
+          Total: 0,
+          Count: 0,
+        };
+        
+        abilityBreakout.Total += event.amount;
+        abilityBreakout.Count += 1;
+        existingUnitBreakout.set(source, abilityBreakout);
+        state.ByAbility.set(damageOwner, existingUnitBreakout);
+      }
     },
   };
 }

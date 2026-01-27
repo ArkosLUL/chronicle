@@ -174,6 +174,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 			// Store the encounters into the database
 			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(finalized.Encounters))
+			events := make([]database.InsertLogEncounterEventsParams, 0)
 			for _, enc := range finalized.Encounters {
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
 					ID:         uuid.New(),
@@ -242,6 +243,12 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				}
 
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))
+
+				ep, err := enc.Combat.Events.InsertParams(dbencounter.ID)
+				if err != nil {
+					return fmt.Errorf("prepare encounter events: %w", err)
+				}
+				events = append(events, ep...)
 			}
 
 			err = builder.insert(ctx, tx)

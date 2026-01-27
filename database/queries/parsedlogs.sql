@@ -123,7 +123,7 @@ WHERE
 
 -- name: InsertLogEncounterEvents :batchexec
 INSERT INTO
-  log_instance_messages(instance_id, type, messages)
+  log_instance_messages(encounter_id, start_time, type, messages)
 VALUES
-  ($1, $2, $3)
+  ($1, $2, $3, $4)
 ;

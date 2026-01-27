@@ -1,23 +1,32 @@
 package encounterevents
 
 import (
-	"bytes"
-	"encoding/binary"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/gogo/protobuf/proto"
+	"github.com/google/uuid"
 )
 
 type Builder[M messages.Message, PM proto.Message] struct {
 	First time.Time
-	Data  *bytes.Buffer
+	Data  *proto.Buffer
 }
 
 func NewBuilder[M messages.Message, PM proto.Message]() *Builder[M, PM] {
 	return &Builder[M, PM]{
 		First: time.Time{},
-		Data:  bytes.NewBuffer(nil),
+		Data:  proto.NewBuffer(nil),
+	}
+}
+
+func (b *Builder[M, PM]) AsInsert(encounterID uuid.UUID, ty database.LogInstanceMessageType) database.InsertLogEncounterEventsParams {
+	return database.InsertLogEncounterEventsParams{
+		EncounterID: encounterID,
+		StartTime:   database.Timestamptz(b.First),
+		Type:        ty,
+		Messages:    b.Data.Bytes(),
 	}
 }
 
@@ -27,21 +36,10 @@ func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, 
 	}
 
 	pm := conv(b.First, idx, m)
-	data, err := proto.Marshal(pm)
-	if err != nil {
-		return err
-	}
-
-	var lenBuf [binary.MaxVarintLen64]byte
-	n := binary.PutUvarint(lenBuf[:], uint64(len(data)))
-	if _, err := b.Data.Write(lenBuf[:n]); err != nil {
-		return err
-	}
-	_, err = b.Data.Write(data)
+	err := b.Data.EncodeMessage(pm)
 	if err != nil {
 		return err
 	}
 
 	return nil
-
 }

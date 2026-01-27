@@ -1,12 +1,14 @@
 package encounterevents
 
 import (
-	"time"
+  "fmt"
+  "time"
 
-	"github.com/Emyrk/chronicle/api/chronicleproto"
-	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/database"
+  "github.com/Emyrk/chronicle/api/chronicleproto"
+  "github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+  "github.com/Emyrk/chronicle/database"
+  "github.com/google/uuid"
 )
 
 type EncounterEventsInProgress EncounterEvents
@@ -24,19 +26,24 @@ func New() *EncounterEventsInProgress {
 	}
 }
 
-func (e *EncounterEvents) InsertParams() ([]database.InsertLogEncounterEventsParams, error) {
-	params := make([]database.InsertLogEncounterEventsParams, 1)
+func (e *EncounterEvents) InsertParams(encounterID uuid.UUID) ([]database.InsertLogEncounterEventsParams, error) {
+	params := []database.InsertLogEncounterEventsParams{
+    e.Damage.AsInsert(encounterID, database.LogInstanceMessageTypeDamage),
+  }
 	return params, nil
 }
 
-func (e *EncounterEventsInProgress) Finalize(start time.Time) (*EncounterEvents, error) {
+func (e *EncounterEventsInProgress) Finalize() (*EncounterEvents, error) {
 	return (*EncounterEvents)(e), nil
 }
 
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 	switch ty := m.(type) {
 	case messages.Damage:
-		AddToBuilder(e.Damage, ty, e.nextIndex(), types2proto.Damage)
+		err := AddToBuilder(e.Damage, ty, e.nextIndex(), types2proto.Damage)
+		if err != nil {
+			return fmt.Errorf("damage proto: %w", err)
+		}
 	}
 	return nil
 }

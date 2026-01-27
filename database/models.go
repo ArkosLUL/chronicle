@@ -534,8 +534,9 @@ type LogInstanceEncounterHostile struct {
 }
 
 type LogInstanceMessage struct {
-	InstanceID uuid.UUID              `db:"instance_id" json:"instance_id"`
-	Type       LogInstanceMessageType `db:"type" json:"type"`
+	EncounterID uuid.UUID              `db:"encounter_id" json:"encounter_id"`
+	Type        LogInstanceMessageType `db:"type" json:"type"`
+	StartTime   pgtype.Timestamptz     `db:"start_time" json:"start_time"`
 	// Gzipped protobuf-encoded messages
 	Messages []byte `db:"messages" json:"messages"`
 }

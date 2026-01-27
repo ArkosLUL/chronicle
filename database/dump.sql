@@ -159,8 +159,9 @@ CREATE TABLE log_instance_encounters (
 );
 
 CREATE TABLE log_instance_messages (
-    instance_id uuid NOT NULL,
+    encounter_id uuid NOT NULL,
     type log_instance_message_type NOT NULL,
+    start_time timestamp with time zone NOT NULL,
     messages bytea NOT NULL
 );
 
@@ -443,7 +444,7 @@ ALTER TABLE ONLY log_instance_encounters
     ADD CONSTRAINT log_instance_encounters_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_messages
-    ADD CONSTRAINT log_instance_messages_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+    ADD CONSTRAINT log_instance_messages_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_players
     ADD CONSTRAINT log_instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;

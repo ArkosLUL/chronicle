@@ -5,8 +5,9 @@ CREATE TYPE log_instance_message_type AS ENUM (
   );
 
 CREATE TABLE log_instance_messages (
-  instance_id UUID NOT NULL REFERENCES log_instances(id) ON DELETE CASCADE,
+  encounter_id UUID NOT NULL REFERENCES log_instance_encounters(id) ON DELETE CASCADE,
   type log_instance_message_type NOT NULL,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
   messages BYTEA NOT NULL
 );
 

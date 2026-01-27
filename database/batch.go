@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -192,9 +193,9 @@ func (b *InsertInstanceUnitsBatchResults) Close() error {
 
 const insertLogEncounterEvents = `-- name: InsertLogEncounterEvents :batchexec
 INSERT INTO
-  log_instance_messages(instance_id, type, messages)
+  log_instance_messages(encounter_id, start_time, type, messages)
 VALUES
-  ($1, $2, $3)
+  ($1, $2, $3, $4)
 `
 
 type InsertLogEncounterEventsBatchResults struct {
@@ -204,16 +205,18 @@ type InsertLogEncounterEventsBatchResults struct {
 }
 
 type InsertLogEncounterEventsParams struct {
-	InstanceID uuid.UUID              `db:"instance_id" json:"instance_id"`
-	Type       LogInstanceMessageType `db:"type" json:"type"`
-	Messages   []byte                 `db:"messages" json:"messages"`
+	EncounterID uuid.UUID              `db:"encounter_id" json:"encounter_id"`
+	StartTime   pgtype.Timestamptz     `db:"start_time" json:"start_time"`
+	Type        LogInstanceMessageType `db:"type" json:"type"`
+	Messages    []byte                 `db:"messages" json:"messages"`
 }
 
 func (q *sqlQuerier) InsertLogEncounterEvents(ctx context.Context, arg []InsertLogEncounterEventsParams) *InsertLogEncounterEventsBatchResults {
 	batch := &pgx.Batch{}
 	for _, a := range arg {
 		vals := []interface{}{
-			a.InstanceID,
+			a.EncounterID,
+			a.StartTime,
 			a.Type,
 			a.Messages,
 		}

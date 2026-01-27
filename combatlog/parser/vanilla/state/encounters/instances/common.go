@@ -276,7 +276,7 @@ func (c *Common) finalizeFight() error {
 		}
 	}
 
-	evts, err := c.currentFight.Events.Finalize(c.currentFight.Start.Timestamp.Date())
+	evts, err := c.currentFight.Events.Finalize()
 	if err != nil {
 		return fmt.Errorf("finalizing encounter messages: %w", err)
 	}

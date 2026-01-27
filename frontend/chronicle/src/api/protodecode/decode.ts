@@ -21,7 +21,7 @@ export interface DecodedPayload<T> {
 /**
  * Decompresses gzip data using the native DecompressionStream API.
  */
-export async function decompressGzip(data: Uint8Array): Promise<Uint8Array> {
+export async function decompressGzip(data: Uint8Array<ArrayBufferLike>): Promise<Uint8Array<ArrayBuffer>> {
   const stream = new ReadableStream({
     start(controller) {
       controller.enqueue(data);
@@ -163,10 +163,214 @@ export function decodeDelimitedMessages<T extends DescMessage>(
   return messages;
 }
 
+// ============================================================================
+// Stream Cursor - Lazy decoding with encounter-aware iteration
+// ============================================================================
+
+/**
+ * A cursor for lazily iterating through a stream of encounters and messages.
+ * Supports peeking at the next message and advancing through the stream.
+ */
+export class StreamCursor<T extends DescMessage> {
+  private readonly schema: T;
+  private readonly data: Uint8Array;
+  private offset: number = 0;
+  
+  // Current encounter state
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _peekedMessage: { message: MessageShape<T>; index: number; bytesConsumed: number } | null = null;
+  
+  // Progress tracking
+  private _bytesProcessed: number = 0;
+  
+  constructor(schema: T, data: Uint8Array) {
+    this.schema = schema;
+    this.data = data;
+    
+    // Load first encounter header
+    this._loadNextEncounterHeader();
+  }
+  
+  /** Current encounter header, or null if no more encounters */
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+  
+  /** Number of messages processed in current encounter */
+  get messagesReadInEncounter(): number {
+    return this._messagesReadInEncounter;
+  }
+  
+  /** Total bytes processed so far */
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+  
+  /** Total bytes in the stream */
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+  
+  /** Whether there are more messages in the current encounter */
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+  
+  /** Whether there are more encounters after the current one */
+  get hasMoreEncounters(): boolean {
+    if (!this._currentHeader) return false;
+    // Check if there's data beyond the current encounter
+    const encounterEndOffset = this.offset + (this._currentHeader.dataLength - this._bytesInCurrentEncounter());
+    return encounterEndOffset < this.data.length;
+  }
+  
+  /**
+   * Peek at the next message without consuming it.
+   * Returns null if no more messages in current encounter.
+   */
+  peek(): { message: MessageShape<T>; index: number } | null {
+    if (!this.hasMoreInEncounter) return null;
+    
+    if (!this._peekedMessage) {
+      this._peekedMessage = this._decodeNextMessage();
+    }
+    
+    if (!this._peekedMessage) return null;
+    
+    return {
+      message: this._peekedMessage.message,
+      index: this._peekedMessage.index,
+    };
+  }
+  
+  /**
+   * Advance to the next message, consuming the current one.
+   */
+  advance(): void {
+    if (!this._peekedMessage) {
+      // Need to decode to know how many bytes to skip
+      this._peekedMessage = this._decodeNextMessage();
+    }
+    
+    if (this._peekedMessage) {
+      this.offset += this._peekedMessage.bytesConsumed;
+      this._bytesProcessed += this._peekedMessage.bytesConsumed;
+      this._messagesReadInEncounter++;
+      this._peekedMessage = null;
+    }
+  }
+  
+  /**
+   * Move to the next encounter.
+   * Returns true if there is another encounter, false if done.
+   */
+  nextEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    
+    // Skip remaining messages in current encounter if any
+    while (this.hasMoreInEncounter) {
+      this.advance();
+    }
+    
+    // Try to load next header
+    return this._loadNextEncounterHeader();
+  }
+  
+  private _bytesInCurrentEncounter(): number {
+    // Bytes read so far in current encounter's message data
+    // This is tracked separately from offset since offset includes header
+    return 0; // This is accounted for in _bytesProcessed
+  }
+  
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    
+    const startOffset = this.offset;
+    
+    // Read encounterID (length-prefixed string)
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+    
+    // Read firstTimestamp (varint, milliseconds since epoch)
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const firstTimestamp = new Date(Number(timestampMs));
+    
+    // Read count (varint)
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+    
+    // Read dataLength (varint)
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+    
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+    
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+    
+    return true;
+  }
+  
+  private _decodeNextMessage(): { message: MessageShape<T>; index: number; bytesConsumed: number } | null {
+    if (!this.hasMoreInEncounter) return null;
+    
+    // Read varint length prefix
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+    
+    if (msgStart + length > this.data.length) {
+      throw new Error(
+        `Invalid length-delimited message: expected ${length} bytes at offset ${msgStart}, but only ${this.data.length - msgStart} remaining`
+      );
+    }
+    
+    const messageBytes = this.data.subarray(msgStart, msgStart + length);
+    const message = fromBinary(this.schema, messageBytes);
+    
+    // Extract index from the message's meta field
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const meta = (message as any).meta;
+    const index = meta?.index ?? 0;
+    
+    return {
+      message,
+      index,
+      bytesConsumed: bytesRead + length,
+    };
+  }
+}
+
+/**
+ * Create a stream cursor for lazy iteration through encounters and messages.
+ */
+export function createStreamCursor<T extends DescMessage>(
+  schema: T,
+  data: Uint8Array
+): StreamCursor<T> {
+  return new StreamCursor(schema, data);
+}
+
+// ============================================================================
+// Varint helpers (exported for use by cursor)
+// ============================================================================
+
 /**
  * Reads a varint (up to 32-bit) from the buffer at the given offset.
  */
-function readVarint(data: Uint8Array, offset: number): { value: number; bytesRead: number } {
+export function readVarint(data: Uint8Array, offset: number): { value: number; bytesRead: number } {
   let value = 0;
   let shift = 0;
   let bytesRead = 0;
@@ -193,7 +397,7 @@ function readVarint(data: Uint8Array, offset: number): { value: number; bytesRea
 /**
  * Reads a varint (up to 64-bit) from the buffer, returns as bigint.
  */
-function readVarint64(data: Uint8Array, offset: number): { value: bigint; bytesRead: number } {
+export function readVarint64(data: Uint8Array, offset: number): { value: bigint; bytesRead: number } {
   let value = 0n;
   let shift = 0n;
   let bytesRead = 0;

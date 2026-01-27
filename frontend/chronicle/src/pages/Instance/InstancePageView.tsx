@@ -13,6 +13,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
 import { MetricPanel } from "./Panel";
+import { EventsPanel } from "./EventsPanel";
 import type { PanelType } from "./panelConfig";
 
 // ============================================================================
@@ -370,6 +371,10 @@ function EncounterDetail({
   const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
   const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
   
+  // Events panel state (new event-driven panels)
+  const [eventsPanel1Type, setEventsPanel1Type] = useState<'damage_done' | 'damage_taken' | 'healing_done'>('damage_done');
+  const [eventsPanel2Type, setEventsPanel2Type] = useState<'damage_done' | 'damage_taken' | 'healing_done'>('damage_taken');
+  
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
   const [isEntityPanelOpen, setIsEntityPanelOpen] = useState(false);
@@ -588,6 +593,30 @@ function EncounterDetail({
           instanceId={instanceId}
           panelType={panel2Type}
           onPanelTypeChange={setPanel2Type}
+          durationMs={totalDurationMs}
+          players={players}
+          enemies={mappedEnemies}
+          selectedPlayerIds={entitySelection.playerIds}
+          selectedEnemyIds={entitySelection.enemyIds}
+          selectedEncounters={encounters}
+        />
+      </div>
+
+      {/* Events Panels - New event-driven panels (experimental) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <EventsPanel
+          panelType={eventsPanel1Type}
+          onPanelTypeChange={setEventsPanel1Type}
+          durationMs={totalDurationMs}
+          players={players}
+          enemies={mappedEnemies}
+          selectedPlayerIds={entitySelection.playerIds}
+          selectedEnemyIds={entitySelection.enemyIds}
+          selectedEncounters={encounters}
+        />
+        <EventsPanel
+          panelType={eventsPanel2Type}
+          onPanelTypeChange={setEventsPanel2Type}
           durationMs={totalDurationMs}
           players={players}
           enemies={mappedEnemies}

@@ -16,4 +16,6 @@ plugins:
   - remote: buf.build/bufbuild/es:v2.2.0
     out: ../../frontend/chronicle/src/api/proto
     include_imports: true
-    opt: target=ts
+    opt:
+      - target=ts
+      - ts_nocheck=true

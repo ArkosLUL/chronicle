@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
+import { InstanceEventsProvider } from "@/hooks/instanceEvents";
 import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { InstancePageView } from "./InstancePageView";
@@ -181,9 +182,11 @@ export function InstancePage() {
   }
 
   return (
-    <InstancePageView
-      instance={instance}
-      onBack={() => navigate(-1)}
-    />
+    <InstanceEventsProvider instanceId={instanceId!}>
+      <InstancePageView
+        instance={instance}
+        onBack={() => navigate(-1)}
+      />
+    </InstanceEventsProvider>
   );
 }

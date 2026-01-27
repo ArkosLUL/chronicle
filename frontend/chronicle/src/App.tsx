@@ -6,6 +6,7 @@ import { Upload } from "./pages/Upload/Upload"
 import { LogsList } from "./pages/Logs/LogsList"
 import { LogDetail } from "./pages/Logs/LogDetail"
 import { InstancePage } from "./pages/Instance/InstancePage"
+import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { 
   AccountLayout, 
   ProfileSettings, 
@@ -26,6 +27,7 @@ function App() {
         <Route path="/logs" element={<LogsList />} />
         <Route path="/logs/:logId" element={<LogDetail />} />
         <Route path="/instances/:instanceId" element={<InstancePage />} />
+        <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/account" element={<AccountLayout />}>
           <Route index element={<Navigate to="/account/settings" replace />} />
           <Route path="settings" element={<ProfileSettings />} />

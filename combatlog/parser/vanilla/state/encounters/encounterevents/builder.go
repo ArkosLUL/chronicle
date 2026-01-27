@@ -47,6 +47,7 @@ func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, 
 		b.First = m.Date()
 	}
 
+	b.Count++
 	pm := conv(b.First, idx, m)
 	err := b.data.EncodeMessage(pm)
 	if err != nil {

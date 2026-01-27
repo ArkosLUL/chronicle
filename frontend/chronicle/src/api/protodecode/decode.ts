@@ -629,6 +629,52 @@ export class FastDamageCursor {
 }
 
 // ============================================================================
+// Header parsing (for encounter discovery)
+// ============================================================================
+
+/**
+ * Parse all encounter headers from stream data without fully decoding messages.
+ * Returns headers with encounter metadata and byte sizes.
+ */
+export function parseAllHeaders(data: Uint8Array): PayloadHeader[] {
+  const headers: PayloadHeader[] = [];
+  let offset = 0;
+
+  while (offset < data.length) {
+    // Read encounterID (length-prefixed string)
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(data, offset);
+    offset += strLenBytes;
+    const encounterID = new TextDecoder().decode(data.subarray(offset, offset + strLen));
+    offset += strLen;
+
+    // Read firstTimestamp (varint, milliseconds since epoch)
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(data, offset);
+    offset += tsBytes;
+    const firstTimestamp = new Date(Number(timestampMs));
+
+    // Read count (varint)
+    const { value: count, bytesRead: countBytes } = readVarint(data, offset);
+    offset += countBytes;
+
+    // Read dataLength (varint)
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(data, offset);
+    offset += dataLenBytes;
+
+    headers.push({
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    });
+
+    // Skip message data to get to next header
+    offset += dataLength;
+  }
+
+  return headers;
+}
+
+// ============================================================================
 // Varint helpers (exported for use by cursor)
 // ============================================================================
 

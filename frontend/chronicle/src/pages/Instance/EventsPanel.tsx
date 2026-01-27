@@ -1,41 +1,44 @@
-/* eslint-disable react-hooks/purity */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState } from "react";
 import { Swords, Shield, Activity } from "lucide-react";
 import type { InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
-import { useInstanceEvents, type StreamType } from "@/hooks/instanceEvents";
-import type { Damage } from "@/api/proto/chronicle_pb";
+import { useWorkerAggregation } from "@/hooks/instanceEvents";
+import type { AggregationType } from "@/workers/damageAggregator.worker";
 import type { Encounter } from "./InstancePage";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type EventsPanelType = "damage_done" | "damage_taken" | "healing_done";
+type EventsPanelType = "damage_done" | "damage_taken" | "healing_done" | "all_activity";
 
 interface PanelConfig {
   label: string;
-  streams: StreamType[];
-  chartType: "damage" | "healing";
+  aggregationType: AggregationType;
+  chartType: "damage" | "healing" | "activity";
 }
 
 const PANEL_CONFIGS: Record<EventsPanelType, PanelConfig> = {
   damage_done: {
     label: "Damage Done",
-    streams: ["damage"],
+    aggregationType: "damage_done",
     chartType: "damage",
   },
   damage_taken: {
     label: "Damage Taken", 
-    streams: ["damage"],
+    aggregationType: "damage_taken",
     chartType: "damage",
   },
   healing_done: {
     label: "Healing Done",
-    streams: ["heal"],
+    aggregationType: "healing_done",
     chartType: "healing",
+  },
+  all_activity: {
+    label: "All Activity",
+    aggregationType: "all_activity",
+    chartType: "activity",
   },
 };
 
@@ -43,12 +46,14 @@ const PANEL_OPTIONS: { value: EventsPanelType; label: string }[] = [
   { value: "damage_done", label: "Damage Done" },
   { value: "damage_taken", label: "Damage Taken" },
   { value: "healing_done", label: "Healing Done" },
+  { value: "all_activity", label: "All Activity (3 streams)" },
 ];
 
 const PANEL_ICONS: Record<EventsPanelType, React.ReactNode> = {
   damage_done: <Swords className="h-4 w-4" />,
   damage_taken: <Shield className="h-4 w-4" />,
   healing_done: <Activity className="h-4 w-4" />,
+  all_activity: <Activity className="h-4 w-4" />,
 };
 
 // ============================================================================
@@ -98,124 +103,25 @@ export function EventsPanel({
   const config = PANEL_CONFIGS[panelType];
   const icon = PANEL_ICONS[panelType];
 
-  // Aggregated data from events
-  const [aggregatedData, setAggregatedData] = useState<Map<string, number>>(new Map());
-  
-  // Ref for batching updates - accumulate here, flush every N events
-  const pendingDataRef = useRef<Map<string, number>>(new Map());
-  const eventCountRef = useRef(0);
-  const FLUSH_INTERVAL = 500;
-  // Mark as used for now (will be used when batching is re-enabled)
-  void FLUSH_INTERVAL;
-  
-  // Timing measurement
-  const startTimeRef = useRef<number | null>(null);
-  const [processingTime, setProcessingTime] = useState<number | null>(null);
-
-  // Set of selected encounter IDs for filtering
-  const selectedEncounterIds = useMemo(
-    () => new Set(selectedEncounters.map((e) => e.id)),
+  // List of selected encounter IDs for the worker
+  const encounterIds = useMemo(
+    () => selectedEncounters.map((e) => e.id),
     [selectedEncounters]
   );
 
-  // Flush pending data to state
-  const flushPendingData = useCallback(() => {
-    if (pendingDataRef.current.size === 0) return;
-    
-    setAggregatedData((prev) => {
-      const next = new Map(prev);
-      for (const [key, value] of pendingDataRef.current) {
-        next.set(key, (next.get(key) || 0) + value);
-      }
-      return next;
-    });
-    pendingDataRef.current.clear();
-  }, []);
-
-  // Event callback - aggregates damage/healing by source or target
-  const onEvent = useCallback(
-    (event: unknown, streamType: StreamType, encounterID: string) => {
-      // Skip events not in selected encounters
-      if (!selectedEncounterIds.has(encounterID)) return;
-
-      if (streamType === "damage") {
-        const dmg = event as Damage;
-        
-        let key: string;
-        if (panelType === "damage_done") {
-          key = dmg.caster || "Unknown";
-        } else if (panelType === "damage_taken") {
-          key = dmg.target;
-        } else {
-          return;
-        }
-        
-        // Mark as used for now (will be used when batching is re-enabled)
-        void key;
-        
-        // // Accumulate in ref
-        // pendingDataRef.current.set(
-        //   key,
-        //   (pendingDataRef.current.get(key) || 0) + dmg.amount
-        // );
-        
-        // // Flush every N events
-        // eventCountRef.current++;
-        // if (eventCountRef.current % FLUSH_INTERVAL === 0) {
-        //   flushPendingData();
-        // }
-      }
-      // TODO: Handle heal stream for healing_done
-    },
-    [panelType, selectedEncounterIds, flushPendingData]
-  );
-
-  // Flush remaining data when encounter completes
-  const onEncounterComplete = useCallback((encounterID: string) => {
-    console.log(`[EventsPanel] Encounter ${encounterID} complete`);
-    flushPendingData();
-  }, [flushPendingData]);
-
-  // Reset state and refs when deps change
-  const depsKey = `${panelType}-${Array.from(selectedEncounterIds).sort().join(",")}`;
-  const prevDepsKeyRef = useRef(depsKey);
-  
-  if (prevDepsKeyRef.current !== depsKey) {
-    prevDepsKeyRef.current = depsKey;
-    pendingDataRef.current.clear();
-    eventCountRef.current = 0;
-    setAggregatedData(new Map());
-  }
-
-  // Use the instance events hook
-  // benchmark: true skips callbacks and progress for raw speed testing
-  const { loading, processing, error, encounterProgress, bytesProcessed, bytesTotal } =
-    useInstanceEvents({
-      streams: config.streams,
-      onEvent,
-      onEncounterComplete,
-      // Use stable string key for deps to avoid effect re-runs on Set reference changes
-      deps: [panelType, Array.from(selectedEncounterIds).sort().join(",")],
-      benchmark: true,  // TODO: remove after testing
-    });
-  
-  // Track timing
-  if (processing && startTimeRef.current === null) {
-    startTimeRef.current = performance.now();
-  }
-  
-  // Final flush when processing completes
-  const wasProcessingRef = useRef(false);
-  if (wasProcessingRef.current && !processing && !loading) {
-    flushPendingData();
-    if (startTimeRef.current !== null) {
-      const elapsed = performance.now() - startTimeRef.current;
-      setProcessingTime(elapsed);
-      console.log(`[EventsPanel] Processing took ${elapsed.toFixed(2)}ms`);
-      startTimeRef.current = null;
-    }
-  }
-  wasProcessingRef.current = processing;
+  // Use the worker aggregation hook
+  const { 
+    loading, 
+    processing, 
+    error, 
+    aggregatedData, 
+    totalEvents,
+    processingTimeMs,
+    progress,
+  } = useWorkerAggregation({
+    aggregationType: config.aggregationType,
+    encounterIds,
+  });
 
   // Transform aggregated data to chart format
   const data: PlayerMetricChartData[] = useMemo(() => {
@@ -271,7 +177,12 @@ export function EventsPanel({
     : formatNumber(totalValue);
 
   // Progress display
-  const progressPercent = bytesTotal > 0 ? (bytesProcessed / bytesTotal) * 100 : 0;
+  const bytesProgressPercent = progress && progress.bytesTotal > 0 
+    ? (progress.bytesProcessed / progress.bytesTotal) * 100 
+    : 0;
+  const eventsProgressPercent = progress && progress.totalEvents > 0 
+    ? (progress.currentIdx / progress.totalEvents) * 100 
+    : 0;
 
   return (
     <Card className="p-4 gap-2">
@@ -307,38 +218,43 @@ export function EventsPanel({
       {/* Progress/Status bars */}
       {(loading || processing) && (
         <div className="mb-2 space-y-2">
+          {/* Loading indicator */}
+          {loading && (
+            <div className="text-xs text-muted-foreground">Fetching data...</div>
+          )}
+          
           {/* Bytes progress */}
-          <div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span>Bytes</span>
-              <span>
-                {formatNumber(bytesProcessed)} / {formatNumber(bytesTotal)} ({formatPercent(progressPercent / 100)})
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
-              <div
-                className="bg-blue-500 h-1.5 rounded-full transition-all duration-150"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Encounter progress */}
-          {encounterProgress && (
+          {progress && (
             <div>
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>Bytes</span>
                 <span>
-                  {loading ? "Fetching..." : "Processing..."} Encounter
+                  {formatNumber(progress.bytesProcessed)} / {formatNumber(progress.bytesTotal)} ({formatPercent(bytesProgressPercent / 100)})
                 </span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-1.5">
+                <div
+                  className="bg-blue-500 h-1.5 rounded-full transition-all duration-150"
+                  style={{ width: `${bytesProgressPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Events progress */}
+          {progress && (
+            <div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>Processing Events</span>
                 <span>
-                  {encounterProgress.currentIdx} / {encounterProgress.totalEvents} (
-                  {formatPercent(encounterProgress.currentIdx / encounterProgress.totalEvents)})
+                  {formatNumber(progress.currentIdx)} / {formatNumber(progress.totalEvents)} (
+                  {formatPercent(eventsProgressPercent / 100)})
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-1.5">
                 <div
                   className="bg-primary h-1.5 rounded-full transition-all duration-150"
-                  style={{ width: `${(encounterProgress.currentIdx / encounterProgress.totalEvents) * 100}%` }}
+                  style={{ width: `${eventsProgressPercent}%` }}
                 />
               </div>
             </div>
@@ -355,11 +271,11 @@ export function EventsPanel({
       <div className="text-xs text-muted-foreground">
         Total: <span className="font-medium text-foreground">{displayTotal}{perSecond ? "/s" : ""}</span>
         {!loading && !processing && (
-          <span className="ml-2">({data.length} entries)</span>
+          <span className="ml-2">({data.length} entries, {formatNumber(totalEvents)} events)</span>
         )}
-        {processingTime !== null && (
+        {processingTimeMs !== null && (
           <span className="ml-2 text-blue-500">
-            Processed in {processingTime.toFixed(0)}ms
+            Processed in {processingTimeMs.toFixed(0)}ms
           </span>
         )}
       </div>

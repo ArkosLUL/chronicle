@@ -195,6 +195,11 @@ func (x *EventMeta) GetOffsetMilli() int64 {
 type Heal struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Caster        string                 `protobuf:"bytes,3,opt,name=caster,proto3" json:"caster,omitempty"`
+	Target        string                 `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
+	SourceName    string                 `protobuf:"bytes,5,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
+	Amount        int32                  `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
+	HitType       uint32                 `protobuf:"varint,7,opt,name=hitType,proto3" json:"hitType,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -234,6 +239,41 @@ func (x *Heal) GetMeta() *EventMeta {
 		return x.Meta
 	}
 	return nil
+}
+
+func (x *Heal) GetCaster() string {
+	if x != nil {
+		return x.Caster
+	}
+	return ""
+}
+
+func (x *Heal) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *Heal) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
+	}
+	return ""
+}
+
+func (x *Heal) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *Heal) GetHitType() uint32 {
+	if x != nil {
+		return x.HitType
+	}
+	return 0
 }
 
 type Damage struct {
@@ -337,6 +377,98 @@ func (x *Damage) GetTailers() []*Tailer {
 	return nil
 }
 
+type ResourceChange struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Target        string                 `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
+	Amount        int32                  `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	ResourceType  string                 `protobuf:"bytes,5,opt,name=resourceType,proto3" json:"resourceType,omitempty"`
+	Caster        *string                `protobuf:"bytes,6,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
+	SourceName    *string                `protobuf:"bytes,7,opt,name=sourceName,proto3,oneof" json:"sourceName,omitempty"`
+	Direction     string                 `protobuf:"bytes,8,opt,name=direction,proto3" json:"direction,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceChange) Reset() {
+	*x = ResourceChange{}
+	mi := &file_chronicle_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceChange) ProtoMessage() {}
+
+func (x *ResourceChange) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceChange.ProtoReflect.Descriptor instead.
+func (*ResourceChange) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ResourceChange) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *ResourceChange) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *ResourceChange) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *ResourceChange) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *ResourceChange) GetCaster() string {
+	if x != nil && x.Caster != nil {
+		return *x.Caster
+	}
+	return ""
+}
+
+func (x *ResourceChange) GetSourceName() string {
+	if x != nil && x.SourceName != nil {
+		return *x.SourceName
+	}
+	return ""
+}
+
+func (x *ResourceChange) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -348,9 +480,16 @@ const file_chronicle_proto_rawDesc = "" +
 	"\a_amount\"C\n" +
 	"\tEventMeta\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x05R\x05index\x12 \n" +
-	"\voffsetMilli\x18\x02 \x01(\x03R\voffsetMilli\"5\n" +
+	"\voffsetMilli\x18\x02 \x01(\x03R\voffsetMilli\"\xb7\x01\n" +
 	"\x04Heal\x12-\n" +
-	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\"\xab\x02\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
+	"\x06caster\x18\x03 \x01(\tR\x06caster\x12\x16\n" +
+	"\x06target\x18\x04 \x01(\tR\x06target\x12\x1e\n" +
+	"\n" +
+	"sourceName\x18\x05 \x01(\tR\n" +
+	"sourceName\x12\x16\n" +
+	"\x06amount\x18\x06 \x01(\x05R\x06amount\x12\x18\n" +
+	"\ahitType\x18\a \x01(\rR\ahitType\"\xab\x02\n" +
 	"\x06Damage\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +
 	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01\x12\x1e\n" +
@@ -362,7 +501,19 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06amount\x18\a \x01(\x05R\x06amount\x12.\n" +
 	"\x06school\x18\b \x01(\x0e2\x16.chronicleproto.SchoolR\x06school\x120\n" +
 	"\atailers\x18\t \x03(\v2\x16.chronicleproto.TailerR\atailersB\t\n" +
-	"\a_caster*p\n" +
+	"\a_caster\"\x8d\x02\n" +
+	"\x0eResourceChange\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
+	"\x06target\x18\x03 \x01(\tR\x06target\x12\x16\n" +
+	"\x06amount\x18\x04 \x01(\x05R\x06amount\x12\"\n" +
+	"\fresourceType\x18\x05 \x01(\tR\fresourceType\x12\x1b\n" +
+	"\x06caster\x18\x06 \x01(\tH\x00R\x06caster\x88\x01\x01\x12#\n" +
+	"\n" +
+	"sourceName\x18\a \x01(\tH\x01R\n" +
+	"sourceName\x88\x01\x01\x12\x1c\n" +
+	"\tdirection\x18\b \x01(\tR\tdirectionB\t\n" +
+	"\a_casterB\r\n" +
+	"\v_sourceName*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -390,24 +541,26 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_chronicle_proto_goTypes = []any{
-	(School)(0),       // 0: chronicleproto.School
-	(*Tailer)(nil),    // 1: chronicleproto.Tailer
-	(*EventMeta)(nil), // 2: chronicleproto.EventMeta
-	(*Heal)(nil),      // 3: chronicleproto.Heal
-	(*Damage)(nil),    // 4: chronicleproto.Damage
+	(School)(0),            // 0: chronicleproto.School
+	(*Tailer)(nil),         // 1: chronicleproto.Tailer
+	(*EventMeta)(nil),      // 2: chronicleproto.EventMeta
+	(*Heal)(nil),           // 3: chronicleproto.Heal
+	(*Damage)(nil),         // 4: chronicleproto.Damage
+	(*ResourceChange)(nil), // 5: chronicleproto.ResourceChange
 }
 var file_chronicle_proto_depIdxs = []int32{
 	2, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
 	2, // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
 	0, // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
 	1, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -417,13 +570,14 @@ func file_chronicle_proto_init() {
 	}
 	file_chronicle_proto_msgTypes[0].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[3].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

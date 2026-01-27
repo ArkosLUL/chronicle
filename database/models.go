@@ -80,7 +80,9 @@ func AllItemEffectTypeValues() []ItemEffectType {
 type LogInstanceEventType string
 
 const (
-	LogInstanceEventTypeDamage LogInstanceEventType = "damage"
+	LogInstanceEventTypeDamage         LogInstanceEventType = "damage"
+	LogInstanceEventTypeHeal           LogInstanceEventType = "heal"
+	LogInstanceEventTypeResourceChange LogInstanceEventType = "resource_change"
 )
 
 func (e *LogInstanceEventType) Scan(src interface{}) error {
@@ -120,7 +122,9 @@ func (ns NullLogInstanceEventType) Value() (driver.Value, error) {
 
 func (e LogInstanceEventType) Valid() bool {
 	switch e {
-	case LogInstanceEventTypeDamage:
+	case LogInstanceEventTypeDamage,
+		LogInstanceEventTypeHeal,
+		LogInstanceEventTypeResourceChange:
 		return true
 	}
 	return false
@@ -129,6 +133,8 @@ func (e LogInstanceEventType) Valid() bool {
 func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 	return []LogInstanceEventType{
 		LogInstanceEventTypeDamage,
+		LogInstanceEventTypeHeal,
+		LogInstanceEventTypeResourceChange,
 	}
 }
 

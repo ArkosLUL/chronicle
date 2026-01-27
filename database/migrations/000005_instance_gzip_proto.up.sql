@@ -1,7 +1,9 @@
 BEGIN;
 
 CREATE TYPE log_instance_event_type AS ENUM (
-  'damage'
+  'damage',
+  'heal',
+  'resource_change'
   );
 
 CREATE TABLE log_instance_events(

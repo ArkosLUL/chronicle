@@ -11,7 +11,9 @@ CREATE TYPE item_effect_type AS ENUM (
 );
 
 CREATE TYPE log_instance_event_type AS ENUM (
-    'damage'
+    'damage',
+    'heal',
+    'resource_change'
 );
 
 CREATE TYPE river_job_state AS ENUM (

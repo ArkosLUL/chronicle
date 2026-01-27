@@ -152,9 +152,14 @@ export function useInstanceEvents<T = unknown>(
         const useFastPath = streams.length === 1 && streams[0] === "damage";
         
         if (useFastPath) {
+          performance.mark("fastpath-start");
+          
           // Use FastDamageCursor for zero-allocation iteration
           const fastCursor = new FastDamageCursor(cachedStreams[0].data);
           
+          performance.mark("cursor-created");
+          
+          let eventCount = 0;
           while (fastCursor.currentHeader) {
             if (cancelled || version !== processingVersionRef.current) return;
             
@@ -165,6 +170,7 @@ export function useInstanceEvents<T = unknown>(
               
               const msg = fastCursor.next();
               if (!msg) break;
+              eventCount++;
               
               if (!benchmark) {
                 onEventRef.current(msg as T, "damage", encounterID);
@@ -178,10 +184,25 @@ export function useInstanceEvents<T = unknown>(
             fastCursor.nextEncounter();
           }
           
+          performance.mark("fastpath-end");
+          
           setBytesProcessed(fastCursor.bytesProcessed);
           
           const elapsed = performance.now() - startTime;
-          console.log(`[useInstanceEvents] Fast path completed in ${elapsed.toFixed(2)}ms (benchmark=${benchmark})`);
+          
+          // Log detailed timing
+          performance.measure("cursor-init", "fastpath-start", "cursor-created");
+          performance.measure("event-iteration", "cursor-created", "fastpath-end");
+          performance.measure("fastpath-total", "fastpath-start", "fastpath-end");
+          
+          const cursorInit = performance.getEntriesByName("cursor-init")[0]?.duration ?? 0;
+          const iteration = performance.getEntriesByName("event-iteration")[0]?.duration ?? 0;
+          
+          console.log(`[useInstanceEvents] Fast path: ${eventCount} events in ${elapsed.toFixed(2)}ms (init=${cursorInit.toFixed(2)}ms, iterate=${iteration.toFixed(2)}ms)`);
+          
+          // Clear marks for next run
+          performance.clearMarks();
+          performance.clearMeasures();
           
           setProcessing(false);
           return;

@@ -26,6 +26,35 @@ func Damage(from time.Time, idx int32, dmg messages.Damage) *chronicleproto.Dama
 	}
 }
 
+func Heal(from time.Time, idx int32, heal messages.Heal) *chronicleproto.Heal {
+	return &chronicleproto.Heal{
+		Meta: &chronicleproto.EventMeta{
+			Index:       idx,
+			OffsetMilli: heal.Timestamp.UnixMilli() - from.UnixMilli(),
+		},
+		Caster:     heal.Caster.String(),
+		Target:     heal.Target.String(),
+		SourceName: heal.SpellName,
+		Amount:     heal.Amount,
+		HitType:    HitType(heal.HitType),
+	}
+}
+
+func ResourceChange(from time.Time, idx int32, rc messages.ResourceChange) *chronicleproto.ResourceChange {
+	return &chronicleproto.ResourceChange{
+		Meta: &chronicleproto.EventMeta{
+			Index:       idx,
+			OffsetMilli: rc.Timestamp.UnixMilli() - from.UnixMilli(),
+		},
+		Target:       rc.Target.String(),
+		Amount:       rc.Amount,
+		ResourceType: rc.Resource.String(),
+		Caster:       OptionalGUID(rc.Caster),
+		SourceName:   rc.SpellName,
+		Direction:    rc.Direction.String(),
+	}
+}
+
 func OptionalGUID(id *guid.GUID) *string {
 	if id == nil {
 		return nil

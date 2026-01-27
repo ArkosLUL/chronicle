@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIi8KBEhlYWwSJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YSLnAQoGRGFtYWdlEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESEwoGY2FzdGVyGAMgASgJSACIAQESEgoKc291cmNlTmFtZRgEIAEoCRIOCgZ0YXJnZXQYBSABKAkSDwoHaGl0VHlwZRgGIAEoDRIOCgZhbW91bnQYByABKAUSJgoGc2Nob29sGAggASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCSADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlcipwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSpwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
 
 /**
  * @generated from message chronicleproto.Tailer
@@ -65,6 +65,31 @@ export type Heal = Message<"chronicleproto.Heal"> & {
    * @generated from field: chronicleproto.EventMeta meta = 1;
    */
   meta?: EventMeta;
+
+  /**
+   * @generated from field: string caster = 3;
+   */
+  caster: string;
+
+  /**
+   * @generated from field: string target = 4;
+   */
+  target: string;
+
+  /**
+   * @generated from field: string sourceName = 5;
+   */
+  sourceName: string;
+
+  /**
+   * @generated from field: int32 amount = 6;
+   */
+  amount: number;
+
+  /**
+   * @generated from field: uint32 hitType = 7;
+   */
+  hitType: number;
 };
 
 /**
@@ -127,6 +152,53 @@ export type Damage = Message<"chronicleproto.Damage"> & {
  */
 export const DamageSchema: GenMessage<Damage> = /*@__PURE__*/
   messageDesc(file_chronicle, 3);
+
+/**
+ * @generated from message chronicleproto.ResourceChange
+ */
+export type ResourceChange = Message<"chronicleproto.ResourceChange"> & {
+  /**
+   * @generated from field: chronicleproto.EventMeta meta = 1;
+   */
+  meta?: EventMeta;
+
+  /**
+   * @generated from field: string target = 3;
+   */
+  target: string;
+
+  /**
+   * @generated from field: int32 amount = 4;
+   */
+  amount: number;
+
+  /**
+   * @generated from field: string resourceType = 5;
+   */
+  resourceType: string;
+
+  /**
+   * @generated from field: optional string caster = 6;
+   */
+  caster?: string;
+
+  /**
+   * @generated from field: optional string sourceName = 7;
+   */
+  sourceName?: string;
+
+  /**
+   * @generated from field: string direction = 8;
+   */
+  direction: string;
+};
+
+/**
+ * Describes the message chronicleproto.ResourceChange.
+ * Use `create(ResourceChangeSchema)` to create a new message.
+ */
+export const ResourceChangeSchema: GenMessage<ResourceChange> = /*@__PURE__*/
+  messageDesc(file_chronicle, 4);
 
 /**
  * @generated from enum chronicleproto.School

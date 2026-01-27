@@ -1,5 +1,6 @@
 export { InstanceEventsProvider, useInstanceEventsContext } from "./InstanceEventsContext";
 export { useInstanceEvents } from "./useInstanceEvents";
+export { useWorkerAggregation } from "./useWorkerAggregation";
 export type {
   StreamType,
   EncounterProgress,
@@ -10,3 +11,7 @@ export type {
   CachedStream,
   InstanceEventsContextValue,
 } from "./types";
+export type {
+  UseWorkerAggregationOptions,
+  UseWorkerAggregationResult,
+} from "./useWorkerAggregation";

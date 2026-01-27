@@ -11,12 +11,16 @@ import (
 )
 
 type Events struct {
-	Damage []byte
+	Damage         []byte
+	Healing        []byte
+	ResourceChange []byte
 }
 
 func NewEvents() *Events {
 	return &Events{
-		Damage: make([]byte, 0),
+		Damage:         make([]byte, 0),
+		Healing:        make([]byte, 0),
+		ResourceChange: make([]byte, 0),
 	}
 }
 
@@ -25,11 +29,32 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 	if err != nil {
 		return fmt.Errorf("gzip damage events: %w", err)
 	}
+
+	healingPayload, err := gzipData(e.Healing)
+	if err != nil {
+		return fmt.Errorf("gzip healing events: %w", err)
+	}
+
+	resourceChangePayload, err := gzipData(e.ResourceChange)
+	if err != nil {
+		return fmt.Errorf("gzip resource change events: %w", err)
+	}
+
 	res := db.InsertLogInstanceEvents(ctx, []database.InsertLogInstanceEventsParams{
 		{
 			InstanceID: instanceID,
 			Type:       database.LogInstanceEventTypeDamage,
 			Events:     damagePayload,
+		},
+		{
+			InstanceID: instanceID,
+			Type:       database.LogInstanceEventTypeHeal,
+			Events:     healingPayload,
+		},
+		{
+			InstanceID: instanceID,
+			Type:       database.LogInstanceEventTypeResourceChange,
+			Events:     resourceChangePayload,
 		},
 	})
 	if err := res.Close(); err != nil {

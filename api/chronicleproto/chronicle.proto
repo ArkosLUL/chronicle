@@ -28,6 +28,11 @@ message EventMeta {
 
 message Heal {
   EventMeta meta = 1;
+  string caster = 3;
+  string target = 4;
+  string sourceName = 5;
+  int32 amount = 6;
+  uint32 hitType = 7;
 }
 
 message Damage {
@@ -41,4 +46,14 @@ message Damage {
   int32 amount = 7;
   School school = 8;
   repeated Tailer tailers = 9;
+}
+
+message ResourceChange {
+  EventMeta meta = 1;
+  string target = 3;
+  int32 amount = 4;
+  string resourceType = 5;
+  optional string caster = 6;
+  optional string sourceName = 7;
+  string direction = 8;
 }

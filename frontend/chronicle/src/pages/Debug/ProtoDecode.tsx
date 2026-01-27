@@ -1,10 +1,25 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card/Card"
 import { Button } from "@/components/ui/button"
-import { decodePayload, decodeDelimitedMessages, decompressGzip, isGzipped, type PayloadHeader } from "@/api/protodecode/decode"
+import { decodePayload, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader } from "@/api/protodecode/decode"
 import { DamageSchema, type Damage, School } from "@/api/proto/chronicle_pb"
+import { wasmDecodeDamageBenchmark, wasmDecodeMinimal, loadWasm } from "@/api/wasm/wasmDecoder"
 
 type DecodeMode = "payload" | "messages"
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+}
+
+interface BenchmarkResult {
+  name: string;
+  events: number;
+  totalMs: number;
+  eventsPerSec: number;
+  details?: string;
+}
 
 export function ProtoDecode() {
   const [input, setInput] = useState("")
@@ -14,6 +29,13 @@ export function ProtoDecode() {
   const [messages, setMessages] = useState<Damage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([])
+  const [benchmarking, setBenchmarking] = useState(false)
+  const [encounterSummary, setEncounterSummary] = useState<{
+    headers: PayloadHeader[];
+    compressedSize: number;
+    decompressedSize: number;
+  } | null>(null)
 
   const handleFetch = async () => {
     if (!instanceId.trim()) {
@@ -95,6 +117,193 @@ export function ProtoDecode() {
     setHeader(null)
     setMessages([])
     setError(null)
+    setBenchmarkResults([])
+    setEncounterSummary(null)
+  }
+
+  const handleBenchmark = async () => {
+    if (!instanceId.trim()) {
+      setError("Please enter an instance ID to benchmark")
+      return
+    }
+
+    setBenchmarking(true)
+    setBenchmarkResults([])
+    setError(null)
+
+    try {
+      // Fetch raw data
+      const url = `/api/v1/raidlogs/instances/${instanceId.trim()}/events/damage`
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const buffer = await response.arrayBuffer()
+      const compressedData = new Uint8Array(buffer)
+      const compressedSize = compressedData.length
+      
+      // Decompress for TypeScript benchmark (WASM handles its own decompression)
+      let data = compressedData
+      if (isGzipped(data)) {
+        data = await decompressGzip(data)
+      }
+      const decompressedSize = data.length
+
+      // Parse encounter headers for summary
+      const headers = parseAllHeaders(data)
+      setEncounterSummary({ headers, compressedSize, decompressedSize })
+
+      const results: BenchmarkResult[] = []
+      const iterations = 3
+
+      // Benchmark 0: TypeScript with aggregation (simulates real usage)
+      {
+        const times: number[] = []
+        let eventCount = 0
+        for (let i = 0; i < iterations; i++) {
+          const start = performance.now()
+          const cursor = new FastDamageCursor(data)
+          const aggregated = new Map<string, number>()
+          let count = 0
+          while (cursor.currentHeader) {
+            while (cursor.hasMoreInEncounter) {
+              const msg = cursor.next()
+              if (msg) {
+                count++
+                const key = msg.caster || "Unknown"
+                aggregated.set(key, (aggregated.get(key) || 0) + msg.amount)
+              }
+            }
+            cursor.nextEncounter()
+          }
+          times.push(performance.now() - start)
+          eventCount = count
+        }
+        const avgTime = times.reduce((a, b) => a + b, 0) / times.length
+        results.push({
+          name: "TypeScript + Aggregation",
+          events: eventCount,
+          totalMs: avgTime,
+          eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
+          details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms`
+        })
+      }
+
+      // Benchmark 1: TypeScript FastDamageCursor
+      {
+        const times: number[] = []
+        let eventCount = 0
+        for (let i = 0; i < iterations; i++) {
+          const start = performance.now()
+          const cursor = new FastDamageCursor(data)
+          let count = 0
+          while (cursor.currentHeader) {
+            while (cursor.hasMoreInEncounter) {
+              const msg = cursor.next()
+              if (msg) count++
+            }
+            cursor.nextEncounter()
+          }
+          times.push(performance.now() - start)
+          eventCount = count
+        }
+        const avgTime = times.reduce((a, b) => a + b, 0) / times.length
+        results.push({
+          name: "TypeScript (FastDamageCursor)",
+          events: eventCount,
+          totalMs: avgTime,
+          eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
+          details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms`
+        })
+      }
+
+      // Benchmark 2: WASM decoder
+      {
+        try {
+          await loadWasm()
+          const times: number[] = []
+          let eventCount = 0
+          let wasmDetails = ""
+          
+          for (let i = 0; i < iterations; i++) {
+            // Pass compressed data - WASM handles decompression
+            const result = await wasmDecodeDamageBenchmark(compressedData)
+            if (result.error) {
+              throw new Error(result.error)
+            }
+            times.push(result.totalMs ?? 0)
+            eventCount = result.events ?? 0
+            if (i === 0) {
+              wasmDetails = `decompress=${result.decompressMs?.toFixed(1)}ms, parse=${result.parseMs?.toFixed(1)}ms`
+            }
+          }
+          
+          const avgTime = times.reduce((a, b) => a + b, 0) / times.length
+          results.push({
+            name: "Go WASM",
+            events: eventCount,
+            totalMs: avgTime,
+            eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
+            details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms (${wasmDetails})`
+          })
+        } catch (wasmErr) {
+          results.push({
+            name: "Go WASM",
+            events: 0,
+            totalMs: 0,
+            eventsPerSec: 0,
+            details: `Error: ${wasmErr instanceof Error ? wasmErr.message : String(wasmErr)}`
+          })
+        }
+      }
+
+      // Benchmark 3: WASM minimal (no protobuf parsing - just byte iteration)
+      {
+        try {
+          await loadWasm()
+          const times: number[] = []
+          let eventCount = 0
+          let wasmDetails = ""
+          
+          for (let i = 0; i < iterations; i++) {
+            const result = await wasmDecodeMinimal(compressedData)
+            if (result.error) {
+              throw new Error(result.error)
+            }
+            times.push(result.totalMs ?? 0)
+            eventCount = result.events ?? 0
+            if (i === 0) {
+              wasmDetails = `copy=${result.copyMs?.toFixed(1)}ms, decompress=${result.decompressMs?.toFixed(1)}ms, iterate=${result.iterateMs?.toFixed(1)}ms`
+            }
+          }
+          
+          const avgTime = times.reduce((a, b) => a + b, 0) / times.length
+          results.push({
+            name: "Go WASM (minimal)",
+            events: eventCount,
+            totalMs: avgTime,
+            eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
+            details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms (${wasmDetails})`
+          })
+        } catch (wasmErr) {
+          results.push({
+            name: "Go WASM (minimal)",
+            events: 0,
+            totalMs: 0,
+            eventsPerSec: 0,
+            details: `Error: ${wasmErr instanceof Error ? wasmErr.message : String(wasmErr)}`
+          })
+        }
+      }
+
+      setBenchmarkResults(results)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBenchmarking(false)
+    }
   }
 
   return (
@@ -147,10 +356,114 @@ export function ProtoDecode() {
               placeholder="Instance UUID (e.g., a1da6acf-a103-4aca-9176-d46e4deabb69)"
               className="flex-1 p-2 font-mono text-sm bg-background border rounded-md"
             />
-            <Button onClick={handleFetch} disabled={loading}>
+            <Button onClick={handleFetch} disabled={loading || benchmarking}>
               {loading ? "Loading..." : "Fetch"}
             </Button>
+            <Button 
+              onClick={handleBenchmark} 
+              disabled={loading || benchmarking}
+              variant="secondary"
+            >
+              {benchmarking ? "Benchmarking..." : "Benchmark"}
+            </Button>
           </div>
+          
+          {/* Benchmark Results */}
+          {benchmarkResults.length > 0 && (
+            <div className="mt-4 p-4 bg-muted rounded-md">
+              <h4 className="font-semibold mb-2">Benchmark Results</h4>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-1">Decoder</th>
+                    <th className="text-right py-1">Events</th>
+                    <th className="text-right py-1">Time (ms)</th>
+                    <th className="text-right py-1">Events/sec</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {benchmarkResults.map((result, i) => (
+                    <tr key={i} className="border-b border-muted-foreground/20">
+                      <td className="py-1">{result.name}</td>
+                      <td className="text-right py-1">{result.events.toLocaleString()}</td>
+                      <td className="text-right py-1">{result.totalMs.toFixed(2)}</td>
+                      <td className="text-right py-1">{result.eventsPerSec.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-2 text-xs text-muted-foreground">
+                {benchmarkResults.map((r, i) => (
+                  <div key={i}>{r.name}: {r.details}</div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Encounter Summary */}
+          {encounterSummary && (
+            <div className="mt-4 p-4 bg-muted rounded-md">
+              <h4 className="font-semibold mb-2">Data Summary</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Compressed</div>
+                  <div className="font-mono">{formatBytes(encounterSummary.compressedSize)}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Decompressed</div>
+                  <div className="font-mono">{formatBytes(encounterSummary.decompressedSize)}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Compression Ratio</div>
+                  <div className="font-mono">{(encounterSummary.decompressedSize / encounterSummary.compressedSize).toFixed(2)}x</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Encounters</div>
+                  <div className="font-mono">{encounterSummary.headers.length}</div>
+                </div>
+              </div>
+              
+              <h4 className="font-semibold mb-2">Encounters ({encounterSummary.headers.reduce((sum, h) => sum + h.count, 0).toLocaleString()} total events)</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-1 pr-4">#</th>
+                      <th className="text-left py-1 pr-4">Encounter ID</th>
+                      <th className="text-left py-1 pr-4">Timestamp</th>
+                      <th className="text-right py-1 pr-4">Events</th>
+                      <th className="text-right py-1 pr-4">Data Size</th>
+                      <th className="text-right py-1">Avg/Event</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {encounterSummary.headers.map((header, i) => (
+                      <tr key={i} className="border-b border-muted-foreground/20">
+                        <td className="py-1 pr-4 text-muted-foreground">{i + 1}</td>
+                        <td className="py-1 pr-4 font-mono text-xs">{header.encounterID.slice(0, 8)}...</td>
+                        <td className="py-1 pr-4 text-xs">{header.firstTimestamp.toLocaleTimeString()}</td>
+                        <td className="text-right py-1 pr-4">{header.count.toLocaleString()}</td>
+                        <td className="text-right py-1 pr-4 font-mono">{formatBytes(header.dataLength)}</td>
+                        <td className="text-right py-1 font-mono">{(header.dataLength / header.count).toFixed(1)}B</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="font-semibold">
+                      <td className="py-1 pr-4"></td>
+                      <td className="py-1 pr-4">Total</td>
+                      <td className="py-1 pr-4"></td>
+                      <td className="text-right py-1 pr-4">{encounterSummary.headers.reduce((sum, h) => sum + h.count, 0).toLocaleString()}</td>
+                      <td className="text-right py-1 pr-4 font-mono">{formatBytes(encounterSummary.headers.reduce((sum, h) => sum + h.dataLength, 0))}</td>
+                      <td className="text-right py-1 font-mono">
+                        {(encounterSummary.headers.reduce((sum, h) => sum + h.dataLength, 0) / encounterSummary.headers.reduce((sum, h) => sum + h.count, 0)).toFixed(1)}B
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

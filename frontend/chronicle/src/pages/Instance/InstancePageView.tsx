@@ -175,15 +175,18 @@ function EncounterSidebar({
   trashGroups,
   selectedIds,
   onSelect,
+  onSelectMany,
   onCollapse,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
   selectedIds: string[];
   onSelect: (id: string, mode: 'single' | 'toggle') => void;
+  onSelectMany: (ids: string[]) => void;
   onCollapse: () => void;
 }) {
   const bossEncounters = encounters.filter((e) => e.boss);
+  const trashEncounterIds = trashGroups.flatMap(g => g.encounters.map(e => e.id));
   const totalTrash = trashGroups.reduce((sum, g) => sum + g.encounters.length, 0);
 
   const groupsWithSelectedTrash = trashGroups
@@ -207,9 +210,6 @@ function EncounterSidebar({
     }
   };
 
-  const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  const modifierKey = isMac ? '⌘' : 'Ctrl';
-
   return (
     <div className="w-64 shrink-0 border-r pr-4">
       <div className="mb-3 flex items-start justify-between">
@@ -220,9 +220,37 @@ function EncounterSidebar({
               <span className="ml-2 text-xs">({selectedIds.length} selected)</span>
             )}
           </h3>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            {modifierKey}+click to multi-select
-          </p>
+          <div className="flex gap-1 mt-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 px-1.5 text-xs"
+              onClick={() => onSelectMany(encounters.map(e => e.id))}
+              title="Select all encounters"
+            >
+              All
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 px-1.5 text-xs"
+              onClick={() => onSelectMany(bossEncounters.map(e => e.id))}
+              disabled={bossEncounters.length === 0}
+              title="Select boss encounters only"
+            >
+              Bosses
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 px-1.5 text-xs"
+              onClick={() => onSelectMany(trashEncounterIds)}
+              disabled={trashEncounterIds.length === 0}
+              title="Select trash encounters only"
+            >
+              Trash
+            </Button>
+          </div>
         </div>
         <Button
           variant="ghost"
@@ -372,8 +400,8 @@ function EncounterDetail({
   const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
   
   // Events panel state (new event-driven panels)
-  const [eventsPanel1Type, setEventsPanel1Type] = useState<'damage_done' | 'damage_taken' | 'healing_done'>('damage_done');
-  const [eventsPanel2Type, setEventsPanel2Type] = useState<'damage_done' | 'damage_taken' | 'healing_done'>('damage_taken');
+  const [eventsPanel1Type, setEventsPanel1Type] = useState<'damage_done' | 'damage_taken' | 'healing_done' | 'all_activity'>('damage_done');
+  const [eventsPanel2Type, setEventsPanel2Type] = useState<'damage_done' | 'damage_taken' | 'healing_done' | 'all_activity'>('all_activity');
   
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
@@ -751,6 +779,10 @@ export function InstancePageView({
             trashGroups={trashGroups}
             selectedIds={selectedIds}
             onSelect={handleSelect}
+            onSelectMany={(ids) => {
+              const update = onSelectEncounters ?? setInternalSelectedIds;
+              update(ids);
+            }}
           />
         ) : (
           <Button

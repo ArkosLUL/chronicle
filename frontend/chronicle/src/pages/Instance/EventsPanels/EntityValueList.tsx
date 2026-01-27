@@ -5,6 +5,7 @@
 import type { PanelRenderProps, EntityValueMap } from "./types";
 
 function formatNumber(value: number): string {
+  if (!value) return "0";
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(1)}M`;
   }

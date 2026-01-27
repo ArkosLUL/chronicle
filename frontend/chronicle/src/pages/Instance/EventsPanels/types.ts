@@ -3,6 +3,7 @@
  */
 
 import type { ReusableDamage } from "@/api/protodecode/decode";
+import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -89,3 +90,5 @@ export interface PanelRenderProps<TResult> {
  * Common aggregation result: map of entity ID to numeric value
  */
 export type EntityValueMap = Map<string, number>;
+
+export type PlayerMetricChartMap = Map<string, PlayerMetricChartData>;

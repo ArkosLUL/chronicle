@@ -5,7 +5,7 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/Card/Card";
 import { usePanelAggregation } from "./usePanelAggregation";
-import type { PanelDefinition, EntityValueMap } from "./types";
+import type { PanelDefinition } from "./types";
 import type { Encounter } from "../InstancePage";
 
 // Import panel definitions
@@ -15,7 +15,10 @@ import { HealingDonePanel } from "./HealingDone";
 import { AllActivityPanel } from "./AllActivity";
 
 // Registry of all available panels
-const PANELS: Record<string, PanelDefinition<EntityValueMap>> = {
+// Using `any` here to allow different result types per panel.
+// Type safety is maintained within each panel definition.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PANELS: Record<string, PanelDefinition<any>> = {
   damage_done: DamageDonePanel,
   damage_taken: DamageTakenPanel,
   healing_done: HealingDonePanel,

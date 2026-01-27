@@ -2,10 +2,10 @@
  * Shared types for EventsPanels
  */
 
-import type { ReusableDamage } from "@/api/protodecode/decode";
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { Instance, Encounter } from "../InstancePage";
+import type { ProcessorContext, ProcessorEvent } from "./processorTypes";
 
 /**
  * Selection state for filtering entities
@@ -73,14 +73,14 @@ export interface PanelDefinition<TResult> {
   
   /**
    * Process a single event and update the state.
-   * Context is available for filtering based on entity selection.
+   * Runs in a Web Worker with serializable ProcessorContext.
    */
   processEvent: (
     state: TResult,
-    event: ReusableDamage,
+    event: ProcessorEvent,
     encounterID: string,
     streamType: StreamType,
-    context: PanelContext,
+    context: ProcessorContext,
   ) => void;
   
   /**

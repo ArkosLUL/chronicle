@@ -1,11 +1,12 @@
 /**
- * Hook for aggregating events based on a PanelDefinition
+ * Hook for aggregating events based on a PanelDefinition.
+ * Uses a Web Worker for processing to keep the UI responsive.
  */
 
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "@/hooks/instanceEvents";
-import { FastDamageCursor } from "@/api/protodecode/decode";
 import type { PanelDefinition, PanelContext } from "./types";
+import type { WorkerRequest, WorkerResponse, ProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 export interface UsePanelAggregationOptions<TResult> {
@@ -24,6 +25,31 @@ export interface UsePanelAggregationResult<TResult> {
 }
 
 /**
+ * Convert PanelContext to serializable ProcessorContext for the worker.
+ */
+function toProcessorContext(ctx: PanelContext): ProcessorContext {
+  // Extract only the fields needed by processors
+  const players: ProcessorContext["players"] = {};
+  if (ctx.instance.players) {
+    for (const [guid, player] of Object.entries(ctx.instance.players)) {
+      players[guid] = {
+        name: player.name,
+        class: player.class,
+      };
+    }
+  }
+  
+  return {
+    players,
+    selectedEncounterIds: ctx.selectedEncounterIds,
+    entitySelection: {
+      enemyIds: Array.from(ctx.entitySelection.enemyIds),
+      playerIds: Array.from(ctx.entitySelection.playerIds),
+    },
+  };
+}
+
+/**
  * Serialize context for comparison. Only includes fields that affect processing.
  */
 function serializeContextForComparison(ctx: PanelContext): string {
@@ -32,6 +58,23 @@ function serializeContextForComparison(ctx: PanelContext): string {
     playerIds: Array.from(ctx.entitySelection.playerIds).sort(),
     enemyIds: Array.from(ctx.entitySelection.enemyIds).sort(),
   });
+}
+
+/**
+ * Deserialize worker result back to the expected type.
+ * Worker serializes Maps as arrays of [key, value] pairs.
+ */
+function deserializeResult<TResult>(result: unknown, panel: PanelDefinition<TResult>): TResult {
+  // If result is an array, assume it's a serialized Map
+  if (Array.isArray(result)) {
+    return new Map(result) as TResult;
+  }
+  // If panel expects a Map but got something else, create empty state
+  const emptyState = panel.createState();
+  if (emptyState instanceof Map && !(result instanceof Map)) {
+    return emptyState;
+  }
+  return result as TResult;
 }
 
 export function usePanelAggregation<TResult>(
@@ -47,7 +90,8 @@ export function usePanelAggregation<TResult>(
   const [totalEvents, setTotalEvents] = useState(0);
   const [processingTimeMs, setProcessingTimeMs] = useState<number | null>(null);
   
-  const versionRef = useRef(0);
+  const requestIdRef = useRef(0);
+  const workerRef = useRef<Worker | null>(null);
   const prevContextRef = useRef<PanelContext | null>(null);
   const cachedStreamsRef = useRef<{ type: StreamType; data: Uint8Array }[] | null>(null);
   
@@ -59,7 +103,7 @@ export function usePanelAggregation<TResult>(
   useEffect(() => {
     if (!enabled) return;
     
-    const version = ++versionRef.current;
+    const requestId = ++requestIdRef.current;
     const prevContext = prevContextRef.current;
     
     // Check if we can skip reprocessing
@@ -88,6 +132,12 @@ export function usePanelAggregation<TResult>(
         return;
       }
       
+      // Terminate any existing worker
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+      
       setLoading(true);
       setProcessing(false);
       setError(null);
@@ -102,7 +152,8 @@ export function usePanelAggregation<TResult>(
           })
         );
         
-        if (version !== versionRef.current) return;
+        // Check if request was superseded while fetching
+        if (requestId !== requestIdRef.current) return;
         
         // Cache streams for potential reuse
         cachedStreamsRef.current = fetchedStreams;
@@ -110,37 +161,56 @@ export function usePanelAggregation<TResult>(
         setLoading(false);
         setProcessing(true);
         
-        const startTime = performance.now();
+        // Create worker
+        const worker = new Worker(
+          new URL('./panelWorker.ts', import.meta.url),
+          { type: 'module' }
+        );
+        workerRef.current = worker;
         
-        // Create fresh state for this aggregation
-        const state = panel.createState();
-        let eventCount = 0;
+        // Set up message handler
+        worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+          const response = e.data;
+          
+          // Ignore stale responses
+          if (response.requestId !== requestIdRef.current) {
+            return;
+          }
+          
+          if (response.error) {
+            setError(new Error(response.error));
+            setProcessing(false);
+            return;
+          }
+          
+          const deserializedResult = deserializeResult(response.result, panel);
+          setResult(deserializedResult);
+          setTotalEvents(response.totalEvents);
+          setProcessingTimeMs(response.processingTimeMs);
+          setProcessing(false);
+          prevContextRef.current = panelContext;
+          
+          console.log(`[usePanelAggregation:${panel.id}] Worker completed in ${response.processingTimeMs.toFixed(2)}ms: ${response.totalEvents} events`);
+        };
         
-        // Process each stream - no pre-filtering, panel decides via context
-        for (const stream of fetchedStreams) {
-          eventCount += processStream(
-            stream.data,
-            stream.type,
-            state,
-            panel.processEvent,
-            panelContext
-          );
-        }
+        worker.onerror = (e) => {
+          if (requestId !== requestIdRef.current) return;
+          setError(new Error(e.message || 'Worker error'));
+          setProcessing(false);
+        };
         
-        const elapsed = performance.now() - startTime;
+        // Send work to worker
+        const workerRequest: WorkerRequest = {
+          requestId,
+          panelId: panel.id,
+          context: toProcessorContext(panelContext),
+          streams: fetchedStreams,
+        };
         
-        if (version !== versionRef.current) return;
-        
-        setResult(state);
-        setTotalEvents(eventCount);
-        setProcessingTimeMs(elapsed);
-        setProcessing(false);
-        prevContextRef.current = panelContext;
-        
-        console.log(`[usePanelAggregation:${panel.id}] Completed in ${elapsed.toFixed(2)}ms: ${eventCount} events`);
+        worker.postMessage(workerRequest);
         
       } catch (err) {
-        if (version !== versionRef.current) return;
+        if (requestId !== requestIdRef.current) return;
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
         setProcessing(false);
@@ -149,8 +219,13 @@ export function usePanelAggregation<TResult>(
     
     run();
     
+    // Cleanup: terminate worker on unmount or when deps change
     return () => {
-      versionRef.current++;
+      requestIdRef.current++;
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
     };
   }, [eventsContext.fetchStream, panel, streamsKey, encounterKey, contextKey, enabled, panelContext]);
   
@@ -162,36 +237,4 @@ export function usePanelAggregation<TResult>(
     totalEvents,
     processingTimeMs,
   };
-}
-
-/**
- * Process a stream using the panel's processEvent callback.
- * No pre-filtering - all events are passed to processEvent.
- * The panel decides how to filter/aggregate via context.
- */
-function processStream<TResult>(
-  data: Uint8Array,
-  streamType: StreamType,
-  state: TResult,
-  processEvent: PanelDefinition<TResult>["processEvent"],
-  context: PanelContext
-): number {
-  const cursor = new FastDamageCursor(data);
-  let eventCount = 0;
-  
-  while (cursor.currentHeader) {
-    const encounterID = cursor.currentHeader.encounterID;
-    
-    while (cursor.hasMoreInEncounter) {
-      const event = cursor.next();
-      if (!event) break;
-      
-      eventCount++;
-      processEvent(state, event, encounterID, streamType, context);
-    }
-    
-    cursor.nextEncounter();
-  }
-  
-  return eventCount;
 }

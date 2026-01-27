@@ -1,31 +1,16 @@
 /**
- * Damage Taken panel - aggregates damage by target
+ * Damage Taken panel - React component wrapper for damage taken aggregation
  */
 
 import { Shield } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps, EntityValueMap } from "./types";
 import { EntityValueList } from "./EntityValueList";
+import { damageTakenProcessor, type DamageTakenState } from "./processors";
 
-export const DamageTakenPanel: PanelDefinition<EntityValueMap> = {
-  id: "damage_taken",
+export const DamageTakenPanel: PanelDefinition<DamageTakenState> = {
+  ...damageTakenProcessor,
   label: "Damage Taken",
   icon: <Shield className="h-4 w-4" />,
-  streams: ["damage"],
-  
-  createState: () => new Map<string, number>(),
-  
-  processEvent: (state, event, _encounterID, streamType, context) => {
-    if (streamType !== "damage") return;
-    
-    // Filter by selected enemies if any are selected
-    const { entitySelection } = context;
-    if (entitySelection.enemyIds.size > 0) {
-      if (!entitySelection.enemyIds.has(event.target)) return;
-    }
-    
-    const key = event.target;
-    state.set(key, (state.get(key) || 0) + event.amount);
-  },
   
   render: (props: PanelRenderProps<EntityValueMap>) => (
     <EntityValueList {...props} valueLabel="Damage Taken" />

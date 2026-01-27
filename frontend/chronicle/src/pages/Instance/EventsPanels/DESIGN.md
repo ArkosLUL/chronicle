@@ -6,21 +6,53 @@ This directory contains the event aggregation panel system for displaying combat
 
 EventsPanels process raw combat log event streams (damage, heal, resource_change) and aggregate them into displayable metrics. Each panel type defines its own aggregation logic and rendering, allowing for different result types and visualizations.
 
+**Key feature:** Event processing runs in a Web Worker to keep the UI responsive.
+
 ## Architecture
 
 ```
 EventsPanels/
-├── types.ts              # Core type definitions
-├── usePanelAggregation.ts # Hook that processes events
+├── types.ts              # React-side type definitions (PanelContext, PanelDefinition)
+├── processorTypes.ts     # Worker-safe types (ProcessorContext, PanelProcessor)
+├── panelWorker.ts        # Web Worker that runs processEvent
+├── usePanelAggregation.ts # Hook that manages worker lifecycle
 ├── EventsPanel.tsx       # Container component with panel selector
 ├── GenericPanel.tsx      # Shared loading/error wrapper + stats footer
 ├── EntityValueList.tsx   # Simple list renderer for Map<string, number>
-├── DamageDone.tsx        # Panel definition: damage by caster
-├── DamageTaken.tsx       # Panel definition: damage by target
-├── HealingDone.tsx       # Panel definition: healing by caster
-├── AllActivity.tsx       # Panel definition: event count by caster
+├── processors/           # Pure TypeScript processors (worker-safe)
+│   ├── index.ts          # Registry of all processors
+│   ├── damageDone.processor.ts
+│   ├── damageTaken.processor.ts
+│   ├── healingDone.processor.ts
+│   └── allActivity.processor.ts
+├── DamageDone.tsx        # Panel definition: React wrapper + render
+├── DamageTaken.tsx       # Panel definition: React wrapper + render
+├── HealingDone.tsx       # Panel definition: React wrapper + render
+├── AllActivity.tsx       # Panel definition: React wrapper + render
 └── index.ts              # Public exports
 ```
+
+## Worker Architecture
+
+```
+Main Thread                          Web Worker
+─────────────                        ──────────
+                                     
+usePanelAggregation                  panelWorker.ts
+  │                                    │
+  ├─ Fetch streams (cached)            │
+  ├─ Create Worker ─────────────────►  │
+  ├─ postMessage(WorkerRequest) ────►  ├─ processorRegistry[panelId]
+  │                                    ├─ Iterate all events
+  │                                    ├─ Call processor.processEvent()
+  │  ◄─── postMessage(WorkerResponse)  ├─ Serialize result (Map → Array)
+  ├─ Deserialize result                │
+  ├─ setResult(state)                  │
+  └─ Terminate worker on cleanup       │
+```
+
+**Cancellation:** When context changes mid-processing, the current worker is terminated
+and a new one is started. Stale responses are ignored via `requestId` matching.
 
 ## Key Types
 
@@ -92,32 +124,31 @@ interface PanelRenderProps<TResult> {
 
 ## Data Flow
 
-1. **EventsPanel** receives `selectedEncounters` and `panelType`
+1. **EventsPanel** receives `context` (PanelContext) and `panelType`
 2. **usePanelAggregation** hook:
    - Fetches required streams from `InstanceEventsContext` (cached)
-   - Creates fresh state via `panel.createState()`
-   - Iterates events using `FastDamageCursor`
-   - Calls `panel.processEvent()` for each event in selected encounters
-   - Returns aggregated result
-3. **panel.render()** displays the result
+   - Creates a Web Worker
+   - Sends streams + serialized context to worker
+   - Worker iterates all events, calls `processor.processEvent()`
+   - Worker returns serialized result
+   - Hook deserializes result (Map reconstruction)
+3. **panel.render()** displays the result on main thread
 
 ## Adding a New Panel
 
-1. Create a new file (e.g., `OverhealingDone.tsx`):
+Panels are split into two files: a **processor** (worker-safe) and a **React wrapper**.
+
+### Step 1: Create the processor (`processors/overhealingDone.processor.ts`)
 
 ```typescript
-import { Heart } from "lucide-react";
-import type { PanelDefinition, PanelRenderProps } from "./types";
-import { GenericPanel } from "./GenericPanel";
+// Pure TypeScript - NO React, NO JSX
+import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
 
-// Define your result type
-type OverhealMap = Map<string, { healing: number; overhealing: number }>;
+export type OverhealState = Map<string, { healing: number; overhealing: number }>;
 
-export const OverhealingDonePanel: PanelDefinition<OverhealMap> = {
+export const overhealingDoneProcessor: PanelProcessor<OverhealState> = {
   id: "overhealing_done",
-  label: "Overhealing",
-  icon: <Heart className="h-4 w-4" />,
-  streams: ["heal"],  // Which streams to fetch
+  streams: ["heal"],
   
   createState: () => new Map(),
   
@@ -126,31 +157,46 @@ export const OverhealingDonePanel: PanelDefinition<OverhealMap> = {
     
     // Filter by selected players if any are selected
     const { entitySelection } = context;
-    if (entitySelection.playerIds.size > 0) {
-      if (!entitySelection.playerIds.has(event.caster)) return;
+    if (entitySelection.playerIds.length > 0) {
+      if (!entitySelection.playerIds.includes(event.caster)) return;
     }
     
     const key = event.caster || "Unknown";
     const current = state.get(key) || { healing: 0, overhealing: 0 };
-    // Your aggregation logic here
     current.healing += event.amount;
     state.set(key, current);
   },
+};
+```
+
+### Step 2: Register the processor (`processors/index.ts`)
+
+```typescript
+import { overhealingDoneProcessor } from "./overhealingDone.processor";
+
+export { overhealingDoneProcessor } from "./overhealingDone.processor";
+export type { OverhealState } from "./overhealingDone.processor";
+
+export const processorRegistry: Record<string, PanelProcessor<any>> = {
+  // ... existing processors
+  overhealing_done: overhealingDoneProcessor,
+};
+```
+
+### Step 3: Create the React wrapper (`OverhealingDone.tsx`)
+
+```typescript
+import { Heart } from "lucide-react";
+import type { PanelDefinition, PanelRenderProps } from "./types";
+import { GenericPanel } from "./GenericPanel";
+import { overhealingDoneProcessor, type OverhealState } from "./processors";
+
+export const OverhealingDonePanel: PanelDefinition<OverhealState> = {
+  ...overhealingDoneProcessor,  // Spread id, streams, createState, processEvent
+  label: "Overhealing",
+  icon: <Heart className="h-4 w-4" />,
   
-  // Optional: optimize when only instance metadata changed (not entity selection)
-  onContextChange: (prev, next) => {
-    // Entity selection changed → must reprocess
-    if (prev.entitySelection.playerIds.size !== next.entitySelection.playerIds.size) {
-      return 'reprocess';
-    }
-    for (const id of prev.entitySelection.playerIds) {
-      if (!next.entitySelection.playerIds.has(id)) return 'reprocess';
-    }
-    // Only instance metadata changed → just re-render (for name lookups, etc.)
-    return 'rerender';
-  },
-  
-  render: (props: PanelRenderProps<OverhealMap>) => (
+  render: (props: PanelRenderProps<OverhealState>) => (
     <GenericPanel {...props}>
       {/* Your custom visualization */}
       {/* Use props.context.instance.players for name lookups */}
@@ -159,7 +205,7 @@ export const OverhealingDonePanel: PanelDefinition<OverhealMap> = {
 };
 ```
 
-2. Register in `EventsPanel.tsx`:
+### Step 4: Register in `EventsPanel.tsx`
 
 ```typescript
 import { OverhealingDonePanel } from "./OverhealingDone";

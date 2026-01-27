@@ -25,10 +25,20 @@ export interface DamageDoneData {
 // UnitDamage is unit guid -> DamageDoneData
 export type UnitDamage = Map<string, DamageDoneData>;
 
+export interface DamageAbilityBreakout {
+  Total: number;
+  // The number of casts
+  Count: number;
+}
+
+export interface DamageAbilitiesBreakout { 
+  [source: string]: DamageAbilityBreakout;
+}
 
 export type DamageDoneResult = {
   EncounterDamage: Map<string, UnitDamage>;
-  Random: number;
+  // Value is unitID -> abilityID -> DamageAbilityBreakout
+  ByAbility: Map<string, DamageAbilityBreakout>;
 }
 
 /**
@@ -45,7 +55,7 @@ export function createDamageDoneProcessor(
 
     createState: () => ({
       EncounterDamage: new Map<string, UnitDamage>(),
-      Random: Math.random(),
+      ByAbility: new Map<string, DamageAbilityBreakout>(),
     }),
 
     processEvent: (

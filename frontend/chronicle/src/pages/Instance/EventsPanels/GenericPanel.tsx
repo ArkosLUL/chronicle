@@ -21,12 +21,20 @@ export function GenericPanel<TResult>({
   if (error) {
     return <div className="text-xs text-destructive">Error: {error.message}</div>;
   }
+  const eventsPerSecond = durationMs > 0 ? (totalEvents / durationMs) * 1000 : 0;
+
   return <>
     {children}
-    <div className="text-xs text-muted-foreground mb-2">
+    <div className="text-xs text-muted-foreground mt-2 flex items-center justify-between">
+      <span>
+        {formatNumber(totalEvents)} events
+        {perSecond && durationMs > 0 && (
+          <span className="ml-1">({formatNumber(eventsPerSecond)}/s)</span>
+        )}
+      </span>
       {processingTimeMs !== null && (
-        <span className="ml-2 text-blue-500">
-          Processed in {processingTimeMs.toFixed(0)}ms
+        <span className="text-blue-500">
+          {processingTimeMs.toFixed(0)}ms
         </span>
       )}
     </div>

@@ -88,50 +88,6 @@ func (School) EnumDescriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{0}
 }
 
-type InstanceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *InstanceRequest) Reset() {
-	*x = InstanceRequest{}
-	mi := &file_chronicle_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *InstanceRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*InstanceRequest) ProtoMessage() {}
-
-func (x *InstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use InstanceRequest.ProtoReflect.Descriptor instead.
-func (*InstanceRequest) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *InstanceRequest) GetInstanceId() string {
-	if x != nil {
-		return x.InstanceId
-	}
-	return ""
-}
-
 type Tailer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Amount        *uint32                `protobuf:"varint,1,opt,name=amount,proto3,oneof" json:"amount,omitempty"`
@@ -142,7 +98,7 @@ type Tailer struct {
 
 func (x *Tailer) Reset() {
 	*x = Tailer{}
-	mi := &file_chronicle_proto_msgTypes[1]
+	mi := &file_chronicle_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -154,7 +110,7 @@ func (x *Tailer) String() string {
 func (*Tailer) ProtoMessage() {}
 
 func (x *Tailer) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[1]
+	mi := &file_chronicle_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -167,7 +123,7 @@ func (x *Tailer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tailer.ProtoReflect.Descriptor instead.
 func (*Tailer) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{1}
+	return file_chronicle_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Tailer) GetAmount() uint32 {
@@ -194,7 +150,7 @@ type EventMeta struct {
 
 func (x *EventMeta) Reset() {
 	*x = EventMeta{}
-	mi := &file_chronicle_proto_msgTypes[2]
+	mi := &file_chronicle_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -206,7 +162,7 @@ func (x *EventMeta) String() string {
 func (*EventMeta) ProtoMessage() {}
 
 func (x *EventMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[2]
+	mi := &file_chronicle_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -219,7 +175,7 @@ func (x *EventMeta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventMeta.ProtoReflect.Descriptor instead.
 func (*EventMeta) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{2}
+	return file_chronicle_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *EventMeta) GetIndex() int32 {
@@ -245,7 +201,7 @@ type Heal struct {
 
 func (x *Heal) Reset() {
 	*x = Heal{}
-	mi := &file_chronicle_proto_msgTypes[3]
+	mi := &file_chronicle_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -257,7 +213,7 @@ func (x *Heal) String() string {
 func (*Heal) ProtoMessage() {}
 
 func (x *Heal) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[3]
+	mi := &file_chronicle_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -270,7 +226,7 @@ func (x *Heal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heal.ProtoReflect.Descriptor instead.
 func (*Heal) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{3}
+	return file_chronicle_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Heal) GetMeta() *EventMeta {
@@ -297,7 +253,7 @@ type Damage struct {
 
 func (x *Damage) Reset() {
 	*x = Damage{}
-	mi := &file_chronicle_proto_msgTypes[4]
+	mi := &file_chronicle_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -309,7 +265,7 @@ func (x *Damage) String() string {
 func (*Damage) ProtoMessage() {}
 
 func (x *Damage) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[4]
+	mi := &file_chronicle_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,7 +278,7 @@ func (x *Damage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Damage.ProtoReflect.Descriptor instead.
 func (*Damage) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{4}
+	return file_chronicle_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Damage) GetMeta() *EventMeta {
@@ -385,11 +341,7 @@ var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
 	"\n" +
-	"\x0fchronicle.proto\x12\x0echronicleproto\"1\n" +
-	"\x0fInstanceRequest\x12\x1e\n" +
-	"\n" +
-	"instanceId\x18\x01 \x01(\tR\n" +
-	"instanceId\"J\n" +
+	"\x0fchronicle.proto\x12\x0echronicleproto\"J\n" +
 	"\x06Tailer\x12\x1b\n" +
 	"\x06amount\x18\x01 \x01(\rH\x00R\x06amount\x88\x01\x01\x12\x18\n" +
 	"\ahitType\x18\x02 \x01(\rR\ahitTypeB\t\n" +
@@ -438,20 +390,19 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_chronicle_proto_goTypes = []any{
-	(School)(0),             // 0: chronicleproto.School
-	(*InstanceRequest)(nil), // 1: chronicleproto.InstanceRequest
-	(*Tailer)(nil),          // 2: chronicleproto.Tailer
-	(*EventMeta)(nil),       // 3: chronicleproto.EventMeta
-	(*Heal)(nil),            // 4: chronicleproto.Heal
-	(*Damage)(nil),          // 5: chronicleproto.Damage
+	(School)(0),       // 0: chronicleproto.School
+	(*Tailer)(nil),    // 1: chronicleproto.Tailer
+	(*EventMeta)(nil), // 2: chronicleproto.EventMeta
+	(*Heal)(nil),      // 3: chronicleproto.Heal
+	(*Damage)(nil),    // 4: chronicleproto.Damage
 }
 var file_chronicle_proto_depIdxs = []int32{
-	3, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
-	3, // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
+	2, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
+	2, // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
 	0, // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
-	2, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
+	1, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
@@ -464,15 +415,15 @@ func file_chronicle_proto_init() {
 	if File_chronicle_proto != nil {
 		return
 	}
-	file_chronicle_proto_msgTypes[1].OneofWrappers = []any{}
-	file_chronicle_proto_msgTypes[4].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[0].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

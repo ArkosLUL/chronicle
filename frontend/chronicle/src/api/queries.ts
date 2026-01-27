@@ -55,6 +55,7 @@ export function useAuthProviders(options?: Omit<UseQueryOptions<string[]>, "quer
 export function useLogGroups(options?: Omit<UseQueryOptions<WoWLogGroup[]>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["logGroups"],
+    retry: false,
     queryFn: async () => {
       const response = await fetch("/api/v1/raidlogs/logs/");
       if (!response.ok) throw new Error("Failed to fetch logs");
@@ -67,6 +68,7 @@ export function useLogGroups(options?: Omit<UseQueryOptions<WoWLogGroup[]>, "que
 export function useLogGroup(logId: string, options?: Omit<UseQueryOptions<WoWLogGroupState>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["logGroup", logId],
+    retry: false,
     queryFn: async () => {
       const response = await fetch(`/api/v1/raidlogs/logs/${logId}`);
       if (!response.ok) throw new Error("Failed to fetch log details");
@@ -123,6 +125,7 @@ export function useReparseLogGroup() {
 export function useInstance(instanceId: string, options?: Omit<UseQueryOptions<WoWParsedInstance>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["instance", instanceId],
+    retry: false,
     queryFn: async () => {
       const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}`);
       if (!response.ok) throw new Error("Failed to fetch instance");
@@ -135,6 +138,7 @@ export function useInstance(instanceId: string, options?: Omit<UseQueryOptions<W
 export function useInstanceDamageSummary(instanceId: string, options?: Omit<UseQueryOptions<EncounterDamageSummary[]>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["instance", instanceId, "damageSummary"],
+    retry: false,
     queryFn: async () => {
       const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}/damage-summary`);
       if (!response.ok) throw new Error("Failed to fetch damage summary");

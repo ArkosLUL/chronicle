@@ -4,14 +4,6 @@ package chronicleproto;
 
 option go_package = "github.com/Emyrk/chronicle/api/chronicleproto";
 
-message InstanceRequest {
-  string instanceId = 1;
-  // [(buf.validate.field).string = {
-  //    min_len: 37,
-  //    max_len: 37,
-  //  }]
-}
-
 enum School {
   Unknown = 0;
   None = 1;

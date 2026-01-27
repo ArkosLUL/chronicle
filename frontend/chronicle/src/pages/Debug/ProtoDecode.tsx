@@ -37,21 +37,16 @@ export function ProtoDecode() {
 
       const contentType = response.headers.get("content-type") || ""
       
-      // If JSON, it's probably an error
       if (contentType.includes("application/json")) {
         const json = await response.json()
         throw new Error(`Server error: ${JSON.stringify(json)}`)
       }
 
-      // Otherwise expect octet-stream with raw gzipped data
       const buffer = await response.arrayBuffer()
       let data = new Uint8Array(buffer)
-      console.log("Raw bytes:", data.length, "first bytes:", Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
 
       if (isGzipped(data)) {
-        console.log("Detected gzip, decompressing...")
         data = await decompressGzip(data)
-        console.log("Decompressed bytes:", data.length, "first bytes:", Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
       }
 
       if (mode === "payload") {
@@ -75,10 +70,8 @@ export function ProtoDecode() {
     setMessages([])
 
     try {
-      // Parse input as base64 or hex
       let data = parseInput(input.trim())
 
-      // Auto-detect and decompress gzip
       if (isGzipped(data)) {
         data = await decompressGzip(data)
       }
@@ -258,7 +251,6 @@ export function ProtoDecode() {
 }
 
 function parseInput(input: string): Uint8Array {
-  // Try base64 first
   if (/^[A-Za-z0-9+/=]+$/.test(input)) {
     try {
       const binary = atob(input)
@@ -272,7 +264,6 @@ function parseInput(input: string): Uint8Array {
     }
   }
 
-  // Try hex (with or without 0x prefix, spaces allowed)
   const hexClean = input.replace(/^0x/i, "").replace(/\s/g, "")
   if (/^[A-Fa-f0-9]+$/.test(hexClean) && hexClean.length % 2 === 0) {
     const bytes = new Uint8Array(hexClean.length / 2)

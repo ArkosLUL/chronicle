@@ -38,7 +38,6 @@ export async function decompressGzip(data: Uint8Array): Promise<Uint8Array> {
     chunks.push(value);
   }
 
-  // Concatenate all chunks
   const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
   const result = new Uint8Array(totalLength);
   let offset = 0;
@@ -73,23 +72,33 @@ export function decodePayload<T extends DescMessage>(
 ): DecodedPayload<MessageShape<T>> {
   let offset = 0;
 
+  console.log("=== DECODE PAYLOAD ===");
+  console.log("First 64 bytes:", Array.from(data.slice(0, 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
   // Read encounterID (length-prefixed string)
   const { value: strLen, bytesRead: strLenBytes } = readVarint(data, offset);
+  console.log(`strLen=${strLen}, strLenBytes=${strLenBytes}, offset=${offset}`);
   offset += strLenBytes;
   const encounterID = new TextDecoder().decode(data.subarray(offset, offset + strLen));
+  console.log(`encounterID="${encounterID}"`);
   offset += strLen;
 
   // Read firstTimestamp (varint, milliseconds since epoch)
   const { value: timestampMs, bytesRead: tsBytes } = readVarint64(data, offset);
+  console.log(`timestampMs=${timestampMs}, tsBytes=${tsBytes}, offset=${offset}`);
   offset += tsBytes;
   const firstTimestamp = new Date(Number(timestampMs));
 
   // Read count (varint)
   const { value: count, bytesRead: countBytes } = readVarint(data, offset);
+  console.log(`count=${count}, countBytes=${countBytes}, offset=${offset}`);
   offset += countBytes;
 
-  // Decode the messages
-  const messages = decodeDelimitedMessages(schema, data.subarray(offset));
+  console.log(`Header done. Messages start at offset ${offset}`);
+  console.log("First message bytes:", Array.from(data.slice(offset, offset + 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+  // Decode the messages, respecting the count from the header
+  const messages = decodeDelimitedMessages(schema, data.subarray(offset), count);
 
   return {
     header: {
@@ -109,12 +118,14 @@ export function decodePayload<T extends DescMessage>(
  */
 export function decodeDelimitedMessages<T extends DescMessage>(
   schema: T,
-  data: Uint8Array
+  data: Uint8Array,
+  maxCount?: number
 ): MessageShape<T>[] {
   const messages: MessageShape<T>[] = [];
   let offset = 0;
+  let msgIndex = 0;
 
-  while (offset < data.length) {
+  while (offset < data.length && (maxCount === undefined || msgIndex < maxCount)) {
     // Read varint length prefix
     const { value: length, bytesRead } = readVarint(data, offset);
     offset += bytesRead;
@@ -127,12 +138,21 @@ export function decodeDelimitedMessages<T extends DescMessage>(
 
     // Extract message bytes and decode
     const messageBytes = data.subarray(offset, offset + length);
-    const message = fromBinary(schema, messageBytes);
-    messages.push(message);
+    
+    try {
+      const message = fromBinary(schema, messageBytes);
+      messages.push(message);
+    } catch (e) {
+      console.error(`Failed at message ${msgIndex}, offset ${offset - bytesRead}, length ${length}`);
+      console.error("Message bytes:", Array.from(messageBytes.slice(0, 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+      throw e;
+    }
 
     offset += length;
+    msgIndex++;
   }
 
+  console.log(`Decoded ${messages.length} messages`);
   return messages;
 }
 

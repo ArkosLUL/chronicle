@@ -10,29 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIiUKD0luc3RhbmNlUmVxdWVzdBISCgppbnN0YW5jZUlkGAEgASgJIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIi8KBEhlYWwSJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YSLnAQoGRGFtYWdlEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESEwoGY2FzdGVyGAMgASgJSACIAQESEgoKc291cmNlTmFtZRgEIAEoCRIOCgZ0YXJnZXQYBSABKAkSDwoHaGl0VHlwZRgGIAEoDRIOCgZhbW91bnQYByABKAUSJgoGc2Nob29sGAggASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCSADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlcipwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
-
-/**
- * @generated from message chronicleproto.InstanceRequest
- */
-export type InstanceRequest = Message<"chronicleproto.InstanceRequest"> & {
-  /**
-   * [(buf.validate.field).string = {
-   *    min_len: 37,
-   *    max_len: 37,
-   *  }]
-   *
-   * @generated from field: string instanceId = 1;
-   */
-  instanceId: string;
-};
-
-/**
- * Describes the message chronicleproto.InstanceRequest.
- * Use `create(InstanceRequestSchema)` to create a new message.
- */
-export const InstanceRequestSchema: GenMessage<InstanceRequest> = /*@__PURE__*/
-  messageDesc(file_chronicle, 0);
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIi8KBEhlYWwSJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YSLnAQoGRGFtYWdlEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESEwoGY2FzdGVyGAMgASgJSACIAQESEgoKc291cmNlTmFtZRgEIAEoCRIOCgZ0YXJnZXQYBSABKAkSDwoHaGl0VHlwZRgGIAEoDRIOCgZhbW91bnQYByABKAUSJgoGc2Nob29sGAggASgOMhYuY2hyb25pY2xlcHJvdG8uU2Nob29sEicKB3RhaWxlcnMYCSADKAsyFi5jaHJvbmljbGVwcm90by5UYWlsZXJCCQoHX2Nhc3RlcipwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
 
 /**
  * @generated from message chronicleproto.Tailer
@@ -54,7 +32,7 @@ export type Tailer = Message<"chronicleproto.Tailer"> & {
  * Use `create(TailerSchema)` to create a new message.
  */
 export const TailerSchema: GenMessage<Tailer> = /*@__PURE__*/
-  messageDesc(file_chronicle, 1);
+  messageDesc(file_chronicle, 0);
 
 /**
  * @generated from message chronicleproto.EventMeta
@@ -76,7 +54,7 @@ export type EventMeta = Message<"chronicleproto.EventMeta"> & {
  * Use `create(EventMetaSchema)` to create a new message.
  */
 export const EventMetaSchema: GenMessage<EventMeta> = /*@__PURE__*/
-  messageDesc(file_chronicle, 2);
+  messageDesc(file_chronicle, 1);
 
 /**
  * @generated from message chronicleproto.Heal
@@ -93,7 +71,7 @@ export type Heal = Message<"chronicleproto.Heal"> & {
  * Use `create(HealSchema)` to create a new message.
  */
 export const HealSchema: GenMessage<Heal> = /*@__PURE__*/
-  messageDesc(file_chronicle, 3);
+  messageDesc(file_chronicle, 2);
 
 /**
  * @generated from message chronicleproto.Damage
@@ -147,7 +125,7 @@ export type Damage = Message<"chronicleproto.Damage"> & {
  * Use `create(DamageSchema)` to create a new message.
  */
 export const DamageSchema: GenMessage<Damage> = /*@__PURE__*/
-  messageDesc(file_chronicle, 4);
+  messageDesc(file_chronicle, 3);
 
 /**
  * @generated from enum chronicleproto.School

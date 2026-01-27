@@ -14,8 +14,14 @@ export const DamageTakenPanel: PanelDefinition<EntityValueMap> = {
   
   createState: () => new Map<string, number>(),
   
-  processEvent: (state, event, _encounterID, streamType) => {
+  processEvent: (state, event, _encounterID, streamType, context) => {
     if (streamType !== "damage") return;
+    
+    // Filter by selected enemies if any are selected
+    const { entitySelection } = context;
+    if (entitySelection.enemyIds.size > 0) {
+      if (!entitySelection.enemyIds.has(event.target)) return;
+    }
     
     const key = event.target;
     state.set(key, (state.get(key) || 0) + event.amount);

@@ -13,7 +13,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
 import { MetricPanel } from "./Panel";
-import { EventsPanel, type EventsPanelType } from "./EventsPanels";
+import { EventsPanel, type EventsPanelType, type PanelContext, type EntitySelection } from "./EventsPanels";
 import type { PanelType } from "./panelConfig";
 
 // ============================================================================
@@ -368,13 +368,8 @@ function EncounterSidebar({
 // EncounterDetail component
 // ============================================================================
 
-interface EntitySelection {
-  enemyIds: Set<string>;
-  playerIds: Set<string>;
-}
-
 interface EncounterDetailProps {
-  instanceId: string;
+  instance: Instance;
   encounters: Encounter[];
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
@@ -384,7 +379,7 @@ interface EncounterDetailProps {
 }
 
 function EncounterDetail({ 
-  instanceId,
+  instance,
   encounters,
   players,
   entitySelection,
@@ -412,6 +407,14 @@ function EncounterDetail({
   const mappedEnemies = new Map(mergedEnemies.map(e => [e.id, e.name]));
   
   const totalDurationMs = computeTotalDuration(encounters);
+  
+  // Build PanelContext for EventsPanels
+  const panelContext: PanelContext = {
+    instance,
+    selectedEncounters: encounters,
+    selectedEncounterIds: encounters.map(e => e.id),
+    entitySelection,
+  };
   
   // Helper to check if an enemy is selected
   const isEnemySelected = (id: string) => entitySelection.enemyIds.has(id);
@@ -607,7 +610,7 @@ function EncounterDetail({
       {/* Metrics - 2 column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MetricPanel
-          instanceId={instanceId}
+          instanceId={instance.id}
           panelType={panel1Type}
           onPanelTypeChange={setPanel1Type}
           durationMs={totalDurationMs}
@@ -618,7 +621,7 @@ function EncounterDetail({
           selectedEncounters={encounters}
         />
         <MetricPanel
-          instanceId={instanceId}
+          instanceId={instance.id}
           panelType={panel2Type}
           onPanelTypeChange={setPanel2Type}
           durationMs={totalDurationMs}
@@ -636,13 +639,13 @@ function EncounterDetail({
           panelType={eventsPanel1Type}
           onPanelTypeChange={setEventsPanel1Type}
           durationMs={totalDurationMs}
-          selectedEncounters={encounters}
+          context={panelContext}
         />
         <EventsPanel
           panelType={eventsPanel2Type}
           onPanelTypeChange={setEventsPanel2Type}
           durationMs={totalDurationMs}
-          selectedEncounters={encounters}
+          context={panelContext}
         />
       </div>
     </div>
@@ -790,7 +793,7 @@ export function InstancePageView({
 
         {selectedEncounters.length > 0 ? (
           <EncounterDetail 
-            instanceId={instance.id}
+            instance={instance}
             encounters={selectedEncounters}
             players={instance.players ?? {}}
             entitySelection={entitySelection}

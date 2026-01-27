@@ -5,6 +5,32 @@
 import type { ReusableDamage } from "@/api/protodecode/decode";
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { StreamType } from "@/hooks/instanceEvents";
+import type { Instance, Encounter } from "../InstancePage";
+
+/**
+ * Selection state for filtering entities
+ */
+export interface EntitySelection {
+  enemyIds: Set<string>;
+  playerIds: Set<string>;
+}
+
+/**
+ * Context available to panels for processing and rendering.
+ */
+export interface PanelContext {
+  /** The full instance data (players, encounters, metadata) */
+  instance: Instance;
+  
+  /** Currently selected encounters */
+  selectedEncounters: Encounter[];
+  
+  /** Currently selected encounter IDs */
+  selectedEncounterIds: string[];
+  
+  /** Currently selected entity GUIDs for filtering display */
+  entitySelection: EntitySelection;
+}
 
 /**
  * Callback invoked for each event during aggregation.
@@ -20,6 +46,9 @@ export type AggregatorFn = (
   onEvent: EventCallback,
   encounterID: string,
 ) => void;
+
+/** Result of onContextChange - determines what happens when context changes */
+export type ContextChangeAction = 'reprocess' | 'rerender' | 'nothing';
 
 /**
  * Configuration for a panel type
@@ -44,14 +73,30 @@ export interface PanelDefinition<TResult> {
   
   /**
    * Process a single event and update the state.
-   * Return true to continue processing, false to skip remaining events in encounter.
+   * Context is available for filtering based on entity selection.
    */
   processEvent: (
     state: TResult,
     event: ReusableDamage,
     encounterID: string,
     streamType: StreamType,
+    context: PanelContext,
   ) => void;
+  
+  /**
+   * Determine what to do when context changes (but encounterIds stay the same).
+   * 
+   * Returns:
+   * - 'reprocess': Re-run processEvent for all events (DEFAULT)
+   * - 'rerender': Keep result, just re-render
+   * - 'nothing': Skip update entirely
+   * 
+   * Default: 'reprocess'
+   */
+  onContextChange?: (
+    prev: PanelContext,
+    next: PanelContext,
+  ) => ContextChangeAction;
   
   /**
    * Render the panel content.
@@ -84,6 +129,9 @@ export interface PanelRenderProps<TResult> {
   
   /** Error if any */
   error: Error | null;
+  
+  /** Full context for rendering (instance data, selections) */
+  context: PanelContext;
 }
 
 /**

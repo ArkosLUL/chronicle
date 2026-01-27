@@ -2,11 +2,10 @@
  * EventsPanel - Container component for event aggregation panels
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/Card/Card";
 import { usePanelAggregation } from "./usePanelAggregation";
-import type { PanelDefinition } from "./types";
-import type { Encounter } from "../InstancePage";
+import type { PanelDefinition, PanelContext } from "./types";
 
 // Import panel definitions
 import { DamageDonePanel } from "./DamageDone";
@@ -38,23 +37,17 @@ export interface EventsPanelProps {
   panelType: EventsPanelType;
   onPanelTypeChange: (type: EventsPanelType) => void;
   durationMs: number;
-  selectedEncounters: Encounter[];
+  context: PanelContext;
 }
 
 export function EventsPanel({
   panelType,
   onPanelTypeChange,
   durationMs,
-  selectedEncounters,
+  context,
 }: EventsPanelProps) {
   const [perSecond, setPerSecond] = useState(false);
   const panel = PANELS[panelType];
-  
-  // List of selected encounter IDs
-  const encounterIds = useMemo(
-    () => selectedEncounters.map((e) => e.id),
-    [selectedEncounters]
-  );
 
   const {
     loading,
@@ -65,7 +58,7 @@ export function EventsPanel({
     processingTimeMs,
   } = usePanelAggregation({
     panel,
-    encounterIds,
+    context,
   });
 
   return (
@@ -108,6 +101,7 @@ export function EventsPanel({
         loading,
         processing,
         error,
+        context,
       })}
     </Card>
   );

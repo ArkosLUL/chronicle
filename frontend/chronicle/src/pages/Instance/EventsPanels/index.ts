@@ -17,6 +17,9 @@ export { usePanelAggregation } from "./usePanelAggregation";
 export type {
   PanelDefinition,
   PanelRenderProps,
+  PanelContext,
+  EntitySelection,
   EntityValueMap,
   EventCallback,
+  ContextChangeAction,
 } from "./types";

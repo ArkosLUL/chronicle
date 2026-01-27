@@ -16,17 +16,23 @@ export const DamageDonePanel: PanelDefinition<PlayerMetricChartMap> = {
   
   createState: () => new Map<string, PlayerMetricChartData>(),
   
-  processEvent: (state, event, _encounterID, streamType) => {
+  processEvent: (state, event, _encounterID, streamType, context) => {
     // Only process damage events
     if (streamType !== "damage") return;
     if (!event.caster) return;
     if (!GUID.fromString(event.caster).isPlayer()) return;
     
-    const existing: PlayerMetricChartData= state.get(event.caster) || { 
+    // Filter by selected players if any are selected
+    // const { entitySelection } = context;
+    // if (entitySelection.playerIds.size > 0) {
+    //   if (!entitySelection.playerIds.has(event.caster)) return;
+    // }
+    
+    const existing: PlayerMetricChartData = state.get(event.caster) || { 
       playerID: event.caster,
       value: 0,
-      playerName: "",
-      className: "UNKNOWN",
+      playerName: context.instance.players?.[event.caster]?.name || "",
+      className: context.instance.players?.[event.caster]?.class || "UNKNOWN",
       specialization: "",
     };
     existing.value += event.amount;

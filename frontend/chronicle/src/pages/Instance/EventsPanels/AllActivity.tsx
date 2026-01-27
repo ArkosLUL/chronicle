@@ -14,7 +14,13 @@ export const AllActivityPanel: PanelDefinition<EntityValueMap> = {
   
   createState: () => new Map<string, number>(),
   
-  processEvent: (state, event) => {
+  processEvent: (state, event, _encounterID, _streamType, context) => {
+    // Filter by selected players if any are selected
+    const { entitySelection } = context;
+    if (entitySelection.playerIds.size > 0) {
+      if (!entitySelection.playerIds.has(event.caster)) return;
+    }
+    
     // Count events, not amounts
     const key = event.caster || "Unknown";
     state.set(key, (state.get(key) || 0) + 1);

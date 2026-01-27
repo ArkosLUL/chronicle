@@ -5,12 +5,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "@/hooks/instanceEvents";
 import { FastDamageCursor } from "@/api/protodecode/decode";
-import type { PanelDefinition } from "./types";
+import type { PanelDefinition, PanelContext } from "./types";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 export interface UsePanelAggregationOptions<TResult> {
   panel: PanelDefinition<TResult>;
-  encounterIds?: string[];
+  context: PanelContext;
   enabled?: boolean;
 }
 
@@ -23,11 +23,22 @@ export interface UsePanelAggregationResult<TResult> {
   processingTimeMs: number | null;
 }
 
+/**
+ * Serialize context for comparison. Only includes fields that affect processing.
+ */
+function serializeContextForComparison(ctx: PanelContext): string {
+  return JSON.stringify({
+    encounterIds: ctx.selectedEncounterIds.slice().sort(),
+    playerIds: Array.from(ctx.entitySelection.playerIds).sort(),
+    enemyIds: Array.from(ctx.entitySelection.enemyIds).sort(),
+  });
+}
+
 export function usePanelAggregation<TResult>(
   options: UsePanelAggregationOptions<TResult>
 ): UsePanelAggregationResult<TResult> {
-  const { panel, encounterIds, enabled = true } = options;
-  const context = useInstanceEventsContext();
+  const { panel, context: panelContext, enabled = true } = options;
+  const eventsContext = useInstanceEventsContext();
   
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -37,40 +48,72 @@ export function usePanelAggregation<TResult>(
   const [processingTimeMs, setProcessingTimeMs] = useState<number | null>(null);
   
   const versionRef = useRef(0);
+  const prevContextRef = useRef<PanelContext | null>(null);
+  const cachedStreamsRef = useRef<{ type: StreamType; data: Uint8Array }[] | null>(null);
   
   // Create stable keys for dependencies
-  const encounterKey = encounterIds?.sort().join(",") ?? "";
-  const streamsKey = panel.streams.sort().join(",");
+  const encounterKey = panelContext.selectedEncounterIds.slice().sort().join(",");
+  const streamsKey = panel.streams.slice().sort().join(",");
+  const contextKey = serializeContextForComparison(panelContext);
   
   useEffect(() => {
     if (!enabled) return;
     
     const version = ++versionRef.current;
+    const prevContext = prevContextRef.current;
+    
+    // Check if we can skip reprocessing
+    let shouldReprocess = true;
+    if (prevContext && cachedStreamsRef.current) {
+      const prevEncounterKey = prevContext.selectedEncounterIds.slice().sort().join(",");
+      if (prevEncounterKey === encounterKey) {
+        // Encounter IDs haven't changed - ask panel what to do
+        const action = panel.onContextChange?.(prevContext, panelContext) ?? 'reprocess';
+        if (action === 'nothing') {
+          return; // Skip entirely
+        }
+        if (action === 'rerender') {
+          shouldReprocess = false;
+        }
+      }
+    }
     
     async function run() {
+      // If we don't need to reprocess and have cached result, skip fetching
+      if (!shouldReprocess && cachedStreamsRef.current) {
+        // Just trigger a re-render by updating state reference
+        // The result stays the same, but components will re-render with new context
+        setResult(r => r);
+        prevContextRef.current = panelContext;
+        return;
+      }
+      
       setLoading(true);
       setProcessing(false);
       setError(null);
       setProcessingTimeMs(null);
       
       try {
-        // Fetch all required streams
+        // Fetch all required streams (these are cached at the eventsContext level)
         const fetchedStreams = await Promise.all(
           panel.streams.map(async (type) => {
-            const stream = await context.fetchStream(type);
+            const stream = await eventsContext.fetchStream(type);
             return { type, data: stream.data };
           })
         );
         
         if (version !== versionRef.current) return;
         
+        // Cache streams for potential reuse
+        cachedStreamsRef.current = fetchedStreams;
+        
         setLoading(false);
         setProcessing(true);
         
         const startTime = performance.now();
         
-        const encounterSet = encounterIds && encounterIds.length > 0 
-          ? new Set(encounterIds) 
+        const encounterSet = panelContext.selectedEncounterIds.length > 0 
+          ? new Set(panelContext.selectedEncounterIds) 
           : null;
         
         // Create fresh state for this aggregation
@@ -84,7 +127,8 @@ export function usePanelAggregation<TResult>(
             stream.type,
             encounterSet,
             state,
-            panel.processEvent
+            panel.processEvent,
+            panelContext
           );
         }
         
@@ -96,6 +140,7 @@ export function usePanelAggregation<TResult>(
         setTotalEvents(eventCount);
         setProcessingTimeMs(elapsed);
         setProcessing(false);
+        prevContextRef.current = panelContext;
         
         console.log(`[usePanelAggregation:${panel.id}] Completed in ${elapsed.toFixed(2)}ms: ${eventCount} events`);
         
@@ -112,7 +157,7 @@ export function usePanelAggregation<TResult>(
     return () => {
       versionRef.current++;
     };
-  }, [context.fetchStream, panel, streamsKey, encounterKey, enabled]);
+  }, [eventsContext.fetchStream, panel, streamsKey, encounterKey, contextKey, enabled, panelContext]);
   
   return {
     loading,
@@ -132,7 +177,8 @@ function processStream<TResult>(
   streamType: StreamType,
   encounterSet: Set<string> | null,
   state: TResult,
-  processEvent: PanelDefinition<TResult>["processEvent"]
+  processEvent: PanelDefinition<TResult>["processEvent"],
+  context: PanelContext
 ): number {
   const cursor = new FastDamageCursor(data);
   let eventCount = 0;
@@ -150,7 +196,7 @@ function processStream<TResult>(
       if (!event) break;
       
       eventCount++;
-      processEvent(state, event, encounterID, streamType);
+      processEvent(state, event, encounterID, streamType, context);
     }
     
     cursor.nextEncounter();

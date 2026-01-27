@@ -14,8 +14,14 @@ export const HealingDonePanel: PanelDefinition<EntityValueMap> = {
   
   createState: () => new Map<string, number>(),
   
-  processEvent: (state, event, _encounterID, streamType) => {
+  processEvent: (state, event, _encounterID, streamType, context) => {
     if (streamType !== "heal") return;
+    
+    // Filter by selected players if any are selected
+    const { entitySelection } = context;
+    if (entitySelection.playerIds.size > 0) {
+      if (!entitySelection.playerIds.has(event.caster)) return;
+    }
     
     const key = event.caster || "Unknown";
     state.set(key, (state.get(key) || 0) + event.amount);

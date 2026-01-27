@@ -8,7 +8,7 @@ import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
 
 // Import panel definitions
-import { DamageDonePanel } from "./DamageDone/DamageDone";
+import { createDamageDonePanel } from "./DamageDone/DamageDone";
 import { DamageTakenPanel } from "./DamageTaken";
 import { HealingDonePanel } from "./HealingDone";
 import { AllActivityPanel } from "./AllActivity";
@@ -18,7 +18,9 @@ import { AllActivityPanel } from "./AllActivity";
 // Type safety is maintained within each panel definition.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PANELS: Record<string, PanelDefinition<any>> = {
-  damage_done: DamageDonePanel,
+  damage_done: createDamageDonePanel("players"),
+  enemy_damage_done: createDamageDonePanel("enemies"),
+  pet_damage_done: createDamageDonePanel("pets"),
   damage_taken: DamageTakenPanel,
   healing_done: HealingDonePanel,
   all_activity: AllActivityPanel,
@@ -28,6 +30,8 @@ export type EventsPanelType = keyof typeof PANELS;
 
 const PANEL_OPTIONS: { value: EventsPanelType; label: string }[] = [
   { value: "damage_done", label: "Damage Done" },
+  { value: "enemy_damage_done", label: "Enemy Damage Done" },
+  { value: "pet_damage_done", label: "Pet Damage Done" },
   { value: "damage_taken", label: "Damage Taken" },
   { value: "healing_done", label: "Healing Done" },
   { value: "all_activity", label: "All Activity" },

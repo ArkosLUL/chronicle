@@ -212,7 +212,7 @@ function formatValue(value: number): string {
   if (value >= 1_000) {
     return `${(value / 1_000).toFixed(1)}K`
   }
-  return value.toLocaleString()
+  return value.toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
 /**
@@ -237,7 +237,7 @@ export function AbilityBreakout({
   
   const hasTargets = targets && targets.length > 0
   
-  const tabClass = "px-3 py-1.5 text-xs font-medium transition-colors"
+  const tabClass = "px-2 py-1 text-2xs font-medium transition-colors"
   const activeTabClass = invertedColors
     ? "text-background border-b-2 border-background"
     : "text-foreground border-b-2 border-foreground"
@@ -248,18 +248,20 @@ export function AbilityBreakout({
   const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
   const textClass = invertedColors ? "text-background" : "text-foreground"
 
-  const totalHeader = (
-    <div className={cn("px-2 py-1.5 text-xs flex justify-between items-center", borderClass, "border-b")}>
-      <span className={mutedClass}>Total {valueLabel}</span>
-      <span className={cn("font-medium tabular-nums", textClass)}>{formatValue(totalValue)}</span>
-    </div>
+  const totalDisplay = (
+    <span className={cn("text-2xs ml-auto pr-1.5", mutedClass)}>
+      Total: <span className={cn("font-medium tabular-nums", textClass)}>{formatValue(totalValue)}</span>
+    </span>
   )
 
   // If no targets, just show the ability table without tabs
   if (!hasTargets) {
     return (
       <div>
-        {totalHeader}
+        <div className={cn("flex items-center border-b", borderClass)}>
+          <span className={cn(tabClass, activeTabClass)}>By Ability</span>
+          {totalDisplay}
+        </div>
         <AbilityTable
           abilities={abilities}
           totalValue={totalValue}
@@ -272,8 +274,7 @@ export function AbilityBreakout({
 
   return (
     <div>
-      {totalHeader}
-      <div className={cn("flex border-b", borderClass)}>
+      <div className={cn("flex items-center border-b", borderClass)}>
         <button
           className={cn(tabClass, activeTab === 'ability' ? activeTabClass : inactiveTabClass)}
           onClick={() => setActiveTab('ability')}
@@ -286,6 +287,7 @@ export function AbilityBreakout({
         >
           By Target
         </button>
+        {totalDisplay}
       </div>
       {activeTab === 'ability' ? (
         <AbilityTable

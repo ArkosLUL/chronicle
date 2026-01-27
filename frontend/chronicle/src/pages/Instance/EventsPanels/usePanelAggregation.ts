@@ -112,20 +112,15 @@ export function usePanelAggregation<TResult>(
         
         const startTime = performance.now();
         
-        const encounterSet = panelContext.selectedEncounterIds.length > 0 
-          ? new Set(panelContext.selectedEncounterIds) 
-          : null;
-        
         // Create fresh state for this aggregation
         const state = panel.createState();
         let eventCount = 0;
         
-        // Process each stream
+        // Process each stream - no pre-filtering, panel decides via context
         for (const stream of fetchedStreams) {
           eventCount += processStream(
             stream.data,
             stream.type,
-            encounterSet,
             state,
             panel.processEvent,
             panelContext
@@ -170,12 +165,13 @@ export function usePanelAggregation<TResult>(
 }
 
 /**
- * Process a stream using the panel's processEvent callback
+ * Process a stream using the panel's processEvent callback.
+ * No pre-filtering - all events are passed to processEvent.
+ * The panel decides how to filter/aggregate via context.
  */
 function processStream<TResult>(
   data: Uint8Array,
   streamType: StreamType,
-  encounterSet: Set<string> | null,
   state: TResult,
   processEvent: PanelDefinition<TResult>["processEvent"],
   context: PanelContext
@@ -185,11 +181,6 @@ function processStream<TResult>(
   
   while (cursor.currentHeader) {
     const encounterID = cursor.currentHeader.encounterID;
-    
-    if (encounterSet && !encounterSet.has(encounterID)) {
-      cursor.nextEncounter();
-      continue;
-    }
     
     while (cursor.hasMoreInEncounter) {
       const event = cursor.next();

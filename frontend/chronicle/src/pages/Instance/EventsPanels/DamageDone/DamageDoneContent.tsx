@@ -92,6 +92,8 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
     valueLabel: "Damage",
     perSecond: props.perSecond,
     durationMs: props.durationMs,
+    loading: props.loading,
+    processing: props.processing,
   });
 
   // Once we have cached data, never show loading/processing states

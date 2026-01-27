@@ -50,6 +50,8 @@ export interface UseDamageDoneBreakoutOptions {
   valueLabel?: string;
   perSecond?: boolean;
   durationMs?: number;
+  loading?: boolean;
+  processing?: boolean;
 }
 
 /**
@@ -61,9 +63,19 @@ export function useDamageDoneBreakout({
   valueLabel = "Damage",
   perSecond = false,
   durationMs,
+  loading = false,
+  processing = false,
 }: UseDamageDoneBreakoutOptions) {
   const breakout = useCallback(
     (playerID: string, pinned: boolean) => {
+      if (loading || processing) {
+        return (
+          <div className="p-4 flex items-center justify-center text-xs text-muted-foreground min-w-[300px] min-h-[200px]">
+            {loading ? "Loading..." : "Processing..."}
+          </div>
+        );
+      }
+      
       if (!result) {
         return (
           <p className="text-xs p-2 text-background/60">No breakdown available</p>
@@ -97,7 +109,7 @@ export function useDamageDoneBreakout({
         />
       );
     },
-    [result, valueLabel, perSecond, durationMs]
+    [result, valueLabel, perSecond, durationMs, loading, processing]
   );
 
   return breakout;

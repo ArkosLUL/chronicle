@@ -4,6 +4,8 @@ import type { DamageDoneResult } from "./damageDone.processor";
 
 /**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
+ * 
+ * ByAbility structure: Map<unitId, Map<abilityName, DamageAbilityBreakout>>
  */
 function getAbilitiesForUnit(
   result: DamageDoneResult,
@@ -28,7 +30,10 @@ function getAbilitiesForUnit(
 /**
  * Get the total damage for a unit from the ByAbility map.
  */
-function getTotalForUnit(result: DamageDoneResult, unitId: string): number {
+function getTotalForUnit(
+  result: DamageDoneResult,
+  unitId: string
+): number {
   const unitAbilities = result.ByAbility.get(unitId);
   if (!unitAbilities) return 0;
 

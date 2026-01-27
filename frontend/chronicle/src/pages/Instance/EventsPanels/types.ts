@@ -6,6 +6,7 @@ import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/Pl
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { Instance, Encounter } from "../InstancePage";
 import type { ProcessorContext, ProcessorEvent } from "./processorTypes";
+import type { ReusableDamage } from "@/api/protodecode/decode";
 
 /**
  * Selection state for filtering entities
@@ -47,9 +48,6 @@ export type AggregatorFn = (
   encounterID: string,
 ) => void;
 
-/** Result of onContextChange - determines what happens when context changes */
-export type ContextChangeAction = 'reprocess' | 'rerender' | 'nothing';
-
 /**
  * Configuration for a panel type
  */
@@ -84,23 +82,12 @@ export interface PanelDefinition<TResult> {
   ) => void;
   
   /**
-   * Determine what to do when context changes (but encounterIds stay the same).
-   * 
-   * Returns:
-   * - 'reprocess': Re-run processEvent for all events (DEFAULT)
-   * - 'rerender': Keep result, just re-render
-   * - 'nothing': Skip update entirely
-   * 
-   * Default: 'reprocess'
-   */
-  onContextChange?: (
-    prev: PanelContext,
-    next: PanelContext,
-  ) => ContextChangeAction;
-  
-  /**
    * Render the panel content.
    * Called with the aggregated result and display context.
+   * 
+   * Components inside render can decide their own caching strategy:
+   * - Use `props.result` directly for always-fresh data
+   * - Cache result when `props.loading` becomes true for static data
    */
   render: (props: PanelRenderProps<TResult>) => React.ReactNode;
 }

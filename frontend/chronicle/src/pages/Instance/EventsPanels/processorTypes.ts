@@ -39,12 +39,24 @@ export interface ProcessorPlayer {
 }
 
 /**
+ * Unit info from instance data (subset needed by processors).
+ */
+export interface ProcessorUnit {
+  name: string;
+  owner: string | null;
+  entry: number;
+}
+
+/**
  * Context available to processors (serializable for worker).
  * This is a serializable subset of PanelContext.
  */
 export interface ProcessorContext {
   /** Players map: guid -> player info */
   players: Record<string, ProcessorPlayer>;
+  
+  /** Units map: guid -> unit info */
+  units?: Record<string, ProcessorUnit>;
   
   /** Currently selected encounter IDs */
   selectedEncounterIds: string[];

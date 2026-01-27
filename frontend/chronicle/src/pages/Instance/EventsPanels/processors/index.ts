@@ -3,19 +3,19 @@
  */
 
 import type { PanelProcessor } from "../processorTypes";
-import { damageDoneProcessor } from "./damageDone.processor";
+import { damageDoneProcessor } from "../DamageDone/damageDone.processor";
 import { damageTakenProcessor } from "./damageTaken.processor";
 import { healingDoneProcessor } from "./healingDone.processor";
 import { allActivityProcessor } from "./allActivity.processor";
 
 // Export individual processors
-export { damageDoneProcessor } from "./damageDone.processor";
+export { damageDoneProcessor } from "../DamageDone/damageDone.processor";
 export { damageTakenProcessor } from "./damageTaken.processor";
 export { healingDoneProcessor } from "./healingDone.processor";
 export { allActivityProcessor } from "./allActivity.processor";
 
 // Export state types
-export type { DamageDoneState, DamageDoneData } from "./damageDone.processor";
+export type { DamageDoneState, DamageDoneData } from "../DamageDone/damageDone.processor";
 export type { DamageTakenState } from "./damageTaken.processor";
 export type { HealingDoneState } from "./healingDone.processor";
 export type { AllActivityState } from "./allActivity.processor";

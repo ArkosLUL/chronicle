@@ -39,25 +39,27 @@ function toProcessorContext(ctx: PanelContext): ProcessorContext {
     }
   }
   
+  // Extract units (convert GUID to string if needed)
+  const units: ProcessorContext["units"] = {};
+  if (ctx.instance.units) {
+    for (const [guid, unit] of Object.entries(ctx.instance.units)) {
+      units[guid] = {
+        name: unit.name,
+        owner: unit.owner?.toString() ?? null,
+        entry: unit.entry,
+      };
+    }
+  }
+  
   return {
     players,
+    units,
     selectedEncounterIds: ctx.selectedEncounterIds,
     entitySelection: {
       enemyIds: Array.from(ctx.entitySelection.enemyIds),
       playerIds: Array.from(ctx.entitySelection.playerIds),
     },
   };
-}
-
-/**
- * Serialize context for comparison. Only includes fields that affect processing.
- */
-function serializeContextForComparison(ctx: PanelContext): string {
-  return JSON.stringify({
-    encounterIds: ctx.selectedEncounterIds.slice().sort(),
-    playerIds: Array.from(ctx.entitySelection.playerIds).sort(),
-    enemyIds: Array.from(ctx.entitySelection.enemyIds).sort(),
-  });
 }
 
 /**
@@ -92,46 +94,16 @@ export function usePanelAggregation<TResult>(
   
   const requestIdRef = useRef(0);
   const workerRef = useRef<Worker | null>(null);
-  const prevContextRef = useRef<PanelContext | null>(null);
-  const cachedStreamsRef = useRef<{ type: StreamType; data: Uint8Array }[] | null>(null);
   
-  // Create stable keys for dependencies
-  const encounterKey = panelContext.selectedEncounterIds.slice().sort().join(",");
+  // Create stable key for streams (panels define which streams they need)
   const streamsKey = panel.streams.slice().sort().join(",");
-  const contextKey = serializeContextForComparison(panelContext);
   
   useEffect(() => {
     if (!enabled) return;
     
     const requestId = ++requestIdRef.current;
-    const prevContext = prevContextRef.current;
-    
-    // Check if we can skip reprocessing
-    let shouldReprocess = true;
-    if (prevContext && cachedStreamsRef.current) {
-      const prevEncounterKey = prevContext.selectedEncounterIds.slice().sort().join(",");
-      if (prevEncounterKey === encounterKey) {
-        // Encounter IDs haven't changed - ask panel what to do
-        const action = panel.onContextChange?.(prevContext, panelContext) ?? 'reprocess';
-        if (action === 'nothing') {
-          return; // Skip entirely
-        }
-        if (action === 'rerender') {
-          shouldReprocess = false;
-        }
-      }
-    }
     
     async function run() {
-      // If we don't need to reprocess and have cached result, skip fetching
-      if (!shouldReprocess && cachedStreamsRef.current) {
-        // Just trigger a re-render by updating state reference
-        // The result stays the same, but components will re-render with new context
-        setResult(r => r);
-        prevContextRef.current = panelContext;
-        return;
-      }
-      
       // Terminate any existing worker
       if (workerRef.current) {
         workerRef.current.terminate();
@@ -154,9 +126,6 @@ export function usePanelAggregation<TResult>(
         
         // Check if request was superseded while fetching
         if (requestId !== requestIdRef.current) return;
-        
-        // Cache streams for potential reuse
-        cachedStreamsRef.current = fetchedStreams;
         
         setLoading(false);
         setProcessing(true);
@@ -188,9 +157,6 @@ export function usePanelAggregation<TResult>(
           setTotalEvents(response.totalEvents);
           setProcessingTimeMs(response.processingTimeMs);
           setProcessing(false);
-          prevContextRef.current = panelContext;
-          
-          console.log(`[usePanelAggregation:${panel.id}] Worker completed in ${response.processingTimeMs.toFixed(2)}ms: ${response.totalEvents} events`);
         };
         
         worker.onerror = (e) => {
@@ -227,7 +193,7 @@ export function usePanelAggregation<TResult>(
         workerRef.current = null;
       }
     };
-  }, [eventsContext.fetchStream, panel, streamsKey, encounterKey, contextKey, enabled, panelContext]);
+  }, [eventsContext.fetchStream, panel, streamsKey, enabled, panelContext]);
   
   return {
     loading,

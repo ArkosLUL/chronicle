@@ -29,6 +29,9 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 develop: frontend/chronicle/dist create-db
 	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
 
+develop-backend: create-db
+	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
+
 .PHONY: build
 build: build-backend frontend/chronicle/dist
 

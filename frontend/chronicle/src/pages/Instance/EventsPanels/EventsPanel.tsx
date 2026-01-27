@@ -8,7 +8,7 @@ import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
 
 // Import panel definitions
-import { DamageDonePanel } from "./DamageDone";
+import { DamageDonePanel } from "./DamageDone/DamageDone";
 import { DamageTakenPanel } from "./DamageTaken";
 import { HealingDonePanel } from "./HealingDone";
 import { AllActivityPanel } from "./AllActivity";

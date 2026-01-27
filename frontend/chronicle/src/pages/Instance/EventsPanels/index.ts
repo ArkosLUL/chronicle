@@ -2,7 +2,7 @@
 export { EventsPanel, type EventsPanelProps, type EventsPanelType } from "./EventsPanel";
 
 // Panel definitions
-export { DamageDonePanel } from "./DamageDone";
+export { DamageDonePanel } from "./DamageDone/DamageDone";
 export { DamageTakenPanel } from "./DamageTaken";
 export { HealingDonePanel } from "./HealingDone";
 export { AllActivityPanel } from "./AllActivity";

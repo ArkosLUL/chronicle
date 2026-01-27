@@ -324,7 +324,7 @@ export function useInstanceEvents<T = unknown>(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context, streams.join(","), ...deps]);
+  }, [context.fetchStream, streams.join(","), ...deps]);
 
   return {
     loading,

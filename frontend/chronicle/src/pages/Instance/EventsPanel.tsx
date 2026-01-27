@@ -194,7 +194,8 @@ export function EventsPanel({
       streams: config.streams,
       onEvent,
       onEncounterComplete,
-      deps: [panelType, selectedEncounterIds],
+      // Use stable string key for deps to avoid effect re-runs on Set reference changes
+      deps: [panelType, Array.from(selectedEncounterIds).sort().join(",")],
       benchmark: true,  // TODO: remove after testing
     });
   

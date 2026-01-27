@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useRef, useState, useMemo, type ReactNode } from "react";
 import { decompressGzip, isGzipped, readVarint, readVarint64, type PayloadHeader } from "@/api/protodecode/decode";
 import type { StreamType, CachedStream, InstanceEventsContextValue } from "./types";
 
@@ -131,12 +131,13 @@ export function InstanceEventsProvider({ instanceId, children }: InstanceEventsP
     return fetchPromise;
   }, [instanceId]);
 
-  const value: InstanceEventsContextValue = {
+  // Memoize context value to prevent re-renders from causing useEffect re-runs
+  const value = useMemo<InstanceEventsContextValue>(() => ({
     instanceId,
     getStream,
     fetchStream,
     isFetching,
-  };
+  }), [instanceId, getStream, fetchStream, isFetching]);
 
   return (
     <InstanceEventsContext.Provider value={value}>

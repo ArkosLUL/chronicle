@@ -7,9 +7,7 @@ export function GenericPanel<TResult>({
   error,
   children,
   totalEvents,
-  perSecond,
   processingTimeMs,
-  durationMs,
 
 }: PanelRenderProps<TResult> & { children: ReactNode }) {
   if (loading) {
@@ -21,14 +19,14 @@ export function GenericPanel<TResult>({
   if (error) {
     return <div className="text-xs text-destructive">Error: {error.message}</div>;
   }
-  const eventsPerSecond = durationMs > 0 ? (totalEvents / durationMs) * 1000 : 0;
+  const eventsPerSecond = processingTimeMs ? (totalEvents / (processingTimeMs / 1000)) : 0;
 
   return <>
     {children}
     <div className="text-xs text-muted-foreground mt-2 flex items-center justify-between">
       <span>
         {formatNumber(totalEvents)} events
-        {perSecond && durationMs > 0 && (
+        {eventsPerSecond > 0 && (
           <span className="ml-1">({formatNumber(eventsPerSecond)}/s)</span>
         )}
       </span>

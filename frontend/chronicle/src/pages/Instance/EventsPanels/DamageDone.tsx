@@ -40,6 +40,7 @@ export const DamageDonePanel: PanelDefinition<PlayerMetricChartMap> = {
       type={"damage"} 
       panelTitle="Damage Done"
       duration_millis={props.durationMs}
+      perSecond={props.perSecond}
     />
     </GenericPanel>
   }

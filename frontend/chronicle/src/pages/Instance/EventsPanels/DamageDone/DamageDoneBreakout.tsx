@@ -46,31 +46,18 @@ function getTotalForUnit(
 }
 
 /**
- * Get target breakdown for a unit from EncounterDamage.
- * Aggregates across all encounters.
+ * Get target breakdown for a unit from ByTarget.
  */
 function getTargetsForUnit(
   result: DamageDoneResult,
   unitId: string,
   context: PanelContext
 ): TargetData[] {
-  // Aggregate targets across all encounters
-  const aggregated = new Map<string, { value: number }>();
+  const unitTargets = result.ByTarget.get(unitId);
+  if (!unitTargets) return [];
   
-  for (const encounterDamage of result.EncounterDamage.values()) {
-    const unitData = encounterDamage.get(unitId);
-    if (!unitData) continue;
-    
-    for (const [targetId, amount] of unitData.target) {
-      const existing = aggregated.get(targetId) || { value: 0 };
-      existing.value += amount;
-      aggregated.set(targetId, existing);
-    }
-  }
-  
-  // Convert to TargetData array with names
   const targets: TargetData[] = [];
-  for (const [targetId, data] of aggregated) {
+  for (const [targetId, value] of unitTargets) {
     // Try to resolve target name from players or units
     let targetName = targetId;
     if (context.instance.players?.[targetId]) {
@@ -82,7 +69,7 @@ function getTargetsForUnit(
     targets.push({
       targetId,
       targetName,
-      value: data.value,
+      value,
       hitCount: 0, // TODO: Track hit counts per target in processor
       critCount: 0,
     });

@@ -157,14 +157,10 @@ export function TargetTable({
             <th className="text-left py-1.5 px-2 font-medium">Target</th>
             <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
             <th className="text-right py-1.5 px-2 font-medium">%</th>
-            <th className="text-right py-1.5 px-2 font-medium">Count</th>
-            <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
           </tr>
         </thead>
         <tbody>
           {sorted.map((target) => {
-            const totalHits = target.hitCount + target.critCount
-            const critPercent = totalHits > 0 ? (target.critCount / totalHits) * 100 : 0
             const valuePercent = totalValue > 0 ? (target.value / totalValue) * 100 : 0
             
             return (
@@ -177,12 +173,6 @@ export function TargetTable({
                 </td>
                 <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
                   {valuePercent.toFixed(1)}%
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {totalHits}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {critPercent.toFixed(0)}%
                 </td>
               </tr>
             )
@@ -211,6 +201,16 @@ export interface AbilityBreakoutProps {
   pinned?: boolean
 }
 
+function formatValue(value: number): string {
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(2)}M`
+  }
+  if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}K`
+  }
+  return value.toLocaleString()
+}
+
 /**
  * Tabbed breakout component - switches between Ability and Target views.
  * This is the main component to use for player breakouts.
@@ -235,21 +235,34 @@ export function AbilityBreakout({
     ? "text-background/60 hover:text-background/80"
     : "text-muted-foreground hover:text-foreground"
   const borderClass = invertedColors ? "border-background/20" : "border-border"
+  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
+  const textClass = invertedColors ? "text-background" : "text-foreground"
+
+  const totalHeader = (
+    <div className={cn("px-2 py-1.5 text-xs flex justify-between items-center", borderClass, "border-b")}>
+      <span className={mutedClass}>Total {valueLabel}</span>
+      <span className={cn("font-medium tabular-nums", textClass)}>{formatValue(totalValue)}</span>
+    </div>
+  )
 
   // If no targets, just show the ability table without tabs
   if (!hasTargets) {
     return (
-      <AbilityTable
-        abilities={abilities}
-        totalValue={totalValue}
-        valueLabel={valueLabel}
-        invertedColors={invertedColors}
-      />
+      <div>
+        {totalHeader}
+        <AbilityTable
+          abilities={abilities}
+          totalValue={totalValue}
+          valueLabel={valueLabel}
+          invertedColors={invertedColors}
+        />
+      </div>
     )
   }
 
   return (
     <div>
+      {totalHeader}
       <div className={cn("flex border-b", borderClass)}>
         <button
           className={cn(tabClass, activeTab === 'ability' ? activeTabClass : inactiveTabClass)}

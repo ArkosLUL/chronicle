@@ -290,6 +290,7 @@ export function PlayerMetricRow({
   const rowRef = useRef<HTMLDivElement>(null)
   const isDimmed = player.dimmed ?? false;
   const [pinnedPosition, setPinnedPosition] = useState<{ x: number; y: number } | null>(null)
+  const [tooltipOpen, setTooltipOpen] = useState(false)
   
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -462,7 +463,11 @@ export function PlayerMetricRow({
   return (
   <>
     <TooltipProvider key={player.playerID + player.playerName}>
-      <Tooltip delayDuration={0} open={isPinned ? false : undefined}>
+      <Tooltip 
+        delayDuration={0} 
+        open={isPinned ? false : tooltipOpen}
+        onOpenChange={setTooltipOpen}
+      >
         <TooltipTrigger asChild>
           {rowContent}
         </TooltipTrigger>

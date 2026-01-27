@@ -88,7 +88,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
 
   // Create breakout function for tooltips
   const breakout = useDamageDoneBreakout({
-    result: cachedResult,
+    result: result,
     valueLabel: "Damage",
     perSecond: props.perSecond,
     durationMs: props.durationMs,

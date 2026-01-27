@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/Card/Card";
 import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
+import { PanelSelector } from "./PanelSelector";
 
 // Import panel definitions
 import { createDamageDonePanel } from "./DamageDone/DamageDone";
@@ -27,15 +28,6 @@ const PANELS: Record<string, PanelDefinition<any>> = {
 };
 
 export type EventsPanelType = keyof typeof PANELS;
-
-const PANEL_OPTIONS: { value: EventsPanelType; label: string }[] = [
-  { value: "damage_done", label: "Damage Done" },
-  { value: "enemy_damage_done", label: "Enemy Damage Done" },
-  { value: "pet_damage_done", label: "Pet Damage Done" },
-  { value: "damage_taken", label: "Damage Taken" },
-  { value: "healing_done", label: "Healing Done" },
-  { value: "all_activity", label: "All Activity" },
-];
 
 export interface EventsPanelProps {
   panelType: EventsPanelType;
@@ -70,17 +62,7 @@ export function EventsPanel({
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-sm font-medium flex items-center gap-2">
           {panel.icon}
-          <select
-            value={panelType}
-            onChange={(e) => onPanelTypeChange(e.target.value as EventsPanelType)}
-            className="text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground"
-          >
-            {PANEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <PanelSelector value={panelType} onChange={onPanelTypeChange} />
         </h3>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">

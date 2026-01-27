@@ -256,6 +256,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return err
 			}
 
+			res := tx.InsertLogEncounterEvents(ctx, events)
+			if err := res.Close(); err != nil {
+				return fmt.Errorf("insert log encounter events: %w", err)
+			}
+
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{
 				WoWInstance: db2sdk.WoWInstance(dbinstance),
 				Encounters:  sdkEncounters,

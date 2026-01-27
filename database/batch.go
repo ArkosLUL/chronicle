@@ -193,7 +193,7 @@ func (b *InsertInstanceUnitsBatchResults) Close() error {
 
 const insertLogEncounterEvents = `-- name: InsertLogEncounterEvents :batchexec
 INSERT INTO
-  log_instance_messages(encounter_id, start_time, type, messages)
+  log_instance_encounter_events(encounter_id, start_time, type, events)
 VALUES
   ($1, $2, $3, $4)
 `
@@ -205,10 +205,10 @@ type InsertLogEncounterEventsBatchResults struct {
 }
 
 type InsertLogEncounterEventsParams struct {
-	EncounterID uuid.UUID              `db:"encounter_id" json:"encounter_id"`
-	StartTime   pgtype.Timestamptz     `db:"start_time" json:"start_time"`
-	Type        LogInstanceMessageType `db:"type" json:"type"`
-	Messages    []byte                 `db:"messages" json:"messages"`
+	EncounterID uuid.UUID                     `db:"encounter_id" json:"encounter_id"`
+	StartTime   pgtype.Timestamptz            `db:"start_time" json:"start_time"`
+	Type        LogInstanceEncounterEventType `db:"type" json:"type"`
+	Events      []byte                        `db:"events" json:"events"`
 }
 
 func (q *sqlQuerier) InsertLogEncounterEvents(ctx context.Context, arg []InsertLogEncounterEventsParams) *InsertLogEncounterEventsBatchResults {
@@ -218,7 +218,7 @@ func (q *sqlQuerier) InsertLogEncounterEvents(ctx context.Context, arg []InsertL
 			a.EncounterID,
 			a.StartTime,
 			a.Type,
-			a.Messages,
+			a.Events,
 		}
 		batch.Queue(insertLogEncounterEvents, vals...)
 	}

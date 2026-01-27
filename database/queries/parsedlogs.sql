@@ -120,10 +120,3 @@ FROM
 WHERE
   instance_id = $1
 ;
-
--- name: InsertLogEncounterEvents :batchexec
-INSERT INTO
-  log_instance_messages(encounter_id, start_time, type, messages)
-VALUES
-  ($1, $2, $3, $4)
-;

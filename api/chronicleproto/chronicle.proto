@@ -51,10 +51,8 @@ message Damage {
   repeated Tailer tailers = 9;
 }
 
-message DamageReport {
+message EncounterDamage {
+  uint64 startUnixMillis = 1;
   repeated Damage damages = 1;
 }
 
-service ChronicleService {
-  rpc Damage(InstanceRequest) returns (DamageReport) {};
-}

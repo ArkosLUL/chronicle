@@ -121,6 +121,7 @@ func (api *API) Routes() chi.Router {
 					r.Route("/instances", func(r chi.Router) {
 						r.Route("/{instance_id}", func(r chi.Router) {
 							r.Use(httpmw.InstanceIDMiddleware)
+							r.Get("/events", api.InstanceEvents)
 							r.Get("/", api.Instance)
 							r.Get("/damage-summary", api.InstanceDamageSummaries)
 						})

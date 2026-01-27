@@ -25,6 +25,14 @@ export interface ActivityPeriod {
     readonly slain: boolean;
 }
 
+// From chroniclesdk/events.go
+export interface ChronicleEncounterEvents {
+    readonly encounter_id: string;
+    readonly type: string;
+    readonly payload: string;
+    readonly start_time: string;
+}
+
 // From chroniclesdk/combat.go
 export interface EncounterDamageSummary {
     readonly encounter_id: string;

@@ -7,8 +7,40 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/slice"
 )
+
+func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	instanceID := httpmw.InstanceID(ctx)
+	db := api.Opts.DB
+
+	types := r.URL.Query().Get("types")
+	if types == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Query param 'types' is required",
+		})
+		return
+	}
+
+	evts, err := db.InstanceEncounterEvents(ctx, database.InstanceEncounterEventsParams{
+		InstanceID: instanceID,
+		Types:      []database.LogInstanceEncounterEventType{database.LogInstanceEncounterEventTypeDamage}, //slice.StringEnums[database.LogInstanceEncounterEventType](strings.Split(types, ",")),
+	})
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch instance encounter events",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	// The conversion to another type is pretty expensive, just use the type as is
+	httpapi.Write(ctx, w, http.StatusOK, evts)
+}
 
 func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

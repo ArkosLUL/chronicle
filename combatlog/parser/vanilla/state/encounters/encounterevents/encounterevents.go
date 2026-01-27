@@ -1,14 +1,14 @@
 package encounterevents
 
 import (
-  "fmt"
-  "time"
+	"fmt"
+	"time"
 
-  "github.com/Emyrk/chronicle/api/chronicleproto"
-  "github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-  "github.com/Emyrk/chronicle/database"
-  "github.com/google/uuid"
+	"github.com/Emyrk/chronicle/api/chronicleproto"
+	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/google/uuid"
 )
 
 type EncounterEventsInProgress EncounterEvents
@@ -28,8 +28,8 @@ func New() *EncounterEventsInProgress {
 
 func (e *EncounterEvents) InsertParams(encounterID uuid.UUID) ([]database.InsertLogEncounterEventsParams, error) {
 	params := []database.InsertLogEncounterEventsParams{
-    e.Damage.AsInsert(encounterID, database.LogInstanceMessageTypeDamage),
-  }
+		e.Damage.AsInsert(encounterID, database.LogInstanceEncounterEventTypeDamage),
+	}
 	return params, nil
 }
 

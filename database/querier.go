@@ -36,6 +36,7 @@ type sqlcQuerier interface {
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
 	Instance(ctx context.Context, id uuid.UUID) (LogInstance, error)
+	InstanceEncounterEvents(ctx context.Context, arg InstanceEncounterEventsParams) ([]LogInstanceEncounterEvent, error)
 	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 }

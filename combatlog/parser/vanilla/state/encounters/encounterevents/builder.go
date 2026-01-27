@@ -11,22 +11,23 @@ import (
 
 type Builder[M messages.Message, PM proto.Message] struct {
 	First time.Time
-	Data  *proto.Buffer
+
+	data *proto.Buffer
 }
 
 func NewBuilder[M messages.Message, PM proto.Message]() *Builder[M, PM] {
 	return &Builder[M, PM]{
 		First: time.Time{},
-		Data:  proto.NewBuffer(nil),
+		data:  proto.NewBuffer(nil),
 	}
 }
 
-func (b *Builder[M, PM]) AsInsert(encounterID uuid.UUID, ty database.LogInstanceMessageType) database.InsertLogEncounterEventsParams {
+func (b *Builder[M, PM]) AsInsert(encounterID uuid.UUID, ty database.LogInstanceEncounterEventType) database.InsertLogEncounterEventsParams {
 	return database.InsertLogEncounterEventsParams{
 		EncounterID: encounterID,
 		StartTime:   database.Timestamptz(b.First),
 		Type:        ty,
-		Messages:    b.Data.Bytes(),
+		Events:      b.data.Bytes(),
 	}
 }
 
@@ -36,7 +37,7 @@ func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, 
 	}
 
 	pm := conv(b.First, idx, m)
-	err := b.Data.EncodeMessage(pm)
+	err := b.data.EncodeMessage(pm)
 	if err != nil {
 		return err
 	}

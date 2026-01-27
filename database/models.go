@@ -77,58 +77,58 @@ func AllItemEffectTypeValues() []ItemEffectType {
 	}
 }
 
-type LogInstanceMessageType string
+type LogInstanceEncounterEventType string
 
 const (
-	LogInstanceMessageTypeDamage LogInstanceMessageType = "damage"
+	LogInstanceEncounterEventTypeDamage LogInstanceEncounterEventType = "damage"
 )
 
-func (e *LogInstanceMessageType) Scan(src interface{}) error {
+func (e *LogInstanceEncounterEventType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = LogInstanceMessageType(s)
+		*e = LogInstanceEncounterEventType(s)
 	case string:
-		*e = LogInstanceMessageType(s)
+		*e = LogInstanceEncounterEventType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for LogInstanceMessageType: %T", src)
+		return fmt.Errorf("unsupported scan type for LogInstanceEncounterEventType: %T", src)
 	}
 	return nil
 }
 
-type NullLogInstanceMessageType struct {
-	LogInstanceMessageType LogInstanceMessageType `json:"log_instance_message_type"`
-	Valid                  bool                   `json:"valid"` // Valid is true if LogInstanceMessageType is not NULL
+type NullLogInstanceEncounterEventType struct {
+	LogInstanceEncounterEventType LogInstanceEncounterEventType `json:"log_instance_encounter_event_type"`
+	Valid                         bool                          `json:"valid"` // Valid is true if LogInstanceEncounterEventType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullLogInstanceMessageType) Scan(value interface{}) error {
+func (ns *NullLogInstanceEncounterEventType) Scan(value interface{}) error {
 	if value == nil {
-		ns.LogInstanceMessageType, ns.Valid = "", false
+		ns.LogInstanceEncounterEventType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.LogInstanceMessageType.Scan(value)
+	return ns.LogInstanceEncounterEventType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullLogInstanceMessageType) Value() (driver.Value, error) {
+func (ns NullLogInstanceEncounterEventType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.LogInstanceMessageType), nil
+	return string(ns.LogInstanceEncounterEventType), nil
 }
 
-func (e LogInstanceMessageType) Valid() bool {
+func (e LogInstanceEncounterEventType) Valid() bool {
 	switch e {
-	case LogInstanceMessageTypeDamage:
+	case LogInstanceEncounterEventTypeDamage:
 		return true
 	}
 	return false
 }
 
-func AllLogInstanceMessageTypeValues() []LogInstanceMessageType {
-	return []LogInstanceMessageType{
-		LogInstanceMessageTypeDamage,
+func AllLogInstanceEncounterEventTypeValues() []LogInstanceEncounterEventType {
+	return []LogInstanceEncounterEventType{
+		LogInstanceEncounterEventTypeDamage,
 	}
 }
 
@@ -527,18 +527,18 @@ type LogInstanceEncounterDamageUnitSummary struct {
 	OwnerGuid            *guid.GUID                       `db:"owner_guid" json:"owner_guid"`
 }
 
+type LogInstanceEncounterEvent struct {
+	EncounterID uuid.UUID                     `db:"encounter_id" json:"encounter_id"`
+	Type        LogInstanceEncounterEventType `db:"type" json:"type"`
+	StartTime   pgtype.Timestamptz            `db:"start_time" json:"start_time"`
+	// Gzipped protobuf-encoded events
+	Events []byte `db:"events" json:"events"`
+}
+
 type LogInstanceEncounterHostile struct {
 	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
 	ID          guid.GUID `db:"id" json:"id"`
 	Periods     Periods   `db:"periods" json:"periods"`
-}
-
-type LogInstanceMessage struct {
-	EncounterID uuid.UUID              `db:"encounter_id" json:"encounter_id"`
-	Type        LogInstanceMessageType `db:"type" json:"type"`
-	StartTime   pgtype.Timestamptz     `db:"start_time" json:"start_time"`
-	// Gzipped protobuf-encoded messages
-	Messages []byte `db:"messages" json:"messages"`
 }
 
 type LogInstancePlayer struct {

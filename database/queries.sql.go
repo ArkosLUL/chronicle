@@ -12,6 +12,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const instanceEncounterEvents = `-- name: InstanceEncounterEvents :many
+SELECT
+  log_instance_encounter_events.encounter_id, log_instance_encounter_events.type, log_instance_encounter_events.start_time, log_instance_encounter_events.events
+FROM
+  log_instance_encounter_events
+LEFT JOIN
+    log_instance_encounters
+    ON log_instance_encounter_events.encounter_id = log_instance_encounters.id
+WHERE
+  instance_id = $1 AND
+  log_instance_encounter_events.type = ANY($2 :: log_instance_encounter_event_type[])
+`
+
+type InstanceEncounterEventsParams struct {
+	InstanceID uuid.UUID                       `db:"instance_id" json:"instance_id"`
+	Types      []LogInstanceEncounterEventType `db:"types" json:"types"`
+}
+
+func (q *sqlQuerier) InstanceEncounterEvents(ctx context.Context, arg InstanceEncounterEventsParams) ([]LogInstanceEncounterEvent, error) {
+	rows, err := q.db.Query(ctx, instanceEncounterEvents, arg.InstanceID, arg.Types)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogInstanceEncounterEvent
+	for rows.Next() {
+		var i LogInstanceEncounterEvent
+		if err := rows.Scan(
+			&i.EncounterID,
+			&i.Type,
+			&i.StartTime,
+			&i.Events,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteWoWLogGroup = `-- name: DeleteWoWLogGroup :exec
 DELETE FROM
   wow_log_groups

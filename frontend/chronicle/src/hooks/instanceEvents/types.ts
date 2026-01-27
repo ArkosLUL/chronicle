@@ -41,6 +41,8 @@ export interface UseInstanceEventsOptions<T = unknown> {
   onEncounterComplete?: EncounterCompleteCallback;
   /** Dependencies that trigger reprocessing when changed */
   deps?: unknown[];
+  /** Benchmark mode - skip callbacks and progress updates for raw speed test */
+  benchmark?: boolean;
 }
 
 /**

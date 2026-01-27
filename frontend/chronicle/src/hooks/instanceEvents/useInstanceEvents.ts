@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "./InstanceEventsContext";
-import { createStreamCursor, type StreamCursor } from "@/api/protodecode/decode";
+import { createStreamCursor, FastDamageCursor, type StreamCursor } from "@/api/protodecode/decode";
 import { DamageSchema, HealSchema } from "@/api/proto/chronicle_pb";
 import type { DescMessage } from "@bufbuild/protobuf";
 import type {
@@ -92,7 +92,7 @@ function getAllEncounterIDs(streams: CachedStream[]): string[] {
 export function useInstanceEvents<T = unknown>(
   options: UseInstanceEventsOptions<T>
 ): UseInstanceEventsResult {
-  const { streams, onEvent, onEncounterComplete, deps = [] } = options;
+  const { streams, onEvent, onEncounterComplete, deps = [], benchmark = false } = options;
   const context = useInstanceEventsContext();
 
   const [loading, setLoading] = useState(false);
@@ -145,8 +145,49 @@ export function useInstanceEvents<T = unknown>(
         setBytesTotal(total);
         setLoading(false);
         setProcessing(true);
+        
+        const startTime = performance.now();
 
-        // Create cursors for each stream
+        // Fast path: single damage stream uses zero-allocation decoder
+        const useFastPath = streams.length === 1 && streams[0] === "damage";
+        
+        if (useFastPath) {
+          // Use FastDamageCursor for zero-allocation iteration
+          const fastCursor = new FastDamageCursor(cachedStreams[0].data);
+          
+          while (fastCursor.currentHeader) {
+            if (cancelled || version !== processingVersionRef.current) return;
+            
+            const encounterID = fastCursor.currentHeader.encounterID;
+            
+            while (fastCursor.hasMoreInEncounter) {
+              if (cancelled || version !== processingVersionRef.current) return;
+              
+              const msg = fastCursor.next();
+              if (!msg) break;
+              
+              if (!benchmark) {
+                onEventRef.current(msg as T, "damage", encounterID);
+              }
+            }
+            
+            if (!benchmark) {
+              onEncounterCompleteRef.current?.(encounterID);
+            }
+            
+            fastCursor.nextEncounter();
+          }
+          
+          setBytesProcessed(fastCursor.bytesProcessed);
+          
+          const elapsed = performance.now() - startTime;
+          console.log(`[useInstanceEvents] Fast path completed in ${elapsed.toFixed(2)}ms (benchmark=${benchmark})`);
+          
+          setProcessing(false);
+          return;
+        }
+
+        // Standard path: Create cursors for each stream
         const cursors: TypedCursor[] = streams.map((type, i) => ({
           type,
           cursor: createStreamCursor(getSchemaForType(type), cachedStreams[i].data),
@@ -182,51 +223,63 @@ export function useInstanceEvents<T = unknown>(
           const activeCursors = getCursorsForEncounter(cursors, encounterID);
 
           // Process messages in index order
-          while (activeCursors.some((c) => c.cursor.hasMoreInEncounter)) {
-            if (cancelled || version !== processingVersionRef.current) return;
+          // Optimization: if single stream, skip the interleaving logic
+          if (activeCursors.length === 1) {
+            const tc = activeCursors[0];
+            while (tc.cursor.hasMoreInEncounter) {
+              if (cancelled || version !== processingVersionRef.current) return;
 
-            // Find cursor with lowest index
-            let minCursor: TypedCursor | null = null;
-            let minIndex = Infinity;
-
-            for (const tc of activeCursors) {
               const peeked = tc.cursor.peek();
-              if (peeked && peeked.index < minIndex) {
-                minIndex = peeked.index;
-                minCursor = tc;
+              if (!peeked) break;
+
+              if (!benchmark) {
+                onEventRef.current(peeked.message as T, tc.type, encounterID);
+              }
+
+              tc.cursor.advance();
+              currentIdx++;
+
+              if (!benchmark && currentIdx % 100 === 0) {
+                setEncounterProgress({ encounterID, currentIdx, totalEvents });
+                const processed = cursors.reduce((sum, c) => sum + c.cursor.bytesProcessed, 0);
+                setBytesProcessed(processed);
+                await new Promise((resolve) => setTimeout(resolve, 0));
               }
             }
+          } else {
+            // Multi-stream: interleave by index
+            while (activeCursors.some((c) => c.cursor.hasMoreInEncounter)) {
+              if (cancelled || version !== processingVersionRef.current) return;
 
-            if (!minCursor) break;
+              // Find cursor with lowest index
+              let minCursor: TypedCursor | null = null;
+              let minIndex = Infinity;
 
-            // Process this message
-            const peeked = minCursor.cursor.peek()!;
-            onEventRef.current(
-              peeked.message as T,
-              minCursor.type,
-              encounterID
-            );
+              for (const tc of activeCursors) {
+                const peeked = tc.cursor.peek();
+                if (peeked && peeked.index < minIndex) {
+                  minIndex = peeked.index;
+                  minCursor = tc;
+                }
+              }
 
-            minCursor.cursor.advance();
-            currentIdx++;
+              if (!minCursor) break;
 
-            // Update progress periodically (every 100 messages to avoid too many renders)
-            if (currentIdx % 100 === 0) {
-              setEncounterProgress({
-                encounterID,
-                currentIdx,
-                totalEvents,
-              });
+              const peeked = minCursor.cursor.peek()!;
+              
+              if (!benchmark) {
+                onEventRef.current(peeked.message as T, minCursor.type, encounterID);
+              }
 
-              // Update bytes processed
-              const processed = cursors.reduce(
-                (sum, c) => sum + c.cursor.bytesProcessed,
-                0
-              );
-              setBytesProcessed(processed);
+              minCursor.cursor.advance();
+              currentIdx++;
 
-              // Yield to allow UI updates
-              await new Promise((resolve) => setTimeout(resolve, 0));
+              if (!benchmark && currentIdx % 100 === 0) {
+                setEncounterProgress({ encounterID, currentIdx, totalEvents });
+                const processed = cursors.reduce((sum, c) => sum + c.cursor.bytesProcessed, 0);
+                setBytesProcessed(processed);
+                await new Promise((resolve) => setTimeout(resolve, 0));
+              }
             }
           }
 
@@ -252,6 +305,10 @@ export function useInstanceEvents<T = unknown>(
           0
         );
         setBytesProcessed(processed);
+        
+        const elapsed = performance.now() - startTime;
+        console.log(`[useInstanceEvents] Processing completed in ${elapsed.toFixed(2)}ms (benchmark=${benchmark})`);
+        
         setProcessing(false);
       } catch (e) {
         if (cancelled || version !== processingVersionRef.current) return;

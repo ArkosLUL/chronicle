@@ -188,12 +188,14 @@ export function EventsPanel({
   }
 
   // Use the instance events hook
+  // benchmark: true skips callbacks and progress for raw speed testing
   const { loading, processing, error, encounterProgress, bytesProcessed, bytesTotal } =
     useInstanceEvents({
       streams: config.streams,
       onEvent,
       onEncounterComplete,
       deps: [panelType, selectedEncounterIds],
+      benchmark: true,  // TODO: remove after testing
     });
   
   // Track timing

@@ -123,7 +123,12 @@ export function createDamageDoneProcessor(
       state.EncounterDamage.set(encounterID, encounterDamage);
       
       // Breakouts
-      if(context.selectedEncounterIds.has(encounterID) ) {
+      if(context.selectedEncounterIds.has(encounterID) &&
+        (
+          (sourceType === "enemies" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target))) ||
+          ((sourceType === "players" || sourceType === "pets") && (context.entitySelection.enemyIds.size == 0 || context.entitySelection.enemyIds.has(event.target)))
+        )
+      ) {
         let source = event.sourceName || "Auto Attack"
         if((sourceType === "players") && isPet) {
           source = source + " (Pet)";

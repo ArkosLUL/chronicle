@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { PlayerMetricChart, type PlayerMetricChartData, type AbilityBreakdown } from './PlayerMetricChart'
+import { PlayerMetricChart, type PlayerMetricChartData, type AbilityBreakdown, AbilityBreakdownTable } from './PlayerMetricChart'
 
 const meta = {
   title: 'UI/PlayerMetricChart',
@@ -247,6 +247,15 @@ const hunterAbilities: AbilityBreakdown[] = [
   { name: 'Arcane Shot', totalDamage: 8000, hitCount: 20, critCount: 8, missCount: 1, dodgeCount: 0, immuneCount: 0, parryCount: 0, otherCount: 0 },
 ]
 
+// Store ability data by playerID for the breakout function
+const abilityDataByPlayer: Record<string, { abilities: AbilityBreakdown[], value: number }> = {
+  'player-1': { abilities: rogueAbilities, value: 140000 },
+  'player-2': { abilities: mageAbilities, value: 105000 },
+  'player-3': { abilities: warriorAbilities, value: 111000 },
+  'player-4': { abilities: warlockAbilities, value: 111000 },
+  'player-5': { abilities: hunterAbilities, value: 101000 },
+}
+
 // Mock data with ability breakdowns
 const mockDataWithAbilities: PlayerMetricChartData[] = [
   { 
@@ -255,7 +264,6 @@ const mockDataWithAbilities: PlayerMetricChartData[] = [
     className: 'Rogue', 
     specialization: 'Combat', 
     value: 140000,
-    abilityBreakdown: rogueAbilities,
   },
   { 
     playerID: 'player-2',
@@ -263,7 +271,6 @@ const mockDataWithAbilities: PlayerMetricChartData[] = [
     className: 'Mage', 
     specialization: 'Fire', 
     value: 105000,
-    abilityBreakdown: mageAbilities,
   },
   { 
     playerID: 'player-3',
@@ -271,7 +278,6 @@ const mockDataWithAbilities: PlayerMetricChartData[] = [
     className: 'Warrior', 
     specialization: 'Fury', 
     value: 111000,
-    abilityBreakdown: warriorAbilities,
   },
   { 
     playerID: 'player-4',
@@ -279,7 +285,6 @@ const mockDataWithAbilities: PlayerMetricChartData[] = [
     className: 'Warlock', 
     specialization: 'Affliction', 
     value: 111000,
-    abilityBreakdown: warlockAbilities,
   },
   { 
     playerID: 'player-5',
@@ -287,7 +292,6 @@ const mockDataWithAbilities: PlayerMetricChartData[] = [
     className: 'Hunter', 
     specialization: 'Marksmanship', 
     value: 101000,
-    abilityBreakdown: hunterAbilities,
   },
 ]
 
@@ -309,6 +313,29 @@ export const WithAbilityBreakdown: Story = {
   render: function Render(args) {
     const [perSecond, setPerSecond] = useState(args.perSecond ?? false)
     
+    // Create breakout function that returns AbilityBreakdownTable
+    // pinned parameter available if we want different content for pinned vs hover
+    const breakout = useCallback((playerID: string, _pinned: boolean) => {
+      const data = abilityDataByPlayer[playerID]
+      if (!data) {
+        return <p className="text-xs p-2 text-background/60">No breakdown available</p>
+      }
+      
+      const displayValue = perSecond && args.duration_millis 
+        ? (data.value / args.duration_millis) * 1000 
+        : data.value
+      
+      return (
+        <AbilityBreakdownTable
+          abilities={data.abilities}
+          totalValue={displayValue}
+          invertedColors
+          perSecond={perSecond}
+          durationMillis={args.duration_millis}
+        />
+      )
+    }, [perSecond, args.duration_millis])
+    
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ fontSize: '14px', color: '#888' }}>
@@ -328,7 +355,7 @@ export const WithAbilityBreakdown: Story = {
             (Duration: {(args.duration_millis! / 1000).toFixed(1)}s)
           </span>
         </label>
-        <PlayerMetricChart {...args} perSecond={perSecond} />
+        <PlayerMetricChart {...args} perSecond={perSecond} breakout={breakout} />
       </div>
     )
   },

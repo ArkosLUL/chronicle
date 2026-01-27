@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Swords, Shield, Skull } from "lucide-react";
 import { useInstanceDamageSummary } from "@/api/queries";
 import type { InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
-import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
-import { PANEL_CONFIGS, PANEL_OPTIONS, type PanelType } from "./panelConfig";
+import { 
+  PlayerMetricChart, 
+  TabbedBreakdownTable,
+  computeAbilityBreakdown,
+} from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import { PANEL_CONFIGS, PANEL_OPTIONS, type PanelType, type PlayerBreakdownData } from "./panelConfig";
 import type { Encounter } from "./InstancePage";
 
 // ============================================================================
@@ -74,7 +78,7 @@ export function MetricPanel({
   }, [fetchedData, selectedEncounters]);
 
   // Transform the data based on panel type and selection
-  const data: PlayerMetricChartData[] = useMemo(() => {
+  const { chartData, breakdownData } = useMemo(() => {
     return config.transform(panelType, encounterFiltered, players, enemies, selectedPlayerIds, selectedEnemyIds);
   }, [panelType, config, encounterFiltered, players, enemies, selectedPlayerIds, selectedEnemyIds]);
 
@@ -96,7 +100,7 @@ export function MetricPanel({
   const showPerSecondToggle = config.chartType === 'damage';
 
   // Calculate total (exclude dimmed items if filtering is active)
-  const totalValue = data
+  const totalValue = chartData
     .filter(d => !d.dimmed)
     .reduce((sum, d) => sum + d.value, 0);
   
@@ -104,6 +108,30 @@ export function MetricPanel({
   const displayTotal = perSecond 
     ? formatDamageNumber(totalValue / durationMs * 1000)
     : formatDamageNumber(totalValue);
+    
+  // Create breakout function for tooltips
+  // pinned parameter available if we want different content for pinned vs hover tooltips
+  const breakout = useCallback((playerID: string, _pinned: boolean) => {
+    const data: PlayerBreakdownData | undefined = breakdownData.get(playerID);
+    if (!data) {
+      return <p className="text-xs p-2 text-background/60">No breakdown available</p>;
+    }
+    
+    const abilities = computeAbilityBreakdown(data.rawAbilities);
+    const displayValue = perSecond ? (data.value / durationMs) * 1000 : data.value;
+    
+    return (
+      <TabbedBreakdownTable
+        abilities={abilities}
+        rawAbilities={data.rawAbilities}
+        targetNames={targetNames}
+        totalValue={displayValue}
+        invertedColors
+        perSecond={perSecond}
+        durationMillis={durationMs}
+      />
+    );
+  }, [breakdownData, targetNames, perSecond, durationMs]);
 
   return (
     <Card className="p-4 gap-2">
@@ -140,13 +168,13 @@ export function MetricPanel({
         Total: <span className="font-medium text-foreground">{displayTotal}{perSecond ? '/s' : ''}</span>
       </div>
       <PlayerMetricChart
-        data={data}
+        data={chartData}
         type={config.chartType}
         duration_millis={durationMs}
         perSecond={perSecond}
         style={{ height: "400px" }}
         panelTitle={config.label}
-        targetNames={targetNames}
+        breakout={breakout}
       />
     </Card>
   );

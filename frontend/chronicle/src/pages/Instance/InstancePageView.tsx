@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users } from "lucide-react";
 import { useUrlState, serializers } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
@@ -717,6 +718,7 @@ export function InstancePageView({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // URL-persisted entity selection state
+  const [, setSearchParams] = useSearchParams();
   const [urlEnemyIds, setUrlEnemyIds] = useUrlState("enemies", new Set<string>(), serializers.stringSet);
   const [urlPlayerIds, setUrlPlayerIds] = useUrlState("players", new Set<string>(), serializers.stringSet);
   
@@ -751,10 +753,15 @@ export function InstancePageView({
     });
   };
   
-  // Clear all entity selections
+  // Clear all entity selections - use setSearchParams directly to clear both in one update
+  // (avoids race condition where two separate useUrlState updates can override each other)
   const clearEntitySelection = () => {
-    setUrlEnemyIds(new Set());
-    setUrlPlayerIds(new Set());
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete("enemies");
+      next.delete("players");
+      return next;
+    }, { replace: true });
   };
 
   const selectedIds = selectedEncounterIds ?? internalSelectedIds;

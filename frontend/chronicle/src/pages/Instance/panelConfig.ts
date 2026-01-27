@@ -1,13 +1,31 @@
 import type { Ability, EncounterDamageSummary, InstancePlayer } from "@/api/typesGenerated";
-import type { AbilityBreakdown, PlayerMetricChartData, RawAbilities } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
+import type { PlayerMetricChartData, RawAbilities } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GUID } from "@/lib/guid/guid";
 
 export type PanelType = 'damage_done' | 'damage_taken' | 'enemy_damage_done' | 'enemy_damage_taken';
 
+/**
+ * Player breakdown data for tooltips/breakout panels.
+ * Stored separately from PlayerMetricChartData to keep the chart data simple.
+ */
+export interface PlayerBreakdownData {
+  rawAbilities: RawAbilities;
+  value: number; // Total value for percentage calculations
+}
+
+/**
+ * Result of transforming raw damage data for a panel.
+ */
+export interface PanelTransformResult {
+  chartData: PlayerMetricChartData[];
+  /** Map of playerID -> breakdown data for tooltips */
+  breakdownData: Map<string, PlayerBreakdownData>;
+}
+
 export interface PanelConfig {
   label: string;
   chartType: 'damage' | 'healing';
-  /** Transform raw damage summary into chart data */
+  /** Transform raw damage summary into chart data and breakdown data */
   transform: (
     panelType : PanelType,
     data: EncounterDamageSummary[],
@@ -15,7 +33,7 @@ export interface PanelConfig {
     enemies: Map<string, string>,
     selectedPlayerIds: Set<string>,
     selectedEnemyIds: Set<string>
-  ) => PlayerMetricChartData[];
+  ) => PanelTransformResult;
 }
 
 // ============================================================================
@@ -126,43 +144,6 @@ function mergeAbility(target: Ability, source: Ability): Ability {
   };
 }
 
-/**
- * Convert rawAbilities (nested by target GUID, then ability name) into a flat
- * AbilityBreakdown[] aggregated across all targets.
- */
-function computeAbilityBreakdown(rawAbilities: RawAbilities | undefined): AbilityBreakdown[] {
-  if (!rawAbilities) return [];
-  
-  // Aggregate abilities across all targets
-  const byAbilityName = new Map<string, Ability>();
-  
-  for (const targetAbilities of Object.values(rawAbilities)) {
-    for (const [abilityName, ability] of Object.entries(targetAbilities)) {
-      const existing = byAbilityName.get(abilityName);
-      if (existing) {
-        byAbilityName.set(abilityName, mergeAbility(existing, ability));
-      } else {
-        byAbilityName.set(abilityName, { ...ability });
-      }
-    }
-  }
-  
-  // Convert to AbilityBreakdown[] and sort by total damage descending
-  return Array.from(byAbilityName.entries())
-    .map(([name, ability]) => ({
-      name,
-      totalDamage: ability.total,
-      hitCount: ability.hit_count,
-      critCount: ability.crit_count,
-      missCount: ability.miss_count,
-      dodgeCount: ability.dodge_count,
-      immuneCount: ability.immune_count,
-      parryCount: ability.parry_count,
-      otherCount: ability.other_count,
-    }))
-    .sort((a, b) => b.totalDamage - a.totalDamage);
-}
-
 // ============================================================================
 // Panel-specific transformations
 // ============================================================================
@@ -174,7 +155,7 @@ function terraformGeneral(
   enemies: Map<string, string>,
   selectedPlayerIds: Set<string>,
   selectedEnemyIds: Set<string>
-) : PlayerMetricChartData[] {
+) : PanelTransformResult {
   // Filter data based on panel type and selections
   switch (panelType) {
     case 'damage_done':
@@ -211,12 +192,15 @@ function terraformGeneral(
   }
 
   const aggregated = aggregateByUnit(targetFilter, data);
-  const result: Record<string, PlayerMetricChartData> = {};
+  const chartDataMap: Record<string, PlayerMetricChartData> = {};
+  const breakdownData = new Map<string, PlayerBreakdownData>();
 
   const isPlayerPanel = panelType === 'damage_done' || panelType === 'damage_taken';
   const isDonePanel = panelType === 'damage_done' || panelType === 'enemy_damage_done';
   const pets = new Map<string, AggregatedDamageSummary>();
 
+  // Track rawAbilities separately for breakdown data
+  const rawAbilitiesByPlayer = new Map<string, RawAbilities>();
 
   for (const [guid, stats] of aggregated) {
     if(stats.ownerGuid != null) {
@@ -233,34 +217,42 @@ function terraformGeneral(
     const enemyName = stats.name || enemies.get(guid);
     const selectionSet = isPlayerPanel ? selectedPlayerIds : selectedEnemyIds;
 
-    if(result[guid]) {
+    if(chartDataMap[guid]) {
       console.log("Duplicate GUID in damage summary:", guid);
       continue;
     }
 
-    result[guid] = {
+    const value = isDonePanel ? stats.damageDoneTotal : stats.damageTakenTotal;
+    const rawAbilities = isDonePanel ? stats.damageDoneAbilities : stats.damageTakenAbilities;
+
+    chartDataMap[guid] = {
       playerID: guid,
       playerName: isPlayerPanel ? player.name : (enemyName || `Enemy ${guid.slice(-8)}`),
       className: isPlayerPanel ? player.class : creatureType,
       specialization: "",
-      value: isDonePanel ? stats.damageDoneTotal : stats.damageTakenTotal,
-      rawAbilities: isDonePanel ? stats.damageDoneAbilities : stats.damageTakenAbilities,
+      value,
       dimmed: selectedPlayerIds.size > 0 && !selectionSet.has(guid),
     };
+    
+    rawAbilitiesByPlayer.set(guid, rawAbilities);
   }
 
   for (const [, petStats] of pets) {
     const ownerGuid = petStats.ownerGuid;
     if (!ownerGuid) continue;
     
-    const owner = result[ownerGuid.toString()];
+    const ownerGuidStr = ownerGuid.toString();
+    const owner = chartDataMap[ownerGuidStr];
     if (!owner) continue;
 
     const value = isDonePanel ? petStats.damageDoneTotal : petStats.damageTakenTotal;
     const abilities = isDonePanel ? petStats.damageDoneAbilities : petStats.damageTakenAbilities;
 
-    if (owner.rawAbilities == null) {
-      owner.rawAbilities = {};
+    // Get or create rawAbilities for the owner
+    let ownerRawAbilities = rawAbilitiesByPlayer.get(ownerGuidStr);
+    if (!ownerRawAbilities) {
+      ownerRawAbilities = {};
+      rawAbilitiesByPlayer.set(ownerGuidStr, ownerRawAbilities);
     }
 
     owner.value = (owner.value || 0) + value;
@@ -280,22 +272,27 @@ function terraformGeneral(
       other_count: 0,
     } as Ability);
     for(const target of Object.keys(abilities)) {
-      if (!owner.rawAbilities[target]) {
-        owner.rawAbilities[target] = {};
+      if (!ownerRawAbilities[target]) {
+        ownerRawAbilities[target] = {};
       }
 
-      owner.rawAbilities[target]["Pet: " + petStats.name] = asOneAbility;
+      ownerRawAbilities[target]["Pet: " + petStats.name] = asOneAbility;
     }
-    
-    result[ownerGuid.toString()] = owner;
   }
   
-  // Compute abilityBreakdown for each player from their rawAbilities
-  for (const entry of Object.values(result)) {
-    entry.abilityBreakdown = computeAbilityBreakdown(entry.rawAbilities);
+  // Build breakdown data from rawAbilities
+  for (const [guid, chartData] of Object.entries(chartDataMap)) {
+    const rawAbilities = rawAbilitiesByPlayer.get(guid) ?? {};
+    breakdownData.set(guid, {
+      rawAbilities,
+      value: chartData.value,
+    });
   }
   
-  return Object.values(result)
+  return {
+    chartData: Object.values(chartDataMap),
+    breakdownData,
+  };
 }
 
 // ============================================================================

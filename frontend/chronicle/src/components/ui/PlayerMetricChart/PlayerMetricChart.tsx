@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback, useEffect } from 'react'
+import { useMemo, useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import {
   Tooltip,
   TooltipContent,
@@ -8,25 +8,18 @@ import {
 import { useMouse } from '@/hooks/useMouse';
 import { cn } from '@/lib/utils';
 import { X, GripHorizontal } from 'lucide-react';
-import type { Ability } from '@/api/typesGenerated';
+
+// Re-export types from BreakdownContent for backwards compatibility
+export { 
+  type AbilityBreakdown, 
+  type RawAbilities,
+  computeAbilityBreakdown,
+  TabbedBreakdownTable,
+  AbilityBreakdownTable,
+  TargetBreakdownTable,
+} from './BreakdownContent';
 
 export type ChartType = 'damage' | 'healing' | 'taken'
-
-// Ability breakdown for tooltip display
-export interface AbilityBreakdown {
-  name: string
-  totalDamage: number
-  hitCount: number
-  critCount: number
-  missCount: number
-  dodgeCount: number
-  immuneCount: number
-  parryCount: number
-  otherCount: number
-}
-
-// Raw abilities record type from API: { [targetGUID]: { [abilityName]: Ability } }
-export type RawAbilities = Record<string, Record<string, Ability>>;
 
 export interface PlayerMetricChartData {
   playerID: string
@@ -38,19 +31,15 @@ export interface PlayerMetricChartData {
   stackedValue?: number
   // dimmed reduces visual prominence (used for filtering)
   dimmed?: boolean
-  // Ability breakdown for tooltip (computed from rawAbilities, or provided directly for stories)
-  abilityBreakdown?: AbilityBreakdown[]
-  rawAbilities?: RawAbilities
 }
 
-// Target breakdown for "By Target" tab display
-export interface TargetBreakdown {
-  targetGuid: string
-  targetName: string
-  totalDamage: number
-  hitCount: number
-  critCount: number
-}
+/**
+ * Function that renders the breakout/tooltip content for a player row.
+ * @param playerID - The ID of the player to render content for
+ * @param pinned - Whether this is a pinned (detached, draggable) tooltip vs a hover tooltip
+ * @returns React node to display in the tooltip/breakout panel
+ */
+export type BreakoutFn = (playerID: string, pinned: boolean) => ReactNode
 
 interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   data: PlayerMetricChartData[]
@@ -65,8 +54,11 @@ interface PlayerMetricChartProps extends React.ComponentProps<"div"> {
   duration_millis?: number
   // Title shown on pinned tooltips (e.g., "Damage Done", "Damage Taken")
   panelTitle?: string
-  // Map of target GUID -> target name for "By Target" breakdown
-  targetNames?: Map<string, string>
+  /**
+   * Function that renders the breakout/tooltip content for a player.
+   * If not provided, no tooltip is shown.
+   */
+  breakout?: BreakoutFn
 }
 
 export function PlayerMetricChart({
@@ -78,7 +70,7 @@ export function PlayerMetricChart({
   panelTitle,
   perSecond,
   duration_millis,
-  targetNames,
+  breakout,
   ...divProps
 }: PlayerMetricChartProps) {
   // Track which rows have pinned tooltips (multiple allowed)
@@ -156,9 +148,7 @@ export function PlayerMetricChart({
             isPinned={pinnedPlayerIds.has(player.playerID)}
             onTogglePin={() => handleTogglePin(player.playerID)}
             panelTitle={panelTitle}
-            perSecond={perSecond}
-            durationMillis={duration_millis}
-            targetNames={targetNames}
+            breakout={breakout}
           />
         })}
       </div>
@@ -178,258 +168,7 @@ export interface PlayerMetricRowProps {
   isPinned?: boolean
   onTogglePin?: () => void
   panelTitle?: string
-  perSecond?: boolean
-  durationMillis?: number
-  targetNames?: Map<string, string>
-}
-
-// Ability breakdown table component
-// invertedColors: when true, uses bg-foreground/text-background (for tooltips with dark bg)
-function AbilityBreakdownTable({ abilities, totalValue, invertedColors = false, perSecond = false, durationMillis }: { 
-  abilities: AbilityBreakdown[], 
-  totalValue: number,
-  invertedColors?: boolean,
-  perSecond?: boolean,
-  durationMillis?: number,
-}) {
-  if (!abilities || abilities.length === 0) {
-    const emptyClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-    return <p className={cn("text-xs p-2", emptyClass)}>No ability breakdown available</p>
-  }
-
-  // Sort by damage descending
-  const sorted = [...abilities].sort((a, b) => b.totalDamage - a.totalDamage)
-
-  // Color classes based on inverted mode
-  const textClass = invertedColors ? "text-background" : "text-foreground"
-  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-  const headerBgClass = invertedColors ? "bg-foreground" : "bg-popover"
-  const borderClass = invertedColors ? "border-background/20" : "border-border"
-  const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
-
-  return (
-    <div className="max-h-64 overflow-y-auto">
-      <table className={cn("w-full text-xs", textClass)}>
-        <thead className={cn("sticky top-0", headerBgClass)}>
-          <tr className={cn("border-b", borderClass)}>
-            <th className="text-left py-1.5 px-2 font-medium">Ability</th>
-            <th className="text-right py-1.5 px-2 font-medium">{perSecond ? 'DPS' : 'Damage'}</th>
-            <th className="text-right py-1.5 px-2 font-medium">%</th>
-            <th className="text-right py-1.5 px-2 font-medium">Count</th>
-            <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((ability) => {
-            const totalHits = ability.hitCount + ability.critCount
-            const critPercent = totalHits > 0 ? (ability.critCount / totalHits) * 100 : 0
-            const displayDamage = perSecond && durationMillis ? (ability.totalDamage / durationMillis) * 1000 : ability.totalDamage
-            const damagePercent = totalValue > 0 ? (displayDamage / totalValue) * 100 : 0
-            
-            return (
-              <tr key={ability.name} className={cn("border-b", borderClass.replace("20", "10"), hoverClass)}>
-                <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
-                  {ability.name}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {displayDamage.toLocaleString()}
-                </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
-                  {damagePercent.toFixed(1)}%
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {totalHits}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {critPercent.toFixed(0)}%
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-// Target breakdown table component - shows damage grouped by target
-function TargetBreakdownTable({ 
-  rawAbilities, 
-  targetNames,
-  totalValue, 
-  invertedColors = false, 
-  perSecond = false, 
-  durationMillis 
-}: { 
-  rawAbilities?: RawAbilities,
-  targetNames?: Map<string, string>,
-  totalValue: number,
-  invertedColors?: boolean,
-  perSecond?: boolean,
-  durationMillis?: number,
-}) {
-  // Compute target breakdown from rawAbilities
-  const targets = useMemo(() => {
-    if (!rawAbilities) return []
-    
-    const byTarget = new Map<string, { totalDamage: number; hitCount: number; critCount: number }>()
-    
-    for (const [targetGuid, abilities] of Object.entries(rawAbilities)) {
-      let totalDamage = 0
-      let hitCount = 0
-      let critCount = 0
-      
-      for (const ability of Object.values(abilities)) {
-        totalDamage += ability.total
-        hitCount += ability.hit_count
-        critCount += ability.crit_count
-      }
-      
-      const existing = byTarget.get(targetGuid)
-      if (existing) {
-        existing.totalDamage += totalDamage
-        existing.hitCount += hitCount
-        existing.critCount += critCount
-      } else {
-        byTarget.set(targetGuid, { totalDamage, hitCount, critCount })
-      }
-    }
-    
-    return Array.from(byTarget.entries())
-      .map(([guid, stats]) => ({
-        targetGuid: guid,
-        targetName: targetNames?.get(guid) || `Unknown (${guid.slice(-8)})`,
-        ...stats,
-      }))
-      .sort((a, b) => b.totalDamage - a.totalDamage)
-  }, [rawAbilities, targetNames])
-
-  if (targets.length === 0) {
-    const emptyClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-    return <p className={cn("text-xs p-2", emptyClass)}>No target breakdown available</p>
-  }
-
-  // Color classes based on inverted mode
-  const textClass = invertedColors ? "text-background" : "text-foreground"
-  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-  const headerBgClass = invertedColors ? "bg-foreground" : "bg-popover"
-  const borderClass = invertedColors ? "border-background/20" : "border-border"
-  const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
-
-  return (
-    <div className="max-h-64 overflow-y-auto">
-      <table className={cn("w-full text-xs", textClass)}>
-        <thead className={cn("sticky top-0", headerBgClass)}>
-          <tr className={cn("border-b", borderClass)}>
-            <th className="text-left py-1.5 px-2 font-medium">Target</th>
-            <th className="text-right py-1.5 px-2 font-medium">{perSecond ? 'DPS' : 'Damage'}</th>
-            <th className="text-right py-1.5 px-2 font-medium">%</th>
-            <th className="text-right py-1.5 px-2 font-medium">Count</th>
-            <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {targets.map((target) => {
-            const totalHits = target.hitCount + target.critCount
-            const critPercent = totalHits > 0 ? (target.critCount / totalHits) * 100 : 0
-            const displayDamage = perSecond && durationMillis ? (target.totalDamage / durationMillis) * 1000 : target.totalDamage
-            const damagePercent = totalValue > 0 ? (displayDamage / totalValue) * 100 : 0
-            
-            return (
-              <tr key={target.targetGuid} className={cn("border-b", borderClass.replace("20", "10"), hoverClass)}>
-                <td className="py-1 px-2 max-w-[150px] truncate" title={target.targetName}>
-                  {target.targetName}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {displayDamage.toLocaleString()}
-                </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
-                  {damagePercent.toFixed(1)}%
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {totalHits}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {critPercent.toFixed(0)}%
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-// Tabbed breakdown component - switches between Ability and Target views
-type BreakdownTab = 'ability' | 'target'
-
-function TabbedBreakdownTable({
-  abilities,
-  rawAbilities,
-  targetNames,
-  totalValue,
-  invertedColors = false,
-  perSecond = false,
-  durationMillis,
-}: {
-  abilities: AbilityBreakdown[],
-  rawAbilities?: RawAbilities,
-  targetNames?: Map<string, string>,
-  totalValue: number,
-  invertedColors?: boolean,
-  perSecond?: boolean,
-  durationMillis?: number,
-}) {
-  const [activeTab, setActiveTab] = useState<BreakdownTab>('ability')
-  
-  const tabClass = invertedColors 
-    ? "px-3 py-1.5 text-xs font-medium transition-colors"
-    : "px-3 py-1.5 text-xs font-medium transition-colors"
-  const activeTabClass = invertedColors
-    ? "text-background border-b-2 border-background"
-    : "text-foreground border-b-2 border-foreground"
-  const inactiveTabClass = invertedColors
-    ? "text-background/60 hover:text-background/80"
-    : "text-muted-foreground hover:text-foreground"
-  const borderClass = invertedColors ? "border-background/20" : "border-border"
-
-  return (
-    <div>
-      <div className={cn("flex border-b", borderClass)}>
-        <button
-          className={cn(tabClass, activeTab === 'ability' ? activeTabClass : inactiveTabClass)}
-          onClick={() => setActiveTab('ability')}
-        >
-          By Ability
-        </button>
-        <button
-          className={cn(tabClass, activeTab === 'target' ? activeTabClass : inactiveTabClass)}
-          onClick={() => setActiveTab('target')}
-        >
-          By Target
-        </button>
-      </div>
-      {activeTab === 'ability' ? (
-        <AbilityBreakdownTable
-          abilities={abilities}
-          totalValue={totalValue}
-          invertedColors={invertedColors}
-          perSecond={perSecond}
-          durationMillis={durationMillis}
-        />
-      ) : (
-        <TargetBreakdownTable
-          rawAbilities={rawAbilities}
-          targetNames={targetNames}
-          totalValue={totalValue}
-          invertedColors={invertedColors}
-          perSecond={perSecond}
-          durationMillis={durationMillis}
-        />
-      )}
-    </div>
-  )
+  breakout?: BreakoutFn
 }
 
 // Draggable pinned tooltip component
@@ -438,12 +177,10 @@ interface DraggablePinnedTooltipProps {
   initialPosition: { x: number; y: number }
   onClose: () => void
   panelTitle?: string
-  perSecond?: boolean
-  durationMillis?: number
-  targetNames?: Map<string, string>
+  breakout?: BreakoutFn
 }
 
-function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, perSecond, durationMillis, targetNames }: DraggablePinnedTooltipProps) {
+function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, breakout }: DraggablePinnedTooltipProps) {
   const [position, setPosition] = useState(initialPosition)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null)
@@ -530,15 +267,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
           <X className="h-4 w-4" />
         </button>
       </div>
-      <TabbedBreakdownTable 
-        abilities={player.abilityBreakdown ?? []} 
-        rawAbilities={player.rawAbilities}
-        targetNames={targetNames}
-        totalValue={player.value}
-        invertedColors
-        perSecond={perSecond}
-        durationMillis={durationMillis}
-      />
+      {breakout?.(player.playerID, true)}
     </div>
   )
 }
@@ -555,9 +284,7 @@ export function PlayerMetricRow({
   isPinned = false,
   onTogglePin,
   panelTitle,
-  perSecond,
-  durationMillis,
-  targetNames,
+  breakout,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   const rowRef = useRef<HTMLDivElement>(null)
@@ -566,6 +293,7 @@ export function PlayerMetricRow({
   
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
+    if (!breakout) return // No action if no breakout function
     if (!isPinned && rowRef.current) {
       // Calculate initial position for the pinned tooltip
       const rect = rowRef.current.getBoundingClientRect()
@@ -575,7 +303,7 @@ export function PlayerMetricRow({
       })
     }
     onTogglePin?.()
-  }, [isPinned, onTogglePin, x, rowHeight])
+  }, [isPinned, onTogglePin, x, rowHeight, breakout])
 
   const handleClose = useCallback(() => {
     onTogglePin?.()
@@ -591,141 +319,152 @@ export function PlayerMetricRow({
     }
   }, [ref])
 
+  const hasBreakout = !!breakout
+
+  const rowContent = (
+    <div
+      ref={setRefs}
+      onClick={handleClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        height: rowHeight,
+        position: 'relative',
+        borderRadius: 'var(--radius)',
+        overflow: 'hidden',
+        color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
+        opacity: isDimmed ? 0.35 : 1,
+        transition: 'opacity 0.2s ease',
+        cursor: hasBreakout ? 'pointer' : 'default',
+      }}
+      className={cn(isPinned && "ring-2 ring-primary ring-inset")}
+    >
+      {/* Colored bar background */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: `${(player.value / maximumValue) * 100}%`,
+          background: `linear-gradient(to right, oklch(0 0 0 / 0.3), oklch(0 0 0 / 0.15)), ${player.color}`,
+          opacity: 0.85,
+          transition: 'width 0.3s ease',
+        }}
+      />
+      
+      {/* Stacked value */}
+      {player.stackedValue && (
+      <div
+        style={{
+          position: 'absolute',
+          left: `${(player.value / maximumValue) * 100}%`,
+          top: 0,
+          bottom: 0,
+          width: `${(player.stackedValue / maximumValue) * 100}%`,
+          background: `${player.color}`,
+          opacity: 0.3,
+          transition: 'width 0.3s ease',
+        }}
+      />)
+      }
+
+      {/* Content overlay */}
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          padding: '0 12px',
+          zIndex: 1,
+        }}
+      >
+
+      {/* Rank */}
+      {showRank && (<span
+          style={{
+            width: '32px',
+            fontSize: '13px',
+            fontWeight: 500,
+          }}
+        >
+          #{player.rank}
+        </span>
+        )}
+
+        {/* Icon */}
+        <img
+          src={`/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
+          alt={player.specialization}
+          style={{
+            width: '20px',
+            height: '20px',
+            marginRight: '8px',
+            borderRadius: '2px',
+          }}
+          onError={(e) => {
+            // Fallback to class icon if spec icon not found, then to unknown
+            const target = e.currentTarget;
+            const classIcon = `/icons/class_${player.className.toLowerCase()}.png`;
+            const unknownIcon = '/icons/class_unknown.png';
+            if (target.src.endsWith(unknownIcon)) {
+              // Already at fallback, hide the image
+              target.style.display = 'none';
+            } else if (target.src.includes('/icons/class_')) {
+              // Class icon failed, try unknown
+              target.src = unknownIcon;
+            } else {
+              // Spec icon failed, try class icon
+              target.src = classIcon;
+            }
+          }}
+        />
+
+        {/* Spec name */}
+        <span
+          style={{
+            flex: 1,
+            fontSize: '13px',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {player.playerName}
+        </span>
+
+        {/* DPS value */}
+        {formatValue(type, player, suffix, decimals)}
+
+        {/* Percentage */}
+        <span
+          style={{
+            width: '50px',
+            textAlign: 'right',
+            fontSize: '13px',
+            fontWeight: 500,
+            color: 'var(--class-muted-foreground)',
+          }}
+        >
+          {((player.value/summedValue)*100).toFixed(2)}%
+        </span>
+      </div>
+    </div>
+  )
+
+  // If no breakout function, just render the row without tooltip
+  if (!hasBreakout) {
+    return rowContent
+  }
+
   return (
   <>
     <TooltipProvider key={player.playerID + player.playerName}>
       <Tooltip delayDuration={0} open={isPinned ? false : undefined}>
         <TooltipTrigger asChild>
-          <div
-            ref={setRefs}
-            onClick={handleClick}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              height: rowHeight,
-              position: 'relative',
-              borderRadius: 'var(--radius)',
-              overflow: 'hidden',
-              color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
-              opacity: isDimmed ? 0.35 : 1,
-              transition: 'opacity 0.2s ease',
-              cursor: 'pointer',
-            }}
-            className={cn(isPinned && "ring-2 ring-primary ring-inset")}
-          >
-            {/* Colored bar background */}
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${(player.value / maximumValue) * 100}%`,
-                background: `linear-gradient(to right, oklch(0 0 0 / 0.3), oklch(0 0 0 / 0.15)), ${player.color}`,
-                opacity: 0.85,
-                transition: 'width 0.3s ease',
-              }}
-            />
-            
-            {/* Stacked value */}
-            {player.stackedValue && (
-            <div
-              style={{
-                position: 'absolute',
-                left: `${(player.value / maximumValue) * 100}%`,
-                top: 0,
-                bottom: 0,
-                width: `${(player.stackedValue / maximumValue) * 100}%`,
-                background: `${player.color}`,
-                opacity: 0.3,
-                transition: 'width 0.3s ease',
-              }}
-            />)
-            }
-
-            {/* Content overlay */}
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                width: '100%',
-                padding: '0 12px',
-                zIndex: 1,
-              }}
-            >
-
-            {/* Rank */}
-            {showRank && (<span
-                style={{
-                  width: '32px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                }}
-              >
-                #{player.rank}
-              </span>
-              )}
-
-              {/* Icon */}
-              <img
-                src={`/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
-                alt={player.specialization}
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  marginRight: '8px',
-                  borderRadius: '2px',
-                }}
-                onError={(e) => {
-                  // Fallback to class icon if spec icon not found, then to unknown
-                  const target = e.currentTarget;
-                  const classIcon = `/icons/class_${player.className.toLowerCase()}.png`;
-                  const unknownIcon = '/icons/class_unknown.png';
-                  if (target.src.endsWith(unknownIcon)) {
-                    // Already at fallback, hide the image
-                    target.style.display = 'none';
-                  } else if (target.src.includes('/icons/class_')) {
-                    // Class icon failed, try unknown
-                    target.src = unknownIcon;
-                  } else {
-                    // Spec icon failed, try class icon
-                    target.src = classIcon;
-                  }
-                }}
-              />
-
-              {/* Spec name */}
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {player.playerName}
-              </span>
-
-              {/* DPS value */}
-              {formatValue(type, player, suffix, decimals)}
-
-              {/* Percentage */}
-              <span
-                style={{
-                  width: '50px',
-                  textAlign: 'right',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--class-muted-foreground)',
-                }}
-              >
-                {((player.value/summedValue)*100).toFixed(2)}%
-              </span>
-            </div>
-          </div>
+          {rowContent}
         </TooltipTrigger>
         <TooltipContent 
           align="start"
@@ -746,15 +485,7 @@ export function PlayerMetricRow({
               </span>
             </div>
           </div>
-          <TabbedBreakdownTable 
-            abilities={player.abilityBreakdown ?? []} 
-            rawAbilities={player.rawAbilities}
-            targetNames={targetNames}
-            totalValue={player.value}
-            invertedColors
-            perSecond={perSecond}
-            durationMillis={durationMillis}
-          />
+          {breakout(player.playerID, false)}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -766,9 +497,7 @@ export function PlayerMetricRow({
         initialPosition={pinnedPosition}
         onClose={handleClose}
         panelTitle={panelTitle}
-        perSecond={perSecond}
-        durationMillis={durationMillis}
-        targetNames={targetNames}
+        breakout={breakout}
       />
     )}
   </>

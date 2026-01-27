@@ -22,11 +22,16 @@ interface PanelCategory {
 const PANEL_CATEGORIES: PanelCategory[] = [
   {
     label: "Damage",
-    items: ["damage_done", "enemy_damage_done", "pet_damage_done", "damage_taken"],
+    items: ["damage_done", "enemy_damage_done", "pet_damage_done"],
   },
   {
     label: "Healing",
     items: ["healing_done"],
+  },
+  {
+    label: "Damage Taken",
+    // TODO: Enemy damage taken
+    items: ["damage_taken",],
   },
   {
     label: "Activity",

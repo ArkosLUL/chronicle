@@ -6,8 +6,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "@/hooks/instanceEvents";
 import type { PanelDefinition, PanelContext } from "./types";
-import type { WorkerRequest, WorkerResponse, ProcessorContext } from "./processorTypes";
-import type { StreamType } from "@/hooks/instanceEvents";
+import type { WorkerRequest, WorkerResponse, SerializableProcessorContext } from "./processorTypes";
 
 export interface UsePanelAggregationOptions<TResult> {
   panel: PanelDefinition<TResult>;
@@ -26,10 +25,11 @@ export interface UsePanelAggregationResult<TResult> {
 
 /**
  * Convert PanelContext to serializable ProcessorContext for the worker.
+ * Arrays are used for Sets since they can't be serialized through postMessage.
  */
-function toProcessorContext(ctx: PanelContext): ProcessorContext {
+function toSerializableContext(ctx: PanelContext): SerializableProcessorContext {
   // Extract only the fields needed by processors
-  const players: ProcessorContext["players"] = {};
+  const players: SerializableProcessorContext["players"] = {};
   if (ctx.instance.players) {
     for (const [guid, player] of Object.entries(ctx.instance.players)) {
       players[guid] = {
@@ -40,7 +40,7 @@ function toProcessorContext(ctx: PanelContext): ProcessorContext {
   }
   
   // Extract units (convert GUID to string if needed)
-  const units: ProcessorContext["units"] = {};
+  const units: SerializableProcessorContext["units"] = {};
   if (ctx.instance.units) {
     for (const [guid, unit] of Object.entries(ctx.instance.units)) {
       units[guid] = {
@@ -178,7 +178,7 @@ export function usePanelAggregation<TResult>(
         const workerRequest: WorkerRequest = {
           requestId,
           panelId: panel.id,
-          context: toProcessorContext(panelContext),
+          context: toSerializableContext(panelContext),
           streams: fetchedStreams,
         };
         

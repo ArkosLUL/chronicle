@@ -23,8 +23,8 @@ export const damageTakenProcessor: PanelProcessor<DamageTakenState> = {
     
     // Filter by selected enemies if any are selected
     const { entitySelection } = context;
-    if (entitySelection.enemyIds.length > 0) {
-      if (!entitySelection.enemyIds.includes(event.target)) return;
+    if (entitySelection.enemyIds.size > 0) {
+      if (!entitySelection.enemyIds.has(event.target)) return;
     }
     
     const key = event.target;

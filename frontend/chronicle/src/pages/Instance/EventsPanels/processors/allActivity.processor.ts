@@ -21,8 +21,8 @@ export const allActivityProcessor: PanelProcessor<AllActivityState> = {
   ) => {
     // Filter by selected players if any are selected
     const { entitySelection } = context;
-    if (entitySelection.playerIds.length > 0) {
-      if (!entitySelection.playerIds.includes(event.caster)) return;
+    if (entitySelection.playerIds.size > 0) {
+      if (!entitySelection.playerIds.has(event.caster)) return;
     }
     
     // Count events, not amounts

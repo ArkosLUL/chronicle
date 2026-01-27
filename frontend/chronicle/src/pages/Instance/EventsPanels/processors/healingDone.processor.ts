@@ -23,8 +23,8 @@ export const healingDoneProcessor: PanelProcessor<HealingDoneState> = {
     
     // Filter by selected players if any are selected
     const { entitySelection } = context;
-    if (entitySelection.playerIds.length > 0) {
-      if (!entitySelection.playerIds.includes(event.caster)) return;
+    if (entitySelection.playerIds.size > 0) {
+      if (!entitySelection.playerIds.has(event.caster)) return;
     }
     
     const key = event.caster || "Unknown";

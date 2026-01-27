@@ -23,11 +23,20 @@ export interface ProcessorEvent {
 }
 
 /**
- * Selection state for filtering entities (serializable for worker).
+ * Selection state for filtering entities (serializable for worker transport).
+ * Arrays are used because Sets don't serialize through postMessage.
  */
 export interface SerializableEntitySelection {
   enemyIds: string[];
   playerIds: string[];
+}
+
+/**
+ * Selection state with Sets for fast lookups in processors.
+ */
+export interface ProcessorEntitySelection {
+  enemyIds: Set<string>;
+  playerIds: Set<string>;
 }
 
 /**
@@ -48,10 +57,9 @@ export interface ProcessorUnit {
 }
 
 /**
- * Context available to processors (serializable for worker).
- * This is a serializable subset of PanelContext.
+ * Serializable context sent to worker via postMessage.
  */
-export interface ProcessorContext {
+export interface SerializableProcessorContext {
   /** Players map: guid -> player info */
   players: Record<string, ProcessorPlayer>;
   
@@ -61,8 +69,25 @@ export interface ProcessorContext {
   /** Currently selected encounter IDs */
   selectedEncounterIds: string[];
   
-  /** Currently selected entity GUIDs for filtering */
+  /** Currently selected entity GUIDs for filtering (arrays for serialization) */
   entitySelection: SerializableEntitySelection;
+}
+
+/**
+ * Context available to processors with Sets for fast lookups.
+ */
+export interface ProcessorContext {
+  /** Players map: guid -> player info */
+  players: Record<string, ProcessorPlayer>;
+  
+  /** Units map: guid -> unit info */
+  units?: Record<string, ProcessorUnit>;
+  
+  /** Currently selected encounter IDs */
+  selectedEncounterIds: Set<string>;
+  
+  /** Currently selected entity GUIDs for filtering */
+  entitySelection: ProcessorEntitySelection;
 }
 
 /**
@@ -99,7 +124,7 @@ export interface PanelProcessor<TResult> {
 export interface WorkerRequest {
   requestId: number;
   panelId: string;
-  context: ProcessorContext;
+  context: SerializableProcessorContext;
   streams: {
     type: StreamType;
     data: Uint8Array;

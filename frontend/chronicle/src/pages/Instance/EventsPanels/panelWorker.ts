@@ -7,8 +7,23 @@
 
 import { FastDamageCursor } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
-import type { WorkerRequest, WorkerResponse, PanelProcessor } from "./processorTypes";
+import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
+
+/**
+ * Convert serializable context to ProcessorContext with Sets for fast lookups.
+ */
+function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext {
+  return {
+    players: ctx.players,
+    units: ctx.units,
+    selectedEncounterIds: new Set(ctx.selectedEncounterIds),
+    entitySelection: {
+      enemyIds: new Set(ctx.entitySelection.enemyIds),
+      playerIds: new Set(ctx.entitySelection.playerIds),
+    },
+  };
+}
 
 /**
  * Process all streams using the given processor.
@@ -16,10 +31,13 @@ import type { StreamType } from "@/hooks/instanceEvents";
 function processStreams<TResult>(
   processor: PanelProcessor<TResult>,
   streams: WorkerRequest["streams"],
-  context: WorkerRequest["context"]
+  serializableContext: SerializableProcessorContext
 ): { result: TResult; totalEvents: number } {
   const state = processor.createState();
   let totalEvents = 0;
+  
+  // Convert to ProcessorContext with Sets for fast lookups
+  const context = deserializeContext(serializableContext);
   
   for (const stream of streams) {
     const cursor = new FastDamageCursor(stream.data);

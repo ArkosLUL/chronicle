@@ -31,14 +31,10 @@ export interface DamageAbilityBreakout {
   Count: number;
 }
 
-export interface DamageAbilitiesBreakout { 
-  [source: string]: DamageAbilityBreakout;
-}
-
 export type DamageDoneResult = {
   EncounterDamage: Map<string, UnitDamage>;
   // Value is unitID -> abilityID -> DamageAbilityBreakout
-  ByAbility: Map<string, DamageAbilityBreakout>;
+  ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
 }
 
 /**
@@ -55,7 +51,7 @@ export function createDamageDoneProcessor(
 
     createState: () => ({
       EncounterDamage: new Map<string, UnitDamage>(),
-      ByAbility: new Map<string, DamageAbilityBreakout>(),
+      ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
     }),
 
     processEvent: (
@@ -71,8 +67,8 @@ export function createDamageDoneProcessor(
 
       const casterGuid = GUID.fromString(event.caster);
       const isPlayer = casterGuid.isPlayer();
-      const unit = context.units?.[event.caster];
-      const isPet = !isPlayer && unit?.owner && GUID.fromString(unit.owner).isPlayer();
+      const casterInfo = context.units?.[event.caster];
+      const isPet = !isPlayer && casterInfo?.owner && GUID.fromString(casterInfo.owner).isPlayer();
       const isEnemy = !isPlayer && !isPet;
 
       // Filter by source type
@@ -84,24 +80,25 @@ export function createDamageDoneProcessor(
       // Determine the entity to attribute damage to
       let damageOwner = event.caster;
       if((sourceType === "players" || sourceType == "pets") && isPet) {
-        damageOwner = unit!.owner!;
+        damageOwner = casterInfo!.owner!;
       } 
 
       // By default, use the raw GUID as name
       let ownerName = damageOwner;
       let ownerClass = "UNKNOWN";
 
+
       if (sourceType === "players") {
         ownerName = context.players[damageOwner]?.name || ownerName;
         ownerClass = context.players[damageOwner]?.class || "UNKNOWN";
       } else if (sourceType === "pets") {
         // For pets, use the owner's name and the owner's class
-        ownerName = (unit?.owner && context.players[unit?.owner]?.name) || ownerName;
+        ownerName = (casterInfo?.owner && context.players[casterInfo?.owner]?.name) || ownerName;
         ownerName += "'s Companions";
-        ownerClass = context.players[unit!.owner!]?.class || "UNKNOWN";
+        ownerClass = context.players[casterInfo!.owner!]?.class || "UNKNOWN";
       } else {
         // For enemies, use the unit's name
-        ownerName = unit?.name || ownerName;
+        ownerName = casterInfo?.name || ownerName;
         ownerClass = "ENEMY";
       }
 
@@ -118,9 +115,28 @@ export function createDamageDoneProcessor(
         target: new Map<string, number>(),
       } as DamageDoneData;
 
+      // Cached static info
       existing.target.set(event.target, (existing.target.get(event.target) || 0) + event.amount);
       encounterDamage.set(damageOwner, existing);
       state.EncounterDamage.set(encounterID, encounterDamage);
+      
+      // Breakouts
+      let source = event.sourceName || "Auto Attack"
+      if((sourceType === "players") && isPet) {
+        source = source + " (Pet)";
+      } 
+
+
+      const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, DamageAbilityBreakout>();
+      const abilityBreakout = existingUnitBreakout.get(source) || {
+        Total: 0,
+        Count: 0,
+      };
+      
+      abilityBreakout.Total += event.amount;
+      abilityBreakout.Count += 1;
+      existingUnitBreakout.set(source, abilityBreakout);
+      state.ByAbility.set(damageOwner, existingUnitBreakout);
     },
   };
 }

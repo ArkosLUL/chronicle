@@ -4,7 +4,7 @@ import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
 import type { DamageDoneResult } from "./damageDone.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
-import type { DamageSourceType } from "./DamageDone";
+import type { DamageSourceType } from "./damageDone.processor";
 
 /**
  * Aggregate damage data across selected encounters.
@@ -72,14 +72,16 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
 }
 
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
-  // TODO: Use sourceType in aggregation logic to filter by entity type
-  const { sourceType: _sourceType = "players" } = props;
+  const { sourceType = "players" } = props;
   const { result, context } = props;
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterDamage.size > 0
+    (r) => r.EncounterDamage.size > 0,
+    [sourceType]
   );
+
+  console.log(props.sourceType)
 
   const damageData = useMemo(() => {
     return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);

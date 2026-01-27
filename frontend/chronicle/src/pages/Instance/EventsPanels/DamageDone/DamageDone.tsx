@@ -6,32 +6,39 @@
 
 import { Swords, Skull, PawPrint } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
-import { damageDoneProcessor, type DamageDoneState } from "../processors";
+import { 
+  damageDoneProcessor, 
+  enemyDamageDoneProcessor, 
+  petDamageDoneProcessor,
+  type DamageDoneState 
+} from "../processors";
 import { DamageDoneContent } from "./DamageDoneContent";
+import type { DamageSourceType } from "./damageDone.processor";
 
-
-/**
- * Entity source types for damage done panel
- */
-export type DamageSourceType = "players" | "enemies" | "pets";
+// Re-export for convenience
+export type { DamageSourceType } from "./damageDone.processor";
 
 interface DamageSourceConfig {
   label: string;
   icon: React.ReactNode;
+  processor: typeof damageDoneProcessor;
 }
 
 const DAMAGE_SOURCE_CONFIGS: Record<DamageSourceType, DamageSourceConfig> = {
   players: {
     label: "Damage Done",
     icon: <Swords className="h-4 w-4" />,
+    processor: damageDoneProcessor,
   },
   enemies: {
     label: "Enemy Damage",
     icon: <Skull className="h-4 w-4" />,
+    processor: enemyDamageDoneProcessor,
   },
   pets: {
     label: "Pet Damage",
     icon: <PawPrint className="h-4 w-4" />,
+    processor: petDamageDoneProcessor,
   },
 };
 
@@ -44,8 +51,7 @@ export function createDamageDonePanel(
   const config = DAMAGE_SOURCE_CONFIGS[sourceType];
   
   return {
-    ...damageDoneProcessor,
-    // Keep processor ID as 'damage_done' - sourceType only affects rendering
+    ...config.processor,
     label: config.label,
     icon: config.icon,
     

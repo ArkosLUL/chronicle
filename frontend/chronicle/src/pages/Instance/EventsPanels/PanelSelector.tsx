@@ -3,47 +3,51 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Swords, Skull, PawPrint, Shield, Heart, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EventsPanelType } from "./EventsPanel";
 
 interface PanelOption {
   value: EventsPanelType;
   label: string;
+  icon: React.ReactNode;
 }
 
 interface PanelCategory {
   label: string;
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
   items: PanelOption[];
 }
 
-// Organize panels into categories
+// Organize panels into categories with icons
 const PANEL_CATEGORIES: PanelCategory[] = [
   {
     label: "Damage",
+    icon: <Swords className="size-4" />,
     items: [
-      { value: "damage_done", label: "Damage Done" },
-      { value: "enemy_damage_done", label: "Enemy Damage Done" },
-      { value: "pet_damage_done", label: "Pet Damage Done" },
-      { value: "damage_taken", label: "Damage Taken" },
+      { value: "damage_done", label: "Damage Done", icon: <Swords className="size-4" /> },
+      { value: "enemy_damage_done", label: "Enemy Damage Done", icon: <Skull className="size-4" /> },
+      { value: "pet_damage_done", label: "Pet Damage Done", icon: <PawPrint className="size-4" /> },
+      { value: "damage_taken", label: "Damage Taken", icon: <Shield className="size-4" /> },
     ],
   },
   {
     label: "Healing",
-    items: [{ value: "healing_done", label: "Healing Done" }],
+    icon: <Heart className="size-4" />,
+    items: [{ value: "healing_done", label: "Healing Done", icon: <Heart className="size-4" /> }],
   },
   {
     label: "Activity",
-    items: [{ value: "all_activity", label: "All Activity" }],
+    icon: <Activity className="size-4" />,
+    items: [{ value: "all_activity", label: "All Activity", icon: <Activity className="size-4" /> }],
   },
 ];
 
 // Flatten for lookup
 const ALL_PANELS: PanelOption[] = PANEL_CATEGORIES.flatMap((cat) => cat.items);
 
-function getLabelForValue(value: EventsPanelType): string {
-  return ALL_PANELS.find((p) => p.value === value)?.label ?? value;
+function getPanelForValue(value: EventsPanelType): PanelOption | undefined {
+  return ALL_PANELS.find((p) => p.value === value);
 }
 
 /**
@@ -153,9 +157,10 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground transition-colors"
+        className="flex items-center gap-1.5 text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground transition-colors"
       >
-        {getLabelForValue(value)}
+        {getPanelForValue(value)?.icon}
+        {getPanelForValue(value)?.label ?? value}
         <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
       </button>
 
@@ -191,12 +196,13 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                     type="button"
                     onClick={() => handleSelect(option.value)}
                     className={cn(
-                      "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center justify-between",
+                      "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
                       "hover:bg-accent hover:text-accent-foreground cursor-pointer",
                       option.value === value && "bg-accent/50"
                     )}
                   >
-                    <span>{option.label}</span>
+                    <span className="text-muted-foreground">{option.icon}</span>
+                    <span className="flex-1">{option.label}</span>
                     <span className="text-xs text-muted-foreground">{category}</span>
                   </button>
                 ))
@@ -215,7 +221,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                     onClick={() =>
                       setExpandedCategory(expandedCategory === category.label ? null : category.label)
                     }
-                    className="w-full text-left px-2 py-1.5 text-sm font-medium rounded-sm flex items-center gap-1 hover:bg-accent/50 cursor-pointer"
+                    className="w-full text-left px-2 py-1.5 text-sm font-medium rounded-sm flex items-center gap-1.5 hover:bg-accent/50 cursor-pointer"
                   >
                     <ChevronRight
                       className={cn(
@@ -223,6 +229,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                         expandedCategory === category.label && "rotate-90"
                       )}
                     />
+                    <span className="text-muted-foreground">{category.icon}</span>
                     {category.label}
                     <span className="text-xs text-muted-foreground ml-auto">
                       {category.items.length}
@@ -238,11 +245,12 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                           type="button"
                           onClick={() => handleSelect(item.value)}
                           className={cn(
-                            "w-full text-left px-2 py-1.5 text-sm rounded-sm",
+                            "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
                             "hover:bg-accent hover:text-accent-foreground cursor-pointer",
                             item.value === value && "bg-accent/50"
                           )}
                         >
+                          <span className="text-muted-foreground">{item.icon}</span>
                           {item.label}
                         </button>
                       ))}

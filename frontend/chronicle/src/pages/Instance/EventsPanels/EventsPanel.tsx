@@ -61,7 +61,6 @@ export function EventsPanel({
     <Card className="p-4 gap-2 mb-3">
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-sm font-medium flex items-center gap-2">
-          {panel.icon}
           <PanelSelector value={panelType} onChange={onPanelTypeChange} />
         </h3>
         <div className="flex items-center gap-3">

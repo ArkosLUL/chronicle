@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users } from "lucide-react";
+import { useUrlState, serializers } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -378,6 +379,18 @@ interface EncounterDetailProps {
   onClearSelection: () => void;
 }
 
+// Serializer for EventsPanelType - validates against known panel types
+const eventsPanelSerializer = {
+  serialize: (v: EventsPanelType) => v,
+  deserialize: (v: string | null, d: EventsPanelType): EventsPanelType => {
+    const validTypes: EventsPanelType[] = [
+      'damage_done', 'enemy_damage_done', 'pet_damage_done', 
+      'damage_taken', 'healing_done', 'all_activity'
+    ];
+    return v && validTypes.includes(v as EventsPanelType) ? v as EventsPanelType : d;
+  },
+};
+
 function EncounterDetail({ 
   instance,
   encounters,
@@ -394,9 +407,13 @@ function EncounterDetail({
   const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
   const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
   
-  // Events panel state (new event-driven panels)
-  const [eventsPanel1Type, setEventsPanel1Type] = useState<EventsPanelType>('damage_done');
-  const [eventsPanel2Type, setEventsPanel2Type] = useState<EventsPanelType>('all_activity');
+  // Events panel state (new event-driven panels) - URL persisted
+  const [eventsPanel1Type, setEventsPanel1Type] = useUrlState<EventsPanelType>(
+    'panel1', 'damage_done', eventsPanelSerializer
+  );
+  const [eventsPanel2Type, setEventsPanel2Type] = useUrlState<EventsPanelType>(
+    'panel2', 'all_activity', eventsPanelSerializer
+  );
   
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
@@ -671,47 +688,73 @@ export function InstancePageView({
   // Find first boss kill, or first encounter if no boss kills
   const firstBossKill = instance.encounters.find((e) => e.boss && e.kill);
   const defaultEncounter = firstBossKill || instance.encounters[0];
+  const defaultEncounterId = defaultEncounter?.id ?? "";
   
-  const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>(
-    selectedEncounterIds || (defaultEncounter ? [defaultEncounter.id] : [])
+  // URL-persisted state for encounter selection
+  const [urlEncounterIds, setUrlEncounterIds] = useUrlState(
+    "encounters",
+    [] as string[],
+    serializers.stringArray
   );
+  
+  // Use URL state if present, otherwise use prop or default
+  const internalSelectedIds = useMemo(() => {
+    if (urlEncounterIds.length > 0) {
+      // Filter to only valid encounter IDs
+      const validIds = urlEncounterIds.filter(id => 
+        instance.encounters.some(e => e.id === id)
+      );
+      if (validIds.length > 0) return validIds;
+    }
+    return selectedEncounterIds || (defaultEncounterId ? [defaultEncounterId] : []);
+  }, [urlEncounterIds, selectedEncounterIds, defaultEncounterId, instance.encounters]);
+  
+  const setInternalSelectedIds = (ids: string[]) => {
+    setUrlEncounterIds(ids);
+    onSelectEncounters?.(ids);
+  };
+  
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  // Entity selection state - lifted from EncounterDetail for data filtering
-  const [entitySelection, setEntitySelection] = useState<EntitySelection>({
-    enemyIds: new Set(),
-    playerIds: new Set(),
-  });
+  // URL-persisted entity selection state
+  const [urlEnemyIds, setUrlEnemyIds] = useUrlState("enemies", new Set<string>(), serializers.stringSet);
+  const [urlPlayerIds, setUrlPlayerIds] = useUrlState("players", new Set<string>(), serializers.stringSet);
+  
+  const entitySelection = useMemo<EntitySelection>(() => ({
+    enemyIds: urlEnemyIds,
+    playerIds: urlPlayerIds,
+  }), [urlEnemyIds, urlPlayerIds]);
   
   // Toggle enemy selection
   const toggleEnemySelection = (enemyId: string) => {
-    setEntitySelection(prev => {
-      const next = new Set(prev.enemyIds);
+    setUrlEnemyIds(prev => {
+      const next = new Set(prev);
       if (next.has(enemyId)) {
         next.delete(enemyId);
       } else {
         next.add(enemyId);
       }
-      return { ...prev, enemyIds: next };
+      return next;
     });
   };
   
   // Toggle player selection
   const togglePlayerSelection = (playerId: string) => {
-    setEntitySelection(prev => {
-      const next = new Set(prev.playerIds);
+    setUrlPlayerIds(prev => {
+      const next = new Set(prev);
       if (next.has(playerId)) {
         next.delete(playerId);
       } else {
         next.add(playerId);
       }
-      return { ...prev, playerIds: next };
+      return next;
     });
   };
   
   // Clear all entity selections
   const clearEntitySelection = () => {
-    setEntitySelection({ enemyIds: new Set(), playerIds: new Set() });
+    setUrlEnemyIds(new Set());
+    setUrlPlayerIds(new Set());
   };
 
   const selectedIds = selectedEncounterIds ?? internalSelectedIds;

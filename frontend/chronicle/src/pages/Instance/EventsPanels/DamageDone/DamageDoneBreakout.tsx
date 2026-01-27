@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { AbilityBreakout, type AbilityData, type TargetData } from "@/components/ui/AbilityBreakout";
+import { useCallback, useState } from "react";
+import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } from "@/components/ui/AbilityBreakout";
 import type { DamageDoneResult } from "./damageDone.processor";
 import type { PanelContext } from "../types";
 
@@ -102,8 +102,15 @@ export function useDamageDoneBreakout({
   loading = false,
   processing = false,
 }: UseDamageDoneBreakoutOptions) {
+  // Track tab selection per player so it persists across reloads
+  const [tabByPlayer, setTabByPlayer] = useState<Map<string, BreakoutTab>>(new Map());
+  
   const breakout = useCallback(
     (playerID: string, pinned: boolean) => {
+      const activeTab = tabByPlayer.get(playerID) ?? 'ability';
+      const setActiveTab = (tab: BreakoutTab) => {
+        setTabByPlayer(prev => new Map(prev).set(playerID, tab));
+      };
       if (loading || processing) {
         return (
           <div className="p-4 flex items-center justify-center text-xs text-muted-foreground min-w-[300px] min-h-[200px]">
@@ -151,10 +158,12 @@ export function useDamageDoneBreakout({
           valueLabel={displayLabel}
           invertedColors
           pinned={pinned}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
       );
     },
-    [result, context, valueLabel, perSecond, durationMs, loading, processing]
+    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer]
   );
 
   return breakout;

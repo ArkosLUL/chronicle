@@ -92,7 +92,7 @@ export function AbilityTable({
                   {ability.name}
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
-                  {ability.value.toLocaleString()}
+                  {ability.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
                 <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
                   {valuePercent.toFixed(1)}%
@@ -169,7 +169,7 @@ export function TargetTable({
                   {target.targetName}
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
-                  {target.value.toLocaleString()}
+                  {target.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
                 <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
                   {valuePercent.toFixed(1)}%
@@ -187,7 +187,7 @@ export function TargetTable({
 // Tabbed Breakout Component
 // ============================================================================
 
-type BreakoutTab = 'ability' | 'target'
+export type BreakoutTab = 'ability' | 'target'
 
 export interface AbilityBreakoutProps {
   abilities: AbilityData[]
@@ -199,6 +199,10 @@ export interface AbilityBreakoutProps {
   invertedColors?: boolean
   /** Whether this is a pinned breakout (for potential styling differences) */
   pinned?: boolean
+  /** Controlled active tab (optional - defaults to internal state) */
+  activeTab?: BreakoutTab
+  /** Callback when tab changes (required if activeTab is controlled) */
+  onTabChange?: (tab: BreakoutTab) => void
 }
 
 function formatValue(value: number): string {
@@ -222,8 +226,14 @@ export function AbilityBreakout({
   valueLabel = 'Value',
   invertedColors = false,
   pinned: _pinned = false,
+  activeTab: controlledTab,
+  onTabChange,
 }: AbilityBreakoutProps) {
-  const [activeTab, setActiveTab] = useState<BreakoutTab>('ability')
+  const [internalTab, setInternalTab] = useState<BreakoutTab>('ability')
+  
+  // Use controlled or uncontrolled tab state
+  const activeTab = controlledTab ?? internalTab
+  const setActiveTab = onTabChange ?? setInternalTab
   
   const hasTargets = targets && targets.length > 0
   

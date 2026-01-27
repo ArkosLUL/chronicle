@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -10,24 +9,18 @@ import (
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/slice"
+	"github.com/go-chi/chi/v5"
 )
 
 func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	instanceID := httpmw.InstanceID(ctx)
 	db := api.Opts.DB
+	eventType := chi.URLParam(r, "type")
 
-	types := r.URL.Query().Get("types")
-	if types == "" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Query param 'types' is required",
-		})
-		return
-	}
-
-	evts, err := db.InstanceEvents(ctx, database.InstanceEventsParams{
+	evts, err := db.InstanceEvent(ctx, database.InstanceEventParams{
 		InstanceID: instanceID,
-		Types:      strings.Split(types, ","),
+		Type:       eventType,
 	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
@@ -40,7 +33,9 @@ func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The conversion to another type is pretty expensive, just use the type as is
-	httpapi.Write(ctx, w, http.StatusOK, evts)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.WriteHeader(http.StatusOK)
+	w.Write(evts.Events)
 }
 
 func (api *API) Instance(w http.ResponseWriter, r *http.Request) {

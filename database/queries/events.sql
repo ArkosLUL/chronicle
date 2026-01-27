@@ -5,7 +5,7 @@ VALUES
   ($1, $2, $3)
 ;
 
--- name: InstanceEvents :many
+-- name: InstanceEvent :one
 SELECT
   log_instance_events.*
 FROM
@@ -15,5 +15,5 @@ LEFT JOIN
     ON log_instance_events.instance_id = log_instances.id
 WHERE
   instance_id = $1 AND
-  log_instance_events.type = ANY(sqlc.arg('types') :: text[] :: log_instance_event_type[])
+  log_instance_events.type =sqlc.arg('type') :: text :: log_instance_event_type
 ;

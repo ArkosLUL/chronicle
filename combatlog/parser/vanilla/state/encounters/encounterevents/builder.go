@@ -39,7 +39,7 @@ func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
 		return nil, err
 	}
 
-	return b.data.Bytes(), nil
+	return append(header.Bytes(), b.data.Bytes()...), nil
 }
 
 func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, idx int32, conv func(from time.Time, idx int32, message M) PM) error {

@@ -6,12 +6,6 @@ import { DamageSchema, type Damage, School } from "@/api/proto/chronicle_pb"
 
 type DecodeMode = "payload" | "messages"
 
-interface LogInstanceEvent {
-  instance_id: string
-  type: string
-  events: string // base64-encoded gzipped protobuf
-}
-
 export function ProtoDecode() {
   const [input, setInput] = useState("")
   const [instanceId, setInstanceId] = useState("")
@@ -33,31 +27,41 @@ export function ProtoDecode() {
     setLoading(true)
 
     try {
-      const url = `/api/v1/raidlogs/instances/${instanceId.trim()}/events?types=damage`
+      const url = `/api/v1/raidlogs/instances/${instanceId.trim()}/events/damage`
       const response = await fetch(url)
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const text = await response.text()
+        throw new Error(`HTTP ${response.status}: ${text || response.statusText}`)
       }
 
-      const events: LogInstanceEvent[] = await response.json()
+      const contentType = response.headers.get("content-type") || ""
       
-      if (events.length === 0) {
-        setError("No events returned")
-        return
+      // If JSON, it's probably an error
+      if (contentType.includes("application/json")) {
+        const json = await response.json()
+        throw new Error(`Server error: ${JSON.stringify(json)}`)
       }
 
-      // Decode the first event's data
-      const event = events[0]
-      let data = parseInput(event.events)
+      // Otherwise expect octet-stream with raw gzipped data
+      const buffer = await response.arrayBuffer()
+      let data = new Uint8Array(buffer)
+      console.log("Raw bytes:", data.length, "first bytes:", Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
 
       if (isGzipped(data)) {
+        console.log("Detected gzip, decompressing...")
         data = await decompressGzip(data)
+        console.log("Decompressed bytes:", data.length, "first bytes:", Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
       }
 
-      const result = decodePayload(DamageSchema, data)
-      setHeader(result.header)
-      setMessages(result.messages)
+      if (mode === "payload") {
+        const result = decodePayload(DamageSchema, data)
+        setHeader(result.header)
+        setMessages(result.messages)
+      } else {
+        const msgs = decodeDelimitedMessages(DamageSchema, data)
+        setMessages(msgs)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -106,6 +110,36 @@ export function ProtoDecode() {
 
       <Card className="mb-6">
         <CardHeader>
+          <CardTitle>Decode Mode</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 items-center">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === "payload"}
+                onChange={() => setMode("payload")}
+                className="accent-primary"
+              />
+              <span>Full Payload (with header)</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === "messages"}
+                onChange={() => setMode("messages")}
+                className="accent-primary"
+              />
+              <span>Messages Only (no header)</span>
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
           <CardTitle>Fetch from API</CardTitle>
           <CardDescription>
             Load events directly from the API by instance ID
@@ -135,29 +169,6 @@ export function ProtoDecode() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4 items-center">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === "payload"}
-                onChange={() => setMode("payload")}
-                className="accent-primary"
-              />
-              <span>Full Payload (with header)</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === "messages"}
-                onChange={() => setMode("messages")}
-                className="accent-primary"
-              />
-              <span>Messages Only (no header)</span>
-            </label>
-          </div>
-
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

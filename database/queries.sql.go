@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const instanceEvents = `-- name: InstanceEvents :many
+const instanceEvent = `-- name: InstanceEvent :one
 SELECT
   log_instance_events.instance_id, log_instance_events.type, log_instance_events.events
 FROM
@@ -22,32 +22,19 @@ LEFT JOIN
     ON log_instance_events.instance_id = log_instances.id
 WHERE
   instance_id = $1 AND
-  log_instance_events.type = ANY($2 :: text[] :: log_instance_event_type[])
+  log_instance_events.type =$2 :: text :: log_instance_event_type
 `
 
-type InstanceEventsParams struct {
+type InstanceEventParams struct {
 	InstanceID uuid.UUID `db:"instance_id" json:"instance_id"`
-	Types      []string  `db:"types" json:"types"`
+	Type       string    `db:"type" json:"type"`
 }
 
-func (q *sqlQuerier) InstanceEvents(ctx context.Context, arg InstanceEventsParams) ([]LogInstanceEvent, error) {
-	rows, err := q.db.Query(ctx, instanceEvents, arg.InstanceID, arg.Types)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []LogInstanceEvent
-	for rows.Next() {
-		var i LogInstanceEvent
-		if err := rows.Scan(&i.InstanceID, &i.Type, &i.Events); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *sqlQuerier) InstanceEvent(ctx context.Context, arg InstanceEventParams) (LogInstanceEvent, error) {
+	row := q.db.QueryRow(ctx, instanceEvent, arg.InstanceID, arg.Type)
+	var i LogInstanceEvent
+	err := row.Scan(&i.InstanceID, &i.Type, &i.Events)
+	return i, err
 }
 
 const deleteWoWLogGroup = `-- name: DeleteWoWLogGroup :exec

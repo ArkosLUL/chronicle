@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { decodePayload, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader } from "@/api/protodecode/decode"
 import { DamageSchema, type Damage, School } from "@/api/proto/chronicle_pb"
-import { wasmDecodeDamageBenchmark, wasmDecodeMinimal, loadWasm } from "@/api/wasm/wasmDecoder"
 
 type DecodeMode = "payload" | "messages"
 
@@ -144,7 +143,7 @@ export function ProtoDecode() {
       const compressedData = new Uint8Array(buffer)
       const compressedSize = compressedData.length
       
-      // Decompress for TypeScript benchmark (WASM handles its own decompression)
+      // Decompress for TypeScript benchmark
       let data = compressedData
       if (isGzipped(data)) {
         data = await decompressGzip(data)
@@ -217,85 +216,6 @@ export function ProtoDecode() {
           eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
           details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms`
         })
-      }
-
-      // Benchmark 2: WASM decoder
-      {
-        try {
-          await loadWasm()
-          const times: number[] = []
-          let eventCount = 0
-          let wasmDetails = ""
-          
-          for (let i = 0; i < iterations; i++) {
-            // Pass compressed data - WASM handles decompression
-            const result = await wasmDecodeDamageBenchmark(compressedData)
-            if (result.error) {
-              throw new Error(result.error)
-            }
-            times.push(result.totalMs ?? 0)
-            eventCount = result.events ?? 0
-            if (i === 0) {
-              wasmDetails = `decompress=${result.decompressMs?.toFixed(1)}ms, parse=${result.parseMs?.toFixed(1)}ms`
-            }
-          }
-          
-          const avgTime = times.reduce((a, b) => a + b, 0) / times.length
-          results.push({
-            name: "Go WASM",
-            events: eventCount,
-            totalMs: avgTime,
-            eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
-            details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms (${wasmDetails})`
-          })
-        } catch (wasmErr) {
-          results.push({
-            name: "Go WASM",
-            events: 0,
-            totalMs: 0,
-            eventsPerSec: 0,
-            details: `Error: ${wasmErr instanceof Error ? wasmErr.message : String(wasmErr)}`
-          })
-        }
-      }
-
-      // Benchmark 3: WASM minimal (no protobuf parsing - just byte iteration)
-      {
-        try {
-          await loadWasm()
-          const times: number[] = []
-          let eventCount = 0
-          let wasmDetails = ""
-          
-          for (let i = 0; i < iterations; i++) {
-            const result = await wasmDecodeMinimal(compressedData)
-            if (result.error) {
-              throw new Error(result.error)
-            }
-            times.push(result.totalMs ?? 0)
-            eventCount = result.events ?? 0
-            if (i === 0) {
-              wasmDetails = `copy=${result.copyMs?.toFixed(1)}ms, decompress=${result.decompressMs?.toFixed(1)}ms, iterate=${result.iterateMs?.toFixed(1)}ms`
-            }
-          }
-          
-          const avgTime = times.reduce((a, b) => a + b, 0) / times.length
-          results.push({
-            name: "Go WASM (minimal)",
-            events: eventCount,
-            totalMs: avgTime,
-            eventsPerSec: Math.round(eventCount / (avgTime / 1000)),
-            details: `${iterations} runs: ${times.map(t => t.toFixed(1)).join(", ")}ms (${wasmDetails})`
-          })
-        } catch (wasmErr) {
-          results.push({
-            name: "Go WASM (minimal)",
-            events: 0,
-            totalMs: 0,
-            eventsPerSec: 0,
-            details: `Error: ${wasmErr instanceof Error ? wasmErr.message : String(wasmErr)}`
-          })
-        }
       }
 
       setBenchmarkResults(results)

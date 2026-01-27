@@ -66,7 +66,7 @@ export function EventsPanel({
   });
 
   return (
-    <Card className="p-4 gap-2">
+    <Card className="p-4 gap-2 mb-3">
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-sm font-medium flex items-center gap-2">
           {panel.icon}

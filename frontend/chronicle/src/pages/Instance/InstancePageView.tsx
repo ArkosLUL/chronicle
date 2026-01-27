@@ -606,6 +606,21 @@ function EncounterDetail({
           </Card>
         </Collapsible>
       </Tabs>
+      {/* Events Panels - New event-driven panels (experimental) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <EventsPanel
+          panelType={eventsPanel1Type}
+          onPanelTypeChange={setEventsPanel1Type}
+          durationMs={totalDurationMs}
+          context={panelContext}
+        />
+        <EventsPanel
+          panelType={eventsPanel2Type}
+          onPanelTypeChange={setEventsPanel2Type}
+          durationMs={totalDurationMs}
+          context={panelContext}
+        />
+      </div>
 
       {/* Metrics - 2 column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -630,22 +645,6 @@ function EncounterDetail({
           selectedPlayerIds={entitySelection.playerIds}
           selectedEnemyIds={entitySelection.enemyIds}
           selectedEncounters={encounters}
-        />
-      </div>
-
-      {/* Events Panels - New event-driven panels (experimental) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <EventsPanel
-          panelType={eventsPanel1Type}
-          onPanelTypeChange={setEventsPanel1Type}
-          durationMs={totalDurationMs}
-          context={panelContext}
-        />
-        <EventsPanel
-          panelType={eventsPanel2Type}
-          onPanelTypeChange={setEventsPanel2Type}
-          durationMs={totalDurationMs}
-          context={panelContext}
         />
       </div>
     </div>

@@ -30,8 +30,11 @@ export function EntityValueList({
   error,
   valueLabel,
 }: EntityValueListProps) {
+  // Ensure result is a Map (could be undefined/null during loading or if deserialization failed)
+  const safeResult = result instanceof Map ? result : new Map<string, number>();
+  
   // Sort entries by value descending
-  const sortedEntries = Array.from(result.entries())
+  const sortedEntries = Array.from(safeResult.entries())
     .sort((a, b) => b[1] - a[1]);
   
   const totalValue = sortedEntries.reduce((sum, [, value]) => sum + value, 0);

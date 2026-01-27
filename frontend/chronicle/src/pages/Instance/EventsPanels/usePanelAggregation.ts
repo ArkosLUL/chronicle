@@ -95,6 +95,15 @@ export function usePanelAggregation<TResult>(
   const requestIdRef = useRef(0);
   const workerRef = useRef<Worker | null>(null);
   
+  // Track panel id in state to detect changes during render
+  // This is the React-approved pattern for "adjusting state when a prop changes"
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevPanelId, setPrevPanelId] = useState(panel.id);
+  if (prevPanelId !== panel.id) {
+    setPrevPanelId(panel.id);
+    setResult(panel.createState());
+  }
+  
   // Create stable key for streams (panels define which streams they need)
   const streamsKey = panel.streams.slice().sort().join(",");
   

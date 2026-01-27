@@ -82,6 +82,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
   );
 
   const damageData = useMemo(() => {
+    if (!cachedResult) return [];
     return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);
   }, [cachedResult, context.selectedEncounterIds, context.entitySelection]);
 

@@ -15,7 +15,7 @@ export { healingDoneProcessor } from "./healingDone.processor";
 export { allActivityProcessor } from "./allActivity.processor";
 
 // Export state types
-export type { DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
+export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
 export type { DamageTakenState } from "./damageTaken.processor";
 export type { HealingDoneState } from "./healingDone.processor";
 export type { AllActivityState } from "./allActivity.processor";

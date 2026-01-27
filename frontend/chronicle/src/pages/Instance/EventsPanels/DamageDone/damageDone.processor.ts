@@ -126,7 +126,6 @@ export function createDamageDoneProcessor(
         source = source + " (Pet)";
       } 
 
-
       const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, Map<string, DamageAbilityBreakout>>();
       const existingEncounterBreakout = existingUnitBreakout.get(encounterID) || new Map<string, DamageAbilityBreakout>();
       const abilityBreakout = existingEncounterBreakout.get(source) || {

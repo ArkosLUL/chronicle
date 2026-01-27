@@ -60,12 +60,35 @@ function processStreams<TResult>(
   return { result: state, totalEvents };
 }
 
+// Marker to identify serialized Maps during deserialization
+const MAP_MARKER = "__serializedMap__";
+
+interface SerializedMap {
+  [MAP_MARKER]: true;
+  entries: [unknown, unknown][];
+}
+
 /**
- * Convert Map to array for serialization (Maps don't serialize through postMessage).
+ * Deep serialize a value for postMessage (Maps don't serialize through postMessage).
+ * Recursively converts Maps to marked objects with serialized entries.
  */
 function serializeResult(result: unknown): unknown {
   if (result instanceof Map) {
-    return Array.from(result.entries());
+    const serialized: SerializedMap = {
+      [MAP_MARKER]: true,
+      entries: Array.from(result.entries()).map(([k, v]) => [k, serializeResult(v)]),
+    };
+    return serialized;
+  }
+  if (Array.isArray(result)) {
+    return result.map(serializeResult);
+  }
+  if (result !== null && typeof result === "object") {
+    const serialized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(result)) {
+      serialized[key] = serializeResult(value);
+    }
+    return serialized;
   }
   return result;
 }

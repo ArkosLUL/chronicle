@@ -62,21 +62,58 @@ function toSerializableContext(ctx: PanelContext): SerializableProcessorContext 
   };
 }
 
+// Marker used by worker to identify serialized Maps
+const MAP_MARKER = "__serializedMap__";
+
+interface SerializedMap {
+  [MAP_MARKER]: true;
+  entries: [unknown, unknown][];
+}
+
+function isSerializedMap(value: unknown): value is SerializedMap {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    MAP_MARKER in value &&
+    (value as SerializedMap)[MAP_MARKER] === true
+  );
+}
+
+/**
+ * Recursively deserialize a value from worker.
+ * Objects with MAP_MARKER are converted back to Maps.
+ */
+function deepDeserialize(value: unknown): unknown {
+  // Check for serialized Map marker
+  if (isSerializedMap(value)) {
+    return new Map(
+      value.entries.map(([k, v]) => [k, deepDeserialize(v)])
+    );
+  }
+  
+  // Recursively deserialize arrays
+  if (Array.isArray(value)) {
+    return value.map(deepDeserialize);
+  }
+  
+  // Recursively deserialize object properties
+  if (value !== null && typeof value === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = deepDeserialize(val);
+    }
+    return result;
+  }
+  
+  return value;
+}
+
 /**
  * Deserialize worker result back to the expected type.
- * Worker serializes Maps as arrays of [key, value] pairs.
+ * Worker serializes Maps with a marker for identification.
  */
-function deserializeResult<TResult>(result: unknown, panel: PanelDefinition<TResult>): TResult {
-  // If result is an array, assume it's a serialized Map
-  if (Array.isArray(result)) {
-    return new Map(result) as TResult;
-  }
-  // If panel expects a Map but got something else, create empty state
-  const emptyState = panel.createState();
-  if (emptyState instanceof Map && !(result instanceof Map)) {
-    return emptyState;
-  }
-  return result as TResult;
+function deserializeResult<TResult>(result: unknown): TResult {
+  return deepDeserialize(result) as TResult;
 }
 
 export function usePanelAggregation<TResult>(
@@ -161,7 +198,7 @@ export function usePanelAggregation<TResult>(
             return;
           }
           
-          const deserializedResult = deserializeResult(response.result, panel);
+          const deserializedResult = deserializeResult<TResult>(response.result);
           setResult(deserializedResult);
           setTotalEvents(response.totalEvents);
           setProcessingTimeMs(response.processingTimeMs);

@@ -11,7 +11,6 @@ import (
 )
 
 type sqlcQuerier interface {
-	DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]LogInstanceEncounterDamageUnitSummary, error)
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
 	DeleteThisQuery(ctx context.Context) error
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
@@ -24,7 +23,6 @@ type sqlcQuerier interface {
 	GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]GetWoWLogGroupsByOwnerRow, error)
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error)
 	InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults
-	InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (LogInstanceEncounterDamageUnitSummary, error)
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
 	InsertInstancePlayers(ctx context.Context, arg []InsertInstancePlayersParams) *InsertInstancePlayersBatchResults
 	InsertInstanceUnits(ctx context.Context, arg []InsertInstanceUnitsParams) *InsertInstanceUnitsBatchResults

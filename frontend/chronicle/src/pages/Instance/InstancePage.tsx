@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
+import { useInstance } from "@/api/queries";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
 import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -60,43 +60,24 @@ function transformToInstance(
     players: Record<string, InstancePlayer>;
     units: Record<string, InstanceUnit>;
   },
-  damageSummary: EncounterDamageSummary[]
 ): Instance {
   const { players, units } = apiInstance;
 
-  // Group damage summaries by encounter
-  const damageByEncounter = new Map<string, EncounterDamageSummary[]>();
-  for (const summary of damageSummary) {
-    const existing = damageByEncounter.get(summary.encounter_id) || [];
-    existing.push(summary);
-    damageByEncounter.set(summary.encounter_id, existing);
-  }
-
-  // Map encounters with damage data
+  // Map encounters
   const encounters: Encounter[] = apiInstance.encounters.map((enc) => {
-    const encounterDamage = damageByEncounter.get(enc.id) || [];
-    
-    // Build a lookup for damage data by GUID
-    const damageByGuid = new Map<string, EncounterDamageSummary>();
-    for (const d of encounterDamage) {
-      damageByGuid.set(String(d.unit_guid), d);
-    }
-
     // Build enemies from encounter hostiles
     const enemies: EnemyUnit[] = enc.hostiles
       .map((hostile) => {
         const guidStr = String(hostile.id);
-        const damage = damageByGuid.get(guidStr);
         return {
           id: guidStr,
           name: getUnitName(guidStr, units),
           boss: hostile.boss,
-          damageTaken: damage?.damage_taken_total ?? 0, // damage they took from players
-          damageDone: damage?.damage_done_total ?? 0,   // damage they dealt to players
+          damageTaken: 0,
+          damageDone: 0,
           periods: hostile.periods,
         };
-      })
-      .sort((a, b) => b.damageTaken - a.damageTaken); // sort by damage taken (most damaged first)
+      });
 
     return {
       id: enc.id,
@@ -138,17 +119,12 @@ export function InstancePage() {
     { enabled: !!instanceId }
   );
 
-  const { data: damageSummary, isLoading: damageLoading } = useInstanceDamageSummary(
-    instanceId || "",
-    { enabled: !!instanceId }
-  );
-
   const instance = useMemo(() => {
     if (!apiInstance) return null;
-    return transformToInstance(apiInstance, damageSummary || []);
-  }, [apiInstance, damageSummary]);
+    return transformToInstance(apiInstance);
+  }, [apiInstance]);
 
-  const isLoading = instanceLoading || damageLoading;
+  const isLoading = instanceLoading;
 
   if (isLoading) {
     return (

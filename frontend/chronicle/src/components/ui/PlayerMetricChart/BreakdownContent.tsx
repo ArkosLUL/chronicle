@@ -1,10 +1,23 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
-import type { Ability } from '@/api/typesGenerated'
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * Ability statistics from damage/healing events
+ */
+export interface Ability {
+  total: number
+  hit_count: number
+  crit_count: number
+  miss_count: number
+  dodge_count: number
+  immune_count: number
+  parry_count: number
+  other_count: number
+}
 
 /**
  * Ability breakdown for display in tables

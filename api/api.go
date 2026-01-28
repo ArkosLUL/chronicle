@@ -123,12 +123,12 @@ func (api *API) Routes() chi.Router {
 							r.Use(httpmw.InstanceIDMiddleware)
 							r.Get("/events/{type}", api.InstanceEvents)
 							r.Get("/", api.Instance)
-							r.Get("/damage-summary", api.InstanceDamageSummaries)
 						})
 					})
 				})
 			})
 		})
+		r.NotFound(http.NotFound)
 	})
 
 	// Auth routes

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -178,6 +177,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return fmt.Errorf("insert events: %w", err)
 			}
 
+			for id := range inst.Seen() {
+				builder.seen(id)
+			}
+
 			// Store the encounters into the database
 			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(finalized.Encounters))
 			for _, enc := range finalized.Encounters {
@@ -201,7 +204,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 				encounterFights := make([]database.InsertEncounterCharacterFightsParams, 0)
 				for hostileID, hostileFight := range enc.Combat.Hostiles {
-          identity := inst.IdentifyUnit(hostileID)
+					identity := inst.IdentifyUnit(hostileID)
 					encounterFights = append(encounterFights, database.InsertEncounterCharacterFightsParams{
 						ID:          hostileID,
 						Boss:        identity.Boss,
@@ -220,33 +223,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				res := tx.InsertEncounterCharacterFights(ctx, encounterFights)
 				if err := res.Close(); err != nil {
 					return fmt.Errorf("insert encounter character fights: %w", err)
-				}
-
-				for unitID, unit := range enc.Damage.Units {
-					var ownerGuid *guid.GUID
-					info, ok := encountersState.Units.Get(unitID)
-					if ok {
-						ownerGuid = info.Owner
-					}
-
-					dd, _ := json.Marshal(unit.DamageDone)
-					dt, _ := json.Marshal(unit.DamageTaken)
-					_, err = tx.InsertEncounterDamageSummary(ctx, database.InsertEncounterDamageSummaryParams{
-						EncounterID:      dbencounter.ID,
-						UnitGuid:         unitID,
-						UnitName:         info.Name,
-						DamageDoneTotal:  unit.TotalDamageDone,
-						DamageTakenTotal: unit.TotalDamageTaken,
-						DamageDone:       dd,
-						DamageTaken:      dt,
-						IsPlayer:         unitID.IsPlayer(),
-						OwnerGuid:        ownerGuid,
-					})
-					if err != nil {
-						return fmt.Errorf("insert encounter damage summary: %w", err)
-					}
-
-					builder.seen(unitID)
 				}
 
 				sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(dbencounter))

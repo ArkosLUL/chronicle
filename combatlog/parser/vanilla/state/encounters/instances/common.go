@@ -11,7 +11,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
@@ -37,8 +36,8 @@ type Common struct {
 	// Live fight tracking
 	currentFight    *OngoingFight
 	completedFights []Fight
-	combatValues    *combatmetrics.Metrics
 	events          *encounterevents.Events
+	seen            map[guid.GUID]struct{}
 }
 
 type FinalizedInstance struct {
@@ -88,11 +87,6 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			}
 		}
 
-		summary, err := c.combatValues.DamageSummary(ctx, fight.Start, fight.End)
-		if err != nil {
-			return nil, fmt.Errorf("computing damage summary: %w", err)
-		}
-
 		remaining := fight.Remaining()
 		encounters = append(encounters, Encounter{
 			Name:      encounterName,
@@ -101,7 +95,6 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			IsKill:    len(remaining) == 0,
 			Remaining: remaining,
 			Boss:      boss,
-			Damage:    summary,
 		})
 	}
 
@@ -126,7 +119,6 @@ func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) 
 		CurrentZone:   z,
 		Characters:    characters,
 		Identifier:    f.Hostiles(),
-		combatValues:  combatmetrics.New(characters),
 		events:        encounterevents.NewEvents(),
 	}
 
@@ -150,6 +142,10 @@ func (c *Common) MatchesZone(z zone.Zone) bool {
 }
 
 func (c *Common) Process(m messages.Message) error {
+	for _, id := range m.Affects() {
+		c.seen[id] = struct{}{}
+	}
+
 	actChange, err := c.Characters.Process(m)
 	if err != nil {
 		return fmt.Errorf("processing characters: %w", err)
@@ -169,12 +165,11 @@ func (c *Common) Process(m messages.Message) error {
 		}
 	}
 
-	err = c.combatValues.Process(m)
-	if err != nil {
-		return fmt.Errorf("processing combat metrics: %w", err)
-	}
-
 	return nil
+}
+
+func (c *Common) Seen() map[guid.GUID]struct{} {
+	return c.seen
 }
 
 func (c *Common) Events() *encounterevents.Events {

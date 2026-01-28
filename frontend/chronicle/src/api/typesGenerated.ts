@@ -2,21 +2,6 @@
 
 import type { GUID } from "@/lib/guid/guid";
 
-// From chroniclesdk/combat.go
-export interface Ability {
-    readonly total: number;
-    readonly hit_count: number;
-    readonly crit_count: number;
-    readonly miss_count: number;
-    readonly dodge_count: number;
-    readonly immune_count: number;
-    readonly parry_count: number;
-    /**
-     * Partial resists and other stuff?
-     */
-    readonly other_count: number;
-}
-
 // From chroniclesdk/log.go
 export interface ActivityPeriod {
     readonly start?: PeriodMoment;
@@ -31,22 +16,6 @@ export interface ChronicleEncounterEvents {
     readonly type: string;
     readonly payload: string;
     readonly start_time: string;
-}
-
-// From chroniclesdk/combat.go
-export interface EncounterDamageSummary {
-    readonly encounter_id: string;
-    readonly unit_guid: GUID;
-    readonly unit_name: string;
-    readonly damage_done_total: number;
-    readonly damage_taken_total: number;
-    /**
-     * DamageDoneAbilities is a map of damage done to a unit, keyed by the target's GUID string.
-     */
-    readonly damage_done_abilities: Record<string, Record<string, Ability>>;
-    readonly damage_taken_abilities: Record<string, Record<string, Ability>>;
-    readonly is_player: boolean;
-    readonly owner_guid: GUID | null;
 }
 
 // From chroniclesdk/log.go

@@ -43,6 +43,7 @@ type Instance interface {
 	Fights() []Fight
 	Events() *encounterevents.Events
 	Finalize(ctx context.Context) (*FinalizedInstance, error)
+	Seen() map[guid.GUID]struct{}
 }
 
 type Identifier struct {

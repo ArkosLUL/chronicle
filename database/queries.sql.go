@@ -322,45 +322,6 @@ func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
 	return err
 }
 
-const damageSummariesByInstanceID = `-- name: DamageSummariesByInstanceID :many
-SELECT
-  encounter_id, unit_guid, unit_name, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
-FROM
-  log_instance_encounter_damage_unit_summary
-WHERE
-  encounter_id IN (SELECT encounter_id FROM log_instances WHERE id = $1)
-`
-
-func (q *sqlQuerier) DamageSummariesByInstanceID(ctx context.Context, logInstanceID uuid.UUID) ([]LogInstanceEncounterDamageUnitSummary, error) {
-	rows, err := q.db.Query(ctx, damageSummariesByInstanceID, logInstanceID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []LogInstanceEncounterDamageUnitSummary
-	for rows.Next() {
-		var i LogInstanceEncounterDamageUnitSummary
-		if err := rows.Scan(
-			&i.EncounterID,
-			&i.UnitGuid,
-			&i.UnitName,
-			&i.DamageDoneTotal,
-			&i.DamageTakenTotal,
-			&i.DamageDoneAbilities,
-			&i.DamageTakenAbilities,
-			&i.IsPlayer,
-			&i.OwnerGuid,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const deleteAllParsedLogsByGroupID = `-- name: DeleteAllParsedLogsByGroupID :exec
 DELETE FROM
   parsed_log_group
@@ -485,63 +446,6 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 		&i.Boss,
 		&i.StartTime,
 		&i.EndTime,
-	)
-	return i, err
-}
-
-const insertEncounterDamageSummary = `-- name: InsertEncounterDamageSummary :one
-INSERT INTO
-  log_instance_encounter_damage_unit_summary(
-    encounter_id,
-    unit_guid,
-    unit_name,
-    damage_done_total,
-    damage_taken_total,
-    damage_done_abilities,
-    damage_taken_abilities,
-    is_player,
-    owner_guid
-  )
-VALUES
-  ($1, $2, $3, $4, $5, $7::jsonb, $8::jsonb, $6, $9::wow_guid)
-RETURNING encounter_id, unit_guid, unit_name, damage_done_total, damage_taken_total, damage_done_abilities, damage_taken_abilities, is_player, owner_guid
-`
-
-type InsertEncounterDamageSummaryParams struct {
-	EncounterID      uuid.UUID  `db:"encounter_id" json:"encounter_id"`
-	UnitGuid         guid.GUID  `db:"unit_guid" json:"unit_guid"`
-	UnitName         string     `db:"unit_name" json:"unit_name"`
-	DamageDoneTotal  int64      `db:"damage_done_total" json:"damage_done_total"`
-	DamageTakenTotal int64      `db:"damage_taken_total" json:"damage_taken_total"`
-	IsPlayer         bool       `db:"is_player" json:"is_player"`
-	DamageDone       []byte     `db:"damage_done" json:"damage_done"`
-	DamageTaken      []byte     `db:"damage_taken" json:"damage_taken"`
-	OwnerGuid        *guid.GUID `db:"owner_guid" json:"owner_guid"`
-}
-
-func (q *sqlQuerier) InsertEncounterDamageSummary(ctx context.Context, arg InsertEncounterDamageSummaryParams) (LogInstanceEncounterDamageUnitSummary, error) {
-	row := q.db.QueryRow(ctx, insertEncounterDamageSummary,
-		arg.EncounterID,
-		arg.UnitGuid,
-		arg.UnitName,
-		arg.DamageDoneTotal,
-		arg.DamageTakenTotal,
-		arg.IsPlayer,
-		arg.DamageDone,
-		arg.DamageTaken,
-		arg.OwnerGuid,
-	)
-	var i LogInstanceEncounterDamageUnitSummary
-	err := row.Scan(
-		&i.EncounterID,
-		&i.UnitGuid,
-		&i.UnitName,
-		&i.DamageDoneTotal,
-		&i.DamageTakenTotal,
-		&i.DamageDoneAbilities,
-		&i.DamageTakenAbilities,
-		&i.IsPlayer,
-		&i.OwnerGuid,
 	)
 	return i, err
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/combatmetrics"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -35,8 +34,6 @@ type Encounter struct {
 	IsKill    bool
 	Remaining []guid.GUID
 	Boss      bool
-
-	Damage *combatmetrics.DamageSummary
 }
 
 func (e Encounter) NamedString(db *unitdb.Units) string {

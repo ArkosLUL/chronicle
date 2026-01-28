@@ -321,7 +321,9 @@ function EncounterSidebar({
                 <span className="truncate flex-1">
                   {encounter.boss ? encounter.name : <span className="italic">{encounter.name}</span>}
                 </span>
-                <span className="text-xs opacity-60">#{idx + 1}</span>
+                <span className={cn("text-xs shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
+                  {formatDuration(encounter.start_time, encounter.end_time)}
+                </span>
               </button>
             );
           })}
@@ -352,7 +354,9 @@ function EncounterSidebar({
                 <Skull className="h-4 w-4 shrink-0 text-red-500" />
               )}
               <span className="truncate flex-1">{encounter.name}</span>
-              {isWipe && <span className="text-xs opacity-70">(wipe)</span>}
+              <span className={cn("text-xs shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
+                {formatDuration(encounter.start_time, encounter.end_time)}
+              </span>
             </button>
           );
         })}
@@ -412,7 +416,10 @@ function EncounterSidebar({
                             ) : (
                               <Skull className="h-3 w-3 text-red-500" />
                             )}
-                            <span>#{idx + 1}</span>
+                            <span className="flex-1">#{idx + 1}</span>
+                            <span className={cn("shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
+                              {formatDuration(encounter.start_time, encounter.end_time)}
+                            </span>
                           </button>
                         );
                       })}

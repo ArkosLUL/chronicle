@@ -5,12 +5,14 @@ import type { PanelRenderProps } from "../types";
 import type { ExtraAttacksResult } from "./extraAttacks.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { formatNumber } from "@/lib/format";
+import { useExtraAttacksBreakout } from "./ExtraAttacksBreakout";
 
 /**
  * Aggregate extra attacks data across selected encounters.
  */
 function aggregateForEncounters(
   result: ExtraAttacksResult,
+  selectedTargets: Set<string>,
   selectedEncounterIds: string[],
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
@@ -30,7 +32,7 @@ function aggregateForEncounters(
           className: data.className,
           specialization: "",
           value: data.totalProcs,
-          dimmed: false,
+          dimmed: selectedTargets.size != 0 && !selectedTargets.has(playerId),
         });
       }
     }
@@ -40,10 +42,10 @@ function aggregateForEncounters(
 }
 
 
-interface ExtraAttacksContentProps extends PanelRenderProps<ExtraAttacksResult> {}
+type ExtraAttacksContentProps = PanelRenderProps<ExtraAttacksResult>;
 
 export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
-  const { result, context } = props;
+  const { result, context, loading, processing } = props;
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -53,8 +55,8 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
 
   const extraAttacksData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.selectedEncounterIds);
-  }, [cachedResult, context.selectedEncounterIds]);
+    return aggregateForEncounters(cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds);
+  }, [cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds]);
 
   // Once we have cached data, never show loading/processing states
   const effectiveProps = {
@@ -62,6 +64,14 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
     loading: hasData ? false : props.loading,
     processing: hasData ? false : props.processing,
   };
+
+  // Create breakout function for showing ability sources
+  const breakout = useExtraAttacksBreakout({
+    result: cachedResult,
+    context,
+    loading: hasData ? false : loading,
+    processing: hasData ? false : processing,
+  });
 
   // Compute display total
   const total = extraAttacksData.reduce((sum, d) => sum + d.value, 0);
@@ -78,6 +88,7 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
         panelTitle="Extra Attacks"
         duration_millis={props.durationMs}
         perSecond={props.perSecond}
+        breakout={breakout}
       />
     </GenericPanel>
   );

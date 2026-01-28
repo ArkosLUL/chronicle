@@ -9,6 +9,7 @@ const cathedralParsedOutput: WoWParsedLogJobOutput = {
     {
       id: "c52bdaae-bb0c-4952-a6d3-6848c6f639c8",
       name: "Scarlet Monastery Cathedral",
+      slug: "scarlet-monastery-cathedral",
       realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
       log_group_id: "550e8400-e29b-41d4-a716-446655440000",
       encounters: [],
@@ -23,6 +24,7 @@ const multiInstanceParsedOutput: WoWParsedLogJobOutput = {
     {
       id: "c52bdaae-bb0c-4952-a6d3-6848c6f639c8",
       name: "Scarlet Monastery Cathedral",
+      slug: "scarlet-monastery-cathedral",
       realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
       log_group_id: "550e8400-e29b-41d4-a716-446655440001",
       encounters: [],
@@ -30,6 +32,7 @@ const multiInstanceParsedOutput: WoWParsedLogJobOutput = {
     {
       id: "d63bdaae-bb0c-4952-a6d3-6848c6f639c9",
       name: "Scarlet Monastery Library",
+      slug: "scarlet-monastery-library",
       realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
       log_group_id: "550e8400-e29b-41d4-a716-446655440001",
       encounters: [],
@@ -44,6 +47,7 @@ const failedParsedOutput: WoWParsedLogJobOutput = {
     {
       id: "e74bdaae-bb0c-4952-a6d3-6848c6f639ca",
       name: "Deadmines",
+      slug: "deadmines",
       realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
       log_group_id: "550e8400-e29b-41d4-a716-446655440002",
       encounters: [],

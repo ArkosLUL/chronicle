@@ -23,6 +23,7 @@ const mockParsedOutput: WoWParsedLogJobOutput = {
     {
       id: "c52bdaae-bb0c-4952-a6d3-6848c6f639c8",
       name: "Scarlet Monastery Cathedral",
+      slug: "scarlet-monastery-cathedral",
       realm_id: "851d2fd3-f9c5-4623-b714-924b59d916aa",
       log_group_id: "296c74e3-310b-4137-987d-f711471f68e6",
       encounters: [

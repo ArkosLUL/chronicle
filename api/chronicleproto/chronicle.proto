@@ -60,7 +60,7 @@ message ResourceChange {
 
 message ExtraAttack {
   EventMeta meta = 1;
-  string caster = 3;
-  string target = 4;
+  string target = 2;
+  int32 amount = 3;
   string sourceName = 5;
 }

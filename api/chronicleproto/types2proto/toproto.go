@@ -55,6 +55,18 @@ func ResourceChange(from time.Time, idx int32, rc messages.ResourceChange) *chro
 	}
 }
 
+func ExtraAttack(from time.Time, idx int32, ea messages.ExtraAttack) *chronicleproto.ExtraAttack {
+	return &chronicleproto.ExtraAttack{
+		Meta: &chronicleproto.EventMeta{
+			Index:       idx,
+			OffsetMilli: ea.Timestamp.UnixMilli() - from.UnixMilli(),
+		},
+		Amount:     ea.Amount,
+		Target:     ea.Caster.String(), // Extra attacks are granted to the caster
+		SourceName: ea.FromSpellName,
+	}
+}
+
 func OptionalGUID(id *guid.GUID) *string {
 	if id == nil {
 		return nil

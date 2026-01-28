@@ -2,11 +2,14 @@
  * All Activity processor - counts all events by caster (pure TS, worker-safe)
  */
 
-import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 
 export type AllActivityState = Map<string, number>;
 
-export const allActivityProcessor: PanelProcessor<AllActivityState> = {
+// This processor only handles damage, heal, and resource_change - not extra_attack
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
+
+export const allActivityProcessor: PanelProcessor<AllActivityState, AllActivityEvent> = {
   id: "all_activity",
   streams: ["damage", "heal", "resource_change"],
   
@@ -14,7 +17,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityState> = {
   
   processEvent: (
     state: AllActivityState,
-    event: ProcessorEvent,
+    event: AllActivityEvent,
     _encounterID: string,
     _streamType: string,
     context: ProcessorContext

@@ -805,8 +805,8 @@ export interface ReusableExtraAttack {
   type: "extra_attack";
   index: number;
   offsetMilli: number;
-  caster: string;
   target: string;
+  amount: number;
   sourceName: string;
 }
 
@@ -815,8 +815,8 @@ export interface ReusableExtraAttack {
  * 
  * ExtraAttack proto field numbers:
  *   1: meta (EventMeta)
- *   3: caster (string)
- *   4: target (string)
+ *   2: target (string)
+ *   3: amount (int32)
  *   5: sourceName (string)
  */
 export class ExtraAttackDecoder {
@@ -827,8 +827,8 @@ export class ExtraAttackDecoder {
     type: "extra_attack",
     index: 0,
     offsetMilli: 0,
-    caster: "",
     target: "",
+    amount: 0,
     sourceName: "",
   };
   
@@ -843,8 +843,8 @@ export class ExtraAttackDecoder {
     // Reset fields
     msg.index = 0;
     msg.offsetMilli = 0;
-    msg.caster = "";
     msg.target = "";
+    msg.amount = 0;
     msg.sourceName = "";
     
     while (offset < end) {
@@ -872,10 +872,7 @@ export class ExtraAttackDecoder {
               else if (metaField === 2) msg.offsetMilli = value;
             }
           }
-        } else if (fieldNumber === 3) {
-          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
-          offset += len;
-        } else if (fieldNumber === 4) {
+        } else if (fieldNumber === 2) {
           msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else if (fieldNumber === 5) {
@@ -885,9 +882,12 @@ export class ExtraAttackDecoder {
           offset += len;
         }
       } else if (wireType === 0) {
-        // Varint - skip
-        const { bytesRead } = readVarintFast(data, offset);
+        // Varint
+        const { value, bytesRead } = readVarintFast(data, offset);
         offset += bytesRead;
+        if (fieldNumber === 3) {
+          msg.amount = value;
+        }
       }
     }
     

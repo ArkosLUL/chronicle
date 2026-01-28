@@ -7,7 +7,8 @@ import type { PanelDefinition, PanelRenderProps, EntityValueMap } from "./types"
 import { EntityValueList } from "./EntityValueList";
 import { allActivityProcessor, type AllActivityState } from "./processors";
 
-export const AllActivityPanel: PanelDefinition<AllActivityState> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
   ...allActivityProcessor,
   label: "All Activity",
   icon: <Activity className="h-4 w-4" />,

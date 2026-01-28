@@ -33,7 +33,10 @@ func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 
 	// The conversion to another type is pretty expensive, just use the type as is
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Cache-Control", "public, max-age=315360000")
+	if httpmw.InstanceByID(ctx) {
+		// Instance IDs are uuids
+		w.Header().Set("Cache-Control", "public, max-age=315360000")
+	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(evts.Events)
 }

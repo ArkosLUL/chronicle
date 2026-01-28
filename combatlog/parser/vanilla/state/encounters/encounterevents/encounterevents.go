@@ -74,6 +74,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("resource change proto: %w", err)
 		}
+	case messages.ExtraAttack:
+		err := AddToBuilder(e.ExtraAttack, ty, e.nextIndex(), types2proto.ExtraAttack)
+		if err != nil {
+			return fmt.Errorf("extra attack proto: %w", err)
+		}
 	}
 	return nil
 }

@@ -67,6 +67,14 @@ export function InstanceEventsProvider({ instanceId, children }: InstanceEventsP
   
   // Track fetching state for UI
   const [fetchingTypes, setFetchingTypes] = useState<Set<StreamType>>(new Set());
+  
+  // Track previous instanceId to clear cache on change
+  const prevInstanceIdRef = useRef<string>(instanceId);
+  if (prevInstanceIdRef.current !== instanceId) {
+    prevInstanceIdRef.current = instanceId;
+    cacheRef.current.clear();
+    fetchingRef.current.clear();
+  }
 
   const getStream = useCallback((type: StreamType): CachedStream | null => {
     return cacheRef.current.get(type) ?? null;

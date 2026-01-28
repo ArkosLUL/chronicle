@@ -472,8 +472,8 @@ func (x *ResourceChange) GetDirection() string {
 type ExtraAttack struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
-	Caster        string                 `protobuf:"bytes,3,opt,name=caster,proto3" json:"caster,omitempty"`
-	Target        string                 `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	Amount        int32                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
 	SourceName    string                 `protobuf:"bytes,5,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -516,18 +516,18 @@ func (x *ExtraAttack) GetMeta() *EventMeta {
 	return nil
 }
 
-func (x *ExtraAttack) GetCaster() string {
-	if x != nil {
-		return x.Caster
-	}
-	return ""
-}
-
 func (x *ExtraAttack) GetTarget() string {
 	if x != nil {
 		return x.Target
 	}
 	return ""
+}
+
+func (x *ExtraAttack) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
 }
 
 func (x *ExtraAttack) GetSourceName() string {
@@ -584,8 +584,8 @@ const file_chronicle_proto_rawDesc = "" +
 	"\v_sourceName\"\x8c\x01\n" +
 	"\vExtraAttack\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
-	"\x06caster\x18\x03 \x01(\tR\x06caster\x12\x16\n" +
-	"\x06target\x18\x04 \x01(\tR\x06target\x12\x1e\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x05R\x06amount\x12\x1e\n" +
 	"\n" +
 	"sourceName\x18\x05 \x01(\tR\n" +
 	"sourceName*p\n" +

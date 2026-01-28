@@ -673,9 +673,9 @@ function ExtraAttackTable({ messages }: { messages: ExtraAttack[] }) {
           <th className="text-left p-2">#</th>
           <th className="text-left p-2">Index</th>
           <th className="text-left p-2">Offset (ms)</th>
-          <th className="text-left p-2">Caster</th>
-          <th className="text-left p-2">Source</th>
           <th className="text-left p-2">Target</th>
+          <th className="text-left p-2">Amount</th>
+          <th className="text-left p-2">Source</th>
         </tr>
       </thead>
       <tbody>
@@ -684,9 +684,9 @@ function ExtraAttackTable({ messages }: { messages: ExtraAttack[] }) {
             <td className="p-2 text-muted-foreground">{i}</td>
             <td className="p-2">{msg.meta?.index ?? "-"}</td>
             <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
-            <td className="p-2">{msg.caster ?? "-"}</td>
-            <td className="p-2">{msg.sourceName ?? "-"}</td>
             <td className="p-2">{msg.target ?? "-"}</td>
+            <td className="p-2">{msg.amount ?? "-"}</td>
+            <td className="p-2">{msg.sourceName ?? "-"}</td>
           </tr>
         ))}
       </tbody>

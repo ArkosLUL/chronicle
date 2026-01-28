@@ -19,6 +19,13 @@ func Instance(ctx context.Context) database.LogInstance {
 	return id
 }
 
+type instanceByIDKey struct{}
+
+func InstanceByID(ctx context.Context) bool {
+	id, _ := ctx.Value(instanceByIDKey{}).(bool)
+	return id
+}
+
 func InstanceIDMiddleware(db database.Store) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +48,7 @@ func InstanceIDMiddleware(db database.Store) func(next http.Handler) http.Handle
 					return
 				}
 			} else {
+				r = r.WithContext(context.WithValue(r.Context(), instanceByIDKey{}, true))
 				inst, err = db.Instance(r.Context(), instanceID)
 				if err != nil {
 					httpapi.HandleResponseError(r.Context(), w, err, httpapi.APIError{

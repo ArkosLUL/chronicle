@@ -31,7 +31,6 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 	if err != nil {
 		return fmt.Errorf("gzip damage events: %w", err)
 	}
-	e.Damage = nil
 
 	healingPayload, err := gzipData(e.Healing)
 	if err != nil {

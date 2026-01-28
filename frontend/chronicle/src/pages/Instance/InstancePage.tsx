@@ -162,7 +162,7 @@ export function InstancePage() {
   const backUrl = apiInstance?.log_group_id ? `/logs/${apiInstance.log_group_id}` : "/logs";
 
   return (
-    <InstanceEventsProvider instanceId={instanceId!}>
+    <InstanceEventsProvider instanceId={instance.id}>
       <InstancePageView
         instance={instance}
         backUrl={backUrl}

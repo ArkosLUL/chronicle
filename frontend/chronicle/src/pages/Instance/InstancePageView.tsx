@@ -494,6 +494,14 @@ function EncounterDetail({
   
   const totalDurationMs = computeTotalDuration(encounters);
   
+  // Compute elapsed time (from first encounter start to last encounter end)
+  const elapsedTimeMs = useMemo(() => {
+    if (encounters.length <= 1) return null;
+    const startTimes = encounters.map(e => new Date(e.start_time).getTime());
+    const endTimes = encounters.map(e => new Date(e.end_time).getTime());
+    return Math.max(...endTimes) - Math.min(...startTimes);
+  }, [encounters]);
+  
   // Build PanelContext for EventsPanels
   const panelContext: PanelContext = {
     instance,
@@ -556,9 +564,36 @@ function EncounterDetail({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span>{formatDurationMs(totalDurationMs)}</span>
+        <div className="flex items-center gap-4 text-muted-foreground text-sm">
+          {elapsedTimeMs !== null && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  <span>{formatDurationMs(elapsedTimeMs)}</span>
+                  <span className="text-xs opacity-60">elapsed</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                Total time from first encounter start to last encounter end
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                <span>{formatDurationMs(totalDurationMs)}</span>
+                {elapsedTimeMs !== null && <span className="text-xs opacity-60">combat</span>}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {elapsedTimeMs !== null 
+                ? "Sum of all encounter durations (active combat time)"
+                : "Encounter duration"
+              }
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 

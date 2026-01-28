@@ -2,7 +2,8 @@ package api
 
 import (
 	"context"
-	"fmt"
+  "errors"
+  "fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -143,4 +144,10 @@ func (api *API) Routes() chi.Router {
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 
 	return r
+}
+
+
+func (api *API) Close() error {
+  cerr := api.Chronicle.Close()
+  return errors.Join(cerr)
 }

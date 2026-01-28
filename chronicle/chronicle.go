@@ -287,7 +287,7 @@ func (c *Chronicle) DeleteWoWLogGroup(ctx context.Context, logID uuid.UUID) erro
 }
 
 func (c *Chronicle) Close() error {
-	qerr := c.queue.Stop(c.AppContext)
+	qerr := c.queue.StopAndCancel(c.AppContext)
 
 	return errors.Join(qerr)
 }

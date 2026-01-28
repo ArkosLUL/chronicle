@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Emyrk/chronicle/api"
 	"github.com/Emyrk/chronicle/api/chronauth"
@@ -201,8 +202,8 @@ func ServerCmd() *serpent.Command {
 			},
 		},
 		Handler: func(i *serpent.Invocation) error {
-			ctx, cancel := context.WithCancel(i.Context())
-			defer cancel()
+			ctx, cancelApp := context.WithCancel(context.Background())
+			defer cancelApp()
 			logger := getLogger(i)
 			reg := prometheus.NewRegistry()
 
@@ -294,8 +295,27 @@ func ServerCmd() *serpent.Command {
 			closeServer := ServeHandler(ctx, logger, handler.Routes(), serverLn, "api")
 			defer closeServer()
 
-			<-ctx.Done()
-			return nil
+			<-i.Context().Done()
+
+			terminate, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				closeServer()
+				err := handler.Close()
+				if err != nil {
+					logger.Error("closing", slog.String("error", err.Error()))
+				}
+				cancelApp()
+			}()
+
+			select {
+			case <-done:
+				return nil
+			case <-terminate.Done():
+				return fmt.Errorf("timed out waiting for server to close")
+			}
 		},
 	}
 	return cmd

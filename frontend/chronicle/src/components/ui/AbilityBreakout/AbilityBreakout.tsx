@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import type { DamageAbilityBreakout } from '@/pages/Instance/EventsPanels/DamageDone/damageDone.processor'
 
 // ============================================================================
 // Types
@@ -9,15 +10,9 @@ import { cn } from '@/lib/utils'
  * Ability data for display in the breakout table.
  * This is a simplified structure compared to the old AbilityBreakdown.
  */
-export interface AbilityData {
+export interface AbilityData extends DamageAbilityBreakout{
   name: string
   value: number
-  hitCount: number
-  critCount: number
-  missCount?: number
-  dodgeCount?: number
-  parryCount?: number
-  // Add more fields as needed
 }
 
 /**
@@ -66,13 +61,15 @@ export function AbilityTable({
             <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
             <th className="text-right py-1.5 px-2 font-medium">%</th>
             <th className="text-right py-1.5 px-2 font-medium">Count</th>
+            <th className="text-right py-1.5 px-2 font-medium">Hits</th>
             <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
+            {/* <th className="text-right py-1.5 px-2 font-medium">Miss%</th> */}
           </tr>
         </thead>
         <tbody>
           {sorted.map((ability) => {
-            const totalHits = ability.hitCount + ability.critCount
-            const critPercent = totalHits > 0 ? (ability.critCount / totalHits) * 100 : 0
+            const critPercent = ability.Hits > 0 ? (ability.Crits / ability.Hits) * 100 : 0
+            // const missPercent = totalAttempts > 0 ? (missCount + / totalAttempts) * 100 : 0
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
             
             return (
@@ -87,11 +84,17 @@ export function AbilityTable({
                   {valuePercent.toFixed(1)}%
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
-                  {totalHits}
+                  {ability.Count}
+                </td>
+                <td className="text-right py-1 px-2 tabular-nums">
+                  {ability.Hits} 
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
                   {critPercent.toFixed(0)}%
                 </td>
+                {/* <td className="text-right py-1 px-2 tabular-nums">
+                  {missPercent.toFixed(0)}%
+                </td> */}
               </tr>
             )
           })}

@@ -31,6 +31,7 @@ func RootCmd() *serpent.Command {
 		SortCmd(),
 		ClientFiles(),
 		ExtractCmd(),
+		HitType(),
 	)
 
 	return cmd

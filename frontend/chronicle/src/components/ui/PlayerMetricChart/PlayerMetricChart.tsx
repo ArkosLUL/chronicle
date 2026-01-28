@@ -476,9 +476,10 @@ export function PlayerMetricRow({
         </TooltipTrigger>
         <TooltipContent 
           align="start"
-          alignOffset={x}
+          alignOffset={x+2}
           sideOffset={-y + 10}
           hideWhenDetached
+          hideArrow
           className="p-0 min-w-[340px] bg-popover text-foreground"
         >
           <div className="p-3 border-b border-border">

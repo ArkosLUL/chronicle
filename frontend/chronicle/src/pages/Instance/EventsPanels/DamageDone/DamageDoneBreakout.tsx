@@ -18,10 +18,9 @@ function getAbilitiesForUnit(
   const abilities: AbilityData[] = [];
   for (const [abilityName, data] of unitAbilities) {
     abilities.push({
+      ...data,
       name: abilityName,
       value: data.Total,
-      hitCount: data.Count,
-      critCount: 0, // TODO: Add crit tracking to processor
     });
   }
 

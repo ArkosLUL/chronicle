@@ -4,7 +4,7 @@
 
 import { GUID } from "@/lib/guid/guid";
 import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
-import { hasHitType, HitTypeCrit, HitTypeHit, HitTypeMiss } from "@/lib/hittype/hittype";
+import { hasHitType, HitTypeCrit, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypePeriodic } from "@/lib/hittype/hittype";
 
 /**
  * Entity source types for damage aggregation
@@ -33,7 +33,12 @@ export interface DamageAbilityBreakout {
 
   Crits: number;
   Hits: number;
+  Dodges: number;
+  Parrys: number;
   Misses: number;
+  FullResist: number;
+  Immunes: number;
+  FullBlocks: number;
 }
 
 export type DamageDoneResult = {
@@ -138,6 +143,9 @@ export function createDamageDoneProcessor(
         if((sourceType === "players") && isPet) {
           source = source + " (Pet)";
         } 
+        if (hasHitType(event.hitType, HitTypePeriodic)) {
+          source = source + " (DoT)";
+        }
 
         const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, DamageAbilityBreakout>();
         const abilityBreakout: DamageAbilityBreakout = existingUnitBreakout.get(source) || {
@@ -146,16 +154,34 @@ export function createDamageDoneProcessor(
           Crits: 0,
           Hits: 0,
           Misses: 0,
+          FullResist: 0,
+          Dodges: 0,
+          Parrys: 0,
+          Immunes: 0,
+          FullBlocks: 0,
         };
         
         abilityBreakout.Total += event.amount;
         abilityBreakout.Count += 1;
         if (hasHitType(event.hitType, HitTypeCrit)) {
           abilityBreakout.Crits += 1;
+          abilityBreakout.Hits += 1;
         } else if (hasHitType(event.hitType, HitTypeMiss)) {
           abilityBreakout.Misses += 1;
-        } else if (hasHitType(event.hitType, HitTypeHit)) {
+        } else if (hasHitType(event.hitType, HitTypeHit) || hasHitType(event.hitType, HitTypePeriodic)) {
           abilityBreakout.Hits += 1;
+        } else if (hasHitType(event.hitType, HitTypeFullResist)) {
+          abilityBreakout.FullResist += 1;
+        } else if (hasHitType(event.hitType, HitTypeDodge)) {
+          abilityBreakout.Dodges += 1;
+        } else if (hasHitType(event.hitType, HitTypeParry)) {
+          abilityBreakout.Parrys += 1;
+        } else if (hasHitType(event.hitType, HitTypeImmune)) {
+          abilityBreakout.Immunes += 1;
+        } else if (hasHitType(event.hitType, HitTypeFullBlock)) {
+          abilityBreakout.FullBlocks += 1;
+        } else {
+          console.log("Unknown hit type for damage done:", event.sourceName, event.hitType);
         }
 
 

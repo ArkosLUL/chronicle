@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  HitType,
+  type HitType,
   HitTypeNone,
   HitTypeOffHand,
   HitTypeHit,

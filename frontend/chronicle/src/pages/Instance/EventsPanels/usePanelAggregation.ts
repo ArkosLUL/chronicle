@@ -9,7 +9,8 @@ import type { PanelDefinition, PanelContext } from "./types";
 import type { WorkerRequest, WorkerResponse, SerializableProcessorContext } from "./processorTypes";
 
 export interface UsePanelAggregationOptions<TResult> {
-  panel: PanelDefinition<TResult>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  panel: PanelDefinition<TResult, any>;
   context: PanelContext;
   enabled?: boolean;
 }

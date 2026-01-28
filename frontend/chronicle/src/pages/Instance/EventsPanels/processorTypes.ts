@@ -8,12 +8,18 @@
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
- * Minimal event data passed to processEvent.
- * Matches ReusableDamage from protodecode.
+ * Common event metadata present in all event types.
  */
-export interface ProcessorEvent {
+interface EventMeta {
   index: number;
   offsetMilli: number;
+}
+
+/**
+ * Damage event from the "damage" stream.
+ */
+export interface DamageProcessorEvent extends EventMeta {
+  type: "damage";
   caster: string;
   sourceName: string;
   target: string;
@@ -21,6 +27,49 @@ export interface ProcessorEvent {
   amount: number;
   school: number;
 }
+
+/**
+ * Heal event from the "heal" stream.
+ */
+export interface HealProcessorEvent extends EventMeta {
+  type: "heal";
+  caster: string;
+  sourceName: string;
+  target: string;
+  hitType: number;
+  amount: number;
+  school: number;
+}
+
+/**
+ * Resource change event from the "resource_change" stream.
+ */
+export interface ResourceChangeProcessorEvent extends EventMeta {
+  type: "resource_change";
+  caster: string;
+  sourceName: string;
+  target: string;
+  amount: number;
+  resourceType: string;
+  direction: string;
+}
+
+/**
+ * Extra attack event from the "extra_attack" stream.
+ * Triggered by abilities like Windfury, Sword Specialization, etc.
+ */
+export interface ExtraAttackProcessorEvent extends EventMeta {
+  type: "extra_attack";
+  caster: string;
+  sourceName: string;
+  target: string;
+}
+
+/**
+ * Discriminated union of all event types.
+ * Use event.type to narrow to a specific type.
+ */
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).
@@ -92,8 +141,11 @@ export interface ProcessorContext {
 
 /**
  * Pure processor definition (no React, worker-safe).
+ * 
+ * @typeParam TResult - The aggregated state type returned by this processor
+ * @typeParam TEvent - The event types this processor handles (defaults to all ProcessorEvent types)
  */
-export interface PanelProcessor<TResult> {
+export interface PanelProcessor<TResult, TEvent extends ProcessorEvent = ProcessorEvent> {
   /** Unique identifier for this panel type */
   id: string;
   
@@ -111,7 +163,7 @@ export interface PanelProcessor<TResult> {
    */
   processEvent: (
     state: TResult,
-    event: ProcessorEvent,
+    event: TEvent,
     encounterID: string,
     streamType: StreamType,
     context: ProcessorContext,

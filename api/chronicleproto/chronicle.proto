@@ -57,3 +57,10 @@ message ResourceChange {
   optional string sourceName = 7;
   string direction = 8;
 }
+
+message ExtraAttack {
+  EventMeta meta = 1;
+  string caster = 3;
+  string target = 4;
+  string sourceName = 5;
+}

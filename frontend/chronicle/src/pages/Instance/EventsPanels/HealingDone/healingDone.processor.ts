@@ -5,9 +5,10 @@
  */
 
 import { GUID } from "@/lib/guid/guid";
-import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
+import type { HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
+import { isResourceChangeEvent } from "../processors";
 
 // Re-export the shared type (works for healing too)
 export type { DamageAbilityBreakout as HealingAbilityBreakout } from "../processors/abilityBreakout";
@@ -44,12 +45,12 @@ export type HealingDoneResult = {
  */
 export function createHealingDoneProcessor(
   sourceType: HealingSourceType
-): PanelProcessor<HealingDoneResult> {
+): PanelProcessor<HealingDoneResult, HealProcessorEvent | ResourceChangeProcessorEvent> {
   const id = sourceType === "players" ? "healing_done" : `healing_done_${sourceType}`;
   
   return {
     id,
-    streams: ["heal"],
+    streams: ["heal", "resource_change"],
 
     createState: () => ({
       EncounterHealing: new Map<string, UnitHealing>(),
@@ -59,13 +60,17 @@ export function createHealingDoneProcessor(
 
     processEvent: (
       state: HealingDoneResult,
-      event: ProcessorEvent,
+      event: HealProcessorEvent | ResourceChangeProcessorEvent,
       encounterID: string,
       streamType: string,
       context: ProcessorContext
     ) => {
+      if (isResourceChangeEvent(event, streamType) && (event.resourceType !== "Health" || event.direction !== "Gain")) {
+        return;
+      }
+
       // Only process heal events
-      if (streamType !== "heal") return;
+      if (!(streamType == "heal" || streamType == "resource_change")) return;
       if (!event.caster) return;
 
       const casterGuid = GUID.fromString(event.caster);
@@ -110,11 +115,13 @@ export function createHealingDoneProcessor(
       ) {
 
         let abilityName = event.sourceName || "???";
-        if (hasHitType(event.hitType, HitTypePeriodic)) {
+        const hitType = isResourceChangeEvent(event, streamType) ? HitTypePeriodic : event.hitType;
+        if (hasHitType(hitType, HitTypePeriodic)) {
           abilityName = abilityName + " (HoT)";
         }
+      
 
-        accumulateAbilityBreakout(state.ByAbility, healingOwner, abilityName, event.amount, event.hitType);
+        accumulateAbilityBreakout(state.ByAbility, healingOwner, abilityName, event.amount, hitType);
 
         const existingTargetBreakout = state.ByTarget.get(healingOwner) || new Map<string, number>();
         existingTargetBreakout.set(event.target, (existingTargetBreakout.get(event.target) || 0) + event.amount);

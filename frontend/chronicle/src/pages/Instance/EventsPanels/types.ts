@@ -50,8 +50,11 @@ export type AggregatorFn = (
 
 /**
  * Configuration for a panel type
+ * 
+ * @typeParam TResult - The aggregated state type returned by this processor
+ * @typeParam TEvent - The event types this processor handles (defaults to all ProcessorEvent types)
  */
-export interface PanelDefinition<TResult> {
+export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = ProcessorEvent> {
   /** Unique identifier for this panel type */
   id: string;
   
@@ -75,7 +78,7 @@ export interface PanelDefinition<TResult> {
    */
   processEvent: (
     state: TResult,
-    event: ProcessorEvent,
+    event: TEvent,
     encounterID: string,
     streamType: StreamType,
     context: ProcessorContext,

@@ -238,6 +238,7 @@ export function decodeDelimitedMessages<T extends DescMessage>(
  * If the callback needs to keep data, it must copy what it needs.
  */
 export interface ReusableDamage {
+  type: "damage";
   index: number;
   offsetMilli: number;  // Use number instead of bigint for speed
   caster: string;
@@ -257,6 +258,7 @@ export class DamageDecoder {
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableDamage = {
+    type: "damage",
     index: 0,
     offsetMilli: 0,
     caster: "",
@@ -344,6 +346,7 @@ export class DamageDecoder {
  * Reusable Heal message object (same shape as Damage for ProcessorEvent compatibility)
  */
 export interface ReusableHeal {
+  type: "heal";
   index: number;
   offsetMilli: number;
   caster: string;
@@ -370,6 +373,7 @@ export class HealDecoder {
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableHeal = {
+    type: "heal",
     index: 0,
     offsetMilli: 0,
     caster: "",
@@ -568,14 +572,13 @@ export class FastHealCursor {
  * Reusable ResourceChange message object
  */
 export interface ReusableResourceChange {
+  type: "resource_change";
   index: number;
   offsetMilli: number;
   caster: string;
   sourceName: string;
   target: string;
-  hitType: number;  // unused for resource change, kept for interface compat
   amount: number;
-  school: number;   // unused for resource change, kept for interface compat
   resourceType: string;
   direction: string;
 }
@@ -597,14 +600,13 @@ export class ResourceChangeDecoder {
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableResourceChange = {
+    type: "resource_change",
     index: 0,
     offsetMilli: 0,
     caster: "",
     sourceName: "",
     target: "",
-    hitType: 0,
     amount: 0,
-    school: 0,
     resourceType: "",
     direction: "",
   };
@@ -623,9 +625,7 @@ export class ResourceChangeDecoder {
     msg.caster = "";
     msg.sourceName = "";
     msg.target = "";
-    msg.hitType = 0;
     msg.amount = 0;
-    msg.school = 0;
     msg.resourceType = "";
     msg.direction = "";
     
@@ -726,6 +726,216 @@ export class FastResourceChangeCursor {
    * WARNING: The returned object is reused - copy data if needed!
    */
   next(): ReusableResourceChange | null {
+    if (!this.hasMoreInEncounter) return null;
+    
+    // Read length prefix
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+    
+    // Decode into reusable message
+    const msg = this.decoder.decode(this.data, msgStart, length);
+    
+    // Advance
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+    
+    return msg;
+  }
+  
+  /**
+   * Move to the next encounter.
+   */
+  nextEncounter(): boolean {
+    // Skip remaining messages in current encounter
+    while (this.hasMoreInEncounter) {
+      this.next();
+    }
+    return this._loadNextEncounterHeader();
+  }
+  
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    
+    const startOffset = this.offset;
+    
+    // Read encounterID
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+    
+    // Read timestamp
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER 
+      ? new Date(tsNumber) 
+      : new Date(NaN);
+    
+    // Read count
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+    
+    // Read dataLength
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+    
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+    
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+    
+    return true;
+  }
+}
+
+/**
+ * Reusable ExtraAttack message object
+ */
+export interface ReusableExtraAttack {
+  type: "extra_attack";
+  index: number;
+  offsetMilli: number;
+  caster: string;
+  target: string;
+  sourceName: string;
+}
+
+/**
+ * Zero-allocation ExtraAttack decoder.
+ * 
+ * ExtraAttack proto field numbers:
+ *   1: meta (EventMeta)
+ *   3: caster (string)
+ *   4: target (string)
+ *   5: sourceName (string)
+ */
+export class ExtraAttackDecoder {
+  private readonly textDecoder = new TextDecoder();
+  
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableExtraAttack = {
+    type: "extra_attack",
+    index: 0,
+    offsetMilli: 0,
+    caster: "",
+    target: "",
+    sourceName: "",
+  };
+  
+  /**
+   * Decode an ExtraAttack message into the reusable object.
+   * Returns the same `this.message` reference, mutated.
+   */
+  decode(data: Uint8Array, offset: number, length: number): ReusableExtraAttack {
+    const end = offset + length;
+    const msg = this.message;
+    
+    // Reset fields
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.caster = "";
+    msg.target = "";
+    msg.sourceName = "";
+    
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+      
+      if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        
+        if (fieldNumber === 1) {
+          // EventMeta - decode nested
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+            
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            }
+          }
+        } else if (fieldNumber === 3) {
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 5) {
+          msg.sourceName = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else {
+          offset += len;
+        }
+      } else if (wireType === 0) {
+        // Varint - skip
+        const { bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+      }
+    }
+    
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for ExtraAttack events with zero-allocation decoding.
+ * Same API as FastDamageCursor but uses ExtraAttackDecoder.
+ */
+export class FastExtraAttackCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new ExtraAttackDecoder();
+  private offset: number = 0;
+  
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+  
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+  
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+  
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+  
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+  
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+  
+  /**
+   * Read the next message, returning the reusable message object.
+   * Returns null if no more messages in current encounter.
+   * WARNING: The returned object is reused - copy data if needed!
+   */
+  next(): ReusableExtraAttack | null {
     if (!this.hasMoreInEncounter) return null;
     
     // Read length prefix

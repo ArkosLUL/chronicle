@@ -469,6 +469,74 @@ func (x *ResourceChange) GetDirection() string {
 	return ""
 }
 
+type ExtraAttack struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Caster        string                 `protobuf:"bytes,3,opt,name=caster,proto3" json:"caster,omitempty"`
+	Target        string                 `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
+	SourceName    string                 `protobuf:"bytes,5,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExtraAttack) Reset() {
+	*x = ExtraAttack{}
+	mi := &file_chronicle_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExtraAttack) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExtraAttack) ProtoMessage() {}
+
+func (x *ExtraAttack) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExtraAttack.ProtoReflect.Descriptor instead.
+func (*ExtraAttack) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ExtraAttack) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *ExtraAttack) GetCaster() string {
+	if x != nil {
+		return x.Caster
+	}
+	return ""
+}
+
+func (x *ExtraAttack) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *ExtraAttack) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
+	}
+	return ""
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -513,7 +581,14 @@ const file_chronicle_proto_rawDesc = "" +
 	"sourceName\x88\x01\x01\x12\x1c\n" +
 	"\tdirection\x18\b \x01(\tR\tdirectionB\t\n" +
 	"\a_casterB\r\n" +
-	"\v_sourceName*p\n" +
+	"\v_sourceName\"\x8c\x01\n" +
+	"\vExtraAttack\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
+	"\x06caster\x18\x03 \x01(\tR\x06caster\x12\x16\n" +
+	"\x06target\x18\x04 \x01(\tR\x06target\x12\x1e\n" +
+	"\n" +
+	"sourceName\x18\x05 \x01(\tR\n" +
+	"sourceName*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -541,7 +616,7 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),            // 0: chronicleproto.School
 	(*Tailer)(nil),         // 1: chronicleproto.Tailer
@@ -549,6 +624,7 @@ var file_chronicle_proto_goTypes = []any{
 	(*Heal)(nil),           // 3: chronicleproto.Heal
 	(*Damage)(nil),         // 4: chronicleproto.Damage
 	(*ResourceChange)(nil), // 5: chronicleproto.ResourceChange
+	(*ExtraAttack)(nil),    // 6: chronicleproto.ExtraAttack
 }
 var file_chronicle_proto_depIdxs = []int32{
 	2, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
@@ -556,11 +632,12 @@ var file_chronicle_proto_depIdxs = []int32{
 	0, // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
 	1, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
 	2, // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -577,7 +654,7 @@ func file_chronicle_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

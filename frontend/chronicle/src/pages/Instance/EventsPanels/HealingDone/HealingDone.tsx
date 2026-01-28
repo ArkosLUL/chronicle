@@ -33,7 +33,8 @@ const HEALING_SOURCE_CONFIGS: Record<HealingSourceType, HealingSourceConfig> = {
  */
 export function createHealingDonePanel(
   sourceType: HealingSourceType
-): PanelDefinition<HealingDoneResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): PanelDefinition<HealingDoneResult, any> {
   const config = HEALING_SOURCE_CONFIGS[sourceType];
   
   return {

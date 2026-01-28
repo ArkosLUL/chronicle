@@ -2,22 +2,23 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card/Card"
 import { Button } from "@/components/ui/button"
 import { decodePayload, decodeAllPayloads, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader, type DecodedPayload } from "@/api/protodecode/decode"
-import { DamageSchema, type Damage, HealSchema, type Heal, ResourceChangeSchema, type ResourceChange, School } from "@/api/proto/chronicle_pb"
+import { DamageSchema, type Damage, ExtraAttackSchema, type ExtraAttack, HealSchema, type Heal, ResourceChangeSchema, type ResourceChange, School } from "@/api/proto/chronicle_pb"
 import type { GenMessage } from "@bufbuild/protobuf/codegenv1"
 import type { Message } from "@bufbuild/protobuf"
 
 type DecodeMode = "payload" | "messages"
-type EventType = "damage" | "heal" | "resource_change"
+type EventType = "damage" | "extra_attack" | "heal" | "resource_change"
 
 // Map event types to their schemas
 const eventSchemas: Record<EventType, GenMessage<Message>> = {
   damage: DamageSchema,
+  extra_attack: ExtraAttackSchema,
   heal: HealSchema,
   resource_change: ResourceChangeSchema,
 }
 
 // Union type for all message types
-type AnyEventMessage = Damage | Heal | ResourceChange
+type AnyEventMessage = Damage | ExtraAttack | Heal | ResourceChange
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -293,6 +294,16 @@ export function ProtoDecode() {
                 />
                 <span>Resource Change</span>
               </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="eventType"
+                  checked={eventType === "extra_attack"}
+                  onChange={() => setEventType("extra_attack")}
+                  className="accent-primary"
+                />
+                <span>Extra Attack</span>
+              </label>
             </div>
           </div>
           <div>
@@ -536,6 +547,9 @@ export function ProtoDecode() {
               {eventType === "resource_change" && (
                 <ResourceChangeTable messages={messages as ResourceChange[]} />
               )}
+              {eventType === "extra_attack" && (
+                <ExtraAttackTable messages={messages as ExtraAttack[]} />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -643,6 +657,36 @@ function ResourceChangeTable({ messages }: { messages: ResourceChange[] }) {
             <td className="p-2 text-right">{msg.amount ?? 0}</td>
             <td className="p-2">{msg.resourceType ?? "-"}</td>
             <td className="p-2">{msg.direction ?? "-"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+// Table component for ExtraAttack events
+function ExtraAttackTable({ messages }: { messages: ExtraAttack[] }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b">
+          <th className="text-left p-2">#</th>
+          <th className="text-left p-2">Index</th>
+          <th className="text-left p-2">Offset (ms)</th>
+          <th className="text-left p-2">Caster</th>
+          <th className="text-left p-2">Source</th>
+          <th className="text-left p-2">Target</th>
+        </tr>
+      </thead>
+      <tbody>
+        {messages.map((msg, i) => (
+          <tr key={i} className="border-b hover:bg-muted/50">
+            <td className="p-2 text-muted-foreground">{i}</td>
+            <td className="p-2">{msg.meta?.index ?? "-"}</td>
+            <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
+            <td className="p-2">{msg.caster ?? "-"}</td>
+            <td className="p-2">{msg.sourceName ?? "-"}</td>
+            <td className="p-2">{msg.target ?? "-"}</td>
           </tr>
         ))}
       </tbody>

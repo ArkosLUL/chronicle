@@ -5,7 +5,7 @@
  * It receives stream data and context, processes events, and returns results.
  */
 
-import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
@@ -29,7 +29,8 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
  * Process all streams using the given processor.
  */
 function processStreams<TResult>(
-  processor: PanelProcessor<TResult>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  processor: PanelProcessor<TResult, any>,
   streams: WorkerRequest["streams"],
   serializableContext: SerializableProcessorContext
 ): { result: TResult; totalEvents: number } {
@@ -45,6 +46,8 @@ function processStreams<TResult>(
       ? new FastHealCursor(stream.data)
       : stream.type === "resource_change"
       ? new FastResourceChangeCursor(stream.data)
+      : stream.type === "extra_attack"
+      ? new FastExtraAttackCursor(stream.data)
       : new FastDamageCursor(stream.data);
     
     while (cursor.currentHeader) {

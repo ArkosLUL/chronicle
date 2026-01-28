@@ -36,7 +36,7 @@ export function updateAbilityBreakout(
   breakout: DamageAbilityBreakout,
   amount: number,
   hitType: number,
-  sourceName?: string,
+  _sourceName?: string,
 ): void {
   breakout.Total += amount;
   breakout.Count += 1;
@@ -59,7 +59,7 @@ export function updateAbilityBreakout(
   } else if (hasHitType(hitType, HitTypeFullBlock)) {
     breakout.FullBlocks += 1;
   } else {
-    console.log("Unknown hit type:", sourceName, hitType);
+    // console.log("Unknown hit type:", sourceName, hitType);
   }
 }
 

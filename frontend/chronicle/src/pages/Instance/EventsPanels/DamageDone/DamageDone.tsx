@@ -47,7 +47,8 @@ const DAMAGE_SOURCE_CONFIGS: Record<DamageSourceType, DamageSourceConfig> = {
  */
 export function createDamageDonePanel(
   sourceType: DamageSourceType
-): PanelDefinition<DamageDoneState> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): PanelDefinition<DamageDoneState, any> {
   const config = DAMAGE_SOURCE_CONFIGS[sourceType];
   
   return {

@@ -12,7 +12,7 @@ export type AggregationType =
   | "healing_done" 
   | "all_activity";
 
-export type StreamType = "damage" | "heal" | "resource_change";
+export type StreamType = "damage" | "extra_attack" | "heal" | "resource_change";
 
 export interface UseEventAggregationOptions {
   aggregationType: AggregationType;

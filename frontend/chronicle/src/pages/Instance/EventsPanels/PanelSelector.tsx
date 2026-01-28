@@ -33,6 +33,10 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     items: ["damage_taken", "enemy_damage_taken"],
   },
   {
+    label: "Procs",
+    items: ["extra_attacks"],
+  },
+  {
     label: "Activity",
     items: ["all_activity"],
   },

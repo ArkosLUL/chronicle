@@ -41,7 +41,8 @@ const DAMAGE_TARGET_CONFIGS: Record<DamageTargetType, DamageTargetConfig> = {
  */
 export function createDamageTakenPanel(
   targetType: DamageTargetType
-): PanelDefinition<DamageTakenResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): PanelDefinition<DamageTakenResult, any> {
   const config = DAMAGE_TARGET_CONFIGS[targetType];
   
   return {

@@ -12,19 +12,21 @@ import { PanelSelector } from "./PanelSelector";
 import { createDamageDonePanel } from "./DamageDone/DamageDone";
 import { createDamageTakenPanel } from "./DamageTaken/DamageTaken";
 import { createHealingDonePanel } from "./HealingDone/HealingDone";
+import { createExtraAttacksPanel } from "./ExtraAttacks/ExtraAttacks";
 import { AllActivityPanel } from "./AllActivity";
 
 // Registry of all available panels
 // Using `any` here to allow different result types per panel.
 // Type safety is maintained within each panel definition.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const PANELS: Record<string, PanelDefinition<any>> = {
+export const PANELS: Record<string, PanelDefinition<any, any>> = {
   damage_done: createDamageDonePanel("players"),
   enemy_damage_done: createDamageDonePanel("enemies"),
   pet_damage_done: createDamageDonePanel("pets"),
   damage_taken: createDamageTakenPanel("players"),
   enemy_damage_taken: createDamageTakenPanel("enemies"),
   healing_done: createHealingDonePanel("players"),
+  extra_attacks: createExtraAttacksPanel(),
   all_activity: AllActivityPanel,
 };
 

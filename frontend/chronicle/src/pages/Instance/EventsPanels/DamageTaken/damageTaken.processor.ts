@@ -5,7 +5,7 @@
  */
 
 import { GUID } from "@/lib/guid/guid";
-import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
 
@@ -44,7 +44,7 @@ export type DamageTakenResult = {
  */
 export function createDamageTakenProcessor(
   targetType: DamageTargetType
-): PanelProcessor<DamageTakenResult> {
+): PanelProcessor<DamageTakenResult, DamageProcessorEvent> {
   const id = targetType === "players" ? "damage_taken" : `damage_taken_${targetType}`;
   
   return {
@@ -59,13 +59,12 @@ export function createDamageTakenProcessor(
 
     processEvent: (
       state: DamageTakenResult,
-      event: ProcessorEvent,
+      event: DamageProcessorEvent,
       encounterID: string,
-      streamType: string,
+      _streamType: string,
       context: ProcessorContext
     ) => {
-      // Only process damage events
-      if (streamType !== "damage") return;
+      // Only damage events reach here (enforced by type)
       if (!event.target) return;
 
       const targetGuid = GUID.fromString(event.target);

@@ -15,6 +15,7 @@ type EncounterEvents struct {
 	Damage         *Builder[messages.Damage, *chronicleproto.Damage]
 	Heal           *Builder[messages.Heal, *chronicleproto.Heal]
 	ResourceChange *Builder[messages.ResourceChange, *chronicleproto.ResourceChange]
+	ExtraAttack    *Builder[messages.ExtraAttack, *chronicleproto.ExtraAttack]
 	cnter          int32
 }
 
@@ -23,6 +24,7 @@ func New() *EncounterEventsInProgress {
 		Damage:         NewBuilder[messages.Damage, *chronicleproto.Damage](),
 		Heal:           NewBuilder[messages.Heal, *chronicleproto.Heal](),
 		ResourceChange: NewBuilder[messages.ResourceChange, *chronicleproto.ResourceChange](),
+		ExtraAttack:    NewBuilder[messages.ExtraAttack, *chronicleproto.ExtraAttack](),
 	}
 }
 
@@ -42,9 +44,15 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing resource change events: %w", err)
 	}
 
+	extraAttack, err := e.ExtraAttack.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing extra attack events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
+	merge.ExtraAttack = append(merge.ExtraAttack, extraAttack...)
 
 	return nil
 }

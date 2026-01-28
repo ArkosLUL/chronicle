@@ -4,6 +4,7 @@
 
 import { useMemo, useCallback } from "react";
 import { GenericPanel } from "../GenericPanel";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import type { PanelRenderProps } from "../types";
 import type { DeathsResult, DeathEvent } from "./deaths.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
@@ -98,7 +99,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
           {loading || processing ? "Loading..." : "No deaths recorded"}
         </div>
       ) : (
-        <div className="max-h-[400px] overflow-y-auto">
+        <ScrollArea className="max-h-[400px]">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border text-muted-foreground">
@@ -152,7 +153,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollArea>
       )}
     </GenericPanel>
   );

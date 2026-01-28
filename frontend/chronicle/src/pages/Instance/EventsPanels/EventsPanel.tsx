@@ -17,6 +17,7 @@ import { createHealingTakenPanel } from "./HealingTaken/HealingTaken";
 import { createDeathsPanel } from "./Deaths/Deaths";
 import { createDeathLogPanel } from "./Deaths/DeathLog";
 import { AllActivityPanel } from "./AllActivity";
+import { AllActivityDebugPanel } from "./AllActivityDebug";
 
 // Registry of all available panels
 // Using `any` here to allow different result types per panel.
@@ -34,6 +35,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   deaths: createDeathsPanel(),
   death_log: createDeathLogPanel(),
   all_activity: AllActivityPanel,
+  all_activity_debug: AllActivityDebugPanel,
 };
 
 export type EventsPanelType = keyof typeof PANELS;

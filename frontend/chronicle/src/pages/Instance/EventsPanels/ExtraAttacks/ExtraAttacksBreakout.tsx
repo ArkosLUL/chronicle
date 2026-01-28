@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import type { ExtraAttacksResult, ExtraAttacksData } from "./extraAttacks.processor";
 import type { PanelContext } from "../types";
 
@@ -43,7 +44,7 @@ function ExtraAttackTable({
   const sorted = [...abilities].sort((a, b) => b.totalAttacks - a.totalAttacks);
 
   return (
-    <div className="max-h-64 overflow-y-auto">
+    <ScrollArea className="max-h-64">
       <table className="w-full text-xs text-foreground">
         <thead className="sticky top-0 bg-popover">
           <tr className="border-b border-border">
@@ -76,7 +77,7 @@ function ExtraAttackTable({
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
   );
 }
 

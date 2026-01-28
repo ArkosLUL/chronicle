@@ -1,45 +1,129 @@
 import { useCallback, useState } from "react";
 import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } from "@/components/ui/AbilityBreakout";
-import type { HealingTakenResult } from "./healingTaken.processor";
+import type { UnifiedHealingResult } from "../processors";
 import type { PanelContext } from "../types";
+import type { HealingViewMode } from "./HealingTakenContent";
 
 /**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
+ * Uses either effective or overheal data based on view mode.
  */
 function getAbilitiesForUnit(
-  result: HealingTakenResult,
-  unitId: string
+  result: UnifiedHealingResult,
+  unitId: string,
+  viewMode: HealingViewMode
 ): AbilityData[] {
-  const unitAbilities = result.ByAbility.get(unitId);
-  if (!unitAbilities) return [];
-
+  const effectiveAbilities = result.TargetByAbility.get(unitId);
+  const overhealAbilities = result.TargetByAbilityOverheal.get(unitId);
+  
+  if (viewMode === "overheal") {
+    if (!overhealAbilities) return [];
+    const abilities: AbilityData[] = [];
+    for (const [abilityName, data] of overhealAbilities) {
+      abilities.push({
+        ...data,
+        name: abilityName,
+        value: data.Total,
+      });
+    }
+    return abilities.sort((a, b) => b.value - a.value);
+  }
+  
+  if (viewMode === "total") {
+    const combined = new Map<string, AbilityData>();
+    
+    if (effectiveAbilities) {
+      for (const [abilityName, data] of effectiveAbilities) {
+        combined.set(abilityName, {
+          ...data,
+          name: abilityName,
+          value: data.Total,
+        });
+      }
+    }
+    
+    if (overhealAbilities) {
+      for (const [abilityName, data] of overhealAbilities) {
+        const existing = combined.get(abilityName);
+        if (existing) {
+          existing.value += data.Total;
+        } else {
+          combined.set(abilityName, {
+            ...data,
+            name: abilityName,
+            value: data.Total,
+          });
+        }
+      }
+    }
+    
+    return Array.from(combined.values()).sort((a, b) => b.value - a.value);
+  }
+  
+  // Default: effective - include overheal as separate column
+  if (!effectiveAbilities) return [];
   const abilities: AbilityData[] = [];
-  for (const [abilityName, data] of unitAbilities) {
+  for (const [abilityName, data] of effectiveAbilities) {
+    const overhealData = overhealAbilities?.get(abilityName);
     abilities.push({
       ...data,
       name: abilityName,
       value: data.Total,
+      overheal: overhealData?.Total,
     });
+  }
+  
+  // Also add abilities that only have overheal (no effective healing)
+  if (overhealAbilities) {
+    for (const [abilityName, data] of overhealAbilities) {
+      if (!effectiveAbilities?.has(abilityName)) {
+        abilities.push({
+          ...data,
+          name: abilityName,
+          value: 0,
+          overheal: data.Total,
+        });
+      }
+    }
   }
 
   return abilities.sort((a, b) => b.value - a.value);
 }
 
 /**
- * Get the total healing for a unit from the ByAbility map.
+ * Get the total healing for a unit based on view mode.
  */
 function getTotalForUnit(
-  result: HealingTakenResult,
-  unitId: string
+  result: UnifiedHealingResult,
+  unitId: string,
+  viewMode: HealingViewMode
 ): number {
-  const unitAbilities = result.ByAbility.get(unitId);
-  if (!unitAbilities) return 0;
-
-  let total = 0;
-  for (const data of unitAbilities.values()) {
-    total += data.Total;
+  const effectiveAbilities = result.TargetByAbility.get(unitId);
+  const overhealAbilities = result.TargetByAbilityOverheal.get(unitId);
+  
+  let effectiveTotal = 0;
+  let overhealTotal = 0;
+  
+  if (effectiveAbilities) {
+    for (const data of effectiveAbilities.values()) {
+      effectiveTotal += data.Total;
+    }
   }
-  return total;
+  
+  if (overhealAbilities) {
+    for (const data of overhealAbilities.values()) {
+      overhealTotal += data.Total;
+    }
+  }
+  
+  switch (viewMode) {
+    case "effective":
+      return effectiveTotal;
+    case "overheal":
+      return overhealTotal;
+    case "total":
+      return effectiveTotal + overhealTotal;
+  }
 }
 
 /**
@@ -47,37 +131,81 @@ function getTotalForUnit(
  * This shows who healed this unit (healer breakdown).
  */
 function getSourcesForUnit(
-  result: HealingTakenResult,
+  result: UnifiedHealingResult,
   unitId: string,
-  context: PanelContext
+  context: PanelContext,
+  viewMode: HealingViewMode
 ): TargetData[] {
-  const unitSources = result.BySource.get(unitId);
-  if (!unitSources) return [];
+  const effectiveSources = result.TargetBySource.get(unitId);
+  const overhealSources = result.TargetBySourceOverheal.get(unitId);
   
+  if (viewMode === "overheal") {
+    if (!overhealSources) return [];
+    const sources: TargetData[] = [];
+    for (const [sourceId, value] of overhealSources) {
+      let sourceName = sourceId;
+      if (context.instance.players?.[sourceId]) {
+        sourceName = context.instance.players[sourceId].name;
+      } else if (context.instance.units?.[sourceId]) {
+        sourceName = context.instance.units[sourceId].name;
+      }
+      sources.push({ targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
+    }
+    return sources.sort((a, b) => b.value - a.value);
+  }
+  
+  if (viewMode === "total") {
+    const combined = new Map<string, TargetData>();
+    
+    if (effectiveSources) {
+      for (const [sourceId, value] of effectiveSources) {
+        let sourceName = sourceId;
+        if (context.instance.players?.[sourceId]) {
+          sourceName = context.instance.players[sourceId].name;
+        } else if (context.instance.units?.[sourceId]) {
+          sourceName = context.instance.units[sourceId].name;
+        }
+        combined.set(sourceId, { targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
+      }
+    }
+    
+    if (overhealSources) {
+      for (const [sourceId, value] of overhealSources) {
+        const existing = combined.get(sourceId);
+        if (existing) {
+          existing.value += value;
+        } else {
+          let sourceName = sourceId;
+          if (context.instance.players?.[sourceId]) {
+            sourceName = context.instance.players[sourceId].name;
+          } else if (context.instance.units?.[sourceId]) {
+            sourceName = context.instance.units[sourceId].name;
+          }
+          combined.set(sourceId, { targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
+        }
+      }
+    }
+    
+    return Array.from(combined.values()).sort((a, b) => b.value - a.value);
+  }
+  
+  // Default: effective only
+  if (!effectiveSources) return [];
   const sources: TargetData[] = [];
-  for (const [sourceId, value] of unitSources) {
-    // Try to resolve source name from players or units
+  for (const [sourceId, value] of effectiveSources) {
     let sourceName = sourceId;
     if (context.instance.players?.[sourceId]) {
       sourceName = context.instance.players[sourceId].name;
     } else if (context.instance.units?.[sourceId]) {
       sourceName = context.instance.units[sourceId].name;
     }
-    
-    sources.push({
-      targetId: sourceId,
-      targetName: sourceName,
-      value,
-      hitCount: 0,
-      critCount: 0,
-    });
+    sources.push({ targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
   }
-  
   return sources.sort((a, b) => b.value - a.value);
 }
 
 export interface UseHealingTakenBreakoutOptions {
-  result: HealingTakenResult | undefined;
+  result: UnifiedHealingResult | undefined;
   context: PanelContext;
   /** Label for the value column (e.g., "Healing", "HPS") */
   valueLabel?: string;
@@ -85,6 +213,8 @@ export interface UseHealingTakenBreakoutOptions {
   durationMs?: number;
   loading?: boolean;
   processing?: boolean;
+  /** View mode for healing display */
+  viewMode?: HealingViewMode;
 }
 
 /**
@@ -99,6 +229,7 @@ export function useHealingTakenBreakout({
   durationMs,
   loading = false,
   processing = false,
+  viewMode = "effective",
 }: UseHealingTakenBreakoutOptions) {
   // Track tab selection per player so it persists across reloads
   const [tabByPlayer, setTabByPlayer] = useState<Map<string, BreakoutTab>>(new Map());
@@ -123,15 +254,16 @@ export function useHealingTakenBreakout({
         );
       }
 
-      const abilities = getAbilitiesForUnit(result, playerID);
-      const sources = getSourcesForUnit(result, playerID, context);
-      const totalValue = getTotalForUnit(result, playerID);
+      const abilities = getAbilitiesForUnit(result, playerID, viewMode);
+      const sources = getSourcesForUnit(result, playerID, context, viewMode);
+      const totalValue = getTotalForUnit(result, playerID, viewMode);
 
       // Convert to per-second if needed
       const displayAbilities = perSecond && durationMs
         ? abilities.map((a) => ({
             ...a,
             value: (a.value / durationMs) * 1000,
+            overheal: a.overheal !== undefined ? (a.overheal / durationMs) * 1000 : undefined,
           }))
         : abilities;
 
@@ -146,7 +278,9 @@ export function useHealingTakenBreakout({
         ? (totalValue / durationMs) * 1000
         : totalValue;
 
-      const displayLabel = perSecond ? "HPS" : valueLabel;
+      const displayLabel = perSecond 
+        ? (viewMode === "overheal" ? "OPS" : "HPS") 
+        : valueLabel;
 
       return (
         <AbilityBreakout
@@ -157,11 +291,13 @@ export function useHealingTakenBreakout({
           pinned={pinned}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          targetTabLabel="Healed By"
+          targetTabLabel={viewMode === "overheal" ? "Overhealed By" : "Healed By"}
+          showHits={false}
+          showOverheal={viewMode === "effective"}
         />
       );
     },
-    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer]
+    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer, viewMode]
   );
 
   return breakout;

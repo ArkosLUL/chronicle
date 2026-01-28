@@ -3,6 +3,7 @@
  */
 
 import { formatNumber } from "@/lib/format";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import type { PanelRenderProps, EntityValueMap } from "./types";
 
 export interface EntityValueListProps extends PanelRenderProps<EntityValueMap> {
@@ -57,36 +58,38 @@ export function EntityValueList({
       </div>
       
       {/* Simple list display - can be replaced with chart later */}
-      <div className="max-h-64 overflow-y-auto space-y-1">
-        {sortedEntries.slice(0, 20).map(([id, value]) => {
-          const displayValue = perSecond && durationMs > 0
-            ? formatNumber(value / durationMs * 1000)
-            : formatNumber(value);
-          const percent = totalValue > 0 ? (value / totalValue) * 100 : 0;
-          
-          return (
-            <div key={id} className="flex items-center gap-2 text-xs">
-              <div className="flex-1 truncate" title={id}>
-                {id}
+      <ScrollArea className="max-h-64">
+        <div className="space-y-1">
+          {sortedEntries.slice(0, 20).map(([id, value]) => {
+            const displayValue = perSecond && durationMs > 0
+              ? formatNumber(value / durationMs * 1000)
+              : formatNumber(value);
+            const percent = totalValue > 0 ? (value / totalValue) * 100 : 0;
+            
+            return (
+              <div key={id} className="flex items-center gap-2 text-xs">
+                <div className="flex-1 truncate" title={id}>
+                  {id}
+                </div>
+                <div className="w-24 bg-muted rounded-full h-1.5">
+                  <div
+                    className="bg-primary h-1.5 rounded-full"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+                <div className="w-16 text-right font-mono">
+                  {displayValue}{perSecond ? "/s" : ""}
+                </div>
               </div>
-              <div className="w-24 bg-muted rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-              <div className="w-16 text-right font-mono">
-                {displayValue}{perSecond ? "/s" : ""}
-              </div>
+            );
+          })}
+          {sortedEntries.length > 20 && (
+            <div className="text-xs text-muted-foreground">
+              ...and {sortedEntries.length - 20} more
             </div>
-          );
-        })}
-        {sortedEntries.length > 20 && (
-          <div className="text-xs text-muted-foreground">
-            ...and {sortedEntries.length - 20} more
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } from "@/components/ui/AbilityBreakout";
-import type { HealingDoneResult } from "./healingDone.processor";
+import type { UnifiedHealingResult } from "../processors";
 import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingDoneContent";
 
@@ -9,13 +9,13 @@ import type { HealingViewMode } from "./HealingDoneContent";
  * Uses either effective or overheal data based on view mode.
  */
 function getAbilitiesForUnit(
-  result: HealingDoneResult,
+  result: UnifiedHealingResult,
   unitId: string,
   viewMode: HealingViewMode
 ): AbilityData[] {
   // Choose which ability map to use based on view mode
-  const effectiveAbilities = result.ByAbility.get(unitId);
-  const overhealAbilities = result.ByAbilityOverheal.get(unitId);
+  const effectiveAbilities = result.HealerByAbility.get(unitId);
+  const overhealAbilities = result.HealerByAbilityOverheal.get(unitId);
   
   if (viewMode === "overheal") {
     // Only show overhealing
@@ -98,12 +98,12 @@ function getAbilitiesForUnit(
  * Get the total healing for a unit based on view mode.
  */
 function getTotalForUnit(
-  result: HealingDoneResult,
+  result: UnifiedHealingResult,
   unitId: string,
   viewMode: HealingViewMode
 ): number {
-  const effectiveAbilities = result.ByAbility.get(unitId);
-  const overhealAbilities = result.ByAbilityOverheal.get(unitId);
+  const effectiveAbilities = result.HealerByAbility.get(unitId);
+  const overhealAbilities = result.HealerByAbilityOverheal.get(unitId);
   
   let effectiveTotal = 0;
   let overhealTotal = 0;
@@ -135,13 +135,13 @@ function getTotalForUnit(
  * This shows who received healing FROM this unit.
  */
 function getTargetsForUnit(
-  result: HealingDoneResult,
+  result: UnifiedHealingResult,
   unitId: string,
   context: PanelContext,
   viewMode: HealingViewMode
 ): TargetData[] {
-  const effectiveTargets = result.ByTarget.get(unitId);
-  const overhealTargets = result.ByTargetOverheal.get(unitId);
+  const effectiveTargets = result.HealerByTarget.get(unitId);
+  const overhealTargets = result.HealerByTargetOverheal.get(unitId);
   
   if (viewMode === "overheal") {
     if (!overhealTargets) return [];
@@ -209,7 +209,7 @@ function getTargetsForUnit(
 }
 
 export interface UseHealingDoneBreakoutOptions {
-  result: HealingDoneResult | undefined;
+  result: UnifiedHealingResult | undefined;
   context: PanelContext;
   /** Label for the value column (e.g., "Healing", "HPS") */
   valueLabel?: string;

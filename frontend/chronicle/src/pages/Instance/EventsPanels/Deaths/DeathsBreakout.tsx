@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import type { DeathsResult } from "./deaths.processor";
 import type { PanelContext } from "../types";
 
@@ -39,7 +40,7 @@ function KillerTable({ killers, totalDeaths }: KillerTableProps) {
   const sorted = [...killers].sort((a, b) => b.count - a.count);
 
   return (
-    <div className="max-h-64 overflow-y-auto">
+    <ScrollArea className="max-h-64">
       <table className="w-full text-xs text-foreground">
         <thead className="sticky top-0 bg-popover">
           <tr className="border-b border-border">
@@ -75,7 +76,7 @@ function KillerTable({ killers, totalDeaths }: KillerTableProps) {
           </tr>
         </tfoot>
       </table>
-    </div>
+    </ScrollArea>
   );
 }
 

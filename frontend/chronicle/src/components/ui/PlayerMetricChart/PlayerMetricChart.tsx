@@ -5,6 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip/tooltip";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { useMouse } from '@/hooks/useMouse';
 import { cn } from '@/lib/utils';
 import { X, GripHorizontal } from 'lucide-react';
@@ -71,6 +72,8 @@ export function PlayerMetricChart({
   perSecond,
   duration_millis,
   breakout,
+  // Exclude dir from divProps to avoid type conflict with ScrollArea
+  dir: _dir,
   ...divProps
 }: PlayerMetricChartProps) {
   // Track which rows have pinned tooltips (multiple allowed)
@@ -126,11 +129,9 @@ export function PlayerMetricChart({
   }
 
   return (
-    <div
+    <ScrollArea
       style={{
         height: "400px", // Default
-        overflowY: 'auto',
-        overflowX: 'hidden',
         ...style,
       }}
       className={className}
@@ -155,7 +156,7 @@ export function PlayerMetricChart({
           />
         })}
       </div>
-    </div>
+    </ScrollArea>
   )
 }
 

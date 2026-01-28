@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea"
 
 // ============================================================================
 // Types
@@ -132,7 +133,7 @@ export function AbilityBreakdownTable({
   const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
 
   return (
-    <div className="max-h-64 overflow-y-auto">
+    <ScrollArea className="max-h-64">
       <table className={cn("w-full text-xs", textClass)}>
         <thead className={cn("sticky top-0", headerBgClass)}>
           <tr className={cn("border-b", borderClass)}>
@@ -172,7 +173,7 @@ export function AbilityBreakdownTable({
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
   )
 }
 
@@ -249,7 +250,7 @@ export function TargetBreakdownTable({
   const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
 
   return (
-    <div className="max-h-64 overflow-y-auto">
+    <ScrollArea className="max-h-64">
       <table className={cn("w-full text-xs", textClass)}>
         <thead className={cn("sticky top-0", headerBgClass)}>
           <tr className={cn("border-b", borderClass)}>
@@ -289,7 +290,7 @@ export function TargetBreakdownTable({
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
   )
 }
 

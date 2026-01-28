@@ -195,7 +195,9 @@ function EncounterSidebar({
   onSelectMany: (ids: string[]) => void;
   onCollapse: () => void;
 }) {
-  const bossEncounters = encounters.filter((e) => e.boss);
+  const bossEncounters = encounters
+    .filter((e) => e.boss)
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   const trashEncounterIds = trashGroups.flatMap(g => g.encounters.map(e => e.id));
   const totalTrash = trashGroups.reduce((sum, g) => sum + g.encounters.length, 0);
 

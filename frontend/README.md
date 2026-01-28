@@ -6,7 +6,7 @@ https://registry.lloydrichards.dev/
 https://registry.lloydrichards.dev/storybook/?path=/docs/ui-accordion--docs
 ```bash
 pnpm dlx shadcn@latest add navigation-menu
-pnpm dlx shadcn@latest add @storybook/alert-story
+pnpm dlx shadcn@latest add @storybook/scroll-area-story
 ```
 
 https://registry.lloydrichards.dev/storybook/?path=/story/ui-menubar--with-submenu

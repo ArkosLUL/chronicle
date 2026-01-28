@@ -4,27 +4,23 @@
 
 import { Heart } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
-import { 
-  healingDoneProcessor,
-  type HealingDoneResult 
-} from "./healingDone.processor";
+import { unifiedHealingProcessor, type UnifiedHealingResult } from "../processors";
 import { HealingDoneContent } from "./HealingDoneContent";
-import type { HealingSourceType } from "./healingDone.processor";
 
-// Re-export for convenience
-export type { HealingSourceType } from "./healingDone.processor";
+/**
+ * Entity source types for healing aggregation
+ */
+export type HealingSourceType = "players";
 
 interface HealingSourceConfig {
   label: string;
   icon: React.ReactNode;
-  processor: typeof healingDoneProcessor;
 }
 
 const HEALING_SOURCE_CONFIGS: Record<HealingSourceType, HealingSourceConfig> = {
   players: {
     label: "Healing Done",
     icon: <Heart className="h-4 w-4" />,
-    processor: healingDoneProcessor,
   },
 };
 
@@ -34,15 +30,16 @@ const HEALING_SOURCE_CONFIGS: Record<HealingSourceType, HealingSourceConfig> = {
 export function createHealingDonePanel(
   sourceType: HealingSourceType
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): PanelDefinition<HealingDoneResult, any> {
+): PanelDefinition<UnifiedHealingResult, any> {
   const config = HEALING_SOURCE_CONFIGS[sourceType];
   
   return {
-    ...config.processor,
+    ...unifiedHealingProcessor,
+    id: "healing_done", // Override processor id to match registry key
     label: config.label,
     icon: config.icon,
     
-    render: (props: PanelRenderProps<HealingDoneResult>) => {
+    render: (props: PanelRenderProps<UnifiedHealingResult>) => {
       return <HealingDoneContent {...props} sourceType={sourceType} />;
     },
   };

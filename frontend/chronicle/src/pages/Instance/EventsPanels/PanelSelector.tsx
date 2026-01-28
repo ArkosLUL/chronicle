@@ -5,6 +5,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { PANELS, type EventsPanelType } from "./EventsPanel";
 
 interface PanelOption {
@@ -42,7 +43,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Activity",
-    items: ["all_activity"],
+    items: ["all_activity", "all_activity_debug"],
   },
 ];
 
@@ -199,83 +200,85 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
           </div>
 
           {/* Results */}
-          <div className="max-h-[300px] overflow-y-auto p-1">
-            {filteredResults ? (
-              // Search results
-              filteredResults.length > 0 ? (
-                filteredResults.map(({ option, category }) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={cn(
-                      "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
-                      "hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                      option.value === value && "bg-accent/50"
-                    )}
-                  >
-                    <span className="text-muted-foreground">{option.icon}</span>
-                    <span className="flex-1">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{category}</span>
-                  </button>
-                ))
-              ) : (
-                <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                  No panels found
-                </div>
-              )
-            ) : (
-              // Category tree
-              PANEL_CATEGORIES.map((category) => (
-                <div key={category.label}>
-                  {/* Category header */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedCategory(expandedCategory === category.label ? null : category.label)
-                    }
-                    className="w-full text-left px-2 py-1.5 text-sm font-medium rounded-sm flex items-center gap-1.5 hover:bg-accent/50 cursor-pointer"
-                  >
-                    <ChevronRight
+          <ScrollArea className="max-h-[300px]">
+            <div className="p-1">
+              {filteredResults ? (
+                // Search results
+                filteredResults.length > 0 ? (
+                  filteredResults.map(({ option, category }) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSelect(option.value)}
                       className={cn(
-                        "size-4 transition-transform",
-                        expandedCategory === category.label && "rotate-90"
+                        "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
+                        "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                        option.value === value && "bg-accent/50"
                       )}
-                    />
-                    <span className="text-muted-foreground">{getCategoryIcon(category)}</span>
-                    {category.label}
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {category.items.length}
-                    </span>
-                  </button>
+                    >
+                      <span className="text-muted-foreground">{option.icon}</span>
+                      <span className="flex-1">{option.label}</span>
+                      <span className="text-xs text-muted-foreground">{category}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                    No panels found
+                  </div>
+                )
+              ) : (
+                // Category tree
+                PANEL_CATEGORIES.map((category) => (
+                  <div key={category.label}>
+                    {/* Category header */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedCategory(expandedCategory === category.label ? null : category.label)
+                      }
+                      className="w-full text-left px-2 py-1.5 text-sm font-medium rounded-sm flex items-center gap-1.5 hover:bg-accent/50 cursor-pointer"
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "size-4 transition-transform",
+                          expandedCategory === category.label && "rotate-90"
+                        )}
+                      />
+                      <span className="text-muted-foreground">{getCategoryIcon(category)}</span>
+                      {category.label}
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {category.items.length}
+                      </span>
+                    </button>
 
-                  {/* Category items */}
-                  {expandedCategory === category.label && (
-                    <div className="ml-4 border-l pl-1">
-                      {category.items.map((panelKey) => {
-                        const item = getPanelOption(panelKey);
-                        return (
-                          <button
-                            key={item.value}
-                            type="button"
-                            onClick={() => handleSelect(item.value)}
-                            className={cn(
-                              "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
-                              "hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                              item.value === value && "bg-accent/50"
-                            )}
-                          >
-                            <span className="text-muted-foreground">{item.icon}</span>
-                            {item.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+                    {/* Category items */}
+                    {expandedCategory === category.label && (
+                      <div className="ml-4 border-l pl-1">
+                        {category.items.map((panelKey) => {
+                          const item = getPanelOption(panelKey);
+                          return (
+                            <button
+                              key={item.value}
+                              type="button"
+                              onClick={() => handleSelect(item.value)}
+                              className={cn(
+                                "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
+                                "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                item.value === value && "bg-accent/50"
+                              )}
+                            >
+                              <span className="text-muted-foreground">{item.icon}</span>
+                              {item.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </div>
       )}
     </div>

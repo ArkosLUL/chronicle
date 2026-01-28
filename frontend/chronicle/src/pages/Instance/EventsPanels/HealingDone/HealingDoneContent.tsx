@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { HealingDoneResult, HealingSourceType } from "./healingDone.processor";
+import type { UnifiedHealingResult } from "../processors";
+import type { HealingSourceType } from "./HealingDone";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useHealingDoneBreakout } from "./HealingDoneBreakout";
 import { formatNumber } from "@/lib/format";
@@ -23,7 +24,7 @@ export type HealingViewMode = "effective" | "overheal" | "total";
  *   - "total": value = total healing (effective + overheal), no stacked
  */
 function aggregateForEncounters(
-  result: HealingDoneResult,
+  result: UnifiedHealingResult,
   selectedEncounterIds: string[],
   selected: EntitySelection,
   viewMode: HealingViewMode,
@@ -33,7 +34,7 @@ function aggregateForEncounters(
   const filterByTarget = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
-    const encounterHealing = result.EncounterHealing.get(encounterId);
+    const encounterHealing = result.EncounterHealingByHealer.get(encounterId);
     if (!encounterHealing) continue;
     
     for (const [playerId, data] of encounterHealing) {
@@ -102,7 +103,7 @@ function aggregateForEncounters(
 }
 
 
-interface HealingDoneContentProps extends PanelRenderProps<HealingDoneResult> {
+interface HealingDoneContentProps extends PanelRenderProps<UnifiedHealingResult> {
   sourceType?: HealingSourceType;
 }
 
@@ -113,7 +114,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterHealing.size > 0,
+    (r) => r.EncounterHealingByHealer.size > 0,
     [sourceType]
   );
 

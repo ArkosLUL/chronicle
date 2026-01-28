@@ -34,8 +34,15 @@ func NewBuilder[M messages.Message, PM proto.Message]() *Builder[M, PM] {
 func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
 	header := make([]byte, 0, 50)
 
+	// Use timestamp=0 for empty encounters (First is zero time if no events added)
+	// This avoids encoding a huge negative number when zero time is cast to uint64
+	var timestampMs int64
+	if !b.First.IsZero() {
+		timestampMs = b.First.UnixMilli()
+	}
+
 	header = protowire.AppendString(header, encounterID.String())
-	header = protowire.AppendVarint(header, uint64(b.First.UnixMilli()))
+	header = protowire.AppendVarint(header, uint64(timestampMs))
 	header = protowire.AppendVarint(header, uint64(b.Count))
 	header = protowire.AppendVarint(header, uint64(b.data.Len()))
 

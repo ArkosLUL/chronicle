@@ -5,7 +5,7 @@
  * It receives stream data and context, processes events, and returns results.
  */
 
-import { FastDamageCursor } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
@@ -40,7 +40,10 @@ function processStreams<TResult>(
   const context = deserializeContext(serializableContext);
   
   for (const stream of streams) {
-    const cursor = new FastDamageCursor(stream.data);
+    // Use the appropriate cursor based on stream type
+    const cursor = stream.type === "heal" 
+      ? new FastHealCursor(stream.data)
+      : new FastDamageCursor(stream.data);
     
     while (cursor.currentHeader) {
       const encounterID = cursor.currentHeader.encounterID;

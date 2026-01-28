@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card/Card"
 import { Button } from "@/components/ui/button"
-import { decodePayload, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader } from "@/api/protodecode/decode"
+import { decodePayload, decodeAllPayloads, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader, type DecodedPayload } from "@/api/protodecode/decode"
 import { DamageSchema, type Damage, HealSchema, type Heal, ResourceChangeSchema, type ResourceChange, School } from "@/api/proto/chronicle_pb"
 import type { GenMessage, Message } from "@bufbuild/protobuf"
 
@@ -37,6 +37,7 @@ export function ProtoDecode() {
   const [instanceId, setInstanceId] = useState("")
   const [mode, setMode] = useState<DecodeMode>("payload")
   const [eventType, setEventType] = useState<EventType>("damage")
+  const [allPayloads, setAllPayloads] = useState<DecodedPayload<AnyEventMessage>[]>([])
   const [header, setHeader] = useState<PayloadHeader | null>(null)
   const [messages, setMessages] = useState<AnyEventMessage[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +59,7 @@ export function ProtoDecode() {
     setError(null)
     setHeader(null)
     setMessages([])
+    setAllPayloads([])
     setLoading(true)
 
     try {
@@ -85,9 +87,16 @@ export function ProtoDecode() {
       }
 
       if (mode === "payload") {
-        const result = decodePayload(schema, data)
-        setHeader(result.header)
-        setMessages(result.messages as AnyEventMessage[])
+        // Decode ALL encounters
+        const payloads = decodeAllPayloads(schema, data)
+        setAllPayloads(payloads as DecodedPayload<AnyEventMessage>[])
+        // Also set first encounter for backward compat
+        if (payloads.length > 0) {
+          setHeader(payloads[0].header)
+          // Flatten all messages for display
+          const allMsgs = payloads.flatMap(p => p.messages)
+          setMessages(allMsgs as AnyEventMessage[])
+        }
       } else {
         const msgs = decodeDelimitedMessages(schema, data)
         setMessages(msgs as AnyEventMessage[])
@@ -473,22 +482,39 @@ export function ProtoDecode() {
         </Card>
       )}
 
-      {header && (
+      {allPayloads.length > 0 && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Header</CardTitle>
+            <CardTitle>Encounters ({allPayloads.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <dt className="font-medium text-muted-foreground">Encounter ID:</dt>
-              <dd className="font-mono">{header.encounterID}</dd>
-              <dt className="font-medium text-muted-foreground">First Timestamp:</dt>
-              <dd>{header.firstTimestamp.toISOString()}</dd>
-              <dt className="font-medium text-muted-foreground">Message Count:</dt>
-              <dd>{header.count}</dd>
-              <dt className="font-medium text-muted-foreground">Data Length:</dt>
-              <dd>{header.dataLength.toLocaleString()} bytes</dd>
-            </dl>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">#</th>
+                    <th className="text-left p-2">Encounter ID</th>
+                    <th className="text-left p-2">Timestamp</th>
+                    <th className="text-right p-2">Count</th>
+                    <th className="text-right p-2">Data Size</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allPayloads.map((payload, i) => (
+                    <tr key={i} className="border-b hover:bg-muted/50">
+                      <td className="p-2 text-muted-foreground">{i}</td>
+                      <td className="p-2 font-mono text-xs">{payload.header.encounterID}</td>
+                      <td className="p-2">{isNaN(payload.header.firstTimestamp.getTime()) ? "-" : payload.header.firstTimestamp.toISOString()}</td>
+                      <td className="p-2 text-right">{payload.header.count}</td>
+                      <td className="p-2 text-right">{payload.header.dataLength.toLocaleString()} B</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 text-sm text-muted-foreground">
+              Total messages: {allPayloads.reduce((sum, p) => sum + p.header.count, 0).toLocaleString()}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -576,10 +602,10 @@ function HealingTable({ messages }: { messages: Heal[] }) {
             <td className="p-2">{msg.meta?.index ?? "-"}</td>
             <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
             <td className="p-2">{msg.caster ?? "-"}</td>
-            <td className="p-2">{msg.sourceName}</td>
-            <td className="p-2">{msg.target}</td>
-            <td className="p-2 text-right">{msg.amount}</td>
-            <td className="p-2">{msg.hitType}</td>
+            <td className="p-2">{msg.sourceName ?? "-"}</td>
+            <td className="p-2">{msg.target ?? "-"}</td>
+            <td className="p-2 text-right">{msg.amount ?? 0}</td>
+            <td className="p-2">{msg.hitType ?? "-"}</td>
           </tr>
         ))}
       </tbody>
@@ -612,10 +638,10 @@ function ResourceChangeTable({ messages }: { messages: ResourceChange[] }) {
             <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
             <td className="p-2">{msg.caster ?? "-"}</td>
             <td className="p-2">{msg.sourceName ?? "-"}</td>
-            <td className="p-2">{msg.target}</td>
-            <td className="p-2 text-right">{msg.amount}</td>
-            <td className="p-2">{msg.resourceType}</td>
-            <td className="p-2">{msg.direction}</td>
+            <td className="p-2">{msg.target ?? "-"}</td>
+            <td className="p-2 text-right">{msg.amount ?? 0}</td>
+            <td className="p-2">{msg.resourceType ?? "-"}</td>
+            <td className="p-2">{msg.direction ?? "-"}</td>
           </tr>
         ))}
       </tbody>

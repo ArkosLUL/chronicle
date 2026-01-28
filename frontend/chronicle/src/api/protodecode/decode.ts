@@ -88,7 +88,12 @@ export function decodePayload<T extends DescMessage>(
   const { value: timestampMs, bytesRead: tsBytes } = readVarint64(data, offset);
   console.log(`timestampMs=${timestampMs}, tsBytes=${tsBytes}, offset=${offset}`);
   offset += tsBytes;
-  const firstTimestamp = new Date(Number(timestampMs));
+  // Handle potentially invalid timestamps (very large values indicate encoding issues)
+  // timestamp=0 is valid for empty encounters
+  const tsNumber = Number(timestampMs);
+  const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER 
+    ? new Date(tsNumber) 
+    : new Date(NaN);
 
   // Read count (varint)
   const { value: count, bytesRead: countBytes } = readVarint(data, offset);
@@ -115,6 +120,67 @@ export function decodePayload<T extends DescMessage>(
     },
     messages,
   };
+}
+
+/**
+ * Decodes ALL encounters from a payload with multiple concatenated encounter payloads.
+ * Returns an array of {header, messages} for each encounter.
+ */
+export function decodeAllPayloads<T extends DescMessage>(
+  schema: T,
+  data: Uint8Array
+): DecodedPayload<MessageShape<T>>[] {
+  const results: DecodedPayload<MessageShape<T>>[] = [];
+  let offset = 0;
+
+  console.log("=== DECODE ALL PAYLOADS ===");
+  console.log(`Total data length: ${data.length} bytes`);
+
+  while (offset < data.length) {
+    // Read encounterID (length-prefixed string)
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(data, offset);
+    offset += strLenBytes;
+    const encounterID = new TextDecoder().decode(data.subarray(offset, offset + strLen));
+    offset += strLen;
+
+    // Read firstTimestamp (varint, milliseconds since epoch)
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(data, offset);
+    offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER 
+      ? new Date(tsNumber) 
+      : new Date(NaN);
+
+    // Read count (varint)
+    const { value: count, bytesRead: countBytes } = readVarint(data, offset);
+    offset += countBytes;
+
+    // Read dataLength (varint)
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(data, offset);
+    offset += dataLenBytes;
+
+    console.log(`Encounter ${results.length}: id=${encounterID.slice(0,8)}..., count=${count}, dataLen=${dataLength}`);
+
+    // Decode messages for this encounter
+    const messages = count > 0 
+      ? decodeDelimitedMessages(schema, data.subarray(offset, offset + dataLength), count)
+      : [];
+
+    results.push({
+      header: {
+        encounterID,
+        firstTimestamp,
+        count,
+        dataLength,
+      },
+      messages,
+    });
+
+    offset += dataLength;
+  }
+
+  console.log(`Decoded ${results.length} encounters`);
+  return results;
 }
 
 /**
@@ -271,6 +337,230 @@ export class DamageDecoder {
     }
     
     return msg;
+  }
+}
+
+/**
+ * Reusable Heal message object (same shape as Damage for ProcessorEvent compatibility)
+ */
+export interface ReusableHeal {
+  index: number;
+  offsetMilli: number;
+  caster: string;
+  sourceName: string;
+  target: string;
+  hitType: number;
+  amount: number;
+  school: number; // Always 0 for heals, but kept for interface compat
+}
+
+/**
+ * Zero-allocation Heal decoder.
+ * 
+ * Heal proto field numbers:
+ *   1: meta (EventMeta)
+ *   3: caster (string)
+ *   4: target (string)      <-- different from Damage!
+ *   5: sourceName (string)  <-- different from Damage!
+ *   6: amount (int32)
+ *   7: hitType (uint32)
+ */
+export class HealDecoder {
+  private readonly textDecoder = new TextDecoder();
+  
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableHeal = {
+    index: 0,
+    offsetMilli: 0,
+    caster: "",
+    sourceName: "",
+    target: "",
+    hitType: 0,
+    amount: 0,
+    school: 0,
+  };
+  
+  /**
+   * Decode a Heal message into the reusable object.
+   * Returns the same `this.message` reference, mutated.
+   */
+  decode(data: Uint8Array, offset: number, length: number): ReusableHeal {
+    const end = offset + length;
+    const msg = this.message;
+    
+    // Reset fields
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.caster = "";
+    msg.sourceName = "";
+    msg.target = "";
+    msg.hitType = 0;
+    msg.amount = 0;
+    msg.school = 0;
+    
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+      
+      if (wireType === 0) {
+        // Varint
+        const { value, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        
+        if (fieldNumber === 6) msg.amount = value;
+        else if (fieldNumber === 7) msg.hitType = value;
+      } else if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        
+        if (fieldNumber === 1) {
+          // EventMeta - decode nested
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+            
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            }
+          }
+        } else if (fieldNumber === 3) {
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          // Heal field 4 = target (different from Damage!)
+          msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 5) {
+          // Heal field 5 = sourceName (different from Damage!)
+          msg.sourceName = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else {
+          offset += len;
+        }
+      }
+    }
+    
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for Heal events with zero-allocation decoding.
+ * Same API as FastDamageCursor but uses HealDecoder.
+ */
+export class FastHealCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new HealDecoder();
+  private offset: number = 0;
+  
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+  
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+  
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+  
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+  
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+  
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+  
+  /**
+   * Read the next message, returning the reusable message object.
+   * Returns null if no more messages in current encounter.
+   * WARNING: The returned object is reused - copy data if needed!
+   */
+  next(): ReusableHeal | null {
+    if (!this.hasMoreInEncounter) return null;
+    
+    // Read length prefix
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+    
+    // Decode into reusable message
+    const msg = this.decoder.decode(this.data, msgStart, length);
+    
+    // Advance
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+    
+    return msg;
+  }
+  
+  /**
+   * Move to the next encounter.
+   */
+  nextEncounter(): boolean {
+    // Skip remaining messages in current encounter
+    while (this.hasMoreInEncounter) {
+      this.next();
+    }
+    return this._loadNextEncounterHeader();
+  }
+  
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    
+    const startOffset = this.offset;
+    
+    // Read encounterID
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+    
+    // Read timestamp
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER 
+      ? new Date(tsNumber) 
+      : new Date(NaN);
+    
+    // Read count
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+    
+    // Read dataLength
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+    
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+    
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+    
+    return true;
   }
 }
 

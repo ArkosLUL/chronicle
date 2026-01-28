@@ -33,7 +33,6 @@ interface ExtraAttackTableProps {
 // eslint-disable-next-line react-refresh/only-export-components
 function ExtraAttackTable({ 
   abilities, 
-  totalProcs,
   totalAttacks,
 }: ExtraAttackTableProps) {
   if (!abilities || abilities.length === 0) {

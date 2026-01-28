@@ -4,7 +4,7 @@
 
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { StreamType } from "@/hooks/instanceEvents";
-import type { Instance, Encounter } from "../InstancePage";
+import type { Instance } from "../InstancePage";
 import type { ProcessorContext, ProcessorEvent } from "./processorTypes";
 import type { ReusableDamage } from "@/api/protodecode/decode";
 

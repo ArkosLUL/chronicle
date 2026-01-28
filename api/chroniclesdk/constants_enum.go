@@ -20,6 +20,8 @@ const (
 	WoWEventTypeResourceChange WoWEventType = "resource_change"
 	// WoWEventTypeExtraAttack is a WoWEventType of type extra_attack.
 	WoWEventTypeExtraAttack WoWEventType = "extra_attack"
+	// WoWEventTypeSlain is a WoWEventType of type slain.
+	WoWEventTypeSlain WoWEventType = "slain"
 )
 
 var ErrInvalidWoWEventType = errors.New("not a valid WoWEventType")
@@ -31,6 +33,7 @@ func WoWEventTypeValues() []WoWEventType {
 		WoWEventTypeHeal,
 		WoWEventTypeResourceChange,
 		WoWEventTypeExtraAttack,
+		WoWEventTypeSlain,
 	}
 }
 
@@ -51,6 +54,7 @@ var _WoWEventTypeValue = map[string]WoWEventType{
 	"heal":            WoWEventTypeHeal,
 	"resource_change": WoWEventTypeResourceChange,
 	"extra_attack":    WoWEventTypeExtraAttack,
+	"slain":           WoWEventTypeSlain,
 }
 
 // ParseWoWEventType attempts to convert a string to a WoWEventType.

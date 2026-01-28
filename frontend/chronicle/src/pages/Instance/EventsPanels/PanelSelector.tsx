@@ -26,7 +26,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Healing",
-    items: ["healing_done"],
+    items: ["healing_done", "healing_taken"],
   },
   {
     label: "Damage Taken",
@@ -35,6 +35,10 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   {
     label: "Procs",
     items: ["extra_attacks"],
+  },
+  {
+    label: "Deaths",
+    items: ["deaths"],
   },
   {
     label: "Activity",

@@ -537,6 +537,66 @@ func (x *ExtraAttack) GetSourceName() string {
 	return ""
 }
 
+type Slain struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	Caster        *string                `protobuf:"bytes,3,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Slain) Reset() {
+	*x = Slain{}
+	mi := &file_chronicle_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Slain) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Slain) ProtoMessage() {}
+
+func (x *Slain) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Slain.ProtoReflect.Descriptor instead.
+func (*Slain) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Slain) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *Slain) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *Slain) GetCaster() string {
+	if x != nil && x.Caster != nil {
+		return *x.Caster
+	}
+	return ""
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -588,7 +648,12 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06amount\x18\x03 \x01(\x05R\x06amount\x12\x1e\n" +
 	"\n" +
 	"sourceName\x18\x05 \x01(\tR\n" +
-	"sourceName*p\n" +
+	"sourceName\"v\n" +
+	"\x05Slain\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1b\n" +
+	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01B\t\n" +
+	"\a_caster*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -616,7 +681,7 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),            // 0: chronicleproto.School
 	(*Tailer)(nil),         // 1: chronicleproto.Tailer
@@ -625,6 +690,7 @@ var file_chronicle_proto_goTypes = []any{
 	(*Damage)(nil),         // 4: chronicleproto.Damage
 	(*ResourceChange)(nil), // 5: chronicleproto.ResourceChange
 	(*ExtraAttack)(nil),    // 6: chronicleproto.ExtraAttack
+	(*Slain)(nil),          // 7: chronicleproto.Slain
 }
 var file_chronicle_proto_depIdxs = []int32{
 	2, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
@@ -633,11 +699,12 @@ var file_chronicle_proto_depIdxs = []int32{
 	1, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
 	2, // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
 	2, // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2, // 6: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -648,13 +715,14 @@ func file_chronicle_proto_init() {
 	file_chronicle_proto_msgTypes[0].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[3].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[4].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

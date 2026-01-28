@@ -64,3 +64,9 @@ message ExtraAttack {
   int32 amount = 3;
   string sourceName = 5;
 }
+
+message Slain {
+  EventMeta meta = 1;
+  string target = 2;
+  optional string caster = 3;
+}

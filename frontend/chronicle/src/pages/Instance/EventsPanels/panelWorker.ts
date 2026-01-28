@@ -5,7 +5,7 @@
  * It receives stream data and context, processes events, and returns results.
  */
 
-import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
@@ -48,6 +48,8 @@ function processStreams<TResult>(
       ? new FastResourceChangeCursor(stream.data)
       : stream.type === "extra_attack"
       ? new FastExtraAttackCursor(stream.data)
+      : stream.type === "slain"
+      ? new FastSlainCursor(stream.data)
       : new FastDamageCursor(stream.data);
     
     while (cursor.currentHeader) {

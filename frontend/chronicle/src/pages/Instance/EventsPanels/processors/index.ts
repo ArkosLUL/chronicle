@@ -7,6 +7,8 @@ import { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor }
 import { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
 import { healingDoneProcessor } from "../HealingDone/healingDone.processor";
 import { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
+import { healingTakenProcessor } from "../HealingTaken/healingTaken.processor";
+import { deathsProcessor } from "../Deaths/deaths.processor";
 import { allActivityProcessor } from "./allActivity.processor";
 
 // Export individual processors
@@ -14,6 +16,8 @@ export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor }
 export { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
 export { healingDoneProcessor } from "../HealingDone/healingDone.processor";
 export { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
+export { healingTakenProcessor } from "../HealingTaken/healingTaken.processor";
+export { deathsProcessor } from "../Deaths/deaths.processor";
 export { allActivityProcessor } from "./allActivity.processor";
 
 // Export state types
@@ -21,6 +25,8 @@ export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceT
 export type { DamageTakenResult as DamageTakenState, DamageTakenData, DamageTargetType } from "../DamageTaken/damageTaken.processor";
 export type { HealingDoneResult as HealingDoneState, HealingDoneData, HealingSourceType } from "../HealingDone/healingDone.processor";
 export type { ExtraAttacksResult as ExtraAttacksState, ExtraAttacksData } from "../ExtraAttacks/extraAttacks.processor";
+export type { HealingTakenResult as HealingTakenState, HealingTakenData, HealingTargetType } from "../HealingTaken/healingTaken.processor";
+export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "../Deaths/deaths.processor";
 export type { AllActivityState } from "./allActivity.processor";
 
 // Export shared utilities
@@ -40,5 +46,7 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   damage_taken_enemies: enemyDamageTakenProcessor,
   healing_done: healingDoneProcessor,
   extra_attacks: extraAttacksProcessor,
+  healing_taken: healingTakenProcessor,
+  deaths: deathsProcessor,
   all_activity: allActivityProcessor,
 };

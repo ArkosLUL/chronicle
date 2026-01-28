@@ -66,10 +66,20 @@ export interface ExtraAttackProcessorEvent extends EventMeta {
 }
 
 /**
+ * Slain event from the "slain" stream.
+ * Indicates a unit was killed.
+ */
+export interface SlainProcessorEvent extends EventMeta {
+  type: "slain";
+  target: string;  // The unit that was slain (victim)
+  caster: string;  // The unit that killed the target (killer), may be empty
+}
+
+/**
  * Discriminated union of all event types.
  * Use event.type to narrow to a specific type.
  */
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent;
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

@@ -67,6 +67,17 @@ func ExtraAttack(from time.Time, idx int32, ea messages.ExtraAttack) *chroniclep
 	}
 }
 
+func Slain(from time.Time, idx int32, ea messages.Slain) *chronicleproto.Slain {
+	return &chronicleproto.Slain{
+		Meta: &chronicleproto.EventMeta{
+			Index:       idx,
+			OffsetMilli: ea.Timestamp.UnixMilli() - from.UnixMilli(),
+		},
+		Target: ea.Victim.String(),
+		Caster: OptionalGUID(ea.Killer),
+	}
+}
+
 func OptionalGUID(id *guid.GUID) *string {
 	if id == nil {
 		return nil

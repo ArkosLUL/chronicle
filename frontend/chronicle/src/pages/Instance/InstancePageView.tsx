@@ -453,7 +453,7 @@ const eventsPanelSerializer = {
     const validTypes: EventsPanelType[] = [
       'damage_done', 'enemy_damage_done', 'pet_damage_done', 
       'damage_taken', 'enemy_damage_taken', 'healing_done', 
-      'extra_attacks', 'all_activity'
+      'healing_taken', 'extra_attacks', 'deaths', 'all_activity'
     ];
     return v && validTypes.includes(v as EventsPanelType) ? v as EventsPanelType : d;
   },

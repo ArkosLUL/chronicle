@@ -2,7 +2,8 @@ import type {
   ExtraAttackProcessorEvent,
   HealProcessorEvent, 
   ProcessorEvent, 
-  ResourceChangeProcessorEvent 
+  ResourceChangeProcessorEvent,
+  SlainProcessorEvent
 } from "../processorTypes";
 
 export function isResourceChangeEvent(
@@ -31,4 +32,11 @@ export function isExtraAttackEvent(
   streamType: string
 ): event is ExtraAttackProcessorEvent {
   return streamType === "extra_attack" && event.type === "extra_attack";
+}
+
+export function isSlainEvent(
+  event: ProcessorEvent,
+  streamType: string
+): event is SlainProcessorEvent {
+  return streamType === "slain" && event.type === "slain";
 }

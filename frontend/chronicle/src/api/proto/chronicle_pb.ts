@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSpwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSJgCgVTbGFpbhInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRITCgZjYXN0ZXIYAyABKAlIAIgBAUIJCgdfY2FzdGVyKnAKBlNjaG9vbBILCgdVbmtub3duEAASCAoETm9uZRABEgwKCFBoeXNpY2FsEAISCAoESG9seRADEggKBEZpcmUQBBIKCgZOYXR1cmUQBRIJCgVGcm9zdBAGEgoKBlNoYWRvdxAHEgoKBkFyY2FuZRAIQi9aLWdpdGh1Yi5jb20vRW15cmsvY2hyb25pY2xlL2FwaS9jaHJvbmljbGVwcm90b2IGcHJvdG8z");
 
 /**
  * @generated from message chronicleproto.Tailer
@@ -231,6 +231,33 @@ export type ExtraAttack = Message<"chronicleproto.ExtraAttack"> & {
  */
 export const ExtraAttackSchema: GenMessage<ExtraAttack> = /*@__PURE__*/
   messageDesc(file_chronicle, 5);
+
+/**
+ * @generated from message chronicleproto.Slain
+ */
+export type Slain = Message<"chronicleproto.Slain"> & {
+  /**
+   * @generated from field: chronicleproto.EventMeta meta = 1;
+   */
+  meta?: EventMeta;
+
+  /**
+   * @generated from field: string target = 2;
+   */
+  target: string;
+
+  /**
+   * @generated from field: optional string caster = 3;
+   */
+  caster?: string;
+};
+
+/**
+ * Describes the message chronicleproto.Slain.
+ * Use `create(SlainSchema)` to create a new message.
+ */
+export const SlainSchema: GenMessage<Slain> = /*@__PURE__*/
+  messageDesc(file_chronicle, 6);
 
 /**
  * @generated from enum chronicleproto.School

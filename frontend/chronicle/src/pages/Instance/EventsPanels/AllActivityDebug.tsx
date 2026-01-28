@@ -251,7 +251,7 @@ function AllActivityRender({
                   : "???";
                 
                 return (
-                  <div key={`${event.streamType}-${event.index}`}>
+                  <div key={`${event.encounterID}-${event.streamType}-${event.index}`}>
                     {showHeader && (
                       <div className="flex items-center gap-2 text-[10px] font-semibold text-cyan-400 py-1 mt-1 border-t border-cyan-400/30 bg-cyan-400/5">
                         <span className="px-1">📍 Encounter: {event.encounterID.slice(0, 8)}... @ {timestamp}</span>

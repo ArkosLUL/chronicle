@@ -3,7 +3,7 @@ export { EventsPanel, type EventsPanelProps, type EventsPanelType } from "./Even
 
 // Panel definitions
 export { createDamageDonePanel, type DamageSourceType } from "./DamageDone/DamageDone";
-export { DamageTakenPanel } from "./DamageTaken";
+export { createDamageTakenPanel, type DamageTargetType } from "./DamageTaken/DamageTaken";
 export { HealingDonePanel } from "./HealingDone";
 export { AllActivityPanel } from "./AllActivity";
 
@@ -21,5 +21,4 @@ export type {
   EntitySelection,
   EntityValueMap,
   EventCallback,
-  ContextChangeAction,
 } from "./types";

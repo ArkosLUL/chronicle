@@ -182,6 +182,8 @@ export interface AbilityBreakoutProps {
   activeTab?: BreakoutTab
   /** Callback when tab changes (required if activeTab is controlled) */
   onTabChange?: (tab: BreakoutTab) => void
+  /** Label for the target tab (defaults to "By Target") */
+  targetTabLabel?: string
 }
 
 function formatValue(value: number): string {
@@ -206,6 +208,7 @@ export function AbilityBreakout({
   pinned: _pinned = false,
   activeTab: controlledTab,
   onTabChange,
+  targetTabLabel = 'By Target',
 }: AbilityBreakoutProps) {
   const [internalTab, setInternalTab] = useState<BreakoutTab>('ability')
   
@@ -255,7 +258,7 @@ export function AbilityBreakout({
           className={cn(tabClass, activeTab === 'target' ? activeTabClass : inactiveTabClass)}
           onClick={() => setActiveTab('target')}
         >
-          By Target
+          {targetTabLabel}
         </button>
         {totalDisplay}
       </div>

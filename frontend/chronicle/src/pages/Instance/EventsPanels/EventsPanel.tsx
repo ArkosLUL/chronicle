@@ -10,7 +10,7 @@ import { PanelSelector } from "./PanelSelector";
 
 // Import panel definitions
 import { createDamageDonePanel } from "./DamageDone/DamageDone";
-import { DamageTakenPanel } from "./DamageTaken";
+import { createDamageTakenPanel } from "./DamageTaken/DamageTaken";
 import { HealingDonePanel } from "./HealingDone";
 import { AllActivityPanel } from "./AllActivity";
 
@@ -22,7 +22,8 @@ export const PANELS: Record<string, PanelDefinition<any>> = {
   damage_done: createDamageDonePanel("players"),
   enemy_damage_done: createDamageDonePanel("enemies"),
   pet_damage_done: createDamageDonePanel("pets"),
-  damage_taken: DamageTakenPanel,
+  damage_taken: createDamageTakenPanel("players"),
+  enemy_damage_taken: createDamageTakenPanel("enemies"),
   healing_done: HealingDonePanel,
   all_activity: AllActivityPanel,
 };

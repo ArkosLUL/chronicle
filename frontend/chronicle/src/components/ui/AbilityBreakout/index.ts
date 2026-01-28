@@ -7,4 +7,5 @@ export {
   type TargetTableProps,
   type AbilityData,
   type TargetData,
+  type BreakoutTab,
 } from './AbilityBreakout'

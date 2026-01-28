@@ -29,6 +29,10 @@ export interface DamageAbilityBreakout {
   Total: number;
   // The number of casts
   Count: number;
+
+  Crits?: number;
+  Hits?: number;
+  Misses?: number;
 }
 
 export type DamageDoneResult = {

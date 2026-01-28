@@ -13,10 +13,6 @@ const meta = {
       control: 'text',
       description: 'Label for the value column',
     },
-    invertedColors: {
-      control: 'boolean',
-      description: 'Use inverted colors (for dark background tooltips)',
-    },
     pinned: {
       control: 'boolean',
       description: 'Whether breakout is pinned',
@@ -135,26 +131,6 @@ export const HealingBreakout: Story = {
 }
 
 /**
- * Inverted colors mode for dark background tooltips.
- */
-export const InvertedColors: Story = {
-  args: {
-    abilities: mockRogueAbilities,
-    targets: mockTargets,
-    totalValue: totalRogueDamage,
-    valueLabel: 'Damage',
-    invertedColors: true,
-  },
-  render: (args) => (
-    <TooltipWidth>
-      <div className="bg-foreground p-4 rounded-md">
-        <AbilityBreakout {...args} />
-      </div>
-    </TooltipWidth>
-  ),
-}
-
-/**
  * Per-second values (DPS/HPS).
  */
 export const PerSecondValues: Story = {
@@ -224,12 +200,11 @@ export const Pinned: Story = {
     totalValue: totalMageDamage,
     valueLabel: 'Damage',
     pinned: true,
-    invertedColors: true,
   },
   render: (args) => (
     <TooltipWidth>
-      <div className="bg-foreground p-4 rounded-md">
-        <div className="text-background text-xs mb-2 opacity-60">Pinned breakout</div>
+      <div className="border rounded-md p-4">
+        <div className="text-muted-foreground text-xs mb-2">Pinned breakout</div>
         <AbilityBreakout {...args} />
       </div>
     </TooltipWidth>
@@ -261,33 +236,5 @@ export const TargetTableOnly: StoryObj<typeof TargetTable> = {
         valueLabel="Damage"
       />
     </TooltipWidth>
-  ),
-}
-
-/**
- * Side-by-side comparison of normal vs inverted colors.
- */
-export const ColorComparison: Story = {
-  args: {
-    abilities: mockMageAbilities,
-    targets: mockTargets,
-    totalValue: totalMageDamage,
-    valueLabel: 'Damage',
-  },
-  render: (args) => (
-    <div style={{ display: 'flex', gap: 16, maxWidth: 800 }}>
-      <TooltipWidth>
-        <div className="text-sm font-medium mb-2">Normal (light bg)</div>
-        <div className="border rounded-md">
-          <AbilityBreakout {...args} invertedColors={false} />
-        </div>
-      </TooltipWidth>
-      <TooltipWidth>
-        <div className="text-sm font-medium mb-2">Inverted (dark bg)</div>
-        <div className="bg-foreground rounded-md">
-          <AbilityBreakout {...args} invertedColors={true} />
-        </div>
-      </TooltipWidth>
-    </div>
   ),
 }

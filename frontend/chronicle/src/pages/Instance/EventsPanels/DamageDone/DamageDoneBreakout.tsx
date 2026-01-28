@@ -156,7 +156,6 @@ export function useDamageDoneBreakout({
           targets={displayTargets}
           totalValue={displayTotal}
           valueLabel={displayLabel}
-          invertedColors
           pinned={pinned}
           activeTab={activeTab}
           onTabChange={setActiveTab}

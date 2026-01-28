@@ -268,7 +268,9 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
           <X className="h-4 w-4" />
         </button>
       </div>
-      {breakout?.(player.playerID, true)}
+      <div className='bg-card'>
+        {breakout?.(player.playerID, true)}
+      </div>
     </div>
   )
 }

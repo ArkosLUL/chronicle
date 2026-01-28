@@ -40,8 +40,6 @@ export interface AbilityTableProps {
   totalValue: number
   /** Label for the value column (e.g., "Damage", "Healing", "DPS", "HPS") */
   valueLabel?: string
-  /** When true, uses inverted colors for dark background tooltips */
-  invertedColors?: boolean
 }
 
 /**
@@ -51,28 +49,19 @@ export function AbilityTable({
   abilities, 
   totalValue,
   valueLabel = 'Value',
-  invertedColors = false,
 }: AbilityTableProps) {
   if (!abilities || abilities.length === 0) {
-    const emptyClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-    return <p className={cn("text-xs p-2", emptyClass)}>No ability breakdown available</p>
+    return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
   }
 
   // Sort by value descending
   const sorted = [...abilities].sort((a, b) => b.value - a.value)
 
-  // Color classes based on inverted mode
-  const textClass = invertedColors ? "text-background" : "text-foreground"
-  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-  const headerBgClass = invertedColors ? "bg-foreground" : "bg-popover"
-  const borderClass = invertedColors ? "border-background/20" : "border-border"
-  const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
-
   return (
     <div className="max-h-64 overflow-y-auto">
-      <table className={cn("w-full text-xs", textClass)}>
-        <thead className={cn("sticky top-0", headerBgClass)}>
-          <tr className={cn("border-b", borderClass)}>
+      <table className="w-full text-xs text-foreground">
+        <thead className="sticky top-0 bg-popover">
+          <tr className="border-b border-border">
             <th className="text-left py-1.5 px-2 font-medium">Ability</th>
             <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
             <th className="text-right py-1.5 px-2 font-medium">%</th>
@@ -87,14 +76,14 @@ export function AbilityTable({
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
             
             return (
-              <tr key={ability.name} className={cn("border-b", borderClass.replace("20", "10"), hoverClass)}>
+              <tr key={ability.name} className="border-b border-border/10 hover:bg-muted/50">
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
                   {ability.name}
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
                   {ability.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
+                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
                   {valuePercent.toFixed(1)}%
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
@@ -121,8 +110,6 @@ export interface TargetTableProps {
   totalValue: number
   /** Label for the value column (e.g., "Damage", "Healing") */
   valueLabel?: string
-  /** When true, uses inverted colors for dark background tooltips */
-  invertedColors?: boolean
 }
 
 /**
@@ -132,28 +119,19 @@ export function TargetTable({
   targets, 
   totalValue, 
   valueLabel = 'Value',
-  invertedColors = false, 
 }: TargetTableProps) {
   if (!targets || targets.length === 0) {
-    const emptyClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-    return <p className={cn("text-xs p-2", emptyClass)}>No target breakdown available</p>
+    return <p className="text-xs p-2 text-muted-foreground">No target breakdown available</p>
   }
 
   // Sort by value descending
   const sorted = [...targets].sort((a, b) => b.value - a.value)
 
-  // Color classes based on inverted mode
-  const textClass = invertedColors ? "text-background" : "text-foreground"
-  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-  const headerBgClass = invertedColors ? "bg-foreground" : "bg-popover"
-  const borderClass = invertedColors ? "border-background/20" : "border-border"
-  const hoverClass = invertedColors ? "hover:bg-background/10" : "hover:bg-muted/50"
-
   return (
     <div className="max-h-64 overflow-y-auto">
-      <table className={cn("w-full text-xs", textClass)}>
-        <thead className={cn("sticky top-0", headerBgClass)}>
-          <tr className={cn("border-b", borderClass)}>
+      <table className="w-full text-xs text-foreground">
+        <thead className="sticky top-0 bg-popover">
+          <tr className="border-b border-border">
             <th className="text-left py-1.5 px-2 font-medium">Target</th>
             <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
             <th className="text-right py-1.5 px-2 font-medium">%</th>
@@ -164,14 +142,14 @@ export function TargetTable({
             const valuePercent = totalValue > 0 ? (target.value / totalValue) * 100 : 0
             
             return (
-              <tr key={target.targetId} className={cn("border-b", borderClass.replace("20", "10"), hoverClass)}>
+              <tr key={target.targetId} className="border-b border-border/10 hover:bg-muted/50">
                 <td className="py-1 px-2 max-w-[150px] truncate" title={target.targetName}>
                   {target.targetName}
                 </td>
                 <td className="text-right py-1 px-2 tabular-nums">
                   {target.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
+                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
                   {valuePercent.toFixed(1)}%
                 </td>
               </tr>
@@ -195,8 +173,6 @@ export interface AbilityBreakoutProps {
   totalValue: number
   /** Label for the value column (e.g., "Damage", "Healing", "DPS", "HPS") */
   valueLabel?: string
-  /** When true, uses inverted colors for dark background tooltips */
-  invertedColors?: boolean
   /** Whether this is a pinned breakout (for potential styling differences) */
   pinned?: boolean
   /** Controlled active tab (optional - defaults to internal state) */
@@ -224,7 +200,6 @@ export function AbilityBreakout({
   targets,
   totalValue,
   valueLabel = 'Value',
-  invertedColors = false,
   pinned: _pinned = false,
   activeTab: controlledTab,
   onTabChange,
@@ -238,19 +213,12 @@ export function AbilityBreakout({
   const hasTargets = targets && targets.length > 0
   
   const tabClass = "px-2 py-1 text-2xs font-medium transition-colors"
-  const activeTabClass = invertedColors
-    ? "text-background border-b-2 border-background"
-    : "text-foreground border-b-2 border-foreground"
-  const inactiveTabClass = invertedColors
-    ? "text-background/60 hover:text-background/80"
-    : "text-muted-foreground hover:text-foreground"
-  const borderClass = invertedColors ? "border-background/20" : "border-border"
-  const mutedClass = invertedColors ? "text-background/60" : "text-muted-foreground"
-  const textClass = invertedColors ? "text-background" : "text-foreground"
+  const activeTabClass = "text-foreground border-b-2 border-foreground"
+  const inactiveTabClass = "text-muted-foreground hover:text-foreground"
 
   const totalDisplay = (
-    <span className={cn("text-2xs ml-auto pr-1.5", mutedClass)}>
-      Total: <span className={cn("font-medium tabular-nums", textClass)}>{formatValue(totalValue)}</span>
+    <span className="text-2xs ml-auto pr-1.5 text-muted-foreground">
+      Total: <span className="font-medium tabular-nums text-foreground">{formatValue(totalValue)}</span>
     </span>
   )
 
@@ -258,7 +226,7 @@ export function AbilityBreakout({
   if (!hasTargets) {
     return (
       <div>
-        <div className={cn("flex items-center border-b", borderClass)}>
+        <div className="flex items-center border-b border-border">
           <span className={cn(tabClass, activeTabClass)}>By Ability</span>
           {totalDisplay}
         </div>
@@ -266,7 +234,6 @@ export function AbilityBreakout({
           abilities={abilities}
           totalValue={totalValue}
           valueLabel={valueLabel}
-          invertedColors={invertedColors}
         />
       </div>
     )
@@ -274,7 +241,7 @@ export function AbilityBreakout({
 
   return (
     <div>
-      <div className={cn("flex items-center border-b", borderClass)}>
+      <div className="flex items-center border-b border-border">
         <button
           className={cn(tabClass, activeTab === 'ability' ? activeTabClass : inactiveTabClass)}
           onClick={() => setActiveTab('ability')}
@@ -294,14 +261,12 @@ export function AbilityBreakout({
           abilities={abilities}
           totalValue={totalValue}
           valueLabel={valueLabel}
-          invertedColors={invertedColors}
         />
       ) : (
         <TargetTable
           targets={targets}
           totalValue={totalValue}
           valueLabel={valueLabel}
-          invertedColors={invertedColors}
         />
       )}
     </div>

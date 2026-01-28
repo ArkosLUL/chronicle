@@ -126,7 +126,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
   const breakout = useHealingDoneBreakout({
     result: result,
     context: context,
-    valueLabel: viewMode === "overheal" ? "Overheal" : "Healing",
+    valueLabel: viewMode === "overheal" ? "Overheal" : "Effective",
     perSecond: props.perSecond,
     durationMs: props.durationMs,
     loading: props.loading,

@@ -5,8 +5,8 @@
  * Extra attacks are granted TO the player (stored in event.target), not from them.
  */
 
-import { GUID } from "@/lib/guid/guid";
 import type { ExtraAttackProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
+import { isPlayerGuidFast } from "../processors/guidCache";
 
 /**
  * Data for a single extra attack ability
@@ -62,14 +62,8 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
       // event.target is the player who gained extra attacks
       if (!event.target) return;
 
-      const playerGuid = GUID.fromString(event.target);
-      const isPlayer = playerGuid.isPlayer();
-      // const owner = context.units?.[event.target]?.owner
-      // const isPlayerPet = !isPlayer && owner && GUID.fromString(owner).isPlayer();
-
-      // For now, only track player extra attacks
-      // if (!isPlayer && !isPlayerPet) return;
-      if (!isPlayer) return;
+      // Fast path: only track player extra attacks
+      if (!isPlayerGuidFast(event.target)) return;
 
       const playerID = event.target;
       const playerName = context.players[playerID]?.name || playerID

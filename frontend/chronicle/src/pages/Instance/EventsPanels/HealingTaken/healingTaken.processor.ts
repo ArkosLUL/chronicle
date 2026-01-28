@@ -5,11 +5,11 @@
  * Useful for identifying who is receiving the most healing (tanks, players taking damage).
  */
 
-import { GUID } from "@/lib/guid/guid";
 import type { HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
 import { isResourceChangeEvent } from "../processors/events";
+import { isPlayerGuidFast } from "../processors/guidCache";
 
 // Re-export the shared type (works for healing too)
 export type { DamageAbilityBreakout as HealingAbilityBreakout } from "../processors/abilityBreakout";
@@ -77,11 +77,8 @@ export function createHealingTakenProcessor(
       if (!(streamType == "heal" || streamType == "resource_change")) return;
       if (!event.target) return;
 
-      const targetGuid = GUID.fromString(event.target);
-      const isPlayer = targetGuid.isPlayer();
-
-      // For now, only track player healing received
-      if (targetType === "players" && !isPlayer) return;
+      // Fast path: only track player healing received
+      if (targetType === "players" && !isPlayerGuidFast(event.target)) return;
 
       const healingTarget = event.target;
 

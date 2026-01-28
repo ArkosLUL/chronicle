@@ -4,10 +4,10 @@
  * Mirrors the DamageDone processor structure but tracks damage received instead of dealt.
  */
 
-import { GUID } from "@/lib/guid/guid";
 import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
+import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 // Re-export the shared type for backwards compatibility
 export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
@@ -37,6 +37,8 @@ export type DamageTakenResult = {
   // Value is unitID -> abilityID -> DamageAbilityBreakout
   ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
   BySource: Map<string, Map<string, number>>;
+  // GUID cache for performance (avoids repeated parsing)
+  GuidCache: GuidCache;
 }
 
 /**
@@ -55,6 +57,7 @@ export function createDamageTakenProcessor(
       EncounterDamage: new Map<string, UnitDamageTaken>(),
       ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
       BySource: new Map<string, Map<string, number>>(),
+      GuidCache: createGuidCache(),
     }),
 
     processEvent: (
@@ -68,10 +71,14 @@ export function createDamageTakenProcessor(
       // Only damage events reach here (enforced by type)
       if (!event.target) return;
 
-      const targetGuid = GUID.fromString(event.target);
-      const isPlayer = targetGuid.isPlayer();
+      const guidCache = state.GuidCache;
+      
+      // Use fast player check first, fall back to cached GUID parsing
+      const isPlayer = isPlayerGuidFast(event.target) || getCachedGuid(guidCache, event.target).isPlayer();
       const targetInfo = context.units?.[event.target];
-      const isPet = !isPlayer && targetInfo?.owner && GUID.fromString(targetInfo.owner).isPlayer();
+      // For pet check: owner must exist and be a player
+      const isPet = !isPlayer && targetInfo?.owner && 
+        (isPlayerGuidFast(targetInfo.owner) || getCachedGuid(guidCache, targetInfo.owner).isPlayer());
       const isEnemy = !isPlayer && !isPet;
 
       // Filter by target type

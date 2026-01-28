@@ -2,8 +2,8 @@
  * Deaths processor - aggregates player deaths from slain events (pure TS, worker-safe)
  */
 
-import { GUID } from "@/lib/guid/guid";
 import type { SlainProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
+import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 /**
  * Data for a single death event
@@ -50,6 +50,8 @@ export type DeathsResult = {
   ByKiller: Map<string, Map<string, number>>;
   // Chronological list of all death events for all encounters
   DeathEvents: DeathEvent[];
+  // GUID cache for performance (avoids repeated parsing)
+  GuidCache: GuidCache;
 }
 
 /**
@@ -64,6 +66,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       EncounterDeaths: new Map<string, UnitDeaths>(),
       ByKiller: new Map<string, Map<string, number>>(),
       DeathEvents: [],
+      GuidCache: createGuidCache(),
     }),
 
     processEvent: (
@@ -77,11 +80,10 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       // event.target is the victim (who died)
       if (!event.target) return;
 
-      const victimGuid = GUID.fromString(event.target);
-      
-      // Only track player deaths
-      if (!victimGuid.isPlayer()) return;
+      // Fast path: only track player deaths
+      if (!isPlayerGuidFast(event.target)) return;
 
+      const guidCache = state.GuidCache;
       const playerID = event.target;
       const playerName = context.players[playerID]?.name || playerID;
       const playerClass = context.players[playerID]?.class || "UNKNOWN";
@@ -91,8 +93,8 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       let killerName = "Unknown";
       
       if (killerID) {
-        const killerGuid = GUID.fromString(killerID);
-        if (killerGuid.isPlayer()) {
+        // Check if killer is a player using fast path first
+        if (isPlayerGuidFast(killerID) || getCachedGuid(guidCache, killerID).isPlayer()) {
           killerName = context.players[killerID]?.name || killerID;
         } else {
           killerName = context.units?.[killerID]?.name || killerID;

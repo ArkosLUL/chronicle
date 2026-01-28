@@ -2,10 +2,10 @@
  * Damage Done processor - aggregates damage by caster (pure TS, worker-safe)
  */
 
-import { GUID } from "@/lib/guid/guid";
 import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
+import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 // Re-export the shared type for backwards compatibility
 export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
@@ -35,6 +35,8 @@ export type DamageDoneResult = {
   // Value is unitID -> abilityID -> DamageAbilityBreakout
   ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
   ByTarget: Map<string, Map<string, number>>;
+  // GUID cache for performance (avoids repeated parsing)
+  GuidCache: GuidCache;
 }
 
 /**
@@ -53,6 +55,7 @@ export function createDamageDoneProcessor(
       EncounterDamage: new Map<string, UnitDamage>(),
       ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
       ByTarget: new Map<string, Map<string, number>>(),
+      GuidCache: createGuidCache(),
     }),
 
     processEvent: (
@@ -66,10 +69,14 @@ export function createDamageDoneProcessor(
       // Only damage events reach here (enforced by type)
       if (!event.caster) return;
 
-      const casterGuid = GUID.fromString(event.caster);
-      const isPlayer = casterGuid.isPlayer();
+      const guidCache = state.GuidCache;
+      
+      // Use fast player check first, fall back to cached GUID parsing
+      const isPlayer = isPlayerGuidFast(event.caster) || getCachedGuid(guidCache, event.caster).isPlayer();
       const casterInfo = context.units?.[event.caster];
-      const isPet = !isPlayer && casterInfo?.owner && GUID.fromString(casterInfo.owner).isPlayer();
+      // For pet check: owner must exist and be a player
+      const isPet = !isPlayer && casterInfo?.owner && 
+        (isPlayerGuidFast(casterInfo.owner) || getCachedGuid(guidCache, casterInfo.owner).isPlayer());
       const isEnemy = !isPlayer && !isPet;
 
       // Filter by source type

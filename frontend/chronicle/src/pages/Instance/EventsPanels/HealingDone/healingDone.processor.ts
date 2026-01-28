@@ -11,11 +11,11 @@
  * - Overhealing = heal amount - effective healing
  */
 
-import { GUID } from "@/lib/guid/guid";
 import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
 import { isResourceChangeEvent, isDamageEvent } from "../processors";
+import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 // Re-export the shared type (works for healing too)
 export type { DamageAbilityBreakout as HealingAbilityBreakout } from "../processors/abilityBreakout";
@@ -64,6 +64,8 @@ export type HealingDoneResult = {
   ByTarget: Map<string, Map<string, number>>;
   // Overheal by target
   ByTargetOverheal: Map<string, Map<string, number>>;
+  // GUID cache for performance (avoids repeated parsing)
+  GuidCache: GuidCache;
 }
 
 /**
@@ -95,6 +97,7 @@ export function createHealingDoneProcessor(
       ByAbilityOverheal: new Map<string, Map<string, DamageAbilityBreakout>>(),
       ByTarget: new Map<string, Map<string, number>>(),
       ByTargetOverheal: new Map<string, Map<string, number>>(),
+      GuidCache: createGuidCache(),
     }),
 
     processEvent: (
@@ -106,15 +109,15 @@ export function createHealingDoneProcessor(
       context: ProcessorContext
     ) => {
       const deficits = getEncounterDeficits(state, encounterID);
+      const guidCache = state.GuidCache;
       
       // Handle damage events - increase target's health deficit
       if (isDamageEvent(event, streamType)) {
-        const targetGuid = GUID.fromString(event.target);
-        // Only track player health deficits
-        if (targetGuid.isPlayer()) {
-          const currentDeficit = deficits.get(event.target) || 0;
-          deficits.set(event.target, currentDeficit + event.amount);
-        }
+        // Fast path: only players can have health deficits tracked
+        if (!isPlayerGuidFast(event.target)) return;
+        
+        const currentDeficit = deficits.get(event.target) || 0;
+        deficits.set(event.target, currentDeficit + event.amount);
         return;
       }
       
@@ -122,8 +125,8 @@ export function createHealingDoneProcessor(
       if (isResourceChangeEvent(event, streamType)) {
         if (event.resourceType !== "Health") return;
         
-        const targetGuid = GUID.fromString(event.target);
-        if (!targetGuid.isPlayer()) return;
+        // Fast path: only track player health
+        if (!isPlayerGuidFast(event.target)) return;
         
         if (event.direction === "Loss") {
           // Health loss (like Life Tap) increases deficit
@@ -140,8 +143,8 @@ export function createHealingDoneProcessor(
       if (!(streamType === "heal" || streamType === "resource_change")) return;
       if (!event.caster) return;
 
-      const casterGuid = GUID.fromString(event.caster);
-      const isPlayer = casterGuid.isPlayer();
+      // Use fast check first, only parse GUID if needed for non-obvious cases
+      const isPlayer = isPlayerGuidFast(event.caster) || getCachedGuid(guidCache, event.caster).isPlayer();
 
       // For now, only track player healing
       if (sourceType === "players" && !isPlayer) return;

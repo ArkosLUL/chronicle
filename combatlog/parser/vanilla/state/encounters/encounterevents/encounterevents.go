@@ -2,7 +2,6 @@ package encounterevents
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
@@ -17,8 +16,6 @@ type EncounterEvents struct {
 	Heal           *Builder[messages.Heal, *chronicleproto.Heal]
 	ResourceChange *Builder[messages.ResourceChange, *chronicleproto.ResourceChange]
 	cnter          int32
-
-	firsts map[string]time.Time
 }
 
 func New() *EncounterEventsInProgress {

@@ -35,7 +35,7 @@ func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 	// The conversion to another type is pretty expensive, just use the type as is
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
-	w.Write(evts.Events)
+	_, _ = w.Write(evts.Events)
 }
 
 func (api *API) Instance(w http.ResponseWriter, r *http.Request) {

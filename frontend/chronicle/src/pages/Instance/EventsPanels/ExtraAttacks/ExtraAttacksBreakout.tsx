@@ -76,14 +76,6 @@ function ExtraAttackTable({
             );
           })}
         </tbody>
-        <tfoot className="border-t border-border">
-          <tr className="font-medium">
-            <td className="py-1 px-2">Total</td>
-            <td className="text-right py-1 px-2 tabular-nums">{totalProcs.toLocaleString()}</td>
-            <td className="text-right py-1 px-2 tabular-nums">{totalAttacks.toLocaleString()}</td>
-            <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">100%</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   );

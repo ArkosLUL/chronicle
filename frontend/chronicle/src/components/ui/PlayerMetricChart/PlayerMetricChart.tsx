@@ -229,7 +229,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
   return (
     <div
       ref={tooltipRef}
-      className="bg-card text-foreground border-3 border-solid  fixed z-50 min-w-[340px] rounded-md shadow-md"
+      className="bg-popover text-foreground border-3 border-solid  fixed z-50 min-w-[340px] rounded-md shadow-md"
       style={{
         left: position.x,
         top: position.y,
@@ -240,7 +240,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
     >
       {/* Header with drag handle and close button */}
       <div 
-        className="flex items-center gap-2 p-3 border-b border-background/20"
+        className="flex items-center gap-2 p-3 border-b border-border"
         data-drag-handle
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
@@ -254,7 +254,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
           {player.className}
         </span>
         {panelTitle && (
-          <span className="text-xs text-muted-foreground border-l border-background/20 pl-2 ml-auto">
+          <span className="text-xs text-muted-foreground border-l border-border pl-2 ml-auto">
             {panelTitle}
           </span>
         )}
@@ -479,16 +479,16 @@ export function PlayerMetricRow({
           alignOffset={x}
           sideOffset={-y + 10}
           hideWhenDetached
-          className="p-0 min-w-[340px]"
+          className="p-0 min-w-[340px] bg-popover text-foreground"
         >
-          <div className="p-3 border-b border-background/20">
+          <div className="p-3 border-b border-border">
             <div className="flex items-center gap-2">
               <span 
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: player.color }}
               />
               <span className="font-medium">{player.playerName}</span>
-              <span className="text-background/60 text-xs ml-auto">
+              <span className="text-muted-foreground text-xs ml-auto">
                 {player.className}
               </span>
             </div>

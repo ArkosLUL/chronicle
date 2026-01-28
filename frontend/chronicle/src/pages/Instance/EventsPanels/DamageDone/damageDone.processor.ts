@@ -4,6 +4,7 @@
 
 import { GUID } from "@/lib/guid/guid";
 import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
+import { hasHitType, HitTypeCrit, HitTypeHit, HitTypeMiss } from "@/lib/hittype/hittype";
 
 /**
  * Entity source types for damage aggregation
@@ -30,9 +31,9 @@ export interface DamageAbilityBreakout {
   // The number of casts
   Count: number;
 
-  Crits?: number;
-  Hits?: number;
-  Misses?: number;
+  Crits: number;
+  Hits: number;
+  Misses: number;
 }
 
 export type DamageDoneResult = {
@@ -139,13 +140,25 @@ export function createDamageDoneProcessor(
         } 
 
         const existingUnitBreakout = state.ByAbility.get(damageOwner) || new Map<string, DamageAbilityBreakout>();
-        const abilityBreakout = existingUnitBreakout.get(source) || {
+        const abilityBreakout: DamageAbilityBreakout = existingUnitBreakout.get(source) || {
           Total: 0,
           Count: 0,
+          Crits: 0,
+          Hits: 0,
+          Misses: 0,
         };
         
         abilityBreakout.Total += event.amount;
         abilityBreakout.Count += 1;
+        if (hasHitType(event.hitType, HitTypeCrit)) {
+          abilityBreakout.Crits += 1;
+        } else if (hasHitType(event.hitType, HitTypeMiss)) {
+          abilityBreakout.Misses += 1;
+        } else if (hasHitType(event.hitType, HitTypeHit)) {
+          abilityBreakout.Hits += 1;
+        }
+
+
         existingUnitBreakout.set(source, abilityBreakout);
         state.ByAbility.set(damageOwner, existingUnitBreakout);
 

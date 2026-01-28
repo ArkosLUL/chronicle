@@ -2,6 +2,7 @@
  * Damage Taken processor - aggregates damage by target (pure TS, worker-safe)
  */
 
+import { hasHitType, HitTypeCrit } from "@/lib/hittype/hittype";
 import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
 
 export type DamageTakenState = Map<string, number>;

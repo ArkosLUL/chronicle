@@ -89,14 +89,18 @@ export function PlayerMetricChart({
 
 
   const summedValue = useMemo(() => {
-    return computedData.reduce((sum, item) => sum + item.value, 0)
+    const sum = computedData.reduce((sum, item) => sum + item.value, 0)
+    // Avoid division by zero - return 1 if sum is 0
+    return sum || 1
   }, [computedData])
 
   // Scale chart so the max effective value takes 75% width, leaving room for stacked
   const maximumValue = useMemo(() => {
+    if (computedData.length === 0) return 1 // Avoid Math.max on empty array
     const maxEffective = Math.max(...computedData.map((item) => item.value))
     // Scale so max effective is 75% of chart, leaving 25% for stacked values
-    return maxEffective / 0.75
+    // Avoid division by zero - return 1 if maxEffective is 0
+    return maxEffective ? maxEffective / 0.75 : 1
   }, [computedData])
 
   // Sort by value descending and calculate percentages
@@ -495,21 +499,25 @@ export function PlayerMetricRow({
         </span>
         
         {/* Overheal percentage - shown when stackedValue exists */}
-        {player.stackedValue !== undefined && player.stackedValue > 0 && (
-          <span
-            style={{
-              width: '50px',
-              textAlign: 'right',
-              fontSize: '11px',
-              fontWeight: 500,
-              color: 'var(--color-yellow-500)',
-              opacity: 0.7,
-            }}
-            title={`${((player.stackedValue / (player.value + player.stackedValue)) * 100).toFixed(1)}% overhealing`}
-          >
-            ({((player.stackedValue / (player.value + player.stackedValue)) * 100).toFixed(0)}%)
-          </span>
-        )}
+        {player.stackedValue !== undefined && player.stackedValue > 0 && (() => {
+          const totalHealing = player.value + player.stackedValue;
+          const overhealPct = totalHealing > 0 ? (player.stackedValue / totalHealing) * 100 : 0;
+          return (
+            <span
+              style={{
+                width: '50px',
+                textAlign: 'right',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--color-yellow-500)',
+                opacity: 0.7,
+              }}
+              title={`${overhealPct.toFixed(1)}% overhealing`}
+            >
+              ({overhealPct.toFixed(0)}%)
+            </span>
+          );
+        })()}
       </div>
     </div>
   )

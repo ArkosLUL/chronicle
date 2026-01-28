@@ -94,7 +94,10 @@ function createCursor(stream: WorkerRequest["streams"][0]): PeekableCursor {
 
 /**
  * Process all streams using the given processor.
- * Interleaves events from all streams by index order.
+ * 
+ * IMPORTANT: Each encounter resets event indices to 0, so we must process
+ * one encounter at a time. Within an encounter, events are interleaved
+ * across streams by index order.
  */
 function processStreams<TResult>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,36 +114,57 @@ function processStreams<TResult>(
   // Create peekable cursors for all streams
   const cursors = streams.map(createCursor);
   
-  // Merge-iterate: always pick the cursor with the lowest index
+  // Process one encounter at a time to avoid interleaving events from different encounters
+  // (since each encounter resets indices to 0)
   while (true) {
-    // Find cursor with lowest index
-    let minCursor: PeekableCursor | null = null;
-    let minPeeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null = null;
+    // Find the current encounter: pick the one with earliest timestamp among all cursors
+    let currentEncounterID: string | null = null;
+    let currentEncounterTimestamp: Date | null = null;
     
     for (const pc of cursors) {
       const peeked = peekCursor(pc);
-      if (peeked && (!minPeeked || peeked.event.index < minPeeked.event.index)) {
-        minCursor = pc;
-        minPeeked = peeked;
+      if (peeked && (!currentEncounterTimestamp || peeked.firstTimestamp < currentEncounterTimestamp)) {
+        currentEncounterID = peeked.encounterID;
+        currentEncounterTimestamp = peeked.firstTimestamp;
       }
     }
     
     // No more events in any stream
-    if (!minCursor || !minPeeked) break;
+    if (!currentEncounterID) break;
     
-    // Process the event with the lowest index
-    totalEvents++;
-    processor.processEvent(
-      state, 
-      minPeeked.event, 
-      minPeeked.encounterID, 
-      minPeeked.firstTimestamp, 
-      minCursor.streamType, 
-      context
-    );
-    
-    // Consume the peeked event
-    consumePeeked(minCursor);
+    // Process all events from this encounter across all streams, interleaved by index
+    while (true) {
+      let minCursor: PeekableCursor | null = null;
+      let minPeeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null = null;
+      
+      for (const pc of cursors) {
+        const peeked = peekCursor(pc);
+        // Only consider events from the current encounter
+        if (peeked && peeked.encounterID === currentEncounterID) {
+          if (!minPeeked || peeked.event.index < minPeeked.event.index) {
+            minCursor = pc;
+            minPeeked = peeked;
+          }
+        }
+      }
+      
+      // No more events from this encounter - move to next encounter
+      if (!minCursor || !minPeeked) break;
+      
+      // Process the event with the lowest index
+      totalEvents++;
+      processor.processEvent(
+        state, 
+        minPeeked.event, 
+        minPeeked.encounterID, 
+        minPeeked.firstTimestamp, 
+        minCursor.streamType, 
+        context
+      );
+      
+      // Consume the peeked event
+      consumePeeked(minCursor);
+    }
   }
   
   return { result: state, totalEvents };

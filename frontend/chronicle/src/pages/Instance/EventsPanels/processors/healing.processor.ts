@@ -96,22 +96,26 @@ export type UnifiedHealingResult = {
   TargetBySourceOverheal: Map<string, Map<string, number>>;
   
   // === Shared state ===
-  // Health deficit tracking: encounterID -> targetGUID -> deficit (positive = damage taken)
-  HealthDeficits: Map<string, Map<string, number>>;
+  // Health deficit tracking: targetGUID -> deficit (positive = damage taken)
+  // Reset to empty when encounterID changes
+  HealthDeficits: Map<string, number>;
+  // Track last encounter ID to detect transitions
+  LastEncounterID: string | null;
   // GUID cache for performance (avoids repeated parsing)
   GuidCache: GuidCache;
 }
 
 /**
- * Get or create health deficit map for an encounter
+ * Get health deficit map, resetting if encounter changed.
+ * This ensures each encounter starts with fresh deficit tracking.
  */
-function getEncounterDeficits(state: UnifiedHealingResult, encounterID: string): Map<string, number> {
-  let deficits = state.HealthDeficits.get(encounterID);
-  if (!deficits) {
-    deficits = new Map<string, number>();
-    state.HealthDeficits.set(encounterID, deficits);
+function getDeficits(state: UnifiedHealingResult, encounterID: string): Map<string, number> {
+  if (state.LastEncounterID !== encounterID) {
+    // New encounter - reset all deficits to 0
+    state.HealthDeficits.clear();
+    state.LastEncounterID = encounterID;
   }
-  return deficits;
+  return state.HealthDeficits;
 }
 
 /**
@@ -137,6 +141,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       TargetBySourceOverheal: new Map(),
       // Shared
       HealthDeficits: new Map(),
+      LastEncounterID: null,
       GuidCache: createGuidCache(),
     }),
 
@@ -148,7 +153,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       streamType: string,
       context: ProcessorContext
     ) => {
-      const deficits = getEncounterDeficits(state, encounterID);
+      const deficits = getDeficits(state, encounterID);
       const guidCache = state.GuidCache;
       
       // Handle damage events - increase target's health deficit
@@ -200,10 +205,6 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       const effectiveHeal = Math.min(healAmount, currentDeficit);
       const overheal = healAmount - effectiveHeal;
 
-      if(event.caster === "0x000000000001C80A" && encounterID == "420ff40a-beda-4220-b022-fa52f4fa28e3") {
-        console.log(`${event.caster} healed ${event.target} for ${healAmount} (effective: ${effectiveHeal}, overheal: ${overheal}, deficit before: ${currentDeficit})`);
-      }
-      
       // Update deficit (reduce by effective heal, never go below 0)
       deficits.set(targetID, Math.max(0, currentDeficit - effectiveHeal));
 

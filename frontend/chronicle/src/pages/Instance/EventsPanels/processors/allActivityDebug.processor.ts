@@ -97,7 +97,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     // Filter by selected players if any are selected
     const { entitySelection } = context;
     if (entitySelection.playerIds.size > 0) {
-      if (!entitySelection.playerIds.has(event.caster)) return;
+      if(!(entitySelection.playerIds.has(event.caster) || entitySelection.playerIds.has(event.target))) {
+        return;
+      }
     }
     
     // Count events per stream

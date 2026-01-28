@@ -2,6 +2,7 @@ package encounterevents
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/api/chronicleproto/types2proto"
@@ -12,6 +13,7 @@ import (
 type EncounterEventsInProgress EncounterEvents
 
 type EncounterEvents struct {
+	first          time.Time
 	Damage         *Builder[messages.Damage, *chronicleproto.Damage]
 	Heal           *Builder[messages.Heal, *chronicleproto.Heal]
 	ResourceChange *Builder[messages.ResourceChange, *chronicleproto.ResourceChange]
@@ -94,6 +96,18 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		}
 	}
 	return nil
+}
+
+func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
+	if !e.first.IsZero() {
+		return
+	}
+	e.first = t
+	e.Damage.SetZero(e.first)
+	e.Heal.SetZero(e.first)
+	e.ResourceChange.SetZero(e.first)
+	e.ExtraAttack.SetZero(e.first)
+	e.Slain.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

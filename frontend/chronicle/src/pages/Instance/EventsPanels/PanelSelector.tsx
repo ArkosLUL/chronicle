@@ -43,7 +43,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Activity",
-    items: ["all_activity", "all_activity_debug"],
+    items: ["all_activity"],
   },
 ];
 

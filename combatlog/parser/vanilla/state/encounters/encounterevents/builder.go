@@ -57,11 +57,11 @@ func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
 	return final, nil
 }
 
-func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, idx int32, conv func(from time.Time, idx int32, message M) PM) error {
-	if b.First.IsZero() {
-		b.First = m.Date()
-	}
+func (b *Builder[M, PM]) SetZero(start time.Time) {
+	b.First = start
+}
 
+func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, idx int32, conv func(from time.Time, idx int32, message M) PM) error {
 	if b.done {
 		return fmt.Errorf("builder already finalized")
 	}

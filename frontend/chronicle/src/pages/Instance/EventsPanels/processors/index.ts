@@ -7,8 +7,7 @@ import { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor }
 import { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
 import { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
 import { deathsProcessor } from "../Deaths/deaths.processor";
-import { allActivityProcessor } from "./allActivity.processor";
-import { allActivityDebugProcessor } from "./allActivityDebug.processor";
+import { allActivityProcessor } from "./allActivityDebug.processor";
 import { unifiedHealingProcessor } from "./healing.processor";
 
 // Export individual processors
@@ -16,8 +15,7 @@ export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor }
 export { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
 export { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
 export { deathsProcessor } from "../Deaths/deaths.processor";
-export { allActivityProcessor } from "./allActivity.processor";
-export { allActivityDebugProcessor } from "./allActivityDebug.processor";
+export { allActivityProcessor } from "./allActivityDebug.processor";
 export { unifiedHealingProcessor } from "./healing.processor";
 
 // Export state types
@@ -26,8 +24,7 @@ export type { DamageTakenResult as DamageTakenState, DamageTakenData, DamageTarg
 export type { UnifiedHealingResult, HealerData, HealingReceiverData, HealingTargetData, HealingSourceData } from "./healing.processor";
 export type { ExtraAttacksResult as ExtraAttacksState, ExtraAttacksData } from "../ExtraAttacks/extraAttacks.processor";
 export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "../Deaths/deaths.processor";
-export type { AllActivityState } from "./allActivity.processor";
-export type { AllActivityDebugState, RawDebugEvent } from "./allActivityDebug.processor";
+export type { AllActivityDebugState as AllActivityState, RawDebugEvent } from "./allActivityDebug.processor";
 
 // Export shared utilities
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
@@ -51,5 +48,4 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   deaths: deathsProcessor,
   death_log: deathsProcessor, // Same processor, different view
   all_activity: allActivityProcessor,
-  all_activity_debug: allActivityDebugProcessor,
 };

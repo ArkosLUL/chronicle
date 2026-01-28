@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import type { PanelDefinition, PanelRenderProps } from "./types";
-import { allActivityDebugProcessor, type AllActivityDebugState, type RawDebugEvent } from "./processors";
+import { allActivityProcessor, type AllActivityState, type RawDebugEvent } from "./processors";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 // Stream type configurations
@@ -77,14 +77,14 @@ function RawEventRow({ event, index }: RawEventRowProps) {
   );
 }
 
-function AllActivityDebugRender({
+function AllActivityRender({
   result,
   totalEvents,
   processingTimeMs,
   loading,
   processing,
   error,
-}: PanelRenderProps<AllActivityDebugState>) {
+}: PanelRenderProps<AllActivityState>) {
   // Track which streams are visible
   const [enabledStreams, setEnabledStreams] = useState<Set<StreamType>>(
     new Set(["damage", "heal", "resource_change"])
@@ -207,12 +207,12 @@ function AllActivityDebugRender({
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const AllActivityDebugPanel: PanelDefinition<AllActivityDebugState, any> = {
-  ...allActivityDebugProcessor,
-  label: "All Activity (Debug)",
+export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
+  ...allActivityProcessor,
+  label: "All Activity",
   icon: <Activity className="h-4 w-4" />,
   
-  render: (props: PanelRenderProps<AllActivityDebugState>) => (
-    <AllActivityDebugRender {...props} />
+  render: (props: PanelRenderProps<AllActivityState>) => (
+    <AllActivityRender {...props} />
   ),
 };

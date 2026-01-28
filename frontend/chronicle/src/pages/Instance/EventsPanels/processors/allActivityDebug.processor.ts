@@ -34,8 +34,8 @@ type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChan
 // Capture first N events (worker interleaves by index, so this captures true order)
 const MAX_RAW_EVENTS = 500;
 
-export const allActivityDebugProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
-  id: "all_activity_debug",
+export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
+  id: "all_activity",
   streams: ["damage", "heal", "resource_change"],
   
   createState: () => ({

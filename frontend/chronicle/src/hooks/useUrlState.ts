@@ -619,7 +619,6 @@ const PANEL_CODES: Record<PanelType, string> = {
   deaths: 'd',
   death_log: 'dl',
   all_activity: 'aa',
-  all_activity_debug: 'aad',
 };
 
 const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(

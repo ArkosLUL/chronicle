@@ -63,7 +63,7 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
 
       const playerGuid = GUID.fromString(event.target);
       const isPlayer = playerGuid.isPlayer();
-      const owner = context.units?.[event.target]?.owner
+      // const owner = context.units?.[event.target]?.owner
       // const isPlayerPet = !isPlayer && owner && GUID.fromString(owner).isPlayer();
 
       // For now, only track player extra attacks

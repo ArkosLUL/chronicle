@@ -296,7 +296,7 @@ function EncounterSidebar({
       {/* Chronological view - all encounters sorted by time */}
       {showChronological ? (
         <div className="space-y-1">
-          {chronologicalEncounters.map((encounter, idx) => {
+          {chronologicalEncounters.map((encounter) => {
             const isSelected = selectedIds.includes(encounter.id);
             const isWipe = !encounter.kill;
             

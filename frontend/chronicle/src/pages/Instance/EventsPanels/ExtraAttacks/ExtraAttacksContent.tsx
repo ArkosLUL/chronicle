@@ -62,7 +62,7 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
 
   const extraAttacksData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds, context.instance.units);
+    return aggregateForEncounters(cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds, context.instance.units ?? {});
   }, [cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds]);
 
   // Once we have cached data, never show loading/processing states

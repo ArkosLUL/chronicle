@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "./InstanceEventsContext";
 import { createStreamCursor, FastDamageCursor, type StreamCursor } from "@/api/protodecode/decode";
-import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema } from "@/api/proto/chronicle_pb";
+import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema } from "@/api/proto/chronicle_pb";
 import type { DescMessage } from "@bufbuild/protobuf";
 import type {
   StreamType,
@@ -24,6 +24,12 @@ function getSchemaForType(type: StreamType): DescMessage {
       return HealSchema;
     case "resource_change":
       return ResourceChangeSchema;
+    case "slain":
+      return SlainSchema;
+    default: {
+      const _exhaustive: never = type;
+      throw new Error(`Unknown stream type: ${_exhaustive}`);
+    }
   }
 }
 

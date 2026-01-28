@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
@@ -24,6 +23,7 @@ type SortSummary struct {
 type logLine struct {
 	Date    time.Time
 	Content string
+	idx     int64
 }
 
 // SortLogs reads log lines from input, sorts them by timestamp, and writes them to output.
@@ -32,6 +32,7 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 	buffer := make([]logLine, 0)
 	liner := lines.NewLiner()
 	sc := bufio.NewScanner(input)
+	c := int64(0)
 	for sc.Scan() {
 		if ctx.Err() != nil {
 			return sum, ctx.Err()
@@ -46,7 +47,9 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 		buffer = append(buffer, logLine{
 			Date:    ts,
 			Content: content,
+			idx:     c,
 		})
+		c++
 
 		if ts.Before(sum.Earliest) || sum.Earliest.IsZero() {
 			sum.Earliest = ts
@@ -62,7 +65,7 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 	// 1. Zone info lines, zone changes context for everything else
 	// 2. Unit info lines, unit db should be poplulated asap
 	// 3. Combatant lines, same idea as above
-	// Finally, lexicographically by content to ensure stable sort
+	// Finally, keep the original order for lines with identical timestamps and types
 	slices.SortFunc(buffer, func(a, b logLine) int {
 		am, bm := a.Date.UnixMilli(), b.Date.UnixMilli()
 		if am != bm {
@@ -90,7 +93,7 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 			return cc
 		}
 
-		return strings.Compare(a.Content, b.Content)
+		return int(a.idx - b.idx)
 	})
 
 	for _, line := range buffer {

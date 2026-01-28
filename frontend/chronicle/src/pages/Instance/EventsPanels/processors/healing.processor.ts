@@ -199,6 +199,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       const currentDeficit = deficits.get(targetID) || 0;
       const effectiveHeal = Math.min(healAmount, currentDeficit);
       const overheal = healAmount - effectiveHeal;
+
+      if(event.caster === "0x000000000001C80A" && encounterID == "420ff40a-beda-4220-b022-fa52f4fa28e3") {
+        console.log(`${event.caster} healed ${event.target} for ${healAmount} (effective: ${effectiveHeal}, overheal: ${overheal}, deficit before: ${currentDeficit})`);
+      }
       
       // Update deficit (reduce by effective heal, never go below 0)
       deficits.set(targetID, Math.max(0, currentDeficit - effectiveHeal));

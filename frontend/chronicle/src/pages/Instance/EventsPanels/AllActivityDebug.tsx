@@ -7,13 +7,14 @@ import { Activity, Swords, Heart, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import type { PanelDefinition, PanelRenderProps } from "./types";
 import { allActivityProcessor, type AllActivityState, type RawDebugEvent, type EncounterMeta, type ResourceType } from "./processors";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 // Resource type color mapping (WoW-inspired colors)
 const RESOURCE_COLORS: Record<ResourceType, string> = {
-  Health: "text-red-500",
+  Health: "text-green-500",
   Mana: "text-blue-400",
   Rage: "text-red-400",
   Energy: "text-yellow-400",
@@ -76,6 +77,10 @@ function RawEventRow({ event, index }: RawEventRowProps) {
     ? RESOURCE_COLORS[event.resourceType] 
     : config.color;
   
+  const amountElement = (
+    <span className={cn("w-12 text-right shrink-0", amountColor)}>{formatNumber(event.amount)}</span>
+  );
+  
   return (
     <div className="flex items-center gap-2 text-xs font-mono py-0.5 border-b border-border/30 hover:bg-muted/30">
       <span className="text-muted-foreground w-6 text-right shrink-0">{index}</span>
@@ -83,10 +88,14 @@ function RawEventRow({ event, index }: RawEventRowProps) {
       <span className="text-muted-foreground w-20 shrink-0">{timeStr}</span>
       <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>{event.sourceName}</span>
       <span className="text-muted-foreground shrink-0">→</span>
-      <span className="text-purple-400 w-24 shrink-0 truncate" title={event.target}>{event.target}</span>
-      <span className={cn("w-12 text-right shrink-0", amountColor)}>{formatNumber(event.amount)}</span>
-      {event.extra && (
-        <span className="text-muted-foreground/70 text-[10px] shrink-0">{event.extra}</span>
+      <span className="text-purple-400 w-24 shrink-0 truncate" title={event.target}>{event.targetName}</span>
+      {event.extra ? (
+        <Tooltip>
+          <TooltipTrigger asChild>{amountElement}</TooltipTrigger>
+          <TooltipContent side="top">{event.extra}</TooltipContent>
+        </Tooltip>
+      ) : (
+        amountElement
       )}
     </div>
   );

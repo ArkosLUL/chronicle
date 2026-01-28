@@ -21,6 +21,7 @@ export interface RawDebugEvent {
   caster: string;
   sourceName: string;
   target: string;
+  targetName: string;
   amount: number;
   resourceType?: ResourceType; // For resource_change events
   extra?: string; // school/hitType info
@@ -109,6 +110,12 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     // Store first N raw events per stream (ensures fair representation)
     const streamEvents = state.rawEventsByStream[streamType];
     if (streamEvents.length < MAX_RAW_EVENTS_PER_STREAM) {
+      // Look up target name from players or units
+      const targetName = 
+        context.players[event.target]?.name ?? 
+        context.units?.[event.target]?.name ?? 
+        event.target;
+      
       const rawEvent: RawDebugEvent = {
         index: event.index,
         offsetMilli: event.offsetMilli,
@@ -117,15 +124,18 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
         caster: event.caster,
         sourceName: event.sourceName,
         target: event.target,
+        targetName,
         amount: event.amount,
       };
       
-      // Add stream-specific info
-      if (event.type === "resource_change") {
-        rawEvent.resourceType = event.resourceType as ResourceType;
-        rawEvent.extra = event.direction;
-      } else if (event.type === "damage" || event.type === "heal") {
-        rawEvent.extra = `school=${event.school} hit=${event.hitType}`;
+      // Add stream-specific info based on streamType (not event.type which doesn't exist on raw events)
+      if (streamType === "resource_change") {
+        const rcEvent = event as ResourceChangeProcessorEvent;
+        rawEvent.resourceType = rcEvent.resourceType as ResourceType;
+        rawEvent.extra = rcEvent.direction;
+      } else if (streamType === "damage" || streamType === "heal") {
+        const dhEvent = event as DamageProcessorEvent | HealProcessorEvent;
+        rawEvent.extra = `school=${dhEvent.school} hit=${dhEvent.hitType}`;
       }
       
       streamEvents.push(rawEvent);

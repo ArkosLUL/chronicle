@@ -2,11 +2,12 @@
  * DeathLogContent - Chronological list of player deaths with timestamps
  */
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { GenericPanel } from "../GenericPanel";
 import type { PanelRenderProps } from "../types";
 import type { DeathsResult, DeathEvent } from "./deaths.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
+import { cn } from "@/lib/utils";
 
 
 function formatTimestamp(absoluteMilli: number): string {
@@ -41,6 +42,20 @@ type DeathLogContentProps = PanelRenderProps<DeathsResult>;
 
 export const DeathLogContent = (props: DeathLogContentProps) => {
   const { result, context, loading, processing } = props;
+
+  // Build encounter name lookup
+  const encounterNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const enc of context.instance.encounters) {
+      map.set(enc.id, enc.name);
+    }
+    return map;
+  }, [context.instance.encounters]);
+
+  // Handle encounter link click
+  const handleEncounterClick = useCallback((encounterId: string) => {
+    context.onSelectEncounters?.([encounterId]);
+  }, [context]);
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -88,19 +103,35 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left py-1.5 px-2 font-medium w-16">Time</th>
+                <th className="text-left py-1.5 px-2 font-medium">Encounter</th>
                 <th className="text-left py-1.5 px-2 font-medium w-16">Offset</th>
                 <th className="text-left py-1.5 px-2 font-medium">Player</th>
                 <th className="text-left py-1.5 px-2 font-medium">Killed By</th>
               </tr>
             </thead>
             <tbody>
-              {sortedDeaths.map((death, index) => (
+              {sortedDeaths.map((death, index) => {
+                const encounterName = encounterNames.get(death.encounterID) || "Unknown";
+                return (
                   <tr
                     key={`${death.playerID}-${death.offsetMilli}-${index}`}
                     className="border-b border-border/10 hover:bg-muted/50"
                   >
                     <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
                       {formatTimestamp(death.dateMilli)}
+                    </td>
+                    <td className="py-1 px-2 max-w-[120px]">
+                      <button
+                        type="button"
+                        onClick={() => handleEncounterClick(death.encounterID)}
+                        className={cn(
+                          "text-left text-2xs truncate max-w-full",
+                          "text-blue-500 hover:text-blue-400 hover:underline cursor-pointer"
+                        )}
+                        title={`Select ${encounterName}`}
+                      >
+                        {encounterName}
+                      </button>
                     </td>
                     <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
                       {formatRelativeTime(death.offsetMilli)}
@@ -117,7 +148,8 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                       {death.killerName || "Unknown"}
                     </td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

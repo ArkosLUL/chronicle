@@ -28,6 +28,9 @@ export interface PanelContext {
   
   /** Currently selected entity GUIDs for filtering display */
   entitySelection: EntitySelection;
+  
+  /** Callback to select specific encounter(s) */
+  onSelectEncounters?: (encounterIds: string[]) => void;
 }
 
 /**

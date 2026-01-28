@@ -463,6 +463,7 @@ interface EncounterDetailProps {
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
   onClearSelection: () => void;
+  onSelectEncounters: (encounterIds: string[]) => void;
 }
 
 function EncounterDetail({ 
@@ -476,6 +477,7 @@ function EncounterDetail({
   onSelectEnemies,
   onTogglePlayer,
   onClearSelection,
+  onSelectEncounters,
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
@@ -510,6 +512,7 @@ function EncounterDetail({
     instance,
     selectedEncounterIds: encounters.map(e => e.id),
     entitySelection,
+    onSelectEncounters,
   };
   
   // Helper to check if an enemy is selected
@@ -975,6 +978,7 @@ export function InstancePageView({
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}
             onClearSelection={clearEntitySelection}
+            onSelectEncounters={setInternalSelectedIds}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">

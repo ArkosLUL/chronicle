@@ -2,62 +2,50 @@ import { useMemo } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { DamageDoneResult, DamageSourceType } from "./damageDone.processor";
+import type { HealingDoneResult, HealingSourceType } from "./healingDone.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
-import { useDamageDoneBreakout } from "./DamageDoneBreakout";
+import { useHealingDoneBreakout } from "./HealingDoneBreakout";
 import { formatNumber } from "@/lib/format";
 
 /**
- * Aggregate damage data across selected encounters.
+ * Aggregate healing data across selected encounters.
  * Merges per-encounter data into a single map by player.
  * 
- * - If selected.enemyIds is non-empty, only sum damage dealt to those targets
  * - If selected.playerIds is non-empty, dim players not in selection
  */
 function aggregateForEncounters(
-  result: DamageDoneResult,
+  result: HealingDoneResult,
   selectedEncounterIds: string[],
   selected: EntitySelection,
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
   
-  const filterByEnemy = selected.enemyIds.size > 0;
   const hasPlayerSelection = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
-    const encounterDamage = result.EncounterDamage.get(encounterId);
-    if (!encounterDamage) continue;
+    const encounterHealing = result.EncounterHealing.get(encounterId);
+    if (!encounterHealing) continue;
     
-    for (const [playerId, data] of encounterDamage) {
-      // Calculate damage - either filtered by target or total
-      let damageValue = 0;
-      if (filterByEnemy) {
-        // Sum only damage to selected enemies
-        for (const [targetId, amount] of data.target) {
-          if (selected.enemyIds.has(targetId)) {
-            damageValue += amount;
-          }
-        }
-      } else {
-        // Sum all damage (no enemy filter)
-        for (const amount of data.target.values()) {
-          damageValue += amount;
-        }
+    for (const [playerId, data] of encounterHealing) {
+      // Sum all healing (no target filter for healing - we show all healing done)
+      let healingValue = 0;
+      for (const amount of data.target.values()) {
+        healingValue += amount;
       }
       
-      // Skip players with zero damage after filtering
-      if (damageValue === 0) continue;
+      // Skip players with zero healing
+      if (healingValue === 0) continue;
       
       const existing = aggregated.get(playerId);
       if (existing) {
-        existing.value += damageValue;
+        existing.value += healingValue;
       } else {
         aggregated.set(playerId, {
           playerID: data.playerID,
           playerName: data.playerName,
           className: data.className,
           specialization: data.specialization,
-          value: damageValue,
+          value: healingValue,
           dimmed: hasPlayerSelection && !selected.playerIds.has(playerId),
         });
       }
@@ -68,30 +56,30 @@ function aggregateForEncounters(
 }
 
 
-interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
-  sourceType?: DamageSourceType;
+interface HealingDoneContentProps extends PanelRenderProps<HealingDoneResult> {
+  sourceType?: HealingSourceType;
 }
 
-export const DamageDoneContent = (props: DamageDoneContentProps) => {
+export const HealingDoneContent = (props: HealingDoneContentProps) => {
   const { sourceType = "players" } = props;
   const { result, context } = props;
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterDamage.size > 0,
+    (r) => r.EncounterHealing.size > 0,
     [sourceType]
   );
 
-  const damageData = useMemo(() => {
+  const healingData = useMemo(() => {
     if (!cachedResult) return [];
     return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);
   }, [cachedResult, context.selectedEncounterIds, context.entitySelection]);
 
   // Create breakout function for tooltips
-  const breakout = useDamageDoneBreakout({
+  const breakout = useHealingDoneBreakout({
     result: result,
     context: context,
-    valueLabel: "Damage",
+    valueLabel: "Healing",
     perSecond: props.perSecond,
     durationMs: props.durationMs,
     loading: props.loading,
@@ -106,7 +94,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
   };
 
   // Compute display total
-  const total = damageData.reduce((sum, d) => sum + d.value, 0);
+  const total = healingData.reduce((sum, d) => sum + d.value, 0);
   const displayTotal = props.perSecond && props.durationMs
     ? formatNumber(total / (props.durationMs / 1000), 1)
     : formatNumber(total, 0);
@@ -117,9 +105,9 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
         Total: <span className="font-medium text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
       </div>
       <PlayerMetricChart 
-        data={damageData} 
-        type={"damage"} 
-        panelTitle="Damage Done"
+        data={healingData} 
+        type={"healing"} 
+        panelTitle="Healing Done"
         duration_millis={props.durationMs}
         perSecond={props.perSecond}
         breakout={breakout}

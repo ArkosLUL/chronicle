@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users } from "lucide-react";
 import { useUrlState, serializers } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
@@ -413,7 +413,7 @@ function EncounterDetail({
     'panel1', 'damage_done', eventsPanelSerializer
   );
   const [eventsPanel2Type, setEventsPanel2Type] = useUrlState<EventsPanelType>(
-    'panel2', 'all_activity', eventsPanelSerializer
+    'panel2', 'healing_done', eventsPanelSerializer
   );
   
   // Active tab and collapsible state
@@ -677,14 +677,15 @@ export interface InstancePageViewProps {
   instance: Instance;
   selectedEncounterIds?: string[];
   onSelectEncounters?: (encounterIds: string[]) => void;
-  onBack?: () => void;
+  /** URL to navigate to when clicking the back button */
+  backUrl?: string;
 }
 
 export function InstancePageView({
   instance,
   selectedEncounterIds,
   onSelectEncounters,
-  onBack,
+  backUrl,
 }: InstancePageViewProps) {
   // Find first boss kill, or first encounter if no boss kills
   const firstBossKill = instance.encounters.find((e) => e.boss && e.kill);
@@ -797,11 +798,13 @@ export function InstancePageView({
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-2">
-          {onBack && (
-            <Button variant="ghost" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
+          {backUrl && (
+            <Link to={backUrl}>
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            </Link>
           )}
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{instance.name}</h1>

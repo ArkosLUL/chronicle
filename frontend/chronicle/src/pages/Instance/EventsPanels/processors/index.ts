@@ -5,19 +5,19 @@
 import type { PanelProcessor } from "../processorTypes";
 import { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor } from "../DamageDone/damageDone.processor";
 import { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
-import { healingDoneProcessor } from "./healingDone.processor";
+import { healingDoneProcessor } from "../HealingDone/healingDone.processor";
 import { allActivityProcessor } from "./allActivity.processor";
 
 // Export individual processors
 export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor } from "../DamageDone/damageDone.processor";
 export { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
-export { healingDoneProcessor } from "./healingDone.processor";
+export { healingDoneProcessor } from "../HealingDone/healingDone.processor";
 export { allActivityProcessor } from "./allActivity.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
 export type { DamageTakenResult as DamageTakenState, DamageTakenData, DamageTargetType } from "../DamageTaken/damageTaken.processor";
-export type { HealingDoneState } from "./healingDone.processor";
+export type { HealingDoneResult as HealingDoneState, HealingDoneData, HealingSourceType } from "../HealingDone/healingDone.processor";
 export type { AllActivityState } from "./allActivity.processor";
 
 // Export shared utilities

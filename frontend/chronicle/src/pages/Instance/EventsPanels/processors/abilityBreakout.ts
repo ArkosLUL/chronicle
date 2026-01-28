@@ -72,12 +72,11 @@ export function accumulateAbilityBreakout(
   abilityName: string,
   amount: number,
   hitType: number,
-  sourceName?: string,
 ): void {
   const unitBreakout = byAbilityMap.get(unitId) || new Map<string, DamageAbilityBreakout>();
   const abilityBreakout = unitBreakout.get(abilityName) || createEmptyAbilityBreakout();
   
-  updateAbilityBreakout(abilityBreakout, amount, hitType, sourceName);
+  updateAbilityBreakout(abilityBreakout, amount, hitType, abilityName);
   
   unitBreakout.set(abilityName, abilityBreakout);
   byAbilityMap.set(unitId, unitBreakout);

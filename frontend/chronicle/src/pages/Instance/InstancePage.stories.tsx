@@ -425,21 +425,21 @@ const bossOnlyInstance: Instance = createInstance(
 export const Default: Story = {
   args: {
     instance: smCathedralInstance,
-    onBack: () => console.log("Back clicked"),
+    backUrl: "/logs",
   },
 };
 
 export const MoltenCore: Story = {
   args: {
     instance: moltenCoreInstance,
-    onBack: () => console.log("Back clicked"),
+    backUrl: "/logs",
   },
 };
 
 export const BossOnly: Story = {
   args: {
     instance: bossOnlyInstance,
-    onBack: () => console.log("Back clicked"),
+    backUrl: "/logs",
   },
 };
 
@@ -447,7 +447,7 @@ export const WipeSelected: Story = {
   args: {
     instance: moltenCoreInstance,
     selectedEncounterIds: ["mc-boss-4"], // Garr wipe
-    onBack: () => console.log("Back clicked"),
+    backUrl: "/logs",
   },
 };
 
@@ -455,7 +455,7 @@ export const MultipleSelected: Story = {
   args: {
     instance: moltenCoreInstance,
     selectedEncounterIds: ["mc-boss-1", "mc-boss-2", "mc-boss-3"], // First 3 bosses
-    onBack: () => console.log("Back clicked"),
+    backUrl: "/logs",
   },
   parameters: {
     docs: {

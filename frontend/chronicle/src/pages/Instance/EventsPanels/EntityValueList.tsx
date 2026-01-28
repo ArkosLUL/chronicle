@@ -2,18 +2,8 @@
  * Shared component for rendering entity-value lists
  */
 
+import { formatNumber } from "@/lib/format";
 import type { PanelRenderProps, EntityValueMap } from "./types";
-
-function formatNumber(value: number): string {
-  if (!value) return "0";
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`;
-  }
-  return value.toFixed(0);
-}
 
 export interface EntityValueListProps extends PanelRenderProps<EntityValueMap> {
   valueLabel: string;

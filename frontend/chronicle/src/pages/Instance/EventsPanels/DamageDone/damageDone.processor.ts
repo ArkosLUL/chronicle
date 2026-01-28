@@ -136,7 +136,7 @@ export function createDamageDoneProcessor(
           abilityName = abilityName + " (DoT)";
         }
 
-        accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, event.amount, event.hitType, event.sourceName);
+        accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, event.amount, event.hitType);
 
         const existingTargetBreakout = state.ByTarget.get(damageOwner) || new Map<string, number>();
         existingTargetBreakout.set(event.target, (existingTargetBreakout.get(event.target) || 0) + event.amount);

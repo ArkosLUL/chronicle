@@ -2,9 +2,21 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card/Card"
 import { Button } from "@/components/ui/button"
 import { decodePayload, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader } from "@/api/protodecode/decode"
-import { DamageSchema, type Damage, School } from "@/api/proto/chronicle_pb"
+import { DamageSchema, type Damage, HealSchema, type Heal, ResourceChangeSchema, type ResourceChange, School } from "@/api/proto/chronicle_pb"
+import type { GenMessage, Message } from "@bufbuild/protobuf"
 
 type DecodeMode = "payload" | "messages"
+type EventType = "damage" | "heal" | "resource_change"
+
+// Map event types to their schemas
+const eventSchemas: Record<EventType, GenMessage<Message>> = {
+  damage: DamageSchema,
+  heal: HealSchema,
+  resource_change: ResourceChangeSchema,
+}
+
+// Union type for all message types
+type AnyEventMessage = Damage | Heal | ResourceChange
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -24,8 +36,9 @@ export function ProtoDecode() {
   const [input, setInput] = useState("")
   const [instanceId, setInstanceId] = useState("")
   const [mode, setMode] = useState<DecodeMode>("payload")
+  const [eventType, setEventType] = useState<EventType>("damage")
   const [header, setHeader] = useState<PayloadHeader | null>(null)
-  const [messages, setMessages] = useState<Damage[]>([])
+  const [messages, setMessages] = useState<AnyEventMessage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([])
@@ -48,7 +61,8 @@ export function ProtoDecode() {
     setLoading(true)
 
     try {
-      const url = `/api/v1/raidlogs/instances/${instanceId.trim()}/events/damage`
+      const schema = eventSchemas[eventType]
+      const url = `/api/v1/raidlogs/instances/${instanceId.trim()}/events/${eventType}`
       const response = await fetch(url)
       
       if (!response.ok) {
@@ -71,12 +85,12 @@ export function ProtoDecode() {
       }
 
       if (mode === "payload") {
-        const result = decodePayload(DamageSchema, data)
+        const result = decodePayload(schema, data)
         setHeader(result.header)
-        setMessages(result.messages)
+        setMessages(result.messages as AnyEventMessage[])
       } else {
-        const msgs = decodeDelimitedMessages(DamageSchema, data)
-        setMessages(msgs)
+        const msgs = decodeDelimitedMessages(schema, data)
+        setMessages(msgs as AnyEventMessage[])
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -91,6 +105,7 @@ export function ProtoDecode() {
     setMessages([])
 
     try {
+      const schema = eventSchemas[eventType]
       let data = parseInput(input.trim())
 
       if (isGzipped(data)) {
@@ -98,12 +113,12 @@ export function ProtoDecode() {
       }
 
       if (mode === "payload") {
-        const result = decodePayload(DamageSchema, data)
+        const result = decodePayload(schema, data)
         setHeader(result.header)
-        setMessages(result.messages)
+        setMessages(result.messages as AnyEventMessage[])
       } else {
-        const msgs = decodeDelimitedMessages(DamageSchema, data)
-        setMessages(msgs)
+        const msgs = decodeDelimitedMessages(schema, data)
+        setMessages(msgs as AnyEventMessage[])
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -232,30 +247,68 @@ export function ProtoDecode() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Decode Mode</CardTitle>
+          <CardTitle>Settings</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 items-center">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === "payload"}
-                onChange={() => setMode("payload")}
-                className="accent-primary"
-              />
-              <span>Full Payload (with header)</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === "messages"}
-                onChange={() => setMode("messages")}
-                className="accent-primary"
-              />
-              <span>Messages Only (no header)</span>
-            </label>
+        <CardContent className="space-y-4">
+          <div>
+            <div className="text-sm font-medium mb-2">Event Type</div>
+            <div className="flex gap-4 items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="eventType"
+                  checked={eventType === "damage"}
+                  onChange={() => setEventType("damage")}
+                  className="accent-primary"
+                />
+                <span>Damage</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="eventType"
+                  checked={eventType === "heal"}
+                  onChange={() => setEventType("heal")}
+                  className="accent-primary"
+                />
+                <span>Heal</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="eventType"
+                  checked={eventType === "resource_change"}
+                  onChange={() => setEventType("resource_change")}
+                  className="accent-primary"
+                />
+                <span>Resource Change</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-medium mb-2">Decode Mode</div>
+            <div className="flex gap-4 items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="mode"
+                  checked={mode === "payload"}
+                  onChange={() => setMode("payload")}
+                  className="accent-primary"
+                />
+                <span>Full Payload (with header)</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="mode"
+                  checked={mode === "messages"}
+                  onChange={() => setMode("messages")}
+                  className="accent-primary"
+                />
+                <span>Messages Only (no header)</span>
+              </label>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -447,41 +500,126 @@ export function ProtoDecode() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">#</th>
-                    <th className="text-left p-2">Index</th>
-                    <th className="text-left p-2">Offset (ms)</th>
-                    <th className="text-left p-2">Caster</th>
-                    <th className="text-left p-2">Source</th>
-                    <th className="text-left p-2">Target</th>
-                    <th className="text-right p-2">Amount</th>
-                    <th className="text-left p-2">School</th>
-                    <th className="text-left p-2">Hit Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {messages.map((msg, i) => (
-                    <tr key={i} className="border-b hover:bg-muted/50">
-                      <td className="p-2 text-muted-foreground">{i}</td>
-                      <td className="p-2">{msg.meta?.index ?? "-"}</td>
-                      <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
-                      <td className="p-2">{msg.caster ?? "-"}</td>
-                      <td className="p-2">{msg.sourceName}</td>
-                      <td className="p-2">{msg.target}</td>
-                      <td className="p-2 text-right">{msg.amount}</td>
-                      <td className="p-2">{schoolName(msg.school)}</td>
-                      <td className="p-2">{msg.hitType}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {eventType === "damage" && (
+                <DamageTable messages={messages as Damage[]} />
+              )}
+              {eventType === "heal" && (
+                <HealingTable messages={messages as Heal[]} />
+              )}
+              {eventType === "resource_change" && (
+                <ResourceChangeTable messages={messages as ResourceChange[]} />
+              )}
             </div>
           </CardContent>
         </Card>
       )}
     </div>
+  )
+}
+
+// Table component for Damage events
+function DamageTable({ messages }: { messages: Damage[] }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b">
+          <th className="text-left p-2">#</th>
+          <th className="text-left p-2">Index</th>
+          <th className="text-left p-2">Offset (ms)</th>
+          <th className="text-left p-2">Caster</th>
+          <th className="text-left p-2">Source</th>
+          <th className="text-left p-2">Target</th>
+          <th className="text-right p-2">Amount</th>
+          <th className="text-left p-2">School</th>
+          <th className="text-left p-2">Hit Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {messages.map((msg, i) => (
+          <tr key={i} className="border-b hover:bg-muted/50">
+            <td className="p-2 text-muted-foreground">{i}</td>
+            <td className="p-2">{msg.meta?.index ?? "-"}</td>
+            <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
+            <td className="p-2">{msg.caster ?? "-"}</td>
+            <td className="p-2">{msg.sourceName}</td>
+            <td className="p-2">{msg.target}</td>
+            <td className="p-2 text-right">{msg.amount}</td>
+            <td className="p-2">{schoolName(msg.school)}</td>
+            <td className="p-2">{msg.hitType}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+// Table component for Healing events
+function HealingTable({ messages }: { messages: Heal[] }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b">
+          <th className="text-left p-2">#</th>
+          <th className="text-left p-2">Index</th>
+          <th className="text-left p-2">Offset (ms)</th>
+          <th className="text-left p-2">Caster</th>
+          <th className="text-left p-2">Source</th>
+          <th className="text-left p-2">Target</th>
+          <th className="text-right p-2">Amount</th>
+          <th className="text-left p-2">Hit Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {messages.map((msg, i) => (
+          <tr key={i} className="border-b hover:bg-muted/50">
+            <td className="p-2 text-muted-foreground">{i}</td>
+            <td className="p-2">{msg.meta?.index ?? "-"}</td>
+            <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
+            <td className="p-2">{msg.caster ?? "-"}</td>
+            <td className="p-2">{msg.sourceName}</td>
+            <td className="p-2">{msg.target}</td>
+            <td className="p-2 text-right">{msg.amount}</td>
+            <td className="p-2">{msg.hitType}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+// Table component for ResourceChange events
+function ResourceChangeTable({ messages }: { messages: ResourceChange[] }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b">
+          <th className="text-left p-2">#</th>
+          <th className="text-left p-2">Index</th>
+          <th className="text-left p-2">Offset (ms)</th>
+          <th className="text-left p-2">Caster</th>
+          <th className="text-left p-2">Source</th>
+          <th className="text-left p-2">Target</th>
+          <th className="text-right p-2">Amount</th>
+          <th className="text-left p-2">Resource</th>
+          <th className="text-left p-2">Direction</th>
+        </tr>
+      </thead>
+      <tbody>
+        {messages.map((msg, i) => (
+          <tr key={i} className="border-b hover:bg-muted/50">
+            <td className="p-2 text-muted-foreground">{i}</td>
+            <td className="p-2">{msg.meta?.index ?? "-"}</td>
+            <td className="p-2">{msg.meta?.offsetMilli?.toString() ?? "-"}</td>
+            <td className="p-2">{msg.caster ?? "-"}</td>
+            <td className="p-2">{msg.sourceName ?? "-"}</td>
+            <td className="p-2">{msg.target}</td>
+            <td className="p-2 text-right">{msg.amount}</td>
+            <td className="p-2">{msg.resourceType}</td>
+            <td className="p-2">{msg.direction}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 

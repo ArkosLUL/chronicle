@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { PanelRenderProps } from "./types";
+import { formatNumber } from "@/lib/format";
 
 export function GenericPanel<TResult>({
   loading,
@@ -37,15 +38,4 @@ export function GenericPanel<TResult>({
       )}
     </div>
   </>;
-}
-
-function formatNumber(value: number): string {
-  if (!value) return "0";
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`;
-  }
-  return value.toFixed(0);
 }

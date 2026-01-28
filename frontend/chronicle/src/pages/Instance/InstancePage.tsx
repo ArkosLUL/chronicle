@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useInstance, useInstanceDamageSummary, type EncounterDamageSummary } from "@/api/queries";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
@@ -130,7 +130,6 @@ function transformToInstance(
 // Connected component that fetches data
 export function InstancePage() {
   const { instanceId } = useParams<{ instanceId: string }>();
-  const navigate = useNavigate();
 
   const { data: apiInstance, isLoading: instanceLoading, error: instanceError } = useInstance(
     instanceId || "",
@@ -181,11 +180,14 @@ export function InstancePage() {
     );
   }
 
+  // Use log_group_id from the API response to construct back URL
+  const backUrl = apiInstance?.log_group_id ? `/logs/${apiInstance.log_group_id}` : "/logs";
+
   return (
     <InstanceEventsProvider instanceId={instanceId!}>
       <InstancePageView
         instance={instance}
-        onBack={() => navigate(-1)}
+        backUrl={backUrl}
       />
     </InstanceEventsProvider>
   );

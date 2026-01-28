@@ -5,6 +5,7 @@ import type { EntitySelection, PanelRenderProps } from "../types";
 import type { DamageTakenResult, DamageTargetType } from "./damageTaken.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDamageTakenBreakout } from "./DamageTakenBreakout";
+import { formatNumber } from "@/lib/format";
 
 /**
  * Aggregate damage taken data across selected encounters.
@@ -113,9 +114,17 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
   };
 
   const panelTitle = targetType === "players" ? "Damage Taken" : "Enemy Damage Taken";
+  // Compute display total
+  const total = damageData.reduce((sum, d) => sum + d.value, 0);
+  const displayTotal = props.perSecond && props.durationMs
+    ? formatNumber(total / (props.durationMs / 1000), 1)
+    : formatNumber(total, 0);
 
   return (
     <GenericPanel {...effectiveProps}>
+      <div className="text-xs text-muted-foreground">
+        Total: <span className="font-medium text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+      </div>
       <PlayerMetricChart 
         data={damageData} 
         type={"damage"} 

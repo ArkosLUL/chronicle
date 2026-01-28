@@ -4,7 +4,7 @@ export { EventsPanel, type EventsPanelProps, type EventsPanelType } from "./Even
 // Panel definitions
 export { createDamageDonePanel, type DamageSourceType } from "./DamageDone/DamageDone";
 export { createDamageTakenPanel, type DamageTargetType } from "./DamageTaken/DamageTaken";
-export { HealingDonePanel } from "./HealingDone";
+export { createHealingDonePanel, type HealingSourceType } from "./HealingDone/HealingDone";
 export { AllActivityPanel } from "./AllActivity";
 
 // Shared components

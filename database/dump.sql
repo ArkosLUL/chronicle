@@ -192,7 +192,8 @@ CREATE TABLE log_instances (
     id uuid NOT NULL,
     realm_id uuid NOT NULL,
     log_group_id uuid NOT NULL,
-    name text NOT NULL
+    name text NOT NULL,
+    hashed_slug text
 );
 
 CREATE TABLE parsed_log_group (
@@ -409,6 +410,8 @@ ALTER TABLE ONLY wow_servers
     ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
+
+CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 
 CREATE INDEX river_job_args_index ON river_job USING gin (args);
 

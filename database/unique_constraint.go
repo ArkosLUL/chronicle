@@ -29,6 +29,7 @@ const (
 	UniqueWowServerRealmsPkey                       UniqueConstraint = "wow_server_realms_pkey"                          // ALTER TABLE ONLY wow_server_realms ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
 	UniqueWowServersPkey                            UniqueConstraint = "wow_servers_pkey"                                // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 	UniqueFilesUniqueOwnerHash                      UniqueConstraint = "files_unique_owner_hash"                         // CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
+	UniqueLogInstancesHashedSlugIndex               UniqueConstraint = "log_instances_hashed_slug_idx"                   // CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 	UniqueRiverJobUniqueIndex                       UniqueConstraint = "river_job_unique_idx"                            // CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
 	UniqueUserAuthsUniqueLinkedID                   UniqueConstraint = "user_auths_unique_linked_id"                     // CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 )

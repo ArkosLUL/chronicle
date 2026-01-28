@@ -120,7 +120,7 @@ func (api *API) Routes() chi.Router {
 				r.Group(func(r chi.Router) {
 					r.Route("/instances", func(r chi.Router) {
 						r.Route("/{instance_id}", func(r chi.Router) {
-							r.Use(httpmw.InstanceIDMiddleware)
+							r.Use(httpmw.InstanceIDMiddleware(api.Opts.DB))
 							r.Get("/events/{type}", api.InstanceEvents)
 							r.Get("/", api.Instance)
 						})

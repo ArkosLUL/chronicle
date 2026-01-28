@@ -204,6 +204,7 @@ export interface WoWInstance {
     readonly realm_id: string;
     readonly log_group_id: string;
     readonly name: string;
+    readonly slug: string;
 }
 
 // From chroniclesdk/log.go

@@ -213,7 +213,7 @@ function InstanceCard({ instance }: { instance: WoWSimpleParsedInstance }) {
   const trashWipes = trashFights.filter(e => !e.kill).length;
   
   // Stub URL for now - will be replaced with actual route
-  const instanceUrl = `/instances/${instance.id}`;
+  const instanceUrl = `/instances/${instance.slug || instance.id}`;
   
   return (
     <div className="border rounded-lg overflow-hidden">

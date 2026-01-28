@@ -14,9 +14,9 @@ VALUES
 
 -- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug)
 VALUES
-  ($1, $2, $3, $4)
+  ($1, $2, $3, $4, $5)
 RETURNING *
 ;
 
@@ -35,6 +35,15 @@ FROM
   log_instances
 WHERE
   id = $1
+;
+
+-- name: InstanceBySlug :one
+SELECT
+  *
+FROM
+  log_instances
+WHERE
+  hashed_slug = $1 AND hashed_slug != ''
 ;
 
 -- name: EncountersByInstanceID :many

@@ -27,6 +27,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -160,13 +161,25 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 
 		err = db.InTx(func(tx database.Store) error {
-			dbinstance, err := tx.InsertInstance(ctx, database.InsertInstanceParams{
+			insertInstanceParams := database.InsertInstanceParams{
 				ID: instanceID,
 				// TODO: Detect this from the logs
 				RealmID:    dbstatic.RealmAmbershire(),
 				LogGroupID: job.Args.LogID,
 				Name:       inst.Name(),
-			})
+				HashedSlug: pgtype.Text{
+					String: database.InstanceSlug(job.Args.LogID, inst.Name()),
+					Valid:  true,
+				},
+			}
+
+			// Handling colliding slugs
+			_, err := tx.InstanceBySlug(ctx, insertInstanceParams.HashedSlug)
+			if err == nil {
+				insertInstanceParams.HashedSlug = pgtype.Text{Valid: false}
+			}
+
+			dbinstance, err := tx.InsertInstance(ctx, insertInstanceParams)
 			if err != nil {
 				return fmt.Errorf("insert instance: %w", err)
 			}

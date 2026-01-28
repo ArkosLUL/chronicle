@@ -504,10 +504,11 @@ type LogFile struct {
 }
 
 type LogInstance struct {
-	ID         uuid.UUID `db:"id" json:"id"`
-	RealmID    uuid.UUID `db:"realm_id" json:"realm_id"`
-	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
-	Name       string    `db:"name" json:"name"`
+	ID         uuid.UUID   `db:"id" json:"id"`
+	RealmID    uuid.UUID   `db:"realm_id" json:"realm_id"`
+	LogGroupID uuid.UUID   `db:"log_group_id" json:"log_group_id"`
+	Name       string      `db:"name" json:"name"`
+	HashedSlug pgtype.Text `db:"hashed_slug" json:"hashed_slug"`
 }
 
 type LogInstanceEncounter struct {

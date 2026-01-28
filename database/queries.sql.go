@@ -452,17 +452,18 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug)
 VALUES
-  ($1, $2, $3, $4)
-RETURNING id, realm_id, log_group_id, name
+  ($1, $2, $3, $4, $5)
+RETURNING id, realm_id, log_group_id, name, hashed_slug
 `
 
 type InsertInstanceParams struct {
-	ID         uuid.UUID `db:"id" json:"id"`
-	RealmID    uuid.UUID `db:"realm_id" json:"realm_id"`
-	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
-	Name       string    `db:"name" json:"name"`
+	ID         uuid.UUID   `db:"id" json:"id"`
+	RealmID    uuid.UUID   `db:"realm_id" json:"realm_id"`
+	LogGroupID uuid.UUID   `db:"log_group_id" json:"log_group_id"`
+	Name       string      `db:"name" json:"name"`
+	HashedSlug pgtype.Text `db:"hashed_slug" json:"hashed_slug"`
 }
 
 func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
@@ -471,6 +472,7 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		arg.RealmID,
 		arg.LogGroupID,
 		arg.Name,
+		arg.HashedSlug,
 	)
 	var i LogInstance
 	err := row.Scan(
@@ -478,6 +480,7 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		&i.RealmID,
 		&i.LogGroupID,
 		&i.Name,
+		&i.HashedSlug,
 	)
 	return i, err
 }
@@ -496,7 +499,7 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name
+  id, realm_id, log_group_id, name, hashed_slug
 FROM
   log_instances
 WHERE
@@ -511,6 +514,29 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstance, e
 		&i.RealmID,
 		&i.LogGroupID,
 		&i.Name,
+		&i.HashedSlug,
+	)
+	return i, err
+}
+
+const instanceBySlug = `-- name: InstanceBySlug :one
+SELECT
+  id, realm_id, log_group_id, name, hashed_slug
+FROM
+  log_instances
+WHERE
+  hashed_slug = $1 AND hashed_slug != ''
+`
+
+func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text) (LogInstance, error) {
+	row := q.db.QueryRow(ctx, instanceBySlug, hashedSlug)
+	var i LogInstance
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.LogGroupID,
+		&i.Name,
+		&i.HashedSlug,
 	)
 	return i, err
 }

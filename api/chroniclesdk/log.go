@@ -50,6 +50,7 @@ type WoWInstance struct {
 	RealmID    uuid.UUID `json:"realm_id"`
 	LogGroupID uuid.UUID `json:"log_group_id"`
 	Name       string    `json:"name"`
+	Slug       string    `json:"slug"`
 }
 
 type WoWEncounter struct {

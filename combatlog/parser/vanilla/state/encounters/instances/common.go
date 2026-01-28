@@ -120,6 +120,7 @@ func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) 
 		Characters:    characters,
 		Identifier:    f.Hostiles(),
 		events:        encounterevents.NewEvents(),
+		seen:          make(map[guid.GUID]struct{}),
 	}
 
 	return c

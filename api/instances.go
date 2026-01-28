@@ -13,12 +13,12 @@ import (
 
 func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	instanceID := httpmw.InstanceID(ctx)
+	inst := httpmw.Instance(ctx)
 	db := api.Opts.DB
 	eventType := chi.URLParam(r, "type")
 
 	evts, err := db.InstanceEvent(ctx, database.InstanceEventParams{
-		InstanceID: instanceID,
+		InstanceID: inst.ID,
 		Type:       eventType,
 	})
 	if err != nil {
@@ -40,22 +40,11 @@ func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	instanceID := httpmw.InstanceID(ctx)
+	inst := httpmw.Instance(ctx)
 
 	db := api.Opts.DB
-	inst, err := db.Instance(ctx, instanceID)
-	if err != nil {
-		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
-			Response: chroniclesdk.Response{
-				Message: "Failed to fetch instance",
-				Detail:  err.Error(),
-			},
-			Status: http.StatusInternalServerError,
-		})
-		return
-	}
 
-	encounters, err := db.EncountersByInstanceID(ctx, instanceID)
+	encounters, err := db.EncountersByInstanceID(ctx, inst.ID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -66,7 +55,7 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	units, err := db.InstanceUnitsByInstanceID(ctx, instanceID)
+	units, err := db.InstanceUnitsByInstanceID(ctx, inst.ID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -77,7 +66,7 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	players, err := db.InstancePlayersByInstanceID(ctx, instanceID)
+	players, err := db.InstancePlayersByInstanceID(ctx, inst.ID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -88,7 +77,7 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fights, err := db.GetInstanceEncounterCharacterFights(ctx, instanceID)
+	fights, err := db.GetInstanceEncounterCharacterFights(ctx, inst.ID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

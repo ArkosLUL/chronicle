@@ -54,6 +54,7 @@ func WoWInstance(instance database.LogInstance) chroniclesdk.WoWInstance {
 		RealmID:    instance.RealmID,
 		LogGroupID: instance.LogGroupID,
 		Name:       instance.Name,
+		Slug:       instance.HashedSlug.String,
 	}
 }
 
@@ -151,5 +152,3 @@ func JobStatus(status rivertype.JobRow) chroniclesdk.JobStatus {
 		Output:      status.Output(),
 	}
 }
-
-

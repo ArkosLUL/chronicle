@@ -5,7 +5,7 @@
  * It receives stream data and context, processes events, and returns results.
  */
 
-import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
@@ -26,7 +26,75 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
 }
 
 /**
+ * Union of all reusable event types
+ */
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain;
+
+/**
+ * A cursor wrapper that supports peeking at the next event without consuming it.
+ */
+interface PeekableCursor {
+  streamType: StreamType;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor;
+  peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
+}
+
+/**
+ * Peek at the next event from a cursor without consuming it.
+ * Returns null if no more events.
+ */
+function peekCursor(pc: PeekableCursor): { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null {
+  if (pc.peeked) return pc.peeked;
+  
+  // Advance to next encounter if needed
+  while (pc.cursor.currentHeader && !pc.cursor.hasMoreInEncounter) {
+    pc.cursor.nextEncounter();
+  }
+  
+  if (!pc.cursor.currentHeader) return null;
+  
+  const event = pc.cursor.next();
+  if (!event) return null;
+  
+  pc.peeked = { 
+    event, 
+    encounterID: pc.cursor.currentHeader.encounterID,
+    firstTimestamp: pc.cursor.currentHeader.firstTimestamp,
+  };
+  return pc.peeked;
+}
+
+/**
+ * Consume the peeked event (call after processing).
+ */
+function consumePeeked(pc: PeekableCursor): void {
+  pc.peeked = null;
+}
+
+/**
+ * Create a cursor for a stream.
+ */
+function createCursor(stream: WorkerRequest["streams"][0]): PeekableCursor {
+  const cursor = stream.type === "heal" 
+    ? new FastHealCursor(stream.data)
+    : stream.type === "resource_change"
+    ? new FastResourceChangeCursor(stream.data)
+    : stream.type === "extra_attack"
+    ? new FastExtraAttackCursor(stream.data)
+    : stream.type === "slain"
+    ? new FastSlainCursor(stream.data)
+    : new FastDamageCursor(stream.data);
+  
+  return {
+    streamType: stream.type as StreamType,
+    cursor,
+    peeked: null,
+  };
+}
+
+/**
  * Process all streams using the given processor.
+ * Interleaves events from all streams by index order.
  */
 function processStreams<TResult>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,31 +108,39 @@ function processStreams<TResult>(
   // Convert to ProcessorContext with Sets for fast lookups
   const context = deserializeContext(serializableContext);
   
-  for (const stream of streams) {
-    // Use the appropriate cursor based on stream type
-    const cursor = stream.type === "heal" 
-      ? new FastHealCursor(stream.data)
-      : stream.type === "resource_change"
-      ? new FastResourceChangeCursor(stream.data)
-      : stream.type === "extra_attack"
-      ? new FastExtraAttackCursor(stream.data)
-      : stream.type === "slain"
-      ? new FastSlainCursor(stream.data)
-      : new FastDamageCursor(stream.data);
+  // Create peekable cursors for all streams
+  const cursors = streams.map(createCursor);
+  
+  // Merge-iterate: always pick the cursor with the lowest index
+  while (true) {
+    // Find cursor with lowest index
+    let minCursor: PeekableCursor | null = null;
+    let minPeeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null = null;
     
-    while (cursor.currentHeader) {
-      const encounterID = cursor.currentHeader.encounterID;
-      
-      while (cursor.hasMoreInEncounter) {
-        const event = cursor.next();
-        if (!event) break;
-        
-        totalEvents++;
-        processor.processEvent(state, event, encounterID, cursor.currentHeader.firstTimestamp, stream.type as StreamType, context);
+    for (const pc of cursors) {
+      const peeked = peekCursor(pc);
+      if (peeked && (!minPeeked || peeked.event.index < minPeeked.event.index)) {
+        minCursor = pc;
+        minPeeked = peeked;
       }
-      
-      cursor.nextEncounter();
     }
+    
+    // No more events in any stream
+    if (!minCursor || !minPeeked) break;
+    
+    // Process the event with the lowest index
+    totalEvents++;
+    processor.processEvent(
+      state, 
+      minPeeked.event, 
+      minPeeked.encounterID, 
+      minPeeked.firstTimestamp, 
+      minCursor.streamType, 
+      context
+    );
+    
+    // Consume the peeked event
+    consumePeeked(minCursor);
   }
   
   return { result: state, totalEvents };

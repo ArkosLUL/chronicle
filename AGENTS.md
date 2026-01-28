@@ -204,6 +204,19 @@ ctx := testutil.Context(t, testutil.WaitMedium)  // 15s
 ctx := testutil.Context(t, testutil.WaitLong)    // 25s
 ```
 
+### Adding EventsPanels
+
+When adding a new panel to the Instance page EventsPanels system:
+
+1. **Create the processor** in `frontend/chronicle/src/pages/Instance/EventsPanels/processors/`
+2. **Register the processor** in `processors/index.ts` → `processorRegistry`
+3. **Create the panel component** that combines processor with React rendering
+4. **Add to PANELS registry** in `EventsPanel.tsx` - this defines `EventsPanelType`
+5. **Add to PANEL_CODES** in `hooks/useUrlState.ts` - TypeScript enforces this via `Record<PanelType, string>` where `PanelType = EventsPanelType`
+6. **Add to PANEL_CATEGORIES** in `PanelSelector.tsx` - so it appears in the dropdown menu
+
+Steps 4 and 5 are type-enforced: if you add a panel to `PANELS` but forget `PANEL_CODES`, TypeScript will error because `PANEL_CODES` must have all keys from `EventsPanelType`.
+
 ## Anti-Patterns
 
 ### Do Not

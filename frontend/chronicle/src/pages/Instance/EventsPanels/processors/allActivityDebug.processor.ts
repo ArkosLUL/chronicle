@@ -22,7 +22,7 @@ export interface RawDebugEvent {
 export interface AllActivityDebugState {
   /** Counts by entity */
   counts: Map<string, number>;
-  /** First 100 events for debugging */
+  /** Raw events in index order (worker now interleaves streams properly) */
   rawEvents: RawDebugEvent[];
   /** Count of events per stream type */
   streamCounts: Record<StreamType, number>;
@@ -31,7 +31,8 @@ export interface AllActivityDebugState {
 // This processor only handles damage, heal, and resource_change - not extra_attack
 type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
 
-const MAX_RAW_EVENTS = 100;
+// Capture first N events (worker interleaves by index, so this captures true order)
+const MAX_RAW_EVENTS = 500;
 
 export const allActivityDebugProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity_debug",
@@ -70,7 +71,7 @@ export const allActivityDebugProcessor: PanelProcessor<AllActivityDebugState, Al
     const key = event.caster || "Unknown";
     state.counts.set(key, (state.counts.get(key) || 0) + 1);
     
-    // Store first N raw events
+    // Store first N raw events (worker now interleaves by index)
     if (state.rawEvents.length < MAX_RAW_EVENTS) {
       const rawEvent: RawDebugEvent = {
         index: event.index,

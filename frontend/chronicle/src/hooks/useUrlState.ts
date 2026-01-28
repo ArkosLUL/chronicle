@@ -5,6 +5,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import type { EventsPanelType } from "@/pages/Instance/EventsPanels/EventsPanel";
 
 type Serializer<T> = {
   serialize: (value: T) => string | null;
@@ -602,11 +603,9 @@ export function useUrlStateMulti<T extends Record<string, unknown>>(
 
 /**
  * Panel type short codes for compact encoding.
- * Must match EventsPanelType from EventsPanel.
+ * Re-exported from EventsPanel to ensure type safety.
  */
-export type PanelType = 'damage_done' | 'enemy_damage_done' | 'pet_damage_done' | 
-  'damage_taken' | 'enemy_damage_taken' | 'healing_done' | 
-  'healing_taken' | 'extra_attacks' | 'deaths' | 'death_log' | 'all_activity' | 'all_activity_debug';
+export type PanelType = EventsPanelType;
 
 const PANEL_CODES: Record<PanelType, string> = {
   damage_done: 'dd',

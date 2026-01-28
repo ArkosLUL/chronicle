@@ -90,6 +90,9 @@ function AllActivityDebugRender({
     new Set(["damage", "heal", "resource_change"])
   );
   
+  // Configurable display limit
+  const [displayLimit, setDisplayLimit] = useState(100);
+  
   const toggleStream = (stream: StreamType) => {
     setEnabledStreams((prev) => {
       const next = new Set(prev);
@@ -109,10 +112,12 @@ function AllActivityDebugRender({
     streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0 },
   };
   
-  // Filter events by enabled streams
-  const filteredEvents = safeResult.rawEvents.filter(
-    (e) => enabledStreams.has(e.streamType)
-  );
+  // Raw events come in index order from worker (properly interleaved)
+  const rawEvents = safeResult.rawEvents ?? [];
+  
+  // Filter by enabled streams, then limit
+  const filteredByStream = rawEvents.filter((e) => enabledStreams.has(e.streamType));
+  const filteredEvents = filteredByStream.slice(0, displayLimit);
 
   if (loading) {
     return <div className="text-xs text-muted-foreground">Fetching data...</div>;
@@ -142,13 +147,30 @@ function AllActivityDebugRender({
         ))}
       </div>
       
-      {/* Stats */}
-      <div className="text-xs text-muted-foreground mb-2">
-        Total Events: <span className="font-medium text-foreground">{formatNumber(totalEvents)}</span>
-        <span className="mx-2">|</span>
-        Showing: <span className="font-medium text-foreground">{filteredEvents.length}</span> of {safeResult.rawEvents.length} captured
+      {/* Stats and limit control */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2 flex-wrap">
+        <span>
+          Total Events: <span className="font-medium text-foreground">{formatNumber(totalEvents)}</span>
+        </span>
+        <span>
+          Captured: <span className="font-medium text-foreground">{formatNumber(rawEvents.length)}</span>
+        </span>
+        <span>
+          Showing: <span className="font-medium text-foreground">{filteredEvents.length}</span> of {formatNumber(filteredByStream.length)} filtered
+        </span>
+        <label className="flex items-center gap-1">
+          Limit:
+          <input
+            type="number"
+            value={displayLimit}
+            onChange={(e) => setDisplayLimit(Math.max(1, Math.min(1000, parseInt(e.target.value) || 100)))}
+            className="w-16 px-1 py-0.5 text-xs bg-muted border rounded text-foreground"
+            min={1}
+            max={1000}
+          />
+        </label>
         {processingTimeMs !== null && (
-          <span className="ml-2 text-blue-500">
+          <span className="text-blue-500">
             ({processingTimeMs.toFixed(0)}ms)
           </span>
         )}

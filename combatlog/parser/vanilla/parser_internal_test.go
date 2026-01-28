@@ -175,14 +175,15 @@ func TestParserMessages(t *testing.T) {
 			HitType:   types.HitTypeCrit,
 		}, hc)
 
-		hot, err := exp[messages.Heal](p.ParseContent(time.Time{}, "0x000000000007C4E9 gains 303 health from 0x0000000000032723's Rejuvenation."))
+		hot, err := exp[messages.ResourceChange](p.ParseContent(time.Time{}, "0x000000000007C4E9 gains 303 health from 0x0000000000032723's Rejuvenation."))
 		require.NoError(t, err)
-		require.Equal(t, messages.Heal{
-			Caster:    0x0000000000032723,
+		require.Equal(t, messages.ResourceChange{
 			Target:    0x000000000007C4E9,
-			SpellName: "Rejuvenation",
 			Amount:    303,
-			HitType:   types.HitTypePeriodic,
+			Resource:  types.ResourceHealth,
+			Caster:    ptr.Ref(guid.GUID(0x0000000000032723)),
+			SpellName: ptr.Ref("Rejuvenation"),
+			Direction: types.ChangeDirectionGain,
 		}, hot)
 	})
 

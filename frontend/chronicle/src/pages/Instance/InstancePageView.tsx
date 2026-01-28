@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown } from "lucide-react";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree } from "lucide-react";
 import { useUrlState, serializers } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -196,8 +196,17 @@ function EncounterSidebar({
 
   const [trashOpen, setTrashOpen] = useState(false);
   const [manualExpandedGroup, setManualExpandedGroup] = useState<string | null>(null);
+  const [showChronological, setShowChronological] = useState(false);
 
   const effectiveTrashOpen = trashOpen || hasSelectedTrash;
+  
+  // Sort encounters by start time for chronological view
+  const chronologicalEncounters = useMemo(() => 
+    [...encounters].sort((a, b) => 
+      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    ),
+    [encounters]
+  );
   
   const isGroupExpanded = (groupName: string) => 
     manualExpandedGroup === groupName || groupsWithSelectedTrash.includes(groupName);
@@ -252,17 +261,73 @@ function EncounterSidebar({
             </Button>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 -mr-1 -mt-1"
-          onClick={onCollapse}
-          title="Hide sidebar"
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
+        <div className="flex items-start gap-1 -mt-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showChronological ? "default" : "ghost"}
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setShowChronological(!showChronological)}
+              >
+                {showChronological ? (
+                  <List className="h-4 w-4" />
+                ) : (
+                  <FolderTree className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {showChronological ? "Showing chronologically" : "Showing grouped by type"}
+            </TooltipContent>
+          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 -mr-1"
+            onClick={onCollapse}
+            title="Hide sidebar"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
+      {/* Chronological view - all encounters sorted by time */}
+      {showChronological ? (
+        <div className="space-y-1">
+          {chronologicalEncounters.map((encounter, idx) => {
+            const isSelected = selectedIds.includes(encounter.id);
+            const isWipe = !encounter.kill;
+            
+            return (
+              <button
+                key={encounter.id}
+                onClick={(e) => handleClick(encounter.id, e)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-colors",
+                  isSelected
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted",
+                  isWipe && !isSelected && "opacity-60",
+                  !encounter.boss && !isSelected && "text-muted-foreground"
+                )}
+              >
+                {encounter.kill ? (
+                  <CheckCircle className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-green-500" : "text-green-500/60")} />
+                ) : (
+                  <Skull className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-red-500" : "text-red-500/60")} />
+                )}
+                <span className="truncate flex-1">
+                  {encounter.boss ? encounter.name : <span className="italic">{encounter.name}</span>}
+                </span>
+                <span className="text-xs opacity-60">#{idx + 1}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+      <>
       {/* Boss encounters */}
       <div className="space-y-1">
         {bossEncounters.map((encounter) => {
@@ -359,6 +424,8 @@ function EncounterSidebar({
             </div>
           </CollapsibleContent>
         </Collapsible>
+      )}
+      </>
       )}
     </div>
   );

@@ -80,7 +80,7 @@ func ServerCmd() *serpent.Command {
 				Required:    false,
 				Flag:        "http-address",
 				Env:         "CHRONICLE_HTTP_ADDRESS",
-				Default:     "0.0.0.0:3000",
+				Default:     "0.0.0.0:4000",
 				Value:       serpent.StringOf(&httpAddress),
 			},
 			{

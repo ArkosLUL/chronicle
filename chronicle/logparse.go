@@ -326,6 +326,10 @@ func (w *logParseInstanceBuilder) insert(ctx context.Context, tx database.Store)
 
 func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 	for _, id := range ids {
+    if id == 0x0000000000000000 {
+      // TODO: Where does this bug come from?
+      continue
+    }
 		if _, ok := w.accounted[id]; ok {
 			continue
 		}

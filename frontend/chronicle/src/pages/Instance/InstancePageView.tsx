@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree } from "lucide-react";
-import { useUrlState, serializers } from "@/hooks/useUrlState";
+import { useUrlState, useEncounterUrlState, useIndexedUrlState, useIndexedRecordUrlState } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -164,6 +164,16 @@ function mergeEnemies(encounters: Encounter[]): MergedEnemy[] {
   }
 
   return Array.from(enemyMap.values()).sort((a, b) => b.damageTaken - a.damageTaken);
+}
+
+/**
+ * Merge enemies sorted by GUID for stable URL indexing.
+ * GUID sort ensures indices don't change when damage values update.
+ */
+function mergeEnemiesByGuid(encounters: Encounter[]): MergedEnemy[] {
+  const enemies = mergeEnemies(encounters);
+  // Sort by GUID (id) for stable ordering - indices won't change if damage changes
+  return enemies.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 // ============================================================================
@@ -453,16 +463,34 @@ interface EncounterDetailProps {
   onClearSelection: () => void;
 }
 
-// Serializer for EventsPanelType - validates against known panel types
+// Short codes for panel types (compact URL representation)
+// Maps: full type <-> short code
+const PANEL_SHORT_CODES: Record<EventsPanelType, string> = {
+  damage_done: 'dd',
+  enemy_damage_done: 'edd',
+  pet_damage_done: 'pdd',
+  damage_taken: 'dt',
+  enemy_damage_taken: 'edt',
+  healing_done: 'hd',
+  healing_taken: 'ht',
+  extra_attacks: 'xa',
+  deaths: 'd',
+  all_activity: 'aa',
+};
+
+const SHORT_CODE_TO_PANEL: Record<string, EventsPanelType> = Object.fromEntries(
+  Object.entries(PANEL_SHORT_CODES).map(([k, v]) => [v, k as EventsPanelType])
+);
+
+// Serializer for EventsPanelType - uses short codes for compact URLs
 const eventsPanelSerializer = {
-  serialize: (v: EventsPanelType) => v,
+  serialize: (v: EventsPanelType) => PANEL_SHORT_CODES[v] ?? v,
   deserialize: (v: string | null, d: EventsPanelType): EventsPanelType => {
-    const validTypes: EventsPanelType[] = [
-      'damage_done', 'enemy_damage_done', 'pet_damage_done', 
-      'damage_taken', 'enemy_damage_taken', 'healing_done', 
-      'healing_taken', 'extra_attacks', 'deaths', 'all_activity'
-    ];
-    return v && validTypes.includes(v as EventsPanelType) ? v as EventsPanelType : d;
+    if (!v) return d;
+    // Try short code first, then full name for backwards compatibility
+    if (v in SHORT_CODE_TO_PANEL) return SHORT_CODE_TO_PANEL[v];
+    if (v in PANEL_SHORT_CODES) return v as EventsPanelType;
+    return d;
   },
 };
 
@@ -479,18 +507,18 @@ function EncounterDetail({
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
   
-  // Events panel state - URL persisted
+  // Events panel state - URL persisted (short keys: p1, p2, p3, p4)
   const [eventsPanel1Type, setEventsPanel1Type] = useUrlState<EventsPanelType>(
-    'panel1', 'damage_done', eventsPanelSerializer
+    'p1', 'damage_done', eventsPanelSerializer
   );
   const [eventsPanel2Type, setEventsPanel2Type] = useUrlState<EventsPanelType>(
-    'panel2', 'healing_done', eventsPanelSerializer
+    'p2', 'healing_done', eventsPanelSerializer
   );
   const [eventsPanel3Type, setEventsPanel3Type] = useUrlState<EventsPanelType>(
-    'panel3', 'damage_taken', eventsPanelSerializer
+    'p3', 'damage_taken', eventsPanelSerializer
   );
   const [eventsPanel4Type, setEventsPanel4Type] = useUrlState<EventsPanelType>(
-    'panel4', 'enemy_damage_done', eventsPanelSerializer
+    'p4', 'enemy_damage_done', eventsPanelSerializer
   );
   
   // Active tab and collapsible state
@@ -721,27 +749,33 @@ function EncounterDetail({
                       playerList.map((player) => {
                         const isSelected = isPlayerSelected(player.guid);
                         return (
-                          <button
-                            key={player.guid}
-                            onClick={() => onTogglePlayer(player.guid)}
-                            className={cn(
-                              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
-                              "bg-muted/50 border border-border hover:bg-muted",
-                              isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
-                              hasSelection && !isSelected && "opacity-50"
-                            )}
-                          >
-                            <span
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: `var(--class-${player.class.toLowerCase()})` }}
-                            />
-                            <span
-                              className="font-medium"
-                              style={{ color: `var(--class-${player.class.toLowerCase()})` }}
-                            >
-                              {player.name}
-                            </span>
-                          </button>
+                          <Tooltip key={player.guid}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => onTogglePlayer(player.guid)}
+                                className={cn(
+                                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
+                                  "bg-muted/50 border border-border hover:bg-muted",
+                                  isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                                  hasSelection && !isSelected && "opacity-50"
+                                )}
+                              >
+                                <span
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: `var(--class-${player.class.toLowerCase()})` }}
+                                />
+                                <span
+                                  className="font-medium"
+                                  style={{ color: `var(--class-${player.class.toLowerCase()})` }}
+                                >
+                                  {player.name}
+                                </span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <span className="font-mono text-xs">{player.guid}</span>
+                            </TooltipContent>
+                          </Tooltip>
                         );
                       })
                     )}
@@ -806,11 +840,18 @@ export function InstancePageView({
   const defaultEncounter = firstBossKill || instance.encounters[0];
   const defaultEncounterId = defaultEncounter?.id ?? "";
   
+  // Compute all enemies from all encounters (GUID-sorted for stable URL indexing)
+  const allMergedEnemies = useMemo(
+    () => mergeEnemiesByGuid(instance.encounters),
+    [instance.encounters]
+  );
+  
   // URL-persisted state for encounter selection
-  const [urlEncounterIds, setUrlEncounterIds] = useUrlState(
-    "encounters",
-    [] as string[],
-    serializers.stringArray
+  // Uses keywords (all/bosses/trash) when applicable, otherwise indices
+  const [urlEncounterIds, setUrlEncounterIds] = useEncounterUrlState(
+    "e",  // short key for "encounters"
+    instance.encounters,
+    [] as string[]
   );
   
   // Use URL state if present, otherwise use prop or default
@@ -832,10 +873,19 @@ export function InstancePageView({
   
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  // URL-persisted entity selection state
+  // URL-persisted entity selection state (uses indices for compact URLs)
   const [, setSearchParams] = useSearchParams();
-  const [urlEnemyIds, setUrlEnemyIds] = useUrlState("enemies", new Set<string>(), serializers.stringSet);
-  const [urlPlayerIds, setUrlPlayerIds] = useUrlState("players", new Set<string>(), serializers.stringSet);
+  const [urlEnemyIds, setUrlEnemyIds] = useIndexedUrlState(
+    "en",  // short key for "enemies"
+    new Set<string>(),
+    allMergedEnemies,
+    "set"
+  );
+  const [urlPlayerIds, setUrlPlayerIds] = useIndexedRecordUrlState(
+    "pl",  // short key for "players"
+    new Set<string>(),
+    instance.players ?? {}
+  );
   
   const entitySelection = useMemo<EntitySelection>(() => ({
     enemyIds: urlEnemyIds,
@@ -878,8 +928,8 @@ export function InstancePageView({
   const clearEntitySelection = () => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      next.delete("enemies");
-      next.delete("players");
+      next.delete("en");  // enemies
+      next.delete("pl");  // players
       return next;
     }, { replace: true });
   };

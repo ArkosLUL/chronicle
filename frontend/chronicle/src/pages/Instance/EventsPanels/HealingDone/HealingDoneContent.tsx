@@ -11,7 +11,8 @@ import { formatNumber } from "@/lib/format";
  * Aggregate healing data across selected encounters.
  * Merges per-encounter data into a single map by player.
  * 
- * - If selected.playerIds is non-empty, dim players not in selection
+ * - If selected.playerIds is non-empty, only sum healing done to those targets
+ * - Healers not in selection are dimmed
  */
 function aggregateForEncounters(
   result: HealingDoneResult,
@@ -20,20 +21,31 @@ function aggregateForEncounters(
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
   
-  const hasPlayerSelection = selected.playerIds.size > 0;
+  const filterByTarget = selected.playerIds.size > 0;
+  const hasHealerSelection = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterHealing = result.EncounterHealing.get(encounterId);
     if (!encounterHealing) continue;
     
     for (const [playerId, data] of encounterHealing) {
-      // Sum all healing (no target filter for healing - we show all healing done)
+      // Calculate healing - either filtered by target or total
       let healingValue = 0;
-      for (const amount of data.target.values()) {
-        healingValue += amount;
+      if (filterByTarget) {
+        // Sum only healing to selected players
+        for (const [targetId, amount] of data.target) {
+          if (selected.playerIds.has(targetId)) {
+            healingValue += amount;
+          }
+        }
+      } else {
+        // Sum all healing (no target filter)
+        for (const amount of data.target.values()) {
+          healingValue += amount;
+        }
       }
       
-      // Skip players with zero healing
+      // Skip players with zero healing after filtering
       if (healingValue === 0) continue;
       
       const existing = aggregated.get(playerId);
@@ -46,7 +58,8 @@ function aggregateForEncounters(
           className: data.className,
           specialization: data.specialization,
           value: healingValue,
-          dimmed: hasPlayerSelection && !selected.playerIds.has(playerId),
+          // Never dim for healing, since we are selecting targets.
+          // dimmed: hasHealerSelection && !selected.playerIds.has(playerId),
         });
       }
     }

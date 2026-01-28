@@ -543,7 +543,7 @@ function EncounterDetail({
             </div>
 
             <CollapsibleContent>
-              <div className="mt-3">
+              <div>
                 <TabsContent value="enemies" className="mt-0">
                   <div className="flex flex-wrap gap-2">
                     {mergedEnemies.length === 0 ? (
@@ -557,7 +557,7 @@ function EncounterDetail({
                               <button
                                 onClick={() => onToggleEnemy(enemy.id)}
                                 className={cn(
-                                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
+                                  "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-all",
                                   enemy.killed
                                     ? "bg-green-500/15 border border-green-500/30"
                                     : "bg-red-500/15 border border-red-500/30",
@@ -566,12 +566,12 @@ function EncounterDetail({
                                 )}
                               >
                                 <span className={cn(
-                                  "w-2 h-2 rounded-full flex-shrink-0",
+                                  "w-1.5 h-1.5 rounded-full flex-shrink-0",
                                   enemy.killed ? "bg-green-500" : "bg-red-500"
                                 )} />
                                 <span className="font-medium">{enemy.name}</span>
-                                <span className="text-muted-foreground text-xs">
-                                  {formatDamageNumber(enemy.damageTaken)} dmg taken
+                                <span className="text-muted-foreground text-[10px]">
+                                  {formatDamageNumber(enemy.damageTaken)}
                                 </span>
                               </button>
                             </TooltipTrigger>

@@ -57,10 +57,16 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 
 	encounters := make([]Encounter, 0, len(c.completedFights))
 	for _, fight := range c.completedFights {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		encounterName := ""
 		encounterType := types.EncounterTypeTRASH
 		boss := false
 		for hid, h := range fight.Hostiles {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
 			if hid != h.ID {
 				panic("inconsistent hostile ID mapping")
 			}

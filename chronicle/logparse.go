@@ -197,6 +197,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			// Store the encounters into the database
 			sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(finalized.Encounters))
 			for _, enc := range finalized.Encounters {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
 					ID:         enc.Combat.EncounterID,
 					InstanceID: dbinstance.ID,

@@ -454,6 +454,23 @@ export function PlayerMetricRow({
         >
           {((player.value/summedValue)*100).toFixed(2)}%
         </span>
+        
+        {/* Overheal percentage - shown when stackedValue exists */}
+        {player.stackedValue !== undefined && player.stackedValue > 0 && (
+          <span
+            style={{
+              width: '50px',
+              textAlign: 'right',
+              fontSize: '11px',
+              fontWeight: 500,
+              color: 'var(--color-yellow-500)',
+              opacity: 0.7,
+            }}
+            title={`${((player.stackedValue / (player.value + player.stackedValue)) * 100).toFixed(1)}% overhealing`}
+          >
+            ({((player.stackedValue / (player.value + player.stackedValue)) * 100).toFixed(0)}%)
+          </span>
+        )}
       </div>
     </div>
   )

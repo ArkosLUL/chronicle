@@ -91,11 +91,17 @@ export function AbilityTable({
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
                   {ability.name}
                 </td>
-                {hasOverhealData && (
-                  <td className="text-right py-1 px-2 tabular-nums text-yellow-500/70">
-                    {(ability.overheal ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                  </td>
-                )}
+                {hasOverhealData && (() => {
+                  const overhealVal = ability.overheal ?? 0;
+                  const totalForAbility = ability.value + overhealVal;
+                  const overhealPct = totalForAbility > 0 ? (overhealVal / totalForAbility) * 100 : 0;
+                  return (
+                    <td className="text-right py-1 px-2 tabular-nums text-yellow-500/70">
+                      {overhealVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                      <span className="text-yellow-500/50 ml-1">({overhealPct.toFixed(0)}%)</span>
+                    </td>
+                  );
+                })()}
                 <td className="text-right py-1 px-2 tabular-nums">
                   {ability.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>

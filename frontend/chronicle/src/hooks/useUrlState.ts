@@ -595,3 +595,297 @@ export function useUrlStateMulti<T extends Record<string, unknown>>(
 
   return [values, setValue];
 }
+
+// ============================================================================
+// Compact View State (single URL param)
+// ============================================================================
+
+/**
+ * Panel type short codes for compact encoding.
+ * Must match EventsPanelType from EventsPanel.
+ */
+export type PanelType = 'damage_done' | 'enemy_damage_done' | 'pet_damage_done' | 
+  'damage_taken' | 'enemy_damage_taken' | 'healing_done' | 
+  'healing_taken' | 'extra_attacks' | 'deaths' | 'all_activity';
+
+const PANEL_CODES: Record<PanelType, string> = {
+  damage_done: 'dd',
+  enemy_damage_done: 'edd',
+  pet_damage_done: 'pdd',
+  damage_taken: 'dt',
+  enemy_damage_taken: 'edt',
+  healing_done: 'hd',
+  healing_taken: 'ht',
+  extra_attacks: 'xa',
+  deaths: 'd',
+  all_activity: 'aa',
+};
+
+const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(
+  Object.entries(PANEL_CODES).map(([k, v]) => [v, k as PanelType])
+);
+
+/**
+ * View state structure for the Instance page
+ */
+export interface InstanceViewState {
+  /** Selected encounter IDs */
+  encounters: string[];
+  /** Selected enemy IDs */
+  enemies: Set<string>;
+  /** Selected player IDs */
+  players: Set<string>;
+  /** Panel types for panels 1-4 */
+  panels: [PanelType, PanelType, PanelType, PanelType];
+}
+
+export interface InstanceViewStateConfig {
+  /** All encounters in the instance */
+  encounters: readonly { id: string; boss: boolean }[];
+  /** All enemies (sorted by GUID for stable indexing) */
+  enemies: readonly { id: string }[];
+  /** All players */
+  players: Record<string, unknown>;
+  /** Default values */
+  defaults: {
+    encounterIds: string[];
+    panels: [PanelType, PanelType, PanelType, PanelType];
+  };
+}
+
+/**
+ * Hook for managing Instance page view state as a single base64-encoded URL param.
+ * 
+ * Format: `?v=<base64>` where the decoded value is:
+ * `<encounters>|<enemies>|<players>|<panels>`
+ * 
+ * - encounters: "all", "bosses", "trash", or comma-separated indices
+ * - enemies: comma-separated indices (empty if none)
+ * - players: comma-separated indices (empty if none)
+ * - panels: 4 short codes separated by commas
+ * 
+ * @example
+ * ```tsx
+ * const { state, setEncounters, setEnemies, setPlayers, setPanelType, clearEntitySelection } = 
+ *   useInstanceViewState({
+ *     encounters: instance.encounters,
+ *     enemies: allMergedEnemies,
+ *     players: instance.players,
+ *     defaults: {
+ *       encounterIds: [defaultEncounterId],
+ *       panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done'],
+ *     },
+ *   });
+ * ```
+ */
+export function useInstanceViewState(config: InstanceViewStateConfig): {
+  state: InstanceViewState;
+  setEncounters: (ids: string[] | ((prev: string[]) => string[])) => void;
+  setEnemies: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+  setPlayers: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+  setPanelType: (index: 0 | 1 | 2 | 3, type: PanelType) => void;
+  clearEntitySelection: () => void;
+} {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Build lookup maps for encounters
+  const encounterMaps = useMemo(() => {
+    const all = new Set(config.encounters.map(e => e.id));
+    const bosses = new Set(config.encounters.filter(e => e.boss).map(e => e.id));
+    const trash = new Set(config.encounters.filter(e => !e.boss).map(e => e.id));
+    const idToIdx = new Map<string, number>();
+    const idxToId = new Map<number, string>();
+    config.encounters.forEach((e, idx) => {
+      idToIdx.set(e.id, idx);
+      idxToId.set(idx, e.id);
+    });
+    return { allIds: all, bossIds: bosses, trashIds: trash, idToIndex: idToIdx, indexToId: idxToId };
+  }, [config.encounters]);
+  
+  // Build lookup maps for enemies
+  const enemyMaps = useMemo(() => {
+    const idToIdx = new Map<string, number>();
+    const idxToId = new Map<number, string>();
+    config.enemies.forEach((e, idx) => {
+      idToIdx.set(e.id, idx);
+      idxToId.set(idx, e.id);
+    });
+    return { idToIndex: idToIdx, indexToId: idxToId };
+  }, [config.enemies]);
+  
+  // Build lookup maps for players (sorted keys)
+  const playerMaps = useMemo(() => {
+    const sortedKeys = Object.keys(config.players).sort();
+    const idToIdx = new Map<string, number>();
+    const idxToId = new Map<number, string>();
+    sortedKeys.forEach((id, idx) => {
+      idToIdx.set(id, idx);
+      idxToId.set(idx, id);
+    });
+    return { idToIndex: idToIdx, indexToId: idxToId };
+  }, [config.players]);
+
+  // Helper to check set equality
+  const setsEqual = useCallback((a: Set<string>, b: Set<string>) => 
+    a.size === b.size && [...a].every(id => b.has(id)), []);
+
+  // Parse state from URL
+  const state = useMemo((): InstanceViewState => {
+    const raw = searchParams.get('v');
+    if (!raw) {
+      return {
+        encounters: config.defaults.encounterIds,
+        enemies: new Set(),
+        players: new Set(),
+        panels: config.defaults.panels,
+      };
+    }
+    
+    try {
+      // Format: encounters.enemies.players.panels (dot-separated sections, dash-separated items)
+      const [encPart, enPart, plPart, panelPart] = raw.split('.');
+      
+      // Parse encounters
+      let encounters: string[];
+      if (encPart === 'all') {
+        encounters = Array.from(encounterMaps.allIds);
+      } else if (encPart === 'bosses') {
+        encounters = Array.from(encounterMaps.bossIds);
+      } else if (encPart === 'trash') {
+        encounters = Array.from(encounterMaps.trashIds);
+      } else if (encPart) {
+        encounters = encPart.split('-')
+          .map(s => parseInt(s, 10))
+          .filter(n => !isNaN(n))
+          .map(idx => encounterMaps.indexToId.get(idx))
+          .filter((id): id is string => id !== undefined);
+      } else {
+        encounters = config.defaults.encounterIds;
+      }
+      if (encounters.length === 0) encounters = config.defaults.encounterIds;
+      
+      // Parse enemies
+      const enemies = new Set(
+        (enPart || '').split('-')
+          .map(s => parseInt(s, 10))
+          .filter(n => !isNaN(n))
+          .map(idx => enemyMaps.indexToId.get(idx))
+          .filter((id): id is string => id !== undefined)
+      );
+      
+      // Parse players
+      const players = new Set(
+        (plPart || '').split('-')
+          .map(s => parseInt(s, 10))
+          .filter(n => !isNaN(n))
+          .map(idx => playerMaps.indexToId.get(idx))
+          .filter((id): id is string => id !== undefined)
+      );
+      
+      // Parse panels
+      const panelCodes = (panelPart || '').split('-');
+      const panels: [PanelType, PanelType, PanelType, PanelType] = [
+        CODE_TO_PANEL[panelCodes[0]] ?? config.defaults.panels[0],
+        CODE_TO_PANEL[panelCodes[1]] ?? config.defaults.panels[1],
+        CODE_TO_PANEL[panelCodes[2]] ?? config.defaults.panels[2],
+        CODE_TO_PANEL[panelCodes[3]] ?? config.defaults.panels[3],
+      ];
+      
+      return { encounters, enemies, players, panels };
+    } catch {
+      return {
+        encounters: config.defaults.encounterIds,
+        enemies: new Set(),
+        players: new Set(),
+        panels: config.defaults.panels,
+      };
+    }
+  }, [searchParams, config.defaults, encounterMaps, enemyMaps, playerMaps]);
+
+  // Serialize state to URL (dot-separated sections, dash-separated items)
+  const serializeState = useCallback((newState: InstanceViewState): string => {
+    // Encounters
+    let encPart: string;
+    const selectedSet = new Set(newState.encounters);
+    if (setsEqual(selectedSet, encounterMaps.allIds)) {
+      encPart = 'all';
+    } else if (setsEqual(selectedSet, encounterMaps.bossIds) && encounterMaps.bossIds.size > 0) {
+      encPart = 'bosses';
+    } else if (setsEqual(selectedSet, encounterMaps.trashIds) && encounterMaps.trashIds.size > 0) {
+      encPart = 'trash';
+    } else {
+      const indices = newState.encounters
+        .map(id => encounterMaps.idToIndex.get(id))
+        .filter((idx): idx is number => idx !== undefined);
+      encPart = indices.join('-');
+    }
+    
+    // Enemies
+    const enIndices = Array.from(newState.enemies)
+      .map(id => enemyMaps.idToIndex.get(id))
+      .filter((idx): idx is number => idx !== undefined);
+    const enPart = enIndices.join('-');
+    
+    // Players
+    const plIndices = Array.from(newState.players)
+      .map(id => playerMaps.idToIndex.get(id))
+      .filter((idx): idx is number => idx !== undefined);
+    const plPart = plIndices.join('-');
+    
+    // Panels
+    const panelPart = newState.panels.map(p => PANEL_CODES[p]).join('-');
+    
+    return `${encPart}.${enPart}.${plPart}.${panelPart}`;
+  }, [encounterMaps, enemyMaps, playerMaps, setsEqual]);
+
+  // Check if state matches defaults (to omit URL param entirely)
+  const isDefaultState = useCallback((s: InstanceViewState): boolean => {
+    const defaultEncs = new Set(config.defaults.encounterIds);
+    const selectedEncs = new Set(s.encounters);
+    return setsEqual(selectedEncs, defaultEncs) &&
+      s.enemies.size === 0 &&
+      s.players.size === 0 &&
+      s.panels.every((p, i) => p === config.defaults.panels[i]);
+  }, [config.defaults, setsEqual]);
+
+  // Update URL with new state
+  const updateUrl = useCallback((newState: InstanceViewState) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (isDefaultState(newState)) {
+        newParams.delete('v');
+      } else {
+        newParams.set('v', serializeState(newState));
+      }
+      return newParams;
+    }, { replace: true });
+  }, [setSearchParams, serializeState, isDefaultState]);
+
+  // Individual setters
+  const setEncounters = useCallback((value: string[] | ((prev: string[]) => string[])) => {
+    const newEncounters = typeof value === 'function' ? value(state.encounters) : value;
+    updateUrl({ ...state, encounters: newEncounters });
+  }, [state, updateUrl]);
+
+  const setEnemies = useCallback((value: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    const newEnemies = typeof value === 'function' ? value(state.enemies) : value;
+    updateUrl({ ...state, enemies: newEnemies });
+  }, [state, updateUrl]);
+
+  const setPlayers = useCallback((value: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    const newPlayers = typeof value === 'function' ? value(state.players) : value;
+    updateUrl({ ...state, players: newPlayers });
+  }, [state, updateUrl]);
+
+  const setPanelType = useCallback((index: 0 | 1 | 2 | 3, type: PanelType) => {
+    const newPanels = [...state.panels] as [PanelType, PanelType, PanelType, PanelType];
+    newPanels[index] = type;
+    updateUrl({ ...state, panels: newPanels });
+  }, [state, updateUrl]);
+
+  const clearEntitySelection = useCallback(() => {
+    updateUrl({ ...state, enemies: new Set(), players: new Set() });
+  }, [state, updateUrl]);
+
+  return { state, setEncounters, setEnemies, setPlayers, setPanelType, clearEntitySelection };
+}

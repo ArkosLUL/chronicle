@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree } from "lucide-react";
-import { useUrlState, useEncounterUrlState, useIndexedUrlState, useIndexedRecordUrlState } from "@/hooks/useUrlState";
+import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -457,48 +457,21 @@ interface EncounterDetailProps {
   encounters: Encounter[];
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
+  panelTypes: [PanelType, PanelType, PanelType, PanelType];
+  onPanelTypeChange: (index: 0 | 1 | 2 | 3, type: PanelType) => void;
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
   onClearSelection: () => void;
 }
 
-// Short codes for panel types (compact URL representation)
-// Maps: full type <-> short code
-const PANEL_SHORT_CODES: Record<EventsPanelType, string> = {
-  damage_done: 'dd',
-  enemy_damage_done: 'edd',
-  pet_damage_done: 'pdd',
-  damage_taken: 'dt',
-  enemy_damage_taken: 'edt',
-  healing_done: 'hd',
-  healing_taken: 'ht',
-  extra_attacks: 'xa',
-  deaths: 'd',
-  all_activity: 'aa',
-};
-
-const SHORT_CODE_TO_PANEL: Record<string, EventsPanelType> = Object.fromEntries(
-  Object.entries(PANEL_SHORT_CODES).map(([k, v]) => [v, k as EventsPanelType])
-);
-
-// Serializer for EventsPanelType - uses short codes for compact URLs
-const eventsPanelSerializer = {
-  serialize: (v: EventsPanelType) => PANEL_SHORT_CODES[v] ?? v,
-  deserialize: (v: string | null, d: EventsPanelType): EventsPanelType => {
-    if (!v) return d;
-    // Try short code first, then full name for backwards compatibility
-    if (v in SHORT_CODE_TO_PANEL) return SHORT_CODE_TO_PANEL[v];
-    if (v in PANEL_SHORT_CODES) return v as EventsPanelType;
-    return d;
-  },
-};
-
 function EncounterDetail({ 
   instance,
   encounters,
   players,
   entitySelection,
+  panelTypes,
+  onPanelTypeChange,
   onToggleEnemy,
   onSelectEnemies,
   onTogglePlayer,
@@ -507,19 +480,13 @@ function EncounterDetail({
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
   
-  // Events panel state - URL persisted (short keys: p1, p2, p3, p4)
-  const [eventsPanel1Type, setEventsPanel1Type] = useUrlState<EventsPanelType>(
-    'p1', 'damage_done', eventsPanelSerializer
-  );
-  const [eventsPanel2Type, setEventsPanel2Type] = useUrlState<EventsPanelType>(
-    'p2', 'healing_done', eventsPanelSerializer
-  );
-  const [eventsPanel3Type, setEventsPanel3Type] = useUrlState<EventsPanelType>(
-    'p3', 'damage_taken', eventsPanelSerializer
-  );
-  const [eventsPanel4Type, setEventsPanel4Type] = useUrlState<EventsPanelType>(
-    'p4', 'enemy_damage_done', eventsPanelSerializer
-  );
+  // Panel types from props (managed by parent via URL state)
+  // Note: PanelType and EventsPanelType are identical unions, cast for compatibility
+  const [eventsPanel1Type, eventsPanel2Type, eventsPanel3Type, eventsPanel4Type] = panelTypes;
+  const setEventsPanel1Type = (type: EventsPanelType) => onPanelTypeChange(0, type as PanelType);
+  const setEventsPanel2Type = (type: EventsPanelType) => onPanelTypeChange(1, type as PanelType);
+  const setEventsPanel3Type = (type: EventsPanelType) => onPanelTypeChange(2, type as PanelType);
+  const setEventsPanel4Type = (type: EventsPanelType) => onPanelTypeChange(3, type as PanelType);
   
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
@@ -846,25 +813,35 @@ export function InstancePageView({
     [instance.encounters]
   );
   
-  // URL-persisted state for encounter selection
-  // Uses keywords (all/bosses/trash) when applicable, otherwise indices
-  const [urlEncounterIds, setUrlEncounterIds] = useEncounterUrlState(
-    "e",  // short key for "encounters"
-    instance.encounters,
-    [] as string[]
-  );
+  // URL-persisted view state (base64 encoded single param)
+  const { 
+    state: viewState, 
+    setEncounters: setUrlEncounterIds, 
+    setEnemies: setUrlEnemyIds, 
+    setPlayers: setUrlPlayerIds, 
+    setPanelType,
+    clearEntitySelection,
+  } = useInstanceViewState({
+    encounters: instance.encounters,
+    enemies: allMergedEnemies,
+    players: instance.players ?? {},
+    defaults: {
+      encounterIds: defaultEncounterId ? [defaultEncounterId] : [],
+      panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done'],
+    },
+  });
   
   // Use URL state if present, otherwise use prop or default
   const internalSelectedIds = useMemo(() => {
-    if (urlEncounterIds.length > 0) {
+    if (viewState.encounters.length > 0) {
       // Filter to only valid encounter IDs
-      const validIds = urlEncounterIds.filter(id => 
+      const validIds = viewState.encounters.filter(id => 
         instance.encounters.some(e => e.id === id)
       );
       if (validIds.length > 0) return validIds;
     }
     return selectedEncounterIds || (defaultEncounterId ? [defaultEncounterId] : []);
-  }, [urlEncounterIds, selectedEncounterIds, defaultEncounterId, instance.encounters]);
+  }, [viewState.encounters, selectedEncounterIds, defaultEncounterId, instance.encounters]);
   
   const setInternalSelectedIds = (ids: string[]) => {
     setUrlEncounterIds(ids);
@@ -873,24 +850,10 @@ export function InstancePageView({
   
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  // URL-persisted entity selection state (uses indices for compact URLs)
-  const [, setSearchParams] = useSearchParams();
-  const [urlEnemyIds, setUrlEnemyIds] = useIndexedUrlState(
-    "en",  // short key for "enemies"
-    new Set<string>(),
-    allMergedEnemies,
-    "set"
-  );
-  const [urlPlayerIds, setUrlPlayerIds] = useIndexedRecordUrlState(
-    "pl",  // short key for "players"
-    new Set<string>(),
-    instance.players ?? {}
-  );
-  
   const entitySelection = useMemo<EntitySelection>(() => ({
-    enemyIds: urlEnemyIds,
-    playerIds: urlPlayerIds,
-  }), [urlEnemyIds, urlPlayerIds]);
+    enemyIds: viewState.enemies,
+    playerIds: viewState.players,
+  }), [viewState.enemies, viewState.players]);
   
   // Toggle enemy selection
   const toggleEnemySelection = (enemyId: string) => {
@@ -921,17 +884,6 @@ export function InstancePageView({
       }
       return next;
     });
-  };
-  
-  // Clear all entity selections - use setSearchParams directly to clear both in one update
-  // (avoids race condition where two separate useUrlState updates can override each other)
-  const clearEntitySelection = () => {
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
-      next.delete("en");  // enemies
-      next.delete("pl");  // players
-      return next;
-    }, { replace: true });
   };
 
   const selectedIds = selectedEncounterIds ?? internalSelectedIds;
@@ -1018,6 +970,8 @@ export function InstancePageView({
             encounters={selectedEncounters}
             players={instance.players ?? {}}
             entitySelection={entitySelection}
+            panelTypes={viewState.panels}
+            onPanelTypeChange={setPanelType}
             onToggleEnemy={toggleEnemySelection}
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}

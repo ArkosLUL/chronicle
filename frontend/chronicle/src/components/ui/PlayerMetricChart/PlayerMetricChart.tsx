@@ -229,7 +229,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
   return (
     <div
       ref={tooltipRef}
-      className="border-3 border-solid  fixed z-50 min-w-[340px] rounded-md bg-foreground text-background shadow-md"
+      className="bg-card text-foreground border-3 border-solid  fixed z-50 min-w-[340px] rounded-md shadow-md"
       style={{
         left: position.x,
         top: position.y,
@@ -244,17 +244,17 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
         data-drag-handle
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        <GripHorizontal className="h-4 w-4 text-background/60 flex-shrink-0" />
+        <GripHorizontal className="h-4 w-4 flex-shrink-0" />
         <span 
           className="w-3 h-3 rounded-full flex-shrink-0"
           style={{ backgroundColor: player.color }}
         />
         <span className="font-medium">{player.playerName}</span>
-        <span className="text-background/60 text-xs">
+        <span className="text-muted-foreground text-xs">
           {player.className}
         </span>
         {panelTitle && (
-          <span className="text-xs text-background/60 border-l border-background/20 pl-2 ml-auto">
+          <span className="text-xs text-muted-foreground border-l border-background/20 pl-2 ml-auto">
             {panelTitle}
           </span>
         )}
@@ -263,12 +263,12 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
             e.stopPropagation()
             onClose()
           }}
-          className={cn("p-1 rounded hover:bg-background/20 text-background/60 hover:text-background transition-colors", !panelTitle && "ml-auto")}
+          className={cn("p-1 rounded bg-destructive/5 text-destructive/75 hover:bg-destructive/25 hover:text-destructive cursor-pointer transition-colors", !panelTitle && "ml-auto")}
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className='bg-card'>
+      <div>
         {breakout?.(player.playerID, true)}
       </div>
     </div>

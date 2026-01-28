@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Chronicled" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="chronicle" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="--tags static" />
+    <parameters value="server --dev-auth --jwt-secret-pem=&quot;dev&quot;" />
+    <kind value="PACKAGE" />
+    <package value="github.com/Emyrk/chronicle/cmd/chronicled" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/cmd/chronicled/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

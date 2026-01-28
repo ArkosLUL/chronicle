@@ -178,6 +178,11 @@ export type WoWEnvironmentType = "fall" | "lava";
 
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["fall", "lava"];
 
+// From chroniclesdk/constants.go
+export type WoWEventType = "damage" | "heal" | "resource_change";
+
+export const WoWEventTypes: WoWEventType[] = ["damage", "heal", "resource_change"];
+
 // From types/constants.go
 export type WoWHeroClasses = "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";
 

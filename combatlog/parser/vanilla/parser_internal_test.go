@@ -174,6 +174,16 @@ func TestParserMessages(t *testing.T) {
 			Amount:    1048,
 			HitType:   types.HitTypeCrit,
 		}, hc)
+
+		hot, err := exp[messages.Heal](p.ParseContent(time.Time{}, "0x000000000007C4E9 gains 303 health from 0x0000000000032723's Rejuvenation."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Heal{
+			Caster:    0x0000000000032723,
+			Target:    0x000000000007C4E9,
+			SpellName: "Rejuvenation",
+			Amount:    303,
+			HitType:   types.HitTypePeriodic,
+		}, hot)
 	})
 
 	t.Run("Slain", func(t *testing.T) {

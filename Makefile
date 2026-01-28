@@ -85,7 +85,7 @@ test-postgres-docker:
 		sleep 0.5; \
 	done
 
-frontend/chronicle/src/api/typesGenerated.ts: $(wildcard scripts/apitypings/*) $(shell find ./api/chroniclesdk $(FIND_EXCLUSIONS) -type f -name '*.go') go.mod go.sum
+frontend/chronicle/src/api/typesGenerated.ts: gen/go $(wildcard scripts/apitypings/*) $(shell find ./api/chroniclesdk $(FIND_EXCLUSIONS) -type f -name '*.go') go.mod go.sum
 	# -C sets the directory for the go run command
 	go run -C ./scripts/apitypings main.go > $@
 	#(cd frontend/chronicle/ && pnpm exec biome format --write src/api/typesGenerated.ts)
@@ -103,10 +103,10 @@ database/dump.sql: $(wildcard database/migrations/*.sql)
 gen/db: $(DB_GEN_FILES)
 .PHONY: gen/db
 
-gen/proto:
-	go generate ./api/chronicleproto/...
-.PHONY: gen/proto
+
+.PHONY: gen/go
+gen/go:
+	go generate ./...
 
 .PHONY: gen
-gen: gen/db gen/proto database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
-	go generate ./...
+gen: gen/db gen/go database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts

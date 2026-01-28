@@ -68,6 +68,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 }
 
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {
+	e.setFirsts(m.Date())
 	switch ty := m.(type) {
 	case messages.Damage:
 		err := AddToBuilder(e.Damage, ty, e.nextIndex(), types2proto.Damage)

@@ -22,8 +22,8 @@ export interface RawDebugEvent {
 export interface AllActivityDebugState {
   /** Counts by entity */
   counts: Map<string, number>;
-  /** Raw events in index order (worker now interleaves streams properly) */
-  rawEvents: RawDebugEvent[];
+  /** Raw events captured per stream (to ensure fair representation) */
+  rawEventsByStream: Record<StreamType, RawDebugEvent[]>;
   /** Count of events per stream type */
   streamCounts: Record<StreamType, number>;
 }
@@ -31,8 +31,8 @@ export interface AllActivityDebugState {
 // This processor only handles damage, heal, and resource_change - not extra_attack
 type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
 
-// Capture first N events (worker interleaves by index, so this captures true order)
-const MAX_RAW_EVENTS = 500;
+// Capture first N events per stream to ensure fair representation
+const MAX_RAW_EVENTS_PER_STREAM = 200;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
@@ -40,7 +40,13 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
   
   createState: () => ({
     counts: new Map<string, number>(),
-    rawEvents: [],
+    rawEventsByStream: {
+      damage: [],
+      heal: [],
+      resource_change: [],
+      extra_attack: [],
+      slain: [],
+    },
     streamCounts: {
       damage: 0,
       heal: 0,
@@ -71,8 +77,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     const key = event.caster || "Unknown";
     state.counts.set(key, (state.counts.get(key) || 0) + 1);
     
-    // Store first N raw events (worker now interleaves by index)
-    if (state.rawEvents.length < MAX_RAW_EVENTS) {
+    // Store first N raw events per stream (ensures fair representation)
+    const streamEvents = state.rawEventsByStream[streamType];
+    if (streamEvents.length < MAX_RAW_EVENTS_PER_STREAM) {
       const rawEvent: RawDebugEvent = {
         index: event.index,
         offsetMilli: event.offsetMilli,
@@ -90,7 +97,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
         rawEvent.extra = `school=${event.school} hit=${event.hitType}`;
       }
       
-      state.rawEvents.push(rawEvent);
+      streamEvents.push(rawEvent);
     }
   },
 };

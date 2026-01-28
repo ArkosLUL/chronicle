@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Activity, Swords, Heart, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
-import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
 import type { PanelDefinition, PanelRenderProps } from "./types";
 import { allActivityProcessor, type AllActivityState, type RawDebugEvent } from "./processors";
 import type { StreamType } from "@/hooks/instanceEvents";
@@ -63,16 +63,16 @@ function RawEventRow({ event, index }: RawEventRowProps) {
   
   return (
     <div className="flex items-center gap-2 text-xs font-mono py-0.5 border-b border-border/30 hover:bg-muted/30">
-      <span className="text-muted-foreground w-6 text-right">{index}</span>
-      <Icon className={cn("h-3 w-3 flex-shrink-0", config.color)} />
-      <span className="text-muted-foreground w-20">{timeStr}</span>
-      <span className="text-blue-400 w-24 truncate" title={event.sourceName}>{event.sourceName}</span>
-      <span className="text-muted-foreground">→</span>
-      <span className="text-purple-400 w-24 truncate" title={event.target}>{event.target}</span>
-      <span className={cn("w-12 text-right", config.color)}>{formatNumber(event.amount)}</span>
-      {event.extra && (
-        <span className="text-muted-foreground/70 text-[10px] truncate">{event.extra}</span>
-      )}
+      <span className="text-muted-foreground w-6 text-right shrink-0">{index}</span>
+      <Icon className={cn("h-3 w-3 shrink-0", config.color)} />
+      <span className="text-muted-foreground w-20 shrink-0">{timeStr}</span>
+      <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>{event.sourceName}</span>
+      <span className="text-muted-foreground shrink-0">→</span>
+      <span className="text-purple-400 w-24 shrink-0 truncate" title={event.target}>{event.target}</span>
+      <span className={cn("w-12 text-right shrink-0", config.color)}>{formatNumber(event.amount)}</span>
+      {/* {event.extra && (
+        <span className="text-muted-foreground/70 text-[10px] shrink-0">{event.extra}</span>
+      )} */}
     </div>
   );
 }
@@ -106,18 +106,29 @@ function AllActivityRender({
   };
   
   // Default state during loading
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [] };
   const safeResult = result ?? {
     counts: new Map<string, number>(),
-    rawEvents: [],
+    rawEventsByStream: emptyByStream,
     streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0 },
   };
   
-  // Raw events come in index order from worker (properly interleaved)
-  const rawEvents = safeResult.rawEvents ?? [];
+  // Merge enabled streams and sort by index to show true interleaving
+  const rawEventsByStream = safeResult.rawEventsByStream ?? emptyByStream;
+  const enabledEvents = [
+    ...(enabledStreams.has("damage") ? rawEventsByStream.damage : []),
+    ...(enabledStreams.has("heal") ? rawEventsByStream.heal : []),
+    ...(enabledStreams.has("resource_change") ? rawEventsByStream.resource_change : []),
+  ];
   
-  // Filter by enabled streams, then limit
-  const filteredByStream = rawEvents.filter((e) => enabledStreams.has(e.streamType));
-  const filteredEvents = filteredByStream.slice(0, displayLimit);
+  // Sort by index to reconstruct true event order
+  const sortedEvents = enabledEvents.sort((a, b) => a.index - b.index);
+  const filteredEvents = sortedEvents.slice(0, displayLimit);
+  
+  // Count total captured across all streams
+  const totalCaptured = rawEventsByStream.damage.length + 
+    rawEventsByStream.heal.length + 
+    rawEventsByStream.resource_change.length;
 
   if (loading) {
     return <div className="text-xs text-muted-foreground">Fetching data...</div>;
@@ -153,10 +164,10 @@ function AllActivityRender({
           Total Events: <span className="font-medium text-foreground">{formatNumber(totalEvents)}</span>
         </span>
         <span>
-          Captured: <span className="font-medium text-foreground">{formatNumber(rawEvents.length)}</span>
+          Captured: <span className="font-medium text-foreground">{formatNumber(totalCaptured)}</span>
         </span>
         <span>
-          Showing: <span className="font-medium text-foreground">{filteredEvents.length}</span> of {formatNumber(filteredByStream.length)} filtered
+          Showing: <span className="font-medium text-foreground">{filteredEvents.length}</span> of {formatNumber(sortedEvents.length)} enabled
         </span>
         <label className="flex items-center gap-1">
           Limit:
@@ -178,17 +189,17 @@ function AllActivityRender({
       
       {/* Raw events list */}
       <ScrollArea className="h-80 border rounded">
-        <div className="p-1">
+        <div className="p-1 min-w-max">
           {/* Header */}
           <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground py-1 border-b sticky top-0 bg-background">
-            <span className="w-6 text-right">#</span>
-            <span className="w-3"></span>
-            <span className="w-20">Time</span>
-            <span className="w-24">Source</span>
-            <span></span>
-            <span className="w-24">Target</span>
-            <span className="w-12 text-right">Amount</span>
-            <span>Extra</span>
+            <span className="w-6 text-right shrink-0">#</span>
+            <span className="w-3 shrink-0"></span>
+            <span className="w-20 shrink-0">Time</span>
+            <span className="w-24 shrink-0">Source</span>
+            <span className="shrink-0"></span>
+            <span className="w-24 shrink-0">Target</span>
+            <span className="w-12 text-right shrink-0">Amount</span>
+            {/* <span className="shrink-0">Extra</span> */}
           </div>
           
           {filteredEvents.length === 0 ? (
@@ -201,6 +212,7 @@ function AllActivityRender({
             ))
           )}
         </div>
+        <ScrollBar orientation="horizontal" />
       </ScrollArea>
     </div>
   );

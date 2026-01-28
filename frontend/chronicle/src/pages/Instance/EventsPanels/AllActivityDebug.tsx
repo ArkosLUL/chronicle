@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
 import type { PanelDefinition, PanelRenderProps } from "./types";
-import { allActivityProcessor, type AllActivityState, type RawDebugEvent } from "./processors";
+import { allActivityProcessor, type AllActivityState, type RawDebugEvent, type EncounterMeta } from "./processors";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 // Stream type configurations
@@ -107,11 +107,20 @@ function AllActivityRender({
   
   // Default state during loading
   const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [] };
+  const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
     streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0 },
+    encounters: emptyEncounters,
   };
+  
+  // Get encounters map (handle both Map and deserialized object)
+  // After worker serialization, Maps become objects with __serializedMap__ marker
+  // After usePanelAggregation deserializes, it should be a Map again
+  const encounters: Map<string, EncounterMeta> = safeResult.encounters instanceof Map 
+    ? safeResult.encounters 
+    : new Map<string, EncounterMeta>();
   
   // Merge enabled streams and sort by index to show true interleaving
   const rawEventsByStream = safeResult.rawEventsByStream ?? emptyByStream;
@@ -207,9 +216,28 @@ function AllActivityRender({
               No events to display. Enable some streams.
             </div>
           ) : (
-            filteredEvents.map((event, idx) => (
-              <RawEventRow key={`${event.streamType}-${event.index}`} event={event} index={idx} />
-            ))
+            (() => {
+              let lastEncounterID: string | null = null;
+              return filteredEvents.map((event, idx) => {
+                const showHeader = event.encounterID !== lastEncounterID;
+                lastEncounterID = event.encounterID;
+                const encounterMeta = encounters.get(event.encounterID);
+                const timestamp = encounterMeta 
+                  ? new Date(encounterMeta.firstTimestamp).toLocaleTimeString()
+                  : "???";
+                
+                return (
+                  <div key={`${event.streamType}-${event.index}`}>
+                    {showHeader && (
+                      <div className="flex items-center gap-2 text-[10px] font-semibold text-cyan-400 py-1 mt-1 border-t border-cyan-400/30 bg-cyan-400/5">
+                        <span className="px-1">📍 Encounter: {event.encounterID.slice(0, 8)}... @ {timestamp}</span>
+                      </div>
+                    )}
+                    <RawEventRow event={event} index={idx} />
+                  </div>
+                );
+              });
+            })()
           )}
         </div>
         <ScrollBar orientation="horizontal" />

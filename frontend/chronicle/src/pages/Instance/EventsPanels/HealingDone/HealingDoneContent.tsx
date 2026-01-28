@@ -31,7 +31,7 @@ function aggregateForEncounters(
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData & { overhealTotal: number }>();
   
-  const filterByTarget = selected.playerIds.size > 0;
+  // const filterByTarget = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterHealing = result.EncounterHealingByHealer.get(encounterId);
@@ -42,19 +42,19 @@ function aggregateForEncounters(
       let effectiveValue = 0;
       let overhealValue = 0;
       
-      if (filterByTarget) {
-        // Sum only healing to selected players
-        for (const [targetId, targetData] of data.target) {
-          if (selected.playerIds.has(targetId)) {
-            effectiveValue += targetData.effective;
-            overhealValue += targetData.overheal;
-          }
-        }
-      } else {
+      // if (filterByTarget) {
+      //   // Sum only healing to selected players
+      //   for (const [targetId, targetData] of data.target) {
+      //     if (selected.playerIds.has(targetId)) {
+      //       effectiveValue += targetData.effective;
+      //       overhealValue += targetData.overheal;
+      //     }
+      //   }
+      // } else {
         // Use aggregate totals (faster)
         effectiveValue = data.effectiveTotal;
         overhealValue = data.overhealTotal;
-      }
+      // }
       
       // Determine display value based on mode
       let displayValue: number;
@@ -94,6 +94,7 @@ function aggregateForEncounters(
           value: displayValue,
           stackedValue,
           overhealTotal: overhealValue,
+          dimmed: selected.playerIds.size > 0 && !selected.playerIds.has(playerId),
         });
       }
     }

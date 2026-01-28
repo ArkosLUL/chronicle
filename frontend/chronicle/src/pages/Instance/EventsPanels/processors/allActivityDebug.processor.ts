@@ -11,12 +11,21 @@ import type { StreamType } from "@/hooks/instanceEvents";
 export interface RawDebugEvent {
   index: number;
   offsetMilli: number;
+  encounterID: string;
   streamType: StreamType;
   caster: string;
   sourceName: string;
   target: string;
   amount: number;
   extra?: string; // resourceType/school info
+}
+
+/**
+ * Encounter metadata for display
+ */
+export interface EncounterMeta {
+  encounterID: string;
+  firstTimestamp: number; // ms since epoch
 }
 
 export interface AllActivityDebugState {
@@ -26,13 +35,15 @@ export interface AllActivityDebugState {
   rawEventsByStream: Record<StreamType, RawDebugEvent[]>;
   /** Count of events per stream type */
   streamCounts: Record<StreamType, number>;
+  /** Encounter metadata: encounterID -> first timestamp */
+  encounters: Map<string, EncounterMeta>;
 }
 
 // This processor only handles damage, heal, and resource_change - not extra_attack
 type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
 
 // Capture first N events per stream to ensure fair representation
-const MAX_RAW_EVENTS_PER_STREAM = 200;
+const MAX_RAW_EVENTS_PER_STREAM = 500;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
@@ -54,16 +65,28 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       extra_attack: 0,
       slain: 0,
     },
+    encounters: new Map<string, EncounterMeta>(),
   }),
   
   processEvent: (
     state: AllActivityDebugState,
     event: AllActivityEvent,
-    _encounterID: string,
-    _firstTimestamp: Date,
+    encounterID: string,
+    firstTimestamp: Date,
     streamType: StreamType,
     context: ProcessorContext
   ) => {
+    if(!context.selectedEncounterIds.has(encounterID)) {
+      return;
+    }
+    // Track encounter metadata
+    if (!state.encounters.has(encounterID)) {
+      state.encounters.set(encounterID, {
+        encounterID,
+        firstTimestamp: firstTimestamp.getTime(),
+      });
+    }
+    
     // Filter by selected players if any are selected
     const { entitySelection } = context;
     if (entitySelection.playerIds.size > 0) {
@@ -83,6 +106,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       const rawEvent: RawDebugEvent = {
         index: event.index,
         offsetMilli: event.offsetMilli,
+        encounterID,
         streamType,
         caster: event.caster,
         sourceName: event.sourceName,

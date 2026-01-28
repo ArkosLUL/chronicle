@@ -32,7 +32,7 @@ export type { AllActivityState } from "./allActivity.processor";
 // Export shared utilities
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
 
-export { isResourceChangeEvent, isHealingEvent } from "./events";
+export { isResourceChangeEvent, isHealingEvent, isDamageEvent } from "./events";
 
 /**
  * Registry of all processors by panel ID.

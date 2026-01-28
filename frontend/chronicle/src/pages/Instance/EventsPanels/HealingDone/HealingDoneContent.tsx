@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
@@ -6,20 +6,29 @@ import type { HealingDoneResult, HealingSourceType } from "./healingDone.process
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useHealingDoneBreakout } from "./HealingDoneBreakout";
 import { formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+/**
+ * View modes for healing display
+ */
+export type HealingViewMode = "effective" | "overheal" | "total";
 
 /**
  * Aggregate healing data across selected encounters.
  * Merges per-encounter data into a single map by player.
  * 
- * - If selected.playerIds is non-empty, only sum healing done to those targets
- * - Healers not in selection are dimmed
+ * @param viewMode - Controls what values are shown:
+ *   - "effective": value = effective healing, stackedValue = overhealing
+ *   - "overheal": value = overhealing only (no stacked)
+ *   - "total": value = total healing (effective + overheal), no stacked
  */
 function aggregateForEncounters(
   result: HealingDoneResult,
   selectedEncounterIds: string[],
   selected: EntitySelection,
+  viewMode: HealingViewMode,
 ): PlayerMetricChartData[] {
-  const aggregated = new Map<string, PlayerMetricChartData>();
+  const aggregated = new Map<string, PlayerMetricChartData & { overhealTotal: number }>();
   
   const filterByTarget = selected.playerIds.size > 0;
   
@@ -29,36 +38,61 @@ function aggregateForEncounters(
     
     for (const [playerId, data] of encounterHealing) {
       // Calculate healing - either filtered by target or total
-      let healingValue = 0;
+      let effectiveValue = 0;
+      let overhealValue = 0;
+      
       if (filterByTarget) {
         // Sum only healing to selected players
-        for (const [targetId, amount] of data.target) {
+        for (const [targetId, targetData] of data.target) {
           if (selected.playerIds.has(targetId)) {
-            healingValue += amount;
+            effectiveValue += targetData.effective;
+            overhealValue += targetData.overheal;
           }
         }
       } else {
-        // Sum all healing (no target filter)
-        for (const amount of data.target.values()) {
-          healingValue += amount;
-        }
+        // Use aggregate totals (faster)
+        effectiveValue = data.effectiveTotal;
+        overhealValue = data.overhealTotal;
       }
       
-      // Skip players with zero healing after filtering
-      if (healingValue === 0) continue;
+      // Determine display value based on mode
+      let displayValue: number;
+      let stackedValue: number | undefined;
+      
+      switch (viewMode) {
+        case "effective":
+          displayValue = effectiveValue;
+          stackedValue = overhealValue > 0 ? overhealValue : undefined;
+          break;
+        case "overheal":
+          displayValue = overhealValue;
+          stackedValue = undefined;
+          break;
+        case "total":
+          displayValue = effectiveValue + overhealValue;
+          stackedValue = undefined;
+          break;
+      }
+      
+      // Skip players with zero value after filtering
+      if (displayValue === 0 && (stackedValue === undefined || stackedValue === 0)) continue;
       
       const existing = aggregated.get(playerId);
       if (existing) {
-        existing.value += healingValue;
+        existing.value += displayValue;
+        existing.overhealTotal += overhealValue;
+        if (stackedValue !== undefined) {
+          existing.stackedValue = (existing.stackedValue || 0) + stackedValue;
+        }
       } else {
         aggregated.set(playerId, {
           playerID: data.playerID,
           playerName: data.playerName,
           className: data.className,
           specialization: data.specialization,
-          value: healingValue,
-          // Never dim for healing, since we are selecting targets.
-          // dimmed: hasHealerSelection && !selected.playerIds.has(playerId),
+          value: displayValue,
+          stackedValue,
+          overhealTotal: overhealValue,
         });
       }
     }
@@ -75,6 +109,7 @@ interface HealingDoneContentProps extends PanelRenderProps<HealingDoneResult> {
 export const HealingDoneContent = (props: HealingDoneContentProps) => {
   const { sourceType = "players" } = props;
   const { result, context } = props;
+  const [viewMode, setViewMode] = useState<HealingViewMode>("effective");
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -84,18 +119,19 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
 
   const healingData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);
-  }, [cachedResult, context.selectedEncounterIds, context.entitySelection]);
+    return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection, viewMode);
+  }, [cachedResult, context.selectedEncounterIds, context.entitySelection, viewMode]);
 
   // Create breakout function for tooltips
   const breakout = useHealingDoneBreakout({
     result: result,
     context: context,
-    valueLabel: "Healing",
+    valueLabel: viewMode === "overheal" ? "Overheal" : "Healing",
     perSecond: props.perSecond,
     durationMs: props.durationMs,
     loading: props.loading,
     processing: props.processing,
+    viewMode,
   });
 
   // Once we have cached data, never show loading/processing states
@@ -107,19 +143,58 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
 
   // Compute display total
   const total = healingData.reduce((sum, d) => sum + d.value, 0);
+  const stackedTotal = healingData.reduce((sum, d) => sum + (d.stackedValue || 0), 0);
   const displayTotal = props.perSecond && props.durationMs
     ? formatNumber(total / (props.durationMs / 1000), 1)
     : formatNumber(total, 0);
 
+  // Compute overheal percentage for effective mode
+  const overhealPercent = viewMode === "effective" && (total + stackedTotal) > 0
+    ? ((stackedTotal / (total + stackedTotal)) * 100).toFixed(1)
+    : null;
+
+  const viewModeLabels: Record<HealingViewMode, string> = {
+    effective: "Effective",
+    overheal: "Overheal",
+    total: "Total",
+  };
+
   return (
     <GenericPanel {...effectiveProps}>
-      <div className="text-xs text-muted-foreground">
-        Total: <span className="font-medium text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-xs text-muted-foreground">
+          Total: <span className="font-medium text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+          {overhealPercent && (
+            <span className="ml-2 text-muted-foreground">
+              (<span className="text-yellow-500">+{overhealPercent}%</span> overheal)
+            </span>
+          )}
+        </div>
+        
+        {/* View mode toggle */}
+        <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
+          {(["effective", "overheal", "total"] as HealingViewMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              className={cn(
+                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                viewMode === mode
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {viewModeLabels[mode]}
+            </button>
+          ))}
+        </div>
       </div>
+      
       <PlayerMetricChart 
         data={healingData} 
         type={"healing"} 
-        panelTitle="Healing Done"
+        panelTitle={viewMode === "overheal" ? "Overhealing" : "Healing Done"}
         duration_millis={props.durationMs}
         perSecond={props.perSecond}
         breakout={breakout}

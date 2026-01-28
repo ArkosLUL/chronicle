@@ -1,14 +1,21 @@
 /**
  * Healing Done processor - aggregates healing by caster (pure TS, worker-safe)
  * 
- * Similar to DamageDone processor but tracks healing instead.
+ * Tracks effective healing vs overhealing by maintaining health deficits per unit.
+ * 
+ * Logic:
+ * - Damage taken increases a unit's health deficit
+ * - Resource change (health loss) increases deficit
+ * - Heals reduce deficit (never below 0)
+ * - Effective healing = min(heal amount, current deficit)
+ * - Overhealing = heal amount - effective healing
  */
 
 import { GUID } from "@/lib/guid/guid";
-import type { HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
-import { isResourceChangeEvent } from "../processors";
+import { isResourceChangeEvent, isDamageEvent } from "../processors";
 
 // Re-export the shared type (works for healing too)
 export type { DamageAbilityBreakout as HealingAbilityBreakout } from "../processors/abilityBreakout";
@@ -19,6 +26,15 @@ export type { DamageAbilityBreakout as HealingAbilityBreakout } from "../process
 export type HealingSourceType = "players";
 
 /**
+ * Healing breakdown per target for a single healer
+ */
+export interface HealingTargetData {
+  effective: number;
+  overheal: number;
+  total: number;
+}
+
+/**
  * Player metric data for healing done aggregation.
  * Serializable - no functions or circular refs.
  */
@@ -27,7 +43,11 @@ export interface HealingDoneData {
   playerName: string;
   className: string;
   specialization: string;
-  target: Map<string, number>; // target guid -> healing done
+  // target guid -> healing breakdown (effective, overheal, total)
+  target: Map<string, HealingTargetData>;
+  // Aggregate totals for this healer
+  effectiveTotal: number;
+  overhealTotal: number;
 }
 
 // UnitHealing is unit guid -> HealingDoneData
@@ -35,9 +55,25 @@ export type UnitHealing = Map<string, HealingDoneData>;
 
 export type HealingDoneResult = {
   EncounterHealing: Map<string, UnitHealing>;
-  // Value is unitID -> abilityID -> AbilityBreakout
+  // Health deficit tracking: encounterID -> targetGUID -> deficit (positive = damage taken)
+  HealthDeficits: Map<string, Map<string, number>>;
+  // Value is unitID -> abilityID -> AbilityBreakout (for effective healing)
   ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
+  // Overheal by ability: unitID -> abilityID -> AbilityBreakout
+  ByAbilityOverheal: Map<string, Map<string, DamageAbilityBreakout>>;
   ByTarget: Map<string, Map<string, number>>;
+  // Overheal by target
+  ByTargetOverheal: Map<string, Map<string, number>>;
+}
+
+/**
+ * Get or create health deficit map for an encounter
+ */
+function getEncounterDeficits(state: HealingDoneResult, encounterID: string): Map<string, number> {
+  if (!state.HealthDeficits.has(encounterID)) {
+    state.HealthDeficits.set(encounterID, new Map<string, number>());
+  }
+  return state.HealthDeficits.get(encounterID)!;
 }
 
 /**
@@ -45,33 +81,63 @@ export type HealingDoneResult = {
  */
 export function createHealingDoneProcessor(
   sourceType: HealingSourceType
-): PanelProcessor<HealingDoneResult, HealProcessorEvent | ResourceChangeProcessorEvent> {
+): PanelProcessor<HealingDoneResult, DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent> {
   const id = sourceType === "players" ? "healing_done" : `healing_done_${sourceType}`;
   
   return {
     id,
-    streams: ["heal", "resource_change"],
+    streams: ["damage", "heal", "resource_change"],
 
     createState: () => ({
       EncounterHealing: new Map<string, UnitHealing>(),
+      HealthDeficits: new Map<string, Map<string, number>>(),
       ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
+      ByAbilityOverheal: new Map<string, Map<string, DamageAbilityBreakout>>(),
       ByTarget: new Map<string, Map<string, number>>(),
+      ByTargetOverheal: new Map<string, Map<string, number>>(),
     }),
 
     processEvent: (
       state: HealingDoneResult,
-      event: HealProcessorEvent | ResourceChangeProcessorEvent,
+      event: DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent,
       encounterID: string,
       _: Date,
       streamType: string,
       context: ProcessorContext
     ) => {
-      if (isResourceChangeEvent(event, streamType) && (event.resourceType !== "Health" || event.direction !== "Gain")) {
+      const deficits = getEncounterDeficits(state, encounterID);
+      
+      // Handle damage events - increase target's health deficit
+      if (isDamageEvent(event, streamType)) {
+        const targetGuid = GUID.fromString(event.target);
+        // Only track player health deficits
+        if (targetGuid.isPlayer()) {
+          const currentDeficit = deficits.get(event.target) || 0;
+          deficits.set(event.target, currentDeficit + event.amount);
+        }
         return;
       }
+      
+      // Handle resource change - health loss increases deficit, health gain is like a heal
+      if (isResourceChangeEvent(event, streamType)) {
+        if (event.resourceType !== "Health") return;
+        
+        const targetGuid = GUID.fromString(event.target);
+        if (!targetGuid.isPlayer()) return;
+        
+        if (event.direction === "Loss") {
+          // Health loss (like Life Tap) increases deficit
+          const currentDeficit = deficits.get(event.target) || 0;
+          deficits.set(event.target, currentDeficit + event.amount);
+          return;
+        }
+        
+        // Health gain - treat as healing (fall through to healing logic below)
+        if (event.direction !== "Gain") return;
+      }
 
-      // Only process heal events
-      if (!(streamType == "heal" || streamType == "resource_change")) return;
+      // From here on, we're handling heal events or resource_change health gains
+      if (!(streamType === "heal" || streamType === "resource_change")) return;
       if (!event.caster) return;
 
       const casterGuid = GUID.fromString(event.caster);
@@ -81,6 +147,16 @@ export function createHealingDoneProcessor(
       if (sourceType === "players" && !isPlayer) return;
 
       const healingOwner = event.caster;
+      const healTarget = event.target;
+      const healAmount = event.amount;
+
+      // Calculate effective healing based on target's deficit
+      const currentDeficit = deficits.get(healTarget) || 0;
+      const effectiveHeal = Math.min(healAmount, currentDeficit);
+      const overheal = healAmount - effectiveHeal;
+      
+      // Update deficit (reduce by effective heal, never go below 0)
+      deficits.set(healTarget, Math.max(0, currentDeficit - effectiveHeal));
 
       // Get player info
       let ownerName = healingOwner;
@@ -96,37 +172,63 @@ export function createHealingDoneProcessor(
       }
 
       const encounterHealing = state.EncounterHealing.get(encounterID)!;
-      const existingEncounter = encounterHealing.get(healingOwner) || {
+      const existingHealer = encounterHealing.get(healingOwner) || {
         playerID: healingOwner,
         playerName: ownerName,
         className: ownerClass,
         specialization: "",
-        target: new Map<string, number>(),
+        target: new Map<string, HealingTargetData>(),
+        effectiveTotal: 0,
+        overhealTotal: 0,
       } as HealingDoneData;
 
-      // Track healing by target
-      existingEncounter.target.set(event.target, (existingEncounter.target.get(event.target) || 0) + event.amount);
-      encounterHealing.set(healingOwner, existingEncounter);
-      state.EncounterHealing.set(encounterID, encounterHealing);
+      // Track healing by target with breakdown
+      const existingTargetData = existingHealer.target.get(healTarget) || {
+        effective: 0,
+        overheal: 0,
+        total: 0,
+      };
+      existingTargetData.effective += effectiveHeal;
+      existingTargetData.overheal += overheal;
+      existingTargetData.total += healAmount;
+      existingHealer.target.set(healTarget, existingTargetData);
+      
+      // Update aggregate totals
+      existingHealer.effectiveTotal += effectiveHeal;
+      existingHealer.overhealTotal += overheal;
+      
+      encounterHealing.set(healingOwner, existingHealer);
       
       // Breakouts - filter by selected players (healer selection)
-      if(context.selectedEncounterIds.has(encounterID) &&
+      if (context.selectedEncounterIds.has(encounterID) &&
         // Only show who the selected players healed
-        (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target))
+        (context.entitySelection.playerIds.size === 0 || context.entitySelection.playerIds.has(healTarget))
       ) {
-
         let abilityName = event.sourceName || "???";
-        const hitType = isResourceChangeEvent(event, streamType) ? HitTypePeriodic : event.hitType;
+        const hitType = isResourceChangeEvent(event, streamType) ? HitTypePeriodic : (event as HealProcessorEvent).hitType;
         if (hasHitType(hitType, HitTypePeriodic)) {
           abilityName = abilityName + " (HoT)";
         }
-      
 
-        accumulateAbilityBreakout(state.ByAbility, healingOwner, abilityName, event.amount, hitType);
+        // Track effective healing by ability
+        if (effectiveHeal > 0) {
+          accumulateAbilityBreakout(state.ByAbility, healingOwner, abilityName, effectiveHeal, hitType);
+        }
+        
+        // Track overhealing by ability
+        if (overheal > 0) {
+          accumulateAbilityBreakout(state.ByAbilityOverheal, healingOwner, abilityName, overheal, hitType);
+        }
 
+        // Track by target (effective)
         const existingTargetBreakout = state.ByTarget.get(healingOwner) || new Map<string, number>();
-        existingTargetBreakout.set(event.target, (existingTargetBreakout.get(event.target) || 0) + event.amount);
+        existingTargetBreakout.set(healTarget, (existingTargetBreakout.get(healTarget) || 0) + effectiveHeal);
         state.ByTarget.set(healingOwner, existingTargetBreakout);
+        
+        // Track by target (overheal)
+        const existingTargetOverheal = state.ByTargetOverheal.get(healingOwner) || new Map<string, number>();
+        existingTargetOverheal.set(healTarget, (existingTargetOverheal.get(healTarget) || 0) + overheal);
+        state.ByTargetOverheal.set(healingOwner, existingTargetOverheal);
       }
     },
   };

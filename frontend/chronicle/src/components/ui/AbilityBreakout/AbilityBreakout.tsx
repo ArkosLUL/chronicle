@@ -13,6 +13,8 @@ import type { DamageAbilityBreakout } from '@/pages/Instance/EventsPanels/Damage
 export interface AbilityData extends DamageAbilityBreakout{
   name: string
   value: number
+  /** Optional overheal value - displayed in a separate column with distinct styling */
+  overheal?: number
 }
 
 /**
@@ -35,6 +37,10 @@ export interface AbilityTableProps {
   totalValue: number
   /** Label for the value column (e.g., "Damage", "Healing", "DPS", "HPS") */
   valueLabel?: string
+  /** Whether to show the Hits column (damage can miss, heals cannot) */
+  showHits?: boolean
+  /** Whether to show the overheal column (only for healing in effective mode) */
+  showOverheal?: boolean
 }
 
 /**
@@ -44,6 +50,8 @@ export function AbilityTable({
   abilities, 
   totalValue,
   valueLabel = 'Value',
+  showHits = true,
+  showOverheal = false,
 }: AbilityTableProps) {
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
@@ -51,6 +59,9 @@ export function AbilityTable({
 
   // Sort by value descending
   const sorted = [...abilities].sort((a, b) => b.value - a.value)
+  
+  // Check if any ability has overheal data
+  const hasOverhealData = showOverheal && sorted.some(a => a.overheal !== undefined && a.overheal > 0)
 
   return (
     <div className="max-h-64 overflow-y-auto">
@@ -58,18 +69,21 @@ export function AbilityTable({
         <thead className="sticky top-0 bg-popover">
           <tr className="border-b border-border">
             <th className="text-left py-1.5 px-2 font-medium">Ability</th>
+            {hasOverhealData && (
+              <th className="text-right py-1.5 px-2 font-medium text-yellow-500/80">Overheal</th>
+            )}
             <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
             <th className="text-right py-1.5 px-2 font-medium">%</th>
             <th className="text-right py-1.5 px-2 font-medium">Count</th>
-            <th className="text-right py-1.5 px-2 font-medium">Hits</th>
+            {showHits && (
+              <th className="text-right py-1.5 px-2 font-medium">Hits</th>
+            )}
             <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
-            {/* <th className="text-right py-1.5 px-2 font-medium">Miss%</th> */}
           </tr>
         </thead>
         <tbody>
           {sorted.map((ability) => {
             const critPercent = ability.Hits > 0 ? (ability.Crits / ability.Hits) * 100 : 0
-            // const missPercent = totalAttempts > 0 ? (missCount + / totalAttempts) * 100 : 0
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
             
             return (
@@ -77,6 +91,11 @@ export function AbilityTable({
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
                   {ability.name}
                 </td>
+                {hasOverhealData && (
+                  <td className="text-right py-1 px-2 tabular-nums text-yellow-500/70">
+                    {(ability.overheal ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                  </td>
+                )}
                 <td className="text-right py-1 px-2 tabular-nums">
                   {ability.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
@@ -86,15 +105,14 @@ export function AbilityTable({
                 <td className="text-right py-1 px-2 tabular-nums">
                   {ability.Count}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
-                  {ability.Hits} 
-                </td>
+                {showHits && (
+                  <td className="text-right py-1 px-2 tabular-nums">
+                    {ability.Hits} 
+                  </td>
+                )}
                 <td className="text-right py-1 px-2 tabular-nums">
                   {critPercent.toFixed(0)}%
                 </td>
-                {/* <td className="text-right py-1 px-2 tabular-nums">
-                  {missPercent.toFixed(0)}%
-                </td> */}
               </tr>
             )
           })}
@@ -184,6 +202,10 @@ export interface AbilityBreakoutProps {
   onTabChange?: (tab: BreakoutTab) => void
   /** Label for the target tab (defaults to "By Target") */
   targetTabLabel?: string
+  /** Whether to show the Hits column (damage can miss, heals cannot) */
+  showHits?: boolean
+  /** Whether to show the overheal column (only for healing in effective mode) */
+  showOverheal?: boolean
 }
 
 function formatValue(value: number): string {
@@ -209,6 +231,8 @@ export function AbilityBreakout({
   activeTab: controlledTab,
   onTabChange,
   targetTabLabel = 'By Target',
+  showHits = true,
+  showOverheal = false,
 }: AbilityBreakoutProps) {
   const [internalTab, setInternalTab] = useState<BreakoutTab>('ability')
   
@@ -240,6 +264,8 @@ export function AbilityBreakout({
           abilities={abilities}
           totalValue={totalValue}
           valueLabel={valueLabel}
+          showHits={showHits}
+          showOverheal={showOverheal}
         />
       </div>
     )
@@ -267,6 +293,8 @@ export function AbilityBreakout({
           abilities={abilities}
           totalValue={totalValue}
           valueLabel={valueLabel}
+          showHits={showHits}
+          showOverheal={showOverheal}
         />
       ) : (
         <TargetTable

@@ -1,4 +1,5 @@
 import type { 
+  DamageProcessorEvent,
   ExtraAttackProcessorEvent,
   HealProcessorEvent, 
   ProcessorEvent, 
@@ -23,7 +24,7 @@ export function isHealingEvent(
 export function isDamageEvent(
   event: ProcessorEvent,
   streamType: string
-): event is HealProcessorEvent {
+): event is DamageProcessorEvent {
   return streamType === "damage" && event.type === "damage";
 }
 

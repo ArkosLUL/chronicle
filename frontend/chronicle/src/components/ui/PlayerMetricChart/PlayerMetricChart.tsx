@@ -234,6 +234,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
         left: position.x,
         top: position.y,
         cursor: isDragging ? 'grabbing' : 'default',
+        border: `2px solid color-mix(in oklch, ${player.color} 50%, transparent)`,
       }}
       onMouseDown={handleMouseDown}
     >

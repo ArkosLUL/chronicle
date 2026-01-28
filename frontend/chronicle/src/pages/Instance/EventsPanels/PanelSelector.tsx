@@ -30,8 +30,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Damage Taken",
-    // TODO: Enemy damage taken
-    items: ["damage_taken",],
+    items: ["damage_taken", "enemy_damage_taken"],
   },
   {
     label: "Activity",

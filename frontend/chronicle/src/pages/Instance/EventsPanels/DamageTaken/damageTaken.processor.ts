@@ -6,7 +6,11 @@
 
 import { GUID } from "@/lib/guid/guid";
 import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
-import { hasHitType, HitTypeCrit, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypePeriodic } from "@/lib/hittype/hittype";
+import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
+import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
+
+// Re-export the shared type for backwards compatibility
+export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
 
 /**
  * Entity target types for damage taken aggregation
@@ -27,21 +31,6 @@ export interface DamageTakenData {
 
 // UnitDamageTaken is unit guid -> DamageTakenData
 export type UnitDamageTaken = Map<string, DamageTakenData>;
-
-export interface DamageAbilityBreakout {
-  Total: number;
-  // The number of casts
-  Count: number;
-
-  Crits: number;
-  Hits: number;
-  Dodges: number;
-  Parrys: number;
-  Misses: number;
-  FullResist: number;
-  Immunes: number;
-  FullBlocks: number;
-}
 
 export type DamageTakenResult = {
   EncounterDamage: Map<string, UnitDamageTaken>;
@@ -130,50 +119,12 @@ export function createDamageTakenProcessor(
           (targetType === "players" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target)))
         )
       ) {
-        let source = event.sourceName || "Auto Attack";
+        let abilityName = event.sourceName || "Auto Attack";
         if (hasHitType(event.hitType, HitTypePeriodic)) {
-          source = source + " (DoT)";
+          abilityName = abilityName + " (DoT)";
         }
 
-        const existingUnitBreakout = state.ByAbility.get(damageReceiver) || new Map<string, DamageAbilityBreakout>();
-        const abilityBreakout: DamageAbilityBreakout = existingUnitBreakout.get(source) || {
-          Total: 0,
-          Count: 0,
-          Crits: 0,
-          Hits: 0,
-          Misses: 0,
-          FullResist: 0,
-          Dodges: 0,
-          Parrys: 0,
-          Immunes: 0,
-          FullBlocks: 0,
-        };
-        
-        abilityBreakout.Total += event.amount;
-        abilityBreakout.Count += 1;
-        if (hasHitType(event.hitType, HitTypeCrit)) {
-          abilityBreakout.Crits += 1;
-          abilityBreakout.Hits += 1;
-        } else if (hasHitType(event.hitType, HitTypeMiss)) {
-          abilityBreakout.Misses += 1;
-        } else if (hasHitType(event.hitType, HitTypeHit) || hasHitType(event.hitType, HitTypePeriodic)) {
-          abilityBreakout.Hits += 1;
-        } else if (hasHitType(event.hitType, HitTypeFullResist)) {
-          abilityBreakout.FullResist += 1;
-        } else if (hasHitType(event.hitType, HitTypeDodge)) {
-          abilityBreakout.Dodges += 1;
-        } else if (hasHitType(event.hitType, HitTypeParry)) {
-          abilityBreakout.Parrys += 1;
-        } else if (hasHitType(event.hitType, HitTypeImmune)) {
-          abilityBreakout.Immunes += 1;
-        } else if (hasHitType(event.hitType, HitTypeFullBlock)) {
-          abilityBreakout.FullBlocks += 1;
-        } else {
-          console.log("Unknown hit type for damage taken:", event.sourceName, event.hitType);
-        }
-
-        existingUnitBreakout.set(source, abilityBreakout);
-        state.ByAbility.set(damageReceiver, existingUnitBreakout);
+        accumulateAbilityBreakout(state.ByAbility, damageReceiver, abilityName, event.amount, event.hitType, event.sourceName);
 
         const existingSourceBreakout = state.BySource.get(damageReceiver) || new Map<string, number>();
         existingSourceBreakout.set(event.caster, (existingSourceBreakout.get(event.caster) || 0) + event.amount);

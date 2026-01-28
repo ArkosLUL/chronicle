@@ -20,6 +20,9 @@ export type { DamageTakenResult as DamageTakenState, DamageTakenData, DamageTarg
 export type { HealingDoneState } from "./healingDone.processor";
 export type { AllActivityState } from "./allActivity.processor";
 
+// Export shared utilities
+export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
+
 /**
  * Registry of all processors by panel ID.
  */

@@ -360,7 +360,7 @@ export function PlayerMetricRow({
         }}
       />
       
-      {/* Stacked value (overheal) - fills remaining space, chevrons when overflow */}
+      {/* Stacked value (overheal) - fills remaining space, stripes at end when overflow */}
       {player.stackedValue && player.stackedValue > 0 && (() => {
         const mainBarEnd = (player.value / maximumValue) * 100;
         const stackedWidth = (player.stackedValue / maximumValue) * 100;
@@ -372,6 +372,7 @@ export function PlayerMetricRow({
         
         return (
           <>
+            {/* Main stacked bar */}
             <div
               style={{
                 position: 'absolute',
@@ -385,27 +386,26 @@ export function PlayerMetricRow({
               }}
               title={isOverflowing ? `Overheal extends beyond chart` : undefined}
             />
-            {/* Chevrons to indicate overflow */}
+            {/* Striped end cap to indicate overflow */}
             {isOverflowing && (
               <div
                 style={{
                   position: 'absolute',
-                  right: 4,
+                  right: 0,
                   top: 0,
                   bottom: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: player.color,
-                  opacity: 0.7,
-                  letterSpacing: '-2px',
-                  zIndex: 0,
+                  width: '12px',
+                  background: `repeating-linear-gradient(
+                    -45deg,
+                    ${player.color},
+                    ${player.color} 2px,
+                    transparent 2px,
+                    transparent 4px
+                  )`,
+                  opacity: 0.5,
                 }}
                 title="Overheal extends beyond chart"
-              >
-                »
-              </div>
+              />
             )}
           </>
         );

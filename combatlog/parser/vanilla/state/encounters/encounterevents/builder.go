@@ -2,6 +2,7 @@ package encounterevents
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -14,6 +15,7 @@ type Builder[M messages.Message, PM proto.Message] struct {
 	First time.Time
 	Count int64
 
+	done bool
 	data *bytes.Buffer
 }
 
@@ -32,6 +34,9 @@ func NewBuilder[M messages.Message, PM proto.Message]() *Builder[M, PM] {
 // Body
 // - Repeated PM messages
 func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
+	if b.done {
+		return nil, fmt.Errorf("builder already finalized")
+	}
 	header := make([]byte, 0, 50)
 
 	// Use timestamp=0 for empty encounters (First is zero time if no events added)
@@ -46,12 +51,19 @@ func (b *Builder[M, PM]) Finalize(encounterID uuid.UUID) ([]byte, error) {
 	header = protowire.AppendVarint(header, uint64(b.Count))
 	header = protowire.AppendVarint(header, uint64(b.data.Len()))
 
-	return append(header, b.data.Bytes()...), nil
+	b.done = true
+	final := append(header, b.data.Bytes()...)
+	b.data = nil
+	return final, nil
 }
 
 func AddToBuilder[M messages.Message, PM proto.Message](b *Builder[M, PM], m M, idx int32, conv func(from time.Time, idx int32, message M) PM) error {
 	if b.First.IsZero() {
 		b.First = m.Date()
+	}
+
+	if b.done {
+		return fmt.Errorf("builder already finalized")
 	}
 
 	b.Count++

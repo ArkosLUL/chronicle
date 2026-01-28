@@ -129,7 +129,8 @@ export function createDamageDoneProcessor(
       ) {
         let abilityName = event.sourceName || "Auto Attack"
         if((sourceType === "players") && isPet) {
-          abilityName = abilityName + " (Pet)";
+          const petName = context.units?.[event.caster]?.name || event.caster.toString();
+          abilityName =  `${petName} (Pet)`
         } 
         if (hasHitType(event.hitType, HitTypePeriodic)) {
           abilityName = abilityName + " (DoT)";

@@ -63,12 +63,25 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
 
       const playerGuid = GUID.fromString(event.target);
       const isPlayer = playerGuid.isPlayer();
+      const owner = context.units?.[event.target]?.owner
+      // const isPlayerPet = !isPlayer && owner && GUID.fromString(owner).isPlayer();
 
       // For now, only track player extra attacks
+      // if (!isPlayer && !isPlayerPet) return;
       if (!isPlayer) return;
 
       const playerID = event.target;
-      const playerName = context.players[playerID]?.name || playerID;
+      const playerName = context.players[playerID]?.name || playerID
+      // if(isPlayerPet){
+      //   const unitInfo = context.units?.[playerID];
+      //   if(unitInfo && unitInfo.owner){
+      //     const ownerInfo = context.players[unitInfo.owner];
+      //     if(ownerInfo){
+      //       playerName = `${unitInfo.name} (${ownerInfo.name}'s Pet)`;
+      //     }
+      //   }
+      // }
+
       const playerClass = context.players[playerID]?.class || "UNKNOWN";
       const abilityName = event.sourceName || "Unknown";
       const attackCount = event.amount || 1;  // How many extra attacks this proc granted

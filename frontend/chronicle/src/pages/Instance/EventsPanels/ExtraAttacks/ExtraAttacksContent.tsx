@@ -6,6 +6,7 @@ import type { ExtraAttacksResult } from "./extraAttacks.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { formatNumber } from "@/lib/format";
 import { useExtraAttacksBreakout } from "./ExtraAttacksBreakout";
+import type { InstanceUnit } from "@/api/typesGenerated";
 
 /**
  * Aggregate extra attacks data across selected encounters.
@@ -14,6 +15,7 @@ function aggregateForEncounters(
   result: ExtraAttacksResult,
   selectedTargets: Set<string>,
   selectedEncounterIds: string[],
+  instanceUnits: Record<string, InstanceUnit>,
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
   
@@ -26,13 +28,18 @@ function aggregateForEncounters(
       if (existing) {
         existing.value += data.totalProcs;
       } else {
+        let dimmed = selectedTargets.size != 0 && !selectedTargets.has(playerId)
+        if(dimmed && selectedTargets.has(instanceUnits[playerId]?.owner?.toString() || "")){
+          dimmed = false;
+        }
+
         aggregated.set(playerId, {
           playerID: data.playerID,
           playerName: data.playerName,
           className: data.className,
           specialization: "",
           value: data.totalProcs,
-          dimmed: selectedTargets.size != 0 && !selectedTargets.has(playerId),
+          dimmed: dimmed,
         });
       }
     }
@@ -55,7 +62,7 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
 
   const extraAttacksData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds);
+    return aggregateForEncounters(cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds, context.instance.units);
   }, [cachedResult, context.entitySelection.playerIds, context.selectedEncounterIds]);
 
   // Once we have cached data, never show loading/processing states

@@ -89,8 +89,11 @@ export function PlayerMetricChart({
     return computedData.reduce((sum, item) => sum + item.value, 0)
   }, [computedData])
 
+  // Scale chart so the max effective value takes 75% width, leaving room for stacked
   const maximumValue = useMemo(() => {
-    return Math.max(...computedData.map((item) => item.value + (item.stackedValue || 0)))
+    const maxEffective = Math.max(...computedData.map((item) => item.value))
+    // Scale so max effective is 75% of chart, leaving 25% for stacked values
+    return maxEffective / 0.75
   }, [computedData])
 
   // Sort by value descending and calculate percentages
@@ -357,21 +360,34 @@ export function PlayerMetricRow({
         }}
       />
       
-      {/* Stacked value */}
-      {player.stackedValue && (
-      <div
-        style={{
-          position: 'absolute',
-          left: `${(player.value / maximumValue) * 100}%`,
-          top: 0,
-          bottom: 0,
-          width: `${(player.stackedValue / maximumValue) * 100}%`,
-          background: `${player.color}`,
-          opacity: 0.3,
-          transition: 'width 0.3s ease',
-        }}
-      />)
-      }
+      {/* Stacked value (overheal) - fills remaining space, fades when it would overflow */}
+      {player.stackedValue && player.stackedValue > 0 && (() => {
+        const mainBarEnd = (player.value / maximumValue) * 100;
+        const stackedWidth = (player.stackedValue / maximumValue) * 100;
+        const availableSpace = 100 - mainBarEnd;
+        // Fade when stacked would extend beyond available space
+        const isOverflowing = stackedWidth > availableSpace;
+        // Always display what fits
+        const displayWidth = Math.min(stackedWidth, availableSpace);
+        
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${mainBarEnd}%`,
+              top: 0,
+              bottom: 0,
+              width: `${displayWidth}%`,
+              background: isOverflowing
+                ? `linear-gradient(to right, ${player.color} 60%, transparent 100%)`
+                : player.color,
+              opacity: 0.35,
+              transition: 'width 0.3s ease',
+            }}
+            title={isOverflowing ? `Overheal extends beyond chart` : undefined}
+          />
+        );
+      })()}
 
       {/* Content overlay */}
       <div

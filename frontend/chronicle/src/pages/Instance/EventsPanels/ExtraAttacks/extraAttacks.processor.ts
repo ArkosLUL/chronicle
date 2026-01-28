@@ -55,6 +55,7 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
       state: ExtraAttacksResult,
       event: ExtraAttackProcessorEvent,
       encounterID: string,
+      _: Date,
       _streamType: string,
       context: ProcessorContext
     ) => {

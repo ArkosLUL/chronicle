@@ -175,6 +175,7 @@ export interface PanelProcessor<TResult, TEvent extends ProcessorEvent = Process
     state: TResult,
     event: TEvent,
     encounterID: string,
+    firstTimestamp: Date,
     streamType: StreamType,
     context: ProcessorContext,
   ) => void;

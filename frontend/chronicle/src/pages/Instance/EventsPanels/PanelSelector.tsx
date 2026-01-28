@@ -38,7 +38,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Deaths",
-    items: ["deaths"],
+    items: ["deaths", "death_log"],
   },
   {
     label: "Activity",

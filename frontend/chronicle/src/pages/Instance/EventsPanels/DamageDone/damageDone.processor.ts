@@ -59,6 +59,7 @@ export function createDamageDoneProcessor(
       state: DamageDoneResult,
       event: DamageProcessorEvent,
       encounterID: string,
+      _: Date,
       _streamType: string,
       context: ProcessorContext
     ) => {

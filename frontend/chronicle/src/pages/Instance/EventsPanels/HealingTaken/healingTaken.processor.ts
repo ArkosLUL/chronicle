@@ -64,6 +64,7 @@ export function createHealingTakenProcessor(
       state: HealingTakenResult,
       event: HealProcessorEvent | ResourceChangeProcessorEvent,
       encounterID: string,
+      _: Date,
       streamType: string,
       context: ProcessorContext
     ) => {

@@ -9,12 +9,14 @@ import type { SlainProcessorEvent, PanelProcessor, ProcessorContext } from "../p
  * Data for a single death event
  */
 export interface DeathEvent {
+  dateMilli: number;  // Absolute timestamp 
   offsetMilli: number;     // Time offset from encounter start
   playerID: string;        // GUID of the player who died
   playerName: string;
   className: string;
   killerID: string;        // GUID of the killer (may be empty)
   killerName: string;      // Name of the killer
+  encounterID: string;
 }
 
 /**
@@ -46,7 +48,7 @@ export type DeathsResult = {
   EncounterDeaths: Map<string, UnitDeaths>;
   // Breakout by killer: playerID -> killerID -> count
   ByKiller: Map<string, Map<string, number>>;
-  // Chronological list of all death events for selected encounters
+  // Chronological list of all death events for all encounters
   DeathEvents: DeathEvent[];
 }
 
@@ -68,6 +70,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       state: DeathsResult,
       event: SlainProcessorEvent,
       encounterID: string,
+      firstTimestamp: Date,
       _streamType: string,
       context: ProcessorContext
     ) => {
@@ -84,7 +87,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       const playerClass = context.players[playerID]?.class || "UNKNOWN";
 
       // Determine killer info
-      let killerID = event.caster || "";
+      const killerID = event.caster || "";
       let killerName = "Unknown";
       
       if (killerID) {
@@ -124,17 +127,18 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       
       encounterData.set(playerID, existing);
 
-      // Add to death events list for selected encounters
-      if (context.selectedEncounterIds.has(encounterID)) {
-        state.DeathEvents.push({
-          offsetMilli: event.offsetMilli,
-          playerID,
-          playerName,
-          className: playerClass,
-          killerID,
-          killerName,
-        });
+      state.DeathEvents.push({
+        dateMilli: firstTimestamp.getTime() + event.offsetMilli,
+        offsetMilli: event.offsetMilli,
+        playerID,
+        playerName,
+        className: playerClass,
+        killerID,
+        killerName,
+        encounterID
+      });
         
+      if (context.selectedEncounterIds.size == 0 || context.selectedEncounterIds.has(encounterID)) {
         // Breakout by killer
         const killerBreakout = state.ByKiller.get(playerID) || new Map<string, number>();
         killerBreakout.set(killerKey, (killerBreakout.get(killerKey) || 0) + 1);

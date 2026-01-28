@@ -508,7 +508,6 @@ function EncounterDetail({
   // Build PanelContext for EventsPanels
   const panelContext: PanelContext = {
     instance,
-    selectedEncounters: encounters,
     selectedEncounterIds: encounters.map(e => e.id),
     entitySelection,
   };

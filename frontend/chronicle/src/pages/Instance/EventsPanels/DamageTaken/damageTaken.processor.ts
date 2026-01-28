@@ -61,6 +61,7 @@ export function createDamageTakenProcessor(
       state: DamageTakenResult,
       event: DamageProcessorEvent,
       encounterID: string,
+      _: Date,
       _streamType: string,
       context: ProcessorContext
     ) => {

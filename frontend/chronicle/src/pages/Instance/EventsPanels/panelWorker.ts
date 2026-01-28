@@ -60,7 +60,7 @@ function processStreams<TResult>(
         if (!event) break;
         
         totalEvents++;
-        processor.processEvent(state, event, encounterID, stream.type as StreamType, context);
+        processor.processEvent(state, event, encounterID, cursor.currentHeader.firstTimestamp, stream.type as StreamType, context);
       }
       
       cursor.nextEncounter();

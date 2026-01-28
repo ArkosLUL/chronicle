@@ -48,5 +48,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   extra_attacks: extraAttacksProcessor,
   healing_taken: healingTakenProcessor,
   deaths: deathsProcessor,
+  death_log: deathsProcessor, // Same processor, different view
   all_activity: allActivityProcessor,
 };

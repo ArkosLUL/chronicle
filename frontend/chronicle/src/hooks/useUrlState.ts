@@ -606,7 +606,7 @@ export function useUrlStateMulti<T extends Record<string, unknown>>(
  */
 export type PanelType = 'damage_done' | 'enemy_damage_done' | 'pet_damage_done' | 
   'damage_taken' | 'enemy_damage_taken' | 'healing_done' | 
-  'healing_taken' | 'extra_attacks' | 'deaths' | 'all_activity';
+  'healing_taken' | 'extra_attacks' | 'deaths' | 'death_log' | 'all_activity';
 
 const PANEL_CODES: Record<PanelType, string> = {
   damage_done: 'dd',
@@ -618,6 +618,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   healing_taken: 'ht',
   extra_attacks: 'xa',
   deaths: 'd',
+  death_log: 'dl',
   all_activity: 'aa',
 };
 

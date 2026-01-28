@@ -19,6 +19,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityState, AllActivityE
     state: AllActivityState,
     event: AllActivityEvent,
     _encounterID: string,
+    _: Date,
     _streamType: string,
     context: ProcessorContext
   ) => {

@@ -23,9 +23,6 @@ export interface PanelContext {
   /** The full instance data (players, encounters, metadata) */
   instance: Instance;
   
-  /** Currently selected encounters */
-  selectedEncounters: Encounter[];
-  
   /** Currently selected encounter IDs */
   selectedEncounterIds: string[];
   
@@ -80,6 +77,7 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
     state: TResult,
     event: TEvent,
     encounterID: string,
+    firstTimestamp: Date,
     streamType: StreamType,
     context: ProcessorContext,
   ) => void;

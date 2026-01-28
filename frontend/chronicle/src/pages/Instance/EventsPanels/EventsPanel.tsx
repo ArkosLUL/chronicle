@@ -15,6 +15,7 @@ import { createHealingDonePanel } from "./HealingDone/HealingDone";
 import { createExtraAttacksPanel } from "./ExtraAttacks/ExtraAttacks";
 import { createHealingTakenPanel } from "./HealingTaken/HealingTaken";
 import { createDeathsPanel } from "./Deaths/Deaths";
+import { createDeathLogPanel } from "./Deaths/DeathLog";
 import { AllActivityPanel } from "./AllActivity";
 
 // Registry of all available panels
@@ -31,6 +32,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   healing_taken: createHealingTakenPanel("players"),
   extra_attacks: createExtraAttacksPanel(),
   deaths: createDeathsPanel(),
+  death_log: createDeathLogPanel(),
   all_activity: AllActivityPanel,
 };
 

@@ -8,6 +8,11 @@ import type { StreamType } from "@/hooks/instanceEvents";
 /**
  * A raw event with metadata for debugging
  */
+/**
+ * Resource types from WoW combat log
+ */
+export type ResourceType = "Health" | "Mana" | "Rage" | "Happiness" | "Energy" | "Focus";
+
 export interface RawDebugEvent {
   index: number;
   offsetMilli: number;
@@ -17,7 +22,8 @@ export interface RawDebugEvent {
   sourceName: string;
   target: string;
   amount: number;
-  extra?: string; // resourceType/school info
+  resourceType?: ResourceType; // For resource_change events
+  extra?: string; // school/hitType info
 }
 
 /**
@@ -116,7 +122,8 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       
       // Add stream-specific info
       if (event.type === "resource_change") {
-        rawEvent.extra = `${event.resourceType} (${event.direction})`;
+        rawEvent.resourceType = event.resourceType as ResourceType;
+        rawEvent.extra = event.direction;
       } else if (event.type === "damage" || event.type === "heal") {
         rawEvent.extra = `school=${event.school} hit=${event.hitType}`;
       }

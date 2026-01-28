@@ -24,7 +24,7 @@ export type { DamageTakenResult as DamageTakenState, DamageTakenData, DamageTarg
 export type { UnifiedHealingResult, HealerData, HealingReceiverData, HealingTargetData, HealingSourceData } from "./healing.processor";
 export type { ExtraAttacksResult as ExtraAttacksState, ExtraAttacksData } from "../ExtraAttacks/extraAttacks.processor";
 export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "../Deaths/deaths.processor";
-export type { AllActivityDebugState as AllActivityState, RawDebugEvent, EncounterMeta } from "./allActivityDebug.processor";
+export type { AllActivityDebugState as AllActivityState, RawDebugEvent, EncounterMeta, ResourceType } from "./allActivityDebug.processor";
 
 // Export shared utilities
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";

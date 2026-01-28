@@ -360,32 +360,54 @@ export function PlayerMetricRow({
         }}
       />
       
-      {/* Stacked value (overheal) - fills remaining space, fades when it would overflow */}
+      {/* Stacked value (overheal) - fills remaining space, chevrons when overflow */}
       {player.stackedValue && player.stackedValue > 0 && (() => {
         const mainBarEnd = (player.value / maximumValue) * 100;
         const stackedWidth = (player.stackedValue / maximumValue) * 100;
         const availableSpace = 100 - mainBarEnd;
-        // Fade when stacked would extend beyond available space
+        // Overflow when stacked would extend beyond available space
         const isOverflowing = stackedWidth > availableSpace;
         // Always display what fits
         const displayWidth = Math.min(stackedWidth, availableSpace);
         
         return (
-          <div
-            style={{
-              position: 'absolute',
-              left: `${mainBarEnd}%`,
-              top: 0,
-              bottom: 0,
-              width: `${displayWidth}%`,
-              background: isOverflowing
-                ? `linear-gradient(to right, ${player.color} 60%, transparent 100%)`
-                : player.color,
-              opacity: 0.35,
-              transition: 'width 0.3s ease',
-            }}
-            title={isOverflowing ? `Overheal extends beyond chart` : undefined}
-          />
+          <>
+            <div
+              style={{
+                position: 'absolute',
+                left: `${mainBarEnd}%`,
+                top: 0,
+                bottom: 0,
+                width: `${displayWidth}%`,
+                background: player.color,
+                opacity: 0.35,
+                transition: 'width 0.3s ease',
+              }}
+              title={isOverflowing ? `Overheal extends beyond chart` : undefined}
+            />
+            {/* Chevrons to indicate overflow */}
+            {isOverflowing && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 4,
+                  top: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: player.color,
+                  opacity: 0.7,
+                  letterSpacing: '-2px',
+                  zIndex: 0,
+                }}
+                title="Overheal extends beyond chart"
+              >
+                »
+              </div>
+            )}
+          </>
         );
       })()}
 

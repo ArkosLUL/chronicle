@@ -105,6 +105,7 @@ func ActivityPeriod(period database.Period) chroniclesdk.ActivityPeriod {
 func WoWHostile(hostile database.LogInstanceEncounterHostile) chroniclesdk.WoWEncounterHostile {
 	return chroniclesdk.WoWEncounterHostile{
 		ID:      hostile.ID,
+		Boss:    hostile.Boss,
 		Periods: slice.List(hostile.Periods, ActivityPeriod),
 	}
 }

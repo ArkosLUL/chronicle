@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users } from "lucide-react";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown } from "lucide-react";
 import { useUrlState, serializers } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -14,9 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
-import { MetricPanel } from "./Panel";
 import { EventsPanel, type EventsPanelType, type PanelContext, type EntitySelection } from "./EventsPanels";
-import type { PanelType } from "./panelConfig";
 
 // ============================================================================
 // Formatting helpers
@@ -376,6 +374,7 @@ interface EncounterDetailProps {
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
   onToggleEnemy: (enemyId: string) => void;
+  onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
   onClearSelection: () => void;
 }
@@ -398,22 +397,25 @@ function EncounterDetail({
   players,
   entitySelection,
   onToggleEnemy,
+  onSelectEnemies,
   onTogglePlayer,
   onClearSelection,
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
   
-  // Panel state - each panel can be configured independently
-  const [panel1Type, setPanel1Type] = useState<PanelType>('damage_done');
-  const [panel2Type, setPanel2Type] = useState<PanelType>('damage_taken');
-  
-  // Events panel state (new event-driven panels) - URL persisted
+  // Events panel state - URL persisted
   const [eventsPanel1Type, setEventsPanel1Type] = useUrlState<EventsPanelType>(
     'panel1', 'damage_done', eventsPanelSerializer
   );
   const [eventsPanel2Type, setEventsPanel2Type] = useUrlState<EventsPanelType>(
     'panel2', 'healing_done', eventsPanelSerializer
+  );
+  const [eventsPanel3Type, setEventsPanel3Type] = useUrlState<EventsPanelType>(
+    'panel3', 'damage_taken', eventsPanelSerializer
+  );
+  const [eventsPanel4Type, setEventsPanel4Type] = useUrlState<EventsPanelType>(
+    'panel4', 'enemy_damage_done', eventsPanelSerializer
   );
   
   // Active tab and collapsible state
@@ -422,7 +424,6 @@ function EncounterDetail({
   
   // Merge enemies across all selected encounters
   const mergedEnemies = mergeEnemies(encounters);
-  const mappedEnemies = new Map(mergedEnemies.map(e => [e.id, e.name]));
   
   const totalDurationMs = computeTotalDuration(encounters);
   
@@ -526,7 +527,7 @@ function EncounterDetail({
                 {hasSelection && (
                   <button
                     onClick={onClearSelection}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-destructive hover:text-destructive-foreground hover:bg-destructive/90 transition-colors"
                   >
                     Clear ({totalSelectionCount})
                   </button>
@@ -545,6 +546,20 @@ function EncounterDetail({
             <CollapsibleContent>
               <div>
                 <TabsContent value="enemies" className="mt-0">
+                  {mergedEnemies.length > 0 && (
+                    <div className="flex items-center gap-2 mb-2">
+                      {mergedEnemies.some(e => e.boss) && (
+                        <>
+                          <button
+                            onClick={() => onSelectEnemies(mergedEnemies.filter(e => e.boss).map(e => e.id))}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            Select Bosses
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     {mergedEnemies.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No enemies in this encounter</p>
@@ -569,6 +584,9 @@ function EncounterDetail({
                                   "w-1.5 h-1.5 rounded-full flex-shrink-0",
                                   enemy.killed ? "bg-green-500" : "bg-red-500"
                                 )} />
+                                {enemy.boss && (
+                                  <Crown className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                                )}
                                 <span className="font-medium">{enemy.name}</span>
                                 <span className="text-muted-foreground text-[10px]">
                                   {formatDamageNumber(enemy.damageTaken)}
@@ -624,7 +642,7 @@ function EncounterDetail({
           </Card>
         </Collapsible>
       </Tabs>
-      {/* Events Panels - New event-driven panels (experimental) */}
+      {/* Events Panels - 2x2 grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <EventsPanel
           panelType={eventsPanel1Type}
@@ -638,31 +656,17 @@ function EncounterDetail({
           durationMs={totalDurationMs}
           context={panelContext}
         />
-      </div>
-
-      {/* Metrics - 2 column grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MetricPanel
-          instanceId={instance.id}
-          panelType={panel1Type}
-          onPanelTypeChange={setPanel1Type}
+        <EventsPanel
+          panelType={eventsPanel3Type}
+          onPanelTypeChange={setEventsPanel3Type}
           durationMs={totalDurationMs}
-          players={players}
-          enemies={mappedEnemies}
-          selectedPlayerIds={entitySelection.playerIds}
-          selectedEnemyIds={entitySelection.enemyIds}
-          selectedEncounters={encounters}
+          context={panelContext}
         />
-        <MetricPanel
-          instanceId={instance.id}
-          panelType={panel2Type}
-          onPanelTypeChange={setPanel2Type}
+        <EventsPanel
+          panelType={eventsPanel4Type}
+          onPanelTypeChange={setEventsPanel4Type}
           durationMs={totalDurationMs}
-          players={players}
-          enemies={mappedEnemies}
-          selectedPlayerIds={entitySelection.playerIds}
-          selectedEnemyIds={entitySelection.enemyIds}
-          selectedEncounters={encounters}
+          context={panelContext}
         />
       </div>
     </div>
@@ -739,6 +743,11 @@ export function InstancePageView({
       }
       return next;
     });
+  };
+  
+  // Select multiple enemies at once (replaces current selection)
+  const selectEnemies = (enemyIds: string[]) => {
+    setUrlEnemyIds(new Set(enemyIds));
   };
   
   // Toggle player selection
@@ -850,6 +859,7 @@ export function InstancePageView({
             players={instance.players ?? {}}
             entitySelection={entitySelection}
             onToggleEnemy={toggleEnemySelection}
+            onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}
             onClearSelection={clearEntitySelection}
           />

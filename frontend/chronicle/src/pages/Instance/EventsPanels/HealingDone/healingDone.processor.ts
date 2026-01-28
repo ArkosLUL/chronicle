@@ -6,7 +6,7 @@
 
 import { GUID } from "@/lib/guid/guid";
 import type { PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
-import { hasHitType, HitTypeCrit, HitTypePeriodic } from "@/lib/hittype/hittype";
+import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
 
 // Re-export the shared type (works for healing too)

@@ -201,8 +201,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 				encounterFights := make([]database.InsertEncounterCharacterFightsParams, 0)
 				for hostileID, hostileFight := range enc.Combat.Hostiles {
+          identity := inst.IdentifyUnit(hostileID)
 					encounterFights = append(encounterFights, database.InsertEncounterCharacterFightsParams{
 						ID:          hostileID,
+						Boss:        identity.Boss,
 						EncounterID: dbencounter.ID,
 						Periods: slice.List[period.Period, database.Period](hostileFight.Activity, func(p period.Period) database.Period {
 							return database.Period{

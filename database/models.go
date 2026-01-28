@@ -537,6 +537,7 @@ type LogInstanceEncounterHostile struct {
 	EncounterID uuid.UUID `db:"encounter_id" json:"encounter_id"`
 	ID          guid.GUID `db:"id" json:"id"`
 	Periods     Periods   `db:"periods" json:"periods"`
+	Boss        bool      `db:"boss" json:"boss"`
 }
 
 type LogInstanceEvent struct {

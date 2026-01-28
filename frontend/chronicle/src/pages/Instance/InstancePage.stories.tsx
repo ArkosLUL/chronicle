@@ -201,6 +201,7 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
     enemies.push({
       id: bossGuid.toString(),
       name: encounterName,
+      boss: true,
       damageTaken: Math.round(500000 + Math.random() * 200000),
       damageDone: Math.round(150000 + Math.random() * 50000),
       periods: [createMockPeriod(0, 180, true)], // 3 minute fight, boss killed
@@ -214,6 +215,7 @@ function mockEnemyData(encounterName: string, boss: boolean): EnemyUnit[] {
     enemies.push({
       id: addGuid.toString(),
       name: addName,
+      boss: false,
       damageTaken: Math.round(50000 + Math.random() * 30000),
       damageDone: Math.round(20000 + Math.random() * 15000),
       periods: [createMockPeriod(0, 30 + i * 10, true)], // adds die at different times

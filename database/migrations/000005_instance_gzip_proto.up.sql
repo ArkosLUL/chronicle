@@ -14,4 +14,6 @@ CREATE TABLE log_instance_events(
 
 COMMENT ON COLUMN log_instance_events.events IS 'Gzipped protobuf-encoded events';
 
+ALTER TABLE log_instance_encounter_hostiles ADD COLUMN boss BOOLEAN NOT NULL DEFAULT FALSE;
+
 COMMIT;

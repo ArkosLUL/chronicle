@@ -11,6 +11,7 @@ import { InstancePageView } from "./InstancePageView";
 export interface EnemyUnit {
   id: string;
   name: string;
+  boss: boolean;       // is this a boss creature
   damageTaken: number; // damage taken from players
   damageDone: number;  // damage done to players
   periods: readonly ActivityPeriod[]; // activity periods for debugging
@@ -89,6 +90,7 @@ function transformToInstance(
         return {
           id: guidStr,
           name: getUnitName(guidStr, units),
+          boss: hostile.boss,
           damageTaken: damage?.damage_taken_total ?? 0, // damage they took from players
           damageDone: damage?.damage_done_total ?? 0,   // damage they dealt to players
           periods: hostile.periods,

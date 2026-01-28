@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { decodePayload, decodeAllPayloads, decodeDelimitedMessages, decompressGzip, isGzipped, FastDamageCursor, parseAllHeaders, type PayloadHeader, type DecodedPayload } from "@/api/protodecode/decode"
 import { DamageSchema, type Damage, HealSchema, type Heal, ResourceChangeSchema, type ResourceChange, School } from "@/api/proto/chronicle_pb"
-import type { GenMessage, Message } from "@bufbuild/protobuf"
+import type { GenMessage } from "@bufbuild/protobuf/codegenv1"
+import type { Message } from "@bufbuild/protobuf"
 
 type DecodeMode = "payload" | "messages"
 type EventType = "damage" | "heal" | "resource_change"
@@ -38,7 +39,7 @@ export function ProtoDecode() {
   const [mode, setMode] = useState<DecodeMode>("payload")
   const [eventType, setEventType] = useState<EventType>("damage")
   const [allPayloads, setAllPayloads] = useState<DecodedPayload<AnyEventMessage>[]>([])
-  const [header, setHeader] = useState<PayloadHeader | null>(null)
+  const [_header, setHeader] = useState<PayloadHeader | null>(null)
   const [messages, setMessages] = useState<AnyEventMessage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)

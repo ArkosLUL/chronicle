@@ -413,7 +413,7 @@ func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid
 
 const getInstanceEncounterCharacterFights = `-- name: GetInstanceEncounterCharacterFights :many
 SELECT
-  encounter_id, id, periods
+  encounter_id, id, periods, boss
 FROM
   log_instance_encounter_hostiles
 WHERE
@@ -429,7 +429,12 @@ func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, in
 	var items []LogInstanceEncounterHostile
 	for rows.Next() {
 		var i LogInstanceEncounterHostile
-		if err := rows.Scan(&i.EncounterID, &i.ID, &i.Periods); err != nil {
+		if err := rows.Scan(
+			&i.EncounterID,
+			&i.ID,
+			&i.Periods,
+			&i.Boss,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

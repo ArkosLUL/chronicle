@@ -89,9 +89,9 @@ VALUES
 
 -- name: InsertEncounterCharacterFights :batchexec
 INSERT INTO
-  log_instance_encounter_hostiles (id, encounter_id, periods)
+  log_instance_encounter_hostiles (id, boss, encounter_id, periods)
 VALUES
-  ($1, $2, $3)
+  ($1, $2, $3, $4)
 ;
 
 -- name: GetInstanceEncounterCharacterFights :many

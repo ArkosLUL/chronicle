@@ -70,6 +70,7 @@ type WoWEncounterWithHostiles struct {
 
 type WoWEncounterHostile struct {
 	ID      guid.GUID        `json:"id"`
+	Boss    bool             `json:"boss"`
 	Periods []ActivityPeriod `json:"periods"`
 }
 

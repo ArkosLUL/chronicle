@@ -190,6 +190,7 @@ export interface WoWEncounter {
 // From chroniclesdk/log.go
 export interface WoWEncounterHostile {
     readonly id: GUID;
+    readonly boss: boolean;
     readonly periods: readonly ActivityPeriod[];
 }
 

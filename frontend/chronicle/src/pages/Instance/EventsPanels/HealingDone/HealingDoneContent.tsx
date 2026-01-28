@@ -22,7 +22,6 @@ function aggregateForEncounters(
   const aggregated = new Map<string, PlayerMetricChartData>();
   
   const filterByTarget = selected.playerIds.size > 0;
-  const hasHealerSelection = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterHealing = result.EncounterHealing.get(encounterId);

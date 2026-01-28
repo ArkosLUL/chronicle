@@ -15,14 +15,23 @@ import { formatNumber } from "@/lib/format";
  * - If selected.playerIds is non-empty, dim players not in selection
  */
 function aggregateForEncounters(
+  sourceType: DamageSourceType,
   result: DamageDoneResult,
   selectedEncounterIds: string[],
   selected: EntitySelection,
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
   
-  const filterByEnemy = selected.enemyIds.size > 0;
-  const hasPlayerSelection = selected.playerIds.size > 0;
+  let targets = selected.enemyIds;
+  let subjects = selected.playerIds;
+  if(sourceType === "enemies") {
+    targets = selected.playerIds;
+    subjects = selected.enemyIds;
+  }
+
+
+  const filterByTarget = targets.size > 0;
+  const hasSubjectSelection = subjects.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterDamage = result.EncounterDamage.get(encounterId);
@@ -31,10 +40,10 @@ function aggregateForEncounters(
     for (const [playerId, data] of encounterDamage) {
       // Calculate damage - either filtered by target or total
       let damageValue = 0;
-      if (filterByEnemy) {
+      if (filterByTarget) {
         // Sum only damage to selected enemies
         for (const [targetId, amount] of data.target) {
-          if (selected.enemyIds.has(targetId)) {
+          if (targets.has(targetId)) {
             damageValue += amount;
           }
         }
@@ -58,7 +67,7 @@ function aggregateForEncounters(
           className: data.className,
           specialization: data.specialization,
           value: damageValue,
-          dimmed: hasPlayerSelection && !selected.playerIds.has(playerId),
+          dimmed: hasSubjectSelection && !subjects.has(playerId),
         });
       }
     }
@@ -84,8 +93,8 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
 
   const damageData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection);
-  }, [cachedResult, context.selectedEncounterIds, context.entitySelection]);
+    return aggregateForEncounters(sourceType, cachedResult, context.selectedEncounterIds, context.entitySelection);
+  }, [sourceType, cachedResult, context.selectedEncounterIds, context.entitySelection]);
 
   // Create breakout function for tooltips
   const breakout = useDamageDoneBreakout({

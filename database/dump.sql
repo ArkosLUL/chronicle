@@ -146,7 +146,8 @@ CREATE TABLE log_instance_encounter_damage_unit_summary (
 CREATE TABLE log_instance_encounter_hostiles (
     encounter_id uuid NOT NULL,
     id wow_guid NOT NULL,
-    periods activity_periods NOT NULL
+    periods activity_periods NOT NULL,
+    boss boolean DEFAULT false NOT NULL
 );
 
 CREATE TABLE log_instance_encounters (

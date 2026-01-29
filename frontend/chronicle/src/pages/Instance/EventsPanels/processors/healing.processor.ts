@@ -19,7 +19,7 @@ import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, Processo
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
 import { isResourceChangeEvent, isDamageEvent } from "./events";
-import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "./guidCache";
+import { createGuidCache, getCachedGuid, isPlayerGuidFast, isPetGuidFast, type GuidCache } from "./guidCache";
 
 // Re-export the shared type (works for healing too)
 export type { DamageAbilityBreakout as HealingAbilityBreakout } from "./abilityBreakout";
@@ -156,10 +156,25 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       const deficits = getDeficits(state, encounterID);
       const guidCache = state.GuidCache;
       
+      // Helper to check if a target is a player or a player-owned pet.
+      // Fast path: if already in deficits map, we've validated them before.
+      const isPlayerOrFriendlyPet = (targetGuid: string): boolean => {
+        if (deficits.has(targetGuid)) return true;
+        if (isPlayerGuidFast(targetGuid)) return true;
+        if (isPetGuidFast(targetGuid)) {
+          // Pet must have a player owner
+          const petInfo = context.units?.[targetGuid];
+          if (petInfo?.owner) {
+            return isPlayerGuidFast(petInfo.owner) || getCachedGuid(guidCache, petInfo.owner).isPlayer();
+          }
+        }
+        return false;
+      };
+      
       // Handle damage events - increase target's health deficit
       if (isDamageEvent(event, streamType)) {
-        // Fast path: only players can have health deficits tracked
-        if (!isPlayerGuidFast(event.target)) return;
+        // Only players and player-owned pets can have health deficits tracked
+        if (!isPlayerOrFriendlyPet(event.target)) return;
         
         const currentDeficit = deficits.get(event.target) || 0;
         deficits.set(event.target, currentDeficit + event.amount);
@@ -170,8 +185,8 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       if (isResourceChangeEvent(event, streamType)) {
         if (event.resourceType !== "Health") return;
         
-        // Fast path: only track player health
-        if (!isPlayerGuidFast(event.target)) return;
+        // Only track player and player-owned pet health
+        if (!isPlayerOrFriendlyPet(event.target)) return;
         
         if (event.direction === "Loss") {
           // Health loss (like Life Tap) increases deficit
@@ -188,13 +203,13 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       if (!(streamType === "heal" || streamType === "resource_change")) return;
       if (!event.caster) return;
 
-      // Only track player-to-player healing for now
+      // Track player-to-player and player-to-pet healing
       // Caster must be a player
       const isCasterPlayer = isPlayerGuidFast(event.caster) || getCachedGuid(guidCache, event.caster).isPlayer();
       if (!isCasterPlayer) return;
       
-      // Target must be a player
-      if (!isPlayerGuidFast(event.target)) return;
+      // Target must be a player or player-owned pet
+      if (!isPlayerOrFriendlyPet(event.target)) return;
 
       const healerID = event.caster;
       const targetID = event.target;
@@ -211,8 +226,22 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       // Get player info
       const healerName = context.players[healerID]?.name || healerID;
       const healerClass = context.players[healerID]?.class || "UNKNOWN";
-      const targetName = context.players[targetID]?.name || targetID;
-      const targetClass = context.players[targetID]?.class || "UNKNOWN";
+      
+      // Get target info - format pet names as "{Owner}'s Pet {PetName}"
+      let targetName: string;
+      let targetClass: string;
+      const targetPlayerInfo = context.players[targetID];
+      if (targetPlayerInfo) {
+        targetName = targetPlayerInfo.name;
+        targetClass = targetPlayerInfo.class || "UNKNOWN";
+      } else {
+        // Must be a pet (we already validated it's a friendly pet)
+        const petInfo = context.units?.[targetID];
+        const petName = petInfo?.name || "Unknown";
+        const ownerName = petInfo?.owner ? (context.players[petInfo.owner]?.name || "Unknown") : "Unknown";
+        targetName = `${ownerName}'s Pet ${petName}`;
+        targetClass = petInfo?.owner ? (context.players[petInfo.owner]?.class || "UNKNOWN") : "UNKNOWN";
+      }
 
       // === Update HealingDone aggregation (by healer) ===
       if (!state.EncounterHealingByHealer.has(encounterID)) {

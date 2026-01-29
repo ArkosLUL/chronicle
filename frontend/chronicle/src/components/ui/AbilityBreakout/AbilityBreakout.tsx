@@ -26,6 +26,8 @@ export interface TargetData {
   value: number
   hitCount: number
   critCount: number
+  /** Optional overheal value - displayed in a separate column with distinct styling */
+  overheal?: number
 }
 
 // ============================================================================
@@ -137,6 +139,8 @@ export interface TargetTableProps {
   totalValue: number
   /** Label for the value column (e.g., "Damage", "Healing") */
   valueLabel?: string
+  /** Whether to show the overheal column (only for healing in effective mode) */
+  showOverheal?: boolean
 }
 
 /**
@@ -146,6 +150,7 @@ export function TargetTable({
   targets, 
   totalValue, 
   valueLabel = 'Value',
+  showOverheal = false,
 }: TargetTableProps) {
   if (!targets || targets.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No target breakdown available</p>
@@ -153,6 +158,9 @@ export function TargetTable({
 
   // Sort by value descending
   const sorted = [...targets].sort((a, b) => b.value - a.value)
+  
+  // Check if any target has overheal data
+  const hasOverhealData = showOverheal && sorted.some(t => t.overheal !== undefined && t.overheal > 0)
 
   return (
     <div className="max-h-64 overflow-y-auto">
@@ -161,6 +169,9 @@ export function TargetTable({
           <tr className="border-b border-border">
             <th className="text-left py-1.5 px-2 font-medium">Target</th>
             <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
+            {hasOverhealData && (
+              <th className="text-right py-1.5 px-2 font-medium text-yellow-500/70">Overheal</th>
+            )}
             <th className="text-right py-1.5 px-2 font-medium">%</th>
           </tr>
         </thead>
@@ -176,6 +187,21 @@ export function TargetTable({
                 <td className="text-right py-1 px-2 tabular-nums">
                   {target.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
+                {hasOverhealData && (
+                  <td className="text-right py-1 px-2 tabular-nums text-yellow-500/70">
+                    {(() => {
+                      const overhealVal = target.overheal ?? 0;
+                      const totalForTarget = target.value + overhealVal;
+                      const overhealPct = totalForTarget > 0 ? (overhealVal / totalForTarget) * 100 : 0;
+                      return (
+                        <>
+                          {overhealVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                          <span className="text-yellow-500/50 ml-1">({overhealPct.toFixed(0)}%)</span>
+                        </>
+                      );
+                    })()}
+                  </td>
+                )}
                 <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
                   {valuePercent.toFixed(1)}%
                 </td>
@@ -307,6 +333,7 @@ export function AbilityBreakout({
           targets={targets}
           totalValue={totalValue}
           valueLabel={valueLabel}
+          showOverheal={showOverheal}
         />
       )}
     </div>

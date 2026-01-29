@@ -5,6 +5,28 @@ import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingDoneContent";
 
 /**
+ * Resolve a unit name from context, formatting pets as "{Owner}'s {PetName}".
+ */
+function resolveUnitName(unitId: string, context: PanelContext): string {
+  // Check if it's a player first
+  if (context.instance.players?.[unitId]) {
+    return context.instance.players[unitId].name;
+  }
+  // Check if it's a unit (could be a pet)
+  const unitInfo = context.instance.units?.[unitId];
+  if (unitInfo) {
+    // If the unit has a player owner, format as pet
+    const ownerKey = unitInfo.owner?.toString();
+    if (ownerKey && context.instance.players?.[ownerKey]) {
+      const ownerName = context.instance.players[ownerKey].name;
+      return `${ownerName}'s ${unitInfo.name}`;
+    }
+    return unitInfo.name;
+  }
+  return unitId;
+}
+
+/**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
  * Uses either effective or overheal data based on view mode.
  */
@@ -147,12 +169,7 @@ function getTargetsForUnit(
     if (!overhealTargets) return [];
     const targets: TargetData[] = [];
     for (const [targetId, value] of overhealTargets) {
-      let targetName = targetId;
-      if (context.instance.players?.[targetId]) {
-        targetName = context.instance.players[targetId].name;
-      } else if (context.instance.units?.[targetId]) {
-        targetName = context.instance.units[targetId].name;
-      }
+      const targetName = resolveUnitName(targetId, context);
       targets.push({ targetId, targetName, value, hitCount: 0, critCount: 0 });
     }
     return targets.sort((a, b) => b.value - a.value);
@@ -163,12 +180,7 @@ function getTargetsForUnit(
     
     if (effectiveTargets) {
       for (const [targetId, value] of effectiveTargets) {
-        let targetName = targetId;
-        if (context.instance.players?.[targetId]) {
-          targetName = context.instance.players[targetId].name;
-        } else if (context.instance.units?.[targetId]) {
-          targetName = context.instance.units[targetId].name;
-        }
+        const targetName = resolveUnitName(targetId, context);
         combined.set(targetId, { targetId, targetName, value, hitCount: 0, critCount: 0 });
       }
     }
@@ -179,12 +191,7 @@ function getTargetsForUnit(
         if (existing) {
           existing.value += value;
         } else {
-          let targetName = targetId;
-          if (context.instance.players?.[targetId]) {
-            targetName = context.instance.players[targetId].name;
-          } else if (context.instance.units?.[targetId]) {
-            targetName = context.instance.units[targetId].name;
-          }
+          const targetName = resolveUnitName(targetId, context);
           combined.set(targetId, { targetId, targetName, value, hitCount: 0, critCount: 0 });
         }
       }
@@ -193,18 +200,25 @@ function getTargetsForUnit(
     return Array.from(combined.values()).sort((a, b) => b.value - a.value);
   }
   
-  // Default: effective only
+  // Default: effective - include overheal as separate column
   if (!effectiveTargets) return [];
   const targets: TargetData[] = [];
   for (const [targetId, value] of effectiveTargets) {
-    let targetName = targetId;
-    if (context.instance.players?.[targetId]) {
-      targetName = context.instance.players[targetId].name;
-    } else if (context.instance.units?.[targetId]) {
-      targetName = context.instance.units[targetId].name;
-    }
-    targets.push({ targetId, targetName, value, hitCount: 0, critCount: 0 });
+    const targetName = resolveUnitName(targetId, context);
+    const overheal = overhealTargets?.get(targetId);
+    targets.push({ targetId, targetName, value, hitCount: 0, critCount: 0, overheal });
   }
+  
+  // Also add targets that only have overheal (no effective healing)
+  if (overhealTargets) {
+    for (const [targetId, overheal] of overhealTargets) {
+      if (!effectiveTargets.has(targetId)) {
+        const targetName = resolveUnitName(targetId, context);
+        targets.push({ targetId, targetName, value: 0, hitCount: 0, critCount: 0, overheal });
+      }
+    }
+  }
+  
   return targets.sort((a, b) => b.value - a.value);
 }
 
@@ -275,6 +289,7 @@ export function useHealingDoneBreakout({
         ? targets.map((t) => ({
             ...t,
             value: (t.value / durationMs) * 1000,
+            overheal: t.overheal !== undefined ? (t.overheal / durationMs) * 1000 : undefined,
           }))
         : targets;
 

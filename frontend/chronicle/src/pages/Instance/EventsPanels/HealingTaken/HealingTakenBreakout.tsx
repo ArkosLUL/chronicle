@@ -5,6 +5,28 @@ import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingTakenContent";
 
 /**
+ * Resolve a unit name from context, formatting pets as "{Owner}'s Pet {PetName}".
+ */
+function resolveUnitName(unitId: string, context: PanelContext): string {
+  // Check if it's a player first
+  if (context.instance.players?.[unitId]) {
+    return context.instance.players[unitId].name;
+  }
+  // Check if it's a unit (could be a pet)
+  const unitInfo = context.instance.units?.[unitId];
+  if (unitInfo) {
+    // If the unit has a player owner, format as pet
+    const ownerKey = unitInfo.owner?.toString();
+    if (ownerKey && context.instance.players?.[ownerKey]) {
+      const ownerName = context.instance.players[ownerKey].name;
+      return `${ownerName}'s Pet ${unitInfo.name}`;
+    }
+    return unitInfo.name;
+  }
+  return unitId;
+}
+
+/**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
  * Uses either effective or overheal data based on view mode.
  */
@@ -143,12 +165,7 @@ function getSourcesForUnit(
     if (!overhealSources) return [];
     const sources: TargetData[] = [];
     for (const [sourceId, value] of overhealSources) {
-      let sourceName = sourceId;
-      if (context.instance.players?.[sourceId]) {
-        sourceName = context.instance.players[sourceId].name;
-      } else if (context.instance.units?.[sourceId]) {
-        sourceName = context.instance.units[sourceId].name;
-      }
+      const sourceName = resolveUnitName(sourceId, context);
       sources.push({ targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
     }
     return sources.sort((a, b) => b.value - a.value);
@@ -159,12 +176,7 @@ function getSourcesForUnit(
     
     if (effectiveSources) {
       for (const [sourceId, value] of effectiveSources) {
-        let sourceName = sourceId;
-        if (context.instance.players?.[sourceId]) {
-          sourceName = context.instance.players[sourceId].name;
-        } else if (context.instance.units?.[sourceId]) {
-          sourceName = context.instance.units[sourceId].name;
-        }
+        const sourceName = resolveUnitName(sourceId, context);
         combined.set(sourceId, { targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
       }
     }
@@ -175,12 +187,7 @@ function getSourcesForUnit(
         if (existing) {
           existing.value += value;
         } else {
-          let sourceName = sourceId;
-          if (context.instance.players?.[sourceId]) {
-            sourceName = context.instance.players[sourceId].name;
-          } else if (context.instance.units?.[sourceId]) {
-            sourceName = context.instance.units[sourceId].name;
-          }
+          const sourceName = resolveUnitName(sourceId, context);
           combined.set(sourceId, { targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
         }
       }
@@ -193,12 +200,7 @@ function getSourcesForUnit(
   if (!effectiveSources) return [];
   const sources: TargetData[] = [];
   for (const [sourceId, value] of effectiveSources) {
-    let sourceName = sourceId;
-    if (context.instance.players?.[sourceId]) {
-      sourceName = context.instance.players[sourceId].name;
-    } else if (context.instance.units?.[sourceId]) {
-      sourceName = context.instance.units[sourceId].name;
-    }
+    const sourceName = resolveUnitName(sourceId, context);
     sources.push({ targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
   }
   return sources.sort((a, b) => b.value - a.value);

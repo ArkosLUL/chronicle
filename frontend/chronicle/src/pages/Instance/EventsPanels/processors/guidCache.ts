@@ -39,3 +39,21 @@ export function isPlayerGuidFast(guidStr: string): boolean {
   // They start with "0x0000" for the simplest check
   return guidStr.startsWith("0x0000");
 }
+
+/**
+ * Quick check if a GUID string represents a pet without full parsing.
+ * Pets have high bits where (high & 0x00f0) === 0x0040.
+ * This means the 5th character (index 4) should be '4'.
+ */
+export function isPetGuidFast(guidStr: string): boolean {
+  // Pet GUIDs: high 16 bits have form 0x00X0 where X & 0xF0 == 0x40
+  // Check the 5th character is '4' (e.g., "0x0040...")
+  return guidStr.length >= 5 && guidStr[4] === '4';
+}
+
+/**
+ * Quick check if a GUID string represents a player or pet without full parsing.
+ */
+export function isPlayerOrPetGuidFast(guidStr: string): boolean {
+  return isPlayerGuidFast(guidStr) || isPetGuidFast(guidStr);
+}

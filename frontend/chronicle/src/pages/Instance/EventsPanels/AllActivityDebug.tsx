@@ -78,7 +78,7 @@ function RawEventRow({ event, index }: RawEventRowProps) {
     : config.color;
   
   const amountElement = (
-    <span className={cn("w-12 text-right shrink-0", amountColor)}>{formatNumber(event.amount)}</span>
+    <span className={cn("w-12 text-right shrink-0", amountColor)}>{event.amount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 1})}</span>
   );
   
   return (

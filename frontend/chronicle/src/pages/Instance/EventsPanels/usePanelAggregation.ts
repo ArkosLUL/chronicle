@@ -6,7 +6,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "@/hooks/instanceEvents";
 import type { PanelDefinition, PanelContext } from "./types";
-import type { WorkerRequest, WorkerResponse, SerializableProcessorContext } from "./processorTypes";
+import type { WorkerRequest, SerializableProcessorContext } from "./processorTypes";
+import { executeRequest } from "./workerPool";
 
 export interface UsePanelAggregationOptions<TResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +132,7 @@ export function usePanelAggregation<TResult>(
   const [processingTimeMs, setProcessingTimeMs] = useState<number | null>(null);
   
   const requestIdRef = useRef(0);
-  const workerRef = useRef<Worker | null>(null);
+  const abortRef = useRef(false);
   
   // Track panel id in state to detect changes during render
   // This is the React-approved pattern for "adjusting state when a prop changes"
@@ -149,14 +150,9 @@ export function usePanelAggregation<TResult>(
     if (!enabled) return;
     
     const requestId = ++requestIdRef.current;
+    abortRef.current = false;
     
     async function run() {
-      // Terminate any existing worker
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
-      
       setLoading(true);
       setProcessing(false);
       setError(null);
@@ -172,47 +168,12 @@ export function usePanelAggregation<TResult>(
         );
         
         // Check if request was superseded while fetching
-        if (requestId !== requestIdRef.current) return;
+        if (requestId !== requestIdRef.current || abortRef.current) return;
         
         setLoading(false);
         setProcessing(true);
         
-        // Create worker
-        const worker = new Worker(
-          new URL('./panelWorker.ts', import.meta.url),
-          { type: 'module' }
-        );
-        workerRef.current = worker;
-        
-        // Set up message handler
-        worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
-          const response = e.data;
-          
-          // Ignore stale responses
-          if (response.requestId !== requestIdRef.current) {
-            return;
-          }
-          
-          if (response.error) {
-            setError(new Error(response.error));
-            setProcessing(false);
-            return;
-          }
-          
-          const deserializedResult = deserializeResult<TResult>(response.result);
-          setResult(deserializedResult);
-          setTotalEvents(response.totalEvents);
-          setProcessingTimeMs(response.processingTimeMs);
-          setProcessing(false);
-        };
-        
-        worker.onerror = (e) => {
-          if (requestId !== requestIdRef.current) return;
-          setError(new Error(e.message || 'Worker error'));
-          setProcessing(false);
-        };
-        
-        // Send work to worker
+        // Send work to pooled worker
         const workerRequest: WorkerRequest = {
           requestId,
           panelId: panel.id,
@@ -220,10 +181,27 @@ export function usePanelAggregation<TResult>(
           streams: fetchedStreams,
         };
         
-        worker.postMessage(workerRequest);
+        const response = await executeRequest(workerRequest);
+        
+        // Ignore stale responses
+        if (requestId !== requestIdRef.current || abortRef.current) {
+          return;
+        }
+        
+        if (response.error) {
+          setError(new Error(response.error));
+          setProcessing(false);
+          return;
+        }
+        
+        const deserializedResult = deserializeResult<TResult>(response.result);
+        setResult(deserializedResult);
+        setTotalEvents(response.totalEvents);
+        setProcessingTimeMs(response.processingTimeMs);
+        setProcessing(false);
         
       } catch (err) {
-        if (requestId !== requestIdRef.current) return;
+        if (requestId !== requestIdRef.current || abortRef.current) return;
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
         setProcessing(false);
@@ -232,13 +210,10 @@ export function usePanelAggregation<TResult>(
     
     run();
     
-    // Cleanup: terminate worker on unmount or when deps change
+    // Cleanup: mark request as stale
     return () => {
       requestIdRef.current++;
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
+      abortRef.current = true;
     };
   }, [eventsContext.fetchStream, panel, streamsKey, enabled, panelContext]);
   

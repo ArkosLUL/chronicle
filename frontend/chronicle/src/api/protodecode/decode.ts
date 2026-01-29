@@ -1,5 +1,8 @@
 import { type MessageShape, type DescMessage, fromBinary } from "@bufbuild/protobuf";
 
+// Shared TextDecoder instance - TextDecoder is stateless and thread-safe
+const sharedTextDecoder = new TextDecoder();
+
 /**
  * Header information from a Builder-encoded payload
  */
@@ -73,20 +76,14 @@ export function decodePayload<T extends DescMessage>(
 ): DecodedPayload<MessageShape<T>> {
   let offset = 0;
 
-  console.log("=== DECODE PAYLOAD ===");
-  console.log("First 64 bytes:", Array.from(data.slice(0, 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-
   // Read encounterID (length-prefixed string)
   const { value: strLen, bytesRead: strLenBytes } = readVarint(data, offset);
-  console.log(`strLen=${strLen}, strLenBytes=${strLenBytes}, offset=${offset}`);
   offset += strLenBytes;
-  const encounterID = new TextDecoder().decode(data.subarray(offset, offset + strLen));
-  console.log(`encounterID="${encounterID}"`);
+  const encounterID = sharedTextDecoder.decode(data.subarray(offset, offset + strLen));
   offset += strLen;
 
   // Read firstTimestamp (varint, milliseconds since epoch)
   const { value: timestampMs, bytesRead: tsBytes } = readVarint64(data, offset);
-  console.log(`timestampMs=${timestampMs}, tsBytes=${tsBytes}, offset=${offset}`);
   offset += tsBytes;
   // Handle potentially invalid timestamps (very large values indicate encoding issues)
   // timestamp=0 is valid for empty encounters
@@ -97,16 +94,11 @@ export function decodePayload<T extends DescMessage>(
 
   // Read count (varint)
   const { value: count, bytesRead: countBytes } = readVarint(data, offset);
-  console.log(`count=${count}, countBytes=${countBytes}, offset=${offset}`);
   offset += countBytes;
 
   // Read dataLength (varint) - expected bytes of message data
   const { value: dataLength, bytesRead: dataLenBytes } = readVarint(data, offset);
-  console.log(`dataLength=${dataLength}, dataLenBytes=${dataLenBytes}, offset=${offset}`);
   offset += dataLenBytes;
-
-  console.log(`Header done. Messages start at offset ${offset}`);
-  console.log("First message bytes:", Array.from(data.slice(offset, offset + 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
 
   // Decode the messages, respecting the count from the header
   const messages = decodeDelimitedMessages(schema, data.subarray(offset), count);
@@ -133,14 +125,11 @@ export function decodeAllPayloads<T extends DescMessage>(
   const results: DecodedPayload<MessageShape<T>>[] = [];
   let offset = 0;
 
-  console.log("=== DECODE ALL PAYLOADS ===");
-  console.log(`Total data length: ${data.length} bytes`);
-
   while (offset < data.length) {
     // Read encounterID (length-prefixed string)
     const { value: strLen, bytesRead: strLenBytes } = readVarint(data, offset);
     offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(data.subarray(offset, offset + strLen));
+    const encounterID = sharedTextDecoder.decode(data.subarray(offset, offset + strLen));
     offset += strLen;
 
     // Read firstTimestamp (varint, milliseconds since epoch)
@@ -158,8 +147,6 @@ export function decodeAllPayloads<T extends DescMessage>(
     // Read dataLength (varint)
     const { value: dataLength, bytesRead: dataLenBytes } = readVarint(data, offset);
     offset += dataLenBytes;
-
-    console.log(`Encounter ${results.length}: id=${encounterID.slice(0,8)}..., count=${count}, dataLen=${dataLength}`);
 
     // Decode messages for this encounter
     const messages = count > 0 
@@ -179,7 +166,6 @@ export function decodeAllPayloads<T extends DescMessage>(
     offset += dataLength;
   }
 
-  console.log(`Decoded ${results.length} encounters`);
   return results;
 }
 
@@ -216,16 +202,13 @@ export function decodeDelimitedMessages<T extends DescMessage>(
       const message = fromBinary(schema, messageBytes);
       messages.push(message);
     } catch (e) {
-      console.error(`Failed at message ${msgIndex}, offset ${offset - bytesRead}, length ${length}`);
-      console.error("Message bytes:", Array.from(messageBytes.slice(0, 64)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-      throw e;
+      throw new Error(`Failed at message ${msgIndex}, offset ${offset - bytesRead}, length ${length}: ${e}`);
     }
 
     offset += length;
     msgIndex++;
   }
 
-  console.log(`Decoded ${messages.length} messages`);
   return messages;
 }
 
@@ -254,7 +237,8 @@ export interface ReusableDamage {
  * Reuses a single object, mutating it for each decode.
  */
 export class DamageDecoder {
-  private readonly textDecoder = new TextDecoder();
+  // Use shared TextDecoder for better memory efficiency
+  private readonly textDecoder = sharedTextDecoder;
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableDamage = {
@@ -369,7 +353,8 @@ export interface ReusableHeal {
  *   7: hitType (uint32)
  */
 export class HealDecoder {
-  private readonly textDecoder = new TextDecoder();
+  // Use shared TextDecoder for better memory efficiency
+  private readonly textDecoder = sharedTextDecoder;
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableHeal = {
@@ -535,7 +520,7 @@ export class FastHealCursor {
     // Read encounterID
     const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
     this.offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
     this.offset += strLen;
     
     // Read timestamp
@@ -596,7 +581,8 @@ export interface ReusableResourceChange {
  *   8: direction (string)
  */
 export class ResourceChangeDecoder {
-  private readonly textDecoder = new TextDecoder();
+  // Use shared TextDecoder for better memory efficiency
+  private readonly textDecoder = sharedTextDecoder;
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableResourceChange = {
@@ -765,7 +751,7 @@ export class FastResourceChangeCursor {
     // Read encounterID
     const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
     this.offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
     this.offset += strLen;
     
     // Read timestamp
@@ -820,7 +806,8 @@ export interface ReusableExtraAttack {
  *   5: sourceName (string)
  */
 export class ExtraAttackDecoder {
-  private readonly textDecoder = new TextDecoder();
+  // Use shared TextDecoder for better memory efficiency
+  private readonly textDecoder = sharedTextDecoder;
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableExtraAttack = {
@@ -975,7 +962,7 @@ export class FastExtraAttackCursor {
     // Read encounterID
     const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
     this.offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
     this.offset += strLen;
     
     // Read timestamp
@@ -1028,7 +1015,8 @@ export interface ReusableSlain {
  *   3: caster (optional string)
  */
 export class SlainDecoder {
-  private readonly textDecoder = new TextDecoder();
+  // Use shared TextDecoder for better memory efficiency
+  private readonly textDecoder = sharedTextDecoder;
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableSlain = {
@@ -1178,7 +1166,7 @@ export class FastSlainCursor {
     // Read encounterID
     const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
     this.offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
     this.offset += strLen;
     
     // Read timestamp
@@ -1384,7 +1372,7 @@ export class StreamCursor<T extends DescMessage> {
     // Read encounterID (length-prefixed string)
     const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
     this.offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
     this.offset += strLen;
     
     // Read firstTimestamp (varint, milliseconds since epoch)
@@ -1536,7 +1524,7 @@ export class FastDamageCursor {
     // Read encounterID
     const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
     this.offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(this.data.subarray(this.offset, this.offset + strLen));
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
     this.offset += strLen;
     
     // Read timestamp
@@ -1581,7 +1569,7 @@ export function parseAllHeaders(data: Uint8Array): PayloadHeader[] {
     // Read encounterID (length-prefixed string)
     const { value: strLen, bytesRead: strLenBytes } = readVarint(data, offset);
     offset += strLenBytes;
-    const encounterID = new TextDecoder().decode(data.subarray(offset, offset + strLen));
+    const encounterID = sharedTextDecoder.decode(data.subarray(offset, offset + strLen));
     offset += strLen;
 
     // Read firstTimestamp (varint, milliseconds since epoch)

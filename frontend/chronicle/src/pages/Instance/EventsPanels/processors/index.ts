@@ -9,6 +9,8 @@ import { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
 import { deathsProcessor } from "../Deaths/deaths.processor";
 import { allActivityProcessor } from "./allActivityDebug.processor";
 import { unifiedHealingProcessor } from "./healing.processor";
+import { mitigationProcessor } from "./mitigation.processor";
+import { avoidanceProcessor } from "./avoidance.processor";
 
 // Export individual processors
 export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor } from "../DamageDone/damageDone.processor";
@@ -17,6 +19,8 @@ export { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
 export { deathsProcessor } from "../Deaths/deaths.processor";
 export { allActivityProcessor } from "./allActivityDebug.processor";
 export { unifiedHealingProcessor } from "./healing.processor";
+export { mitigationProcessor } from "./mitigation.processor";
+export { avoidanceProcessor } from "./avoidance.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -25,6 +29,8 @@ export type { UnifiedHealingResult, HealerData, HealingReceiverData, HealingTarg
 export type { ExtraAttacksResult as ExtraAttacksState, ExtraAttacksData } from "../ExtraAttacks/extraAttacks.processor";
 export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "../Deaths/deaths.processor";
 export type { AllActivityDebugState as AllActivityState, RawDebugEvent, EncounterMeta, ResourceType } from "./allActivityDebug.processor";
+export type { MitigationResult, MitigationData, EncounterMitigation } from "./mitigation.processor";
+export type { AvoidanceResult, AvoidanceData, EncounterAvoidance } from "./avoidance.processor";
 
 // Export shared utilities
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
@@ -48,4 +54,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   deaths: deathsProcessor,
   death_log: deathsProcessor, // Same processor, different view
   all_activity: allActivityProcessor,
+  mitigation: mitigationProcessor,
+  avoidance: avoidanceProcessor,
 };

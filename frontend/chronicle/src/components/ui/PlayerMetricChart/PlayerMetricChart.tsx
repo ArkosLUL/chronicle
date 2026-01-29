@@ -20,7 +20,7 @@ export {
   TargetBreakdownTable,
 } from './BreakdownContent';
 
-export type ChartType = 'damage' | 'healing' | 'taken'
+export type ChartType = 'damage' | 'healing' | 'taken' | 'mitigation'
 
 export interface PlayerMetricChartData {
   playerID: string
@@ -149,7 +149,7 @@ export function PlayerMetricChart({
             rowHeight={rowHeight}
             maximumValue={maximumValue}
             summedValue={summedValue}
-            showRank={type === 'damage' || type === 'healing' || type === 'taken'}
+            showRank={type === 'damage' || type === 'healing' || type === 'taken' || type === 'mitigation'}
             type={type}
             suffix={perSecond ? '/s' : ''}
             decimals={perSecond ? 1 : 0}

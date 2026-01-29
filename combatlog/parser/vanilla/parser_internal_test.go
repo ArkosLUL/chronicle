@@ -538,6 +538,23 @@ func TestParserMessages(t *testing.T) {
 			EnvironmentType: nil,
 		}, dmg)
 	})
+
+	t.Run("Parry", func(t *testing.T) {
+		par, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF1300011BC009C68's Kick was parried by 0x000000000001C7AC."))
+		require.NoError(t, err)
+
+		require.Equal(t, messages.Damage{
+			MessageBase:     messages.MessageBase{},
+			SpellName:       nil,
+			Caster:          nil,
+			Target:          0,
+			HitType:         0,
+			Amount:          0,
+			School:          types.PhysicalSchool,
+			Trailer:         nil,
+			EnvironmentType: nil,
+		}, par)
+	})
 }
 
 func TestPreProcess(t *testing.T) {

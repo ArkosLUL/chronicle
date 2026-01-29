@@ -17,6 +17,9 @@ import { createHealingTakenPanel } from "./HealingTaken/HealingTaken";
 import { createDeathsPanel } from "./Deaths/Deaths";
 import { createDeathLogPanel } from "./Deaths/DeathLog";
 import { AllActivityPanel } from "./AllActivityDebug";
+import { createMitigationPanel } from "./Mitigation/Mitigation";
+// TODO: Avoidance panel requires spell school data which isn't available yet
+// import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
 // Registry of all available panels
 // Using `any` here to allow different result types per panel.
@@ -33,6 +36,9 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   extra_attacks: createExtraAttacksPanel(),
   deaths: createDeathsPanel(),
   death_log: createDeathLogPanel(),
+  mitigation: createMitigationPanel(),
+  // TODO: Avoidance panel requires spell school data which isn't available yet
+  // avoidance: createAvoidancePanel(),
   all_activity: AllActivityPanel,
 };
 

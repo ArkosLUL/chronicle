@@ -618,6 +618,8 @@ const PANEL_CODES: Record<PanelType, string> = {
   extra_attacks: 'xa',
   deaths: 'd',
   death_log: 'dl',
+  mitigation: 'mit',
+  // avoidance: 'av', // TODO: Requires spell school data
   all_activity: 'aa',
 };
 

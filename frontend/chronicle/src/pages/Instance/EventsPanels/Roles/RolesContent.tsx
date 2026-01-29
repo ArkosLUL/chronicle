@@ -45,9 +45,10 @@ interface RoleGroupProps {
   selectedPlayerIds: Set<string>;
   onTogglePlayers?: (playerIds: string[]) => void;
   onTogglePlayer?: (playerId: string) => void;
+  columns?: 1 | 2;
 }
 
-function RoleGroup({ title, icon, players, accentColor, selectedPlayerIds, onTogglePlayers, onTogglePlayer }: RoleGroupProps) {
+function RoleGroup({ title, icon, players, accentColor, selectedPlayerIds, onTogglePlayers, onTogglePlayer, columns = 1 }: RoleGroupProps) {
   // Select all players in this role group
   const handleTitleClick = () => {
     if (!onTogglePlayers || players.length === 0) return;
@@ -80,7 +81,7 @@ function RoleGroup({ title, icon, players, accentColor, selectedPlayerIds, onTog
         <span className="text-sm font-medium">{title}</span>
         <span className="text-xs text-muted-foreground ml-auto">({players.length})</span>
       </div>
-      <div className="space-y-0.5">
+      <div className={columns === 2 ? "grid grid-cols-2 gap-x-2 gap-y-0.5" : "space-y-0.5"}>
         {players.map((player) => {
           const classColor = CLASS_COLORS[player.className] || CLASS_COLORS.UNKNOWN;
           const isSelected = selectedPlayerIds.has(player.playerID);
@@ -408,8 +409,8 @@ export const RolesContent = ({ context }: RolesContentProps) => {
         <span className="text-red-400">{roleSummary.dps.length}</span> DPS
       </div>
 
-      {/* Two column layout for Tanks and Healers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      {/* Tanks (1/3 width) and Healers (2/3 width, 2-col) layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-[3fr_5fr] gap-4 mb-4">
         <RoleGroup
           title="Tanks"
           icon={<Shield className="h-4 w-4" />}
@@ -427,6 +428,7 @@ export const RolesContent = ({ context }: RolesContentProps) => {
           selectedPlayerIds={context.entitySelection.playerIds}
           onTogglePlayers={context.onTogglePlayers}
           onTogglePlayer={context.onTogglePlayer}
+          columns={2}
         />
       </div>
 
@@ -464,7 +466,7 @@ export const RolesContent = ({ context }: RolesContentProps) => {
               <div>
                 <span className="text-emerald-500">High healing:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.healerHighCutoff, 0)}</span>
-                <span className="text-muted-foreground/70"> ≥{debug.healerHighZThreshold.toFixed(1)}σ (ignores DPS)</span>
+                <span className="text-muted-foreground/70"> ≥{debug.healerHighZThreshold.toFixed(1)}σ</span>
               </div>
               <div className="col-span-2">
                 <span className="text-muted-foreground italic">Healer = healing above mean + (low DPS OR high healing)</span>
@@ -474,20 +476,23 @@ export const RolesContent = ({ context }: RolesContentProps) => {
                 <span className="text-foreground">{formatNumber(debug.meanDamageTaken, 0)}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">Mean healing:</span>{" "}
-                <span className="text-foreground">{formatNumber(debug.meanHealingDone, 0)}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Mean dps:</span>{" "}
-                <span className="text-foreground">{formatNumber(debug.meanDamageDone, 0)}</span>
-              </div>
-              <div>
                 <span className="text-muted-foreground">Std dev dmg taken:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.stdDevDamageTaken, 0)}</span>
               </div>
+
+              <div>
+                <span className="text-muted-foreground">Mean healing:</span>{" "}
+                <span className="text-foreground">{formatNumber(debug.meanHealingDone, 0)}</span>
+              </div>
+
               <div>
                 <span className="text-muted-foreground">Std dev healing:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.stdDevHealingDone, 0)}</span>
+              </div>
+
+              <div>
+                <span className="text-muted-foreground">Mean dps:</span>{" "}
+                <span className="text-foreground">{formatNumber(debug.meanDamageDone, 0)}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Std dev dps:</span>{" "}

@@ -5,10 +5,12 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/playerposition"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
@@ -126,6 +128,20 @@ type Combatant struct {
 }
 
 func (c Combatant) Affects() []guid.GUID { return []guid.GUID{c.Guid} }
+
+type Realm struct {
+	MessageBase
+	realm.Info
+}
+
+func (u Realm) Affects() []guid.GUID { return []guid.GUID{} }
+
+type PlayerPosition struct {
+	MessageBase
+	playerposition.PlayerPosition
+}
+
+func (u PlayerPosition) Affects() []guid.GUID { return []guid.GUID{} }
 
 type Zone struct {
 	MessageBase

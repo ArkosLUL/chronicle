@@ -1,6 +1,10 @@
 package dbstatic
 
-import "github.com/google/uuid"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 func ServerTurtleWoW() uuid.UUID {
 	return uuid.MustParse("10ac9e23-ff74-43ed-83ad-96c123017097")
@@ -16,4 +20,17 @@ func RealmTelAbim() uuid.UUID {
 
 func RealmNordanaar() uuid.UUID {
 	return uuid.MustParse("bcf173a7-c94a-49fe-8930-27435d722fb7")
+}
+
+func RealmByName(name string) (uuid.UUID, bool) {
+	switch strings.ToLower(name) {
+	case "ambershire":
+		return RealmAmbershire(), true
+	case "tel abim", "tel'abim":
+		return RealmTelAbim(), true
+	case "nordanaar":
+		return RealmNordanaar(), true
+	default:
+		return uuid.UUID{}, false
+	}
 }

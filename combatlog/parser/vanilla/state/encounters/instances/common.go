@@ -8,8 +8,9 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
@@ -38,11 +39,12 @@ type Common struct {
 	completedFights []Fight
 	events          *encounterevents.Events
 	seen            map[guid.GUID]struct{}
+	realm           *realm.Info
 }
 
 type FinalizedInstance struct {
+	Realm      *realm.Info
 	Encounters []Encounter
-	SeenUnits  map[guid.GUID]unitinfo.Info
 }
 
 func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
@@ -105,6 +107,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	}
 
 	return &FinalizedInstance{
+		Realm:      c.realm,
 		Encounters: encounters,
 	}, nil
 }
@@ -151,6 +154,16 @@ func (c *Common) MatchesZone(z zone.Zone) bool {
 func (c *Common) Process(m messages.Message) error {
 	for _, id := range m.Affects() {
 		c.seen[id] = struct{}{}
+	}
+
+	switch msg := m.(type) {
+	case messages.Realm:
+		if c.realm != nil {
+			if c.realm.RealmName != msg.Info.RealmName {
+				return vanilla.AsFatalError(fmt.Errorf("realm name changed from %q to %q during instance", c.realm.RealmName, msg.Info.RealmName))
+			}
+		}
+		c.realm = &msg.Info
 	}
 
 	actChange, err := c.Characters.Process(m)

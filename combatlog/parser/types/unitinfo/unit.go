@@ -18,15 +18,21 @@ func IsUnitInfo(content string) (string, bool) {
 	return types.Is(PrefixUnitInfo, content)
 }
 
+type Buff struct {
+	ID           int
+	Applications int
+}
+
 type Info struct {
 	Seen         time.Time
 	Guid         guid.GUID
 	IsPlayer     bool
 	Name         string
-	Level        int
-	Challenges   []string
 	CanCooperate bool
 	Owner        *guid.GUID
+	Buffs        []Buff
+	Level        int
+	Challenges   []string
 }
 
 // TODO:
@@ -44,8 +50,8 @@ func ParseUnitInfo(content string) (Info, error) {
 	// <seen>&<guid>&<name>&<can_cooperator>&<owner>
 	parts := strings.Split(trimmed, "&")
 
-	if len(parts) < 5 {
-		return Info{}, fmt.Errorf("insufficient arguments in UNIT_INFO message, got %d, want at least 5", len(parts))
+	if len(parts) < 6 {
+		return Info{}, fmt.Errorf("insufficient arguments in UNIT_INFO message, got %d, want at least 6", len(parts))
 	}
 
 	// TODO: LEvel and challenges
@@ -81,16 +87,66 @@ func ParseUnitInfo(content string) (Info, error) {
 		ownerID = &id
 	}
 
-	return Info{
+	info := Info{
 		Seen:         seen,
 		Guid:         gid,
 		IsPlayer:     isPlayer,
 		Name:         name,
 		CanCooperate: canCoop,
 		Owner:        ownerID,
-	}, nil
+	}
+	if len(parts) >= 7 {
+		info.Buffs, err = ParseBuffs(parts[6])
+		if err != nil {
+			return Info{}, fmt.Errorf("parsing buffs: %w", err)
+		}
+	}
+	if len(parts) >= 8 {
+		level, err := strconv.Atoi(parts[7])
+		if err != nil {
+			return Info{}, fmt.Errorf("invalid level %q: %w", parts[7], err)
+		}
+		info.Level = level
+	}
+	if len(parts) >= 9 {
+		challenges := strings.Split(parts[8], ",")
+		info.Challenges = challenges
+	}
+
+	return info, nil
 }
 
 func (u *Info) IsMe() bool {
 	return u.IsPlayer
+}
+
+// ,21564=1,27681=1
+func ParseBuffs(buffStr string) ([]Buff, error) {
+	if buffStr == "" {
+		return []Buff{}, nil
+	}
+
+	buffs := make([]Buff, 0)
+	for _, buff := range strings.Split(buffStr, ",") {
+		if buff == "" {
+			continue
+		}
+		parts := strings.Split(buff, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid buff format %q", buff)
+		}
+		id, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid buff ID %q: %w", parts[0], err)
+		}
+		applications, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid buff applications %q: %w", parts[1], err)
+		}
+		buffs = append(buffs, Buff{
+			ID:           id,
+			Applications: applications,
+		})
+	}
+	return buffs, nil
 }

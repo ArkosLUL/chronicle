@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/playerposition"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs/compiled"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs/compiled/matchers"
@@ -14,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/loot"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -116,6 +118,38 @@ func (p *Parser) fCombatCount(ts time.Time, content string) ([]messages.Message,
 	return set(messages.CombatCount{
 		Count:       cbt,
 		MessageBase: messages.Base(ts),
+	}), nil
+}
+
+func (p *Parser) fRealm(ts time.Time, content string) ([]messages.Message, error) {
+	if !strings.HasPrefix(content, realm.PrefixRealmInfo) {
+		return messages.NotHandled()
+	}
+
+	ut, err := realm.ParseRealmInfo(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
+	}
+
+	return set(messages.Realm{
+		MessageBase: messages.Base(ts),
+		Info:        ut,
+	}), nil
+}
+
+func (p *Parser) PlayerPosition(ts time.Time, content string) ([]messages.Message, error) {
+	if !strings.HasPrefix(content, playerposition.PrefixPlayerPosition) {
+		return messages.NotHandled()
+	}
+
+	ut, err := playerposition.ParsePlayerPosition(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
+	}
+
+	return set(messages.PlayerPosition{
+		MessageBase:    messages.Base(ts),
+		PlayerPosition: ut,
 	}), nil
 }
 

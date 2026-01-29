@@ -160,11 +160,19 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			continue
 		}
 
+		// TODO: Remove this crutch
+		var realmID uuid.UUID = dbstatic.RealmAmbershire()
+		if finalized.Realm != nil {
+			foundRealm, ok := dbstatic.RealmByName(finalized.Realm.RealmName)
+			if ok {
+				realmID = foundRealm
+			}
+		}
+
 		err = db.InTx(func(tx database.Store) error {
 			insertInstanceParams := database.InsertInstanceParams{
-				ID: instanceID,
-				// TODO: Detect this from the logs
-				RealmID:    dbstatic.RealmAmbershire(),
+				ID:         instanceID,
+				RealmID:    realmID,
 				LogGroupID: job.Args.LogID,
 				Name:       inst.Name(),
 				HashedSlug: pgtype.Text{
@@ -326,10 +334,10 @@ func (w *logParseInstanceBuilder) insert(ctx context.Context, tx database.Store)
 
 func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 	for _, id := range ids {
-    if id == 0x0000000000000000 {
-      // TODO: Where does this bug come from?
-      continue
-    }
+		if id == 0x0000000000000000 {
+			// TODO: Where does this bug come from?
+			continue
+		}
 		if _, ok := w.accounted[id]; ok {
 			continue
 		}

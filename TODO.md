@@ -6,3 +6,7 @@
     - Raw log is just that but guids, maybe we can edit it
 
 - When a `slain` message comes in, attribute the kill to the last damage dealer. Attach this to the slain message for the ui.
+  - Track the same pet across multiple summons, even though its guid changes
+    - To identify the "same" pet across summons, we could create a stable key like:
+      ${owner}-${name} (for named pets like warlock demons)
+      ${owner}-${entry} (for generic pets/totems)

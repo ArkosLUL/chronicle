@@ -58,16 +58,17 @@ function getTargetsForUnit(
   const targets: TargetData[] = [];
   for (const [targetId, value] of unitTargets) {
     // Try to resolve target name from players or units
-    let targetName = targetId;
-    if (context.instance.players?.[targetId]) {
+    // Fall back to GUID if name is unknown or empty
+    let targetName: string | undefined;
+    if (context.instance.players?.[targetId]?.name) {
       targetName = context.instance.players[targetId].name;
-    } else if (context.instance.units?.[targetId]) {
+    } else if (context.instance.units?.[targetId]?.name) {
       targetName = context.instance.units[targetId].name;
     }
     
     targets.push({
       targetId,
-      targetName,
+      targetName: targetName || targetId, // Show GUID if name is unknown
       value,
       hitCount: 0, // TODO: Track hit counts per target in processor
       critCount: 0,

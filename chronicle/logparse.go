@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
+	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
@@ -396,7 +397,7 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 		w.units = append(w.units, database.InsertInstanceUnitsParams{
 			InstanceID: w.instanceID,
 			UnitGuid:   id,
-			Name:       "Unknown",
+			Name:       unitname.ByEntry(entry),
 			Entry:      int32(entry),
 		})
 	}

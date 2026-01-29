@@ -159,8 +159,8 @@ func (c *Common) Process(m messages.Message) error {
 	switch msg := m.(type) {
 	case messages.Realm:
 		if c.realm != nil {
-			if c.realm.RealmName != msg.Info.RealmName {
-				return vanilla.AsFatalError(fmt.Errorf("realm name changed from %q to %q during instance", c.realm.RealmName, msg.Info.RealmName))
+			if c.realm.RealmName != msg.RealmName {
+				return vanilla.AsFatalError(fmt.Errorf("realm name changed from %q to %q during instance", c.realm.RealmName, msg.RealmName))
 			}
 		}
 		c.realm = &msg.Info

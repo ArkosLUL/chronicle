@@ -137,7 +137,7 @@ func (p *Parser) fRealm(ts time.Time, content string) ([]messages.Message, error
 	}), nil
 }
 
-func (p *Parser) PlayerPosition(ts time.Time, content string) ([]messages.Message, error) {
+func (p *Parser) fPlayerPosition(ts time.Time, content string) ([]messages.Message, error) {
 	if !strings.HasPrefix(content, playerposition.PrefixPlayerPosition) {
 		return messages.NotHandled()
 	}

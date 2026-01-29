@@ -161,7 +161,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 
 		// TODO: Remove this crutch
-		var realmID uuid.UUID = dbstatic.RealmAmbershire()
+		var realmID = dbstatic.RealmAmbershire()
 		if finalized.Realm != nil {
 			foundRealm, ok := dbstatic.RealmByName(finalized.Realm.RealmName)
 			if ok {

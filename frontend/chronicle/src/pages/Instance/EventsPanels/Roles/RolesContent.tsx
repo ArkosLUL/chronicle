@@ -345,6 +345,7 @@ export const RolesContent = ({ context }: RolesContentProps) => {
       tankZThreshold: 0,
       healerZThreshold: 0,
       lowDpsZThreshold: 0,
+      healerHighZThreshold: 0,
       meanDamageTaken: 0,
       stdDevDamageTaken: 0,
       meanHealingDone: 0,
@@ -354,6 +355,7 @@ export const RolesContent = ({ context }: RolesContentProps) => {
       tankCutoff: 0,
       healerCutoff: 0,
       lowDpsCutoff: 0,
+      healerHighCutoff: 0,
     };
     
     if (damageTakenMap.size === 0 && healingDoneMap.size === 0 && damageDoneMap.size === 0) {
@@ -460,7 +462,12 @@ export const RolesContent = ({ context }: RolesContentProps) => {
                 <span className="text-muted-foreground/70"> dps ≤{debug.lowDpsZThreshold.toFixed(2)}σ</span>
               </div>
               <div>
-                <span className="text-muted-foreground italic">Healer = healing + low DPS</span>
+                <span className="text-emerald-500">High healing:</span>{" "}
+                <span className="text-foreground">{formatNumber(debug.healerHighCutoff, 0)}</span>
+                <span className="text-muted-foreground/70"> ≥{debug.healerHighZThreshold.toFixed(1)}σ (ignores DPS)</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground italic">Healer = healing above mean + (low DPS OR high healing)</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Mean dmg taken:</span>{" "}

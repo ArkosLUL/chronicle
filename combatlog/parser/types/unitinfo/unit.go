@@ -8,6 +8,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 )
 
 const (
@@ -85,6 +86,14 @@ func ParseUnitInfo(content string) (Info, error) {
 			return Info{}, fmt.Errorf("invalid owner guid format %q: %w", owner, err)
 		}
 		ownerID = &id
+	}
+
+	// This feels a bit jank, but the WoW `UnitName` function can return "Unknown".
+	// Unsure why, but when it does that name will be propagated up. In some cases,
+	// if we know it is not a player, and it has an entry ID, we can fix the name
+	// here. Maintaining a list of seen "unknowns" hopefully does not get that large.
+	if name == "Unknown" && !gid.IsPlayer() && unitname.ByGUID(gid) != "" {
+		name = unitname.ByGUID(gid)
 	}
 
 	info := Info{

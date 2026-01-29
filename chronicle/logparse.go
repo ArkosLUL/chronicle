@@ -373,7 +373,7 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 			w.players = append(w.players, database.InsertInstancePlayersParams{
 				InstanceID: w.instanceID,
 				UnitGuid:   id,
-				Name:       "Unknown",
+				Name:       "Unknown Player",
 				Level:      -1,
 				Class:      database.WowPlayableClassUNKNOWN,
 				Race:       database.WowPlayableRaceUnknown,

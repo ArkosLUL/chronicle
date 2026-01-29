@@ -7,6 +7,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -44,7 +45,7 @@ func (e Encounter) NamedString(db *unitdb.Units) string {
 	str.WriteString("  Hostiles:\n")
 	for charID, charFight := range e.Combat.Hostiles {
 		unit, ok := db.Get(charID)
-		unitName := "Unknown"
+		unitName := unitname.ByGUID(charID)
 		if !ok {
 			unitName = unit.Name
 		}
@@ -96,7 +97,7 @@ func (f Fight) NamedString(db *unitdb.Units) string {
 	str.WriteString("  Hostiles:\n")
 	for charID, charFight := range f.Hostiles {
 		unit, ok := db.Get(charID)
-		unitName := "Unknown"
+		unitName := unitname.ByGUID(charID)
 		if !ok {
 			unitName = unit.Name
 		}

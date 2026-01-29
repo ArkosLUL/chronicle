@@ -1,5 +1,7 @@
 package unitname
 
+import "github.com/Emyrk/chronicle/combatlog/parser/guid"
+
 // ByEntry is a static list of some unit names by their entry ID. Helps when
 // identifying units in the combat log if their name is not given from the addon.
 func ByEntry(entry uint32) string {
@@ -9,4 +11,12 @@ func ByEntry(entry uint32) string {
 	default:
 		return ""
 	}
+}
+
+func ByGUID(guid guid.GUID) string {
+	entry, ok := guid.GetEntry()
+	if !ok {
+		return ""
+	}
+	return ByEntry(entry)
 }

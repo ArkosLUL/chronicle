@@ -46,6 +46,10 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     items: ["deaths", "death_log"],
   },
   {
+    label: "Composition",
+    items: ["roles"],
+  },
+  {
     label: "Activity",
     items: ["all_activity"],
   },

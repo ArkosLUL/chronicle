@@ -31,6 +31,12 @@ export interface PanelContext {
   
   /** Callback to select specific encounter(s) */
   onSelectEncounters?: (encounterIds: string[]) => void;
+  
+  /** Callback to toggle player selection */
+  onTogglePlayer?: (playerId: string) => void;
+  
+  /** Callback to toggle multiple players at once (all selected or all deselected) */
+  onTogglePlayers?: (playerIds: string[]) => void;
 }
 
 /**

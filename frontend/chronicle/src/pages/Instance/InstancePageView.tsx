@@ -464,6 +464,7 @@ interface EncounterDetailProps {
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
+  onTogglePlayers: (playerIds: string[]) => void;
   onClearSelection: () => void;
   onSelectEncounters: (encounterIds: string[]) => void;
 }
@@ -478,6 +479,7 @@ function EncounterDetail({
   onToggleEnemy,
   onSelectEnemies,
   onTogglePlayer,
+  onTogglePlayers,
   onClearSelection,
   onSelectEncounters,
 }: EncounterDetailProps) {
@@ -515,6 +517,8 @@ function EncounterDetail({
     selectedEncounterIds: encounters.map(e => e.id),
     entitySelection,
     onSelectEncounters,
+    onTogglePlayer,
+    onTogglePlayers,
   };
   
   // Helper to check if an enemy is selected
@@ -889,6 +893,26 @@ export function InstancePageView({
       return next;
     });
   };
+  
+  // Toggle multiple players at once (if any are selected, deselect all; otherwise select all)
+  const togglePlayersSelection = (playerIds: string[]) => {
+    setUrlPlayerIds(prev => {
+      const next = new Set(prev);
+      const anySelected = playerIds.some(id => next.has(id));
+      if (anySelected) {
+        // Deselect all
+        for (const id of playerIds) {
+          next.delete(id);
+        }
+      } else {
+        // Select all
+        for (const id of playerIds) {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  };
 
   const selectedIds = selectedEncounterIds ?? internalSelectedIds;
   
@@ -979,6 +1003,7 @@ export function InstancePageView({
             onToggleEnemy={toggleEnemySelection}
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}
+            onTogglePlayers={togglePlayersSelection}
             onClearSelection={clearEntitySelection}
             onSelectEncounters={setInternalSelectedIds}
           />

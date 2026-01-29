@@ -31,6 +31,8 @@ export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "
 export type { AllActivityDebugState as AllActivityState, RawDebugEvent, EncounterMeta, ResourceType } from "./allActivityDebug.processor";
 export type { MitigationResult, MitigationData, EncounterMitigation } from "./mitigation.processor";
 export type { AvoidanceResult, AvoidanceData, EncounterAvoidance } from "./avoidance.processor";
+export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
+export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
 
 // Export shared utilities
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
@@ -56,4 +58,5 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   all_activity: allActivityProcessor,
   mitigation: mitigationProcessor,
   avoidance: avoidanceProcessor,
+  // Note: roles panel doesn't have its own processor - it reuses damage_taken and healing_done
 };

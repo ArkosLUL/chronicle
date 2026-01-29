@@ -171,6 +171,17 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Heal", func(t *testing.T) {
+		sw, err := exp[messages.Heal](p.ParseContent(time.Time{}, "0x0000000000032723's Swiftmend critically heals 0x00000000000F4671 for 1819."))
+		require.NoError(t, err)
+		require.Equal(t, messages.Heal{
+			MessageBase: messages.MessageBase{},
+			Caster:      0x0000000000032723,
+			Target:      0x00000000000F4671,
+			SpellName:   "Swiftmend",
+			Amount:      1819,
+			HitType:     types.HitTypeCrit,
+		}, sw)
+
 		h, err := exp[messages.Heal](p.ParseContent(time.Time{}, "0x00000000000DF543's Lesser Healing Wave heals 0x0000000000024225 for 393."))
 		require.NoError(t, err)
 		require.Equal(t, messages.Heal{

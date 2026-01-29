@@ -620,6 +620,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   death_log: 'dl',
   mitigation: 'mit',
   // avoidance: 'av', // TODO: Requires spell school data
+  roles: 'r',
   all_activity: 'aa',
 };
 

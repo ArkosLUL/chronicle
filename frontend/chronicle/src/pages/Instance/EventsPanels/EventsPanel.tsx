@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card/Card";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
@@ -18,6 +19,7 @@ import { createDeathsPanel } from "./Deaths/Deaths";
 import { createDeathLogPanel } from "./Deaths/DeathLog";
 import { AllActivityPanel } from "./AllActivityDebug";
 import { createMitigationPanel } from "./Mitigation/Mitigation";
+import { createRolesPanel } from "./Roles/Roles";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -39,6 +41,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   mitigation: createMitigationPanel(),
   // TODO: Avoidance panel requires spell school data which isn't available yet
   // avoidance: createAvoidancePanel(),
+  roles: createRolesPanel(),
   all_activity: AllActivityPanel,
 };
 
@@ -91,18 +94,20 @@ export function EventsPanel({
         </div>
       </div>
 
-      {/* Render the panel content */}
-      {panel.render({
-        result,
-        totalEvents,
-        processingTimeMs,
-        durationMs,
-        perSecond,
-        loading,
-        processing,
-        error,
-        context,
-      })}
+      {/* Render the panel content with max height */}
+      <ScrollArea className="max-h-[450px]">
+        {panel.render({
+          result,
+          totalEvents,
+          processingTimeMs,
+          durationMs,
+          perSecond,
+          loading,
+          processing,
+          error,
+          context,
+        })}
+      </ScrollArea>
     </Card>
   );
 }

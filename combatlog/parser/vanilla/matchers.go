@@ -366,6 +366,8 @@ func (p *Parser) fDamageHitOrCrit(hasScool bool, ts time.Time, content string) (
 	var school types.School
 	if hasScool {
 		school = matches.School()
+	} else {
+		school = types.PhysicalSchool
 	}
 	trailer := matches.Trailer()
 
@@ -516,7 +518,7 @@ func (p *Parser) fDamageSpellSplit(ts time.Time, content string) ([]messages.Mes
 		HitType:     types.HitTypeSplit,
 		Target:      target,
 		Amount:      amount,
-		School:      0,
+		School:      types.NoneSchool,
 		Trailer:     trailer,
 	}), nil
 }
@@ -548,7 +550,7 @@ func (p *Parser) fDamageSpellMiss(ts time.Time, content string) ([]messages.Mess
 		HitType:     types.HitTypeMiss,
 		Target:      target,
 		Amount:      0,
-		School:      0,
+		School:      types.NoneSchool,
 		Trailer:     nil,
 	}), nil
 }
@@ -571,6 +573,11 @@ func (p *Parser) fDamageSpellBlockParryEvadeDodgeResistDeflect(ts time.Time, con
 		return messages.Skip(ts, "DamageSpellBlockParryEvadeDodgeDeflect: not using guids"), nil
 	}
 
+	school := types.NoneSchool
+	if hitType.Has(types.HitTypeFullBlock) || hitType.Has(types.HitTypeParry) || hitType.Has(types.HitTypeEvade) {
+		school = types.PhysicalSchool
+	}
+
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
 		Caster:      ptr.Ref(caster),
@@ -578,7 +585,7 @@ func (p *Parser) fDamageSpellBlockParryEvadeDodgeResistDeflect(ts time.Time, con
 		HitType:     hitType,
 		Target:      target,
 		Amount:      0,
-		School:      0,
+		School:      school,
 		Trailer:     nil,
 	}), nil
 }
@@ -718,7 +725,7 @@ func (p *Parser) fDamageMiss(ts time.Time, content string) ([]messages.Message, 
 		Target:      target,
 		HitType:     types.HitTypeMiss,
 		Amount:      0,
-		School:      0,
+		School:      types.PhysicalSchool,
 		Trailer:     nil,
 	}), nil
 }
@@ -740,11 +747,17 @@ func (p *Parser) fDamageBlockParryEvadeDodgeDeflect(ts time.Time, content string
 		return messages.Skip(ts, "DamageBlockParryEvadeDodgeDeflect: not using guids"), nil
 	}
 
+	school := types.PhysicalSchool
+	if hitType.Has(types.HitTypeFullBlock) || hitType.Has(types.HitTypeParry) || hitType.Has(types.HitTypeEvade) {
+		school = types.PhysicalSchool
+	}
+
 	return set(messages.Damage{
 		MessageBase: messages.Base(ts),
 		Caster:      ptr.Ref(caster),
 		Target:      target,
 		HitType:     hitType,
+		School:      school,
 	}), nil
 }
 
@@ -795,7 +808,7 @@ func (p *Parser) fDamageImmune(ts time.Time, content string) ([]messages.Message
 		Target:      target,
 		HitType:     types.HitTypeImmune,
 		Amount:      0,
-		School:      0,
+		School:      types.PhysicalSchool,
 		Trailer:     nil,
 	}), nil
 }

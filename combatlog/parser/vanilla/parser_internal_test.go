@@ -56,6 +56,22 @@ func TestParserMessages(t *testing.T) {
 	//	require.Equal(t, "Flash Heal", att.SpellName)
 	//})
 
+	t.Run("Damage", func(t *testing.T) {
+		gl, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x000000000008B2C1 hits 0xF130002FE800DD20 for 60. (glancing)"))
+		require.NoError(t, err)
+
+		require.Equal(t, messages.Damage{
+			Caster:  ptr.Ref[guid.GUID](0x000000000008B2C1),
+			HitType: types.HitTypeHit,
+			Target:  0xF130002FE800DD20,
+			Amount:  60,
+			Trailer: []types.TrailerEntry{
+				{HitType: types.HitTypeGlancing},
+			},
+			School: types.PhysicalSchool,
+		}, gl)
+	})
+
 	// With school: 0xF1400844930090A2's Firebolt hits 0xF130000950003FB5 for 38 Fire damage
 	t.Run("SpellHit", func(t *testing.T) {
 		sh, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x0000000000062A1B's Hamstring hits 0xF1300033F000CFD0 for 27."))
@@ -282,6 +298,7 @@ func TestParserMessages(t *testing.T) {
 			HitType: types.HitTypeImmune,
 			Target:  0xF13000ED412739B3,
 			Amount:  0,
+			School:  types.PhysicalSchool,
 			Trailer: nil,
 		}, mis)
 	})
@@ -321,7 +338,7 @@ func TestParserMessages(t *testing.T) {
 			Target:  0x00000000000E16AC,
 			HitType: types.HitTypeDodge,
 			Amount:  0,
-			School:  0,
+			School:  types.PhysicalSchool,
 			Trailer: nil,
 		}, dod)
 	})

@@ -133,9 +133,10 @@ export function inferRoles(
   
   if (playerIds.size === 0) return { roles: result, debug: emptyDebug };
   
-  // Get values (include zeros to not skew statistics)
-  const dtValues = [...damageTaken.values()];
-  const hdValues = [...healingDone.values()];
+  // Get values - include zeros for all players to not skew statistics
+  // A player who exists but did 0 healing should count toward the average
+  const dtValues = [...playerIds].map(id => damageTaken.get(id) || 0);
+  const hdValues = [...playerIds].map(id => healingDone.get(id) || 0);
   
   // Calculate statistics for damage taken
   const meanDT = mean(dtValues);

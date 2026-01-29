@@ -136,9 +136,7 @@ func ParseBuffs(buffStr string) ([]Buff, error) {
 	}
 
 	// A bug in a version of the addon
-	if strings.HasSuffix(buffStr, "na") {
-		buffStr = strings.TrimSuffix(buffStr, "na")
-	}
+  buffStr = strings.TrimSuffix(buffStr, "na")
 
 	buffs := make([]Buff, 0)
 	for _, buff := range strings.Split(buffStr, ",") {

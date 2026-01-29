@@ -16,6 +16,15 @@ interface EventMeta {
 }
 
 /**
+ * A tailer (trailer) damage entry - additional damage that occurred alongside the main hit.
+ * Examples: Seal of Righteousness proc, Fiery Weapon enchant, etc.
+ */
+export interface TailerEntry {
+  amount: number;
+  hitType: number;
+}
+
+/**
  * Damage event from the "damage" stream.
  */
 export interface DamageProcessorEvent extends EventMeta {
@@ -26,6 +35,9 @@ export interface DamageProcessorEvent extends EventMeta {
   hitType: number;
   amount: number;
   school: number;
+  /** Additional damage entries (procs, enchants, etc.) */
+  tailers: TailerEntry[];
+  tailerCount: number;
 }
 
 /**

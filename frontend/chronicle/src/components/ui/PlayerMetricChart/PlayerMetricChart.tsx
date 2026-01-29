@@ -544,7 +544,7 @@ export function PlayerMetricRow({
           sideOffset={-y + 10}
           hideWhenDetached
           hideArrow
-          className="p-0 min-w-[340px] bg-popover text-foreground animate-none data-[state=closed]:animate-none"
+          className="p-0 min-w-[340px] bg-popover text-foreground animate-none"
         >
           <div className="p-3 border-b border-border">
             <div className="flex items-center gap-2">

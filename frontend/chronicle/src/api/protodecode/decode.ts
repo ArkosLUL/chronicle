@@ -217,6 +217,15 @@ export function decodeDelimitedMessages<T extends DescMessage>(
 // ============================================================================
 
 /**
+ * A tailer (trailer) damage entry - additional damage that occurred alongside the main hit.
+ * Examples: Seal of Righteousness proc, Fiery Weapon enchant, etc.
+ */
+export interface ReusableTailer {
+  amount: number;
+  hitType: number;
+}
+
+/**
  * Reusable Damage message structure - mutated in place during decoding.
  * If the callback needs to keep data, it must copy what it needs.
  */
@@ -230,6 +239,8 @@ export interface ReusableDamage {
   hitType: number;
   amount: number;
   school: number;
+  tailers: ReusableTailer[];
+  tailerCount: number;  // Actual number of tailers (tailers array may have extra capacity)
 }
 
 /**
@@ -251,6 +262,8 @@ export class DamageDecoder {
     hitType: 0,
     amount: 0,
     school: 0,
+    tailers: [],
+    tailerCount: 0,
   };
   
   /**
@@ -270,6 +283,7 @@ export class DamageDecoder {
     msg.hitType = 0;
     msg.amount = 0;
     msg.school = 0;
+    msg.tailerCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -314,8 +328,29 @@ export class DamageDecoder {
           msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else if (fieldNumber === 9) {
-          // Tailers - skip for now (add if needed)
-          offset += len;
+          // Tailer - decode nested message
+          // Reuse or grow the tailers array as needed
+          if (msg.tailerCount >= msg.tailers.length) {
+            msg.tailers.push({ amount: 0, hitType: 0 });
+          }
+          const tailer = msg.tailers[msg.tailerCount];
+          tailer.amount = 0;
+          tailer.hitType = 0;
+          
+          const tailerEnd = offset + len;
+          while (offset < tailerEnd) {
+            const tailerTag = data[offset++];
+            const tailerField = tailerTag >> 3;
+            const tailerWire = tailerTag & 0x7;
+            
+            if (tailerWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (tailerField === 1) tailer.amount = value;
+              else if (tailerField === 2) tailer.hitType = value;
+            }
+          }
+          msg.tailerCount++;
         } else {
           offset += len;
         }

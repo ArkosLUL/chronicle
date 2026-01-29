@@ -293,10 +293,6 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       healerData.effectiveTotal += effectiveHeal;
       healerData.overhealTotal += overheal;
 
-      if(event.caster === "0x000000000002A882" && encounterID === "c7283a34-5473-4b8e-809b-1075d98133ba") {
-        console.log(`Heal processed: encounter=${encounterID} healer=${healerName} target=${targetName} amount=${healAmount} effective=${effectiveHeal} overheal=${overheal}`);
-      }
-
       // === Update HealingTaken aggregation (by target) ===
       if (!state.EncounterHealingByTarget.has(encounterID)) {
         state.EncounterHealingByTarget.set(encounterID, new Map());

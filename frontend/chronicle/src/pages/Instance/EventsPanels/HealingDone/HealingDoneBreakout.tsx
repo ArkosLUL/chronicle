@@ -5,9 +5,13 @@ import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingDoneContent";
 
 /**
- * Resolve a unit name from context, formatting pets as "{Owner}'s {PetName}".
+ * Resolve a unit name from context, formatting pets as "{Owner}'s Pet {PetName}".
  */
 function resolveUnitName(unitId: string, context: PanelContext): string {
+  // Special "Other" bucket for non-player, non-pet targets
+  if (unitId === "__other__") {
+    return "Other";
+  }
   // Check if it's a player first
   if (context.instance.players?.[unitId]) {
     return context.instance.players[unitId].name;
@@ -19,7 +23,7 @@ function resolveUnitName(unitId: string, context: PanelContext): string {
     const ownerKey = unitInfo.owner?.toString();
     if (ownerKey && context.instance.players?.[ownerKey]) {
       const ownerName = context.instance.players[ownerKey].name;
-      return `${ownerName}'s ${unitInfo.name}`;
+      return `${ownerName}'s Pet ${unitInfo.name}`;
     }
     return unitInfo.name;
   }

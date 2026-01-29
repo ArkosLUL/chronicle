@@ -8,6 +8,10 @@ import type { HealingViewMode } from "./HealingTakenContent";
  * Resolve a unit name from context, formatting pets as "{Owner}'s Pet {PetName}".
  */
 function resolveUnitName(unitId: string, context: PanelContext): string {
+  // Special "Other" bucket for non-player, non-pet targets
+  if (unitId === "__other__") {
+    return "Other";
+  }
   // Check if it's a player first
   if (context.instance.players?.[unitId]) {
     return context.instance.players[unitId].name;

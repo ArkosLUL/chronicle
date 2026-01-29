@@ -89,6 +89,11 @@ func (g GUID) IsPet() bool {
 	return g.GetHigh()&0x00F0 == 0x0040
 }
 
+func (g GUID) AsPet() GUID {
+	// Clear type bits (0x00F0 at position 48) and set pet type (0x0040)
+	return GUID((uint64(g) &^ 0x00F0000000000000) | 0x0040000000000000)
+}
+
 // IsCreature returns true if the GUID represents a creature
 func (g GUID) IsCreature() bool {
 	return g.GetHigh()&0x00F0 == 0x0030

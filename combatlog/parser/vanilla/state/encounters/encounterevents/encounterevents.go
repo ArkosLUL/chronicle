@@ -67,40 +67,6 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	return nil
 }
 
-
-281.
-509.
-512.
-394.
-502.
-464.
-291.
-524.
-91.
-825 (176 overheal).
-281.
-89.
-467 (97 overheal).
-1,006.
-267.
-536.
-1,004.
-92.
-155 (96 overheal).
-501.
-516 (501 overheal).
-269.
-294.
-1,081 (376 overheal).
-254.
-535.
-957.
-249.
-483.
-1,015.
-1,626.
-
-
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 	e.setFirsts(m.Date())
 	switch ty := m.(type) {

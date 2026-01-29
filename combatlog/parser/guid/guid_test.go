@@ -2,6 +2,7 @@ package guid_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -30,6 +31,32 @@ func TestGUIDMarshalJSON(t *testing.T) {
 			require.Equal(t, tc, string(data))
 		})
 	}
+}
+
+func TestIsPet(t *testing.T) {
+	t.Parallel()
+
+	orig := guid.GUID(0xF13000005927952E)
+	asPet := guid.GUID(0xF13000005927952E).AsPet()
+	fmt.Println(orig.IsPlayer())
+
+	compare := func(orig, asPet guid.GUID) {
+		require.False(t, orig.IsPet())
+		require.True(t, asPet.IsPet())
+
+		require.Equal(t, orig.IsZero(), asPet.IsZero())
+		require.Equal(t, orig.IsPlayer(), asPet.IsPlayer())
+		require.Equal(t, orig.IsObject(), asPet.IsObject())
+		require.Equal(t, orig.IsCreature(), asPet.IsCreature())
+		require.Equal(t, orig.IsUnit(), asPet.IsUnit())
+		require.Equal(t, orig.IsVehicle(), asPet.IsVehicle())
+		aa, ab := orig.GetEntry()
+		ba, bb := asPet.GetEntry()
+		require.Equal(t, aa, ba)
+		require.Equal(t, ab, bb)
+	}
+
+	compare(orig, asPet)
 }
 
 func TestGUID(t *testing.T) {

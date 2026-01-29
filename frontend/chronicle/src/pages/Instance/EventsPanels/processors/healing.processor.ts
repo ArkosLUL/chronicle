@@ -203,44 +203,61 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       if (!(streamType === "heal" || streamType === "resource_change")) return;
       if (!event.caster) return;
 
-      // Track player-to-player and player-to-pet healing
       // Caster must be a player
       const isCasterPlayer = isPlayerGuidFast(event.caster) || getCachedGuid(guidCache, event.caster).isPlayer();
       if (!isCasterPlayer) return;
-      
-      // Target must be a player or player-owned pet
-      if (!isPlayerOrFriendlyPet(event.target)) return;
 
       const healerID = event.caster;
       const targetID = event.target;
       const healAmount = event.amount;
 
       // Calculate effective healing based on target's deficit
-      const currentDeficit = deficits.get(targetID) || 0;
-      const effectiveHeal = Math.min(healAmount, currentDeficit);
-      const overheal = healAmount - effectiveHeal;
-
-      // Update deficit (reduce by effective heal, never go below 0)
-      deficits.set(targetID, Math.max(0, currentDeficit - effectiveHeal));
+      // For players and player-owned pets, use deficit tracking
+      // For other targets (friendly NPCs, etc.), count all as overheal
+      let effectiveHeal: number;
+      let overheal: number;
+      
+      if (isPlayerOrFriendlyPet(targetID)) {
+        const currentDeficit = deficits.get(targetID) || 0;
+        effectiveHeal = Math.min(healAmount, currentDeficit);
+        overheal = healAmount - effectiveHeal;
+        // Update deficit (reduce by effective heal, never go below 0)
+        deficits.set(targetID, Math.max(0, currentDeficit - effectiveHeal));
+      } else {
+        // Non-player, non-pet targets: count all healing as overheal
+        effectiveHeal = 0;
+        overheal = healAmount;
+      }
 
       // Get player info
       const healerName = context.players[healerID]?.name || healerID;
       const healerClass = context.players[healerID]?.class || "UNKNOWN";
       
-      // Get target info - format pet names as "{Owner}'s Pet {PetName}"
+      // Determine if this is an "other" target (non-player, non-pet)
+      const isOtherTarget = effectiveHeal === 0 && overheal === healAmount && !isPlayerOrFriendlyPet(targetID);
+      
+      // For "other" targets, use a fixed ID so they all aggregate together
+      const aggregateTargetID = isOtherTarget ? "__other__" : targetID;
+      
+      // Get target info - format based on target type
       let targetName: string;
       let targetClass: string;
-      const targetPlayerInfo = context.players[targetID];
-      if (targetPlayerInfo) {
-        targetName = targetPlayerInfo.name;
-        targetClass = targetPlayerInfo.class || "UNKNOWN";
+      if (isOtherTarget) {
+        targetName = "Other";
+        targetClass = "NPC";
       } else {
-        // Must be a pet (we already validated it's a friendly pet)
-        const petInfo = context.units?.[targetID];
-        const petName = petInfo?.name || "Unknown";
-        const ownerName = petInfo?.owner ? (context.players[petInfo.owner]?.name || "Unknown") : "Unknown";
-        targetName = `${ownerName}'s Pet ${petName}`;
-        targetClass = petInfo?.owner ? (context.players[petInfo.owner]?.class || "UNKNOWN") : "UNKNOWN";
+        const targetPlayerInfo = context.players[targetID];
+        if (targetPlayerInfo) {
+          // Player target
+          targetName = targetPlayerInfo.name;
+          targetClass = targetPlayerInfo.class || "UNKNOWN";
+        } else {
+          // Pet with owner - format as "{Owner}'s Pet {PetName}"
+          const unitInfo = context.units?.[targetID];
+          const ownerName = unitInfo?.owner ? (context.players[unitInfo.owner]?.name || "Unknown") : "Unknown";
+          targetName = `${ownerName}'s Pet ${unitInfo?.name || "Unknown"}`;
+          targetClass = unitInfo?.owner ? (context.players[unitInfo.owner]?.class || "UNKNOWN") : "UNKNOWN";
+        }
       }
 
       // === Update HealingDone aggregation (by healer) ===
@@ -264,10 +281,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       }
       
       // Track healing by target
-      let targetData = healerData.target.get(targetID);
+      let targetData = healerData.target.get(aggregateTargetID);
       if (!targetData) {
         targetData = { effective: 0, overheal: 0, total: 0 };
-        healerData.target.set(targetID, targetData);
+        healerData.target.set(aggregateTargetID, targetData);
       }
       targetData.effective += effectiveHeal;
       targetData.overheal += overheal;
@@ -276,16 +293,20 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       healerData.effectiveTotal += effectiveHeal;
       healerData.overhealTotal += overheal;
 
+      if(event.caster === "0x000000000002A882" && encounterID === "c7283a34-5473-4b8e-809b-1075d98133ba") {
+        console.log(`Heal processed: encounter=${encounterID} healer=${healerName} target=${targetName} amount=${healAmount} effective=${effectiveHeal} overheal=${overheal}`);
+      }
+
       // === Update HealingTaken aggregation (by target) ===
       if (!state.EncounterHealingByTarget.has(encounterID)) {
         state.EncounterHealingByTarget.set(encounterID, new Map());
       }
       const encounterByTarget = state.EncounterHealingByTarget.get(encounterID)!;
       
-      let receiverData = encounterByTarget.get(targetID);
+      let receiverData = encounterByTarget.get(aggregateTargetID);
       if (!receiverData) {
         receiverData = {
-          playerID: targetID,
+          playerID: aggregateTargetID,
           playerName: targetName,
           className: targetClass,
           specialization: "",
@@ -293,7 +314,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
           effectiveTotal: 0,
           overhealTotal: 0,
         };
-        encounterByTarget.set(targetID, receiverData);
+        encounterByTarget.set(aggregateTargetID, receiverData);
       }
       
       // Track healing by source
@@ -320,7 +341,9 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       }
 
       // Filter for healer breakouts: only show healing to selected players (or all if none selected)
-      const includeInHealerBreakout = context.entitySelection.playerIds.size === 0 || 
+      // "Other" targets are always included in breakouts
+      const includeInHealerBreakout = isOtherTarget || 
+        context.entitySelection.playerIds.size === 0 || 
         context.entitySelection.playerIds.has(targetID);
       
       if (includeInHealerBreakout) {
@@ -334,35 +357,37 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
 
         // Healer target breakdown
         const healerTargets = state.HealerByTarget.get(healerID) || new Map();
-        healerTargets.set(targetID, (healerTargets.get(targetID) || 0) + effectiveHeal);
+        healerTargets.set(aggregateTargetID, (healerTargets.get(aggregateTargetID) || 0) + effectiveHeal);
         state.HealerByTarget.set(healerID, healerTargets);
         
         const healerTargetsOverheal = state.HealerByTargetOverheal.get(healerID) || new Map();
-        healerTargetsOverheal.set(targetID, (healerTargetsOverheal.get(targetID) || 0) + overheal);
+        healerTargetsOverheal.set(aggregateTargetID, (healerTargetsOverheal.get(aggregateTargetID) || 0) + overheal);
         state.HealerByTargetOverheal.set(healerID, healerTargetsOverheal);
       }
 
       // Filter for target breakouts: only show healing received by selected players (or all if none selected)
-      const includeInTargetBreakout = context.entitySelection.playerIds.size === 0 || 
+      // "Other" targets are always included in breakouts
+      const includeInTargetBreakout = isOtherTarget ||
+        context.entitySelection.playerIds.size === 0 || 
         context.entitySelection.playerIds.has(targetID);
       
       if (includeInTargetBreakout) {
         // Target ability breakdown
         if (effectiveHeal > 0) {
-          accumulateAbilityBreakout(state.TargetByAbility, targetID, abilityName, effectiveHeal, hitType);
+          accumulateAbilityBreakout(state.TargetByAbility, aggregateTargetID, abilityName, effectiveHeal, hitType);
         }
         if (overheal > 0) {
-          accumulateAbilityBreakout(state.TargetByAbilityOverheal, targetID, abilityName, overheal, hitType);
+          accumulateAbilityBreakout(state.TargetByAbilityOverheal, aggregateTargetID, abilityName, overheal, hitType);
         }
 
         // Target source breakdown
-        const targetSources = state.TargetBySource.get(targetID) || new Map();
+        const targetSources = state.TargetBySource.get(aggregateTargetID) || new Map();
         targetSources.set(healerID, (targetSources.get(healerID) || 0) + effectiveHeal);
-        state.TargetBySource.set(targetID, targetSources);
+        state.TargetBySource.set(aggregateTargetID, targetSources);
         
-        const targetSourcesOverheal = state.TargetBySourceOverheal.get(targetID) || new Map();
+        const targetSourcesOverheal = state.TargetBySourceOverheal.get(aggregateTargetID) || new Map();
         targetSourcesOverheal.set(healerID, (targetSourcesOverheal.get(healerID) || 0) + overheal);
-        state.TargetBySourceOverheal.set(targetID, targetSourcesOverheal);
+        state.TargetBySourceOverheal.set(aggregateTargetID, targetSourcesOverheal);
       }
     },
   };

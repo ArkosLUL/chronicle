@@ -1,7 +1,7 @@
 /**
  * RolesContent - displays inferred player roles (Tank, Healer, DPS)
  * 
- * This component reuses data from the damage_taken and healing_done processors
+ * This component reuses data from the damage_taken, healing_done, and damage_done processors
  * rather than having its own processor.
  */
 
@@ -13,6 +13,7 @@ import {
   type RoleSummary,
   type RoleDetectionDebug,
   type DamageTakenState,
+  type DamageDoneState,
   type UnifiedHealingResult,
   inferRoles, 
   getRoleSummary 
@@ -239,9 +240,10 @@ interface RoleInferenceResult {
 }
 
 export const RolesContent = ({ context }: RolesContentProps) => {
-  // Reuse existing processors for damage taken and healing done
+  // Reuse existing processors for damage taken, healing done, and damage done
   const damageTakenPanel = PANELS.damage_taken;
   const healingDonePanel = PANELS.healing_done;
+  const damageDonePanel = PANELS.damage_done;
   
   // Create a stable context that doesn't change when player/enemy selection changes
   // This prevents reprocessing - only encounter changes should trigger reprocess
@@ -269,10 +271,15 @@ export const RolesContent = ({ context }: RolesContentProps) => {
     panel: healingDonePanel,
     context: stableContext,
   });
+  
+  const damageDoneAgg = usePanelAggregation<DamageDoneState>({
+    panel: damageDonePanel,
+    context: stableContext,
+  });
 
-  const loading = damageTakenAgg.loading || healingDoneAgg.loading;
-  const processing = damageTakenAgg.processing || healingDoneAgg.processing;
-  const error = damageTakenAgg.error || healingDoneAgg.error;
+  const loading = damageTakenAgg.loading || healingDoneAgg.loading || damageDoneAgg.loading;
+  const processing = damageTakenAgg.processing || healingDoneAgg.processing || damageDoneAgg.processing;
+  const error = damageTakenAgg.error || healingDoneAgg.error || damageDoneAgg.error;
 
   // Aggregate damage taken from the processor result
   const damageTakenMap = useMemo(() => {
@@ -311,20 +318,45 @@ export const RolesContent = ({ context }: RolesContentProps) => {
     return result;
   }, [healingDoneAgg.result, context.selectedEncounterIds]);
 
+  // Aggregate damage done from the processor result
+  const damageDoneMap = useMemo(() => {
+    const result = new Map<string, number>();
+    if (!damageDoneAgg.result) return result;
+    
+    for (const encounterId of context.selectedEncounterIds) {
+      const encounterData = damageDoneAgg.result.EncounterDamage.get(encounterId);
+      if (!encounterData) continue;
+      
+      for (const [playerId, data] of encounterData) {
+        // Sum damage to all targets
+        let totalDamage = 0;
+        for (const amount of data.target.values()) {
+          totalDamage += amount;
+        }
+        result.set(playerId, (result.get(playerId) || 0) + totalDamage);
+      }
+    }
+    return result;
+  }, [damageDoneAgg.result, context.selectedEncounterIds]);
+
   // Infer roles from aggregated data
   const { summary: roleSummary, debug } = useMemo((): RoleInferenceResult => {
     const emptyDebug: RoleDetectionDebug = {
       tankZThreshold: 0,
       healerZThreshold: 0,
+      lowDpsZThreshold: 0,
       meanDamageTaken: 0,
       stdDevDamageTaken: 0,
       meanHealingDone: 0,
       stdDevHealingDone: 0,
+      meanDamageDone: 0,
+      stdDevDamageDone: 0,
       tankCutoff: 0,
       healerCutoff: 0,
+      lowDpsCutoff: 0,
     };
     
-    if (damageTakenMap.size === 0 && healingDoneMap.size === 0) {
+    if (damageTakenMap.size === 0 && healingDoneMap.size === 0 && damageDoneMap.size === 0) {
       return { summary: { tanks: [], healers: [], dps: [] }, debug: emptyDebug };
     }
 
@@ -337,11 +369,12 @@ export const RolesContent = ({ context }: RolesContentProps) => {
     const { roles, debug: inferDebug } = inferRoles(
       damageTakenMap,
       healingDoneMap,
+      damageDoneMap,
       players
     );
 
     return { summary: getRoleSummary(roles), debug: inferDebug };
-  }, [damageTakenMap, healingDoneMap, context.instance.players]);
+  }, [damageTakenMap, healingDoneMap, damageDoneMap, context.instance.players]);
 
   // Compute totals for summary
   const totalPlayers = roleSummary.tanks.length + roleSummary.healers.length + roleSummary.dps.length;
@@ -414,12 +447,20 @@ export const RolesContent = ({ context }: RolesContentProps) => {
               <div>
                 <span className="text-amber-500">Tank cutoff:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.tankCutoff, 0)}</span>
-                <span className="text-muted-foreground/70"> ({debug.tankZThreshold.toFixed(1)}σ)</span>
+                <span className="text-muted-foreground/70"> dmg taken ≥{debug.tankZThreshold.toFixed(1)}σ</span>
               </div>
               <div>
                 <span className="text-emerald-500">Healer cutoff:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.healerCutoff, 0)}</span>
-                <span className="text-muted-foreground/70"> ({debug.healerZThreshold.toFixed(1)}σ)</span>
+                <span className="text-muted-foreground/70"> healing ≥{debug.healerZThreshold.toFixed(1)}σ</span>
+              </div>
+              <div>
+                <span className="text-red-400">Low DPS cutoff:</span>{" "}
+                <span className="text-foreground">{formatNumber(debug.lowDpsCutoff, 0)}</span>
+                <span className="text-muted-foreground/70"> dps ≤{debug.lowDpsZThreshold.toFixed(2)}σ</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground italic">Healer = healing + low DPS</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Mean dmg taken:</span>{" "}
@@ -430,12 +471,20 @@ export const RolesContent = ({ context }: RolesContentProps) => {
                 <span className="text-foreground">{formatNumber(debug.meanHealingDone, 0)}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">Std dev dmg:</span>{" "}
+                <span className="text-muted-foreground">Mean dps:</span>{" "}
+                <span className="text-foreground">{formatNumber(debug.meanDamageDone, 0)}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Std dev dmg taken:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.stdDevDamageTaken, 0)}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Std dev healing:</span>{" "}
                 <span className="text-foreground">{formatNumber(debug.stdDevHealingDone, 0)}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Std dev dps:</span>{" "}
+                <span className="text-foreground">{formatNumber(debug.stdDevDamageDone, 0)}</span>
               </div>
             </div>
           </div>

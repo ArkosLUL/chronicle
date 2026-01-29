@@ -35,6 +35,8 @@ describe('damageDoneProcessor', () => {
       hitType: 0,
       amount: 1000,
       school: 1, // physical
+      tailers: [],
+      tailerCount: 0,
       ...overrides,
     };
   }
@@ -164,6 +166,8 @@ describe('enemyDamageDoneProcessor', () => {
       hitType: 0,
       amount: 2000,
       school: 1,
+      tailers: [],
+      tailerCount: 0,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -189,6 +193,8 @@ describe('enemyDamageDoneProcessor', () => {
       hitType: 0,
       amount: 1000,
       school: 1,
+      tailers: [],
+      tailerCount: 0,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -230,6 +236,8 @@ describe('petDamageDoneProcessor', () => {
       hitType: 0,
       amount: 500,
       school: 1,
+      tailers: [],
+      tailerCount: 0,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -252,6 +260,8 @@ describe('petDamageDoneProcessor', () => {
       hitType: 0,
       amount: 1000,
       school: 1,
+      tailers: [],
+      tailerCount: 0,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);

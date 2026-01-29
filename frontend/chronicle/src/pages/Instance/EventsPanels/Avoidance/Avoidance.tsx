@@ -5,12 +5,13 @@
 import { BicepsFlexed } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { avoidanceProcessor, type AvoidanceResult } from "../processors";
+import type { DamageProcessorEvent } from "../processorTypes";
 import { AvoidanceContent } from "./AvoidanceContent";
 
 /**
  * Create the AvoidancePanel definition.
  */
-export function createAvoidancePanel(): PanelDefinition<AvoidanceResult, unknown> {
+export function createAvoidancePanel(): PanelDefinition<AvoidanceResult, DamageProcessorEvent> {
   return {
     ...avoidanceProcessor,
     label: "Physical Avoidance",

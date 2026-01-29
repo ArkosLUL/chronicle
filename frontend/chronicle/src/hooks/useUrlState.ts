@@ -611,6 +611,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   damage_done: 'dd',
   enemy_damage_done: 'edd',
   pet_damage_done: 'pdd',
+  damage_done_friendly_fire: 'ff',
   damage_taken: 'dt',
   enemy_damage_taken: 'edt',
   healing_done: 'hd',

@@ -4,12 +4,13 @@
  * Configurable to show damage from Players, Enemies, or Pets.
  */
 
-import { Swords, Skull, PawPrint } from "lucide-react";
+import { Swords, Skull, PawPrint, Flame } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { 
   damageDoneProcessor, 
   enemyDamageDoneProcessor, 
   petDamageDoneProcessor,
+  friendlyFireProcessor,
   type DamageDoneState 
 } from "../processors";
 import { DamageDoneContent } from "./DamageDoneContent";
@@ -39,6 +40,11 @@ const DAMAGE_SOURCE_CONFIGS: Record<DamageSourceType, DamageSourceConfig> = {
     label: "Pet Damage",
     icon: <PawPrint className="h-4 w-4" />,
     processor: petDamageDoneProcessor,
+  },
+  friendly_fire: {
+    label: "Friendly Fire",
+    icon: <Flame className="h-4 w-4" />,
+    processor: friendlyFireProcessor,
   },
 };
 

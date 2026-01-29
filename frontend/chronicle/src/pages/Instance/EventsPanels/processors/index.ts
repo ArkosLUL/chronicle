@@ -3,7 +3,7 @@
  */
 
 import type { PanelProcessor } from "../processorTypes";
-import { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor } from "../DamageDone/damageDone.processor";
+import { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
 import { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
 import { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
 import { deathsProcessor } from "../Deaths/deaths.processor";
@@ -13,7 +13,7 @@ import { mitigationProcessor } from "./mitigation.processor";
 import { avoidanceProcessor } from "./avoidance.processor";
 
 // Export individual processors
-export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor } from "../DamageDone/damageDone.processor";
+export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
 export { damageTakenProcessor, enemyDamageTakenProcessor } from "../DamageTaken/damageTaken.processor";
 export { extraAttacksProcessor } from "../ExtraAttacks/extraAttacks.processor";
 export { deathsProcessor } from "../Deaths/deaths.processor";
@@ -47,6 +47,7 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   damage_done: damageDoneProcessor,
   damage_done_enemies: enemyDamageDoneProcessor,
   damage_done_pets: petDamageDoneProcessor,
+  damage_done_friendly_fire: friendlyFireProcessor,
   damage_taken: damageTakenProcessor,
   damage_taken_enemies: enemyDamageTakenProcessor,
   // Unified healing processor for both healing_done and healing_taken

@@ -31,6 +31,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   damage_done: createDamageDonePanel("players"),
   enemy_damage_done: createDamageDonePanel("enemies"),
   pet_damage_done: createDamageDonePanel("pets"),
+  damage_done_friendly_fire: createDamageDonePanel("friendly_fire"),
   damage_taken: createDamageTakenPanel("players"),
   enemy_damage_taken: createDamageTakenPanel("enemies"),
   healing_done: createHealingDonePanel("players"),

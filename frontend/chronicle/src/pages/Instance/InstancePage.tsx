@@ -148,11 +148,21 @@ export function InstancePage() {
     return defaultEncounterId ? [defaultEncounterId] : [];
   }, [userSelectedEncounterIds, defaultEncounterId]);
 
-  // Get the start time of the first selected encounter for video sync
-  const selectedEncounterStartTime = useMemo(() => {
-    if (!instance || selectedEncounterIds.length === 0) return undefined;
-    const encounter = instance.encounters.find(e => e.id === selectedEncounterIds[0]);
-    return encounter?.start_time;
+  // Get the start/end time of selected encounters for video sync
+  // When multiple selected: start of first, end of last (by time order)
+  const selectedEncounterTimes = useMemo(() => {
+    if (!instance || selectedEncounterIds.length === 0) return { start: undefined, end: undefined };
+    
+    const selectedEncounters = instance.encounters
+      .filter(e => selectedEncounterIds.includes(e.id))
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    
+    if (selectedEncounters.length === 0) return { start: undefined, end: undefined };
+    
+    const first = selectedEncounters[0];
+    const last = selectedEncounters[selectedEncounters.length - 1];
+    
+    return { start: first.start_time, end: last.end_time };
   }, [instance, selectedEncounterIds]);
 
   const isLoading = instanceLoading;
@@ -217,7 +227,8 @@ export function InstancePage() {
         <YouTubeOverlay
           videoUrl={youtubeData.url}
           timestamps={youtubeData.results}
-          targetTime={selectedEncounterStartTime}
+          targetTime={selectedEncounterTimes.start}
+          pauseTime={selectedEncounterTimes.end}
           onClose={() => setShowYoutube(false)}
         />
       )}

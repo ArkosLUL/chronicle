@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { X, Minimize2, Maximize2, Move, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +38,8 @@ interface YouTubeOverlayProps {
   timestamps?: readonly VideoTimestamp[];
   /** ISO timestamp to seek to (e.g., encounter start_time) */
   targetTime?: string;
+  /** ISO timestamp to pause at (e.g., encounter end_time) */
+  pauseTime?: string;
   onClose: () => void;
 }
 
@@ -133,20 +135,63 @@ function calculateVideoTime(
   return null;
 }
 
-export function YouTubeOverlay({ videoUrl, timestamps, targetTime, onClose }: YouTubeOverlayProps) {
+/**
+ * Format seconds to MM:SS or HH:MM:SS
+ */
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, onClose }: YouTubeOverlayProps) {
   const [position, setPosition] = useState({ x: 20, y: 80 });
   const [size, setSize] = useState({ width: 480, height: 270 });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
+  const seekBarRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const pauseVideoTimeRef = useRef<number | null>(null);
 
   const videoId = parseYouTubeVideoId(videoUrl);
+
+  // Calculate encounter video times
+  const encounterVideoTimes = useMemo(() => {
+    if (!timestamps?.length) return null;
+    
+    let startVideoTime: number | null = null;
+    let endVideoTime: number | null = null;
+    
+    if (targetTime) {
+      const startSeconds = isoToTimeOfDaySeconds(targetTime);
+      startVideoTime = calculateVideoTime(startSeconds, timestamps);
+    }
+    
+    if (pauseTime) {
+      const endSeconds = isoToTimeOfDaySeconds(pauseTime);
+      endVideoTime = calculateVideoTime(endSeconds, timestamps);
+    }
+    
+    if (startVideoTime !== null && endVideoTime !== null) {
+      return {
+        start: startVideoTime,
+        end: endVideoTime,
+        duration: endVideoTime - startVideoTime,
+      };
+    }
+    return null;
+  }, [targetTime, pauseTime, timestamps]);
 
   // Initialize player callback - defined before effects that use it
   const initPlayer = useCallback(() => {
@@ -209,7 +254,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, onClose }: Yo
     };
   }, []);
 
-  // Seek when targetTime changes
+  // Seek when targetTime changes and calculate pause time
   useEffect(() => {
     if (!playerReady || !playerRef.current || !targetTime || !timestamps?.length) return;
 
@@ -219,7 +264,37 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, onClose }: Yo
     if (videoTime !== null) {
       playerRef.current.seekTo(videoTime, true);
     }
-  }, [targetTime, timestamps, playerReady]);
+
+    // Calculate pause time if pauseTime is set
+    if (pauseTime) {
+      const pauseSeconds = isoToTimeOfDaySeconds(pauseTime);
+      const pauseVideoTime = calculateVideoTime(pauseSeconds, timestamps);
+      pauseVideoTimeRef.current = pauseVideoTime;
+    } else {
+      pauseVideoTimeRef.current = null;
+    }
+  }, [targetTime, pauseTime, timestamps, playerReady]);
+
+  // Monitor video time, update current time state, and auto-pause at encounter end
+  useEffect(() => {
+    if (!playerReady || !playerRef.current) return;
+
+    const checkTime = () => {
+      if (!playerRef.current) return;
+      
+      const currentTime = playerRef.current.getCurrentTime();
+      setCurrentVideoTime(currentTime);
+      
+      if (pauseVideoTimeRef.current !== null && currentTime >= pauseVideoTimeRef.current) {
+        playerRef.current.pauseVideo();
+        // Clear the pause time so we don't keep pausing if user resumes
+        pauseVideoTimeRef.current = null;
+      }
+    };
+
+    const interval = setInterval(checkTime, 500);
+    return () => clearInterval(interval);
+  }, [playerReady]);
 
   // Drag handlers
   const handleDragStart = useCallback((e: React.MouseEvent) => {
@@ -298,6 +373,33 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, onClose }: Yo
     }
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
+  // Handle seek bar click
+  const handleSeekBarClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!playerRef.current || !encounterVideoTimes || !seekBarRef.current) return;
+    
+    const rect = seekBarRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, clickX / rect.width));
+    const seekTime = encounterVideoTimes.start + percent * encounterVideoTimes.duration;
+    
+    playerRef.current.seekTo(seekTime, true);
+    // Re-enable auto-pause when user seeks within encounter
+    pauseVideoTimeRef.current = encounterVideoTimes.end;
+  }, [encounterVideoTimes]);
+
+  // Calculate seek bar progress
+  const seekBarProgress = useMemo(() => {
+    if (!encounterVideoTimes) return 0;
+    const elapsed = currentVideoTime - encounterVideoTimes.start;
+    return Math.max(0, Math.min(1, elapsed / encounterVideoTimes.duration));
+  }, [currentVideoTime, encounterVideoTimes]);
+
+  // Calculate elapsed time within encounter
+  const encounterElapsed = useMemo(() => {
+    if (!encounterVideoTimes) return 0;
+    return Math.max(0, currentVideoTime - encounterVideoTimes.start);
+  }, [currentVideoTime, encounterVideoTimes]);
+
   if (!videoId) {
     return null;
   }
@@ -350,17 +452,40 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, onClose }: Yo
 
       {/* Video player */}
       {!isMinimized && (
-        <div className="relative" style={{ height: size.height }}>
-          <div id="yt-overlay-player" className="w-full h-full" />
-          
-          {/* Resize handle */}
-          <div
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center bg-muted/80 rounded-tl"
-            onMouseDown={handleResizeStart}
-          >
-            <GripHorizontal className="h-3 w-3 text-muted-foreground rotate-[-45deg]" />
+        <>
+          <div className="relative" style={{ height: size.height }}>
+            <div id="yt-overlay-player" className="w-full h-full" />
+            
+            {/* Resize handle */}
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center bg-muted/80 rounded-tl"
+              onMouseDown={handleResizeStart}
+            >
+              <GripHorizontal className="h-3 w-3 text-muted-foreground rotate-[-45deg]" />
+            </div>
           </div>
-        </div>
+
+          {/* Encounter seek bar */}
+          {encounterVideoTimes && (
+            <div className="px-2 py-1.5 bg-muted/30 border-t border-border">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <span>{formatDuration(encounterElapsed)}</span>
+                <div className="flex-1" />
+                <span>{formatDuration(encounterVideoTimes.duration)}</span>
+              </div>
+              <div
+                ref={seekBarRef}
+                className="h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
+                onClick={handleSeekBarClick}
+              >
+                <div
+                  className="h-full bg-primary rounded-full transition-[width] duration-100"
+                  style={{ width: `${seekBarProgress * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

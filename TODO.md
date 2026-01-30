@@ -15,3 +15,4 @@
 - Detect out of date super wow, that is missing Raw logs
 - Corpse release should be tracked and count as a wipe, but an indicator
 - Use https://github.com/otiai10/gosseract to extract server time from video and sync to fights
+  - https://github.com/otiai10/ocrserver/wiki/API-Endpoints 

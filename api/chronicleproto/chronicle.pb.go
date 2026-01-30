@@ -542,6 +542,7 @@ type Slain struct {
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
 	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	Caster        *string                `protobuf:"bytes,3,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
+	Attribution   *Damage                `protobuf:"bytes,4,opt,name=attribution,proto3,oneof" json:"attribution,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -597,6 +598,13 @@ func (x *Slain) GetCaster() string {
 	return ""
 }
 
+func (x *Slain) GetAttribution() *Damage {
+	if x != nil {
+		return x.Attribution
+	}
+	return nil
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -648,12 +656,14 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06amount\x18\x03 \x01(\x05R\x06amount\x12\x1e\n" +
 	"\n" +
 	"sourceName\x18\x05 \x01(\tR\n" +
-	"sourceName\"v\n" +
+	"sourceName\"\xc5\x01\n" +
 	"\x05Slain\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1b\n" +
-	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01B\t\n" +
-	"\a_caster*p\n" +
+	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01\x12=\n" +
+	"\vattribution\x18\x04 \x01(\v2\x16.chronicleproto.DamageH\x01R\vattribution\x88\x01\x01B\t\n" +
+	"\a_casterB\x0e\n" +
+	"\f_attribution*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -700,11 +710,12 @@ var file_chronicle_proto_depIdxs = []int32{
 	2, // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
 	2, // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
 	2, // 6: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	4, // 7: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }

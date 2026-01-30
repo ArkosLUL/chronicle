@@ -69,4 +69,5 @@ message Slain {
   EventMeta meta = 1;
   string target = 2;
   optional string caster = 3;
+  optional Damage attribution = 4;
 }

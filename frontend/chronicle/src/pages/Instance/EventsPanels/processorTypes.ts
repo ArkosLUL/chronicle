@@ -78,6 +78,18 @@ export interface ExtraAttackProcessorEvent extends EventMeta {
 }
 
 /**
+ * Attribution damage info - the damage event that caused the death.
+ * Subset of DamageProcessorEvent without event metadata.
+ */
+export interface AttributionDamage {
+  caster: string;
+  sourceName: string;
+  hitType: number;
+  amount: number;
+  school: number;
+}
+
+/**
  * Slain event from the "slain" stream.
  * Indicates a unit was killed.
  */
@@ -85,6 +97,7 @@ export interface SlainProcessorEvent extends EventMeta {
   type: "slain";
   target: string;  // The unit that was slain (victim)
   caster: string;  // The unit that killed the target (killer), may be empty
+  attribution: AttributionDamage | null;  // The damage that caused the death
 }
 
 /**

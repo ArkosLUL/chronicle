@@ -27,7 +27,8 @@ func AuthenticatedClaims(ctx context.Context) (*claims.Claims, bool) {
 }
 
 func AuthenticationState(r *http.Request) AuthenticationContext {
-	return r.Context().Value(authContextKey{}).(AuthenticationContext)
+	v, _ := r.Context().Value(authContextKey{}).(AuthenticationContext)
+	return v
 }
 
 func withState(r *http.Request, s AuthenticationContext) *http.Request {
@@ -113,7 +114,7 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			state := AuthenticationState(r)
-			if optional && state.Error != nil {
+			if optional && (state.Error != nil || state.Claims == nil) {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -124,6 +125,11 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 					return
 				}
 				http.Error(w, state.Error.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if state.Claims == nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 

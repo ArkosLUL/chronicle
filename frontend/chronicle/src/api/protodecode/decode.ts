@@ -1031,6 +1031,17 @@ export class FastExtraAttackCursor {
 }
 
 /**
+ * Reusable attribution damage object - the damage that caused the death.
+ */
+export interface ReusableAttributionDamage {
+  caster: string;
+  sourceName: string;
+  hitType: number;
+  amount: number;
+  school: number;
+}
+
+/**
  * Reusable Slain message object
  */
 export interface ReusableSlain {
@@ -1039,6 +1050,7 @@ export interface ReusableSlain {
   offsetMilli: number;
   target: string;
   caster: string;
+  attribution: ReusableAttributionDamage | null;
 }
 
 /**
@@ -1048,10 +1060,28 @@ export interface ReusableSlain {
  *   1: meta (EventMeta)
  *   2: target (string)
  *   3: caster (optional string)
+ *   4: attribution (optional Damage)
+ * 
+ * Damage proto field numbers (for attribution):
+ *   3: caster (optional string)
+ *   4: sourceName (string)
+ *   5: target (string) - not used for attribution
+ *   6: hitType (uint32)
+ *   7: amount (int32)
+ *   8: school (School enum)
  */
 export class SlainDecoder {
   // Use shared TextDecoder for better memory efficiency
   private readonly textDecoder = sharedTextDecoder;
+  
+  /** Reusable attribution object - mutated on each decode */
+  private readonly reusableAttribution: ReusableAttributionDamage = {
+    caster: "",
+    sourceName: "",
+    hitType: 0,
+    amount: 0,
+    school: 0,
+  };
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableSlain = {
@@ -1060,6 +1090,7 @@ export class SlainDecoder {
     offsetMilli: 0,
     target: "",
     caster: "",
+    attribution: null,
   };
   
   /**
@@ -1075,6 +1106,7 @@ export class SlainDecoder {
     msg.offsetMilli = 0;
     msg.target = "";
     msg.caster = "";
+    msg.attribution = null;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -1107,6 +1139,42 @@ export class SlainDecoder {
         } else if (fieldNumber === 3) {
           msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
+        } else if (fieldNumber === 4) {
+          // Attribution (Damage) - decode nested
+          const attr = this.reusableAttribution;
+          attr.caster = "";
+          attr.sourceName = "";
+          attr.hitType = 0;
+          attr.amount = 0;
+          attr.school = 0;
+          
+          const attrEnd = offset + len;
+          while (offset < attrEnd) {
+            const attrTag = data[offset++];
+            const attrField = attrTag >> 3;
+            const attrWire = attrTag & 0x7;
+            
+            if (attrWire === 0) {
+              // Varint fields
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (attrField === 6) attr.hitType = value;
+              else if (attrField === 7) attr.amount = value;
+              else if (attrField === 8) attr.school = value;
+            } else if (attrWire === 2) {
+              // Length-delimited fields
+              const { value: attrLen, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (attrField === 3) {
+                attr.caster = this.textDecoder.decode(data.subarray(offset, offset + attrLen));
+              } else if (attrField === 4) {
+                attr.sourceName = this.textDecoder.decode(data.subarray(offset, offset + attrLen));
+              }
+              // Skip field 5 (target) and field 1 (meta) - not needed for attribution
+              offset += attrLen;
+            }
+          }
+          msg.attribution = attr;
         } else {
           offset += len;
         }

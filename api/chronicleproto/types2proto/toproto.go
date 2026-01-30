@@ -68,13 +68,24 @@ func ExtraAttack(from time.Time, idx int32, ea messages.ExtraAttack) *chroniclep
 }
 
 func Slain(from time.Time, idx int32, ea messages.Slain) *chronicleproto.Slain {
+	var att *chronicleproto.Damage
+	if ea.Attribution != nil {
+		switch typed := ea.Attribution.(type) {
+		case messages.Damage:
+			att = Damage(ea.Attribution.Date(), -1, typed)
+		default:
+			// unexpected type
+
+		}
+	}
 	return &chronicleproto.Slain{
 		Meta: &chronicleproto.EventMeta{
 			Index:       idx,
 			OffsetMilli: ea.Timestamp.UnixMilli() - from.UnixMilli(),
 		},
-		Target: ea.Victim.String(),
-		Caster: OptionalGUID(ea.Killer),
+		Target:      ea.Victim.String(),
+		Caster:      OptionalGUID(ea.Killer),
+		Attribution: att,
 	}
 }
 

@@ -21,8 +21,8 @@ func New(logger *slog.Logger) *Synthetic {
 }
 
 func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message, error) {
-	for _, msg := range msgs {
-		s.slain.ProcessMessage(msg)
+	for i, msg := range msgs {
+		msgs[i] = s.slain.ProcessMessage(msg)
 	}
 
 	return msgs, nil

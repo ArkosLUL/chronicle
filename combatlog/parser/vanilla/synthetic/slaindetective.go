@@ -18,7 +18,7 @@ func newSlainDetective() *slainDetective {
 	}
 }
 
-func (s *slainDetective) ProcessMessage(msg messages.Message) {
+func (s *slainDetective) ProcessMessage(msg messages.Message) messages.Message{
 	switch m := msg.(type) {
 	case messages.Zone:
 		changed := s.currentZone.Process(m)
@@ -31,10 +31,13 @@ func (s *slainDetective) ProcessMessage(msg messages.Message) {
 	case messages.Slain:
 		if m.Killer == nil {
 			m.Attribution = s.lastDamage[m.Victim]
+			m.Killer = s.lastDamage[m.Victim].Caster
 		} else if lastDamage, ok := s.lastDamage[m.Victim]; ok {
 			if lastDamage.Caster != nil && *m.Killer == *lastDamage.Caster {
 				m.Attribution = lastDamage
 			}
 		}
+    return m
 	}
+  return msg
 }

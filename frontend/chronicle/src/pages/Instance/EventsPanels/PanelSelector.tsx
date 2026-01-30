@@ -53,6 +53,10 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     label: "Activity",
     items: ["all_activity"],
   },
+  {
+    label: "Other",
+    items: ["empty"],
+  },
 ];
 
 // Build panel options from registry
@@ -189,7 +193,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
       {/* Dropdown panel */}
       {isOpen && (
         <div
-          className="absolute left-0 top-full mt-1 z-50 min-w-[220px] bg-popover text-popover-foreground border rounded-md shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95"
+          className="absolute left-0 top-full mt-1 z-50 w-[260px] bg-popover text-popover-foreground border rounded-md shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95"
           onKeyDown={handleKeyDown}
         >
           {/* Search input */}
@@ -208,7 +212,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
           </div>
 
           {/* Results */}
-          <ScrollArea className="max-h-[300px]">
+          <ScrollArea className="max-h-[350px]">
             <div className="p-1">
               {filteredResults ? (
                 // Search results
@@ -261,7 +265,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
 
                     {/* Category items */}
                     {expandedCategory === category.label && (
-                      <div className="ml-4 border-l pl-1">
+                      <div className="ml-3 border-l pl-2">
                         {category.items.map((panelKey) => {
                           const item = getPanelOption(panelKey);
                           return (

@@ -11,6 +11,7 @@ import { allActivityProcessor } from "./allActivityDebug.processor";
 import { unifiedHealingProcessor } from "./healing.processor";
 import { mitigationProcessor } from "./mitigation.processor";
 import { avoidanceProcessor } from "./avoidance.processor";
+import { emptyProcessor } from "../Empty/empty.processor";
 
 // Export individual processors
 export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -21,6 +22,7 @@ export { allActivityProcessor } from "./allActivityDebug.processor";
 export { unifiedHealingProcessor } from "./healing.processor";
 export { mitigationProcessor } from "./mitigation.processor";
 export { avoidanceProcessor } from "./avoidance.processor";
+export { emptyProcessor } from "../Empty/empty.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -31,6 +33,7 @@ export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "
 export type { AllActivityDebugState as AllActivityState, RawDebugEvent, EncounterMeta, ResourceType } from "./allActivityDebug.processor";
 export type { MitigationResult, MitigationData, EncounterMitigation } from "./mitigation.processor";
 export type { AvoidanceResult, AvoidanceData, EncounterAvoidance } from "./avoidance.processor";
+export type { EmptyResult } from "../Empty/empty.processor";
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
 
@@ -59,5 +62,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   all_activity: allActivityProcessor,
   mitigation: mitigationProcessor,
   avoidance: avoidanceProcessor,
+  empty: emptyProcessor,
   // Note: roles panel doesn't have its own processor - it reuses damage_taken and healing_done
 };

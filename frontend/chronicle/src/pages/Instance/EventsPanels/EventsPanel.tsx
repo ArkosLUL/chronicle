@@ -21,6 +21,7 @@ import { createDeathLogPanel } from "./Deaths/DeathLog";
 import { AllActivityPanel } from "./AllActivityDebug";
 import { createMitigationPanel } from "./Mitigation/Mitigation";
 import { createRolesPanel } from "./Roles/Roles";
+import { createEmptyPanel } from "./Empty/Empty";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -45,6 +46,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   // avoidance: createAvoidancePanel(),
   roles: createRolesPanel(),
   all_activity: AllActivityPanel,
+  empty: createEmptyPanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;

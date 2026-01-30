@@ -623,6 +623,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   // avoidance: 'av', // TODO: Requires spell school data
   roles: 'r',
   all_activity: 'aa',
+  empty: 'e',
 };
 
 const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(

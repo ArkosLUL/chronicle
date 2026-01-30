@@ -152,10 +152,6 @@ func (c *Common) MatchesZone(z zone.Zone) bool {
 }
 
 func (c *Common) Process(m messages.Message) error {
-	for _, id := range m.Affects() {
-		c.seen[id] = struct{}{}
-	}
-
 	switch msg := m.(type) {
 	case messages.Realm:
 		if c.realm != nil {
@@ -164,6 +160,12 @@ func (c *Common) Process(m messages.Message) error {
 			}
 		}
 		c.realm = &msg.Info
+	case messages.Combatant:
+		// Combatants do not count as "seen", since the addon tracks them async
+	default:
+		for _, id := range m.Affects() {
+			c.seen[id] = struct{}{}
+		}
 	}
 
 	actChange, err := c.Characters.Process(m)

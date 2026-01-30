@@ -188,8 +188,13 @@ export function YouTubeSyncPage() {
   const [results, setResults] = useState<SyncResult[]>([])
   const [lastResult, setLastResult] = useState<SyncResult | null>(null)
 
+  const [chronicleUrl, setChronicleUrl] = useState(window.location.origin)
+  const [instanceId, setInstanceId] = useState("")
+  const [chronicleExporting, setChronicleExporting] = useState(false)
+
   // Refs
   const playerRef = useRef<YTPlayer | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const playerReadyRef = useRef(false)
   const captureStreamRef = useRef<MediaStream | null>(null)
   const captureVideoRef = useRef<HTMLVideoElement | null>(null)
@@ -656,6 +661,110 @@ export function YouTubeSyncPage() {
     URL.revokeObjectURL(url)
   }
 
+  const exportToChronicle = async () => {
+    if (!instanceId.trim()) {
+      alert("Please enter an Instance ID")
+      return
+    }
+
+    if (results.length === 0) {
+      alert("No results to export")
+      return
+    }
+
+    setChronicleExporting(true)
+    try {
+      // Check if logged in
+      const whoamiRes = await fetch(`${chronicleUrl}/api/v1/whoami`, {
+        credentials: "include",
+      })
+      if (!whoamiRes.ok) {
+        alert(`Not logged in to ${chronicleUrl}. Please log in first.`)
+        setChronicleExporting(false)
+        return
+      }
+
+      const data = {
+        url: videoUrl,
+        exported_at: new Date().toISOString(),
+        results: results.map((r) => ({
+          video_time_seconds: Math.round(r.videoTime),
+          raw_ocr: r.rawOCR,
+          server_time: r.serverTime,
+          confidence: r.confidence,
+        })),
+      }
+
+      const response = await fetch(
+        `${chronicleUrl}/api/v1/raidlogs/instances/${encodeURIComponent(instanceId.trim())}/youtube`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      alert("Successfully exported to Chronicle!")
+    } catch (err) {
+      alert(`Failed to export: ${(err as Error).message}`)
+    } finally {
+      setChronicleExporting(false)
+    }
+  }
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string)
+
+        // Set video URL if present
+        if (json.url) {
+          setVideoUrl(json.url)
+        }
+
+        // Convert imported results to SyncResult format
+        if (Array.isArray(json.results)) {
+          const imported: SyncResult[] = json.results.map(
+            (r: {
+              video_time_seconds?: number
+              raw_ocr?: string | null
+              server_time?: string | null
+              confidence?: number
+              error?: string | null
+            }) => ({
+              videoTime: r.video_time_seconds ?? 0,
+              videoTimeFormatted: formatTime(r.video_time_seconds ?? 0),
+              imageDataUrl: null,
+              serverTime: r.server_time ?? null,
+              rawOCR: r.raw_ocr ?? null,
+              confidence: r.confidence ?? 0,
+              status: r.error ? "error" : r.server_time ? "success" : "pending",
+              error: r.error ?? null,
+            })
+          )
+          setResults(imported)
+          setStatusText(`Imported ${imported.length} results from file`)
+        }
+      } catch (err) {
+        alert(`Failed to parse JSON: ${(err as Error).message}`)
+      }
+    }
+    reader.readAsText(file)
+
+    // Reset input so same file can be re-selected
+    e.target.value = ""
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground dark">
       {/* Fixed Video Area */}
@@ -935,7 +1044,12 @@ export function YouTubeSyncPage() {
           </CardHeader>
           <CardContent>
             {results.length === 0 ? (
-              <p className="text-muted-foreground text-center py-5">No results yet</p>
+              <div className="text-center py-5">
+                <p className="text-muted-foreground mb-3">No results yet</p>
+                <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                  Import JSON
+                </Button>
+              </div>
             ) : (
               <>
                 <table className="w-full text-sm">
@@ -996,8 +1110,45 @@ export function YouTubeSyncPage() {
                   <Button variant="secondary" onClick={exportCSV}>
                     Export CSV
                   </Button>
+                  <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                    Import JSON
+                  </Button>
                   <Button variant="secondary" onClick={() => setResults([])}>
                     Clear
+                  </Button>
+                </div>
+
+                {/* Chronicle Export */}
+                <div className="mt-6 pt-4 border-t border-border">
+                  <h4 className="text-sm font-medium mb-3">Export to Chronicle</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <Label htmlFor="chronicle-url" className="text-xs">
+                        Chronicle URL
+                      </Label>
+                      <Input
+                        id="chronicle-url"
+                        value={chronicleUrl}
+                        onChange={(e) => setChronicleUrl(e.target.value)}
+                        placeholder="https://chronicle.example.com"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="instance-id" className="text-xs">
+                        Instance ID
+                      </Label>
+                      <Input
+                        id="instance-id"
+                        value={instanceId}
+                        onChange={(e) => setInstanceId(e.target.value)}
+                        placeholder="abc123..."
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={exportToChronicle} disabled={chronicleExporting}>
+                    {chronicleExporting ? "Exporting..." : "Export to Chronicle"}
                   </Button>
                 </div>
               </>
@@ -1025,6 +1176,13 @@ export function YouTubeSyncPage() {
       )}
 
       {/* Hidden elements */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={handleFileImport}
+        className="hidden"
+      />
       <video ref={captureVideoRef} className="hidden" autoPlay />
       <canvas ref={captureCanvasRef} className="hidden" />
     </div>

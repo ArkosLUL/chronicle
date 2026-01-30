@@ -116,6 +116,8 @@ function transformToInstance(
 export function InstancePage() {
   const { instanceId } = useParams<{ instanceId: string }>();
   const [showYoutube, setShowYoutube] = useState(false);
+  // Track user selection; null means use default
+  const [userSelectedEncounterIds, setUserSelectedEncounterIds] = useState<string[] | null>(null);
 
   const { data: apiInstance, isLoading: instanceLoading, error: instanceError } = useInstance(
     instanceId || "",
@@ -131,6 +133,27 @@ export function InstancePage() {
     if (!apiInstance) return null;
     return transformToInstance(apiInstance);
   }, [apiInstance]);
+
+  // Compute default encounter (first boss kill, or first encounter)
+  const defaultEncounterId = useMemo(() => {
+    if (!instance) return null;
+    const firstBossKill = instance.encounters.find((e) => e.boss && e.kill);
+    const defaultEncounter = firstBossKill || instance.encounters[0];
+    return defaultEncounter?.id ?? null;
+  }, [instance]);
+
+  // Use user selection if set, otherwise use default
+  const selectedEncounterIds = useMemo(() => {
+    if (userSelectedEncounterIds !== null) return userSelectedEncounterIds;
+    return defaultEncounterId ? [defaultEncounterId] : [];
+  }, [userSelectedEncounterIds, defaultEncounterId]);
+
+  // Get the start time of the first selected encounter for video sync
+  const selectedEncounterStartTime = useMemo(() => {
+    if (!instance || selectedEncounterIds.length === 0) return undefined;
+    const encounter = instance.encounters.find(e => e.id === selectedEncounterIds[0]);
+    return encounter?.start_time;
+  }, [instance, selectedEncounterIds]);
 
   const isLoading = instanceLoading;
 
@@ -174,6 +197,8 @@ export function InstancePage() {
       <InstancePageView
         instance={instance}
         backUrl={backUrl}
+        selectedEncounterIds={selectedEncounterIds}
+        onSelectEncounters={setUserSelectedEncounterIds}
         youtubeButton={
           youtubeData?.url ? (
             <Button
@@ -191,6 +216,8 @@ export function InstancePage() {
       {showYoutube && youtubeData?.url && (
         <YouTubeOverlay
           videoUrl={youtubeData.url}
+          timestamps={youtubeData.results}
+          targetTime={selectedEncounterStartTime}
           onClose={() => setShowYoutube(false)}
         />
       )}

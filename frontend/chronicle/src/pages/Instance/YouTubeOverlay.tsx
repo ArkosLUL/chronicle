@@ -2,9 +2,42 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { X, Minimize2, Maximize2, Move, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { VideoTimestamp } from "@/api/typesGenerated";
+
+// YouTube Player types
+declare global {
+  interface Window {
+    YT: {
+      Player: new (
+        elementId: string,
+        config: {
+          videoId: string;
+          playerVars?: Record<string, unknown>;
+          events?: {
+            onReady?: (event: { target: YTPlayer }) => void;
+            onStateChange?: (event: { data: number }) => void;
+          };
+        }
+      ) => YTPlayer;
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+interface YTPlayer {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  destroy: () => void;
+}
 
 interface YouTubeOverlayProps {
   videoUrl: string;
+  timestamps?: readonly VideoTimestamp[];
+  /** ISO timestamp to seek to (e.g., encounter start_time) */
+  targetTime?: string;
   onClose: () => void;
 }
 
@@ -21,18 +54,172 @@ function parseYouTubeVideoId(url: string): string | null {
   return null;
 }
 
-export function YouTubeOverlay({ videoUrl, onClose }: YouTubeOverlayProps) {
+/**
+ * Parse a time string "HH:MM:SS" to seconds since midnight
+ */
+function parseTimeToSeconds(timeStr: string): number | null {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const seconds = parseInt(match[3], 10);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/**
+ * Extract time-of-day in seconds from an ISO timestamp
+ */
+function isoToTimeOfDaySeconds(isoString: string): number {
+  const date = new Date(isoString);
+  return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+}
+
+/**
+ * Find the video time to seek to for a given target server time.
+ * Uses the timestamps array to interpolate/extrapolate.
+ */
+function calculateVideoTime(
+  targetTimeSeconds: number,
+  timestamps: readonly VideoTimestamp[]
+): number | null {
+  if (timestamps.length === 0) return null;
+
+  // Convert all timestamps to seconds and pair with video time
+  const points = timestamps
+    .map((ts) => ({
+      serverSeconds: parseTimeToSeconds(ts.server_time),
+      videoSeconds: ts.video_time_seconds,
+    }))
+    .filter((p): p is { serverSeconds: number; videoSeconds: number } => 
+      p.serverSeconds !== null
+    )
+    .sort((a, b) => a.serverSeconds - b.serverSeconds);
+
+  if (points.length === 0) return null;
+
+  // Find the closest point(s) for interpolation
+  // If target is before all points, extrapolate from first
+  // If target is after all points, extrapolate from last
+  // Otherwise, interpolate between two surrounding points
+
+  const first = points[0];
+  const last = points[points.length - 1];
+
+  if (targetTimeSeconds <= first.serverSeconds) {
+    // Extrapolate backwards from first point
+    const diff = first.serverSeconds - targetTimeSeconds;
+    return Math.max(0, first.videoSeconds - diff);
+  }
+
+  if (targetTimeSeconds >= last.serverSeconds) {
+    // Extrapolate forwards from last point
+    const diff = targetTimeSeconds - last.serverSeconds;
+    return last.videoSeconds + diff;
+  }
+
+  // Find surrounding points and interpolate
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    if (targetTimeSeconds >= p1.serverSeconds && targetTimeSeconds <= p2.serverSeconds) {
+      // Linear interpolation
+      const serverRange = p2.serverSeconds - p1.serverSeconds;
+      const videoRange = p2.videoSeconds - p1.videoSeconds;
+      const t = (targetTimeSeconds - p1.serverSeconds) / serverRange;
+      return p1.videoSeconds + t * videoRange;
+    }
+  }
+
+  return null;
+}
+
+export function YouTubeOverlay({ videoUrl, timestamps, targetTime, onClose }: YouTubeOverlayProps) {
   const [position, setPosition] = useState({ x: 20, y: 80 });
   const [size, setSize] = useState({ width: 480, height: 270 });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const videoId = parseYouTubeVideoId(videoUrl);
+
+  // Initialize player callback - defined before effects that use it
+  const initPlayer = useCallback(() => {
+    if (!videoId || playerRef.current) return;
+
+    playerRef.current = new window.YT.Player("yt-overlay-player", {
+      videoId,
+      playerVars: {
+        autoplay: 0,
+        modestbranding: 1,
+        rel: 0,
+      },
+      events: {
+        onReady: () => {
+          setPlayerReady(true);
+        },
+      },
+    });
+  }, [videoId]);
+
+  // Load YouTube IFrame API and initialize player
+  useEffect(() => {
+    // If API already loaded, initialize player
+    if (window.YT?.Player) {
+      // Small delay to ensure DOM element exists
+      const timer = setTimeout(initPlayer, 100);
+      return () => clearTimeout(timer);
+    }
+
+    // Load API script if not present
+    if (!document.getElementById("youtube-iframe-api")) {
+      const tag = document.createElement("script");
+      tag.id = "youtube-iframe-api";
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+
+    // Set up callback for when API is ready
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousCallback?.();
+      initPlayer();
+    };
+
+    return () => {
+      // Restore previous callback if any
+      if (previousCallback) {
+        window.onYouTubeIframeAPIReady = previousCallback;
+      }
+    };
+  }, [initPlayer]);
+
+  // Cleanup player on unmount
+  useEffect(() => {
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Seek when targetTime changes
+  useEffect(() => {
+    if (!playerReady || !playerRef.current || !targetTime || !timestamps?.length) return;
+
+    const targetSeconds = isoToTimeOfDaySeconds(targetTime);
+    const videoTime = calculateVideoTime(targetSeconds, timestamps);
+
+    if (videoTime !== null) {
+      playerRef.current.seekTo(videoTime, true);
+    }
+  }, [targetTime, timestamps, playerReady]);
 
   // Drag handlers
   const handleDragStart = useCallback((e: React.MouseEvent) => {
@@ -161,15 +348,10 @@ export function YouTubeOverlay({ videoUrl, onClose }: YouTubeOverlayProps) {
         </div>
       </div>
 
-      {/* Video iframe */}
+      {/* Video player */}
       {!isMinimized && (
         <div className="relative" style={{ height: size.height }}>
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1`}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          <div id="yt-overlay-player" className="w-full h-full" />
           
           {/* Resize handle */}
           <div

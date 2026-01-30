@@ -802,6 +802,8 @@ export interface InstancePageViewProps {
   onSelectEncounters?: (encounterIds: string[]) => void;
   /** URL to navigate to when clicking the back button */
   backUrl?: string;
+  /** Optional button to show YouTube video overlay */
+  youtubeButton?: React.ReactNode;
 }
 
 export function InstancePageView({
@@ -809,6 +811,7 @@ export function InstancePageView({
   selectedEncounterIds,
   onSelectEncounters,
   backUrl,
+  youtubeButton,
 }: InstancePageViewProps) {
   // Find first boss kill, or first encounter if no boss kills
   const firstBossKill = instance.encounters.find((e) => e.boss && e.kill);
@@ -963,6 +966,7 @@ export function InstancePageView({
               {totalDuration && ` • ${totalDuration}`}
             </p>
           </div>
+          {youtubeButton}
         </div>
       </div>
 

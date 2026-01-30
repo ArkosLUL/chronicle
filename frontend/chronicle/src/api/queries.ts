@@ -10,6 +10,7 @@ import type {
   WoWParsedInstance as WoWParsedInstanceGenerated,
   WoWEncounter as WoWEncounterGenerated,
   WoWInstance as WoWInstanceGenerated,
+  Video as VideoGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -23,6 +24,7 @@ export type WoWParsedLogJobOutput = WoWParsedLogJobOutputGenerated;
 export type WoWParsedInstance = WoWParsedInstanceGenerated;
 export type WoWEncounter = WoWEncounterGenerated;
 export type WoWInstance = WoWInstanceGenerated;
+export type Video = VideoGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -126,6 +128,20 @@ export function useInstance(instanceId: string, options?: Omit<UseQueryOptions<W
       const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}`);
       if (!response.ok) throw new Error("Failed to fetch instance");
       return response.json() as Promise<WoWParsedInstance>;
+    },
+    ...options,
+  });
+}
+
+export function useInstanceYoutube(instanceId: string, options?: Omit<UseQueryOptions<Video | null>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["instanceYoutube", instanceId],
+    retry: false,
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}/youtube`);
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error("Failed to fetch YouTube data");
+      return response.json() as Promise<Video>;
     },
     ...options,
   });

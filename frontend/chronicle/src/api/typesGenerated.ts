@@ -123,6 +123,24 @@ export interface RiverAttemptError {
 // From rivertype/river_type.go
 export type RiverJobState = string;
 
+// From chroniclesdk/youtube.go
+export interface Video {
+    readonly url: string;
+    readonly exported_at: string;
+    readonly results: readonly VideoTimestamp[];
+}
+
+// From chroniclesdk/youtube.go
+export interface VideoTimestamp {
+    readonly video_time_seconds: number;
+    readonly raw_ocr: string;
+    /**
+     * Need to convert to timezone, is like "17:56:08"
+     */
+    readonly server_time: string;
+    readonly confidence: number;
+}
+
 // From types/date.go
 /**
  * AddonDateFormat is the date format for addon created logs like `COMBATANT_INFO`

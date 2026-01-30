@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useInstance } from "@/api/queries";
+import { ArrowLeft, Loader2, Youtube } from "lucide-react";
+import { useInstance, useInstanceYoutube } from "@/api/queries";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
 import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
+import { Button } from "@/components/ui/button";
 import { InstancePageView } from "./InstancePageView";
+import { YouTubeOverlay } from "./YouTubeOverlay";
 
 // Types for the Instance page
 export interface EnemyUnit {
@@ -113,8 +115,14 @@ function transformToInstance(
 // Connected component that fetches data
 export function InstancePage() {
   const { instanceId } = useParams<{ instanceId: string }>();
+  const [showYoutube, setShowYoutube] = useState(false);
 
   const { data: apiInstance, isLoading: instanceLoading, error: instanceError } = useInstance(
+    instanceId || "",
+    { enabled: !!instanceId }
+  );
+
+  const { data: youtubeData } = useInstanceYoutube(
     instanceId || "",
     { enabled: !!instanceId }
   );
@@ -166,7 +174,26 @@ export function InstancePage() {
       <InstancePageView
         instance={instance}
         backUrl={backUrl}
+        youtubeButton={
+          youtubeData?.url ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setShowYoutube(true)}
+            >
+              <Youtube className="h-4 w-4 text-red-500" />
+              Video
+            </Button>
+          ) : null
+        }
       />
+      {showYoutube && youtubeData?.url && (
+        <YouTubeOverlay
+          videoUrl={youtubeData.url}
+          onClose={() => setShowYoutube(false)}
+        />
+      )}
     </InstanceEventsProvider>
   );
 }

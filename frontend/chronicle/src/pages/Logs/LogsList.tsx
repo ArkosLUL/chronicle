@@ -1,21 +1,26 @@
-import { Link } from "react-router-dom";
-import { FileText, Clock, LogIn, Loader2, Upload as UploadIcon, Castle, AlertCircle } from "lucide-react";
+import { useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { FileText, LogIn, Loader2, Upload as UploadIcon, Castle, AlertCircle, ChevronRight, Filter, X } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogGroups, type WoWLogGroup, type WoWParsedLogJobOutput } from "@/api/queries";
+import type { WoWSimpleParsedInstance } from "@/api/typesGenerated";
 
-function formatDate(timestamp: unknown): string {
+function formatShortDate(timestamp: unknown): string {
   if (!timestamp) return "Unknown";
-  // Handle the pgtype.Timestamptz format
   const ts = timestamp as { Time?: string; Valid?: boolean } | string;
-  if (typeof ts === "string") {
-    return new Date(ts).toLocaleString();
-  }
-  if (ts.Valid && ts.Time) {
-    return new Date(ts.Time).toLocaleString();
-  }
-  return "Unknown";
+  const dateStr = typeof ts === "string" ? ts : ts.Valid && ts.Time ? ts.Time : null;
+  if (!dateStr) return "Unknown";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function getInstanceDate(inst: WoWSimpleParsedInstance): string | null {
+  const firstEncounter = inst.encounters?.[0];
+  if (!firstEncounter?.start_time) return null;
+  const date = new Date(firstEncounter.start_time);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function formatBytes(bytes: number): string {
@@ -38,6 +43,82 @@ function parseParsedOutput(output: unknown): WoWParsedLogJobOutput | null {
   return parsed;
 }
 
+// Get all unique instance names from logs
+function getUniqueInstanceNames(logs: WoWLogGroup[]): string[] {
+  const names = new Set<string>();
+  for (const log of logs) {
+    const parsed = parseParsedOutput(log.processing_output);
+    if (parsed?.instances) {
+      for (const inst of parsed.instances) {
+        names.add(inst.name);
+      }
+    }
+  }
+  return Array.from(names).sort();
+}
+
+interface LogRowProps {
+  log: WoWLogGroup;
+  instances: WoWSimpleParsedInstance[];
+  failedCount: number;
+}
+
+function LogRow({ log, instances, failedCount }: LogRowProps) {
+  const totalBytes = log.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+  
+  return (
+    <div className="group">
+      {/* Main row - log info */}
+      <Link
+        to={`/logs/${log.id}`}
+        className="flex items-center gap-3 px-4 py-2 hover:bg-accent/50 transition-colors"
+      >
+        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm flex-1">
+          {formatShortDate(log.created_at)}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {formatBytes(totalBytes)}
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
+      {/* Instance links - separate row for easy clicking */}
+      {(instances.length > 0 || failedCount > 0) && (
+        <div className="flex items-center gap-2 flex-wrap px-4 pb-2 pl-12">
+          {instances.map((inst) => {
+            const instanceDate = getInstanceDate(inst);
+            return (
+              <Link
+                key={inst.id}
+                to={`/instances/${inst.slug || inst.id}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-400 rounded text-sm transition-colors"
+              >
+                <Castle className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{inst.name}</span>
+                {instanceDate && (
+                  <span className="text-xs text-muted-foreground">({instanceDate})</span>
+                )}
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </Link>
+            );
+          })}
+          {failedCount > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 text-destructive rounded text-sm">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {failedCount} failed
+            </span>
+          )}
+        </div>
+      )}
+      {instances.length === 0 && failedCount === 0 && (
+        <div className="px-4 pb-2 pl-12">
+          <span className="text-sm text-muted-foreground italic">Processing...</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export interface LogsListViewProps {
   isAuthenticated: boolean;
   authLoading: boolean;
@@ -53,12 +134,37 @@ export function LogsListView({
   logsLoading,
   logsError,
 }: LogsListViewProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const instanceFilter = searchParams.get("instance");
+  
+  const uniqueInstances = useMemo(() => {
+    return logs ? getUniqueInstanceNames(logs) : [];
+  }, [logs]);
+  
+  const filteredLogs = useMemo(() => {
+    if (!logs) return [];
+    if (!instanceFilter) return logs;
+    
+    return logs.filter((log) => {
+      const parsed = parseParsedOutput(log.processing_output);
+      return parsed?.instances.some((inst) => inst.name === instanceFilter);
+    });
+  }, [logs, instanceFilter]);
+  
+  const setInstanceFilter = (name: string | null) => {
+    if (name) {
+      setSearchParams({ instance: name });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-8 space-y-8">
+    <div className="max-w-4xl mx-auto p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Your Logs</h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-1">
             View and manage your uploaded raid logs.
           </p>
         </div>
@@ -125,57 +231,68 @@ export function LogsListView({
           </div>
         </Card>
       ) : (
-        <div className="flex flex-col gap-2">
-          {logs?.map((log) => {
-            const parsedOutput = parseParsedOutput(log.processing_output);
-            const instanceNames = parsedOutput?.instances.map(i => i.name) ?? [];
-            const failedInstances = Object.keys(parsedOutput?.instance_failures ?? {});
-            
-            return (
-              <Link key={log.id} to={`/logs/${log.id}`} className="block">
-                <Card className="p-4 hover:bg-accent transition-colors cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                      <div>
-                        <h3 className="font-medium">Log Upload</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatDate(log.created_at)}</span>
-                        </div>
-                        {/* Parsed instances info */}
-                        {(instanceNames.length > 0 || failedInstances.length > 0) && (
-                          <ul className="mt-2 ml-1 space-y-1 text-sm">
-                            {instanceNames.map((name) => (
-                              <li key={name} className="flex items-center gap-2">
-                                <Castle className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                <span>{name}</span>
-                              </li>
-                            ))}
-                            {failedInstances.length > 0 && (
-                              <li className="flex items-center gap-2 text-destructive">
-                                <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                                <span>{failedInstances.length} failed to parse</span>
-                              </li>
-                            )}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>{log.files?.length || 0} files</p>
-                      <p>
-                        {log.files?.reduce((acc, f) => acc + f.size_bytes, 0)
-                          ? formatBytes(log.files.reduce((acc, f) => acc + f.size_bytes, 0))
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+        <>
+          {/* Instance filter */}
+          {uniqueInstances.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filter by instance:</span>
+              {instanceFilter ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setInstanceFilter(null)}
+                  className="h-7 gap-1"
+                >
+                  <Castle className="h-3 w-3" />
+                  {instanceFilter}
+                  <X className="h-3 w-3" />
+                </Button>
+              ) : (
+                <select
+                  className="text-sm bg-secondary border-0 rounded px-2 py-1 cursor-pointer"
+                  value=""
+                  onChange={(e) => setInstanceFilter(e.target.value || null)}
+                >
+                  <option value="">All instances</option>
+                  {uniqueInstances.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {instanceFilter && (
+                <span className="text-sm text-muted-foreground">
+                  ({filteredLogs.length} {filteredLogs.length === 1 ? "log" : "logs"})
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Log list */}
+          <Card className="overflow-hidden divide-y divide-border/50">
+            {filteredLogs.map((log) => {
+              const parsedOutput = parseParsedOutput(log.processing_output);
+              const instances = parsedOutput?.instances ?? [];
+              const failedCount = Object.keys(parsedOutput?.instance_failures ?? {}).length;
+              
+              return (
+                <LogRow
+                  key={log.id}
+                  log={log}
+                  instances={instances as WoWSimpleParsedInstance[]}
+                  failedCount={failedCount}
+                />
+              );
+            })}
+            {filteredLogs.length === 0 && instanceFilter && (
+              <div className="p-4 text-center text-muted-foreground">
+                No logs found for "{instanceFilter}"
+              </div>
+            )}
+          </Card>
+        </>
       )}
     </div>
   );

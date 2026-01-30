@@ -76,6 +76,9 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
   /** Whether this panel supports per-second display mode (shows checkbox when true) */
   supportsPerSecond?: boolean;
   
+  /** Custom label for the checkbox (defaults to "Per second" when supportsPerSecond is true) */
+  checkboxLabel?: string;
+  
   /**
    * Create the initial state for aggregation
    */
@@ -118,8 +121,11 @@ export interface PanelRenderProps<TResult> {
   /** Duration of selected encounters in ms */
   durationMs: number;
   
-  /** Whether to show per-second values */
+  /** Whether to show per-second values (or generic checkbox state) */
   perSecond: boolean;
+  
+  /** Generic checkbox state (same as perSecond, clearer name for non-perSecond uses) */
+  checkboxChecked: boolean;
   
   /** Loading state */
   loading: boolean;

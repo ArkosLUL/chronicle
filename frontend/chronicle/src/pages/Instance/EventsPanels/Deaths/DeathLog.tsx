@@ -18,6 +18,7 @@ export function createDeathLogPanel(): PanelDefinition<DeathsResult, any> {
     id: "death_log", // Override the id to differentiate from deaths panel
     label: "Death Log",
     icon: <ScrollText className="h-4 w-4" />,
+    checkboxLabel: "Encounter offset",
 
     render: (props: PanelRenderProps<DeathsResult>) => {
       return <DeathLogContent {...props} />;

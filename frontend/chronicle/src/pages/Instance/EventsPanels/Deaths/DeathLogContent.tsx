@@ -78,7 +78,7 @@ function getSortedDeathEvents(selectedEncounterIDs:string[], result: DeathsResul
 type DeathLogContentProps = PanelRenderProps<DeathsResult>;
 
 export const DeathLogContent = (props: DeathLogContentProps) => {
-  const { result, context, loading, processing } = props;
+  const { result, context, loading, processing, checkboxChecked } = props;
 
   // Build encounter name lookup
   const encounterNames = useMemo(() => {
@@ -141,21 +141,28 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
               <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left py-1.5 px-2 font-medium w-16">Time</th>
                 <th className="text-left py-1.5 px-2 font-medium">Encounter</th>
-                <th className="text-left py-1.5 px-2 font-medium w-16">Offset</th>
-                <th className="text-left py-1.5 px-2 font-medium">Killed By</th>
+                <th className="text-left py-1.5 px-2 font-medium w-24">Killed By</th>
                 <th className="text-left py-1.5 px-2 font-medium">Player</th>
               </tr>
             </thead>
             <tbody>
               {sortedDeaths.map((death, index) => {
                 const encounterName = encounterNames.get(death.encounterID) || "Unknown";
+                const prevDeath = index > 0 ? sortedDeaths[index - 1] : null;
+                const isNewEncounter = prevDeath && prevDeath.encounterID !== death.encounterID;
                 return (
                   <tr
                     key={`${death.playerID}-${death.offsetMilli}-${index}`}
-                    className="border-b border-border/10 hover:bg-muted/50"
+                    className={cn(
+                      "border-b border-border/10 hover:bg-muted/50",
+                      isNewEncounter && "border-t-2 border-t-border"
+                    )}
                   >
                     <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
-                      {formatTimestamp(death.dateMilli)}
+                      {checkboxChecked 
+                        ? formatRelativeTime(death.offsetMilli)
+                        : formatTimestamp(death.dateMilli)
+                      }
                     </td>
                     <td className="py-1 px-2 max-w-[120px]">
                       <button
@@ -170,20 +177,18 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                         {encounterName}
                       </button>
                     </td>
-                    <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
-                      {formatRelativeTime(death.offsetMilli)}
-                    </td>
-                                        <td className="py-1 px-2 text-muted-foreground max-w-[150px]">
+                                        <td className="py-1 px-2 text-muted-foreground w-24 max-w-24">
                       {death.attribution ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="truncate cursor-help underline decoration-dotted decoration-muted-foreground/50">
+                            <span className="block truncate cursor-help underline decoration-dotted decoration-muted-foreground/50">
                               {death.killerName || "Unknown"}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent side="left" hideArrow className="max-w-[250px] bg-popover text-popover-foreground border border-border">
                             <div className="space-y-1">
-                              <div className="font-medium">{death.attribution.sourceName}</div>
+                              <div className="font-medium">{death.killerName || "Unknown"}</div>
+                              <div className="text-xs text-muted-foreground">{death.attribution.sourceName}</div>
                               <div className="flex items-center gap-2 text-xs">
                                 <span className={cn("font-medium", getSchoolColor(death.attribution.school))}>
                                   {death.attribution.amount.toLocaleString()}
@@ -206,7 +211,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                           </TooltipContent>
                         </Tooltip>
                       ) : (
-                        <span className="truncate" title={death.killerName}>
+                        <span className="block truncate" title={death.killerName}>
                           {death.killerName || "Unknown"}
                         </span>
                       )}

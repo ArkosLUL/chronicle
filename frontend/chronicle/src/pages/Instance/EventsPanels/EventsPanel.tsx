@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card/Card";
 import { BreakoutHoverProvider } from "@/components/ui/AbilityBreakout";
+import { Switch } from "@/components/ui/Switch/Switch";
 import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
@@ -61,8 +62,12 @@ export function EventsPanel({
   durationMs,
   context,
 }: EventsPanelProps) {
-  const [perSecond, setPerSecond] = useState(false);
+  const [checkboxChecked, setCheckboxChecked] = useState(false);
   const panel = PANELS[panelType];
+  
+  // Determine if checkbox should be shown and its label
+  const showCheckbox = panel.supportsPerSecond || panel.checkboxLabel;
+  const checkboxLabel = panel.checkboxLabel || "Per second";
 
   const {
     loading,
@@ -83,18 +88,15 @@ export function EventsPanel({
           <h3 className="text-sm font-medium flex items-center gap-2">
             <PanelSelector value={panelType} onChange={onPanelTypeChange} />
           </h3>
-          {panel.supportsPerSecond && (
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                <input
-                  type="checkbox"
-                  checked={perSecond}
-                  onChange={(e) => setPerSecond(e.target.checked)}
-                  className="w-3.5 h-3.5 cursor-pointer"
-                />
-                Per second
-              </label>
-            </div>
+          {showCheckbox && (
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+              <Switch
+                size="sm"
+                checked={checkboxChecked}
+                onCheckedChange={setCheckboxChecked}
+              />
+              {checkboxLabel}
+            </label>
           )}
         </div>
 
@@ -104,7 +106,8 @@ export function EventsPanel({
           totalEvents,
           processingTimeMs,
           durationMs,
-          perSecond,
+          perSecond: checkboxChecked,
+          checkboxChecked,
           loading,
           processing,
           error,

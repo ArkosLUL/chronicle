@@ -482,6 +482,11 @@ export function LogDetailView({
             <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <Server className="h-5 w-5 text-muted-foreground" />
               Processing Status
+              {log.status.attempted_at && log.status.finalized_at && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({formatDuration(log.status.attempted_at, log.status.finalized_at)})
+                </span>
+              )}
             </h2>
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -2,8 +2,18 @@
  * Deaths processor - aggregates player deaths from slain events (pure TS, worker-safe)
  */
 
-import type { SlainProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
+import type { SlainProcessorEvent, PanelProcessor, ProcessorContext, AttributionDamage } from "../processorTypes";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
+
+/**
+ * Attribution info for a death - the damage that caused the kill
+ */
+export interface DeathAttribution {
+  sourceName: string;      // Spell/ability name
+  amount: number;          // Damage amount
+  school: number;          // Damage school (physical, fire, etc.)
+  hitType: number;         // Hit type flags (crit, etc.)
+}
 
 /**
  * Data for a single death event
@@ -17,6 +27,7 @@ export interface DeathEvent {
   killerID: string;        // GUID of the killer (may be empty)
   killerName: string;      // Name of the killer
   encounterID: string;
+  attribution: DeathAttribution | null;  // The damage that killed the player
 }
 
 /**
@@ -129,6 +140,17 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       
       encounterData.set(playerID, existing);
 
+      // Build attribution if available
+      let attribution: DeathAttribution | null = null;
+      if (event.attribution) {
+        attribution = {
+          sourceName: event.attribution.sourceName,
+          amount: event.attribution.amount,
+          school: event.attribution.school,
+          hitType: event.attribution.hitType,
+        };
+      }
+
       state.DeathEvents.push({
         dateMilli: firstTimestamp.getTime() + event.offsetMilli,
         offsetMilli: event.offsetMilli,
@@ -137,7 +159,8 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
         className: playerClass,
         killerID,
         killerName,
-        encounterID
+        encounterID,
+        attribution,
       });
         
       if (context.selectedEncounterIds.size == 0 || context.selectedEncounterIds.has(encounterID)) {

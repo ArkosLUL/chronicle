@@ -5,10 +5,12 @@
 import { useMemo, useCallback } from "react";
 import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import type { PanelRenderProps } from "../types";
-import type { DeathsResult, DeathEvent } from "./deaths.processor";
+import type { DeathsResult, DeathEvent, DeathAttribution } from "./deaths.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { cn } from "@/lib/utils";
+import { hitTypeNames, HitTypeCrit } from "@/lib/hittype/hittype";
 
 
 function formatTimestamp(absoluteMilli: number): string {
@@ -29,6 +31,40 @@ function formatRelativeTime(offsetMilli: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = (totalSeconds % 60).toFixed(1);
   return `+${minutes}:${seconds.padStart(4, "0")}`;
+}
+
+/**
+ * Get school name from school enum value
+ */
+function getSchoolName(school: number): string {
+  const schools: Record<number, string> = {
+    0: "Unknown",
+    1: "None",
+    2: "Physical",
+    3: "Holy",
+    4: "Fire",
+    5: "Nature",
+    6: "Frost",
+    7: "Shadow",
+    8: "Arcane",
+  };
+  return schools[school] || "Unknown";
+}
+
+/**
+ * Get school color for styling
+ */
+function getSchoolColor(school: number): string {
+  const colors: Record<number, string> = {
+    2: "text-amber-200",      // Physical
+    3: "text-yellow-300",     // Holy
+    4: "text-orange-500",     // Fire
+    5: "text-green-400",      // Nature
+    6: "text-cyan-400",       // Frost
+    7: "text-purple-400",     // Shadow
+    8: "text-blue-400",       // Arcane
+  };
+  return colors[school] || "text-muted-foreground";
 }
 
 /**
@@ -106,8 +142,8 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                 <th className="text-left py-1.5 px-2 font-medium w-16">Time</th>
                 <th className="text-left py-1.5 px-2 font-medium">Encounter</th>
                 <th className="text-left py-1.5 px-2 font-medium w-16">Offset</th>
-                <th className="text-left py-1.5 px-2 font-medium">Player</th>
                 <th className="text-left py-1.5 px-2 font-medium">Killed By</th>
+                <th className="text-left py-1.5 px-2 font-medium">Player</th>
               </tr>
             </thead>
             <tbody>
@@ -137,6 +173,44 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                     <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
                       {formatRelativeTime(death.offsetMilli)}
                     </td>
+                                        <td className="py-1 px-2 text-muted-foreground max-w-[150px]">
+                      {death.attribution ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="truncate cursor-help underline decoration-dotted decoration-muted-foreground/50">
+                              {death.killerName || "Unknown"}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" hideArrow className="max-w-[250px] bg-popover text-popover-foreground border border-border">
+                            <div className="space-y-1">
+                              <div className="font-medium">{death.attribution.sourceName}</div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className={cn("font-medium", getSchoolColor(death.attribution.school))}>
+                                  {death.attribution.amount.toLocaleString()}
+                                </span>
+                                {death.attribution.school > 1 && (
+                                  <span className="text-muted-foreground">
+                                    {getSchoolName(death.attribution.school)}
+                                  </span>
+                                )}
+                                {(death.attribution.hitType & HitTypeCrit) !== 0 && (
+                                  <span className="text-yellow-500 font-medium">Crit!</span>
+                                )}
+                              </div>
+                              {death.attribution.hitType !== 0 && (
+                                <div className="text-2xs text-muted-foreground">
+                                  {hitTypeNames(death.attribution.hitType).join(", ")}
+                                </div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="truncate" title={death.killerName}>
+                          {death.killerName || "Unknown"}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-1 px-2">
                       <span
                         className="font-medium"
@@ -144,9 +218,6 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                       >
                         {death.playerName}
                       </span>
-                    </td>
-                    <td className="py-1 px-2 text-muted-foreground max-w-[150px] truncate" title={death.killerName}>
-                      {death.killerName || "Unknown"}
                     </td>
                   </tr>
                 );

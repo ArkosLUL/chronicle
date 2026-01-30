@@ -49,6 +49,7 @@ export function createDamageTakenPanel(
     ...config.processor,
     label: config.label,
     icon: config.icon,
+    supportsPerSecond: true,
     
     render: (props: PanelRenderProps<DamageTakenResult>) => {
       return <DamageTakenContent {...props} targetType={targetType} />;

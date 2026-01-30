@@ -73,6 +73,9 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
   /** Which streams this panel needs */
   streams: StreamType[];
   
+  /** Whether this panel supports per-second display mode (shows checkbox when true) */
+  supportsPerSecond?: boolean;
+  
   /**
    * Create the initial state for aggregation
    */

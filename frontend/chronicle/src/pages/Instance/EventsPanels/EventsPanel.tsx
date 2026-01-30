@@ -82,17 +82,19 @@ export function EventsPanel({
         <h3 className="text-sm font-medium flex items-center gap-2">
           <PanelSelector value={panelType} onChange={onPanelTypeChange} />
         </h3>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-            <input
-              type="checkbox"
-              checked={perSecond}
-              onChange={(e) => setPerSecond(e.target.checked)}
-              className="w-3.5 h-3.5 cursor-pointer"
-            />
-            Per second
-          </label>
-        </div>
+        {panel.supportsPerSecond && (
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={perSecond}
+                onChange={(e) => setPerSecond(e.target.checked)}
+                className="w-3.5 h-3.5 cursor-pointer"
+              />
+              Per second
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Render the panel content with max height */}

@@ -10,3 +10,5 @@
     - To identify the "same" pet across summons, we could create a stable key like:
       ${owner}-${name} (for named pets like warlock demons)
       ${owner}-${entry} (for generic pets/totems)
+- Rotation panel to show casts
+  - cancelled/interrupted should also be shown

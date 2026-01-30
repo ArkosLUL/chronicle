@@ -61,6 +61,7 @@ export function createDamageDonePanel(
     ...config.processor,
     label: config.label,
     icon: config.icon,
+    supportsPerSecond: true,
     
     render: (props: PanelRenderProps<DamageDoneState>) => {
       return <DamageDoneContent {...props} sourceType={sourceType} />;

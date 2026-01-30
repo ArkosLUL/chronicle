@@ -38,6 +38,7 @@ export function createHealingTakenPanel(
     id: "healing_taken", // Override processor id to match registry key
     label: config.label,
     icon: config.icon,
+    supportsPerSecond: true,
     
     render: (props: PanelRenderProps<UnifiedHealingResult>) => {
       return <HealingTakenContent {...props} targetType={targetType} />;

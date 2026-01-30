@@ -86,10 +86,10 @@ func (a *Sessions) ValidateSession(payload string) (claims.Claims, error) {
 		return claims.Claims{}, fmt.Errorf("parse claims: %w", err)
 	}
 
-	err = userClaims.Validate(claims.Expected{
+	err = userClaims.ValidateWithLeeway(claims.Expected{
 		Issuer: a.Issuer,
 		Time:   time.Now(),
-	})
+	}, time.Minute)
 	if err != nil {
 		return claims.Claims{}, fmt.Errorf("validate claims: %w", err)
 	}
@@ -110,19 +110,20 @@ func (a *Sessions) ValidateSession(payload string) (claims.Claims, error) {
 	return userClaims, nil
 }
 
-func (a *Sessions) CreateSession(ctx context.Context, session database.UserAuthSession) (string, error) {
+func (a *Sessions) CreateSession(ctx context.Context, provider string, session database.UserAuthSession) (string, error) {
 	c := &claims.Claims{
-		Issuer:    a.Issuer,
-		Subject:   session.UserID,
-		Audience:  []string{a.Issuer},
-		Expiry:    jwt.NewNumericDate(session.ExpiresAt.Time),
-		NotBefore: jwt.NewNumericDate(session.CreatedAt.Time.Add(time.Minute * -1)),
-		IssuedAt:  jwt.NewNumericDate(session.CreatedAt.Time),
-		ID:        session.ID,
-
+		Issuer:      a.Issuer,
+		Subject:     session.UserID,
+		Audience:    []string{a.Issuer},
+		Expiry:      jwt.NewNumericDate(session.ExpiresAt.Time),
+		NotBefore:   jwt.NewNumericDate(session.CreatedAt.Time.Add(time.Minute * -1)),
+		IssuedAt:    jwt.NewNumericDate(session.CreatedAt.Time),
+		ID:          session.JwtID,
+		SessionID:   session.ID,
+		UserAuthID:  session.UserAuthID,
+		Provider:    provider,
 		OAuthExpire: jwt.NewNumericDate(session.ExpiresAt.Time),
 		Refreshable: session.RefreshToken != "",
-		SessionID:   session.UserAuthID,
 	}
 	payload, err := jwt.Signed(a.Signer).Claims(c).Serialize()
 	if err != nil {

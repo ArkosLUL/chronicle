@@ -18,6 +18,7 @@ type sqlcQuerier interface {
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
 	GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterHostile, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
+	GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (UserAuthSession, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
@@ -39,6 +40,7 @@ type sqlcQuerier interface {
 	InstanceEvent(ctx context.Context, arg InstanceEventParams) (LogInstanceEvent, error)
 	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
+	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

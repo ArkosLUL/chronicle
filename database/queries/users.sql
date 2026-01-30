@@ -27,9 +27,33 @@ WHERE
 
 -- name: InsertUserAuthSession :one
 INSERT INTO
-  user_auth_session(id, user_id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
+  user_auth_session(id, user_id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at, jwt_id)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING *
+;
+
+-- name: GetUserAuthSessionByID :one
+SELECT
+  *
+FROM
+  user_auth_session
+WHERE
+  id = $1
+FOR UPDATE ;
+
+-- name: UpdateUserAuthSessionTokens :one
+UPDATE
+  user_auth_session
+SET
+  access_token = $2,
+  access_token_secret = $3,
+  refresh_token = $4,
+  expires_at = $5,
+  updated_at = $6,
+  jwt_id = $7
+WHERE
+  id = $1
 RETURNING *
 ;
 

@@ -21,6 +21,6 @@ func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(r.Context(), w, http.StatusOK, sdk.Session{
 		UserID:    c.Subject,
-		SessionID: c.ID,
+		SessionID: c.SessionID,
 	})
 }

@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-  "errors"
-  "fmt"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -88,13 +88,9 @@ func (api *API) Routes() chi.Router {
 		httpmw.PrometheusMW(api.Opts.Registry),
 	)
 
-	r.Route("/grpc/v1", func(r chi.Router) {
-		// Handles all gRPC requests
-		//r.Mount(api.Chronicle.ChronicleGRPCHandler())
-	})
-
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(
+			api.Auth.AuthenticationMiddleware,
 		//authMW.Trace,
 		)
 
@@ -146,8 +142,7 @@ func (api *API) Routes() chi.Router {
 	return r
 }
 
-
 func (api *API) Close() error {
-  cerr := api.Chronicle.Close()
-  return errors.Join(cerr)
+	cerr := api.Chronicle.Close()
+	return errors.Join(cerr)
 }

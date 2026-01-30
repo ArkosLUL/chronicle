@@ -77,6 +77,7 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 		// Save the user session
 		session, err = tx.InsertUserAuthSession(ctx, database.InsertUserAuthSessionParams{
 			ID:                uuid.New(),
+			JwtID:             uuid.New(),
 			UserID:            linked.UserID,
 			UserAuthID:        linked.ID,
 			AccessToken:       user.AccessToken,

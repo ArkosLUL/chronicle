@@ -314,7 +314,8 @@ CREATE TABLE user_auth_session (
     refresh_token text NOT NULL,
     expires_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    jwt_id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 CREATE TABLE users (

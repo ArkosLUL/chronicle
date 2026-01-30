@@ -674,6 +674,7 @@ type UserAuthSession struct {
 	ExpiresAt         pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	JwtID             uuid.UUID          `db:"jwt_id" json:"jwt_id"`
 }
 
 type WoWLogGroup struct {

@@ -43,7 +43,7 @@ type Options struct {
 
 type Service struct {
 	Providers       goth.Providers
-	Store           sessions.Store
+	Store           *sessions.CookieStore
 	Database        database.Store
 	logger          *slog.Logger
 	disallowSignups bool
@@ -267,7 +267,9 @@ func (s *Service) BeginAuthHandler(w http.ResponseWriter, req *http.Request) {
 func (s *Service) Handler() http.Handler {
 	mux := chi.NewRouter()
 	mux.Group(func(r chi.Router) {
-		r.Use(s.Authenticated(true))
+		r.Use(
+			s.Authenticated(true),
+		)
 
 		mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {
 			cl, ok := AuthenticatedClaims(r.Context())
@@ -282,7 +284,6 @@ func (s *Service) Handler() http.Handler {
 			cl, ok := AuthenticatedClaims(r.Context())
 			if !ok || cl == nil {
 				// If authenticated, skip all this
-				ctx := r.Context()
 				_, ok = s.provider(w, r)
 				if !ok {
 					return
@@ -301,20 +302,7 @@ func (s *Service) Handler() http.Handler {
 					return
 				}
 
-				jwt, err := s.sessions.CreateSession(ctx, session)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				auth, err := s.Store.New(r, AuthSessionName)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				auth.Values["jwt"] = jwt
-				err = auth.Save(r, w)
+				err = s.SetSessionCookie(w, r, user.Provider, session)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -352,6 +340,26 @@ func (s *Service) Handler() http.Handler {
 	})
 
 	return mux
+}
+
+func (s *Service) SetSessionCookie(w http.ResponseWriter, r *http.Request, provider string, session database.UserAuthSession) error {
+	ctx := r.Context()
+	jwt, err := s.sessions.CreateSession(ctx, provider, session)
+	if err != nil {
+		return err
+	}
+
+	auth, err := s.Store.New(r, AuthSessionName)
+	if err != nil {
+		return err
+	}
+
+	auth.Values["jwt"] = jwt
+	err = auth.Save(r, w)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) provider(w http.ResponseWriter, r *http.Request) (goth.Provider, bool) {

@@ -641,6 +641,34 @@ func (q *sqlQuerier) GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthB
 	return i, err
 }
 
+const getUserAuthSessionByID = `-- name: GetUserAuthSessionByID :one
+SELECT
+  id, user_auth_id, user_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at, jwt_id
+FROM
+  user_auth_session
+WHERE
+  id = $1
+FOR UPDATE
+`
+
+func (q *sqlQuerier) GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (UserAuthSession, error) {
+	row := q.db.QueryRow(ctx, getUserAuthSessionByID, id)
+	var i UserAuthSession
+	err := row.Scan(
+		&i.ID,
+		&i.UserAuthID,
+		&i.UserID,
+		&i.AccessToken,
+		&i.AccessTokenSecret,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.JwtID,
+	)
+	return i, err
+}
+
 const getUserByID = `-- name: GetUserByID :one
 SELECT
   id, username, email, created_at, updated_at
@@ -738,10 +766,10 @@ func (q *sqlQuerier) InsertUserAuth(ctx context.Context, arg InsertUserAuthParam
 
 const insertUserAuthSession = `-- name: InsertUserAuthSession :one
 INSERT INTO
-  user_auth_session(id, user_id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at)
+  user_auth_session(id, user_id, user_auth_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at, jwt_id)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, user_auth_id, user_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, user_auth_id, user_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at, jwt_id
 `
 
 type InsertUserAuthSessionParams struct {
@@ -754,6 +782,7 @@ type InsertUserAuthSessionParams struct {
 	ExpiresAt         pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	JwtID             uuid.UUID          `db:"jwt_id" json:"jwt_id"`
 }
 
 func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error) {
@@ -767,6 +796,7 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 		arg.ExpiresAt,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.JwtID,
 	)
 	var i UserAuthSession
 	err := row.Scan(
@@ -779,6 +809,58 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.JwtID,
+	)
+	return i, err
+}
+
+const updateUserAuthSessionTokens = `-- name: UpdateUserAuthSessionTokens :one
+UPDATE
+  user_auth_session
+SET
+  access_token = $2,
+  access_token_secret = $3,
+  refresh_token = $4,
+  expires_at = $5,
+  updated_at = $6,
+  jwt_id = $7
+WHERE
+  id = $1
+RETURNING id, user_auth_id, user_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at, jwt_id
+`
+
+type UpdateUserAuthSessionTokensParams struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	AccessToken       string             `db:"access_token" json:"access_token"`
+	AccessTokenSecret string             `db:"access_token_secret" json:"access_token_secret"`
+	RefreshToken      string             `db:"refresh_token" json:"refresh_token"`
+	ExpiresAt         pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	JwtID             uuid.UUID          `db:"jwt_id" json:"jwt_id"`
+}
+
+func (q *sqlQuerier) UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error) {
+	row := q.db.QueryRow(ctx, updateUserAuthSessionTokens,
+		arg.ID,
+		arg.AccessToken,
+		arg.AccessTokenSecret,
+		arg.RefreshToken,
+		arg.ExpiresAt,
+		arg.UpdatedAt,
+		arg.JwtID,
+	)
+	var i UserAuthSession
+	err := row.Scan(
+		&i.ID,
+		&i.UserAuthID,
+		&i.UserID,
+		&i.AccessToken,
+		&i.AccessTokenSecret,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.JwtID,
 	)
 	return i, err
 }

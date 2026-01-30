@@ -4,12 +4,98 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth/claims"
 )
 
-type authenticatedKey struct{}
+type authContextKey struct{}
+
+type AuthenticationContext struct {
+	Claims *claims.Claims
+	Error  error
+}
+
+func AuthenticatedClaims(ctx context.Context) (*claims.Claims, bool) {
+	state, ok := ctx.Value(authContextKey{}).(AuthenticationContext)
+	if !ok || state.Claims == nil {
+		return nil, false
+	}
+	return state.Claims, true
+}
+
+func AuthenticationState(r *http.Request) AuthenticationContext {
+	return r.Context().Value(authContextKey{}).(AuthenticationContext)
+}
+
+func withState(r *http.Request, s AuthenticationContext) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), authContextKey{}, s))
+}
+
+func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth, err := s.Store.Get(r, AuthSessionName)
+		if err != nil {
+			_ = s.Logout(w, r)
+			next.ServeHTTP(w, withState(r, AuthenticationContext{
+				Error: err,
+			}))
+			return
+		}
+
+		jwt, ok := auth.Values["jwt"]
+		if !ok {
+			// No JWT, means probably no cookie
+			next.ServeHTTP(w, withState(r, AuthenticationContext{
+				Error: ErrNotAuthorized,
+			}))
+			return
+		}
+
+		jwtStr, ok := jwt.(string)
+		if !ok {
+			_ = s.Logout(w, r)
+			next.ServeHTTP(w, withState(r, AuthenticationContext{
+				Error: ErrNotAuthorized,
+			}))
+			return
+		}
+
+		c, err := s.sessions.ValidateSession(jwtStr)
+		if err != nil {
+			_ = s.Logout(w, r)
+			next.ServeHTTP(w, withState(r, AuthenticationContext{
+				Error: fmt.Errorf("invalid session (%s): %w", err.Error(), ErrNotAuthorized),
+			}))
+			return
+		}
+
+		expiringDuration := time.Hour * 24
+		lifespan := c.Expiry.Time().Sub(c.NotBefore.Time())
+		if lifespan < time.Hour*48 {
+			expiringDuration = time.Minute * 30
+		}
+
+		if c.Expiry.Time().Sub(time.Now()) < expiringDuration {
+			// If the token is expiring, try to refresh it
+			err := s.RefreshSession(r.Context(), w, r, &c)
+			if err != nil && !errors.Is(err, ErrRefreshSkipped) {
+				s.logger.Error("failed to refresh session",
+					slog.String("error", err.Error()),
+					slog.String("user_id", c.Subject.String()),
+					slog.String("session_id", c.ID.String()),
+				)
+			}
+		}
+
+		next.ServeHTTP(w, withState(r, AuthenticationContext{
+			Claims: &c,
+			Error:  nil,
+		}))
+	})
+}
 
 func MustAuthenticatedClaims(ctx context.Context) *claims.Claims {
 	c, ok := AuthenticatedClaims(ctx)
@@ -19,19 +105,6 @@ func MustAuthenticatedClaims(ctx context.Context) *claims.Claims {
 	return c
 }
 
-func AuthenticatedClaims(ctx context.Context) (*claims.Claims, bool) {
-	v := ctx.Value(authenticatedKey{})
-	if v == nil {
-		return nil, false
-	}
-	c, ok := v.(*claims.Claims)
-	return c, ok
-}
-
-func WithClaims(ctx context.Context, c *claims.Claims) context.Context {
-	return context.WithValue(ctx, authenticatedKey{}, c)
-}
-
 var (
 	ErrNotAuthorized = errors.New("not authorized")
 )
@@ -39,51 +112,22 @@ var (
 func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fail := func(err error) {
-				if errors.Is(err, ErrNotAuthorized) {
-					http.Error(w, err.Error(), http.StatusUnauthorized)
+			state := AuthenticationState(r)
+			if optional && state.Error != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if state.Error != nil {
+				if errors.Is(state.Error, ErrNotAuthorized) {
+					http.Error(w, state.Error.Error(), http.StatusUnauthorized)
 					return
 				}
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-
-			if optional {
-				fail = func(err error) {
-					next.ServeHTTP(w, r)
-				}
-			}
-
-			auth, err := s.Store.Get(r, AuthSessionName)
-			if err != nil {
-				// TODO: Error to try again
-				_ = s.Logout(w, r)
-				fail(err)
+				http.Error(w, state.Error.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			jwt, ok := auth.Values["jwt"]
-			if !ok {
-				fail(ErrNotAuthorized)
-				return
-			}
-
-			jwtStr, ok := jwt.(string)
-			if !ok {
-				// TODO: Error to try again
-				_ = s.Logout(w, r)
-				fail(ErrNotAuthorized)
-				return
-			}
-
-			c, err := s.sessions.ValidateSession(jwtStr)
-			if err != nil {
-				// TODO: Error to try again
-				_ = s.Logout(w, r)
-				fail(fmt.Errorf("invalid session (%s): %w", err.Error(), ErrNotAuthorized))
-				return
-			}
-
-			next.ServeHTTP(w, r.WithContext(WithClaims(r.Context(), &c)))
+			next.ServeHTTP(w, r)
 		})
 	}
 }

@@ -140,8 +140,8 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left py-1.5 px-2 font-medium w-16">Time</th>
-                <th className="text-left py-1.5 px-2 font-medium">Encounter</th>
-                <th className="text-left py-1.5 px-2 font-medium w-24">Killed By</th>
+                <th className="text-left py-1.5 px-2 font-medium w-16">Encounter</th>
+                <th className="text-left py-1.5 px-2 font-medium w-28">Killed By</th>
                 <th className="text-left py-1.5 px-2 font-medium">Player</th>
               </tr>
             </thead>

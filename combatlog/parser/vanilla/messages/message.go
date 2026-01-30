@@ -227,6 +227,10 @@ type Slain struct {
 	MessageBase
 	Victim guid.GUID
 	Killer *guid.GUID
+
+	// Attribution is synthetic and not always present.
+	// It is the cause of the death
+	Attribution Message
 }
 
 func (s Slain) Affects() []guid.GUID {

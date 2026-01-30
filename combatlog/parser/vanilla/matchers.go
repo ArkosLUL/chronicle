@@ -80,7 +80,8 @@ func (p *Parser) fUnitInfo(ts time.Time, content string) ([]messages.Message, er
 
 	ut, err := unitinfo.ParseUnitInfo(content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
+		fmt.Println(content)
+		return nil, fmt.Errorf("failed to parse unit info: %v", err)
 	}
 
 	return set(messages.Unit{

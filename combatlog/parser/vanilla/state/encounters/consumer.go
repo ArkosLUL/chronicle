@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 )
 
 type State struct {
 	logger *slog.Logger
 
 	// CurrentZone is the zone the player is currently in.
-	CurrentZone     zone.Zone
+	CurrentZone     *zoner.Location
 	CurrentInstance instances.Instance
 	Instances       []instances.Instance
 
@@ -30,7 +30,7 @@ func New(logger *slog.Logger) *State {
 	s := &State{
 		logger:      logger,
 		Units:       unitdb.New(),
-		CurrentZone: zone.Zone{},
+		CurrentZone: zoner.NewLocation(),
 		reg:         registry.DefaultRegistry(logger),
 		Instances:   make([]instances.Instance, 0),
 	}
@@ -72,17 +72,8 @@ func (s *State) Unit(u messages.Unit) {
 }
 
 func (s *State) Zone(z messages.Zone) {
-	if z.Name == "" {
-		// Ignore empty zones
-		return
-	}
-	defer func() {
-		// Always set the current zone at the end
-		s.CurrentZone = z.Zone
-	}()
-
-	if s.CurrentZone.Equal(z.Zone) {
-		// Zone unchanged
+	changed := s.CurrentZone.Process(z)
+	if !changed {
 		return
 	}
 

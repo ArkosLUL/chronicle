@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 )
 
@@ -33,13 +34,23 @@ type Parser struct {
 	matchers     []parseLine
 	matcherNames []string
 	initMatchers sync.Once
+	synthetics   *synthetic.Synthetic
 }
 
 func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
 	return &Parser{
-		logger:  logger,
-		scanner: merge.FromIOReader(lines.NewLiner(), r),
-		liner:   lines.NewLiner(),
+		logger:     logger,
+		scanner:    merge.FromIOReader(lines.NewLiner(), r),
+		liner:      lines.NewLiner(),
+		synthetics: synthetic.New(logger),
+		metrics: Metrics{
+			PreProcessDuration: 0,
+			TotalParseDuration: 0,
+			TotalLinesParsed:   0,
+			UnmatchedTime:      0,
+			MatchingTime:       make(map[string]time.Duration),
+			UnmatchingTime:     make(map[string]time.Duration),
+		},
 	}, nil
 }
 
@@ -56,6 +67,7 @@ func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan) *P
 			MatchingTime:       make(map[string]time.Duration),
 			UnmatchingTime:     make(map[string]time.Duration),
 		},
+		synthetics: synthetic.New(logger),
 	}
 }
 
@@ -138,7 +150,12 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	}
 	p.metrics.TotalParseDuration += time.Since(now)
 	p.metrics.TotalLinesParsed++
-	return msgs, err
+
+	msgs, err = p.synthetics.ProcessMessages(msgs)
+	if err != nil {
+		return nil, fmt.Errorf("processing synthetics: %w", err)
+	}
+	return msgs, nil
 }
 
 func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message, error) {

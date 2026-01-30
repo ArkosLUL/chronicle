@@ -104,13 +104,20 @@ func ParseUnitInfo(content string) (Info, error) {
 		CanCooperate: canCoop,
 		Owner:        ownerID,
 	}
+
 	if len(parts) >= 7 {
 		info.Buffs, err = ParseBuffs(parts[6])
 		if err != nil {
-			return Info{}, fmt.Errorf("parsing buffs: %w", err)
+			// So jank, but there is a bugged version of the addon that puts the unit level
+			// plus "na" in this part.
+			r, err := strconv.ParseUint(strings.TrimSuffix(parts[6], "na"), 10, 64)
+			if err != nil || r < 40 {
+				return Info{}, fmt.Errorf("parsing buffs: %w", err)
+			}
 		}
 	}
 	if len(parts) >= 8 {
+		parts[7] = strings.TrimSuffix(parts[7], "na") // Addon bug
 		level, err := strconv.Atoi(parts[7])
 		if err != nil {
 			return Info{}, fmt.Errorf("invalid level %q: %w", parts[7], err)
@@ -137,7 +144,6 @@ func ParseBuffs(buffStr string) ([]Buff, error) {
 
 	// A bug in a version of the addon
 	buffStr = strings.TrimSuffix(buffStr, "na")
-
 	buffs := make([]Buff, 0)
 	for _, buff := range strings.Split(buffStr, ",") {
 		if buff == "" {

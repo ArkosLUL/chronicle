@@ -23,6 +23,16 @@ function getInstanceDate(inst: WoWSimpleParsedInstance): string | null {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+const REALM_NAMES: Record<string, string> = {
+  "851d2fd3-f9c5-4623-b714-924b59d916aa": "Ambershire",
+  "f94d3103-1cd8-40e9-ad91-a2366de33354": "Tel Abim",
+  "bcf173a7-c94a-49fe-8930-27435d722fb7": "Nordanaar",
+};
+
+function getRealmName(realmId: string): string | null {
+  return REALM_NAMES[realmId] ?? null;
+}
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -66,16 +76,23 @@ interface LogRowProps {
 function LogRow({ log, instances, failedCount }: LogRowProps) {
   const totalBytes = log.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
   
+  // Check if all instances share the same realm
+  const realmIds = new Set(instances.map((inst) => inst.realm_id));
+  const sharedRealm = realmIds.size === 1 ? getRealmName(instances[0]?.realm_id) : null;
+  
   return (
-    <div className="group">
+    <div className="group py-2">
       {/* Main row - log info */}
       <Link
         to={`/logs/${log.id}`}
-        className="flex items-center gap-3 px-4 py-2 hover:bg-accent/50 transition-colors"
+        className="flex items-center gap-3 px-4 hover:bg-accent/50 transition-colors"
       >
         <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         <span className="text-sm flex-1">
           {formatShortDate(log.created_at)}
+          {sharedRealm && (
+            <span className="text-xs text-muted-foreground ml-2">({sharedRealm})</span>
+          )}
         </span>
         <span className="text-xs text-muted-foreground">
           {formatBytes(totalBytes)}
@@ -84,9 +101,11 @@ function LogRow({ log, instances, failedCount }: LogRowProps) {
       </Link>
       {/* Instance links - separate row for easy clicking */}
       {(instances.length > 0 || failedCount > 0) && (
-        <div className="flex items-center gap-2 flex-wrap px-4 pb-2 pl-12">
+        <div className="flex items-center gap-2 flex-wrap px-4 pt-1 pl-12">
           {instances.map((inst) => {
             const instanceDate = getInstanceDate(inst);
+            // Only show realm in badge if instances have different realms
+            const realmName = sharedRealm ? null : getRealmName(inst.realm_id);
             return (
               <Link
                 key={inst.id}
@@ -95,8 +114,10 @@ function LogRow({ log, instances, failedCount }: LogRowProps) {
               >
                 <Castle className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>{inst.name}</span>
-                {instanceDate && (
-                  <span className="text-xs text-muted-foreground">({instanceDate})</span>
+                {(instanceDate || realmName) && (
+                  <span className="text-xs text-muted-foreground">
+                    ({[realmName, instanceDate].filter(Boolean).join(" · ")})
+                  </span>
                 )}
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
               </Link>
@@ -111,7 +132,7 @@ function LogRow({ log, instances, failedCount }: LogRowProps) {
         </div>
       )}
       {instances.length === 0 && failedCount === 0 && (
-        <div className="px-4 pb-2 pl-12">
+        <div className="px-4 pt-1 pl-12">
           <span className="text-sm text-muted-foreground italic">Processing...</span>
         </div>
       )}
@@ -271,7 +292,7 @@ export function LogsListView({
           )}
 
           {/* Log list */}
-          <Card className="overflow-hidden divide-y divide-border/50">
+          <Card className="overflow-hidden divide-y divide-border/50 pb-2 pt-6">
             {filteredLogs.map((log) => {
               const parsedOutput = parseParsedOutput(log.processing_output);
               const instances = parsedOutput?.instances ?? [];

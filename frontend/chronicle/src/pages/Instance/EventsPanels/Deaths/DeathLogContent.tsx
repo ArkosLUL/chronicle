@@ -7,7 +7,7 @@ import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import type { PanelRenderProps } from "../types";
-import type { DeathsResult, DeathEvent, DeathAttribution } from "./deaths.processor";
+import type { DeathsResult, DeathEvent } from "./deaths.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { cn } from "@/lib/utils";
 import { hitTypeNames, HitTypeCrit } from "@/lib/hittype/hittype";

@@ -2,7 +2,7 @@
  * Deaths processor - aggregates player deaths from slain events (pure TS, worker-safe)
  */
 
-import type { SlainProcessorEvent, PanelProcessor, ProcessorContext, AttributionDamage } from "../processorTypes";
+import type { SlainProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 /**

@@ -89,13 +89,13 @@ export function EventsPanel({
             <PanelSelector value={panelType} onChange={onPanelTypeChange} />
           </h3>
           {showCheckbox && (
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground pr-2">
+              {checkboxLabel}
               <Switch
                 size="sm"
                 checked={checkboxChecked}
                 onCheckedChange={setCheckboxChecked}
               />
-              {checkboxLabel}
             </label>
           )}
         </div>

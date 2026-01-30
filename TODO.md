@@ -12,3 +12,4 @@
       ${owner}-${entry} (for generic pets/totems)
 - Rotation panel to show casts
   - cancelled/interrupted should also be shown
+- Detect out of date super wow, that is missing Raw logs

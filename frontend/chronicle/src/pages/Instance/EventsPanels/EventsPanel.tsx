@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card/Card";
+import { BreakoutHoverProvider } from "@/components/ui/AbilityBreakout";
 import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
@@ -76,38 +77,40 @@ export function EventsPanel({
   });
 
   return (
-    <Card className="p-4 gap-2 mb-3">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-medium flex items-center gap-2">
-          <PanelSelector value={panelType} onChange={onPanelTypeChange} />
-        </h3>
-        {panel.supportsPerSecond && (
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-              <input
-                type="checkbox"
-                checked={perSecond}
-                onChange={(e) => setPerSecond(e.target.checked)}
-                className="w-3.5 h-3.5 cursor-pointer"
-              />
-              Per second
-            </label>
-          </div>
-        )}
-      </div>
+    <BreakoutHoverProvider>
+      <Card className="p-4 gap-2 mb-3">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <PanelSelector value={panelType} onChange={onPanelTypeChange} />
+          </h3>
+          {panel.supportsPerSecond && (
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                <input
+                  type="checkbox"
+                  checked={perSecond}
+                  onChange={(e) => setPerSecond(e.target.checked)}
+                  className="w-3.5 h-3.5 cursor-pointer"
+                />
+                Per second
+              </label>
+            </div>
+          )}
+        </div>
 
-      {/* Render the panel content */}
-      {panel.render({
-        result,
-        totalEvents,
-        processingTimeMs,
-        durationMs,
-        perSecond,
-        loading,
-        processing,
-        error,
-        context,
-      })}
-    </Card>
+        {/* Render the panel content */}
+        {panel.render({
+          result,
+          totalEvents,
+          processingTimeMs,
+          durationMs,
+          perSecond,
+          loading,
+          processing,
+          error,
+          context,
+        })}
+      </Card>
+    </BreakoutHoverProvider>
   );
 }

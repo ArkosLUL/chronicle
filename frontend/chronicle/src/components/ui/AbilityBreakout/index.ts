@@ -9,3 +9,10 @@ export {
   type TargetData,
   type BreakoutTab,
 } from './AbilityBreakout'
+
+export {
+  BreakoutHoverProvider,
+  useBreakoutHover,
+  getCellHighlight,
+  type BreakoutHoverState,
+} from './BreakoutHoverContext'

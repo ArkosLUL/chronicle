@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout } from '@/pages/Instance/EventsPanels/DamageDone/damageDone.processor'
+import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
 
 // ============================================================================
 // Types
@@ -31,6 +32,57 @@ export interface TargetData {
 }
 
 // ============================================================================
+// Highlight Styles
+// ============================================================================
+
+/** Get highlight class based on cell state */
+function getHighlightClass(highlight: ReturnType<typeof getCellHighlight>): string {
+  switch (highlight) {
+    case 'intersection':
+      return 'bg-primary/25'
+    case 'row':
+      return 'bg-primary/5'
+    case 'column':
+      return 'bg-primary/5'
+    default:
+      return ''
+  }
+}
+
+/** HoverCell component that handles mouse events */
+function HoverCell({
+  rowId,
+  columnId,
+  hover,
+  setHover,
+  clearHover,
+  className,
+  children,
+  ...props
+}: {
+  rowId: string
+  columnId: string
+  hover: BreakoutHoverState
+  setHover: (state: BreakoutHoverState) => void
+  clearHover: () => void
+  className?: string
+  children: React.ReactNode
+} & React.TdHTMLAttributes<HTMLTableCellElement>) {
+  const highlight = getCellHighlight(hover, rowId, columnId)
+  
+  return (
+    <td
+      className={cn(className, getHighlightClass(highlight))}
+      onMouseEnter={() => setHover({ rowId, columnId })}
+      onMouseLeave={clearHover}
+      {...props}
+    >
+      {children}
+    </td>
+  )
+}
+
+// ============================================================================
 // Ability Table Component
 // ============================================================================
 
@@ -55,6 +107,8 @@ export function AbilityTable({
   showHits = true,
   showOverheal = false,
 }: AbilityTableProps) {
+  const { hover, setHover, clearHover } = useBreakoutHover()
+  
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
   }
@@ -65,62 +119,124 @@ export function AbilityTable({
   // Check if any ability has overheal data
   const hasOverhealData = showOverheal && sorted.some(a => a.overheal !== undefined && a.overheal > 0)
 
+  // Column IDs for hover tracking
+  const COL = {
+    ABILITY: 'ability',
+    OVERHEAL: 'overheal',
+    VALUE: 'value',
+    PERCENT: 'percent',
+    COUNT: 'count',
+    HITS: 'hits',
+    CRIT: 'crit',
+  }
+
   return (
     <div className="max-h-64 overflow-y-auto">
       <table className="w-full text-xs text-foreground">
-        <thead className="sticky top-0 bg-popover">
+        <thead className="sticky top-0 bg-popover z-10">
           <tr className="border-b border-border">
-            <th className="text-left py-1.5 px-2 font-medium">Ability</th>
+            <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.ABILITY && "bg-primary/20")}>Ability</th>
             {hasOverhealData && (
-              <th className="text-right py-1.5 px-2 font-medium text-yellow-500/80">Overheal</th>
+              <th className={cn("text-right py-1.5 px-2 font-medium text-yellow-500/80", hover.columnId === COL.OVERHEAL && "bg-primary/20")}>Overheal</th>
             )}
-            <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
-            <th className="text-right py-1.5 px-2 font-medium">%</th>
-            <th className="text-right py-1.5 px-2 font-medium">Count</th>
+            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.VALUE && "bg-primary/20")}>{valueLabel}</th>
+            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.PERCENT && "bg-primary/20")}>%</th>
+            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.COUNT && "bg-primary/20")}>Count</th>
             {showHits && (
-              <th className="text-right py-1.5 px-2 font-medium">Hits</th>
+              <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.HITS && "bg-primary/20")}>Hits</th>
             )}
-            <th className="text-right py-1.5 px-2 font-medium">Crit%</th>
+            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.CRIT && "bg-primary/20")}>Crit%</th>
           </tr>
         </thead>
         <tbody>
           {sorted.map((ability) => {
             const critPercent = ability.Hits > 0 ? (ability.Crits / ability.Hits) * 100 : 0
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
+            const rowId = ability.name
             
             return (
-              <tr key={ability.name} className="border-b border-border/10 hover:bg-muted/50">
-                <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
+              <tr key={ability.name} className="border-b border-border/10">
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.ABILITY}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="py-1 px-2 max-w-[150px] truncate"
+                  title={ability.name}
+                >
                   {ability.name}
-                </td>
+                </HoverCell>
                 {hasOverhealData && (() => {
                   const overhealVal = ability.overheal ?? 0;
                   const totalForAbility = ability.value + overhealVal;
                   const overhealPct = totalForAbility > 0 ? (overhealVal / totalForAbility) * 100 : 0;
                   return (
-                    <td className="text-right py-1 px-2 tabular-nums text-yellow-500/70">
+                    <HoverCell
+                      rowId={rowId}
+                      columnId={COL.OVERHEAL}
+                      hover={hover}
+                      setHover={setHover}
+                      clearHover={clearHover}
+                      className="text-right py-1 px-2 tabular-nums text-yellow-500/70"
+                    >
                       {overhealVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                       <span className="text-yellow-500/50 ml-1">({overhealPct.toFixed(0)}%)</span>
-                    </td>
+                    </HoverCell>
                   );
                 })()}
-                <td className="text-right py-1 px-2 tabular-nums">
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.VALUE}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="text-right py-1 px-2 tabular-nums"
+                >
                   {ability.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                </HoverCell>
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.PERCENT}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="text-right py-1 px-2 tabular-nums text-muted-foreground"
+                >
                   {valuePercent.toFixed(1)}%
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                </HoverCell>
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.COUNT}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="text-right py-1 px-2 tabular-nums"
+                >
                   {ability.Count}
-                </td>
+                </HoverCell>
                 {showHits && (
-                  <td className="text-right py-1 px-2 tabular-nums">
-                    {ability.Hits} 
-                  </td>
+                  <HoverCell
+                    rowId={rowId}
+                    columnId={COL.HITS}
+                    hover={hover}
+                    setHover={setHover}
+                    clearHover={clearHover}
+                    className="text-right py-1 px-2 tabular-nums"
+                  >
+                    {ability.Hits}
+                  </HoverCell>
                 )}
-                <td className="text-right py-1 px-2 tabular-nums">
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.CRIT}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="text-right py-1 px-2 tabular-nums"
+                >
                   {critPercent.toFixed(0)}%
-                </td>
+                </HoverCell>
               </tr>
             )
           })}
@@ -152,6 +268,8 @@ export function TargetTable({
   valueLabel = 'Value',
   showOverheal = false,
 }: TargetTableProps) {
+  const { hover, setHover, clearHover } = useBreakoutHover()
+  
   if (!targets || targets.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No target breakdown available</p>
   }
@@ -162,33 +280,64 @@ export function TargetTable({
   // Check if any target has overheal data
   const hasOverhealData = showOverheal && sorted.some(t => t.overheal !== undefined && t.overheal > 0)
 
+  // Column IDs for hover tracking (shared with AbilityTable where applicable)
+  const COL = {
+    TARGET: 'ability', // Use 'ability' so it syncs with the "Ability" column header
+    VALUE: 'value',
+    OVERHEAL: 'overheal',
+    PERCENT: 'percent',
+  }
+
   return (
     <div className="max-h-64 overflow-y-auto">
       <table className="w-full text-xs text-foreground">
-        <thead className="sticky top-0 bg-popover">
+        <thead className="sticky top-0 bg-popover z-10">
           <tr className="border-b border-border">
-            <th className="text-left py-1.5 px-2 font-medium">Target</th>
-            <th className="text-right py-1.5 px-2 font-medium">{valueLabel}</th>
+            <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.TARGET && "bg-primary/20")}>Target</th>
+            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.VALUE && "bg-primary/20")}>{valueLabel}</th>
             {hasOverhealData && (
-              <th className="text-right py-1.5 px-2 font-medium text-yellow-500/70">Overheal</th>
+              <th className={cn("text-right py-1.5 px-2 font-medium text-yellow-500/70", hover.columnId === COL.OVERHEAL && "bg-primary/20")}>Overheal</th>
             )}
-            <th className="text-right py-1.5 px-2 font-medium">%</th>
+            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.PERCENT && "bg-primary/20")}>%</th>
           </tr>
         </thead>
         <tbody>
           {sorted.map((target) => {
             const valuePercent = totalValue > 0 ? (target.value / totalValue) * 100 : 0
+            const rowId = target.targetName
             
             return (
-              <tr key={target.targetId} className="border-b border-border/10 hover:bg-muted/50">
-                <td className="py-1 px-2 max-w-[150px] truncate" title={target.targetName}>
+              <tr key={target.targetId} className="border-b border-border/10">
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.TARGET}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="py-1 px-2 max-w-[150px] truncate"
+                  title={target.targetName}
+                >
                   {target.targetName}
-                </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                </HoverCell>
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.VALUE}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="text-right py-1 px-2 tabular-nums"
+                >
                   {target.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                </td>
+                </HoverCell>
                 {hasOverhealData && (
-                  <td className="text-right py-1 px-2 tabular-nums text-yellow-500/70">
+                  <HoverCell
+                    rowId={rowId}
+                    columnId={COL.OVERHEAL}
+                    hover={hover}
+                    setHover={setHover}
+                    clearHover={clearHover}
+                    className="text-right py-1 px-2 tabular-nums text-yellow-500/70"
+                  >
                     {(() => {
                       const overhealVal = target.overheal ?? 0;
                       const totalForTarget = target.value + overhealVal;
@@ -200,11 +349,18 @@ export function TargetTable({
                         </>
                       );
                     })()}
-                  </td>
+                  </HoverCell>
                 )}
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                <HoverCell
+                  rowId={rowId}
+                  columnId={COL.PERCENT}
+                  hover={hover}
+                  setHover={setHover}
+                  clearHover={clearHover}
+                  className="text-right py-1 px-2 tabular-nums text-muted-foreground"
+                >
                   {valuePercent.toFixed(1)}%
-                </td>
+                </HoverCell>
               </tr>
             )
           })}

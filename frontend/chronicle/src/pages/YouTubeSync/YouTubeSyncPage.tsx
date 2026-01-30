@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card"
 import { cn } from "@/lib/utils"
+import type { YTPlayer } from "@/types/youtube"
 
 // Types
 interface CropRegion {
@@ -22,41 +23,6 @@ interface SyncResult {
   confidence: number
   status: "success" | "error" | "pending"
   error: string | null
-}
-
-// YouTube Player types
-declare global {
-  interface Window {
-    YT: {
-      Player: new (
-        elementId: string,
-        config: {
-          videoId: string
-          playerVars?: Record<string, unknown>
-          events?: {
-            onReady?: (event: { target: YTPlayer }) => void
-            onStateChange?: (event: { data: number }) => void
-          }
-        }
-      ) => YTPlayer
-      PlayerState: {
-        PLAYING: number
-        PAUSED: number
-        ENDED: number
-      }
-    }
-    onYouTubeIframeAPIReady: () => void
-  }
-}
-
-interface YTPlayer {
-  playVideo: () => void
-  pauseVideo: () => void
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void
-  getCurrentTime: () => number
-  getDuration: () => number
-  getPlayerState: () => number
-  loadVideoById: (videoId: string) => void
 }
 
 // Helper functions

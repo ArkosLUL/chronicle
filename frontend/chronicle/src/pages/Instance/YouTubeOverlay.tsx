@@ -3,35 +3,7 @@ import { X, Minimize2, Maximize2, Move, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { VideoTimestamp } from "@/api/typesGenerated";
-
-// YouTube Player types
-declare global {
-  interface Window {
-    YT: {
-      Player: new (
-        elementId: string,
-        config: {
-          videoId: string;
-          playerVars?: Record<string, unknown>;
-          events?: {
-            onReady?: (event: { target: YTPlayer }) => void;
-            onStateChange?: (event: { data: number }) => void;
-          };
-        }
-      ) => YTPlayer;
-    };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-interface YTPlayer {
-  playVideo: () => void;
-  pauseVideo: () => void;
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  destroy: () => void;
-}
+import type { YTPlayer } from "@/types/youtube";
 
 interface YouTubeOverlayProps {
   videoUrl: string;

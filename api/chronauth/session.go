@@ -79,7 +79,7 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 			expiringDuration = time.Minute * 30
 		}
 
-		if c.Expiry.Time().Sub(time.Now()) < expiringDuration {
+		if time.Until(c.Expiry.Time()) < expiringDuration {
 			// If the token is expiring, try to refresh it
 			err := s.RefreshSession(r.Context(), w, r, &c)
 			if err != nil && !errors.Is(err, ErrRefreshSkipped) {

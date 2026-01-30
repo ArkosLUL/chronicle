@@ -21,6 +21,7 @@ func (l *Location) Process(z messages.Zone) bool {
 		return false
 	}
 
+	//nolint: staticcheck
 	if l.Zone.Equal(z.Zone) {
 		// Zone unchanged
 		return false

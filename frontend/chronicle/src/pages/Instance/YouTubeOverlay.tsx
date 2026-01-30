@@ -422,42 +422,41 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
         </div>
       </div>
 
-      {/* Video player */}
-      {!isMinimized && (
-        <>
-          <div className="relative" style={{ height: size.height }}>
-            <div id="yt-overlay-player" className="w-full h-full" />
-            
-            {/* Resize handle */}
-            <div
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center bg-muted/80 rounded-tl"
-              onMouseDown={handleResizeStart}
-            >
-              <GripHorizontal className="h-3 w-3 text-muted-foreground rotate-[-45deg]" />
-            </div>
-          </div>
+      {/* Video player - always rendered, hidden when minimized to preserve player state */}
+      <div 
+        className={cn("relative", isMinimized && "hidden")} 
+        style={{ height: isMinimized ? 0 : size.height }}
+      >
+        <div id="yt-overlay-player" className="w-full h-full" />
+        
+        {/* Resize handle */}
+        <div
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center bg-muted/80 rounded-tl"
+          onMouseDown={handleResizeStart}
+        >
+          <GripHorizontal className="h-3 w-3 text-muted-foreground rotate-[-45deg]" />
+        </div>
+      </div>
 
-          {/* Encounter seek bar */}
-          {encounterVideoTimes && (
-            <div className="px-2 py-1.5 bg-muted/30 border-t border-border">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                <span>{formatDuration(encounterElapsed)}</span>
-                <div className="flex-1" />
-                <span>{formatDuration(encounterVideoTimes.duration)}</span>
-              </div>
-              <div
-                ref={seekBarRef}
-                className="h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
-                onClick={handleSeekBarClick}
-              >
-                <div
-                  className="h-full bg-primary rounded-full transition-[width] duration-100"
-                  style={{ width: `${seekBarProgress * 100}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </>
+      {/* Encounter seek bar */}
+      {!isMinimized && encounterVideoTimes && (
+        <div className="px-2 py-1.5 bg-muted/30 border-t border-border">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+            <span>{formatDuration(encounterElapsed)}</span>
+            <div className="flex-1" />
+            <span>{formatDuration(encounterVideoTimes.duration)}</span>
+          </div>
+          <div
+            ref={seekBarRef}
+            className="h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
+            onClick={handleSeekBarClick}
+          >
+            <div
+              className="h-full bg-primary rounded-full transition-[width] duration-100"
+              style={{ width: `${seekBarProgress * 100}%` }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

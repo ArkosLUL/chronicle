@@ -359,6 +359,7 @@ func (s *Service) SetSessionCookie(w http.ResponseWriter, r *http.Request, provi
 	if err != nil {
 		return err
 	}
+	s.clearRefreshFailed(w)
 	return nil
 }
 

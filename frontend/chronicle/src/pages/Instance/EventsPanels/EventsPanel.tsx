@@ -4,7 +4,6 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card/Card";
-import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { usePanelAggregation } from "./usePanelAggregation";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
@@ -97,20 +96,18 @@ export function EventsPanel({
         )}
       </div>
 
-      {/* Render the panel content with max height */}
-      <ScrollArea className="max-h-[450px]">
-        {panel.render({
-          result,
-          totalEvents,
-          processingTimeMs,
-          durationMs,
-          perSecond,
-          loading,
-          processing,
-          error,
-          context,
-        })}
-      </ScrollArea>
+      {/* Render the panel content */}
+      {panel.render({
+        result,
+        totalEvents,
+        processingTimeMs,
+        durationMs,
+        perSecond,
+        loading,
+        processing,
+        error,
+        context,
+      })}
     </Card>
   );
 }

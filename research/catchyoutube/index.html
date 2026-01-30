@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Time Sync - Chronicle</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #1a1a2e;
+      color: #eee;
+    }
+    
+    /* Fixed video area at top */
+    #video-area {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0d0d1a;
+      border-bottom: 2px solid #333;
+      z-index: 100;
+      padding: 10px 20px;
+    }
+    
+    #video-viewport {
+      width: 800px;
+      height: 450px;
+      background: #000;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 2px solid #444;
+      position: relative;
+    }
+    
+    #video-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    
+    #video-container.dragging {
+      cursor: grabbing;
+    }
+    
+    #video-container.pan-mode {
+      cursor: grab;
+    }
+    
+    #video-container.pan-mode iframe {
+      pointer-events: none;
+    }
+    
+    #video-container iframe {
+      display: block;
+    }
+    
+    /* Controls panel - below video in fixed area */
+    #controls-bar {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    
+    #controls-bar .group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    #controls-bar .divider {
+      width: 1px;
+      height: 24px;
+      background: #444;
+    }
+    
+    /* Scrollable content below fixed video */
+    #content-area {
+      margin-top: 520px; /* video height + padding */
+      padding: 20px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .section {
+      background: #252542;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .section h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #fff;
+      font-size: 1rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+    
+    input[type="text"], input[type="number"] {
+      padding: 8px 10px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    button.primary {
+      background: #6366f1;
+      color: white;
+    }
+    
+    button.primary:hover {
+      background: #5558e3;
+    }
+    
+    button.secondary {
+      background: #374151;
+      color: white;
+    }
+    
+    button.secondary:hover {
+      background: #4b5563;
+    }
+    
+    button.danger {
+      background: #dc2626;
+      color: white;
+    }
+    
+    button.danger:hover {
+      background: #b91c1c;
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    button.active {
+      background: #6366f1;
+    }
+    
+    .time-display {
+      font-family: monospace;
+      background: #1a1a2e;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+    
+    /* URL input section */
+    #url-section {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    #url-section input {
+      flex: 1;
+      max-width: 400px;
+    }
+    
+    /* Crop preview and controls */
+    .capture-row {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    
+    #capture-preview-container {
+      flex: 1;
+      min-height: 100px;
+      max-height: 200px;
+      background: #1a1a2e;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      overflow: hidden;
+    }
+    
+    #capture-preview-container img {
+      max-width: 100%;
+      max-height: 200px;
+    }
+    
+    .crop-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      min-width: 180px;
+    }
+    
+    .crop-controls input {
+      width: 100%;
+    }
+    
+    /* Sync settings */
+    .settings-row {
+      display: flex;
+      gap: 15px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    
+    .settings-row > div {
+      min-width: 120px;
+    }
+    
+    /* Last result display */
+    #last-result {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+    
+    #last-result .result-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    
+    #last-result img {
+      max-height: 60px;
+      border-radius: 4px;
+    }
+    
+    #last-result .result-info {
+      flex: 1;
+    }
+    
+    #last-result .result-info span {
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    #last-result .label {
+      color: #888;
+      font-size: 0.8rem;
+    }
+    
+    #last-result .value {
+      font-family: monospace;
+      font-size: 1.1rem;
+    }
+    
+    /* Results table */
+    #results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+    
+    #results-table th,
+    #results-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #374151;
+    }
+    
+    #results-table th {
+      background: #1a1a2e;
+      color: #888;
+      font-weight: 500;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+    
+    #results-table td {
+      font-family: monospace;
+    }
+    
+    #results-table td img {
+      max-height: 30px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    #results-table td img:hover {
+      transform: scale(2);
+      position: relative;
+      z-index: 100;
+    }
+    
+    .status {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    
+    .status.success {
+      background: #065f46;
+      color: #6ee7b7;
+    }
+    
+    .status.error {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #374151;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    
+    .progress-bar-fill {
+      height: 100%;
+      background: #6366f1;
+      transition: width 0.3s;
+    }
+    
+    #status-text {
+      color: #888;
+      font-size: 0.85rem;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    /* Region selector overlay */
+    #region-selector-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10000;
+    }
+    
+    .region-selector-instructions {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #6366f1;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      z-index: 10002;
+    }
+    
+    #region-selector-canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 95vw;
+      max-height: 85vh;
+      border: 2px solid #6366f1;
+      border-radius: 4px;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+  <!-- Fixed Video Area -->
+  <div id="video-area">
+    <!-- URL Input (hidden after video loads) -->
+    <div id="url-section">
+      <input type="text" id="youtube-url" placeholder="Paste YouTube URL and press Enter..." />
+      <button class="primary" id="load-video-btn">Load</button>
+    </div>
+    
+    <!-- Video viewport -->
+    <div id="video-viewport" class="hidden">
+      <div id="video-container">
+        <div id="player"></div>
+      </div>
+    </div>
+    
+    <!-- Controls bar (shown after video loads) -->
+    <div id="controls-bar" class="hidden">
+      <!-- Playback controls -->
+      <div class="group">
+        <button class="secondary" id="seek-back-60">-60s</button>
+        <button class="secondary" id="seek-back-10">-10s</button>
+        <button class="secondary" id="play-pause-btn">Play</button>
+        <button class="secondary" id="seek-fwd-10">+10s</button>
+        <button class="secondary" id="seek-fwd-60">+60s</button>
+        <span class="time-display"><span id="current-time">0:00</span> / <span id="duration">0:00</span></span>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <!-- Video size/pan -->
+      <div class="group">
+        <input type="number" id="video-width" value="1280" style="width: 70px;" title="Video width" />
+        <span style="color: #666;">×</span>
+        <input type="number" id="video-height" value="720" style="width: 70px;" title="Video height" />
+        <button class="secondary" id="apply-video-size-btn">Apply</button>
+        <button class="secondary" id="pan-mode-btn" title="Toggle pan mode">🖐</button>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <!-- Capture controls -->
+      <div class="group" id="capture-controls">
+        <button class="primary" id="start-capture-btn">Start Capture</button>
+        <button class="secondary" id="stop-capture-btn" disabled>Stop</button>
+        <button class="secondary" id="select-region-btn" disabled>Select Region</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrollable Content -->
+  <div id="content-area">
+    <!-- Screen Capture Setup (shown after capture starts) -->
+    <div class="section" id="capture-section" class="hidden">
+      <h2>📷 Capture Region</h2>
+      <div class="capture-row">
+        <div id="capture-preview-container">
+          <span>Select a region to capture</span>
+        </div>
+        <div class="crop-controls" id="crop-controls">
+          <div>
+            <label>X</label>
+            <input type="number" id="crop-x" value="0" min="0" />
+          </div>
+          <div>
+            <label>Y</label>
+            <input type="number" id="crop-y" value="0" min="0" />
+          </div>
+          <div>
+            <label>Width</label>
+            <input type="number" id="crop-width" value="200" min="1" />
+          </div>
+          <div>
+            <label>Height</label>
+            <input type="number" id="crop-height" value="50" min="1" />
+          </div>
+          <div style="grid-column: span 2;">
+            <button class="secondary" style="width: 100%;" id="update-crop-btn">Update</button>
+          </div>
+          <div style="grid-column: span 2;">
+            <button class="secondary" style="width: 100%;" id="test-capture-btn">Test Capture</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sync Settings & Run -->
+    <div class="section" id="sync-section">
+      <h2>⚡ Sync Settings</h2>
+      <div class="settings-row">
+        <div>
+          <label>OCR Service URL</label>
+          <input type="text" id="ocr-url" value="http://localhost:8730" style="width: 200px;" />
+        </div>
+        <div>
+          <label>Interval (sec)</label>
+          <input type="number" id="interval" value="60" min="1" style="width: 80px;" />
+        </div>
+        <div>
+          <label>Start (sec)</label>
+          <input type="number" id="start-time" value="0" min="0" style="width: 80px;" />
+        </div>
+        <div>
+          <label>End (sec, 0=end)</label>
+          <input type="number" id="end-time" value="0" min="0" style="width: 80px;" />
+        </div>
+        <div>
+          <button class="primary" id="start-sync-btn" disabled>Start Sync</button>
+          <button class="danger" id="stop-sync-btn" disabled>Stop</button>
+        </div>
+      </div>
+      
+      <div id="sync-progress" class="hidden">
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div id="status-text"></div>
+      </div>
+      
+      <!-- Last result preview -->
+      <div id="last-result" class="hidden">
+        <div class="result-row">
+          <img id="last-result-img" src="" alt="Last capture" />
+          <div class="result-info">
+            <span class="label">Video Time</span>
+            <span class="value" id="last-result-video-time">-</span>
+          </div>
+          <div class="result-info">
+            <span class="label">Server Time</span>
+            <span class="value" id="last-result-server-time">-</span>
+          </div>
+          <div class="result-info">
+            <span class="label">OCR Text</span>
+            <span class="value" id="last-result-ocr">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="section" id="results-section">
+      <h2>📊 Results</h2>
+      <div id="no-results" style="color: #666; text-align: center; padding: 20px;">
+        No results yet
+      </div>
+      <table id="results-table" class="hidden">
+        <thead>
+          <tr>
+            <th>Video Time</th>
+            <th>Image</th>
+            <th>Server Time</th>
+            <th>Raw OCR</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+      <div class="export-buttons hidden" id="export-buttons">
+        <button class="secondary" id="export-json-btn">Export JSON</button>
+        <button class="secondary" id="export-csv-btn">Export CSV</button>
+        <button class="secondary" id="clear-results-btn">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Region selector overlay -->
+  <div id="region-selector-overlay" class="hidden">
+    <div class="region-selector-instructions">
+      Click and drag to select the clock region. Press Escape to cancel.
+    </div>
+    <canvas id="region-selector-canvas"></canvas>
+  </div>
+  
+  <!-- Hidden elements for capture -->
+  <video id="capture-video" style="display: none;" autoplay></video>
+  <canvas id="capture-canvas" style="display: none;"></canvas>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="app.js"></script>
+</body>
+</html>

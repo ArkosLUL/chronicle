@@ -15,6 +15,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
 import { EventsPanel, type EventsPanelType, type PanelContext, type EntitySelection } from "./EventsPanels";
+import { PanelTimingProvider, PanelTimingDisplay, PanelTimingResetter } from "./EventsPanels/PanelTimingContext";
 
 // ============================================================================
 // Formatting helpers
@@ -762,32 +763,42 @@ function EncounterDetail({
         </Collapsible>
       </Tabs>
       {/* Events Panels - 2x2 grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <EventsPanel
-          panelType={eventsPanel1Type}
-          onPanelTypeChange={setEventsPanel1Type}
-          durationMs={totalDurationMs}
-          context={panelContext}
-        />
-        <EventsPanel
-          panelType={eventsPanel2Type}
-          onPanelTypeChange={setEventsPanel2Type}
-          durationMs={totalDurationMs}
-          context={panelContext}
-        />
-        <EventsPanel
-          panelType={eventsPanel3Type}
-          onPanelTypeChange={setEventsPanel3Type}
-          durationMs={totalDurationMs}
-          context={panelContext}
-        />
-        <EventsPanel
-          panelType={eventsPanel4Type}
-          onPanelTypeChange={setEventsPanel4Type}
-          durationMs={totalDurationMs}
-          context={panelContext}
-        />
-      </div>
+      <PanelTimingProvider panelCount={4}>
+        <PanelTimingResetter encounters={encounters} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <EventsPanel
+            panelType={eventsPanel1Type}
+            onPanelTypeChange={setEventsPanel1Type}
+            durationMs={totalDurationMs}
+            context={panelContext}
+            panelIndex={0}
+          />
+          <EventsPanel
+            panelType={eventsPanel2Type}
+            onPanelTypeChange={setEventsPanel2Type}
+            durationMs={totalDurationMs}
+            context={panelContext}
+            panelIndex={1}
+          />
+          <EventsPanel
+            panelType={eventsPanel3Type}
+            onPanelTypeChange={setEventsPanel3Type}
+            durationMs={totalDurationMs}
+            context={panelContext}
+            panelIndex={2}
+          />
+          <EventsPanel
+            panelType={eventsPanel4Type}
+            onPanelTypeChange={setEventsPanel4Type}
+            durationMs={totalDurationMs}
+            context={panelContext}
+            panelIndex={3}
+          />
+        </div>
+        <div className="mt-4 flex justify-end">
+          <PanelTimingDisplay />
+        </div>
+      </PanelTimingProvider>
     </div>
   );
 }

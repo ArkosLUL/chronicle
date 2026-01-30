@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card/Card";
 import { BreakoutHoverProvider } from "@/components/ui/AbilityBreakout";
 import { Switch } from "@/components/ui/Switch/Switch";
 import { usePanelAggregation } from "./usePanelAggregation";
+import { usePanelTiming } from "./PanelTimingContext";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
 
@@ -56,6 +57,8 @@ export interface EventsPanelProps {
   onPanelTypeChange: (type: EventsPanelType) => void;
   durationMs: number;
   context: PanelContext;
+  /** Unique index for timing tracking (0-3 for 4 panels) */
+  panelIndex: number;
 }
 
 export function EventsPanel({
@@ -63,6 +66,7 @@ export function EventsPanel({
   onPanelTypeChange,
   durationMs,
   context,
+  panelIndex,
 }: EventsPanelProps) {
   const [checkboxChecked, setCheckboxChecked] = useState(false);
   const panel = PANELS[panelType];
@@ -82,6 +86,11 @@ export function EventsPanel({
     panel,
     context,
   });
+  
+  // Report timing when panel finishes loading
+  // Use processingTimeMs as indicator - it's only set after actual processing completes
+  const isDone = processingTimeMs !== null;
+  usePanelTiming(`panel-${panelIndex}`, isDone);
 
   return (
     <BreakoutHoverProvider>

@@ -429,9 +429,14 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
       >
         <div id="yt-overlay-player" className="w-full h-full" />
         
+        {/* Transparent overlay during drag/resize to capture mouse events over iframe */}
+        {(isDragging || isResizing) && (
+          <div className="absolute inset-0 z-10" />
+        )}
+        
         {/* Resize handle */}
         <div
-          className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center bg-muted/80 rounded-tl"
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center bg-muted/80 rounded-tl z-20"
           onMouseDown={handleResizeStart}
         >
           <GripHorizontal className="h-3 w-3 text-muted-foreground rotate-[-45deg]" />

@@ -2,12 +2,14 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -92,4 +94,55 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, db2sdk.WowDecoratedInstance(inst, units, players, encounters, fights))
+}
+
+func (api *API) PostInstanceYoutube(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	inst := httpmw.Instance(ctx)
+	db := api.Opts.DB
+
+	var req chroniclesdk.Video
+	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	err := db.InsertStampedYoutubeVideo(ctx, database.InsertStampedYoutubeVideoParams{
+		LogInstanceID: inst.ID,
+		CreatedAt:     database.Timestamptz(time.Now()),
+		ExportedAt:    database.Timestamptz(req.ExportedAt),
+		VideoUrl:      req.URL,
+		Payload:       slice.List(req.Results, db2sdk.VideoTimestampToDB),
+	})
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to post youtube video for instance",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.Response{
+		Message: "Youtube video posted successfully",
+	})
+}
+
+func (api *API) GetInstanceYoutube(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	inst := httpmw.Instance(ctx)
+	db := api.Opts.DB
+
+	data, err := db.GetInstanceYoutubeData(ctx, inst.ID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch youtube videos for instance",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, db2sdk.Video(data))
 }

@@ -109,3 +109,34 @@ func (a Periods) Value() (driver.Value, error) {
 	}
 	return string(b), nil
 }
+
+type Video struct {
+	URL        string           `json:"url"`
+	ExportedAt time.Time        `json:"exported_at"`
+	Results    []VideoTimestamp `json:"results"`
+}
+
+type VideoTimestamp struct {
+	VideoTimeSeconds int    `json:"video_time_seconds"`
+	RawOCR           string `json:"raw_ocr"`
+	// Need to convert to timezone, is like "17:56:08"
+	ServerTime string `json:"server_time"`
+	Confidence int    `json:"confidence"`
+}
+
+func (t *Video) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(v), &t)
+	case []byte:
+		return json.Unmarshal(v, &t)
+	case json.RawMessage:
+		return json.Unmarshal(v, &t)
+	}
+
+	return xerrors.Errorf("unexpected type %T", src)
+}
+
+func (t Video) Value() (driver.Value, error) {
+	return json.Marshal(t)
+}

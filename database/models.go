@@ -572,6 +572,14 @@ type LogInstanceUnit struct {
 	OwnerGuid  *guid.GUID `db:"owner_guid" json:"owner_guid"`
 }
 
+type LogInstanceYoutubeTimestamped struct {
+	LogInstanceID uuid.UUID          `db:"log_instance_id" json:"log_instance_id"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ExportedAt    pgtype.Timestamptz `db:"exported_at" json:"exported_at"`
+	VideoUrl      string             `db:"video_url" json:"video_url"`
+	Payload       []VideoTimestamp   `db:"payload" json:"payload"`
+}
+
 // A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.
 type ParsedLogGroup struct {
 	ID uuid.UUID `db:"id" json:"id"`

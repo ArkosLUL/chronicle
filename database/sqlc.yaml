@@ -42,3 +42,6 @@ sql:
               type: "Periods"
           - column: "log_instance_encounters.remaining"
             go_type: "github.com/Emyrk/chronicle/combatlog/parser/guid.GUIDs"
+          - column: "log_instance_youtube_timestamped.payload"
+            go_type:
+              type: "[]VideoTimestamp"

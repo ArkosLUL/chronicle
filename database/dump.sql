@@ -190,6 +190,14 @@ CREATE TABLE log_instance_units (
 
 COMMENT ON TABLE log_instance_units IS 'Stores all units (NPCs, not players) that participated in an instance.';
 
+CREATE TABLE log_instance_youtube_timestamped (
+    log_instance_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    exported_at timestamp with time zone DEFAULT now() NOT NULL,
+    video_url text NOT NULL,
+    payload jsonb NOT NULL
+);
+
 CREATE TABLE log_instances (
     id uuid NOT NULL,
     realm_id uuid NOT NULL,
@@ -367,6 +375,9 @@ ALTER TABLE ONLY log_instance_encounters
 ALTER TABLE ONLY log_instance_units
     ADD CONSTRAINT log_instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
 
+ALTER TABLE ONLY log_instance_youtube_timestamped
+    ADD CONSTRAINT log_instance_youtube_timestamped_pkey PRIMARY KEY (log_instance_id);
+
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
 
@@ -459,6 +470,9 @@ ALTER TABLE ONLY log_instance_players
 
 ALTER TABLE ONLY log_instance_units
     ADD CONSTRAINT log_instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instance_youtube_timestamped
+    ADD CONSTRAINT log_instance_youtube_timestamped_log_instance_id_fkey FOREIGN KEY (log_instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES parsed_log_group(id) ON DELETE CASCADE;

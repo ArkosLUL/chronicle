@@ -120,6 +120,12 @@ func (api *API) Routes() chi.Router {
 							r.Use(httpmw.InstanceIDMiddleware(api.Opts.DB))
 							r.Get("/events/{type}", api.InstanceEvents)
 							r.Get("/", api.Instance)
+
+              r.Get("/youtube", api.GetInstanceYoutube)
+              r.Group(func(r chi.Router) {
+                r.Use(api.Auth.Authenticated(false))
+                r.Post("/youtube", api.PostInstanceYoutube)
+              })
 						})
 					})
 				})

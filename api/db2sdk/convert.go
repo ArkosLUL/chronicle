@@ -152,3 +152,37 @@ func JobStatus(status rivertype.JobRow) chroniclesdk.JobStatus {
 		Output:      status.Output(),
 	}
 }
+
+func Video(video database.LogInstanceYoutubeTimestamped) chroniclesdk.Video {
+	return chroniclesdk.Video{
+		URL:        video.VideoUrl,
+		ExportedAt: video.ExportedAt.Time,
+		Results:    slice.List(video.Payload, VideoTimestamp),
+	}
+}
+
+func VideoToDB(video chroniclesdk.Video) database.Video {
+	return database.Video{
+		URL:        video.URL,
+		ExportedAt: video.ExportedAt,
+		Results:    slice.List(video.Results, VideoTimestampToDB),
+	}
+}
+
+func VideoTimestampToDB(timestamp chroniclesdk.VideoTimestamp) database.VideoTimestamp {
+	return database.VideoTimestamp{
+		VideoTimeSeconds: timestamp.VideoTimeSeconds,
+		RawOCR:           timestamp.RawOCR,
+		ServerTime:       timestamp.ServerTime,
+		Confidence:       timestamp.Confidence,
+	}
+}
+
+func VideoTimestamp(timestamp database.VideoTimestamp) chroniclesdk.VideoTimestamp {
+	return chroniclesdk.VideoTimestamp{
+		VideoTimeSeconds: timestamp.VideoTimeSeconds,
+		RawOCR:           timestamp.RawOCR,
+		ServerTime:       timestamp.ServerTime,
+		Confidence:       timestamp.Confidence,
+	}
+}

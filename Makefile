@@ -110,3 +110,7 @@ gen/go:
 
 .PHONY: gen
 gen: gen/db gen/go database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
+
+.PHONY: ocr-server
+ocr-server:
+	docker run -p 8730:8080 --rm --name ocrserver -d ocrserver

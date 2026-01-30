@@ -7,6 +7,7 @@ import { LogsList } from "./pages/Logs/LogsList"
 import { LogDetail } from "./pages/Logs/LogDetail"
 import { InstancePage } from "./pages/Instance/InstancePage"
 import { ProtoDecode } from "./pages/Debug/ProtoDecode"
+import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
 import { 
   AccountLayout, 
   ProfileSettings, 
@@ -20,6 +21,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/youtube-sync" element={<YouTubeSyncPage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/empty" element={<Empty />} />

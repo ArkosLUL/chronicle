@@ -864,3 +864,51 @@ func (q *sqlQuerier) UpdateUserAuthSessionTokens(ctx context.Context, arg Update
 	)
 	return i, err
 }
+
+const getInstanceYoutubeData = `-- name: GetInstanceYoutubeData :one
+SELECT
+  log_instance_id, created_at, exported_at, video_url, payload
+FROM
+  log_instance_youtube_timestamped
+WHERE
+  log_instance_id = $1
+`
+
+func (q *sqlQuerier) GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (LogInstanceYoutubeTimestamped, error) {
+	row := q.db.QueryRow(ctx, getInstanceYoutubeData, logInstanceID)
+	var i LogInstanceYoutubeTimestamped
+	err := row.Scan(
+		&i.LogInstanceID,
+		&i.CreatedAt,
+		&i.ExportedAt,
+		&i.VideoUrl,
+		&i.Payload,
+	)
+	return i, err
+}
+
+const insertStampedYoutubeVideo = `-- name: InsertStampedYoutubeVideo :exec
+INSERT INTO
+  log_instance_youtube_timestamped (log_instance_id, created_at, exported_at, video_url, payload)
+VALUES
+  ($1, $2, $3, $4, $5)
+`
+
+type InsertStampedYoutubeVideoParams struct {
+	LogInstanceID uuid.UUID          `db:"log_instance_id" json:"log_instance_id"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ExportedAt    pgtype.Timestamptz `db:"exported_at" json:"exported_at"`
+	VideoUrl      string             `db:"video_url" json:"video_url"`
+	Payload       []VideoTimestamp   `db:"payload" json:"payload"`
+}
+
+func (q *sqlQuerier) InsertStampedYoutubeVideo(ctx context.Context, arg InsertStampedYoutubeVideoParams) error {
+	_, err := q.db.Exec(ctx, insertStampedYoutubeVideo,
+		arg.LogInstanceID,
+		arg.CreatedAt,
+		arg.ExportedAt,
+		arg.VideoUrl,
+		arg.Payload,
+	)
+	return err
+}

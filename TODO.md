@@ -13,3 +13,5 @@
 - Rotation panel to show casts
   - cancelled/interrupted should also be shown
 - Detect out of date super wow, that is missing Raw logs
+- Corpse release should be tracked and count as a wipe, but an indicator
+

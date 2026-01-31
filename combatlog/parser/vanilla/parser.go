@@ -177,6 +177,7 @@ func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message,
 			p.fCombatCount,                  // ✓
 			p.fRealm,                        // ✓
 			p.fPlayerPosition,               // ✓
+			p.fClockInfo,                    // ✓
 			p.fBugDamageSpellHitOrCrit,      // ✓
 			p.fSpellCastAttempt,             // ✓
 			p.fGain,                         // ✓

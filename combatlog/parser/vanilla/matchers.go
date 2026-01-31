@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -80,7 +81,6 @@ func (p *Parser) fUnitInfo(ts time.Time, content string) ([]messages.Message, er
 
 	ut, err := unitinfo.ParseUnitInfo(content)
 	if err != nil {
-		fmt.Println(content)
 		return nil, fmt.Errorf("failed to parse unit info: %v", err)
 	}
 
@@ -151,6 +151,22 @@ func (p *Parser) fPlayerPosition(ts time.Time, content string) ([]messages.Messa
 	return set(messages.PlayerPosition{
 		MessageBase:    messages.Base(ts),
 		PlayerPosition: ut,
+	}), nil
+}
+
+func (p *Parser) fClockInfo(ts time.Time, content string) ([]messages.Message, error) {
+	if !strings.HasPrefix(content, realmclock.PrefixClockInfo) {
+		return messages.NotHandled()
+	}
+
+	ci, err := realmclock.ParseClockInfo(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse unit info: %v", err)
+	}
+
+	return set(messages.Clock{
+		MessageBase: messages.Base(ts),
+		Info:        ci,
 	}), nil
 }
 

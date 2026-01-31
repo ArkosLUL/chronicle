@@ -10,6 +10,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
@@ -70,6 +71,13 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 		am, bm := a.Date.UnixMilli(), b.Date.UnixMilli()
 		if am != bm {
 			return int(am - bm)
+		}
+
+		_, acl := realmclock.IsClockInfo(a.Content)
+		_, bcl := realmclock.IsClockInfo(b.Content)
+		clc := compareBooleans(acl, bcl)
+		if clc != 0 {
+			return clc
 		}
 
 		_, az := zone.IsZoneInfo(a.Content)

@@ -11,6 +11,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
@@ -156,6 +157,13 @@ type CombatCount struct {
 }
 
 func (c CombatCount) Affects() []guid.GUID { return []guid.GUID{} }
+
+type Clock struct {
+	MessageBase
+	realmclock.Info
+}
+
+func (c Clock) Affects() []guid.GUID { return []guid.GUID{} }
 
 type ResourceChange struct {
 	MessageBase

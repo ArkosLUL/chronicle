@@ -58,7 +58,7 @@ func SortCmd() *serpent.Command {
 				}
 			}
 
-			smry, err := sorter.SortLogs(ctx, logger, files[0], outFile)
+			smry, _, err := sorter.SortLogs(ctx, logger, files[0], outFile)
 			if err != nil {
 				return fmt.Errorf("sorting logs: %w", err)
 			}

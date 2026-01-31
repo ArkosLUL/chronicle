@@ -27,6 +27,9 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	// 10 man
 	r.Register(wrap(instances.TowerOfKarazhan))
 
+	// 20 man
+	r.Register(wrap(instances.ZulGurub))
+
 	// 40 man
 	r.Register(wrap(instances.MoltenCore))
 	r.Register(wrap(instances.Onyxia))

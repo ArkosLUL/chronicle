@@ -219,3 +219,68 @@ func RagefireChasmHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func ZulGurubHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		11352: "Gurubashi Berserker",
+		11391: "Vilebranch Speaker",
+		14881: "Spider",
+		11350: "Gurubashi Axe Thrower",
+		11370: "Razzashi Broodwidow",
+		15010: "Jungle Toad",
+		14826: "Sacrificed Troll",
+		11360: "Zulian Cub",
+		14750: "Gurubashi Bat Rider",
+		11355: "Gurubashi Warrior",
+		2914:  "Snake",
+		11361: "Zulian Tiger",
+		11368: "Bloodseeker Bat",
+		11357: "Son of Hakkar",
+		14825: "Withered Mistress",
+		11388: "Witherbark Speaker",
+		15041: "Spawn of Mar'li",
+		11339: "Hakkari Shadow Hunter",
+		14880: "Razzashi Skitterer",
+		14507: "High Priest Venoxis",
+		11340: "Hakkari Blood Priest",
+		11356: "Gurubashi Champion",
+		11351: "Gurubashi Headhunter",
+		14883: "Voodoo Slave",
+		11374: "Hooktooth Frenzy",
+		14821: "Razzashi Raptor",
+		14882: "Atal'ai Mistress",
+		14532: "Razzashi Venombrood",
+		14884: "Parasitic Serpent",
+		14987: "Powerful Healing Ward",
+		15101: "Zulian Prowler",
+		15043: "Zulian Crocolisk",
+		11387: "Sandfury Speaker",
+		11830: "Hakkari Priest",
+		11353: "Gurubashi Blood Drinker",
+		11338: "Hakkari Shadowcaster",
+		11372: "Razzashi Adder",
+		11373: "Razzashi Cobra",
+		11371: "Razzashi Serpent",
+		11365: "Zulian Panther",
+		11359: "Soulflayer",
+		11831: "Hakkari Witch Doctor",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		11348: "High Priest Thekal", // "Zealot Zath"
+		11347: "High Priest Thekal", // "Zealot Lor'Khan"
+		14599: "High Priest Thekal",
+
+		14988: "Bloodlord Mandokir", // "Ohgan", the mount
+		11382: "Bloodlord Mandokir",
+
+		14510: "High Priestess Mar'li",
+		14517: "High Priestess Jeklik",
+		14515: "High Priestess Arlokk",
+		11380: "Jin'do the Hexxer",
+		15114: "Gahz'ranka",
+		14834: "Hakkar",
+	})
+	return hostile
+}

@@ -25,6 +25,10 @@ var characterFactories = []characterFactory{
 	NewRagnarosCharacter,
 	// Onyxia
 	NewOnyxiaCharacter,
+	// Zul'Gurub
+	NewHighPriestArlokk,
+	NewHighPriestMarli,
+	NewHighPriestessJeklik,
 }
 
 type Characters struct {

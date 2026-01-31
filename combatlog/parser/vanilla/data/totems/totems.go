@@ -105,6 +105,10 @@ func init() {
 		variant{nameOverride: "Corrupted Totem", id: 14667, duration: 0},
 		variant{nameOverride: "Corrupted Windfury Totem", id: 14666, duration: 0},
 	)
+
+	register("Powerful Healing Ward", 0,
+		variant{id: 14987, duration: 60 * time.Second * 4},
+	)
 }
 
 // Variants are like different ranks for example

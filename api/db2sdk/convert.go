@@ -174,6 +174,7 @@ func VideoTimestampToDB(timestamp chroniclesdk.VideoTimestamp) database.VideoTim
 		VideoTimeSeconds: timestamp.VideoTimeSeconds,
 		RawOCR:           timestamp.RawOCR,
 		ServerTime:       timestamp.ServerTime,
+		UTCTime:          timestamp.UTCTime,
 		Confidence:       timestamp.Confidence,
 	}
 }
@@ -184,5 +185,6 @@ func VideoTimestamp(timestamp database.VideoTimestamp) chroniclesdk.VideoTimesta
 		RawOCR:           timestamp.RawOCR,
 		ServerTime:       timestamp.ServerTime,
 		Confidence:       timestamp.Confidence,
+		UTCTime:          timestamp.UTCTime,
 	}
 }

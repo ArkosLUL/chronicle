@@ -121,6 +121,7 @@ type VideoTimestamp struct {
 	RawOCR           string `json:"raw_ocr"`
 	// Need to convert to timezone, is like "17:56:08"
 	ServerTime string `json:"server_time"`
+	UTCTime    string `json:"utc_time"`
 	Confidence int    `json:"confidence"`
 }
 

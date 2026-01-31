@@ -38,10 +38,13 @@ type Parser struct {
 }
 
 func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
+	// Single liner shared between scanner and parser so CLOCK_INFO from scanner
+	// propagates to parser for timestamp adjustments.
+	liner := lines.NewLiner()
 	return &Parser{
 		logger:     logger,
-		scanner:    merge.FromIOReader(lines.NewLiner(), r),
-		liner:      lines.NewLiner(),
+		scanner:    merge.FromIOReader(liner, r),
+		liner:      liner,
 		synthetics: synthetic.New(logger),
 		metrics: Metrics{
 			PreProcessDuration: 0,

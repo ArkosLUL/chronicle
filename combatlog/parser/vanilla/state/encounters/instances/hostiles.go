@@ -233,7 +233,6 @@ func ZulGurubHostiles() map[uint32]Identity {
 		11360: "Zulian Cub",
 		14750: "Gurubashi Bat Rider",
 		11355: "Gurubashi Warrior",
-		2914:  "Snake",
 		11361: "Zulian Tiger",
 		11368: "Bloodseeker Bat",
 		11357: "Son of Hakkar",

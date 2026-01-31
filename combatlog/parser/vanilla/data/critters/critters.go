@@ -6,6 +6,7 @@ var critters = map[uint32]string{
 	4075: "Rat",
 	7395: "Cockroach",
 	4076: "Roach",
+	2914: "Snake",
 }
 
 func IsCritter(id guid.GUID) bool {

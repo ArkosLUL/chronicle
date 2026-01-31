@@ -29,6 +29,11 @@ func NewLiner() *Liner {
 	}
 }
 
+func (l *Liner) WithRealmClockInfo(info *realmclock.Info) *Liner {
+	l.realm = info
+  return l
+}
+
 func (l *Liner) WithoutTimeAdjustments() *Liner {
 	l.disableTimeAdjust = true
 	return l

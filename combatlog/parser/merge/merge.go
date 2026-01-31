@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
 type Scan func() (time.Time, string, error)
@@ -43,10 +44,10 @@ func WithMiddleWare(mw MiddleWare) Option {
 	}
 }
 
-func (m *Merger) LineScanner(ctx context.Context, formatted io.Reader, raw io.Reader) (*lines.Liner, Scan, error) {
+func (m *Merger) LineScanner(ctx context.Context, ri *realmclock.Info, formatted io.Reader, raw io.Reader) (*lines.Liner, Scan, error) {
 	f := bufio.NewScanner(formatted)
 	r := bufio.NewScanner(raw)
-	l := lines.NewLiner()
+	l := lines.NewLiner().WithRealmClockInfo(ri)
 
 	merger, err := newInOrderMerger(ctx, l, f, r)
 	if err != nil {
@@ -73,7 +74,7 @@ func (m *Merger) LineScanner(ctx context.Context, formatted io.Reader, raw io.Re
 }
 
 func (m *Merger) MergeLogs(ctx context.Context, formatted io.Reader, raw io.Reader, writer io.Writer) error {
-	l, scan, err := m.LineScanner(ctx, formatted, raw)
+	l, scan, err := m.LineScanner(ctx, nil, formatted, raw)
 	if err != nil {
 		return fmt.Errorf("create line scanner: %w", err)
 	}

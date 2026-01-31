@@ -28,7 +28,7 @@ type logLine struct {
 }
 
 // SortLogs reads log lines from input, sorts them by timestamp, and writes them to output.
-func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output io.Writer) (SortSummary, error) {
+func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output io.Writer) (SortSummary, *realmclock.Info, error) {
 	sum := SortSummary{}
 	buffer := make([]logLine, 0)
 	var firstRealmClock *realmclock.Info
@@ -39,7 +39,7 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 	c := int64(0)
 	for sc.Scan() {
 		if ctx.Err() != nil {
-			return sum, ctx.Err()
+			return sum, firstRealmClock, ctx.Err()
 		}
 
 		txt := sc.Text()
@@ -127,17 +127,17 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 
 	for _, line := range buffer {
 		if ctx.Err() != nil {
-			return sum, ctx.Err()
+			return sum, firstRealmClock, ctx.Err()
 		}
 
 		_, err := output.Write([]byte(liner.FmtLine(line.Date, line.Content)))
 		if err != nil {
-			return sum, err
+			return sum, firstRealmClock, err
 		}
 		_, _ = output.Write([]byte("\n"))
 	}
 
-	return sum, nil
+	return sum, firstRealmClock, nil
 }
 
 func compareBooleans(a, b bool) int {

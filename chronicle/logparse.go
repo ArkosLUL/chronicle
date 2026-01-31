@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -69,7 +70,7 @@ type WorkerLogParse struct {
 	river.WorkerDefaults[ArgsLogParse]
 }
 
-func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (io.Reader, error) {
+func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (io.Reader, *realmclock.Info, error) {
 	storage := w.parent.Storage
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 
@@ -79,20 +80,20 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) 
 		if errors.Is(err, os.ErrNotExist) {
 			err = river.JobCancel(err)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
 	fileData := &bytes.Buffer{}
-	_, err = sorter.SortLogs(ctx, logger, bytes.NewReader(fd), fileData)
+	_, ri, err := sorter.SortLogs(ctx, logger, bytes.NewReader(fd), fileData)
 	if err != nil {
-		return nil, fmt.Errorf("sort log file %s: %w", fileID, err)
+		return nil, ri, fmt.Errorf("sort log file %s: %w", fileID, err)
 	}
 
 	// Help GC
 	//nolint:ineffassign
 	fd = nil
 
-	return fileData, nil
+	return fileData, ri, nil
 }
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
@@ -113,17 +114,22 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return river.JobCancel(fmt.Errorf("log group does not have exactly 2 files, has %d", len(files)))
 	}
 
+	var ri *realmclock.Info
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 	rdrs := make([]io.Reader, len(files))
 	for i, file := range files {
-		rdrs[i], err = w.loadAndSortFile(ctx, file.ID)
+		var fri *realmclock.Info
+		rdrs[i], fri, err = w.loadAndSortFile(ctx, file.ID)
 		if err != nil {
 			return err
+		}
+		if ri == nil && fri != nil {
+			ri = fri
 		}
 	}
 
 	m := vanilla.Merger(logger)
-	liner, scan, err := m.LineScanner(ctx, rdrs[0], rdrs[1])
+	liner, scan, err := m.LineScanner(ctx, ri, rdrs[0], rdrs[1])
 	if err != nil {
 		return fmt.Errorf("create line scanner: %w", err)
 	}

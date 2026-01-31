@@ -42,7 +42,7 @@ func ParseCmd() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, files[0], files[1])
+			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
 			if err != nil {
 				return err
 			}
@@ -107,7 +107,7 @@ func CreaturesCmd() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, files[0], files[1])
+			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
 			if err != nil {
 				return err
 			}

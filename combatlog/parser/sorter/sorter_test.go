@@ -30,7 +30,7 @@ func TestSortByTimestamp(t *testing.T) {
 
 		logger := testutil.Logger(t)
 		var out bytes.Buffer
-		_, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(cpy, "\n")), &out)
+		_, _, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(cpy, "\n")), &out)
 		require.NoError(t, err)
 
 		got := removeEmpty(strings.Split(out.String(), "\n"))
@@ -61,7 +61,7 @@ func TestPriorityOrder(t *testing.T) {
 
 		logger := testutil.Logger(t)
 		var out bytes.Buffer
-		_, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(cpy, "\n")), &out)
+		_, _, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(cpy, "\n")), &out)
 		require.NoError(t, err)
 
 		got := removeEmpty(strings.Split(out.String(), "\n"))
@@ -85,7 +85,7 @@ func TestOriginalOrderPreserved(t *testing.T) {
 	// Without shuffling, order should be preserved
 	logger := testutil.Logger(t)
 	var out bytes.Buffer
-	_, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(logs, "\n")), &out)
+	_, _, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(logs, "\n")), &out)
 	require.NoError(t, err)
 
 	got := removeEmpty(strings.Split(out.String(), "\n"))
@@ -115,7 +115,7 @@ func TestMixedTimestampsAndPriorities(t *testing.T) {
 
 	logger := testutil.Logger(t)
 	var out bytes.Buffer
-	_, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(input, "\n")), &out)
+	_, _, err := sorter.SortLogs(t.Context(), logger, strings.NewReader(strings.Join(input, "\n")), &out)
 	require.NoError(t, err)
 
 	got := removeEmpty(strings.Split(out.String(), "\n"))

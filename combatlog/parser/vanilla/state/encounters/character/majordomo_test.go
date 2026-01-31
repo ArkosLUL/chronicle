@@ -26,7 +26,7 @@ func TestMajordomo(t *testing.T) {
 	logger := testutil.Logger(t)
 
 	m := merge.NewMerger(logger)
-	liner, scans, err := m.LineScanner(ctx, raw, logs)
+	liner, scans, err := m.LineScanner(ctx, nil, raw, logs)
 	require.NoError(t, err)
 
 	p := vanilla.NewFromScanner(logger, liner, scans)

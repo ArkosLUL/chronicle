@@ -55,8 +55,10 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 		})
 		c++
 
-		if firstRealmClock == nil && liner.RealmClockInfo() != nil {
-			firstRealmClock = liner.RealmClockInfo()
+		if firstRealmClock == nil {
+			if ri, err := realmclock.ParseClockInfo(content); err == nil {
+				firstRealmClock = &ri
+			}
 		}
 
 		if ts.Before(sum.Earliest) || sum.Earliest.IsZero() {

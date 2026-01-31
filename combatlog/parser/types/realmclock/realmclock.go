@@ -70,5 +70,6 @@ func (ci *Info) ParseAddonDate(dateStr string) (time.Time, error) {
 	if ci == nil {
 		return ts, nil
 	}
+
 	return ci.Adjust(ts), nil
 }

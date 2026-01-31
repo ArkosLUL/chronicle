@@ -106,16 +106,18 @@ func (l *Liner) parse(year int, line string) (time.Time, string, error) {
 		return ts, content, err
 	}
 
-	if _, ok := realmclock.IsClockInfo(content); ok {
-		info, err := realmclock.ParseClockInfo(content)
-		if err == nil {
-			l.realm = &info
+	if !l.disableTimeAdjust {
+		if _, ok := realmclock.IsClockInfo(content); ok {
+			info, err := realmclock.ParseClockInfo(content)
+			if err == nil {
+				l.realm = &info
+			}
 		}
-	}
 
-	if !l.disableTimeAdjust && l.realm != nil {
-		// Fix the timestamp.
-		ts = l.realm.Adjust(ts)
+		if l.realm != nil {
+			// Fix the timestamp.
+			ts = l.realm.Adjust(ts)
+		}
 	}
 
 	return ts, strings.TrimPrefix(parts[2], " "), err

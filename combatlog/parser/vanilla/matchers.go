@@ -48,7 +48,7 @@ func (p *Parser) fLoot(ts time.Time, content string) ([]messages.Message, error)
 		return messages.NotHandled()
 	}
 
-	li, err := loot.ParseLootInfo(content)
+	li, err := loot.ParseLootInfo(p.liner.RealmClockInfo(), content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse zone info: %v", err)
 	}
@@ -63,7 +63,7 @@ func (p *Parser) fZoneInfo(ts time.Time, content string) ([]messages.Message, er
 		return messages.NotHandled()
 	}
 
-	zi, err := zone.ParseZoneInfo(content)
+	zi, err := zone.ParseZoneInfo(p.liner.RealmClockInfo(), content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse zone info: %v", err)
 	}
@@ -79,7 +79,7 @@ func (p *Parser) fUnitInfo(ts time.Time, content string) ([]messages.Message, er
 		return messages.NotHandled()
 	}
 
-	ut, err := unitinfo.ParseUnitInfo(content)
+	ut, err := unitinfo.ParseUnitInfo(p.liner.RealmClockInfo(), content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse unit info: %v", err)
 	}
@@ -95,7 +95,7 @@ func (p *Parser) fCombatantInfo(ts time.Time, content string) ([]messages.Messag
 		return messages.NotHandled()
 	}
 
-	cbt, err := combatant.ParseCombatantInfo(content)
+	cbt, err := combatant.ParseCombatantInfo(p.liner.RealmClockInfo(), content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
 	}
@@ -127,7 +127,7 @@ func (p *Parser) fRealm(ts time.Time, content string) ([]messages.Message, error
 		return messages.NotHandled()
 	}
 
-	ut, err := realm.ParseRealmInfo(content)
+	ut, err := realm.ParseRealmInfo(p.liner.RealmClockInfo(), content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
 	}
@@ -143,7 +143,7 @@ func (p *Parser) fPlayerPosition(ts time.Time, content string) ([]messages.Messa
 		return messages.NotHandled()
 	}
 
-	ut, err := playerposition.ParsePlayerPosition(content)
+	ut, err := playerposition.ParsePlayerPosition(p.liner.RealmClockInfo(), content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse combatant info: %v", err)
 	}

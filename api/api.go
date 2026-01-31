@@ -121,11 +121,11 @@ func (api *API) Routes() chi.Router {
 							r.Get("/events/{type}", api.InstanceEvents)
 							r.Get("/", api.Instance)
 
-              r.Get("/youtube", api.GetInstanceYoutube)
-              r.Group(func(r chi.Router) {
-                r.Use(api.Auth.Authenticated(false))
-                r.Post("/youtube", api.PostInstanceYoutube)
-              })
+							r.Get("/youtube", api.GetInstanceYoutube)
+							r.Group(func(r chi.Router) {
+								r.Use(api.Auth.Authenticated(false))
+								r.Post("/youtube", api.PostInstanceYoutube)
+							})
 						})
 					})
 				})
@@ -139,7 +139,10 @@ func (api *API) Routes() chi.Router {
 
 	// River UI
 	r.Group(func(r chi.Router) {
-		r.Use(api.Auth.Authenticated(false))
+		r.Use(
+			api.Auth.AuthenticationMiddleware,
+			api.Auth.Authenticated(false),
+		)
 		r.Mount("/river", api.Chronicle.RiverUI())
 	})
 

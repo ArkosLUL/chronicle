@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
 const (
@@ -27,7 +28,7 @@ func (z Zone) ID() string {
 	return fmt.Sprintf("%s:%d", z.Name, z.InstanceID)
 }
 
-func ParseZoneInfo(content string) (Zone, error) {
+func ParseZoneInfo(ri *realmclock.Info, content string) (Zone, error) {
 	trimmed, ok := IsZoneInfo(content)
 	if !ok {
 		return Zone{}, fmt.Errorf("not a ZONE_INFO message")
@@ -40,7 +41,7 @@ func ParseZoneInfo(content string) (Zone, error) {
 	}
 
 	ts, name, id := parts[0], parts[1], parts[2]
-	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
+	seen, err := ri.ParseAddonDate(ts)
 	if err != nil {
 		return Zone{}, fmt.Errorf("invalid date format %q: %w", ts, err)
 	}

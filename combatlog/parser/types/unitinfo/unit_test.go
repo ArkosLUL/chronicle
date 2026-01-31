@@ -95,7 +95,7 @@ func TestParseUnitInfo(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.input, func(t *testing.T) {
 			t.Parallel()
-			got, err := unitinfo.ParseUnitInfo(c.input)
+			got, err := unitinfo.ParseUnitInfo(nil, c.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

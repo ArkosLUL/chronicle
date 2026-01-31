@@ -30,7 +30,7 @@ func TestParseRealmInfo(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.input, func(t *testing.T) {
 			t.Parallel()
-			got, err := realm.ParseRealmInfo(c.input)
+			got, err := realm.ParseRealmInfo(nil, c.input)
 			require.NoError(t, err)
 			require.Equal(t, c.exp, got)
 		})

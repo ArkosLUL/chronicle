@@ -31,7 +31,10 @@ type logLine struct {
 func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output io.Writer) (SortSummary, error) {
 	sum := SortSummary{}
 	buffer := make([]logLine, 0)
-	liner := lines.NewLiner()
+	var firstRealmClock *realmclock.Info
+
+	// Use original timestamps for sorting
+	liner := lines.NewLiner().WithoutTimeAdjustments()
 	sc := bufio.NewScanner(input)
 	c := int64(0)
 	for sc.Scan() {
@@ -51,6 +54,10 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 			idx:     c,
 		})
 		c++
+
+		if firstRealmClock == nil && liner.RealmClockInfo() != nil {
+			firstRealmClock = liner.RealmClockInfo()
+		}
 
 		if ts.Before(sum.Earliest) || sum.Earliest.IsZero() {
 			sum.Earliest = ts
@@ -103,6 +110,18 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 
 		return int(a.idx - b.idx)
 	})
+
+	// First thing we do is insert some heading logs
+	if len(buffer) > 0 && firstRealmClock != nil {
+		_, _ = output.Write([]byte(
+			// Knock some time off the first to guarantee it's first
+			liner.FmtLine(
+				buffer[0].Date.Add(time.Second*-10),
+				firstRealmClock.String(),
+			),
+		))
+		_, _ = output.Write([]byte("\n"))
+	}
 
 	for _, line := range buffer {
 		if ctx.Err() != nil {

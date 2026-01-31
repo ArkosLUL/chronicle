@@ -29,7 +29,7 @@ func TestParsePlayerPosition(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.input, func(t *testing.T) {
 			t.Parallel()
-			got, err := playerposition.ParsePlayerPosition(c.input)
+			got, err := playerposition.ParsePlayerPosition(nil, c.input)
 			require.NoError(t, err)
 			require.Equal(t, c.exp, got)
 		})

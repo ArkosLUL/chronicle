@@ -115,3 +115,18 @@ func TestJanuary(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, d.Month(), time.January)
 }
+
+func TestRealmTime(t *testing.T) {
+	t.Parallel()
+
+	liner := lines.NewLiner()
+
+	ci := `1/26 17:33:15.090 CLOCK_INFO: 26.01.26 17:33:15&26.01.26 11:33:15`
+	d, _, err := liner.Line(ci)
+	require.NoError(t, err)
+	require.Equal(t, 11, d.Hour())
+
+	d, _, err = liner.Line(`1/26 17:33:15.090  REALM_INFO: 26.01.26 17:33:15&1.18.0&7233&Dec 09 2025&Nordanaar`)
+	require.NoError(t, err)
+	require.Equal(t, 11, d.Hour())
+}

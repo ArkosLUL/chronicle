@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
 const (
@@ -24,7 +25,7 @@ type PlayerPosition struct {
 	Y    float64
 }
 
-func ParsePlayerPosition(content string) (PlayerPosition, error) {
+func ParsePlayerPosition(ri *realmclock.Info, content string) (PlayerPosition, error) {
 	trimmed, ok := IsPlayerPosition(content)
 	if !ok {
 		return PlayerPosition{}, fmt.Errorf("not a PLAYER_POSITION message")
@@ -37,7 +38,7 @@ func ParsePlayerPosition(content string) (PlayerPosition, error) {
 	}
 
 	ts, guid, xStr, yStr := parts[0], parts[1], parts[2], parts[3]
-	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
+	seen, err := ri.ParseAddonDate(ts)
 	if err != nil {
 		return PlayerPosition{}, fmt.Errorf("invalid date format %q: %w", ts, err)
 	}

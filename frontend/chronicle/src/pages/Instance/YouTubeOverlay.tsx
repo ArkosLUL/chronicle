@@ -41,11 +41,12 @@ function parseTimeToSeconds(timeStr: string): number | null {
 }
 
 /**
- * Extract time-of-day in seconds from an ISO timestamp
+ * Extract time-of-day in seconds from an ISO timestamp.
+ * Uses UTC to match the utc_time field from YouTube sync data.
  */
 function isoToTimeOfDaySeconds(isoString: string): number {
   const date = new Date(isoString);
-  return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  return date.getUTCHours() * 3600 + date.getUTCMinutes() * 60 + date.getUTCSeconds();
 }
 
 /**
@@ -59,9 +60,10 @@ function calculateVideoTime(
   if (timestamps.length === 0) return null;
 
   // Convert all timestamps to seconds and pair with video time
+  // Use utc_time if available (preferred), otherwise fall back to server_time
   const points = timestamps
     .map((ts) => ({
-      serverSeconds: parseTimeToSeconds(ts.server_time),
+      serverSeconds: parseTimeToSeconds(ts.utc_time ?? ts.server_time),
       videoSeconds: ts.video_time_seconds,
     }))
     .filter((p): p is { serverSeconds: number; videoSeconds: number } => 

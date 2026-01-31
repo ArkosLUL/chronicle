@@ -8,6 +8,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
 const (
@@ -38,7 +39,7 @@ func (c *Combatant) IsMe() bool {
 	return c.Talents != nil && c.Guid.IsPlayer()
 }
 
-func ParseCombatantInfo(content string) (Combatant, error) {
+func ParseCombatantInfo(ri *realmclock.Info, content string) (Combatant, error) {
 	var empty Combatant
 
 	nilToEmpty := func(s string) string {
@@ -58,7 +59,7 @@ func ParseCombatantInfo(content string) (Combatant, error) {
 		return empty, fmt.Errorf("insufficient arguments in COMBATANT_INFO message, got %d, want at least 27", len(info))
 	}
 
-	ts, err := time.ParseInLocation(types.AddonDateFormat, info.timestamp(), time.UTC)
+	ts, err := ri.ParseAddonDate(info.timestamp())
 	if err != nil {
 		return empty, fmt.Errorf("invalid timestamp format in COMBATANT_INFO message: %v", err)
 	}

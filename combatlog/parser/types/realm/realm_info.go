@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
 const (
@@ -25,7 +26,7 @@ type Info struct {
 	RealmName string
 }
 
-func ParseRealmInfo(content string) (Info, error) {
+func ParseRealmInfo(ri *realmclock.Info, content string) (Info, error) {
 	trimmed, ok := IsRealmInfo(content)
 	if !ok {
 		return Info{}, fmt.Errorf("not a REALM_INFO message")
@@ -38,7 +39,7 @@ func ParseRealmInfo(content string) (Info, error) {
 	}
 
 	ts, version, buildStr, buildDate, realmName := parts[0], parts[1], parts[2], parts[3], parts[4]
-	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
+	seen, err := ri.ParseAddonDate(ts)
 	if err != nil {
 		return Info{}, fmt.Errorf("invalid date format %q: %w", ts, err)
 	}

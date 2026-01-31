@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
+
 	"github.com/coder/quartz"
 )
 
@@ -16,6 +18,9 @@ const (
 type Liner struct {
 	Year  int
 	clock quartz.Clock
+
+	disableTimeAdjust bool
+	realm             *realmclock.Info
 }
 
 func NewLiner() *Liner {
@@ -24,8 +29,17 @@ func NewLiner() *Liner {
 	}
 }
 
+func (l *Liner) WithoutTimeAdjustments() *Liner {
+	l.disableTimeAdjust = true
+	return l
+}
+
 func (l *Liner) SetClock(clock quartz.Clock) {
 	l.clock = clock
+}
+
+func (l *Liner) RealmClockInfo() *realmclock.Info {
+	return l.realm
 }
 
 func (l *Liner) SetYear(year int) {
@@ -85,7 +99,25 @@ func (l *Liner) parse(year int, line string) (time.Time, string, error) {
 	if len(parts) != 3 {
 		return time.Time{}, "", errors.New("invalid line format")
 	}
+
+	content := strings.TrimPrefix(parts[2], " ")
 	ts, err := time.ParseInLocation("2006 "+LogDateFormat, strconv.Itoa(year)+" "+parts[0]+" "+parts[1], time.UTC)
+	if err != nil {
+		return ts, content, err
+	}
+
+	if _, ok := realmclock.IsClockInfo(content); ok {
+		info, err := realmclock.ParseClockInfo(content)
+		if err == nil {
+			l.realm = &info
+		}
+	}
+
+	if !l.disableTimeAdjust && l.realm != nil {
+		// Fix the timestamp.
+		ts = l.realm.Adjust(ts)
+	}
+
 	return ts, strings.TrimPrefix(parts[2], " "), err
 }
 

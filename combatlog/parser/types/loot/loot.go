@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
 const (
@@ -21,7 +22,7 @@ type Loot struct {
 	// TODO: Parse the rest
 }
 
-func ParseLootInfo(content string) (Loot, error) {
+func ParseLootInfo(ri *realmclock.Info, content string) (Loot, error) {
 	trimmed, ok := IsLoot(content)
 	if !ok {
 		return Loot{}, fmt.Errorf("not a LOOT message")
@@ -34,7 +35,7 @@ func ParseLootInfo(content string) (Loot, error) {
 	}
 
 	ts, _ := parts[0], parts[1]
-	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
+	seen, err := ri.ParseAddonDate(ts)
 	if err != nil {
 		return Loot{}, fmt.Errorf("invalid date format %q: %w", ts, err)
 	}

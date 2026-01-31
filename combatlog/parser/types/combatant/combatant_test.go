@@ -73,7 +73,7 @@ func TestParseCombatant(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			player, err := combatant.ParseCombatantInfo(c.content)
+			player, err := combatant.ParseCombatantInfo(nil, c.content)
 			if c.expErr {
 				require.Error(t, err)
 				return

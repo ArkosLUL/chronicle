@@ -55,7 +55,7 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, e
 		}
 
 		if _, ok := combatant.IsCombatant(content); ok {
-			cmbt, err := combatant.ParseCombatantInfo(content)
+			cmbt, err := combatant.ParseCombatantInfo(liner.RealmClockInfo(), content)
 			if err != nil {
 				continue // Do not fatal on init
 			}
@@ -69,7 +69,7 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, e
 		}
 
 		if _, ok := unitinfo.IsUnitInfo(content); ok {
-			ui, err := unitinfo.ParseUnitInfo(content)
+			ui, err := unitinfo.ParseUnitInfo(liner.RealmClockInfo(), content)
 			if err != nil {
 				continue // Do not fatal on init
 			}

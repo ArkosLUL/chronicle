@@ -8,6 +8,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 )
 
@@ -39,7 +40,7 @@ type Info struct {
 // TODO:
 // - UnitIsTapped? (tagged)
 // - UnitIsPlusMob? (elite)
-func ParseUnitInfo(content string) (Info, error) {
+func ParseUnitInfo(ri *realmclock.Info, content string) (Info, error) {
 	trimmed, ok := IsUnitInfo(content)
 	if !ok {
 		return Info{}, fmt.Errorf("not a UNIT_INFO message")
@@ -57,7 +58,7 @@ func ParseUnitInfo(content string) (Info, error) {
 
 	// TODO: LEvel and challenges
 	ts, guidStr, isPlayerStr, name, coop, owner := parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
-	seen, err := time.ParseInLocation(types.AddonDateFormat, ts, time.UTC)
+	seen, err := ri.ParseAddonDate(ts)
 	if err != nil {
 		return Info{}, fmt.Errorf("invalid date format %q: %w", ts, err)
 	}

@@ -135,9 +135,14 @@ export interface VideoTimestamp {
     readonly video_time_seconds: number;
     readonly raw_ocr: string;
     /**
-     * Need to convert to timezone, is like "17:56:08"
+     * ServerTime is the time shown on the in-game clock, like "17:56:08"
      */
     readonly server_time: string;
+    /**
+     * UTCTime is ServerTime adjusted by the user-specified offset to match UTC.
+     * This is used to sync with encounter timestamps which are stored in UTC.
+     */
+    readonly utc_time?: string;
     readonly confidence: number;
 }
 

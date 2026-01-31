@@ -123,6 +123,27 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Apply a time offset to convert server time to UTC.
+ * @param serverTime - Time string in "HH:MM:SS" format
+ * @param offsetHours - Hours to subtract (e.g., 1 if server is UTC+1)
+ * @returns UTC time string in "HH:MM:SS" format
+ */
+function applyTimeOffset(serverTime: string, offsetHours: number): string {
+  const match = serverTime.match(/^(\d{1,2}):(\d{2}):(\d{2})$/)
+  if (!match) return serverTime
+
+  let hour = parseInt(match[1], 10) - offsetHours
+  const minute = match[2]
+  const second = match[3]
+
+  // Handle day wraparound
+  if (hour < 0) hour += 24
+  if (hour >= 24) hour -= 24
+
+  return `${hour.toString().padStart(2, "0")}:${minute}:${second}`
+}
+
 export function YouTubeSyncPage() {
   // State
   const [videoUrl, setVideoUrl] = useState("")
@@ -157,6 +178,8 @@ export function YouTubeSyncPage() {
   const [chronicleUrl, setChronicleUrl] = useState(window.location.origin)
   const [instanceId, setInstanceId] = useState("")
   const [chronicleExporting, setChronicleExporting] = useState(false)
+  // Time offset in hours to convert server_time to UTC (e.g., 1 means server is UTC+1)
+  const [timeOffsetHours, setTimeOffsetHours] = useState(0)
 
   // Refs
   const playerRef = useRef<YTPlayer | null>(null)
@@ -657,6 +680,7 @@ export function YouTubeSyncPage() {
           video_time_seconds: Math.round(r.videoTime),
           raw_ocr: r.rawOCR,
           server_time: r.serverTime,
+          utc_time: r.serverTime ? applyTimeOffset(r.serverTime, timeOffsetHours) : undefined,
           confidence: r.confidence,
         })),
       }
@@ -1087,7 +1111,7 @@ export function YouTubeSyncPage() {
                 {/* Chronicle Export */}
                 <div className="mt-6 pt-4 border-t border-border">
                   <h4 className="text-sm font-medium mb-3">Export to Chronicle</h4>
-                  <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div className="grid grid-cols-3 gap-4 mb-3">
                     <div>
                       <Label htmlFor="chronicle-url" className="text-xs">
                         Chronicle URL
@@ -1111,6 +1135,23 @@ export function YouTubeSyncPage() {
                         placeholder="abc123..."
                         className="mt-1"
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="time-offset" className="text-xs">
+                        Time Offset (hours)
+                      </Label>
+                      <Input
+                        id="time-offset"
+                        type="number"
+                        value={timeOffsetHours}
+                        onChange={(e) => setTimeOffsetHours(Number(e.target.value))}
+                        placeholder="0"
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Server timezone offset from UTC (e.g., 1 for CET).
+                        Your local offset: UTC{new Date().getTimezoneOffset() <= 0 ? "+" : ""}{-new Date().getTimezoneOffset() / 60}
+                      </p>
                     </div>
                   </div>
                   <Button onClick={exportToChronicle} disabled={chronicleExporting}>

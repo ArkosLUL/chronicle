@@ -77,6 +77,7 @@ export function EventsPanel({
   const showCheckbox = panel.supportsPerSecond || panel.checkboxLabel;
   const checkboxLabel = panel.checkboxLabel || "Per second";
 
+  // Only run aggregation if panel doesn't manage its own
   const {
     loading,
     processing,
@@ -87,11 +88,12 @@ export function EventsPanel({
   } = usePanelAggregation({
     panel,
     context,
+    enabled: !panel.selfManagesAggregation,
   });
   
   // Report timing when panel finishes loading
-  // Use processingTimeMs as indicator - it's only set after actual processing completes
-  const isDone = processingTimeMs !== null;
+  // For self-managed panels, we can't track timing this way (they manage their own)
+  const isDone = panel.selfManagesAggregation || processingTimeMs !== null;
   usePanelTiming(`panel-${panelIndex}`, isDone);
 
   return (

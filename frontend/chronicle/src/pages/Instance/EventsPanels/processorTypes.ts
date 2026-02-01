@@ -175,6 +175,18 @@ export interface ProcessorUnit {
 }
 
 /**
+ * Pagination options for processors that support paging through events.
+ */
+export interface ProcessorPagination {
+  /** Number of events to skip */
+  offset: number;
+  /** Maximum number of events to capture */
+  limit: number;
+  /** Which streams to include in pagination (if not set, all streams are included) */
+  enabledStreams?: string[];
+}
+
+/**
  * Serializable context sent to worker via postMessage.
  */
 export interface SerializableProcessorContext {
@@ -189,6 +201,9 @@ export interface SerializableProcessorContext {
   
   /** Currently selected entity GUIDs for filtering (arrays for serialization) */
   entitySelection: SerializableEntitySelection;
+  
+  /** Optional pagination for processors that support paging (e.g., all_activity) */
+  pagination?: ProcessorPagination;
 }
 
 /**
@@ -206,6 +221,9 @@ export interface ProcessorContext {
   
   /** Currently selected entity GUIDs for filtering */
   entitySelection: ProcessorEntitySelection;
+  
+  /** Optional pagination for processors that support paging */
+  pagination?: ProcessorPagination;
 }
 
 /**

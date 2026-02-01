@@ -5,7 +5,7 @@
 import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { Instance } from "../InstancePage";
-import type { ProcessorContext, ProcessorEvent } from "./processorTypes";
+import type { ProcessorContext, ProcessorEvent, ProcessorPagination } from "./processorTypes";
 import type { ReusableDamage } from "@/api/protodecode/decode";
 
 /**
@@ -37,6 +37,9 @@ export interface PanelContext {
   
   /** Callback to toggle multiple players at once (all selected or all deselected) */
   onTogglePlayers?: (playerIds: string[]) => void;
+  
+  /** Optional pagination for processors that support paging (e.g., all_activity) */
+  pagination?: ProcessorPagination;
 }
 
 /**
@@ -78,6 +81,12 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
   
   /** Custom label for the checkbox (defaults to "Per second" when supportsPerSecond is true) */
   checkboxLabel?: string;
+  
+  /**
+   * If true, this panel manages its own aggregation (e.g., for custom pagination).
+   * EventsPanel will skip calling usePanelAggregation and pass only context to render.
+   */
+  selfManagesAggregation?: boolean;
   
   /**
    * Create the initial state for aggregation

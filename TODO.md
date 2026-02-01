@@ -19,3 +19,12 @@
 - Sunder panel ASAP or bust
 - On the damage panel breakout, we can show damage mitigated by blocks/resists
  - Or damage mitigated panel under "Damage Taken"
+
+# Synthetic Messages
+
+- [Absorbs](./combatlog/parser/vanilla/absorbs/TODO.md)
+- Interrupts
+```
+1/31 20:43:55.408  CAST: 0x0000000000049036(Defen) casts Pummel(6552) on 0xF130002D8E00DD66(Flamewaker Priest).
+1/31 20:43:55.408  CAST: 0xF130002D8E00DD66(Flamewaker Priest) fails casting Dark Mending(19775).
+```

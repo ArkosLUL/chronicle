@@ -61,6 +61,7 @@ function toSerializableContext(ctx: PanelContext): SerializableProcessorContext 
       enemyIds: Array.from(ctx.entitySelection.enemyIds),
       playerIds: Array.from(ctx.entitySelection.playerIds),
     },
+    pagination: ctx.pagination,
   };
 }
 

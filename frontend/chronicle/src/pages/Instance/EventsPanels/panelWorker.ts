@@ -22,6 +22,7 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
       enemyIds: new Set(ctx.entitySelection.enemyIds),
       playerIds: new Set(ctx.entitySelection.playerIds),
     },
+    pagination: ctx.pagination,
   };
 }
 

@@ -2,15 +2,16 @@
  * All Activity Debug panel - Shows raw events with stream type toggles
  */
 
-import { useState } from "react";
-import { Activity, Swords, Heart, Zap, Wand2 } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Activity, Swords, Heart, Zap, Wand2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
-import type { PanelDefinition, PanelRenderProps } from "./types";
+import type { PanelDefinition, PanelRenderProps, PanelContext } from "./types";
 import { allActivityProcessor, type AllActivityState, type RawDebugEvent, type EncounterMeta, type ResourceType } from "./processors";
 import type { StreamType } from "@/hooks/instanceEvents";
+import { usePanelAggregation } from "./usePanelAggregation";
 
 // Resource type color mapping (WoW-inspired colors)
 const RESOURCE_COLORS: Record<ResourceType, string> = {
@@ -102,34 +103,137 @@ function RawEventRow({ event, index }: RawEventRowProps) {
   );
 }
 
-function AllActivityRender({
+// ============================================================================
+// Pagination Controls
+// ============================================================================
+
+const PAGE_SIZE = 100;
+
+interface PaginationControlsProps {
+  currentPage: number;
+  totalPages: number;
+  totalEvents: number;
+  onPageChange: (page: number) => void;
+  loading?: boolean;
+}
+
+function PaginationControls({
+  currentPage,
+  totalPages,
+  totalEvents,
+  onPageChange,
+  loading,
+}: PaginationControlsProps) {
+  const canGoPrev = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+  
+  const startEvent = (currentPage - 1) * PAGE_SIZE + 1;
+  const endEvent = Math.min(currentPage * PAGE_SIZE, totalEvents);
+  
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="text-muted-foreground">
+        {totalEvents > 0 ? (
+          <>
+            <span className="font-medium text-foreground">{startEvent.toLocaleString()}</span>
+            {" - "}
+            <span className="font-medium text-foreground">{endEvent.toLocaleString()}</span>
+            {" of "}
+            <span className="font-medium text-foreground">{totalEvents.toLocaleString()}</span>
+          </>
+        ) : (
+          "No events"
+        )}
+      </span>
+      
+      <div className="flex items-center gap-0.5 ml-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(1)}
+          disabled={!canGoPrev || loading}
+          className={cn(
+            "p-1 rounded hover:bg-muted transition-colors",
+            (!canGoPrev || loading) && "opacity-30 cursor-not-allowed"
+          )}
+          title="First page"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!canGoPrev || loading}
+          className={cn(
+            "p-1 rounded hover:bg-muted transition-colors",
+            (!canGoPrev || loading) && "opacity-30 cursor-not-allowed"
+          )}
+          title="Previous page"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        
+        <span className="px-2 text-muted-foreground tabular-nums">
+          {currentPage} / {Math.max(1, totalPages)}
+        </span>
+        
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!canGoNext || loading}
+          className={cn(
+            "p-1 rounded hover:bg-muted transition-colors",
+            (!canGoNext || loading) && "opacity-30 cursor-not-allowed"
+          )}
+          title="Next page"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(totalPages)}
+          disabled={!canGoNext || loading}
+          className={cn(
+            "p-1 rounded hover:bg-muted transition-colors",
+            (!canGoNext || loading) && "opacity-30 cursor-not-allowed"
+          )}
+          title="Last page"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Internal render component that handles data display (no pagination control).
+ * This is used by the wrapper that manages aggregation with pagination.
+ */
+interface AllActivityContentProps {
+  result: AllActivityState | null;
+  totalEvents: number;
+  processingTimeMs: number | null;
+  loading: boolean;
+  processing: boolean;
+  error: Error | null;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  enabledStreams: Set<StreamType>;
+  onToggleStream: (stream: StreamType) => void;
+}
+
+function AllActivityContent({
   result,
   totalEvents,
   processingTimeMs,
   loading,
   processing,
   error,
-}: PanelRenderProps<AllActivityState>) {
-  // Track which streams are visible
-  const [enabledStreams, setEnabledStreams] = useState<Set<StreamType>>(
-    new Set(["damage", "heal", "resource_change"])
-  );
-  
-  // Configurable display limit
-  const [displayLimit, setDisplayLimit] = useState(100);
-  
-  const toggleStream = (stream: StreamType) => {
-    setEnabledStreams((prev) => {
-      const next = new Set(prev);
-      if (next.has(stream)) {
-        next.delete(stream);
-      } else {
-        next.add(stream);
-      }
-      return next;
-    });
-  };
-  
+  currentPage,
+  onPageChange,
+  enabledStreams,
+  onToggleStream,
+}: AllActivityContentProps) {
   // Default state during loading
   const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], casts: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
@@ -138,45 +242,36 @@ function AllActivityRender({
     rawEventsByStream: emptyByStream,
     streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, casts: 0 },
     encounters: emptyEncounters,
+    totalProcessed: 0,
+    eventsSkipped: 0,
+    eventsCaptured: 0,
   };
   
   // Get encounters map (handle both Map and deserialized object)
-  // After worker serialization, Maps become objects with __serializedMap__ marker
-  // After usePanelAggregation deserializes, it should be a Map again
   const encounters: Map<string, EncounterMeta> = safeResult.encounters instanceof Map 
     ? safeResult.encounters 
     : new Map<string, EncounterMeta>();
   
-  // Merge enabled streams and sort by index to show true interleaving
+  // Merge all captured events (processor already filtered by enabled streams)
   const rawEventsByStream = safeResult.rawEventsByStream ?? emptyByStream;
-  const enabledEvents = [
-    ...(enabledStreams.has("damage") ? rawEventsByStream.damage : []),
-    ...(enabledStreams.has("heal") ? rawEventsByStream.heal : []),
-    ...(enabledStreams.has("resource_change") ? rawEventsByStream.resource_change : []),
-    ...(enabledStreams.has("casts") ? rawEventsByStream.casts : []),
+  const allCapturedEvents = [
+    ...rawEventsByStream.damage,
+    ...rawEventsByStream.heal,
+    ...rawEventsByStream.resource_change,
+    ...rawEventsByStream.casts,
   ];
   
-  // Sort by index to reconstruct true event order
-  const sortedEvents = enabledEvents.sort((a, b) => a.index - b.index);
-  const filteredEvents = sortedEvents.slice(0, displayLimit);
+  // Sort by encounter first, then by index within encounter to reconstruct true event order
+  const sortedEvents = allCapturedEvents.sort((a, b) => {
+    if (a.encounterID !== b.encounterID) {
+      return a.encounterID.localeCompare(b.encounterID);
+    }
+    return a.index - b.index;
+  });
   
-  // Count total captured across all streams
-  const totalCaptured = rawEventsByStream.damage.length + 
-    rawEventsByStream.heal.length + 
-    rawEventsByStream.resource_change.length +
-    rawEventsByStream.casts.length;
-
-  if (loading) {
-    return <div className="text-xs text-muted-foreground">Fetching data...</div>;
-  }
-
-  if (processing) {
-    return <div className="text-xs text-muted-foreground">Processing...</div>;
-  }
-
-  if (error) {
-    return <div className="text-xs text-destructive">Error: {error.message}</div>;
-  }
+  // Calculate pagination info from the result
+  const totalProcessed = safeResult.totalProcessed;
+  const totalPages = Math.ceil(totalProcessed / PAGE_SIZE);
 
   return (
     <div>
@@ -189,39 +284,41 @@ function AllActivityRender({
             streamType={stream}
             enabled={enabledStreams.has(stream)}
             count={safeResult.streamCounts[stream]}
-            onToggle={() => toggleStream(stream)}
+            onToggle={() => onToggleStream(stream)}
           />
         ))}
       </div>
       
-      {/* Stats and limit control */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2 flex-wrap">
-        <span>
-          Total Events: <span className="font-medium text-foreground">{formatNumber(totalEvents)}</span>
-        </span>
-        <span>
-          Captured: <span className="font-medium text-foreground">{formatNumber(totalCaptured)}</span>
-        </span>
-        <span>
-          Showing: <span className="font-medium text-foreground">{filteredEvents.length}</span> of {formatNumber(sortedEvents.length)} enabled
-        </span>
-        <label className="flex items-center gap-1">
-          Limit:
-          <input
-            type="number"
-            value={displayLimit}
-            onChange={(e) => setDisplayLimit(Math.max(1, Math.min(1000, parseInt(e.target.value) || 100)))}
-            className="w-16 px-1 py-0.5 text-xs bg-muted border rounded text-foreground"
-            min={1}
-            max={1000}
-          />
-        </label>
-        {processingTimeMs !== null && (
-          <span className="text-blue-500">
-            ({processingTimeMs.toFixed(0)}ms)
+      {/* Stats row with pagination */}
+      <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground mb-2 flex-wrap">
+        <div className="flex items-center gap-4">
+          <span>
+            Total Processed: <span className="font-medium text-foreground">{formatNumber(totalEvents)}</span>
           </span>
-        )}
+          {processingTimeMs !== null && (
+            <span className="text-blue-500">
+              ({processingTimeMs.toFixed(0)}ms)
+            </span>
+          )}
+          {(loading || processing) && (
+            <span className="text-yellow-500 animate-pulse">
+              {loading ? "Fetching..." : "Processing..."}
+            </span>
+          )}
+        </div>
+        
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalEvents={totalProcessed}
+          onPageChange={onPageChange}
+          loading={loading || processing}
+        />
       </div>
+
+      {error && (
+        <div className="text-xs text-destructive mb-2">Error: {error.message}</div>
+      )}
       
       {/* Raw events list */}
       <ScrollArea className="h-80 border rounded">
@@ -235,17 +332,18 @@ function AllActivityRender({
             <span className="shrink-0"></span>
             <span className="w-24 shrink-0">Target</span>
             <span className="w-12 text-right shrink-0">Amount</span>
-            {/* <span className="shrink-0">Extra</span> */}
           </div>
           
-          {filteredEvents.length === 0 ? (
+          {sortedEvents.length === 0 ? (
             <div className="text-xs text-muted-foreground text-center py-4">
-              No events to display. Enable some streams.
+              {loading || processing ? "Loading events..." : "No events to display. Enable some streams."}
             </div>
           ) : (
             (() => {
               let lastEncounterID: string | null = null;
-              return filteredEvents.map((event, idx) => {
+              // Calculate global index offset for display
+              const globalOffset = (currentPage - 1) * PAGE_SIZE;
+              return sortedEvents.map((event, idx) => {
                 const showHeader = event.encounterID !== lastEncounterID;
                 lastEncounterID = event.encounterID;
                 const encounterMeta = encounters.get(event.encounterID);
@@ -260,7 +358,7 @@ function AllActivityRender({
                         <span className="px-1">📍 Encounter: {event.encounterID.slice(0, 8)}... @ {timestamp}</span>
                       </div>
                     )}
-                    <RawEventRow event={event} index={idx} />
+                    <RawEventRow event={event} index={globalOffset + idx} />
                   </div>
                 );
               });
@@ -273,11 +371,103 @@ function AllActivityRender({
   );
 }
 
+/**
+ * Wrapper component that manages its own pagination state and aggregation.
+ * This is necessary because pagination changes need to trigger re-processing in the worker.
+ */
+interface AllActivityWrapperProps {
+  context: PanelContext;
+}
+
+const DEFAULT_ENABLED_STREAMS = new Set<StreamType>(["damage", "heal", "resource_change"]);
+
+function AllActivityWrapper({ context }: AllActivityWrapperProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [enabledStreams, setEnabledStreams] = useState<Set<StreamType>>(DEFAULT_ENABLED_STREAMS);
+  
+  // Track previous encounter key to reset page when encounters change
+  // Using the React-approved pattern for "adjusting state when a prop changes"
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const encounterKey = context.selectedEncounterIds.join(",");
+  const [prevEncounterKey, setPrevEncounterKey] = useState(encounterKey);
+  if (prevEncounterKey !== encounterKey) {
+    setPrevEncounterKey(encounterKey);
+    setCurrentPage(1);
+  }
+  
+  // Create context with pagination and enabled streams
+  const paginatedContext = useMemo((): PanelContext => ({
+    ...context,
+    pagination: {
+      offset: (currentPage - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+      enabledStreams: Array.from(enabledStreams),
+    },
+  }), [context, currentPage, enabledStreams]);
+  
+  // Use aggregation with paginated context
+  const {
+    loading,
+    processing,
+    error,
+    result,
+    totalEvents,
+    processingTimeMs,
+  } = usePanelAggregation({
+    panel: allActivityProcessor as PanelDefinition<AllActivityState>,
+    context: paginatedContext,
+  });
+  
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+  
+  const handleToggleStream = useCallback((stream: StreamType) => {
+    setEnabledStreams((prev) => {
+      const next = new Set(prev);
+      if (next.has(stream)) {
+        next.delete(stream);
+      } else {
+        next.add(stream);
+      }
+      return next;
+    });
+    // Reset to page 1 when streams change
+    setCurrentPage(1);
+  }, []);
+  
+  return (
+    <AllActivityContent
+      result={result}
+      totalEvents={totalEvents}
+      processingTimeMs={processingTimeMs}
+      loading={loading}
+      processing={processing}
+      error={error}
+      currentPage={currentPage}
+      onPageChange={handlePageChange}
+      enabledStreams={enabledStreams}
+      onToggleStream={handleToggleStream}
+    />
+  );
+}
+
+/**
+ * Legacy render function that simply extracts context and delegates to wrapper.
+ * This maintains compatibility with the PanelDefinition interface.
+ */
+function AllActivityRender(props: PanelRenderProps<AllActivityState>) {
+  // The wrapper manages its own aggregation with pagination
+  return <AllActivityWrapper context={props.context} />;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
   ...allActivityProcessor,
   label: "All Activity",
   icon: <Activity className="h-4 w-4" />,
+  // This panel manages its own aggregation to support pagination
+  selfManagesAggregation: true,
   
   render: (props: PanelRenderProps<AllActivityState>) => (
     <AllActivityRender {...props} />

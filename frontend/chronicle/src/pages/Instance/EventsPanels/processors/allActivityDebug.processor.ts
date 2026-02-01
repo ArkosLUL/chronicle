@@ -48,13 +48,19 @@ export interface AllActivityDebugState {
   streamCounts: Record<StreamType, number>;
   /** Encounter metadata: encounterID -> first timestamp */
   encounters: Map<string, EncounterMeta>;
+  /** Total events processed (for pagination) */
+  totalProcessed: number;
+  /** Events skipped due to pagination offset */
+  eventsSkipped: number;
+  /** Events captured in current page */
+  eventsCaptured: number;
 }
 
 // This processor handles damage, heal, resource_change, and cast events
 type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent;
 
-// Capture first N events per stream to ensure fair representation
-const MAX_RAW_EVENTS_PER_STREAM = 500;
+// Default page size if no pagination specified
+const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
@@ -79,6 +85,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       casts: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
+    totalProcessed: 0,
+    eventsSkipped: 0,
+    eventsCaptured: 0,
   }),
   
   processEvent: (
@@ -111,67 +120,94 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       }
     }
     
-    // Count events per stream
+    // Count events per stream (always count for display in stream toggles)
     state.streamCounts[streamType]++;
     
-    // Count events by caster
+    // Count events by caster (always count)
     const key = eventCaster || "Unknown";
     state.counts.set(key, (state.counts.get(key) || 0) + 1);
     
-    // Store first N raw events per stream (ensures fair representation)
-    const streamEvents = state.rawEventsByStream[streamType];
-    if (streamEvents.length < MAX_RAW_EVENTS_PER_STREAM) {
-      // Look up target name from players or units
-      const targetName = eventTarget
-        ? (context.players[eventTarget]?.name ?? 
-           context.units?.[eventTarget]?.name ?? 
-           eventTarget)
-        : "";
-      
-      // Get sourceName - cast events use spell.name instead
-      let sourceName = "";
-      let amount = 0;
-      if (streamType === "casts") {
-        const castEvent = event as CastProcessorEvent;
-        sourceName = castEvent.spell.name;
-        amount = 0; // Casts don't have an amount
-      } else {
-        const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
-        sourceName = regularEvent.sourceName;
-        amount = regularEvent.amount;
-      }
-      
-      const rawEvent: RawDebugEvent = {
-        index: event.index,
-        offsetMilli: event.offsetMilli,
-        encounterID,
-        streamType,
-        caster: eventCaster,
-        sourceName,
-        target: eventTarget,
-        targetName,
-        amount,
-      };
-      
-      // Add stream-specific info based on streamType
-      if (streamType === "resource_change") {
-        const rcEvent = event as ResourceChangeProcessorEvent;
-        rawEvent.resourceType = rcEvent.resourceType as ResourceType;
-        rawEvent.extra = rcEvent.direction;
-      } else if (streamType === "damage" || streamType === "heal") {
-        const dhEvent = event as DamageProcessorEvent | HealProcessorEvent;
-        rawEvent.extra = `school=${dhEvent.school} hit=${dhEvent.hitType}`;
-      } else if (streamType === "casts") {
-        const castEvent = event as CastProcessorEvent;
-        rawEvent.castAction = castEvent.action;
-        rawEvent.spellId = castEvent.spell.id;
-        rawEvent.spellRank = castEvent.spell.rank;
-        // Show cast action in extra field
-        const actionNames = ["Unknown", "Casts", "Begins", "Channels", "Fails"];
-        rawEvent.extra = actionNames[castEvent.action] || "Unknown";
-      }
-      
-      streamEvents.push(rawEvent);
+    // Check if this stream is enabled for pagination
+    // If enabledStreams is set, only count/capture events from those streams
+    const enabledStreams = context.pagination?.enabledStreams;
+    if (enabledStreams && !enabledStreams.includes(streamType)) {
+      // This stream is not enabled - still counted in streamCounts above,
+      // but not included in pagination
+      return;
     }
+    
+    // Increment total processed (only for enabled streams)
+    state.totalProcessed++;
+    
+    // Get pagination settings
+    const offset = context.pagination?.offset ?? 0;
+    const limit = context.pagination?.limit ?? DEFAULT_PAGE_SIZE;
+    
+    // Skip events before our page offset
+    if (state.totalProcessed <= offset) {
+      state.eventsSkipped++;
+      return;
+    }
+    
+    // Stop capturing if we've reached the page limit
+    if (state.eventsCaptured >= limit) {
+      return;
+    }
+    
+    // Capture this event
+    state.eventsCaptured++;
+    
+    // Look up target name from players or units
+    const targetName = eventTarget
+      ? (context.players[eventTarget]?.name ?? 
+         context.units?.[eventTarget]?.name ?? 
+         eventTarget)
+      : "";
+    
+    // Get sourceName - cast events use spell.name instead
+    let sourceName = "";
+    let amount = 0;
+    if (streamType === "casts") {
+      const castEvent = event as CastProcessorEvent;
+      sourceName = castEvent.spell.name;
+      amount = 0; // Casts don't have an amount
+    } else {
+      const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
+      sourceName = regularEvent.sourceName;
+      amount = regularEvent.amount;
+    }
+    
+    const rawEvent: RawDebugEvent = {
+      index: event.index,
+      offsetMilli: event.offsetMilli,
+      encounterID,
+      streamType,
+      caster: eventCaster,
+      sourceName,
+      target: eventTarget,
+      targetName,
+      amount,
+    };
+    
+    // Add stream-specific info based on streamType
+    if (streamType === "resource_change") {
+      const rcEvent = event as ResourceChangeProcessorEvent;
+      rawEvent.resourceType = rcEvent.resourceType as ResourceType;
+      rawEvent.extra = rcEvent.direction;
+    } else if (streamType === "damage" || streamType === "heal") {
+      const dhEvent = event as DamageProcessorEvent | HealProcessorEvent;
+      rawEvent.extra = `school=${dhEvent.school} hit=${dhEvent.hitType}`;
+    } else if (streamType === "casts") {
+      const castEvent = event as CastProcessorEvent;
+      rawEvent.castAction = castEvent.action;
+      rawEvent.spellId = castEvent.spell.id;
+      rawEvent.spellRank = castEvent.spell.rank;
+      // Show cast action in extra field
+      const actionNames = ["Unknown", "Casts", "Begins", "Channels", "Fails"];
+      rawEvent.extra = actionNames[castEvent.action] || "Unknown";
+    }
+    
+    // Store in appropriate stream bucket
+    state.rawEventsByStream[streamType].push(rawEvent);
   },
 };

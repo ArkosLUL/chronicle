@@ -80,11 +80,13 @@ function formatMinAvgMax(stats: HitTypeStats | undefined): React.ReactNode {
   const min = stats.min === Infinity ? 0 : stats.min
   const max = stats.max === -Infinity ? 0 : stats.max
   return <>
-  <span>{min}</span>
-  -
-  <span>{avg}</span>
-  -
-  <span className='font-semibold'>{max}</span>
+    <span className="whitespace-nowrap">
+      <span className="text-muted-foreground/60">{min}</span>
+      <span className="text-muted-foreground/40 mx-0.5">/</span>
+      <span className="font-semibold">{avg}</span>
+      <span className="text-muted-foreground/40 mx-0.5">/</span>
+      <span className="text-muted-foreground/60">{max}</span>
+    </span>
   </>
 }
 

@@ -534,6 +534,7 @@ export function PlayerMetricRow({
         delayDuration={0} 
         open={isPinned ? false : tooltipOpen}
         onOpenChange={setTooltipOpen}
+        disableHoverableContent
       >
         <TooltipTrigger asChild>
           {rowContent}

@@ -528,17 +528,39 @@ function EncounterDetail({
   // Helper to check if a player is selected
   const isPlayerSelected = (id: string) => entitySelection.playerIds.has(id);
   
-  // Build player list sorted by class and name
+  // Class display order (roughly by armor type / role)
+  const CLASS_ORDER = [
+    "WARRIOR", "ROGUE", "HUNTER", 
+    "MAGE", "WARLOCK", 
+    "PRIEST", "DRUID", "SHAMAN", "PALADIN",
+    "UNKNOWN"
+  ];
+  
+  // Build player list and group by class
   const playerList = Object.entries(players).map(([guid, player]) => ({
     guid,
     ...player,
-  })).sort((a, b) => {
-    // Sort by class first, then by name
-    if (a.class !== b.class) {
-      return a.class.localeCompare(b.class);
+  }));
+  
+  // Group players by class
+  const playersByClass = useMemo(() => {
+    const byClass = new Map<string, typeof playerList>();
+    for (const player of playerList) {
+      const cls = player.class.toUpperCase();
+      if (!byClass.has(cls)) {
+        byClass.set(cls, []);
+      }
+      byClass.get(cls)!.push(player);
     }
-    return a.name.localeCompare(b.name);
-  });
+    // Sort players within each class alphabetically
+    for (const players of byClass.values()) {
+      players.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // Return classes in predefined order
+    return CLASS_ORDER
+      .filter(cls => byClass.has(cls))
+      .map(cls => ({ className: cls, players: byClass.get(cls)! }));
+  }, [playerList]);
   
   // Has any selection
   const hasSelection = entitySelection.enemyIds.size > 0 || entitySelection.playerIds.size > 0;
@@ -718,44 +740,56 @@ function EncounterDetail({
                 </TabsContent>
 
                 <TabsContent value="players" className="mt-0">
-                  <div className="flex flex-wrap gap-2">
-                    {playerList.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No players in this instance</p>
-                    ) : (
-                      playerList.map((player) => {
-                        const isSelected = isPlayerSelected(player.guid);
-                        return (
-                          <Tooltip key={player.guid}>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => onTogglePlayer(player.guid)}
-                                className={cn(
-                                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all",
-                                  "bg-muted/50 border border-border hover:bg-muted",
-                                  isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
-                                  hasSelection && !isSelected && "opacity-50"
-                                )}
-                              >
-                                <span
-                                  className="w-2 h-2 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: `var(--class-${player.class.toLowerCase()})` }}
-                                />
-                                <span
-                                  className="font-medium"
-                                  style={{ color: `var(--class-${player.class.toLowerCase()})` }}
-                                >
-                                  {player.name}
-                                </span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <span className="font-mono text-xs">{player.guid}</span>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })
-                    )}
-                  </div>
+                  {playerList.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No players in this instance</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-x-3 gap-y-2">
+                      {playersByClass.map(({ className, players: classPlayers }) => (
+                        <div key={className} className="flex items-center gap-1">
+                          <span 
+                            className="text-2xs font-medium cursor-pointer hover:underline"
+                            style={{ color: `var(--class-${className.toLowerCase()})` }}
+                            onClick={() => onTogglePlayers(classPlayers.map(p => p.guid))}
+                            title={`Toggle all ${className.toLowerCase()}s`}
+                          >
+                            {className.slice(0, 3)}:
+                          </span>
+                          {classPlayers.map((player) => {
+                            const isSelected = isPlayerSelected(player.guid);
+                            return (
+                              <Tooltip key={player.guid}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => onTogglePlayer(player.guid)}
+                                    className={cn(
+                                      "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs cursor-pointer transition-all",
+                                      "bg-muted/50 border border-border hover:bg-muted",
+                                      isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                                      hasSelection && !isSelected && "opacity-50"
+                                    )}
+                                  >
+                                    <span
+                                      className="w-2 h-2 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: `var(--class-${player.class.toLowerCase()})` }}
+                                    />
+                                    <span
+                                      className="font-medium"
+                                      style={{ color: `var(--class-${player.class.toLowerCase()})` }}
+                                    >
+                                      {player.name}
+                                    </span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <span className="font-mono text-xs">{player.guid}</span>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
               </div>
             </CollapsibleContent>

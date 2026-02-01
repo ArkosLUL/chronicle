@@ -2,10 +2,49 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout } from '@/pages/Instance/EventsPanels/DamageDone/damageDone.processor'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
+import { ChevronRight, ChevronDown } from 'lucide-react'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip/tooltip'
+
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/** Hit type column definition for expanded view */
+interface HitTypeColumn {
+  key: keyof DamageAbilityBreakout
+  label: string       // Single letter/short label
+  fullName: string    // Full name for tooltip
+  description?: string // Optional description for tooltip
+}
+
+/** All possible hit type columns in display order */
+const HIT_TYPE_COLUMNS: HitTypeColumn[] = [
+  { key: 'Hits', label: 'H', fullName: 'Hits', description: 'Includes glancing, crushing, and crits' },
+  { key: 'Crits', label: 'C', fullName: 'Crits' },
+  { key: 'Misses', label: 'M', fullName: 'Misses' },
+  { key: 'Dodges', label: 'D', fullName: 'Dodges' },
+  { key: 'Parries', label: 'P', fullName: 'Parries' },
+  { key: 'FullResist', label: 'R', fullName: 'Resists', description: 'Fully resisted (0 damage)' },
+  { key: 'FullBlocks', label: 'B', fullName: 'Blocks', description: 'Fully blocked (0 damage)' },
+  { key: 'Glancing', label: 'G', fullName: 'Glancing', description: 'Reduced damage hit' },
+  { key: 'Immunes', label: 'I', fullName: 'Immunes' },
+  { key: 'Reflects', label: 'Rf', fullName: 'Reflects' },
+  { key: 'Crushing', label: 'Cr', fullName: 'Crushing', description: 'Increased damage hit' },
+]
+
+/** Get the value of a hit type column from an ability */
+function getHitTypeValue(ability: DamageAbilityBreakout, key: keyof DamageAbilityBreakout): number {
+  const val = ability[key]
+  return typeof val === 'number' ? val : 0
+}
+
+/** Determine which hit type columns have any non-zero values across all abilities */
+function getVisibleHitTypeColumns(abilities: DamageAbilityBreakout[]): HitTypeColumn[] {
+  return HIT_TYPE_COLUMNS.filter(col => 
+    abilities.some(ability => getHitTypeValue(ability, col.key) > 0)
+  )
+}
 
 /**
  * Ability data for display in the breakout table.
@@ -108,16 +147,23 @@ export function AbilityTable({
   showOverheal = false,
 }: AbilityTableProps) {
   const { hover, setHover, clearHover } = useBreakoutHover()
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [showPercent, setShowPercent] = useState(true)
   
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
   }
 
-  // Sort by value descending
-  const sorted = [...abilities].sort((a, b) => b.value - a.value)
+  // Filter out zero-damage abilities and sort by value descending
+  const sorted = [...abilities]
+    .filter(a => a.Total > 0)
+    .sort((a, b) => b.value - a.value)
   
   // Check if any ability has overheal data
   const hasOverhealData = showOverheal && sorted.some(a => a.overheal !== undefined && a.overheal > 0)
+  
+  // Get visible hit type columns (only those with non-zero values)
+  const visibleHitTypeColumns = isExpanded ? getVisibleHitTypeColumns(sorted) : []
 
   // Column IDs for hover tracking
   const COL = {
@@ -131,26 +177,80 @@ export function AbilityTable({
   }
 
   return (
-    <div className="max-h-64 overflow-y-auto">
-      <table className="w-full text-xs text-foreground">
-        <thead className="sticky top-0 bg-popover z-10">
-          <tr className="border-b border-border">
-            <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.ABILITY && "bg-primary/20")}>Ability</th>
-            {hasOverhealData && (
-              <th className={cn("text-right py-1.5 px-2 font-medium text-yellow-500/80", hover.columnId === COL.OVERHEAL && "bg-primary/20")}>Overheal</th>
-            )}
-            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.VALUE && "bg-primary/20")}>{valueLabel}</th>
-            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.PERCENT && "bg-primary/20")}>%</th>
-            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.COUNT && "bg-primary/20")}>Count</th>
-            {showHits && (
-              <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.HITS && "bg-primary/20")}>Hits</th>
-            )}
-            <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.CRIT && "bg-primary/20")}>Crit%</th>
-          </tr>
-        </thead>
+    <div>
+      {/* Controls above the table */}
+      <div className="flex items-center justify-end gap-1 px-2 py-1 text-xs">
+        {isExpanded && (
+          <>
+            <span className="text-muted-foreground mr-1">Show:</span>
+            <button
+              onClick={() => setShowPercent(false)}
+              className={cn(
+                "px-1.5 py-0.5 rounded",
+                !showPercent ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              #
+            </button>
+            <button
+              onClick={() => setShowPercent(true)}
+              className={cn(
+                "px-1.5 py-0.5 rounded mr-2",
+                showPercent ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              %
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-muted-foreground hover:text-foreground p-0.5"
+          title={isExpanded ? "Collapse hit breakdown" : "Expand hit breakdown"}
+        >
+          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </button>
+      </div>
+      <div className="max-h-64 overflow-y-auto styled-scrollbar">
+        <table className="w-full text-xs text-foreground">
+          <thead className="sticky top-0 bg-popover z-10">
+            <tr className="border-b border-border">
+              <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.ABILITY && "bg-primary/20")}>Ability</th>
+              {hasOverhealData && (
+                <th className={cn("text-right py-1.5 px-2 font-medium text-yellow-500/80", hover.columnId === COL.OVERHEAL && "bg-primary/20")}>Overheal</th>
+              )}
+              <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.VALUE && "bg-primary/20")}>{valueLabel}</th>
+              <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.PERCENT && "bg-primary/20")}>%</th>
+              <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.COUNT && "bg-primary/20")} title="Total count">#</th>
+              {/* Collapsed view: simple Hits and Crit% columns */}
+              {!isExpanded && showHits && (
+                <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.HITS && "bg-primary/20")}>Hits</th>
+              )}
+              {!isExpanded && (
+                <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.CRIT && "bg-primary/20")}>Crit%</th>
+              )}
+              {/* Expanded view: individual hit type columns */}
+              {isExpanded && visibleHitTypeColumns.map(col => (
+                <th 
+                  key={col.key}
+                  className={cn("text-right py-1.5 px-1 font-medium", hover.columnId === col.key && "bg-primary/20")}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">{col.label}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" hideArrow>
+                      <div className="font-medium">{col.fullName}</div>
+                      {col.description && <div className="text-muted-foreground text-2xs">{col.description}</div>}
+                    </TooltipContent>
+                  </Tooltip>
+                </th>
+              ))}
+            </tr>
+          </thead>
         <tbody>
           {sorted.map((ability) => {
-            const critPercent = ability.Hits > 0 ? (ability.Crits / ability.Hits) * 100 : 0
+            const critPercent = ability.Hits > 0 ? (ability.Crits / (ability.Count)) * 100 : 0
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
             const rowId = ability.name
             
@@ -215,7 +315,8 @@ export function AbilityTable({
                 >
                   {ability.Count}
                 </HoverCell>
-                {showHits && (
+                {/* Collapsed view: simple Hits and Crit% columns */}
+                {!isExpanded && showHits && (
                   <HoverCell
                     rowId={rowId}
                     columnId={COL.HITS}
@@ -227,21 +328,43 @@ export function AbilityTable({
                     {ability.Hits}
                   </HoverCell>
                 )}
-                <HoverCell
-                  rowId={rowId}
-                  columnId={COL.CRIT}
-                  hover={hover}
-                  setHover={setHover}
-                  clearHover={clearHover}
-                  className="text-right py-1 px-2 tabular-nums"
-                >
-                  {critPercent.toFixed(0)}%
-                </HoverCell>
+                {!isExpanded && (
+                  <HoverCell
+                    rowId={rowId}
+                    columnId={COL.CRIT}
+                    hover={hover}
+                    setHover={setHover}
+                    clearHover={clearHover}
+                    className="text-right py-1 px-2 tabular-nums"
+                  >
+                    {critPercent.toLocaleString(undefined, {maximumFractionDigits: 1})}%
+                  </HoverCell>
+                )}
+                {/* Expanded view: individual hit type columns */}
+                {isExpanded && visibleHitTypeColumns.map(col => {
+                  const count = getHitTypeValue(ability, col.key)
+                  const percent = ability.Count > 0 ? (count / ability.Count) * 100 : 0
+                  const isZero = showPercent ? percent === 0 : count === 0
+                  return (
+                    <HoverCell
+                      key={col.key}
+                      rowId={rowId}
+                      columnId={col.key}
+                      hover={hover}
+                      setHover={setHover}
+                      clearHover={clearHover}
+                      className={cn("text-right py-1 px-1 tabular-nums", isZero && "text-muted-foreground/50")}
+                    >
+                      {showPercent ? `${percent.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 1})}%` : count}
+                    </HoverCell>
+                  )
+                })}
               </tr>
             )
           })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

@@ -6,12 +6,14 @@ import (
 	"log/slog"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
@@ -242,6 +244,24 @@ func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message,
 		m, err := parser(ts, content)
 		if err != nil {
 			return nil, err
+		}
+
+		for msgIndex, msg := range m {
+			if dmg, ok := msg.(messages.Damage); ok {
+				dmg.Trailer = slices.DeleteFunc(dmg.Trailer, func(entry types.TrailerEntry) bool {
+					// Adjust HitType to remove Hit flag if Glancing or Crushing is present
+					if entry.HitType.Has(types.HitTypeGlancing) {
+						dmg.HitType = (dmg.HitType | types.HitTypeGlancing) & (^types.HitTypeHit)
+						return true
+					}
+					if entry.HitType.Has(types.HitTypeCrushing) {
+						dmg.HitType = (dmg.HitType | types.HitTypeCrushing) & (^types.HitTypeHit)
+						return true
+					}
+					return false
+				})
+				m[msgIndex] = dmg
+			}
 		}
 
 		if len(m) == 0 {

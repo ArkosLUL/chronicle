@@ -134,19 +134,17 @@ export function InstancePage() {
     return transformToInstance(apiInstance);
   }, [apiInstance]);
 
-  // Compute default encounter (first boss kill, or first encounter)
-  const defaultEncounterId = useMemo(() => {
-    if (!instance) return null;
-    const firstBossKill = instance.encounters.find((e) => e.boss && e.kill);
-    const defaultEncounter = firstBossKill || instance.encounters[0];
-    return defaultEncounter?.id ?? null;
+  // Compute default encounter IDs (all encounters)
+  const defaultEncounterIds = useMemo(() => {
+    if (!instance) return [];
+    return instance.encounters.map(e => e.id);
   }, [instance]);
 
-  // Use user selection if set, otherwise use default
+  // Use user selection if set, otherwise use default (all)
   const selectedEncounterIds = useMemo(() => {
     if (userSelectedEncounterIds !== null) return userSelectedEncounterIds;
-    return defaultEncounterId ? [defaultEncounterId] : [];
-  }, [userSelectedEncounterIds, defaultEncounterId]);
+    return defaultEncounterIds;
+  }, [userSelectedEncounterIds, defaultEncounterIds]);
 
   // Get the start/end time of selected encounters for video sync
   // When multiple selected: start of first, end of last (by time order)

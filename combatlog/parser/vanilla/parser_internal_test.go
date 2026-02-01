@@ -62,14 +62,29 @@ func TestParserMessages(t *testing.T) {
 
 		require.Equal(t, messages.Damage{
 			Caster:  ptr.Ref[guid.GUID](0x000000000008B2C1),
-			HitType: types.HitTypeHit,
+			HitType: types.HitTypeGlancing,
 			Target:  0xF130002FE800DD20,
 			Amount:  60,
-			Trailer: []types.TrailerEntry{
-				{HitType: types.HitTypeGlancing},
-			},
-			School: types.PhysicalSchool,
+			School:  types.PhysicalSchool,
+			Trailer: types.Trailer{},
 		}, gl)
+
+		cr, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0xF1300038B500C02F hits 0x000000000002A904 for 0. (crushing) (886 absorbed)"))
+		require.NoError(t, err)
+		require.Equal(t, messages.Damage{
+			Caster:  ptr.Ref(guid.GUID(0xF1300038B500C02F)),
+			Target:  0x000000000002A904,
+			HitType: types.HitTypeCrushing,
+			Amount:  0,
+			Trailer: types.Trailer{
+				{
+					Amount:  ptr.Ref(uint32(886)),
+					HitType: types.HitTypePartialAbsorb,
+				},
+			},
+			School:          types.PhysicalSchool,
+			EnvironmentType: nil,
+		}, cr)
 	})
 
 	// With school: 0xF1400844930090A2's Firebolt hits 0xF130000950003FB5 for 38 Fire damage

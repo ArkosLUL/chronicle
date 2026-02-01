@@ -61,10 +61,12 @@ export function updateAbilityBreakout(
     breakout.FullBlocks = (breakout.FullBlocks || 0) + 1;
   } else if (hasHitType(hitType, HitTypeGlancing)) {
     breakout.Glancing = (breakout.Glancing || 0) + 1;
+    breakout.Hits += 1;
   } else if (hasHitType(hitType, HitTypeReflect)) { 
     breakout.Reflects = (breakout.Reflects || 0) + 1;
   } else if (hasHitType(hitType, HitTypeCrushing)) {
     breakout.Crushing = (breakout.Crushing || 0) + 1;
+    breakout.Hits += 1;
   } else {
     breakout.Unknown = (breakout.Unknown || 0) + 1;
     // console.log("Unknown hit type:", sourceName, hitType);

@@ -30,32 +30,20 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     items: ["healing_done", "healing_taken"],
   },
   {
-    label: "Damage Taken",
-    items: ["damage_taken", "enemy_damage_taken"],
-  },
-  {
     label: "Survivability",
-    items: ["mitigation"], // TODO: Add "avoidance" when spell school data is available
+    items: ["damage_taken", "enemy_damage_taken", "mitigation"], // TODO: Add "avoidance" when spell school data is available
   },
   {
-    label: "Procs",
-    items: ["extra_attacks"],
+    label: "Resources",
+    items: ["extra_attacks", "resource_regen"],
   },
   {
     label: "Deaths",
     items: ["deaths", "death_log"],
   },
   {
-    label: "Composition",
-    items: ["roles"],
-  },
-  {
-    label: "Activity",
-    items: ["all_activity"],
-  },
-  {
-    label: "Other",
-    items: ["empty"],
+    label: "Utility",
+    items: ["roles", "all_activity", "empty"],
   },
 ];
 

@@ -85,6 +85,7 @@ const (
 	LogInstanceEventTypeResourceChange LogInstanceEventType = "resource_change"
 	LogInstanceEventTypeExtraAttack    LogInstanceEventType = "extra_attack"
 	LogInstanceEventTypeSlain          LogInstanceEventType = "slain"
+	LogInstanceEventTypeCasts          LogInstanceEventType = "casts"
 )
 
 func (e *LogInstanceEventType) Scan(src interface{}) error {
@@ -128,7 +129,8 @@ func (e LogInstanceEventType) Valid() bool {
 		LogInstanceEventTypeHeal,
 		LogInstanceEventTypeResourceChange,
 		LogInstanceEventTypeExtraAttack,
-		LogInstanceEventTypeSlain:
+		LogInstanceEventTypeSlain,
+		LogInstanceEventTypeCasts:
 		return true
 	}
 	return false
@@ -141,6 +143,7 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 		LogInstanceEventTypeResourceChange,
 		LogInstanceEventTypeExtraAttack,
 		LogInstanceEventTypeSlain,
+		LogInstanceEventTypeCasts,
 	}
 }
 

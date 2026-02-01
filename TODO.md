@@ -17,3 +17,5 @@
 - Use https://github.com/otiai10/gosseract to extract server time from video and sync to fights
   - https://github.com/otiai10/ocrserver/wiki/API-Endpoints 
 - Sunder panel ASAP or bust
+- On the damage panel breakout, we can show damage mitigated by blocks/resists
+ - Or damage mitigated panel under "Damage Taken"

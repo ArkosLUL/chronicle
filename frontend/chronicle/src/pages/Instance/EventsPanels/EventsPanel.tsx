@@ -23,6 +23,7 @@ import { AllActivityPanel } from "./AllActivityDebug";
 import { createMitigationPanel } from "./Mitigation/Mitigation";
 import { createRolesPanel } from "./Roles/Roles";
 import { createEmptyPanel } from "./Empty/Empty";
+import { createResourceRegenPanel } from "./ResourceRegen/ResourceRegen";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -45,6 +46,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   mitigation: createMitigationPanel(),
   // TODO: Avoidance panel requires spell school data which isn't available yet
   // avoidance: createAvoidancePanel(),
+  resource_regen: createResourceRegenPanel(),
   roles: createRolesPanel(),
   all_activity: AllActivityPanel,
   empty: createEmptyPanel(),

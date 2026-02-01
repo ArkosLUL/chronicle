@@ -12,6 +12,7 @@ import { unifiedHealingProcessor } from "./healing.processor";
 import { mitigationProcessor } from "./mitigation.processor";
 import { avoidanceProcessor } from "./avoidance.processor";
 import { emptyProcessor } from "../Empty/empty.processor";
+import { resourceRegenProcessor } from "../ResourceRegen/resourceRegen.processor";
 
 // Export individual processors
 export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -23,6 +24,7 @@ export { unifiedHealingProcessor } from "./healing.processor";
 export { mitigationProcessor } from "./mitigation.processor";
 export { avoidanceProcessor } from "./avoidance.processor";
 export { emptyProcessor } from "../Empty/empty.processor";
+export { resourceRegenProcessor } from "../ResourceRegen/resourceRegen.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -34,6 +36,8 @@ export type { AllActivityDebugState as AllActivityState, RawDebugEvent, Encounte
 export type { MitigationResult, MitigationData, EncounterMitigation } from "./mitigation.processor";
 export type { AvoidanceResult, AvoidanceData, EncounterAvoidance } from "./avoidance.processor";
 export type { EmptyResult } from "../Empty/empty.processor";
+export type { ResourceRegenResult, PlayerResourceData, ResourceAbilityData } from "../ResourceRegen/resourceRegen.processor";
+// Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
 
@@ -63,5 +67,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   mitigation: mitigationProcessor,
   avoidance: avoidanceProcessor,
   empty: emptyProcessor,
+  resource_regen: resourceRegenProcessor,
   // Note: roles panel doesn't have its own processor - it reuses damage_taken and healing_done
 };

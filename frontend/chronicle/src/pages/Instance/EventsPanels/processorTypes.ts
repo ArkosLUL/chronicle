@@ -101,10 +101,44 @@ export interface SlainProcessorEvent extends EventMeta {
 }
 
 /**
+ * Cast action constants matching CastAction proto
+ */
+export const CastAction = {
+  Unknown: 0,
+  Casts: 1,
+  BeginsToCast: 2,
+  Channels: 3,
+  FailsCasting: 4,
+} as const;
+
+export type CastAction = typeof CastAction[keyof typeof CastAction];
+
+/**
+ * Spell info from Cast event
+ */
+export interface SpellInfo {
+  name: string;
+  id: number;
+  rank: number | null;
+}
+
+/**
+ * Cast event from the "casts" stream.
+ * Tracks spell casts, channels, and failed casts.
+ */
+export interface CastProcessorEvent extends EventMeta {
+  type: "casts";
+  caster: string;  // The unit casting the spell
+  action: CastAction;  // What type of cast action (casts, begins to cast, channels, fails)
+  target: string;  // The target of the spell (may be empty)
+  spell: SpellInfo;  // Information about the spell being cast
+}
+
+/**
  * Discriminated union of all event types.
  * Use event.type to narrow to a specific type.
  */
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent;
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

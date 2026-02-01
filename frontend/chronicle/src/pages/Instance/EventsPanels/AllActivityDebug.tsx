@@ -3,7 +3,7 @@
  */
 
 import { useState } from "react";
-import { Activity, Swords, Heart, Zap } from "lucide-react";
+import { Activity, Swords, Heart, Zap, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -29,6 +29,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   resource_change: { icon: Zap, color: "text-yellow-500", label: "Resource" },
   extra_attack: { icon: Swords, color: "text-orange-500", label: "Extra Attack" },
   slain: { icon: Activity, color: "text-gray-500", label: "Slain" },
+  casts: { icon: Wand2, color: "text-purple-500", label: "Casts" },
 };
 
 interface StreamToggleProps {
@@ -130,12 +131,12 @@ function AllActivityRender({
   };
   
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], casts: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, casts: 0 },
     encounters: emptyEncounters,
   };
   
@@ -152,6 +153,7 @@ function AllActivityRender({
     ...(enabledStreams.has("damage") ? rawEventsByStream.damage : []),
     ...(enabledStreams.has("heal") ? rawEventsByStream.heal : []),
     ...(enabledStreams.has("resource_change") ? rawEventsByStream.resource_change : []),
+    ...(enabledStreams.has("casts") ? rawEventsByStream.casts : []),
   ];
   
   // Sort by index to reconstruct true event order
@@ -161,7 +163,8 @@ function AllActivityRender({
   // Count total captured across all streams
   const totalCaptured = rawEventsByStream.damage.length + 
     rawEventsByStream.heal.length + 
-    rawEventsByStream.resource_change.length;
+    rawEventsByStream.resource_change.length +
+    rawEventsByStream.casts.length;
 
   if (loading) {
     return <div className="text-xs text-muted-foreground">Fetching data...</div>;
@@ -180,7 +183,7 @@ function AllActivityRender({
       {/* Stream toggles */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "casts"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

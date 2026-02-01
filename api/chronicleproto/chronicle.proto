@@ -16,6 +16,15 @@ enum School {
   Arcane = 8;
 }
 
+enum CastAction {
+  ActionUnknown = 0;
+  ActionCasts = 1;
+  ActionBeginsToCast = 2;
+  ActionChannels = 3;
+  ActionFailsCasting = 4;
+}
+
+
 message Tailer {
   optional uint32 amount = 1;
   uint32 hitType = 2;
@@ -70,4 +79,18 @@ message Slain {
   string target = 2;
   optional string caster = 3;
   optional Damage attribution = 4;
+}
+
+message Spell {
+  string name = 1;
+  int32 id = 2;
+  optional int32 rank = 3;
+}
+
+message Cast {
+  EventMeta meta = 1;
+  string caster = 2;
+  CastAction action = 3;
+  optional string target = 4;
+  Spell spell = 5;
 }

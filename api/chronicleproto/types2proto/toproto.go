@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/slice"
 )
 
@@ -86,6 +87,52 @@ func Slain(from time.Time, idx int32, ea messages.Slain) *chronicleproto.Slain {
 		Target:      ea.Victim.String(),
 		Caster:      OptionalGUID(ea.Killer),
 		Attribution: att,
+	}
+}
+
+func Cast(from time.Time, idx int32, ca messages.Cast) *chronicleproto.Cast {
+	var target *string
+	if ca.Target != nil {
+		target = ptr.Ref(ca.Target.Gid.String())
+	}
+	return &chronicleproto.Cast{
+		Meta: &chronicleproto.EventMeta{
+			Index:       idx,
+			OffsetMilli: ca.Timestamp.UnixMilli() - from.UnixMilli(),
+		},
+		Caster: ca.Caster.Gid.String(),
+		Action: CastAction(ca.Action),
+		Target: target,
+		Spell:  Spell(ca.Spell),
+	}
+}
+
+func Spell(spell types.Spell) *chronicleproto.Spell {
+	var rank *int32
+	if spell.Rank != nil {
+		//nolint:gosec
+		rank = ptr.Ref(int32(*spell.Rank))
+	}
+	return &chronicleproto.Spell{
+		Name: spell.Name,
+		//nolint:gosec
+		Id:   int32(spell.ID),
+		Rank: rank,
+	}
+}
+
+func CastAction(action types.CastActions) chronicleproto.CastAction {
+	switch action {
+	case types.CastActionsCasts:
+		return chronicleproto.CastAction_ActionCasts
+	case types.CastActionsFailsCasting:
+		return chronicleproto.CastAction_ActionFailsCasting
+	case types.CastActionsBeginsToCast:
+		return chronicleproto.CastAction_ActionBeginsToCast
+	case types.CastActionsChannels:
+		return chronicleproto.CastAction_ActionChannels
+	default:
+		return chronicleproto.CastAction_ActionUnknown
 	}
 }
 

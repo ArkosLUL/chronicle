@@ -19,6 +19,7 @@ type EncounterEvents struct {
 	ResourceChange *Builder[messages.ResourceChange, *chronicleproto.ResourceChange]
 	ExtraAttack    *Builder[messages.ExtraAttack, *chronicleproto.ExtraAttack]
 	Slain          *Builder[messages.Slain, *chronicleproto.Slain]
+	Casts          *Builder[messages.Cast, *chronicleproto.Cast]
 	cnter          int32
 }
 
@@ -29,6 +30,7 @@ func New() *EncounterEventsInProgress {
 		ResourceChange: NewBuilder[messages.ResourceChange, *chronicleproto.ResourceChange](),
 		ExtraAttack:    NewBuilder[messages.ExtraAttack, *chronicleproto.ExtraAttack](),
 		Slain:          NewBuilder[messages.Slain, *chronicleproto.Slain](),
+		Casts:          NewBuilder[messages.Cast, *chronicleproto.Cast](),
 	}
 }
 
@@ -58,11 +60,17 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing slain events: %w", err)
 	}
 
+	casts, err := e.Casts.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing casts events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
 	merge.ExtraAttack = append(merge.ExtraAttack, extraAttack...)
 	merge.Slain = append(merge.Slain, slain...)
+	merge.Casts = append(merge.Casts, casts...)
 
 	return nil
 }
@@ -94,6 +102,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		err := AddToBuilder(e.Slain, ty, e.nextIndex(), types2proto.Slain)
 		if err != nil {
 			return fmt.Errorf("slain proto: %w", err)
+		}
+	case messages.Cast:
+		err := AddToBuilder(e.Casts, ty, e.nextIndex(), types2proto.Cast)
+		if err != nil {
+			return fmt.Errorf("cast proto: %w", err)
 		}
 	}
 	return nil

@@ -15,7 +15,8 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'heal',
     'resource_change',
     'extra_attack',
-    'slain'
+    'slain',
+    'casts'
 );
 
 CREATE TYPE river_job_state AS ENUM (

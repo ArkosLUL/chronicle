@@ -88,6 +88,61 @@ func (School) EnumDescriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{0}
 }
 
+type CastAction int32
+
+const (
+	CastAction_ActionUnknown      CastAction = 0
+	CastAction_ActionCasts        CastAction = 1
+	CastAction_ActionBeginsToCast CastAction = 2
+	CastAction_ActionChannels     CastAction = 3
+	CastAction_ActionFailsCasting CastAction = 4
+)
+
+// Enum value maps for CastAction.
+var (
+	CastAction_name = map[int32]string{
+		0: "ActionUnknown",
+		1: "ActionCasts",
+		2: "ActionBeginsToCast",
+		3: "ActionChannels",
+		4: "ActionFailsCasting",
+	}
+	CastAction_value = map[string]int32{
+		"ActionUnknown":      0,
+		"ActionCasts":        1,
+		"ActionBeginsToCast": 2,
+		"ActionChannels":     3,
+		"ActionFailsCasting": 4,
+	}
+)
+
+func (x CastAction) Enum() *CastAction {
+	p := new(CastAction)
+	*p = x
+	return p
+}
+
+func (x CastAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CastAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_chronicle_proto_enumTypes[1].Descriptor()
+}
+
+func (CastAction) Type() protoreflect.EnumType {
+	return &file_chronicle_proto_enumTypes[1]
+}
+
+func (x CastAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CastAction.Descriptor instead.
+func (CastAction) EnumDescriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{1}
+}
+
 type Tailer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Amount        *uint32                `protobuf:"varint,1,opt,name=amount,proto3,oneof" json:"amount,omitempty"`
@@ -605,6 +660,142 @@ func (x *Slain) GetAttribution() *Damage {
 	return nil
 }
 
+type Spell struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Id            int32                  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	Rank          *int32                 `protobuf:"varint,3,opt,name=rank,proto3,oneof" json:"rank,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Spell) Reset() {
+	*x = Spell{}
+	mi := &file_chronicle_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Spell) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Spell) ProtoMessage() {}
+
+func (x *Spell) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Spell.ProtoReflect.Descriptor instead.
+func (*Spell) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Spell) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Spell) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Spell) GetRank() int32 {
+	if x != nil && x.Rank != nil {
+		return *x.Rank
+	}
+	return 0
+}
+
+type Cast struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Caster        string                 `protobuf:"bytes,2,opt,name=caster,proto3" json:"caster,omitempty"`
+	Action        CastAction             `protobuf:"varint,3,opt,name=action,proto3,enum=chronicleproto.CastAction" json:"action,omitempty"`
+	Target        *string                `protobuf:"bytes,4,opt,name=target,proto3,oneof" json:"target,omitempty"`
+	Spell         *Spell                 `protobuf:"bytes,5,opt,name=spell,proto3" json:"spell,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Cast) Reset() {
+	*x = Cast{}
+	mi := &file_chronicle_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Cast) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Cast) ProtoMessage() {}
+
+func (x *Cast) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Cast.ProtoReflect.Descriptor instead.
+func (*Cast) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Cast) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *Cast) GetCaster() string {
+	if x != nil {
+		return x.Caster
+	}
+	return ""
+}
+
+func (x *Cast) GetAction() CastAction {
+	if x != nil {
+		return x.Action
+	}
+	return CastAction_ActionUnknown
+}
+
+func (x *Cast) GetTarget() string {
+	if x != nil && x.Target != nil {
+		return *x.Target
+	}
+	return ""
+}
+
+func (x *Cast) GetSpell() *Spell {
+	if x != nil {
+		return x.Spell
+	}
+	return nil
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -663,7 +854,19 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01\x12=\n" +
 	"\vattribution\x18\x04 \x01(\v2\x16.chronicleproto.DamageH\x01R\vattribution\x88\x01\x01B\t\n" +
 	"\a_casterB\x0e\n" +
-	"\f_attribution*p\n" +
+	"\f_attribution\"M\n" +
+	"\x05Spell\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\x05R\x02id\x12\x17\n" +
+	"\x04rank\x18\x03 \x01(\x05H\x00R\x04rank\x88\x01\x01B\a\n" +
+	"\x05_rank\"\xd6\x01\n" +
+	"\x04Cast\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
+	"\x06caster\x18\x02 \x01(\tR\x06caster\x122\n" +
+	"\x06action\x18\x03 \x01(\x0e2\x1a.chronicleproto.CastActionR\x06action\x12\x1b\n" +
+	"\x06target\x18\x04 \x01(\tH\x00R\x06target\x88\x01\x01\x12+\n" +
+	"\x05spell\x18\x05 \x01(\v2\x15.chronicleproto.SpellR\x05spellB\t\n" +
+	"\a_target*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -676,7 +879,14 @@ const file_chronicle_proto_rawDesc = "" +
 	"\n" +
 	"\x06Shadow\x10\a\x12\n" +
 	"\n" +
-	"\x06Arcane\x10\bB/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
+	"\x06Arcane\x10\b*t\n" +
+	"\n" +
+	"CastAction\x12\x11\n" +
+	"\rActionUnknown\x10\x00\x12\x0f\n" +
+	"\vActionCasts\x10\x01\x12\x16\n" +
+	"\x12ActionBeginsToCast\x10\x02\x12\x12\n" +
+	"\x0eActionChannels\x10\x03\x12\x16\n" +
+	"\x12ActionFailsCasting\x10\x04B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
 
 var (
 	file_chronicle_proto_rawDescOnce sync.Once
@@ -690,32 +900,38 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 	return file_chronicle_proto_rawDescData
 }
 
-var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),            // 0: chronicleproto.School
-	(*Tailer)(nil),         // 1: chronicleproto.Tailer
-	(*EventMeta)(nil),      // 2: chronicleproto.EventMeta
-	(*Heal)(nil),           // 3: chronicleproto.Heal
-	(*Damage)(nil),         // 4: chronicleproto.Damage
-	(*ResourceChange)(nil), // 5: chronicleproto.ResourceChange
-	(*ExtraAttack)(nil),    // 6: chronicleproto.ExtraAttack
-	(*Slain)(nil),          // 7: chronicleproto.Slain
+	(CastAction)(0),        // 1: chronicleproto.CastAction
+	(*Tailer)(nil),         // 2: chronicleproto.Tailer
+	(*EventMeta)(nil),      // 3: chronicleproto.EventMeta
+	(*Heal)(nil),           // 4: chronicleproto.Heal
+	(*Damage)(nil),         // 5: chronicleproto.Damage
+	(*ResourceChange)(nil), // 6: chronicleproto.ResourceChange
+	(*ExtraAttack)(nil),    // 7: chronicleproto.ExtraAttack
+	(*Slain)(nil),          // 8: chronicleproto.Slain
+	(*Spell)(nil),          // 9: chronicleproto.Spell
+	(*Cast)(nil),           // 10: chronicleproto.Cast
 }
 var file_chronicle_proto_depIdxs = []int32{
-	2, // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
-	2, // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
-	0, // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
-	1, // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	2, // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
-	2, // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
-	2, // 6: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
-	4, // 7: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	3,  // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
+	3,  // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
+	0,  // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
+	2,  // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
+	3,  // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
+	3,  // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
+	3,  // 6: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
+	5,  // 7: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
+	3,  // 8: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
+	1,  // 9: chronicleproto.Cast.action:type_name -> chronicleproto.CastAction
+	9,  // 10: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -727,13 +943,15 @@ func file_chronicle_proto_init() {
 	file_chronicle_proto_msgTypes[3].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[4].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[6].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[7].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   7,
+			NumEnums:      2,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -25,6 +25,10 @@ export interface RawDebugEvent {
   amount: number;
   resourceType?: ResourceType; // For resource_change events
   extra?: string; // school/hitType info
+  // Cast-specific fields
+  castAction?: CastAction;
+  spellId?: number;
+  spellRank?: number | null;
 }
 
 /**
@@ -46,15 +50,15 @@ export interface AllActivityDebugState {
   encounters: Map<string, EncounterMeta>;
 }
 
-// This processor only handles damage, heal, and resource_change - not extra_attack
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
+// This processor handles damage, heal, resource_change, and cast events
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent;
 
 // Capture first N events per stream to ensure fair representation
 const MAX_RAW_EVENTS_PER_STREAM = 500;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change"],
+  streams: ["damage", "heal", "resource_change", "casts"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -64,6 +68,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       resource_change: [],
       extra_attack: [],
       slain: [],
+      casts: [],
     },
     streamCounts: {
       damage: 0,
@@ -71,6 +76,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       resource_change: 0,
       extra_attack: 0,
       slain: 0,
+      casts: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
   }),
@@ -96,8 +102,11 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     
     // Filter by selected players if any are selected
     const { entitySelection } = context;
+    // Cast events have caster but may not have target
+    const eventCaster = event.caster;
+    const eventTarget = "target" in event ? event.target : "";
     if (entitySelection.playerIds.size > 0) {
-      if(!(entitySelection.playerIds.has(event.caster) || entitySelection.playerIds.has(event.target))) {
+      if(!(entitySelection.playerIds.has(eventCaster) || (eventTarget && entitySelection.playerIds.has(eventTarget)))) {
         return;
       }
     }
@@ -106,31 +115,45 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     state.streamCounts[streamType]++;
     
     // Count events by caster
-    const key = event.caster || "Unknown";
+    const key = eventCaster || "Unknown";
     state.counts.set(key, (state.counts.get(key) || 0) + 1);
     
     // Store first N raw events per stream (ensures fair representation)
     const streamEvents = state.rawEventsByStream[streamType];
     if (streamEvents.length < MAX_RAW_EVENTS_PER_STREAM) {
       // Look up target name from players or units
-      const targetName = 
-        context.players[event.target]?.name ?? 
-        context.units?.[event.target]?.name ?? 
-        event.target;
+      const targetName = eventTarget
+        ? (context.players[eventTarget]?.name ?? 
+           context.units?.[eventTarget]?.name ?? 
+           eventTarget)
+        : "";
+      
+      // Get sourceName - cast events use spell.name instead
+      let sourceName = "";
+      let amount = 0;
+      if (streamType === "casts") {
+        const castEvent = event as CastProcessorEvent;
+        sourceName = castEvent.spell.name;
+        amount = 0; // Casts don't have an amount
+      } else {
+        const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
+        sourceName = regularEvent.sourceName;
+        amount = regularEvent.amount;
+      }
       
       const rawEvent: RawDebugEvent = {
         index: event.index,
         offsetMilli: event.offsetMilli,
         encounterID,
         streamType,
-        caster: event.caster,
-        sourceName: event.sourceName,
-        target: event.target,
+        caster: eventCaster,
+        sourceName,
+        target: eventTarget,
         targetName,
-        amount: event.amount,
+        amount,
       };
       
-      // Add stream-specific info based on streamType (not event.type which doesn't exist on raw events)
+      // Add stream-specific info based on streamType
       if (streamType === "resource_change") {
         const rcEvent = event as ResourceChangeProcessorEvent;
         rawEvent.resourceType = rcEvent.resourceType as ResourceType;
@@ -138,6 +161,14 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       } else if (streamType === "damage" || streamType === "heal") {
         const dhEvent = event as DamageProcessorEvent | HealProcessorEvent;
         rawEvent.extra = `school=${dhEvent.school} hit=${dhEvent.hitType}`;
+      } else if (streamType === "casts") {
+        const castEvent = event as CastProcessorEvent;
+        rawEvent.castAction = castEvent.action;
+        rawEvent.spellId = castEvent.spell.id;
+        rawEvent.spellRank = castEvent.spell.rank;
+        // Show cast action in extra field
+        const actionNames = ["Unknown", "Casts", "Begins", "Channels", "Fails"];
+        rawEvent.extra = actionNames[castEvent.action] || "Unknown";
       }
       
       streamEvents.push(rawEvent);

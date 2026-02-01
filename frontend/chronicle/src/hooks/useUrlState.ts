@@ -621,6 +621,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   death_log: 'dl',
   mitigation: 'mit',
   // avoidance: 'av', // TODO: Requires spell school data
+  resource_regen: 'rr',
   roles: 'r',
   all_activity: 'aa',
   empty: 'e',

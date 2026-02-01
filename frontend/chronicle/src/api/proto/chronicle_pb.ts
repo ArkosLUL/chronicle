@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSKiAQoFU2xhaW4SJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRIOCgZ0YXJnZXQYAiABKAkSEwoGY2FzdGVyGAMgASgJSACIAQESMAoLYXR0cmlidXRpb24YBCABKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2VIAYgBAUIJCgdfY2FzdGVyQg4KDF9hdHRyaWJ1dGlvbipwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCEIvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSKiAQoFU2xhaW4SJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRIOCgZ0YXJnZXQYAiABKAkSEwoGY2FzdGVyGAMgASgJSACIAQESMAoLYXR0cmlidXRpb24YBCABKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2VIAYgBAUIJCgdfY2FzdGVyQg4KDF9hdHRyaWJ1dGlvbiI9CgVTcGVsbBIMCgRuYW1lGAEgASgJEgoKAmlkGAIgASgFEhEKBHJhbmsYAyABKAVIAIgBAUIHCgVfcmFuayKxAQoEQ2FzdBInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBmNhc3RlchgCIAEoCRIqCgZhY3Rpb24YAyABKA4yGi5jaHJvbmljbGVwcm90by5DYXN0QWN0aW9uEhMKBnRhcmdldBgEIAEoCUgAiAEBEiQKBXNwZWxsGAUgASgLMhUuY2hyb25pY2xlcHJvdG8uU3BlbGxCCQoHX3RhcmdldCpwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCCp0CgpDYXN0QWN0aW9uEhEKDUFjdGlvblVua25vd24QABIPCgtBY3Rpb25DYXN0cxABEhYKEkFjdGlvbkJlZ2luc1RvQ2FzdBACEhIKDkFjdGlvbkNoYW5uZWxzEAMSFgoSQWN0aW9uRmFpbHNDYXN0aW5nEARCL1otZ2l0aHViLmNvbS9FbXlyay9jaHJvbmljbGUvYXBpL2Nocm9uaWNsZXByb3RvYgZwcm90bzM");
 
 /**
  * @generated from message chronicleproto.Tailer
@@ -265,6 +265,70 @@ export const SlainSchema: GenMessage<Slain> = /*@__PURE__*/
   messageDesc(file_chronicle, 6);
 
 /**
+ * @generated from message chronicleproto.Spell
+ */
+export type Spell = Message<"chronicleproto.Spell"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: int32 id = 2;
+   */
+  id: number;
+
+  /**
+   * @generated from field: optional int32 rank = 3;
+   */
+  rank?: number;
+};
+
+/**
+ * Describes the message chronicleproto.Spell.
+ * Use `create(SpellSchema)` to create a new message.
+ */
+export const SpellSchema: GenMessage<Spell> = /*@__PURE__*/
+  messageDesc(file_chronicle, 7);
+
+/**
+ * @generated from message chronicleproto.Cast
+ */
+export type Cast = Message<"chronicleproto.Cast"> & {
+  /**
+   * @generated from field: chronicleproto.EventMeta meta = 1;
+   */
+  meta?: EventMeta;
+
+  /**
+   * @generated from field: string caster = 2;
+   */
+  caster: string;
+
+  /**
+   * @generated from field: chronicleproto.CastAction action = 3;
+   */
+  action: CastAction;
+
+  /**
+   * @generated from field: optional string target = 4;
+   */
+  target?: string;
+
+  /**
+   * @generated from field: chronicleproto.Spell spell = 5;
+   */
+  spell?: Spell;
+};
+
+/**
+ * Describes the message chronicleproto.Cast.
+ * Use `create(CastSchema)` to create a new message.
+ */
+export const CastSchema: GenMessage<Cast> = /*@__PURE__*/
+  messageDesc(file_chronicle, 8);
+
+/**
  * @generated from enum chronicleproto.School
  */
 export enum School {
@@ -319,4 +383,40 @@ export enum School {
  */
 export const SchoolSchema: GenEnum<School> = /*@__PURE__*/
   enumDesc(file_chronicle, 0);
+
+/**
+ * @generated from enum chronicleproto.CastAction
+ */
+export enum CastAction {
+  /**
+   * @generated from enum value: ActionUnknown = 0;
+   */
+  ActionUnknown = 0,
+
+  /**
+   * @generated from enum value: ActionCasts = 1;
+   */
+  ActionCasts = 1,
+
+  /**
+   * @generated from enum value: ActionBeginsToCast = 2;
+   */
+  ActionBeginsToCast = 2,
+
+  /**
+   * @generated from enum value: ActionChannels = 3;
+   */
+  ActionChannels = 3,
+
+  /**
+   * @generated from enum value: ActionFailsCasting = 4;
+   */
+  ActionFailsCasting = 4,
+}
+
+/**
+ * Describes the enum chronicleproto.CastAction.
+ */
+export const CastActionSchema: GenEnum<CastAction> = /*@__PURE__*/
+  enumDesc(file_chronicle, 1);
 

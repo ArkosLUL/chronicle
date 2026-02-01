@@ -16,6 +16,7 @@ type Events struct {
 	ResourceChange []byte
 	ExtraAttack    []byte
 	Slain          []byte
+	Casts          []byte
 }
 
 func NewEvents() *Events {
@@ -25,6 +26,7 @@ func NewEvents() *Events {
 		ResourceChange: make([]byte, 0),
 		ExtraAttack:    make([]byte, 0),
 		Slain:          make([]byte, 0),
+		Casts:          make([]byte, 0),
 	}
 }
 
@@ -58,6 +60,12 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 	}
 	e.Slain = nil
 
+	casts, err := gzipData(e.Casts)
+	if err != nil {
+		return fmt.Errorf("gzip cast events: %w", err)
+	}
+	e.Casts = nil
+
 	res := db.InsertLogInstanceEvents(ctx, []database.InsertLogInstanceEventsParams{
 		{
 			InstanceID: instanceID,
@@ -83,6 +91,11 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 			InstanceID: instanceID,
 			Type:       database.LogInstanceEventTypeSlain,
 			Events:     slain,
+		},
+		{
+			InstanceID: instanceID,
+			Type:       database.LogInstanceEventTypeCasts,
+			Events:     casts,
 		},
 	})
 	if err := res.Close(); err != nil {

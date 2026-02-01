@@ -151,6 +151,34 @@ const (
 	ArcaneSchool   School = 0x40
 )
 
+func (s School) Has(flag School) bool {
+	return s&flag != 0
+}
+func (s School) String() string {
+	var parts []string
+	for k, v := range map[School]string{
+		PhysicalSchool: "Physical",
+		HolySchool:     "Holy",
+		FireSchool:     "Fire",
+		NatureSchool:   "Nature",
+		FrostSchool:    "Frost",
+		ShadowSchool:   "Shadow",
+		ArcaneSchool:   "Arcane",
+	} {
+		if s.Has(k) {
+			parts = append(parts, v)
+		} else if k != NoneSchool {
+			parts = append(parts, "Unknown")
+		}
+	}
+
+	if len(parts) == 0 {
+		return "None"
+	}
+
+	return strings.Join(parts, "|")
+}
+
 func ParseSchool(s string) (School, error) {
 	switch strings.ToLower(s) {
 	case "physical":

@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
@@ -165,7 +166,12 @@ func HitTypeCMD() *serpent.Command {
 			}
 
 			for spellName, hitTypes := range h.SpellName {
-				fmt.Printf("Spell: %s\n", spellName)
+				schools := make([]string, len(h.SpellSchool[spellName]))
+				for school, _ := range h.SpellSchool[spellName] {
+					schools = append(schools, school.String())
+				}
+
+				fmt.Printf("Spell: %s (%s)\n", spellName, strings.Join(schools, ", "))
 				for hitType, count := range hitTypes {
 					fmt.Printf("  %s: %d\n", hitType.String(), count)
 				}
@@ -179,12 +185,14 @@ func HitTypeCMD() *serpent.Command {
 }
 
 type hitTypeConsumer struct {
-	SpellName map[string]map[types.HitType]int
+	SpellName   map[string]map[types.HitType]int
+	SpellSchool map[string]map[types.School]int
 }
 
 func (h *hitTypeConsumer) Process(m messages.Message) error {
 	if h.SpellName == nil {
 		h.SpellName = make(map[string]map[types.HitType]int)
+		h.SpellSchool = make(map[string]map[types.School]int)
 	}
 	switch msg := m.(type) {
 	case messages.Damage:
@@ -194,8 +202,10 @@ func (h *hitTypeConsumer) Process(m messages.Message) error {
 
 		if _, ok := h.SpellName[*msg.SpellName]; !ok {
 			h.SpellName[*msg.SpellName] = make(map[types.HitType]int)
+			h.SpellSchool[*msg.SpellName] = make(map[types.School]int)
 		}
 		h.SpellName[*msg.SpellName][msg.HitType]++
+		h.SpellSchool[*msg.SpellName][msg.School]++
 	}
 	return nil
 }

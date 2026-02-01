@@ -27,6 +27,7 @@ func RootCmd() *serpent.Command {
 		MergeCmd(),
 		ParseCmd(),
 		CreaturesCmd(),
+		HitTypeCMD(),
 		GuidCmd(),
 		SortCmd(),
 		ClientFiles(),

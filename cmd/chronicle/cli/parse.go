@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 
@@ -132,4 +134,68 @@ func CreaturesCmd() *serpent.Command {
 	}
 
 	return cmd
+}
+
+func HitTypeCMD() *serpent.Command {
+	cmd := &serpent.Command{
+		Use:        "hits <file> <file>",
+		Middleware: serpent.RequireNArgs(2),
+		Handler: func(i *serpent.Invocation) error {
+			ctx := i.Context()
+			logger := getLogger(i)
+
+			files, err := openFileReaders(i.Args[0], i.Args[1])
+			if err != nil {
+				return err
+			}
+			defer func() { closeFiles(files...) }()
+
+			m := vanilla.Merger(logger)
+			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
+			if err != nil {
+				return err
+			}
+
+			p := vanilla.NewFromScanner(logger, liner, scan)
+			h := &hitTypeConsumer{}
+			c := consumers.New(logger, h)
+			err = c.ConsumeAll(ctx, p)
+			if err != nil {
+				return err
+			}
+
+			for spellName, hitTypes := range h.SpellName {
+				fmt.Printf("Spell: %s\n", spellName)
+				for hitType, count := range hitTypes {
+					fmt.Printf("  %s: %d\n", hitType.String(), count)
+				}
+			}
+
+			return nil
+		},
+	}
+
+	return cmd
+}
+
+type hitTypeConsumer struct {
+	SpellName map[string]map[types.HitType]int
+}
+
+func (h *hitTypeConsumer) Process(m messages.Message) error {
+	if h.SpellName == nil {
+		h.SpellName = make(map[string]map[types.HitType]int)
+	}
+	switch msg := m.(type) {
+	case messages.Damage:
+		if msg.SpellName == nil {
+			return nil
+		}
+
+		if _, ok := h.SpellName[*msg.SpellName]; !ok {
+			h.SpellName[*msg.SpellName] = make(map[types.HitType]int)
+		}
+		h.SpellName[*msg.SpellName][msg.HitType]++
+	}
+	return nil
 }

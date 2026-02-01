@@ -2,19 +2,25 @@
  * Shared ability breakout utilities for damage processors.
  */
 
-import { hasHitType, HitTypeCrit, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypePeriodic } from "@/lib/hittype/hittype";
+import { hasHitType, HitTypeCrit, HitTypeCrushing, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeGlancing, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypePeriodic, HitTypeReflect } from "@/lib/hittype/hittype";
 
 export interface DamageAbilityBreakout {
   Total: number;
   Count: number;
   Crits: number;
   Hits: number;
-  Dodges: number;
-  Parrys: number;
   Misses: number;
-  FullResist: number;
-  Immunes: number;
-  FullBlocks: number;
+
+  // These outcomes are not guaranteed to be present in every ability
+  Dodges?: number;
+  Parries?: number;
+  FullResist?: number;
+  Immunes?: number;
+  FullBlocks?: number;
+  Reflects?: number;
+  Glancing?: number;
+  Crushing?: number;
+  Unknown?: number;
 }
 
 export function createEmptyAbilityBreakout(): DamageAbilityBreakout {
@@ -24,11 +30,6 @@ export function createEmptyAbilityBreakout(): DamageAbilityBreakout {
     Crits: 0,
     Hits: 0,
     Misses: 0,
-    FullResist: 0,
-    Dodges: 0,
-    Parrys: 0,
-    Immunes: 0,
-    FullBlocks: 0,
   };
 }
 
@@ -49,16 +50,23 @@ export function updateAbilityBreakout(
   } else if (hasHitType(hitType, HitTypeHit) || hasHitType(hitType, HitTypePeriodic)) {
     breakout.Hits += 1;
   } else if (hasHitType(hitType, HitTypeFullResist)) {
-    breakout.FullResist += 1;
+    breakout.FullResist = (breakout.FullResist || 0) + 1;
   } else if (hasHitType(hitType, HitTypeDodge)) {
-    breakout.Dodges += 1;
+    breakout.Dodges = (breakout.Dodges || 0) + 1;
   } else if (hasHitType(hitType, HitTypeParry)) {
-    breakout.Parrys += 1;
+    breakout.Parries = (breakout.Parries || 0) + 1;
   } else if (hasHitType(hitType, HitTypeImmune)) {
-    breakout.Immunes += 1;
+    breakout.Immunes = (breakout.Immunes || 0) + 1;
   } else if (hasHitType(hitType, HitTypeFullBlock)) {
-    breakout.FullBlocks += 1;
+    breakout.FullBlocks = (breakout.FullBlocks || 0) + 1;
+  } else if (hasHitType(hitType, HitTypeGlancing)) {
+    breakout.Glancing = (breakout.Glancing || 0) + 1;
+  } else if (hasHitType(hitType, HitTypeReflect)) { 
+    breakout.Reflects = (breakout.Reflects || 0) + 1;
+  } else if (hasHitType(hitType, HitTypeCrushing)) {
+    breakout.Crushing = (breakout.Crushing || 0) + 1;
   } else {
+    breakout.Unknown = (breakout.Unknown || 0) + 1;
     // console.log("Unknown hit type:", sourceName, hitType);
   }
 }

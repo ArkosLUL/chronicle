@@ -39,6 +39,43 @@ type HitType uint32
 func (h HitType) Has(flag HitType) bool {
 	return h&flag != 0
 }
+func (h HitType) String() string {
+	var parts []string
+	for k, v := range map[HitType]string{
+		HitTypeOffHand:       "OffHand",
+		HitTypeHit:           "Hit",
+		HitTypeCrit:          "Crit",
+		HitTypePartialResist: "PartialResist",
+		HitTypeFullResist:    "FullResist",
+		HitTypeMiss:          "Miss",
+		HitTypePartialAbsorb: "PartialAbsorb",
+		HitTypeFullAbsorb:    "FullAbsorb",
+		HitTypeGlancing:      "Glancing",
+		HitTypeCrushing:      "Crushing",
+		HitTypeEvade:         "Evade",
+		HitTypeDodge:         "Dodge",
+		HitTypeParry:         "Parry",
+		HitTypeImmune:        "Immune",
+		HitTypeEnvironment:   "Environment",
+		HitTypeDeflect:       "Deflect",
+		HitTypeInterrupt:     "Interrupt",
+		HitTypePartialBlock:  "PartialBlock",
+		HitTypeFullBlock:     "FullBlock",
+		HitTypeSplit:         "Split",
+		HitTypeReflect:       "Reflect",
+		HitTypePeriodic:      "Periodic",
+	} {
+		if h.Has(k) {
+			parts = append(parts, v)
+		}
+	}
+
+	if len(parts) == 0 {
+		return "None"
+	}
+
+	return strings.Join(parts, "|")
+}
 
 const (
 	HitTypeNone          HitType = 0x00000000

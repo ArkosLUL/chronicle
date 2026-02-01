@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout, HitTypeStats } from '@/pages/Instance/EventsPanels/processors/abilityBreakout'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
-import { ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown, ChevronLeft } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip/tooltip'
 
 
@@ -334,7 +334,9 @@ export function AbilityTable({
           className="text-muted-foreground hover:text-foreground p-0.5"
           title={isExpanded ? "Collapse hit breakdown" : "Expand hit breakdown"}
         >
-          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <>More detail <ChevronRight className="w-3 h-3" /></>}
+          {isExpanded ? 
+          <span className="inline-flex items-center gap-0.5"><ChevronLeft className="w-3 h-3" /> Less detail</span> : 
+          <span className="inline-flex items-center gap-0.5">More detail <ChevronRight className="w-3 h-3" /></span>}
         </button>
       </div>
       <div className="max-h-64 overflow-y-auto styled-scrollbar">

@@ -8,7 +8,7 @@ import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../proces
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 // Re-export the shared type for backwards compatibility
-export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
+export type { DamageAbilityBreakout, HitTypeStats } from "../processors/abilityBreakout";
 
 /**
  * Entity source types for damage aggregation

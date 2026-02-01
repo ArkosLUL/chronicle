@@ -4,6 +4,25 @@
 
 import { hasHitType, HitTypeCrit, HitTypeCrushing, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeGlancing, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypePeriodic, HitTypeReflect } from "@/lib/hittype/hittype";
 
+/** Stats for a specific hit type (min/max/total for avg calculation) */
+export interface HitTypeStats {
+  count: number;
+  total: number;
+  min: number;
+  max: number;
+}
+
+export function createEmptyHitTypeStats(): HitTypeStats {
+  return { count: 0, total: 0, min: Infinity, max: -Infinity };
+}
+
+export function updateHitTypeStats(stats: HitTypeStats, amount: number): void {
+  stats.count += 1;
+  stats.total += amount;
+  if (amount < stats.min) stats.min = amount;
+  if (amount > stats.max) stats.max = amount;
+}
+
 export interface DamageAbilityBreakout {
   Total: number;
   Count: number;
@@ -21,6 +40,12 @@ export interface DamageAbilityBreakout {
   Glancing?: number;
   Crushing?: number;
   Unknown?: number;
+
+  // Min/max/total stats for damage-dealing hit types
+  HitStats?: HitTypeStats;      // Regular hits (non-crit, non-glancing, non-crushing)
+  CritStats?: HitTypeStats;     // Critical hits
+  GlancingStats?: HitTypeStats; // Glancing blows
+  CrushingStats?: HitTypeStats; // Crushing blows
 }
 
 export function createEmptyAbilityBreakout(): DamageAbilityBreakout {
@@ -45,10 +70,16 @@ export function updateAbilityBreakout(
   if (hasHitType(hitType, HitTypeCrit)) {
     breakout.Crits += 1;
     breakout.Hits += 1;
+    // Track crit stats
+    if (!breakout.CritStats) breakout.CritStats = createEmptyHitTypeStats();
+    updateHitTypeStats(breakout.CritStats, amount);
   } else if (hasHitType(hitType, HitTypeMiss)) {
     breakout.Misses += 1;
   } else if (hasHitType(hitType, HitTypeHit) || hasHitType(hitType, HitTypePeriodic)) {
     breakout.Hits += 1;
+    // Track regular hit stats
+    if (!breakout.HitStats) breakout.HitStats = createEmptyHitTypeStats();
+    updateHitTypeStats(breakout.HitStats, amount);
   } else if (hasHitType(hitType, HitTypeFullResist)) {
     breakout.FullResist = (breakout.FullResist || 0) + 1;
   } else if (hasHitType(hitType, HitTypeDodge)) {
@@ -62,11 +93,17 @@ export function updateAbilityBreakout(
   } else if (hasHitType(hitType, HitTypeGlancing)) {
     breakout.Glancing = (breakout.Glancing || 0) + 1;
     breakout.Hits += 1;
+    // Track glancing stats
+    if (!breakout.GlancingStats) breakout.GlancingStats = createEmptyHitTypeStats();
+    updateHitTypeStats(breakout.GlancingStats, amount);
   } else if (hasHitType(hitType, HitTypeReflect)) { 
     breakout.Reflects = (breakout.Reflects || 0) + 1;
   } else if (hasHitType(hitType, HitTypeCrushing)) {
     breakout.Crushing = (breakout.Crushing || 0) + 1;
     breakout.Hits += 1;
+    // Track crushing stats
+    if (!breakout.CrushingStats) breakout.CrushingStats = createEmptyHitTypeStats();
+    updateHitTypeStats(breakout.CrushingStats, amount);
   } else {
     breakout.Unknown = (breakout.Unknown || 0) + 1;
     // console.log("Unknown hit type:", sourceName, hitType);

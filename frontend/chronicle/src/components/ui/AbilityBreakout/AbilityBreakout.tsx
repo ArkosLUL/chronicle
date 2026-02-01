@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import type { DamageAbilityBreakout } from '@/pages/Instance/EventsPanels/DamageDone/damageDone.processor'
+import type { DamageAbilityBreakout, HitTypeStats } from '@/pages/Instance/EventsPanels/processors/abilityBreakout'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip/tooltip'
@@ -9,6 +9,9 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip
 // ============================================================================
 // Types
 // ============================================================================
+
+/** Expanded view modes */
+type ExpandedViewMode = 'count' | 'percent' | 'minmax'
 
 /** Hit type column definition for expanded view */
 interface HitTypeColumn {
@@ -33,6 +36,20 @@ const HIT_TYPE_COLUMNS: HitTypeColumn[] = [
   { key: 'Crushing', label: 'Cr', fullName: 'Crushing', description: 'Increased damage hit' },
 ]
 
+/** Min/max stats columns (only for damage-dealing hit types) */
+interface MinMaxColumn {
+  statsKey: 'HitStats' | 'CritStats' | 'GlancingStats' | 'CrushingStats'
+  label: string
+  fullName: string
+}
+
+const MIN_MAX_COLUMNS: MinMaxColumn[] = [
+  { statsKey: 'HitStats', label: 'Hit', fullName: 'Regular Hits' },
+  { statsKey: 'CritStats', label: 'Crit', fullName: 'Critical Hits' },
+  { statsKey: 'GlancingStats', label: 'Glnc', fullName: 'Glancing Blows' },
+  { statsKey: 'CrushingStats', label: 'Crsh', fullName: 'Crushing Blows' },
+]
+
 /** Get the value of a hit type column from an ability */
 function getHitTypeValue(ability: DamageAbilityBreakout, key: keyof DamageAbilityBreakout): number {
   const val = ability[key]
@@ -44,6 +61,31 @@ function getVisibleHitTypeColumns(abilities: DamageAbilityBreakout[]): HitTypeCo
   return HIT_TYPE_COLUMNS.filter(col => 
     abilities.some(ability => getHitTypeValue(ability, col.key) > 0)
   )
+}
+
+/** Determine which min/max columns have data across all abilities */
+function getVisibleMinMaxColumns(abilities: DamageAbilityBreakout[]): MinMaxColumn[] {
+  return MIN_MAX_COLUMNS.filter(col =>
+    abilities.some(ability => {
+      const stats = ability[col.statsKey] as HitTypeStats | undefined
+      return stats && stats.count > 0
+    })
+  )
+}
+
+/** Format min/avg/max as a compact string */
+function formatMinAvgMax(stats: HitTypeStats | undefined): React.ReactNode {
+  if (!stats || stats.count === 0) return '-'
+  const avg = Math.round(stats.total / stats.count)
+  const min = stats.min === Infinity ? 0 : stats.min
+  const max = stats.max === -Infinity ? 0 : stats.max
+  return <>
+  <span>{min}</span>
+  -
+  <span>{avg}</span>
+  -
+  <span className='font-semibold'>{max}</span>
+  </>
 }
 
 /**
@@ -148,7 +190,7 @@ export function AbilityTable({
 }: AbilityTableProps) {
   const { hover, setHover, clearHover } = useBreakoutHover()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [showPercent, setShowPercent] = useState(true)
+  const [viewMode, setViewMode] = useState<ExpandedViewMode>('percent')
   
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
@@ -162,8 +204,9 @@ export function AbilityTable({
   // Check if any ability has overheal data
   const hasOverhealData = showOverheal && sorted.some(a => a.overheal !== undefined && a.overheal > 0)
   
-  // Get visible hit type columns (only those with non-zero values)
-  const visibleHitTypeColumns = isExpanded ? getVisibleHitTypeColumns(sorted) : []
+  // Get visible columns based on view mode
+  const visibleHitTypeColumns = isExpanded && viewMode !== 'minmax' ? getVisibleHitTypeColumns(sorted) : []
+  const visibleMinMaxColumns = isExpanded && viewMode === 'minmax' ? getVisibleMinMaxColumns(sorted) : []
 
   // Column IDs for hover tracking
   const COL = {
@@ -184,22 +227,34 @@ export function AbilityTable({
           <>
             <span className="text-muted-foreground mr-1">Show:</span>
             <button
-              onClick={() => setShowPercent(false)}
+              onClick={() => setViewMode('count')}
               className={cn(
                 "px-1.5 py-0.5 rounded",
-                !showPercent ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                viewMode === 'count' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
               )}
+              title="Show counts"
             >
               #
             </button>
             <button
-              onClick={() => setShowPercent(true)}
+              onClick={() => setViewMode('percent')}
               className={cn(
-                "px-1.5 py-0.5 rounded mr-2",
-                showPercent ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                "px-1.5 py-0.5 rounded",
+                viewMode === 'percent' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
               )}
+              title="Show percentages"
             >
               %
+            </button>
+            <button
+              onClick={() => setViewMode('minmax')}
+              className={cn(
+                "px-1.5 py-0.5 rounded mr-2",
+                viewMode === 'minmax' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Show min/avg/max damage"
+            >
+              ↕
             </button>
           </>
         )}
@@ -229,8 +284,8 @@ export function AbilityTable({
               {!isExpanded && (
                 <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.CRIT && "bg-primary/20")}>Crit%</th>
               )}
-              {/* Expanded view: individual hit type columns */}
-              {isExpanded && visibleHitTypeColumns.map(col => (
+              {/* Expanded view: individual hit type columns (count/percent mode) */}
+              {isExpanded && viewMode !== 'minmax' && visibleHitTypeColumns.map(col => (
                 <th 
                   key={col.key}
                   className={cn("text-right py-1.5 px-1 font-medium", hover.columnId === col.key && "bg-primary/20")}
@@ -242,6 +297,23 @@ export function AbilityTable({
                     <TooltipContent side="top" hideArrow>
                       <div className="font-medium">{col.fullName}</div>
                       {col.description && <div className="text-muted-foreground text-2xs">{col.description}</div>}
+                    </TooltipContent>
+                  </Tooltip>
+                </th>
+              ))}
+              {/* Expanded view: min/avg/max columns (minmax mode) */}
+              {isExpanded && viewMode === 'minmax' && visibleMinMaxColumns.map(col => (
+                <th 
+                  key={col.statsKey}
+                  className={cn("text-right py-1.5 px-1 font-medium", hover.columnId === col.statsKey && "bg-primary/20")}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">{col.label}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" hideArrow>
+                      <div className="font-medium">{col.fullName}</div>
+                      <div className="text-muted-foreground text-2xs">min / avg / max</div>
                     </TooltipContent>
                   </Tooltip>
                 </th>
@@ -340,11 +412,11 @@ export function AbilityTable({
                     {critPercent.toLocaleString(undefined, {maximumFractionDigits: 1})}%
                   </HoverCell>
                 )}
-                {/* Expanded view: individual hit type columns */}
-                {isExpanded && visibleHitTypeColumns.map(col => {
+                {/* Expanded view: individual hit type columns (count/percent mode) */}
+                {isExpanded && viewMode !== 'minmax' && visibleHitTypeColumns.map(col => {
                   const count = getHitTypeValue(ability, col.key)
                   const percent = ability.Count > 0 ? (count / ability.Count) * 100 : 0
-                  const isZero = showPercent ? percent === 0 : count === 0
+                  const isZero = viewMode === 'percent' ? percent === 0 : count === 0
                   return (
                     <HoverCell
                       key={col.key}
@@ -355,7 +427,25 @@ export function AbilityTable({
                       clearHover={clearHover}
                       className={cn("text-right py-1 px-1 tabular-nums", isZero && "text-muted-foreground/50")}
                     >
-                      {showPercent ? `${percent.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 1})}%` : count}
+                      {viewMode === 'percent' ? `${percent.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 1})}%` : count}
+                    </HoverCell>
+                  )
+                })}
+                {/* Expanded view: min/avg/max columns (minmax mode) */}
+                {isExpanded && viewMode === 'minmax' && visibleMinMaxColumns.map(col => {
+                  const stats = ability[col.statsKey] as HitTypeStats | undefined
+                  const hasData = stats && stats.count > 0
+                  return (
+                    <HoverCell
+                      key={col.statsKey}
+                      rowId={rowId}
+                      columnId={col.statsKey}
+                      hover={hover}
+                      setHover={setHover}
+                      clearHover={clearHover}
+                      className={cn("text-right py-1 px-1 tabular-nums text-xs", !hasData && "text-muted-foreground/50")}
+                    >
+                      {formatMinAvgMax(stats)}
                     </HoverCell>
                   )
                 })}

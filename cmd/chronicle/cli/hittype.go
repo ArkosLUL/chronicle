@@ -62,3 +62,39 @@ func HitType() *serpent.Command {
 	}
 	return cmd
 }
+
+func SchoolType() *serpent.Command {
+	cmd := &serpent.Command{
+		Use:        "schooltype <number>",
+		Aliases:    []string{"school"},
+		Middleware: serpent.RequireNArgs(1),
+		Options:    []serpent.Option{},
+		Handler: func(i *serpent.Invocation) error {
+			ht, err := strconv.ParseUint(i.Args[0], 10, 64)
+			if err != nil {
+				return fmt.Errorf("parsing hittype %s: %w", i.Args[0], err)
+			}
+
+			htt := types.School(uint32(ht))
+			_, _ = fmt.Fprintf(os.Stdout, "HitType: %d\n", htt)
+			printType := func(n string, flag types.School) {
+				out := ""
+				if htt.Has(flag) {
+					out = "true"
+				}
+				_, _ = fmt.Fprintf(os.Stdout, "%14s: %s\n", n, out)
+			}
+
+			printType("None", types.PhysicalSchool)
+			printType("Hit", types.HolySchool)
+			printType("Offhand", types.FireSchool)
+			printType("Hit", types.NatureSchool)
+			printType("Crit", types.FrostSchool)
+			printType("PartialResist", types.ShadowSchool)
+			printType("FullResist", types.ArcaneSchool)
+
+			return nil
+		},
+	}
+	return cmd
+}

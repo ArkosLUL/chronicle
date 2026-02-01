@@ -155,6 +155,9 @@ func (s School) Has(flag School) bool {
 	return s&flag != 0
 }
 func (s School) String() string {
+	if s == 0 {
+		return "None"
+	}
 	var parts []string
 	for k, v := range map[School]string{
 		PhysicalSchool: "Physical",
@@ -167,13 +170,11 @@ func (s School) String() string {
 	} {
 		if s.Has(k) {
 			parts = append(parts, v)
-		} else if k != NoneSchool {
-			parts = append(parts, "Unknown")
 		}
 	}
 
 	if len(parts) == 0 {
-		return "None"
+		return "Unknown"
 	}
 
 	return strings.Join(parts, "|")

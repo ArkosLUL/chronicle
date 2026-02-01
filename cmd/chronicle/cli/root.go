@@ -33,6 +33,7 @@ func RootCmd() *serpent.Command {
 		ClientFiles(),
 		ExtractCmd(),
 		HitType(),
+		SchoolType(),
 	)
 
 	return cmd

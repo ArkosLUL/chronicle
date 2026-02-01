@@ -297,36 +297,48 @@ export function AbilityTable({
         {isExpanded && (
           <>
             <span className="text-muted-foreground mr-1">Show:</span>
-            <button
-              onClick={() => setViewMode('count')}
-              className={cn(
-                "px-1.5 py-0.5 rounded",
-                viewMode === 'count' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Show counts"
-            >
-              #
-            </button>
-            <button
-              onClick={() => setViewMode('percent')}
-              className={cn(
-                "px-1.5 py-0.5 rounded",
-                viewMode === 'percent' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Show percentages"
-            >
-              %
-            </button>
-            <button
-              onClick={() => setViewMode('minmax')}
-              className={cn(
-                "px-1.5 py-0.5 rounded mr-2",
-                viewMode === 'minmax' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Show min/avg/max damage"
-            >
-              ↕
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setViewMode('count')}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded",
+                    viewMode === 'count' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  #
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" hideArrow>Show counts</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setViewMode('percent')}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded",
+                    viewMode === 'percent' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  %
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" hideArrow>Show percentages</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setViewMode('minmax')}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded mr-2",
+                    viewMode === 'minmax' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  ↕
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" hideArrow>Show min/avg/max damage</TooltipContent>
+            </Tooltip>
           </>
         )}
         <button

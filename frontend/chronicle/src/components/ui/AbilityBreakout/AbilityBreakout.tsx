@@ -239,10 +239,9 @@ export function AbilityTable({
   showHits = true,
   showOverheal = false,
 }: AbilityTableProps) {
-  const { hover, setHover, clearHover } = useBreakoutHover()
+  const { hover, setHover, clearHover, selectedAbilities, toggleAbilitySelection, clearSelection } = useBreakoutHover()
   const [isExpanded, setIsExpanded] = useState(false)
   const [viewMode, setViewMode] = useState<ExpandedViewMode>('percent')
-  const [selectedAbilities, setSelectedAbilities] = useState<Set<string>>(new Set())
   
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
@@ -260,20 +259,8 @@ export function AbilityTable({
   const visibleHitTypeColumns = isExpanded && viewMode !== 'minmax' ? getVisibleHitTypeColumns(sorted) : []
   const visibleMinMaxColumns = isExpanded && viewMode === 'minmax' ? getVisibleMinMaxColumns(sorted) : []
   
-  // Selection helpers
+  // Selection state from context
   const hasSelection = selectedAbilities.size > 0
-  const toggleAbilitySelection = (name: string) => {
-    setSelectedAbilities(prev => {
-      const next = new Set(prev)
-      if (next.has(name)) {
-        next.delete(name)
-      } else {
-        next.add(name)
-      }
-      return next
-    })
-  }
-  const clearSelection = () => setSelectedAbilities(new Set())
   
   // Compute totals from selected abilities (or all if none selected)
   const abilitiesToSum = hasSelection 
@@ -347,7 +334,7 @@ export function AbilityTable({
           className="text-muted-foreground hover:text-foreground p-0.5"
           title={isExpanded ? "Collapse hit breakdown" : "Expand hit breakdown"}
         >
-          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <>More detail <ChevronRight className="w-3 h-3" /></>}
         </button>
       </div>
       <div className="max-h-64 overflow-y-auto styled-scrollbar">

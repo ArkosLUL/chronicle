@@ -1,6 +1,7 @@
 /**
- * Context for synchronizing hover state across multiple breakout tables.
+ * Context for synchronizing hover and selection state across multiple breakout tables.
  * When hovering over a cell, highlights the row and column across all tables.
+ * When selecting abilities, the selection is shared across all tables.
  */
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
@@ -16,12 +17,17 @@ interface BreakoutHoverContextValue {
   hover: BreakoutHoverState;
   setHover: (state: BreakoutHoverState) => void;
   clearHover: () => void;
+  // Selection state shared across panels
+  selectedAbilities: Set<string>;
+  toggleAbilitySelection: (name: string) => void;
+  clearSelection: () => void;
 }
 
 const BreakoutHoverContext = createContext<BreakoutHoverContextValue | null>(null);
 
 export function BreakoutHoverProvider({ children }: { children: ReactNode }) {
   const [hover, setHoverState] = useState<BreakoutHoverState>({ rowId: null, columnId: null });
+  const [selectedAbilities, setSelectedAbilities] = useState<Set<string>>(new Set());
 
   const setHover = useCallback((state: BreakoutHoverState) => {
     setHoverState(state);
@@ -31,8 +37,27 @@ export function BreakoutHoverProvider({ children }: { children: ReactNode }) {
     setHoverState({ rowId: null, columnId: null });
   }, []);
 
+  const toggleAbilitySelection = useCallback((name: string) => {
+    setSelectedAbilities(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedAbilities(new Set());
+  }, []);
+
   return (
-    <BreakoutHoverContext.Provider value={{ hover, setHover, clearHover }}>
+    <BreakoutHoverContext.Provider value={{ 
+      hover, setHover, clearHover,
+      selectedAbilities, toggleAbilitySelection, clearSelection
+    }}>
       {children}
     </BreakoutHoverContext.Provider>
   );
@@ -46,6 +71,9 @@ export function useBreakoutHover() {
       hover: { rowId: null, columnId: null },
       setHover: () => {},
       clearHover: () => {},
+      selectedAbilities: new Set<string>(),
+      toggleAbilitySelection: () => {},
+      clearSelection: () => {},
     };
   }
   return context;

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout, HitTypeStats } from '@/pages/Instance/EventsPanels/processors/abilityBreakout'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
-import { ChevronRight, ChevronDown, ChevronLeft } from 'lucide-react'
+import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip/tooltip'
 
 

@@ -73,6 +73,55 @@ function getVisibleMinMaxColumns(abilities: DamageAbilityBreakout[]): MinMaxColu
   )
 }
 
+/** Merge multiple HitTypeStats into one */
+function mergeHitTypeStats(statsArray: (HitTypeStats | undefined)[]): HitTypeStats | undefined {
+  const validStats = statsArray.filter((s): s is HitTypeStats => s !== undefined && s.count > 0)
+  if (validStats.length === 0) return undefined
+  
+  return validStats.reduce((acc, stats) => ({
+    count: acc.count + stats.count,
+    total: acc.total + stats.total,
+    min: Math.min(acc.min, stats.min),
+    max: Math.max(acc.max, stats.max),
+  }), { count: 0, total: 0, min: Infinity, max: -Infinity })
+}
+
+/** Merge selected abilities into a summary row */
+function mergeAbilities(abilities: DamageAbilityBreakout[]): DamageAbilityBreakout {
+  const merged: DamageAbilityBreakout = {
+    Total: 0,
+    Count: 0,
+    Crits: 0,
+    Hits: 0,
+    Misses: 0,
+  }
+  
+  for (const ability of abilities) {
+    merged.Total += ability.Total
+    merged.Count += ability.Count
+    merged.Crits += ability.Crits
+    merged.Hits += ability.Hits
+    merged.Misses += ability.Misses
+    merged.Dodges = (merged.Dodges || 0) + (ability.Dodges || 0)
+    merged.Parries = (merged.Parries || 0) + (ability.Parries || 0)
+    merged.FullResist = (merged.FullResist || 0) + (ability.FullResist || 0)
+    merged.Immunes = (merged.Immunes || 0) + (ability.Immunes || 0)
+    merged.FullBlocks = (merged.FullBlocks || 0) + (ability.FullBlocks || 0)
+    merged.Reflects = (merged.Reflects || 0) + (ability.Reflects || 0)
+    merged.Glancing = (merged.Glancing || 0) + (ability.Glancing || 0)
+    merged.Crushing = (merged.Crushing || 0) + (ability.Crushing || 0)
+    merged.Unknown = (merged.Unknown || 0) + (ability.Unknown || 0)
+  }
+  
+  // Merge hit type stats
+  merged.HitStats = mergeHitTypeStats(abilities.map(a => a.HitStats))
+  merged.CritStats = mergeHitTypeStats(abilities.map(a => a.CritStats))
+  merged.GlancingStats = mergeHitTypeStats(abilities.map(a => a.GlancingStats))
+  merged.CrushingStats = mergeHitTypeStats(abilities.map(a => a.CrushingStats))
+  
+  return merged
+}
+
 /** Format min/avg/max as a compact string */
 function formatMinAvgMax(stats: HitTypeStats | undefined): React.ReactNode {
   if (!stats || stats.count === 0) return '-'
@@ -193,6 +242,7 @@ export function AbilityTable({
   const { hover, setHover, clearHover } = useBreakoutHover()
   const [isExpanded, setIsExpanded] = useState(false)
   const [viewMode, setViewMode] = useState<ExpandedViewMode>('percent')
+  const [selectedAbilities, setSelectedAbilities] = useState<Set<string>>(new Set())
   
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>
@@ -209,6 +259,29 @@ export function AbilityTable({
   // Get visible columns based on view mode
   const visibleHitTypeColumns = isExpanded && viewMode !== 'minmax' ? getVisibleHitTypeColumns(sorted) : []
   const visibleMinMaxColumns = isExpanded && viewMode === 'minmax' ? getVisibleMinMaxColumns(sorted) : []
+  
+  // Selection helpers
+  const hasSelection = selectedAbilities.size > 0
+  const toggleAbilitySelection = (name: string) => {
+    setSelectedAbilities(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) {
+        next.delete(name)
+      } else {
+        next.add(name)
+      }
+      return next
+    })
+  }
+  const clearSelection = () => setSelectedAbilities(new Set())
+  
+  // Compute totals from selected abilities (or all if none selected)
+  const abilitiesToSum = hasSelection 
+    ? sorted.filter(a => selectedAbilities.has(a.name))
+    : sorted
+  const mergedTotals = mergeAbilities(abilitiesToSum)
+  const totalValueForSelection = abilitiesToSum.reduce((sum, a) => sum + a.value, 0)
+  const totalOverhealForSelection = abilitiesToSum.reduce((sum, a) => sum + (a.overheal || 0), 0)
 
   // Column IDs for hover tracking
   const COL = {
@@ -225,6 +298,15 @@ export function AbilityTable({
     <div>
       {/* Controls above the table */}
       <div className="flex items-center justify-end gap-1 px-2 py-1 text-xs">
+        {hasSelection && (
+          <button
+            onClick={clearSelection}
+            className="px-1.5 py-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted mr-auto"
+            title="Clear selection"
+          >
+            ✕ Clear ({selectedAbilities.size})
+          </button>
+        )}
         {isExpanded && (
           <>
             <span className="text-muted-foreground mr-1">Show:</span>
@@ -327,9 +409,19 @@ export function AbilityTable({
             const critPercent = ability.Hits > 0 ? (ability.Crits / (ability.Count)) * 100 : 0
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
             const rowId = ability.name
+            const isSelected = selectedAbilities.has(ability.name)
+            const isDimmed = hasSelection && !isSelected
             
             return (
-              <tr key={ability.name} className="border-b border-border/10">
+              <tr 
+                key={ability.name} 
+                className={cn(
+                  "border-b border-border/10 cursor-pointer transition-opacity",
+                  isSelected && "bg-primary/10",
+                  isDimmed && "opacity-40"
+                )}
+                onClick={() => toggleAbilitySelection(ability.name)}
+              >
                 <HoverCell
                   rowId={rowId}
                   columnId={COL.ABILITY}
@@ -455,6 +547,58 @@ export function AbilityTable({
             )
           })}
           </tbody>
+          {/* Footer row with totals */}
+          <tfoot className="sticky bottom-0 bg-popover border-t border-border">
+            <tr className="font-medium">
+              <td className="py-1.5 px-2 text-muted-foreground">
+                {hasSelection ? `Total (${selectedAbilities.size})` : 'Total'}
+              </td>
+              {hasOverhealData && (
+                <td className="text-right py-1.5 px-2 tabular-nums text-yellow-500/70">
+                  {totalOverhealForSelection.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                </td>
+              )}
+              <td className="text-right py-1.5 px-2 tabular-nums">
+                {totalValueForSelection.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+              </td>
+              <td className="text-right py-1.5 px-2 tabular-nums text-muted-foreground">
+                {totalValue > 0 ? ((totalValueForSelection / totalValue) * 100).toFixed(1) : 0}%
+              </td>
+              <td className="text-right py-1.5 px-2 tabular-nums">
+                {mergedTotals.Count}
+              </td>
+              {/* Collapsed view */}
+              {!isExpanded && showHits && (
+                <td className="text-right py-1.5 px-2 tabular-nums">
+                  {mergedTotals.Hits}
+                </td>
+              )}
+              {!isExpanded && (
+                <td className="text-right py-1.5 px-2 tabular-nums">
+                  {mergedTotals.Hits > 0 ? ((mergedTotals.Crits / mergedTotals.Count) * 100).toFixed(1) : 0}%
+                </td>
+              )}
+              {/* Expanded view: hit type columns (count/percent mode) */}
+              {isExpanded && viewMode !== 'minmax' && visibleHitTypeColumns.map(col => {
+                const count = getHitTypeValue(mergedTotals, col.key)
+                const percent = mergedTotals.Count > 0 ? (count / mergedTotals.Count) * 100 : 0
+                return (
+                  <td key={col.key} className="text-right py-1.5 px-1 tabular-nums">
+                    {viewMode === 'percent' ? `${percent.toFixed(1)}%` : count}
+                  </td>
+                )
+              })}
+              {/* Expanded view: min/avg/max columns (minmax mode) */}
+              {isExpanded && viewMode === 'minmax' && visibleMinMaxColumns.map(col => {
+                const stats = mergedTotals[col.statsKey] as HitTypeStats | undefined
+                return (
+                  <td key={col.statsKey} className="text-right py-1.5 px-1 tabular-nums text-2xs">
+                    {formatMinAvgMax(stats)}
+                  </td>
+                )
+              })}
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

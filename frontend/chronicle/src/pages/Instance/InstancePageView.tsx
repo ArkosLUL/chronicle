@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -995,7 +996,11 @@ export function InstancePageView({
     : null;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className={cn(
+      "container mx-auto py-6",
+      // Mobile: minimal padding, full width
+      isMobile ? "px-2" : "px-4 max-w-7xl"
+    )}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-2">
@@ -1020,7 +1025,7 @@ export function InstancePageView({
       </div>
 
       {/* Main content: sidebar + detail */}
-      <div className="flex gap-6">
+      <div className="flex gap-6 relative">
         {/* Mobile backdrop */}
         {isMobile && sidebarOpen && (
           <div 
@@ -1029,7 +1034,7 @@ export function InstancePageView({
           />
         )}
         
-        {sidebarOpen ? (
+        {sidebarOpen && (
           <EncounterSidebar
             onCollapse={() => setSidebarOpen(false)}
             encounters={instance.encounters}
@@ -1042,7 +1047,10 @@ export function InstancePageView({
             }}
             isMobile={isMobile}
           />
-        ) : (
+        )}
+        
+        {/* Desktop: inline toggle when sidebar closed */}
+        {!sidebarOpen && !isMobile && (
           <Button
             variant="ghost"
             size="sm"
@@ -1053,7 +1061,7 @@ export function InstancePageView({
             <PanelLeft className="h-4 w-4" />
           </Button>
         )}
-
+        
         {selectedEncounters.length > 0 ? (
           <EncounterDetail 
             instance={instance}
@@ -1075,6 +1083,20 @@ export function InstancePageView({
           </div>
         )}
       </div>
+
+      {/* Mobile: FAB toggle button - portaled to body to avoid fixed positioning issues */}
+      {isMobile && createPortal(
+        <Button
+          variant="default"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="fixed bottom-4 left-4 z-50 h-12 w-12 rounded-full shadow-lg"
+          title={sidebarOpen ? "Close encounters" : "Show encounters"}
+        >
+          {sidebarOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}
+        </Button>,
+        document.body
+      )}
     </div>
   );
 }

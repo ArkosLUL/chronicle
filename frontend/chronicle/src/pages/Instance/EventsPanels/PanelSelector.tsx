@@ -3,7 +3,7 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Leaf, Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { PANELS, type EventsPanelType } from "./EventsPanel";
@@ -52,10 +52,13 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Class",
+    // TODO: Make class icons in this style
+    icon: <User className="h-4 w-4" />,
     subcategories: [
       {
         label: "Druid",
         items: ["innervate"],
+        icon: <Leaf className="h-4 w-4" />,
       },
     ],
   },
@@ -253,16 +256,30 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Toggle a category's expanded state
+  // Toggle a category's expanded state (accordion behavior - only one branch at a time)
   const toggleExpanded = (path: string) => {
     setExpandedPaths(prev => {
-      const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
+      if (prev.has(path)) {
+        // Collapsing: remove this path and any children
+        const next = new Set<string>();
+        for (const p of prev) {
+          if (!p.startsWith(path)) {
+            next.add(p);
+          }
+        }
+        return next;
       } else {
+        // Expanding: keep only ancestor paths, add this one
+        const next = new Set<string>();
+        for (const p of prev) {
+          // Keep if this new path is a child of existing (e.g., expanding "Class/Druid" keeps "Class")
+          if (path.startsWith(p + "/") || path === p) {
+            next.add(p);
+          }
+        }
         next.add(path);
+        return next;
       }
-      return next;
     });
   };
 

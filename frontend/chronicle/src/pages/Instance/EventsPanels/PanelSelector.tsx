@@ -16,7 +16,12 @@ interface PanelOption {
 
 interface PanelCategory {
   label: string;
-  items: EventsPanelType[];
+  /** Direct panel items (leaf nodes) */
+  items?: EventsPanelType[];
+  /** Nested subcategories */
+  subcategories?: PanelCategory[];
+  /** Optional explicit icon (defaults to first item's icon) */
+  icon?: React.ReactNode;
 }
 
 // Category organization - panels get their labels/icons from PANELS registry
@@ -45,6 +50,15 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     label: "Utility",
     items: ["roles", "all_activity", "empty"],
   },
+  {
+    label: "Class",
+    subcategories: [
+      {
+        label: "Druid",
+        items: ["innervate"],
+      },
+    ],
+  },
 ];
 
 // Build panel options from registry
@@ -57,10 +71,53 @@ function getPanelOption(value: EventsPanelType): PanelOption {
   };
 }
 
-// Get first item's icon as category icon
+// Get category icon: explicit icon, first item's icon, or first subcategory's icon
 function getCategoryIcon(category: PanelCategory): React.ReactNode {
-  const firstPanel = PANELS[category.items[0]];
-  return firstPanel?.icon;
+  if (category.icon) return category.icon;
+  if (category.items && category.items.length > 0) {
+    const firstPanel = PANELS[category.items[0]];
+    return firstPanel?.icon;
+  }
+  if (category.subcategories && category.subcategories.length > 0) {
+    return getCategoryIcon(category.subcategories[0]);
+  }
+  return null;
+}
+
+// Count total items in a category (including nested)
+function getCategoryItemCount(category: PanelCategory): number {
+  let count = category.items?.length ?? 0;
+  if (category.subcategories) {
+    for (const sub of category.subcategories) {
+      count += getCategoryItemCount(sub);
+    }
+  }
+  return count;
+}
+
+// Get all items from a category recursively (for search)
+function getAllCategoryItems(category: PanelCategory): { panelKey: EventsPanelType; categoryPath: string }[] {
+  const results: { panelKey: EventsPanelType; categoryPath: string }[] = [];
+  
+  if (category.items) {
+    for (const panelKey of category.items) {
+      results.push({ panelKey, categoryPath: category.label });
+    }
+  }
+  
+  if (category.subcategories) {
+    for (const sub of category.subcategories) {
+      const subItems = getAllCategoryItems(sub);
+      for (const item of subItems) {
+        results.push({
+          panelKey: item.panelKey,
+          categoryPath: `${category.label} › ${item.categoryPath}`,
+        });
+      }
+    }
+  }
+  
+  return results;
 }
 
 /**
@@ -97,6 +154,91 @@ function fuzzyMatch(pattern: string, str: string): { match: boolean; score: numb
   };
 }
 
+/** Props for the recursive CategoryNode component */
+interface CategoryNodeProps {
+  category: PanelCategory;
+  path: string;
+  expandedPaths: Set<string>;
+  onToggle: (path: string) => void;
+  selectedValue: EventsPanelType;
+  onSelect: (value: EventsPanelType) => void;
+}
+
+/** Recursive component for rendering category tree with nested subcategories */
+function CategoryNode({
+  category,
+  path,
+  expandedPaths,
+  onToggle,
+  selectedValue,
+  onSelect,
+}: CategoryNodeProps) {
+  const isExpanded = expandedPaths.has(path);
+  const hasChildren = (category.items && category.items.length > 0) || 
+                      (category.subcategories && category.subcategories.length > 0);
+
+  return (
+    <div>
+      {/* Category header */}
+      <button
+        type="button"
+        onClick={() => onToggle(path)}
+        className="w-full text-left px-2 py-1.5 text-sm font-medium rounded-sm flex items-center gap-1.5 hover:bg-accent/50 cursor-pointer"
+      >
+        <ChevronRight
+          className={cn(
+            "size-4 transition-transform",
+            isExpanded && "rotate-90"
+          )}
+        />
+        <span className="text-muted-foreground">{getCategoryIcon(category)}</span>
+        {category.label}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {getCategoryItemCount(category)}
+        </span>
+      </button>
+
+      {/* Expanded content: subcategories first, then items */}
+      {isExpanded && hasChildren && (
+        <div className="ml-2 border-l pl-1">
+          {/* Render subcategories */}
+          {category.subcategories?.map((sub) => (
+            <CategoryNode
+              key={sub.label}
+              category={sub}
+              path={`${path}/${sub.label}`}
+              expandedPaths={expandedPaths}
+              onToggle={onToggle}
+              selectedValue={selectedValue}
+              onSelect={onSelect}
+            />
+          ))}
+          
+          {/* Render direct items */}
+          {category.items?.map((panelKey) => {
+            const item = getPanelOption(panelKey);
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => onSelect(item.value)}
+                className={cn(
+                  "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
+                  "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                  item.value === selectedValue && "bg-accent/50"
+                )}
+              >
+                <span className="text-muted-foreground">{item.icon}</span>
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export interface PanelSelectorProps {
   value: EventsPanelType;
   onChange: (value: EventsPanelType) => void;
@@ -106,9 +248,23 @@ export interface PanelSelectorProps {
 export function PanelSelector({ value, onChange, className }: PanelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  // Track expanded categories by their path (e.g., "Class" or "Class/Druid")
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Toggle a category's expanded state
+  const toggleExpanded = (path: string) => {
+    setExpandedPaths(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -116,7 +272,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearchQuery("");
-        setExpandedCategory(null);
+        setExpandedPaths(new Set());
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -130,18 +286,19 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
     }
   }, [isOpen]);
 
-  // Filter panels based on search
+  // Filter panels based on search (searches all nested items)
   const filteredResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
 
     const results: { option: PanelOption; category: string; score: number }[] = [];
 
     for (const category of PANEL_CATEGORIES) {
-      for (const panelKey of category.items) {
+      const allItems = getAllCategoryItems(category);
+      for (const { panelKey, categoryPath } of allItems) {
         const option = getPanelOption(panelKey);
         const { match, score } = fuzzyMatch(searchQuery, option.label);
         if (match) {
-          results.push({ option, category: category.label, score });
+          results.push({ option, category: categoryPath, score });
         }
       }
     }
@@ -154,14 +311,14 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
     onChange(panelValue);
     setIsOpen(false);
     setSearchQuery("");
-    setExpandedCategory(null);
+    setExpandedPaths(new Set());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       setIsOpen(false);
       setSearchQuery("");
-      setExpandedCategory(null);
+      setExpandedPaths(new Set());
     }
   };
 
@@ -227,54 +384,17 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                   </div>
                 )
               ) : (
-                // Category tree
+                // Category tree (recursive)
                 PANEL_CATEGORIES.map((category) => (
-                  <div key={category.label}>
-                    {/* Category header */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpandedCategory(expandedCategory === category.label ? null : category.label)
-                      }
-                      className="w-full text-left px-2 py-1.5 text-sm font-medium rounded-sm flex items-center gap-1.5 hover:bg-accent/50 cursor-pointer"
-                    >
-                      <ChevronRight
-                        className={cn(
-                          "size-4 transition-transform",
-                          expandedCategory === category.label && "rotate-90"
-                        )}
-                      />
-                      <span className="text-muted-foreground">{getCategoryIcon(category)}</span>
-                      {category.label}
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {category.items.length}
-                      </span>
-                    </button>
-
-                    {/* Category items */}
-                    {expandedCategory === category.label && (
-                      <div className="ml-3 border-l pl-2">
-                        {category.items.map((panelKey) => {
-                          const item = getPanelOption(panelKey);
-                          return (
-                            <button
-                              key={item.value}
-                              type="button"
-                              onClick={() => handleSelect(item.value)}
-                              className={cn(
-                                "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
-                                "hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                item.value === value && "bg-accent/50"
-                              )}
-                            >
-                              <span className="text-muted-foreground">{item.icon}</span>
-                              {item.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <CategoryNode
+                    key={category.label}
+                    category={category}
+                    path={category.label}
+                    expandedPaths={expandedPaths}
+                    onToggle={toggleExpanded}
+                    selectedValue={value}
+                    onSelect={handleSelect}
+                  />
                 ))
               )}
             </div>

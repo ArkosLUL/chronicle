@@ -167,7 +167,7 @@ func HitTypeCMD() *serpent.Command {
 
 			for spellName, hitTypes := range h.SpellName {
 				schools := make([]string, 0, len(h.SpellSchool[spellName]))
-				for school, _ := range h.SpellSchool[spellName] {
+				for school := range h.SpellSchool[spellName] {
 					schools = append(schools, school.String())
 				}
 

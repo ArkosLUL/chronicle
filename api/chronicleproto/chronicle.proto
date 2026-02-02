@@ -24,6 +24,12 @@ enum CastAction {
   ActionFailsCasting = 4;
 }
 
+enum AuraApplication {
+  ApplicationUnknown = 0;
+  ApplicationGains = 1;
+  ApplicationFades = 2;
+  ApplicationRemoved = 3;
+}
 
 message Tailer {
   optional uint32 amount = 1;
@@ -93,4 +99,12 @@ message Cast {
   CastAction action = 3;
   optional string target = 4;
   Spell spell = 5;
+}
+
+message Aura {
+  EventMeta meta = 1;
+  string target = 2;
+  string spellName = 3;
+  int32 amount = 4;
+  AuraApplication application = 5;
 }

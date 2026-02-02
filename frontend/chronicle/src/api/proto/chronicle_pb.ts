@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSKiAQoFU2xhaW4SJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRIOCgZ0YXJnZXQYAiABKAkSEwoGY2FzdGVyGAMgASgJSACIAQESMAoLYXR0cmlidXRpb24YBCABKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2VIAYgBAUIJCgdfY2FzdGVyQg4KDF9hdHRyaWJ1dGlvbiI9CgVTcGVsbBIMCgRuYW1lGAEgASgJEgoKAmlkGAIgASgFEhEKBHJhbmsYAyABKAVIAIgBAUIHCgVfcmFuayKxAQoEQ2FzdBInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBmNhc3RlchgCIAEoCRIqCgZhY3Rpb24YAyABKA4yGi5jaHJvbmljbGVwcm90by5DYXN0QWN0aW9uEhMKBnRhcmdldBgEIAEoCUgAiAEBEiQKBXNwZWxsGAUgASgLMhUuY2hyb25pY2xlcHJvdG8uU3BlbGxCCQoHX3RhcmdldCpwCgZTY2hvb2wSCwoHVW5rbm93bhAAEggKBE5vbmUQARIMCghQaHlzaWNhbBACEggKBEhvbHkQAxIICgRGaXJlEAQSCgoGTmF0dXJlEAUSCQoFRnJvc3QQBhIKCgZTaGFkb3cQBxIKCgZBcmNhbmUQCCp0CgpDYXN0QWN0aW9uEhEKDUFjdGlvblVua25vd24QABIPCgtBY3Rpb25DYXN0cxABEhYKEkFjdGlvbkJlZ2luc1RvQ2FzdBACEhIKDkFjdGlvbkNoYW5uZWxzEAMSFgoSQWN0aW9uRmFpbHNDYXN0aW5nEARCL1otZ2l0aHViLmNvbS9FbXlyay9jaHJvbmljbGUvYXBpL2Nocm9uaWNsZXByb3RvYgZwcm90bzM");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSKiAQoFU2xhaW4SJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRIOCgZ0YXJnZXQYAiABKAkSEwoGY2FzdGVyGAMgASgJSACIAQESMAoLYXR0cmlidXRpb24YBCABKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2VIAYgBAUIJCgdfY2FzdGVyQg4KDF9hdHRyaWJ1dGlvbiI9CgVTcGVsbBIMCgRuYW1lGAEgASgJEgoKAmlkGAIgASgFEhEKBHJhbmsYAyABKAVIAIgBAUIHCgVfcmFuayKxAQoEQ2FzdBInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBmNhc3RlchgCIAEoCRIqCgZhY3Rpb24YAyABKA4yGi5jaHJvbmljbGVwcm90by5DYXN0QWN0aW9uEhMKBnRhcmdldBgEIAEoCUgAiAEBEiQKBXNwZWxsGAUgASgLMhUuY2hyb25pY2xlcHJvdG8uU3BlbGxCCQoHX3RhcmdldCKYAQoEQXVyYRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIRCglzcGVsbE5hbWUYAyABKAkSDgoGYW1vdW50GAQgASgFEjQKC2FwcGxpY2F0aW9uGAUgASgOMh8uY2hyb25pY2xlcHJvdG8uQXVyYUFwcGxpY2F0aW9uKnAKBlNjaG9vbBILCgdVbmtub3duEAASCAoETm9uZRABEgwKCFBoeXNpY2FsEAISCAoESG9seRADEggKBEZpcmUQBBIKCgZOYXR1cmUQBRIJCgVGcm9zdBAGEgoKBlNoYWRvdxAHEgoKBkFyY2FuZRAIKnQKCkNhc3RBY3Rpb24SEQoNQWN0aW9uVW5rbm93bhAAEg8KC0FjdGlvbkNhc3RzEAESFgoSQWN0aW9uQmVnaW5zVG9DYXN0EAISEgoOQWN0aW9uQ2hhbm5lbHMQAxIWChJBY3Rpb25GYWlsc0Nhc3RpbmcQBCptCg9BdXJhQXBwbGljYXRpb24SFgoSQXBwbGljYXRpb25Vbmtub3duEAASFAoQQXBwbGljYXRpb25HYWlucxABEhQKEEFwcGxpY2F0aW9uRmFkZXMQAhIWChJBcHBsaWNhdGlvblJlbW92ZWQQA0IvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
 
 /**
  * @generated from message chronicleproto.Tailer
@@ -329,6 +329,43 @@ export const CastSchema: GenMessage<Cast> = /*@__PURE__*/
   messageDesc(file_chronicle, 8);
 
 /**
+ * @generated from message chronicleproto.Aura
+ */
+export type Aura = Message<"chronicleproto.Aura"> & {
+  /**
+   * @generated from field: chronicleproto.EventMeta meta = 1;
+   */
+  meta?: EventMeta;
+
+  /**
+   * @generated from field: string target = 2;
+   */
+  target: string;
+
+  /**
+   * @generated from field: string spellName = 3;
+   */
+  spellName: string;
+
+  /**
+   * @generated from field: int32 amount = 4;
+   */
+  amount: number;
+
+  /**
+   * @generated from field: chronicleproto.AuraApplication application = 5;
+   */
+  application: AuraApplication;
+};
+
+/**
+ * Describes the message chronicleproto.Aura.
+ * Use `create(AuraSchema)` to create a new message.
+ */
+export const AuraSchema: GenMessage<Aura> = /*@__PURE__*/
+  messageDesc(file_chronicle, 9);
+
+/**
  * @generated from enum chronicleproto.School
  */
 export enum School {
@@ -419,4 +456,35 @@ export enum CastAction {
  */
 export const CastActionSchema: GenEnum<CastAction> = /*@__PURE__*/
   enumDesc(file_chronicle, 1);
+
+/**
+ * @generated from enum chronicleproto.AuraApplication
+ */
+export enum AuraApplication {
+  /**
+   * @generated from enum value: ApplicationUnknown = 0;
+   */
+  ApplicationUnknown = 0,
+
+  /**
+   * @generated from enum value: ApplicationGains = 1;
+   */
+  ApplicationGains = 1,
+
+  /**
+   * @generated from enum value: ApplicationFades = 2;
+   */
+  ApplicationFades = 2,
+
+  /**
+   * @generated from enum value: ApplicationRemoved = 3;
+   */
+  ApplicationRemoved = 3,
+}
+
+/**
+ * Describes the enum chronicleproto.AuraApplication.
+ */
+export const AuraApplicationSchema: GenEnum<AuraApplication> = /*@__PURE__*/
+  enumDesc(file_chronicle, 2);
 

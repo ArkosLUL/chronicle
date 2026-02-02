@@ -625,6 +625,8 @@ const PANEL_CODES: Record<PanelType, string> = {
   roles: 'r',
   all_activity: 'aa',
   empty: 'e',
+  // Class: Druid
+  innervate: 'inn',
 };
 
 const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(

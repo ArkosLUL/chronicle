@@ -20,6 +20,7 @@ type EncounterEvents struct {
 	ExtraAttack    *Builder[messages.ExtraAttack, *chronicleproto.ExtraAttack]
 	Slain          *Builder[messages.Slain, *chronicleproto.Slain]
 	Casts          *Builder[messages.Cast, *chronicleproto.Cast]
+	Aura           *Builder[messages.Aura, *chronicleproto.Aura]
 	cnter          int32
 }
 
@@ -31,6 +32,7 @@ func New() *EncounterEventsInProgress {
 		ExtraAttack:    NewBuilder[messages.ExtraAttack, *chronicleproto.ExtraAttack](),
 		Slain:          NewBuilder[messages.Slain, *chronicleproto.Slain](),
 		Casts:          NewBuilder[messages.Cast, *chronicleproto.Cast](),
+		Aura:           NewBuilder[messages.Aura, *chronicleproto.Aura](),
 	}
 }
 
@@ -65,12 +67,18 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing casts events: %w", err)
 	}
 
+	auras, err := e.Aura.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing casts events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
 	merge.ExtraAttack = append(merge.ExtraAttack, extraAttack...)
 	merge.Slain = append(merge.Slain, slain...)
 	merge.Cast = append(merge.Cast, casts...)
+	merge.Aura = append(merge.Aura, auras...)
 
 	return nil
 }

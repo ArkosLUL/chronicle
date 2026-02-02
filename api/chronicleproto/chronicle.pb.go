@@ -143,6 +143,58 @@ func (CastAction) EnumDescriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{1}
 }
 
+type AuraApplication int32
+
+const (
+	AuraApplication_ApplicationUnknown AuraApplication = 0
+	AuraApplication_ApplicationGains   AuraApplication = 1
+	AuraApplication_ApplicationFades   AuraApplication = 2
+	AuraApplication_ApplicationRemoved AuraApplication = 3
+)
+
+// Enum value maps for AuraApplication.
+var (
+	AuraApplication_name = map[int32]string{
+		0: "ApplicationUnknown",
+		1: "ApplicationGains",
+		2: "ApplicationFades",
+		3: "ApplicationRemoved",
+	}
+	AuraApplication_value = map[string]int32{
+		"ApplicationUnknown": 0,
+		"ApplicationGains":   1,
+		"ApplicationFades":   2,
+		"ApplicationRemoved": 3,
+	}
+)
+
+func (x AuraApplication) Enum() *AuraApplication {
+	p := new(AuraApplication)
+	*p = x
+	return p
+}
+
+func (x AuraApplication) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AuraApplication) Descriptor() protoreflect.EnumDescriptor {
+	return file_chronicle_proto_enumTypes[2].Descriptor()
+}
+
+func (AuraApplication) Type() protoreflect.EnumType {
+	return &file_chronicle_proto_enumTypes[2]
+}
+
+func (x AuraApplication) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AuraApplication.Descriptor instead.
+func (AuraApplication) EnumDescriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{2}
+}
+
 type Tailer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Amount        *uint32                `protobuf:"varint,1,opt,name=amount,proto3,oneof" json:"amount,omitempty"`
@@ -796,6 +848,82 @@ func (x *Cast) GetSpell() *Spell {
 	return nil
 }
 
+type Aura struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	SpellName     string                 `protobuf:"bytes,3,opt,name=spellName,proto3" json:"spellName,omitempty"`
+	Amount        int32                  `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	Application   AuraApplication        `protobuf:"varint,5,opt,name=application,proto3,enum=chronicleproto.AuraApplication" json:"application,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Aura) Reset() {
+	*x = Aura{}
+	mi := &file_chronicle_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Aura) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Aura) ProtoMessage() {}
+
+func (x *Aura) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Aura.ProtoReflect.Descriptor instead.
+func (*Aura) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Aura) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *Aura) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *Aura) GetSpellName() string {
+	if x != nil {
+		return x.SpellName
+	}
+	return ""
+}
+
+func (x *Aura) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *Aura) GetApplication() AuraApplication {
+	if x != nil {
+		return x.Application
+	}
+	return AuraApplication_ApplicationUnknown
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -866,7 +994,13 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06action\x18\x03 \x01(\x0e2\x1a.chronicleproto.CastActionR\x06action\x12\x1b\n" +
 	"\x06target\x18\x04 \x01(\tH\x00R\x06target\x88\x01\x01\x12+\n" +
 	"\x05spell\x18\x05 \x01(\v2\x15.chronicleproto.SpellR\x05spellB\t\n" +
-	"\a_target*p\n" +
+	"\a_target\"\xc6\x01\n" +
+	"\x04Aura\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1c\n" +
+	"\tspellName\x18\x03 \x01(\tR\tspellName\x12\x16\n" +
+	"\x06amount\x18\x04 \x01(\x05R\x06amount\x12A\n" +
+	"\vapplication\x18\x05 \x01(\x0e2\x1f.chronicleproto.AuraApplicationR\vapplication*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -886,7 +1020,12 @@ const file_chronicle_proto_rawDesc = "" +
 	"\vActionCasts\x10\x01\x12\x16\n" +
 	"\x12ActionBeginsToCast\x10\x02\x12\x12\n" +
 	"\x0eActionChannels\x10\x03\x12\x16\n" +
-	"\x12ActionFailsCasting\x10\x04B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
+	"\x12ActionFailsCasting\x10\x04*m\n" +
+	"\x0fAuraApplication\x12\x16\n" +
+	"\x12ApplicationUnknown\x10\x00\x12\x14\n" +
+	"\x10ApplicationGains\x10\x01\x12\x14\n" +
+	"\x10ApplicationFades\x10\x02\x12\x16\n" +
+	"\x12ApplicationRemoved\x10\x03B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
 
 var (
 	file_chronicle_proto_rawDescOnce sync.Once
@@ -900,38 +1039,42 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 	return file_chronicle_proto_rawDescData
 }
 
-var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),            // 0: chronicleproto.School
 	(CastAction)(0),        // 1: chronicleproto.CastAction
-	(*Tailer)(nil),         // 2: chronicleproto.Tailer
-	(*EventMeta)(nil),      // 3: chronicleproto.EventMeta
-	(*Heal)(nil),           // 4: chronicleproto.Heal
-	(*Damage)(nil),         // 5: chronicleproto.Damage
-	(*ResourceChange)(nil), // 6: chronicleproto.ResourceChange
-	(*ExtraAttack)(nil),    // 7: chronicleproto.ExtraAttack
-	(*Slain)(nil),          // 8: chronicleproto.Slain
-	(*Spell)(nil),          // 9: chronicleproto.Spell
-	(*Cast)(nil),           // 10: chronicleproto.Cast
+	(AuraApplication)(0),   // 2: chronicleproto.AuraApplication
+	(*Tailer)(nil),         // 3: chronicleproto.Tailer
+	(*EventMeta)(nil),      // 4: chronicleproto.EventMeta
+	(*Heal)(nil),           // 5: chronicleproto.Heal
+	(*Damage)(nil),         // 6: chronicleproto.Damage
+	(*ResourceChange)(nil), // 7: chronicleproto.ResourceChange
+	(*ExtraAttack)(nil),    // 8: chronicleproto.ExtraAttack
+	(*Slain)(nil),          // 9: chronicleproto.Slain
+	(*Spell)(nil),          // 10: chronicleproto.Spell
+	(*Cast)(nil),           // 11: chronicleproto.Cast
+	(*Aura)(nil),           // 12: chronicleproto.Aura
 }
 var file_chronicle_proto_depIdxs = []int32{
-	3,  // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
-	3,  // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
+	4,  // 0: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
+	4,  // 1: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
 	0,  // 2: chronicleproto.Damage.school:type_name -> chronicleproto.School
-	2,  // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	3,  // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
-	3,  // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
-	3,  // 6: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
-	5,  // 7: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
-	3,  // 8: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
+	3,  // 3: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
+	4,  // 4: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
+	4,  // 5: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
+	4,  // 6: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
+	6,  // 7: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
+	4,  // 8: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
 	1,  // 9: chronicleproto.Cast.action:type_name -> chronicleproto.CastAction
-	9,  // 10: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	10, // 10: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
+	4,  // 11: chronicleproto.Aura.meta:type_name -> chronicleproto.EventMeta
+	2,  // 12: chronicleproto.Aura.application:type_name -> chronicleproto.AuraApplication
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -950,8 +1093,8 @@ func file_chronicle_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   9,
+			NumEnums:      3,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

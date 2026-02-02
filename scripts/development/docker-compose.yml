@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: chronicle-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chronicle
+    ports:
+      # Non-standard port to avoid conflicts with local postgres
+      - "5433:5432"
+    volumes:
+      - chronicle-postgres-data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  spicedb-migrate:
+    image: authzed/spicedb:latest
+    container_name: chronicle-spicedb-migrate
+    command: migrate head
+    restart: on-failure
+    environment:
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: postgres://postgres:postgres@postgres:5432/spicedb?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  spicedb:
+    image: authzed/spicedb:latest
+    container_name: chronicle-spicedb
+    restart: unless-stopped
+    command: serve
+    ports:
+      # gRPC API
+      - "50051:50051"
+      # HTTP API (REST gateway)
+      - "8443:8443"
+      # Metrics
+      - "9090:9090"
+    environment:
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: postgres://postgres:postgres@postgres:5432/spicedb?sslmode=disable
+      # Pre-shared key for API authentication (change in production!)
+      SPICEDB_GRPC_PRESHARED_KEY: chronicle-dev-key
+      SPICEDB_HTTP_ENABLED: "true"
+    depends_on:
+      spicedb-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50051"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ocr-server:
+    image: ocrserver
+    container_name: chronicle-ocr-server
+    restart: unless-stopped
+    ports:
+      - "8730:8080"
+
+volumes:
+  chronicle-postgres-data:

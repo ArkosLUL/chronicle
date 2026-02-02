@@ -19,6 +19,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/spice"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -61,6 +62,8 @@ func ServerCmd() *serpent.Command {
 		accessURL         string
 		devAuth           bool
 		postgresURL       string
+		spiceDBURL        url.URL
+		spiceDBEnabled    bool
 		discord           chronauth.DiscordOAuth
 		secretPem         string
 		storageFlag       string
@@ -106,8 +109,26 @@ func ServerCmd() *serpent.Command {
 				Required:    false,
 				Flag:        "postgres-url",
 				Env:         "CHRONICLE_POSTGRES_URL",
-				Default:     "postgresql://postgres:postgres@localhost:5432/chronicle?sslmode=disable",
+				Default:     "postgresql://postgres:postgres@localhost:5433/chronicle?sslmode=disable",
 				Value:       serpent.StringOf(&postgresURL),
+			},
+			{
+				Name:        "SpiceDB URL",
+				Description: "SpiceDB to connect to.",
+				Required:    false,
+				Flag:        "spicedb-url",
+				Env:         "CHRONICLE_SPICEDB_URL",
+				Default:     "http://localhost:50051",
+				Value:       serpent.URLOf(&spiceDBURL),
+			},
+			{
+				Name:        "Enable SpiceDB",
+				Description: "Enable SpiceDB.",
+				Required:    false,
+				Flag:        "enable-spicedb",
+				Env:         "CHRONICLE_ENABLE_SPICEDB",
+				Default:     "false",
+				Value:       serpent.BoolOf(&spiceDBEnabled),
 			},
 			{
 				Name:        "Discord OAuth Client ID",
@@ -214,6 +235,18 @@ func ServerCmd() *serpent.Command {
 			//nolint:errcheck
 			defer db.Close()
 
+			var sdb *spice.Spice
+			if spiceDBEnabled {
+				sdb, err = spice.New(ctx, &spice.Options{
+					GRPCURL: &spiceDBURL,
+					Logger:  logger,
+				})
+				if err != nil {
+					return fmt.Errorf("connect to spicedb: %w", err)
+				}
+				var _ = sdb
+			}
+
 			serverLn, err := ProvisionListener(logger, httpAddress)
 			if err != nil {
 				return err
@@ -305,7 +338,11 @@ func ServerCmd() *serpent.Command {
 				closeServer()
 				err := handler.Close()
 				if err != nil {
-					logger.Error("closing", slog.String("error", err.Error()))
+					logger.Error("closing chronicle", slog.String("error", err.Error()))
+				}
+				err = db.Close()
+				if err != nil {
+					logger.Error("closing database", slog.String("error", err.Error()))
 				}
 				cancelApp()
 			}()

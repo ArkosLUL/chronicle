@@ -1,6 +1,3 @@
-POSTGRES_VERSION ?= 17
-POSTGRES_IMAGE   ?= us-docker.pkg.dev/coder-v2-images-public/public/postgres:$(POSTGRES_VERSION)
-
 GIT_TAG := $(shell git describe --tags --abbrev=0)
 GIT_COMMIT := $(shell git describe --always)
 BUILD_TIME := $(shell TZ='America/Chicago' date +"%m-%d-%y_%H:%M")
@@ -39,51 +36,31 @@ build: build-backend frontend/chronicle/dist
 build-backend:
 	go build --tags static  $(LD_BUILD_FLAGS) -o bin/chronicled ./cmd/chronicled
 
+# Docker Compose targets for local development services
+COMPOSE_FILE := scripts/development/docker-compose.yml
+
+.PHONY: services-up
+services-up:
+	docker compose -f $(COMPOSE_FILE) up -d
+
+.PHONY: services-down
+services-down:
+	docker compose -f $(COMPOSE_FILE) down
+
+.PHONY: services-logs
+services-logs:
+	docker compose -f $(COMPOSE_FILE) logs -f
+
+.PHONY: services-clean
+services-clean:
+	docker compose -f $(COMPOSE_FILE) down -v
+
+# Default postgres port for docker-compose setup (5433)
+POSTGRES_PORT ?= 5433
+
 .PHONY: create-db
 create-db:
-	PGPASSWORD='postgres' createdb -U postgres -h localhost chronicle || true
-
-.PHONY: test-postgres-docker
-test-postgres-docker:
-	docker rm -f test-postgres-docker-${POSTGRES_VERSION} || true
-
-	docker pull ${POSTGRES_IMAGE}
-
-	# Make sure to not overallocate work_mem and max_connections as each
-	# connection will be allowed to use this much memory. Try adjusting
-	# shared_buffers instead, if needed.
-	#
-	# - work_mem=8MB * max_connections=1000 = 8GB
-	# - shared_buffers=2GB + effective_cache_size=1GB = 3GB
-	#
-	# This leaves 5GB for the rest of the system _and_ storing the
-	# database in memory (--tmpfs).
-	#
-	# https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-WORK-MEM
-	docker run \
-		--env POSTGRES_PASSWORD=postgres \
-		--env POSTGRES_USER=postgres \
-		--env POSTGRES_DB=postgres \
-		--env PGDATA=/tmp \
-		--tmpfs /tmp \
-		--publish 5432:5432 \
-		--name test-postgres-docker-${POSTGRES_VERSION} \
-		--restart no \
-		--detach \
-		--memory 16GB \
-		${POSTGRES_IMAGE} \
-		-c shared_buffers=2GB \
-		-c effective_cache_size=1GB \
-		-c work_mem=8MB \
-		-c max_connections=1000 \
-		-c fsync=off \
-		-c synchronous_commit=off \
-		-c full_page_writes=off \
-		-c log_statement=all
-	while ! pg_isready -h 127.0.0.1; do \
-		echo "$$(date) - waiting for database to start"; \
-		sleep 0.5; \
-	done
+	PGPASSWORD='postgres' createdb -U postgres -h localhost -p $(POSTGRES_PORT) chronicle || true
 
 frontend/chronicle/src/api/typesGenerated.ts: gen/go $(wildcard scripts/apitypings/*) $(shell find ./api/chroniclesdk $(FIND_EXCLUSIONS) -type f -name '*.go') go.mod go.sum
 	# -C sets the directory for the go run command
@@ -110,7 +87,3 @@ gen/go:
 
 .PHONY: gen
 gen: gen/db gen/go database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
-
-.PHONY: ocr-server
-ocr-server:
-	docker run -p 8730:8080 --rm --name ocrserver -d ocrserver

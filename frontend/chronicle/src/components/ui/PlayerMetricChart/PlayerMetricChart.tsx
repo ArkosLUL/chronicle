@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Tooltip,
   TooltipContent,
@@ -7,6 +8,7 @@ import {
 } from "@/components/ui/Tooltip/tooltip";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { useMouse } from '@/hooks/useMouse';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
 import { X, GripHorizontal } from 'lucide-react';
 
@@ -189,14 +191,15 @@ interface DraggablePinnedTooltipProps {
 }
 
 function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, breakout }: DraggablePinnedTooltipProps) {
+  const isMobile = useIsMobile()
   const [position, setPosition] = useState(initialPosition)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only start drag from the header area
-    if ((e.target as HTMLElement).closest('[data-drag-handle]')) {
+    // Only start drag from the header area, and not on mobile
+    if (!isMobile && (e.target as HTMLElement).closest('[data-drag-handle]')) {
       e.preventDefault()
       setIsDragging(true)
       dragStartRef.current = {
@@ -206,7 +209,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
         posY: position.y,
       }
     }
-  }, [position])
+  }, [position, isMobile])
 
   useEffect(() => {
     if (!isDragging) return
@@ -234,6 +237,55 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
     }
   }, [isDragging])
 
+  // Mobile: centered modal
+  if (isMobile) {
+    return createPortal(
+      <>
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 z-50 bg-black/50"
+          onClick={onClose}
+        />
+        {/* Modal - centered */}
+        <div
+          className="fixed inset-x-2 top-1/2 -translate-y-1/2 z-50 flex flex-col bg-background rounded-lg max-h-[85vh] shadow-xl"
+          style={{ border: `2px solid color-mix(in oklch, ${player.color} 50%, transparent)` }}
+        >
+          {/* Header */}
+          <div 
+            className="flex items-center gap-2 p-4 border-b border-border shrink-0"
+          >
+            <span 
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: player.color }}
+            />
+            <span className="font-medium">{player.playerName}</span>
+            <span className="text-muted-foreground text-xs">
+              {player.className}
+            </span>
+            {panelTitle && (
+              <span className="text-xs text-muted-foreground border-l border-border pl-2 ml-auto">
+                {panelTitle}
+              </span>
+            )}
+            <button
+              onClick={onClose}
+              className={cn("p-2 rounded bg-destructive/5 text-destructive/75 hover:bg-destructive/25 hover:text-destructive cursor-pointer transition-colors", !panelTitle && "ml-auto")}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          {/* Content - scrollable */}
+          <div className="flex-1 overflow-y-auto styled-scrollbar">
+            {breakout?.(player.playerID, true)}
+          </div>
+        </div>
+      </>,
+      document.body
+    )
+  }
+
+  // Desktop: draggable tooltip
   return (
     <div
       ref={tooltipRef}

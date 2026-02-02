@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree } from "lucide-react";
+import { ArrowLeft, Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -82,16 +83,6 @@ function formatDurationMs(ms: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
-}
-
-function formatDamageNumber(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`;
-  }
-  return value.toFixed(1).toLocaleString();
 }
 
 // ============================================================================
@@ -188,6 +179,7 @@ function EncounterSidebar({
   onSelect,
   onSelectMany,
   onCollapse,
+  isMobile,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
@@ -195,6 +187,7 @@ function EncounterSidebar({
   onSelect: (id: string, mode: 'single' | 'toggle') => void;
   onSelectMany: (ids: string[]) => void;
   onCollapse: () => void;
+  isMobile: boolean;
 }) {
   const bossEncounters = encounters
     .filter((e) => e.boss)
@@ -233,7 +226,13 @@ function EncounterSidebar({
   };
 
   return (
-    <div className="w-64 shrink-0 border-r pr-4">
+    <div className={cn(
+      "w-64 shrink-0 border-r pr-4 overflow-y-auto styled-scrollbar",
+      // Desktop: sticky sidebar that scrolls independently
+      !isMobile && "sticky top-4 max-h-[calc(100vh-2rem)]",
+      // Mobile: fixed overlay with background
+      isMobile && "fixed inset-y-0 left-0 z-50 bg-background border-r shadow-lg pl-4 pt-4"
+    )}>
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h3 className="text-sm font-medium text-muted-foreground">
@@ -301,7 +300,7 @@ function EncounterSidebar({
             onClick={onCollapse}
             title="Hide sidebar"
           >
-            <PanelLeftClose className="h-4 w-4" />
+            {isMobile ? <X className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
         </div>
       </div>
@@ -901,7 +900,15 @@ export function InstancePageView({
     onSelectEncounters?.(ids);
   };
   
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  
+  // Close sidebar when switching to mobile view
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [isMobile]);
   
   const entitySelection = useMemo<EntitySelection>(() => ({
     enemyIds: viewState.enemies,
@@ -1014,6 +1021,14 @@ export function InstancePageView({
 
       {/* Main content: sidebar + detail */}
       <div className="flex gap-6">
+        {/* Mobile backdrop */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
         {sidebarOpen ? (
           <EncounterSidebar
             onCollapse={() => setSidebarOpen(false)}
@@ -1025,6 +1040,7 @@ export function InstancePageView({
               const update = onSelectEncounters ?? setInternalSelectedIds;
               update(ids);
             }}
+            isMobile={isMobile}
           />
         ) : (
           <Button

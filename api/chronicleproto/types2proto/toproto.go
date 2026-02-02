@@ -76,7 +76,6 @@ func Slain(from time.Time, idx int32, ea messages.Slain) *chronicleproto.Slain {
 			att = Damage(ea.Attribution.Date(), -1, typed)
 		default:
 			// unexpected type
-
 		}
 	}
 	return &chronicleproto.Slain{
@@ -107,6 +106,21 @@ func Cast(from time.Time, idx int32, ca messages.Cast) *chronicleproto.Cast {
 	}
 }
 
+func Aura(from time.Time, idx int32, a messages.Aura) *chronicleproto.Aura {
+	{
+		return &chronicleproto.Aura{
+			Meta: &chronicleproto.EventMeta{
+				Index:       idx,
+				OffsetMilli: a.Timestamp.UnixMilli() - from.UnixMilli(),
+			},
+			Target:      a.Target.String(),
+			SpellName:   a.SpellName,
+			Amount:      a.Amount,
+			Application: Application(a.Application),
+		}
+	}
+}
+
 func Spell(spell types.Spell) *chronicleproto.Spell {
 	var rank *int32
 	if spell.Rank != nil {
@@ -118,6 +132,19 @@ func Spell(spell types.Spell) *chronicleproto.Spell {
 		//nolint:gosec
 		Id:   int32(spell.ID),
 		Rank: rank,
+	}
+}
+
+func Application(app types.AuraApplication) chronicleproto.AuraApplication {
+	switch app {
+	case types.AuraApplicationRemoved:
+		return chronicleproto.AuraApplication_ApplicationRemoved
+	case types.AuraApplicationGains:
+		return chronicleproto.AuraApplication_ApplicationGains
+	case types.AuraApplicationFades:
+		return chronicleproto.AuraApplication_ApplicationFades
+	default:
+		return chronicleproto.AuraApplication_ApplicationUnknown
 	}
 }
 

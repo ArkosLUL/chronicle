@@ -13,8 +13,8 @@ const INNERVATE_SPELL_ID = 29166;
 
 /** A single Innervate cast */
 export interface InnervateCast {
-  /** Actual timestamp of the cast */
-  timestamp: Date;
+  /** Timestamp in milliseconds since epoch */
+  timestampMs: number;
   /** GUID of the druid who cast */
   casterGuid: string;
   /** Name of the druid who cast */
@@ -63,11 +63,11 @@ export const innervateProcessor: PanelProcessor<InnervateResult, CastProcessorEv
     const casterPlayer = context.players[event.caster];
     const targetPlayer = context.players[event.target];
     
-    // Compute actual timestamp
-    const timestamp = new Date(firstTimestamp.getTime() + event.offsetMilli);
+    // Compute actual timestamp (as ms for serialization through worker)
+    const timestampMs = firstTimestamp.getTime() + event.offsetMilli;
     
     state.casts.push({
-      timestamp,
+      timestampMs,
       casterGuid: event.caster,
       casterName: casterPlayer?.name ?? event.caster,
       targetGuid: event.target,

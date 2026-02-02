@@ -13,23 +13,10 @@ import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { cn } from "@/lib/utils";
 
 /**
- * Format timestamp to HH:MM:SS format
- * Handles Date, string, or number (ms since epoch)
+ * Format timestamp (ms since epoch) to HH:MM:SS format
  */
-function formatTimestamp(date: Date | string | number | unknown): string {
-  let d: Date;
-  if (date instanceof Date) {
-    d = date;
-  } else if (typeof date === "string" || typeof date === "number") {
-    d = new Date(date);
-  } else {
-    d = new Date(date as number);
-  }
-  
-  if (isNaN(d.getTime())) {
-    return "??:??:??";
-  }
-  
+function formatTimestamp(timestampMs: number): string {
+  const d = new Date(timestampMs);
   return d.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
@@ -160,7 +147,7 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
                       )}
                     >
                       <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
-                        {formatTimestamp(cast.timestamp)}
+                        {formatTimestamp(cast.timestampMs)}
                       </td>
                       <td className="py-1 px-2 max-w-[120px]">
                         <button

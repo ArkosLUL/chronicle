@@ -724,9 +724,6 @@ function EncounterDetail({
                                   <Crown className="h-3 w-3 text-yellow-500 flex-shrink-0" />
                                 )}
                                 <span className="font-medium">{enemy.name}</span>
-                                <span className="text-muted-foreground text-[10px]">
-                                  {formatDamageNumber(enemy.damageTaken)}
-                                </span>
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="p-3">

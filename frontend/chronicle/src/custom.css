@@ -1,0 +1,19 @@
+:root {
+  /*  WoW Colors : https://wowwiki-archive.fandom.com/wiki/Class_colors*/
+  --class-warrior: #C79C6E;
+  --class-mage: #69CCF0;
+  --class-rogue: #FFF569;
+  --class-priest: #FFFFFF;
+  --class-warlock: #9482C9;
+  --class-hunter: #ABD473;
+  --class-shaman: #0070DE;
+  --class-paladin: #F58CBA;
+  --class-druid: #FF7D0A;
+  --class-unknown: #A0A0A0;
+  --class-enemy: #E53935; /* Red for enemies */
+  --class-creature: #AAAAAA; /* Grey for creatures */
+
+  /* Foreground color over classes, eg text. */
+  --class-foreground: oklch(0.9219 0 0);
+  --class-muted-foreground: oklch(0.3010 0 0);
+}

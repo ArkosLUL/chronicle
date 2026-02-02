@@ -547,7 +547,8 @@ export function PlayerMetricRow({
           sideOffset={-y + 10}
           hideWhenDetached
           hideArrow
-          className="p-0 min-w-[340px] max-w-[90vw] bg-popover text-foreground animate-none"
+          className="p-0 min-w-[340px] max-w-[90vw] bg-popover text-foreground animate-none border-2"
+          style={{ borderColor: `color-mix(in oklch, ${player.color} 60%, transparent)` }}
         >
           <div className="p-3 border-b border-border">
             <div className="flex items-center gap-2">

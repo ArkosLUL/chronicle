@@ -493,6 +493,7 @@ export function PlayerMetricRow({
             fontSize: '13px',
             fontWeight: 500,
             color: 'var(--class-muted-foreground)',
+            fontFamily: 'var(--font-mono)',
           }}
         >
           {((player.value/summedValue)*100).toFixed(2)}%
@@ -511,6 +512,7 @@ export function PlayerMetricRow({
                 fontWeight: 500,
                 color: 'var(--color-yellow-500)',
                 opacity: 0.7,
+                fontFamily: 'var(--font-mono)',
               }}
               title={`${overhealPct.toFixed(1)}% overhealing`}
             >
@@ -579,7 +581,7 @@ export function PlayerMetricRow({
 }
 
 function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: string, decimals: number = 1) {
-  const styles = {
+  const styles: React.CSSProperties = {
     fontSize: '0.7em',
     fontWeight: 600,
     color: 'oklch(0.985 0 0)',
@@ -587,6 +589,7 @@ function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: st
     padding: '2px 8px',
     borderRadius: '4px',
     marginRight: '12px',
+    fontFamily: 'var(--font-mono)',
   }
 
   switch (type) {

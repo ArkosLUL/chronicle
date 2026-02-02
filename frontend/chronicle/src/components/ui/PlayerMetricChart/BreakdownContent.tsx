@@ -156,16 +156,16 @@ export function AbilityBreakdownTable({
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
                   {ability.name}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {displayDamage.toLocaleString()}
                 </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
+                <td className={cn("text-right py-1 px-2 font-mono", mutedClass)}>
                   {damagePercent.toFixed(1)}%
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {totalHits}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {critPercent.toFixed(0)}%
                 </td>
               </tr>
@@ -273,16 +273,16 @@ export function TargetBreakdownTable({
                 <td className="py-1 px-2 max-w-[150px] truncate" title={target.targetName}>
                   {target.targetName}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {displayDamage.toLocaleString()}
                 </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", mutedClass)}>
+                <td className={cn("text-right py-1 px-2 font-mono", mutedClass)}>
                   {damagePercent.toFixed(1)}%
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {totalHits}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {critPercent.toFixed(0)}%
                 </td>
               </tr>

@@ -496,7 +496,7 @@ export function AbilityTable({
                       hover={hover}
                       setHover={setHover}
                       clearHover={clearHover}
-                      className="text-right py-1 px-2 tabular-nums text-yellow-500/70"
+                      className="text-right py-1 px-2 font-mono text-yellow-500/70"
                     >
                       {overhealVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                       <span className="text-yellow-500/50 ml-1">({overhealPct.toFixed(0)}%)</span>
@@ -509,7 +509,7 @@ export function AbilityTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="text-right py-1 px-2 tabular-nums"
+                  className="text-right py-1 px-2 font-mono"
                 >
                   {ability.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </HoverCell>
@@ -519,7 +519,7 @@ export function AbilityTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="text-right py-1 px-2 tabular-nums text-muted-foreground"
+                  className="text-right py-1 px-2 font-mono text-muted-foreground"
                 >
                   {valuePercent.toFixed(1)}%
                 </HoverCell>
@@ -529,7 +529,7 @@ export function AbilityTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="text-right py-1 px-2 tabular-nums"
+                  className="text-right py-1 px-2 font-mono"
                 >
                   {ability.Count}
                 </HoverCell>
@@ -541,7 +541,7 @@ export function AbilityTable({
                     hover={hover}
                     setHover={setHover}
                     clearHover={clearHover}
-                    className="text-right py-1 px-2 tabular-nums"
+                    className="text-right py-1 px-2 font-mono"
                   >
                     {ability.Hits}
                   </HoverCell>
@@ -553,7 +553,7 @@ export function AbilityTable({
                     hover={hover}
                     setHover={setHover}
                     clearHover={clearHover}
-                    className="text-right py-1 px-2 tabular-nums"
+                    className="text-right py-1 px-2 font-mono"
                   >
                     {critPercent.toLocaleString(undefined, {maximumFractionDigits: 1})}%
                   </HoverCell>
@@ -571,7 +571,7 @@ export function AbilityTable({
                       hover={hover}
                       setHover={setHover}
                       clearHover={clearHover}
-                      className={cn("text-right py-1 px-1 tabular-nums", isZero && "text-muted-foreground/50")}
+                      className={cn("text-right py-1 px-1 font-mono", isZero && "text-muted-foreground/50")}
                     >
                       {viewMode === 'percent' ? `${percent.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 1})}%` : count}
                     </HoverCell>
@@ -589,7 +589,7 @@ export function AbilityTable({
                       hover={hover}
                       setHover={setHover}
                       clearHover={clearHover}
-                      className={cn("text-right py-1 px-1 tabular-nums text-xs", !hasData && "text-muted-foreground/50")}
+                      className={cn("text-right py-1 px-1 font-mono text-xs", !hasData && "text-muted-foreground/50")}
                     >
                       {formatMinAvgMax(stats)}
                     </HoverCell>
@@ -606,27 +606,27 @@ export function AbilityTable({
                 {hasSelection ? `Total (${selectedAbilities.size})` : 'Total'}
               </td>
               {hasOverhealData && (
-                <td className="text-right py-1.5 px-2 tabular-nums text-yellow-500/70">
+                <td className="text-right py-1.5 px-2 font-mono text-yellow-500/70">
                   {totalOverhealForSelection.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
               )}
-              <td className="text-right py-1.5 px-2 tabular-nums">
+              <td className="text-right py-1.5 px-2 font-mono">
                 {totalValueForSelection.toLocaleString(undefined, { maximumFractionDigits: 1 })}
               </td>
-              <td className="text-right py-1.5 px-2 tabular-nums text-muted-foreground">
+              <td className="text-right py-1.5 px-2 font-mono text-muted-foreground">
                 {totalValue > 0 ? ((totalValueForSelection / totalValue) * 100).toFixed(1) : 0}%
               </td>
-              <td className="text-right py-1.5 px-2 tabular-nums">
+              <td className="text-right py-1.5 px-2 font-mono">
                 {mergedTotals.Count}
               </td>
               {/* Collapsed view */}
               {!isExpanded && showHits && (
-                <td className="text-right py-1.5 px-2 tabular-nums">
+                <td className="text-right py-1.5 px-2 font-mono">
                   {mergedTotals.Hits}
                 </td>
               )}
               {!isExpanded && (
-                <td className="text-right py-1.5 px-2 tabular-nums">
+                <td className="text-right py-1.5 px-2 font-mono">
                   {mergedTotals.Hits > 0 ? ((mergedTotals.Crits / mergedTotals.Count) * 100).toFixed(1) : 0}%
                 </td>
               )}
@@ -635,7 +635,7 @@ export function AbilityTable({
                 const count = getHitTypeValue(mergedTotals, col.key)
                 const percent = mergedTotals.Count > 0 ? (count / mergedTotals.Count) * 100 : 0
                 return (
-                  <td key={col.key} className="text-right py-1.5 px-1 tabular-nums">
+                  <td key={col.key} className="text-right py-1.5 px-1 font-mono">
                     {viewMode === 'percent' ? `${percent.toFixed(1)}%` : count}
                   </td>
                 )
@@ -644,7 +644,7 @@ export function AbilityTable({
               {isExpanded && viewMode === 'minmax' && visibleMinMaxColumns.map(col => {
                 const stats = mergedTotals[col.statsKey] as HitTypeStats | undefined
                 return (
-                  <td key={col.statsKey} className="text-right py-1.5 px-1 tabular-nums text-2xs">
+                  <td key={col.statsKey} className="text-right py-1.5 px-1 font-mono text-2xs">
                     {formatMinAvgMax(stats)}
                   </td>
                 )
@@ -736,7 +736,7 @@ export function TargetTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="text-right py-1 px-2 tabular-nums"
+                  className="text-right py-1 px-2 font-mono"
                 >
                   {target.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </HoverCell>
@@ -747,7 +747,7 @@ export function TargetTable({
                     hover={hover}
                     setHover={setHover}
                     clearHover={clearHover}
-                    className="text-right py-1 px-2 tabular-nums text-yellow-500/70"
+                    className="text-right py-1 px-2 font-mono text-yellow-500/70"
                   >
                     {(() => {
                       const overhealVal = target.overheal ?? 0;
@@ -768,7 +768,7 @@ export function TargetTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="text-right py-1 px-2 tabular-nums text-muted-foreground"
+                  className="text-right py-1 px-2 font-mono text-muted-foreground"
                 >
                   {valuePercent.toFixed(1)}%
                 </HoverCell>
@@ -847,7 +847,7 @@ export function AbilityBreakout({
 
   const totalDisplay = (
     <span className="text-2xs ml-auto pr-1.5 text-muted-foreground">
-      Total: <span className="font-medium tabular-nums text-foreground">{formatValue(totalValue)}</span>
+      Total: <span className="font-medium font-mono text-foreground">{formatValue(totalValue)}</span>
     </span>
   )
 

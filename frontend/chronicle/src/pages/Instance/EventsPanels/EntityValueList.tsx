@@ -48,8 +48,8 @@ export function EntityValueList({
   return (
     <div>
       <div className="text-xs text-muted-foreground mb-2">
-        Total {valueLabel}: <span className="font-medium text-foreground">{displayTotal}{perSecond ? "/s" : ""}</span>
-        <span className="ml-2">({sortedEntries.length} entities, {formatNumber(totalEvents)} events)</span>
+        Total {valueLabel}: <span className="font-medium font-mono text-foreground">{displayTotal}{perSecond ? "/s" : ""}</span>
+        <span className="ml-2 font-mono">({sortedEntries.length} entities, {formatNumber(totalEvents)} events)</span>
         {processingTimeMs !== null && (
           <span className="ml-2 text-blue-500">
             Processed in {processingTimeMs.toFixed(0)}ms

@@ -63,13 +63,13 @@ function ExtraAttackTable({
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
                   {ability.name}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {ability.count.toLocaleString()}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {ability.totalAttacks.toLocaleString()}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                <td className="text-right py-1 px-2 font-mono text-muted-foreground">
                   {attackPercent.toFixed(1)}%
                 </td>
               </tr>
@@ -109,7 +109,7 @@ function ExtraAttacksBreakout({
       <div className="flex items-center border-b border-border">
         <span className={cn(tabClass, activeTabClass)}>By Source</span>
         <span className="text-2xs ml-auto pr-1.5 text-muted-foreground">
-          Total: <span className="font-medium tabular-nums text-foreground">{totalAttacks}</span> attacks
+          Total: <span className="font-medium font-mono text-foreground">{totalAttacks}</span> attacks
         </span>
       </div>
       <ExtraAttackTable

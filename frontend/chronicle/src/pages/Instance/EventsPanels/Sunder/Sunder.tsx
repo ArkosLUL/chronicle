@@ -135,10 +135,10 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
                       {warrior.name}
                     </span>
                   </td>
-                  <td className="py-1 px-2 text-right tabular-nums">
+                  <td className="py-1 px-2 text-right font-mono">
                     {total}
                   </td>
-                  <td className="py-1 px-2 text-right tabular-nums text-green-400">
+                  <td className="py-1 px-2 text-right font-mono text-green-400">
                     {warrior.effectiveSunders}
                   </td>
                 </tr>
@@ -204,7 +204,7 @@ function TargetsView({ targets }: TargetsViewProps) {
                     <td className="py-1 px-2 font-medium text-orange-400 whitespace-nowrap">
                       {target.name}
                     </td>
-                    <td className="py-1 px-2 text-right tabular-nums font-mono text-2xs whitespace-nowrap">
+                    <td className="py-1 px-2 text-right font-mono font-mono text-2xs whitespace-nowrap">
                       {target.timeToFiveStacksMs !== null 
                         ? formatTimeMs(target.timeToFiveStacksMs)
                         : "—"}
@@ -304,7 +304,7 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
                   !event.matched && "opacity-50"
                 )}
               >
-                <td className="py-0.5 px-2 text-right tabular-nums">
+                <td className="py-0.5 px-2 text-right font-mono">
                   {formatTimeMs(event.offsetMs)}
                 </td>
                 <td className={cn(

@@ -164,7 +164,7 @@ function AbilityBreakdownTable({ playerData, resourceType }: AbilityBreakdownPro
                   {ability.abilityName}
                 </td>
                 <td 
-                  className="text-right py-1 px-2 tabular-nums text-muted-foreground"
+                  className="text-right py-1 px-2 font-mono text-muted-foreground"
                   title={`${ability.gainCount} procs, ~${formatNumber(avgPerProc, 0)} avg per proc`}
                 >
                   {ability.gainCount.toLocaleString()}
@@ -172,13 +172,13 @@ function AbilityBreakdownTable({ playerData, resourceType }: AbilityBreakdownPro
                     <span className="text-red-400/70"> / {ability.lossCount.toLocaleString()}</span>
                   )}
                 </td>
-                <td className={cn("text-right py-1 px-2 tabular-nums", config.color)}>
+                <td className={cn("text-right py-1 px-2 font-mono", config.color)}>
                   {formatNumber(ability.gained, 0)}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums text-red-400">
+                <td className="text-right py-1 px-2 font-mono text-red-400">
                   {ability.lost > 0 ? formatNumber(ability.lost, 0) : "-"}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                <td className="text-right py-1 px-2 font-mono text-muted-foreground">
                   {gainPercent.toFixed(1)}%
                 </td>
               </tr>
@@ -209,7 +209,7 @@ function ResourceRegenBreakout({ playerData, resourceType }: ResourceRegenBreako
       <div className="flex items-center border-b border-border">
         <span className={cn(tabClass, activeTabClass)}>By Ability</span>
         <span className="text-2xs ml-auto pr-1.5 text-muted-foreground">
-          Total: <span className={cn("font-medium tabular-nums", config.color)}>
+          Total: <span className={cn("font-medium font-mono", config.color)}>
             {formatNumber(playerData.totalGained, 0)}
           </span> {resourceType.toLowerCase()}
         </span>
@@ -444,7 +444,7 @@ export const ResourceRegenContent = (props: ResourceRegenContentProps) => {
     <GenericPanel {...effectiveProps}>
       <div className="flex items-center justify-between gap-2 mb-1">
         <div className="text-xs text-muted-foreground">
-          Total: <span className={cn("font-medium", config.color)}>
+          Total: <span className={cn("font-medium font-mono", config.color)}>
             {displayTotal}{props.perSecond ? '/s' : ''}
           </span>
         </div>

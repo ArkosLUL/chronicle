@@ -158,7 +158,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                       isNewEncounter && "border-t-2 border-t-border"
                     )}
                   >
-                    <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
+                    <td className="py-1 px-2 font-mono text-muted-foreground font-mono text-2xs">
                       {checkboxChecked 
                         ? formatRelativeTime(death.offsetMilli)
                         : formatTimestamp(death.dateMilli)

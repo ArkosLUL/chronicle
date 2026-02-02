@@ -155,10 +155,10 @@ export const HealingTakenContent = (props: HealingTakenContentProps) => {
     <GenericPanel {...effectiveProps}>
       <div className="flex items-center justify-between mb-1">
         <div className="text-xs text-muted-foreground">
-          Total: <span className="font-medium text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+          Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
           {overhealPercent && (
             <span className="ml-2 text-muted-foreground">
-              (<span className="text-yellow-500">+{overhealPercent}%</span> overheal)
+              (<span className="font-mono text-yellow-500">+{overhealPercent}%</span> overheal)
             </span>
           )}
         </div>

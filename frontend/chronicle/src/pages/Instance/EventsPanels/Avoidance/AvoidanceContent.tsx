@@ -150,16 +150,16 @@ export const AvoidanceContent = (props: AvoidanceContentProps) => {
                     <span className="truncate">{d.playerName}</span>
                   </div>
                 </td>
-                <td className="text-right py-1 px-1 tabular-nums text-muted-foreground">
+                <td className="text-right py-1 px-1 font-mono text-muted-foreground">
                   {formatPct(d.dodge, d.totalAttacks)}
                 </td>
-                <td className="text-right py-1 px-1 tabular-nums text-muted-foreground">
+                <td className="text-right py-1 px-1 font-mono text-muted-foreground">
                   {formatPct(d.parry, d.totalAttacks)}
                 </td>
-                <td className="text-right py-1 px-1 tabular-nums text-muted-foreground">
+                <td className="text-right py-1 px-1 font-mono text-muted-foreground">
                   {formatPct(d.block, d.totalAttacks)}
                 </td>
-                <td className="text-right py-1 pl-1 pr-1 tabular-nums font-medium">
+                <td className="text-right py-1 pl-1 pr-1 font-mono font-medium">
                   {d.avoidancePercent.toFixed(1)}%
                 </td>
               </tr>

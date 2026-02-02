@@ -173,7 +173,7 @@ function PaginationControls({
           <ChevronLeft className="h-4 w-4" />
         </button>
         
-        <span className="px-2 text-muted-foreground tabular-nums">
+        <span className="px-2 text-muted-foreground font-mono">
           {currentPage} / {Math.max(1, totalPages)}
         </span>
         

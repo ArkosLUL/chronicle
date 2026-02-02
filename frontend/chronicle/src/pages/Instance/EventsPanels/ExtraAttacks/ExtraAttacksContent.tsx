@@ -87,7 +87,7 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
   return (
     <GenericPanel {...effectiveProps}>
       <div className="text-xs text-muted-foreground">
-        Total Procs: <span className="font-medium text-foreground">{displayTotal}</span>
+        Total Procs: <span className="font-medium font-mono text-foreground">{displayTotal}</span>
       </div>
       <PlayerMetricChart 
         data={extraAttacksData} 

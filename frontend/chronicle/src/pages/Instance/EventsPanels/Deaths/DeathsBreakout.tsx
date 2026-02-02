@@ -58,10 +58,10 @@ function KillerTable({ killers, totalDeaths }: KillerTableProps) {
                 <td className="py-1 px-2 max-w-[180px] truncate" title={killer.killerName}>
                   {killer.killerName}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums">
+                <td className="text-right py-1 px-2 font-mono">
                   {killer.count.toLocaleString()}
                 </td>
-                <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">
+                <td className="text-right py-1 px-2 font-mono text-muted-foreground">
                   {percent.toFixed(1)}%
                 </td>
               </tr>
@@ -71,8 +71,8 @@ function KillerTable({ killers, totalDeaths }: KillerTableProps) {
         <tfoot className="border-t border-border">
           <tr className="font-medium">
             <td className="py-1 px-2">Total</td>
-            <td className="text-right py-1 px-2 tabular-nums">{totalDeaths.toLocaleString()}</td>
-            <td className="text-right py-1 px-2 tabular-nums text-muted-foreground">100%</td>
+            <td className="text-right py-1 px-2 font-mono">{totalDeaths.toLocaleString()}</td>
+            <td className="text-right py-1 px-2 font-mono text-muted-foreground">100%</td>
           </tr>
         </tfoot>
       </table>
@@ -103,7 +103,7 @@ function DeathsBreakout({ killers, totalDeaths }: DeathsBreakoutProps) {
       <div className="flex items-center border-b border-border">
         <span className={cn(tabClass, activeTabClass)}>Killed By</span>
         <span className="text-2xs ml-auto pr-1.5 text-muted-foreground">
-          Total: <span className="font-medium tabular-nums text-foreground">{totalDeaths}</span> deaths
+          Total: <span className="font-medium font-mono text-foreground">{totalDeaths}</span> deaths
         </span>
       </div>
       <KillerTable killers={killers} totalDeaths={totalDeaths} />

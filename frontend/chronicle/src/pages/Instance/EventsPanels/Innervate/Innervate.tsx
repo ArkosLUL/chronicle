@@ -146,7 +146,7 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
                         isNewEncounter && "border-t-2 border-t-border"
                       )}
                     >
-                      <td className="py-1 px-2 tabular-nums text-muted-foreground font-mono text-2xs">
+                      <td className="py-1 px-2 font-mono text-muted-foreground font-mono text-2xs">
                         {formatTimestamp(cast.timestampMs)}
                       </td>
                       <td className="py-1 px-2 max-w-[120px]">

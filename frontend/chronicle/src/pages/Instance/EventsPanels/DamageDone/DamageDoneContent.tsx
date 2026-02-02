@@ -123,7 +123,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
   return (
     <GenericPanel {...effectiveProps}>
       <div className="text-xs text-muted-foreground">
-        Total: <span className="font-medium text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+        Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
       </div>
       <PlayerMetricChart 
         data={damageData} 

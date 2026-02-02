@@ -796,7 +796,7 @@ function EncounterDetail({
       {/* Events Panels - 2x2 grid */}
       <PanelTimingProvider panelCount={4}>
         <PanelTimingResetter encounters={encounters} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
           <EventsPanel
             panelType={eventsPanel1Type}
             onPanelTypeChange={setEventsPanel1Type}

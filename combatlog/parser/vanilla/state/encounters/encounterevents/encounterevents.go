@@ -116,11 +116,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("cast proto: %w", err)
 		}
-  case messages.Aura:
-    err := AddToBuilder(e.Aura, ty, e.nextIndex(), types2proto.Aura)
-    if err != nil {
-      return fmt.Errorf("aura proto: %w", err)
-    }
+	case messages.Aura:
+		err := AddToBuilder(e.Aura, ty, e.nextIndex(), types2proto.Aura)
+		if err != nil {
+			return fmt.Errorf("aura proto: %w", err)
+		}
 	}
 	return nil
 }
@@ -135,6 +135,8 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.ResourceChange.SetZero(e.first)
 	e.ExtraAttack.SetZero(e.first)
 	e.Slain.SetZero(e.first)
+	e.Aura.SetZero(e.first)
+	e.Casts.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

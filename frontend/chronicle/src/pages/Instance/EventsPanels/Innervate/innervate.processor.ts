@@ -57,6 +57,7 @@ export const innervateProcessor: PanelProcessor<InnervateResult, CastProcessorEv
     if (event.spell.id !== INNERVATE_SPELL_ID) return;
     // Only track successful casts (action === 1 is "Casts")
     if (event.action !== 1) return;
+    if (!context.selectedEncounterIds.has(encounterID)) return;
     
     // Get player names from context
     const casterPlayer = context.players[event.caster];

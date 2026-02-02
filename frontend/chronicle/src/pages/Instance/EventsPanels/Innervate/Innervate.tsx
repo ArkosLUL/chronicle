@@ -1,12 +1,13 @@
 /**
  * Innervate panel - Shows Innervate casts by Druids.
  * 
- * Displays a simple table of who cast Innervate on whom.
+ * Simple, clean display showing who cast Innervate on whom.
  */
 
-import { BatteryCharging } from "lucide-react";
+import { useMemo } from "react";
+import { Leaf } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
-import { innervateProcessor, type InnervateResult } from "./innervate.processor";
+import { innervateProcessor, type InnervateResult, type InnervateCast } from "./innervate.processor";
 import { GenericPanel } from "../GenericPanel";
 
 /**
@@ -19,6 +20,50 @@ function formatTime(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+interface CasterSummary {
+  name: string;
+  selfCount: number;
+  targets: { name: string; count: number }[];
+  totalCasts: number;
+}
+
+/**
+ * Aggregate casts by caster, showing self-casts and targets.
+ */
+function aggregateByCaster(casts: InnervateCast[]): CasterSummary[] {
+  const casterMap = new Map<string, { selfCount: number; targets: Map<string, number> }>();
+  
+  for (const cast of casts) {
+    if (!casterMap.has(cast.casterName)) {
+      casterMap.set(cast.casterName, { selfCount: 0, targets: new Map() });
+    }
+    const data = casterMap.get(cast.casterName)!;
+    
+    if (cast.casterGuid === cast.targetGuid) {
+      data.selfCount++;
+    } else {
+      data.targets.set(cast.targetName, (data.targets.get(cast.targetName) || 0) + 1);
+    }
+  }
+  
+  const result: CasterSummary[] = [];
+  for (const [name, data] of casterMap) {
+    const targets = Array.from(data.targets.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    
+    result.push({
+      name,
+      selfCount: data.selfCount,
+      targets,
+      totalCasts: data.selfCount + targets.reduce((sum, t) => sum + t.count, 0),
+    });
+  }
+  
+  // Sort by total casts descending
+  return result.sort((a, b) => b.totalCasts - a.totalCasts);
+}
+
 /**
  * Create the Innervate panel definition.
  */
@@ -27,7 +72,7 @@ export function createInnervatePanel(): PanelDefinition<InnervateResult, any> {
   return {
     ...innervateProcessor,
     label: "Innervate",
-    icon: <BatteryCharging className="h-4 w-4" />,
+    icon: <Leaf className="h-4 w-4" />,
     supportsPerSecond: false,
     
     render: (props: PanelRenderProps<InnervateResult>) => {
@@ -40,6 +85,11 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
   const { result } = props;
   const hasCasts = result !== null && result.casts.length > 0;
   
+  const casterSummaries = useMemo(() => {
+    if (!result || result.casts.length === 0) return [];
+    return aggregateByCaster(result.casts);
+  }, [result]);
+  
   return (
     <GenericPanel {...props}>
       {!hasCasts ? (
@@ -47,37 +97,59 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
           No Innervate casts found
         </div>
       ) : (
-        <div className="space-y-1">
-          <div className="text-xs text-muted-foreground mb-2">
-            {result.casts.length} Innervate cast{result.casts.length !== 1 ? "s" : ""}
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-muted-foreground border-b">
-                <th className="text-left py-1 font-medium">Time</th>
-                <th className="text-left py-1 font-medium">Caster</th>
-                <th className="text-left py-1 font-medium">Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.casts.map((cast, idx) => (
-                <tr key={idx} className="border-b border-border/50 last:border-0">
-                  <td className="py-1.5 text-muted-foreground font-mono text-xs">
-                    {formatTime(cast.offsetMilli)}
-                  </td>
-                  <td className="py-1.5">
-                    {cast.casterName}
-                  </td>
-                  <td className="py-1.5">
-                    {cast.targetName}
-                    {cast.casterGuid === cast.targetGuid && (
-                      <span className="text-xs text-muted-foreground ml-1">(self)</span>
-                    )}
-                  </td>
+        <div className="space-y-2">
+          {/* Summary by caster */}
+          {casterSummaries.map((caster) => (
+            <div key={caster.name} className="flex items-start gap-2 text-sm">
+              <span className="font-medium min-w-[80px]">{caster.name}</span>
+              <span className="text-muted-foreground">→</span>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {caster.selfCount > 0 && (
+                  <span className="text-muted-foreground">
+                    self{caster.selfCount > 1 && <span className="text-xs ml-1">×{caster.selfCount}</span>}
+                  </span>
+                )}
+                {caster.targets.map((target) => (
+                  <span key={target.name} className="text-green-400">
+                    {target.name}{target.count > 1 && <span className="text-xs ml-1">×{target.count}</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {/* Detailed cast log (collapsible) */}
+          <details className="mt-3">
+            <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+              {result.casts.length} cast{result.casts.length !== 1 ? "s" : ""} detailed log
+            </summary>
+            <table className="w-full text-sm mt-2">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b">
+                  <th className="text-left py-1 font-medium">Time</th>
+                  <th className="text-left py-1 font-medium">Caster</th>
+                  <th className="text-left py-1 font-medium">Target</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {result.casts.map((cast, idx) => (
+                  <tr key={idx} className="border-b border-border/50 last:border-0">
+                    <td className="py-1.5 text-muted-foreground font-mono text-xs">
+                      {formatTime(cast.offsetMilli)}
+                    </td>
+                    <td className="py-1.5">{cast.casterName}</td>
+                    <td className="py-1.5">
+                      {cast.casterGuid === cast.targetGuid ? (
+                        <span className="text-muted-foreground">self</span>
+                      ) : (
+                        <span className="text-green-400">{cast.targetName}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         </div>
       )}
     </GenericPanel>

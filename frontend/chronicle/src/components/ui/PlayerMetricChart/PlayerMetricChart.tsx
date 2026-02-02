@@ -487,10 +487,10 @@ export function PlayerMetricRow({
 
         {/* Percentage */}
         <span
+          className='text-xs'
           style={{
             width: '50px',
             textAlign: 'right',
-            fontSize: '13px',
             fontWeight: 500,
             color: 'var(--class-muted-foreground)',
             fontFamily: 'var(--font-mono)',
@@ -505,10 +505,10 @@ export function PlayerMetricRow({
           const overhealPct = totalHealing > 0 ? (player.stackedValue / totalHealing) * 100 : 0;
           return (
             <span
+              className='text-2xs'
               style={{
                 width: '50px',
                 textAlign: 'right',
-                fontSize: '11px',
                 fontWeight: 500,
                 color: 'var(--color-yellow-500)',
                 opacity: 0.7,
@@ -582,9 +582,8 @@ export function PlayerMetricRow({
 
 function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: string, decimals: number = 1) {
   const styles: React.CSSProperties = {
-    fontSize: '0.7em',
     fontWeight: 600,
-    color: 'oklch(0.985 0 0)',
+    // color: 'oklch(0.985 0 0)',
     background: 'oklch(0.205 0 0 / 0.7)',
     padding: '2px 8px',
     borderRadius: '4px',
@@ -608,6 +607,7 @@ function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: st
     // case 'damage':
     default:
       return (<span
+        className='text-xs'
         style={{
           ...styles
         }}

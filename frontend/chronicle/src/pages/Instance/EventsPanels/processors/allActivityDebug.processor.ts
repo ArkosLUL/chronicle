@@ -74,7 +74,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       resource_change: [],
       extra_attack: [],
       slain: [],
-      casts: [],
+      cast: [],
     },
     streamCounts: {
       damage: 0,
@@ -82,7 +82,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       resource_change: 0,
       extra_attack: 0,
       slain: 0,
-      casts: 0,
+      cast: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
     totalProcessed: 0,

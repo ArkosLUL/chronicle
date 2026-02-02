@@ -30,7 +30,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   resource_change: { icon: Zap, color: "text-yellow-500", label: "Resource" },
   extra_attack: { icon: Swords, color: "text-orange-500", label: "Extra Attack" },
   slain: { icon: Activity, color: "text-gray-500", label: "Slain" },
-  casts: { icon: Wand2, color: "text-purple-500", label: "Cast" },
+  cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
 };
 
 interface StreamToggleProps {
@@ -235,12 +235,12 @@ function AllActivityContent({
   onToggleStream,
 }: AllActivityContentProps) {
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], casts: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, casts: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,
@@ -258,7 +258,7 @@ function AllActivityContent({
     ...rawEventsByStream.damage,
     ...rawEventsByStream.heal,
     ...rawEventsByStream.resource_change,
-    ...rawEventsByStream.casts,
+    ...rawEventsByStream.cast,
   ];
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order

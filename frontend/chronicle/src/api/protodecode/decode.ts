@@ -1329,7 +1329,7 @@ export interface ReusableSpell {
 }
 
 export interface ReusableCast {
-  type: "casts";
+  type: "cast";
   index: number;
   offsetMilli: number;
   caster: string;
@@ -1365,7 +1365,7 @@ export class CastDecoder {
   
   /** Reusable message - mutated on each decode */
   readonly message: ReusableCast = {
-    type: "casts",
+    type: "cast",
     index: 0,
     offsetMilli: 0,
     caster: "",

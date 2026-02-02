@@ -64,7 +64,7 @@ const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "casts"],
+  streams: ["damage", "heal", "resource_change", "cast"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -167,7 +167,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     // Get sourceName - cast events use spell.name instead
     let sourceName = "";
     let amount = 0;
-    if (streamType === "casts") {
+    if (streamType === "cast") {
       const castEvent = event as CastProcessorEvent;
       sourceName = castEvent.spell.name;
       amount = 0; // Casts don't have an amount
@@ -197,7 +197,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     } else if (streamType === "damage" || streamType === "heal") {
       const dhEvent = event as DamageProcessorEvent | HealProcessorEvent;
       rawEvent.extra = `school=${dhEvent.school} hit=${dhEvent.hitType}`;
-    } else if (streamType === "casts") {
+    } else if (streamType === "cast") {
       const castEvent = event as CastProcessorEvent;
       rawEvent.castAction = castEvent.action;
       rawEvent.spellId = castEvent.spell.id;

@@ -237,7 +237,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
   return (
     <div
       ref={tooltipRef}
-      className="bg-popover text-foreground border-3 border-solid  fixed z-50 min-w-[340px] rounded-md shadow-md"
+      className="bg-popover text-foreground border-3 border-solid fixed z-50 min-w-[340px] max-w-[90vw] rounded-md shadow-md"
       style={{
         left: position.x,
         top: position.y,
@@ -545,7 +545,7 @@ export function PlayerMetricRow({
           sideOffset={-y + 10}
           hideWhenDetached
           hideArrow
-          className="p-0 min-w-[340px] bg-popover text-foreground animate-none"
+          className="p-0 min-w-[340px] max-w-[90vw] bg-popover text-foreground animate-none"
         >
           <div className="p-3 border-b border-border">
             <div className="flex items-center gap-2">

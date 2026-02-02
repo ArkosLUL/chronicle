@@ -1,9 +1,61 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout, HitTypeStats } from '@/pages/Instance/EventsPanels/processors/abilityBreakout'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip/tooltip'
+
+// ============================================================================
+// CSS Tooltip with Portal (escapes overflow containers)
+// ============================================================================
+
+interface CssTooltipProps {
+  children: React.ReactNode
+  content: React.ReactNode
+  className?: string
+}
+
+function CssTooltip({ children, content, className }: CssTooltipProps) {
+  const [show, setShow] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const triggerRef = useRef<HTMLSpanElement>(null)
+  
+  useEffect(() => {
+    if (show && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 4,
+      })
+    }
+  }, [show])
+  
+  return (
+    <>
+      <span
+        ref={triggerRef}
+        className={className}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      >
+        {children}
+      </span>
+      {show && createPortal(
+        <div
+          className="pointer-events-none fixed z-[9999] px-2 py-1 rounded bg-foreground text-background text-xs whitespace-nowrap"
+          style={{
+            left: position.x,
+            top: position.y,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          {content}
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
 
 
 // ============================================================================
@@ -297,48 +349,39 @@ export function AbilityTable({
         {isExpanded && (
           <>
             <span className="text-muted-foreground mr-1">Show:</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setViewMode('count')}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded",
-                    viewMode === 'count' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  #
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" hideArrow>Show counts</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setViewMode('percent')}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded",
-                    viewMode === 'percent' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  %
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" hideArrow>Show percentages</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setViewMode('minmax')}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded mr-2",
-                    viewMode === 'minmax' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  ↕
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" hideArrow>Show min/avg/max damage</TooltipContent>
-            </Tooltip>
+            <CssTooltip content="Show counts">
+              <button
+                onClick={() => setViewMode('count')}
+                className={cn(
+                  "px-1.5 py-0.5 rounded",
+                  viewMode === 'count' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                #
+              </button>
+            </CssTooltip>
+            <CssTooltip content="Show percentages">
+              <button
+                onClick={() => setViewMode('percent')}
+                className={cn(
+                  "px-1.5 py-0.5 rounded",
+                  viewMode === 'percent' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                %
+              </button>
+            </CssTooltip>
+            <CssTooltip content="Show min/avg/max">
+              <button
+                onClick={() => setViewMode('minmax')}
+                className={cn(
+                  "px-1.5 py-0.5 rounded mr-2",
+                  viewMode === 'minmax' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                ↕
+              </button>
+            </CssTooltip>
           </>
         )}
         <button
@@ -351,8 +394,8 @@ export function AbilityTable({
           <span className="inline-flex items-center gap-0.5">More detail <ChevronRight className="w-3 h-3" /></span>}
         </button>
       </div>
-      <div className="max-h-64 overflow-y-auto styled-scrollbar">
-        <table className="w-full text-xs text-foreground">
+      <div className="max-h-64 overflow-y-auto overflow-x-clip styled-scrollbar">
+        <table className="w-full text-xs text-foreground whitespace-nowrap">
           <thead className="sticky top-0 bg-popover z-10">
             <tr className="border-b border-border">
               <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.ABILITY && "bg-primary/20")}>Ability</th>
@@ -373,34 +416,42 @@ export function AbilityTable({
               {isExpanded && viewMode !== 'minmax' && visibleHitTypeColumns.map(col => (
                 <th 
                   key={col.key}
-                  className={cn("text-right py-1.5 px-1 font-medium", hover.columnId === col.key && "bg-primary/20")}
+                  className={cn(
+                    "text-right py-1.5 px-1 font-medium",
+                    hover.columnId === col.key && "bg-primary/20"
+                  )}
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">{col.label}</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" hideArrow>
-                      <div className="font-medium">{col.fullName}</div>
-                      {col.description && <div className="text-muted-foreground text-2xs">{col.description}</div>}
-                    </TooltipContent>
-                  </Tooltip>
+                  <CssTooltip
+                    content={
+                      <>
+                        <span className="font-medium">{col.fullName}</span>
+                        {col.description && <span className="text-background/70"> – {col.description}</span>}
+                      </>
+                    }
+                  >
+                    {col.label}
+                  </CssTooltip>
                 </th>
               ))}
               {/* Expanded view: min/avg/max columns (minmax mode) */}
               {isExpanded && viewMode === 'minmax' && visibleMinMaxColumns.map(col => (
                 <th 
                   key={col.statsKey}
-                  className={cn("text-right py-1.5 px-1 font-medium", hover.columnId === col.statsKey && "bg-primary/20")}
+                  className={cn(
+                    "text-right py-1.5 px-1 font-medium",
+                    hover.columnId === col.statsKey && "bg-primary/20"
+                  )}
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">{col.label}</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" hideArrow>
-                      <div className="font-medium">{col.fullName}</div>
-                      <div className="text-muted-foreground text-2xs">min / avg / max</div>
-                    </TooltipContent>
-                  </Tooltip>
+                  <CssTooltip
+                    content={
+                      <>
+                        <span className="font-medium">{col.fullName}</span>
+                        <span className="text-background/70"> – min / avg / max</span>
+                      </>
+                    }
+                  >
+                    {col.label}
+                  </CssTooltip>
                 </th>
               ))}
             </tr>
@@ -649,8 +700,8 @@ export function TargetTable({
   }
 
   return (
-    <div className="max-h-64 overflow-y-auto">
-      <table className="w-full text-xs text-foreground">
+    <div className="max-h-64 overflow-auto styled-scrollbar">
+      <table className="w-full text-xs text-foreground whitespace-nowrap">
         <thead className="sticky top-0 bg-popover z-10">
           <tr className="border-b border-border">
             <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.TARGET && "bg-primary/20")}>Target</th>

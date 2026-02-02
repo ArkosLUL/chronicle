@@ -84,7 +84,7 @@ function createCursor(stream: WorkerRequest["streams"][0]): PeekableCursor {
     ? new FastExtraAttackCursor(stream.data)
     : stream.type === "slain"
     ? new FastSlainCursor(stream.data)
-    : stream.type === "casts"
+    : stream.type === "cast"
     ? new FastCastCursor(stream.data)
     : new FastDamageCursor(stream.data);
   

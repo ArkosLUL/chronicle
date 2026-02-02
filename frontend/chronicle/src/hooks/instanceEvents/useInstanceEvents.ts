@@ -26,7 +26,7 @@ function getSchemaForType(type: StreamType): DescMessage {
       return ResourceChangeSchema;
     case "slain":
       return SlainSchema;
-    case "casts":
+    case "cast":
       return CastSchema;
     default: {
       const _exhaustive: never = type;

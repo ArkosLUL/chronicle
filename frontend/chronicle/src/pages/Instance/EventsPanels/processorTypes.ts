@@ -127,7 +127,7 @@ export interface SpellInfo {
  * Tracks spell casts, channels, and failed casts.
  */
 export interface CastProcessorEvent extends EventMeta {
-  type: "casts";
+  type: "cast";
   caster: string;  // The unit casting the spell
   action: CastAction;  // What type of cast action (casts, begins to cast, channels, fails)
   target: string;  // The target of the spell (may be empty)

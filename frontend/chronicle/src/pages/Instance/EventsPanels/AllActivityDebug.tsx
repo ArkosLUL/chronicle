@@ -30,7 +30,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   resource_change: { icon: Zap, color: "text-yellow-500", label: "Resource" },
   extra_attack: { icon: Swords, color: "text-orange-500", label: "Extra Attack" },
   slain: { icon: Activity, color: "text-gray-500", label: "Slain" },
-  casts: { icon: Wand2, color: "text-purple-500", label: "Casts" },
+  casts: { icon: Wand2, color: "text-purple-500", label: "Cast" },
 };
 
 interface StreamToggleProps {
@@ -278,7 +278,7 @@ function AllActivityContent({
       {/* Stream toggles */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "casts"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "cast"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

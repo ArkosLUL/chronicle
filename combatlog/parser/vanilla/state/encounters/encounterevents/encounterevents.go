@@ -70,7 +70,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
 	merge.ExtraAttack = append(merge.ExtraAttack, extraAttack...)
 	merge.Slain = append(merge.Slain, slain...)
-	merge.Casts = append(merge.Casts, casts...)
+	merge.Cast = append(merge.Cast, casts...)
 
 	return nil
 }

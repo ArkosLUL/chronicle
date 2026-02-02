@@ -394,7 +394,7 @@ export function AbilityTable({
           <span className="inline-flex items-center gap-0.5">More detail <ChevronRight className="w-3 h-3" /></span>}
         </button>
       </div>
-      <div className="max-h-64 overflow-y-auto overflow-x-clip styled-scrollbar">
+      <div className="max-h-64 overflow-auto styled-scrollbar">
         <table className="w-full text-xs text-foreground whitespace-nowrap">
           <thead className="sticky top-0 bg-popover z-10">
             <tr className="border-b border-border">

@@ -275,8 +275,11 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
               <X className="h-5 w-5" />
             </button>
           </div>
-          {/* Content - scrollable */}
-          <div className="flex-1 overflow-y-auto styled-scrollbar">
+          {/* Content - scrollable both directions */}
+          <div 
+            className="flex-1 styled-scrollbar"
+            style={{ overflow: 'auto' }}
+          >
             {breakout?.(player.playerID, true)}
           </div>
         </div>

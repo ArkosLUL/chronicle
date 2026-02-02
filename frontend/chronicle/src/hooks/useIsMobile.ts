@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 
 /**
  * Hook to detect if the viewport is mobile-sized.
- * Uses Tailwind's `md` breakpoint (768px) as the threshold.
+ * Uses Tailwind's `lg` breakpoint (1024px) as the threshold to cover
+ * phones in both portrait and landscape orientations.
  */
 export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.innerWidth < 768;
+    return window.innerWidth < 1024;
   });
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
     
     const handleChange = (e: MediaQueryListEvent) => {
       setIsMobile(e.matches);

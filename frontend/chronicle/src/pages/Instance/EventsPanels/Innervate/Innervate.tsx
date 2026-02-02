@@ -4,7 +4,7 @@
  * Displays a simple table of who cast Innervate on whom.
  */
 
-import { Leaf } from "lucide-react";
+import { BatteryCharging } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { innervateProcessor, type InnervateResult } from "./innervate.processor";
 import { GenericPanel } from "../GenericPanel";
@@ -27,7 +27,7 @@ export function createInnervatePanel(): PanelDefinition<InnervateResult, any> {
   return {
     ...innervateProcessor,
     label: "Innervate",
-    icon: <Leaf className="h-4 w-4" />,
+    icon: <BatteryCharging className="h-4 w-4" />,
     supportsPerSecond: false,
     
     render: (props: PanelRenderProps<InnervateResult>) => {

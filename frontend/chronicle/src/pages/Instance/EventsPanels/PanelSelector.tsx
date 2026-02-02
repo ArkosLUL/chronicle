@@ -3,7 +3,7 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Leaf, Search, User } from "lucide-react";
+import { ChevronDown, ChevronRight, Leaf, Search, Toolbox, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { PANELS, type EventsPanelType } from "./EventsPanel";
@@ -49,6 +49,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   {
     label: "Utility",
     items: ["roles", "all_activity", "empty"],
+    icon: <Toolbox className="h-4 w-4" />,
   },
   {
     label: "Class",
@@ -226,13 +227,13 @@ function CategoryNode({
                 type="button"
                 onClick={() => onSelect(item.value)}
                 className={cn(
-                  "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
+                  "w-full text-left pl-6 pr-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
                   "hover:bg-accent hover:text-accent-foreground cursor-pointer",
                   item.value === selectedValue && "bg-accent/50"
                 )}
               >
-                <span className="text-muted-foreground">{item.icon}</span>
-                {item.label}
+                <span className="text-muted-foreground shrink-0">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
               </button>
             );
           })}

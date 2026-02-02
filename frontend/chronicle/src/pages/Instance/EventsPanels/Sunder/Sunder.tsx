@@ -33,8 +33,8 @@ function formatTimeMs(ms: number): string {
 function sortedWarriors(warriors: Record<string, WarriorSunderStats>): WarriorSunderStats[] {
   return Object.values(warriors).sort((a, b) => {
     // Sort by total sunders descending
-    const totalA = a.effectiveSunders + a.ineffectiveSunders;
-    const totalB = b.effectiveSunders + b.ineffectiveSunders;
+    const totalA = a.effectiveSunders;
+    const totalB = b.effectiveSunders;
     return totalB - totalA;
   });
 }
@@ -116,10 +116,10 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">
               <th className="text-left py-1.5 px-2 font-medium">Warrior</th>
-              <th className="text-right py-1.5 px-2 font-medium">Total</th>
               <th className="text-right py-1.5 px-2 font-medium">
                 <span className="cursor-help" title="Counted towards the first 5 stacks on a target">Effective</span>
               </th>
+              <th className="text-right py-1.5 px-2 font-medium">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -135,11 +135,11 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
                       {warrior.name}
                     </span>
                   </td>
-                  <td className="py-1 px-2 text-right font-mono">
-                    {total}
-                  </td>
                   <td className="py-1 px-2 text-right font-mono text-green-400">
                     {warrior.effectiveSunders}
+                  </td>
+                  <td className="py-1 px-2 text-right font-mono">
+                    {total}
                   </td>
                 </tr>
               );

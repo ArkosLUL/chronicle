@@ -173,17 +173,17 @@ func (c *Common) Process(m messages.Message) error {
 		return fmt.Errorf("processing characters: %w", err)
 	}
 
-	if actChange {
-		err = c.CharacterActivityChange()
-		if err != nil {
-			return fmt.Errorf("processing fight: %w", err)
-		}
-	}
-
 	if c.currentFight != nil && c.currentFight.Start != nil {
 		err = c.currentFight.Events.Process(m)
 		if err != nil {
 			return fmt.Errorf("processing encounter messages: %w", err)
+		}
+	}
+
+	if actChange {
+		err = c.CharacterActivityChange()
+		if err != nil {
+			return fmt.Errorf("processing fight: %w", err)
 		}
 	}
 

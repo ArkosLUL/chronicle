@@ -204,7 +204,9 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
     
     // Add uptime from still-active judgements (no fade event received)
     for (const [, active] of result.activeJudgements) {
-      const uptimeMs = result.maxOffsetMs - active.startOffsetMs;
+      // Use the max offset for this judgement's encounter
+      const encounterMaxOffset = result.maxOffsetByEncounter.get(active.encounterId) ?? active.startOffsetMs;
+      const uptimeMs = encounterMaxOffset - active.startOffsetMs;
       if (uptimeMs <= 0) continue;
       
       let targetStats = merged[active.targetGuid];
@@ -221,13 +223,13 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
       
       targetStats.uptimeByType[active.type] += uptimeMs;
       targetStats.totalUptimeMs += uptimeMs;
-      // Add as application with endOffsetMs = maxOffsetMs (still active)
+      // Add as application with endOffsetMs = encounter's max offset (still active)
       targetStats.applications.push({
         type: active.type,
         targetGuid: active.targetGuid,
         targetName: active.targetName,
         startOffsetMs: active.startOffsetMs,
-        endOffsetMs: result.maxOffsetMs,
+        endOffsetMs: encounterMaxOffset,
         encounterId: active.encounterId,
       });
     }

@@ -75,8 +75,10 @@ export interface JudgementResult {
   jolBenefit: JudgementOfLightBenefit;
   /** Currently active judgements - exported for UI to show still-active debuffs */
   activeJudgements: Map<string, ActiveJudgement>;
-  /** Max event offset seen - used to calculate active judgement uptime */
-  maxOffsetMs: number;
+  /** Max event offset seen per encounter - used to calculate active judgement uptime */
+  maxOffsetByEncounter: Map<string, number>;
+  /** Last encounter ID processed - used to detect encounter transitions */
+  lastEncounterId: string | null;
 }
 
 /** Create a composite key for active judgements */
@@ -123,6 +125,18 @@ function finalizeJudgementsOnTarget(state: JudgementResult, targetGuid: string, 
   }
 }
 
+/**
+ * Finalize all active judgements for an encounter (when encounter ends).
+ * Uses the max offset for each judgement's encounter as the end time.
+ */
+function finalizeAllActiveJudgements(state: JudgementResult): void {
+  for (const [, active] of state.activeJudgements) {
+    const endOffsetMs = state.maxOffsetByEncounter.get(active.encounterId) ?? active.startOffsetMs;
+    finalizeActiveJudgement(state, active, endOffsetMs);
+  }
+  state.activeJudgements.clear();
+}
+
 type JudgementEvent = AuraProcessorEvent | HealProcessorEvent | SlainProcessorEvent;
 
 /**
@@ -139,7 +153,8 @@ export const judgementProcessor: PanelProcessor<JudgementResult, JudgementEvent>
       byPlayer: new Map(),
     },
     activeJudgements: new Map(),
-    maxOffsetMs: 0,
+    maxOffsetByEncounter: new Map(),
+    lastEncounterId: null,
   }),
   
   processEvent: (
@@ -150,11 +165,18 @@ export const judgementProcessor: PanelProcessor<JudgementResult, JudgementEvent>
     _streamType: StreamType,
     context: ProcessorContext,
   ): void => {
+    // Detect encounter transition - finalize all active judgements from previous encounter
+    if (state.lastEncounterId !== null && state.lastEncounterId !== encounterID) {
+      finalizeAllActiveJudgements(state);
+    }
+    state.lastEncounterId = encounterID;
+
     if (!context.selectedEncounterIds.has(encounterID)) return;
     
-    // Track max offset for calculating active judgement uptime
-    if (event.offsetMilli > state.maxOffsetMs) {
-      state.maxOffsetMs = event.offsetMilli;
+    // Track max offset per encounter for calculating active judgement uptime
+    const currentMax = state.maxOffsetByEncounter.get(encounterID) ?? 0;
+    if (event.offsetMilli > currentMax) {
+      state.maxOffsetByEncounter.set(encounterID, event.offsetMilli);
     }
     
     if (event.type === "aura") {

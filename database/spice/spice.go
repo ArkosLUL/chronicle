@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/url"
 
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/spice/policy"
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
+	"github.com/authzed/grpcutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -28,13 +28,15 @@ type Spice struct {
 }
 
 type Options struct {
-	GRPCURL *url.URL
+	GRPCURL string
 	Logger  *slog.Logger
 }
 
 func New(ctx context.Context, opts *Options) (*Spice, error) {
 	cli, err := authzed.NewClient(
-		opts.GRPCURL.String(),
+		opts.GRPCURL,
+		grpcutil.WithInsecureBearerToken("chronicle-dev-key"),
+		//grpcutil.WithBearerToken("chronicle-dev-key"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {

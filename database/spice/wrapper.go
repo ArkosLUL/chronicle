@@ -10,161 +10,129 @@ import (
 )
 
 func (sdb *Spice) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.DeleteAllParsedLogsByGroupID(ctx, id)
 }
 
 func (sdb *Spice) DeleteThisQuery(ctx context.Context) error {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.DeleteThisQuery(ctx)
 }
 
 func (sdb *Spice) DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.DeleteWoWLogGroup(ctx, id)
 }
 
 func (sdb *Spice) EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]database.LogInstanceEncounter, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.EncountersByInstanceID(ctx, instanceID)
 }
 
 func (sdb *Spice) GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]database.LogInstanceEncounterHostile, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetInstanceEncounterCharacterFights(ctx, instanceID)
 }
 
 func (sdb *Spice) GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (database.LogInstanceYoutubeTimestamped, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetInstanceYoutubeData(ctx, logInstanceID)
 }
 
 func (sdb *Spice) GetUserAuthByLinkedID(ctx context.Context, arg database.GetUserAuthByLinkedIDParams) (database.UserAuthLink, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetUserAuthByLinkedID(ctx, arg)
 }
 
 func (sdb *Spice) GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (database.UserAuthSession, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetUserAuthSessionByID(ctx, id)
 }
 
 func (sdb *Spice) GetUserByID(ctx context.Context, id uuid.UUID) (database.User, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetUserByID(ctx, id)
 }
 
 func (sdb *Spice) GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]database.LogFile, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetWoWLogFilesByGroupID(ctx, wowLogID)
 }
 
 func (sdb *Spice) GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (database.GetWoWLogGroupByIDRow, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetWoWLogGroupByID(ctx, id)
 }
 
 func (sdb *Spice) GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]database.GetWoWLogGroupsByOwnerRow, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.GetWoWLogGroupsByOwner(ctx, owner)
 }
 
 func (sdb *Spice) InsertEncounter(ctx context.Context, arg database.InsertEncounterParams) (database.LogInstanceEncounter, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertEncounter(ctx, arg)
 }
 
 func (sdb *Spice) InsertEncounterCharacterFights(ctx context.Context, arg []database.InsertEncounterCharacterFightsParams) *database.InsertEncounterCharacterFightsBatchResults {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertEncounterCharacterFights(ctx, arg)
 }
 
 func (sdb *Spice) InsertInstance(ctx context.Context, arg database.InsertInstanceParams) (database.LogInstance, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertInstance(ctx, arg)
 }
 
 func (sdb *Spice) InsertInstancePlayers(ctx context.Context, arg []database.InsertInstancePlayersParams) *database.InsertInstancePlayersBatchResults {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertInstancePlayers(ctx, arg)
 }
 
 func (sdb *Spice) InsertInstanceUnits(ctx context.Context, arg []database.InsertInstanceUnitsParams) *database.InsertInstanceUnitsBatchResults {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertInstanceUnits(ctx, arg)
 }
 
 func (sdb *Spice) InsertLogFile(ctx context.Context, arg database.InsertLogFileParams) (database.LogFile, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertLogFile(ctx, arg)
 }
 
 func (sdb *Spice) InsertLogInstanceEvents(ctx context.Context, arg []database.InsertLogInstanceEventsParams) *database.InsertLogInstanceEventsBatchResults {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertLogInstanceEvents(ctx, arg)
 }
 
 func (sdb *Spice) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertParsedLogGroup(ctx, id)
 }
 
 func (sdb *Spice) InsertStampedYoutubeVideo(ctx context.Context, arg database.InsertStampedYoutubeVideoParams) error {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertStampedYoutubeVideo(ctx, arg)
 }
 
 func (sdb *Spice) InsertUser(ctx context.Context, arg database.InsertUserParams) (database.User, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertUser(ctx, arg)
 }
 
 func (sdb *Spice) InsertUserAuth(ctx context.Context, arg database.InsertUserAuthParams) (database.UserAuthLink, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertUserAuth(ctx, arg)
 }
 
 func (sdb *Spice) InsertUserAuthSession(ctx context.Context, arg database.InsertUserAuthSessionParams) (database.UserAuthSession, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertUserAuthSession(ctx, arg)
 }
 
 func (sdb *Spice) InsertWoWLogGroup(ctx context.Context, arg database.InsertWoWLogGroupParams) (database.WoWLogGroup, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InsertWoWLogGroup(ctx, arg)
 }
 
 func (sdb *Spice) Instance(ctx context.Context, id uuid.UUID) (database.LogInstance, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.Instance(ctx, id)
 }
 
 func (sdb *Spice) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text) (database.LogInstance, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InstanceBySlug(ctx, hashedSlug)
 }
 
 func (sdb *Spice) InstanceEvent(ctx context.Context, arg database.InstanceEventParams) (database.LogInstanceEvent, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InstanceEvent(ctx, arg)
 }
 
 func (sdb *Spice) InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]database.LogInstancePlayer, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InstancePlayersByInstanceID(ctx, instanceID)
 }
 
 func (sdb *Spice) InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]database.LogInstanceUnit, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.InstanceUnitsByInstanceID(ctx, instanceID)
 }
 
 func (sdb *Spice) UpdateUserAuthSessionTokens(ctx context.Context, arg database.UpdateUserAuthSessionTokensParams) (database.UserAuthSession, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.UpdateUserAuthSessionTokens(ctx, arg)
 }
 
 func (sdb *Spice) Ping(ctx context.Context) (time.Duration, error) {
-	//TODO implement me
-	panic("implement me")
+	return sdb.db.Ping(ctx)
 }

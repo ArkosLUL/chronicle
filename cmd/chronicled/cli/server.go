@@ -62,7 +62,7 @@ func ServerCmd() *serpent.Command {
 		accessURL         string
 		devAuth           bool
 		postgresURL       string
-		spiceDBURL        url.URL
+		spiceDBURL        string
 		spiceDBEnabled    bool
 		discord           chronauth.DiscordOAuth
 		secretPem         string
@@ -118,8 +118,8 @@ func ServerCmd() *serpent.Command {
 				Required:    false,
 				Flag:        "spicedb-url",
 				Env:         "CHRONICLE_SPICEDB_URL",
-				Default:     "http://localhost:50051",
-				Value:       serpent.URLOf(&spiceDBURL),
+				Default:     "localhost:50051",
+				Value:       serpent.StringOf(&spiceDBURL),
 			},
 			{
 				Name:        "Enable SpiceDB",
@@ -238,7 +238,7 @@ func ServerCmd() *serpent.Command {
 			var sdb *spice.Spice
 			if spiceDBEnabled {
 				sdb, err = spice.New(ctx, &spice.Options{
-					GRPCURL: &spiceDBURL,
+					GRPCURL: spiceDBURL,
 					Logger:  logger,
 				})
 				if err != nil {

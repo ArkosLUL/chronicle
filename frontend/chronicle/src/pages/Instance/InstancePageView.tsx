@@ -896,10 +896,10 @@ export function InstancePageView({
     return selectedEncounterIds || (defaultEncounterId ? [defaultEncounterId] : []);
   }, [viewState.encounters, selectedEncounterIds, defaultEncounterId, instance.encounters]);
   
-  const setInternalSelectedIds = (ids: string[]) => {
+  const setInternalSelectedIds = useCallback((ids: string[]) => {
     setUrlEncounterIds(ids);
     onSelectEncounters?.(ids);
-  };
+  }, [setUrlEncounterIds, onSelectEncounters]);
   
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -967,24 +967,24 @@ export function InstancePageView({
     });
   };
 
-  const selectedIds = selectedEncounterIds ?? internalSelectedIds;
+  // Use internalSelectedIds which already prioritizes URL state over props
+  const selectedIds = internalSelectedIds;
   
   const handleSelect = (id: string, mode: 'single' | 'toggle') => {
-    const update = onSelectEncounters ?? setInternalSelectedIds;
-    
+    // Always use setInternalSelectedIds to update both URL and parent state
     if (mode === 'toggle') {
       // Toggle selection
       if (selectedIds.includes(id)) {
         // Don't allow deselecting the last one
         if (selectedIds.length > 1) {
-          update(selectedIds.filter(sid => sid !== id));
+          setInternalSelectedIds(selectedIds.filter(sid => sid !== id));
         }
       } else {
-        update([...selectedIds, id]);
+        setInternalSelectedIds([...selectedIds, id]);
       }
     } else {
       // Single select replaces
-      update([id]);
+      setInternalSelectedIds([id]);
     }
   };
 
@@ -1042,8 +1042,7 @@ export function InstancePageView({
             selectedIds={selectedIds}
             onSelect={handleSelect}
             onSelectMany={(ids) => {
-              const update = onSelectEncounters ?? setInternalSelectedIds;
-              update(ids);
+              setInternalSelectedIds(ids);
             }}
             isMobile={isMobile}
           />

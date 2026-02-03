@@ -28,7 +28,7 @@ type meFinder struct {
 	buffer []scanLine
 }
 
-func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, error) {
+func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, *SharedMe, int, error) {
 	finder := &meFinder{
 		Scan:   scan,
 		buffer: make([]scanLine, 0),
@@ -39,9 +39,9 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, e
 		ts, content, err := scan()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return nil, types.Unit{}, lineCount, fmt.Errorf("reached end of log without finding me within %d lines", lineCount)
+				return nil, nil, lineCount, fmt.Errorf("reached end of log without finding me within %d lines", lineCount)
 			}
-			return nil, types.Unit{}, lineCount, err
+			return nil, nil, lineCount, err
 		}
 
 		finder.buffer = append(finder.buffer, scanLine{
@@ -51,7 +51,7 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, e
 
 		lineCount++
 		if lineCount > lineLimit {
-			return nil, types.Unit{}, lineCount, fmt.Errorf("cannot find me within %d lines", lineLimit)
+			return nil, nil, lineCount, fmt.Errorf("cannot find me within %d lines", lineLimit)
 		}
 
 		if _, ok := combatant.IsCombatant(content); ok {
@@ -61,10 +61,10 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, e
 			}
 
 			if cmbt.IsMe() {
-				return finder.scan, types.Unit{
+				return finder.scan, &SharedMe{me: types.Unit{
 					Name: cmbt.Name,
 					Gid:  cmbt.Guid,
-				}, lineCount, nil
+				}}, lineCount, nil
 			}
 		}
 
@@ -75,10 +75,10 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, types.Unit, int, e
 			}
 
 			if ui.IsMe() {
-				return finder.scan, types.Unit{
+				return finder.scan, &SharedMe{me: types.Unit{
 					Name: ui.Name,
 					Gid:  ui.Guid,
-				}, lineLimit, nil
+				}}, lineLimit, nil
 			}
 		}
 	}

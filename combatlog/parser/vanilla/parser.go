@@ -99,8 +99,8 @@ func (p *Parser) init() error {
 		}
 
 		p.logger.Info("Identified 'me' in logs",
-			slog.String("name", me.Name),
-			slog.String("guid", me.Gid.String()),
+			slog.String("name", me.Unit().Name),
+			slog.String("guid", me.Unit().Gid.String()),
 			slog.Int("lines_read", lc),
 		)
 		p.scanner = scan
@@ -151,6 +151,12 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	for _, msg := range msgs {
 		if msg.Date().IsZero() {
 			return nil, fmt.Errorf("timestamp is zero for message type: %s", reflect.TypeOf(msg).String())
+		}
+
+		// In case the player changes, like logging onto an alt
+		err = p.you.Me.Process(msg)
+		if err != nil {
+			return nil, fmt.Errorf("processing me for message: %w", err)
 		}
 	}
 	p.metrics.TotalParseDuration += time.Since(now)

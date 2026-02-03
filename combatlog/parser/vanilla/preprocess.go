@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 )
 
 type replacement struct {
@@ -59,7 +60,7 @@ var (
 )
 
 type youReplacer struct {
-	Me types.Unit
+	Me *whoami.SharedMe
 }
 
 func (s youReplacer) Preprocess(content string) (string, error) {
@@ -119,7 +120,7 @@ func (s youReplacer) replacer(re *regexp.Regexp, content string, replacement str
 		return content, false, nil
 	}
 
-	if s.Me.Gid.IsZero() {
+	if s.Me.Unit().Gid.IsZero() {
 		return content, false, fmt.Errorf("cannot perform 'you' replacement without a defined player unit")
 	}
 
@@ -130,7 +131,7 @@ func (s youReplacer) replacer(re *regexp.Regexp, content string, replacement str
 
 	matchesArgs := matches.Rest()
 	args := make([]any, len(matchesArgs)+1)
-	args[0] = s.Me.Gid.String()
+	args[0] = s.Me.Unit().Gid.String()
 	for i := range matchesArgs {
 		args[i+1] = matchesArgs[i]
 	}

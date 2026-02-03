@@ -119,7 +119,7 @@ func (c *HighPriestThekalParty) finalizeDeath() {
 // Died handles the death of Thekal and his zealots.
 // During phase 1, deaths are "pending" - if we see activity within the
 // resurrection window, the death is cancelled. Otherwise, it's finalized.
-func (c *HighPriestThekalParty) Died(reason string, m messages.Message) {
+func (c *HighPriestThekalParty) Died(_ string, m messages.Message) {
 	// Record death as pending - will be finalized if no resurrection occurs
 	c.pendingDeath = &m
 	c.LastSlain = m
@@ -133,37 +133,4 @@ func (c *HighPriestThekalParty) Start(reason string, m messages.Message) {
 		c.pendingDeath = nil
 	}
 	c.Common.Start(reason, m)
-}
-
-// DELTE BEWLO
-
-func (c *HighPriestThekalParty) IsThekal() bool {
-	entry, ok := c.ID().GetEntry()
-	return ok && entry == highPriestThekal
-}
-
-func (c *HighPriestThekalParty) getThekal() (*HighPriestThekalParty, bool) {
-	return c.get(highPriestThekal)
-}
-
-func (c *HighPriestThekalParty) getZath() (*HighPriestThekalParty, bool) {
-	return c.get(zealotZath)
-}
-
-func (c *HighPriestThekalParty) getLorKhan() (*HighPriestThekalParty, bool) {
-	return c.get(zealotLorKhan)
-}
-
-func (c *HighPriestThekalParty) get(entry uint32) (*HighPriestThekalParty, bool) {
-	thek, ok := c.all.ByEntry[entry]
-	if !ok || len(thek) != 1 {
-		return nil, false
-	}
-
-	typed, ok := thek[0].(*HighPriestThekalParty)
-	if !ok {
-		return nil, false
-	}
-
-	return typed, true
 }

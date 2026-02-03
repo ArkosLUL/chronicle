@@ -879,12 +879,12 @@ export function InstancePageView({
     enemies: allMergedEnemies,
     players: instance.players ?? {},
     defaults: {
-      encounterIds: defaultEncounterId ? [defaultEncounterId] : [],
+      encounterIds: instance.encounters.map(e => e.id),
       panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done'],
     },
   });
   
-  // Use URL state if present, otherwise use prop or default
+  // Use URL state if present, otherwise default to all encounters
   const internalSelectedIds = useMemo(() => {
     if (viewState.encounters.length > 0) {
       // Filter to only valid encounter IDs
@@ -893,8 +893,9 @@ export function InstancePageView({
       );
       if (validIds.length > 0) return validIds;
     }
-    return selectedEncounterIds || (defaultEncounterId ? [defaultEncounterId] : []);
-  }, [viewState.encounters, selectedEncounterIds, defaultEncounterId, instance.encounters]);
+    // Default to all encounters when nothing is selected
+    return instance.encounters.map(e => e.id);
+  }, [viewState.encounters, instance.encounters]);
   
   const setInternalSelectedIds = useCallback((ids: string[]) => {
     setUrlEncounterIds(ids);

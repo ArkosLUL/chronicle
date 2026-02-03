@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { PanelRenderProps } from "../types";
-import type { DeathsResult } from "./deaths.processor";
+import type { DeathsResult, UnitDeaths } from "./deaths.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDeathsBreakout } from "./DeathsBreakout";
 
@@ -10,21 +10,21 @@ import { useDeathsBreakout } from "./DeathsBreakout";
  * Aggregate death counts across selected encounters.
  */
 function aggregateForEncounters(
-  result: DeathsResult,
+  deathsMap: Map<string, UnitDeaths>,
   selectedEncounterIds: string[]
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
 
   for (const encounterId of selectedEncounterIds) {
-    const encounterData = result.EncounterDeaths.get(encounterId);
+    const encounterData = deathsMap.get(encounterId);
     if (!encounterData) continue;
 
-    for (const [playerId, data] of encounterData) {
-      const existing = aggregated.get(playerId);
+    for (const [unitId, data] of encounterData) {
+      const existing = aggregated.get(unitId);
       if (existing) {
         existing.value += data.deathCount;
       } else {
-        aggregated.set(playerId, {
+        aggregated.set(unitId, {
           playerID: data.playerID,
           playerName: data.playerName,
           className: data.className,
@@ -52,7 +52,7 @@ export const DeathsContent = (props: DeathsContentProps) => {
 
   const deathsData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.selectedEncounterIds);
+    return aggregateForEncounters(cachedResult.EncounterDeaths, context.selectedEncounterIds);
   }, [cachedResult, context.selectedEncounterIds]);
 
   // Once we have cached data, never show loading/processing states

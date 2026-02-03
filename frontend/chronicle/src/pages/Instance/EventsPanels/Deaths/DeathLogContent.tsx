@@ -1,8 +1,9 @@
 /**
- * DeathLogContent - Chronological list of player deaths with timestamps
+ * DeathLogContent - Chronological list of player and enemy deaths with timestamps
  */
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
+import { User, Skull } from "lucide-react";
 import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
@@ -11,6 +12,8 @@ import type { DeathsResult, DeathEvent } from "./deaths.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { cn } from "@/lib/utils";
 import { hitTypeNames, HitTypeCrit } from "@/lib/hittype/hittype";
+
+type DeathMode = "players" | "enemies";
 
 
 function formatTimestamp(absoluteMilli: number): string {
@@ -70,15 +73,16 @@ function getSchoolColor(school: number): string {
 /**
  * Sort death events by offsetMilli and return chronological list.
  */
-function getSortedDeathEvents(selectedEncounterIDs:string[], result: DeathsResult): DeathEvent[] {
-  // DeathEvents is already populated for selected encounters
-  return [...result.DeathEvents].filter((event) => selectedEncounterIDs.includes(event.encounterID)) // sort((a, b) => a.offsetMilli - b.offsetMilli);
+function getSortedDeathEvents(selectedEncounterIDs: string[], result: DeathsResult, mode: DeathMode): DeathEvent[] {
+  const events = mode === "players" ? result.DeathEvents : result.EnemyDeathEvents;
+  return [...events].filter((event) => selectedEncounterIDs.includes(event.encounterID));
 }
 
 type DeathLogContentProps = PanelRenderProps<DeathsResult>;
 
 export const DeathLogContent = (props: DeathLogContentProps) => {
   const { result, context, loading, processing, checkboxChecked } = props;
+  const [mode, setMode] = useState<DeathMode>("players");
 
   // Build encounter name lookup
   const encounterNames = useMemo(() => {
@@ -96,26 +100,14 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.DeathEvents.length > 0,
+    (r) => r.DeathEvents.length > 0 || r.EnemyDeathEvents.length > 0,
     []
   );
 
-  // // Get the earliest encounter start time for timestamp calculation
-  // const encounterStartTime = useMemo(() => {
-  //   if (context.selectedEncounterIds.size === 0) {
-  //     return new Date();
-  //   }
-  //   // Find the earliest start time among selected encounters
-  //   const startTimes = context.selectedEncounters.map(
-  //     (e) => new Date(e.start_time).getTime()
-  //   );
-  //   return new Date(Math.min(...startTimes));
-  // }, [context.selectedEncounters]);
-
   const sortedDeaths = useMemo(() => {
     if (!cachedResult) return [];
-    return getSortedDeathEvents(context.selectedEncounterIds, cachedResult);
-  }, [context.selectedEncounterIds, cachedResult]);
+    return getSortedDeathEvents(context.selectedEncounterIds, cachedResult, mode);
+  }, [context.selectedEncounterIds, cachedResult, mode]);
 
   // Once we have cached data, never show loading/processing states
   const effectiveProps = {
@@ -126,8 +118,48 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
 
   return (
     <GenericPanel {...effectiveProps}>
-      <div className="text-xs text-muted-foreground mb-2">
-        Total Deaths: <span className="font-medium text-foreground">{sortedDeaths.length}</span>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs text-muted-foreground">
+          Total Deaths: <span className="font-medium text-foreground">{sortedDeaths.length}</span>
+        </div>
+        {/* Player/Enemy toggle */}
+        <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+          <button
+            type="button"
+            onClick={() => setMode("players")}
+            className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded text-xs transition-all",
+              mode === "players"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            title="Show player deaths"
+          >
+            <User className="h-3 w-3" />
+            <span>Players</span>
+          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setMode("enemies")}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded text-xs transition-all",
+                  mode === "enemies"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Skull className="h-3 w-3" />
+                <span>Enemies</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>Show enemy deaths</p>
+              <p className="text-muted-foreground text-2xs">Note: Some enemies may have 2 death messages in the combat log</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       {sortedDeaths.length === 0 ? (
@@ -142,7 +174,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                 <th className="text-left py-1.5 px-2 font-medium w-16">Time</th>
                 <th className="text-left py-1.5 px-2 font-medium w-16">Encounter</th>
                 <th className="text-left py-1.5 px-2 font-medium w-28">Killed By</th>
-                <th className="text-left py-1.5 px-2 font-medium">Player</th>
+                <th className="text-left py-1.5 px-2 font-medium">Unit</th>
               </tr>
             </thead>
             <tbody>

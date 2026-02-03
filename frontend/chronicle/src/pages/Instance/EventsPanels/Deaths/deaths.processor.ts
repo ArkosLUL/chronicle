@@ -1,5 +1,5 @@
 /**
- * Deaths processor - aggregates player deaths from slain events (pure TS, worker-safe)
+ * Deaths processor - aggregates player and enemy deaths from slain events (pure TS, worker-safe)
  */
 
 import type { SlainProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
@@ -57,10 +57,16 @@ export type UnitDeaths = Map<string, PlayerDeathsData>;
 export type DeathsResult = {
   // Per-encounter death counts by player
   EncounterDeaths: Map<string, UnitDeaths>;
+  // Per-encounter death counts by enemy (non-player units)
+  EncounterEnemyDeaths: Map<string, UnitDeaths>;
   // Breakout by killer: playerID -> killerID -> count
   ByKiller: Map<string, Map<string, number>>;
+  // Breakout by killer for enemies: enemyID -> killerID -> count
+  EnemyByKiller: Map<string, Map<string, number>>;
   // Chronological list of all death events for all encounters
   DeathEvents: DeathEvent[];
+  // Chronological list of enemy death events
+  EnemyDeathEvents: DeathEvent[];
   // GUID cache for performance (avoids repeated parsing)
   GuidCache: GuidCache;
 }
@@ -75,8 +81,11 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
 
     createState: () => ({
       EncounterDeaths: new Map<string, UnitDeaths>(),
+      EncounterEnemyDeaths: new Map<string, UnitDeaths>(),
       ByKiller: new Map<string, Map<string, number>>(),
+      EnemyByKiller: new Map<string, Map<string, number>>(),
       DeathEvents: [],
+      EnemyDeathEvents: [],
       GuidCache: createGuidCache(),
     }),
 
@@ -91,13 +100,21 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       // event.target is the victim (who died)
       if (!event.target) return;
 
-      // Fast path: only track player deaths
-      if (!isPlayerGuidFast(event.target)) return;
-
       const guidCache = state.GuidCache;
-      const playerID = event.target;
-      const playerName = context.players[playerID]?.name || playerID;
-      const playerClass = context.players[playerID]?.class || "UNKNOWN";
+      const isPlayerDeath = isPlayerGuidFast(event.target);
+      
+      // Get victim info
+      const victimID = event.target;
+      let victimName: string;
+      let victimClass: string;
+      
+      if (isPlayerDeath) {
+        victimName = context.players[victimID]?.name || victimID;
+        victimClass = context.players[victimID]?.class || "UNKNOWN";
+      } else {
+        victimName = context.units?.[victimID]?.name || victimID;
+        victimClass = "ENEMY";
+      }
 
       // Determine killer info
       const killerID = event.caster || "";
@@ -112,16 +129,21 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
         }
       }
 
+      // Choose appropriate data structures based on whether it's a player or enemy death
+      const encounterDeathsMap = isPlayerDeath ? state.EncounterDeaths : state.EncounterEnemyDeaths;
+      const byKillerMap = isPlayerDeath ? state.ByKiller : state.EnemyByKiller;
+      const deathEventsList = isPlayerDeath ? state.DeathEvents : state.EnemyDeathEvents;
+
       // Initialize encounter map if needed
-      if (!state.EncounterDeaths.has(encounterID)) {
-        state.EncounterDeaths.set(encounterID, new Map<string, PlayerDeathsData>());
+      if (!encounterDeathsMap.has(encounterID)) {
+        encounterDeathsMap.set(encounterID, new Map<string, PlayerDeathsData>());
       }
 
-      const encounterData = state.EncounterDeaths.get(encounterID)!;
-      const existing = encounterData.get(playerID) || {
-        playerID,
-        playerName,
-        className: playerClass,
+      const encounterData = encounterDeathsMap.get(encounterID)!;
+      const existing = encounterData.get(victimID) || {
+        playerID: victimID,
+        playerName: victimName,
+        className: victimClass,
         deathCount: 0,
         killers: new Map<string, KillerData>(),
       };
@@ -138,7 +160,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
       existingKiller.count++;
       existing.killers.set(killerKey, existingKiller);
       
-      encounterData.set(playerID, existing);
+      encounterData.set(victimID, existing);
 
       // Build attribution if available
       let attribution: DeathAttribution | null = null;
@@ -151,12 +173,12 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
         };
       }
 
-      state.DeathEvents.push({
+      deathEventsList.push({
         dateMilli: firstTimestamp.getTime() + event.offsetMilli,
         offsetMilli: event.offsetMilli,
-        playerID,
-        playerName,
-        className: playerClass,
+        playerID: victimID,
+        playerName: victimName,
+        className: victimClass,
         killerID,
         killerName,
         encounterID,
@@ -165,9 +187,9 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, SlainProce
         
       if (context.selectedEncounterIds.size == 0 || context.selectedEncounterIds.has(encounterID)) {
         // Breakout by killer
-        const killerBreakout = state.ByKiller.get(playerID) || new Map<string, number>();
+        const killerBreakout = byKillerMap.get(victimID) || new Map<string, number>();
         killerBreakout.set(killerKey, (killerBreakout.get(killerKey) || 0) + 1);
-        state.ByKiller.set(playerID, killerBreakout);
+        byKillerMap.set(victimID, killerBreakout);
       }
     },
   };

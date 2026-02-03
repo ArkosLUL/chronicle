@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { Activity, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -29,7 +29,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   heal: { icon: Heart, color: "text-green-500", label: "Healing" },
   resource_change: { icon: Zap, color: "text-yellow-500", label: "Resource" },
   extra_attack: { icon: Swords, color: "text-orange-500", label: "Extra Attack" },
-  slain: { icon: Activity, color: "text-gray-500", label: "Slain" },
+  slain: { icon: Skull, color: "text-gray-500", label: "Slain" },
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
   aura: { icon: Sparkles, color: "text-cyan-500", label: "Aura" },
 };
@@ -261,6 +261,7 @@ function AllActivityContent({
     ...rawEventsByStream.resource_change,
     ...rawEventsByStream.cast,
     ...rawEventsByStream.aura,
+    ...rawEventsByStream.slain,
   ];
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order
@@ -280,7 +281,7 @@ function AllActivityContent({
       {/* Stream toggles */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "cast", "aura"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "cast", "aura", "slain"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}
@@ -467,7 +468,7 @@ function AllActivityRender(props: PanelRenderProps<AllActivityState>) {
 export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
   ...allActivityProcessor,
   label: "All Activity",
-  icon: <Activity className="h-4 w-4" />,
+  icon: <Skull className="h-4 w-4" />,
   // This panel manages its own aggregation to support pagination
   selfManagesAggregation: true,
   

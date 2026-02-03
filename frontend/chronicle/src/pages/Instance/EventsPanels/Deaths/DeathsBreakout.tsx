@@ -115,28 +115,33 @@ function DeathsBreakout({ killers, totalDeaths }: DeathsBreakoutProps) {
 // Hook
 // ============================================================================
 
+type DeathMode = "players" | "enemies";
+
 /**
- * Get the aggregated death data for a player across selected encounters.
+ * Get the aggregated death data for a unit across selected encounters.
  */
-function getDeathsForPlayer(
+function getDeathsForUnit(
   result: DeathsResult,
-  playerID: string,
-  selectedEncounterIds: string[]
+  unitID: string,
+  selectedEncounterIds: string[],
+  mode: DeathMode
 ): { killers: KillerDisplay[]; totalDeaths: number } | null {
   // Aggregate killers across encounters
   const aggregatedKillers = new Map<string, { killerName: string; count: number }>();
   let totalDeaths = 0;
 
+  const deathsMap = mode === "players" ? result.EncounterDeaths : result.EncounterEnemyDeaths;
+
   for (const encounterId of selectedEncounterIds) {
-    const encounterData = result.EncounterDeaths.get(encounterId);
+    const encounterData = deathsMap.get(encounterId);
     if (!encounterData) continue;
 
-    const playerData = encounterData.get(playerID);
-    if (!playerData) continue;
+    const unitData = encounterData.get(unitID);
+    if (!unitData) continue;
 
-    totalDeaths += playerData.deathCount;
+    totalDeaths += unitData.deathCount;
 
-    for (const [killerID, killerData] of playerData.killers) {
+    for (const [killerID, killerData] of unitData.killers) {
       const existing = aggregatedKillers.get(killerID) || { killerName: killerData.killerName, count: 0 };
       existing.count += killerData.count;
       aggregatedKillers.set(killerID, existing);
@@ -161,6 +166,7 @@ export interface UseDeathsBreakoutOptions {
   context: PanelContext;
   loading?: boolean;
   processing?: boolean;
+  mode?: DeathMode;
 }
 
 /**
@@ -172,9 +178,10 @@ export function useDeathsBreakout({
   context,
   loading = false,
   processing = false,
+  mode = "players",
 }: UseDeathsBreakoutOptions) {
   const breakout = useCallback(
-    (playerID: string) => {
+    (unitID: string) => {
       if (loading || processing) {
         return (
           <div className="p-4 flex items-center justify-center text-xs text-muted-foreground min-w-[250px] min-h-[150px]">
@@ -189,13 +196,14 @@ export function useDeathsBreakout({
         );
       }
 
-      const playerData = getDeathsForPlayer(
+      const unitData = getDeathsForUnit(
         result,
-        playerID,
-        context.selectedEncounterIds
+        unitID,
+        context.selectedEncounterIds,
+        mode
       );
 
-      if (!playerData) {
+      if (!unitData) {
         return (
           <p className="text-xs p-2 text-muted-foreground">No death data</p>
         );
@@ -203,12 +211,12 @@ export function useDeathsBreakout({
 
       return (
         <DeathsBreakout
-          killers={playerData.killers}
-          totalDeaths={playerData.totalDeaths}
+          killers={unitData.killers}
+          totalDeaths={unitData.totalDeaths}
         />
       );
     },
-    [result, context.selectedEncounterIds, loading, processing]
+    [result, context.selectedEncounterIds, loading, processing, mode]
   );
 
   return breakout;

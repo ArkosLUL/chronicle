@@ -418,7 +418,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
               </div>
               <div
                 ref={seekBarRef}
-                className="h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
+                className="h-2 bg-muted-foreground/10 rounded-full cursor-pointer overflow-hidden"
                 onClick={handleSeekBarClick}
               >
                 <div
@@ -512,7 +512,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           </div>
           <div
             ref={seekBarRef}
-            className="h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
+            className="h-2 bg-muted-foreground/10 rounded-full cursor-pointer overflow-hidden"
             onClick={handleSeekBarClick}
           >
             <div

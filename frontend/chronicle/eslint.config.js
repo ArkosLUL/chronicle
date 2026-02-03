@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'src/api/proto']),
+  globalIgnores(['dist', 'src/api/proto', 'storybook-static']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

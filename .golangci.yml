@@ -8,3 +8,4 @@ linters:
       - "database/dbtestutil/.*"
       - "combatlog/parser/regexs/compiled/"
       - "database/spice/.*"
+      - "scripts/policygen/.*"

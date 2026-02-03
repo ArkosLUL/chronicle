@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,10 +15,10 @@ func TestYouReplacements(t *testing.T) {
 	t.Parallel()
 
 	replacer := &youReplacer{
-		Me: types.Unit{
+		Me: (&whoami.SharedMe{}).SetMe(types.Unit{
 			Name: "Doyd",
 			Gid:  0x000000000001C7AC,
-		},
+		}),
 	}
 
 	exps := map[string]string{
@@ -65,10 +66,10 @@ func TestSingleReplacement(t *testing.T) {
 	t.Parallel()
 
 	replacer := &youReplacer{
-		Me: types.Unit{
+		Me: (&whoami.SharedMe{}).SetMe(types.Unit{
 			Name: "Doyd",
 			Gid:  0x000000000001C7AC,
-		},
+		}),
 	}
 
 	input := "Power Word: Fortitude fades from you."

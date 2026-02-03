@@ -7,3 +7,4 @@ linters:
       - "database/gen/dump/.*"
       - "database/dbtestutil/.*"
       - "combatlog/parser/regexs/compiled/"
+      - "database/spice/.*"

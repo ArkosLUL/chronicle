@@ -1,6 +1,12 @@
 package instances
 
 var (
+	Deadmines = (&CommonFactory{
+		Name:     "Deadmines",
+		ZoneName: "the deadmines",
+		Hostiles: FromMap(DeadminesHostiles()),
+	}).New
+
 	ScarletMonasteryCathedral = (&CommonFactory{
 		Name:     "Scarlet Monastery Cathedral",
 		ZoneName: "scarlet monastery cathedral",

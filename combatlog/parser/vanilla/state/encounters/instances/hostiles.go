@@ -283,3 +283,40 @@ func ZulGurubHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func DeadminesHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		61959: "Defias Chemist",
+		641:   "Goblin Woodcarver",
+		642:   "Sneed's Shredder",
+		1731:  "Goblin Craftsman",
+		1732:  "Defias Squallshaper",
+		3947:  "Goblin Shipbuilder",
+		636:   "Defias Blackguard",
+		598:   "Defias Miner",
+		4418:  "Defias Wizard",
+		622:   "Goblin Engineer",
+		657:   "Defias Pirate",
+		1729:  "Defias Evoker",
+		122:   "Defias Highwayman",
+		1726:  "Defias Magician",
+		61960: "Defias Mixologist",
+		4416:  "Defias Strip Miner",
+		1725:  "Defias Watchman",
+		4417:  "Defias Taskmaster",
+		634:   "Defias Overseer",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		61961: "Jared Voss",
+		645:   "Cookie",
+		646:   "Mr. Smite",
+		643:   "Sneed",
+		639:   "Edwin VanCleef",
+		647:   "Captain Greenskin",
+		644:   "Rhahk'Zor",
+		1763:  "Gilnid",
+	})
+	return hostile
+}

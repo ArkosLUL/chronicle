@@ -1090,7 +1090,7 @@ export function InstancePageView({
           variant="default"
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed bottom-4 left-4 z-50 h-12 w-12 rounded-full shadow-lg"
+          className="fixed bottom-8 left-8 z-50 h-14 w-14 rounded-full shadow-lg"
           title={sidebarOpen ? "Close encounters" : "Show encounters"}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}

@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { X, Minimize2, Maximize2, Move, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type { VideoTimestamp } from "@/api/typesGenerated";
 import type { YTPlayer } from "@/types/youtube";
 
@@ -123,6 +125,7 @@ function formatDuration(seconds: number): string {
 }
 
 export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, onClose }: YouTubeOverlayProps) {
+  const isMobile = useIsMobile();
   const [position, setPosition] = useState({ x: 20, y: 80 });
   const [size, setSize] = useState({ width: 480, height: 270 });
   const [isMinimized, setIsMinimized] = useState(false);
@@ -378,6 +381,60 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
     return null;
   }
 
+  // Mobile: centered modal (z-40 to stay below sidebar FAB at z-50)
+  if (isMobile) {
+    return createPortal(
+      <>
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 z-40 bg-black/50"
+          onClick={onClose}
+        />
+        {/* Modal - centered */}
+        <div
+          className="fixed inset-x-2 top-1/2 -translate-y-1/2 z-40 flex flex-col bg-card rounded-lg shadow-xl border border-border overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 border-b border-border shrink-0">
+            <span className="text-sm font-medium">YouTube</span>
+            <button
+              onClick={onClose}
+              className="p-2 rounded bg-destructive/5 text-destructive/75 hover:bg-destructive/25 hover:text-destructive cursor-pointer transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          {/* Video player - 16:9 aspect ratio */}
+          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <div id="yt-overlay-player" className="absolute inset-0 w-full h-full" />
+          </div>
+          {/* Encounter seek bar */}
+          {encounterVideoTimes && (
+            <div className="px-3 py-2 bg-muted/30 border-t border-border">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <span>{formatDuration(encounterElapsed)}</span>
+                <div className="flex-1" />
+                <span>{formatDuration(encounterVideoTimes.duration)}</span>
+              </div>
+              <div
+                ref={seekBarRef}
+                className="h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
+                onClick={handleSeekBarClick}
+              >
+                <div
+                  className="h-full bg-primary rounded-full transition-[width] duration-100"
+                  style={{ width: `${seekBarProgress * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </>,
+      document.body
+    );
+  }
+
+  // Desktop: draggable overlay
   return (
     <div
       ref={containerRef}

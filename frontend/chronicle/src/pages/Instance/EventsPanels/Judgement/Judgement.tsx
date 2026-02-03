@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Scale } from "lucide-react";
-import type { PanelDefinition, PanelRenderProps } from "../types";
+import type { PanelDefinition, PanelRenderProps, PanelContext } from "../types";
 import {
   judgementProcessor,
   type JudgementResult,
@@ -15,6 +15,7 @@ import {
 } from "./judgement.processor";
 import { GenericPanel } from "../GenericPanel";
 import { cn } from "@/lib/utils";
+import type { ActivityPeriod } from "@/api/typesGenerated";
 
 /** Display names for judgement types */
 const JUDGEMENT_LABELS: Record<JudgementType, string> = {
@@ -85,6 +86,43 @@ function targetsToArray(targets: Record<string, TargetJudgementStats>): TargetJu
 }
 
 /**
+ * Calculate total active time in ms from activity periods
+ */
+function calculateActiveTimeMs(periods: readonly ActivityPeriod[]): number {
+  let totalMs = 0;
+  for (const period of periods) {
+    if (period.start && period.end) {
+      const startMs = new Date(period.start.timestamp).getTime();
+      const endMs = new Date(period.end.timestamp).getTime();
+      totalMs += Math.max(0, endMs - startMs);
+    }
+  }
+  return totalMs;
+}
+
+/**
+ * Build a map of unit GUID -> total active time (ms) from selected encounters
+ */
+function buildUnitActiveTimeMap(
+  context: PanelContext,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  const selectedIds = new Set(context.selectedEncounterIds);
+  
+  for (const encounter of context.instance.encounters) {
+    if (!selectedIds.has(encounter.id)) continue;
+    
+    for (const enemy of encounter.enemies ?? []) {
+      const existingTime = map.get(enemy.id) ?? 0;
+      const periodTime = calculateActiveTimeMs(enemy.periods);
+      map.set(enemy.id, existingTime + periodTime);
+    }
+  }
+  
+  return map;
+}
+
+/**
  * Create the Judgement panel definition.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,7 +140,12 @@ export function createJudgementPanel(): PanelDefinition<JudgementResult, any> {
 }
 
 function JudgementContent(props: PanelRenderProps<JudgementResult>) {
-  const { result, durationMs } = props;
+  const { result, context } = props;
+
+  // Build unit active time map from selected encounters
+  const unitActiveTimeMap = useMemo(() => {
+    return buildUnitActiveTimeMap(context);
+  }, [context]);
 
   // Merge finalized targets with active judgements
   const targets = useMemo(() => {
@@ -153,7 +196,11 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
           No Judgement debuffs found
         </div>
       ) : (
-        <TargetsView targets={targets} durationMs={durationMs} jolBenefit={result?.jolBenefit} />
+        <TargetsView 
+          targets={targets} 
+          unitActiveTimeMap={unitActiveTimeMap} 
+          jolBenefit={result?.jolBenefit} 
+        />
       )}
     </GenericPanel>
   );
@@ -161,11 +208,11 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
 
 interface TargetsViewProps {
   targets: TargetJudgementStats[];
-  durationMs: number;
+  unitActiveTimeMap: Map<string, number>;
   jolBenefit?: { totalHealing: number; byPlayer: Map<string, number> };
 }
 
-function TargetsView({ targets, durationMs, jolBenefit }: TargetsViewProps) {
+function TargetsView({ targets, unitActiveTimeMap, jolBenefit }: TargetsViewProps) {
   const [selectedTargetGuid, setSelectedTargetGuid] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<SortColumn>("total");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -244,7 +291,7 @@ function TargetsView({ targets, durationMs, jolBenefit }: TargetsViewProps) {
       {selectedTarget ? (
         <TargetBreakout
           target={selectedTarget}
-          durationMs={durationMs}
+          activeTimeMs={unitActiveTimeMap.get(selectedTarget.guid) ?? selectedTarget.totalUptimeMs}
           onClose={() => setSelectedTargetGuid(null)}
         />
       ) : (
@@ -293,35 +340,39 @@ function TargetsView({ targets, durationMs, jolBenefit }: TargetsViewProps) {
                 </tr>
               </thead>
               <tbody>
-                {sortedTargets.map((target) => (
-                  <tr
-                    key={target.guid}
-                    className="border-b border-border/10 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => setSelectedTargetGuid(target.guid)}
-                  >
-                    <td className="py-1 px-2 font-medium text-orange-400 whitespace-nowrap">
-                      {target.name}
-                    </td>
-                    <td className={cn("py-1 px-2 text-center font-mono text-2xs", target.uptimeByType.light > 0 && JUDGEMENT_COLORS.light)}>
-                      {target.uptimeByType.light > 0
-                        ? formatUptimePercent(target.uptimeByType.light, durationMs)
-                        : "—"}
-                    </td>
-                    <td className={cn("py-1 px-2 text-center font-mono text-2xs", target.uptimeByType.wisdom > 0 && JUDGEMENT_COLORS.wisdom)}>
-                      {target.uptimeByType.wisdom > 0
-                        ? formatUptimePercent(target.uptimeByType.wisdom, durationMs)
-                        : "—"}
-                    </td>
-                    <td className={cn("py-1 px-2 text-center font-mono text-2xs", target.uptimeByType.crusader > 0 && JUDGEMENT_COLORS.crusader)}>
-                      {target.uptimeByType.crusader > 0
-                        ? formatUptimePercent(target.uptimeByType.crusader, durationMs)
-                        : "—"}
-                    </td>
-                    <td className="py-1 px-2 text-right font-mono text-2xs whitespace-nowrap">
-                      {formatDuration(target.totalUptimeMs)}
-                    </td>
-                  </tr>
-                ))}
+                {sortedTargets.map((target) => {
+                  // Use unit-specific active time, fallback to uptime if not found
+                  const activeTimeMs = unitActiveTimeMap.get(target.guid) ?? target.totalUptimeMs;
+                  return (
+                    <tr
+                      key={target.guid}
+                      className="border-b border-border/10 hover:bg-muted/50 cursor-pointer"
+                      onClick={() => setSelectedTargetGuid(target.guid)}
+                    >
+                      <td className="py-1 px-2 font-medium text-orange-400 whitespace-nowrap">
+                        {target.name}
+                      </td>
+                      <td className={cn("py-1 px-2 text-center font-mono text-2xs", target.uptimeByType.light > 0 && JUDGEMENT_COLORS.light)}>
+                        {target.uptimeByType.light > 0
+                          ? formatUptimePercent(target.uptimeByType.light, activeTimeMs)
+                          : "—"}
+                      </td>
+                      <td className={cn("py-1 px-2 text-center font-mono text-2xs", target.uptimeByType.wisdom > 0 && JUDGEMENT_COLORS.wisdom)}>
+                        {target.uptimeByType.wisdom > 0
+                          ? formatUptimePercent(target.uptimeByType.wisdom, activeTimeMs)
+                          : "—"}
+                      </td>
+                      <td className={cn("py-1 px-2 text-center font-mono text-2xs", target.uptimeByType.crusader > 0 && JUDGEMENT_COLORS.crusader)}>
+                        {target.uptimeByType.crusader > 0
+                          ? formatUptimePercent(target.uptimeByType.crusader, activeTimeMs)
+                          : "—"}
+                      </td>
+                      <td className="py-1 px-2 text-right font-mono text-2xs whitespace-nowrap">
+                        {formatDuration(target.totalUptimeMs)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -333,11 +384,11 @@ function TargetsView({ targets, durationMs, jolBenefit }: TargetsViewProps) {
 
 interface TargetBreakoutProps {
   target: TargetJudgementStats;
-  durationMs: number;
+  activeTimeMs: number;
   onClose: () => void;
 }
 
-function TargetBreakout({ target, durationMs, onClose }: TargetBreakoutProps) {
+function TargetBreakout({ target, activeTimeMs, onClose }: TargetBreakoutProps) {
   // Sort applications by start time
   const sortedApps = useMemo(() => {
     return [...target.applications].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
@@ -386,7 +437,7 @@ function TargetBreakout({ target, durationMs, onClose }: TargetBreakoutProps) {
               <span className="text-muted-foreground">
                 {stats.count} applications
                 {" • "}
-                {formatUptimePercent(stats.totalMs, durationMs)} uptime
+                {formatUptimePercent(stats.totalMs, activeTimeMs)} uptime
               </span>
             </div>
           );

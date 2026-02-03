@@ -29,6 +29,7 @@ var characterFactories = []characterFactory{
 	NewHighPriestArlokk,
 	NewHighPriestMarli,
 	NewHighPriestessJeklik,
+	NewHighPriestThekalParty,
 }
 
 type Characters struct {

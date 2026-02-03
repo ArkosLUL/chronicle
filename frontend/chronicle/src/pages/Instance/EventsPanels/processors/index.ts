@@ -45,7 +45,7 @@ export type { EmptyResult } from "../Empty/empty.processor";
 export type { ResourceRegenResult, PlayerResourceData, ResourceAbilityData } from "../ResourceRegen/resourceRegen.processor";
 export type { InnervateResult, InnervateCast } from "../Innervate/innervate.processor";
 export type { SunderResult, WarriorSunderStats, TargetSunderStats, ConfirmedSunder, SunderDebugEvent } from "../Sunder/sunder.processor";
-export type { JudgementResult, PaladinJudgementStats, TargetJudgementStats, JudgementApplication, JudgementType, JudgementOfLightBenefit } from "../Judgement/judgement.processor";
+export type { JudgementResult, TargetJudgementStats, JudgementApplication, JudgementType, JudgementOfLightBenefit } from "../Judgement/judgement.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";

@@ -1,17 +1,15 @@
 /**
- * Judgement panel - Shows Paladin Judgement usage and uptime.
+ * Judgement panel - Shows Paladin Judgement uptime on targets.
  * 
- * Paladins view: Shows each paladin's judgements by type
- * Targets view: Shows judgement uptime per target with benefit tracking
+ * Shows judgement uptime per target with benefit tracking
  */
 
 import { useMemo, useState } from "react";
-import { Scale } from "lucide-react";
+import { ArrowDown, ArrowUp, Scale } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import {
   judgementProcessor,
   type JudgementResult,
-  type PaladinJudgementStats,
   type TargetJudgementStats,
   type JudgementType,
 } from "./judgement.processor";
@@ -75,18 +73,15 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
-/**
- * Sort paladins by total judgements descending
- */
-function sortedPaladins(paladins: Record<string, PaladinJudgementStats>): PaladinJudgementStats[] {
-  return Object.values(paladins).sort((a, b) => b.totalJudgements - a.totalJudgements);
-}
+/** Sort columns */
+type SortColumn = "name" | "light" | "wisdom" | "crusader" | "total";
+type SortDirection = "asc" | "desc";
 
 /**
- * Sort targets by total uptime descending
+ * Convert targets record to array (no sorting - done in component)
  */
-function sortedTargets(targets: Record<string, TargetJudgementStats>): TargetJudgementStats[] {
-  return Object.values(targets).sort((a, b) => b.totalUptimeMs - a.totalUptimeMs);
+function targetsToArray(targets: Record<string, TargetJudgementStats>): TargetJudgementStats[] {
+  return Object.values(targets);
 }
 
 /**
@@ -99,7 +94,6 @@ export function createJudgementPanel(): PanelDefinition<JudgementResult, any> {
     label: "Judgement",
     icon: <Scale className="h-4 w-4" />,
     supportsPerSecond: false,
-    checkboxLabel: "Show paladins",
 
     render: (props: PanelRenderProps<JudgementResult>) => {
       return <JudgementContent {...props} />;
@@ -108,88 +102,60 @@ export function createJudgementPanel(): PanelDefinition<JudgementResult, any> {
 }
 
 function JudgementContent(props: PanelRenderProps<JudgementResult>) {
-  const { result, checkboxChecked: showPaladins, durationMs } = props;
+  const { result, durationMs } = props;
 
-  const paladins = useMemo(() => {
-    if (!result) return [];
-    return sortedPaladins(result.paladins);
-  }, [result]);
-
+  // Merge finalized targets with active judgements
   const targets = useMemo(() => {
     if (!result) return [];
-    return sortedTargets(result.targets);
+    
+    // Start with finalized targets
+    const merged: Record<string, TargetJudgementStats> = { ...result.targets };
+    
+    // Add uptime from still-active judgements (no fade event received)
+    for (const [, active] of result.activeJudgements) {
+      const uptimeMs = result.maxOffsetMs - active.startOffsetMs;
+      if (uptimeMs <= 0) continue;
+      
+      let targetStats = merged[active.targetGuid];
+      if (!targetStats) {
+        targetStats = {
+          guid: active.targetGuid,
+          name: active.targetName,
+          uptimeByType: { light: 0, wisdom: 0, crusader: 0, justice: 0, unknown: 0 },
+          totalUptimeMs: 0,
+          applications: [],
+        };
+        merged[active.targetGuid] = targetStats;
+      }
+      
+      targetStats.uptimeByType[active.type] += uptimeMs;
+      targetStats.totalUptimeMs += uptimeMs;
+      // Add as application with endOffsetMs = maxOffsetMs (still active)
+      targetStats.applications.push({
+        type: active.type,
+        targetGuid: active.targetGuid,
+        targetName: active.targetName,
+        startOffsetMs: active.startOffsetMs,
+        endOffsetMs: result.maxOffsetMs,
+        encounterId: active.encounterId,
+      });
+    }
+    
+    return targetsToArray(merged);
   }, [result]);
 
-  const hasData = paladins.length > 0 || targets.length > 0;
+  const hasData = targets.length > 0;
 
   return (
     <GenericPanel {...props}>
       {!hasData ? (
         <div className="text-center py-2 text-muted-foreground text-sm">
-          No Judgement casts found
+          No Judgement debuffs found
         </div>
-      ) : showPaladins ? (
-        <PaladinsView paladins={paladins} />
       ) : (
         <TargetsView targets={targets} durationMs={durationMs} jolBenefit={result?.jolBenefit} />
       )}
     </GenericPanel>
-  );
-}
-
-interface PaladinsViewProps {
-  paladins: PaladinJudgementStats[];
-}
-
-function PaladinsView({ paladins }: PaladinsViewProps) {
-  return (
-    <div className="space-y-2">
-      <div className="max-h-[300px] overflow-y-auto">
-        <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-card">
-            <tr className="border-b border-border text-muted-foreground">
-              <th className="text-left py-1.5 px-2 font-medium">Paladin</th>
-              <th className="text-center py-1.5 px-2 font-medium">
-                <span className={JUDGEMENT_COLORS.light} title="Judgement of Light">JoL</span>
-              </th>
-              <th className="text-center py-1.5 px-2 font-medium">
-                <span className={JUDGEMENT_COLORS.wisdom} title="Judgement of Wisdom">JoW</span>
-              </th>
-              <th className="text-center py-1.5 px-2 font-medium">
-                <span className={JUDGEMENT_COLORS.crusader} title="Judgement of the Crusader">JotC</span>
-              </th>
-              <th className="text-right py-1.5 px-2 font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paladins.map((paladin) => (
-              <tr
-                key={paladin.guid}
-                className="border-b border-border/10 hover:bg-muted/50"
-              >
-                <td className="py-1 px-2">
-                  <span className="font-medium text-[var(--class-paladin)]">
-                    {paladin.name}
-                  </span>
-                </td>
-                <td className={cn("py-1 px-2 text-center font-mono", paladin.byType.light > 0 && JUDGEMENT_COLORS.light)}>
-                  {paladin.byType.light || "—"}
-                </td>
-                <td className={cn("py-1 px-2 text-center font-mono", paladin.byType.wisdom > 0 && JUDGEMENT_COLORS.wisdom)}>
-                  {paladin.byType.wisdom || "—"}
-                </td>
-                <td className={cn("py-1 px-2 text-center font-mono", paladin.byType.crusader > 0 && JUDGEMENT_COLORS.crusader)}>
-                  {paladin.byType.crusader || "—"}
-                </td>
-                <td className="py-1 px-2 text-right font-mono">
-                  {paladin.totalJudgements}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 
@@ -201,10 +167,67 @@ interface TargetsViewProps {
 
 function TargetsView({ targets, durationMs, jolBenefit }: TargetsViewProps) {
   const [selectedTargetGuid, setSelectedTargetGuid] = useState<string | null>(null);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("total");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const selectedTarget = selectedTargetGuid
     ? targets.find((t) => t.guid === selectedTargetGuid)
     : null;
+
+  // Sort targets based on current sort state
+  const sortedTargets = useMemo(() => {
+    const sorted = [...targets].sort((a, b) => {
+      let aVal: number | string;
+      let bVal: number | string;
+      
+      switch (sortColumn) {
+        case "name":
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case "light":
+          aVal = a.uptimeByType.light;
+          bVal = b.uptimeByType.light;
+          break;
+        case "wisdom":
+          aVal = a.uptimeByType.wisdom;
+          bVal = b.uptimeByType.wisdom;
+          break;
+        case "crusader":
+          aVal = a.uptimeByType.crusader;
+          bVal = b.uptimeByType.crusader;
+          break;
+        case "total":
+        default:
+          aVal = a.totalUptimeMs;
+          bVal = b.totalUptimeMs;
+          break;
+      }
+      
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [targets, sortColumn, sortDirection]);
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Toggle direction
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // New column - default to desc for numbers, asc for name
+      setSortColumn(column);
+      setSortDirection(column === "name" ? "asc" : "desc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: SortColumn }) => {
+    if (sortColumn !== column) return null;
+    return sortDirection === "asc" 
+      ? <ArrowUp className="h-3 w-3 inline ml-0.5" />
+      : <ArrowDown className="h-3 w-3 inline ml-0.5" />;
+  };
 
   return (
     <div className="space-y-2">
@@ -228,36 +251,49 @@ function TargetsView({ targets, durationMs, jolBenefit }: TargetsViewProps) {
         <>
           <div className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{targets.length}</span> targets with judgements
-            {selectedTarget && (
-              <button
-                type="button"
-                onClick={() => setSelectedTargetGuid(null)}
-                className="ml-2 text-blue-400 hover:text-blue-300 cursor-pointer"
-              >
-                [clear selection]
-              </button>
-            )}
           </div>
 
           <div className="max-h-[300px] overflow-y-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left py-1.5 px-2 font-medium">Target</th>
-                  <th className="text-center py-1.5 px-2 font-medium">
+                  <th 
+                    className="text-left py-1.5 px-2 font-medium cursor-pointer hover:text-foreground select-none"
+                    onClick={() => handleSort("name")}
+                  >
+                    Target<SortIcon column="name" />
+                  </th>
+                  <th 
+                    className="text-center py-1.5 px-2 font-medium cursor-pointer hover:text-foreground select-none"
+                    onClick={() => handleSort("light")}
+                  >
                     <span className={JUDGEMENT_COLORS.light} title="Judgement of Light uptime">JoL</span>
+                    <SortIcon column="light" />
                   </th>
-                  <th className="text-center py-1.5 px-2 font-medium">
+                  <th 
+                    className="text-center py-1.5 px-2 font-medium cursor-pointer hover:text-foreground select-none"
+                    onClick={() => handleSort("wisdom")}
+                  >
                     <span className={JUDGEMENT_COLORS.wisdom} title="Judgement of Wisdom uptime">JoW</span>
+                    <SortIcon column="wisdom" />
                   </th>
-                  <th className="text-center py-1.5 px-2 font-medium">
+                  <th 
+                    className="text-center py-1.5 px-2 font-medium cursor-pointer hover:text-foreground select-none"
+                    onClick={() => handleSort("crusader")}
+                  >
                     <span className={JUDGEMENT_COLORS.crusader} title="Judgement of the Crusader uptime">JotC</span>
+                    <SortIcon column="crusader" />
                   </th>
-                  <th className="text-right py-1.5 px-2 font-medium">Total</th>
+                  <th 
+                    className="text-right py-1.5 px-2 font-medium cursor-pointer hover:text-foreground select-none"
+                    onClick={() => handleSort("total")}
+                  >
+                    Total<SortIcon column="total" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {targets.map((target) => (
+                {sortedTargets.map((target) => (
                   <tr
                     key={target.guid}
                     className="border-b border-border/10 hover:bg-muted/50 cursor-pointer"
@@ -309,22 +345,17 @@ function TargetBreakout({ target, durationMs, onClose }: TargetBreakoutProps) {
 
   // Group by type for summary
   const byType = useMemo(() => {
-    const result: Record<JudgementType, { count: number; totalMs: number; paladins: Set<string> }> = {
-      light: { count: 0, totalMs: 0, paladins: new Set() },
-      wisdom: { count: 0, totalMs: 0, paladins: new Set() },
-      crusader: { count: 0, totalMs: 0, paladins: new Set() },
-      justice: { count: 0, totalMs: 0, paladins: new Set() },
-      unknown: { count: 0, totalMs: 0, paladins: new Set() },
+    const result: Record<JudgementType, { count: number; totalMs: number }> = {
+      light: { count: 0, totalMs: 0 },
+      wisdom: { count: 0, totalMs: 0 },
+      crusader: { count: 0, totalMs: 0 },
+      justice: { count: 0, totalMs: 0 },
+      unknown: { count: 0, totalMs: 0 },
     };
     for (const app of sortedApps) {
-      const duration = app.endOffsetMs !== null
-        ? app.endOffsetMs - app.startOffsetMs
-        : 0; // Still active - we don't know duration
+      const duration = app.endOffsetMs - app.startOffsetMs;
       result[app.type].count++;
       result[app.type].totalMs += duration;
-      if (app.casterName !== "Unknown") {
-        result[app.type].paladins.add(app.casterName);
-      }
     }
     return result;
   }, [sortedApps]);
@@ -356,14 +387,6 @@ function TargetBreakout({ target, durationMs, onClose }: TargetBreakoutProps) {
                 {stats.count} applications
                 {" • "}
                 {formatUptimePercent(stats.totalMs, durationMs)} uptime
-                {stats.paladins.size > 0 && (
-                  <>
-                    {" • "}
-                    <span className="text-[var(--class-paladin)]">
-                      {Array.from(stats.paladins).join(", ")}
-                    </span>
-                  </>
-                )}
               </span>
             </div>
           );
@@ -376,16 +399,13 @@ function TargetBreakout({ target, durationMs, onClose }: TargetBreakoutProps) {
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">
               <th className="text-left py-1 px-2 font-medium">Type</th>
-              <th className="text-left py-1 px-2 font-medium">Paladin</th>
               <th className="text-right py-1 px-2 font-medium">Start</th>
               <th className="text-right py-1 px-2 font-medium">Duration</th>
             </tr>
           </thead>
           <tbody>
             {sortedApps.map((app, index) => {
-              const duration = app.endOffsetMs !== null
-                ? app.endOffsetMs - app.startOffsetMs
-                : null;
+              const duration = app.endOffsetMs - app.startOffsetMs;
               return (
                 <tr
                   key={index}
@@ -394,14 +414,11 @@ function TargetBreakout({ target, durationMs, onClose }: TargetBreakoutProps) {
                   <td className={cn("py-0.5 px-2", JUDGEMENT_COLORS[app.type])}>
                     {JUDGEMENT_SHORT[app.type]}
                   </td>
-                  <td className="py-0.5 px-2 text-[var(--class-paladin)]">
-                    {app.casterName}
-                  </td>
                   <td className="py-0.5 px-2 text-right">
                     {formatDuration(app.startOffsetMs)}
                   </td>
                   <td className="py-0.5 px-2 text-right">
-                    {duration !== null ? formatDuration(duration) : "active"}
+                    {formatDuration(duration)}
                   </td>
                 </tr>
               );

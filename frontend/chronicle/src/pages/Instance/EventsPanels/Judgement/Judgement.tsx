@@ -13,6 +13,8 @@ import {
   type TargetJudgementStats,
   type JudgementType,
 } from "./judgement.processor";
+import { unifiedHealingProcessor, type UnifiedHealingResult } from "../processors";
+import { usePanelAggregation } from "../usePanelAggregation";
 import { GenericPanel } from "../GenericPanel";
 import { cn } from "@/lib/utils";
 import type { ActivityPeriod } from "@/api/typesGenerated";
@@ -139,8 +141,74 @@ export function createJudgementPanel(): PanelDefinition<JudgementResult, any> {
   };
 }
 
+/**
+ * Extract total JoL overheal from healing processor result.
+ * Sums overheal for "Judgement of Light" and "Judgement of Light (HoT)" across all healers.
+ */
+function extractJoLOverheal(healingResult: UnifiedHealingResult | null): number {
+  if (!healingResult) return 0;
+  
+  let totalOverheal = 0;
+  
+  // HealerByAbilityOverheal is healerID -> abilityName -> DamageAbilityBreakout
+  for (const [, abilityMap] of healingResult.HealerByAbilityOverheal) {
+    // Check both regular and HoT versions of JoL
+    const jolBreakout = abilityMap.get("Judgement of Light");
+    if (jolBreakout) {
+      totalOverheal += jolBreakout.Total;
+    }
+    const jolHotBreakout = abilityMap.get("Judgement of Light (HoT)");
+    if (jolHotBreakout) {
+      totalOverheal += jolHotBreakout.Total;
+    }
+  }
+  
+  return totalOverheal;
+}
+
+// Healing processor panel definition for aggregation (minimal wrapper)
+// Must use id: "healing_done" to match the processor registry
+const healingPanel = {
+  ...unifiedHealingProcessor,
+  id: "healing_done",  // Override to match registry key
+  label: "Healing",
+  icon: null,
+  render: () => null,
+};
+
 function JudgementContent(props: PanelRenderProps<JudgementResult>) {
   const { result, context } = props;
+  
+  // Run the healing processor to get JoL overheal data
+  const healingAgg = usePanelAggregation<UnifiedHealingResult>({
+    panel: healingPanel,
+    context,
+  });
+  
+  // Debug: log healing processor state
+  console.log("[JoL Debug] healingAgg state:", {
+    loading: healingAgg.loading,
+    processing: healingAgg.processing,
+    error: healingAgg.error?.message,
+    hasResult: !!healingAgg.result,
+    overhealMapSize: healingAgg.result?.HealerByAbilityOverheal?.size ?? "N/A",
+  });
+  
+  // Extract JoL overheal from healing result
+  const jolOverheal = useMemo(() => {
+    // Debug: log what abilities are in the overheal map
+    if (healingAgg.result && healingAgg.result.HealerByAbilityOverheal.size > 0) {
+      console.log("[JoL Debug] HealerByAbilityOverheal entries:");
+      for (const [healerId, abilityMap] of healingAgg.result.HealerByAbilityOverheal) {
+        for (const [abilityName, breakout] of abilityMap) {
+          if (abilityName.toLowerCase().includes("judgement") || abilityName.toLowerCase().includes("light")) {
+            console.log(`  ${healerId}: "${abilityName}" = ${breakout.Total}`);
+          }
+        }
+      }
+    }
+    return extractJoLOverheal(healingAgg.result);
+  }, [healingAgg.result]);
 
   // Build unit active time map from selected encounters
   const unitActiveTimeMap = useMemo(() => {
@@ -199,7 +267,8 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
         <TargetsView 
           targets={targets} 
           unitActiveTimeMap={unitActiveTimeMap} 
-          jolBenefit={result?.jolBenefit} 
+          jolBenefit={result?.jolBenefit}
+          jolOverheal={jolOverheal}
         />
       )}
     </GenericPanel>
@@ -210,9 +279,10 @@ interface TargetsViewProps {
   targets: TargetJudgementStats[];
   unitActiveTimeMap: Map<string, number>;
   jolBenefit?: { totalHealing: number; byPlayer: Map<string, number> };
+  jolOverheal: number;
 }
 
-function TargetsView({ targets, unitActiveTimeMap, jolBenefit }: TargetsViewProps) {
+function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: TargetsViewProps) {
   const [selectedTargetGuid, setSelectedTargetGuid] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<SortColumn>("total");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -284,7 +354,14 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit }: TargetsViewProp
           <span className={JUDGEMENT_COLORS.light}>Judgement of Light</span>
           {" healed for "}
           <span className="font-medium text-green-400">{formatNumber(jolBenefit.totalHealing)}</span>
-          {" total"}
+          {jolOverheal > 0 && (
+            <>
+              {" "}
+              <span className="text-muted-foreground">
+                ({formatNumber(jolOverheal)} overheal)
+              </span>
+            </>
+          )}
         </div>
       )}
 

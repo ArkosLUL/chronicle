@@ -77,7 +77,7 @@ function formatNumber(n: number): string {
 }
 
 /** Sort columns */
-type SortColumn = "name" | "light" | "wisdom" | "crusader" | "total";
+type SortColumn = "name" | "light" | "wisdom" | "crusader";
 type SortDirection = "asc" | "desc";
 
 /**
@@ -185,28 +185,8 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
     context,
   });
   
-  // Debug: log healing processor state
-  console.log("[JoL Debug] healingAgg state:", {
-    loading: healingAgg.loading,
-    processing: healingAgg.processing,
-    error: healingAgg.error?.message,
-    hasResult: !!healingAgg.result,
-    overhealMapSize: healingAgg.result?.HealerByAbilityOverheal?.size ?? "N/A",
-  });
-  
   // Extract JoL overheal from healing result
   const jolOverheal = useMemo(() => {
-    // Debug: log what abilities are in the overheal map
-    if (healingAgg.result && healingAgg.result.HealerByAbilityOverheal.size > 0) {
-      console.log("[JoL Debug] HealerByAbilityOverheal entries:");
-      for (const [healerId, abilityMap] of healingAgg.result.HealerByAbilityOverheal) {
-        for (const [abilityName, breakout] of abilityMap) {
-          if (abilityName.toLowerCase().includes("judgement") || abilityName.toLowerCase().includes("light")) {
-            console.log(`  ${healerId}: "${abilityName}" = ${breakout.Total}`);
-          }
-        }
-      }
-    }
     return extractJoLOverheal(healingAgg.result);
   }, [healingAgg.result]);
 
@@ -284,7 +264,7 @@ interface TargetsViewProps {
 
 function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: TargetsViewProps) {
   const [selectedTargetGuid, setSelectedTargetGuid] = useState<string | null>(null);
-  const [sortColumn, setSortColumn] = useState<SortColumn>("total");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("light");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const selectedTarget = selectedTargetGuid
@@ -311,13 +291,9 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: Ta
           bVal = b.uptimeByType.wisdom;
           break;
         case "crusader":
+        default:
           aVal = a.uptimeByType.crusader;
           bVal = b.uptimeByType.crusader;
-          break;
-        case "total":
-        default:
-          aVal = a.totalUptimeMs;
-          bVal = b.totalUptimeMs;
           break;
       }
       
@@ -408,12 +384,6 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: Ta
                     <span className={JUDGEMENT_COLORS.crusader} title="Judgement of the Crusader uptime">JotC</span>
                     <SortIcon column="crusader" />
                   </th>
-                  <th 
-                    className="text-right py-1.5 px-2 font-medium cursor-pointer hover:text-foreground select-none"
-                    onClick={() => handleSort("total")}
-                  >
-                    Total<SortIcon column="total" />
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -443,9 +413,6 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: Ta
                         {target.uptimeByType.crusader > 0
                           ? formatUptimePercent(target.uptimeByType.crusader, activeTimeMs)
                           : "—"}
-                      </td>
-                      <td className="py-1 px-2 text-right font-mono text-2xs whitespace-nowrap">
-                        {formatDuration(target.totalUptimeMs)}
                       </td>
                     </tr>
                   );

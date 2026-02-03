@@ -1,4 +1,4 @@
-export { InstanceEventsProvider, useInstanceEventsContext } from "./InstanceEventsContext";
+export { InstanceEventsProvider, useInstanceEventsContext, InstanceEventsContext } from "./InstanceEventsContext";
 export { useInstanceEvents } from "./useInstanceEvents";
 export { useEventAggregation } from "./useEventAggregation";
 export type {

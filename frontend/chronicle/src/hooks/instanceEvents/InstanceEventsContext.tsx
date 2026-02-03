@@ -2,7 +2,7 @@ import { createContext, useContext, useCallback, useRef, useState, useMemo, type
 import { decompressGzip, isGzipped, readVarint, readVarint64, type PayloadHeader } from "@/api/protodecode/decode";
 import type { StreamType, CachedStream, InstanceEventsContextValue } from "./types";
 
-const InstanceEventsContext = createContext<InstanceEventsContextValue | null>(null);
+export const InstanceEventsContext = createContext<InstanceEventsContextValue | null>(null);
 
 /**
  * Get the API endpoint for a stream type

@@ -88,6 +88,8 @@ gen/go:
 .PHONY: gen
 gen: gen/db gen/go database/unique_constraint.go frontend/chronicle/src/api/typesGenerated.ts
 
+POSTGRES_VERSION ?= 17
+POSTGRES_IMAGE   ?= us-docker.pkg.dev/coder-v2-images-public/public/postgres:$(POSTGRES_VERSION)
 .PHONY: test-postgres-docker
 test-postgres-docker:
 	docker rm -f test-postgres-docker-${POSTGRES_VERSION} || true

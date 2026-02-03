@@ -208,6 +208,8 @@ export interface ProcessorPagination {
   limit: number;
   /** Which streams to include in pagination (if not set, all streams are included) */
   enabledStreams?: string[];
+  /** Filter events by ability/source name (case-insensitive substring match) */
+  abilityFilter?: string;
 }
 
 /**

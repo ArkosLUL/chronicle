@@ -140,6 +140,31 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       return;
     }
     
+    // Filter by ability name if specified
+    const abilityFilter = context.pagination?.abilityFilter?.toLowerCase().trim();
+    if (abilityFilter) {
+      // Get the ability/source name based on event type
+      let abilityName = "";
+      if (streamType === "cast") {
+        const castEvent = event as CastProcessorEvent;
+        abilityName = castEvent.spell.name;
+      } else if (streamType === "aura") {
+        const auraEvent = event as AuraProcessorEvent;
+        abilityName = auraEvent.spellName;
+      } else if (streamType === "slain") {
+        const slainEvent = event as SlainProcessorEvent;
+        abilityName = slainEvent.attribution?.sourceName ?? "";
+      } else {
+        const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
+        abilityName = regularEvent.sourceName;
+      }
+      
+      // Check if the ability name contains the filter string (case-insensitive)
+      if (!abilityName.toLowerCase().includes(abilityFilter)) {
+        return;
+      }
+    }
+    
     // Increment total processed (only for enabled streams)
     state.totalProcessed++;
     

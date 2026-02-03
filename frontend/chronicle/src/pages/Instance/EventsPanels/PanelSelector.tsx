@@ -3,7 +3,7 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Leaf, Search, Sword, Toolbox, User } from "lucide-react";
+import { ChevronDown, ChevronRight, Leaf, Scale, Search, Sword, Toolbox, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { PANELS, type EventsPanelType } from "./EventsPanel";
@@ -65,6 +65,11 @@ const PANEL_CATEGORIES: PanelCategory[] = [
         label: "Warrior",
         items: ["sunder"],
         icon: <Sword className="h-4 w-4" />,
+      },
+      {
+        label: "Paladin",
+        items: ["judgement"],
+        icon: <Scale className="h-4 w-4" />,
       },
     ],
   },

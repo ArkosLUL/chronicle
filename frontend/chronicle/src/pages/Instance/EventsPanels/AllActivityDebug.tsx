@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -221,6 +221,8 @@ interface AllActivityContentProps {
   onPageChange: (page: number) => void;
   enabledStreams: Set<StreamType>;
   onToggleStream: (stream: StreamType) => void;
+  abilityFilter: string;
+  onAbilityFilterChange: (filter: string) => void;
 }
 
 function AllActivityContent({
@@ -234,6 +236,8 @@ function AllActivityContent({
   onPageChange,
   enabledStreams,
   onToggleStream,
+  abilityFilter,
+  onAbilityFilterChange,
 }: AllActivityContentProps) {
   // Default state during loading
   const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [] };
@@ -278,7 +282,7 @@ function AllActivityContent({
 
   return (
     <div>
-      {/* Stream toggles */}
+      {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
         {(["damage", "heal", "resource_change", "cast", "aura", "slain"] as StreamType[]).map((stream) => (
@@ -290,6 +294,30 @@ function AllActivityContent({
             onToggle={() => onToggleStream(stream)}
           />
         ))}
+        
+        {/* Ability filter input */}
+        <div className="flex items-center gap-1 ml-2">
+          <Search className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="relative">
+            <input
+              type="text"
+              value={abilityFilter}
+              onChange={(e) => onAbilityFilterChange(e.target.value)}
+              placeholder="Filter by ability..."
+              className="h-6 w-40 px-2 text-xs bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {abilityFilter && (
+              <button
+                type="button"
+                onClick={() => onAbilityFilterChange("")}
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted-foreground/20 rounded"
+                title="Clear filter"
+              >
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
       
       {/* Stats row with pagination */}
@@ -387,6 +415,7 @@ const DEFAULT_ENABLED_STREAMS = new Set<StreamType>(["damage", "heal", "resource
 function AllActivityWrapper({ context }: AllActivityWrapperProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [enabledStreams, setEnabledStreams] = useState<Set<StreamType>>(DEFAULT_ENABLED_STREAMS);
+  const [abilityFilter, setAbilityFilter] = useState("");
   
   // Track previous encounter key to reset page when encounters change
   // Using the React-approved pattern for "adjusting state when a prop changes"
@@ -398,15 +427,16 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
     setCurrentPage(1);
   }
   
-  // Create context with pagination and enabled streams
+  // Create context with pagination, enabled streams, and ability filter
   const paginatedContext = useMemo((): PanelContext => ({
     ...context,
     pagination: {
       offset: (currentPage - 1) * PAGE_SIZE,
       limit: PAGE_SIZE,
       enabledStreams: Array.from(enabledStreams),
+      abilityFilter: abilityFilter.trim() || undefined,
     },
-  }), [context, currentPage, enabledStreams]);
+  }), [context, currentPage, enabledStreams, abilityFilter]);
   
   // Use aggregation with paginated context
   const {
@@ -439,6 +469,12 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
     setCurrentPage(1);
   }, []);
   
+  const handleAbilityFilterChange = useCallback((filter: string) => {
+    setAbilityFilter(filter);
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
+  }, []);
+  
   return (
     <AllActivityContent
       result={result}
@@ -451,6 +487,8 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
       onPageChange={handlePageChange}
       enabledStreams={enabledStreams}
       onToggleStream={handleToggleStream}
+      abilityFilter={abilityFilter}
+      onAbilityFilterChange={handleAbilityFilterChange}
     />
   );
 }

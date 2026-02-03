@@ -26,6 +26,7 @@ import { createEmptyPanel } from "./Empty/Empty";
 import { createResourceRegenPanel } from "./ResourceRegen/ResourceRegen";
 import { createInnervatePanel } from "./Innervate/Innervate";
 import { createSunderPanel } from "./Sunder/Sunder";
+import { createJudgementPanel } from "./Judgement/Judgement";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -56,6 +57,8 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   innervate: createInnervatePanel(),
   // Class: Warrior
   sunder: createSunderPanel(),
+  // Class: Paladin
+  judgement: createJudgementPanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;

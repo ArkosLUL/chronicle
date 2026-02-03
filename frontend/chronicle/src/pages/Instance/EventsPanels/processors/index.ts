@@ -15,6 +15,7 @@ import { emptyProcessor } from "../Empty/empty.processor";
 import { resourceRegenProcessor } from "../ResourceRegen/resourceRegen.processor";
 import { innervateProcessor } from "../Innervate/innervate.processor";
 import { sunderProcessor } from "../Sunder/sunder.processor";
+import { judgementProcessor } from "../Judgement/judgement.processor";
 
 // Export individual processors
 export { damageDoneProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -29,6 +30,7 @@ export { emptyProcessor } from "../Empty/empty.processor";
 export { resourceRegenProcessor } from "../ResourceRegen/resourceRegen.processor";
 export { innervateProcessor } from "../Innervate/innervate.processor";
 export { sunderProcessor } from "../Sunder/sunder.processor";
+export { judgementProcessor } from "../Judgement/judgement.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -43,6 +45,7 @@ export type { EmptyResult } from "../Empty/empty.processor";
 export type { ResourceRegenResult, PlayerResourceData, ResourceAbilityData } from "../ResourceRegen/resourceRegen.processor";
 export type { InnervateResult, InnervateCast } from "../Innervate/innervate.processor";
 export type { SunderResult, WarriorSunderStats, TargetSunderStats, ConfirmedSunder, SunderDebugEvent } from "../Sunder/sunder.processor";
+export type { JudgementResult, PaladinJudgementStats, TargetJudgementStats, JudgementApplication, JudgementType, JudgementOfLightBenefit } from "../Judgement/judgement.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
@@ -79,4 +82,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   innervate: innervateProcessor,
   // Class: Warrior
   sunder: sunderProcessor,
+  // Class: Paladin
+  judgement: judgementProcessor,
 };

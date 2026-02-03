@@ -9,8 +9,9 @@ type SharedMe struct {
 	me types.Unit
 }
 
-func (s *SharedMe) SetMe(me types.Unit) {
+func (s *SharedMe) SetMe(me types.Unit) *SharedMe{
 	s.me = me
+  return s
 }
 
 func (s *SharedMe) Unit() types.Unit {

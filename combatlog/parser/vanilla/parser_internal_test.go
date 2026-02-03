@@ -11,6 +11,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/rs/zerolog"
 	slogzerolog "github.com/samber/slog-zerolog/v2"
@@ -586,10 +587,10 @@ func TestParserMessages(t *testing.T) {
 func TestPreProcess(t *testing.T) {
 	t.Parallel()
 
-	pre := youReplacer{Me: types.Unit{
+	pre := youReplacer{Me: (&whoami.SharedMe{}).SetMe(types.Unit{
 		Name: "Doyd",
 		Gid:  0x000000000001C7AC,
-	}}
+	})}
 
 	tc := []struct {
 		input    string

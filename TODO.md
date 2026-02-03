@@ -28,3 +28,6 @@
 1/31 20:43:55.408  CAST: 0x0000000000049036(Defen) casts Pummel(6552) on 0xF130002D8E00DD66(Flamewaker Priest).
 1/31 20:43:55.408  CAST: 0xF130002D8E00DD66(Flamewaker Priest) fails casting Dark Mending(19775).
 ```
+
+- Judgement of light to source healing to actor who put the debuff on the target
+- Filter by source spell id

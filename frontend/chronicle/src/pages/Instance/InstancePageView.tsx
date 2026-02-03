@@ -850,15 +850,12 @@ export interface InstancePageViewProps {
 
 export function InstancePageView({
   instance,
-  selectedEncounterIds,
+  selectedEncounterIds: _selectedEncounterIds,
   onSelectEncounters,
   backUrl,
   youtubeButton,
 }: InstancePageViewProps) {
-  // Find first boss kill, or first encounter if no boss kills
-  const firstBossKill = instance.encounters.find((e) => e.boss && e.kill);
-  const defaultEncounter = firstBossKill || instance.encounters[0];
-  const defaultEncounterId = defaultEncounter?.id ?? "";
+
   
   // Compute all enemies from all encounters (GUID-sorted for stable URL indexing)
   const allMergedEnemies = useMemo(

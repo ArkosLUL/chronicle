@@ -114,7 +114,7 @@ func populateRelationships(ctx context.Context, permSrv v1.PermissionsServiceCli
 	// Write in a workspace
 	relationships.GenerateRelationships()
 	// Example: group:hr#member@user:camilla
-	all := relationships.RelationshipsToStrings(relationships.Playground.V1Relationships)
+	all := relationships.RelationshipsToStrings(relationships.Playground.Relationships)
 
 	var token *v1.ZedToken
 	for _, rel := range all {

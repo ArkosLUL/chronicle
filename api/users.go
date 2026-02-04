@@ -9,18 +9,12 @@ import (
 )
 
 func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
-	c, ok := chronauth.AuthenticatedClaims(r.Context())
-	if !ok {
-		httpapi.Write(r.Context(), w, http.StatusUnauthorized, "not authenticated")
-		return
-	}
-	if c == nil {
-		httpapi.Write(r.Context(), w, http.StatusUnauthorized, "not authenticated")
-		return
-	}
+	state := chronauth.AuthenticationState(r)
+
+
 
 	httpapi.Write(r.Context(), w, http.StatusOK, sdk.Session{
-		UserID:    c.Subject,
-		SessionID: c.SessionID,
+		UserID:    state.Claims.Subject,
+		SessionID: state.Claims.SessionID,
 	})
 }

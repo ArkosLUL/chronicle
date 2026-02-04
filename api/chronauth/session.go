@@ -153,7 +153,7 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 	}
 }
 
-func (s *Service) MustRoles(requiredRole database.UserRoles) func(next http.Handler) http.Handler {
+func (s *Service) MustRoles(requiredRoles ...database.UserRoles) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -177,10 +177,13 @@ func (s *Service) MustRoles(requiredRole database.UserRoles) func(next http.Hand
 				user = state.User
 			}
 
-			if !slice.Contains(user.Roles, requiredRole) {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
+			for _, requiredRole := range requiredRoles {
+				if !slice.Contains(user.Roles, requiredRole) {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					return
+				}
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}

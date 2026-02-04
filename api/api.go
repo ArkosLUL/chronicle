@@ -98,7 +98,10 @@ func (api *API) Routes() chi.Router {
 		)
 
 		r.Group(func(r chi.Router) {
-			r.Use(api.Auth.Authenticated(false))
+			r.Use(
+        api.Auth.Authenticated(false),
+        api.Auth.MustRoles(),
+        )
 			r.Get("/whoami", api.WhoAmI)
 		})
 

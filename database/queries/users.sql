@@ -70,8 +70,8 @@ WHERE
 UPDATE
   users
 SET
-  roles = $2,
-  updated_at = $3
+  roles = sqlc.arg('roles'),
+  updated_at = $2
 WHERE
   id = $1
 RETURNING *

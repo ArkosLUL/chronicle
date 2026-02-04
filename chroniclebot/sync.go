@@ -1,7 +1,8 @@
-package chronauth
+package chroniclebot
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Emyrk/chronicle/database"
@@ -9,9 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) SyncDiscordUser(ctx context.Context, tx database.Store, signup bool, discordID string, userID uuid.UUID) (retErr error) {
-	bot := s.Bot
-
+func (bot *Bot) SyncDiscordUser(ctx context.Context, tx database.Store, discordID string, userID uuid.UUID) (retErr error) {
 	member, err := bot.GetGuildMember(bot.ChronicleGuildID(), discordID)
 	if err != nil {
 		return err
@@ -28,7 +27,7 @@ func (s *Service) SyncDiscordUser(ctx context.Context, tx database.Store, signup
 
 	if member == nil {
 		// DELETE ALL PERMS
-		return nil
+		return errors.New("must be in the discord server to use chronicle")
 	}
 
 	for _, roleID := range member.Roles {

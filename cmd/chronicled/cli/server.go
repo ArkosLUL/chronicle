@@ -234,7 +234,7 @@ func ServerCmd() *serpent.Command {
 			//nolint:errcheck
 			defer db.Close()
 
-			bot, err := chroniclebot.New(logger, chroniclebot.Config{
+			bot, err := chroniclebot.New(ctx, logger, chroniclebot.Config{
 				Token:   discordBot.Token,
 				GuildID: discordBot.GuildID,
 				DB:      db,
@@ -242,6 +242,7 @@ func ServerCmd() *serpent.Command {
 			if err != nil {
 				return fmt.Errorf("create chronicle bot: %w", err)
 			}
+			defer bot.Close()
 
 			serverLn, err := ProvisionListener(logger, httpAddress)
 			if err != nil {
@@ -342,6 +343,10 @@ func ServerCmd() *serpent.Command {
 					logger.Error("closing database", slog.String("error", err.Error()))
 				}
 				cancelApp()
+				err = bot.Close()
+				if err != nil {
+					logger.Error("closing discord bot", slog.String("error", err.Error()))
+				}
 			}()
 
 			select {

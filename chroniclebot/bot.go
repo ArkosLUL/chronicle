@@ -36,9 +36,9 @@ type Bot struct {
 
 // New creates a new Discord bot instance.
 // Call Open() to connect to Discord.
-func New(logger *slog.Logger, config Config) (*Bot, error) {
+func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) {
 	if config.Token == "" {
-		return nil, nil
+		return nil, fmt.Errorf("no token provided")
 	}
 
 	session, err := discordgo.New("Bot " + config.Token)
@@ -55,11 +55,18 @@ func New(logger *slog.Logger, config Config) (*Bot, error) {
 	// Register default handlers
 	session.AddHandler(bot.onReady)
 	session.AddHandler(bot.onGuildMemberAdd)
+	session.AddHandler(bot.onGuildMemberUpdate)
+	session.AddHandler(bot.onGuildMemberRemove)
 
 	bot.roles, err = bot.GetGuildRoles(bot.ChronicleGuildID())
 	if err != nil {
 		return nil, fmt.Errorf("fetch guild roles: %w", err)
 	}
+
+  err = bot.Open(ctx)
+  if err != nil {
+    return nil, fmt.Errorf("open bot session: %w", err)
+  }
 
 	return bot, nil
 }
@@ -115,6 +122,8 @@ func (b *Bot) onReady(s *discordgo.Session, r *discordgo.Ready) {
 	b.logger.Info("bot is ready",
 		slog.String("user", r.User.Username),
 		slog.Int("guilds", len(r.Guilds)),
+		slog.Int("intents", int(s.Identify.Intents)),
+		slog.String("chronicle_guild_id", b.ChronicleGuildID()),
 	)
 }
 
@@ -125,6 +134,79 @@ func (b *Bot) onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd
 		slog.String("user_id", m.User.ID),
 		slog.String("username", m.User.Username),
 	)
+}
+
+// onGuildMemberUpdate is called when a member's roles, nickname, etc. change.
+func (b *Bot) onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
+	b.logger.Info("onGuildMemberUpdate fired",
+		slog.String("guild_id", m.GuildID),
+		slog.String("user_id", m.User.ID),
+		slog.String("chronicle_guild", b.ChronicleGuildID()),
+	)
+
+	// Only care about our guild
+	if m.GuildID != b.ChronicleGuildID() {
+		return
+	}
+
+	b.logger.Info("member updated",
+		slog.String("guild_id", m.GuildID),
+		slog.String("user_id", m.User.ID),
+		slog.String("username", m.User.Username),
+		slog.Any("roles", m.Roles),
+	)
+
+	// Look up the user by Discord ID
+	link, err := b.config.DB.GetUserAuthByLinkedID(context.Background(), database.GetUserAuthByLinkedIDParams{
+		LinkedID: m.User.ID,
+		Provider: "discord",
+	})
+	if err != nil {
+		b.logger.Debug("member update: user not found in db",
+			slog.String("discord_id", m.User.ID),
+		)
+		return
+	}
+
+	// Sync their roles
+	err = b.SyncDiscordUser(context.Background(), b.config.DB, m.User.ID, link.UserID)
+	if err != nil {
+		b.logger.Error("failed to sync user roles",
+			slog.String("user_id", link.UserID.String()),
+			slog.Any("error", err),
+		)
+	}
+}
+
+// onGuildMemberRemove is called when a member leaves or is kicked from a guild.
+func (b *Bot) onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
+	if m.GuildID != b.ChronicleGuildID() {
+		return
+	}
+
+	b.logger.Debug("member left guild",
+		slog.String("guild_id", m.GuildID),
+		slog.String("user_id", m.User.ID),
+		slog.String("username", m.User.Username),
+	)
+
+	// Look up the user by Discord ID
+	link, err := b.config.DB.GetUserAuthByLinkedID(context.Background(), database.GetUserAuthByLinkedIDParams{
+		LinkedID: m.User.ID,
+		Provider: "discord",
+	})
+	if err != nil {
+		return // User not in our system, nothing to do
+	}
+
+	// SyncDiscordUser will clear roles when member is nil (not in guild)
+	err = b.SyncDiscordUser(context.Background(), b.config.DB, m.User.ID, link.UserID)
+	if err != nil {
+		b.logger.Error("failed to revoke roles on member leave",
+			slog.String("user_id", link.UserID.String()),
+			slog.Any("error", err),
+		)
+	}
 }
 
 // GetGuildMember fetches a member from a guild.

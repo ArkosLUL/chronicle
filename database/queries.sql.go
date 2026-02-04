@@ -871,8 +871,8 @@ const updateUserRoles = `-- name: UpdateUserRoles :one
 UPDATE
   users
 SET
-  roles = $2,
-  updated_at = $3
+  roles = $3,
+  updated_at = $2
 WHERE
   id = $1
 RETURNING id, username, email, created_at, updated_at, roles
@@ -880,12 +880,12 @@ RETURNING id, username, email, created_at, updated_at, roles
 
 type UpdateUserRolesParams struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
-	Roles     []UserRoles        `db:"roles" json:"roles"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Roles     []UserRoles        `db:"roles" json:"roles"`
 }
 
 func (q *sqlQuerier) UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) (User, error) {
-	row := q.db.QueryRow(ctx, updateUserRoles, arg.ID, arg.Roles, arg.UpdatedAt)
+	row := q.db.QueryRow(ctx, updateUserRoles, arg.ID, arg.UpdatedAt, arg.Roles)
 	var i User
 	err := row.Scan(
 		&i.ID,

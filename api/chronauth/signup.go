@@ -93,7 +93,7 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 		}
 
 		if user.Provider == "discord" {
-			err = s.SyncDiscordUser(ctx, tx, linked.ID == uuid.Nil, user.UserID, linked.UserID)
+			err = s.Bot.SyncDiscordUser(ctx, tx, user.UserID, linked.UserID)
 			if err != nil {
 				return fmt.Errorf("handling discord user: %w", err)
 			}

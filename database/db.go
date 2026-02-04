@@ -50,7 +50,35 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
 
+	cfg.AfterConnect = RegisterTypes
+
 	return cfg, nil
+}
+
+// RegisterTypes registers custom Postgres types (enums, etc.) with pgx.
+func RegisterTypes(ctx context.Context, conn *pgx.Conn) error {
+	// Register user_roles enum type so pgx can encode []UserRoles as user_roles[]
+	dataTypeNames := []string{
+		"user_roles",
+	}
+
+	for _, typeName := range dataTypeNames {
+		dataType, err := conn.LoadType(ctx, typeName)
+		if err != nil {
+			return fmt.Errorf("load type %q: %w", typeName, err)
+		}
+		conn.TypeMap().RegisterType(dataType)
+
+		// Also register the array type
+		arrayTypeName := "_" + typeName
+		arrayType, err := conn.LoadType(ctx, arrayTypeName)
+		if err != nil {
+			return fmt.Errorf("load array type %q: %w", arrayTypeName, err)
+		}
+		conn.TypeMap().RegisterType(arrayType)
+	}
+
+	return nil
 }
 
 func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgxpool.Pool, error) {

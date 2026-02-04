@@ -33,7 +33,6 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy chronicled to Railway
-        run: railway up --service chronicled
-        working-directory: services/chronicled
+        run: railway up --service chronicled --config services/chronicled/railway.toml
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

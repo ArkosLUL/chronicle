@@ -30,10 +30,11 @@ type RiverQueueOptions struct {
 }
 
 func (c *Chronicle) StartQueues(ctx context.Context, opts Options) error {
-	cfg, err := database.PoolConfig(c.logger, opts.Queue.DBURL)
+	cfg, migDone, err := database.PoolConfig(c.logger, opts.Queue.DBURL)
 	if err != nil {
 		return fmt.Errorf("db url for queues: %w", err)
 	}
+	migDone()
 
 	// Pool changes
 	cfg.MaxConns = 2 // Smaller pool for background workers

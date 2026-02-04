@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"github.com/Emyrk/chronicle/database/migrations"
@@ -39,24 +40,35 @@ type sqlQuerier struct {
 	db  DBTX
 }
 
+type registerTypes struct {
+	migrationsComplete atomic.Bool
+}
+
 // https://github.com/jackc/pgx/issues/288#issuecomment-901975396
-func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, error) {
+func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 		var _ = logger
 	}
 	cfg, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse postgres db url: %w", err)
+		return nil, nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
 
-	cfg.AfterConnect = RegisterTypes
+	r := &registerTypes{}
+	cfg.AfterConnect = r.RegisterTypes
 
-	return cfg, nil
+	return cfg, func() {
+		r.migrationsComplete.Store(true)
+	}, nil
 }
 
 // RegisterTypes registers custom Postgres types (enums, etc.) with pgx.
-func RegisterTypes(ctx context.Context, conn *pgx.Conn) error {
+func (r *registerTypes) RegisterTypes(ctx context.Context, conn *pgx.Conn) error {
+	if !r.migrationsComplete.Load() {
+		return nil
+	}
+
 	// Register user_roles enum type so pgx can encode []UserRoles as user_roles[]
 	dataTypeNames := []string{
 		"user_roles",
@@ -84,7 +96,7 @@ func RegisterTypes(ctx context.Context, conn *pgx.Conn) error {
 func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgxpool.Pool, error) {
 	logger.Info("connecting to postgres database")
 
-	cfg, err := PoolConfig(logger, dbURL)
+	cfg, migDone, err := PoolConfig(logger, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres db url: %w", err)
 	}
@@ -106,6 +118,7 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgx
 		return nil, fmt.Errorf("migrate up: %w", err)
 	}
 
+	migDone()
 	logger.Info("connected to postgres database")
 	return pool, nil
 }

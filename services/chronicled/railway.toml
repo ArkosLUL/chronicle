@@ -6,3 +6,4 @@ dockerfilePath = "services/chronicled/Dockerfile"
 numReplicas = 1
 memoryLimitMb = 1024
 cpuLimit = 2
+startCommand = "./chronicled server"

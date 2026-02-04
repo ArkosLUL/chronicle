@@ -32,9 +32,6 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 		}
 
 		if linked.ID == uuid.Nil {
-			if s.disallowSignups {
-				return errors.New("signups are disabled")
-			}
 			// Sign up the user
 			name := user.Name
 

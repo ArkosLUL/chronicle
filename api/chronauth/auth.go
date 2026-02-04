@@ -33,23 +33,21 @@ const (
 )
 
 type Options struct {
-	AccessURL    *url.URL
-	DevServer    bool
-	Database     database.Store
-	Discord      DiscordOAuth
-	BlockSignups bool
-	Bot          *chroniclebot.Bot
+	AccessURL *url.URL
+	DevServer bool
+	Database  database.Store
+	Discord   DiscordOAuth
+	Bot       *chroniclebot.Bot
 
 	Sessions SessionOptions
 }
 
 type Service struct {
-	Providers       goth.Providers
-	Store           *sessions.CookieStore
-	Database        database.Store
-	Bot             *chroniclebot.Bot
-	logger          *slog.Logger
-	disallowSignups bool
+	Providers goth.Providers
+	Store     *sessions.CookieStore
+	Database  database.Store
+	Bot       *chroniclebot.Bot
+	logger    *slog.Logger
 
 	sessions *Sessions
 }
@@ -98,13 +96,12 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 	}
 
 	return &Service{
-		Providers:       providers,
-		Store:           store,
-		Database:        opts.Database,
-		logger:          logger.With(slog.String("service", "auth")),
-		sessions:        sess,
-		disallowSignups: opts.BlockSignups,
-		Bot:             opts.Bot,
+		Providers: providers,
+		Store:     store,
+		Database:  opts.Database,
+		logger:    logger.With(slog.String("service", "auth")),
+		sessions:  sess,
+		Bot:       opts.Bot,
 	}, nil
 }
 

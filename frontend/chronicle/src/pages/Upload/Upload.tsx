@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle, FolderOpen } from "lucide-react";
+import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle, FolderOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
 import { useAuth } from "@/hooks/useAuth";
+import { useSession } from "@/api/queries";
 
 export interface UploadViewProps {
   isAuthenticated: boolean;
   authLoading: boolean;
+  hasUploadPermission: boolean;
   combatLog: File | null;
   rawCombatLog: File | null;
   uploading: boolean;
@@ -22,6 +24,7 @@ export interface UploadViewProps {
 export function UploadView({
   isAuthenticated,
   authLoading,
+  hasUploadPermission,
   combatLog,
   rawCombatLog,
   uploading,
@@ -49,6 +52,17 @@ export function UploadView({
           </Link>
         )}
       </div>
+
+      {/* Permission Warning */}
+      {isAuthenticated && !hasUploadPermission && (
+        <Alert className="border-yellow-500/50 bg-yellow-500/10 text-yellow-200 [&>svg]:text-yellow-500">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="text-yellow-200">Upload Access Required</AlertTitle>
+          <AlertDescription className="text-yellow-200/80">
+            You don't have permission to upload logs yet. Ask for the alpha role in the Chronicle Discord server to get upload access.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Auth Check */}
       {!authLoading && !isAuthenticated ? (
@@ -212,56 +226,72 @@ export function UploadView({
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Info className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">Requirements</h2>
+          <h2 className="font-semibold">Raid Log Uploading</h2>
         </div>
 
         <div className="space-y-6 text-sm">
           <div>
-            <h3 className="font-medium mb-2">Addon Requirements</h3>
+            <h3 className="font-medium mb-2">Requirements</h3>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li>
-                <strong>Advanced Combat Logging</strong> must be enabled in-game
-                (System → Network → Advanced Combat Logging)
+                <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  SuperWoW Mod
+                </a>
               </li>
               <li>
-                <strong>RaidRosterExport</strong> addon for exporting raid roster data
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-medium mb-2">Mod Requirements</h3>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Turtle WoW client with combat logging support</li>
-              <li>No log parsing mods that modify the combat log format</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-medium mb-2">File Locations</h3>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>
-                <strong>Combat Log:</strong>{" "}
-                <code className="bg-muted px-1 rounded">
-                  World of Warcraft/_classic_/Logs/WoWCombatLog.txt
-                </code>
+                <a href="https://github.com/pepopo978/SuperWowCombatLogger" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  SuperWoWCombatLogger Addon
+                </a>
               </li>
               <li>
-                <strong>Raid Roster:</strong>{" "}
-                <code className="bg-muted px-1 rounded">
-                  World of Warcraft/_classic_/WTF/Account/[NAME]/SavedVariables/RaidRosterExport.lua
-                </code>
+                <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  ChronicleCompanion Addon
+                </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-medium mb-2">Tips</h3>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Clear your combat log before each raid session for cleaner data</li>
-              <li>Export the raid roster at the start of the raid</li>
-              <li>Upload logs as soon as possible after the raid ends</li>
-            </ul>
+            <h3 className="font-medium mb-2">On Raid Night</h3>
+            <div className="space-y-3 text-muted-foreground">
+              <div>
+                <p className="mb-1">1. <strong className="text-foreground">Delete these files before raiding:</strong></p>
+                <ul className="list-none space-y-1 ml-4">
+                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                </ul>
+              </div>
+              <p>2. <strong className="text-foreground">Launch WoW and do your raid.</strong></p>
+              <div>
+                <p className="mb-1">3. <strong className="text-foreground">Upload both files</strong> (required):</p>
+                <ul className="list-none space-y-1 ml-4">
+                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <h3 className="font-medium mb-3">FAQ</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium text-foreground">Why delete my logs?</p>
+                <p className="text-muted-foreground mt-1">
+                  The WoW client writes to the logs but never deletes them, so they grow continuously. 
+                  Starting fresh gives the parser less data to process. Switching characters mid-session 
+                  can also confuse the parser.
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">What is the ChronicleCompanion addon?</p>
+                <p className="text-muted-foreground mt-1">
+                  It extends SuperWoWCombatLogger with additional logging information. Eventually it will 
+                  completely replace SuperWoWCombatLogger. Chronicle uses different log formats than TurtLogs, 
+                  so we maintain our own addon.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -271,6 +301,10 @@ export function UploadView({
 
 export function Upload() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { data: session } = useSession();
+  const hasUploadPermission = session?.roles.some(r => 
+    r === "alpha_tester" || r === "admin" || r === "technical_admin"
+  ) ?? false;
   const [combatLog, setCombatLog] = useState<File | null>(null);
   const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -325,13 +359,28 @@ export function Upload() {
       } else {
         try {
           const data = JSON.parse(xhr.responseText);
-          setError({ 
-            message: data.message || "Upload failed",
-            call_to_action: data.call_to_action,
-            detail: data.detail 
-          });
+          // Special handling for 403 - missing role
+          if (xhr.status === 403) {
+            setError({ 
+              message: "You don't have permission to upload logs.",
+              call_to_action: "Ask for the alpha role in Discord to get upload access.",
+            });
+          } else {
+            setError({ 
+              message: data.message || "Upload failed",
+              call_to_action: data.call_to_action,
+              detail: data.detail 
+            });
+          }
         } catch {
-          setError({ message: "Upload failed" });
+          if (xhr.status === 403) {
+            setError({ 
+              message: "You don't have permission to upload logs.",
+              call_to_action: "Ask for the alpha role in Discord to get upload access.",
+            });
+          } else {
+            setError({ message: "Upload failed" });
+          }
         }
       }
     });
@@ -349,6 +398,7 @@ export function Upload() {
     <UploadView
       isAuthenticated={isAuthenticated}
       authLoading={authLoading}
+      hasUploadPermission={hasUploadPermission}
       combatLog={combatLog}
       rawCombatLog={rawCombatLog}
       uploading={uploading}

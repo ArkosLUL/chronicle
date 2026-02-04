@@ -71,7 +71,6 @@ func ServerCmd() *serpent.Command {
 		promtheusAddress  string
 		pprofEnabled      bool
 		pprofAddress      string
-		disableSignups    bool
 	)
 	cmd := &serpent.Command{
 		Use: "server",
@@ -211,15 +210,6 @@ func ServerCmd() *serpent.Command {
 				Default:     "0.0.0.0:6060",
 				Value:       serpent.StringOf(&pprofAddress),
 			},
-			{
-				Name:        "Disable Signups",
-				Description: "Disable new user signups.",
-				Required:    false,
-				Flag:        "disable-signups",
-				Env:         "CHRONICLE_DISABLE_SIGNUPS",
-				Default:     "false",
-				Value:       serpent.BoolOf(&disableSignups),
-			},
 		},
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancelApp := context.WithCancel(context.Background())
@@ -299,17 +289,16 @@ func ServerCmd() *serpent.Command {
 			}
 			riverOpts.DBURL = postgresURL
 			handler, err := api.New(ctx, api.Options{
-				Logger:          logger,
-				Storage:         files,
-				DB:              db,
-				Registry:        reg,
-				AccessURL:       au,
-				DevOAuth:        devAuth,
-				Discord:         discordOauth,
-				Bot:             bot,
-				SecretPEM:       decodedSecret,
-				RiverQueue:      riverOpts,
-				DisallowSignups: disableSignups,
+				Logger:     logger,
+				Storage:    files,
+				DB:         db,
+				Registry:   reg,
+				AccessURL:  au,
+				DevOAuth:   devAuth,
+				Discord:    discordOauth,
+				Bot:        bot,
+				SecretPEM:  decodedSecret,
+				RiverQueue: riverOpts,
 			})
 			if err != nil {
 				return err

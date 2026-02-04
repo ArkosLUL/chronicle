@@ -23,17 +23,16 @@ import (
 )
 
 type Options struct {
-	Logger          *slog.Logger
-	Storage         storage.ObjectStorage
-	DB              database.Store
-	Registry        *prometheus.Registry
-	AccessURL       *url.URL
-	DevOAuth        bool
-	Discord         chronauth.DiscordOAuth
-	Bot             *chroniclebot.Bot
-	SecretPEM       []byte // Used for JWTs
-	RiverQueue      chronicle.RiverQueueOptions
-	DisallowSignups bool
+	Logger     *slog.Logger
+	Storage    storage.ObjectStorage
+	DB         database.Store
+	Registry   *prometheus.Registry
+	AccessURL  *url.URL
+	DevOAuth   bool
+	Discord    chronauth.DiscordOAuth
+	Bot        *chroniclebot.Bot
+	SecretPEM  []byte // Used for JWTs
+	RiverQueue chronicle.RiverQueueOptions
 }
 
 type API struct {
@@ -57,7 +56,6 @@ func New(ctx context.Context, opts Options) (*API, error) {
 			SecretPEM: opts.SecretPEM,
 			Registry:  opts.Registry,
 		},
-		BlockSignups: opts.DisallowSignups,
 	})
 	if err != nil {
 		return nil, err
@@ -125,7 +123,7 @@ func (api *API) Routes() chi.Router {
 						api.Auth.MustRoles(),
 					)
 					r.Group(func(r chi.Router) {
-						r.Use(api.Auth.MustRoles(database.UserRolesTechnicalAdmin))
+						r.Use(api.Auth.MustRoles(database.UserRolesAlphaTester))
 						r.Post("/upload", api.WoWLogUpload)
 					})
 					r.Get("/", api.WoWLogGroups)

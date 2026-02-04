@@ -19,7 +19,9 @@
 - Sunder panel ASAP or bust
 - On the damage panel breakout, we can show damage mitigated by blocks/resists
  - Or damage mitigated panel under "Damage Taken"
-
+- Remove the interface database.Store
+- Use spicedb and mix it with database.Store for permissions
+ 
 # Synthetic Messages
 
 - [Absorbs](./combatlog/parser/vanilla/absorbs/TODO.md)
@@ -29,5 +31,7 @@
 1/31 20:43:55.408  CAST: 0xF130002D8E00DD66(Flamewaker Priest) fails casting Dark Mending(19775).
 ```
 
-- Judgement of light to source healing to actor who put the debuff on the target
+- Judgement of light to credit who applied debuff
 - Filter by source spell id
+
+

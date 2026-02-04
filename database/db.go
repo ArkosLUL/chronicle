@@ -119,6 +119,12 @@ func NewPostgresDB(ctx context.Context, logger *slog.Logger, dbURL string) (*pgx
 	}
 
 	migDone()
+
+	// Force pool to create fresh connections that will register types.
+	// Existing connections were created before migrations, so they don't
+	// have custom types registered.
+	pool.Reset()
+
 	logger.Info("connected to postgres database")
 	return pool, nil
 }

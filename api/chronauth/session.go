@@ -177,19 +177,18 @@ func (s *Service) MustRoles(requiredRoles ...database.UserRoles) func(next http.
 				user = state.User
 			}
 
-			found := false
-			for _, requiredRole := range requiredRoles {
-				if slice.Contains(user.Roles, requiredRole) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
+			if len(requiredRoles) == 0 {
+				next.ServeHTTP(w, r)
 			}
 
-			next.ServeHTTP(w, r)
+			for _, requiredRole := range requiredRoles {
+				if slice.Contains(user.Roles, requiredRole) {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			http.Error(w, "Forbidden", http.StatusForbidden)
 		})
 	}
 }

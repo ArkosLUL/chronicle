@@ -57,6 +57,25 @@ func TestParserMessages(t *testing.T) {
 	//	require.Equal(t, "Flash Heal", att.SpellName)
 	//})
 
+	t.Run("LegacyCast", func(t *testing.T) {
+		gl, err := exp[messages.LegacyCast](p.ParseContent(time.Time{}, "0xF130000282013577 performs Eject Sneed."))
+		require.NoError(t, err)
+
+		require.Equal(t, messages.LegacyCast{
+			MessageBase: messages.MessageBase{},
+			Caster:      0xF130000282013577,
+			Spell:       "Eject Sneed",
+		}, gl)
+
+		dz, err := exp[messages.LegacyCast](p.ParseContent(time.Time{}, "0xF13000114001359D performs Dazed on 0x00000000006FEF22."))
+		require.Equal(t, messages.LegacyCast{
+			MessageBase: messages.MessageBase{},
+			Caster:      0xF13000114001359D,
+			Spell:       "Dazed",
+			Target:      ptr.Ref[guid.GUID](0x00000000006FEF22),
+		}, dz)
+	})
+
 	t.Run("Damage", func(t *testing.T) {
 		gl, err := exp[messages.Damage](p.ParseContent(time.Time{}, "0x000000000008B2C1 hits 0xF130002FE800DD20 for 60. (glancing)"))
 		require.NoError(t, err)

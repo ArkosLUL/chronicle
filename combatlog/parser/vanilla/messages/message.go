@@ -104,6 +104,23 @@ func set(m ...Message) []Message {
 	return m
 }
 
+// LegacyCast comes from non CAST: v2 messages. This is included because
+// SuperWoWLogger removed v2 casts from raw logs. So sometimes the v1 style casts
+// are all we have.
+type LegacyCast struct {
+	MessageBase
+	Caster guid.GUID
+	Target *guid.GUID
+	Spell  string
+}
+
+func (c LegacyCast) Affects() []guid.GUID {
+	if c.Target == nil {
+		return []guid.GUID{c.Caster}
+	}
+	return []guid.GUID{c.Caster, *c.Target}
+}
+
 type Cast struct {
 	castv2.CastV2
 	MessageBase

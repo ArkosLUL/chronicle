@@ -847,23 +847,56 @@ func (p *Parser) fSpellCastPerformDurability(ts time.Time, content string) ([]me
 }
 
 func (p *Parser) fSpellCastPerform(ts time.Time, content string) ([]messages.Message, error) {
-	matches := regexs.ReSpellCastPerform.FindStringSubmatch(content)
-	if matches == nil {
+	matches, ok := types.FromRegex(regexs.ReSpellCastPerform).Match(content)
+	if !ok {
 		return messages.NotHandled()
 	}
 
-	//caster, spellID, target := matches[1], matches[3], matches[4]
-	return messages.Skip(ts, "'SpellCastPerform' handled by castsv2"), nil
+	_, caster := matches.UnitOrGUID()
+  matches.Skip()
+	spellName := matches.String()
+	_, target := matches.UnitOrGUID()
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("SpellCastPerformUnknown: %w", err)
+	}
+
+	if caster.IsZero() || target.IsZero() {
+		return messages.Skip(ts, "SpellCastPerform: not using guids"), nil
+	}
+
+	return set(messages.LegacyCast{
+		MessageBase: messages.Base(ts),
+		Caster:      caster,
+		Target:      &target,
+		Spell:       spellName,
+	}), nil
 }
 
 func (p *Parser) fSpellCastPerformUnknown(ts time.Time, content string) ([]messages.Message, error) {
-	matches := regexs.ReSpellCastPerformUnknown.FindStringSubmatch(content)
-	if matches == nil {
+	matches, ok := types.FromRegex(regexs.ReSpellCastPerformUnknown).Match(content)
+	if !ok {
 		return messages.NotHandled()
 	}
 
-	//caster, spellID := matches[1], matches[3]
-	return messages.Skip(ts, "'SpellCastPerformUnknown' handled by castsv2"), nil
+	_, caster := matches.UnitOrGUID()
+	matches.Skip() // skip the word "perform"
+	spellName := matches.String()
+
+	if err := matches.Error(); err != nil {
+		return nil, fmt.Errorf("SpellCastPerformUnknown: %w", err)
+	}
+
+	if caster.IsZero() {
+		return messages.Skip(ts, "SpellCastPerformUnknown: not using guids"), nil
+	}
+
+	return set(messages.LegacyCast{
+		MessageBase: messages.Base(ts),
+		Caster:      caster,
+		Target:      nil,
+		Spell:       spellName,
+	}), nil
 }
 
 /**

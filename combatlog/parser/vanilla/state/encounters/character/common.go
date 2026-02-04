@@ -98,3 +98,11 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 	}
 	return nil
 }
+
+func (c *Common) Is(entry uint32) bool {
+  charEntry, ok := c.ID().GetEntry()
+  if !ok {
+    return false
+  }
+  return charEntry == entry
+}

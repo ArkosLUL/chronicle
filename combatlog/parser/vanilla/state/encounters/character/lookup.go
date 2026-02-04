@@ -15,6 +15,8 @@ var characterFactories = []characterFactory{
 	// Global
 	NewTotemCharacter,
 	NewCritterCharacter,
+	// Deadmines
+	NewSneedShredder,
 	// Molten Core
 	NewCoreHoundCharacter,
 	NewMajordomoPartyCharacter,

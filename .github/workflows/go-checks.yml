@@ -111,6 +111,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: services/chronicled/Dockerfile
           push: ${{ github.ref_type == 'tag' }}
           tags: emyrk/chronicled:latest
 

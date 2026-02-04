@@ -3,7 +3,7 @@
  * Uses fixture data for visual regression testing with Chromatic.
  */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { within, waitFor, expect } from "storybook/test";
 import { MemoryRouter } from "react-router-dom";
 import { EventsPanel, PANELS, type EventsPanelType } from "./EventsPanel";
@@ -47,7 +47,7 @@ const meta: Meta<typeof EventsPanel> = {
     (Story) => (
       <MemoryRouter>
         <MockInstanceEventsProvider>
-          <PanelTimingProvider>
+          <PanelTimingProvider panelCount={1}>
             <div className="w-[600px] p-4 bg-background">
               <Story />
             </div>

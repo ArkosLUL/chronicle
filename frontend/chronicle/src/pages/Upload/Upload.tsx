@@ -64,6 +64,16 @@ export function UploadView({
         </Alert>
       )}
 
+      {/* Backup Warning */}
+      <Alert className="border-orange-500/50 bg-orange-500/10 text-orange-200 [&>svg]:text-orange-500">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle className="text-orange-200">Backup Your Log Files</AlertTitle>
+        <AlertDescription className="text-orange-200/80">
+          Chronicle is in early development and uploaded logs <strong>will be deleted</strong> at some point.
+          Always keep a backup of your original log files somewhere safe.
+        </AlertDescription>
+      </Alert>
+
       {/* Auth Check */}
       {!authLoading && !isAuthenticated ? (
         <Card className="p-6">

@@ -68,6 +68,8 @@ func TestParserMessages(t *testing.T) {
 		}, gl)
 
 		dz, err := exp[messages.LegacyCast](p.ParseContent(time.Time{}, "0xF13000114001359D performs Dazed on 0x00000000006FEF22."))
+		require.NoError(t, err)
+
 		require.Equal(t, messages.LegacyCast{
 			MessageBase: messages.MessageBase{},
 			Caster:      0xF13000114001359D,

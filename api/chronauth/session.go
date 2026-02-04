@@ -179,6 +179,7 @@ func (s *Service) MustRoles(requiredRoles ...database.UserRoles) func(next http.
 
 			if len(requiredRoles) == 0 {
 				next.ServeHTTP(w, r)
+				return
 			}
 
 			for _, requiredRole := range requiredRoles {

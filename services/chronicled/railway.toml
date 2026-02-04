@@ -1,3 +1,8 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+
+[deploy]
+numReplicas = 1
+memoryLimitMb = 1024
+cpuLimit = 2

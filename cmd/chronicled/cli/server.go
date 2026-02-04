@@ -232,6 +232,7 @@ func ServerCmd() *serpent.Command {
 			if err != nil {
 				return fmt.Errorf("create chronicle bot: %w", err)
 			}
+			//nolint:errcheck
 			defer bot.Close()
 
 			serverLn, err := ProvisionListener(logger, httpAddress)

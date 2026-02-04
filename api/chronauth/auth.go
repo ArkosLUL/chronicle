@@ -15,6 +15,7 @@ import (
 
 	"github.com/Emyrk/chronicle/api/chronauth/fakeoidc"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/chroniclebot"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
@@ -37,6 +38,7 @@ type Options struct {
 	Database     database.Store
 	Discord      DiscordOAuth
 	BlockSignups bool
+	Bot          *chroniclebot.Bot
 
 	Sessions SessionOptions
 }
@@ -45,6 +47,7 @@ type Service struct {
 	Providers       goth.Providers
 	Store           *sessions.CookieStore
 	Database        database.Store
+	Bot             *chroniclebot.Bot
 	logger          *slog.Logger
 	disallowSignups bool
 
@@ -101,6 +104,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 		logger:          logger.With(slog.String("service", "auth")),
 		sessions:        sess,
 		disallowSignups: opts.BlockSignups,
+		Bot:             opts.Bot,
 	}, nil
 }
 

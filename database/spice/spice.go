@@ -14,8 +14,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var _ database.Store = (*Spice)(nil)
-
 type Spice struct {
 	client    *authzed.Client
 	logger    *slog.Logger
@@ -25,6 +23,9 @@ type Spice struct {
 	reverts reverter
 
 	db database.Store
+
+	// TODO: REMOVE THIS
+	database.Store
 }
 
 type Options struct {

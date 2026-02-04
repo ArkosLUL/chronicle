@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/chronicle"
+	"github.com/Emyrk/chronicle/chroniclebot"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
@@ -29,6 +30,7 @@ type Options struct {
 	AccessURL       *url.URL
 	DevOAuth        bool
 	Discord         chronauth.DiscordOAuth
+	Bot             *chroniclebot.Bot
 	SecretPEM       []byte // Used for JWTs
 	RiverQueue      chronicle.RiverQueueOptions
 	DisallowSignups bool
@@ -50,6 +52,7 @@ func New(ctx context.Context, opts Options) (*API, error) {
 		DevServer: opts.DevOAuth,
 		Database:  opts.DB,
 		Discord:   opts.Discord,
+		Bot:       opts.Bot,
 		Sessions: chronauth.SessionOptions{
 			SecretPEM: opts.SecretPEM,
 			Registry:  opts.Registry,
@@ -104,13 +107,22 @@ func (api *API) Routes() chi.Router {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Route("/logs", func(r chi.Router) {
 					r.Use(api.Auth.Authenticated(false))
-					r.Post("/upload", api.WoWLogUpload)
+					r.Group(func(r chi.Router) {
+						r.Use(api.Auth.MustRoles(database.UserRolesTechnicalAdmin))
+						r.Post("/upload", api.WoWLogUpload)
+					})
 					r.Get("/", api.WoWLogGroups)
 					r.Route("/{logID}", func(r chi.Router) {
 						r.Use(httpmw.LogIDMiddleware)
-						r.Post("/reparse", api.WoWLogReparse)
+						r.Group(func(r chi.Router) {
+							r.Use(api.Auth.MustRoles(database.UserRolesAdmin))
+							r.Post("/reparse", api.WoWLogReparse)
+						})
 						r.Get("/", api.WoWLogGroup)
-						r.Delete("/", api.WoWLogDeleteGroup)
+						r.Group(func(r chi.Router) {
+							r.Use(api.Auth.MustRoles(database.UserRolesAlphaTester))
+							r.Delete("/", api.WoWLogDeleteGroup)
+						})
 					})
 				})
 
@@ -123,7 +135,10 @@ func (api *API) Routes() chi.Router {
 
 							r.Get("/youtube", api.GetInstanceYoutube)
 							r.Group(func(r chi.Router) {
-								r.Use(api.Auth.Authenticated(false))
+								r.Use(
+									api.Auth.Authenticated(false),
+									api.Auth.MustRoles(database.UserRolesAdmin),
+								)
 								r.Post("/youtube", api.PostInstanceYoutube)
 							})
 						})
@@ -142,6 +157,7 @@ func (api *API) Routes() chi.Router {
 		r.Use(
 			api.Auth.AuthenticationMiddleware,
 			api.Auth.Authenticated(false),
+			api.Auth.MustRoles(database.UserRolesTechnicalAdmin),
 		)
 		r.Mount("/river", api.Chronicle.RiverUI())
 	})

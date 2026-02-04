@@ -18,8 +18,8 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/chronicle"
+	"github.com/Emyrk/chronicle/chroniclebot"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/database/spice"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -62,9 +62,8 @@ func ServerCmd() *serpent.Command {
 		accessURL         string
 		devAuth           bool
 		postgresURL       string
-		spiceDBURL        string
-		spiceDBEnabled    bool
-		discord           chronauth.DiscordOAuth
+		discordOauth      chronauth.DiscordOAuth
+		discordBot        chroniclebot.Config
 		secretPem         string
 		storageFlag       string
 		riverOpts         chronicle.RiverQueueOptions
@@ -113,22 +112,22 @@ func ServerCmd() *serpent.Command {
 				Value:       serpent.StringOf(&postgresURL),
 			},
 			{
-				Name:        "SpiceDB URL",
-				Description: "SpiceDB to connect to.",
-				Required:    false,
-				Flag:        "spicedb-url",
-				Env:         "CHRONICLE_SPICEDB_URL",
-				Default:     "localhost:50051",
-				Value:       serpent.StringOf(&spiceDBURL),
+				Name:        "Discord bot token",
+				Description: "Address to serve the api on.",
+				Required:    true,
+				Flag:        "discord-token",
+				Env:         "CHRONICLE_DISCORD_BOT_TOKEN",
+				Default:     "",
+				Value:       serpent.StringOf(&discordBot.Token),
 			},
 			{
-				Name:        "Enable SpiceDB",
-				Description: "Enable SpiceDB.",
+				Name:        "Discord Chronicle GuildID",
+				Description: "Address to serve the api on.",
 				Required:    false,
-				Flag:        "enable-spicedb",
-				Env:         "CHRONICLE_ENABLE_SPICEDB",
-				Default:     "false",
-				Value:       serpent.BoolOf(&spiceDBEnabled),
+				Flag:        "discord-guild-id",
+				Env:         "CHRONICLE_DISCORD_GUILD_ID",
+				Default:     "1466099237669306380",
+				Value:       serpent.StringOf(&discordBot.GuildID),
 			},
 			{
 				Name:        "Discord OAuth Client ID",
@@ -137,7 +136,7 @@ func ServerCmd() *serpent.Command {
 				Flag:        "discord-client-id",
 				Env:         "CHRONICLE_DISCORD_CLIENT_ID",
 				Default:     "",
-				Value:       serpent.StringOf(&discord.ClientID),
+				Value:       serpent.StringOf(&discordOauth.ClientID),
 			},
 			{
 				Name:        "Discord OAuth Client Secret",
@@ -146,7 +145,7 @@ func ServerCmd() *serpent.Command {
 				Flag:        "discord-client-secret",
 				Env:         "CHRONICLE_DISCORD_CLIENT_SECRET",
 				Default:     "",
-				Value:       serpent.StringOf(&discord.ClientSecret),
+				Value:       serpent.StringOf(&discordOauth.ClientSecret),
 			},
 			{
 				Name:        "JWT Secret PEM",
@@ -235,16 +234,13 @@ func ServerCmd() *serpent.Command {
 			//nolint:errcheck
 			defer db.Close()
 
-			var sdb *spice.Spice
-			if spiceDBEnabled {
-				sdb, err = spice.New(ctx, &spice.Options{
-					GRPCURL: spiceDBURL,
-					Logger:  logger,
-				})
-				if err != nil {
-					return fmt.Errorf("connect to spicedb: %w", err)
-				}
-				var _ = sdb
+			bot, err := chroniclebot.New(logger, chroniclebot.Config{
+				Token:   discordBot.Token,
+				GuildID: discordBot.GuildID,
+				DB:      db,
+			})
+			if err != nil {
+				return fmt.Errorf("create chronicle bot: %w", err)
 			}
 
 			serverLn, err := ProvisionListener(logger, httpAddress)
@@ -308,7 +304,8 @@ func ServerCmd() *serpent.Command {
 				Registry:        reg,
 				AccessURL:       au,
 				DevOAuth:        devAuth,
-				Discord:         discord,
+				Discord:         discordOauth,
+				Bot:             bot,
 				SecretPEM:       decodedSecret,
 				RiverQueue:      riverOpts,
 				DisallowSignups: disableSignups,

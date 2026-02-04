@@ -9,29 +9,44 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth/claims"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/slice"
 )
 
 type authContextKey struct{}
 
 type AuthenticationContext struct {
 	Claims *claims.Claims
+	User   *database.User
 	Error  error
 }
 
+func AuthenticatedUser(ctx context.Context) (*database.User, bool) {
+	state := AuthenticationStateCtx(ctx)
+	if state.Error != nil || state.Claims == nil || state.User == nil {
+		return nil, false
+	}
+	return state.User, true
+}
+
 func AuthenticatedClaims(ctx context.Context) (*claims.Claims, bool) {
-	state, ok := ctx.Value(authContextKey{}).(AuthenticationContext)
+	state, ok := ctx.Value(authContextKey{}).(*AuthenticationContext)
 	if !ok || state.Claims == nil {
 		return nil, false
 	}
 	return state.Claims, true
 }
 
-func AuthenticationState(r *http.Request) AuthenticationContext {
-	v, _ := r.Context().Value(authContextKey{}).(AuthenticationContext)
+func AuthenticationStateCtx(ctx context.Context) *AuthenticationContext {
+	v, _ := ctx.Value(authContextKey{}).(*AuthenticationContext)
 	return v
 }
 
-func withState(r *http.Request, s AuthenticationContext) *http.Request {
+func AuthenticationState(r *http.Request) *AuthenticationContext {
+	return AuthenticationStateCtx(r.Context())
+}
+
+func withState(r *http.Request, s *AuthenticationContext) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), authContextKey{}, s))
 }
 
@@ -40,7 +55,7 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 		auth, err := s.Store.Get(r, AuthSessionName)
 		if err != nil {
 			_ = s.Logout(w, r)
-			next.ServeHTTP(w, withState(r, AuthenticationContext{
+			next.ServeHTTP(w, withState(r, &AuthenticationContext{
 				Error: err,
 			}))
 			return
@@ -49,7 +64,7 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 		jwt, ok := auth.Values["jwt"]
 		if !ok {
 			// No JWT, means probably no cookie
-			next.ServeHTTP(w, withState(r, AuthenticationContext{
+			next.ServeHTTP(w, withState(r, &AuthenticationContext{
 				Error: ErrNotAuthorized,
 			}))
 			return
@@ -58,7 +73,7 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 		jwtStr, ok := jwt.(string)
 		if !ok {
 			_ = s.Logout(w, r)
-			next.ServeHTTP(w, withState(r, AuthenticationContext{
+			next.ServeHTTP(w, withState(r, &AuthenticationContext{
 				Error: ErrNotAuthorized,
 			}))
 			return
@@ -67,7 +82,7 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 		c, err := s.sessions.ValidateSession(jwtStr)
 		if err != nil {
 			_ = s.Logout(w, r)
-			next.ServeHTTP(w, withState(r, AuthenticationContext{
+			next.ServeHTTP(w, withState(r, &AuthenticationContext{
 				Error: fmt.Errorf("invalid session (%s): %w", err.Error(), ErrNotAuthorized),
 			}))
 			return
@@ -91,7 +106,7 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 			}
 		}
 
-		next.ServeHTTP(w, withState(r, AuthenticationContext{
+		next.ServeHTTP(w, withState(r, &AuthenticationContext{
 			Claims: &c,
 			Error:  nil,
 		}))
@@ -133,6 +148,39 @@ func (s *Service) Authenticated(optional bool) func(next http.Handler) http.Hand
 				return
 			}
 
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (s *Service) MustRoles(requiredRole database.UserRoles) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			cl, ok := AuthenticatedClaims(ctx)
+			if !ok || cl == nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			var user *database.User
+			state := AuthenticationState(r)
+			if state.User == nil {
+				dbUser, err := s.Database.GetUserByID(ctx, cl.Subject)
+				if err != nil {
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+				state.User = &dbUser
+				user = state.User
+			} else {
+				user = state.User
+			}
+
+			if !slice.Contains(user.Roles, requiredRole) {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}

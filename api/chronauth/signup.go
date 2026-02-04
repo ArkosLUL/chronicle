@@ -3,6 +3,7 @@ package chronauth
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -89,6 +90,13 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 		})
 		if err != nil {
 			return err
+		}
+
+		if user.Provider == "discord" {
+			err = s.SyncDiscordUser(ctx, tx, linked.ID == uuid.Nil, user.UserID, linked.UserID)
+			if err != nil {
+				return fmt.Errorf("handling discord user: %w", err)
+			}
 		}
 
 		return nil

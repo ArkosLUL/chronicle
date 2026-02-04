@@ -671,7 +671,7 @@ func (q *sqlQuerier) GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-  id, username, email, created_at, updated_at
+  id, username, email, created_at, updated_at, roles
 FROM
   users
 WHERE
@@ -687,6 +687,7 @@ func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (User, error
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Roles,
 	)
 	return i, err
 }
@@ -696,7 +697,7 @@ INSERT INTO
   users(id, username, email, created_at, updated_at)
 VALUES
   ($1, $2, $3, $4, $5)
-RETURNING id, username, email, created_at, updated_at
+RETURNING id, username, email, created_at, updated_at, roles
 `
 
 type InsertUserParams struct {
@@ -722,6 +723,7 @@ func (q *sqlQuerier) InsertUser(ctx context.Context, arg InsertUserParams) (User
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Roles,
 	)
 	return i, err
 }
@@ -861,6 +863,37 @@ func (q *sqlQuerier) UpdateUserAuthSessionTokens(ctx context.Context, arg Update
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.JwtID,
+	)
+	return i, err
+}
+
+const updateUserRoles = `-- name: UpdateUserRoles :one
+UPDATE
+  users
+SET
+  roles = $2,
+  updated_at = $3
+WHERE
+  id = $1
+RETURNING id, username, email, created_at, updated_at, roles
+`
+
+type UpdateUserRolesParams struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	Roles     []UserRoles        `db:"roles" json:"roles"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserRoles, arg.ID, arg.Roles, arg.UpdatedAt)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Roles,
 	)
 	return i, err
 }

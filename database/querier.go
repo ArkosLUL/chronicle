@@ -43,6 +43,7 @@ type sqlcQuerier interface {
 	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
+	UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) (User, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

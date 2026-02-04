@@ -16,7 +16,7 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, tx database.Store, discordI
 		return err
 	}
 
-	roles := make([]database.UserRoles, 0)
+	roles := make([]string, 0)
 	defer func() {
 		_, retErr = tx.UpdateUserRoles(ctx, database.UpdateUserRolesParams{
 			ID:        userID,
@@ -33,11 +33,11 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, tx database.Store, discordI
 	for _, roleID := range member.Roles {
 		switch roleID {
 		case "1468405974506410110": // Alpha tester
-			roles = append(roles, database.UserRolesAlphaTester)
+			roles = append(roles, string(database.UserRolesAlphaTester))
 		case "1467892674743898297": // Owner
-			roles = append(roles, database.UserRolesTechnicalAdmin, database.UserRolesAlphaTester)
+			roles = append(roles, string(database.UserRolesTechnicalAdmin), string(database.UserRolesAlphaTester))
 		case "1467890007854551120":
-			roles = append(roles, database.UserRolesAdmin, database.UserRolesAlphaTester)
+			roles = append(roles, string(database.UserRolesAdmin), string(database.UserRolesAlphaTester))
 		}
 	}
 

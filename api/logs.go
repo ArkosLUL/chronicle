@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -35,6 +36,7 @@ func (api *API) WoWLogGroups(w http.ResponseWriter, r *http.Request) {
 func (api *API) WoWLogGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logID := httpmw.LogID(ctx)
+	user, _ := chronauth.AuthenticatedUser(r.Context())
 
 	resp, err := api.Chronicle.WoWLogGroup(ctx, logID)
 	if err != nil {
@@ -45,6 +47,16 @@ func (api *API) WoWLogGroup(w http.ResponseWriter, r *http.Request) {
 			},
 			Status:  http.StatusInternalServerError,
 			Wrapped: err,
+		})
+		return
+	}
+
+	canView := slices.Contains(user.Roles, database.UserRolesAdmin) ||
+		slices.Contains(user.Roles, database.UserRolesTechnicalAdmin) ||
+		resp.Owner == user.ID
+	if !canView {
+		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
+			Message: "You do not have permission to view this log group",
 		})
 		return
 	}

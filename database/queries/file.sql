@@ -60,6 +60,46 @@ WHERE
   id = $1
 ;
 
+-- name: ListAllWoWLogGroupsWithOwner :many
+SELECT
+  sqlc.embed(wow_log_groups),
+  u.username AS owner_name,
+  files_agg.files,
+  latest_job.output AS processing_output
+FROM
+  wow_log_groups
+    LEFT JOIN users u ON u.id = wow_log_groups.owner
+    LEFT JOIN LATERAL (
+    SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', lf.id,
+        'owner', lf.owner,
+        'wow_log_id', lf.wow_log_id,
+        'hash', lf.hash,
+        'size_bytes', lf.size_bytes,
+        'mime_type', lf.mime_type,
+        'created_at', lf.created_at,
+        'updated_at', lf.updated_at
+      )
+      ORDER BY lf.created_at) FILTER (WHERE lf.id IS NOT NULL),
+      '[]'::jsonb
+    )::wow_log_group_files AS files
+    FROM log_file lf
+    WHERE lf.wow_log_id = wow_log_groups.id
+    ) files_agg ON true
+
+    LEFT JOIN LATERAL (
+    SELECT rj.metadata->'output' AS output
+    FROM river_job rj
+    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
+    ORDER BY rj.created_at DESC
+    LIMIT 1
+    ) latest_job ON true
+ORDER BY
+  wow_log_groups.created_at DESC
+;
+
 -- name: GetWoWLogGroupsByOwner :many
 SELECT
   sqlc.embed(wow_log_groups),

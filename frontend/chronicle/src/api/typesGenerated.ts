@@ -10,6 +10,26 @@ export interface ActivityPeriod {
     readonly slain: boolean;
 }
 
+// From chroniclesdk/user.go
+export interface AdminLog {
+    readonly id: string;
+    readonly owner_id: string;
+    readonly owner_name: string;
+    readonly description: string;
+    readonly created_at: string;
+    readonly state: string;
+}
+
+// From chroniclesdk/user.go
+export interface AdminLogsResponse {
+    readonly logs: readonly AdminLog[];
+}
+
+// From chroniclesdk/user.go
+export interface AdminUsersResponse {
+    readonly users: readonly User[];
+}
+
 // From chroniclesdk/events.go
 export interface ChronicleEncounterEvents {
     readonly encounter_id: string;
@@ -122,6 +142,28 @@ export interface RiverAttemptError {
 
 // From rivertype/river_type.go
 export type RiverJobState = string;
+
+// From chroniclesdk/user.go
+export interface Session {
+    readonly user_id: string;
+    readonly session_id: string;
+    readonly roles: readonly UserRole[];
+}
+
+// From chroniclesdk/user.go
+export interface User {
+    readonly id: string;
+    readonly username: string;
+    readonly email: string;
+    readonly roles: readonly UserRole[];
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/user.go
+export type UserRole = "admin" | "alpha_tester" | "technical_admin";
+
+export const UserRoles: UserRole[] = ["admin", "alpha_tester", "technical_admin"];
 
 // From chroniclesdk/youtube.go
 export interface Video {

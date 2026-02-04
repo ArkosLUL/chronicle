@@ -313,6 +313,81 @@ func (q *sqlQuerier) InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGrou
 	return i, err
 }
 
+const listAllWoWLogGroupsWithOwner = `-- name: ListAllWoWLogGroupsWithOwner :many
+SELECT
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  u.username AS owner_name,
+  files_agg.files,
+  latest_job.output AS processing_output
+FROM
+  wow_log_groups
+    LEFT JOIN users u ON u.id = wow_log_groups.owner
+    LEFT JOIN LATERAL (
+    SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', lf.id,
+        'owner', lf.owner,
+        'wow_log_id', lf.wow_log_id,
+        'hash', lf.hash,
+        'size_bytes', lf.size_bytes,
+        'mime_type', lf.mime_type,
+        'created_at', lf.created_at,
+        'updated_at', lf.updated_at
+      )
+      ORDER BY lf.created_at) FILTER (WHERE lf.id IS NOT NULL),
+      '[]'::jsonb
+    )::wow_log_group_files AS files
+    FROM log_file lf
+    WHERE lf.wow_log_id = wow_log_groups.id
+    ) files_agg ON true
+
+    LEFT JOIN LATERAL (
+    SELECT rj.metadata->'output' AS output
+    FROM river_job rj
+    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
+    ORDER BY rj.created_at DESC
+    LIMIT 1
+    ) latest_job ON true
+ORDER BY
+  wow_log_groups.created_at DESC
+`
+
+type ListAllWoWLogGroupsWithOwnerRow struct {
+	WoWLogGroup      WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
+	OwnerName        pgtype.Text `db:"owner_name" json:"owner_name"`
+	Files            []LogFile   `db:"files" json:"files"`
+	ProcessingOutput interface{} `db:"processing_output" json:"processing_output"`
+}
+
+func (q *sqlQuerier) ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAllWoWLogGroupsWithOwnerRow, error) {
+	rows, err := q.db.Query(ctx, listAllWoWLogGroupsWithOwner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllWoWLogGroupsWithOwnerRow
+	for rows.Next() {
+		var i ListAllWoWLogGroupsWithOwnerRow
+		if err := rows.Scan(
+			&i.WoWLogGroup.ID,
+			&i.WoWLogGroup.Owner,
+			&i.WoWLogGroup.CreatedAt,
+			&i.WoWLogGroup.UpdatedAt,
+			&i.OwnerName,
+			&i.Files,
+			&i.ProcessingOutput,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteThisQuery = `-- name: DeleteThisQuery :exec
 SELECT id, name, quality, item_level, required_level, class, sub_class, inventory_slot, icon, unique_limit, bind_type, stack_size, description, created_at, updated_at FROM item_templates
 `
@@ -641,6 +716,30 @@ func (q *sqlQuerier) GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthB
 	return i, err
 }
 
+const getUserAuthLinkByUserID = `-- name: GetUserAuthLinkByUserID :one
+SELECT
+  id, linked_id, user_id, provider, created_at, updated_at
+FROM
+  user_auth_links
+WHERE
+  user_id = $1
+LIMIT 1
+`
+
+func (q *sqlQuerier) GetUserAuthLinkByUserID(ctx context.Context, userID uuid.UUID) (UserAuthLink, error) {
+	row := q.db.QueryRow(ctx, getUserAuthLinkByUserID, userID)
+	var i UserAuthLink
+	err := row.Scan(
+		&i.ID,
+		&i.LinkedID,
+		&i.UserID,
+		&i.Provider,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserAuthSessionByID = `-- name: GetUserAuthSessionByID :one
 SELECT
   id, user_auth_id, user_id, access_token, access_token_secret, refresh_token, expires_at, created_at, updated_at, jwt_id
@@ -816,6 +915,42 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 	return i, err
 }
 
+const listAllUsers = `-- name: ListAllUsers :many
+SELECT
+  id, username, email, created_at, updated_at, roles
+FROM
+  users
+ORDER BY
+  created_at DESC
+`
+
+func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Roles,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateUserAuthSessionTokens = `-- name: UpdateUserAuthSessionTokens :one
 UPDATE
   user_auth_session
@@ -871,7 +1006,7 @@ const updateUserRoles = `-- name: UpdateUserRoles :one
 UPDATE
   users
 SET
-  roles = $3,
+  roles = $3::text[]::user_roles[],
   updated_at = $2
 WHERE
   id = $1
@@ -881,7 +1016,7 @@ RETURNING id, username, email, created_at, updated_at, roles
 type UpdateUserRolesParams struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	Roles     []UserRoles        `db:"roles" json:"roles"`
+	Roles     []string           `db:"roles" json:"roles"`
 }
 
 func (q *sqlQuerier) UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) (User, error) {

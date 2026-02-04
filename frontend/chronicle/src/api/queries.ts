@@ -11,6 +11,12 @@ import type {
   WoWEncounter as WoWEncounterGenerated,
   WoWInstance as WoWInstanceGenerated,
   Video as VideoGenerated,
+  AdminUsersResponse as AdminUsersResponseGenerated,
+  AdminLogsResponse as AdminLogsResponseGenerated,
+  User as UserGenerated,
+  AdminLog as AdminLogGenerated,
+  Session as SessionGenerated,
+  UserRole as UserRoleGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -25,6 +31,12 @@ export type WoWParsedInstance = WoWParsedInstanceGenerated;
 export type WoWEncounter = WoWEncounterGenerated;
 export type WoWInstance = WoWInstanceGenerated;
 export type Video = VideoGenerated;
+export type AdminUsersResponse = AdminUsersResponseGenerated;
+export type AdminLogsResponse = AdminLogsResponseGenerated;
+export type User = UserGenerated;
+export type AdminLog = AdminLogGenerated;
+export type Session = SessionGenerated;
+export type UserRole = UserRoleGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -147,3 +159,63 @@ export function useInstanceYoutube(instanceId: string, options?: Omit<UseQueryOp
   });
 }
 
+// Admin queries
+
+export function useSession(options?: Omit<UseQueryOptions<Session | null>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/whoami");
+      if (!response.ok) return null;
+      return response.json() as Promise<Session>;
+    },
+    retry: false,
+    ...options,
+  });
+}
+
+export function useAdminUsers(options?: Omit<UseQueryOptions<AdminUsersResponse>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/admin/users");
+      if (!response.ok) throw new Error("Failed to fetch users");
+      return response.json() as Promise<AdminUsersResponse>;
+    },
+    retry: false,
+    ...options,
+  });
+}
+
+export function useAdminLogs(options?: Omit<UseQueryOptions<AdminLogsResponse>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["admin", "logs"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/admin/logs");
+      if (!response.ok) throw new Error("Failed to fetch logs");
+      return response.json() as Promise<AdminLogsResponse>;
+    },
+    retry: false,
+    ...options,
+  });
+}
+
+export function useResyncUserRoles() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await fetch(`/api/v1/admin/users/${userId}/resync`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to resync roles" }));
+        throw new Error(error.message || "Failed to resync roles");
+      }
+      return response.json() as Promise<User>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}

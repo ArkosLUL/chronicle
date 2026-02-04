@@ -66,11 +66,30 @@ WHERE
   id = $1
 ;
 
+-- name: ListAllUsers :many
+SELECT
+  *
+FROM
+  users
+ORDER BY
+  created_at DESC
+;
+
+-- name: GetUserAuthLinkByUserID :one
+SELECT
+  *
+FROM
+  user_auth_links
+WHERE
+  user_id = $1
+LIMIT 1
+;
+
 -- name: UpdateUserRoles :one
 UPDATE
   users
 SET
-  roles = sqlc.arg('roles'),
+  roles = sqlc.arg('roles')::text[]::user_roles[],
   updated_at = $2
 WHERE
   id = $1

@@ -99,17 +99,31 @@ func (api *API) Routes() chi.Router {
 
 		r.Group(func(r chi.Router) {
 			r.Use(
-        api.Auth.Authenticated(false),
-        api.Auth.MustRoles(),
-        )
+				api.Auth.Authenticated(false),
+				api.Auth.MustRoles(),
+			)
 			r.Get("/whoami", api.WhoAmI)
+		})
+
+		// Admin routes - require admin or technical_admin role
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(
+				api.Auth.Authenticated(false),
+				api.Auth.MustRoles(database.UserRolesAdmin, database.UserRolesTechnicalAdmin),
+			)
+			r.Get("/users", api.AdminListUsers)
+			r.Post("/users/{userID}/resync", api.AdminResyncUserRoles)
+			r.Get("/logs", api.AdminListLogs)
 		})
 
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Route("/logs", func(r chi.Router) {
-					r.Use(api.Auth.Authenticated(false))
+					r.Use(
+						api.Auth.Authenticated(false),
+						api.Auth.MustRoles(),
+					)
 					r.Group(func(r chi.Router) {
 						r.Use(api.Auth.MustRoles(database.UserRolesTechnicalAdmin))
 						r.Post("/upload", api.WoWLogUpload)

@@ -155,11 +155,12 @@ func (s *Services) Close(ctx context.Context) error {
 	for name, srv := range s.services {
 		srv := srv // capture for closure
 		r.AddVertex(name, func() error {
+			now := time.Now()
 			if err := srv.Close(ctx); err != nil {
 				s.logger.Error("failed to close service", slog.String("name", name), slog.String("error", err.Error()))
 				errs <- fmt.Errorf("close service %q: %w", srv.Name(), err)
 			} else {
-				s.logger.Info("closed service", slog.String("name", name))
+				s.logger.Info("closed service", slog.String("name", name), slog.String("duration", time.Since(now).String()))
 			}
 
 			return nil // always return nil to continue closing other services

@@ -50,6 +50,7 @@ func ServerCmd() *serpent.Command {
 		Handler: func(i *serpent.Invocation) error {
 			ctx, cancelApp := context.WithCancel(context.Background())
 			defer cancelApp()
+			now := time.Now()
 
 			logger := getLogger(i)
 			logger.Info("🚀🚀 startup sequence initiated 🚀🚀",
@@ -62,16 +63,26 @@ func ServerCmd() *serpent.Command {
 				return fmt.Errorf("start services: %w", err)
 			}
 
+			logger.Info("🏃🏃 startup sequence complete, services in full swing 🏃🏃", slog.String("duration", time.Since(now).String()))
 			<-i.Context().Done()
+
+			logger.Info("🛑🛑 closing sequence initiated 🛑🛑",
+				slog.String("tag", version.GitTag),
+				slog.String("commit", version.GitCommit),
+				slog.String("build_time", version.BuildTime),
+			)
 
 			terminate, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			done := make(chan struct{})
 			go func() {
+				now := time.Now()
 				defer close(done)
 				err := srvs.Close(terminate)
 				if err != nil {
-					logger.Error("closing services", slog.String("error", err.Error()))
+					logger.Error("❌❌ closing sequence failed ❌❌", slog.String("error", err.Error()), slog.String("duration", time.Since(now).String()))
+				} else {
+					logger.Info("✅✅ closing sequence complete, goodbye! ✅✅", slog.String("duration", time.Since(now).String()))
 				}
 			}()
 

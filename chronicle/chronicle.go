@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -18,13 +17,12 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/internal/cleanup"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
 )
 
 const (
@@ -38,17 +36,14 @@ type Chronicle struct {
 	DB                 database.Store
 	logger             *slog.Logger
 	TemporaryDirectory string
+	queue              *riverqueue.Queues
 
-	queue   *river.Client[pgx.Tx]
-	mu      sync.Mutex
-	riverUI http.Handler
+	mu sync.Mutex
 }
 
 type Options struct {
 	Storage storage.ObjectStorage
 	DB      database.Store
-
-	Queue RiverQueueOptions
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
@@ -65,20 +60,12 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		return nil, fmt.Errorf("init storage: %w", err)
 	}
 
-	// River async job queue
-	err = c.StartQueues(ctx, opts)
-	if err != nil {
-		return nil, fmt.Errorf("start queues: %w", err)
-	}
-
-	riverUI, err := c.webUI(ctx)
-	if err != nil {
-		return nil, err
-	}
-	c.riverUI = riverUI
-
 	_ = c.clearTemporaryFiles()
 	return c, nil
+}
+
+func (c *Chronicle) SetQueue(queue *riverqueue.Queues) {
+	c.queue = queue
 }
 
 func (c *Chronicle) logPath(fileID uuid.UUID) string {
@@ -287,9 +274,7 @@ func (c *Chronicle) DeleteWoWLogGroup(ctx context.Context, logID uuid.UUID) erro
 }
 
 func (c *Chronicle) Close() error {
-	qerr := c.queue.StopAndCancel(c.AppContext)
-
-	return errors.Join(qerr)
+	return c.clearTemporaryFiles()
 }
 
 func (c *Chronicle) clearTemporaryFiles() error {

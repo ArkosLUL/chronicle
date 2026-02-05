@@ -15,6 +15,7 @@ import (
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
+	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
@@ -46,8 +47,8 @@ type ArgsLogParse struct {
 
 func (ArgsLogParse) InsertOpts() river.InsertOpts {
 	return river.InsertOpts{
-		Queue:       QueueLogParsing,
-		Priority:    PriorityDefault,
+		Queue:       riverqueue.QueueLogParsing,
+		Priority:    riverqueue.PriorityDefault,
 		MaxAttempts: 5,
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -68,6 +69,12 @@ type WorkerLogParse struct {
 	parent *Chronicle
 
 	river.WorkerDefaults[ArgsLogParse]
+}
+
+func (c *Chronicle) NewWorkerLogParse() river.Worker[ArgsLogParse] {
+  return &WorkerLogParse{
+    parent: c,
+  }
 }
 
 func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (io.Reader, *realmclock.Info, error) {

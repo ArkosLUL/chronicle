@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
@@ -17,8 +18,8 @@ type ArgsLogReparse struct {
 
 func (ArgsLogReparse) InsertOpts() river.InsertOpts {
 	return river.InsertOpts{
-		Queue:       QueueLogParsing,
-		Priority:    PriorityDefault,
+		Queue:       riverqueue.QueueLogParsing,
+		Priority:    riverqueue.PriorityDefault,
 		MaxAttempts: 5,
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -39,6 +40,12 @@ type WorkerLogReparse struct {
 	parent *Chronicle
 
 	river.WorkerDefaults[ArgsLogReparse]
+}
+
+func (c *Chronicle) NewWorkerReLogParse() river.Worker[ArgsLogReparse] {
+	return &WorkerLogReparse{
+		parent: c,
+	}
 }
 
 func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogReparse]) error {
@@ -103,7 +110,7 @@ func (c *Chronicle) ListLogGroupJobs(ctx context.Context, groupID uuid.UUID) (*r
 	opts := river.NewJobListParams().Where(`args->>'log_group_id' = @group_id`, map[string]any{
 		"group_id": groupID.String(),
 	}).
-		Queues(QueueLogParsing).
+		Queues(riverqueue.QueueLogParsing).
 		Kinds(KindLogParse, KindLogReparse).
 		OrderBy(river.JobListOrderByScheduledAt, river.SortOrderDesc)
 

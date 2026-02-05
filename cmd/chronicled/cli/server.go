@@ -17,6 +17,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
+	"github.com/Emyrk/chronicle/internal/version"
 
 	"github.com/coder/serpent"
 )
@@ -51,6 +52,11 @@ func ServerCmd() *serpent.Command {
 			defer cancelApp()
 
 			logger := getLogger(i)
+			logger.Info("🚀🚀 startup sequence initiated 🚀🚀",
+				slog.String("tag", version.GitTag),
+				slog.String("commit", version.GitCommit),
+				slog.String("build_time", version.BuildTime),
+			)
 			err := srvs.Start(ctx, logger)
 			if err != nil {
 				return fmt.Errorf("start services: %w", err)

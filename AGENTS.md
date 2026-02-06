@@ -207,6 +207,8 @@ ctx := testutil.Context(t, testutil.WaitLong)    // 25s
 ### Adding EventsPanels
 
 > **Full documentation:** See `frontend/chronicle/src/pages/Instance/EventsPanels/DESIGN.md` for architecture details.
+> 
+> **Sync Mode:** See `frontend/chronicle/src/pages/Instance/SYNC_MODE.md` for the video synchronization feature (experimental, `?exp=1`).
 
 EventsPanels process combat log event streams and aggregate them into displayable metrics. Processing runs in a Web Worker to keep UI responsive.
 

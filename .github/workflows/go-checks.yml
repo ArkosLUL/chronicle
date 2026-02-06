@@ -97,6 +97,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git describe
+
+      - name: Get version info
+        id: version
+        run: |
+          echo "GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo 'unknown')" >> $GITHUB_OUTPUT
+          echo "GIT_COMMIT=$(git describe --always)" >> $GITHUB_OUTPUT
+          echo "BUILD_TIME=$(TZ='America/Chicago' date +'%m-%d-%y_%H:%M')" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -114,6 +123,10 @@ jobs:
           file: services/chronicled/Dockerfile
           push: ${{ github.ref_type == 'tag' }}
           tags: emyrk/chronicled:latest
+          build-args: |
+            GIT_TAG=${{ steps.version.outputs.GIT_TAG }}
+            GIT_COMMIT=${{ steps.version.outputs.GIT_COMMIT }}
+            BUILD_TIME=${{ steps.version.outputs.BUILD_TIME }}
 
   deploy-fly-io:
     name: Deploy to Fly.io
@@ -132,3 +145,20 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-railway:
+    name: Deploy to Railway
+    if: github.ref_type == 'tag'
+    needs: docker-push  # Use the image pushed to DockerHub
+    runs-on: ubuntu-latest
+    environment: railway
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Redeploy chronicled on Railway
+        # The Railway service is configured to use emyrk/chronicled:latest
+        # This triggers a redeploy to pull the new image
+        run: railway redeploy --service chronicled --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

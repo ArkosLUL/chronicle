@@ -1,9 +1,7 @@
-name: Deploy to Railway
+name: Deploy to Railway (Manual)
 
+# Manual deployment only - automated deploys on tags go through go-checks.yml
 on:
-  push:
-    tags:
-      - '*'
   workflow_dispatch:
     inputs:
       environment:
@@ -26,25 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: railway
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full history for git describe
-
-      - name: Get version info
-        id: version
-        run: |
-          echo "GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo 'unknown')" >> $GITHUB_OUTPUT
-          echo "GIT_COMMIT=$(git describe --always)" >> $GITHUB_OUTPUT
-          echo "BUILD_TIME=$(TZ='America/Chicago' date +'%m-%d-%y_%H:%M')" >> $GITHUB_OUTPUT
-
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Deploy chronicled to Railway
-        run: railway up --service chronicled
+      - name: Redeploy chronicled on Railway
+        # The Railway service is configured to use emyrk/chronicled:latest
+        # This triggers a redeploy to pull the latest image from DockerHub
+        run: railway redeploy --service chronicled --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_CONFIG_FILE: services/chronicled/railway.toml
-          # Pass version info as Docker build args via Railway
-          RAILWAY_DOCKERFILE_BUILD_ARGS: GIT_TAG=${{ steps.version.outputs.GIT_TAG }},GIT_COMMIT=${{ steps.version.outputs.GIT_COMMIT }},BUILD_TIME=${{ steps.version.outputs.BUILD_TIME }}

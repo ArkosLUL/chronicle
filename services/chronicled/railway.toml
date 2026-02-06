@@ -1,9 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "services/chronicled/Dockerfile"
-
-[deploy]
-numReplicas = 1
-memoryLimitMb = 1024
-cpuLimit = 2
-startCommand = "./chronicled server"

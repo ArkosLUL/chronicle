@@ -90,12 +90,13 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 			return err
 		}
 
-		if user.Provider == "discord" {
+		switch user.Provider {
+		case "discord":
 			err = s.Bot.SyncDiscordUser(ctx, tx, user.UserID, linked.UserID)
 			if err != nil {
 				return fmt.Errorf("handling discord user: %w", err)
 			}
-		} else if user.Provider == "dev-oidc" {
+		case "dev-oidc":
 			_, err = tx.UpdateUserRoles(ctx, database.UpdateUserRolesParams{
 				ID:        linked.UserID,
 				Roles:     slice.ToStrings([]database.UserRoles{database.UserRolesAdmin, database.UserRolesTechnicalAdmin, database.UserRolesAlphaTester}),

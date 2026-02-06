@@ -121,8 +121,8 @@ jobs:
         with:
           context: .
           file: services/chronicled/Dockerfile
-          push: ${{ github.ref_type == 'tag' }}
-          tags: emyrk/chronicled:latest
+          push: true
+          tags: emyrk/chronicled:${{ github.ref_type == 'tag' && 'latest' || 'unstable' }}
           build-args: |
             GIT_TAG=${{ steps.version.outputs.GIT_TAG }}
             GIT_COMMIT=${{ steps.version.outputs.GIT_COMMIT }}

@@ -54,6 +54,8 @@ export interface IncrementalProcessorState<TResult> {
   processedCount: number;
   /** Last processed timestamp (absolute) for detecting backward seeks */
   lastTimestamp: Date | null;
+  /** Number of events processed at lastTimestamp (for precise resume) */
+  eventsAtLastTimestamp: number;
   /** Whether processing reached the end of all events */
   isDone: boolean;
 }
@@ -90,6 +92,8 @@ export interface ProcessIncrementallyResult<TResult> {
   processingTimeMs: number;
   /** Last processed timestamp (absolute) */
   lastTimestamp: Date | null;
+  /** Number of events processed at lastTimestamp (for precise resume) */
+  eventsAtLastTimestamp: number;
   /** Whether processing reached the end of all events */
   isDone: boolean;
   /** Error message if processing failed */
@@ -222,7 +226,7 @@ export async function processIncrementally<TResult>(
     stopAtTimestamp, 
     previousState,
     onProgress,
-    yieldEveryN = 1000,
+    yieldEveryN = 10000,
   } = options;
 
   const startTime = performance.now();
@@ -235,6 +239,7 @@ export async function processIncrementally<TResult>(
       processedCount: 0,
       processingTimeMs: 0,
       lastTimestamp: null,
+      eventsAtLastTimestamp: 0,
       isDone: true,
       error: `Unknown panel: ${panelId}`,
     };
@@ -250,19 +255,27 @@ export async function processIncrementally<TResult>(
   let state: TResult;
   let processedCount: number;
   let lastTimestamp: Date | null;
-  let skipCount: number;
+  let eventsAtLastTimestamp: number;
+  let skipUntilTimestamp: number | null; // Skip events BEFORE this timestamp (ms)
+  let skipCountAtTimestamp: number; // Skip this many events AT the timestamp
 
   if (mustRestart || !previousState) {
     state = processor.createState();
     processedCount = 0;
     lastTimestamp = null;
-    skipCount = 0; // Process all events
+    eventsAtLastTimestamp = 0;
+    skipUntilTimestamp = null; // Process all events
+    skipCountAtTimestamp = 0;
   } else {
     // Resume from previous state - keep result and skip already processed events
     state = previousState.result;
     processedCount = previousState.processedCount;
     lastTimestamp = previousState.lastTimestamp;
-    skipCount = previousState.processedCount; // Skip this many events
+    eventsAtLastTimestamp = previousState.eventsAtLastTimestamp;
+    // Skip events BEFORE the last processed timestamp
+    skipUntilTimestamp = previousState.lastTimestamp?.getTime() ?? null;
+    // And skip this many events AT that timestamp
+    skipCountAtTimestamp = previousState.eventsAtLastTimestamp;
     
     // If we already finished, just return the previous state
     // (clone to ensure new reference for React)
@@ -272,22 +285,43 @@ export async function processIncrementally<TResult>(
         processedCount,
         processingTimeMs: 0,
         lastTimestamp,
+        eventsAtLastTimestamp,
         isDone: true,
       };
     }
   }
+  
+  // Counter for events seen at the boundary timestamp
+  let eventsSeenAtBoundary = 0;
 
   // Create cursors for all streams
   const cursors: PeekableCursor[] = [];
   for (const streamType of processor.streams) {
     const cachedStream = streams.get(streamType);
     if (cachedStream) {
-      cursors.push(createCursor(streamType, cachedStream.data));
+      const cursor = createCursor(streamType, cachedStream.data);
+      
+      // Skip entire encounters that end before our resume timestamp.
+      // This avoids decoding events we know we'll skip - skipEncounter() 
+      // uses dataLength to jump directly by byte offset (no decoding needed).
+      if (skipUntilTimestamp !== null) {
+        while (cursor.cursor.currentHeader) {
+          const header = cursor.cursor.currentHeader;
+          // We don't know exact encounter end time, only start time.
+          // Use conservative heuristic: skip if start is 60+ seconds before resume time.
+          // This ensures we don't skip encounters that might contain events we need.
+          const encounterStart = header.firstTimestamp.getTime();
+          if (encounterStart < skipUntilTimestamp - 60000) {
+            cursor.cursor.skipEncounter();
+          } else {
+            break;
+          }
+        }
+      }
+      
+      cursors.push(cursor);
     }
   }
-  
-  // Counter for skipping already-processed events
-  let skipped = 0;
 
   let localCount = 0;
 
@@ -327,16 +361,27 @@ export async function processIncrementally<TResult>(
       // No more events from this encounter - move to next encounter
       if (!minCursor || !minPeeked) break;
       
+      const eventTime = minPeeked.firstTimestamp.getTime() + minPeeked.event.offsetMilli;
+      
       // Skip events we've already processed (for resume)
-      if (skipped < skipCount) {
-        consumePeeked(minCursor);
-        skipped++;
-        continue;
+      if (skipUntilTimestamp !== null) {
+        // Skip all events BEFORE the boundary timestamp
+        if (eventTime < skipUntilTimestamp) {
+          consumePeeked(minCursor);
+          continue;
+        }
+        // At the boundary timestamp, skip exactly the number we already processed
+        if (eventTime === skipUntilTimestamp) {
+          eventsSeenAtBoundary++;
+          if (eventsSeenAtBoundary <= skipCountAtTimestamp) {
+            consumePeeked(minCursor);
+            continue;
+          }
+        }
       }
       
       // Check timestamp cutoff BEFORE processing
       if (stopAtTimestamp) {
-        const eventTime = minPeeked.firstTimestamp.getTime() + minPeeked.event.offsetMilli;
         if (eventTime > stopAtTimestamp.getTime()) {
           // Stop here - return state that can be resumed
           // Clone to ensure new reference for React
@@ -346,11 +391,18 @@ export async function processIncrementally<TResult>(
             processedCount,
             processingTimeMs,
             lastTimestamp,
+            eventsAtLastTimestamp,
             isDone: false,
           };
         }
-        // Update last processed timestamp
-        lastTimestamp = new Date(eventTime);
+        // Track events at each timestamp for precise resume
+        const lastTimestampMs = lastTimestamp?.getTime() ?? null;
+        if (lastTimestampMs === eventTime) {
+          eventsAtLastTimestamp++;
+        } else {
+          lastTimestamp = new Date(eventTime);
+          eventsAtLastTimestamp = 1;
+        }
       }
       
       // Process the event
@@ -383,6 +435,7 @@ export async function processIncrementally<TResult>(
     processedCount,
     processingTimeMs,
     lastTimestamp,
+    eventsAtLastTimestamp,
     isDone: true,
   };
 }

@@ -328,7 +328,7 @@ export function usePanelAggregation<TResult>(
           // Update metrics during processing (use ref to avoid dep issues)
           updateMetricsRef.current?.(count, 0);
         },
-        yieldEveryN: 1000,
+        yieldEveryN: 10000,
       });
       
       // Ignore stale responses
@@ -347,6 +347,7 @@ export function usePanelAggregation<TResult>(
         result: response.result,
         processedCount: response.processedCount,
         lastTimestamp: response.lastTimestamp,
+        eventsAtLastTimestamp: response.eventsAtLastTimestamp,
         isDone: response.isDone,
       };
       prevTimestampRef.current = stopAt;

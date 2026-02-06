@@ -544,6 +544,22 @@ export class FastHealCursor {
     return this._loadNextEncounterHeader();
   }
   
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+  
   private _loadNextEncounterHeader(): boolean {
     if (this.offset >= this.data.length) {
       this._currentHeader = null;
@@ -775,6 +791,22 @@ export class FastResourceChangeCursor {
     return this._loadNextEncounterHeader();
   }
   
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+  
   private _loadNextEncounterHeader(): boolean {
     if (this.offset >= this.data.length) {
       this._currentHeader = null;
@@ -983,6 +1015,22 @@ export class FastExtraAttackCursor {
     while (this.hasMoreInEncounter) {
       this.next();
     }
+    return this._loadNextEncounterHeader();
+  }
+  
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
     return this._loadNextEncounterHeader();
   }
   
@@ -1258,6 +1306,22 @@ export class FastSlainCursor {
     return this._loadNextEncounterHeader();
   }
   
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+  
   private _loadNextEncounterHeader(): boolean {
     if (this.offset >= this.data.length) {
       this._currentHeader = null;
@@ -1529,6 +1593,22 @@ export class FastCastCursor {
     return this._loadNextEncounterHeader();
   }
   
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+  
   private _loadNextEncounterHeader(): boolean {
     if (this.offset >= this.data.length) {
       this._currentHeader = null;
@@ -1756,6 +1836,22 @@ export class FastAuraCursor {
     while (this.hasMoreInEncounter) {
       this.next();
     }
+    return this._loadNextEncounterHeader();
+  }
+  
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
     return this._loadNextEncounterHeader();
   }
   
@@ -2114,6 +2210,28 @@ export class FastDamageCursor {
     while (this.hasMoreInEncounter) {
       this.next();
     }
+    return this._loadNextEncounterHeader();
+  }
+  
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    
+    // If we've already read some messages, fall back to nextEncounter
+    // since we can't easily calculate remaining bytes
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    
+    // Jump past all message data in this encounter
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    
     return this._loadNextEncounterHeader();
   }
   

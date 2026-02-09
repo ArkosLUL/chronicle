@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/internal/testutil"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 )
@@ -69,7 +70,7 @@ func NowInDefaultTimezone() time.Time {
 	return time.Now().In(loc).Round(time.Microsecond)
 }
 
-func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
+func NewConnectionURL(t testing.TB, opts ...Option) string {
 	t.Helper()
 
 	o := options{logger: testutil.Logger(t).With("name", "pubsub")}
@@ -98,7 +99,18 @@ func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
 	}
 	dbName := dbNameFromConnectionURL(t, connectionURL)
 	setDBTimezone(t, connectionURL, dbName, o.fixedTimezone)
+	return connectionURL
+}
 
+func NewPGXPool(t testing.TB, opts ...Option) (*pgxpool.Pool, pubsub.Pubsub) {
+	t.Helper()
+
+	o := options{logger: testutil.Logger(t).With("name", "pubsub")}
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	connectionURL := NewConnectionURL(t, opts...)
 	pool, err := database.NewPostgresDB(t.Context(), o.logger, connectionURL)
 	require.NoError(t, err)
 
@@ -115,6 +127,13 @@ func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
 		_ = ps.Close()
 	})
 
+	return pool, ps
+}
+
+func NewDB(t testing.TB, opts ...Option) (database.Store, pubsub.Pubsub) {
+	t.Helper()
+
+	pool, ps := NewPGXPool(t, opts...)
 	return database.New(pool), ps
 }
 

@@ -1,6 +1,7 @@
 package servicepgxpool
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Emyrk/chronicle/database/dbtestutil"
@@ -18,10 +19,7 @@ func NewTestPGXPool(t *testing.T, broker *services.Services) *Service {
 	srv.pgURL = connectionURL
 
 	t.Cleanup(func() {
-		if srv.pool == nil {
-			return
-		}
-		srv.pool.Close()
+		_ = srv.Close(context.Background())
 	})
 	return srv
 }

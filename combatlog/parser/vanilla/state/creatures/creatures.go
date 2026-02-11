@@ -21,8 +21,9 @@ type Creatures struct {
 	logger *slog.Logger
 
 	// CurrentZone is the zone the player is currently in.
-	CurrentZone zone.Zone
-	ZonedUnits  map[string]map[uint32]string
+	CurrentZone  zone.Zone
+	ZonedUnits   map[string]map[uint32]string
+	UnknownUnits map[string]map[uint32]int
 
 	// Units holds information about all units seen so far.
 	// Friendly/Foe/Relationships, etc.
@@ -31,10 +32,11 @@ type Creatures struct {
 
 func New(logger *slog.Logger) *Creatures {
 	s := &Creatures{
-		logger:      logger,
-		Units:       unitdb.New(),
-		CurrentZone: zone.Zone{},
-		ZonedUnits:  map[string]map[uint32]string{},
+		logger:       logger,
+		Units:        unitdb.New(),
+		CurrentZone:  zone.Zone{},
+		UnknownUnits: make(map[string]map[uint32]int),
+		ZonedUnits:   map[string]map[uint32]string{},
 	}
 	return s
 }
@@ -74,6 +76,9 @@ func (s *Creatures) Process(m messages.Message) error {
 		s.Combatant(typed)
 	case messages.Unit:
 		s.Unit(typed)
+	case messages.UnitDied:
+		s.UnitDied(typed)
+
 	}
 
 	for _, gid := range m.Affects() {
@@ -88,7 +93,12 @@ func (s *Creatures) Process(m messages.Message) error {
 
 		unit, ok := s.Units.Get(gid)
 		if !ok {
-			s.logger.Error("Could not find unit", slog.String("gid", gid.String()))
+			if s.UnknownUnits[s.CurrentZone.Name] == nil {
+				s.UnknownUnits[s.CurrentZone.Name] = map[uint32]int{}
+			}
+			s.UnknownUnits[s.CurrentZone.Name][entry]++
+
+			//s.logger.Error("Could not find unit", slog.String("gid", gid.String()))
 			continue
 		}
 
@@ -107,6 +117,10 @@ func (s *Creatures) Combatant(c messages.Combatant) {
 
 func (s *Creatures) Unit(u messages.Unit) {
 	s.Units.Update(u.Info)
+}
+
+func (s *Creatures) UnitDied(u messages.UnitDied) {
+	s.Units.UpdateUnitName(u.ID, u.Name)
 }
 
 func (s *Creatures) Zone(z messages.Zone) {

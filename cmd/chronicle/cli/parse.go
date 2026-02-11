@@ -128,6 +128,13 @@ func CreaturesCmd() *serpent.Command {
 					fmt.Printf("  %d: %q,\n", id, name)
 				}
 				fmt.Println()
+
+				if len(output.UnknownUnits[z]) > 0 {
+					fmt.Println("Unknown units:")
+					for entryID, count := range output.UnknownUnits[z] {
+						fmt.Printf("  %d: %d\n", entryID, count)
+					}
+				}
 			}
 
 			return nil

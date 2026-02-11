@@ -33,6 +33,16 @@ func (us *Units) Update(u unitinfo.Info) {
 	us.Info[u.Guid] = u
 }
 
+func (us *Units) UpdateUnitName(gid guid.GUID, name string) {
+	if info, ok := us.Info[gid]; ok {
+		info.Name = name
+		us.Info[gid] = info
+		return
+	}
+
+	us.Info[gid] = unitinfo.Info{Name: name}
+}
+
 func (us *Units) UpdatePlayer(c combatant.Combatant) {
 	us.Players[c.Guid] = c
 	// TODO: REMOVE this. It is a crutch because `unit_info` is not perfect.

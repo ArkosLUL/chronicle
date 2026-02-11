@@ -17,6 +17,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitdied"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -138,6 +139,22 @@ func (p *Parser) fRealm(ts time.Time, content string) ([]messages.Message, error
 	}), nil
 }
 
+func (p *Parser) fUnitDied(ts time.Time, content string) ([]messages.Message, error) {
+	if !strings.HasPrefix(content, unitdied.PrefixUnitDied) {
+		return messages.NotHandled()
+	}
+
+	d, err := unitdied.ParseUnitDead(p.liner.RealmClockInfo(), content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse unit died info: %v", err)
+	}
+
+	return set(messages.UnitDied{
+		MessageBase: messages.Base(ts),
+		Info:        d,
+	}), nil
+}
+
 func (p *Parser) fPlayerPosition(ts time.Time, content string) ([]messages.Message, error) {
 	if !strings.HasPrefix(content, playerposition.PrefixPlayerPosition) {
 		return messages.NotHandled()
@@ -221,6 +238,36 @@ func (p *Parser) fGain(ts time.Time, content string) ([]messages.Message, error)
 		Amount:      amount,
 		Resource:    resource,
 		Caster:      ptr.Ref(casterGUID),
+		SpellName:   spellName,
+		Direction:   direction,
+	}), nil
+}
+
+func (p *Parser) fGainNoSource(ts time.Time, content string) ([]messages.Message, error) {
+	matched, ok := types.FromRegex(regexs.ReGainNoSource).Match(content)
+	if !ok {
+		return messages.NotHandled()
+	}
+
+	_, targetGUID := matched.UnitOrGUID()
+	direction := matched.ResourceChange()
+	amount := matched.Int32()
+	resource := matched.Resource()
+	spellName := ptr.Ref(matched.String())
+
+	if err := matched.Error(); err != nil {
+		return nil, fmt.Errorf("gain: %w", err)
+	}
+
+	if targetGUID.IsZero() {
+		return messages.Skip(ts, "gain: not using guids"), nil
+	}
+
+	return set(messages.ResourceChange{
+		MessageBase: messages.Base(ts),
+		Target:      targetGUID,
+		Amount:      amount,
+		Resource:    resource,
 		SpellName:   spellName,
 		Direction:   direction,
 	}), nil
@@ -853,7 +900,7 @@ func (p *Parser) fSpellCastPerform(ts time.Time, content string) ([]messages.Mes
 	}
 
 	_, caster := matches.UnitOrGUID()
-  matches.Skip()
+	matches.Skip()
 	spellName := matches.String()
 	_, target := matches.UnitOrGUID()
 

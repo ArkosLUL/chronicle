@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatcount"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitdied"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
@@ -153,6 +154,13 @@ type Realm struct {
 }
 
 func (u Realm) Affects() []guid.GUID { return []guid.GUID{} }
+
+type UnitDied struct {
+	MessageBase
+	unitdied.Info
+}
+
+func (u UnitDied) Affects() []guid.GUID { return []guid.GUID{u.ID} }
 
 type PlayerPosition struct {
 	MessageBase

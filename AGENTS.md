@@ -8,17 +8,17 @@ Chronicle is a **game-play performance analysis tool for Classic World of Warcra
 
 ### Technology Stack
 
-| Layer     | Technology                                                |
-| --------- | --------------------------------------------------------- |
-| Backend   | Go 1.25+                                                  |
-| Frontend  | React 19 + TypeScript + Vite + Tailwind CSS v4            |
-| Database  | PostgreSQL 17 (via pgx/v5)                                |
-| ORM/Query | sqlc (code generation from SQL)                           |
-| Router    | go-chi/chi                                                |
-| Auth      | OAuth (Discord) + JWT sessions                            |
-| Queue     | River (PostgreSQL-based job queue)                        |
-| Package   | pnpm (frontend)                                           |
-| Hosting   | Fly.io                                                    |
+| Layer     | Technology                                     |
+| --------- |------------------------------------------------|
+| Backend   | Go 1.25+                                       |
+| Frontend  | React 19 + TypeScript + Vite + Tailwind CSS v4 |
+| Database  | PostgreSQL 17 (via pgx/v5)                     |
+| ORM/Query | sqlc (code generation from SQL)                |
+| Router    | go-chi/chi                                     |
+| Auth      | OAuth (Discord) + JWT sessions                 |
+| Queue     | River (PostgreSQL-based job queue)             |
+| Package   | pnpm (frontend)                                |
+| Hosting   | Railway                                        |
 
 ## Reference
 

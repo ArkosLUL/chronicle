@@ -128,24 +128,6 @@ jobs:
             GIT_COMMIT=${{ steps.version.outputs.GIT_COMMIT }}
             BUILD_TIME=${{ steps.version.outputs.BUILD_TIME }}
 
-  deploy-fly-io:
-    name: Deploy to Fly.io
-    if: github.ref_type == 'tag'
-    needs: docker-push
-    runs-on: ubuntu-latest
-    environment: actions
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
   deploy-railway:
     name: Deploy to Railway
     if: github.ref_type == 'tag'

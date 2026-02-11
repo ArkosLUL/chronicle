@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -37,11 +36,12 @@ type Authz struct {
 func New(ctx context.Context, opts Options) (*Authz, error) {
 	var spice *client.Client
 	var err error
-	if strings.Contains(opts.GRPCURL, "localhost") {
-		spice, err = client.NewPlaintext(opts.GRPCURL, opts.PreSharedKey)
-	} else {
-		spice, err = client.NewSystemTLS(opts.GRPCURL, opts.PreSharedKey)
-	}
+	//if strings.Contains(opts.GRPCURL, "localhost") {
+	//	spice, err = client.NewPlaintext(opts.GRPCURL, opts.PreSharedKey)
+	//} else {
+	//	spice, err = client.NewSystemTLS(opts.GRPCURL, opts.PreSharedKey)
+	//}
+	spice, err = client.NewPlaintext(opts.GRPCURL, opts.PreSharedKey)
 	if err != nil {
 		return nil, fmt.Errorf("init authz client: %w", err)
 	}

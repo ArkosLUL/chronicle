@@ -17,6 +17,10 @@ import (
 	"golang.org/x/xerrors"
 )
 
+type StoreQueries interface {
+	sqlcQuerier
+}
+
 // Store contains all queryable database functions.
 // It extends the generated interface to add transaction support.
 type Store interface {
@@ -70,9 +74,7 @@ func (r *registerTypes) RegisterTypes(ctx context.Context, conn *pgx.Conn) error
 	}
 
 	// Register user_roles enum type so pgx can encode []UserRoles as user_roles[]
-	dataTypeNames := []string{
-		"user_roles",
-	}
+	dataTypeNames := []string{}
 
 	for _, typeName := range dataTypeNames {
 		dataType, err := conn.LoadType(ctx, typeName)

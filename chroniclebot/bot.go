@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/database/spice"
+	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -19,7 +19,7 @@ type Config struct {
 	// GuildID is your Discord server ID. If empty, commands are registered globally.
 	GuildID string
 	DB      database.Store
-	Authz   *spice.Spice
+	Zed     *authz.Authz
 }
 
 // Bot represents a Discord bot instance.
@@ -63,10 +63,10 @@ func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) 
 		return nil, fmt.Errorf("fetch guild roles: %w", err)
 	}
 
-  err = bot.Open(ctx)
-  if err != nil {
-    return nil, fmt.Errorf("open bot session: %w", err)
-  }
+	err = bot.Open(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("open bot session: %w", err)
+	}
 
 	return bot, nil
 }
@@ -169,7 +169,7 @@ func (b *Bot) onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMember
 	}
 
 	// Sync their roles
-	err = b.SyncDiscordUser(context.Background(), b.config.DB, m.User.ID, link.UserID)
+	err = b.SyncDiscordUser(context.Background(), b.config.Zed, m.User.ID, link.UserID)
 	if err != nil {
 		b.logger.Error("failed to sync user roles",
 			slog.String("user_id", link.UserID.String()),
@@ -200,7 +200,7 @@ func (b *Bot) onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMember
 	}
 
 	// SyncDiscordUser will clear roles when member is nil (not in guild)
-	err = b.SyncDiscordUser(context.Background(), b.config.DB, m.User.ID, link.UserID)
+	err = b.SyncDiscordUser(context.Background(), b.config.Zed, m.User.ID, link.UserID)
 	if err != nil {
 		b.logger.Error("failed to revoke roles on member leave",
 			slog.String("user_id", link.UserID.String()),

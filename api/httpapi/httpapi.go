@@ -10,6 +10,18 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 )
 
+func Forbidden(rw http.ResponseWriter, err error) {
+	var details string
+	if err != nil {
+		details = err.Error()
+	}
+
+	Write(context.Background(), rw, http.StatusForbidden, chroniclesdk.Response{
+		Message: "Forbidden: you don't have permission to access this resource.",
+		Detail:  details,
+	})
+}
+
 func InternalServerError(rw http.ResponseWriter, err error) {
 	var details string
 	if err != nil {

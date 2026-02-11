@@ -1,0 +1,47 @@
+/** 
+ * Chronicle SpiceDB Schema
+ * 
+ * Core authorization model for raid log management.
+ */
+
+definition user {}
+
+// Top level site definition for site-wide overrides (administration)
+definition chronicle {
+  relation technical_admin: user
+  relation admin: user
+  relation upload_capable: user
+
+  permission administer   = admin + technical_admin
+  permission admin_logs   = administer
+  permission admin_users  = administer
+  permission admin_queues = technical_admin
+  permission upload_youtube = administer
+  permission upload_log = upload_capable + administer
+}
+
+definition river_queue {
+  relation chronicle: chronicle
+
+  permission access = chronicle->admin_queues
+}
+
+definition raid_log {
+  relation chronicle: chronicle
+  relation uploader: user
+
+  // View: uploader, guild members (if guild-linked), or public
+  permission view = uploader + chronicle->admin_logs
+  permission reparse = chronicle->admin_logs
+    
+  // Delete: uploader or guild admin
+  permission delete = uploader + chronicle->admin_logs
+}
+
+definition instance {
+  relation raid_log: raid_log
+  relation public: user:*
+  
+  // Inherit permissions from parent raid log
+  permission view = raid_log->view + public
+}

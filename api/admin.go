@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -25,11 +25,17 @@ func (a *API) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 		Users: make([]chroniclesdk.User, len(users)),
 	}
 	for i, u := range users {
+		roles, err := a.Opts.Zed.UserChronicleRoles(r.Context(), u.ID)
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+
 		resp.Users[i] = chroniclesdk.User{
 			ID:        u.ID,
 			Username:  u.Username,
 			Email:     u.Email,
-			Roles:     dbRolesToSDK(u.Roles),
+			Roles:     roles,
 			CreatedAt: u.CreatedAt.Time.Format("2006-01-02T15:04:05Z"),
 			UpdatedAt: u.UpdatedAt.Time.Format("2006-01-02T15:04:05Z"),
 		}
@@ -38,7 +44,7 @@ func (a *API) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(r.Context(), w, http.StatusOK, resp)
 }
 
-// AdminResyncUserRoles re-syncs a user's roles from Discord.
+// AdminResyncUserRoles re-syncs a user's primary roles from Discord.
 // @Summary Resync user roles from Discord
 // @Tags Admin
 // @Param userID path string true "User ID"
@@ -78,7 +84,7 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.Opts.Bot.SyncDiscordUser(r.Context(), a.Opts.DB, link.LinkedID, userID)
+	err = a.Opts.Bot.SyncDiscordUser(r.Context(), a.Opts.Zed, link.LinkedID, userID)
 	if err != nil {
 		httpapi.Write(r.Context(), w, http.StatusInternalServerError, map[string]string{
 			"message": "Failed to sync user roles: " + err.Error(),
@@ -93,11 +99,17 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	roles, err := a.Opts.Zed.UserChronicleRoles(r.Context(), userID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
 	httpapi.Write(r.Context(), w, http.StatusOK, chroniclesdk.User{
 		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
-		Roles:     dbRolesToSDK(user.Roles),
+		Roles:     roles,
 		CreatedAt: user.CreatedAt.Time.Format("2006-01-02T15:04:05Z"),
 		UpdatedAt: user.UpdatedAt.Time.Format("2006-01-02T15:04:05Z"),
 	})

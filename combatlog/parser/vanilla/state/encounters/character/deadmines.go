@@ -110,5 +110,5 @@ const (
 // and the second two do. But this is good enough for now. If you kill the boss,
 // the logs will count it. Even if you wipe after :shrug:
 func NewEdwinVanCleef(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(highPriestArlokk, defiasBlackGuard)(id, all)
+	return NewAdsGoWithBoss(edwinVanCleef, defiasBlackGuard)(id, all)
 }

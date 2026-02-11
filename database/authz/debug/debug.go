@@ -70,6 +70,7 @@ func displayCheckTrace(checkTrace *v1.CheckDebugTrace, tp *TreePrinter, hasError
 	resourceColor := white
 	permissionColor := color.FgWhite.Render
 
+	//nolint:staticcheck
 	if checkTrace.PermissionType == v1.CheckDebugTrace_PERMISSION_TYPE_PERMISSION {
 		permissionColor = lightgreen
 	} else if checkTrace.PermissionType == v1.CheckDebugTrace_PERMISSION_TYPE_RELATION {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
-	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/google/uuid"
 )
@@ -32,8 +31,6 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 		return err
 	}
 
-	roles := make([]string, 0)
-
 	if member == nil {
 		// DELETE ALL PERMS
 		return errors.New("must be in the discord server to use chronicle")
@@ -51,8 +48,6 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 			gChron.Admin(usr)
 		}
 	}
-
-	roles = slice.Unique(roles)
 
 	_, err = zed.Write(ctx, *b.Txn())
 	if err != nil {

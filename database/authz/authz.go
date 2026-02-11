@@ -63,6 +63,11 @@ func New(ctx context.Context, opts Options) (*Authz, error) {
 		store:      z.db,
 	}
 
+	err = RunSchemaMigrations(ctx, z)
+	if err != nil {
+		return nil, fmt.Errorf("run schema migrations: %w", err)
+	}
+
 	return z, nil
 }
 

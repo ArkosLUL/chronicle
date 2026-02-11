@@ -13,6 +13,7 @@ definition chronicle {
   relation upload_capable: user
 
   permission administer   = admin + technical_admin
+  permission administer_authz = technical_admin
   permission admin_logs   = administer
   permission admin_users  = administer
   permission admin_queues = technical_admin

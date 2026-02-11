@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut, FileText, Shield } from "lucide-react";
+import { Settings, Upload, LogOut, FileText, Shield, Key } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck } from "@/api/queries";
@@ -17,25 +17,28 @@ import {
 type NavItem = {
   title: string;
   icon: LucideIcon;
-} & ({ href: string } | { onClick: () => void });
+} & ({ href: string; external?: boolean } | { onClick: () => void });
 
 export function NavBar() {
   const location = useLocation();
   const { isAuthenticated, isLoading, logout } = useAuth();
 
-  // Check admin permission via SpiceDB
+  // Check admin permissions via SpiceDB
   const authzChecks = useMemo(() => ({
     admin: "chronicle:chronicle#admin_users",
+    adminAuthz: "chronicle:chronicle#administer_authz",
   }), []);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
   });
   const isAdmin = authz?.admin ?? false;
+  const canAdminAuthz = authz?.adminAuthz ?? false;
 
   const accountMenuItems: NavItem[] = [
     { title: "My Logs", href: "/logs", icon: FileText },
     { title: "Upload", href: "/upload", icon: Upload },
     ...(isAdmin ? [{ title: "Admin", href: "/admin", icon: Shield } as NavItem] : []),
+    ...(canAdminAuthz ? [{ title: "Saffron", href: "/saffron", icon: Key, external: true } as NavItem] : []),
     { title: "Settings", href: "/account/settings", icon: Settings },
     { title: "Sign Out", onClick: logout, icon: LogOut },
   ];
@@ -57,10 +60,17 @@ export function NavBar() {
                       {accountMenuItems.map((item) => (
                         <NavigationMenuLink key={item.title} asChild>
                           {"href" in item ? (
-                            <Link to={item.href} className="flex-row items-center gap-2">
-                              <item.icon />
-                              {item.title}
-                            </Link>
+                            item.external ? (
+                              <a href={item.href} className="flex-row items-center gap-2">
+                                <item.icon />
+                                {item.title}
+                              </a>
+                            ) : (
+                              <Link to={item.href} className="flex-row items-center gap-2">
+                                <item.icon />
+                                {item.title}
+                              </Link>
+                            )
                           ) : (
                             <button onClick={item.onClick} className="flex-row items-center gap-2 w-full">
                               <item.icon />

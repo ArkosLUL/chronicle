@@ -65,6 +65,10 @@ func (obj *ObjChronicle) PermissionAdminister() string {
 	return "administer"
 }
 
+func (obj *ObjChronicle) PermissionAdminister_authz() string {
+	return "administer_authz"
+}
+
 func (obj *ObjChronicle) PermissionAdmin_logs() string {
 	return "admin_logs"
 }
@@ -165,6 +169,21 @@ func (obj *ObjChronicle) CanAdminister_User(sub *ObjUser) rel.Relationship {
 		ResourceType:     r.ObjectType,
 		ResourceID:       r.ObjectId,
 		ResourceRelation: "administer",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanAdminister_authz_User checks if the subject has administer_authz permission
+// // Object: chronicle:<id>
+// Schema: permission administer_authz = technical_admin
+func (obj *ObjChronicle) CanAdminister_authz_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "administer_authz",
 		SubjectType:      s.Obj.ObjectType,
 		SubjectID:        s.Obj.ObjectId,
 		SubjectRelation:  s.OptionalRelation,
@@ -280,20 +299,8 @@ func (obj *ObjInstance) RelationRaid_log() string {
 	return "raid_log"
 }
 
-func (obj *ObjInstance) RelationTagged_by() string {
-	return "tagged_by"
-}
-
 func (obj *ObjInstance) PermissionView() string {
 	return "view"
-}
-
-func (obj *ObjInstance) PermissionEdit() string {
-	return "edit"
-}
-
-func (obj *ObjInstance) PermissionTag() string {
-	return "tag"
 }
 
 type InstanceRelates struct {
@@ -313,7 +320,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:42
+// Raid_log schema.zed:43
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -327,24 +334,6 @@ func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
 func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	for _, sub := range subs {
 		r.rel.Add("raid_log", sub.src.Obj, "")
-	}
-	return r
-}
-
-// Tagged_by schema.zed:43
-// Relationship: instance:<id>#tagged_by@user:<id>
-// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Tagged_by() etc.
-func (obj *ObjInstance) Tagged_by(subs ...*ObjUser) *ObjInstance {
-	for _, sub := range subs {
-		obj.src.Touch().Add("tagged_by", sub.src.Obj, "")
-	}
-	return obj
-}
-
-// Tagged_by on Relates uses the specified operation (Touch/Create/Delete)
-func (r *InstanceRelates) Tagged_by(subs ...*ObjUser) *InstanceRelates {
-	for _, sub := range subs {
-		r.rel.Add("tagged_by", sub.src.Obj, "")
 	}
 	return r
 }
@@ -376,80 +365,6 @@ func (obj *ObjInstance) CanView_Raid_log(sub *ObjRaid_log) rel.Relationship {
 		ResourceType:     r.ObjectType,
 		ResourceID:       r.ObjectId,
 		ResourceRelation: "view",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
-// CanView_User checks if the subject has view permission
-// // Object: instance:<id>
-func (obj *ObjInstance) CanView_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "view",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
-// CanEdit_Raid_log checks if the subject has edit permission
-// // Object: instance:<id>
-// Schema: permission edit = raid_log->edit
-func (obj *ObjInstance) CanEdit_Raid_log(sub *ObjRaid_log) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "edit",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
-// CanEdit_User checks if the subject has edit permission
-// // Object: instance:<id>
-// Schema: permission edit = raid_log->edit
-func (obj *ObjInstance) CanEdit_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "edit",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
-// CanTag_Raid_log checks if the subject has tag permission
-// // Object: instance:<id>
-// Schema: permission tag = raid_log->edit + tagged_by
-func (obj *ObjInstance) CanTag_Raid_log(sub *ObjRaid_log) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "tag",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
-// CanTag_User checks if the subject has tag permission
-// // Object: instance:<id>
-// Schema: permission tag = raid_log->edit + tagged_by
-func (obj *ObjInstance) CanTag_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "tag",
 		SubjectType:      s.Obj.ObjectType,
 		SubjectID:        s.Obj.ObjectId,
 		SubjectRelation:  s.OptionalRelation,
@@ -519,7 +434,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:30
+// Chronicle schema.zed:31
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -537,7 +452,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:31
+// Uploader schema.zed:32
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {
@@ -692,7 +607,7 @@ func (obj *ObjRiver_queue) Create() *River_queueRelates {
 	return &River_queueRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:24
+// Chronicle schema.zed:25
 // Relationship: river_queue:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRiver_queue) Chronicle(subs ...*ObjChronicle) *ObjRiver_queue {

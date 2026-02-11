@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { Login } from "./pages/Login/Login"
 import { Home } from "./pages/Home"
 import { Empty } from "./pages/Empty"
@@ -17,6 +17,22 @@ import {
   AppearanceSettings 
 } from "./pages/Settings"
 import { Layout } from "./components/Layout/Layout"
+
+// Backend-handled paths that should bypass React Router
+const BACKEND_PATHS = ["/saffron", "/river", "/api", "/auth"]
+
+function CatchAllRoute() {
+  const location = useLocation()
+  
+  // If this is a backend path, do a full page reload to let the server handle it
+  if (BACKEND_PATHS.some(p => location.pathname.startsWith(p))) {
+    window.location.reload()
+    return null
+  }
+  
+  // Otherwise redirect to login
+  return <Navigate to="/login" replace />
+}
 
 function App() {
   return (
@@ -40,7 +56,7 @@ function App() {
           <Route path="appearance" element={<AppearanceSettings />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<CatchAllRoute />} />
     </Routes>
   )
 }

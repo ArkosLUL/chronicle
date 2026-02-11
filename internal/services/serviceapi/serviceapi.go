@@ -44,6 +44,7 @@ type Service struct {
 	secretPem   string
 	httpAddress string
 	devAuth     bool
+	saffronURL  *url.URL
 	discordAuth chronauth.DiscordOAuth
 
 	app           *api.API
@@ -52,7 +53,8 @@ type Service struct {
 
 func New(broker *services.Services) *Service {
 	return &Service{
-		broker: broker,
+		broker:     broker,
+		saffronURL: new(url.URL),
 	}
 }
 
@@ -123,6 +125,10 @@ func (s *Service) Start(ctx context.Context) error {
 		return fmt.Errorf("decode jwt secret pem: %w", err)
 	}
 
+	saffronURL := s.saffronURL
+	if s.saffronURL.Scheme == "" {
+		saffronURL = nil
+	}
 	handler, err := api.New(ctx, api.Options{
 		Logger:     logger,
 		Storage:    st,
@@ -132,6 +138,7 @@ func (s *Service) Start(ctx context.Context) error {
 		Bot:        bot,
 		Registry:   reg,
 		Zed:        zed,
+		SaffronURL: saffronURL,
 
 		AccessURL: au,
 		DevOAuth:  s.devAuth,
@@ -209,6 +216,15 @@ func (s *Service) Options() serpent.OptionSet {
 			Env:         "CHRONICLE_DISCORD_CLIENT_SECRET",
 			Default:     "",
 			Value:       serpent.StringOf(&s.discordAuth.ClientSecret),
+		},
+		{
+			Name:        "Internal Saffron URL",
+			Description: "Optional proxy to saffron admin dashboard.",
+			Required:    false,
+			Flag:        "saffron-url",
+			Env:         "CHRONICLE_SAFFRON_URL",
+			Default:     "",
+			Value:       serpent.URLOf(s.saffronURL),
 		},
 	}
 }

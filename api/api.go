@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
@@ -31,6 +32,7 @@ type Options struct {
 	Chronicle  *chronicle.Chronicle
 	RiverQueue *riverqueue.Queues
 	Bot        *chroniclebot.Bot
+	SaffronURL *url.URL
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -172,6 +174,24 @@ func (api *API) Routes() chi.Router {
 			httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_queues_User),
 		)
 		r.Mount("/river", api.Queues.UI)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(
+			api.Auth.AuthenticationMiddleware,
+			api.Auth.Authenticated(false),
+			httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdminister_authz_User),
+		)
+
+		if api.Opts.SaffronURL != nil {
+			proxy := httputil.NewSingleHostReverseProxy(api.Opts.SaffronURL)
+			// Don't strip prefix - Next.js is configured with basePath: "/saffron"
+			r.Mount("/saffron", proxy)
+		} else {
+			r.Mount("/saffron", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte("Saffron URL not configured"))
+			}))
+		}
 	})
 
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)

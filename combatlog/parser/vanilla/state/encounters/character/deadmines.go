@@ -100,3 +100,15 @@ func (c *SneedShredder) IsShredder() bool {
 func (c *SneedShredder) IsSneed() bool {
 	return c.Is(sneed)
 }
+
+const (
+	edwinVanCleef    = 639
+	defiasBlackGuard = 636
+)
+
+// NewEdwinVanCleef is not perfect. Technically the first 2 guards do not despawn,
+// and the second two do. But this is good enough for now. If you kill the boss,
+// the logs will count it. Even if you wipe after :shrug:
+func NewEdwinVanCleef(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(highPriestArlokk, defiasBlackGuard)(id, all)
+}

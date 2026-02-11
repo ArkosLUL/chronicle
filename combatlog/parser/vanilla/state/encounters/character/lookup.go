@@ -17,6 +17,7 @@ var characterFactories = []characterFactory{
 	NewCritterCharacter,
 	// Deadmines
 	NewSneedShredder,
+	NewEdwinVanCleef,
 	// Molten Core
 	NewCoreHoundCharacter,
 	NewMajordomoPartyCharacter,

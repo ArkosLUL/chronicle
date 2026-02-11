@@ -34,6 +34,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	// 40 man
 	r.Register(wrap(instances.MoltenCore))
 	r.Register(wrap(instances.Onyxia))
+	r.Register(wrap(instances.EmeraldSanctum))
 
 	return r
 }

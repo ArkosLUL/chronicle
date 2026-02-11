@@ -14,7 +14,7 @@ const (
 )
 
 func IsUnitDead(content string) (string, bool) {
-	return types.Is(PrefixUnitDied, content)
+	return types.IsNoSpace(PrefixUnitDied, content)
 }
 
 type Info struct {

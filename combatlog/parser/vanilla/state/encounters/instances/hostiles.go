@@ -320,3 +320,21 @@ func DeadminesHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func EmeraldSanctumHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		60744: "Sanctum Wyrm",
+		60742: "Sanctum Dreamer",
+		60746: "Sanctum Scalebane",
+		61212: "Sanctum Supressor",
+		60743: "Sanctum Dragonkin",
+		60745: "Sanctum Wyrmkin",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		60747: "Erennius",
+		60748: "Solnius",
+	})
+
+	return hostile
+}

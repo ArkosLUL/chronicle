@@ -35,6 +35,9 @@ func (us *Units) Update(u unitinfo.Info) {
 
 func (us *Units) UpdateUnitName(gid guid.GUID, name string) {
 	if info, ok := us.Info[gid]; ok {
+		if info.Name != "" {
+			return
+		}
 		info.Name = name
 		us.Info[gid] = info
 		return

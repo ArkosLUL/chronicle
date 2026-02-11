@@ -54,4 +54,10 @@ var (
 		ZoneName: "zul'gurub",
 		Hostiles: FromMap(ZulGurubHostiles()),
 	}).New
+
+	EmeraldSanctum = (&CommonFactory{
+		Name:     "Emerald Sanctum",
+		ZoneName: "emerald sanctum",
+		Hostiles: FromMap(EmeraldSanctumHostiles()),
+	}).New
 )

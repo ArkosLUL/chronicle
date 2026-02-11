@@ -10,7 +10,6 @@ import (
 
 type TestPGXPool struct {
 	*Service
-	t *testing.T
 }
 
 func NewTestPGXPool(t *testing.T, broker *services.Services) *Service {

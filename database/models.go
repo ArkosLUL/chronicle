@@ -492,6 +492,13 @@ type DataLimit struct {
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type Guild struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name      string             `db:"name" json:"name"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`
@@ -540,6 +547,8 @@ type LogInstance struct {
 	LogGroupID uuid.UUID   `db:"log_group_id" json:"log_group_id"`
 	Name       string      `db:"name" json:"name"`
 	HashedSlug pgtype.Text `db:"hashed_slug" json:"hashed_slug"`
+	// If set, that means it was a guild run.
+	GuildID uuid.NullUUID `db:"guild_id" json:"guild_id"`
 }
 
 type LogInstanceEncounter struct {
@@ -586,6 +595,7 @@ type LogInstancePlayer struct {
 	Level      int32            `db:"level" json:"level"`
 	Class      WowPlayableClass `db:"class" json:"class"`
 	Race       WowPlayableRace  `db:"race" json:"race"`
+	GuildID    uuid.NullUUID    `db:"guild_id" json:"guild_id"`
 }
 
 // Stores all units (NPCs, not players) that participated in an instance.
@@ -603,6 +613,18 @@ type LogInstanceYoutubeTimestamped struct {
 	ExportedAt    pgtype.Timestamptz `db:"exported_at" json:"exported_at"`
 	VideoUrl      string             `db:"video_url" json:"video_url"`
 	Payload       []VideoTimestamp   `db:"payload" json:"payload"`
+}
+
+type LogInstancesGuild struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	RealmID        uuid.UUID          `db:"realm_id" json:"realm_id"`
+	LogGroupID     uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name           string             `db:"name" json:"name"`
+	HashedSlug     pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	GuildID        uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName      pgtype.Text        `db:"guild_name" json:"guild_name"`
+	GuildRealmID   uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`
+	GuildCreatedAt pgtype.Timestamptz `db:"guild_created_at" json:"guild_created_at"`
 }
 
 // A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.

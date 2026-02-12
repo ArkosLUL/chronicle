@@ -458,6 +458,34 @@ func (q *sqlQuerier) ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAl
 	return items, nil
 }
 
+const upsertGuild = `-- name: UpsertGuild :one
+INSERT INTO
+  guilds (realm_id, name, created_at)
+VALUES
+  ($1, $2, $3)
+ON CONFLICT (realm_id, name) DO UPDATE
+  SET realm_id = EXCLUDED.realm_id  -- no-op, just to return the row
+RETURNING id, realm_id, name, created_at
+`
+
+type UpsertGuildParams struct {
+	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name      string             `db:"name" json:"name"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *sqlQuerier) UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error) {
+	row := q.db.QueryRow(ctx, upsertGuild, arg.RealmID, arg.Name, arg.CreatedAt)
+	var i Guild
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.Name,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const deleteThisQuery = `-- name: DeleteThisQuery :exec
 SELECT id, name, quality, item_level, required_level, class, sub_class, inventory_slot, icon, unique_limit, bind_type, stack_size, description, created_at, updated_at FROM item_templates
 `
@@ -640,18 +668,19 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id)
 VALUES
-  ($1, $2, $3, $4, $5)
-RETURNING id, realm_id, log_group_id, name, hashed_slug
+  ($1, $2, $3, $4, $5, $6)
+RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id
 `
 
 type InsertInstanceParams struct {
-	ID         uuid.UUID   `db:"id" json:"id"`
-	RealmID    uuid.UUID   `db:"realm_id" json:"realm_id"`
-	LogGroupID uuid.UUID   `db:"log_group_id" json:"log_group_id"`
-	Name       string      `db:"name" json:"name"`
-	HashedSlug pgtype.Text `db:"hashed_slug" json:"hashed_slug"`
+	ID         uuid.UUID     `db:"id" json:"id"`
+	RealmID    uuid.UUID     `db:"realm_id" json:"realm_id"`
+	LogGroupID uuid.UUID     `db:"log_group_id" json:"log_group_id"`
+	Name       string        `db:"name" json:"name"`
+	HashedSlug pgtype.Text   `db:"hashed_slug" json:"hashed_slug"`
+	GuildID    uuid.NullUUID `db:"guild_id" json:"guild_id"`
 }
 
 func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
@@ -661,6 +690,7 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		arg.LogGroupID,
 		arg.Name,
 		arg.HashedSlug,
+		arg.GuildID,
 	)
 	var i LogInstance
 	err := row.Scan(
@@ -669,6 +699,7 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		&i.LogGroupID,
 		&i.Name,
 		&i.HashedSlug,
+		&i.GuildID,
 	)
 	return i, err
 }
@@ -687,51 +718,59 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, guild_name, guild_realm_id, guild_created_at
 FROM
-  log_instances
+  log_instances_guild
 WHERE
-  id = $1
+  log_instances_guild.id = $1
 `
 
-func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstance, error) {
+func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGuild, error) {
 	row := q.db.QueryRow(ctx, instance, id)
-	var i LogInstance
+	var i LogInstancesGuild
 	err := row.Scan(
 		&i.ID,
 		&i.RealmID,
 		&i.LogGroupID,
 		&i.Name,
 		&i.HashedSlug,
+		&i.GuildID,
+		&i.GuildName,
+		&i.GuildRealmID,
+		&i.GuildCreatedAt,
 	)
 	return i, err
 }
 
 const instanceBySlug = `-- name: InstanceBySlug :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, guild_name, guild_realm_id, guild_created_at
 FROM
-  log_instances
+  log_instances_guild
 WHERE
   hashed_slug = $1 AND hashed_slug != ''
 `
 
-func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text) (LogInstance, error) {
+func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text) (LogInstancesGuild, error) {
 	row := q.db.QueryRow(ctx, instanceBySlug, hashedSlug)
-	var i LogInstance
+	var i LogInstancesGuild
 	err := row.Scan(
 		&i.ID,
 		&i.RealmID,
 		&i.LogGroupID,
 		&i.Name,
 		&i.HashedSlug,
+		&i.GuildID,
+		&i.GuildName,
+		&i.GuildRealmID,
+		&i.GuildCreatedAt,
 	)
 	return i, err
 }
 
 const instancePlayersByInstanceID = `-- name: InstancePlayersByInstanceID :many
 SELECT
-  instance_id, unit_guid, name, level, class, race
+  instance_id, unit_guid, name, level, class, race, guild_id
 FROM
   log_instance_players
 WHERE
@@ -754,6 +793,7 @@ func (q *sqlQuerier) InstancePlayersByInstanceID(ctx context.Context, instanceID
 			&i.Level,
 			&i.Class,
 			&i.Race,
+			&i.GuildID,
 		); err != nil {
 			return nil, err
 		}

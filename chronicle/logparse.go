@@ -186,6 +186,32 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 
 		err = db.InTx(func(tx *authz.AuthzTX) error {
+			guildIDs := make(map[string]uuid.UUID)
+			mostGuildPlayers := 0
+			var guildWithMostPlayers *database.Guild
+			for name, players := range finalized.Guilds.Guilds {
+				insertedGuild, err := tx.UpsertGuild(ctx, database.UpsertGuildParams{
+					RealmID:   realmID,
+					Name:      name,
+					CreatedAt: database.Timestamptz(time.Now()),
+				})
+				if err != nil {
+					return fmt.Errorf("upsert guild: %w", err)
+				}
+				guildIDs[name] = insertedGuild.ID
+				if len(players) > mostGuildPlayers {
+					mostGuildPlayers = len(players)
+					guildWithMostPlayers = &insertedGuild
+				}
+			}
+
+			var guildID uuid.UUID
+			if mostGuildPlayers > len(finalized.Guilds.Participant)/2 && guildWithMostPlayers != nil {
+				guildID = guildWithMostPlayers.ID
+			} else {
+				guildWithMostPlayers = nil
+			}
+
 			insertInstanceParams := database.InsertInstanceParams{
 				ID:         instanceID,
 				RealmID:    realmID,
@@ -194,6 +220,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				HashedSlug: pgtype.Text{
 					String: database.InstanceSlug(job.Args.LogID, inst.Name()),
 					Valid:  true,
+				},
+				GuildID: uuid.NullUUID{
+					UUID:  guildID,
+					Valid: guildID != uuid.Nil,
 				},
 			}
 
@@ -216,6 +246,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 			for id := range inst.Seen() {
 				builder.seen(id)
+			}
+			for id := range finalized.Guilds.Participant {
+				builder.participate(id)
 			}
 
 			// Store the encounters into the database
@@ -274,7 +307,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{
-				WoWInstance: db2sdk.WoWInstance(dbinstance),
+				WoWInstance: db2sdk.WoWInstanceWithGuild(dbinstance, guildWithMostPlayers),
 				Encounters:  sdkEncounters,
 			})
 
@@ -316,17 +349,24 @@ type logParseInstanceBuilder struct {
 	accounted map[guid.GUID]struct{}
 	units     []database.InsertInstanceUnitsParams
 	players   []database.InsertInstancePlayersParams
-	inserted  bool
+
+	participantAccounted map[guid.GUID]struct{}
+	participants         []database.InsertInstancePlayersParams
+	inserted             bool
 }
 
 func newInstanceBuilder(db *unitdb.Units, instanceID uuid.UUID) *logParseInstanceBuilder {
 	return &logParseInstanceBuilder{
-		db:         db,
-		instanceID: instanceID,
-		accounted:  make(map[guid.GUID]struct{}),
+		db:                   db,
+		instanceID:           instanceID,
+		accounted:            make(map[guid.GUID]struct{}),
+		participantAccounted: make(map[guid.GUID]struct{}),
 
-		units:   make([]database.InsertInstanceUnitsParams, 0),
-		players: make([]database.InsertInstancePlayersParams, 0),
+		units: make([]database.InsertInstanceUnitsParams, 0),
+		// players can include extra players seen but not active.
+		// participants are those who did damage or healing in the zone.
+		players:      make([]database.InsertInstancePlayersParams, 0),
+		participants: make([]database.InsertInstancePlayersParams, 0),
 	}
 }
 
@@ -343,11 +383,36 @@ func (w *logParseInstanceBuilder) insert(ctx context.Context, tx database.Store)
 		return fmt.Errorf("insert instance units: %w", err)
 	}
 
-	playerRes := tx.InsertInstancePlayers(ctx, w.players)
+	playerRes := tx.InsertInstancePlayers(ctx, w.participants)
 	if err := playerRes.Close(); err != nil {
 		return fmt.Errorf("insert instance players: %w", err)
 	}
 	return nil
+}
+
+func (w *logParseInstanceBuilder) participate(ids ...guid.GUID) {
+	for _, id := range ids {
+		if id == 0x0000000000000000 {
+			continue
+		}
+		if _, ok := w.participantAccounted[id]; ok {
+			continue
+		}
+		unitData, _ := w.db.Get(id)
+		playerData, ok := w.db.GetPlayer(id)
+		if ok {
+			w.participantAccounted[id] = struct{}{}
+			w.participants = append(w.participants, database.InsertInstancePlayersParams{
+				InstanceID: w.instanceID,
+				UnitGuid:   id,
+				Name:       playerData.Name,
+				Level:      int32(unitData.Level),
+				Class:      database.WowPlayableClass(playerData.HeroClass),
+				Race:       database.WowPlayableRace(playerData.Race),
+			})
+			continue
+		}
+	}
 }
 
 func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {

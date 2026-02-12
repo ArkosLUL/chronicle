@@ -101,7 +101,7 @@ CREATE TABLE data_limit (
 CREATE TABLE log_file (
     id uuid NOT NULL,
     owner uuid NOT NULL,
-    wow_log_id uuid,
+    wow_log_id uuid NOT NULL,
     hash text NOT NULL,
     size_bytes bigint NOT NULL,
     mime_type text NOT NULL,
@@ -136,6 +136,13 @@ CREATE VIEW chronicle_users AS
            FROM log_file
           WHERE (log_file.storage_deleted_at IS NULL)
           GROUP BY log_file.owner) lf ON ((lf.owner = u.id)));
+
+CREATE TABLE guilds (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    realm_id uuid NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
 
 CREATE TABLE item_effects (
     id uuid NOT NULL,
@@ -213,7 +220,8 @@ CREATE TABLE log_instance_players (
     name text NOT NULL,
     level integer NOT NULL,
     class wow_playable_class NOT NULL,
-    race wow_playable_race NOT NULL
+    race wow_playable_race NOT NULL,
+    guild_id uuid
 );
 
 CREATE TABLE log_instance_units (
@@ -239,8 +247,24 @@ CREATE TABLE log_instances (
     realm_id uuid NOT NULL,
     log_group_id uuid NOT NULL,
     name text NOT NULL,
-    hashed_slug text
+    hashed_slug text,
+    guild_id uuid
 );
+
+COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
+
+CREATE VIEW log_instances_guild AS
+ SELECT log_instances.id,
+    log_instances.realm_id,
+    log_instances.log_group_id,
+    log_instances.name,
+    log_instances.hashed_slug,
+    log_instances.guild_id,
+    guilds.name AS guild_name,
+    guilds.realm_id AS guild_realm_id,
+    guilds.created_at AS guild_created_at
+   FROM (public.log_instances
+     LEFT JOIN guilds ON ((log_instances.guild_id = guilds.id)));
 
 CREATE TABLE parsed_log_group (
     id uuid NOT NULL
@@ -385,6 +409,12 @@ ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq
 ALTER TABLE ONLY data_limit
     ADD CONSTRAINT data_limit_pkey PRIMARY KEY (user_id);
 
+ALTER TABLE ONLY guilds
+    ADD CONSTRAINT guilds_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY guilds
+    ADD CONSTRAINT guilds_realm_id_name_key UNIQUE (realm_id, name);
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
 
@@ -475,6 +505,9 @@ CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (
 ALTER TABLE ONLY data_limit
     ADD CONSTRAINT data_limit_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY guilds
+    ADD CONSTRAINT guilds_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
+
 ALTER TABLE ONLY item_effects
     ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
 
@@ -500,6 +533,9 @@ ALTER TABLE ONLY log_instance_events
     ADD CONSTRAINT log_instance_events_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_players
+    ADD CONSTRAINT log_instance_players_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id);
+
+ALTER TABLE ONLY log_instance_players
     ADD CONSTRAINT log_instance_players_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_units
@@ -507,6 +543,9 @@ ALTER TABLE ONLY log_instance_units
 
 ALTER TABLE ONLY log_instance_youtube_timestamped
     ADD CONSTRAINT log_instance_youtube_timestamped_log_instance_id_fkey FOREIGN KEY (log_instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY log_instances
+    ADD CONSTRAINT log_instances_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id);
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES parsed_log_group(id) ON DELETE CASCADE;

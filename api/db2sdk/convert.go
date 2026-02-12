@@ -63,17 +63,45 @@ func WoWLogFile(file database.LogFile) chroniclesdk.WoWLogFile {
 	}
 }
 
-func WoWInstance(instance database.LogInstance) chroniclesdk.WoWInstance {
+func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) chroniclesdk.WoWInstance {
+	var g *chroniclesdk.Guild
+	if dbG != nil {
+		g = &chroniclesdk.Guild{
+			ID:        dbG.ID,
+			Name:      dbG.Name,
+			CreatedAt: dbG.CreatedAt.Time,
+		}
+	}
 	return chroniclesdk.WoWInstance{
 		ID:         instance.ID,
 		RealmID:    instance.RealmID,
 		LogGroupID: instance.LogGroupID,
 		Name:       instance.Name,
 		Slug:       instance.HashedSlug.String,
+		Guild:      g,
 	}
 }
 
-func WowDecoratedInstance(instance database.LogInstance,
+func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
+	var g *chroniclesdk.Guild
+	if instance.GuildID.Valid {
+		g = &chroniclesdk.Guild{
+			ID:        instance.GuildID.UUID,
+			Name:      instance.GuildName.String,
+			CreatedAt: instance.GuildCreatedAt.Time,
+		}
+	}
+	return chroniclesdk.WoWInstance{
+		ID:         instance.ID,
+		RealmID:    instance.RealmID,
+		LogGroupID: instance.LogGroupID,
+		Name:       instance.Name,
+		Slug:       instance.HashedSlug.String,
+		Guild:      g,
+	}
+}
+
+func WowDecoratedInstance(instance database.LogInstancesGuild,
 	units []database.LogInstanceUnit,
 	players []database.LogInstancePlayer,
 	encounters []database.LogInstanceEncounter,

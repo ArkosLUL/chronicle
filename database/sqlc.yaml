@@ -21,7 +21,7 @@ sql:
             go_type: "github.com/google/uuid.UUID"
           # Override for nullable UUID columns
           - db_type: "uuid"
-            go_type: "github.com/google/uuid.UUID"
+            go_type: "github.com/google/uuid.NullUUID"
             nullable: true
           - db_type: "wow_log_group_files"
             go_type:

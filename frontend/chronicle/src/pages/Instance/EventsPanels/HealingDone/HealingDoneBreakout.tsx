@@ -76,6 +76,36 @@ function getAbilitiesForUnit(
         const existing = combined.get(abilityName);
         if (existing) {
           existing.value += data.Total;
+          existing.Count += data.Count;
+          existing.Hits += data.Hits;
+          existing.Crits += data.Crits;
+          existing.Misses += data.Misses;
+          // Merge HitStats (min/max)
+          if (data.HitStats) {
+            if (existing.HitStats) {
+              existing.HitStats = {
+                count: existing.HitStats.count + data.HitStats.count,
+                total: existing.HitStats.total + data.HitStats.total,
+                min: Math.min(existing.HitStats.min, data.HitStats.min),
+                max: Math.max(existing.HitStats.max, data.HitStats.max),
+              };
+            } else {
+              existing.HitStats = { ...data.HitStats };
+            }
+          }
+          // Merge CritStats
+          if (data.CritStats) {
+            if (existing.CritStats) {
+              existing.CritStats = {
+                count: existing.CritStats.count + data.CritStats.count,
+                total: existing.CritStats.total + data.CritStats.total,
+                min: Math.min(existing.CritStats.min, data.CritStats.min),
+                max: Math.max(existing.CritStats.max, data.CritStats.max),
+              };
+            } else {
+              existing.CritStats = { ...data.CritStats };
+            }
+          }
         } else {
           combined.set(abilityName, {
             ...data,

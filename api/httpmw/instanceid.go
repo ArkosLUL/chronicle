@@ -14,8 +14,8 @@ import (
 
 type instanceIDKey struct{}
 
-func Instance(ctx context.Context) database.LogInstance {
-	id, _ := ctx.Value(instanceIDKey{}).(database.LogInstance)
+func Instance(ctx context.Context) database.LogInstancesGuild {
+	id, _ := ctx.Value(instanceIDKey{}).(database.LogInstancesGuild)
 	return id
 }
 
@@ -31,7 +31,7 @@ func InstanceIDMiddleware(db database.Store) func(next http.Handler) http.Handle
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			instanceIDStr := chi.URLParam(r, "instance_id")
 			instanceID, err := uuid.Parse(instanceIDStr)
-			var inst database.LogInstance
+			var inst database.LogInstancesGuild
 			if err != nil {
 				inst, err = db.InstanceBySlug(r.Context(), pgtype.Text{
 					String: instanceIDStr,

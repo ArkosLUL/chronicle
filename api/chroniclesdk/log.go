@@ -46,12 +46,19 @@ type WoWLogFile struct {
 	StorageDeletedAt pgtype.Timestamptz `json:"storage_deleted_at,omitempty"`
 }
 
+type Guild struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type WoWInstance struct {
 	ID         uuid.UUID `json:"id"`
 	RealmID    uuid.UUID `json:"realm_id"`
 	LogGroupID uuid.UUID `json:"log_group_id"`
 	Name       string    `json:"name"`
 	Slug       string    `json:"slug"`
+	Guild      *Guild    `json:"guild,omitempty"`
 }
 
 type WoWEncounter struct {
@@ -111,6 +118,7 @@ type WoWParsedInstance struct {
 	Units      map[GUIDString]InstanceUnit   `json:"units"`
 	Players    map[GUIDString]InstancePlayer `json:"players"`
 }
+
 // RecentInstancesResponse is the response for listing recently uploaded instances.
 type RecentInstancesResponse struct {
 	Instances  []RecentInstance `json:"instances"`
@@ -120,18 +128,18 @@ type RecentInstancesResponse struct {
 
 // RecentInstance represents a recently uploaded raid or dungeon instance.
 type RecentInstance struct {
-	ID           uuid.UUID `json:"id"`
-	Slug         string    `json:"slug"`
-	Name         string    `json:"name"`
-	RealmID      uuid.UUID `json:"realm_id"`
-	RealmName    string    `json:"realm_name"`
-	UploaderID   uuid.UUID `json:"uploader_id"`
-	UploaderName string    `json:"uploader_name"`
-	UploadedAt   time.Time `json:"uploaded_at"`
-	PlayerCount  int64     `json:"player_count"`
-	BossCount    int64     `json:"boss_count"`
-	BossKills    int64     `json:"boss_kills"`
-	DurationMs   *float64  `json:"duration_ms"` // nullable if no encounters
+	ID           uuid.UUID         `json:"id"`
+	Slug         string            `json:"slug"`
+	Name         string            `json:"name"`
+	RealmID      uuid.UUID         `json:"realm_id"`
+	RealmName    string            `json:"realm_name"`
+	UploaderID   uuid.UUID         `json:"uploader_id"`
+	UploaderName string            `json:"uploader_name"`
+	UploadedAt   time.Time         `json:"uploaded_at"`
+	PlayerCount  int64             `json:"player_count"`
+	BossCount    int64             `json:"boss_count"`
+	BossKills    int64             `json:"boss_kills"`
+	DurationMs   *float64          `json:"duration_ms"` // nullable if no encounters
 	Encounters   []RecentEncounter `json:"encounters,omitempty"`
 }
 
@@ -141,4 +149,3 @@ type RecentEncounter struct {
 	Boss bool   `json:"boss"`
 	Kill bool   `json:"kill"`
 }
-

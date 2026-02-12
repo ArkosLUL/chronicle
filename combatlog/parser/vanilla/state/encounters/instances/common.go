@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/google/uuid"
 )
@@ -40,11 +41,15 @@ type Common struct {
 	events          *encounterevents.Events
 	seen            map[guid.GUID]struct{}
 	realm           *realm.Info
+
+	// General summaries
+	Guild *guild.Tracker
 }
 
 type FinalizedInstance struct {
 	Realm      *realm.Info
 	Encounters []Encounter
+	Guilds     *guild.Tracker
 }
 
 func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
@@ -109,6 +114,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	return &FinalizedInstance{
 		Realm:      c.realm,
 		Encounters: encounters,
+		Guilds:     c.Guild,
 	}, nil
 }
 
@@ -130,6 +136,7 @@ func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) 
 		Identifier:    f.Hostiles(),
 		events:        encounterevents.NewEvents(),
 		seen:          make(map[guid.GUID]struct{}),
+		Guild:         guild.New(),
 	}
 
 	return c
@@ -185,6 +192,11 @@ func (c *Common) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("processing fight: %w", err)
 		}
+	}
+
+	err = c.Guild.Process(m)
+	if err != nil {
+		return fmt.Errorf("processing guild info: %w", err)
 	}
 
 	return nil

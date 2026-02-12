@@ -14,9 +14,9 @@ VALUES
 
 -- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id)
 VALUES
-  ($1, $2, $3, $4, $5)
+  ($1, $2, $3, $4, $5, $6)
 RETURNING *
 ;
 
@@ -32,16 +32,16 @@ RETURNING *
 SELECT
   *
 FROM
-  log_instances
+  log_instances_guild
 WHERE
-  id = $1
+  log_instances_guild.id = $1
 ;
 
 -- name: InstanceBySlug :one
 SELECT
   *
 FROM
-  log_instances
+  log_instances_guild
 WHERE
   hashed_slug = $1 AND hashed_slug != ''
 ;
@@ -64,9 +64,9 @@ VALUES
 
 -- name: InsertInstancePlayers :batchexec
 INSERT INTO
-  log_instance_players (instance_id, unit_guid, name, level, class, race)
+  log_instance_players (instance_id, unit_guid, name, level, class, race, guild_id)
 VALUES
-  ($1, $2, $3, $4, $5, $6)
+  ($1, $2, $3, $4, $5, $6, $7)
 ;
 
 -- name: InsertEncounterCharacterFights :batchexec

@@ -11,6 +11,7 @@ import { Upload } from "./pages/Upload/Upload"
 import { LogsList } from "./pages/Logs/LogsList"
 import { LogDetail, LogDetailByHash } from "./pages/Logs/LogDetail"
 import { InstancePage } from "./pages/Instance/InstancePage"
+import { RecentRaids } from "./pages/Recent/RecentRaids"
 import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
 import { AdminPage } from "./pages/Admin/AdminPage"
@@ -46,6 +47,7 @@ function App() {
       <Route path="/youtube-sync" element={<YouTubeSyncPage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/recent" element={<RecentRaids />} />
         <Route path="/empty" element={<Empty />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/logs" element={<LogsList />} />

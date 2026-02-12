@@ -517,6 +517,49 @@ func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid
 	return items, nil
 }
 
+const getEncounterSummariesByInstanceID = `-- name: GetEncounterSummariesByInstanceID :many
+SELECT
+    lie.id,
+    lie.name,
+    lie.boss,
+    lie.kill
+FROM log_instance_encounters lie
+WHERE lie.instance_id = $1
+ORDER BY lie.start_time ASC
+`
+
+type GetEncounterSummariesByInstanceIDRow struct {
+	ID   uuid.UUID `db:"id" json:"id"`
+	Name string    `db:"name" json:"name"`
+	Boss bool      `db:"boss" json:"boss"`
+	Kill bool      `db:"kill" json:"kill"`
+}
+
+func (q *sqlQuerier) GetEncounterSummariesByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]GetEncounterSummariesByInstanceIDRow, error) {
+	rows, err := q.db.Query(ctx, getEncounterSummariesByInstanceID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEncounterSummariesByInstanceIDRow
+	for rows.Next() {
+		var i GetEncounterSummariesByInstanceIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Boss,
+			&i.Kill,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getInstanceEncounterCharacterFights = `-- name: GetInstanceEncounterCharacterFights :many
 SELECT
   encounter_id, id, periods, boss
@@ -746,6 +789,221 @@ func (q *sqlQuerier) InstanceUnitsByInstanceID(ctx context.Context, instanceID u
 			&i.Name,
 			&i.Entry,
 			&i.OwnerGuid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentInstances = `-- name: ListRecentInstances :many
+SELECT 
+    li.id,
+    li.hashed_slug as slug,
+    li.name,
+    li.realm_id,
+    wsr.name as realm_name,
+    wlg.owner as uploader_id,
+    u.username as uploader_name,
+    wlg.created_at as uploaded_at,
+    (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
+    (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+WHERE true
+    -- Filter by instance name
+    AND CASE
+        WHEN $1 :: text != '' THEN
+            li.name = $1
+        ELSE true
+    END
+    -- Filter by realm
+    AND CASE
+        WHEN $2 :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.realm_id = $2
+        ELSE true
+    END
+    -- Cursor pagination (uploaded_at, id) - pass '0001-01-01' to skip
+    AND CASE
+        WHEN $3 :: timestamptz != '0001-01-01'::timestamptz THEN
+            (wlg.created_at < $3 
+             OR (wlg.created_at = $3 AND li.id < $4 :: uuid))
+        ELSE true
+    END
+ORDER BY wlg.created_at DESC, li.id DESC
+LIMIT $5
+`
+
+type ListRecentInstancesParams struct {
+	InstanceName string             `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CursorTime   pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
+	CursorID     uuid.UUID          `db:"cursor_id" json:"cursor_id"`
+	LimitCount   int32              `db:"limit_count" json:"limit_count"`
+}
+
+type ListRecentInstancesRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	Slug         pgtype.Text        `db:"slug" json:"slug"`
+	Name         string             `db:"name" json:"name"`
+	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName    string             `db:"realm_name" json:"realm_name"`
+	UploaderID   uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt   pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	PlayerCount  int64              `db:"player_count" json:"player_count"`
+	BossCount    int64              `db:"boss_count" json:"boss_count"`
+	BossKills    int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs   float64            `db:"duration_ms" json:"duration_ms"`
+}
+
+func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error) {
+	rows, err := q.db.Query(ctx, listRecentInstances,
+		arg.InstanceName,
+		arg.RealmID,
+		arg.CursorTime,
+		arg.CursorID,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecentInstancesRow
+	for rows.Next() {
+		var i ListRecentInstancesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.RealmID,
+			&i.RealmName,
+			&i.UploaderID,
+			&i.UploaderName,
+			&i.UploadedAt,
+			&i.PlayerCount,
+			&i.BossCount,
+			&i.BossKills,
+			&i.DurationMs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentInstancesByPlayer = `-- name: ListRecentInstancesByPlayer :many
+SELECT DISTINCT ON (wlg.created_at, li.id)
+    li.id,
+    li.hashed_slug as slug,
+    li.name,
+    li.realm_id,
+    wsr.name as realm_name,
+    wlg.owner as uploader_id,
+    u.username as uploader_name,
+    wlg.created_at as uploaded_at,
+    (SELECT COUNT(*) FROM log_instance_players lip2 WHERE lip2.instance_id = li.id) as player_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
+    (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms
+FROM log_instances li
+JOIN log_instance_players lip ON lip.instance_id = li.id
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+WHERE lip.name ILIKE $1
+    -- Filter by instance name
+    AND CASE
+        WHEN $2 :: text != '' THEN
+            li.name = $2
+        ELSE true
+    END
+    -- Filter by realm
+    AND CASE
+        WHEN $3 :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.realm_id = $3
+        ELSE true
+    END
+    -- Cursor pagination
+    AND CASE
+        WHEN $4 :: timestamptz != '0001-01-01'::timestamptz THEN
+            (wlg.created_at < $4 
+             OR (wlg.created_at = $4 AND li.id < $5 :: uuid))
+        ELSE true
+    END
+ORDER BY wlg.created_at DESC, li.id DESC
+LIMIT $6
+`
+
+type ListRecentInstancesByPlayerParams struct {
+	PlayerName   string             `db:"player_name" json:"player_name"`
+	InstanceName string             `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CursorTime   pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
+	CursorID     uuid.UUID          `db:"cursor_id" json:"cursor_id"`
+	LimitCount   int32              `db:"limit_count" json:"limit_count"`
+}
+
+type ListRecentInstancesByPlayerRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	Slug         pgtype.Text        `db:"slug" json:"slug"`
+	Name         string             `db:"name" json:"name"`
+	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName    string             `db:"realm_name" json:"realm_name"`
+	UploaderID   uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt   pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	PlayerCount  int64              `db:"player_count" json:"player_count"`
+	BossCount    int64              `db:"boss_count" json:"boss_count"`
+	BossKills    int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs   float64            `db:"duration_ms" json:"duration_ms"`
+}
+
+func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error) {
+	rows, err := q.db.Query(ctx, listRecentInstancesByPlayer,
+		arg.PlayerName,
+		arg.InstanceName,
+		arg.RealmID,
+		arg.CursorTime,
+		arg.CursorID,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecentInstancesByPlayerRow
+	for rows.Next() {
+		var i ListRecentInstancesByPlayerRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.RealmID,
+			&i.RealmName,
+			&i.UploaderID,
+			&i.UploaderName,
+			&i.UploadedAt,
+			&i.PlayerCount,
+			&i.BossCount,
+			&i.BossKills,
+			&i.DurationMs,
 		); err != nil {
 			return nil, err
 		}

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut, FileText, Shield, Key } from "lucide-react";
+import { Settings, Upload, LogOut, FileText, Shield, Key, Castle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck } from "@/api/queries";
@@ -45,9 +45,18 @@ export function NavBar() {
 
   return (
     <nav className="flex items-center justify-between p-4 border-b">
-      <Link to="/" className="text-xl font-bold">
-        Chronicle
-      </Link>
+      <div className="flex items-center gap-6">
+        <Link to="/" className="text-xl font-bold">
+          Chronicle
+        </Link>
+        <Link 
+          to="/recent" 
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Castle className="h-4 w-4" />
+          Recent Raids
+        </Link>
+      </div>
       <div>
         {isLoading ? null : isAuthenticated ? (
           <NavigationMenu className="justify-end">

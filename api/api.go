@@ -121,6 +121,7 @@ func (api *API) Routes() chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Get("/supported", api.SupportedInstances)
+				r.Get("/recent", api.RecentInstances)
 				r.Route("/logs", func(r chi.Router) {
 					r.Use(
 						api.Auth.Authenticated(false),

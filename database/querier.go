@@ -17,6 +17,7 @@ type sqlcQuerier interface {
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLogGroupFilesParams) ([]LogFile, error)
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
+	GetEncounterSummariesByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]GetEncounterSummariesByInstanceIDRow, error)
 	GetFileByHash(ctx context.Context, hash string) (LogFile, error)
 	GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterHostile, error)
 	GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (LogInstanceYoutubeTimestamped, error)
@@ -47,6 +48,8 @@ type sqlcQuerier interface {
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 	ListAllUsers(ctx context.Context) ([]ChronicleUser, error)
 	ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAllWoWLogGroupsWithOwnerRow, error)
+	ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error)
+	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	SetUserStorageLimit(ctx context.Context, arg SetUserStorageLimitParams) (DataLimit, error)
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
 }

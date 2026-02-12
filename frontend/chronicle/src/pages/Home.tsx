@@ -172,7 +172,7 @@ export function Home() {
       <section className="py-16 md:py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <Button asChild size="lg">
-            <Link to="/logs">Browse Chronicle</Link>
+            <Link to="/recent">Browse Chronicle</Link>
           </Button>
           <p className="mt-4 text-muted-foreground">
             Look through real guild pages before uploading anything.

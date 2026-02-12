@@ -105,6 +105,46 @@ export interface PeriodMoment {
     readonly reason: string;
 }
 
+// From chroniclesdk/log.go
+/**
+ * RecentEncounter is a simplified encounter summary for the recent raids list.
+ */
+export interface RecentEncounter {
+    readonly name: string;
+    readonly boss: boolean;
+    readonly kill: boolean;
+}
+
+// From chroniclesdk/log.go
+/**
+ * RecentInstance represents a recently uploaded raid or dungeon instance.
+ */
+export interface RecentInstance {
+    readonly id: string;
+    readonly slug: string;
+    readonly name: string;
+    readonly realm_id: string;
+    readonly realm_name: string;
+    readonly uploader_id: string;
+    readonly uploader_name: string;
+    readonly uploaded_at: string;
+    readonly player_count: number;
+    readonly boss_count: number;
+    readonly boss_kills: number;
+    readonly duration_ms: number | null; // nullable if no encounters
+    readonly encounters?: readonly RecentEncounter[];
+}
+
+// From chroniclesdk/log.go
+/**
+ * RecentInstancesResponse is the response for listing recently uploaded instances.
+ */
+export interface RecentInstancesResponse {
+    readonly instances: readonly RecentInstance[];
+    readonly next_cursor?: string;
+    readonly has_more: boolean;
+}
+
 // From chroniclesdk/response.go
 /**
  * Response represents a generic HTTP response.

@@ -111,3 +111,34 @@ type WoWParsedInstance struct {
 	Units      map[GUIDString]InstanceUnit   `json:"units"`
 	Players    map[GUIDString]InstancePlayer `json:"players"`
 }
+// RecentInstancesResponse is the response for listing recently uploaded instances.
+type RecentInstancesResponse struct {
+	Instances  []RecentInstance `json:"instances"`
+	NextCursor string           `json:"next_cursor,omitempty"`
+	HasMore    bool             `json:"has_more"`
+}
+
+// RecentInstance represents a recently uploaded raid or dungeon instance.
+type RecentInstance struct {
+	ID           uuid.UUID `json:"id"`
+	Slug         string    `json:"slug"`
+	Name         string    `json:"name"`
+	RealmID      uuid.UUID `json:"realm_id"`
+	RealmName    string    `json:"realm_name"`
+	UploaderID   uuid.UUID `json:"uploader_id"`
+	UploaderName string    `json:"uploader_name"`
+	UploadedAt   time.Time `json:"uploaded_at"`
+	PlayerCount  int64     `json:"player_count"`
+	BossCount    int64     `json:"boss_count"`
+	BossKills    int64     `json:"boss_kills"`
+	DurationMs   *float64  `json:"duration_ms"` // nullable if no encounters
+	Encounters   []RecentEncounter `json:"encounters,omitempty"`
+}
+
+// RecentEncounter is a simplified encounter summary for the recent raids list.
+type RecentEncounter struct {
+	Name string `json:"name"`
+	Boss bool   `json:"boss"`
+	Kill bool   `json:"kill"`
+}
+

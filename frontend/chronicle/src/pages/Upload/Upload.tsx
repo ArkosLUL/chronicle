@@ -251,11 +251,6 @@ export function UploadView({
                 </a>
               </li>
               <li>
-                <a href="https://github.com/pepopo978/SuperWowCombatLogger" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  SuperWoWCombatLogger Addon
-                </a>
-              </li>
-              <li>
                 <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   ChronicleCompanion Addon
                 </a>

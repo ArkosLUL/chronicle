@@ -14,6 +14,8 @@ const baseInstance: RecentInstance = {
   realm_name: "Ambershire",
   uploader_id: "user-1",
   uploader_name: "Emyrk",
+  guild_id: "guild-1234",
+  guild_name: "Turtle Raiders",
   uploaded_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
   player_count: 40,
   boss_count: 10,
@@ -274,6 +276,31 @@ export const NoEncounters: Story = {
     instance: {
       ...baseInstance,
       encounters: undefined,
+    },
+  },
+};
+
+/**
+ * No guild - shows just uploader name without guild prefix.
+ */
+export const NoGuild: Story = {
+  args: {
+    instance: {
+      ...baseInstance,
+      guild_id: undefined,
+      guild_name: undefined,
+    },
+  },
+};
+
+/**
+ * Long guild name - tests layout with very long guild names.
+ */
+export const LongGuildName: Story = {
+  args: {
+    instance: {
+      ...baseInstance,
+      guild_name: "Knights of the Eternal Flame",
     },
   },
 };

@@ -140,6 +140,8 @@ type RecentInstance struct {
 	BossCount    int64             `json:"boss_count"`
 	BossKills    int64             `json:"boss_kills"`
 	DurationMs   *float64          `json:"duration_ms"` // nullable if no encounters
+	GuildID      *uuid.UUID        `json:"guild_id,omitempty"`
+	GuildName    *string           `json:"guild_name,omitempty"`
 	Encounters   []RecentEncounter `json:"encounters,omitempty"`
 }
 

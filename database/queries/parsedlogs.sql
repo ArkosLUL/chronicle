@@ -117,12 +117,15 @@ SELECT
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
-     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
+    g.id as guild_id,
+    g.name as guild_name
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE true
     -- Filter by instance name
     AND CASE
@@ -160,13 +163,16 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
-     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
+    g.id as guild_id,
+    g.name as guild_name
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE lip.name ILIKE @player_name
     -- Filter by instance name
     AND CASE

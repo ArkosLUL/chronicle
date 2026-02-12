@@ -854,12 +854,15 @@ SELECT
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
-     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
+    g.id as guild_id,
+    g.name as guild_name
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE true
     -- Filter by instance name
     AND CASE
@@ -905,6 +908,8 @@ type ListRecentInstancesRow struct {
 	BossCount    int64              `db:"boss_count" json:"boss_count"`
 	BossKills    int64              `db:"boss_kills" json:"boss_kills"`
 	DurationMs   float64            `db:"duration_ms" json:"duration_ms"`
+	GuildID      uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName    pgtype.Text        `db:"guild_name" json:"guild_name"`
 }
 
 func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error) {
@@ -935,6 +940,8 @@ func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInst
 			&i.BossCount,
 			&i.BossKills,
 			&i.DurationMs,
+			&i.GuildID,
+			&i.GuildName,
 		); err != nil {
 			return nil, err
 		}
@@ -960,13 +967,16 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
-     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
+    g.id as guild_id,
+    g.name as guild_name
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE lip.name ILIKE $1
     -- Filter by instance name
     AND CASE
@@ -1013,6 +1023,8 @@ type ListRecentInstancesByPlayerRow struct {
 	BossCount    int64              `db:"boss_count" json:"boss_count"`
 	BossKills    int64              `db:"boss_kills" json:"boss_kills"`
 	DurationMs   float64            `db:"duration_ms" json:"duration_ms"`
+	GuildID      uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName    pgtype.Text        `db:"guild_name" json:"guild_name"`
 }
 
 func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error) {
@@ -1044,6 +1056,8 @@ func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRe
 			&i.BossCount,
 			&i.BossKills,
 			&i.DurationMs,
+			&i.GuildID,
+			&i.GuildName,
 		); err != nil {
 			return nil, err
 		}

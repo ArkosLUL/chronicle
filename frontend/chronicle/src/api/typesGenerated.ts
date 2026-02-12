@@ -65,6 +65,13 @@ export interface ChronicleEncounterEvents {
 export type GUIDString = string;
 
 // From chroniclesdk/log.go
+export interface Guild {
+    readonly id: string;
+    readonly name: string;
+    readonly created_at: string;
+}
+
+// From chroniclesdk/log.go
 export interface InstancePlayer {
     readonly name: string;
     readonly class: WoWHeroClasses;
@@ -132,6 +139,8 @@ export interface RecentInstance {
     readonly boss_count: number;
     readonly boss_kills: number;
     readonly duration_ms: number | null; // nullable if no encounters
+    readonly guild_id?: string;
+    readonly guild_name?: string;
     readonly encounters?: readonly RecentEncounter[];
 }
 
@@ -348,6 +357,7 @@ export interface WoWInstance {
     readonly log_group_id: string;
     readonly name: string;
     readonly slug: string;
+    readonly guild?: Guild;
 }
 
 // From chroniclesdk/log.go

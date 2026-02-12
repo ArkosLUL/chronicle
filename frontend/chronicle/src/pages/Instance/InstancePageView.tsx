@@ -1001,7 +1001,12 @@ export function InstancePageView({
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{instance.name}</h1>
             <p className="text-muted-foreground text-sm">
-              {instance.realm && `${instance.realm} • `}
+              {instance.guild && (
+                <span className="text-amber-500">&lt;{instance.guild.name}&gt;</span>
+              )}
+              {instance.guild && instance.realm && " • "}
+              {instance.realm && `${instance.realm}`}
+              {(instance.guild || instance.realm) && " • "}
               {formatTime(instance.startTime)}
               {totalDuration && ` • ${totalDuration}`}
             </p>

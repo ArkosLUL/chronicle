@@ -97,7 +97,6 @@ function generateMockInstances(count: number, startIndex = 0): RecentInstance[] 
 }
 
 // Create pages of mock data
-const PAGE_SIZE = 24;
 const TOTAL_ITEMS = 200;
 const allMockInstances = generateMockInstances(TOTAL_ITEMS);
 

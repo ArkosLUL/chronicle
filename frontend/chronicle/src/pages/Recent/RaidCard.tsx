@@ -133,7 +133,15 @@ export function RaidCard({ instance }: RaidCardProps) {
               {instance.name}
             </h3>
             <p className="text-xs text-white/70 drop-shadow">
-              by {instance.uploader_name}
+              {instance.guild_name ? (
+                <>
+                  <span className="text-amber-300/90">&lt;{instance.guild_name}&gt;</span>
+                  <span className="mx-1">·</span>
+                  by {instance.uploader_name}
+                </>
+              ) : (
+                <>by {instance.uploader_name}</>
+              )}
             </p>
           </div>
 

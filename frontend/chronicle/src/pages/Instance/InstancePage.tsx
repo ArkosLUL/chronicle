@@ -36,6 +36,7 @@ export interface Instance {
   id: string;
   name: string;
   realm?: string;
+  guild?: { name: string };
   startTime: string;
   endTime?: string;
   encounters: Encounter[];
@@ -60,6 +61,7 @@ function transformToInstance(
   apiInstance: {
     id: string;
     name: string;
+    guild?: { name: string };
     encounters: readonly WoWEncounterWithHostiles[];
     players: Record<string, InstancePlayer>;
     units: Record<string, InstanceUnit>;
@@ -106,6 +108,7 @@ function transformToInstance(
   return {
     id: apiInstance.id,
     name: apiInstance.name,
+    guild: apiInstance.guild,
     startTime,
     endTime,
     encounters,

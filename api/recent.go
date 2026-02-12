@@ -167,6 +167,12 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 			d := row.DurationMs
 			inst.DurationMs = &d
 		}
+		if row.GuildID.Valid {
+			inst.GuildID = &row.GuildID.UUID
+		}
+		if row.GuildName.Valid {
+			inst.GuildName = &row.GuildName.String
+		}
 
 		// Fetch encounter summaries for this instance
 		encounters, err := api.Opts.DB.GetEncounterSummariesByInstanceID(ctx, row.ID)

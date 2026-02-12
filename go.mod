@@ -4,7 +4,7 @@ go 1.25.7
 
 require (
 	cdr.dev/slog v1.6.2-0.20250703074222-9df5e0a6c145
-	github.com/Emyrk/zedgen v0.0.0-20260211040957-e47b650df70a
+	github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f
 	github.com/Gophercraft/core v0.5.2-0.20240410205646-00865bbdb78a
 	github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e
 	github.com/KromDaniel/regengo v0.5.3

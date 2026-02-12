@@ -76,6 +76,8 @@ github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/Emyrk/zedgen v0.0.0-20260211040957-e47b650df70a h1:NevLZONAk1t2b+6LdCZFCNk+8b1r5haurWX+76lJAlw=
 github.com/Emyrk/zedgen v0.0.0-20260211040957-e47b650df70a/go.mod h1:QTx3b7aEUyukkswuvRo2cuN8+qFtaLcnC1AvqGKPWOo=
+github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f h1:pTAJh+8PR9GJ9LbCzqartCAtG1EN/zpBwDWEsKC+Nnc=
+github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f/go.mod h1:QTx3b7aEUyukkswuvRo2cuN8+qFtaLcnC1AvqGKPWOo=
 github.com/Gophercraft/core v0.5.2-0.20240410205646-00865bbdb78a h1:WVIR2S+crMwaaOTpppjUinS9b7vewHEwhmAWZE4894M=
 github.com/Gophercraft/core v0.5.2-0.20240410205646-00865bbdb78a/go.mod h1:oUGwM9zwRQ3kyHi2Z/7ak1KBs8jc/H2qreck47r1mk8=
 github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e h1:27s+u/BsNt9wqfwUG67tYg6/PFAk5X0U6bl3fKxUQro=

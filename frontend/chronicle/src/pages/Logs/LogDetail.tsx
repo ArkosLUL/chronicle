@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Skull,
   Shield,
+  Youtube,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -33,11 +34,13 @@ import {
   useReparseLogGroup,
   useDeleteLogFiles,
   useAuthorizationCheck,
+  useUploadInstanceYoutube,
   type WoWLogGroupState, 
   type WoWLogFile, 
   type RiverJobState,
   type WoWParsedLogJobOutput,
   type WoWEncounter,
+  type Video,
 } from "@/api/queries";
 import type { WoWSimpleParsedInstance } from "@/api/typesGenerated";
 
@@ -207,7 +210,16 @@ function BossEncounterRow({ encounter }: { encounter: WoWEncounter }) {
   );
 }
 
-function InstanceCard({ instance }: { instance: WoWSimpleParsedInstance }) {
+function InstanceCard({ 
+  instance, 
+  canUploadYoutube,
+}: { 
+  instance: WoWSimpleParsedInstance;
+  canUploadYoutube: boolean;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMutation = useUploadInstanceYoutube();
+  
   const bossFights = instance.encounters.filter(e => e.boss);
   const trashFights = instance.encounters.filter(e => !e.boss);
   const bossKills = bossFights.filter(e => e.kill).length;
@@ -217,6 +229,28 @@ function InstanceCard({ instance }: { instance: WoWSimpleParsedInstance }) {
   
   // Stub URL for now - will be replaced with actual route
   const instanceUrl = `/instances/${instance.slug || instance.id}`;
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as Video;
+      // Basic validation
+      if (!data.url || !Array.isArray(data.results)) {
+        throw new Error("Invalid JSON format: missing 'url' or 'results' field");
+      }
+      await uploadMutation.mutateAsync({ instanceId: instance.id, data });
+      toast.success("YouTube sync data uploaded successfully");
+    } catch (err) {
+      toast.error("Failed to upload sync data", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+    // Reset input for re-selection
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
   
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -227,12 +261,35 @@ function InstanceCard({ instance }: { instance: WoWSimpleParsedInstance }) {
             <Castle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <h3 className="font-semibold truncate">{instance.name}</h3>
           </div>
-          <Link to={instanceUrl}>
-            <Button variant="outline" size="sm" className="h-7 text-xs">
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              View
-            </Button>
-          </Link>
+          <div className="flex items-center gap-1.5">
+            {canUploadYoutube && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadMutation.isPending}
+                >
+                  <Youtube className="h-3.5 w-3.5 mr-1" />
+                  {uploadMutation.isPending ? "Uploading..." : "Upload Sync"}
+                </Button>
+              </>
+            )}
+            <Link to={instanceUrl}>
+              <Button variant="outline" size="sm" className="h-7 text-xs">
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                View
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
       
@@ -286,7 +343,13 @@ function InstanceCard({ instance }: { instance: WoWSimpleParsedInstance }) {
   );
 }
 
-function ParsedInstancesSection({ log }: { log: WoWLogGroupState }) {
+function ParsedInstancesSection({ 
+  log,
+  canUploadYoutube,
+}: { 
+  log: WoWLogGroupState;
+  canUploadYoutube: boolean;
+}) {
   const parsedOutput = parseLogParseOutput(log.status.output, log.status.kind);
   
   // Only show for log-parse jobs with output
@@ -317,7 +380,7 @@ function ParsedInstancesSection({ log }: { log: WoWLogGroupState }) {
       ) : (
         <div className="space-y-4">
           {instances.map((instance) => (
-            <InstanceCard key={instance.id} instance={instance} />
+            <InstanceCard key={instance.id} instance={instance} canUploadYoutube={canUploadYoutube} />
           ))}
           
           {hasFailures && (
@@ -356,6 +419,7 @@ export interface LogDetailViewProps {
   onDeleteFiles: () => void;
   isDeletingFiles: boolean;
   canDeleteFiles: boolean;
+  canUploadYoutube: boolean;
   onRefresh: () => void;
   isRefreshing: boolean;
 }
@@ -376,6 +440,7 @@ export function LogDetailView({
   onDeleteFiles,
   isDeletingFiles,
   canDeleteFiles,
+  canUploadYoutube,
   onRefresh,
   isRefreshing,
 }: LogDetailViewProps) {
@@ -632,7 +697,7 @@ export function LogDetailView({
           </Card>
 
           {/* Parsed Instances Section - only shows for log-parse jobs with output */}
-          <ParsedInstancesSection log={log} />
+          <ParsedInstancesSection log={log} canUploadYoutube={canUploadYoutube} />
 
           {/* Files Card */}
           <Card className="p-6">
@@ -812,12 +877,14 @@ export function LogDetail() {
   const authzChecks = useMemo(() => ({
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
+    uploadYoutube: "chronicle:chronicle#upload_youtube",
   }), [logId]);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated && !!logId,
   });
   const canReparse = authz?.reparse ?? false;
   const canDeleteFiles = authz?.deleteFiles ?? false;
+  const canUploadYoutube = authz?.uploadYoutube ?? false;
 
   const handleDelete = () => {
     if (!logId) return;
@@ -889,6 +956,7 @@ export function LogDetail() {
       onDeleteFiles={handleDeleteFiles}
       isDeletingFiles={deleteLogFiles.isPending}
       canDeleteFiles={canDeleteFiles}
+      canUploadYoutube={canUploadYoutube}
       onRefresh={handleRefresh}
       isRefreshing={isRefetching}
     />
@@ -921,12 +989,14 @@ export function LogDetailByHash() {
   const authzChecks = useMemo(() => ({
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
+    uploadYoutube: "chronicle:chronicle#upload_youtube",
   }), [logId]);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated && !!logId,
   });
   const canReparse = authz?.reparse ?? false;
   const canDeleteFiles = authz?.deleteFiles ?? false;
+  const canUploadYoutube = authz?.uploadYoutube ?? false;
 
   const handleDelete = () => {
     if (!logId) return;
@@ -998,6 +1068,7 @@ export function LogDetailByHash() {
       onDeleteFiles={handleDeleteFiles}
       isDeletingFiles={deleteLogFiles.isPending}
       canDeleteFiles={canDeleteFiles}
+      canUploadYoutube={canUploadYoutube}
       onRefresh={handleRefresh}
       isRefreshing={isRefetching}
     />

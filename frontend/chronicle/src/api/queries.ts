@@ -252,6 +252,31 @@ export function useInstanceYoutube(instanceId: string, options?: Omit<UseQueryOp
   });
 }
 
+export function useUploadInstanceYoutube() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ instanceId, data }: { instanceId: string; data: Video }) => {
+      const response = await fetch(
+        `/api/v1/raidlogs/instances/${encodeURIComponent(instanceId)}/youtube`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        }
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to upload YouTube sync data");
+      }
+      return response.json();
+    },
+    onSuccess: (_, { instanceId }) => {
+      queryClient.invalidateQueries({ queryKey: ["instanceYoutube", instanceId] });
+    },
+  });
+}
+
 // Admin queries
 
 export function useAdminUsers(options?: Omit<UseQueryOptions<AdminUsersResponse>, "queryKey" | "queryFn">) {

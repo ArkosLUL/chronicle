@@ -133,7 +133,6 @@ function InstancePageInner({
 }) {
   const [showYoutube, setShowYoutube] = useState(false);
   const [showSyncPanel, setShowSyncPanel] = useState(false);
-  const [searchParams] = useSearchParams();
   const { setEncounterBounds, enabled: syncEnabled } = useSyncModeContext();
   
   // Update sync mode encounter bounds when selection changes

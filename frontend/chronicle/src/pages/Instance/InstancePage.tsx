@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Loader2, Youtube, Timer } from "lucide-react";
 import { useInstance, useInstanceYoutube } from "@/api/queries";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";

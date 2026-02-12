@@ -49,9 +49,75 @@ func (q *sqlQuerier) DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error 
 	return err
 }
 
+const deleteWoWLogGroupFiles = `-- name: DeleteWoWLogGroupFiles :many
+UPDATE
+  log_file
+SET
+  storage_deleted_at = $1
+WHERE
+  wow_log_id = $2
+RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at
+`
+
+type DeleteWoWLogGroupFilesParams struct {
+	StorageDeletedAt pgtype.Timestamptz `db:"storage_deleted_at" json:"storage_deleted_at"`
+	WowLogID         uuid.UUID          `db:"wow_log_id" json:"wow_log_id"`
+}
+
+func (q *sqlQuerier) DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLogGroupFilesParams) ([]LogFile, error) {
+	rows, err := q.db.Query(ctx, deleteWoWLogGroupFiles, arg.StorageDeletedAt, arg.WowLogID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogFile
+	for rows.Next() {
+		var i LogFile
+		if err := rows.Scan(
+			&i.ID,
+			&i.Owner,
+			&i.WowLogID,
+			&i.Hash,
+			&i.SizeBytes,
+			&i.MimeType,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StorageDeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFileByHash = `-- name: GetFileByHash :one
+SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at FROM log_file WHERE hash = $1
+`
+
+func (q *sqlQuerier) GetFileByHash(ctx context.Context, hash string) (LogFile, error) {
+	row := q.db.QueryRow(ctx, getFileByHash, hash)
+	var i LogFile
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.WowLogID,
+		&i.Hash,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.StorageDeletedAt,
+	)
+	return i, err
+}
+
 const getWoWLogFilesByGroupID = `-- name: GetWoWLogFilesByGroupID :many
 SELECT
-  id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at
+  id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at
 FROM
   log_file
 WHERE
@@ -78,6 +144,7 @@ func (q *sqlQuerier) GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.
 			&i.MimeType,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.StorageDeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -102,7 +169,8 @@ SELECT
         'size_bytes', json_file.size_bytes,
         'mime_type', json_file.mime_type,
         'created_at', json_file.created_at,
-        'updated_at', json_file.updated_at
+        'updated_at', json_file.updated_at,
+        'storage_deleted_at', json_file.storage_deleted_at
       )
       ORDER BY json_file.created_at
                ) FILTER (WHERE json_file.id IS NOT NULL),
@@ -154,7 +222,8 @@ FROM
         'size_bytes', lf.size_bytes,
         'mime_type', lf.mime_type,
         'created_at', lf.created_at,
-        'updated_at', lf.updated_at
+        'updated_at', lf.updated_at,
+        'storage_deleted_at', lf.storage_deleted_at
       )
       ORDER BY lf.created_at) FILTER (WHERE lf.id IS NOT NULL),
       '[]'::jsonb
@@ -232,7 +301,7 @@ VALUES
     $7,
     $8
    )
-RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at
+RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at
 `
 
 type InsertLogFileParams struct {
@@ -267,6 +336,7 @@ func (q *sqlQuerier) InsertLogFile(ctx context.Context, arg InsertLogFileParams)
 		&i.MimeType,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StorageDeletedAt,
 	)
 	return i, err
 }
@@ -770,22 +840,25 @@ func (q *sqlQuerier) GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-  id, username, email, created_at, updated_at
+  id, username, email, created_at, updated_at, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
 FROM
-  users
+  chronicle_users
 WHERE
   id = $1
 `
 
-func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
+func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (ChronicleUser, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i User
+	var i ChronicleUser
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MaxStorageBytes,
+		&i.DataLimitUpdatedAt,
+		&i.ConsumedStorageBytes,
 	)
 	return i, err
 }
@@ -915,28 +988,31 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 
 const listAllUsers = `-- name: ListAllUsers :many
 SELECT
-  id, username, email, created_at, updated_at
+  id, username, email, created_at, updated_at, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
 FROM
-  users
+  chronicle_users
 ORDER BY
   created_at DESC
 `
 
-func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]User, error) {
+func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]ChronicleUser, error) {
 	rows, err := q.db.Query(ctx, listAllUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	var items []ChronicleUser
 	for rows.Next() {
-		var i User
+		var i ChronicleUser
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
 			&i.Email,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MaxStorageBytes,
+			&i.DataLimitUpdatedAt,
+			&i.ConsumedStorageBytes,
 		); err != nil {
 			return nil, err
 		}
@@ -946,6 +1022,30 @@ func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const setUserStorageLimit = `-- name: SetUserStorageLimit :one
+UPDATE
+  data_limit
+SET
+  max_storage_bytes = $2,
+  updated_at = $3
+WHERE
+  user_id = $1
+RETURNING user_id, max_storage_bytes, updated_at
+`
+
+type SetUserStorageLimitParams struct {
+	UserID          uuid.UUID          `db:"user_id" json:"user_id"`
+	MaxStorageBytes int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) SetUserStorageLimit(ctx context.Context, arg SetUserStorageLimitParams) (DataLimit, error) {
+	row := q.db.QueryRow(ctx, setUserStorageLimit, arg.UserID, arg.MaxStorageBytes, arg.UpdatedAt)
+	var i DataLimit
+	err := row.Scan(&i.UserID, &i.MaxStorageBytes, &i.UpdatedAt)
+	return i, err
 }
 
 const updateUserAuthSessionTokens = `-- name: UpdateUserAuthSessionTokens :one

@@ -61,7 +61,7 @@ RETURNING *
 SELECT
   *
 FROM
-  users
+  chronicle_users
 WHERE
   id = $1
 ;
@@ -70,9 +70,20 @@ WHERE
 SELECT
   *
 FROM
-  users
+  chronicle_users
 ORDER BY
   created_at DESC
+;
+
+-- name: SetUserStorageLimit :one
+UPDATE
+  data_limit
+SET
+  max_storage_bytes = $2,
+  updated_at = $3
+WHERE
+  user_id = $1
+RETURNING *
 ;
 
 -- name: GetUserAuthLinkByUserID :one

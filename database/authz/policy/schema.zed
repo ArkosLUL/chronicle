@@ -19,6 +19,7 @@ definition chronicle {
   permission admin_queues = technical_admin
   permission upload_youtube = administer
   permission upload_log = upload_capable + administer
+  permission set_user_data_limit = technical_admin
 }
 
 definition river_queue {
@@ -34,6 +35,7 @@ definition raid_log {
   // View: uploader, guild members (if guild-linked), or public
   permission view = uploader + chronicle->admin_logs
   permission reparse = chronicle->admin_logs
+  permission delete_files = uploader + chronicle->admin_logs
     
   // Delete: uploader or guild admin
   permission delete = uploader + chronicle->admin_logs

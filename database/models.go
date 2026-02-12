@@ -475,6 +475,23 @@ func AllWowPlayableRaceValues() []WowPlayableRace {
 	}
 }
 
+type ChronicleUser struct {
+	ID                   uuid.UUID          `db:"id" json:"id"`
+	Username             string             `db:"username" json:"username"`
+	Email                string             `db:"email" json:"email"`
+	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	MaxStorageBytes      pgtype.Int8        `db:"max_storage_bytes" json:"max_storage_bytes"`
+	DataLimitUpdatedAt   pgtype.Timestamptz `db:"data_limit_updated_at" json:"data_limit_updated_at"`
+	ConsumedStorageBytes int64              `db:"consumed_storage_bytes" json:"consumed_storage_bytes"`
+}
+
+type DataLimit struct {
+	UserID          uuid.UUID          `db:"user_id" json:"user_id"`
+	MaxStorageBytes int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type ItemEffect struct {
 	ID          uuid.UUID      `db:"id" json:"id"`
 	ItemID      int32          `db:"item_id" json:"item_id"`
@@ -513,6 +530,8 @@ type LogFile struct {
 	MimeType  string             `db:"mime_type" json:"mime_type"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	// The timestamp when the file was deleted from storage. This allows us to keep track of files that have been removed from storage, even if the log_file record still exists in the database.
+	StorageDeletedAt pgtype.Timestamptz `db:"storage_deleted_at" json:"storage_deleted_at"`
 }
 
 type LogInstance struct {

@@ -124,6 +124,11 @@ export interface Response {
      */
     readonly call_to_action?: string;
     /**
+     * Link if provided is a URL that the user can click on to take the suggested action in CallToAction.
+     */
+    readonly link?: string;
+    readonly link_text?: string;
+    /**
      * Detail is a debug message that provides further insight into why the
      * action failed. This information can be technical and a regular golang
      * err.Error() text.
@@ -171,6 +176,13 @@ export interface Session {
     readonly user_id: string;
     readonly session_id: string;
     readonly roles: readonly string[];
+    readonly max_storage_bytes: number;
+    readonly consumed_storage_bytes: number;
+}
+
+// From chroniclesdk/user.go
+export interface SetUserDataLimitRequest {
+    readonly max_storage_bytes: number;
 }
 
 // From chroniclesdk/user.go
@@ -181,6 +193,9 @@ export interface User {
     readonly roles: readonly string[];
     readonly created_at: string;
     readonly updated_at: string;
+    readonly max_storage_bytes: number;
+    readonly max_storage_bytes_updated: string;
+    readonly consumed_storage_bytes: number;
 }
 
 // From chroniclesdk/youtube.go
@@ -303,20 +318,17 @@ export interface WoWLogFile {
     readonly hash: string;
     readonly size_bytes: number;
     readonly mime_type: string;
-    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
-    readonly created_at: unknown;
-    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
-    readonly updated_at: unknown;
+    readonly created_at: string;
+    readonly updated_at: string;
+    readonly storage_deleted_at?: string;
 }
 
 // From chroniclesdk/log.go
 export interface WoWLogGroup {
     readonly id: string;
     readonly owner: string;
-    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
-    readonly created_at: unknown;
-    // external type "github.com/jackc/pgx/v5/pgtype.Timestamptz", to include this type the package must be explicitly included in the parsing
-    readonly updated_at: unknown;
+    readonly created_at: string;
+    readonly updated_at: string;
     readonly files: readonly WoWLogFile[];
     // empty interface{} type, falling back to unknown
     readonly processing_output?: unknown;
@@ -336,6 +348,7 @@ export interface WoWParsedInstance extends WoWInstance {
 
 // From chroniclesdk/log.go
 export interface WoWParsedLogJobOutput {
+    readonly complete: string | null;
     readonly instance_failures: Record<string, string>;
     readonly instances: readonly WoWSimpleParsedInstance[];
 }

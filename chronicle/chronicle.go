@@ -23,6 +23,7 @@ import (
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/internal/cleanup"
 	"github.com/Emyrk/chronicle/internal/ptr"
+	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
 )
 
@@ -103,6 +104,17 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		return nil, nil, fmt.Errorf("upload file, no authenticated user")
 	}
 
+	user, err := c.Zed.GetUserByID(ctx, cl.Subject)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch user: %w", err)
+	}
+	if user.ConsumedStorageBytes > user.MaxStorageBytes.Int64 {
+		return nil, nil, httpapi.NewAPIError(
+			fmt.Errorf("storage limit exceeded"),
+			fmt.Sprintf("Reached storage limit of %s bytes, delete log files to free up space", humanize.Bytes(uint64(user.MaxStorageBytes.Int64))),
+			http.StatusBadRequest)
+	}
+
 	// Save the files locally to disk first, then upload them to object storage.
 	// This allows us to hash them and store in the database first, and keep them tracked.
 	tmpIDs := []uuid.UUID{uuid.New(), uuid.New()}
@@ -154,7 +166,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	var group database.WoWLogGroup
 	// tmpFiles and hashes are the files that were uploaded now on local disk.
-	err := c.Zed.InTx(func(tx *authz.AuthzTX) error {
+	err = c.Zed.InTx(func(tx *authz.AuthzTX) error {
 		// Insert the log grouo
 		var err error
 		group, err = tx.InsertWoWLogGroup(ctx, database.InsertWoWLogGroupParams{
@@ -187,9 +199,12 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 			})
 			if err != nil {
 				if database.IsUniqueViolation(err, database.UniqueFilesUniqueOwnerHash) {
-					return httpapi.NewAPIError(err,
+					return httpapi.NewAPIError(
+						fmt.Errorf("file with same hash already exists"), // Hide the sql error
 						"A log file with the same contents has already been uploaded by you",
-						http.StatusBadRequest).CTA("Log files cannot be uploaded multiple times, delete the conflicting file or choose another one.")
+						http.StatusBadRequest).
+						CTA("Log files cannot be uploaded multiple times, delete the conflicting log upload or choose another one.").
+						Link("Conflicting Log file", "/logs/file/"+hashes[i])
 				}
 				return err
 			}
@@ -251,6 +266,37 @@ func (c *Chronicle) WoWLogGroup(ctx context.Context, groupID uuid.UUID) (*chroni
 }
 
 func (c *Chronicle) DeleteWoWLogGroup(ctx context.Context, logID uuid.UUID) error {
+	err := c.RemoveWoWLogFilesFromStorage(ctx, logID)
+	if err != nil {
+		return fmt.Errorf("remove log files from storage: %w", err)
+	}
+
+	err = c.Zed.DeleteWoWLogGroup(ctx, logID)
+	if err != nil {
+		return fmt.Errorf("delete log group: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Chronicle) DeleteWoWLogGroupFiles(ctx context.Context, logID uuid.UUID) error {
+	err := c.RemoveWoWLogFilesFromStorage(ctx, logID)
+	if err != nil {
+		return fmt.Errorf("remove log files from storage: %w", err)
+	}
+
+	_, err = c.Zed.DeleteWoWLogGroupFiles(ctx, database.DeleteWoWLogGroupFilesParams{
+		StorageDeletedAt: database.Timestamptz(time.Now()),
+		WowLogID:         logID,
+	})
+	if err != nil {
+		return fmt.Errorf("delete log group files: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Chronicle) RemoveWoWLogFilesFromStorage(ctx context.Context, logID uuid.UUID) error {
 	files, err := c.Zed.GetWoWLogFilesByGroupID(ctx, logID)
 	if err != nil {
 		return fmt.Errorf("fetch log files: %w", err)
@@ -262,12 +308,6 @@ func (c *Chronicle) DeleteWoWLogGroup(ctx context.Context, logID uuid.UUID) erro
 			return fmt.Errorf("remove file: %w", err)
 		}
 	}
-
-	err = c.Zed.DeleteWoWLogGroup(ctx, logID)
-	if err != nil {
-		return fmt.Errorf("delete log group: %w", err)
-	}
-
 	return nil
 }
 

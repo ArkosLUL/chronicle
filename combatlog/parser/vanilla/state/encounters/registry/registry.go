@@ -23,7 +23,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.Register(wrap(instances.ScarletMonasteryCathedral))
 	r.Register(wrap(instances.ScarletMonasteryLibrary))
 
-	r.Register(wrap(instances.BlackrockSpire))
+	r.RegisterWithComment(wrap(instances.BlackrockSpire), "Only upper spire is supported at the moment")
 
 	// 10 man
 	r.Register(wrap(instances.TowerOfKarazhan))
@@ -41,16 +41,29 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 
 // Registry manages available instances
 type Registry struct {
-	factories map[string]InstanceFactory
-	logger    *slog.Logger
+	factories      map[string]InstanceFactory
+	factoryComment map[string]string
+	logger         *slog.Logger
 }
 
 // NewRegistry creates a new instance registry
 func NewRegistry(logger *slog.Logger) *Registry {
 	return &Registry{
-		factories: make(map[string]InstanceFactory),
-		logger:    logger,
+		factories:      make(map[string]InstanceFactory),
+		factoryComment: make(map[string]string),
+		logger:         logger,
 	}
+}
+
+func (r *Registry) RegisterWithComment(factory InstanceFactory, comment string) {
+	// temporary instance to get the name
+	tmp := factory(nil, nil, zone.Zone{})
+	name := tmp.Name()
+	if _, exists := r.factories[name]; exists {
+		panic(fmt.Sprintf("instance factory named %s already exists", name))
+	}
+	r.factories[name] = factory
+	r.factoryComment[name] = comment
 }
 
 // Register adds an instance factory to the registry
@@ -62,7 +75,6 @@ func (r *Registry) Register(factory InstanceFactory) {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
 	}
 	r.factories[name] = factory
-	r.logger.Debug("registered instance", slog.String("name", name))
 }
 
 // GetInstance returns an instance for the given zone, or nil if none match
@@ -88,6 +100,15 @@ func (r *Registry) AllInstances() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+func (r *Registry) AllInstancesWithComments() map[string]string {
+	all := make(map[string]string)
+	for name := range r.factories {
+		comment := r.factoryComment[name]
+		all[name] = comment
+	}
+	return all
 }
 
 func wrap[i instances.Instance](do func(logger *slog.Logger, db *unitdb.Units, z zone.Zone) i) InstanceFactory {

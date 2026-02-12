@@ -8,10 +8,18 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/go-chi/chi/v5"
 )
+
+func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	reg := registry.DefaultRegistry(api.Opts.Logger)
+	httpapi.Write(ctx, w, http.StatusOK, reg.AllInstancesWithComments())
+}
 
 func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

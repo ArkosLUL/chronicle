@@ -105,6 +105,22 @@ export function useAuthProviders(options?: Omit<UseQueryOptions<string[]>, "quer
   });
 }
 
+// Map of instance name to optional note/caveat (empty string = fully supported)
+export type SupportedInstances = Record<string, string>;
+
+export function useSupportedInstances(options?: Omit<UseQueryOptions<SupportedInstances>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["supportedInstances"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/raidlogs/supported");
+      if (!response.ok) throw new Error("Failed to fetch supported instances");
+      return response.json() as Promise<SupportedInstances>;
+    },
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour - this data rarely changes
+    ...options,
+  });
+}
+
 export function useLogGroups(options?: Omit<UseQueryOptions<WoWLogGroup[]>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["logGroups"],

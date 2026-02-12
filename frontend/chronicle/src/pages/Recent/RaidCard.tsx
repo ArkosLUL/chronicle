@@ -3,56 +3,67 @@ import { Link } from "react-router-dom";
 import { Clock, Users, Swords, CheckCircle, XCircle } from "lucide-react";
 import type { RecentInstance } from "@/api/typesGenerated";
 
-// Map instance names to their loading screen images (WebP format for smaller file sizes)
-// The loading screens have decorative borders at top (~12%) and bottom (~12%)
-// We use object-position to crop them out
-const INSTANCE_BACKGROUNDS: Record<string, string> = {
-  "Molten Core": "/images/loadingscreens/LoadScreenMoltenCore.webp",
-  "Blackwing Lair": "/images/loadingscreens/LoadScreenBlackWingLair.webp",
-  "Onyxia's Lair": "/images/loadingscreens/LoadScreenRaid.webp",
-  "Zul'Gurub": "/images/loadingscreens/LoadScreenZulGurub.webp",
-  "Ruins of Ahn'Qiraj": "/images/loadingscreens/LoadScreenAhnQiraj20man.webp",
-  "Temple of Ahn'Qiraj": "/images/loadingscreens/LoadScreenAhnQiraj40man.webp",
-  "Naxxramas": "/images/loadingscreens/LoadScreenNaxxramas.webp",
-  "World Bosses": "/images/loadingscreens/LoadScreenRaid.webp",
-  "Emerald Sanctum": "/images/loadingscreens/LoadScreenEmeraldSanctum.webp",
-  "Karazhan": "/images/loadingscreens/LoadScreenKarazhan.webp",
-  "Karazhan Crypts": "/images/loadingscreens/LoadscreenKarazhanCrypt.webp",
-  "Hateforge Quarry": "/images/loadingscreens/LoadScreenHateforge.webp",
-  "Gilneas City": "/images/loadingscreens/LoadScreenGilneasCity.webp",
-  // Dungeons
-  "Deadmines": "/images/loadingscreens/LoadScreenDeadmines.webp",
-  "Shadowfang Keep": "/images/loadingscreens/LoadScreenShadowFangKeep.webp",
-  "Scarlet Monastery": "/images/loadingscreens/LoadScreenMonastery.webp",
-  "Scarlet Monastery Library": "/images/loadingscreens/LoadScreenMonastery.webp",
-  "Scarlet Monastery Cathedral": "/images/loadingscreens/LoadScreenMonastery.webp",
-  "Scarlet Monastery Graveyard": "/images/loadingscreens/LoadScreenMonastery.webp",
-  "Scarlet Monastery Armory": "/images/loadingscreens/LoadScreenMonastery.webp",
-  "Stratholme": "/images/loadingscreens/LoadScreenStrathome.webp",
-  "Scholomance": "/images/loadingscreens/LoadScreenScholomance.webp",
-  "Blackrock Depths": "/images/loadingscreens/LoadScreenBlackrockDepths.webp",
-  "Lower Blackrock Spire": "/images/loadingscreens/LoadScreenBlackrockSpire.webp",
-  "Upper Blackrock Spire": "/images/loadingscreens/LoadScreenBlackrockSpire.webp",
-  "Dire Maul": "/images/loadingscreens/LoadScreenDireMaul.webp",
-  "Maraudon": "/images/loadingscreens/LoadScreenMaraudon.webp",
-  "Sunken Temple": "/images/loadingscreens/LoadScreenSunkenTemple.webp",
-  "Zul'Farrak": "/images/loadingscreens/LoadScreenZulFarrak.webp",
-  "Uldaman": "/images/loadingscreens/LoadScreenUldaman.webp",
-  "Razorfen Downs": "/images/loadingscreens/LoadScreenRazorfenDowns.webp",
-  "Razorfen Kraul": "/images/loadingscreens/LoadScreenRazorfenKraul.webp",
-  "Wailing Caverns": "/images/loadingscreens/LoadScreenWailingCaverns.webp",
-  "Blackfathom Deeps": "/images/loadingscreens/LoadScreenBlackFathomDeeps.webp",
-  "Gnomeregan": "/images/loadingscreens/LoadScreenGnomeregan.webp",
-  "Ragefire Chasm": "/images/loadingscreens/LoadScreenRagefireChasm.webp",
-  "Stormwind Stockade": "/images/loadingscreens/LoadScreenStormwindStockade.webp",
-  "Caverns of Time": "/images/loadingscreens/LoadScreenCavernsTime.webp",
+// Unified instance configuration - one place to configure each instance
+// bossCount is the static total number of bosses for the instance
+interface InstanceConfig {
+  background: string;
+  bossCount?: number; // Optional - dungeons may not need this
+}
+
+const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
+  // 40-man Raids
+  "Molten Core": { background: "/images/loadingscreens/LoadScreenMoltenCore.webp", bossCount: 12 },
+  "Blackwing Lair": { background: "/images/loadingscreens/LoadScreenBlackWingLair.webp", bossCount: 8 },
+  "Temple of Ahn'Qiraj": { background: "/images/loadingscreens/LoadScreenAhnQiraj40man.webp", bossCount: 9 },
+  "Naxxramas": { background: "/images/loadingscreens/LoadScreenNaxxramas.webp", bossCount: 15 },
+  "Emerald Sanctum": { background: "/images/loadingscreens/LoadScreenEmeraldSanctum.webp", bossCount: 2 },
+  // 20-man Raids
+  "Zul'Gurub": { background: "/images/loadingscreens/LoadScreenZulGurub.webp", bossCount: 10 },
+  "Ruins of Ahn'Qiraj": { background: "/images/loadingscreens/LoadScreenAhnQiraj20man.webp", bossCount: 6 },
+  // Single Boss
+  "Onyxia's Lair": { background: "/images/loadingscreens/LoadScreenRaid.webp", bossCount: 1 },
+  // Turtle WoW Custom
+  "Karazhan": { background: "/images/loadingscreens/LoadScreenKarazhan.webp", bossCount: 5 },
+  "Karazhan Crypts": { background: "/images/loadingscreens/LoadscreenKarazhanCrypt.webp", bossCount: 3 },
+  "Hateforge Quarry": { background: "/images/loadingscreens/LoadScreenHateforge.webp", bossCount: 4 },
+  "Gilneas City": { background: "/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3 },
+  "World Bosses": { background: "/images/loadingscreens/LoadScreenRaid.webp" },
+  // Dungeons (bossCount optional - falls back to API value)
+  "Upper Blackrock Spire": { background: "/images/loadingscreens/LoadScreenBlackrockSpire.webp", bossCount: 5 },
+  "Lower Blackrock Spire": { background: "/images/loadingscreens/LoadScreenBlackrockSpire.webp" },
+  "Deadmines": { background: "/images/loadingscreens/LoadScreenDeadmines.webp", bossCount: 8 },
+  "Shadowfang Keep": { background: "/images/loadingscreens/LoadScreenShadowFangKeep.webp" },
+  "Scarlet Monastery": { background: "/images/loadingscreens/LoadScreenMonastery.webp" },
+  "Scarlet Monastery Library": { background: "/images/loadingscreens/LoadScreenMonastery.webp", bossCount: 3 },
+  "Scarlet Monastery Cathedral": { background: "/images/loadingscreens/LoadScreenMonastery.webp", bossCount: 2 },
+  "Scarlet Monastery Graveyard": { background: "/images/loadingscreens/LoadScreenMonastery.webp" },
+  "Scarlet Monastery Armory": { background: "/images/loadingscreens/LoadScreenMonastery.webp" },
+  "Stratholme": { background: "/images/loadingscreens/LoadScreenStrathome.webp" },
+  "Scholomance": { background: "/images/loadingscreens/LoadScreenScholomance.webp" },
+  "Blackrock Depths": { background: "/images/loadingscreens/LoadScreenBlackrockDepths.webp" },
+  "Dire Maul": { background: "/images/loadingscreens/LoadScreenDireMaul.webp" },
+  "Maraudon": { background: "/images/loadingscreens/LoadScreenMaraudon.webp" },
+  "Sunken Temple": { background: "/images/loadingscreens/LoadScreenSunkenTemple.webp" },
+  "Zul'Farrak": { background: "/images/loadingscreens/LoadScreenZulFarrak.webp" },
+  "Uldaman": { background: "/images/loadingscreens/LoadScreenUldaman.webp" },
+  "Razorfen Downs": { background: "/images/loadingscreens/LoadScreenRazorfenDowns.webp" },
+  "Razorfen Kraul": { background: "/images/loadingscreens/LoadScreenRazorfenKraul.webp" },
+  "Wailing Caverns": { background: "/images/loadingscreens/LoadScreenWailingCaverns.webp" },
+  "Blackfathom Deeps": { background: "/images/loadingscreens/LoadScreenBlackFathomDeeps.webp" },
+  "Gnomeregan": { background: "/images/loadingscreens/LoadScreenGnomeregan.webp" },
+  "Ragefire Chasm": { background: "/images/loadingscreens/LoadScreenRagefireChasm.webp", bossCount:4 },
+  "Stormwind Stockade": { background: "/images/loadingscreens/LoadScreenStormwindStockade.webp" },
+  "Caverns of Time": { background: "/images/loadingscreens/LoadScreenCavernsTime.webp" },
 };
 
-// Fallback background for unknown instances
 const DEFAULT_BACKGROUND = "/images/loadingscreens/LoadScreenDungeon.webp";
 
+function getInstanceConfig(name: string): InstanceConfig | undefined {
+  return INSTANCE_CONFIG[name];
+}
+
 function getInstanceBackground(name: string): string {
-  return INSTANCE_BACKGROUNDS[name] ?? DEFAULT_BACKGROUND;
+  return INSTANCE_CONFIG[name]?.background ?? DEFAULT_BACKGROUND;
 }
 
 function formatDuration(ms: number | null): string {
@@ -87,8 +98,12 @@ interface RaidCardProps {
 export function RaidCard({ instance }: RaidCardProps) {
   const [imageError, setImageError] = useState(false);
   const uploadedAt = new Date(instance.uploaded_at);
-  const isFullClear = instance.boss_kills === instance.boss_count && instance.boss_count > 0;
   const backgroundImage = getInstanceBackground(instance.name);
+  
+  // Use static boss count if configured, otherwise fall back to API value
+  const config = getInstanceConfig(instance.name);
+  const displayBossCount = config?.bossCount ?? instance.boss_count;
+  const isFullClear = instance.boss_kills === displayBossCount && displayBossCount > 0;
   
   // Build instance URL - prefer slug if available
   const instanceUrl = instance.slug 
@@ -169,7 +184,7 @@ export function RaidCard({ instance }: RaidCardProps) {
             }`}>
               <Swords className="h-3.5 w-3.5" />
               <span className="text-sm font-semibold">
-                {instance.boss_kills}/{instance.boss_count}
+                {instance.boss_kills}/{displayBossCount}
               </span>
               {isFullClear && <CheckCircle className="h-3.5 w-3.5" />}
             </div>

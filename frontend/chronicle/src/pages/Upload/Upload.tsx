@@ -254,12 +254,12 @@ export function UploadView({
             <h3 className="font-medium mb-2">Requirements</h3>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li>
-                <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                   SuperWoW Mod
                 </a>
               </li>
               <li>
-                <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                   ChronicleCompanion Addon
                 </a>
               </li>

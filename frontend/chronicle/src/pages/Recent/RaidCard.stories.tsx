@@ -407,11 +407,9 @@ export const GridPreview: StoryObj = {
   },
   decorators: [
     (Story) => (
-      <MemoryRouter>
-        <div className="min-h-screen bg-background">
-          <Story />
-        </div>
-      </MemoryRouter>
+      <div className="min-h-screen bg-background">
+        <Story />
+      </div>
     ),
   ],
   parameters: {

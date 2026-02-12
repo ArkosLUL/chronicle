@@ -293,9 +293,8 @@ export function UploadView({
               <div>
                 <p className="font-medium text-foreground">What is the ChronicleCompanion addon?</p>
                 <p className="text-muted-foreground mt-1">
-                  It extends SuperWoWCombatLogger with additional logging information. Eventually it will 
-                  completely replace SuperWoWCombatLogger. Chronicle uses different log formats than TurtLogs, 
-                  so we maintain our own addon.
+                  It replaces and extends SuperWoWCombatLogger with additional logging information.
+                  Chronicle uses different log formats than TurtLogs, so we maintain our own addon.
                 </p>
               </div>
             </div>

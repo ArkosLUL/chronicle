@@ -24,7 +24,7 @@ export function GenericPanel<TResult>({
 
   return <>
     {children}
-    <div className="text-2xs mt-1 font-mono text-muted-foreground flex items-center justify-between">
+    <div className="text-2xs mt-1 font-mono text-muted-foreground flex items-center justify-between" data-chromatic="ignore">
       <span>
         {formatNumber(totalEvents)} events
         {eventsPerSecond > 0 && (

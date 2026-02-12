@@ -13,8 +13,7 @@ function DiscordIcon({ className }: { className?: string }) {
   );
 }
 
-// TODO: Replace with actual Discord invite URL
-const DISCORD_URL = "https://discord.gg/XXXXXX";
+const DISCORD_URL = "https://discord.gg/gz97ABFVAj";
 
 export function Footer() {
   const gitTag = document

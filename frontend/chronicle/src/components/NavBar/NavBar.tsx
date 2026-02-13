@@ -46,7 +46,7 @@ export function NavBar() {
   return (
     <nav className="relative flex items-center justify-end p-4 border-b">
       <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
-          <img src="/public/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+          <img src="/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
         </Link>
       <div className="flex items-center gap-6">
         <Link 

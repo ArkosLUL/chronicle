@@ -115,6 +115,27 @@ func (q *sqlQuerier) GetFileByHash(ctx context.Context, hash string) (LogFile, e
 	return i, err
 }
 
+const getLogFile = `-- name: GetLogFile :one
+SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at FROM log_file WHERE id = $1
+`
+
+func (q *sqlQuerier) GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error) {
+	row := q.db.QueryRow(ctx, getLogFile, id)
+	var i LogFile
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.WowLogID,
+		&i.Hash,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.StorageDeletedAt,
+	)
+	return i, err
+}
+
 const getWoWLogFilesByGroupID = `-- name: GetWoWLogFilesByGroupID :many
 SELECT
   id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at

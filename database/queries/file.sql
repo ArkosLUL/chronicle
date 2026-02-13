@@ -155,6 +155,10 @@ ORDER BY
 SELECT * FROM log_file WHERE hash = $1;
 ;
 
+-- name: GetLogFile :one
+SELECT * FROM log_file WHERE id = $1;
+
+
 -- name: GetWoWLogGroupByID :one
 SELECT
   sqlc.embed(wow_log_groups),

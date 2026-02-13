@@ -139,6 +139,7 @@ func (api *API) Routes() chi.Router {
 							r.Delete("/delete-files", api.DeleteWoWLogFiles)
 						})
 						r.Get("/", api.WoWLogGroup)
+						r.Get("/files/{fileID}/download", api.WoWLogFileDownload)
 						r.Group(func(r chi.Router) {
 							r.Delete("/", api.WoWLogDeleteGroup)
 						})

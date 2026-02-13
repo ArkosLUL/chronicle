@@ -23,6 +23,7 @@ import {
   Skull,
   Shield,
   Youtube,
+  Download,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -419,6 +420,7 @@ export interface LogDetailViewProps {
   onDeleteFiles: () => void;
   isDeletingFiles: boolean;
   canDeleteFiles: boolean;
+  canDownloadFiles: boolean;
   canUploadYoutube: boolean;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -440,6 +442,7 @@ export function LogDetailView({
   onDeleteFiles,
   isDeletingFiles,
   canDeleteFiles,
+  canDownloadFiles,
   canUploadYoutube,
   onRefresh,
   isRefreshing,
@@ -744,13 +747,25 @@ export function LogDetailView({
                         </p>
                       </div>
                     </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>{formatBytes(file.size_bytes)}</p>
-                      <p className="text-xs">{formatDate(file.created_at)}</p>
-                      {file.storage_deleted_at && (
-                        <p className="text-xs text-destructive">
-                          Deleted: {formatDate(file.storage_deleted_at)}
-                        </p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right text-sm text-muted-foreground">
+                        <p>{formatBytes(file.size_bytes)}</p>
+                        <p className="text-xs">{formatDate(file.created_at)}</p>
+                        {file.storage_deleted_at && (
+                          <p className="text-xs text-destructive">
+                            Deleted: {formatDate(file.storage_deleted_at)}
+                          </p>
+                        )}
+                      </div>
+                      {canDownloadFiles && !file.storage_deleted_at && (
+                        <a
+                          href={`/api/v1/raidlogs/logs/${log.id}/files/${file.id}/download`}
+                          download
+                        >
+                          <Button variant="outline" size="sm" title="Download file">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </a>
                       )}
                     </div>
                   </div>
@@ -878,12 +893,14 @@ export function LogDetail() {
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
     uploadYoutube: "chronicle:chronicle#upload_youtube",
+    adminLogs: "chronicle:chronicle#admin_logs",
   }), [logId]);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated && !!logId,
   });
   const canReparse = authz?.reparse ?? false;
   const canDeleteFiles = authz?.deleteFiles ?? false;
+  const canDownloadFiles = authz?.adminLogs ?? false;
   const canUploadYoutube = authz?.uploadYoutube ?? false;
 
   const handleDelete = () => {
@@ -956,6 +973,7 @@ export function LogDetail() {
       onDeleteFiles={handleDeleteFiles}
       isDeletingFiles={deleteLogFiles.isPending}
       canDeleteFiles={canDeleteFiles}
+      canDownloadFiles={canDownloadFiles}
       canUploadYoutube={canUploadYoutube}
       onRefresh={handleRefresh}
       isRefreshing={isRefetching}
@@ -990,12 +1008,14 @@ export function LogDetailByHash() {
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
     uploadYoutube: "chronicle:chronicle#upload_youtube",
+    adminLogs: "chronicle:chronicle#admin_logs",
   }), [logId]);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated && !!logId,
   });
   const canReparse = authz?.reparse ?? false;
   const canDeleteFiles = authz?.deleteFiles ?? false;
+  const canDownloadFiles = authz?.adminLogs ?? false;
   const canUploadYoutube = authz?.uploadYoutube ?? false;
 
   const handleDelete = () => {
@@ -1068,6 +1088,7 @@ export function LogDetailByHash() {
       onDeleteFiles={handleDeleteFiles}
       isDeletingFiles={deleteLogFiles.isPending}
       canDeleteFiles={canDeleteFiles}
+      canDownloadFiles={canDownloadFiles}
       canUploadYoutube={canUploadYoutube}
       onRefresh={handleRefresh}
       isRefreshing={isRefetching}

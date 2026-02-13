@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert"
+import { MagicLogo } from "@/components/MagicLogo"
 import { useAuthProviders } from "@/api/queries"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -42,14 +43,11 @@ export function Login() {
     <div className="flex min-h-svh flex-col items-center justify-center pb-50">
       <div className="w-full max-w-md space-y-8 px-4">
         <div className="text-center">
-          <img 
-            src="/public/chronicle/ChronicleLogo.svg" 
-            alt="Chronicle Logo" 
+          <MagicLogo
+            src="/public/chronicle/ChronicleLogoCenter.svg"
+            alt="Chronicle Logo"
             className="mx-auto h-80 w-80"
           />
-          <h1 className="mt-4 text-3xl font-bold tracking-tight">
-            Welcome to Chronicle
-          </h1>
         </div>
 
         <Card className="p-8">

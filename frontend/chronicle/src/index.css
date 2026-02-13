@@ -3,6 +3,46 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Magic particle effect for login logo */
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  85% {
+    opacity: 0.8;
+    transform: translateY(-120px) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-150px) scale(0.3);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+.magic-particles .particle {
+  position: absolute;
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.8) 0%, rgba(96, 165, 250, 0.5) 50%, transparent 100%);
+  border-radius: 50%;
+  left: var(--x);
+  top: var(--y);
+  animation: 
+    float-up var(--duration) ease-out infinite,
+    sparkle 3s ease-in-out infinite;
+  animation-delay: var(--delay);
+  box-shadow: 0 0 4px 1px rgba(96, 165, 250, 0.3);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

@@ -44,11 +44,11 @@ export function NavBar() {
   ];
 
   return (
-    <nav className="flex items-center justify-between p-4 border-b">
-      <div className="flex items-center gap-6">
-        <Link to="/" className="flex items-center">
-          <img src="/public/chronicle/ChronicleLogoType.svg" alt="Chronicle" className="h-8" />
+    <nav className="relative flex items-center justify-end p-4 border-b">
+      <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
+          <img src="/public/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
         </Link>
+      <div className="flex items-center gap-6">
         <Link 
           to="/recent" 
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -56,8 +56,6 @@ export function NavBar() {
           <Castle className="h-4 w-4" />
           Recent Raids
         </Link>
-      </div>
-      <div>
         {isLoading ? null : isAuthenticated ? (
           <NavigationMenu className="justify-end">
             <NavigationMenuList>

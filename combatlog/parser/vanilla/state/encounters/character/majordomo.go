@@ -9,6 +9,10 @@ type MajordomoParty struct {
 	*Common
 	all         *Characters
 	isMajordomo bool
+	announced   bool
+
+	// party is only allocated on majordomo, and is used to track the adds in the encounter.
+	party map[guid.GUID]Character
 }
 
 const (
@@ -37,11 +41,13 @@ func NewMajordomoPartyCharacter(id guid.GUID, all *Characters) (Character, bool)
 		return nil, false
 	}
 
-	return &MajordomoParty{
+	p := &MajordomoParty{
 		Common:      NewCommonCharacter(id, all),
 		all:         all,
 		isMajordomo: isMajordomo,
-	}, true
+		party:       make(map[guid.GUID]Character),
+	}
+	return p, true
 }
 
 func (c *MajordomoParty) Process(m messages.Message) error {
@@ -52,6 +58,15 @@ func (c *MajordomoParty) Process(m messages.Message) error {
 		return err
 	}
 
+	if !wasActive && c.IsActive() {
+		// Activity gone from inactive to active, add to the major domo party
+		c.announceSelf()
+	}
+
+	if !c.announced && c.IsActive() {
+		c.announceSelf()
+	}
+
 	// If someone was slain, or this unit just became inactive, then tell
 	// Majordomo to do an activity check.
 	_, isSlain := m.(messages.Slain)
@@ -59,27 +74,52 @@ func (c *MajordomoParty) Process(m messages.Message) error {
 		c.processAddCheck(m)
 	}
 
+	if c.isMajordomo && (wasActive && !c.IsActive()) {
+		// If Majordomo goes inactive due to a timeout, we need to reset the party. When
+		// the encounter resets, the domo party will be re-announced and populated as the
+		// adds become active again.
+		c.party = make(map[guid.GUID]Character)
+	}
+
 	return nil
 }
 
-func (c *MajordomoParty) getMajorDomo() (*MajordomoParty, bool) {
-	major, ok := c.all.ByEntry[majorDomoEntry]
-	if !ok || len(major) != 1 {
-		return nil, false
-	}
-
-	typed, ok := major[0].(*MajordomoParty)
+func (c *MajordomoParty) announceSelf() {
+	p, ok := c.getActiveMajorDomo()
 	if !ok {
+		return
+	}
+
+	if !c.isMajordomo {
+		p.party[c.ID()] = c
+	}
+	c.announced = true
+}
+
+func (c *MajordomoParty) getActiveMajorDomo() (*MajordomoParty, bool) {
+	var major *MajordomoParty
+	majors, ok := c.all.ByEntry[majorDomoEntry]
+	for _, m := range majors {
+		if m.IsActive() {
+			ty, ok := m.(*MajordomoParty)
+			if ok {
+				major = ty
+			}
+			break
+		}
+	}
+
+	if !ok || major == nil {
 		return nil, false
 	}
 
-	return typed, true
+	return major, true
 }
 
 func (c *MajordomoParty) processAddCheck(m messages.Message) {
 	if !c.isMajordomo {
 		// Find him
-		major, ok := c.getMajorDomo()
+		major, ok := c.getActiveMajorDomo()
 		if !ok {
 			return
 		}
@@ -91,20 +131,13 @@ func (c *MajordomoParty) processAddCheck(m messages.Message) {
 		return // Nothing to do if Majordomo is not active
 	}
 
-	elites := c.all.ByEntry[11664]  // Famewaker elite
-	healers := c.all.ByEntry[11663] // Flamewaker healer
-	if len(elites)+len(healers) != 8 {
+	// We need 8 ads to check
+	if len(c.party) != 8 {
 		return
 	}
 
-	for _, char := range elites {
-		if char.IsActive() {
-			return
-		}
-	}
-
-	for _, char := range healers {
-		if char.IsActive() {
+	for _, c := range c.party {
+		if c.IsActive() {
 			return
 		}
 	}

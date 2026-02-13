@@ -8,14 +8,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '../public/chronicle');
 const sourceImage = join(publicDir, 'ChronicleFavicon.png');
 
+// Background color #2b2b2b
+const background = { r: 0x2b, g: 0x2b, b: 0x2b };
+
 async function generateFavicons() {
-  const sizes = [16, 32, 48];
+  const sizes = [16, 32, 48, 64, 128, 256];
   const pngBuffers = [];
 
   // Generate resized PNGs
   for (const size of sizes) {
     const buffer = await sharp(sourceImage)
-      .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .resize(size, size, { fit: 'contain', background })
+      .flatten({ background })
       .png({ quality: 90, compressionLevel: 9 })
       .toBuffer();
     pngBuffers.push(buffer);
@@ -23,7 +27,8 @@ async function generateFavicons() {
     // Also save individual PNGs for apple-touch-icon etc
     if (size === 32) {
       await sharp(sourceImage)
-        .resize(size, size)
+        .resize(size, size, { fit: 'contain', background })
+        .flatten({ background })
         .png({ quality: 90, compressionLevel: 9 })
         .toFile(join(publicDir, 'favicon-32x32.png'));
     }

@@ -85,8 +85,7 @@ export function Home() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Raid Leaders</h3>
               <p className="text-muted-foreground">
-                Coach more effectively with fast, interpretable insight that highlights where 
-                improvements matter most.
+                Coach more effectively with actionable insights.
               </p>
             </div>
             
@@ -97,7 +96,7 @@ export function Home() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Guild Masters</h3>
               <p className="text-muted-foreground">
-                Use Chronicle as a transparent record of performance and progression.
+                Record your group's performance and progression.
               </p>
             </div>
             
@@ -108,7 +107,7 @@ export function Home() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Individual Players</h3>
               <p className="text-muted-foreground">
-                See how individual actions contribute to group success.
+                Connect personal contributions to collective progress.
               </p>
             </div>
           </div>
@@ -133,7 +132,7 @@ export function Home() {
               </div>
               <h3 className="text-lg font-semibold mb-2">Upload the Raid Log</h3>
               <p className="text-muted-foreground">
-                Capture the full run once the night wraps up, while it's still fresh.
+                Capture the full run as the night wraps up, while it's still fresh.
               </p>
             </div>
             
@@ -145,9 +144,9 @@ export function Home() {
                 </div>
                 <Eye className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Review What Happened Together</h3>
+              <h3 className="text-lg font-semibold mb-2">Review What Happened</h3>
               <p className="text-muted-foreground">
-                See contributions, resource use, and where time was gained or lost.
+                See contributions, resource use, and where time was lost.
               </p>
             </div>
             

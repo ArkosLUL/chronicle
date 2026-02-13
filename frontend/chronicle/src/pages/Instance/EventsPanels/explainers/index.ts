@@ -1,0 +1,48 @@
+/**
+ * Registry of panel explainers.
+ * 
+ * Only panels with explainers defined here will show the ? help button.
+ * Import explainers from their co-located files in each panel directory.
+ */
+
+import type { PanelExplainer } from "../../PanelExplainer/types";
+import type { EventsPanelType } from "../EventsPanel";
+
+// Import explainers from panel directories
+// These will be added as panels get their explainers
+import { damageDoneExplainer } from "../DamageDone/DamageDone.explainer";
+import { healingDoneExplainer } from "../HealingDone/HealingDone.explainer";
+import { deathLogExplainer } from "../Deaths/DeathLog.explainer";
+import { damageTakenExplainer } from "../DamageTaken/DamageTaken.explainer";
+import { rolesExplainer } from "../Roles/Roles.explainer";
+
+/**
+ * Map of panel types to their explainer configurations.
+ * 
+ * Partial because not all panels have explainers yet.
+ * The ? button only appears for panels in this registry.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const PANEL_EXPLAINERS: Partial<Record<EventsPanelType, PanelExplainer<any>>> = {
+  damage_done: damageDoneExplainer,
+  enemy_damage_done: damageDoneExplainer, // Same explainer, different context
+  healing_done: healingDoneExplainer,
+  death_log: deathLogExplainer,
+  damage_taken: damageTakenExplainer,
+  enemy_damage_taken: damageTakenExplainer, // Same explainer, different context
+  roles: rolesExplainer,
+};
+
+/**
+ * Check if a panel has an explainer available.
+ */
+export function hasExplainer(panelType: EventsPanelType): boolean {
+  return panelType in PANEL_EXPLAINERS;
+}
+
+/**
+ * Get the explainer for a panel type, if available.
+ */
+export function getExplainer(panelType: EventsPanelType): PanelExplainer | undefined {
+  return PANEL_EXPLAINERS[panelType];
+}

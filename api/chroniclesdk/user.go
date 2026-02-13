@@ -7,11 +7,16 @@ import (
 )
 
 type Session struct {
-	UserID               uuid.UUID `json:"user_id"`
-	SessionID            uuid.UUID `json:"session_id"`
-	Roles                []string  `json:"roles"`
-	MaxStorageBytes      int64     `json:"max_storage_bytes"`
-	ConsumedStorageBytes int64     `json:"consumed_storage_bytes"`
+	UserID               uuid.UUID   `json:"user_id"`
+	SessionID            uuid.UUID   `json:"session_id"`
+	Roles                []string    `json:"roles"`
+	MaxStorageBytes      int64       `json:"max_storage_bytes"`
+	ConsumedStorageBytes int64       `json:"consumed_storage_bytes"`
+	Preferences          Preferences `json:"preferences"`
+}
+
+type Preferences struct {
+	HelpfulHints bool `json:"helpful_hints"`
 }
 
 type User struct {

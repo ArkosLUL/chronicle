@@ -23,10 +23,34 @@ function TooltipProvider({
 function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+}
+
+/**
+ * HintTooltip - Tooltip variant for helpful hints with stable, delayed behavior.
+ * 
+ * Use this for contextual help tooltips (RandomTip, info icons) to prevent
+ * flicker when moving the mouse quickly. Regular `Tooltip` remains instant
+ * for data displays like breakout panels.
+ * 
+ * Uses its own provider to avoid inheriting the global provider's aggressive
+ * skipDelay and disableHoverableContent settings.
+ */
+function HintTooltip({
+  delayDuration = 300,
+  children,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
   return (
-    <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
-    </TooltipProvider>
+    <TooltipPrimitive.Provider
+      delayDuration={delayDuration}
+      skipDelayDuration={0}
+      disableHoverableContent={false}
+    >
+      <TooltipPrimitive.Root data-slot="tooltip" {...props}>
+        {children}
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   )
 }
 
@@ -61,4 +85,4 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, HintTooltip }

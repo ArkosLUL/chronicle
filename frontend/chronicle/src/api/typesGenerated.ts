@@ -117,6 +117,12 @@ export interface PeriodMoment {
     readonly reason: string;
 }
 
+// From chroniclesdk/user.go
+export interface Preferences {
+    readonly helpful_hints: boolean;
+    readonly explainer_panels: boolean;
+}
+
 // From chroniclesdk/log.go
 /**
  * RecentEncounter is a simplified encounter summary for the recent raids list.
@@ -232,6 +238,7 @@ export interface Session {
     readonly roles: readonly string[];
     readonly max_storage_bytes: number;
     readonly consumed_storage_bytes: number;
+    readonly preferences: Preferences;
 }
 
 // From chroniclesdk/user.go

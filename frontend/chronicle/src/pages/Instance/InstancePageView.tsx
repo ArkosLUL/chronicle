@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -12,11 +14,15 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible/Collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, HintTooltip } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
 import { EventsPanel, type EventsPanelType, type PanelContext, type EntitySelection } from "./EventsPanels";
 import { PanelTimingProvider, PanelTimingDisplay, PanelTimingResetter } from "./EventsPanels/PanelTimingContext";
+import { PanelExplainerView } from "./PanelExplainer";
+import { RandomTip } from "@/components/RandomTip";
+import { InstanceHelpSheet } from "@/components/HelpSheet";
+import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 
 // ============================================================================
 // Formatting helpers
@@ -180,6 +186,7 @@ function EncounterSidebar({
   onSelectMany,
   onCollapse,
   isMobile,
+  showHints,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
@@ -188,6 +195,7 @@ function EncounterSidebar({
   onSelectMany: (ids: string[]) => void;
   onCollapse: () => void;
   isMobile: boolean;
+  showHints: boolean;
 }) {
   const bossEncounters = encounters
     .filter((e) => e.boss)
@@ -235,10 +243,23 @@ function EncounterSidebar({
     )}>
       <div className="mb-3 flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
             Encounters
+            {showHints && (
+              <HintTooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-muted-foreground/50 hover:text-muted-foreground">
+                    <HelpCircle className="h-3 w-3" />
+                    <span className="sr-only">Tips</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px]">
+                  <RandomTip id="encounters" tips={ENCOUNTER_TIPS} />
+                </TooltipContent>
+              </HintTooltip>
+            )}
             {selectedIds.length > 1 && (
-              <span className="ml-2 text-xs">({selectedIds.length} selected)</span>
+              <span className="text-xs">({selectedIds.length})</span>
             )}
           </h3>
           <div className="flex gap-1 mt-1.5">
@@ -473,6 +494,10 @@ interface EncounterDetailProps {
   onTogglePlayers: (playerIds: string[]) => void;
   onClearSelection: () => void;
   onSelectEncounters: (encounterIds: string[]) => void;
+  /** Callback when user clicks the explainer button on a panel */
+  onExplainerClick: (panelType: EventsPanelType) => void;
+  /** Whether to show helpful hints (tooltips, help icons) */
+  showHints: boolean;
 }
 
 function EncounterDetail({ 
@@ -488,6 +513,8 @@ function EncounterDetail({
   onTogglePlayers,
   onClearSelection,
   onSelectEncounters,
+  onExplainerClick,
+  showHints,
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
@@ -668,6 +695,19 @@ function EncounterDetail({
                     )}
                   </TabsTrigger>
                 </TabsList>
+                {showHints && (
+                  <HintTooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-muted-foreground/50 hover:text-muted-foreground">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                        <span className="sr-only">Entity filtering tips</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[200px]">
+                      <RandomTip id="entity-panel" tips={ENTITY_TIPS} />
+                    </TooltipContent>
+                  </HintTooltip>
+                )}
                 {hasSelection && (
                   <button
                     onClick={onClearSelection}
@@ -751,14 +791,31 @@ function EncounterDetail({
                     <div className="flex flex-wrap gap-x-3 gap-y-2">
                       {playersByClass.map(({ className, players: classPlayers }) => (
                         <div key={className} className="flex items-center gap-1">
-                          <span 
-                            className="text-2xs font-medium cursor-pointer hover:underline"
-                            style={{ color: `var(--class-${className.toLowerCase()})` }}
-                            onClick={() => onTogglePlayers(classPlayers.map(p => p.guid))}
-                            title={`Toggle all ${className.toLowerCase()}s`}
-                          >
-                            {className.slice(0, 3)}:
-                          </span>
+                          {showHints ? (
+                            <HintTooltip>
+                              <TooltipTrigger asChild>
+                                <span 
+                                  className="text-2xs font-medium cursor-pointer hover:underline"
+                                  style={{ color: `var(--class-${className.toLowerCase()})` }}
+                                  onClick={() => onTogglePlayers(classPlayers.map(p => p.guid))}
+                                >
+                                  {className.slice(0, 3)}:
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[180px]">
+                                <RandomTip id={`class-${className}`} tips={CLASS_TOGGLE_TIPS} />
+                              </TooltipContent>
+                            </HintTooltip>
+                          ) : (
+                            <span 
+                              className="text-2xs font-medium cursor-pointer hover:underline"
+                              style={{ color: `var(--class-${className.toLowerCase()})` }}
+                              onClick={() => onTogglePlayers(classPlayers.map(p => p.guid))}
+                              title={`Toggle all ${className.toLowerCase()}s`}
+                            >
+                              {className.slice(0, 3)}:
+                            </span>
+                          )}
                           {classPlayers.map((player) => {
                             const isSelected = isPlayerSelected(player.guid);
                             return (
@@ -811,6 +868,8 @@ function EncounterDetail({
             durationMs={totalDurationMs}
             context={panelContext}
             panelIndex={0}
+            onExplainerClick={onExplainerClick}
+            showHints={showHints}
           />
           <EventsPanel
             panelType={eventsPanel2Type}
@@ -818,6 +877,8 @@ function EncounterDetail({
             durationMs={totalDurationMs}
             context={panelContext}
             panelIndex={1}
+            onExplainerClick={onExplainerClick}
+            showHints={showHints}
           />
           <EventsPanel
             panelType={eventsPanel3Type}
@@ -825,6 +886,8 @@ function EncounterDetail({
             durationMs={totalDurationMs}
             context={panelContext}
             panelIndex={2}
+            onExplainerClick={onExplainerClick}
+            showHints={showHints}
           />
           <EventsPanel
             panelType={eventsPanel4Type}
@@ -832,6 +895,8 @@ function EncounterDetail({
             durationMs={totalDurationMs}
             context={panelContext}
             panelIndex={3}
+            onExplainerClick={onExplainerClick}
+            showHints={showHints}
           />
           {/* 5th panel spans full width */}
           <div className="lg:col-span-2">
@@ -841,6 +906,8 @@ function EncounterDetail({
               durationMs={totalDurationMs}
               context={panelContext}
               panelIndex={4}
+              onExplainerClick={onExplainerClick}
+              showHints={showHints}
             />
           </div>
         </div>
@@ -870,7 +937,26 @@ export function InstancePageView({
   onSelectEncounters,
   youtubeButton,
 }: InstancePageViewProps) {
-
+  // URL state for explainer mode (simple ?explain=panel_type)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const explainerPanelType = searchParams.get("explain") as EventsPanelType | null;
+  
+  const handleExplainerClick = useCallback((panelType: EventsPanelType) => {
+    setSearchParams(prev => {
+      prev.set("explain", panelType);
+      return prev;
+    });
+  }, [setSearchParams]);
+  
+  const handleExplainerExit = useCallback(() => {
+    setSearchParams(prev => {
+      prev.delete("explain");
+      return prev;
+    });
+  }, [setSearchParams]);
+  
+  // Get user preference for showing helpful hints
+  const showHints = useHelpfulHints();
   
   // Compute all enemies from all encounters (GUID-sorted for stable URL indexing)
   const allMergedEnemies = useMemo(
@@ -1007,6 +1093,40 @@ export function InstancePageView({
   const totalDuration = instance.endTime
     ? formatDuration(instance.startTime, instance.endTime)
     : null;
+    
+  // Compute total duration for explainer view
+  const totalDurationMs = useMemo(() => {
+    return selectedEncounters.reduce((acc, enc) => {
+      const start = new Date(enc.start_time).getTime();
+      const end = new Date(enc.end_time).getTime();
+      return acc + (end - start);
+    }, 0);
+  }, [selectedEncounters]);
+  
+  // Build panel context for explainer view
+  const explainerPanelContext: PanelContext = useMemo(() => ({
+    instance,
+    selectedEncounterIds: selectedEncounters.map(e => e.id),
+    entitySelection: {
+      enemyIds: viewState.enemies,
+      playerIds: viewState.players,
+    },
+    onSelectEncounters: setInternalSelectedIds,
+    onTogglePlayer: togglePlayerSelection,
+    onTogglePlayers: togglePlayersSelection,
+  }), [instance, selectedEncounters, viewState.enemies, viewState.players, setInternalSelectedIds, togglePlayerSelection, togglePlayersSelection]);
+  
+  // If explainer mode is active on desktop, show only the explainer view
+  if (explainerPanelType && !isMobile) {
+    return (
+      <PanelExplainerView
+        panelType={explainerPanelType}
+        context={explainerPanelContext}
+        durationMs={totalDurationMs}
+        onExit={handleExplainerExit}
+      />
+    );
+  }
 
   return (
     <div className={cn(
@@ -1030,7 +1150,10 @@ export function InstancePageView({
               {totalDuration && ` • ${totalDuration}`}
             </p>
           </div>
-          {youtubeButton}
+          <div className="flex items-center gap-2">
+            {youtubeButton}
+            {showHints && !isMobile && <InstanceHelpSheet />}
+          </div>
         </div>
       </div>
 
@@ -1055,6 +1178,7 @@ export function InstancePageView({
               setInternalSelectedIds(ids);
             }}
             isMobile={isMobile}
+            showHints={showHints}
           />
         )}
         
@@ -1085,6 +1209,8 @@ export function InstancePageView({
             onTogglePlayers={togglePlayersSelection}
             onClearSelection={clearEntitySelection}
             onSelectEncounters={setInternalSelectedIds}
+            onExplainerClick={handleExplainerClick}
+            showHints={showHints}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">

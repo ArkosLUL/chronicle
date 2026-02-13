@@ -109,8 +109,8 @@ function groupTrashEncounters(encounters: Encounter[]): TrashGroup[] {
   return Array.from(groups.entries()).map(([name, encs]) => ({
     name,
     encounters: encs,
-    kills: encs.filter((e) => e.kill).length,
-    wipes: encs.filter((e) => !e.kill).length,
+    kills: encs.filter((e) => e.kill_type !== "wipe").length,
+    wipes: encs.filter((e) => e.kill_type === "wipe").length,
   }));
 }
 
@@ -310,7 +310,7 @@ function EncounterSidebar({
         <div className="space-y-1">
           {chronologicalEncounters.map((encounter) => {
             const isSelected = selectedIds.includes(encounter.id);
-            const isWipe = !encounter.kill;
+            const isWipe = encounter.kill_type === "wipe";
             
             return (
               <button
@@ -325,7 +325,7 @@ function EncounterSidebar({
                   !encounter.boss && !isSelected && "text-muted-foreground"
                 )}
               >
-                {encounter.kill ? (
+                {encounter.kill_type !== "wipe" ? (
                   <CheckCircle className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-green-500" : "text-green-500/60")} />
                 ) : (
                   <Skull className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-red-500" : "text-red-500/60")} />
@@ -346,7 +346,7 @@ function EncounterSidebar({
       <div className="space-y-1">
         {bossEncounters.map((encounter) => {
           const isSelected = selectedIds.includes(encounter.id);
-          const isWipe = !encounter.kill;
+          const isWipe = encounter.kill_type === "wipe";
           
           return (
             <button
@@ -360,7 +360,7 @@ function EncounterSidebar({
                 isWipe && !isSelected && "opacity-60"
               )}
             >
-              {encounter.kill ? (
+              {encounter.kill_type !== "wipe" ? (
                 <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
               ) : (
                 <Skull className="h-4 w-4 shrink-0 text-red-500" />
@@ -423,7 +423,7 @@ function EncounterSidebar({
                                 : "hover:bg-accent/50 hover:translate-x-0.5 opacity-60"
                             )}
                           >
-                            {encounter.kill ? (
+                            {encounter.kill_type !== "wipe" ? (
                               <CheckCircle className="h-3 w-3 text-green-500" />
                             ) : (
                               <Skull className="h-3 w-3 text-red-500" />
@@ -576,7 +576,7 @@ function EncounterDetail({
     : `${encounters.length} Encounters Selected`;
 
   const subtitle = isSingle
-    ? (!encounter.kill ? "(Wipe)" : null)
+    ? (encounter.kill_type === "wipe" ? "(Wipe)" : null)
     : encounters.map(e => e.name).filter((v, i, a) => a.indexOf(v) === i).join(", ");
 
   return (
@@ -585,7 +585,7 @@ function EncounterDetail({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           {isSingle && (
-            encounter.kill ? (
+            encounter.kill_type !== "wipe" ? (
               <CheckCircle className="h-6 w-6 text-green-500" />
             ) : (
               <Skull className="h-6 w-6 text-red-500" />

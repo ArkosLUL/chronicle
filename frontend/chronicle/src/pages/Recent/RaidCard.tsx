@@ -196,23 +196,25 @@ export function RaidCard({ instance }: RaidCardProps) {
               {instance.encounters
                 .filter(e => e.boss)
                 .slice(0, 3)
-                .map((enc, i) => (
-                  <span
-                    key={i}
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${
-                      enc.kill
-                        ? "bg-green-500/30 text-green-300"
-                        : "bg-red-500/30 text-red-300"
-                    }`}
-                  >
-                    {enc.kill ? (
-                      <CheckCircle className="h-2.5 w-2.5" />
-                    ) : (
-                      <XCircle className="h-2.5 w-2.5" />
-                    )}
-                    <span className="truncate max-w-[70px]">{enc.name}</span>
-                  </span>
-                ))}
+                .map((enc, i) => {
+                  const styleClasses = 
+                    enc.kill_type === "clean" ? "bg-green-500/30 text-green-300" :
+                    enc.kill_type === "partial" ? "bg-yellow-500/30 text-yellow-300" :
+                    "bg-red-500/30 text-red-300";
+                  return (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${styleClasses}`}
+                    >
+                      {enc.kill_type !== "wipe" ? (
+                        <CheckCircle className="h-2.5 w-2.5" />
+                      ) : (
+                        <XCircle className="h-2.5 w-2.5" />
+                      )}
+                      <span className="truncate max-w-[70px]">{enc.name}</span>
+                    </span>
+                  );
+                })}
               {instance.encounters.filter(e => e.boss).length > 3 && (
                 <span className="text-xs text-white/60 bg-black/40 px-1.5 py-0.5 rounded">
                   +{instance.encounters.filter(e => e.boss).length - 3}

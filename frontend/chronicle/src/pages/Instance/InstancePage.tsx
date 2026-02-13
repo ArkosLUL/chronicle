@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Loader2, Youtube, Timer } from "lucide-react";
 import { useInstance, useInstanceYoutube } from "@/api/queries";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
-import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles } from "@/api/typesGenerated";
+import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, KillType } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { InstancePageView } from "./InstancePageView";
@@ -25,7 +25,7 @@ export interface Encounter {
   id: string;
   name: string;
   boss: boolean;
-  kill: boolean;
+  kill_type: KillType;
   start_time: string;
   end_time: string;
   enemies?: EnemyUnit[];
@@ -89,7 +89,7 @@ function transformToInstance(
       id: enc.id,
       name: enc.name,
       boss: enc.boss,
-      kill: enc.kill,
+      kill_type: enc.kill_type,
       start_time: enc.start_time,
       end_time: enc.end_time,
       players,

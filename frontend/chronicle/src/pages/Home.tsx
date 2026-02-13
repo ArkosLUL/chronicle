@@ -17,7 +17,7 @@ export function Home() {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
             Every raid tells a story.
             <br />
-            <span className="text-sky-400">Chronicle helps you read it.</span>
+            <span className="text-[var(--tertiary)]">Chronicle helps you read it.</span>
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -30,7 +30,7 @@ export function Home() {
               <Link to="/logs">View a Sample Guild</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <Link to="/upload">How to do this for your next raid</Link>
+              <Link to="/upload">How to Do This for Your Next Raid</Link>
             </Button>
           </div>
           
@@ -74,7 +74,7 @@ export function Home() {
       <section className="py-16 md:py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-            Built for those who lead in the moment and learn from the chronicle.
+            Built for those who lead in the moment and learn from the Chronicle.
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -131,7 +131,7 @@ export function Home() {
                 </div>
                 <Upload className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Upload the raid log</h3>
+              <h3 className="text-lg font-semibold mb-2">Upload the Raid Log</h3>
               <p className="text-muted-foreground">
                 Capture the full run once the night wraps up, while it's still fresh.
               </p>
@@ -145,7 +145,7 @@ export function Home() {
                 </div>
                 <Eye className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Review what happened together</h3>
+              <h3 className="text-lg font-semibold mb-2">Review What Happened Together</h3>
               <p className="text-muted-foreground">
                 See contributions, resource use, and where time was gained or lost.
               </p>
@@ -159,7 +159,7 @@ export function Home() {
                 </div>
                 <Share2 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Share the chronicle</h3>
+              <h3 className="text-lg font-semibold mb-2">Share the Chronicle</h3>
               <p className="text-muted-foreground">
                 Use it as a shared reference for discussion and improvement.
               </p>

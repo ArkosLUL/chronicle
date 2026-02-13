@@ -39,15 +39,15 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
+    <div className="flex min-h-svh flex-col items-center justify-center pb-50">
       <div className="w-full max-w-md space-y-8 px-4">
         <div className="text-center">
           <img 
-            src="/chronicle/logo.png" 
+            src="/public/chronicle/ChronicleLogo.svg" 
             alt="Chronicle Logo" 
-            className="mx-auto h-20 w-20"
+            className="mx-auto h-80 w-80"
           />
-          <h1 className="mt-6 text-3xl font-bold tracking-tight">
+          <h1 className="mt-4 text-3xl font-bold tracking-tight">
             Welcome to Chronicle
           </h1>
         </div>

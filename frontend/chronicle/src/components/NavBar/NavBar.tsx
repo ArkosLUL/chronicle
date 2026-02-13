@@ -46,8 +46,8 @@ export function NavBar() {
   return (
     <nav className="flex items-center justify-between p-4 border-b">
       <div className="flex items-center gap-6">
-        <Link to="/" className="text-xl font-bold">
-          Chronicle
+        <Link to="/" className="flex items-center">
+          <img src="/public/chronicle/ChronicleLogoType.svg" alt="Chronicle" className="h-8" />
         </Link>
         <Link 
           to="/recent" 

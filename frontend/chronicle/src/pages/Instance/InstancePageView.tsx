@@ -459,8 +459,8 @@ interface EncounterDetailProps {
   encounters: Encounter[];
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
-  panelTypes: [PanelType, PanelType, PanelType, PanelType];
-  onPanelTypeChange: (index: 0 | 1 | 2 | 3, type: PanelType) => void;
+  panelTypes: [PanelType, PanelType, PanelType, PanelType, PanelType];
+  onPanelTypeChange: (index: 0 | 1 | 2 | 3 | 4, type: PanelType) => void;
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
@@ -488,11 +488,12 @@ function EncounterDetail({
   
   // Panel types from props (managed by parent via URL state)
   // Note: PanelType and EventsPanelType are identical unions, cast for compatibility
-  const [eventsPanel1Type, eventsPanel2Type, eventsPanel3Type, eventsPanel4Type] = panelTypes;
+  const [eventsPanel1Type, eventsPanel2Type, eventsPanel3Type, eventsPanel4Type, eventsPanel5Type] = panelTypes;
   const setEventsPanel1Type = (type: EventsPanelType) => onPanelTypeChange(0, type as PanelType);
   const setEventsPanel2Type = (type: EventsPanelType) => onPanelTypeChange(1, type as PanelType);
   const setEventsPanel3Type = (type: EventsPanelType) => onPanelTypeChange(2, type as PanelType);
   const setEventsPanel4Type = (type: EventsPanelType) => onPanelTypeChange(3, type as PanelType);
+  const setEventsPanel5Type = (type: EventsPanelType) => onPanelTypeChange(4, type as PanelType);
   
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
@@ -792,8 +793,8 @@ function EncounterDetail({
           </Card>
         </Collapsible>
       </Tabs>
-      {/* Events Panels - 2x2 grid */}
-      <PanelTimingProvider panelCount={4}>
+      {/* Events Panels - 2x2 grid + full-width 5th panel */}
+      <PanelTimingProvider panelCount={5}>
         <PanelTimingResetter encounters={encounters} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
           <EventsPanel
@@ -824,6 +825,16 @@ function EncounterDetail({
             context={panelContext}
             panelIndex={3}
           />
+          {/* 5th panel spans full width */}
+          <div className="lg:col-span-2">
+            <EventsPanel
+              panelType={eventsPanel5Type}
+              onPanelTypeChange={setEventsPanel5Type}
+              durationMs={totalDurationMs}
+              context={panelContext}
+              panelIndex={4}
+            />
+          </div>
         </div>
         <div className="mt-4 flex justify-end">
           <PanelTimingDisplay />
@@ -873,7 +884,7 @@ export function InstancePageView({
     players: instance.players ?? {},
     defaults: {
       encounterIds: instance.encounters.map(e => e.id),
-      panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done'],
+      panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done', 'empty'],
     },
   });
   

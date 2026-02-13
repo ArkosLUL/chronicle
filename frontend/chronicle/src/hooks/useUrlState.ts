@@ -647,8 +647,8 @@ export interface InstanceViewState {
   enemies: Set<string>;
   /** Selected player IDs */
   players: Set<string>;
-  /** Panel types for panels 1-4 */
-  panels: [PanelType, PanelType, PanelType, PanelType];
+  /** Panel types for panels 1-5 (5th is full-width) */
+  panels: [PanelType, PanelType, PanelType, PanelType, PanelType];
 }
 
 export interface InstanceViewStateConfig {
@@ -661,7 +661,7 @@ export interface InstanceViewStateConfig {
   /** Default values */
   defaults: {
     encounterIds: string[];
-    panels: [PanelType, PanelType, PanelType, PanelType];
+    panels: [PanelType, PanelType, PanelType, PanelType, PanelType];
   };
 }
 
@@ -674,7 +674,7 @@ export interface InstanceViewStateConfig {
  * - encounters: "all", "bosses", "trash", or comma-separated indices
  * - enemies: comma-separated indices (empty if none)
  * - players: comma-separated indices (empty if none)
- * - panels: 4 short codes separated by commas
+ * - panels: 5 short codes separated by dashes
  * 
  * @example
  * ```tsx
@@ -685,7 +685,7 @@ export interface InstanceViewStateConfig {
  *     players: instance.players,
  *     defaults: {
  *       encounterIds: [defaultEncounterId],
- *       panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done'],
+ *       panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done', 'empty'],
  *     },
  *   });
  * ```
@@ -695,7 +695,7 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
   setEncounters: (ids: string[] | ((prev: string[]) => string[])) => void;
   setEnemies: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   setPlayers: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
-  setPanelType: (index: 0 | 1 | 2 | 3, type: PanelType) => void;
+  setPanelType: (index: 0 | 1 | 2 | 3 | 4, type: PanelType) => void;
   clearEntitySelection: () => void;
 } {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -794,13 +794,14 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
           .filter((id): id is string => id !== undefined)
       );
       
-      // Parse panels
+      // Parse panels (backward compatible - missing 5th defaults to config default)
       const panelCodes = (panelPart || '').split('-');
-      const panels: [PanelType, PanelType, PanelType, PanelType] = [
+      const panels: [PanelType, PanelType, PanelType, PanelType, PanelType] = [
         CODE_TO_PANEL[panelCodes[0]] ?? config.defaults.panels[0],
         CODE_TO_PANEL[panelCodes[1]] ?? config.defaults.panels[1],
         CODE_TO_PANEL[panelCodes[2]] ?? config.defaults.panels[2],
         CODE_TO_PANEL[panelCodes[3]] ?? config.defaults.panels[3],
+        CODE_TO_PANEL[panelCodes[4]] ?? config.defaults.panels[4],
       ];
       
       return { encounters, enemies, players, panels };
@@ -889,8 +890,8 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
     updateUrl({ ...state, players: newPlayers });
   }, [state, updateUrl]);
 
-  const setPanelType = useCallback((index: 0 | 1 | 2 | 3, type: PanelType) => {
-    const newPanels = [...state.panels] as [PanelType, PanelType, PanelType, PanelType];
+  const setPanelType = useCallback((index: 0 | 1 | 2 | 3 | 4, type: PanelType) => {
+    const newPanels = [...state.panels] as [PanelType, PanelType, PanelType, PanelType, PanelType];
     newPanels[index] = type;
     updateUrl({ ...state, panels: newPanels });
   }, [state, updateUrl]);

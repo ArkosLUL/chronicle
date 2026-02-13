@@ -69,7 +69,9 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		}
 		encounterName := ""
 		encounterType := types.EncounterTypeTRASH
-		boss := false
+		isBossFight := false
+		// TODO: Fix to boss count, as there can be 2 bosses
+		aBossRemains := false
 		for hid, h := range fight.Hostiles {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
@@ -83,7 +85,10 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 				continue
 			}
 			if id.Boss {
-				boss = true
+				isBossFight = true
+				// Check if this boss was slain
+				lastPeriod := h.Activity[len(h.Activity)-1]
+				aBossRemains = aBossRemains || !lastPeriod.Slain
 			}
 
 			// Always take the encounter name if set
@@ -101,13 +106,26 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		}
 
 		remaining := fight.Remaining()
+
+		// Determine kill type based on remaining enemies and boss status
+		var killType KillType
+		if len(remaining) == 0 {
+			killType = KillTypeClean
+		} else if isBossFight && !aBossRemains {
+			// No bosses remain, but it was a boss fight.
+			// An add probably lived
+			killType = KillTypePartial
+		} else {
+			killType = KillTypeWipe
+		}
+
 		encounters = append(encounters, Encounter{
 			Name:      encounterName,
 			Type:      encounterType,
 			Combat:    fight,
-			IsKill:    len(remaining) == 0,
+			KillType:  killType,
 			Remaining: remaining,
-			Boss:      boss,
+			Boss:      isBossFight,
 		})
 	}
 

@@ -180,9 +180,9 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 			inst.Encounters = make([]chroniclesdk.RecentEncounter, 0, len(encounters))
 			for _, enc := range encounters {
 				inst.Encounters = append(inst.Encounters, chroniclesdk.RecentEncounter{
-					Name: enc.Name,
-					Boss: enc.Boss,
-					Kill: enc.Kill,
+					Name:     enc.Name,
+					Boss:     enc.Boss,
+					KillType: chroniclesdk.KillType(enc.KillType),
 				})
 			}
 		}

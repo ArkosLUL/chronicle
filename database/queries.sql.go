@@ -530,7 +530,7 @@ func (q *sqlQuerier) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.U
 
 const encountersByInstanceID = `-- name: EncountersByInstanceID :many
 SELECT
-  id, instance_id, name, kill, remaining, boss, start_time, end_time
+  id, instance_id, name, remaining, boss, start_time, end_time, kill_type
 FROM
   log_instance_encounters
 WHERE
@@ -550,11 +550,11 @@ func (q *sqlQuerier) EncountersByInstanceID(ctx context.Context, instanceID uuid
 			&i.ID,
 			&i.InstanceID,
 			&i.Name,
-			&i.Kill,
 			&i.Remaining,
 			&i.Boss,
 			&i.StartTime,
 			&i.EndTime,
+			&i.KillType,
 		); err != nil {
 			return nil, err
 		}
@@ -571,17 +571,17 @@ SELECT
     lie.id,
     lie.name,
     lie.boss,
-    lie.kill
+    lie.kill_type
 FROM log_instance_encounters lie
 WHERE lie.instance_id = $1
 ORDER BY lie.start_time ASC
 `
 
 type GetEncounterSummariesByInstanceIDRow struct {
-	ID   uuid.UUID `db:"id" json:"id"`
-	Name string    `db:"name" json:"name"`
-	Boss bool      `db:"boss" json:"boss"`
-	Kill bool      `db:"kill" json:"kill"`
+	ID       uuid.UUID `db:"id" json:"id"`
+	Name     string    `db:"name" json:"name"`
+	Boss     bool      `db:"boss" json:"boss"`
+	KillType KillType  `db:"kill_type" json:"kill_type"`
 }
 
 func (q *sqlQuerier) GetEncounterSummariesByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]GetEncounterSummariesByInstanceIDRow, error) {
@@ -597,7 +597,7 @@ func (q *sqlQuerier) GetEncounterSummariesByInstanceID(ctx context.Context, inst
 			&i.ID,
 			&i.Name,
 			&i.Boss,
-			&i.Kill,
+			&i.KillType,
 		); err != nil {
 			return nil, err
 		}
@@ -645,17 +645,17 @@ func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, in
 
 const insertEncounter = `-- name: InsertEncounter :one
 INSERT INTO
-  log_instance_encounters (id, instance_id, name, kill, remaining, boss, start_time, end_time)
+  log_instance_encounters (id, instance_id, name, kill_type, remaining, boss, start_time, end_time)
 VALUES
   ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, instance_id, name, kill, remaining, boss, start_time, end_time
+RETURNING id, instance_id, name, remaining, boss, start_time, end_time, kill_type
 `
 
 type InsertEncounterParams struct {
 	ID         uuid.UUID          `db:"id" json:"id"`
 	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
 	Name       string             `db:"name" json:"name"`
-	Kill       bool               `db:"kill" json:"kill"`
+	KillType   KillType           `db:"kill_type" json:"kill_type"`
 	Remaining  guid.GUIDs         `db:"remaining" json:"remaining"`
 	Boss       bool               `db:"boss" json:"boss"`
 	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
@@ -667,7 +667,7 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 		arg.ID,
 		arg.InstanceID,
 		arg.Name,
-		arg.Kill,
+		arg.KillType,
 		arg.Remaining,
 		arg.Boss,
 		arg.StartTime,
@@ -678,11 +678,11 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 		&i.ID,
 		&i.InstanceID,
 		&i.Name,
-		&i.Kill,
 		&i.Remaining,
 		&i.Boss,
 		&i.StartTime,
 		&i.EndTime,
+		&i.KillType,
 	)
 	return i, err
 }
@@ -873,7 +873,7 @@ SELECT
     wlg.created_at as uploaded_at,
     (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
-    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
     g.id as guild_id,
@@ -986,7 +986,7 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     wlg.created_at as uploaded_at,
     (SELECT COUNT(*) FROM log_instance_players lip2 WHERE lip2.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
-    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
     g.id as guild_id,

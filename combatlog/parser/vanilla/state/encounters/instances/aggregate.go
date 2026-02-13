@@ -23,6 +23,18 @@ type OngoingFight struct {
 	End   *period.Moment
 }
 
+// KillType represents the outcome of an encounter.
+type KillType string
+
+const (
+	// KillTypeClean means all hostiles were killed - a complete victory.
+	KillTypeClean KillType = "clean"
+	// KillTypePartial means the boss was killed but adds remain alive.
+	KillTypePartial KillType = "partial"
+	// KillTypeWipe means the boss was not killed - raid wiped or reset.
+	KillTypeWipe KillType = "wipe"
+)
+
 // Encounter represents a named combat period in the logs.
 type Encounter struct {
 	// Name is the identifier for this encounter.
@@ -31,15 +43,15 @@ type Encounter struct {
 
 	// Period identifies the start/end of combat
 	Combat Fight
-	// If it is not a kill, it is a wipe (or reset)
-	IsKill    bool
+	// KillType indicates the outcome of the encounter
+	KillType  KillType
 	Remaining []guid.GUID
 	Boss      bool
 }
 
 func (e Encounter) NamedString(db *unitdb.Units) string {
 	var str strings.Builder
-	str.WriteString(fmt.Sprintf("%s Fight [Kill=%t]: against %d units\n", e.Type, e.IsKill, len(e.Combat.Hostiles)))
+	str.WriteString(fmt.Sprintf("%s Fight [KillType=%s]: against %d units\n", e.Type, e.KillType, len(e.Combat.Hostiles)))
 	str.WriteString(fmt.Sprintf("  Start: %s\n", e.Combat.Start.Format("15:04:05.000")))
 	str.WriteString(fmt.Sprintf("  End:   %s\n", e.Combat.End.Format("15:04:05.000")))
 	str.WriteString("  Hostiles:\n")

@@ -140,6 +140,11 @@ func (c *MajordomoParty) processAddCheck(m messages.Message) {
 		if c.IsActive() {
 			return
 		}
+
+		pd, ok := c.CurrentPeriod()
+		if !ok || !pd.Slain {
+			return
+		}
 	}
 
 	c.Died("all_adds_dead", m)

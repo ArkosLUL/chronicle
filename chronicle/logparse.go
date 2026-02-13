@@ -261,7 +261,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					ID:         enc.Combat.EncounterID,
 					InstanceID: dbinstance.ID,
 					Name:       enc.Name,
-					Kill:       enc.IsKill,
+					KillType:   database.KillType(enc.KillType),
 					Remaining:  enc.Remaining,
 					Boss:       enc.Boss,
 					StartTime:  database.Timestamptz(enc.Combat.Start),

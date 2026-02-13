@@ -61,12 +61,24 @@ type WoWInstance struct {
 	Guild      *Guild    `json:"guild,omitempty"`
 }
 
+// KillType represents the outcome of an encounter.
+type KillType string
+
+const (
+	// KillTypeClean means all hostiles were killed - a complete victory.
+	KillTypeClean KillType = "clean"
+	// KillTypePartial means the boss was killed but adds remain alive.
+	KillTypePartial KillType = "partial"
+	// KillTypeWipe means the boss was not killed - raid wiped or reset.
+	KillTypeWipe KillType = "wipe"
+)
+
 type WoWEncounter struct {
 	ID         uuid.UUID   `json:"id"`
 	InstanceID uuid.UUID   `json:"instance_id"`
 	Boss       bool        `json:"boss"`
 	Name       string      `json:"name"`
-	Kill       bool        `json:"kill"`
+	KillType   KillType    `json:"kill_type"`
 	Remaining  []guid.GUID `json:"remaining,omitempty"`
 	StartTime  time.Time   `json:"start_time"`
 	EndTime    time.Time   `json:"end_time"`
@@ -147,7 +159,7 @@ type RecentInstance struct {
 
 // RecentEncounter is a simplified encounter summary for the recent raids list.
 type RecentEncounter struct {
-	Name string `json:"name"`
-	Boss bool   `json:"boss"`
-	Kill bool   `json:"kill"`
+	Name     string   `json:"name"`
+	Boss     bool     `json:"boss"`
+	KillType KillType `json:"kill_type"`
 }

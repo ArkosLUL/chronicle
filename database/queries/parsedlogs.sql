@@ -22,7 +22,7 @@ RETURNING *
 
 -- name: InsertEncounter :one
 INSERT INTO
-  log_instance_encounters (id, instance_id, name, kill, remaining, boss, start_time, end_time)
+  log_instance_encounters (id, instance_id, name, kill_type, remaining, boss, start_time, end_time)
 VALUES
   ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *
@@ -115,7 +115,7 @@ SELECT
     wlg.created_at as uploaded_at,
     (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
-    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
     g.id as guild_id,
@@ -161,7 +161,7 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     wlg.created_at as uploaded_at,
     (SELECT COUNT(*) FROM log_instance_players lip2 WHERE lip2.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
-    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill = true) as boss_kills,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
     (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
     g.id as guild_id,
@@ -201,7 +201,7 @@ SELECT
     lie.id,
     lie.name,
     lie.boss,
-    lie.kill
+    lie.kill_type
 FROM log_instance_encounters lie
 WHERE lie.instance_id = $1
 ORDER BY lie.start_time ASC;

@@ -100,6 +100,11 @@ export interface JobStatus {
     readonly output?: Record<string, string>;
 }
 
+// From chroniclesdk/log.go
+export type KillType = "clean" | "partial" | "wipe";
+
+export const KillTypes: KillType[] = ["clean", "partial", "wipe"];
+
 // From chroniclesdk/response.go
 export interface LogUploadResponse {
     readonly log_id: string;
@@ -119,7 +124,7 @@ export interface PeriodMoment {
 export interface RecentEncounter {
     readonly name: string;
     readonly boss: boolean;
-    readonly kill: boolean;
+    readonly kill_type: KillType;
 }
 
 // From chroniclesdk/log.go
@@ -297,7 +302,7 @@ export interface WoWEncounter {
     readonly instance_id: string;
     readonly boss: boolean;
     readonly name: string;
-    readonly kill: boolean;
+    readonly kill_type: KillType;
     readonly remaining?: readonly GUID[];
     readonly start_time: string;
     readonly end_time: string;

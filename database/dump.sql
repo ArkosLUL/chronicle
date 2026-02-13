@@ -10,6 +10,12 @@ CREATE TYPE item_effect_type AS ENUM (
     'proc'
 );
 
+CREATE TYPE kill_type AS ENUM (
+    'clean',
+    'partial',
+    'wipe'
+);
+
 CREATE TYPE log_instance_event_type AS ENUM (
     'damage',
     'heal',
@@ -199,11 +205,11 @@ CREATE TABLE log_instance_encounters (
     id uuid NOT NULL,
     instance_id uuid NOT NULL,
     name text NOT NULL,
-    kill boolean NOT NULL,
     remaining wow_guid[] NOT NULL,
     boss boolean NOT NULL,
     start_time timestamp with time zone NOT NULL,
-    end_time timestamp with time zone NOT NULL
+    end_time timestamp with time zone NOT NULL,
+    kill_type kill_type NOT NULL
 );
 
 CREATE TABLE log_instance_events (

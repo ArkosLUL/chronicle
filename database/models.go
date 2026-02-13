@@ -77,6 +77,67 @@ func AllItemEffectTypeValues() []ItemEffectType {
 	}
 }
 
+type KillType string
+
+const (
+	KillTypeClean   KillType = "clean"
+	KillTypePartial KillType = "partial"
+	KillTypeWipe    KillType = "wipe"
+)
+
+func (e *KillType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = KillType(s)
+	case string:
+		*e = KillType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for KillType: %T", src)
+	}
+	return nil
+}
+
+type NullKillType struct {
+	KillType KillType `json:"kill_type"`
+	Valid    bool     `json:"valid"` // Valid is true if KillType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullKillType) Scan(value interface{}) error {
+	if value == nil {
+		ns.KillType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.KillType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullKillType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.KillType), nil
+}
+
+func (e KillType) Valid() bool {
+	switch e {
+	case KillTypeClean,
+		KillTypePartial,
+		KillTypeWipe:
+		return true
+	}
+	return false
+}
+
+func AllKillTypeValues() []KillType {
+	return []KillType{
+		KillTypeClean,
+		KillTypePartial,
+		KillTypeWipe,
+	}
+}
+
 type LogInstanceEventType string
 
 const (
@@ -555,11 +616,11 @@ type LogInstanceEncounter struct {
 	ID         uuid.UUID          `db:"id" json:"id"`
 	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
 	Name       string             `db:"name" json:"name"`
-	Kill       bool               `db:"kill" json:"kill"`
 	Remaining  guid.GUIDs         `db:"remaining" json:"remaining"`
 	Boss       bool               `db:"boss" json:"boss"`
 	StartTime  pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	EndTime    pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	KillType   KillType           `db:"kill_type" json:"kill_type"`
 }
 
 type LogInstanceEncounterDamageUnitSummary struct {

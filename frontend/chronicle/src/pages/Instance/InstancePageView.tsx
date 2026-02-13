@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Skull, CheckCircle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X } from "lucide-react";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
@@ -325,8 +325,10 @@ function EncounterSidebar({
                   !encounter.boss && !isSelected && "text-muted-foreground"
                 )}
               >
-                {encounter.kill_type !== "wipe" ? (
+                {encounter.kill_type === "clean" ? (
                   <CheckCircle className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-green-500" : "text-green-500/60")} />
+                ) : encounter.kill_type === "partial" ? (
+                  <AlertTriangle className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-yellow-500" : "text-yellow-500/60")} />
                 ) : (
                   <Skull className={cn("h-4 w-4 shrink-0", encounter.boss ? "text-red-500" : "text-red-500/60")} />
                 )}
@@ -360,8 +362,10 @@ function EncounterSidebar({
                 isWipe && !isSelected && "opacity-60"
               )}
             >
-              {encounter.kill_type !== "wipe" ? (
+              {encounter.kill_type === "clean" ? (
                 <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+              ) : encounter.kill_type === "partial" ? (
+                <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-500" />
               ) : (
                 <Skull className="h-4 w-4 shrink-0 text-red-500" />
               )}
@@ -423,8 +427,10 @@ function EncounterSidebar({
                                 : "hover:bg-accent/50 hover:translate-x-0.5 opacity-60"
                             )}
                           >
-                            {encounter.kill_type !== "wipe" ? (
+                            {encounter.kill_type === "clean" ? (
                               <CheckCircle className="h-3 w-3 text-green-500" />
+                            ) : encounter.kill_type === "partial" ? (
+                              <AlertTriangle className="h-3 w-3 text-yellow-500" />
                             ) : (
                               <Skull className="h-3 w-3 text-red-500" />
                             )}
@@ -576,7 +582,7 @@ function EncounterDetail({
     : `${encounters.length} Encounters Selected`;
 
   const subtitle = isSingle
-    ? (encounter.kill_type === "wipe" ? "(Wipe)" : null)
+    ? (encounter.kill_type === "wipe" ? "(Wipe)" : encounter.kill_type === "partial" ? "(Partial)" : null)
     : encounters.map(e => e.name).filter((v, i, a) => a.indexOf(v) === i).join(", ");
 
   return (
@@ -585,8 +591,10 @@ function EncounterDetail({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           {isSingle && (
-            encounter.kill_type !== "wipe" ? (
+            encounter.kill_type === "clean" ? (
               <CheckCircle className="h-6 w-6 text-green-500" />
+            ) : encounter.kill_type === "partial" ? (
+              <AlertTriangle className="h-6 w-6 text-yellow-500" />
             ) : (
               <Skull className="h-6 w-6 text-red-500" />
             )

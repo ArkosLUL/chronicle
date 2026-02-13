@@ -21,7 +21,10 @@
  - Or damage mitigated panel under "Damage Taken"
 - Remove the interface database.Store
 - Use spicedb and mix it with database.Store for permissions
- 
+- Guild attendance tracking.
+- Some discord cli commands
+- Guild page can show demand for class/spec combinations
+
 # Synthetic Messages
 
 - [Absorbs](./combatlog/parser/vanilla/absorbs/TODO.md)

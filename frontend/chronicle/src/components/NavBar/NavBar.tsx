@@ -1,10 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut, FileText, Shield, Key, Castle } from "lucide-react";
+import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck } from "@/api/queries";
 import { Button } from "../ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "../ui/sheet";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -22,6 +27,7 @@ type NavItem = {
 export function NavBar() {
   const location = useLocation();
   const { isAuthenticated, isLoading, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Check admin permissions via SpiceDB
   const authzChecks = useMemo(() => ({
@@ -43,14 +49,96 @@ export function NavBar() {
     { title: "Sign Out", onClick: logout, icon: LogOut },
   ];
 
-  return (
-    <nav className="relative flex items-center justify-end p-4 border-b">
-      <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
-          <img src="/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+  const loginUrl = `/login?from=${encodeURIComponent(location.pathname + location.search)}`;
+
+  // Reusable menu item renderer for both mobile and desktop
+  const renderMenuItem = (item: NavItem, closeMobile?: () => void) => {
+    const className = "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2";
+    if ("href" in item) {
+      if (item.external) {
+        return (
+          <a key={item.title} href={item.href} className={className} onClick={closeMobile}>
+            <item.icon className="h-4 w-4" />
+            {item.title}
+          </a>
+        );
+      }
+      return (
+        <Link key={item.title} to={item.href} className={className} onClick={closeMobile}>
+          <item.icon className="h-4 w-4" />
+          {item.title}
         </Link>
-      <div className="flex items-center gap-6">
-        <Link 
-          to="/recent" 
+      );
+    }
+    return (
+      <button
+        key={item.title}
+        onClick={() => {
+          item.onClick();
+          closeMobile?.();
+        }}
+        className={`${className} w-full text-left`}
+      >
+        <item.icon className="h-4 w-4" />
+        {item.title}
+      </button>
+    );
+  };
+
+  return (
+    <nav className="relative flex items-center justify-between p-4 border-b">
+      {/* Left: Mobile hamburger menu (visible on mobile only) */}
+      <div className="md:hidden">
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-6">
+            <nav className="flex flex-col gap-2 mt-4">
+              <Link
+                to="/recent"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              >
+                <Castle className="h-4 w-4" />
+                Recent Raids
+              </Link>
+              {isAuthenticated && (
+                <>
+                  <div className="border-t my-2" />
+                  {accountMenuItems.map((item) =>
+                    renderMenuItem(item, () => setMobileMenuOpen(false))
+                  )}
+                </>
+              )}
+              {!isAuthenticated && !isLoading && (
+                <>
+                  <div className="border-t my-2" />
+                  <Link to={loginUrl} onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full">Sign In</Button>
+                  </Link>
+                </>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Left spacer for desktop to balance layout */}
+      <div className="hidden md:block w-10" />
+
+      {/* Center: Logo */}
+      <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
+        <img src="/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+      </Link>
+
+      {/* Right: Desktop navigation (hidden on mobile) */}
+      <div className="hidden md:flex items-center gap-6">
+        <Link
+          to="/recent"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <Castle className="h-4 w-4" />
@@ -93,13 +181,14 @@ export function NavBar() {
             </NavigationMenuList>
           </NavigationMenu>
         ) : (
-          <Link
-            to={`/login?from=${encodeURIComponent(location.pathname + location.search)}`}
-          >
+          <Link to={loginUrl}>
             <Button>Sign In</Button>
           </Link>
         )}
       </div>
+
+      {/* Right: Empty spacer for mobile to balance hamburger on left */}
+      <div className="md:hidden w-10" />
     </nav>
   );
 }

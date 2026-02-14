@@ -147,6 +147,12 @@ export interface PanelRenderProps<TResult> {
   
   /** Full context for rendering (instance data, selections) */
   context: PanelContext;
+  
+  /** Panel-specific option from URL (e.g., selected aura name) */
+  panelOption?: string | null;
+  
+  /** Callback to update the panel option in URL */
+  setPanelOption?: (option: string | null) => void;
 }
 
 /**

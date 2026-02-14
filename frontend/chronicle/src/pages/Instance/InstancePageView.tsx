@@ -491,7 +491,9 @@ interface EncounterDetailProps {
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
   panelTypes: [PanelType, PanelType, PanelType, PanelType, PanelType];
+  panelOptions: [string | null, string | null, string | null, string | null, string | null];
   onPanelTypeChange: (index: 0 | 1 | 2 | 3 | 4, type: PanelType) => void;
+  onPanelOptionChange: (index: 0 | 1 | 2 | 3 | 4, option: string | null) => void;
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
@@ -510,7 +512,9 @@ function EncounterDetail({
   players,
   entitySelection,
   panelTypes,
+  panelOptions,
   onPanelTypeChange,
+  onPanelOptionChange,
   onToggleEnemy,
   onSelectEnemies,
   onTogglePlayer,
@@ -531,6 +535,14 @@ function EncounterDetail({
   const setEventsPanel3Type = (type: EventsPanelType) => onPanelTypeChange(2, type as PanelType);
   const setEventsPanel4Type = (type: EventsPanelType) => onPanelTypeChange(3, type as PanelType);
   const setEventsPanel5Type = (type: EventsPanelType) => onPanelTypeChange(4, type as PanelType);
+  
+  // Panel options (managed by parent via URL state)
+  const [panelOption1, panelOption2, panelOption3, panelOption4, panelOption5] = panelOptions;
+  const setPanelOption1 = (opt: string | null) => onPanelOptionChange(0, opt);
+  const setPanelOption2 = (opt: string | null) => onPanelOptionChange(1, opt);
+  const setPanelOption3 = (opt: string | null) => onPanelOptionChange(2, opt);
+  const setPanelOption4 = (opt: string | null) => onPanelOptionChange(3, opt);
+  const setPanelOption5 = (opt: string | null) => onPanelOptionChange(4, opt);
   
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
@@ -874,6 +886,8 @@ function EncounterDetail({
             panelIndex={0}
             onExplainerClick={onExplainerClick}
             showHints={showHints}
+            panelOption={panelOption1}
+            onPanelOptionChange={setPanelOption1}
           />
           <EventsPanel
             panelType={eventsPanel2Type}
@@ -883,6 +897,8 @@ function EncounterDetail({
             panelIndex={1}
             onExplainerClick={onExplainerClick}
             showHints={showHints}
+            panelOption={panelOption2}
+            onPanelOptionChange={setPanelOption2}
           />
           <EventsPanel
             panelType={eventsPanel3Type}
@@ -892,6 +908,8 @@ function EncounterDetail({
             panelIndex={2}
             onExplainerClick={onExplainerClick}
             showHints={showHints}
+            panelOption={panelOption3}
+            onPanelOptionChange={setPanelOption3}
           />
           <EventsPanel
             panelType={eventsPanel4Type}
@@ -901,6 +919,8 @@ function EncounterDetail({
             panelIndex={3}
             onExplainerClick={onExplainerClick}
             showHints={showHints}
+            panelOption={panelOption4}
+            onPanelOptionChange={setPanelOption4}
           />
           {/* 5th panel spans full width */}
           <div className="lg:col-span-2">
@@ -912,6 +932,8 @@ function EncounterDetail({
               panelIndex={4}
               onExplainerClick={onExplainerClick}
               showHints={showHints}
+              panelOption={panelOption5}
+              onPanelOptionChange={setPanelOption5}
             />
           </div>
         </div>
@@ -988,6 +1010,7 @@ export function InstancePageView({
     setEnemies: setUrlEnemyIds, 
     setPlayers: setUrlPlayerIds, 
     setPanelType,
+    setPanelOption,
     clearEntitySelection,
   } = useInstanceViewState({
     encounters: instance.encounters,
@@ -1227,7 +1250,9 @@ export function InstancePageView({
             players={instance.players ?? {}}
             entitySelection={entitySelection}
             panelTypes={viewState.panels}
+            panelOptions={viewState.panelOptions}
             onPanelTypeChange={setPanelType}
+            onPanelOptionChange={setPanelOption}
             onToggleEnemy={toggleEnemySelection}
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}

@@ -47,6 +47,10 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     items: ["deaths", "death_log"],
   },
   {
+    label: "Buffs",
+    items: ["aura_uptime"],
+  },
+  {
     label: "Utility",
     items: ["roles", "all_activity", "empty"],
     icon: <Toolbox className="h-4 w-4" />,

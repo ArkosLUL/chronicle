@@ -32,6 +32,7 @@ import { createResourceRegenPanel } from "./ResourceRegen/ResourceRegen";
 import { createInnervatePanel } from "./Innervate/Innervate";
 import { createSunderPanel } from "./Sunder/Sunder";
 import { createJudgementPanel } from "./Judgement/Judgement";
+import { createAuraUptimePanel } from "./AuraUptime/AuraUptime";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -64,6 +65,8 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   sunder: createSunderPanel(),
   // Class: Paladin
   judgement: createJudgementPanel(),
+  // Aura tracking
+  aura_uptime: createAuraUptimePanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;
@@ -79,6 +82,10 @@ export interface EventsPanelProps {
   onExplainerClick?: (panelType: EventsPanelType) => void;
   /** Whether to show helpful hints (explainer button). Defaults to true. */
   showHints?: boolean;
+  /** Panel-specific option (e.g., selected aura name) */
+  panelOption?: string | null;
+  /** Callback to update panel option */
+  onPanelOptionChange?: (option: string | null) => void;
 }
 
 export function EventsPanel({
@@ -89,6 +96,8 @@ export function EventsPanel({
   panelIndex,
   onExplainerClick,
   showHints = true,
+  panelOption,
+  onPanelOptionChange,
 }: EventsPanelProps) {
   const [checkboxChecked, setCheckboxChecked] = useState(false);
   const isMobile = useIsMobile();
@@ -174,6 +183,8 @@ export function EventsPanel({
           processing,
           error,
           context,
+          panelOption,
+          setPanelOption: onPanelOptionChange,
         })}
       </Card>
     </BreakoutHoverProvider>

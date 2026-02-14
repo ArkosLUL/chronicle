@@ -631,11 +631,40 @@ const PANEL_CODES: Record<PanelType, string> = {
   sunder: 'sun',
   // Class: Paladin
   judgement: 'jdg',
+  // Aura tracking
+  aura_uptime: 'au',
 };
 
 const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(
   Object.entries(PANEL_CODES).map(([k, v]) => [v, k as PanelType])
 );
+
+/**
+ * Parse a panel code with optional brackets: "au[Slice and Dice]" -> { code: "au", option: "Slice and Dice" }
+ */
+function parsePanelCode(encoded: string): { code: string; option: string | null } {
+  const bracketIdx = encoded.indexOf('[');
+  if (bracketIdx === -1) {
+    return { code: encoded, option: null };
+  }
+  const code = encoded.slice(0, bracketIdx);
+  // Extract content between [ and ] (handle missing closing bracket gracefully)
+  const closeBracket = encoded.indexOf(']', bracketIdx);
+  const option = closeBracket > bracketIdx 
+    ? encoded.slice(bracketIdx + 1, closeBracket)
+    : encoded.slice(bracketIdx + 1);
+  return { code, option: option || null };
+}
+
+/**
+ * Serialize a panel code with optional option: "au" + "Slice and Dice" -> "au[Slice and Dice]"
+ */
+function serializePanelCode(code: string, option: string | null): string {
+  return option ? `${code}[${option}]` : code;
+}
+
+/** Panel option tuple type */
+export type PanelOptions = [string | null, string | null, string | null, string | null, string | null];
 
 /**
  * View state structure for the Instance page
@@ -649,6 +678,8 @@ export interface InstanceViewState {
   players: Set<string>;
   /** Panel types for panels 1-5 (5th is full-width) */
   panels: [PanelType, PanelType, PanelType, PanelType, PanelType];
+  /** Panel-specific options (e.g., selected aura name) */
+  panelOptions: PanelOptions;
 }
 
 export interface InstanceViewStateConfig {
@@ -696,6 +727,7 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
   setEnemies: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   setPlayers: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   setPanelType: (index: 0 | 1 | 2 | 3 | 4, type: PanelType) => void;
+  setPanelOption: (index: 0 | 1 | 2 | 3 | 4, option: string | null) => void;
   clearEntitySelection: () => void;
 } {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -750,6 +782,7 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
         enemies: new Set(),
         players: new Set(),
         panels: config.defaults.panels,
+        panelOptions: [null, null, null, null, null],
       };
     }
     
@@ -795,22 +828,34 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
       );
       
       // Parse panels (backward compatible - missing 5th defaults to config default)
-      const panelCodes = (panelPart || '').split('-');
+      // Format: code or code[option] separated by dashes
+      const panelParts = (panelPart || '').split('-');
+      const parsedPanels = panelParts.map(parsePanelCode);
+      
       const panels: [PanelType, PanelType, PanelType, PanelType, PanelType] = [
-        CODE_TO_PANEL[panelCodes[0]] ?? config.defaults.panels[0],
-        CODE_TO_PANEL[panelCodes[1]] ?? config.defaults.panels[1],
-        CODE_TO_PANEL[panelCodes[2]] ?? config.defaults.panels[2],
-        CODE_TO_PANEL[panelCodes[3]] ?? config.defaults.panels[3],
-        CODE_TO_PANEL[panelCodes[4]] ?? config.defaults.panels[4],
+        CODE_TO_PANEL[parsedPanels[0]?.code] ?? config.defaults.panels[0],
+        CODE_TO_PANEL[parsedPanels[1]?.code] ?? config.defaults.panels[1],
+        CODE_TO_PANEL[parsedPanels[2]?.code] ?? config.defaults.panels[2],
+        CODE_TO_PANEL[parsedPanels[3]?.code] ?? config.defaults.panels[3],
+        CODE_TO_PANEL[parsedPanels[4]?.code] ?? config.defaults.panels[4],
       ];
       
-      return { encounters, enemies, players, panels };
+      const panelOptions: PanelOptions = [
+        parsedPanels[0]?.option ?? null,
+        parsedPanels[1]?.option ?? null,
+        parsedPanels[2]?.option ?? null,
+        parsedPanels[3]?.option ?? null,
+        parsedPanels[4]?.option ?? null,
+      ];
+      
+      return { encounters, enemies, players, panels, panelOptions };
     } catch {
       return {
         encounters: config.defaults.encounterIds,
         enemies: new Set(),
         players: new Set(),
         panels: config.defaults.panels,
+        panelOptions: [null, null, null, null, null],
       };
     }
   }, [searchParams, config.defaults, encounterMaps, enemyMaps, playerMaps]);
@@ -845,8 +890,12 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
       .filter((idx): idx is number => idx !== undefined);
     const plPart = plIndices.join('-');
     
-    // Panels
-    const panelPart = newState.panels.map(p => PANEL_CODES[p]).join('-');
+    // Panels (with options)
+    const panelPart = newState.panels.map((p, i) => {
+      const code = PANEL_CODES[p];
+      const option = newState.panelOptions?.[i] ?? null;
+      return serializePanelCode(code, option);
+    }).join('-');
     
     return `${encPart}.${enPart}.${plPart}.${panelPart}`;
   }, [encounterMaps, enemyMaps, playerMaps, setsEqual]);
@@ -858,7 +907,8 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
     return setsEqual(selectedEncs, defaultEncs) &&
       s.enemies.size === 0 &&
       s.players.size === 0 &&
-      s.panels.every((p, i) => p === config.defaults.panels[i]);
+      s.panels.every((p, i) => p === config.defaults.panels[i]) &&
+      s.panelOptions.every(opt => opt === null);
   }, [config.defaults, setsEqual]);
 
   // Update URL with new state
@@ -893,12 +943,21 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
   const setPanelType = useCallback((index: 0 | 1 | 2 | 3 | 4, type: PanelType) => {
     const newPanels = [...state.panels] as [PanelType, PanelType, PanelType, PanelType, PanelType];
     newPanels[index] = type;
-    updateUrl({ ...state, panels: newPanels });
+    // Clear the option when changing panel type
+    const newOptions = [...state.panelOptions] as PanelOptions;
+    newOptions[index] = null;
+    updateUrl({ ...state, panels: newPanels, panelOptions: newOptions });
+  }, [state, updateUrl]);
+
+  const setPanelOption = useCallback((index: 0 | 1 | 2 | 3 | 4, option: string | null) => {
+    const newOptions = [...state.panelOptions] as PanelOptions;
+    newOptions[index] = option;
+    updateUrl({ ...state, panelOptions: newOptions });
   }, [state, updateUrl]);
 
   const clearEntitySelection = useCallback(() => {
     updateUrl({ ...state, enemies: new Set(), players: new Set() });
   }, [state, updateUrl]);
 
-  return { state, setEncounters, setEnemies, setPlayers, setPanelType, clearEntitySelection };
+  return { state, setEncounters, setEnemies, setPlayers, setPanelType, setPanelOption, clearEntitySelection };
 }

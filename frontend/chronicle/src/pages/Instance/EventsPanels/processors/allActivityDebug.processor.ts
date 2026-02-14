@@ -19,6 +19,7 @@ export interface RawDebugEvent {
   encounterID: string;
   streamType: StreamType;
   caster: string;
+  casterName: string;
   sourceName: string;
   target: string;
   targetName: string;
@@ -165,6 +166,22 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       }
     }
     
+    // Filter by source/caster name if specified
+    const sourceFilter = context.pagination?.sourceFilter?.toLowerCase().trim();
+    if (sourceFilter) {
+      // Look up caster name from players or units
+      const casterName = eventCaster
+        ? (context.players[eventCaster]?.name ?? 
+           context.units?.[eventCaster]?.name ?? 
+           eventCaster)
+        : "";
+      
+      // Check if the caster name contains the filter string (case-insensitive)
+      if (!casterName.toLowerCase().includes(sourceFilter)) {
+        return;
+      }
+    }
+    
     // Increment total processed (only for enabled streams)
     state.totalProcessed++;
     
@@ -191,6 +208,13 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       ? (context.players[eventTarget]?.name ?? 
          context.units?.[eventTarget]?.name ?? 
          eventTarget)
+      : "";
+    
+    // Look up caster name from players or units
+    const casterName = eventCaster
+      ? (context.players[eventCaster]?.name ?? 
+         context.units?.[eventCaster]?.name ?? 
+         eventCaster)
       : "";
     
     // Get sourceName - cast events use spell.name, aura events use spellName, slain events use attribution
@@ -220,6 +244,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       encounterID,
       streamType,
       caster: eventCaster,
+      casterName,
       sourceName,
       target: eventTarget,
       targetName,

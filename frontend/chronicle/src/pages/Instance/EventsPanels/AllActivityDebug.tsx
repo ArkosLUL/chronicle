@@ -89,6 +89,7 @@ function RawEventRow({ event, index }: RawEventRowProps) {
       <span className="text-muted-foreground w-6 text-right shrink-0">{index}</span>
       <Icon className={cn("h-3 w-3 shrink-0", config.color)} />
       <span className="text-muted-foreground w-20 shrink-0">{timeStr}</span>
+      <span className="text-orange-400 w-24 shrink-0 truncate" title={event.caster}>{event.casterName || "-"}</span>
       <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>{event.sourceName}</span>
       <span className="text-muted-foreground shrink-0">→</span>
       <span className="text-purple-400 w-24 shrink-0 truncate" title={event.target}>{event.targetName}</span>
@@ -223,6 +224,8 @@ interface AllActivityContentProps {
   onToggleStream: (stream: StreamType) => void;
   abilityFilter: string;
   onAbilityFilterChange: (filter: string) => void;
+  sourceFilter: string;
+  onSourceFilterChange: (filter: string) => void;
 }
 
 function AllActivityContent({
@@ -238,6 +241,8 @@ function AllActivityContent({
   onToggleStream,
   abilityFilter,
   onAbilityFilterChange,
+  sourceFilter,
+  onSourceFilterChange,
 }: AllActivityContentProps) {
   // Default state during loading
   const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [] };
@@ -295,16 +300,39 @@ function AllActivityContent({
           />
         ))}
         
-        {/* Ability filter input */}
+        {/* Source filter input */}
         <div className="flex items-center gap-1 ml-2">
           <Search className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="relative">
+            <input
+              type="text"
+              value={sourceFilter}
+              onChange={(e) => onSourceFilterChange(e.target.value)}
+              placeholder="Filter by source..."
+              className="h-6 w-32 px-2 text-xs bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {sourceFilter && (
+              <button
+                type="button"
+                onClick={() => onSourceFilterChange("")}
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted-foreground/20 rounded"
+                title="Clear filter"
+              >
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Ability filter input */}
+        <div className="flex items-center gap-1">
           <div className="relative">
             <input
               type="text"
               value={abilityFilter}
               onChange={(e) => onAbilityFilterChange(e.target.value)}
               placeholder="Filter by ability..."
-              className="h-6 w-40 px-2 text-xs bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-6 w-32 px-2 text-xs bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {abilityFilter && (
               <button
@@ -359,7 +387,8 @@ function AllActivityContent({
             <span className="w-6 text-right shrink-0">#</span>
             <span className="w-3 shrink-0"></span>
             <span className="w-20 shrink-0">Time</span>
-            <span className="w-24 shrink-0">Source</span>
+            <span className="w-24 shrink-0">Caster</span>
+            <span className="w-24 shrink-0">Ability</span>
             <span className="shrink-0"></span>
             <span className="w-24 shrink-0">Target</span>
             <span className="w-12 text-right shrink-0">Amount</span>
@@ -416,6 +445,7 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [enabledStreams, setEnabledStreams] = useState<Set<StreamType>>(DEFAULT_ENABLED_STREAMS);
   const [abilityFilter, setAbilityFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
   
   // Track previous encounter key to reset page when encounters change
   // Using the React-approved pattern for "adjusting state when a prop changes"
@@ -435,8 +465,9 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
       limit: PAGE_SIZE,
       enabledStreams: Array.from(enabledStreams),
       abilityFilter: abilityFilter.trim() || undefined,
+      sourceFilter: sourceFilter.trim() || undefined,
     },
-  }), [context, currentPage, enabledStreams, abilityFilter]);
+  }), [context, currentPage, enabledStreams, abilityFilter, sourceFilter]);
   
   // Use aggregation with paginated context
   const {
@@ -475,6 +506,12 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
     setCurrentPage(1);
   }, []);
   
+  const handleSourceFilterChange = useCallback((filter: string) => {
+    setSourceFilter(filter);
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
+  }, []);
+  
   return (
     <AllActivityContent
       result={result}
@@ -489,6 +526,8 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
       onToggleStream={handleToggleStream}
       abilityFilter={abilityFilter}
       onAbilityFilterChange={handleAbilityFilterChange}
+      sourceFilter={sourceFilter}
+      onSourceFilterChange={handleSourceFilterChange}
     />
   );
 }

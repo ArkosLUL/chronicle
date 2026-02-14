@@ -167,7 +167,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
           {loading || processing ? "Loading..." : "No deaths recorded"}
         </div>
       ) : (
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="max-h-panel">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border text-muted-foreground">

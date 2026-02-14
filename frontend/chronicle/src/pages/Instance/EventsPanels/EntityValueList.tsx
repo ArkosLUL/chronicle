@@ -58,7 +58,7 @@ export function EntityValueList({
       </div>
       
       {/* Simple list display - can be replaced with chart later */}
-      <ScrollArea className="max-h-64">
+      <ScrollArea className="max-h-panel">
         <div className="space-y-1">
           {sortedEntries.slice(0, 20).map(([id, value]) => {
             const displayValue = perSecond && durationMs > 0

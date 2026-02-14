@@ -121,7 +121,7 @@ export const AvoidanceContent = (props: AvoidanceContentProps) => {
         Total: <span className="font-medium text-foreground">{totalAvoided.toLocaleString()}/{totalAttacks.toLocaleString()}</span> attacks avoided (<span className="font-medium text-foreground">{overallPercent}%</span>)
       </div>
       
-      <ScrollArea className="h-[300px]">
+      <ScrollArea className="max-h-panel">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-background z-10">
             <tr className="text-muted-foreground border-b border-border">

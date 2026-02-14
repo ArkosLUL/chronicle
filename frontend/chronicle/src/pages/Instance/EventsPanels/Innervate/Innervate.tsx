@@ -121,7 +121,7 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
           <div className="text-xs text-muted-foreground mb-2">
             Total Casts: <span className="font-medium text-foreground">{result.casts.length}</span>
           </div>
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="max-h-panel">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">

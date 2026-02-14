@@ -357,7 +357,7 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: Ta
             <span>% uptime</span>
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto">
+          <div className="max-h-panel overflow-y-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">
@@ -493,7 +493,7 @@ function TargetBreakout({ target, activeTimeMs, onClose }: TargetBreakoutProps) 
       </div>
 
       {/* Timeline */}
-      <div className="max-h-[200px] overflow-y-auto">
+      <div className="max-h-panel overflow-y-auto">
         <table className="w-full text-2xs font-mono">
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">

@@ -111,7 +111,7 @@ interface WarriorsViewProps {
 function WarriorsView({ warriors }: WarriorsViewProps) {
   return (
     <div className="space-y-2" data-sunder-warriors>
-      <div className="max-h-[300px] overflow-y-auto">
+      <div className="max-h-panel overflow-y-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">
@@ -185,7 +185,7 @@ function TargetsView({ targets }: TargetsViewProps) {
         <DebugBreakout target={selectedTarget} onClose={() => setSelectedTargetGuid(null)} />
       ) : (
         <>
-          <div className="max-h-[300px] overflow-y-auto">
+          <div className="max-h-panel overflow-y-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">
@@ -285,7 +285,7 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
         Total events: <span className="font-medium text-foreground">{sortedEvents.length}</span>
       </div>
       
-      <div className="max-h-[250px] overflow-y-auto">
+      <div className="max-h-panel overflow-y-auto">
         <table className="w-full text-2xs font-mono">
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">

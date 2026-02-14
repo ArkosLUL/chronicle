@@ -177,7 +177,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
             )}
 
             {/* Per-target per-aura table */}
-            <div className="max-h-[220px] overflow-y-auto">
+            <div className="max-h-panel overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-card">
                   <tr className="border-b border-border text-muted-foreground">

@@ -44,7 +44,7 @@ function ExtraAttackTable({
   const sorted = [...abilities].sort((a, b) => b.totalAttacks - a.totalAttacks);
 
   return (
-    <ScrollArea className="max-h-64">
+    <ScrollArea className="max-h-panel">
       <table className="w-full text-xs text-foreground">
         <thead className="sticky top-0 bg-popover">
           <tr className="border-b border-border">

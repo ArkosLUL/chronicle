@@ -184,7 +184,7 @@ func (p *Parser) ParseContent(lctx *logfile.Context, ts time.Time, content strin
 			Either(p.fCombatantInfo),                                 // ✓
 			Either(p.fUnitInfo),                                      // ✓
 			Either(p.fZoneInfo),                                      // ✓
-			Either(p.fV2Casts),                                       // ✓
+			OnlyRaw(p.fV2Casts),                                      // ✓
 			Either(p.fLoot),                                          // ✓
 			Either(p.fCombatCount),                                   // ✓
 			Either(p.fRealm),                                         // ✓

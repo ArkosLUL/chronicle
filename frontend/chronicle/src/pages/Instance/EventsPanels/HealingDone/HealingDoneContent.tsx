@@ -124,6 +124,70 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
     return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection, viewMode);
   }, [cachedResult, context.selectedEncounterIds, context.entitySelection, viewMode]);
 
+  // DEBUG: Log Mending Light totals for specific encounter
+  useMemo(() => {
+    if (!cachedResult) return;
+    const targetEncounter = "08d18392-e6b8-4a70-8b60-89ee8059c3c6";
+    if (!context.selectedEncounterIds.includes(targetEncounter)) return;
+    
+    for (const [unitId, abilityMap] of cachedResult.HealerByAbility) {
+      const playerName = context.instance.players?.[unitId]?.name;
+      if (playerName !== "Infertile") continue;
+      
+      for (const [abilityName, breakout] of abilityMap) {
+        if (abilityName.includes("Mending")) {
+          console.log("[HEAL SUMMARY] Effective:", {
+            unitId,
+            playerName,
+            abilityName,
+            count: breakout.Count,
+            hits: breakout.Hits,
+            crits: breakout.Crits,
+            total: breakout.Total,
+          });
+        }
+      }
+    }
+    
+    for (const [unitId, abilityMap] of cachedResult.HealerByAbilityOverheal) {
+      const playerName = context.instance.players?.[unitId]?.name;
+      if (playerName !== "Infertile") continue;
+      
+      for (const [abilityName, breakout] of abilityMap) {
+        if (abilityName.includes("Mending")) {
+          console.log("[HEAL SUMMARY] Overheal:", {
+            unitId,
+            playerName,
+            abilityName,
+            count: breakout.Count,
+            hits: breakout.Hits,
+            crits: breakout.Crits,
+            total: breakout.Total,
+          });
+        }
+      }
+    }
+    
+    for (const [unitId, abilityMap] of cachedResult.HealerByAbilityTotal) {
+      const playerName = context.instance.players?.[unitId]?.name;
+      if (playerName !== "Infertile") continue;
+      
+      for (const [abilityName, breakout] of abilityMap) {
+        if (abilityName.includes("Mending")) {
+          console.log("[HEAL SUMMARY] Total:", {
+            unitId,
+            playerName,
+            abilityName,
+            count: breakout.Count,
+            hits: breakout.Hits,
+            crits: breakout.Crits,
+            total: breakout.Total,
+          });
+        }
+      }
+    }
+  }, [cachedResult, context.selectedEncounterIds, context.instance.players]);
+
   // Create breakout function for tooltips
   const breakout = useHealingDoneBreakout({
     result: result,

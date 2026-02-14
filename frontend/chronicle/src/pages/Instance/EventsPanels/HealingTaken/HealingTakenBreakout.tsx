@@ -56,34 +56,19 @@ function getAbilitiesForUnit(
   }
   
   if (viewMode === "total") {
-    const combined = new Map<string, AbilityData>();
+    // Use the dedicated total map which counts each event exactly once
+    const totalAbilities = result.TargetByAbilityTotal.get(unitId);
+    if (!totalAbilities) return [];
     
-    if (effectiveAbilities) {
-      for (const [abilityName, data] of effectiveAbilities) {
-        combined.set(abilityName, {
-          ...data,
-          name: abilityName,
-          value: data.Total,
-        });
-      }
+    const abilities: AbilityData[] = [];
+    for (const [abilityName, data] of totalAbilities) {
+      abilities.push({
+        ...data,
+        name: abilityName,
+        value: data.Total,
+      });
     }
-    
-    if (overhealAbilities) {
-      for (const [abilityName, data] of overhealAbilities) {
-        const existing = combined.get(abilityName);
-        if (existing) {
-          existing.value += data.Total;
-        } else {
-          combined.set(abilityName, {
-            ...data,
-            name: abilityName,
-            value: data.Total,
-          });
-        }
-      }
-    }
-    
-    return Array.from(combined.values()).sort((a, b) => b.value - a.value);
+    return abilities.sort((a, b) => b.value - a.value);
   }
   
   // Default: effective - include overheal as separate column
@@ -124,32 +109,20 @@ function getTotalForUnit(
   unitId: string,
   viewMode: HealingViewMode
 ): number {
-  const effectiveAbilities = result.TargetByAbility.get(unitId);
-  const overhealAbilities = result.TargetByAbilityOverheal.get(unitId);
+  // Use the appropriate map based on view mode
+  const abilityMap = viewMode === "effective" 
+    ? result.TargetByAbility.get(unitId)
+    : viewMode === "overheal"
+    ? result.TargetByAbilityOverheal.get(unitId)
+    : result.TargetByAbilityTotal.get(unitId);
   
-  let effectiveTotal = 0;
-  let overhealTotal = 0;
+  if (!abilityMap) return 0;
   
-  if (effectiveAbilities) {
-    for (const data of effectiveAbilities.values()) {
-      effectiveTotal += data.Total;
-    }
+  let total = 0;
+  for (const data of abilityMap.values()) {
+    total += data.Total;
   }
-  
-  if (overhealAbilities) {
-    for (const data of overhealAbilities.values()) {
-      overhealTotal += data.Total;
-    }
-  }
-  
-  switch (viewMode) {
-    case "effective":
-      return effectiveTotal;
-    case "overheal":
-      return overhealTotal;
-    case "total":
-      return effectiveTotal + overhealTotal;
-  }
+  return total;
 }
 
 /**
@@ -176,28 +149,16 @@ function getSourcesForUnit(
   }
   
   if (viewMode === "total") {
-    const combined = new Map<string, TargetData>();
+    // Use the dedicated total source map
+    const totalSources = result.TargetBySourceTotal.get(unitId);
+    if (!totalSources) return [];
     
-    if (effectiveSources) {
-      for (const [sourceId, value] of effectiveSources) {
-        const sourceName = resolveUnitName(sourceId, context);
-        combined.set(sourceId, { targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
-      }
+    const sources: TargetData[] = [];
+    for (const [sourceId, value] of totalSources) {
+      const sourceName = resolveUnitName(sourceId, context);
+      sources.push({ targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
     }
-    
-    if (overhealSources) {
-      for (const [sourceId, value] of overhealSources) {
-        const existing = combined.get(sourceId);
-        if (existing) {
-          existing.value += value;
-        } else {
-          const sourceName = resolveUnitName(sourceId, context);
-          combined.set(sourceId, { targetId: sourceId, targetName: sourceName, value, hitCount: 0, critCount: 0 });
-        }
-      }
-    }
-    
-    return Array.from(combined.values()).sort((a, b) => b.value - a.value);
+    return sources.sort((a, b) => b.value - a.value);
   }
   
   // Default: effective only

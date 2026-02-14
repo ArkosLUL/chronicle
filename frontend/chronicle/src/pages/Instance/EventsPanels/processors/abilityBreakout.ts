@@ -71,6 +71,7 @@ export function updateAbilityBreakout(
   
   if (hasHitType(hitType, HitTypeCrit)) {
     breakout.Crits += 1;
+    breakout.Hits += 1;
     breakout.Landed += 1;
     // Track crit stats
     if (!breakout.CritStats) breakout.CritStats = createEmptyHitTypeStats();
@@ -95,6 +96,7 @@ export function updateAbilityBreakout(
   } else if (hasHitType(hitType, HitTypeGlancing)) {
     breakout.Glancing = (breakout.Glancing || 0) + 1;
     breakout.Landed += 1;
+    breakout.Hits += 1;
     // Track glancing stats
     if (!breakout.GlancingStats) breakout.GlancingStats = createEmptyHitTypeStats();
     updateHitTypeStats(breakout.GlancingStats, amount);
@@ -103,6 +105,7 @@ export function updateAbilityBreakout(
   } else if (hasHitType(hitType, HitTypeCrushing)) {
     breakout.Crushing = (breakout.Crushing || 0) + 1;
     breakout.Landed += 1;
+    breakout.Hits += 1;
     // Track crushing stats
     if (!breakout.CrushingStats) breakout.CrushingStats = createEmptyHitTypeStats();
     updateHitTypeStats(breakout.CrushingStats, amount);

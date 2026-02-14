@@ -82,18 +82,22 @@ export type UnifiedHealingResult = {
   // Breakouts: healerID -> abilityName -> data
   HealerByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
   HealerByAbilityOverheal: Map<string, Map<string, DamageAbilityBreakout>>;
+  HealerByAbilityTotal: Map<string, Map<string, DamageAbilityBreakout>>;
   // Breakouts: healerID -> targetID -> amount
   HealerByTarget: Map<string, Map<string, number>>;
   HealerByTargetOverheal: Map<string, Map<string, number>>;
+  HealerByTargetTotal: Map<string, Map<string, number>>;
   
   // === HealingTaken data (by target) ===
   EncounterHealingByTarget: Map<string, UnitHealingTaken>;
   // Breakouts: targetID -> abilityName -> data  
   TargetByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
   TargetByAbilityOverheal: Map<string, Map<string, DamageAbilityBreakout>>;
+  TargetByAbilityTotal: Map<string, Map<string, DamageAbilityBreakout>>;
   // Breakouts: targetID -> sourceID -> amount
   TargetBySource: Map<string, Map<string, number>>;
   TargetBySourceOverheal: Map<string, Map<string, number>>;
+  TargetBySourceTotal: Map<string, Map<string, number>>;
   
   // === Shared state ===
   // Health deficit tracking: targetGUID -> deficit (positive = damage taken)
@@ -131,14 +135,18 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       EncounterHealingByHealer: new Map(),
       HealerByAbility: new Map(),
       HealerByAbilityOverheal: new Map(),
+      HealerByAbilityTotal: new Map(),
       HealerByTarget: new Map(),
       HealerByTargetOverheal: new Map(),
+      HealerByTargetTotal: new Map(),
       // HealingTaken
       EncounterHealingByTarget: new Map(),
       TargetByAbility: new Map(),
       TargetByAbilityOverheal: new Map(),
+      TargetByAbilityTotal: new Map(),
       TargetBySource: new Map(),
       TargetBySourceOverheal: new Map(),
+      TargetBySourceTotal: new Map(),
       // Shared
       HealthDeficits: new Map(),
       LastEncounterID: null,
@@ -336,6 +344,30 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         abilityName = abilityName + " (HoT)";
       }
 
+      // DEBUG: Log Mending Light events for specific encounter/caster
+      if (
+        abilityName.includes("Mending") &&
+        healerName === "Infertile" &&
+        encounterID === "08d18392-e6b8-4a70-8b60-89ee8059c3c6"
+      ) {
+        console.log("[HEAL DEBUG] Mending Light event:", {
+          healerName,
+          healerID,
+          targetName,
+          targetID,
+          abilityName,
+          healAmount,
+          effectiveHeal,
+          overheal,
+          hitType,
+          hitTypePeriodic: hasHitType(hitType, HitTypePeriodic),
+          streamType,
+          timestamp: event.timestamp,
+          encounterID,
+          includeInHealerBreakout: context.entitySelection.playerIds.size === 0 || context.entitySelection.playerIds.has(targetID),
+        });
+      }
+
       // Filter for healer breakouts: only show healing to selected players (or all if none selected)
       // "Other" targets are always included in breakouts
       const includeInHealerBreakout = isOtherTarget || 
@@ -350,6 +382,8 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         if (overheal > 0) {
           accumulateAbilityBreakout(state.HealerByAbilityOverheal, healerID, abilityName, overheal, hitType);
         }
+        // Always track total (effective + overheal) - counts each event exactly once
+        accumulateAbilityBreakout(state.HealerByAbilityTotal, healerID, abilityName, healAmount, hitType);
 
         // Healer target breakdown
         const healerTargets = state.HealerByTarget.get(healerID) || new Map();
@@ -359,6 +393,11 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         const healerTargetsOverheal = state.HealerByTargetOverheal.get(healerID) || new Map();
         healerTargetsOverheal.set(aggregateTargetID, (healerTargetsOverheal.get(aggregateTargetID) || 0) + overheal);
         state.HealerByTargetOverheal.set(healerID, healerTargetsOverheal);
+        
+        // Total target breakdown
+        const healerTargetsTotal = state.HealerByTargetTotal.get(healerID) || new Map();
+        healerTargetsTotal.set(aggregateTargetID, (healerTargetsTotal.get(aggregateTargetID) || 0) + healAmount);
+        state.HealerByTargetTotal.set(healerID, healerTargetsTotal);
       }
 
       // Filter for target breakouts: only show healing received by selected players (or all if none selected)
@@ -375,6 +414,8 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         if (overheal > 0) {
           accumulateAbilityBreakout(state.TargetByAbilityOverheal, aggregateTargetID, abilityName, overheal, hitType);
         }
+        // Always track total (effective + overheal) - counts each event exactly once
+        accumulateAbilityBreakout(state.TargetByAbilityTotal, aggregateTargetID, abilityName, healAmount, hitType);
 
         // Target source breakdown
         const targetSources = state.TargetBySource.get(aggregateTargetID) || new Map();
@@ -384,6 +425,11 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         const targetSourcesOverheal = state.TargetBySourceOverheal.get(aggregateTargetID) || new Map();
         targetSourcesOverheal.set(healerID, (targetSourcesOverheal.get(healerID) || 0) + overheal);
         state.TargetBySourceOverheal.set(aggregateTargetID, targetSourcesOverheal);
+        
+        // Total source breakdown
+        const targetSourcesTotal = state.TargetBySourceTotal.get(aggregateTargetID) || new Map();
+        targetSourcesTotal.set(healerID, (targetSourcesTotal.get(healerID) || 0) + healAmount);
+        state.TargetBySourceTotal.set(aggregateTargetID, targetSourcesTotal);
       }
     },
   };

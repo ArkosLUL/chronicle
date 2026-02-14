@@ -8,6 +8,7 @@ import { within, waitFor, expect } from "storybook/test";
 import { MemoryRouter } from "react-router-dom";
 import { EventsPanel, PANELS, type EventsPanelType } from "./EventsPanel";
 import { MockInstanceEventsProvider } from "./__fixtures__/MockInstanceEventsProvider";
+import { TooltipProvider } from "@/components/ui/Tooltip/tooltip";
 import { PanelTimingProvider } from "./PanelTimingContext";
 import type { PanelContext } from "./types";
 import type { Instance } from "../InstancePage";
@@ -46,13 +47,15 @@ const meta: Meta<typeof EventsPanel> = {
   decorators: [
     (Story) => (
       <MemoryRouter>
-        <MockInstanceEventsProvider>
-          <PanelTimingProvider panelCount={1}>
-            <div className="w-[600px] p-4 bg-background">
-              <Story />
-            </div>
-          </PanelTimingProvider>
-        </MockInstanceEventsProvider>
+        <TooltipProvider>
+          <MockInstanceEventsProvider>
+            <PanelTimingProvider panelCount={1}>
+              <div className="w-[600px] p-4 bg-background">
+                <Story />
+              </div>
+            </PanelTimingProvider>
+          </MockInstanceEventsProvider>
+        </TooltipProvider>
       </MemoryRouter>
     ),
   ],

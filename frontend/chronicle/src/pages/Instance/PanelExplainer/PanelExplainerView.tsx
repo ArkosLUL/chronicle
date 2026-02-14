@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, BookOpen, Lightbulb, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Lightbulb, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card";
 import { cn } from "@/lib/utils";
@@ -123,9 +123,22 @@ export function PanelExplainerView({
         {/* Summary Card */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              What this panel shows
+            <CardTitle className="flex items-center justify-between text-base">
+              <span className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                What this panel shows
+              </span>
+              {hasWalkthrough && (
+                walkthroughStarted ? (
+                  <Button size="sm" variant="outline" onClick={handleExitWalkthrough}>
+                    Cancel Walkthrough
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={handleStartWalkthrough}>
+                    Start Walkthrough
+                  </Button>
+                )
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -145,6 +158,7 @@ export function PanelExplainerView({
               instruction={currentWalkthroughStep.instruction}
               stepNumber={currentStep + 1}
               totalSteps={explainer.walkthrough?.length ?? 0}
+              waitFor={currentWalkthroughStep.waitFor}
             />
           )}
           
@@ -172,73 +186,7 @@ export function PanelExplainerView({
           />
         </div>
 
-        {/* Walkthrough UI */}
-        {hasWalkthrough && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between text-base">
-                <span className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  Interactive Walkthrough
-                </span>
-                {walkthroughStarted && (
-                  <span className="text-sm font-normal text-muted-foreground">
-                    Step {currentStep + 1} of {explainer.walkthrough?.length}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!walkthroughStarted ? (
-                <div className="flex items-center justify-between">
-                  <p className="text-muted-foreground">
-                    Learn how to use this panel step-by-step
-                  </p>
-                  <Button onClick={handleStartWalkthrough}>
-                    Start Walkthrough
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-lg">{currentWalkthroughStep?.instruction}</p>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleExitWalkthrough}
-                    >
-                      Cancel
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      or press <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono text-[10px]">Esc</kbd>
-                    </span>
-                    <Button onClick={handleNextStep}>
-                      {isLastStep ? "Finish" : "Next Step"}
-                    </Button>
-                    {currentWalkthroughStep?.waitFor !== "manual" && (
-                      <span className="text-sm text-muted-foreground">
-                        or {currentWalkthroughStep?.waitFor} the highlighted area
-                      </span>
-                    )}
-                  </div>
-                  {/* Step indicators */}
-                  <div className="flex gap-1 pt-2">
-                    {explainer.walkthrough?.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "h-1.5 flex-1 rounded-full transition-colors",
-                          idx <= currentStep
-                            ? "bg-primary"
-                            : "bg-muted"
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* Tips Card */}
         <Card>
@@ -276,6 +224,7 @@ function ExplainerHighlight({
   instruction,
   stepNumber,
   totalSteps,
+  waitFor,
 }: { 
   selector: string; 
   onExit: () => void;
@@ -284,6 +233,7 @@ function ExplainerHighlight({
   instruction?: string;
   stepNumber?: number;
   totalSteps?: number;
+  waitFor?: "click" | "hover" | "manual";
 }) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const hasScrolledRef = useRef(false);
@@ -340,7 +290,7 @@ function ExplainerHighlight({
     const handleMouseEnter = () => {
       hoverTimeoutRef.current = window.setTimeout(() => {
         onTargetHover();
-      }, 1000);
+      }, 500);
     };
     
     const handleMouseLeave = () => {
@@ -432,13 +382,23 @@ function ExplainerHighlight({
       {instruction && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 max-w-xl pointer-events-none" style={{ zIndex: 60 }}>
           <div 
-            className="bg-secondary/95 text-white px-8 py-5 rounded-xl text-center border border-blue-500/50"
+            className="bg-primary/95 text-white px-8 py-5 rounded-xl text-center border border-blue-500/50"
             style={{ boxShadow: "0 0 30px 5px rgba(59, 130, 246, 0.3)" }}
           >
             <p className="text-xl font-medium">{instruction}</p>
             {stepNumber && totalSteps && (
               <p className="text-sm text-blue-300 mt-2">
                 Step {stepNumber} of {totalSteps}
+              </p>
+            )}
+            {waitFor === "hover" && (
+              <p className="text-xs text-white/50 mt-3">
+                Hover on the highlighted area to continue
+              </p>
+            )}
+            {waitFor === "click" && (
+              <p className="text-xs text-white/50 mt-3">
+                Click the highlighted area to continue
               </p>
             )}
           </div>

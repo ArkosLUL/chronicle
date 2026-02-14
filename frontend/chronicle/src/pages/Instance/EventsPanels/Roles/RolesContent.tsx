@@ -402,7 +402,7 @@ export const RolesContent = ({ context }: RolesContentProps) => {
   return (
     <div className="pr-3">
       {/* Summary line */}
-      <div className="text-xs text-muted-foreground mb-3">
+      <div className="text-xs text-muted-foreground mb-3" data-roles-summary>
         <span className="font-medium text-foreground">{totalPlayers}</span> players detected:{" "}
         <span className="text-amber-500">{roleSummary.tanks.length}</span> tanks,{" "}
         <span className="text-emerald-500">{roleSummary.healers.length}</span> healers,{" "}
@@ -410,7 +410,7 @@ export const RolesContent = ({ context }: RolesContentProps) => {
       </div>
 
       {/* Tanks (1/3 width) and Healers (2/3 width, 2-col) layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-[3fr_5fr] gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[3fr_5fr] gap-4 mb-4" data-roles-groups>
         <RoleGroup
           title="Tanks"
           icon={<Shield className="h-4 w-4" />}
@@ -441,10 +441,10 @@ export const RolesContent = ({ context }: RolesContentProps) => {
       />
 
       {/* Detection info with debug thresholds */}
-      <div className="text-xs text-muted-foreground mt-4 pt-2 border-t border-border/30">
+      <div className="text-xs text-muted-foreground mt-4 pt-2 border-t border-border/30" data-roles-debug>
         <details>
-          <summary className="cursor-pointer hover:text-foreground">
-            Detection thresholds (debug)
+          <summary className="cursor-pointer hover:text-foreground" data-roles-debug-toggle>
+            Detection thresholds
           </summary>
           <div className="mt-2 space-y-1 font-mono text-[11px] bg-muted/30 p-2 rounded">
             <div className="grid grid-cols-2 gap-x-4">

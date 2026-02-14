@@ -174,7 +174,10 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
         </div>
         
         {/* View mode toggle */}
-        <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
+        <div 
+          className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5"
+          data-healing-view-toggle
+        >
           {(["effective", "overheal", "total"] as HealingViewMode[]).map((mode) => (
             <button
               key={mode}
@@ -186,6 +189,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
+              data-healing-view-mode={mode}
             >
               {viewModeLabels[mode]}
             </button>

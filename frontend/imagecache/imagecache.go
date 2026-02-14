@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -57,7 +58,7 @@ func NewHandler(filesystem fs.FS, opts ...Option) *Handler {
 	h := &Handler{
 		fs:      filesystem,
 		aliases: make(map[string]string),
-		maxAge:  31536000, // 1 year
+		maxAge:  int((time.Hour * 24 * 30).Seconds()), // 1 month
 	}
 	for _, opt := range opts {
 		opt(h)
@@ -82,7 +83,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			urlPath = rc.RoutePath
 		}
 	}
-	
+
 	name := strings.TrimPrefix(urlPath, "/")
 	if name == "" {
 		http.NotFound(w, r)

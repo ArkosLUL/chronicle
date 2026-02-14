@@ -7,7 +7,7 @@ package imagecache
 // or loaded from JSON at init time.
 var SpellIcons = map[string]string{
 	// Example mappings - replace with actual spell -> icon mappings
-	// "sliceanddice": "ability_rogue_slicedice",
+	//"sliceanddice": "ability_hunter_pet_basilisk",
 	// "garrote":      "ability_rogue_garrote",
 	// "ambush":       "ability_ambush",
 }

@@ -295,6 +295,7 @@ function DraggablePinnedTooltip({ player, initialPosition, onClose, panelTitle, 
   return (
     <div
       ref={tooltipRef}
+      data-breakout-panel
       className="bg-popover text-foreground border-3 border-solid fixed z-50 min-w-[340px] max-w-[90vw] rounded-md shadow-md"
       style={{
         left: position.x,

@@ -27,20 +27,26 @@ export const damageDoneExplainer: PanelExplainer = {
       highlightSelector: "[data-panel-row]",
     },
     {
-      id: "view-ability-breakout",
-      instruction:
-        "The ability breakout shows which spells contributed to their damage",
-      waitFor: "manual",
+      id: "view-breakout-panel",
+      instruction: "This is the ability breakout - it shows which spells contributed to their damage (hover over it to advance!)",
+      waitFor: "hover",
+      highlightSelector: "[data-breakout-panel]",
     },
     {
-      id: "view-target-breakout",
-      instruction: "The target breakout shows which enemies they hit",
-      waitFor: "manual",
+      id: "click-more-detail",
+      instruction: "Click 'More detail' to see hit type breakdowns (normal, crit, glancing, etc.)",
+      waitFor: "click",
+      highlightSelector: "[data-more-detail]",
+    },
+    {
+      id: "click-minmax",
+      instruction: "Click the ↕ button to show min/avg/max values for each hit type",
+      waitFor: "click",
+      highlightSelector: "[data-minmax-toggle]",
     },
     {
       id: "toggle-dps",
-      instruction:
-        "Toggle 'Per Second' in the header to switch between total and DPS view",
+      instruction: "Toggle 'Per Second' in the header to switch between total and DPS view",
       waitFor: "click",
       highlightSelector: "[data-per-second-toggle]",
     },

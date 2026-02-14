@@ -42,6 +42,7 @@ export function PanelExplainerView({
   const explainer = getExplainer(panelType);
   const [currentStep, setCurrentStep] = useState(0);
   const [walkthroughStarted, setWalkthroughStarted] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
 
   if (!explainer) {
     // Shouldn't happen, but fallback gracefully
@@ -64,8 +65,13 @@ export function PanelExplainerView({
 
   const handleNextStep = () => {
     if (isLastStep) {
-      setWalkthroughStarted(false);
-      setCurrentStep(0);
+      setShowCompletion(true);
+      // Auto-dismiss after 2 seconds
+      setTimeout(() => {
+        setShowCompletion(false);
+        setWalkthroughStarted(false);
+        setCurrentStep(0);
+      }, 2000);
     } else {
       setCurrentStep((s) => s + 1);
     }
@@ -77,6 +83,7 @@ export function PanelExplainerView({
   };
 
   const handleExitWalkthrough = useCallback(() => {
+    setShowCompletion(false);
     setWalkthroughStarted(false);
     setCurrentStep(0);
   }, []);
@@ -129,11 +136,31 @@ export function PanelExplainerView({
         {/* Live Panel */}
         <div className="relative">
           {/* Highlight overlay for walkthrough */}
-          {walkthroughStarted && currentWalkthroughStep?.highlightSelector && (
+          {walkthroughStarted && !showCompletion && currentWalkthroughStep?.highlightSelector && (
             <ExplainerHighlight 
               selector={currentWalkthroughStep.highlightSelector} 
               onExit={handleExitWalkthrough}
+              onTargetClick={currentWalkthroughStep.waitFor === "click" ? handleNextStep : undefined}
+              onTargetHover={currentWalkthroughStep.waitFor === "hover" ? handleNextStep : undefined}
+              instruction={currentWalkthroughStep.instruction}
+              stepNumber={currentStep + 1}
+              totalSteps={explainer.walkthrough?.length ?? 0}
             />
+          )}
+          
+          {/* Completion overlay */}
+          {showCompletion && createPortal(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+              <div 
+                className="text-center animate-in fade-in zoom-in duration-300"
+              >
+                <div className="text-6xl mb-4">🎉</div>
+                <h2 className="text-3xl font-bold text-white mb-2">You're all set!</h2>
+                <p className="text-xl text-white/80">Best of luck with your logs!</p>
+                <p className="text-sm text-white/40 mt-4">Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">Esc</kbd> to close</p>
+              </div>
+            </div>,
+            document.body
           )}
 
           <EventsPanel
@@ -241,14 +268,117 @@ export function PanelExplainerView({
  * Spotlight overlay that darkens the page and highlights the target element.
  * Uses box-shadow technique to create a "cutout" effect around the target.
  */
-function ExplainerHighlight({ selector, onExit }: { selector: string; onExit: () => void }) {
+function ExplainerHighlight({ 
+  selector, 
+  onExit,
+  onTargetClick,
+  onTargetHover,
+  instruction,
+  stepNumber,
+  totalSteps,
+}: { 
+  selector: string; 
+  onExit: () => void;
+  onTargetClick?: () => void;
+  onTargetHover?: () => void;
+  instruction?: string;
+  stepNumber?: number;
+  totalSteps?: number;
+}) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const hasScrolledRef = useRef(false);
+  const hoverTimeoutRef = useRef<number | null>(null);
 
   // Reset scroll flag when selector changes
   useEffect(() => {
     hasScrolledRef.current = false;
   }, [selector]);
+
+  // Listen for clicks on the target element
+  useEffect(() => {
+    if (!onTargetClick) return;
+    
+    let el: Element | null = null;
+    let retryInterval: number | null = null;
+    
+    const handleClick = () => {
+      onTargetClick();
+    };
+    
+    const attachListener = () => {
+      el = document.querySelector(selector);
+      if (el) {
+        if (retryInterval) {
+          clearInterval(retryInterval);
+          retryInterval = null;
+        }
+        el.addEventListener("click", handleClick);
+      }
+    };
+    
+    // Try immediately, then retry every 100ms
+    attachListener();
+    if (!el) {
+      retryInterval = window.setInterval(attachListener, 100);
+    }
+    
+    return () => {
+      if (retryInterval) clearInterval(retryInterval);
+      if (el) {
+        el.removeEventListener("click", handleClick);
+      }
+    };
+  }, [selector, onTargetClick]);
+
+  // Listen for hover on the target element (with 1 second delay)
+  useEffect(() => {
+    if (!onTargetHover) return;
+    
+    let el: Element | null = null;
+    let retryInterval: number | null = null;
+    
+    const handleMouseEnter = () => {
+      hoverTimeoutRef.current = window.setTimeout(() => {
+        onTargetHover();
+      }, 1000);
+    };
+    
+    const handleMouseLeave = () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+    };
+    
+    const attachListener = () => {
+      el = document.querySelector(selector);
+      if (el) {
+        if (retryInterval) {
+          clearInterval(retryInterval);
+          retryInterval = null;
+        }
+        el.addEventListener("mouseenter", handleMouseEnter);
+        el.addEventListener("mouseleave", handleMouseLeave);
+      }
+    };
+    
+    // Try immediately, then retry every 100ms
+    attachListener();
+    if (!el) {
+      retryInterval = window.setInterval(attachListener, 100);
+    }
+    
+    return () => {
+      if (retryInterval) clearInterval(retryInterval);
+      if (el) {
+        el.removeEventListener("mouseenter", handleMouseEnter);
+        el.removeEventListener("mouseleave", handleMouseLeave);
+      }
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, [selector, onTargetHover]);
 
   const updateRect = useCallback(() => {
     const el = document.querySelector(selector);
@@ -298,6 +428,22 @@ function ExplainerHighlight({ selector, onExit }: { selector: string; onExit: ()
 
   return createPortal(
     <>
+      {/* Instruction banner at top */}
+      {instruction && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 max-w-xl pointer-events-none" style={{ zIndex: 60 }}>
+          <div 
+            className="bg-secondary/95 text-white px-8 py-5 rounded-xl text-center border border-blue-500/50"
+            style={{ boxShadow: "0 0 30px 5px rgba(59, 130, 246, 0.3)" }}
+          >
+            <p className="text-xl font-medium">{instruction}</p>
+            {stepNumber && totalSteps && (
+              <p className="text-sm text-blue-300 mt-2">
+                Step {stepNumber} of {totalSteps}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       {/* Spotlight cutout */}
       <div
         className="fixed z-50 pointer-events-none rounded-md"

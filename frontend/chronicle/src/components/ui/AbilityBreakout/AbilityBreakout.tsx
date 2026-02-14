@@ -378,6 +378,7 @@ export function AbilityTable({
                   "px-1.5 py-0.5 rounded mr-2",
                   viewMode === 'minmax' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
+                data-minmax-toggle={viewMode !== 'minmax' ? true : undefined}
               >
                 ↕
               </button>
@@ -388,6 +389,7 @@ export function AbilityTable({
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-muted-foreground hover:text-foreground p-0.5"
           title={isExpanded ? "Collapse hit breakdown" : "Expand hit breakdown"}
+          data-more-detail={!isExpanded ? true : undefined}
         >
           {isExpanded ? 
           <span className="inline-flex items-center gap-0.5"><ChevronLeft className="w-3 h-3" /> Less detail</span> : 

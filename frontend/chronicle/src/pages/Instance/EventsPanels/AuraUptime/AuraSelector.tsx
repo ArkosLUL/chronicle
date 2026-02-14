@@ -196,7 +196,7 @@ export function AuraSelector({ auras, selected, onChange, className }: AuraSelec
           </div>
 
           {/* Results */}
-          <ScrollArea className="h-[300px]" viewportClassName="max-h-[300px]">
+          <ScrollArea className="h-[300px]">
             <div className="p-1">
               {filteredAuras.length > 0 ? (
                 filteredAuras.map((aura) => {

@@ -10,6 +10,7 @@ import { Sword } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { sunderProcessor, type SunderResult, type WarriorSunderStats, type TargetSunderStats } from "./sunder.processor";
 import { GenericPanel } from "../GenericPanel";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { cn } from "@/lib/utils";
 
 /**
@@ -111,7 +112,7 @@ interface WarriorsViewProps {
 function WarriorsView({ warriors }: WarriorsViewProps) {
   return (
     <div className="space-y-2" data-sunder-warriors>
-      <div className="max-h-panel overflow-y-auto">
+      <ScrollArea className="max-h-panel">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">
@@ -146,7 +147,7 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollArea>
     </div>
   );
 }
@@ -185,7 +186,7 @@ function TargetsView({ targets }: TargetsViewProps) {
         <DebugBreakout target={selectedTarget} onClose={() => setSelectedTargetGuid(null)} />
       ) : (
         <>
-          <div className="max-h-panel overflow-y-auto">
+          <ScrollArea className="max-h-panel">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">
@@ -217,7 +218,7 @@ function TargetsView({ targets }: TargetsViewProps) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollArea>
           
           {targetsWithoutFive.length > 0 && (
             <details className="text-xs">
@@ -285,7 +286,7 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
         Total events: <span className="font-medium text-foreground">{sortedEvents.length}</span>
       </div>
       
-      <div className="max-h-panel overflow-y-auto">
+      <ScrollArea className="max-h-panel">
         <table className="w-full text-2xs font-mono">
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">
@@ -328,7 +329,7 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

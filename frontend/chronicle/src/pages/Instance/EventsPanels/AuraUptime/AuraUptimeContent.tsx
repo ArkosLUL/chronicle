@@ -12,6 +12,7 @@ import { GenericPanel } from "../GenericPanel";
 import { AuraSelector } from "./AuraSelector";
 import { UptimeTimeline } from "./UptimeTimeline";
 import { useCachedValue } from "@/hooks/useCachedValue";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 
 /**
  * Format uptime as percentage
@@ -59,7 +60,11 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     (r) => r.auraNames.length > 0,
-    []
+    [
+      props.context.selectedEncounterIds, 
+      props.context.entitySelection.enemyIds, 
+      props.context.entitySelection.playerIds,
+    ]
   );
   
   // Build sorted aura list (auraNames is already an array for serialization)
@@ -151,7 +156,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
 
   return (
     <GenericPanel {...props}>
-      <div className="space-y-2">
+      <div className="space-y-2 min-h-panel">
         {/* Aura selector */}
         <div className="flex items-center gap-2">
           <AuraSelector
@@ -168,7 +173,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
 
         {/* Content */}
         {selectedAuras.length > 0 && rows.length > 0 ? (
-          <div className="@container space-y-2">
+          <div className="@container space-y-2 min-h-panel">
             {/* Filter indicator */}
             {filterSummary && (
               <div className="text-2xs text-muted-foreground">
@@ -177,7 +182,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
             )}
 
             {/* Per-target per-aura table */}
-            <div className="max-h-panel overflow-y-auto">
+            <ScrollArea className="max-h-panel">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-card">
                   <tr className="border-b border-border text-muted-foreground">
@@ -230,14 +235,14 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollArea>
           </div>
         ) : selectedAuras.length > 0 ? (
-          <div className="text-xs text-muted-foreground py-4 text-center">
+          <div className="text-xs text-muted-foreground text-center min-h-panel flex items-center justify-center">
             No data for selected auras{filterSummary ? ` on ${filterSummary}` : ""}
           </div>
         ) : (
-          <div className="text-xs text-muted-foreground py-4 text-center">
+          <div className="text-xs text-muted-foreground text-center min-h-panel flex items-center justify-center">
             {hasData ? "Select auras to view uptime" : "No auras recorded"}
           </div>
         )}

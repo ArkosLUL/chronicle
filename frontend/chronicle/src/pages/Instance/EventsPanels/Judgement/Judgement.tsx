@@ -16,6 +16,7 @@ import {
 import { unifiedHealingProcessor, type UnifiedHealingResult } from "../processors";
 import { usePanelAggregation } from "../usePanelAggregation";
 import { GenericPanel } from "../GenericPanel";
+import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { cn } from "@/lib/utils";
 import type { ActivityPeriod } from "@/api/typesGenerated";
 
@@ -357,7 +358,7 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: Ta
             <span>% uptime</span>
           </div>
 
-          <div className="max-h-panel overflow-y-auto">
+          <ScrollArea className="max-h-panel">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-muted-foreground">
@@ -423,7 +424,7 @@ function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: Ta
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollArea>
         </>
       )}
     </div>
@@ -493,7 +494,7 @@ function TargetBreakout({ target, activeTimeMs, onClose }: TargetBreakoutProps) 
       </div>
 
       {/* Timeline */}
-      <div className="max-h-panel overflow-y-auto">
+      <ScrollArea className="max-h-panel">
         <table className="w-full text-2xs font-mono">
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border text-muted-foreground">
@@ -524,7 +525,7 @@ function TargetBreakout({ target, activeTimeMs, onClose }: TargetBreakoutProps) 
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

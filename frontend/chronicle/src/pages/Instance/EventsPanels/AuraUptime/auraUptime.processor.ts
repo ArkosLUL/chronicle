@@ -194,6 +194,10 @@ function processAuraEvent(
   encounterID: string,
   context: ProcessorContext,
 ): void {
+  if(context.selectedEncounterIds.size !== 0 && !context.selectedEncounterIds.has(encounterID)) return;
+  if(context.entitySelection.playerIds.size !== 0 && !context.entitySelection.playerIds.has(event.target)) return;
+  if(context.entitySelection.enemyIds.size !== 0 && !context.entitySelection.enemyIds.has(event.target)) return;
+
   const key = activeKey(event.target, event.spellName);
   
   if (event.application === AuraApplication.Gains) {

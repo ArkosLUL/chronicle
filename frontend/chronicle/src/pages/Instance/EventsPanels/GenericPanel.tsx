@@ -12,13 +12,13 @@ export function GenericPanel<TResult>({
 
 }: PanelRenderProps<TResult> & { children: ReactNode }) {
   if (loading) {
-    return <div className="text-xs text-muted-foreground">Fetching data...</div>;
+    return <div className="text-xs text-muted-foreground min-h-panel flex items-center justify-center">Fetching data...</div>;
   }
   if (processing) {
-    return <div className="text-xs text-muted-foreground">Processing...</div>;
+    return <div className="text-xs text-muted-foreground min-h-panel flex items-center justify-center">Processing...</div>;
   }
   if (error) {
-    return <div className="text-xs text-destructive">Error: {error.message}</div>;
+    return <div className="text-xs text-destructive min-h-panel flex items-center justify-center">Error: {error.message}</div>;
   }
   const eventsPerSecond = processingTimeMs ? (totalEvents / (processingTimeMs / 1000)) : 0;
 

@@ -10,8 +10,9 @@
  * Mobile: This view is not shown on mobile - tooltips are used instead.
  */
 
-import { useState } from "react";
-import { ArrowLeft, BookOpen, Lightbulb, ChevronRight } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, BookOpen, Lightbulb, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,25 @@ export function PanelExplainerView({
     setCurrentStep(0);
   };
 
+  const handleExitWalkthrough = useCallback(() => {
+    setWalkthroughStarted(false);
+    setCurrentStep(0);
+  }, []);
+
+  // Escape key to exit walkthrough
+  useEffect(() => {
+    if (!walkthroughStarted) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleExitWalkthrough();
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [walkthroughStarted, handleExitWalkthrough]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -110,7 +130,10 @@ export function PanelExplainerView({
         <div className="relative">
           {/* Highlight overlay for walkthrough */}
           {walkthroughStarted && currentWalkthroughStep?.highlightSelector && (
-            <ExplainerHighlight selector={currentWalkthroughStep.highlightSelector} />
+            <ExplainerHighlight 
+              selector={currentWalkthroughStep.highlightSelector} 
+              onExit={handleExitWalkthrough}
+            />
           )}
 
           <EventsPanel
@@ -154,13 +177,13 @@ export function PanelExplainerView({
                   <div className="flex items-center gap-4">
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setWalkthroughStarted(false);
-                        setCurrentStep(0);
-                      }}
+                      onClick={handleExitWalkthrough}
                     >
                       Cancel
                     </Button>
+                    <span className="text-xs text-muted-foreground">
+                      or press <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono text-[10px]">Esc</kbd>
+                    </span>
                     <Button onClick={handleNextStep}>
                       {isLastStep ? "Finish" : "Next Step"}
                     </Button>
@@ -215,26 +238,97 @@ export function PanelExplainerView({
 }
 
 /**
- * Highlight overlay that creates a spotlight effect on the target element.
- * Uses a CSS selector to find the element and positions an overlay around it.
+ * Spotlight overlay that darkens the page and highlights the target element.
+ * Uses box-shadow technique to create a "cutout" effect around the target.
  */
-function ExplainerHighlight({ selector }: { selector: string }) {
-  // For now, just add a pulsing border effect via CSS
-  // A full spotlight implementation would use portal + positioning
-  return (
-    <style>{`
-      ${selector} {
-        position: relative;
-        z-index: 10;
-        outline: 2px solid hsl(var(--primary));
-        outline-offset: 2px;
-        animation: explainer-pulse 2s ease-in-out infinite;
+function ExplainerHighlight({ selector, onExit }: { selector: string; onExit: () => void }) {
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const hasScrolledRef = useRef(false);
+
+  // Reset scroll flag when selector changes
+  useEffect(() => {
+    hasScrolledRef.current = false;
+  }, [selector]);
+
+  const updateRect = useCallback(() => {
+    const el = document.querySelector(selector);
+    if (el) {
+      // Scroll element into view on first find
+      if (!hasScrolledRef.current) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        hasScrolledRef.current = true;
+        // Wait for scroll to finish before measuring
+        setTimeout(() => {
+          setTargetRect(el.getBoundingClientRect());
+        }, 300);
+      } else {
+        setTargetRect(el.getBoundingClientRect());
       }
-      
-      @keyframes explainer-pulse {
-        0%, 100% { outline-color: hsl(var(--primary)); }
-        50% { outline-color: hsl(var(--primary) / 0.5); }
-      }
-    `}</style>
+    } else {
+      setTargetRect(null);
+    }
+  }, [selector]);
+
+  useEffect(() => {
+    // Initial update with retries - element may not exist yet if panel is still rendering
+    updateRect();
+    const retryTimeout1 = setTimeout(updateRect, 50);
+    const retryTimeout2 = setTimeout(updateRect, 150);
+    const retryTimeout3 = setTimeout(updateRect, 500);
+    
+    // Update on scroll/resize since getBoundingClientRect is viewport-relative
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    
+    return () => {
+      clearTimeout(retryTimeout1);
+      clearTimeout(retryTimeout2);
+      clearTimeout(retryTimeout3);
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [updateRect]);
+
+  if (!targetRect) {
+    // Element not found - don't show anything
+    return null;
+  }
+
+  const padding = 6;
+
+  return createPortal(
+    <>
+      {/* Spotlight cutout */}
+      <div
+        className="fixed z-50 pointer-events-none rounded-md"
+        style={{
+          left: targetRect.left - padding,
+          top: targetRect.top - padding,
+          width: targetRect.width + padding * 2,
+          height: targetRect.height + padding * 2,
+          boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 0 2px #3b82f6",
+        }}
+      />
+      {/* Exit button in top-right */}
+      <button
+        onClick={onExit}
+        className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg bg-black/80 text-white hover:bg-black/90 transition-colors cursor-pointer animate-[glow-pulse_2s_ease-in-out_infinite]"
+        style={{
+          animationName: "glow-pulse",
+        }}
+      >
+      <style>{`
+        @keyframes glow-pulse {
+          0%, 100% { box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.6); }
+          50% { box-shadow: 0 0 30px 8px rgba(239, 68, 68, 0.8); }
+        }
+      `}</style>
+        <span className="text-base">
+          Press <kbd className="px-2 py-1 rounded bg-white/20 font-mono text-sm">Esc</kbd> to exit
+        </span>
+        <X className="h-5 w-5" />
+      </button>
+    </>,
+    document.body
   );
 }

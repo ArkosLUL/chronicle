@@ -144,7 +144,7 @@ export function PlayerMetricChart({
       {...divProps}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}>
-        {chartData.map((player) => {
+        {chartData.map((player, index) => {
           return <PlayerMetricRow 
             key={player.playerID}
             player={player} 
@@ -159,6 +159,7 @@ export function PlayerMetricChart({
             onTogglePin={() => handleTogglePin(player.playerID)}
             panelTitle={panelTitle}
             breakout={breakout}
+            isFirstRow={index === 0}
           />
         })}
       </div>
@@ -179,6 +180,8 @@ export interface PlayerMetricRowProps {
   onTogglePin?: () => void
   panelTitle?: string
   breakout?: BreakoutFn
+  /** Whether this is the first row (used for tutorial highlight) */
+  isFirstRow?: boolean
 }
 
 // Draggable pinned tooltip component
@@ -351,6 +354,7 @@ export function PlayerMetricRow({
   onTogglePin,
   panelTitle,
   breakout,
+  isFirstRow = false,
 }: PlayerMetricRowProps) {
   const { ref, x, y } = useMouse<HTMLDivElement>();
   const rowRef = useRef<HTMLDivElement>(null)
@@ -392,6 +396,7 @@ export function PlayerMetricRow({
     <div
       ref={setRefs}
       onClick={handleClick}
+      data-panel-row={isFirstRow ? true : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',

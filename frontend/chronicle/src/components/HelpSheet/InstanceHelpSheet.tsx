@@ -1,19 +1,15 @@
 /**
- * InstanceHelpSheet - A slide-out panel with tips and shortcuts for the Instance page.
+ * InstanceHelpSheet - A modal overlay with tips and shortcuts for the Instance page.
  * 
  * Provides a comprehensive reference for all Instance page features,
- * organized by category. Accessible via a ? button in the page header.
+ * organized by category. Closes on Esc or clicking outside.
  */
 
-import { HelpCircle, MousePointerClick, Users, LayoutGrid, Keyboard, Lightbulb } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { HelpCircle, MousePointerClick, Users, LayoutGrid, Keyboard, Lightbulb, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Card } from "@/components/ui/Card/Card";
 
 interface HelpSectionProps {
   icon: React.ReactNode;
@@ -45,37 +41,88 @@ function HelpItem({ children }: { children: React.ReactNode }) {
 }
 
 export interface InstanceHelpSheetProps {
-  /** Whether the sheet is open */
+  /** Whether the overlay is open (controlled mode) */
   open?: boolean;
-  /** Callback when open state changes */
+  /** Callback when open state changes (controlled mode) */
   onOpenChange?: (open: boolean) => void;
 }
 
 /**
- * Help sheet that can be used as a controlled or uncontrolled component.
- * When used uncontrolled, it renders its own trigger button.
+ * Help overlay that can be used as a controlled or uncontrolled component.
+ * When used uncontrolled, it renders its own trigger button and manages state.
+ * Closes on Esc key or clicking the backdrop.
  */
-export function InstanceHelpSheet({ open, onOpenChange }: InstanceHelpSheetProps) {
+export function InstanceHelpSheet({ open: controlledOpen, onOpenChange }: InstanceHelpSheetProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Use controlled or uncontrolled state
+  const isControlled = controlledOpen !== undefined;
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+  
+  const handleClose = useCallback(() => {
+    if (isControlled) {
+      onOpenChange?.(false);
+    } else {
+      setInternalOpen(false);
+    }
+  }, [isControlled, onOpenChange]);
+  
+  const handleOpen = useCallback(() => {
+    if (isControlled) {
+      onOpenChange?.(true);
+    } else {
+      setInternalOpen(true);
+    }
+  }, [isControlled, onOpenChange]);
+  
+  // Handle Esc key
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, handleClose]);
+  
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* Only show trigger if not controlled */}
-      {onOpenChange === undefined && (
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-1.5">
-            <HelpCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">Help</span>
-          </Button>
-        </SheetTrigger>
+    <>
+      {/* Trigger button (only in uncontrolled mode) */}
+      {!isControlled && (
+        <Button variant="ghost" size="sm" className="gap-1.5" onClick={handleOpen}>
+          <HelpCircle className="h-4 w-4" />
+          <span className="hidden sm:inline">Help</span>
+        </Button>
       )}
-      <SheetContent side="right" className="w-[340px] sm:w-[400px] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5" />
-            Tips & Shortcuts
-          </SheetTitle>
-        </SheetHeader>
+      
+      {/* Modal overlay */}
+      {isOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-200"
+            onClick={handleClose}
+          />
+          
+          {/* Content */}
+          <Card className="relative z-10 w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 animate-in fade-in-0 zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <HelpCircle className="h-5 w-5" />
+                Tips & Shortcuts
+              </h2>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleClose}>
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </div>
 
-        <div className="mt-6 space-y-6">
+            <div className="space-y-6">
           <HelpSection
             icon={<MousePointerClick className="h-4 w-4 text-blue-500" />}
             title="Encounters"
@@ -162,8 +209,11 @@ export function InstanceHelpSheet({ open, onOpenChange }: InstanceHelpSheetProps
               Look for the <HelpCircle className="h-3 w-3 inline text-muted-foreground" /> icons for contextual tips throughout the page
             </HelpItem>
           </HelpSection>
-        </div>
-      </SheetContent>
-    </Sheet>
+            </div>
+          </Card>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

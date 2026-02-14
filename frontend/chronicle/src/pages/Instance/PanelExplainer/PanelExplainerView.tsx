@@ -15,7 +15,6 @@ import { createPortal } from "react-dom";
 import { ArrowLeft, BookOpen, Lightbulb, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card/Card";
-import { cn } from "@/lib/utils";
 import { PANELS, type EventsPanelType } from "../EventsPanels/EventsPanel";
 import { getExplainer } from "../EventsPanels/explainers";
 import { EventsPanel } from "../EventsPanels";

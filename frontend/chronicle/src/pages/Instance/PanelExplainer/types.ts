@@ -23,7 +23,7 @@ export interface ExplainerStep {
   highlightSelector?: string;
   
   /** What user action completes this step */
-  waitFor?: "click" | "hover" | "scroll" | "manual";
+  waitFor?: "click" | "hover" | "manual";
   
   /** Custom validation function (optional) */
   validate?: () => boolean;

@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -26,7 +27,7 @@ func TestMajordomo(t *testing.T) {
 	logger := testutil.Logger(t)
 
 	m := merge.NewMerger(logger)
-	liner, scans, err := m.LineScanner(ctx, nil, raw, logs)
+	liner, scans, err := m.LineScanner(ctx, nil, logfile.New(nil, raw), logfile.New(nil, logs))
 	require.NoError(t, err)
 
 	p := vanilla.NewFromScanner(logger, liner, scans)

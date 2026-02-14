@@ -3,13 +3,14 @@
  */
 
 import { useState } from "react";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Construction } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { BreakoutHoverProvider } from "@/components/ui/AbilityBreakout";
 import { Switch } from "@/components/ui/Switch/Switch";
 import { HintTooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { cn } from "@/lib/utils";
 import { usePanelAggregation } from "./usePanelAggregation";
 import { usePanelTiming } from "./PanelTimingContext";
 import type { PanelDefinition, PanelContext } from "./types";
@@ -131,7 +132,7 @@ export function EventsPanel({
 
   return (
     <BreakoutHoverProvider>
-      <Card className="p-4 gap-2 mb-3">
+      <Card className={cn("p-4 gap-2 mb-3", panel.underConstruction && "border-yellow-500/50")}>
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-medium flex items-center gap-2">
             <PanelSelector value={panelType} onChange={onPanelTypeChange} />
@@ -151,6 +152,20 @@ export function EventsPanel({
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   Learn about this panel
+                </TooltipContent>
+              </HintTooltip>
+            )}
+            {panel.underConstruction && (
+              <HintTooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-yellow-500 cursor-help">
+                    <Construction className="h-3.5 w-3.5" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[250px]">
+                  <p className="text-xs">
+                    This panel is under construction. Accuracy is not guaranteed and it may look different in the future. Ask in Discord for limitations.
+                  </p>
                 </TooltipContent>
               </HintTooltip>
             )}

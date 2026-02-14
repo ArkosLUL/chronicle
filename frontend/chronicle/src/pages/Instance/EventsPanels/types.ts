@@ -88,6 +88,9 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
    */
   selfManagesAggregation?: boolean;
   
+  /** If true, shows a warning indicator that this panel is experimental */
+  underConstruction?: boolean;
+  
   /**
    * Create the initial state for aggregation
    */

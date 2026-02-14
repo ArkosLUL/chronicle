@@ -22,6 +22,7 @@ export function createAuraUptimePanel(): PanelDefinition<AuraUptimeResult, any> 
     label: "Aura Uptime",
     icon: <Sparkles className="h-4 w-4" />,
     checkboxLabel: "Duration",
+    underConstruction: true,
 
     render: (props: PanelRenderProps<AuraUptimeResult>) => {
       return <AuraUptimeContent {...props} />;

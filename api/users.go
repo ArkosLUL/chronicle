@@ -6,7 +6,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
-	"github.com/google/uuid"
 )
 
 func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +31,8 @@ func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
 		MaxStorageBytes:      user.MaxStorageBytes.Int64,
 		ConsumedStorageBytes: user.ConsumedStorageBytes,
 		Preferences: chroniclesdk.Preferences{
-			HelpfulHints: user.ID == uuid.MustParse("4d977ff0-45a8-4673-967a-b148c771413f"),
+			// Should allow people to disable hints if they want, but for now we'll just enable them by default
+			HelpfulHints: true,
 		},
 	})
 }

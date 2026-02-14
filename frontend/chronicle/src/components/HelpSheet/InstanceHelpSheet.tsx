@@ -51,6 +51,12 @@ const FEATURE_MAP: FeatureCategory[] = [
         selector: "[data-help-view-toggle]",
         description: "Switch between grouped (by boss/trash) and chronological view.",
       },
+            {
+        id: "collapse-toggle",
+        label: "Collapse Toggle",
+        selector: "[data-help-collapse-toggle]",
+        description: "Collapse or expand sections of the panel.",
+      },
     ],
   },
   {

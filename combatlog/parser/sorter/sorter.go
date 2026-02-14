@@ -19,6 +19,7 @@ type SortSummary struct {
 	Earliest time.Time
 	Latest   time.Time
 	Total    int
+	IsRaw    bool
 }
 
 type logLine struct {
@@ -48,6 +49,11 @@ func SortLogs(ctx context.Context, logger *slog.Logger, input io.Reader, output 
 			logger.Warn("skipping failed line", slog.String("line", txt), slog.String("error", err.Error()))
 			continue
 		}
+
+		if _, ok := unitinfo.IsUnitInfo(content); ok {
+			sum.IsRaw = true
+		}
+
 		buffer = append(buffer, logLine{
 			Date:    ts,
 			Content: content,

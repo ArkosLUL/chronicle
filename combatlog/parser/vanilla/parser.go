@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -19,7 +20,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 )
 
-type parseLine = func(ts time.Time, content string) ([]messages.Message, error)
+type parseLine = func(lCtx *logfile.Context, ts time.Time, content string) ([]messages.Message, error)
 
 type Parser struct {
 	logger  *slog.Logger
@@ -116,7 +117,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	}
 	now := time.Now()
 
-	ts, original, err := p.scanner()
+	lCtx, ts, original, err := p.scanner()
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 		return messages.Skip(ts, "empty line"), nil
 	}
 
-	msgs, err := p.ParseContent(ts, content)
+	msgs, err := p.ParseContent(lCtx, ts, content)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	return msgs, nil
 }
 
-func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message, error) {
+func (p *Parser) ParseContent(lctx *logfile.Context, ts time.Time, content string) ([]messages.Message, error) {
 	if p.metrics.UnmatchingTime == nil {
 		p.metrics.UnmatchingTime = make(map[string]time.Duration)
 	}
@@ -180,64 +181,64 @@ func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message,
 	start := time.Now()
 	p.initMatchers.Do(func() {
 		p.matchers = []parseLine{
-			p.fCombatantInfo,                // ✓
-			p.fUnitInfo,                     // ✓
-			p.fZoneInfo,                     // ✓
-			p.fV2Casts,                      // ✓
-			p.fLoot,                         // ✓
-			p.fCombatCount,                  // ✓
-			p.fRealm,                        // ✓
-			p.fUnitDied,                     // ✓
-			p.fPlayerPosition,               // ✓
-			p.fClockInfo,                    // ✓
-			p.fBugDamageSpellHitOrCrit,      // ✓
-			p.fSpellCastAttempt,             // ✓
-			p.fGain,                         // ✓
-			p.fGainNoSource,                 // ✓
-			p.fDamageSpellHitOrCritNoSchool, // ✓
-			p.fDamageSpellHitOrCritSchool,   // ✓
-			p.fDamagePeriodic,               // ✓
-			p.fDamageShield,                 // ✓
-			p.fDamageHitOrCritNoSchool,      // ✓
-			p.fDamageHitOrCritSchool,        // ✓
-			p.fHeal,                         // ✓
-			p.fAuraGainHarmfulHelpful,       // ✓
-			p.fAuraFade,                     // ✓
-			p.fDamageSpellSplit,             // ✓
-			p.fDamageSpellMiss,              // ✓
-			p.fDamageSpellBlockParryEvadeDodgeResistDeflect, // ✓
-			p.fDamageSpellAbsorb,                            // ✓
-			p.fDamageSpellAbsorbSelf,                        // x TODO: need an example
-			p.fDamageReflect,                                // ✓
-			p.fDamageProcResist,                             // x TODO: need an example
-			p.fDamageSpellImmune,                            // ✓
-			p.fDamageMiss,                                   // ✓
-			p.fDamageBlockParryEvadeDodgeDeflect,            // ✓
-			p.fDamageAbsorbResist,                           // ✓
-			p.fDamageImmune,                                 // ✓
-			p.fSpellCastPerformDurability,                   // x TODO: need an example
-			p.fSpellCastPerform,                             // ✓
-			p.fSpellCastPerformUnknown,                      // ✓
-			p.fHonorableKill,                                // ✓ (TODO: add currency gain for honor)
-			p.fUnitDieDestroyed,                             // ✓
-			p.fUnitDieDestroyedExperience,                   // ✓ (TODO: add experience gain)
-			p.fUnitSlay,                                     // ✓
-			p.fAuraDispel,                                   // ✓
-			p.fAuraInterrupt,                                // ✓
-			p.fCreates,                                      // ✓
-			p.fGainsAttack,                                  // ✓
-			p.fFallDamage,                                   // ✓
-			p.fDurabilityLoss,                               // ✓
-			p.fUsesConsumable,                               // ✓
-			p.fResourceDrain,                                // ✓
-			p.fReputationChange,                             // ✓
-			p.fPetEats,                                      // ✓
-			p.fKilledBy,                                     // ✓
-			p.fLavaSwimming,                                 // ✓
-			p.fFullResist,                                   // x TODO: Unsure what to do with this, there is no target
-			p.fFullImmune,                                   // ✓
-			p.fPetHappiness,                                 // ✓
-			p.fPetDismissed,                                 // ✓
+			Either(p.fCombatantInfo),                                 // ✓
+			Either(p.fUnitInfo),                                      // ✓
+			Either(p.fZoneInfo),                                      // ✓
+			Either(p.fV2Casts),                                       // ✓
+			Either(p.fLoot),                                          // ✓
+			Either(p.fCombatCount),                                   // ✓
+			Either(p.fRealm),                                         // ✓
+			Either(p.fUnitDied),                                      // ✓
+			Either(p.fPlayerPosition),                                // ✓
+			Either(p.fClockInfo),                                     // ✓
+			OnlyRaw(p.fBugDamageSpellHitOrCrit),                      // ✓
+			OnlyRaw(p.fSpellCastAttempt),                             // ✓
+			OnlyRaw(p.fGain),                                         // ✓
+			OnlyRaw(p.fGainNoSource),                                 // ✓
+			OnlyRaw(p.fDamageSpellHitOrCritNoSchool),                 // ✓
+			OnlyRaw(p.fDamageSpellHitOrCritSchool),                   // ✓
+			OnlyRaw(p.fDamagePeriodic),                               // ✓
+			OnlyRaw(p.fDamageShield),                                 // ✓
+			OnlyRaw(p.fDamageHitOrCritNoSchool),                      // ✓
+			OnlyRaw(p.fDamageHitOrCritSchool),                        // ✓
+			OnlyRaw(p.fHeal),                                         // ✓
+			OnlyRaw(p.fAuraGainHarmfulHelpful),                       // ✓
+			OnlyRaw(p.fAuraFade),                                     // ✓
+			OnlyRaw(p.fDamageSpellSplit),                             // ✓
+			OnlyRaw(p.fDamageSpellMiss),                              // ✓
+			OnlyRaw(p.fDamageSpellBlockParryEvadeDodgeResistDeflect), // ✓
+			OnlyRaw(p.fDamageSpellAbsorb),                            // ✓
+			OnlyRaw(p.fDamageSpellAbsorbSelf),                        // x TODO: need an example
+			OnlyRaw(p.fDamageReflect),                                // ✓
+			OnlyRaw(p.fDamageProcResist),                             // x TODO: need an example
+			OnlyRaw(p.fDamageSpellImmune),                            // ✓
+			OnlyRaw(p.fDamageMiss),                                   // ✓
+			OnlyRaw(p.fDamageBlockParryEvadeDodgeDeflect),            // ✓
+			OnlyRaw(p.fDamageAbsorbResist),                           // ✓
+			OnlyRaw(p.fDamageImmune),                                 // ✓
+			OnlyRaw(p.fSpellCastPerformDurability),                   // x TODO: need an example
+			OnlyRaw(p.fSpellCastPerform),                             // ✓
+			OnlyRaw(p.fSpellCastPerformUnknown),                      // ✓
+			OnlyRaw(p.fHonorableKill),                                // ✓ (TODO: add currency gain for honor)
+			OnlyRaw(p.fUnitDieDestroyed),                             // ✓
+			OnlyRaw(p.fUnitDieDestroyedExperience),                   // ✓ (TODO: add experience gain)
+			OnlyRaw(p.fUnitSlay),                                     // ✓
+			OnlyRaw(p.fAuraDispel),                                   // ✓
+			OnlyRaw(p.fAuraInterrupt),                                // ✓
+			OnlyRaw(p.fCreates),                                      // ✓
+			OnlyRaw(p.fGainsAttack),                                  // ✓
+			OnlyRaw(p.fFallDamage),                                   // ✓
+			OnlyRaw(p.fDurabilityLoss),                               // ✓
+			OnlyRaw(p.fUsesConsumable),                               // ✓
+			OnlyRaw(p.fResourceDrain),                                // ✓
+			OnlyRaw(p.fReputationChange),                             // ✓
+			OnlyRaw(p.fPetEats),                                      // ✓
+			OnlyRaw(p.fKilledBy),                                     // ✓
+			OnlyRaw(p.fLavaSwimming),                                 // ✓
+			OnlyRaw(p.fFullResist),                                   // x TODO: Unsure what to do with this, there is no target
+			OnlyRaw(p.fFullImmune),                                   // ✓
+			OnlyRaw(p.fPetHappiness),                                 // ✓
+			OnlyRaw(p.fPetDismissed),                                 // ✓
 		}
 		p.matcherNames = make([]string, 0, len(p.matchers))
 
@@ -249,7 +250,7 @@ func (p *Parser) ParseContent(ts time.Time, content string) ([]messages.Message,
 	for i, parser := range p.matchers {
 		matcherName := p.matcherNames[i]
 		startMatch := time.Now()
-		m, err := parser(ts, content)
+		m, err := parser(lctx, ts, content)
 		if err != nil {
 			return nil, err
 		}

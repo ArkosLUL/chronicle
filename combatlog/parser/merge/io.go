@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 )
 
 func FromIOReader(lines *lines.Liner, m io.Reader) Scan {
 	scanner := bufio.NewScanner(m)
-	return func() (time.Time, string, error) {
+	return func() (*logfile.Context, time.Time, string, error) {
 		for {
 			if !scanner.Scan() {
-				return time.Time{}, "", io.EOF
+				return nil, time.Time{}, "", io.EOF
 			}
 
 			text := scanner.Text()
@@ -28,7 +29,8 @@ func FromIOReader(lines *lines.Liner, m io.Reader) Scan {
 				// Skip comment lines
 				continue
 			}
-			return lines.Line(scanner.Text())
+			ts, c, err := lines.Line(scanner.Text())
+			return nil, ts, c, err
 		}
 	}
 }

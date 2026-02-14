@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
@@ -19,8 +20,9 @@ const (
 )
 
 type scanLine struct {
-	Ts      time.Time
-	Content string
+	LineContext *logfile.Context
+	Ts          time.Time
+	Content     string
 }
 type meFinder struct {
 	Scan merge.Scan
@@ -36,7 +38,7 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, *SharedMe, int, er
 
 	lineCount := 0
 	for {
-		ts, content, err := scan()
+		lctx, ts, content, err := scan()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil, nil, lineCount, fmt.Errorf("reached end of log without finding me within %d lines", lineCount)
@@ -45,8 +47,9 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, *SharedMe, int, er
 		}
 
 		finder.buffer = append(finder.buffer, scanLine{
-			Ts:      ts,
-			Content: content,
+			LineContext: lctx,
+			Ts:          ts,
+			Content:     content,
 		})
 
 		lineCount++
@@ -84,11 +87,11 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, *SharedMe, int, er
 	}
 }
 
-func (m *meFinder) scan() (time.Time, string, error) {
+func (m *meFinder) scan() (*logfile.Context, time.Time, string, error) {
 	if len(m.buffer) > 0 {
 		line := m.buffer[0]
 		m.buffer = m.buffer[1:]
-		return line.Ts, line.Content, nil
+		return line.LineContext, line.Ts, line.Content, nil
 	}
 	return m.Scan()
 }

@@ -57,7 +57,7 @@ func ExtractByUtility() *serpent.Command {
 					continue
 				}
 
-				msgs, err := p.ParseContent(ts, content)
+				msgs, err := p.ParseContent(nil, ts, content)
 				if err != nil {
 					logger.Warn("skipping failed parse", slog.String("line", txt), slog.String("error", err.Error()))
 					continue

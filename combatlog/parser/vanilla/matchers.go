@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/playerposition"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs/compiled"
@@ -1393,4 +1394,22 @@ func (p *Parser) fFullImmune(ts time.Time, content string) ([]messages.Message, 
 		Trailer:         nil,
 		EnvironmentType: nil,
 	}), nil
+}
+
+func OnlyRaw(do func(ts time.Time, content string) ([]messages.Message, error)) parseLine {
+	return func(lCtx *logfile.Context, ts time.Time, content string) ([]messages.Message, error) {
+		if lCtx != nil &&
+			lCtx.IsRaw != nil &&
+			!(*lCtx.IsRaw) {
+			return messages.Skip(ts, "will source only from raw logs"), nil
+		}
+
+		return do(ts, content)
+	}
+}
+
+func Either(do func(ts time.Time, content string) ([]messages.Message, error)) parseLine {
+  return func(lCtx *logfile.Context, ts time.Time, content string) ([]messages.Message, error) {
+    return do(ts, content)
+  }
 }

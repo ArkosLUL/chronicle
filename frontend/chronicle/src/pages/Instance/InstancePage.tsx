@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Loader2, Youtube, Timer } from "lucide-react";
-import { useInstance, useInstanceYoutube } from "@/api/queries";
+import { useInstance, useInstanceYoutube, useAuthorizationCheck } from "@/api/queries";
+import { useAuth } from "@/hooks/useAuth";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
 import type { ActivityPeriod, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles, KillType } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
@@ -127,12 +128,14 @@ function InstancePageInner({
   onSelectEncounters,
   youtubeData,
   selectedEncounterTimes,
+  logDetailUrl,
 }: {
   instance: Instance;
   selectedEncounterIds: string[];
   onSelectEncounters: (ids: string[] | null) => void;
   youtubeData: { url: string; results: readonly import("@/api/typesGenerated").VideoTimestamp[] } | null | undefined;
   selectedEncounterTimes: { start: string | undefined; end: string | undefined };
+  logDetailUrl?: string;
 }) {
   const [showYoutube, setShowYoutube] = useState(false);
   const [showSyncPanel, setShowSyncPanel] = useState(false);
@@ -156,6 +159,7 @@ function InstancePageInner({
         instance={instance}
         selectedEncounterIds={selectedEncounterIds}
         onSelectEncounters={onSelectEncounters}
+        logDetailUrl={logDetailUrl}
         youtubeButton={
           <div className="flex gap-1.5">
             {/* Sync button */}
@@ -217,6 +221,18 @@ export function InstancePage() {
     instanceId || "",
     { enabled: !!instanceId }
   );
+
+  // Check if user can delete this log (uploader or admin) - if so, show link to log detail
+  const { isAuthenticated } = useAuth();
+  const logGroupId = apiInstance?.log_group_id;
+  const authzChecks = useMemo(() => ({
+    delete: logGroupId ? `raid_log:${logGroupId}#delete` : "",
+  }), [logGroupId]);
+  const { data: authz } = useAuthorizationCheck(authzChecks, {
+    enabled: isAuthenticated && !!logGroupId,
+  });
+  const canDeleteLog = authz?.delete ?? false;
+  const logDetailUrl = canDeleteLog && logGroupId ? `/logs/${logGroupId}` : undefined;
 
   const instance = useMemo(() => {
     if (!apiInstance) return null;
@@ -286,9 +302,6 @@ export function InstancePage() {
     );
   }
 
-  // // Use log_group_id from the API response to construct back URL
-  // const backUrl = apiInstance?.log_group_id ? `/logs/${apiInstance.log_group_id}` : "/logs";
-
   return (
     <SyncModeProvider>
       <InstanceEventsProvider instanceId={instance.id}>
@@ -298,6 +311,7 @@ export function InstancePage() {
           onSelectEncounters={setUserSelectedEncounterIds}
           youtubeData={youtubeData}
           selectedEncounterTimes={selectedEncounterTimes}
+          logDetailUrl={logDetailUrl}
         />
       </InstanceEventsProvider>
     </SyncModeProvider>

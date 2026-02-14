@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -46,7 +47,7 @@ func ParseCmd() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
+			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
 			if err != nil {
 				return err
 			}
@@ -111,7 +112,7 @@ func CreaturesCmd() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
+			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
 			if err != nil {
 				return err
 			}
@@ -160,7 +161,7 @@ func RegrowthBug() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
+			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
 			if err != nil {
 				return err
 			}
@@ -207,7 +208,7 @@ func HitTypeCMD() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, nil, files[0], files[1])
+			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
 			if err != nil {
 				return err
 			}
@@ -250,6 +251,12 @@ func (h *hitTypeConsumer) Process(m messages.Message) error {
 		h.SpellSchool = make(map[string]map[types.School]int)
 	}
 	switch msg := m.(type) {
+	case messages.Heal:
+		if _, ok := h.SpellName[msg.SpellName]; !ok {
+			h.SpellName[msg.SpellName] = make(map[types.HitType]int)
+			h.SpellSchool[msg.SpellName] = make(map[types.School]int)
+		}
+		h.SpellName[msg.SpellName][msg.HitType]++
 	case messages.Damage:
 		if msg.SpellName == nil {
 			return nil

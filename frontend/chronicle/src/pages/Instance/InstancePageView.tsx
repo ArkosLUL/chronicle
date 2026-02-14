@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "react-router-dom";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle } from "lucide-react";
+import { useSearchParams, Link } from "react-router-dom";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, FileText } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
@@ -324,6 +324,7 @@ function EncounterSidebar({
             className="h-6 w-6 -mr-1"
             onClick={onCollapse}
             title="Hide sidebar"
+            data-help-collapse-toggle
           >
             {isMobile ? <X className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
@@ -955,6 +956,8 @@ export interface InstancePageViewProps {
   onSelectEncounters?: (encounterIds: string[]) => void;
   /** Optional button to show YouTube video overlay */
   youtubeButton?: React.ReactNode;
+  /** URL to log detail page (shown only if user can manage the log, desktop only) */
+  logDetailUrl?: string;
 }
 
 export function InstancePageView({
@@ -962,6 +965,7 @@ export function InstancePageView({
   selectedEncounterIds: _selectedEncounterIds,
   onSelectEncounters,
   youtubeButton,
+  logDetailUrl,
 }: InstancePageViewProps) {
   // URL state for explainer mode (simple ?explain=panel_type)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1191,6 +1195,15 @@ export function InstancePageView({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* View Log button - desktop only, when user can manage the log */}
+            {!isMobile && logDetailUrl && (
+              <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                <Link to={logDetailUrl}>
+                  <FileText className="h-4 w-4" />
+                  View Log
+                </Link>
+              </Button>
+            )}
             {youtubeButton}
             {showHints && !isMobile && (
               <>

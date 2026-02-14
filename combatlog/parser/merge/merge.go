@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/lines"
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
-type Scan func() (time.Time, string, error)
+type Scan func() (*logfile.Context, time.Time, string, error)
 
 type MiddleWare func(ts time.Time, content string) bool
 type Option func(m *Merger)
@@ -44,22 +45,20 @@ func WithMiddleWare(mw MiddleWare) Option {
 	}
 }
 
-func (m *Merger) LineScanner(ctx context.Context, ri *realmclock.Info, formatted io.Reader, raw io.Reader) (*lines.Liner, Scan, error) {
-	f := bufio.NewScanner(formatted)
-	r := bufio.NewScanner(raw)
+func (m *Merger) LineScanner(ctx context.Context, ri *realmclock.Info, formatted logfile.Reader, raw logfile.Reader) (*lines.Liner, Scan, error) {
 	l := lines.NewLiner().WithRealmClockInfo(ri)
 
-	merger, err := newInOrderMerger(ctx, l, f, r)
+	merger, err := newInOrderMerger(ctx, l, formatted, raw)
 	if err != nil {
 		return l, nil, fmt.Errorf("create merger: %w", err)
 	}
 
-	return l, func() (time.Time, string, error) {
+	return l, func() (*logfile.Context, time.Time, string, error) {
 	LineLoop:
 		for {
-			ts, content, err := merger.next()
+			lctx, ts, content, err := merger.next()
 			if err != nil {
-				return time.Time{}, "", err
+				return nil, time.Time{}, "", err
 			}
 
 			for _, mw := range m.mw {
@@ -68,19 +67,19 @@ func (m *Merger) LineScanner(ctx context.Context, ri *realmclock.Info, formatted
 				}
 			}
 
-			return ts, content, err
+			return lctx, ts, content, err
 		}
 	}, nil
 }
 
 func (m *Merger) MergeLogs(ctx context.Context, formatted io.Reader, raw io.Reader, writer io.Writer) error {
-	l, scan, err := m.LineScanner(ctx, nil, formatted, raw)
+	l, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, formatted), logfile.New(nil, raw))
 	if err != nil {
 		return fmt.Errorf("create line scanner: %w", err)
 	}
 
 	for {
-		ts, content, err := scan()
+		_, ts, content, err := scan()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -102,6 +101,7 @@ func (m *Merger) MergeLogs(ctx context.Context, formatted io.Reader, raw io.Read
 }
 
 type logFile struct {
+	LCtx     *logfile.Context
 	Scanner  *bufio.Scanner
 	lastTS   time.Time
 	lastLine string
@@ -116,23 +116,26 @@ type inOrderMerger struct {
 	failedLines []string
 }
 
-func newInOrderMerger(ctx context.Context, l *lines.Liner, a, b *bufio.Scanner) (*inOrderMerger, error) {
+func newInOrderMerger(ctx context.Context, l *lines.Liner, ar, br logfile.Reader) (*inOrderMerger, error) {
+	a := bufio.NewScanner(ar)
+	b := bufio.NewScanner(br)
+
 	i := &inOrderMerger{
 		ctx:   ctx,
 		liner: l,
 		Sets: [2]logFile{
-			{Scanner: a},
-			{Scanner: b},
+			{Scanner: a, LCtx: ar.Context()},
+			{Scanner: b, LCtx: br.Context()},
 		},
 	}
 
 	var err error
-	_, _, err = i.advance(0)
+	_, _, _, err = i.advance(0)
 	if err != nil {
 		return nil, fmt.Errorf("advance a: %w", err)
 	}
 
-	_, _, err = i.advance(1)
+	_, _, _, err = i.advance(1)
 	if err != nil {
 		return nil, fmt.Errorf("advance b: %w", err)
 	}
@@ -140,11 +143,11 @@ func newInOrderMerger(ctx context.Context, l *lines.Liner, a, b *bufio.Scanner) 
 	return i, nil
 }
 
-func (i *inOrderMerger) next() (time.Time, string, error) {
+func (i *inOrderMerger) next() (*logfile.Context, time.Time, string, error) {
 	a := i.Sets[0]
 	b := i.Sets[1]
 	if a.done && b.done {
-		return time.Time{}, "", io.EOF
+		return nil, time.Time{}, "", io.EOF
 	}
 
 	if a.done {
@@ -160,11 +163,11 @@ func (i *inOrderMerger) next() (time.Time, string, error) {
 	return i.advance(1)
 }
 
-func (i *inOrderMerger) advance(index int) (time.Time, string, error) {
+func (i *inOrderMerger) advance(index int) (*logfile.Context, time.Time, string, error) {
 	set := i.Sets[index]
 	ts, cnt := set.lastTS, set.lastLine
 	if set.done {
-		return time.Time{}, "", io.EOF
+		return nil, time.Time{}, "", io.EOF
 	}
 
 	var nTs time.Time
@@ -173,7 +176,7 @@ func (i *inOrderMerger) advance(index int) (time.Time, string, error) {
 
 	for {
 		if i.ctx.Err() != nil {
-			return time.Time{}, "", i.ctx.Err()
+			return nil, time.Time{}, "", i.ctx.Err()
 		}
 
 		if !set.Scanner.Scan() {
@@ -183,14 +186,14 @@ func (i *inOrderMerger) advance(index int) (time.Time, string, error) {
 			set.lastTS = time.Time{}
 			set.lastLine = ""
 			i.Sets[index] = set
-			return lastTS, lastLine, nil
+			return i.Sets[index].LCtx, lastTS, lastLine, nil
 		}
 
 		line := set.Scanner.Text()
 		nTs, nl, err = i.liner.Line(line)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return time.Time{}, "", io.EOF
+				return nil, time.Time{}, "", io.EOF
 			}
 			i.failedLines = append(i.failedLines, line)
 			continue
@@ -201,5 +204,5 @@ func (i *inOrderMerger) advance(index int) (time.Time, string, error) {
 	set.lastLine = nl
 	i.Sets[index] = set
 
-	return ts, cnt, nil
+	return i.Sets[index].LCtx, ts, cnt, nil
 }

@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"slices"
@@ -18,6 +17,7 @@ import (
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
@@ -79,7 +79,7 @@ func (c *Chronicle) NewWorkerLogParse() river.Worker[ArgsLogParse] {
 	}
 }
 
-func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (io.Reader, *realmclock.Info, error) {
+func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (logfile.Reader, *realmclock.Info, error) {
 	storage := w.parent.Storage
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 
@@ -93,7 +93,7 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) 
 	}
 
 	fileData := &bytes.Buffer{}
-	_, ri, err := sorter.SortLogs(ctx, logger, bytes.NewReader(fd), fileData)
+	sum, ri, err := sorter.SortLogs(ctx, logger, bytes.NewReader(fd), fileData)
 	if err != nil {
 		return nil, ri, fmt.Errorf("sort log file %s: %w", fileID, err)
 	}
@@ -102,7 +102,7 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) 
 	//nolint:ineffassign
 	fd = nil
 
-	return fileData, ri, nil
+	return logfile.New(&sum.IsRaw, fileData), ri, nil
 }
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
@@ -125,7 +125,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	var ri *realmclock.Info
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
-	rdrs := make([]io.Reader, len(files))
+	rdrs := make([]logfile.Reader, len(files))
 	for i, file := range files {
 		var fri *realmclock.Info
 		rdrs[i], fri, err = w.loadAndSortFile(ctx, file.ID)

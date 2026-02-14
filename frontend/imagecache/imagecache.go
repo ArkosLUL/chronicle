@@ -106,6 +106,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	//nolint:errcheck
 	defer f.Close()
 
 	stat, err := f.Stat()

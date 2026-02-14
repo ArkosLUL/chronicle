@@ -47,7 +47,7 @@
 
 @theme inline {
   /* Panel content height - standardized across all EventsPanels */
-  --max-height-panel: 300px;
+  --max-height-panel: 330px;
 
   /* Custom font sizes */
   --text-2xs: 0.625rem;   /* 10px */

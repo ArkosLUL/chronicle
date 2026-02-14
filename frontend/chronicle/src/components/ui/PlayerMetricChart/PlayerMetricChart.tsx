@@ -136,11 +136,8 @@ export function PlayerMetricChart({
 
   return (
     <ScrollArea
-      style={{
-        height: "400px", // Default
-        ...style,
-      }}
-      className={className}
+      style={style}
+      className={cn("max-h-panel", className)}
       {...divProps}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '4px' }}>

@@ -344,30 +344,6 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         abilityName = abilityName + " (HoT)";
       }
 
-      // DEBUG: Log Mending Light events for specific encounter/caster
-      if (
-        abilityName.includes("Mending") &&
-        healerName === "Infertile" &&
-        encounterID === "08d18392-e6b8-4a70-8b60-89ee8059c3c6"
-      ) {
-        console.log("[HEAL DEBUG] Mending Light event:", {
-          healerName,
-          healerID,
-          targetName,
-          targetID,
-          abilityName,
-          healAmount,
-          effectiveHeal,
-          overheal,
-          hitType,
-          hitTypePeriodic: hasHitType(hitType, HitTypePeriodic),
-          streamType,
-          timestamp: event.timestamp,
-          encounterID,
-          includeInHealerBreakout: context.entitySelection.playerIds.size === 0 || context.entitySelection.playerIds.has(targetID),
-        });
-      }
-
       // Filter for healer breakouts: only show healing to selected players (or all if none selected)
       // "Other" targets are always included in breakouts
       const includeInHealerBreakout = isOtherTarget || 

@@ -27,8 +27,6 @@ export interface DamageAbilityBreakout {
   Total: number;
   Count: number;
   Crits: number;
-  // Landed is hits + crits + glancing + crushing, basically all hit types that successfully dealt damage (not dodged/missed/parried/etc)
-  Landed: number;
   Hits: number;
   Misses: number;
 
@@ -72,7 +70,6 @@ export function updateAbilityBreakout(
   if (hasHitType(hitType, HitTypeCrit)) {
     breakout.Crits += 1;
     breakout.Hits += 1;
-    breakout.Landed += 1;
     // Track crit stats
     if (!breakout.CritStats) breakout.CritStats = createEmptyHitTypeStats();
     updateHitTypeStats(breakout.CritStats, amount);
@@ -95,7 +92,6 @@ export function updateAbilityBreakout(
     breakout.FullBlocks = (breakout.FullBlocks || 0) + 1;
   } else if (hasHitType(hitType, HitTypeGlancing)) {
     breakout.Glancing = (breakout.Glancing || 0) + 1;
-    breakout.Landed += 1;
     breakout.Hits += 1;
     // Track glancing stats
     if (!breakout.GlancingStats) breakout.GlancingStats = createEmptyHitTypeStats();
@@ -104,7 +100,6 @@ export function updateAbilityBreakout(
     breakout.Reflects = (breakout.Reflects || 0) + 1;
   } else if (hasHitType(hitType, HitTypeCrushing)) {
     breakout.Crushing = (breakout.Crushing || 0) + 1;
-    breakout.Landed += 1;
     breakout.Hits += 1;
     // Track crushing stats
     if (!breakout.CrushingStats) breakout.CrushingStats = createEmptyHitTypeStats();

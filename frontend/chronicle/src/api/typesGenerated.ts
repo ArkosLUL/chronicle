@@ -120,7 +120,6 @@ export interface PeriodMoment {
 // From chroniclesdk/user.go
 export interface Preferences {
     readonly helpful_hints: boolean;
-    readonly explainer_panels: boolean;
 }
 
 // From chroniclesdk/log.go

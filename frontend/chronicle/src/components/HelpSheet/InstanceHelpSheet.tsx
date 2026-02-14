@@ -1,94 +1,243 @@
 /**
- * InstanceHelpSheet - A modal overlay with tips and shortcuts for the Instance page.
+ * InstanceHelpSheet - Interactive feature map for the Instance page.
  * 
- * Provides a comprehensive reference for all Instance page features,
- * organized by category. Closes on Esc or clicking outside.
+ * Provides a list of page features that highlight on hover, showing
+ * where each feature is located on the page with a spotlight effect.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle, MousePointerClick, Users, LayoutGrid, Keyboard, Lightbulb, X } from "lucide-react";
+import { HelpCircle, MousePointerClick, Users, LayoutGrid, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/Card/Card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
-interface HelpSectionProps {
-  icon: React.ReactNode;
+// -----------------------------------------------------------------------------
+// Feature Map Configuration
+// -----------------------------------------------------------------------------
+
+interface FeatureItem {
+  id: string;
+  label: string;
+  selector: string;
+  description: string;
+}
+
+interface FeatureCategory {
   title: string;
-  children: React.ReactNode;
+  icon: React.ReactNode;
+  items: FeatureItem[];
 }
 
-function HelpSection({ icon, title, children }: HelpSectionProps) {
-  return (
-    <div className="space-y-2">
-      <h3 className="flex items-center gap-2 font-medium text-sm">
-        {icon}
-        {title}
-      </h3>
-      <ul className="space-y-1.5 text-sm text-muted-foreground ml-6">
-        {children}
-      </ul>
-    </div>
+const FEATURE_MAP: FeatureCategory[] = [
+  {
+    title: "Encounters",
+    icon: <MousePointerClick className="h-4 w-4 text-blue-500" />,
+    items: [
+      {
+        id: "encounter-sidebar",
+        label: "Encounter Sidebar",
+        selector: "[data-help-encounter-sidebar]",
+        description: "Select encounters to analyze. Ctrl/⌘+click to select multiple. Trash encounters are grouped by mob type.",
+      },
+      {
+        id: "quick-select",
+        label: "Quick Select Buttons",
+        selector: "[data-help-quick-select]",
+        description: "Quickly select All, Bosses, or Trash encounters with one click.",
+      },
+      {
+        id: "view-toggle",
+        label: "View Toggle",
+        selector: "[data-help-view-toggle]",
+        description: "Switch between grouped (by boss/trash) and chronological view.",
+      },
+    ],
+  },
+  {
+    title: "Filtering",
+    icon: <Users className="h-4 w-4 text-green-500" />,
+    items: [
+      {
+        id: "entity-panel",
+        label: "Entity Panel",
+        selector: "[data-help-entity-panel]",
+        description: "Filter all panels by clicking enemies or players. Click class labels to toggle all players of that class.",
+      },
+    ],
+  },
+  {
+    title: "Data Panels",
+    icon: <LayoutGrid className="h-4 w-4 text-purple-500" />,
+    items: [
+      {
+        id: "panel-selector",
+        label: "Panel Selector",
+        selector: "[data-help-panel-selector]",
+        description: "Click to change what data the panel displays. Type to search for panels.",
+      },
+      {
+        id: "per-second-toggle",
+        label: "Per-Second Toggle",
+        selector: "[data-help-per-second-toggle]",
+        description: "Toggle between totals and rates (DPS/HPS). Shows damage or healing per second.",
+      },
+      {
+        id: "panel-explainer",
+        label: "Panel Help (?)",
+        selector: "[data-help-panel-explainer]",
+        description: "Click for a detailed explanation and interactive walkthrough of the panel.",
+      },
+    ],
+  },
+  {
+    title: "Pro Tips",
+    icon: <Lightbulb className="h-4 w-4 text-amber-500" />,
+    items: [
+      {
+        id: "shareable-url",
+        label: "Shareable URLs",
+        selector: "", // No element to highlight
+        description: "Copy the URL to share your exact view (encounters, panels, filters) with others.",
+      },
+    ],
+  },
+];
+
+// -----------------------------------------------------------------------------
+// Spotlight Component
+// -----------------------------------------------------------------------------
+
+function FeatureSpotlight({ 
+  selector, 
+  description,
+}: { 
+  selector: string | null;
+  description: string | null;
+}) {
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    if (!selector) {
+      // Use timeout to avoid "setState in effect" lint warning
+      // This is intentional - we need to clear rect when selector becomes null
+      const timeout = setTimeout(() => setTargetRect(null), 0);
+      return () => clearTimeout(timeout);
+    }
+
+    const updateRect = () => {
+      const el = document.querySelector(selector);
+      if (el) {
+        setTargetRect(el.getBoundingClientRect());
+      } else {
+        setTargetRect(null);
+      }
+    };
+
+    // Initial measurement with retries (element may be rendering)
+    updateRect();
+    const retry1 = setTimeout(updateRect, 50);
+    const retry2 = setTimeout(updateRect, 150);
+
+    // Scroll element into view
+    const el = document.querySelector(selector);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    // Track position on scroll/resize
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+
+    return () => {
+      clearTimeout(retry1);
+      clearTimeout(retry2);
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [selector]);
+
+  if (!targetRect) return null;
+
+  const padding = 6;
+  
+  // Smart tooltip positioning - avoid going off screen
+  const tooltipWidth = 280;
+  const tooltipOnRight = targetRect.right + 12 + tooltipWidth < window.innerWidth;
+  const tooltipLeft = tooltipOnRight 
+    ? targetRect.right + 12 
+    : targetRect.left - tooltipWidth - 12;
+
+  return createPortal(
+    <>
+      {/* Spotlight cutout */}
+      <div
+        className="fixed z-[100] pointer-events-none rounded-md transition-all duration-200"
+        style={{
+          left: targetRect.left - padding,
+          top: targetRect.top - padding,
+          width: targetRect.width + padding * 2,
+          height: targetRect.height + padding * 2,
+          boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 0 2px #3b82f6",
+        }}
+      />
+      
+      {/* Description tooltip near element */}
+      {description && (
+        <div
+          className="fixed z-[101] bg-card border rounded-lg p-3 shadow-lg animate-in fade-in-0 duration-150"
+          style={{
+            left: tooltipLeft,
+            top: targetRect.top,
+            width: tooltipWidth,
+          }}
+        >
+          <p className="text-sm">{description}</p>
+        </div>
+      )}
+    </>,
+    document.body
   );
 }
 
-function HelpItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2">
-      <span className="text-primary mt-0.5">•</span>
-      <span>{children}</span>
-    </li>
-  );
-}
+// -----------------------------------------------------------------------------
+// Main Component
+// -----------------------------------------------------------------------------
 
 export interface InstanceHelpSheetProps {
-  /** Whether the overlay is open (controlled mode) */
+  /** Whether the sheet is open (controlled mode) */
   open?: boolean;
   /** Callback when open state changes (controlled mode) */
   onOpenChange?: (open: boolean) => void;
 }
 
 /**
- * Help overlay that can be used as a controlled or uncontrolled component.
- * When used uncontrolled, it renders its own trigger button and manages state.
- * Closes on Esc key or clicking the backdrop.
+ * Interactive feature map that highlights page elements on hover.
+ * Can be used as controlled or uncontrolled component.
  */
 export function InstanceHelpSheet({ open: controlledOpen, onOpenChange }: InstanceHelpSheetProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<FeatureItem | null>(null);
   
   // Use controlled or uncontrolled state
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   
-  const handleClose = useCallback(() => {
+  const handleOpenChange = useCallback((open: boolean) => {
     if (isControlled) {
-      onOpenChange?.(false);
+      onOpenChange?.(open);
     } else {
-      setInternalOpen(false);
+      setInternalOpen(open);
+    }
+    // Clear hover when closing
+    if (!open) {
+      setHoveredItem(null);
     }
   }, [isControlled, onOpenChange]);
   
   const handleOpen = useCallback(() => {
-    if (isControlled) {
-      onOpenChange?.(true);
-    } else {
-      setInternalOpen(true);
-    }
-  }, [isControlled, onOpenChange]);
-  
-  // Handle Esc key
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      }
-    };
-    
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleClose]);
-  
+    handleOpenChange(true);
+  }, [handleOpenChange]);
+
   return (
     <>
       {/* Trigger button (only in uncontrolled mode) */}
@@ -99,120 +248,60 @@ export function InstanceHelpSheet({ open: controlledOpen, onOpenChange }: Instan
         </Button>
       )}
       
-      {/* Modal overlay */}
-      {isOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-200"
-            onClick={handleClose}
-          />
+      {/* Sheet */}
+      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+        <SheetContent side="right" className="w-80 overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <span>📖</span>
+              Page Guide
+            </SheetTitle>
+          </SheetHeader>
           
-          {/* Content */}
-          <Card className="relative z-10 w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 animate-in fade-in-0 zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <HelpCircle className="h-5 w-5" />
-                Tips & Shortcuts
-              </h2>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleClose}>
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-          <HelpSection
-            icon={<MousePointerClick className="h-4 w-4 text-blue-500" />}
-            title="Encounters"
-          >
-            <HelpItem>
-              <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Ctrl</kbd>/<kbd className="px-1 py-0.5 text-xs bg-muted rounded">⌘</kbd>+click to select multiple encounters
-            </HelpItem>
-            <HelpItem>
-              Use <strong>All</strong>, <strong>Bosses</strong>, <strong>Trash</strong> buttons for quick selection
-            </HelpItem>
-            <HelpItem>
-              Click the view toggle to switch between grouped and chronological order
-            </HelpItem>
-            <HelpItem>
-              Trash encounters are grouped by mob type for easier navigation
-            </HelpItem>
-          </HelpSection>
-
-          <HelpSection
-            icon={<Users className="h-4 w-4 text-green-500" />}
-            title="Entity Filtering"
-          >
-            <HelpItem>
-              Click players or enemies to filter <strong>all</strong> panels to that selection
-            </HelpItem>
-            <HelpItem>
-              Click class labels (e.g., <span className="font-mono text-xs">WAR:</span>) to toggle all players of that class
-            </HelpItem>
-            <HelpItem>
-              Use <strong>Clear</strong> to reset entity selection and see all data
-            </HelpItem>
-            <HelpItem>
-              <strong>Select Bosses</strong> quick-link filters to boss enemies only
-            </HelpItem>
-          </HelpSection>
-
-          <HelpSection
-            icon={<LayoutGrid className="h-4 w-4 text-purple-500" />}
-            title="Panels"
-          >
-            <HelpItem>
-              Click the panel dropdown to change what data is displayed
-            </HelpItem>
-            <HelpItem>
-              Click <HelpCircle className="h-3 w-3 inline" /> on any panel for a detailed explanation
-            </HelpItem>
-            <HelpItem>
-              Toggle <strong>Per Second</strong> to see rates instead of totals (DPS/HPS)
-            </HelpItem>
-            <HelpItem>
-              Click any row to see ability and target breakdowns
-            </HelpItem>
-            <HelpItem>
-              Search for panels by typing in the selector dropdown
-            </HelpItem>
-          </HelpSection>
-
-          <HelpSection
-            icon={<Keyboard className="h-4 w-4 text-orange-500" />}
-            title="Keyboard Shortcuts"
-          >
-            <HelpItem>
-              <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Ctrl</kbd>/<kbd className="px-1 py-0.5 text-xs bg-muted rounded">⌘</kbd>+click for multi-select
-            </HelpItem>
-            <HelpItem>
-              Press <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Esc</kbd> to close popups and dropdowns
-            </HelpItem>
-          </HelpSection>
-
-          <HelpSection
-            icon={<Lightbulb className="h-4 w-4 text-amber-500" />}
-            title="Pro Tips"
-          >
-            <HelpItem>
-              URLs are shareable - copy the URL to share your exact view with others
-            </HelpItem>
-            <HelpItem>
-              Multi-selecting encounters shows combined metrics across all selected fights
-            </HelpItem>
-            <HelpItem>
-              Compare wipe attempts by selecting them together to spot improvement
-            </HelpItem>
-            <HelpItem>
-              Look for the <HelpCircle className="h-3 w-3 inline text-muted-foreground" /> icons for contextual tips throughout the page
-            </HelpItem>
-          </HelpSection>
-            </div>
-          </Card>
-        </div>,
-        document.body
+          <p className="text-xs text-muted-foreground px-4 pb-2">
+            Hover over items to see where they are on the page
+          </p>
+          
+          <div className="px-4 pb-4 space-y-6">
+            {FEATURE_MAP.map(category => (
+              <div key={category.title}>
+                <h3 className="flex items-center gap-2 text-sm font-medium mb-2">
+                  {category.icon}
+                  {category.title}
+                </h3>
+                <ul className="space-y-0.5">
+                  {category.items.map(item => (
+                    <li
+                      key={item.id}
+                      className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                        item.selector 
+                          ? "cursor-pointer hover:bg-muted" 
+                          : "text-muted-foreground"
+                      } ${hoveredItem?.id === item.id ? "bg-muted" : ""}`}
+                      onMouseEnter={() => item.selector && setHoveredItem(item)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                    >
+                      {item.label}
+                      {!item.selector && (
+                        <span className="block text-xs text-muted-foreground mt-0.5">
+                          {item.description}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Spotlight overlay (rendered outside sheet to avoid z-index issues) */}
+      {isOpen && (
+        <FeatureSpotlight
+          selector={hoveredItem?.selector ?? null}
+          description={hoveredItem?.description ?? null}
+        />
       )}
     </>
   );

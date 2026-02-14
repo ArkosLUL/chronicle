@@ -357,6 +357,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 text-sm font-medium bg-transparent cursor-pointer hover:text-muted-foreground transition-colors"
+        data-help-panel-selector
       >
         {getPanelOption(value).icon}
         {getPanelOption(value).label}

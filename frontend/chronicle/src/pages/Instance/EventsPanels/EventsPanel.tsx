@@ -134,6 +134,7 @@ export function EventsPanel({
                     size="sm"
                     className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                     onClick={() => onExplainerClick(panelType)}
+                    data-help-panel-explainer
                   >
                     <HelpCircle className="h-3.5 w-3.5" />
                     <span className="sr-only">Learn about this panel</span>
@@ -149,6 +150,7 @@ export function EventsPanel({
             <label
               className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground pr-2"
               data-per-second-toggle
+              data-help-per-second-toggle
             >
               {checkboxLabel}
               <Switch

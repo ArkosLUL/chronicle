@@ -234,13 +234,16 @@ function EncounterSidebar({
   };
 
   return (
-    <div className={cn(
-      "w-64 shrink-0 border-r pr-4 overflow-y-auto styled-scrollbar",
-      // Desktop: sticky sidebar that scrolls independently
-      !isMobile && "sticky top-4 max-h-[calc(100vh-2rem)]",
-      // Mobile: fixed overlay with background
-      isMobile && "fixed inset-y-0 left-0 z-50 bg-background border-r shadow-lg pl-4 pt-4"
-    )}>
+    <div 
+      data-help-encounter-sidebar
+      className={cn(
+        "w-64 shrink-0 border-r pr-4 overflow-y-auto styled-scrollbar",
+        // Desktop: sticky sidebar that scrolls independently
+        !isMobile && "sticky top-4 max-h-[calc(100vh-2rem)]",
+        // Mobile: fixed overlay with background
+        isMobile && "fixed inset-y-0 left-0 z-50 bg-background border-r shadow-lg pl-4 pt-4"
+      )}
+    >
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
@@ -262,7 +265,7 @@ function EncounterSidebar({
               <span className="text-xs">({selectedIds.length})</span>
             )}
           </h3>
-          <div className="flex gap-1 mt-1.5">
+          <div className="flex gap-1 mt-1.5" data-help-quick-select>
             <Button
               variant="outline"
               size="sm"
@@ -302,6 +305,7 @@ function EncounterSidebar({
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => setShowChronological(!showChronological)}
+                data-help-view-toggle
               >
                 {showChronological ? (
                   <List className="h-4 w-4" />
@@ -672,7 +676,7 @@ function EncounterDetail({
         setIsEntityPanelOpen(true);
       }} className="mb-6">
         <Collapsible open={isEntityPanelOpen} onOpenChange={setIsEntityPanelOpen}>
-          <Card className="p-4">
+          <Card className="p-4" data-help-entity-panel>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <TabsList>
@@ -941,6 +945,19 @@ export function InstancePageView({
   const [searchParams, setSearchParams] = useSearchParams();
   const explainerPanelType = searchParams.get("explain") as EventsPanelType | null;
   
+  // URL state for help panel (?help=1)
+  const helpOpen = searchParams.get("help") === "1";
+  const setHelpOpen = useCallback((open: boolean) => {
+    setSearchParams(prev => {
+      if (open) {
+        prev.set("help", "1");
+      } else {
+        prev.delete("help");
+      }
+      return prev;
+    });
+  }, [setSearchParams]);
+  
   const handleExplainerClick = useCallback((panelType: EventsPanelType) => {
     setSearchParams(prev => {
       prev.set("explain", panelType);
@@ -1152,7 +1169,15 @@ export function InstancePageView({
           </div>
           <div className="flex items-center gap-2">
             {youtubeButton}
-            {showHints && !isMobile && <InstanceHelpSheet />}
+            {showHints && !isMobile && (
+              <>
+                <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setHelpOpen(true)}>
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Help</span>
+                </Button>
+                <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
+              </>
+            )}
           </div>
         </div>
       </div>

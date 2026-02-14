@@ -110,7 +110,7 @@ interface WarriorsViewProps {
 
 function WarriorsView({ warriors }: WarriorsViewProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-sunder-warriors>
       <div className="max-h-[300px] overflow-y-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-card">
@@ -167,7 +167,7 @@ function TargetsView({ targets }: TargetsViewProps) {
     : null;
   
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-sunder-targets>
       <div className="text-xs text-muted-foreground">
         <span className="font-medium text-foreground">{targetsWithFive.length}</span> targets reached 5 stacks
         {selectedTarget && (
@@ -195,11 +195,12 @@ function TargetsView({ targets }: TargetsViewProps) {
                 </tr>
               </thead>
               <tbody>
-                {targetsWithFive.map((target) => (
+                {targetsWithFive.map((target, index) => (
                   <tr
                     key={target.guid}
                     className="border-b border-border/10 hover:bg-muted/50 cursor-pointer"
                     onClick={() => setSelectedTargetGuid(target.guid)}
+                    data-sunder-target-row={index === 0 ? true : undefined}
                   >
                     <td className="py-1 px-2 font-medium text-orange-400 whitespace-nowrap">
                       {target.name}

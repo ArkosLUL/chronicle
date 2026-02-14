@@ -123,7 +123,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
           Total Deaths: <span className="font-medium text-foreground">{sortedDeaths.length}</span>
         </div>
         {/* Player/Enemy toggle */}
-        <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+        <div className="flex items-center gap-1 bg-muted rounded-md p-0.5" data-death-mode-toggle>
           <button
             type="button"
             onClick={() => setMode("players")}
@@ -189,6 +189,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                       "border-b border-border/10 hover:bg-muted/50",
                       isNewEncounter && "border-t-2 border-t-border"
                     )}
+                    data-death-row={index === 0 ? true : undefined}
                   >
                     <td className="py-1 px-2 font-mono text-muted-foreground font-mono text-2xs">
                       {checkboxChecked 
@@ -205,11 +206,12 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                           "text-blue-500 hover:text-blue-400 hover:underline cursor-pointer"
                         )}
                         title={`Select ${encounterName}`}
+                        data-death-encounter-link={index === 0 ? true : undefined}
                       >
                         {encounterName}
                       </button>
                     </td>
-                                        <td className="py-1 px-2 text-muted-foreground w-24 max-w-24">
+                                        <td className="py-1 px-2 text-muted-foreground w-24 max-w-24" data-death-killer={index === 0 ? true : undefined}>
                       {death.attribution ? (
                         <Tooltip>
                           <TooltipTrigger asChild>

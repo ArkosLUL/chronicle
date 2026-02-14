@@ -7,10 +7,10 @@
 
 import { useMemo } from "react";
 import type { PanelRenderProps } from "../types";
-import { type AuraUptimeResult, type UptimeSegment } from "./auraUptime.processor";
+import { type AuraUptimeResult } from "./auraUptime.processor";
 import { GenericPanel } from "../GenericPanel";
 import { AuraSelector } from "./AuraSelector";
-import { UptimeTimeline } from "./UptimeTimeline";
+import { UptimeTimeline, type DisplaySegment } from "./UptimeTimeline";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 
@@ -47,7 +47,7 @@ interface TargetAuraRow {
   auraName: string;
   applicationCount: number;
   totalUptimeMs: number;
-  segments: UptimeSegment[];
+  segments: DisplaySegment[];
 }
 
 export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
@@ -89,6 +89,33 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
     return new Set([...playerIds, ...enemyIds]);
   }, [context.entitySelection]);
   
+  // Compute cumulative offsets for each encounter (for multi-encounter timeline)
+  // Each encounter's events have offsets relative to that encounter's start (0ms).
+  // When displaying a unified timeline, we need to shift later encounters forward.
+  const encounterOffsets = useMemo((): Map<string, number> => {
+    const offsets = new Map<string, number>();
+    let cumulative = 0;
+    
+    // Iterate encounters in order - selectedEncounterIds controls which are included
+    for (const encounter of context.instance.encounters) {
+      if (!context.selectedEncounterIds.includes(encounter.id)) continue;
+      
+      offsets.set(encounter.id, cumulative);
+      const duration = new Date(encounter.end_time).getTime() - new Date(encounter.start_time).getTime();
+      cumulative += duration;
+    }
+    return offsets;
+  }, [context.instance.encounters, context.selectedEncounterIds]);
+  
+  // Build encounter name lookup (for tooltip display)
+  const encounterNames = useMemo((): Map<string, string> => {
+    const names = new Map<string, string>();
+    for (const encounter of context.instance.encounters) {
+      names.set(encounter.id, encounter.name);
+    }
+    return names;
+  }, [context.instance.encounters]);
+  
   // Build per-target per-aura row data, filtered by selected entities
   const rows = useMemo((): TargetAuraRow[] => {
     if (!cachedResult || selectedAuras.length === 0) return [];
@@ -105,20 +132,43 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
           continue;
         }
         
+        // Transform segments to unified timeline offsets with metadata for tooltips
+        // Only include encounter name if multiple encounters are selected
+        const showEncounterName = context.selectedEncounterIds.length > 1;
+        const adjustedSegments: DisplaySegment[] = targetData.segments
+          .map(seg => {
+            const encounterOffset = encounterOffsets.get(seg.encounterId) ?? 0;
+            return {
+              ...seg,
+              startMs: seg.startMs + encounterOffset,
+              endMs: seg.endMs + encounterOffset,
+              encounterName: showEncounterName ? encounterNames.get(seg.encounterId) : undefined,
+            };
+          })
+          // Sort by start time for gap calculation
+          .sort((a, b) => a.startMs - b.startMs);
+        
+        // Calculate gaps between segments
+        for (let i = 1; i < adjustedSegments.length; i++) {
+          const prevEnd = adjustedSegments[i - 1].endMs;
+          const currentStart = adjustedSegments[i].startMs;
+          adjustedSegments[i].gapBeforeMs = currentStart - prevEnd;
+        }
+        
         result.push({
           targetGuid: guid,
           targetName: targetData.name,
           auraName,
           applicationCount: targetData.applicationCount,
           totalUptimeMs: targetData.totalUptimeMs,
-          segments: targetData.segments,
+          segments: adjustedSegments,
         });
       }
     }
     
     // Sort by uptime descending
     return result.sort((a, b) => b.totalUptimeMs - a.totalUptimeMs);
-  }, [cachedResult, selectedAuras, filteredTargetGuids]);
+  }, [cachedResult, selectedAuras, filteredTargetGuids, encounterOffsets, encounterNames]);
   
   // Summary text for filter state
   const filterSummary = useMemo(() => {
@@ -227,7 +277,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
                         <td className="hidden @lg:table-cell py-0.5 px-1 w-3/5">
                           <UptimeTimeline
                             segments={row.segments}
-                            totalDurationMs={durationMs}                
+                            totalDurationMs={durationMs}
                           />
                         </td>
                       </tr>

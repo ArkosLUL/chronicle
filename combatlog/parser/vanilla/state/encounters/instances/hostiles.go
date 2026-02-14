@@ -338,3 +338,26 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func BlackrockDepthsHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		8890: "Anvilrage Warden",
+		8891: "Anvilrage Guardsman",
+		8895: "Anvilrage Officer",
+		8893: "Anvilrage Soldier",
+		8910: "Blazing Fireguard",
+		8921: "Bloodhound",
+		8912: "Twilight's Hammer Torturer",
+		8894: "Anvilrage Medic",
+		8889: "Anvilrage Overseer",
+		8892: "Anvilrage Footman",
+		8916: "Arena Spectator",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		9016: "Bael'Gar",
+		9018: "High Interrogator Gerstahn",
+	})
+
+	return hostile
+}

@@ -22,6 +22,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.Register(wrap(instances.RagefireChasm))
 	r.Register(wrap(instances.ScarletMonasteryCathedral))
 	r.Register(wrap(instances.ScarletMonasteryLibrary))
+	r.RegisterWithComment(wrap(instances.BlackrockDepths), "Most bosses & mobs are not yet supported")
 
 	r.RegisterWithComment(wrap(instances.BlackrockSpire), "Only upper spire is supported at the moment")
 

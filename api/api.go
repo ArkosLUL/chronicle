@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
+	"github.com/Emyrk/chronicle/frontend/imagecache"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	context2 "github.com/gorilla/context"
@@ -199,6 +200,12 @@ func (api *API) Routes() chi.Router {
 			}))
 		}
 	})
+
+	// Static assets - icons with spell name aliases
+	r.Mount("/static/icon", imagecache.New())
+	r.Mount("/static/spellicon", imagecache.New(
+		imagecache.WithAliases(imagecache.SpellIcons),
+	))
 
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 

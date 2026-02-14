@@ -82,6 +82,16 @@ CREATE TYPE wow_playable_race AS ENUM (
     'Unknown'
 );
 
+CREATE FUNCTION insert_default_data_limit() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO data_limit (user_id, max_storage_bytes)
+  VALUES (NEW.id, 500000000); -- 500MB default
+  RETURN NEW;
+END;
+$$;
+
 CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) RETURNS boolean
     LANGUAGE sql IMMUTABLE
     AS $$
@@ -507,6 +517,8 @@ CREATE INDEX river_job_state_and_finalized_at_index ON river_job USING btree (st
 CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
+
+CREATE TRIGGER trigger_insert_default_data_limit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION insert_default_data_limit();
 
 ALTER TABLE ONLY data_limit
     ADD CONSTRAINT data_limit_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

@@ -1,6 +1,6 @@
 // TODO: Add a database backing and LRU caching system for WoW data.
 // TODO: Flesh out all the params and data the structures can have
-package wowdb
+package gamedb
 
 type WoWDB struct {
 	Spells map[SpellID]*Spell

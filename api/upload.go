@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const MaxLogFileSize = 50 * 1024 * 1024 // 50 MB
+const MaxLogFileSize = 150 * 1024 * 1024 // 150 MB
 
 func (api *API) WoWLogReparse(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

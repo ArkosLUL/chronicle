@@ -2,6 +2,7 @@ package character
 
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
@@ -34,7 +35,21 @@ func (c *CoreHound) Process(m messages.Message) error {
 		if data.Amount == 0 {
 			return nil
 		}
+
+		// So apparently glancing blows can do some damage when the corehound is on the
+		// ground? If there is an absorb, we just won't count that as activity. Absorbs
+		// only happen in their dead state.
+		for _, t := range data.Trailer {
+			if t.Amount != nil && *t.Amount > 0 && t.HitType.Has(types.HitTypePartialAbsorb) {
+				return nil
+			}
+		}
 	}
 
-	return c.Common.Process(m)
+	err := c.Common.Process(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

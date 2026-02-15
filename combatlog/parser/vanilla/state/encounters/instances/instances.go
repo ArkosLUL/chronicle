@@ -66,4 +66,16 @@ var (
 		ZoneName: "blackrock depths",
 		Hostiles: FromMap(BlackrockDepthsHostiles()),
 	}).New
+
+	Scholomance = (&CommonFactory{
+		Name:     "Scholomance",
+		ZoneName: "scholomance",
+		Hostiles: FromMap(ScholomanceHostiles()),
+	}).New
+
+	TempleOfAhnQiraj = (&CommonFactory{
+		Name:     "Ahn'Qiraj",
+		ZoneName: "ahn'qiraj",
+		Hostiles: FromMap(TempleOfAhnQirajHostiles()),
+	}).New
 )

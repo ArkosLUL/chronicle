@@ -23,6 +23,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.Register(wrap(instances.ScarletMonasteryCathedral))
 	r.Register(wrap(instances.ScarletMonasteryLibrary))
 	r.RegisterWithComment(wrap(instances.BlackrockDepths), "Most bosses & mobs are not yet supported")
+	r.RegisterWithComment(wrap(instances.Scholomance), "**new** not fully implemented")
 
 	r.RegisterWithComment(wrap(instances.BlackrockSpire), "Only upper spire is supported at the moment")
 
@@ -36,6 +37,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.Register(wrap(instances.MoltenCore))
 	r.Register(wrap(instances.Onyxia))
 	r.Register(wrap(instances.EmeraldSanctum))
+	r.RegisterWithComment(wrap(instances.TempleOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
 
 	return r
 }

@@ -7,8 +7,11 @@ import (
 	"io"
 	"log/slog"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/critters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
@@ -82,6 +85,9 @@ func (s *Creatures) Process(m messages.Message) error {
 	}
 
 	for _, gid := range m.Affects() {
+		if s.Skip(gid) {
+			continue
+		}
 		if !gid.IsCreature() {
 			continue
 		}
@@ -116,10 +122,16 @@ func (s *Creatures) Combatant(c messages.Combatant) {
 }
 
 func (s *Creatures) Unit(u messages.Unit) {
+	if s.Skip(u.Guid) {
+		return
+	}
 	s.Units.Update(u.Info)
 }
 
 func (s *Creatures) UnitDied(u messages.UnitDied) {
+	if s.Skip(u.ID) {
+		return
+	}
 	s.Units.UpdateUnitName(u.ID, u.Name)
 }
 
@@ -144,4 +156,14 @@ func (s *Creatures) Zone(z messages.Zone) {
 		slog.Uint64("exited_instance_id", uint64(s.CurrentZone.InstanceID)),
 		slog.Time("seen", z.Seen),
 	)
+}
+
+func (s *Creatures) Skip(id guid.GUID) bool {
+	if _, ok := totems.IsTotem(id); ok {
+		return true
+	}
+	if ok := critters.IsCritter(id); ok {
+		return true
+	}
+	return false
 }

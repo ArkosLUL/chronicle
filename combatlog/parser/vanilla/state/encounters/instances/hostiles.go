@@ -361,3 +361,122 @@ func BlackrockDepthsHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+// AQ40
+func TempleOfAhnQirajHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		15262: "Obsidian Eradicator",
+		15621: "Yauj Brood",
+		15250: "Qiraji Slayer",
+		15910: "Giant Tentacle Portal",
+		15802: "Flesh Tentacle",
+		15300: "Vekniss Drone",
+		15246: "Qiraji Mindslayer",
+		15247: "Qiraji Brainwasher",
+		15984: "Sartura's Royal Guard",
+		15252: "Qiraji Champion",
+		15264: "Anubisath Sentinel",
+		15230: "Vekniss Warrior",
+		15229: "Vekniss Soldier",
+		15236: "Vekniss Wasp",
+		15277: "Anubisath Defender",
+		15538: "Anubisath Swarmguard",
+		15589: "Eye of C'Thun",
+		15317: "Qiraji Scorpion",
+		15235: "Vekniss Stinger",
+		15312: "Obsidian Nullifier",
+		15726: "Eye Tentacle",
+		15728: "Giant Claw Tentacle",
+		15233: "Vekniss Guardian",
+		15667: "Glob of Viscidus",
+		15311: "Anubisath Warder",
+		15725: "Claw Tentacle",
+		15622: "Vekniss Borer",
+		15962: "Vekniss Hatchling",
+		15630: "Spawn of Fankriss",
+		15240: "Vekniss Hive Crawler",
+		15249: "Qiraji Lasher",
+		15537: "Anubisath Warrior",
+		15316: "Qiraji Scarab",
+		15334: "Giant Eye Tentacle",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		15517: "Ouro",
+		15727: "C'Thun",
+		15510: "Fankriss the Unyielding",
+		15516: "Battleguard Sartura",
+		15299: "Viscidus" ,
+    15509: "Princess Huhuran",
+    15263: "The Prophet Skeram",
+
+    // Twin emps
+    15275: "Twin Emperors", // "Emperor Vek'nilash",
+    15276: "Twin Emperors", //   "Emperor Vek'lor",
+
+
+		// Bug family
+		15543: "Bug Family", // "Princess Yauj",
+		15511: "Bug Family", // "Lord Kri",
+		15544: "Bug Family", // "Vem",
+	})
+
+	return hostile
+}
+
+func ScholomanceHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+
+	LoadAdds(hostile, map[uint32]string{
+		11582: "Scholomance Dark Summoner",
+		10482: "Risen Lackey",
+		10678: "Plagued Hatchling",
+		14521: "Aspect of Shadow",
+		30000: "Risen Guard",
+		11257: "Scholomance Handler",
+		10486: "Risen Warrior",
+		10477: "Scholomance Necromancer",
+		14518: "Aspect of Banality",
+		14512: "Corrupted Spirit",
+		14519: "Aspect of Corruption",
+		14516: "Death Knight Darkreaver",
+		10500: "Spectral Teacher",
+		14514: "Banal Spirit",
+		14511: "Shadowed Spirit",
+		10491: "Risen Bonewarder",
+		10499: "Spectral Researcher",
+		11258: "Frail Skeleton",
+		10487: "Risen Protector",
+		10469: "Scholomance Adept",
+		10485: "Risen Aberration",
+		10480: "Unstable Corpse",
+		10470: "Scholomance Neophyte",
+		10471: "Scholomance Acolyte",
+		10498: "Spectral Tutor",
+		14520: "Aspect of Malice",
+		10472: "Scholomance Occultist",
+		1853:  "Darkmaster Gandling",
+		10476: "Scholomance Necrolyte",
+		10481: "Reanimated Corpse",
+		10488: "Risen Construct",
+		14513: "Malicious Spirit",
+		10478: "Splintered Skeleton",
+		10489: "Risen Guard",
+		11551: "Necrofiend",
+		10495: "Diseased Ghoul",
+		11261: "Doctor Theolen Krastinov",
+    11439: "Illusion of Jandice Barov",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		10506: "Kirtonos the Herald",
+		11622: "Rattlegore",
+		10508: "Ras Frostwhisper",
+		10507: "The Ravenian",
+		10901: "Lorekeeper Polkelt",
+		10505: "Instructor Malicia",
+		10502: "Lady Illucia Barov",
+		10503: "Jandice Barov",
+		10504: "Lord Alexei Barov",
+	})
+	return hostile
+}

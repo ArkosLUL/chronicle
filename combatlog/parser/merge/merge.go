@@ -46,7 +46,7 @@ func WithMiddleWare(mw MiddleWare) Option {
 }
 
 func (m *Merger) LineScanner(ctx context.Context, ri *realmclock.Info, formatted logfile.Reader, raw logfile.Reader) (*lines.Liner, Scan, error) {
-	l := lines.NewLiner().WithRealmClockInfo(ri)
+	l := lines.NewLiner().WithRealmClockInfo(ri) //.WithoutTimeAdjustments()
 
 	merger, err := newInOrderMerger(ctx, l, formatted, raw)
 	if err != nil {

@@ -90,6 +90,21 @@ func init() {
 		variant{id: 15464, duration: 120 * time.Second},
 	)
 
+	register("Magma Totem",
+		0,
+		variant{id: 5929, duration: 20 * time.Second},
+		variant{id: 7464, duration: 20 * time.Second},
+		variant{id: 7465, duration: 20 * time.Second},
+		variant{id: 7466, duration: 20 * time.Second},
+	)
+
+	register("Windwall Totem",
+		modifierTotemicMastery,
+		variant{id: 9687, duration: 120 * time.Second},
+		variant{id: 9688, duration: 120 * time.Second},
+		variant{id: 9689, duration: 120 * time.Second},
+	)
+
 	// Comes from "Enamored Water Spirit" item
 	// https://database.turtle-wow.org/?item=20503
 	register("Ancient Mana Spring Totem", 0,

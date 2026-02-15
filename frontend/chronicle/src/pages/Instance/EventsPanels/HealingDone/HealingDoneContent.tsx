@@ -94,7 +94,7 @@ function aggregateForEncounters(
           value: displayValue,
           stackedValue,
           overhealTotal: overhealValue,
-          dimmed: selected.playerIds.size > 0 && !selected.playerIds.has(playerId),
+          // dimmed: selected.playerIds.size > 0 && !selected.playerIds.has(playerId),
         });
       }
     }

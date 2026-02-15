@@ -31,7 +31,7 @@ function aggregateForEncounters(
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData & { overhealTotal: number }>();
   
-  // const filterByTarget = selected.playerIds.size > 0;
+  const filterByTarget = selected.playerIds.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterHealing = result.EncounterHealingByHealer.get(encounterId);
@@ -42,19 +42,19 @@ function aggregateForEncounters(
       let effectiveValue = 0;
       let overhealValue = 0;
       
-      // if (filterByTarget) {
-      //   // Sum only healing to selected players
-      //   for (const [targetId, targetData] of data.target) {
-      //     if (selected.playerIds.has(targetId)) {
-      //       effectiveValue += targetData.effective;
-      //       overhealValue += targetData.overheal;
-      //     }
-      //   }
-      // } else {
+      if (filterByTarget) {
+        // Sum only healing to selected players
+        for (const [targetId, targetData] of data.target) {
+          if (selected.playerIds.has(targetId)) {
+            effectiveValue += targetData.effective;
+            overhealValue += targetData.overheal;
+          }
+        }
+      } else {
         // Use aggregate totals (faster)
         effectiveValue = data.effectiveTotal;
         overhealValue = data.overhealTotal;
-      // }
+      }
       
       // Determine display value based on mode
       let displayValue: number;
@@ -197,6 +197,12 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
           ))}
         </div>
       </div>
+      
+      {context.entitySelection.playerIds.size > 0 && (
+        <div className="text-xs text-muted-foreground italic mb-1">
+          Showing healing to {context.entitySelection.playerIds.size} selected player{context.entitySelection.playerIds.size !== 1 ? 's' : ''}
+        </div>
+      )}
       
       <PlayerMetricChart 
         data={healingData} 

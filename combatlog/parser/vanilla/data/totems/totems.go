@@ -105,6 +105,11 @@ func init() {
 		variant{id: 9689, duration: 120 * time.Second},
 	)
 
+	register("Tremor Totem",
+		modifierTotemicMastery,
+		variant{id: 5913, duration: 120 * time.Second},
+	)
+
 	// Comes from "Enamored Water Spirit" item
 	// https://database.turtle-wow.org/?item=20503
 	register("Ancient Mana Spring Totem", 0,

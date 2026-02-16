@@ -1090,6 +1090,172 @@ func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRe
 	return items, nil
 }
 
+const deleteAllSpellTemplates = `-- name: DeleteAllSpellTemplates :exec
+DELETE FROM spell_templates
+`
+
+func (q *sqlQuerier) DeleteAllSpellTemplates(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllSpellTemplates)
+	return err
+}
+
+const getSpellTemplate = `-- name: GetSpellTemplate :one
+SELECT id, name, school, description, created_at, updated_at, subtext, aura_description, icon_id, school_mask, power_type, mana_cost, mana_cost_pct, cast_time_index, recovery_time, range_index, attributes, targets FROM spell_templates WHERE id = $1
+`
+
+func (q *sqlQuerier) GetSpellTemplate(ctx context.Context, id int32) (SpellTemplate, error) {
+	row := q.db.QueryRow(ctx, getSpellTemplate, id)
+	var i SpellTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.School,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Subtext,
+		&i.AuraDescription,
+		&i.IconID,
+		&i.SchoolMask,
+		&i.PowerType,
+		&i.ManaCost,
+		&i.ManaCostPct,
+		&i.CastTimeIndex,
+		&i.RecoveryTime,
+		&i.RangeIndex,
+		&i.Attributes,
+		&i.Targets,
+	)
+	return i, err
+}
+
+const getSpellTemplatesByIDs = `-- name: GetSpellTemplatesByIDs :many
+SELECT id, name, school, description, created_at, updated_at, subtext, aura_description, icon_id, school_mask, power_type, mana_cost, mana_cost_pct, cast_time_index, recovery_time, range_index, attributes, targets FROM spell_templates WHERE id = ANY($1::int[])
+`
+
+func (q *sqlQuerier) GetSpellTemplatesByIDs(ctx context.Context, dollar_1 []int32) ([]SpellTemplate, error) {
+	rows, err := q.db.Query(ctx, getSpellTemplatesByIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SpellTemplate
+	for rows.Next() {
+		var i SpellTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.School,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Subtext,
+			&i.AuraDescription,
+			&i.IconID,
+			&i.SchoolMask,
+			&i.PowerType,
+			&i.ManaCost,
+			&i.ManaCostPct,
+			&i.CastTimeIndex,
+			&i.RecoveryTime,
+			&i.RangeIndex,
+			&i.Attributes,
+			&i.Targets,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const spellTemplateCount = `-- name: SpellTemplateCount :one
+SELECT COUNT(*) FROM spell_templates
+`
+
+func (q *sqlQuerier) SpellTemplateCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, spellTemplateCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const upsertSpellTemplate = `-- name: UpsertSpellTemplate :exec
+INSERT INTO spell_templates (
+    id, name, school, description, subtext, aura_description,
+    icon_id, school_mask, power_type, mana_cost, mana_cost_pct,
+    cast_time_index, recovery_time, range_index, attributes, targets,
+    created_at, updated_at
+)
+VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10, $11,
+    $12, $13, $14, $15, $16,
+    NOW(), NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    school = EXCLUDED.school,
+    description = EXCLUDED.description,
+    subtext = EXCLUDED.subtext,
+    aura_description = EXCLUDED.aura_description,
+    icon_id = EXCLUDED.icon_id,
+    school_mask = EXCLUDED.school_mask,
+    power_type = EXCLUDED.power_type,
+    mana_cost = EXCLUDED.mana_cost,
+    mana_cost_pct = EXCLUDED.mana_cost_pct,
+    cast_time_index = EXCLUDED.cast_time_index,
+    recovery_time = EXCLUDED.recovery_time,
+    range_index = EXCLUDED.range_index,
+    attributes = EXCLUDED.attributes,
+    targets = EXCLUDED.targets,
+    updated_at = NOW()
+`
+
+type UpsertSpellTemplateParams struct {
+	ID              int32       `db:"id" json:"id"`
+	Name            string      `db:"name" json:"name"`
+	School          SpellSchool `db:"school" json:"school"`
+	Description     pgtype.Text `db:"description" json:"description"`
+	Subtext         pgtype.Text `db:"subtext" json:"subtext"`
+	AuraDescription pgtype.Text `db:"aura_description" json:"aura_description"`
+	IconID          pgtype.Int4 `db:"icon_id" json:"icon_id"`
+	SchoolMask      pgtype.Int4 `db:"school_mask" json:"school_mask"`
+	PowerType       pgtype.Int4 `db:"power_type" json:"power_type"`
+	ManaCost        pgtype.Int4 `db:"mana_cost" json:"mana_cost"`
+	ManaCostPct     pgtype.Int4 `db:"mana_cost_pct" json:"mana_cost_pct"`
+	CastTimeIndex   pgtype.Int4 `db:"cast_time_index" json:"cast_time_index"`
+	RecoveryTime    pgtype.Int4 `db:"recovery_time" json:"recovery_time"`
+	RangeIndex      pgtype.Int4 `db:"range_index" json:"range_index"`
+	Attributes      []int64     `db:"attributes" json:"attributes"`
+	Targets         pgtype.Int4 `db:"targets" json:"targets"`
+}
+
+func (q *sqlQuerier) UpsertSpellTemplate(ctx context.Context, arg UpsertSpellTemplateParams) error {
+	_, err := q.db.Exec(ctx, upsertSpellTemplate,
+		arg.ID,
+		arg.Name,
+		arg.School,
+		arg.Description,
+		arg.Subtext,
+		arg.AuraDescription,
+		arg.IconID,
+		arg.SchoolMask,
+		arg.PowerType,
+		arg.ManaCost,
+		arg.ManaCostPct,
+		arg.CastTimeIndex,
+		arg.RecoveryTime,
+		arg.RangeIndex,
+		arg.Attributes,
+		arg.Targets,
+	)
+	return err
+}
+
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one
 SELECT
   id, linked_id, user_id, provider, created_at, updated_at

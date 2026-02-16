@@ -2,13 +2,12 @@
 // TODO: Flesh out all the params and data the structures can have
 package gamedb
 
+import "github.com/Emyrk/chronicle/database"
+
 type WoWDB struct {
 	//Spells map[SpellID]*Spell
 }
 
-func New() (*WoWDB, error) {
+func New(db database.Store) (*WoWDB, error) {
 	return &WoWDB{}, nil
 }
-
-type Icon string
-type SpellID int

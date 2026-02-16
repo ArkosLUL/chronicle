@@ -761,6 +761,28 @@ type SpellTemplate struct {
 	Description pgtype.Text        `db:"description" json:"description"`
 	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	// Rank text like "Rank 1", "Passive", etc.
+	Subtext pgtype.Text `db:"subtext" json:"subtext"`
+	// Description shown when spell is an aura/buff
+	AuraDescription pgtype.Text `db:"aura_description" json:"aura_description"`
+	// SpellIconID for icon lookup
+	IconID pgtype.Int4 `db:"icon_id" json:"icon_id"`
+	// Bitmask: 1=phys, 2=holy, 4=fire, 8=nature, 16=frost, 32=shadow, 64=arcane
+	SchoolMask pgtype.Int4 `db:"school_mask" json:"school_mask"`
+	// 0=mana, 1=rage, 2=focus, 3=energy
+	PowerType   pgtype.Int4 `db:"power_type" json:"power_type"`
+	ManaCost    pgtype.Int4 `db:"mana_cost" json:"mana_cost"`
+	ManaCostPct pgtype.Int4 `db:"mana_cost_pct" json:"mana_cost_pct"`
+	// Index into SpellCastTimes.dbc
+	CastTimeIndex pgtype.Int4 `db:"cast_time_index" json:"cast_time_index"`
+	// Cooldown in milliseconds
+	RecoveryTime pgtype.Int4 `db:"recovery_time" json:"recovery_time"`
+	// Index into SpellRange.dbc
+	RangeIndex pgtype.Int4 `db:"range_index" json:"range_index"`
+	// 9-element array of uint32 attribute bitmasks
+	Attributes []int64 `db:"attributes" json:"attributes"`
+	// Target flags bitmask
+	Targets pgtype.Int4 `db:"targets" json:"targets"`
 }
 
 type User struct {

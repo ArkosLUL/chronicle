@@ -377,8 +377,40 @@ CREATE TABLE spell_templates (
     school spell_school NOT NULL,
     description text,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    subtext text DEFAULT ''::text,
+    aura_description text DEFAULT ''::text,
+    icon_id integer DEFAULT 0,
+    school_mask integer DEFAULT 0,
+    power_type integer DEFAULT 0,
+    mana_cost integer DEFAULT 0,
+    mana_cost_pct integer DEFAULT 0,
+    cast_time_index integer DEFAULT 0,
+    recovery_time integer DEFAULT 0,
+    range_index integer DEFAULT 0,
+    attributes bigint[] DEFAULT '{}'::bigint[],
+    targets integer DEFAULT 0
 );
+
+COMMENT ON COLUMN spell_templates.subtext IS 'Rank text like "Rank 1", "Passive", etc.';
+
+COMMENT ON COLUMN spell_templates.aura_description IS 'Description shown when spell is an aura/buff';
+
+COMMENT ON COLUMN spell_templates.icon_id IS 'SpellIconID for icon lookup';
+
+COMMENT ON COLUMN spell_templates.school_mask IS 'Bitmask: 1=phys, 2=holy, 4=fire, 8=nature, 16=frost, 32=shadow, 64=arcane';
+
+COMMENT ON COLUMN spell_templates.power_type IS '0=mana, 1=rage, 2=focus, 3=energy';
+
+COMMENT ON COLUMN spell_templates.cast_time_index IS 'Index into SpellCastTimes.dbc';
+
+COMMENT ON COLUMN spell_templates.recovery_time IS 'Cooldown in milliseconds';
+
+COMMENT ON COLUMN spell_templates.range_index IS 'Index into SpellRange.dbc';
+
+COMMENT ON COLUMN spell_templates.attributes IS '9-element array of uint32 attribute bitmasks';
+
+COMMENT ON COLUMN spell_templates.targets IS 'Target flags bitmask';
 
 CREATE TABLE user_auth_links (
     id uuid NOT NULL,

@@ -2,40 +2,72 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/Emyrk/chronicle/database/gamedb/dbc"
+	"github.com/Emyrk/chronicle/scripts/dbcdata/cli"
+
+	"github.com/coder/serpent"
+
 	"github.com/Emyrk/chronicle/scripts/dbcdata/dbcdb"
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
 )
 
 func main() {
-	wc, err := dbcdb.New()
+	err := rootCmd().Invoke().WithOS().Run()
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
+}
 
-	spdb, err := wc.Spells()
-	if err != nil {
-		panic(err)
+func rootCmd() *serpent.Command {
+	cmd := &serpent.Command{
+		Use:     "dbcdata",
+		Short:   "Generate Go code from DBC files.",
+		Handler: serpent.DefaultHelpFn(),
 	}
+	cmd.AddSubcommands(
+		cli.StaticPopulateCmd(),
+		demo(),
+		cli.Populate(),
+	)
+	return cmd
+}
 
-	err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
-		if cursor == nil {
-			return true
-		}
-		sp := dbc.NewSpell(*cursor)
-		if sp.Targets.Has(dbc.TargetCorpseAlly) {
-			fmt.Println(sp.Name_lang.String())
-		}
-		return true
-	})
-	if err != nil {
-		panic(err)
-	}
+func demo() *serpent.Command {
+	var dbcPath string
+	return &serpent.Command{
+		Use:   "demo",
+		Short: "Demo.",
+		Options: serpent.OptionSet{
+			{
+				Name:        "dbc",
+				Description: "Path to WoW client directory.",
+				Flag:        "dbc",
+				Value:       serpent.StringOf(&dbcPath),
+				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
+			},
+		},
+		Handler: func(inv *serpent.Invocation) error {
+			wc, err := dbcdb.New(dbcPath)
+			if err != nil {
+				return fmt.Errorf("open wow client: %w", err)
+			}
 
-	sp, err := spdb.Index(14769)
-	if err != nil {
-		panic(err)
+			spdb, err := wc.SpellDuration()
+			if err != nil {
+				return fmt.Errorf("read spells: %w", err)
+			}
+
+			err = spdb.Range(func(cursor *dbdefs.Ent_SpellDuration) bool {
+				fmt.Println(cursor)
+				return true
+			})
+			if err != nil {
+				return fmt.Errorf("iterate spells: %w", err)
+			}
+
+			return nil
+		},
 	}
-	fmt.Println(sp)
 }

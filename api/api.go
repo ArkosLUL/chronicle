@@ -40,6 +40,10 @@ type Options struct {
 	DevOAuth  bool
 	Discord   chronauth.DiscordOAuth
 	SecretPEM []byte // Used for JWTs
+
+	// Icon handlers (provided by serviceimagecache)
+	IconHandler      *imagecache.Handler
+	SpellIconHandler *imagecache.Handler
 }
 
 type API struct {
@@ -201,11 +205,9 @@ func (api *API) Routes() chi.Router {
 		}
 	})
 
-	// Static assets - icons with spell name aliases
-	r.Mount("/static/icon", imagecache.New())
-	r.Mount("/static/spellicon", imagecache.New(
-		imagecache.WithAliases(imagecache.SpellIcons),
-	))
+	// Static assets - icons
+	r.Mount("/static/icon", api.Opts.IconHandler)
+	r.Mount("/static/spellicon", api.Opts.SpellIconHandler)
 
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 

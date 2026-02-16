@@ -4,6 +4,7 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     (python3.withPackages (ps: [ ps.pillow ]))  # BLP → PNG (Pillow has native BLP support)
     libwebp                                      # cwebp (PNG → WebP)
+    rclone                                       # Upload to R2/S3
   ];
 
   shellHook = ''

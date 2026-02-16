@@ -6,6 +6,7 @@ import (
 
 	"github.com/Emyrk/chronicle/frontend/imagecache"
 	"github.com/Emyrk/chronicle/internal/services"
+
 	"github.com/coder/serpent"
 )
 
@@ -75,7 +76,7 @@ func (s *Service) Options() serpent.OptionSet {
 			Required:    false,
 			Flag:        "imagecache-path",
 			Env:         "CHRONICLE_IMAGECACHE_PATH",
-			Default:     "",
+			Default:     "frontend/imagecache/icons",
 			Value:       serpent.StringOf(&s.path),
 		},
 	}

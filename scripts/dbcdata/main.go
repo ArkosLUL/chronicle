@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -54,18 +55,42 @@ func demo() *serpent.Command {
 				return fmt.Errorf("open wow client: %w", err)
 			}
 
-			spdb, err := wc.SpellDuration()
+			spdb, err := wc.Spells()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			err = spdb.Range(func(cursor *dbdefs.Ent_SpellDuration) bool {
-				fmt.Println(cursor)
+			err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
+				if cursor.ShapeshiftID != 0 {
+					fmt.Println(cursor.Name_lang.String(), cursor.ID, cursor.SpellLevel)
+					d, _ := json.Marshal(cursor)
+					fmt.Println(string(d))
+				}
+				//if cursor.BaseLevel > 0 {
+				//	fmt.Println(cursor.BaseLevel)
+				//	d, _ := json.Marshal(cursor)
+				//	fmt.Println(string(d))
+				//}
 				return true
 			})
 			if err != nil {
 				return fmt.Errorf("iterate spells: %w", err)
 			}
+
+			r, err := wc.SpellCooldowns()
+			if err != nil {
+				return fmt.Errorf("read spells: %w", err)
+			}
+
+			err = r.Range(func(cursor *dbdefs.Ent_SpellCooldowns) bool {
+				d, _ := json.Marshal(cursor)
+				fmt.Println(string(d))
+				return true
+			})
+			if err != nil {
+				return fmt.Errorf("iterate spells: %w", err)
+			}
+			fmt.Println(r.Len())
 
 			return nil
 		},

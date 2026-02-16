@@ -21,7 +21,7 @@ func Spell(st database.SpellTemplate) *dbc.Spell {
 		Description_lang:     i18n.Text{i18n.English: st.Description.String},
 		AuraDescription_lang: i18n.Text{i18n.English: st.AuraDescription.String},
 		SpellIconID:          st.IconID.Int32,
-		SchoolMask:           st.SchoolMask.Int32,
+		School:               dbc.School(st.SchoolMask.Int32),
 		PowerType:            st.PowerType.Int32,
 		ManaCost:             st.ManaCost.Int32,
 		ManaCostPct:          st.ManaCostPct.Int32,

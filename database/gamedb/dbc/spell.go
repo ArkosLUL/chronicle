@@ -14,8 +14,21 @@ type Spell struct {
 	AuraDescription_lang i18n.Text
 
 	// Display
-	SpellIconID int32
-	SchoolMask  int32 // Bitmask: 1=phys, 2=holy, 4=fire, 8=nature, 16=frost, 32=shadow, 64=arcane
+	SpellIconID  int32
+	ActiveIconID int32
+
+	// Usage
+	MaxLevel   int32
+	BaseLevel  int32 // Level of player to use the spell
+	SpellLevel int32
+
+	// Effects
+	School         School
+	SpellPriority  int32
+	StanceBarOrder int32
+	ProcTypeMask   ProcFlags
+	ProcChance     int32 // >100 means it is server side
+	ProcCharges    int32
 
 	// Cost
 	PowerType   int32 // 0=mana, 1=rage, 2=focus, 3=energy
@@ -26,6 +39,7 @@ type Spell struct {
 	CastingTimeIndex int32 // → SpellCastTimes.dbc lookup
 	RecoveryTime     int32 // Cooldown in ms
 	RangeIndex       int32 // → SpellRange.dbc lookup
+	DurationIndex    int32 // -> SpellDuration.dbc lookup
 
 	// Filtering/logic
 	Attrs   SpellAttributes
@@ -39,14 +53,11 @@ type Spell struct {
 	// AuraOptionsID            int32
 	// AuraRestrictionsID       int32
 	// CastingRequirementsID    int32
-	// CategoriesID             int32
 	// ClassOptionsID           int32
-	// CooldownsID              int32
 	// EquippedItemsID          int32
 	// InterruptsID             int32
 	// LevelsID                 int32
 	// ReagentsID               int32
-	// ShapeshiftID             int32
 	// TargetRestrictionsID     int32
 	// TotemsID                 int32
 	// RequiredProjectID        int32
@@ -71,13 +82,6 @@ type Spell struct {
 	// InterruptFlags           int32
 	// AuraInterruptFlags       []int32
 	// ChannelInterruptFlags    []int32
-	// ProcTypeMask             int32
-	// ProcChance               int32
-	// ProcCharges              int32
-	// MaxLevel                 int32
-	// BaseLevel                int32
-	// SpellLevel               int32
-	// DurationIndex            int32
 	// ManaCostPerLevel         int32
 	// ManaPerSecond            int32
 	// Speed                    float32
@@ -111,7 +115,6 @@ type Spell struct {
 	// EffectSpellClassMaskB    []int32
 	// EffectSpellClassMaskC    []int32
 	// SpellVisualID            []int32
-	// ActiveIconID             int32
 	// StartRecoveryCategory    int32
 	// StartRecoveryTime        int32
 	// MaxTargetLevel           int32
@@ -120,7 +123,6 @@ type Spell struct {
 	// MaxTargets               int32
 	// DefenseType              int32
 	// PreventionType           int32
-	// StanceBarOrder           int32
 	// EffectChainAmplitude     []float32
 	// MinFactionID             int32
 	// MinReputation            int32
@@ -129,15 +131,20 @@ type Spell struct {
 	// RequiredAreasID          int32
 	// PowerDisplayID           int32
 	// EffectBonusCoefficient   []float32
-	// Difficulty               int32
+	//
 	// CastUI                   int32
 	// ManaPerSecondPerLevel    int32
 	// EffectBaseDice           []int32
 	// EffectDicePerLevel       []int32
-	// SpellPriority            int32
 	// RequiredAreaID           int32
-	// School                   int32
 	// ProcFlags                int32
+
+	// No value
+	// SchoolMask      int32 // Always 0
+	// CategoriesID    int32 // Always 0
+	// CooldownsID     int32 // Always 0
+	// Difficulty      int32 // Used for mythic/20man/heroic
+	// ShapeshiftID    int32 // Always 0
 }
 
 func NewSpell(def dbdefs.Ent_Spell) *Spell {
@@ -148,7 +155,6 @@ func NewSpell(def dbdefs.Ent_Spell) *Spell {
 		Description_lang:     def.Description_lang,
 		AuraDescription_lang: def.AuraDescription_lang,
 		SpellIconID:          def.SpellIconID,
-		SchoolMask:           def.SchoolMask,
 		PowerType:            def.PowerType,
 		ManaCost:             def.ManaCost,
 		ManaCostPct:          def.ManaCostPct,

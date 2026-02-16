@@ -48,30 +48,68 @@ function formatPeriodMoment(moment: { timestamp: string; reason: string } | unde
   return `${time} (${moment.reason})`;
 }
 
+function computePeriodDuration(period: ActivityPeriod): number | null {
+  if (!period.start || !period.end) return null;
+  const startMs = new Date(period.start.timestamp).getTime();
+  const endMs = new Date(period.end.timestamp).getTime();
+  return endMs - startMs;
+}
+
 function formatPeriodsTooltip(guid: string, periods: readonly ActivityPeriod[]): React.ReactNode {
+  if (!periods || periods.length === 0) {
+    return (
+      <div className="space-y-2 max-w-xs">
+        <span className="text-muted-foreground">No activity data</span>
+      </div>
+    );
+  }
+
+  // Calculate total duration across all periods
+  const totalDuration = periods.reduce((sum, period) => {
+    const duration = computePeriodDuration(period);
+    return sum + (duration ?? 0);
+  }, 0);
+
   return (
     <div className="space-y-2 max-w-xs">
-      <div className="font-mono text-xs text-muted-foreground">{guid}</div>
-      {(!periods || periods.length === 0) ? (
-        <span className="text-muted-foreground">No activity data</span>
-      ) : (
-        <>
-          <div className="font-medium border-b border-border pb-1">
-            Activity Periods ({periods.length})
+      <div className="font-medium border-b border-border pb-1">
+        Activity: {formatDurationMs(totalDuration)}
+      </div>
+      {periods.map((period, idx) => {
+        const duration = computePeriodDuration(period);
+        return (
+          <div key={idx} className="text-xs space-y-0.5">
+            <div className="font-medium text-foreground/80 flex items-center gap-2">
+              <span>Period {idx + 1}</span>
+              {duration !== null && (
+                <span className="text-muted-foreground font-normal">
+                  ({formatDurationMs(duration)})
+                </span>
+              )}
+              <span className={period.slain ? "text-green-400" : "text-red-400"}>
+                {period.slain ? "✓" : "✗"}
+              </span>
+            </div>
           </div>
+        );
+      })}
+      
+      <details className="text-xs">
+        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+          Debug
+        </summary>
+        <div className="mt-2 space-y-2 font-mono text-[10px] text-muted-foreground">
+          <div>GUID: <span className="break-all">{guid}</span></div>
           {periods.map((period, idx) => (
-            <div key={idx} className="text-xs space-y-0.5">
-              <div className="font-medium text-foreground/80">Period {idx + 1}</div>
+            <div key={idx} className="border-l border-border pl-2">
               <div>Start: {formatPeriodMoment(period.start)}</div>
               <div>End: {formatPeriodMoment(period.end)}</div>
               <div>Last Active: {formatPeriodMoment(period.last_active)}</div>
-              <div className={period.slain ? "text-green-400" : "text-red-400"}>
-                {period.slain ? "✓ Slain" : "✗ Survived"}
-              </div>
+              <div>Slain: {period.slain ? "true" : "false"}</div>
             </div>
           ))}
-        </>
-      )}
+        </div>
+      </details>
     </div>
   );
 }
@@ -768,7 +806,7 @@ function EncounterDetail({
                       mergedEnemies.map((enemy) => {
                         const isSelected = isEnemySelected(enemy.id);
                         return (
-                          <Tooltip key={enemy.id}>
+                          <HintTooltip key={enemy.id}>
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => onToggleEnemy(enemy.id)}
@@ -791,10 +829,10 @@ function EncounterDetail({
                                 <span className="font-medium">{enemy.name}</span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" className="p-3">
+                            <TooltipContent side="bottom" hideArrow className="p-3 bg-card text-card-foreground border border-border">
                               {formatPeriodsTooltip(enemy.id, enemy.periods)}
                             </TooltipContent>
-                          </Tooltip>
+                          </HintTooltip>
                         );
                       })
                     )}

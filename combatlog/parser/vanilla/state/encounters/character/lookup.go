@@ -33,6 +33,11 @@ var characterFactories = []characterFactory{
 	NewHighPriestMarli,
 	NewHighPriestessJeklik,
 	NewHighPriestThekalParty,
+	// Scholomance
+	NewJandiceBarov,
+	NewDiseasedGhoul,
+	// AQ 40
+	NewCthun,
 }
 
 type Characters struct {

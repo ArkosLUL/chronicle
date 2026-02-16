@@ -169,7 +169,7 @@ export function RaidCard({ instance }: RaidCardProps) {
               <Users className="h-3 w-3" />
               {instance.player_count}
             </span>
-            <span className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded">
+            <span data-chromatic="ignore" className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded">
               <Clock className="h-3 w-3" />
               {formatDuration(instance.duration_ms)}
             </span>
@@ -224,7 +224,7 @@ export function RaidCard({ instance }: RaidCardProps) {
           )}
 
           {/* Footer: Time and realm */}
-          <div className="pt-2 border-t border-white/20 flex items-center justify-between text-xs text-white/60">
+          <div data-chromatic="ignore" className="pt-2 border-t border-white/20 flex items-center justify-between text-xs text-white/60">
             <span>{formatRelativeTime(uploadedAt)}</span>
             <span className="truncate ml-2">{instance.realm_name}</span>
           </div>

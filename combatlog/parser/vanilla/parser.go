@@ -86,8 +86,12 @@ func (p *Parser) Metrics() Metrics {
 //}
 
 // Merger returns a configured merger for this parser.
-func Merger(logger *slog.Logger) *merge.Merger {
-	return merge.NewMerger(logger) //merge.WithMiddleWare(OnlyKeepRawV2Casts),
+func Merger(logger *slog.Logger, opts ...merge.Option) *merge.Merger {
+	m := merge.NewMerger(logger) //merge.WithMiddleWare(OnlyKeepRawV2Casts),
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
 }
 
 func (p *Parser) init() error {

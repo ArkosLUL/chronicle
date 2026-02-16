@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
+	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -111,8 +113,25 @@ func CreaturesCmd() *serpent.Command {
 			}
 			defer func() { closeFiles(files...) }()
 
+			fileOne := &bytes.Buffer{}
+			sum, ri1, err := sorter.SortLogs(ctx, logger, files[0], fileOne)
+			if err != nil {
+				return fmt.Errorf("sorting logs: %w", err)
+			}
+
+			fileTwo := &bytes.Buffer{}
+			sum2, ri2, err := sorter.SortLogs(ctx, logger, files[1], fileTwo)
+			if err != nil {
+				return fmt.Errorf("sorting logs: %w", err)
+			}
+
+			ri := ri1
+			if ri == nil {
+				ri = ri2
+			}
+
 			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
+			liner, scan, err := m.LineScanner(ctx, ri, logfile.New(&sum.IsRaw, fileOne), logfile.New(&sum2.IsRaw, fileTwo))
 			if err != nil {
 				return err
 			}

@@ -28,7 +28,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.RegisterWithComment(wrap(instances.BlackrockSpire), "Only upper spire is supported at the moment")
 
 	// 10 man
-	r.Register(wrap(instances.TowerOfKarazhan))
+	r.RegisterWithComment(wrap(instances.TowerOfKarazhan), "Upper tower is not completely supported yet")
 
 	// 20 man
 	r.Register(wrap(instances.ZulGurub))

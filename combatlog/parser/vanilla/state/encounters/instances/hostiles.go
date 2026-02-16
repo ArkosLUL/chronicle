@@ -154,6 +154,58 @@ func MoltenCoreHostiles() map[uint32]Identity {
 func TowerOfKarazhanHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
+		61937: "Shadowclaw Worgen",
+		59997: "Red Owl",
+		61956: "Lingering Astrologist",
+		59969: "Ghastly Horseman",
+		61942: "Manascale Dragon Guard",
+		61946: "Ley-Watcher Incantagos",
+		60062: "Lingering Doom",
+		61934: "Spectral Worker",
+		59988: "Manascale Whelp",
+		59955: "Manascale Whelp",
+		62604: "Desolate Invader",
+		61950: "Arcane Anomaly",
+		3909:  "Healing Stream Totem V",
+		61940: "Manascale Drake",
+		59989: "Manascale Ley-Seeker",
+		61953: "Karazhan Protector Golem",
+		61957: "Lingering Enchanter",
+		59968: "Knight",
+		61933: "Greater Gloomwing",
+		61943: "Manascale Suppressor",
+		60061: "Resonating Crystal",
+		61954: "Lingering Magus",
+		59995: "Unstoppable Infernal",
+		49014: "Malfunctioning Knight",
+		49015: "Withering Pawn",
+		62607: "Forgotten Echo",
+		62605: "Desolate Destroyer",
+		62606: "Ima'ghaol, Herald of Desolation",
+		61935: "Duskfang Creeper",
+		59953: "Queen",
+		59972: "Pawn",
+		61945: "Manascale Overseer",
+		61947: "Arcane Overflow",
+		61955: "Lingering Arcanist",
+		59971: "Bishop",
+		59984: "Blue Affinity",
+		62603: "Miniature Arcane Wyrm",
+		61952: "Crumbling Protector",
+		49013: "Decaying Bishop",
+		61932: "Vampiric Gloomwing",
+		59999: "Blood Raven",
+		61949: "Disrupted Arcane Elemental",
+		49012: "Broken Rook",
+		61936: "Shadowclaw Darkbringer",
+		61944: "Manascale Mageweaver",
+		61948: "Unstable Arcane Elemental",
+		61938: "Shadowclaw Rager",
+		59985: "Green Affinity",
+		59998: "Blue Owl",
+		59970: "Rook",
+
+		// Lower
 		61194: "Shadowbane Ragefang",
 		61208: "Skitterweb Venomfang",
 		61211: "Shadowbane Glutton",
@@ -178,6 +230,12 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		61193: "Shadowbane Ambusher",
 	})
 	LoadBosses(hostile, map[uint32]string{
+		61939: "Keeper Gnarlmoon",
+		61951: "Anomalus",
+		61958: "Echo of Medivh",
+		59967: "King",
+
+		// Lower
 		61221: "Brood Queen Araxxna",
 		61224: "Grizikil",
 		61223: "Clawlord Howlfang",
@@ -406,14 +464,13 @@ func TempleOfAhnQirajHostiles() map[uint32]Identity {
 		15727: "C'Thun",
 		15510: "Fankriss the Unyielding",
 		15516: "Battleguard Sartura",
-		15299: "Viscidus" ,
-    15509: "Princess Huhuran",
-    15263: "The Prophet Skeram",
+		15299: "Viscidus",
+		15509: "Princess Huhuran",
+		15263: "The Prophet Skeram",
 
-    // Twin emps
-    15275: "Twin Emperors", // "Emperor Vek'nilash",
-    15276: "Twin Emperors", //   "Emperor Vek'lor",
-
+		// Twin emps
+		15275: "Twin Emperors", // "Emperor Vek'nilash",
+		15276: "Twin Emperors", //   "Emperor Vek'lor",
 
 		// Bug family
 		15543: "Bug Family", // "Princess Yauj",
@@ -465,7 +522,7 @@ func ScholomanceHostiles() map[uint32]Identity {
 		11551: "Necrofiend",
 		10495: "Diseased Ghoul",
 		11261: "Doctor Theolen Krastinov",
-    11439: "Illusion of Jandice Barov",
+		11439: "Illusion of Jandice Barov",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		10506: "Kirtonos the Herald",

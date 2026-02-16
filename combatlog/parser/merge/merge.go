@@ -24,8 +24,9 @@ type Option func(m *Merger)
 // Also add a parser in the middle to capture some state and log additional lines at the start
 // for things like combatant info.
 type Merger struct {
-	logger *slog.Logger
-	mw     []MiddleWare
+	logger            *slog.Logger
+	mw                []MiddleWare
+	disableTimeAdjust bool
 }
 
 func NewMerger(logger *slog.Logger, opts ...Option) *Merger {
@@ -45,8 +46,17 @@ func WithMiddleWare(mw MiddleWare) Option {
 	}
 }
 
+func WithoutTimeAdjustments() Option {
+	return func(m *Merger) {
+		m.disableTimeAdjust = true
+	}
+}
+
 func (m *Merger) LineScanner(ctx context.Context, ri *realmclock.Info, formatted logfile.Reader, raw logfile.Reader) (*lines.Liner, Scan, error) {
-	l := lines.NewLiner().WithRealmClockInfo(ri) //.WithoutTimeAdjustments()
+	l := lines.NewLiner().WithRealmClockInfo(ri)
+	if m.disableTimeAdjust {
+		l = l.WithoutTimeAdjustments()
+	}
 
 	merger, err := newInOrderMerger(ctx, l, formatted, raw)
 	if err != nil {

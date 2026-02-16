@@ -134,6 +134,17 @@ func ExtractByTime() *serpent.Command {
 				return fmt.Errorf("invalid end time format: %w", err)
 			}
 
+			logger.Info(fmt.Sprintf("Extracting lines between %s and %s (UTC: %t) for %s",
+				start.Format("15:04:05"),
+				finish.Format("15:04:05"),
+				useUTC,
+				finish.Sub(start).String(),
+			))
+
+			if finish.Before(start) {
+				return fmt.Errorf("begin time must be before end time")
+			}
+
 			files, err := openFileReaders(i.Args[0])
 			if err != nil {
 				return err
@@ -141,7 +152,7 @@ func ExtractByTime() *serpent.Command {
 			defer func() { closeFiles(files...) }()
 			input := bufio.NewScanner(files[0])
 
-			liner := lines.NewLiner()
+			liner := lines.NewLiner().WithoutTimeAdjustments()
 			for input.Scan() {
 				if ctx.Err() != nil {
 					return ctx.Err()
@@ -158,6 +169,10 @@ func ExtractByTime() *serpent.Command {
 					year, month, day := ts.Date()
 					start = time.Date(year, month, day, start.Hour(), start.Minute(), start.Second(), 0, loc)
 					finish = time.Date(year, month, day, finish.Hour(), finish.Minute(), finish.Second(), 0, loc)
+					logger.Info("set date",
+						slog.Time("start", start),
+						slog.Time("finish", finish),
+					)
 				})
 
 				if ts.Before(start) {

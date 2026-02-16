@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, Link } from "react-router-dom";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, FileText } from "lucide-react";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, FileText, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
@@ -27,6 +28,26 @@ import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips
 // ============================================================================
 // Formatting helpers
 // ============================================================================
+
+// WoW combat log format: "1/2 15:04:05.000" (month/day without leading zeros)
+function formatAsLogTime(isoTimestamp: string): string {
+  const d = new Date(isoTimestamp);
+  const month = d.getMonth() + 1; // 0-indexed
+  const day = d.getDate();
+  const hours = d.getHours().toString().padStart(2, "0");
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const seconds = d.getSeconds().toString().padStart(2, "0");
+  const ms = d.getMilliseconds().toString().padStart(3, "0");
+  return `${month}/${day} ${hours}:${minutes}:${seconds}.${ms}`;
+}
+
+async function copyEncounterTimes(startTime: string, endTime: string) {
+  const start = formatAsLogTime(startTime);
+  const end = formatAsLogTime(endTime);
+  const text = `${start} - ${end}`;
+  await navigator.clipboard.writeText(text);
+  toast.success("Copied encounter times", { description: text });
+}
 
 function formatDuration(startTime: string, endTime: string): string {
   const start = new Date(startTime);
@@ -249,6 +270,8 @@ function EncounterSidebar({
   const [trashOpen, setTrashOpen] = useState(false);
   const [manualExpandedGroup, setManualExpandedGroup] = useState<string | null>(null);
   const [showChronological, setShowChronological] = useState(false);
+  const [searchParams] = useSearchParams();
+  const isDebug = searchParams.get("debug") === "true";
 
   const effectiveTrashOpen = trashOpen || hasSelectedTrash;
   
@@ -402,6 +425,18 @@ function EncounterSidebar({
                 <span className={cn("text-xs shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
                   {formatDuration(encounter.start_time, encounter.end_time)}
                 </span>
+                {isDebug && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyEncounterTimes(encounter.start_time, encounter.end_time);
+                    }}
+                    className="p-1 hover:bg-accent rounded"
+                    title="Copy encounter times"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                )}
               </button>
             );
           })}
@@ -437,6 +472,18 @@ function EncounterSidebar({
               <span className={cn("text-xs shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
                 {formatDuration(encounter.start_time, encounter.end_time)}
               </span>
+              {isDebug && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyEncounterTimes(encounter.start_time, encounter.end_time);
+                  }}
+                  className="p-1 hover:bg-accent rounded"
+                  title="Copy encounter times"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              )}
             </button>
           );
         })}
@@ -502,6 +549,18 @@ function EncounterSidebar({
                             <span className={cn("shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
                               {formatDuration(encounter.start_time, encounter.end_time)}
                             </span>
+                            {isDebug && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyEncounterTimes(encounter.start_time, encounter.end_time);
+                                }}
+                                className="p-1 hover:bg-accent rounded"
+                                title="Copy encounter times"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            )}
                           </button>
                         );
                       })}

@@ -355,7 +355,7 @@ function AllActivityContent({
             Total Processed: <span className="font-medium text-foreground">{formatNumber(totalEvents)}</span>
           </span>
           {processingTimeMs !== null && (
-            <span className="text-blue-500">
+            <span data-chromatic="ignore" className="text-blue-500">
               ({processingTimeMs.toFixed(0)}ms)
             </span>
           )}

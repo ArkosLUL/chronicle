@@ -52,10 +52,7 @@ func (s *Service) Configures() []string { return []string{} }
 func (s *Service) DependsOn() []string  { return []string{} }
 
 func (s *Service) Start(_ context.Context) error {
-	iconFS := imagecache.FS()
-	if s.path != "" {
-		iconFS = os.DirFS(s.path)
-	}
+	iconFS := os.DirFS(s.path)
 
 	s.handler = imagecache.NewHandler(iconFS)
 	s.spellHandler = imagecache.NewHandler(iconFS,
@@ -72,7 +69,7 @@ func (s *Service) Options() serpent.OptionSet {
 	return serpent.OptionSet{
 		{
 			Name:        "Image Cache Path",
-			Description: "Path to directory containing icon files. If empty, uses embedded icons.",
+			Description: "Path to directory containing icon files.",
 			Required:    false,
 			Flag:        "imagecache-path",
 			Env:         "CHRONICLE_IMAGECACHE_PATH",

@@ -1,7 +1,6 @@
 package imagecache
 
 import (
-	"embed"
 	"fmt"
 	"io"
 	"io/fs"
@@ -13,18 +12,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 )
-
-//go:embed icons/*
-var iconsFS embed.FS
-
-// FS returns the embedded icons filesystem.
-func FS() fs.FS {
-	sub, err := fs.Sub(iconsFS, "icons")
-	if err != nil {
-		panic("imagecache: failed to get icons sub-filesystem: " + err.Error())
-	}
-	return sub
-}
 
 // Handler serves icons from a filesystem with optional alias resolution.
 // Mount it at any route, e.g., r.Mount("/static/spellicon", imagecache.NewHandler(...))
@@ -66,10 +53,7 @@ func NewHandler(filesystem fs.FS, opts ...Option) *Handler {
 	return h
 }
 
-// New creates an icon handler using the embedded icons filesystem.
-func New(opts ...Option) *Handler {
-	return NewHandler(FS(), opts...)
-}
+
 
 // ServeHTTP implements http.Handler.
 // Expects the icon name as the URL path (e.g., "/sliceanddice.webp").

@@ -2,17 +2,269 @@ package dbc
 
 import (
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
+	"github.com/Gophercraft/core/i18n"
 )
 
 type Spell struct {
-	dbdefs.Ent_Spell
+	ID                       int32
+	Name_lang                i18n.Text
+	NameSubtext_lang         i18n.Text
+	Description_lang         i18n.Text
+	AuraDescription_lang     i18n.Text
+	RuneCostID               int32
+	SpellMissileID           int32
+	DescriptionVariablesID   int32
+	ScalingID                int32
+	AuraOptionsID            int32
+	AuraRestrictionsID       int32
+	CastingRequirementsID    int32
+	CategoriesID             int32
+	ClassOptionsID           int32
+	CooldownsID              int32
+	EquippedItemsID          int32
+	InterruptsID             int32
+	LevelsID                 int32
+	ReagentsID               int32
+	ShapeshiftID             int32
+	TargetRestrictionsID     int32
+	TotemsID                 int32
+	RequiredProjectID        int32
+	MiscID                   int32
+	Category                 int32
+	DispelType               int32
+	Mechanic                 int32
+	Attrs                    SpellAttributes
+	ShapeshiftMask           []int32
+	ShapeshiftExclude        []int32
+	Targets                  TargetFlags
+	TargetCreatureType       int32
+	RequiresSpellFocus       int32
+	FacingCasterFlags        int32
+	CasterAuraState          int32
+	TargetAuraState          int32
+	ExcludeCasterAuraState   int32
+	ExcludeTargetAuraState   int32
+	CasterAuraSpell          int32
+	TargetAuraSpell          int32
+	ExcludeCasterAuraSpell   int32
+	ExcludeTargetAuraSpell   int32
+	CastingTimeIndex         int32
+	RecoveryTime             int32
+	CategoryRecoveryTime     int32
+	InterruptFlags           int32
+	AuraInterruptFlags       []int32
+	ChannelInterruptFlags    []int32
+	ProcTypeMask             int32
+	ProcChance               int32
+	ProcCharges              int32
+	MaxLevel                 int32
+	BaseLevel                int32
+	SpellLevel               int32
+	DurationIndex            int32
+	PowerType                int32
+	ManaCost                 int32
+	ManaCostPerLevel         int32
+	ManaPerSecond            int32
+	RangeIndex               int32
+	Speed                    float32
+	ModalNextSpell           int32
+	CumulativeAura           int32
+	Totem                    []int32
+	Reagent                  []int32
+	ReagentCount             []int32
+	EquippedItemClass        int32
+	EquippedItemSubclass     int32
+	EquippedItemInvTypes     int32
+	Effect                   []int32
+	EffectDieSides           []int32
+	EffectRealPointsPerLevel []float32
+	EffectBasePoints         []int32
+	EffectMechanic           []int32
+	ImplicitTargetA          []int32
+	ImplicitTargetB          []int32
+	EffectRadiusIndex        []int32
+	EffectRadiusIndexB       []int32
+	EffectAura               []int32
+	EffectAuraPeriod         []int32
+	EffectAmplitude          []float32
+	EffectChainTargets       []int32
+	EffectItemType           []int32
+	EffectMiscValue          []int32
+	EffectMiscValueB         []int32
+	EffectTriggerSpell       []int32
+	EffectPointsPerCombo     []float32
+	EffectSpellClassMaskA    []int32
+	EffectSpellClassMaskB    []int32
+	EffectSpellClassMaskC    []int32
+	SpellVisualID            []int32
+	SpellIconID              int32
+	ActiveIconID             int32
+	ManaCostPct              int32
+	StartRecoveryCategory    int32
+	StartRecoveryTime        int32
+	MaxTargetLevel           int32
+	SpellClassSet            int32
+	SpellClassMask           []int32
+	MaxTargets               int32
+	DefenseType              int32
+	PreventionType           int32
+	StanceBarOrder           int32
+	EffectChainAmplitude     []float32
+	MinFactionID             int32
+	MinReputation            int32
+	RequiredAuraVision       int32
+	RequiredTotemCategoryID  []int32
+	RequiredAreasID          int32
+	SchoolMask               int32
+	PowerDisplayID           int32
+	EffectBonusCoefficient   []float32
+	Difficulty               int32
+	CastUI                   int32
+	ManaPerSecondPerLevel    int32
+	EffectBaseDice           []int32
+	EffectDicePerLevel       []int32
+	SpellPriority            int32
+	RequiredAreaID           int32
+	School                   int32
+	ProcFlags                int32
+}
+
+func NewSpell(def dbdefs.Ent_Spell) *Spell {
+	return &Spell{
+		ID:                     def.ID,
+		Name_lang:              def.Name_lang,
+		NameSubtext_lang:       def.NameSubtext_lang,
+		Description_lang:       def.Description_lang,
+		AuraDescription_lang:   def.AuraDescription_lang,
+		RuneCostID:             def.RuneCostID,
+		SpellMissileID:         def.SpellMissileID,
+		DescriptionVariablesID: def.DescriptionVariablesID,
+		ScalingID:              def.ScalingID,
+		AuraOptionsID:          def.AuraOptionsID,
+		AuraRestrictionsID:     def.AuraRestrictionsID,
+		CastingRequirementsID:  def.CastingRequirementsID,
+		CategoriesID:           def.CategoriesID,
+		ClassOptionsID:         def.ClassOptionsID,
+		CooldownsID:            def.CooldownsID,
+		EquippedItemsID:        def.EquippedItemsID,
+		InterruptsID:           def.InterruptsID,
+		LevelsID:               def.LevelsID,
+		ReagentsID:             def.ReagentsID,
+		ShapeshiftID:           def.ShapeshiftID,
+		TargetRestrictionsID:   def.TargetRestrictionsID,
+		TotemsID:               def.TotemsID,
+		RequiredProjectID:      def.RequiredProjectID,
+		MiscID:                 def.MiscID,
+		Category:               def.Category,
+		DispelType:             def.DispelType,
+		Mechanic:               def.Mechanic,
+		Attrs: SpellAttributes{
+			uint32(def.Attributes),
+			uint32(def.AttributesEx),
+			uint32(def.AttributesExB),
+			uint32(def.AttributesExC),
+			uint32(def.AttributesExD),
+			uint32(def.AttributesExE),
+			uint32(def.AttributesExF),
+			uint32(def.AttributesExG),
+			uint32(def.AttributesExH),
+		},
+		ShapeshiftMask:           def.ShapeshiftMask,
+		ShapeshiftExclude:        def.ShapeshiftExclude,
+		Targets:                  TargetFlags(def.Targets),
+		TargetCreatureType:       def.TargetCreatureType,
+		RequiresSpellFocus:       def.RequiresSpellFocus,
+		FacingCasterFlags:        def.FacingCasterFlags,
+		CasterAuraState:          def.CasterAuraState,
+		TargetAuraState:          def.TargetAuraState,
+		ExcludeCasterAuraState:   def.ExcludeCasterAuraState,
+		ExcludeTargetAuraState:   def.ExcludeTargetAuraState,
+		CasterAuraSpell:          def.CasterAuraSpell,
+		TargetAuraSpell:          def.TargetAuraSpell,
+		ExcludeCasterAuraSpell:   def.ExcludeCasterAuraSpell,
+		ExcludeTargetAuraSpell:   def.ExcludeTargetAuraSpell,
+		CastingTimeIndex:         def.CastingTimeIndex,
+		RecoveryTime:             def.RecoveryTime,
+		CategoryRecoveryTime:     def.CategoryRecoveryTime,
+		InterruptFlags:           def.InterruptFlags,
+		AuraInterruptFlags:       def.AuraInterruptFlags,
+		ChannelInterruptFlags:    def.ChannelInterruptFlags,
+		ProcTypeMask:             def.ProcTypeMask,
+		ProcChance:               def.ProcChance,
+		ProcCharges:              def.ProcCharges,
+		MaxLevel:                 def.MaxLevel,
+		BaseLevel:                def.BaseLevel,
+		SpellLevel:               def.SpellLevel,
+		DurationIndex:            def.DurationIndex,
+		PowerType:                def.PowerType,
+		ManaCost:                 def.ManaCost,
+		ManaCostPerLevel:         def.ManaCostPerLevel,
+		ManaPerSecond:            def.ManaPerSecond,
+		RangeIndex:               def.RangeIndex,
+		Speed:                    def.Speed,
+		ModalNextSpell:           def.ModalNextSpell,
+		CumulativeAura:           def.CumulativeAura,
+		Totem:                    def.Totem,
+		Reagent:                  def.Reagent,
+		ReagentCount:             def.ReagentCount,
+		EquippedItemClass:        def.EquippedItemClass,
+		EquippedItemSubclass:     def.EquippedItemSubclass,
+		EquippedItemInvTypes:     def.EquippedItemInvTypes,
+		Effect:                   def.Effect,
+		EffectDieSides:           def.EffectDieSides,
+		EffectRealPointsPerLevel: def.EffectRealPointsPerLevel,
+		EffectBasePoints:         def.EffectBasePoints,
+		EffectMechanic:           def.EffectMechanic,
+		ImplicitTargetA:          def.ImplicitTargetA,
+		ImplicitTargetB:          def.ImplicitTargetB,
+		EffectRadiusIndex:        def.EffectRadiusIndex,
+		EffectRadiusIndexB:       def.EffectRadiusIndexB,
+		EffectAura:               def.EffectAura,
+		EffectAuraPeriod:         def.EffectAuraPeriod,
+		EffectAmplitude:          def.EffectAmplitude,
+		EffectChainTargets:       def.EffectChainTargets,
+		EffectItemType:           def.EffectItemType,
+		EffectMiscValue:          def.EffectMiscValue,
+		EffectMiscValueB:         def.EffectMiscValueB,
+		EffectTriggerSpell:       def.EffectTriggerSpell,
+		EffectPointsPerCombo:     def.EffectPointsPerCombo,
+		EffectSpellClassMaskA:    def.EffectSpellClassMaskA,
+		EffectSpellClassMaskB:    def.EffectSpellClassMaskB,
+		EffectSpellClassMaskC:    def.EffectSpellClassMaskC,
+		SpellVisualID:            def.SpellVisualID,
+		SpellIconID:              def.SpellIconID,
+		ActiveIconID:             def.ActiveIconID,
+		ManaCostPct:              def.ManaCostPct,
+		StartRecoveryCategory:    def.StartRecoveryCategory,
+		StartRecoveryTime:        def.StartRecoveryTime,
+		MaxTargetLevel:           def.MaxTargetLevel,
+		SpellClassSet:            def.SpellClassSet,
+		SpellClassMask:           def.SpellClassMask,
+		MaxTargets:               def.MaxTargets,
+		DefenseType:              def.DefenseType,
+		PreventionType:           def.PreventionType,
+		StanceBarOrder:           def.StanceBarOrder,
+		EffectChainAmplitude:     def.EffectChainAmplitude,
+		MinFactionID:             def.MinFactionID,
+		MinReputation:            def.MinReputation,
+		RequiredAuraVision:       def.RequiredAuraVision,
+		RequiredTotemCategoryID:  def.RequiredTotemCategoryID,
+		RequiredAreasID:          def.RequiredAreasID,
+		SchoolMask:               def.SchoolMask,
+		PowerDisplayID:           def.PowerDisplayID,
+		EffectBonusCoefficient:   def.EffectBonusCoefficient,
+		Difficulty:               def.Difficulty,
+		CastUI:                   def.CastUI,
+		ManaPerSecondPerLevel:    def.ManaPerSecondPerLevel,
+		EffectBaseDice:           def.EffectBaseDice,
+		EffectDicePerLevel:       def.EffectDicePerLevel,
+		SpellPriority:            def.SpellPriority,
+		RequiredAreaID:           def.RequiredAreaID,
+		School:                   def.School,
+		ProcFlags:                def.ProcFlags,
+	}
 }
 
 func (s Spell) String() string {
 	return s.Name_lang.String()
-}
-
-// Attributes returns all attribute blocks for this spell.
-func (s Spell) Attributes() SpellAttributes {
-	return SpellAttributesFromSpell(&s.Ent_Spell)
 }

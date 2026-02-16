@@ -32,7 +32,5 @@ func (w *WoWClient) Spells() (Table[dbdefs.Ent_Spell], error) {
 		return nil, err
 	}
 
-  dbdefs.Ent_Spell{}
-
 	return WrapTable[dbdefs.Ent_Spell](table), nil
 }

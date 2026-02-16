@@ -3,7 +3,7 @@
 package gamedb
 
 type WoWDB struct {
-	Spells map[SpellID]*Spell
+	//Spells map[SpellID]*Spell
 }
 
 func New() (*WoWDB, error) {

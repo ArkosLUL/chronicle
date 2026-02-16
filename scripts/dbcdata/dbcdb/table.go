@@ -28,8 +28,8 @@ func (w WrappedTable[T]) Underlying() *dbc.Table {
 }
 
 func (w *WrappedTable[T]) Range(f func(cursor *T) bool) error {
-	return w.wrapped.Range(func(cursor any) bool {
-		return f(cursor.(*T))
+	return w.wrapped.Range(func(cursor *T) bool {
+		return f(cursor)
 	})
 }
 

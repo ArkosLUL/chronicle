@@ -74,7 +74,7 @@ var (
 	}).New
 
 	TempleOfAhnQiraj = (&CommonFactory{
-		Name:     "Ahn'Qiraj",
+		Name:     "Temple of Ahn'Qiraj",
 		ZoneName: "ahn'qiraj",
 		Hostiles: FromMap(TempleOfAhnQirajHostiles()),
 	}).New

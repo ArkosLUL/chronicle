@@ -23,7 +23,7 @@ const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   // Single Boss
   "Onyxia's Lair": { background: "/images/loadingscreens/LoadScreenRaid.webp", bossCount: 1 },
   // Turtle WoW Custom
-  "Karazhan": { background: "/images/loadingscreens/LoadScreenKarazhan.webp", bossCount: 5 },
+  "Tower of Karazhan": { background: "/images/loadingscreens/LoadScreenKarazhan.webp", bossCount: 5 },
   "Karazhan Crypts": { background: "/images/loadingscreens/LoadscreenKarazhanCrypt.webp", bossCount: 3 },
   "Hateforge Quarry": { background: "/images/loadingscreens/LoadScreenHateforge.webp", bossCount: 4 },
   "Gilneas City": { background: "/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3 },

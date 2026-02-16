@@ -21,19 +21,25 @@ type Spell struct {
 	MaxLevel   int32
 	BaseLevel  int32 // Level of player to use the spell
 	SpellLevel int32
+	Category   int32 // ?
 
 	// Effects
 	School         School
 	SpellPriority  int32
 	StanceBarOrder int32
-	ProcTypeMask   ProcFlags
-	ProcChance     int32 // >100 means it is server side
-	ProcCharges    int32
+	// TODO: PROCS
+	ProcTypeMask ProcFlags
+	ProcFlags    int32 // ?
+	ProcChance   int32 // >100 means it is server side
+	ProcCharges  int32
+	Speed        float32 // ? Speed of the spell projectile maybe?
 
 	// Cost
-	PowerType   int32 // 0=mana, 1=rage, 2=focus, 3=energy
-	ManaCost    int32
-	ManaCostPct int32
+	PowerType        int32 // 0=mana, 1=rage, 2=focus, 3=energy
+	ManaCost         int32
+	ManaCostPct      int32
+	ManaCostPerLevel int32
+	ManaPerSecond    int32
 
 	// Timing
 	CastingTimeIndex int32 // → SpellCastTimes.dbc lookup
@@ -44,6 +50,8 @@ type Spell struct {
 	// Filtering/logic
 	Attrs   SpellAttributes
 	Targets TargetFlags
+
+	// TODO: Reagents
 
 	// --- Fields below commented out for now, uncomment as needed ---
 	// RuneCostID               int32
@@ -57,12 +65,10 @@ type Spell struct {
 	// EquippedItemsID          int32
 	// InterruptsID             int32
 	// LevelsID                 int32
-	// ReagentsID               int32
 	// TargetRestrictionsID     int32
 	// TotemsID                 int32
 	// RequiredProjectID        int32
 	// MiscID                   int32
-	// Category                 int32
 	// DispelType               int32
 	// Mechanic                 int32
 	// ShapeshiftMask           []int32
@@ -82,8 +88,6 @@ type Spell struct {
 	// InterruptFlags           int32
 	// AuraInterruptFlags       []int32
 	// ChannelInterruptFlags    []int32
-	// ManaCostPerLevel         int32
-	// ManaPerSecond            int32
 	// Speed                    float32
 	// ModalNextSpell           int32
 	// CumulativeAura           int32
@@ -140,11 +144,13 @@ type Spell struct {
 	// ProcFlags                int32
 
 	// No value
-	// SchoolMask      int32 // Always 0
-	// CategoriesID    int32 // Always 0
-	// CooldownsID     int32 // Always 0
-	// Difficulty      int32 // Used for mythic/20man/heroic
-	// ShapeshiftID    int32 // Always 0
+	//SchoolMask            int32 // Always 0
+	//CategoriesID          int32 // Always 0
+	//CooldownsID           int32 // Always 0
+	//Difficulty            int32 // Used for mythic/20man/heroic
+	//ShapeshiftID          int32 // Always 0
+	//ReagentsID            int32 // Always 0
+	//ManaPerSecondPerLevel int32 // Always 0
 }
 
 func NewSpell(def dbdefs.Ent_Spell) *Spell {

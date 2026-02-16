@@ -18,7 +18,6 @@ import (
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
-	"github.com/Emyrk/chronicle/frontend/imagecache"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	context2 "github.com/gorilla/context"
@@ -40,10 +39,6 @@ type Options struct {
 	DevOAuth  bool
 	Discord   chronauth.DiscordOAuth
 	SecretPEM []byte // Used for JWTs
-
-	// Icon handlers (provided by serviceimagecache)
-	IconHandler      *imagecache.Handler
-	SpellIconHandler *imagecache.Handler
 }
 
 type API struct {
@@ -204,10 +199,6 @@ func (api *API) Routes() chi.Router {
 			}))
 		}
 	})
-
-	// Static assets - icons
-	r.Mount("/static/icon", api.Opts.IconHandler)
-	r.Mount("/static/spellicon", api.Opts.SpellIconHandler)
 
 	r.NotFound(frontend.Handler(frontend.FS()).ServeHTTP)
 

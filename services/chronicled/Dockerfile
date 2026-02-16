@@ -38,8 +38,6 @@ WORKDIR /app
 
 COPY --from=frontend /chronicle/frontend/chronicle/dist ./frontend/chronicle/dist
 COPY --from=backend /chronicle/bin/chronicled ./
-# Copy icon cache for disk-based loading
-COPY --from=backend /chronicle/frontend/imagecache/icons ./icons
 
 RUN chmod +x ./chronicled
-ENTRYPOINT ["./chronicled", "server", "--imagecache-path=/app/icons"]
+ENTRYPOINT ["./chronicled", "server"]

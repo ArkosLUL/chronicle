@@ -18,7 +18,6 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
-	"github.com/Emyrk/chronicle/internal/services/serviceimagecache"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
@@ -74,7 +73,6 @@ func (s *Service) DependsOn() []string {
 		servicechronicle.OnChronicle(),
 		serviceprometheus.OnPrometheus(),
 		serviceauthz.OnAuthz(),
-		serviceimagecache.OnImageCache(),
 	}
 }
 
@@ -146,9 +144,6 @@ func (s *Service) Start(ctx context.Context) error {
 		DevOAuth:  s.devAuth,
 		Discord:   s.discordAuth,
 		SecretPEM: decodedSecret,
-
-		IconHandler:      serviceimagecache.Handler(s.broker),
-		SpellIconHandler: serviceimagecache.SpellHandler(s.broker),
 	})
 
 	if err != nil {

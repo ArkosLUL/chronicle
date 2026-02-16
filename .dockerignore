@@ -136,6 +136,8 @@ frontend/chronicle/**/*.ntvs*
 frontend/chronicle/**/*.njsproj
 frontend/chronicle/**/*.sln
 frontend/chronicle/**/*.sw?
+frontend/imagecache/icons/*
+frontend/imagecache/blp/*
 
 frontend/chronicle/**/*storybook.log
 frontend/chronicle/**/storybook-static

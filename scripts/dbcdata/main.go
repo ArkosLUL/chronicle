@@ -61,16 +61,21 @@ func demo() *serpent.Command {
 			}
 
 			err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
-				if cursor.ShapeshiftID != 0 {
-					fmt.Println(cursor.Name_lang.String(), cursor.ID, cursor.SpellLevel)
+				//if len(cursor.Reagent) != 0 {
+				//	for _, r := range cursor.Reagent {
+				//		if r != 0 {
+				//			fmt.Println(cursor.Name_lang.String(), cursor.ID, cursor.Reagent)
+				//			d, _ := json.Marshal(cursor)
+				//			fmt.Println(string(d))
+				//			break
+				//		}
+				//	}
+				//}
+				if cursor.ProcFlags > 0 {
+					fmt.Println(cursor.ProcFlags)
 					d, _ := json.Marshal(cursor)
 					fmt.Println(string(d))
 				}
-				//if cursor.BaseLevel > 0 {
-				//	fmt.Println(cursor.BaseLevel)
-				//	d, _ := json.Marshal(cursor)
-				//	fmt.Println(string(d))
-				//}
 				return true
 			})
 			if err != nil {

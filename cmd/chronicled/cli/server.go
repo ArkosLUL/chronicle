@@ -16,7 +16,6 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
 	"github.com/Emyrk/chronicle/internal/services/servicepprof"
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
-	"github.com/Emyrk/chronicle/internal/services/serviceimagecache"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
 	"github.com/Emyrk/chronicle/internal/version"
@@ -37,7 +36,6 @@ func ServerCmd() *serpent.Command {
 		serviceauthz.New(srvs),
 		servicechronicle.New(srvs),
 		servicebot.New(srvs),
-		serviceimagecache.New(srvs),
 		serviceapi.New(srvs),
 	)
 	if err != nil {

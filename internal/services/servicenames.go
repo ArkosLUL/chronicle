@@ -12,5 +12,5 @@ const (
 	ServiceDiscordBot = "discordbot"
 	ServiceAPI        = "api"
 	ServiceAuthz      = "authz"
-	ServiceImageCache = "imagecache"
+	ServiceWoWDB      = "wow-db"
 )

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -30,7 +29,6 @@ func rootCmd() *serpent.Command {
 	cmd.AddSubcommands(
 		cli.StaticPopulateCmd(),
 		demo(),
-		cli.Populate(),
 	)
 	return cmd
 }
@@ -60,19 +58,14 @@ func demo() *serpent.Command {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			highest := int32(0)
+			c := make(map[int]int)
 			err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
+				c[len(cursor.Reagent)]++
+
 				//if cursor.Name_lang.String() == "Renew" {
 				//	d, _ := json.Marshal(cursor)
 				//	fmt.Println(string(d))
 				//}
-				if cursor.ProcFlags > 0 {
-
-					fmt.Println(cursor.ProcFlags)
-					d, _ := json.Marshal(cursor)
-					fmt.Println(string(d))
-
-				}
 				//if len(cursor.Effect) != 3 {
 				//	fmt.Println(cursor.Name_lang.String(), cursor.ID, cursor.Effect)
 				//}
@@ -105,25 +98,26 @@ func demo() *serpent.Command {
 				//}
 				return true
 			})
-			fmt.Println(highest)
+			fmt.Println(c)
+
 			if err != nil {
 				return fmt.Errorf("iterate spells: %w", err)
 			}
 
-			r, err := wc.SpellFocusObject()
-			if err != nil {
-				return fmt.Errorf("read spells: %w", err)
-			}
-
-			err = r.Range(func(cursor *dbdefs.Ent_SpellFocusObject) bool {
-				//d, _ := json.Marshal(cursor)
-				//fmt.Println(string(d))
-				return true
-			})
-			if err != nil {
-				return fmt.Errorf("iterate spells: %w", err)
-			}
-			fmt.Println(r.Len())
+			//r, err := wc.SpellFocusObject()
+			//if err != nil {
+			//	return fmt.Errorf("read spells: %w", err)
+			//}
+			//
+			//err = r.Range(func(cursor *dbdefs.Ent_SpellFocusObject) bool {
+			//	//d, _ := json.Marshal(cursor)
+			//	//fmt.Println(string(d))
+			//	return true
+			//})
+			//if err != nil {
+			//	return fmt.Errorf("iterate spells: %w", err)
+			//}
+			//fmt.Println(r.Len())
 
 			return nil
 		},

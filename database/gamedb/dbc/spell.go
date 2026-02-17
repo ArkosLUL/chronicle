@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/internal/bitmask"
-	"github.com/Gophercraft/core/format/dbc/dbdefs"
 	"github.com/Gophercraft/core/i18n"
 )
 
@@ -50,13 +49,13 @@ type Spell struct {
 	RequiresSpellFocus SpellFocusObject // The game checks if there's a matching game object within range (usually ~5 yards) before allowing the cast.
 
 	// === Resource Cost ===
-	PowerType        Power    // Resource type: 0=mana, 1=rage, 2=focus, 3=energy
-	ManaCost         int32    // Flat resource cost
-	ManaCostPct      int32    // Cost as percentage of base mana
-	ManaCostPerLevel int32    // Additional cost per caster level
-	ManaPerSecond    int32    // Resource drain per second while channeling
-	Reagent          []ItemID // Required consumable item IDs (up to 8)
-	ReagentCount     []int32  // Quantity of each reagent consumed per cast
+	PowerType        Power     // Resource type: 0=mana, 1=rage, 2=focus, 3=energy
+	ManaCost         int32     // Flat resource cost
+	ManaCostPct      int32     // Cost as percentage of base mana
+	ManaCostPerLevel int32     // Additional cost per caster level
+	ManaPerSecond    int32     // Resource drain per second while channeling
+	Reagent          [8]ItemID // Required consumable item IDs (up to 8)
+	ReagentCount     [8]int32  // Quantity of each reagent consumed per cast
 
 	// === Timing ===
 	CastingTimeIndex      CastingTimeID // Cast time lookup (→ SpellCastTimes.dbc)
@@ -107,7 +106,7 @@ type Spell struct {
 	RequiredAuraVision int32
 	MinFactionID       int32
 	MinReputation      int32
-	SpellVisualID      []int32
+	SpellVisualID      [2]int32
 
 	// No value
 	//RequiredAreaID          int32
@@ -151,35 +150,6 @@ type Spell struct {
 	//ManaPerSecondPerLevel   int32
 	//ExcludeCasterAuraState  int32
 	//ExcludeTargetAuraState  int32
-}
-
-func NewSpell(def dbdefs.Ent_Spell) *Spell {
-	return &Spell{
-		ID:                   SpellID(def.ID),
-		Name_lang:            def.Name_lang,
-		NameSubtext_lang:     def.NameSubtext_lang,
-		Description_lang:     def.Description_lang,
-		AuraDescription_lang: def.AuraDescription_lang,
-		SpellIconID:          IconID(def.SpellIconID),
-		//PowerType:            def.PowerType,
-		ManaCost:         def.ManaCost,
-		ManaCostPct:      def.ManaCostPct,
-		CastingTimeIndex: CastingTimeID(def.CastingTimeIndex),
-		//RecoveryTime:     def.RecoveryTime,
-		RangeIndex: RangeID(def.RangeIndex),
-		Attrs: SpellAttributes{
-			uint32(def.Attributes),
-			uint32(def.AttributesEx),
-			uint32(def.AttributesExB),
-			uint32(def.AttributesExC),
-			uint32(def.AttributesExD),
-			uint32(def.AttributesExE),
-			uint32(def.AttributesExF),
-			uint32(def.AttributesExG),
-			uint32(def.AttributesExH),
-		},
-		Targets: TargetFlags(def.Targets),
-	}
 }
 
 func (s Spell) String() string {

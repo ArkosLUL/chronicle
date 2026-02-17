@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Emyrk/chronicle/scripts/dbcdata/dbcdb"
+	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
 
 	"github.com/coder/serpent"
@@ -511,6 +511,3 @@ func GetSpellFocusObject(id int32) SpellFocusObject {
 	return SpellFocusObjects[id]
 }
 `))
-
-
-

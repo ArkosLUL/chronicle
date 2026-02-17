@@ -38,6 +38,12 @@ func (d SpellRadiusID) Get() dbcmem.SpellRadius {
 	return dbcmem.SpellRadii[int32(d)]
 }
 
+type SpellFocusObject int32
+
+func (d SpellFocusObject) Get() dbcmem.SpellFocusObject {
+	return dbcmem.SpellFocusObjects[int32(d)]
+}
+
 //go:generate stringer -type School -trimprefix=School
 type School int32
 
@@ -1102,4 +1108,92 @@ const (
 	InterruptFlagInterrupt  InterruptFlags = 0x00000004 // Can be interrupted (Kick, Counterspell)
 	InterruptFlagAutoAttack InterruptFlags = 0x00000008 // Interrupted by auto-attack
 	InterruptFlagDamage     InterruptFlags = 0x00000010 // Interrupted by any damage
+)
+
+//go:generate stringer -type Mechanic -trimprefix Mechanic
+type Mechanic int32
+
+const (
+	MechanicNone         Mechanic = 0
+	MechanicCharm        Mechanic = 1  // Mind Control
+	MechanicDisoriented  Mechanic = 2  // Scatter Shot
+	MechanicDisarm       Mechanic = 3  // Disarm
+	MechanicDistract     Mechanic = 4  // Distract
+	MechanicFlee         Mechanic = 5  // Fear (running away)
+	MechanicGrip         Mechanic = 6  // Death Grip (later expansions)
+	MechanicRoot         Mechanic = 7  // Frost Nova, Entangling Roots
+	MechanicSlow         Mechanic = 8  // Frostbolt debuff, Crippling Poison
+	MechanicSilence      Mechanic = 9  // Silence
+	MechanicSleep        Mechanic = 10 // Wyvern Sting, Hibernate
+	MechanicSnare        Mechanic = 11 // Hamstring, Wing Clip
+	MechanicStun         Mechanic = 12 // Cheap Shot, Hammer of Justice
+	MechanicFreeze       Mechanic = 13 // Frost Nova root effect
+	MechanicKnockout     Mechanic = 14 // Gouge, Sap (incapacitate)
+	MechanicBleed        Mechanic = 15 // Rend, Rupture, Garrote
+	MechanicBandage      Mechanic = 16 // Bandaging
+	MechanicPolymorph    Mechanic = 17 // Sheep, Pig, Turtle
+	MechanicBanish       Mechanic = 18 // Banish
+	MechanicShield       Mechanic = 19 // Shield effects
+	MechanicShackle      Mechanic = 20 // Shackle Undead
+	MechanicMount        Mechanic = 21 // Mounting
+	MechanicInfected     Mechanic = 22 // Disease effects
+	MechanicTurn         Mechanic = 23 // Turn Undead
+	MechanicHorror       Mechanic = 24 // Death Coil (fear variant)
+	MechanicInvulnerable Mechanic = 25 // Divine Shield, Ice Block
+	MechanicInterrupt    Mechanic = 26 // Kick, Counterspell
+	MechanicDaze         Mechanic = 27 // Dazed (hit from behind)
+	MechanicDiscovery    Mechanic = 28 // Discovery (professions)
+	MechanicImmuneShield Mechanic = 29 // Immune shield (cannot be dispelled)
+	MechanicSapped       Mechanic = 30 // Sap specifically
+	MechanicEnraged      Mechanic = 31 // Enrage effects
+)
+
+//go:generate stringer -type DefenseType -trimprefix DefenseType
+type DefenseType int32
+
+const (
+	DefenseTypeNone   DefenseType = 0 // Magic — uses spell hit/resist, no dodge/parry/block
+	DefenseTypeMelee  DefenseType = 1 // Can be dodged, parried, blocked
+	DefenseTypeRanged DefenseType = 2 // Can be dodged, can't be parried/blocked
+)
+
+//go:generate stringer -type AuraState -trimprefix AuraState
+type AuraState int32
+
+const (
+	AuraStateNone               AuraState = 0
+	AuraStateDefense            AuraState = 1  // Defensive stance/form
+	AuraStateHealthLess20Pct    AuraState = 2  // Target below 20% health (Execute)
+	AuraStateBerserking         AuraState = 3  // Berserker rage active
+	AuraStateJudgement          AuraState = 5  // Has Judgement debuff (Paladin)
+	AuraStateHunterParry        AuraState = 7  // Hunter parry (Mongoose Bite)
+	AuraStateRogue              AuraState = 10 // Combo points (finishing moves)
+	AuraStateDruidCatForm       AuraState = 11 // In Cat Form
+	AuraStateWarriorVictoryRush AuraState = 12 // Victory Rush proc
+	AuraStateCritical           AuraState = 13 // Just got a critical hit
+	AuraStateRecentlyBandaged   AuraState = 14 // Has "Recently Bandaged" debuff
+	AuraStateHealthLess35Pct    AuraState = 16 // Target below 35% health (Kill Shot)
+	AuraStateImmolate           AuraState = 17 // Has Immolate debuff (Conflagrate)
+	AuraStateDodged             AuraState = 18 // Target dodged (Overpower)
+	AuraStateBlocked            AuraState = 19 // Target blocked (Revenge)
+	AuraStateFrozen             AuraState = 21 // Target is frozen (Ice Lance)
+	AuraStateStealthInvis       AuraState = 23 // In stealth or invisible
+)
+
+type TargetCreatureType = bitmask.Bitmask32
+
+const (
+	CreatureTypeBeast        TargetCreatureType = 0x00000001 // 0
+	CreatureTypeDragonkin    TargetCreatureType = 0x00000002 // 1
+	CreatureTypeDemon        TargetCreatureType = 0x00000004 // 2
+	CreatureTypeElemental    TargetCreatureType = 0x00000008 // 3
+	CreatureTypeGiant        TargetCreatureType = 0x00000010 // 4
+	CreatureTypeUndead       TargetCreatureType = 0x00000020 // 5
+	CreatureTypeHumanoid     TargetCreatureType = 0x00000040 // 6
+	CreatureTypeCritter      TargetCreatureType = 0x00000080 // 7
+	CreatureTypeMechanical   TargetCreatureType = 0x00000100 // 8
+	CreatureTypeNotSpecified TargetCreatureType = 0x00000200 // 9
+	CreatureTypeTotem        TargetCreatureType = 0x00000400 // 10
+	CreatureTypeNonCombatPet TargetCreatureType = 0x00000800 // 11
+	CreatureTypeGasCloud     TargetCreatureType = 0x00001000 // 12
 )

@@ -66,12 +66,12 @@ func demo() *serpent.Command {
 				//	d, _ := json.Marshal(cursor)
 				//	fmt.Println(string(d))
 				//}
-				if cursor.PowerDisplayID > 0 {
+				if cursor.RequiresSpellFocus > 0 {
 					//for _, m := range cursor.EffectSpellClassMaskB {
 					//if m != 0 {
-					fmt.Println(cursor.PowerDisplayID)
-					d, _ := json.Marshal(cursor)
-					fmt.Println(string(d))
+					//fmt.Println(cursor.RequiresSpellFocus)
+					//d, _ := json.Marshal(cursor)
+					//fmt.Println(string(d))
 					//}
 					//}
 				}
@@ -109,14 +109,14 @@ func demo() *serpent.Command {
 				return fmt.Errorf("iterate spells: %w", err)
 			}
 
-			r, err := wc.SpellCategory()
+			r, err := wc.SpellFocusObject()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			err = r.Range(func(cursor *dbdefs.Ent_SpellCategory) bool {
-				//d, _ := json.Marshal(cursor)
-				//fmt.Println(string(d))
+			err = r.Range(func(cursor *dbdefs.Ent_SpellFocusObject) bool {
+				d, _ := json.Marshal(cursor)
+				fmt.Println(string(d))
 				return true
 			})
 			if err != nil {

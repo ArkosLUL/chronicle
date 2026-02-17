@@ -41,6 +41,13 @@ type Spell struct {
 	ModalNextSpell     int32          // The "Modal" suggests it's about spells that share a button slot but swap based on game state.
 	InterruptFlags     InterruptFlags // what can interrupt a spell while casting (different from AuraInterruptFlags which is for buffs).
 	CumulativeAura     int32          // Max charges I think?
+	Mechanic           Mechanic       // Combat mechanic: stun, root, silence, etc. (for immunity checks)
+	DefenseType        DefenseType    // How the target can defend against this spell
+	CasterAuraState    AuraState      // what state the target must be in for the spell to be usable.
+	TargetAuraState    AuraState
+	MaxTargets         int32
+	TargetCreatureType TargetCreatureType
+	RequiresSpellFocus SpellFocusObject // The game checks if there's a matching game object within range (usually ~5 yards) before allowing the cast.
 
 	// === Resource Cost ===
 	PowerType        Power    // Resource type: 0=mana, 1=rage, 2=focus, 3=energy
@@ -93,37 +100,27 @@ type Spell struct {
 	TotemsID int32     // Totem category/type ID
 	Totem    [2]ItemID // Required totem tool item IDs (not consumed, just must be in inventory)
 
-	// TODO: Reagents
+	// === Other ===
+	CastUI             int32
+	RequiredAuraVision int32
+	MinFactionID       int32
+	MinReputation      int32
 
 	// --- Fields below commented out for now, uncomment as needed ---
-	// Mechanic                 int32
 	// ShapeshiftMask           []int32
 	// ShapeshiftExclude        []int32
-	// TargetCreatureType       int32
-	// RequiresSpellFocus       int32
-	// FacingCasterFlags        int32
-	// CasterAuraState          int32
-	// TargetAuraState          int32
-	// ExcludeCasterAuraState   int32
-	// ExcludeTargetAuraState   int32
 	// ChannelInterruptFlags    []int32
 	// ImplicitTargetA          []int32
 	// ImplicitTargetB          []int32
 	// SpellVisualID            []int32
-	// MaxTargets               int32
-	// DefenseType              int32
-	// MinFactionID             int32
-	// MinReputation            int32
-	// RequiredAuraVision       int32
-	// RequiredAreasID          int32
 
 	//
-	// CastUI                   int32
-	// ManaPerSecondPerLevel    int32
+
 	// RequiredAreaID           int32
 	// ProcFlags                int32
 
 	// No value
+	// FacingCasterFlags        int32
 	//ScalingID               int32     // Always 0
 	//SchoolMask              int32     // Always 0
 	//CategoriesID            int32     // Always 0
@@ -157,6 +154,9 @@ type Spell struct {
 	// ExcludeCasterAuraSpell   int32
 	// ExcludeTargetAuraSpell   int32
 	// PowerDisplayID           int32
+	//ManaPerSecondPerLevel    int32
+	// ExcludeCasterAuraState   int32
+	// ExcludeTargetAuraState   int32
 }
 
 func NewSpell(def dbdefs.Ent_Spell) *Spell {

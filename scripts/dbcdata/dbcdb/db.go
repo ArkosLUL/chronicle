@@ -52,6 +52,21 @@ func (w *WoWClient) SpellCategory() (Table[dbdefs.Ent_SpellCategory], error) {
 	return WrapTable[dbdefs.Ent_SpellCategory](table), nil
 }
 
+func (w *WoWClient) SpellFocusObject() (Table[dbdefs.Ent_SpellFocusObject], error) {
+	data, err := w.ReadFile("DBFilesClient\\SpellFocusObject.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("SpellFocusObject", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_SpellFocusObject](table), nil
+}
+
 func (w *WoWClient) SpellRange() (Table[dbdefs.Ent_SpellRange], error) {
 	data, err := w.ReadFile("DBFilesClient\\SpellRange.dbc")
 	if err != nil {

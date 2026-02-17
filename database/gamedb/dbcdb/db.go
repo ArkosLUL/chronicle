@@ -187,3 +187,168 @@ func (w *WoWClient) SpellIcons() (Table[dbdefs.Ent_SpellIcon], error) {
 
 	return WrapTable[dbdefs.Ent_SpellIcon](table), nil
 }
+
+func (w *WoWClient) ItemDisplayInfo() (Table[dbdefs.Ent_ItemDisplayInfo], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemDisplayInfo.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemDisplayInfo", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemDisplayInfo](table), nil
+}
+
+func (w *WoWClient) CharSections() (Table[dbdefs.Ent_CharSections], error) {
+	data, err := w.ReadFile("DBFilesClient\\CharSections.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("CharSections", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_CharSections](table), nil
+}
+
+func (w *WoWClient) ChrRaces() (Table[dbdefs.Ent_ChrRaces], error) {
+	data, err := w.ReadFile("DBFilesClient\\ChrRaces.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ChrRaces", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ChrRaces](table), nil
+}
+
+func (w *WoWClient) AnimationData() (Table[dbdefs.Ent_AnimationData], error) {
+	data, err := w.ReadFile("DBFilesClient\\AnimationData.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("AnimationData", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_AnimationData](table), nil
+}
+
+func (w *WoWClient) HelmetGeosetVisData() (Table[dbdefs.Ent_HelmetGeosetVisData], error) {
+	data, err := w.ReadFile("DBFilesClient\\HelmetGeosetVisData.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("HelmetGeosetVisData", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_HelmetGeosetVisData](table), nil
+}
+
+func (w *WoWClient) CreatureModelData() (Table[dbdefs.Ent_CreatureModelData], error) {
+	data, err := w.ReadFile("DBFilesClient\\CreatureModelData.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("CreatureModelData", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_CreatureModelData](table), nil
+}
+
+func (w *WoWClient) CreatureDisplayInfo() (Table[dbdefs.Ent_CreatureDisplayInfo], error) {
+	data, err := w.ReadFile("DBFilesClient\\CreatureDisplayInfo.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("CreatureDisplayInfo", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_CreatureDisplayInfo](table), nil
+}
+
+func (w *WoWClient) ItemVisuals() (Table[dbdefs.Ent_ItemVisuals], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemVisuals.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemVisuals", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemVisuals](table), nil
+}
+
+func (w *WoWClient) ItemVisualEffects() (Table[dbdefs.Ent_ItemVisualEffects], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemVisualEffects.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemVisualEffects", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemVisualEffects](table), nil
+}
+
+func (w *WoWClient) ItemClass() (Table[dbdefs.Ent_ItemClass], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemClass.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemClass", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemClass](table), nil
+}
+
+func (w *WoWClient) ItemSubClass() (Table[dbdefs.Ent_ItemSubClass], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemSubClass.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemSubClass", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemSubClass](table), nil
+}

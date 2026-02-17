@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 	"github.com/Emyrk/chronicle/scripts/dbcdata/cli"
+	"github.com/Gophercraft/core/format/dbc/dbdefs"
 
 	"github.com/coder/serpent"
 )
@@ -27,8 +29,50 @@ func rootCmd() *serpent.Command {
 	cmd.AddSubcommands(
 		cli.StaticPopulateCmd(),
 		demo(),
+		jsonDump(),
 	)
 	return cmd
+}
+
+func jsonDump() *serpent.Command {
+	var dbcPath string
+	return &serpent.Command{
+		Use:   "dump",
+		Short: "Dump.",
+		Options: serpent.OptionSet{
+			{
+				Name:        "dbc",
+				Description: "Path to WoW client directory.",
+				Flag:        "dbc",
+				Value:       serpent.StringOf(&dbcPath),
+				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
+			},
+		},
+		Handler: func(inv *serpent.Invocation) error {
+			wc, err := dbcdb.New(dbcPath)
+			if err != nil {
+				return fmt.Errorf("open wow client: %w", err)
+			}
+
+			var cpy []dbdefs.Ent_ItemSubClass
+			id, err := wc.ItemSubClass()
+			if err != nil {
+				return fmt.Errorf("read spells: %w", err)
+			}
+
+			err = id.Range(func(cursor *dbdefs.Ent_ItemSubClass) bool {
+				cpy = append(cpy, *cursor)
+				return true
+			})
+			if err != nil {
+				return fmt.Errorf("iterate spells: %w", err)
+			}
+
+			d, _ := json.Marshal(cpy)
+			fmt.Println(string(d))
+			return nil
+		},
+	}
 }
 
 func demo() *serpent.Command {

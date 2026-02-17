@@ -1,0 +1,15 @@
+Analyzing /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/WoW.exe ...
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/patch-2.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/patch.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/backup.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/base.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/dbc.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/fonts.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/interface.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/misc.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/model.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/sound.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/speech.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/terrain.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/texture.MPQ
+[{"ID":245,"HideGeoset":[0,0,0,0,0],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":246,"HideGeoset":[-65,0,128,4,-273],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":247,"HideGeoset":[0,-33,-65,-289,0],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":248,"HideGeoset":[-65,-33,-65,-289,-273],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":249,"HideGeoset":[-65,0,128,0,64],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":265,"HideGeoset":[-65,0,0,0,-439],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":285,"HideGeoset":[1022,1022,1022,1022,1022],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":305,"HideGeoset":[446,0,0,158,64],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":306,"HideGeoset":[446,478,510,222,238],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":307,"HideGeoset":[446,0,0,28,238],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":325,"HideGeoset":[958,0,0,1022,64],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":345,"HideGeoset":[446,64,158,140,206],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":365,"HideGeoset":[0,0,128,0,0],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":366,"HideGeoset":[958,0,128,4,0],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":367,"HideGeoset":[446,0,0,62,0],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null},{"ID":368,"HideGeoset":[-1,-33,-1,-1,-1],"DefaultFlags":null,"PreferredFlags":null,"HideFlags":null}]

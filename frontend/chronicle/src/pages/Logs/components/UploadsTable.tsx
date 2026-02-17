@@ -1,0 +1,197 @@
+import { Link } from "react-router-dom";
+import { ArrowUpDown, Eye, Castle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { WoWLogGroup } from "@/api/queries";
+import type { WoWSimpleParsedInstance } from "@/api/typesGenerated";
+import { parseParsedOutput, format } from "../utils/calendarUtils";
+
+const REALM_NAMES: Record<string, string> = {
+  "851d2fd3-f9c5-4623-b714-924b59d916aa": "Ambershire",
+  "f94d3103-1cd8-40e9-ad91-a2366de33354": "Tel Abim",
+  "bcf173a7-c94a-49fe-8930-27435d722fb7": "Nordanaar",
+};
+
+function getRealmName(realmId: string): string {
+  return REALM_NAMES[realmId] ?? "Unknown";
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
+
+function parseTimestamp(timestamp: unknown): Date | null {
+  if (!timestamp) return null;
+  const ts = timestamp as { Time?: string; Valid?: boolean } | string;
+  const dateStr = typeof ts === "string" ? ts : ts.Valid && ts.Time ? ts.Time : null;
+  if (!dateStr) return null;
+  return new Date(dateStr);
+}
+
+function getInstanceDate(inst: WoWSimpleParsedInstance): string | null {
+  const firstEncounter = inst.encounters?.[0];
+  if (!firstEncounter?.start_time) return null;
+  const date = new Date(firstEncounter.start_time);
+  return format(date, "MMM d");
+}
+
+export type SortField = "date" | "size";
+export type SortDirection = "asc" | "desc";
+
+interface UploadsTableProps {
+  logs: WoWLogGroup[];
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSortChange: (field: SortField) => void;
+}
+
+export function UploadsTable({
+  logs,
+  sortField,
+  sortDirection,
+  onSortChange,
+}: UploadsTableProps) {
+  // Sort logs
+  const sortedLogs = [...logs].sort((a, b) => {
+    let comparison = 0;
+    if (sortField === "date") {
+      const dateA = parseTimestamp(a.created_at)?.getTime() ?? 0;
+      const dateB = parseTimestamp(b.created_at)?.getTime() ?? 0;
+      comparison = dateB - dateA; // Default newest first
+    } else {
+      const sizeA = a.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+      const sizeB = b.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+      comparison = sizeB - sizeA; // Default largest first
+    }
+    return sortDirection === "asc" ? -comparison : comparison;
+  });
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold">Log Uploads</h2>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5"
+            onClick={() => onSortChange("date")}
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            Sort by {sortField === "date" ? "date" : "size"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="border border-border rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-muted/50 text-sm">
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Upload Date
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Server
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Instances
+              </th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">
+                Size
+              </th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {sortedLogs.map((log) => {
+              const parsed = parseParsedOutput(log.processing_output);
+              const instances = (parsed?.instances ?? []) as WoWSimpleParsedInstance[];
+              const uploadDate = parseTimestamp(log.created_at);
+              const totalBytes = log.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+              const filesDeleted = log.files?.some((f) => f.storage_deleted_at) ?? false;
+              
+              // Get realm from first instance
+              const realmName = instances[0] ? getRealmName(instances[0].realm_id) : "—";
+
+              return (
+                <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3 text-sm">
+                    {uploadDate ? format(uploadDate, "MMM d, yyyy") : "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {realmName}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {instances.slice(0, 4).map((inst) => {
+                        const instanceDate = getInstanceDate(inst);
+                        const instanceUrl = inst.slug
+                          ? `/instances/${inst.slug}`
+                          : `/instances/${inst.id}`;
+                        return (
+                          <Link
+                            key={inst.id}
+                            to={instanceUrl}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/15 hover:bg-green-500/25 text-green-400 rounded text-xs transition-colors"
+                          >
+                            <Castle className="h-3 w-3" />
+                            <span>{inst.name}</span>
+                            {instanceDate && (
+                              <span className="text-muted-foreground">
+                                ({instanceDate})
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                      {instances.length > 4 && (
+                        <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded">
+                          +{instances.length - 4} more
+                        </span>
+                      )}
+                      {instances.length === 0 && (
+                        <span className="text-xs text-muted-foreground italic">
+                          {parsed?.complete ? "No instances" : "Processing..."}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-right text-muted-foreground">
+                    {filesDeleted ? (
+                      <span className="italic text-xs">removed</span>
+                    ) : (
+                      formatBytes(totalBytes)
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      to={`/logs/${log.id}`}
+                      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+            {sortedLogs.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  No logs found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

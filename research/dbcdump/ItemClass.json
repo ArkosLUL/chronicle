@@ -1,0 +1,15 @@
+Analyzing /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/WoW.exe ...
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/patch-2.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/patch.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/backup.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/base.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/dbc.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/fonts.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/interface.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/misc.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/model.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/sound.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/speech.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/terrain.MPQ
+[MPQ Pool] Opened /home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW/Data/texture.MPQ
+[{"ClassID":0,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Consumable"},"ID":0,"SubclassMapID":0},{"ClassID":1,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Container"},"ID":0,"SubclassMapID":1},{"ClassID":2,"Flags":1,"PriceModifier":0,"ClassName_lang":{"0":"Weapon"},"ID":0,"SubclassMapID":2},{"ClassID":3,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Jewelry(OBSOLETE)"},"ID":0,"SubclassMapID":3},{"ClassID":4,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Armor"},"ID":0,"SubclassMapID":4},{"ClassID":5,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Reagent"},"ID":0,"SubclassMapID":5},{"ClassID":6,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Projectile"},"ID":0,"SubclassMapID":6},{"ClassID":7,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Trade Goods"},"ID":0,"SubclassMapID":7},{"ClassID":8,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Generic(OBSOLETE)"},"ID":0,"SubclassMapID":8},{"ClassID":9,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Recipe"},"ID":0,"SubclassMapID":9},{"ClassID":10,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Money(OBSOLETE)"},"ID":0,"SubclassMapID":10},{"ClassID":11,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Quiver"},"ID":0,"SubclassMapID":6},{"ClassID":12,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Quest"},"ID":0,"SubclassMapID":0},{"ClassID":13,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Key"},"ID":0,"SubclassMapID":0},{"ClassID":14,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Permanent(OBSOLETE)"},"ID":0,"SubclassMapID":1},{"ClassID":15,"Flags":0,"PriceModifier":0,"ClassName_lang":{"0":"Miscellaneous"},"ID":0,"SubclassMapID":0}]

@@ -125,6 +125,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
+	github.com/cybriq/gotiny v0.0.5 // indirect
 	github.com/dave/jennifer v1.7.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20250730155240-ffadbf3f398c // indirect
@@ -339,4 +340,4 @@ tool (
 // which we use in the awsiamrds package.
 replace github.com/lib/pq => github.com/coder/pq v1.10.5-0.20250807075151-6ad9b0a25151
 
-replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260217041140-caafdf647c24
+replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260217042645-fddd00b2f688

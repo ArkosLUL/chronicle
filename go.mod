@@ -6,7 +6,6 @@ require (
 	cdr.dev/slog v1.6.2-0.20250703074222-9df5e0a6c145
 	github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f
 	github.com/Gophercraft/core v0.5.2-0.20240410205646-00865bbdb78a
-	github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e
 	github.com/KromDaniel/regengo v0.5.3
 	github.com/authzed/authzed-go v1.7.0
 	github.com/authzed/gochugaru v0.0.0-20250806201116-319cc7551988
@@ -22,6 +21,7 @@ require (
 	github.com/coder/quartz v0.3.0
 	github.com/coder/retry v1.5.1
 	github.com/coder/serpent v0.12.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-jose/go-jose/v4 v4.1.3
@@ -77,6 +77,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.2 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.1 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
@@ -124,7 +125,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
-	github.com/cybriq/gotiny v0.0.5 // indirect
 	github.com/dave/jennifer v1.7.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20250730155240-ffadbf3f398c // indirect
@@ -140,7 +140,6 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dop251/goja v0.0.0-20241024094426-79f3a7efcdbd // indirect
 	github.com/dprotaso/go-yit v0.0.0-20250513223454-5ece0c5aa76c // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
@@ -339,3 +338,5 @@ tool (
 // This lets us use rotating authentication tokens for passwords in connection strings
 // which we use in the awsiamrds package.
 replace github.com/lib/pq => github.com/coder/pq v1.10.5-0.20250807075151-6ad9b0a25151
+
+replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260217041140-caafdf647c24

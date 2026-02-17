@@ -114,6 +114,7 @@ const (
 	DispelTypeInvisibility DispelType = 6
 )
 
+//go:generate stringer -type ProcFlags -trimprefix=ProcFlag
 type ProcFlags bitmask.Bitmask32
 
 func (b ProcFlags) Has(flag ProcFlags) bool { return b&flag != 0 }
@@ -147,6 +148,7 @@ const (
 	ProcFlagDeath                      ProcFlags = 0x01000000 // 24 Died in any way
 )
 
+//go:generate stringer -type AuraInterruptFlags -trimprefix=AuraInterruptFlags
 type AuraInterruptFlags bitmask.Bitmask32
 
 func (b AuraInterruptFlags) Has(flag AuraInterruptFlags) bool { return b&flag != 0 }
@@ -180,6 +182,8 @@ const (
 	AuraInterruptFlagDirectDamage          AuraInterruptFlags = 0x02000000 // Cancelled by direct damage (not DoT)
 	AuraInterruptFlagLanding               AuraInterruptFlags = 0x04000000 // Cancelled when landing (flying mount)
 )
+
+//go:generate stringer -type WeaponSubclass -trimprefix=WeaponSubclass
 
 // WeaponSubclass is a bitmask for EquippedItemSubclass when ItemClass = Weapon
 type WeaponSubclass bitmask.Bitmask32
@@ -218,6 +222,7 @@ const (
 	WeaponSubclassAllRanged = WeaponSubclassBow | WeaponSubclassGun | WeaponSubclassCrossbow
 )
 
+//go:generate stringer -type EquippedItemClass -trimprefix=EquippedItemClass
 type EquippedItemClass int32
 
 const (
@@ -240,6 +245,8 @@ const (
 	ItemClassGlyph         EquippedItemClass = 16 // Later expansions
 )
 
+//go:generate stringer -type ArmorSubclass -trimprefix=ArmorSubclass
+
 // ArmorSubclass is a bitmask for EquippedItemSubclass when ItemClass = Armor
 type ArmorSubclass bitmask.Bitmask32
 
@@ -258,6 +265,7 @@ const (
 	ArmorSubclassTotem   ArmorSubclass = 0x00000200 // 9 (Shaman relic)
 )
 
+//go:generate stringer -type EquippedItemInvTypes -trimprefix=EquippedItemInvTypes
 type EquippedItemInvTypes bitmask.Bitmask32
 
 func (b EquippedItemInvTypes) Has(flag EquippedItemInvTypes) bool { return b&flag != 0 }
@@ -1115,6 +1123,7 @@ const (
 	PreventionTypePacify  PreventionType = 2 // Blocked by pacify effects (disarms, etc.)
 )
 
+//go:generate stringer -type InterruptFlags -trimprefix=InterruptFlags
 type InterruptFlags bitmask.Bitmask32
 
 func (b InterruptFlags) Has(flag InterruptFlags) bool { return b&flag != 0 }
@@ -1294,6 +1303,7 @@ const (
 	ImplicitTargetUnitTargetPassenger       ImplicitTarget = 95
 )
 
+//go:generate stringer -type ProcFlagsEx -trimprefix=ProcFlagsEx
 type ProcFlagsEx bitmask.Bitmask32
 
 func (b ProcFlagsEx) Has(flag ProcFlagsEx) bool { return b&flag != 0 }

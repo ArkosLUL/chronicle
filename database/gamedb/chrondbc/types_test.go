@@ -12,8 +12,4 @@ func TestSpellClassMask(t *testing.T) {
 
 	require.Equal(t, chrondbc.NewSpellClassMask(1, 0), uint64(1))
 
-
-  var x chrondbc.ProcFlags
-
-
 }

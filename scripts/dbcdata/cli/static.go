@@ -151,6 +151,7 @@ func outputWriter(outputDir, filename string, stdout io.Writer) (io.Writer, func
 	if err != nil {
 		return nil, nil, fmt.Errorf("create %s: %w", path, err)
 	}
+	// nolint:errcheck
 	return f, func() { f.Close() }, nil
 }
 

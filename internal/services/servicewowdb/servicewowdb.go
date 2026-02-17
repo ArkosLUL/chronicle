@@ -83,7 +83,7 @@ func (s *Service) handleGetSpell(w http.ResponseWriter, r *http.Request) {
 	// Cache for 24 hours since these are static data that won't change for the most part.
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(spell)
+	_ = json.NewEncoder(w).Encode(spell)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

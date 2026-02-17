@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 	"github.com/Emyrk/chronicle/scripts/dbcdata/cli"
 
 	"github.com/coder/serpent"
 
-	"github.com/Emyrk/chronicle/scripts/dbcdata/dbcdb"
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
 )
 
@@ -66,22 +66,23 @@ func demo() *serpent.Command {
 				//	d, _ := json.Marshal(cursor)
 				//	fmt.Println(string(d))
 				//}
-				if cursor.RequiresSpellFocus > 0 {
-					//for _, m := range cursor.EffectSpellClassMaskB {
-					//if m != 0 {
-					//fmt.Println(cursor.RequiresSpellFocus)
-					//d, _ := json.Marshal(cursor)
-					//fmt.Println(string(d))
-					//}
-					//}
+				if cursor.ProcFlags > 0 {
+
+					fmt.Println(cursor.ProcFlags)
+					d, _ := json.Marshal(cursor)
+					fmt.Println(string(d))
+
 				}
-				//if len(cursor.AuraInterruptFlags) > 1 {
-				//	for i, e := range cursor.AuraInterruptFlags {
+				//if len(cursor.Effect) != 3 {
+				//	fmt.Println(cursor.Name_lang.String(), cursor.ID, cursor.Effect)
+				//}
+				//if len(cursor.ShapeshiftMask) > 1 {
+				//	for i, e := range cursor.ShapeshiftMask {
 				//		if i > 0 && e > highest {
 				//			highest = e
 				//		}
 				//		if e != 0 {
-				//			fmt.Println(cursor.AuraInterruptFlags)
+				//			fmt.Println(cursor.ShapeshiftMask)
 				//			fmt.Println(cursor.Name_lang.String(), cursor.ID, e)
 				//			break
 				//		}
@@ -115,8 +116,8 @@ func demo() *serpent.Command {
 			}
 
 			err = r.Range(func(cursor *dbdefs.Ent_SpellFocusObject) bool {
-				d, _ := json.Marshal(cursor)
-				fmt.Println(string(d))
+				//d, _ := json.Marshal(cursor)
+				//fmt.Println(string(d))
 				return true
 			})
 			if err != nil {

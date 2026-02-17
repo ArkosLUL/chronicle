@@ -38,6 +38,7 @@ WORKDIR /app
 
 COPY --from=frontend /chronicle/frontend/chronicle/dist ./frontend/chronicle/dist
 COPY --from=backend /chronicle/bin/chronicled ./
+COPY assets/ ./assets/
 
 RUN chmod +x ./chronicled
 ENTRYPOINT ["./chronicled", "server"]

@@ -28,15 +28,15 @@ type Spell struct {
 	MaxTargetLevel int32           // Maximum target level (0 = no limit, used for CC diminishing)
 
 	// === Behavior ===
-	School             School     // Magic school: physical, holy, fire, nature, frost, shadow, arcane
-	SpellPriority      int32      // AI priority for NPC spell selection
-	StanceBarOrder     int32      // Position on stance/shapeshift action bar
-	ProcTypeMask       ProcFlags  // Events that can trigger this spell (on hit, on crit, on kill, etc.)
-	ProcFlags          int32      // Additional proc configuration
-	ProcChance         int32      // Percent chance to proc (>100 means server-side calculation)
-	ProcCharges        int32      // Number of times proc can trigger before aura fades (0 = unlimited)
-	Speed              float32    // Projectile travel speed in yards/sec (0 = instant)
-	DispelType         DispelType // Dispel category: 0=none, 1=magic, 2=curse, 3=disease, 4=poison
+	School             School      // Magic school: physical, holy, fire, nature, frost, shadow, arcane
+	SpellPriority      int32       // AI priority for NPC spell selection
+	StanceBarOrder     int32       // Position on stance/shapeshift action bar
+	ProcTypeMask       ProcFlags   // Events that can trigger this spell (on hit, on crit, on kill, etc.)
+	ProcFlags          ProcFlagsEx // Additional proc configuration
+	ProcChance         int32       // Percent chance to proc (>100 means server-side calculation)
+	ProcCharges        int32       // Number of times proc can trigger before aura fades (0 = unlimited)
+	Speed              float32     // Projectile travel speed in yards/sec (0 = instant)
+	DispelType         DispelType  // Dispel category: 0=none, 1=magic, 2=curse, 3=disease, 4=poison
 	AuraInterruptFlags AuraInterruptFlags
 	ModalNextSpell     int32          // The "Modal" suggests it's about spells that share a button slot but swap based on game state.
 	InterruptFlags     InterruptFlags // what can interrupt a spell while casting (different from AuraInterruptFlags which is for buffs).
@@ -78,23 +78,25 @@ type Spell struct {
 	PreventionType       PreventionType
 
 	// === Effect Data (up to 3 effects per spell, index 0-2) ===
-	Effect                   []Effect        // Effect type: damage, heal, apply aura, summon, etc.
-	EffectDieSides           []int32         // Random range: value = BasePoints + rand(1, DieSides)
-	EffectRealPointsPerLevel []float32       // Bonus points per caster level (for scaling)
-	EffectBasePoints         []int32         // Base value for effect calculations
-	EffectMechanic           []int32         // Combat mechanic: stun, root, bleed, etc. (for immunity checks)
-	EffectRadiusIndex        []SpellRadiusID // AoE radius lookup (→ SpellRadius.dbc)
-	EffectAura               []AuraEffect    // Aura type if Effect is ApplyAura (mod stat, periodic damage, etc.)
-	EffectAuraPeriod         []int32         // Tick interval in ms for periodic effects (e.g., 3000 = 3 sec)
-	EffectAmplitude          []float32       // Amplitude modifier for periodic effects
-	EffectChainTargets       []int32         // Number of chain/bounce targets (Chain Lightning, etc.)
-	EffectItemType           []ItemID        // Item created/affected by effect (Conjure Water creates item 5350)
-	EffectMiscValue          []int32         // Context-dependent: stat type, power type, creature ID, etc.
-	EffectTriggerSpell       []SpellID       // Spell triggered by this effect (procs, chain casts)
-	EffectPointsPerCombo     []float32       // Bonus points per combo point (rogue/druid finishers)
-	EffectBaseDice           []int32         // Base dice count for damage variance
-	EffectDicePerLevel       []int32         // Additional dice per caster level
-	EffectChainAmplitude     []float32       // Damage multiplier per chain bounce (e.g., 0.7 = 30% reduction)
+	Effect                   [3]Effect         // Effect type: damage, heal, apply aura, summon, etc.
+	EffectDieSides           [3]int32          // Random range: value = BasePoints + rand(1, DieSides)
+	EffectRealPointsPerLevel [3]float32        // Bonus points per caster level (for scaling)
+	EffectBasePoints         [3]int32          // Base value for effect calculations
+	EffectMechanic           [3]int32          // Combat mechanic: stun, root, bleed, etc. (for immunity checks)
+	EffectRadiusIndex        [3]SpellRadiusID  // AoE radius lookup (→ SpellRadius.dbc)
+	EffectAura               [3]AuraEffect     // Aura type if Effect is ApplyAura (mod stat, periodic damage, etc.)
+	EffectAuraPeriod         [3]int32          // Tick interval in ms for periodic effects (e.g., 3000 = 3 sec)
+	EffectAmplitude          [3]float32        // Amplitude modifier for periodic effects
+	EffectChainTargets       [3]int32          // Number of chain/bounce targets (Chain Lightning, etc.)
+	EffectItemType           [3]ItemID         // Item created/affected by effect (Conjure Water creates item 5350)
+	EffectMiscValue          [3]int32          // Context-dependent: stat type, power type, creature ID, etc.
+	EffectTriggerSpell       [3]SpellID        // Spell triggered by this effect (procs, chain casts)
+	EffectPointsPerCombo     [3]float32        // Bonus points per combo point (rogue/druid finishers)
+	EffectBaseDice           [3]int32          // Base dice count for damage variance
+	EffectDicePerLevel       [3]int32          // Additional dice per caster level
+	EffectChainAmplitude     [3]float32        // Damage multiplier per chain bounce (e.g., 0.7 = 30% reduction)
+	ImplicitTargetA          [3]ImplicitTarget // Primary targeting for each effect: who/what the effect affects (self, enemy, ally, area, etc.)
+	ImplicitTargetB          [3]ImplicitTarget // Secondary targeting for each effect: typically the location/destination (used for movement, AoE placement, etc.)
 
 	// === Totem Requirements (Shaman) ===
 	TotemsID int32     // Totem category/type ID
@@ -105,22 +107,14 @@ type Spell struct {
 	RequiredAuraVision int32
 	MinFactionID       int32
 	MinReputation      int32
-
-	// --- Fields below commented out for now, uncomment as needed ---
-	// ShapeshiftMask           []int32
-	// ShapeshiftExclude        []int32
-	// ChannelInterruptFlags    []int32
-	// ImplicitTargetA          []int32
-	// ImplicitTargetB          []int32
-	// SpellVisualID            []int32
-
-	//
-
-	// RequiredAreaID           int32
-	// ProcFlags                int32
+	SpellVisualID      []int32
 
 	// No value
-	// FacingCasterFlags        int32
+	//RequiredAreaID          int32
+	//ShapeshiftMask          []int32
+	//ShapeshiftExclude       []int32
+	//ChannelInterruptFlags   []int32
+	//FacingCasterFlags       int32
 	//ScalingID               int32     // Always 0
 	//SchoolMask              int32     // Always 0
 	//CategoriesID            int32     // Always 0
@@ -136,27 +130,27 @@ type Spell struct {
 	//RequiredTotemCategoryID []int32   // Always nil
 	//EffectMiscValueB        []int32   // Always nil
 	//EffectRadiusIndexB      []int32   // Always nil
-	// RuneCostID               int32 // Always 0
-	// SpellMissileID           int32 // Always 0
-	// DescriptionVariablesID   int32 // Always 0
-	// AuraOptionsID            int32
-	// AuraRestrictionsID       int32
-	// CastingRequirementsID    int32
-	// ClassOptionsID           int32
-	// EquippedItemsID          int32
-	// InterruptsID             int32
-	// LevelsID                 int32
-	// TargetRestrictionsID     int32
-	// RequiredProjectID        int32
-	// MiscID                   int32
-	// CasterAuraSpell          int32
-	// TargetAuraSpell          int32
-	// ExcludeCasterAuraSpell   int32
-	// ExcludeTargetAuraSpell   int32
-	// PowerDisplayID           int32
-	//ManaPerSecondPerLevel    int32
-	// ExcludeCasterAuraState   int32
-	// ExcludeTargetAuraState   int32
+	//RuneCostID              int32     // Always 0
+	//SpellMissileID          int32     // Always 0
+	//DescriptionVariablesID  int32     // Always 0
+	//AuraOptionsID           int32
+	//AuraRestrictionsID      int32
+	//CastingRequirementsID   int32
+	//ClassOptionsID          int32
+	//EquippedItemsID         int32
+	//InterruptsID            int32
+	//LevelsID                int32
+	//TargetRestrictionsID    int32
+	//RequiredProjectID       int32
+	//MiscID                  int32
+	//CasterAuraSpell         int32
+	//TargetAuraSpell         int32
+	//ExcludeCasterAuraSpell  int32
+	//ExcludeTargetAuraSpell  int32
+	//PowerDisplayID          int32
+	//ManaPerSecondPerLevel   int32
+	//ExcludeCasterAuraState  int32
+	//ExcludeTargetAuraState  int32
 }
 
 func NewSpell(def dbdefs.Ent_Spell) *Spell {

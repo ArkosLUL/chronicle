@@ -1197,3 +1197,105 @@ const (
 	CreatureTypeNonCombatPet TargetCreatureType = 0x00000800 // 11
 	CreatureTypeGasCloud     TargetCreatureType = 0x00001000 // 12
 )
+
+//go:generate stringer -type ImplicitTarget -trimprefix ImplicitTarget
+type ImplicitTarget int32
+
+const (
+	ImplicitTargetNone                      ImplicitTarget = 0
+	ImplicitTargetUnitCaster                ImplicitTarget = 1 // Self
+	ImplicitTargetUnitNearbyEnemy           ImplicitTarget = 2 // Closest enemy
+	ImplicitTargetUnitNearbyParty           ImplicitTarget = 3 // Closest party member
+	ImplicitTargetUnitNearbyAlly            ImplicitTarget = 4 // Closest ally
+	ImplicitTargetUnitPet                   ImplicitTarget = 5 // Your pet
+	ImplicitTargetUnitTargetEnemy           ImplicitTarget = 6 // Current target (hostile)
+	ImplicitTargetUnitSrcAreaEntry          ImplicitTarget = 7 // Creatures in area by entry
+	ImplicitTargetUnitDestAreaEntry         ImplicitTarget = 8 // Creatures at dest by entry
+	ImplicitTargetDestHome                  ImplicitTarget = 9 // Hearth location
+	ImplicitTargetUnitSrcAreaUnk11          ImplicitTarget = 11
+	ImplicitTargetUnitSrcAreaEnemy          ImplicitTarget = 15 // AoE enemies at caster
+	ImplicitTargetUnitDestAreaEnemy         ImplicitTarget = 16 // AoE enemies at target
+	ImplicitTargetDestDB                    ImplicitTarget = 17 // Database location
+	ImplicitTargetDestCaster                ImplicitTarget = 18 // Caster's position
+	ImplicitTargetUnitCasterAreaParty       ImplicitTarget = 20 // Party members near caster
+	ImplicitTargetUnitTargetAlly            ImplicitTarget = 21 // Current target (friendly)
+	ImplicitTargetSrcCaster                 ImplicitTarget = 22 // Source = caster pos
+	ImplicitTargetGameobjectTarget          ImplicitTarget = 23 // Targeted game object
+	ImplicitTargetUnitConeEnemy             ImplicitTarget = 24 // Cone in front (enemies)
+	ImplicitTargetUnitTargetAny             ImplicitTarget = 25 // Any target
+	ImplicitTargetGameobjectItemTarget      ImplicitTarget = 26 // Item or game object
+	ImplicitTargetUnitMaster                ImplicitTarget = 27 // Pet's master
+	ImplicitTargetDestDynobjEnemy           ImplicitTarget = 28 // Dynamic object (enemy)
+	ImplicitTargetDestDynobjAlly            ImplicitTarget = 29 // Dynamic object (ally)
+	ImplicitTargetUnitSrcAreaAlly           ImplicitTarget = 30 // AoE allies at caster
+	ImplicitTargetUnitDestAreaAlly          ImplicitTarget = 31 // AoE allies at target
+	ImplicitTargetDestCasterSummon          ImplicitTarget = 32 // Summon location
+	ImplicitTargetUnitSrcAreaParty          ImplicitTarget = 33 // Party in area at caster
+	ImplicitTargetUnitDestAreaParty         ImplicitTarget = 34 // Party in area at target
+	ImplicitTargetUnitTargetParty           ImplicitTarget = 35 // Target's party
+	ImplicitTargetDestCasterUnk36           ImplicitTarget = 36
+	ImplicitTargetUnitLastTargetAreaParty   ImplicitTarget = 37 // Last target's party area
+	ImplicitTargetUnitNearbyEntry           ImplicitTarget = 38 // Nearby creature by entry
+	ImplicitTargetDestCasterFrontLeft       ImplicitTarget = 39
+	ImplicitTargetDestCasterBackLeft        ImplicitTarget = 40
+	ImplicitTargetDestCasterBackRight       ImplicitTarget = 41
+	ImplicitTargetDestCasterFrontRight      ImplicitTarget = 42
+	ImplicitTargetUnitChainhealAlly         ImplicitTarget = 45 // Chain heal bounce
+	ImplicitTargetDestNearbyEntry           ImplicitTarget = 46 // Near creature by entry
+	ImplicitTargetDestCasterFront           ImplicitTarget = 47 // In front of caster
+	ImplicitTargetDestCasterBack            ImplicitTarget = 48 // Behind caster
+	ImplicitTargetDestCasterRight           ImplicitTarget = 49 // Right of caster
+	ImplicitTargetDestCasterLeft            ImplicitTarget = 50 // Left of caster
+	ImplicitTargetGameobjectSrcArea         ImplicitTarget = 51 // Game objects in area
+	ImplicitTargetGameobjectDestArea        ImplicitTarget = 52
+	ImplicitTargetDestTargetEnemy           ImplicitTarget = 53 // Enemy's position
+	ImplicitTargetUnitConeCasterToDestEnemy ImplicitTarget = 54 // Cone toward dest
+	ImplicitTargetDestCasterFrontLeap       ImplicitTarget = 55 // Leap forward
+	ImplicitTargetUnitCasterAreaRaid        ImplicitTarget = 56 // Raid members near caster
+	ImplicitTargetUnitTargetRaid            ImplicitTarget = 57 // Target's raid
+	ImplicitTargetUnitNearbyRaid            ImplicitTarget = 58 // Nearby raid member
+	ImplicitTargetUnitConeCasterToDestAlly  ImplicitTarget = 59
+	ImplicitTargetUnitDestAreaRaidClass     ImplicitTarget = 60 // Same class in raid
+	ImplicitTargetDestCasterMovementDir     ImplicitTarget = 61 // Direction of movement
+	ImplicitTargetCorpseEnemy               ImplicitTarget = 64 // Enemy corpse
+	ImplicitTargetUnitDestAreaEnemySrc      ImplicitTarget = 65
+	ImplicitTargetUnitDestAreaEnemyDst      ImplicitTarget = 66
+	ImplicitTargetDestCasterRandom          ImplicitTarget = 72 // Random near caster
+	ImplicitTargetDestCasterRadius          ImplicitTarget = 73 // Random in radius
+	ImplicitTargetDestTargetRandom          ImplicitTarget = 74 // Random near target
+	ImplicitTargetDestTargetRadius          ImplicitTarget = 75
+	ImplicitTargetDestChannelTarget         ImplicitTarget = 77 // Channeling target
+	ImplicitTargetUnitChannelTarget         ImplicitTarget = 78
+	ImplicitTargetDestDestFront             ImplicitTarget = 79
+	ImplicitTargetDestDestBack              ImplicitTarget = 80
+	ImplicitTargetDestDestRight             ImplicitTarget = 81
+	ImplicitTargetDestDestLeft              ImplicitTarget = 82
+	ImplicitTargetCorpseSrcAreaEnemy        ImplicitTarget = 87 // Enemy corpses in area
+	ImplicitTargetUnitVehicle               ImplicitTarget = 94
+	ImplicitTargetUnitTargetPassenger       ImplicitTarget = 95
+)
+
+type ProcFlagsEx = bitmask.Bitmask32
+
+const (
+	ProcExNone            ProcFlagsEx = 0x00000000
+	ProcExNormalHit       ProcFlagsEx = 0x00000001 // Only on normal (non-crit) hits
+	ProcExCriticalHit     ProcFlagsEx = 0x00000002 // Only on critical hits
+	ProcExMiss            ProcFlagsEx = 0x00000004 // On miss
+	ProcExResist          ProcFlagsEx = 0x00000008 // On resist
+	ProcExDodge           ProcFlagsEx = 0x00000010 // On dodge
+	ProcExParry           ProcFlagsEx = 0x00000020 // On parry
+	ProcExBlock           ProcFlagsEx = 0x00000040 // On block
+	ProcExEvade           ProcFlagsEx = 0x00000080 // On evade
+	ProcExImmune          ProcFlagsEx = 0x00000100 // On immune
+	ProcExDeflect         ProcFlagsEx = 0x00000200 // On deflect
+	ProcExAbsorb          ProcFlagsEx = 0x00000400 // On absorb
+	ProcExReflect         ProcFlagsEx = 0x00000800 // On reflect
+	ProcExInterrupt       ProcFlagsEx = 0x00001000 // On interrupt
+	ProcExFullBlock       ProcFlagsEx = 0x00002000 // On full block
+	ProcExOnCastEnd       ProcFlagsEx = 0x00004000 // Trigger on cast end (not hit)
+	ProcExNotActiveSpell  ProcFlagsEx = 0x00008000 // Don't trigger from active spells
+	ProcExTriggerAlways   ProcFlagsEx = 0x00010000 // Always trigger (ignore other conditions)
+	ProcExOneTimeTrigger  ProcFlagsEx = 0x00020000 // Remove aura after proc
+	ProcExOnlyActiveSpell ProcFlagsEx = 0x00040000 // Only trigger from active spells
+)

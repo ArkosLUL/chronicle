@@ -60,7 +60,33 @@ func demo() *serpent.Command {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
+			highest := int32(0)
 			err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
+				//if cursor.Name_lang.String() == "Renew" {
+				//	d, _ := json.Marshal(cursor)
+				//	fmt.Println(string(d))
+				//}
+				if cursor.PowerDisplayID > 0 {
+					//for _, m := range cursor.EffectSpellClassMaskB {
+					//if m != 0 {
+					fmt.Println(cursor.PowerDisplayID)
+					d, _ := json.Marshal(cursor)
+					fmt.Println(string(d))
+					//}
+					//}
+				}
+				//if len(cursor.AuraInterruptFlags) > 1 {
+				//	for i, e := range cursor.AuraInterruptFlags {
+				//		if i > 0 && e > highest {
+				//			highest = e
+				//		}
+				//		if e != 0 {
+				//			fmt.Println(cursor.AuraInterruptFlags)
+				//			fmt.Println(cursor.Name_lang.String(), cursor.ID, e)
+				//			break
+				//		}
+				//	}
+				//}
 				//if len(cursor.Reagent) != 0 {
 				//	for _, r := range cursor.Reagent {
 				//		if r != 0 {
@@ -71,25 +97,26 @@ func demo() *serpent.Command {
 				//		}
 				//	}
 				//}
-				if cursor.ProcFlags > 0 {
-					fmt.Println(cursor.ProcFlags)
-					d, _ := json.Marshal(cursor)
-					fmt.Println(string(d))
-				}
+				//if cursor.ProcFlags > 0 {
+				//	fmt.Println(cursor.ProcFlags)
+				//	d, _ := json.Marshal(cursor)
+				//	fmt.Println(string(d))
+				//}
 				return true
 			})
+			fmt.Println(highest)
 			if err != nil {
 				return fmt.Errorf("iterate spells: %w", err)
 			}
 
-			r, err := wc.SpellCooldowns()
+			r, err := wc.SpellCategory()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			err = r.Range(func(cursor *dbdefs.Ent_SpellCooldowns) bool {
-				d, _ := json.Marshal(cursor)
-				fmt.Println(string(d))
+			err = r.Range(func(cursor *dbdefs.Ent_SpellCategory) bool {
+				//d, _ := json.Marshal(cursor)
+				//fmt.Println(string(d))
 				return true
 			})
 			if err != nil {

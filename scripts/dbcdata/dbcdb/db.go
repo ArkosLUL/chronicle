@@ -82,6 +82,22 @@ func (w *WoWClient) SpellRadius() (Table[dbdefs.Ent_SpellRadius], error) {
 	return WrapTable[dbdefs.Ent_SpellRadius](table), nil
 }
 
+// SpellEffectNames is not there
+func (w *WoWClient) SpellEffectNames() (Table[dbdefs.Ent_SpellEffectNames], error) {
+	data, err := w.ReadFile("DBFilesClient\\SpellEffectNames.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("SpellEffectNames", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_SpellEffectNames](table), nil
+}
+
 func (w *WoWClient) SpellCooldowns() (Table[dbdefs.Ent_SpellCooldowns], error) {
 	data, err := w.ReadFile("DBFilesClient\\SpellCooldowns.dbc")
 	if err != nil {

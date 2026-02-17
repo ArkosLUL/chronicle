@@ -154,22 +154,22 @@ func spellToParams(sp *dbc.Spell) database.UpsertSpellTemplateParams {
 	}
 
 	return database.UpsertSpellTemplateParams{
-		ID:   sp.ID,
-		Name: sp.Name_lang.String(),
-		//School:          schoolFromMask(sp.SchoolMask),
-		Description:     textToPgtype(sp.Description_lang),
-		Subtext:         textToPgtype(sp.NameSubtext_lang),
-		AuraDescription: textToPgtype(sp.AuraDescription_lang),
-		IconID:          pgtype.Int4{Int32: sp.SpellIconID, Valid: true},
-		//SchoolMask:      pgtype.Int4{Int32: sp.SchoolMask, Valid: true},
-		PowerType:     pgtype.Int4{Int32: sp.PowerType, Valid: true},
-		ManaCost:      pgtype.Int4{Int32: sp.ManaCost, Valid: true},
-		ManaCostPct:   pgtype.Int4{Int32: sp.ManaCostPct, Valid: true},
-		CastTimeIndex: pgtype.Int4{Int32: sp.CastingTimeIndex, Valid: true},
-		RecoveryTime:  pgtype.Int4{Int32: sp.RecoveryTime, Valid: true},
-		RangeIndex:    pgtype.Int4{Int32: sp.RangeIndex, Valid: true},
-		Attributes:    attrs,
-		Targets:       pgtype.Int4{Int32: int32(sp.Targets), Valid: true},
+		//ID:   sp.ID,
+		//Name: sp.Name_lang.String(),
+		////School:          schoolFromMask(sp.SchoolMask),
+		//Description:     textToPgtype(sp.Description_lang),
+		//Subtext:         textToPgtype(sp.NameSubtext_lang),
+		//AuraDescription: textToPgtype(sp.AuraDescription_lang),
+		//IconID:          pgtype.Int4{Int32: sp.SpellIconID, Valid: true},
+		////SchoolMask:      pgtype.Int4{Int32: sp.SchoolMask, Valid: true},
+		//PowerType:     pgtype.Int4{Int32: sp.PowerType, Valid: true},
+		//ManaCost:      pgtype.Int4{Int32: sp.ManaCost, Valid: true},
+		//ManaCostPct:   pgtype.Int4{Int32: sp.ManaCostPct, Valid: true},
+		//CastTimeIndex: pgtype.Int4{Int32: sp.CastingTimeIndex, Valid: true},
+		//RecoveryTime:  pgtype.Int4{Int32: sp.RecoveryTime, Valid: true},
+		//RangeIndex:    pgtype.Int4{Int32: sp.RangeIndex, Valid: true},
+		//Attributes:    attrs,
+		//Targets:       pgtype.Int4{Int32: int32(sp.Targets), Valid: true},
 	}
 }
 

@@ -170,11 +170,38 @@ export interface WoWSpell {
   spell_visual_id: number[];
 }
 
+// === Locales ===
+
+export const LOCALES = [
+  { index: "0", code: "enUS", label: "English" },
+  { index: "1", code: "koKR", label: "한국어" },
+  { index: "2", code: "frFR", label: "Français" },
+  { index: "3", code: "deDE", label: "Deutsch" },
+  { index: "4", code: "zhCN", label: "简体中文" },
+  { index: "5", code: "zhTW", label: "繁體中文" },
+  { index: "6", code: "esES", label: "Español (EU)" },
+  { index: "7", code: "esMX", label: "Español (MX)" },
+  { index: "8", code: "ruRU", label: "Русский" },
+  { index: "9", code: "jaJP", label: "日本語" },
+  { index: "10", code: "ptPT", label: "Português" },
+  { index: "11", code: "itIT", label: "Italiano" },
+] as const;
+
+export type LocaleIndex = (typeof LOCALES)[number]["index"];
+
 // === Helpers ===
 
 export function getEnglishText(text: I18nText | undefined): string {
   if (!text) return "";
   return text["0"] || Object.values(text)[0] || "";
+}
+
+export function getLocalizedText(
+  text: I18nText | undefined,
+  locale: LocaleIndex
+): string {
+  if (!text) return "";
+  return text[locale] || text["0"] || Object.values(text)[0] || "";
 }
 
 export function getSpellIconUrl(icon: SpellIcon): string {
@@ -216,3 +243,191 @@ export const SCHOOL_COLORS: Record<number, string> = {
   5: "text-purple-400", // Shadow
   6: "text-pink-400", // Arcane
 };
+
+// === Spell Description Template Resolver ===
+// WoW spell descriptions contain template variables like $s1, $o1, $d, $t1
+// that need to be resolved using the spell's effect data.
+
+/**
+ * Format a duration in milliseconds to a human-readable string.
+ * Used for $d variable.
+ */
+function formatDurationMs(ms: number): string {
+  if (ms <= 0) return "0 sec";
+  const seconds = ms / 1000;
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (mins === 0) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    return `${hours} hour${hours !== 1 ? "s" : ""} ${mins} min`;
+  }
+  if (seconds >= 60) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    if (secs === 0) return `${mins} min`;
+    return `${mins} min ${secs} sec`;
+  }
+  // Show decimal for short durations
+  if (seconds < 10 && seconds !== Math.floor(seconds)) {
+    return `${seconds.toFixed(1)} sec`;
+  }
+  return `${Math.floor(seconds)} sec`;
+}
+
+/**
+ * Get the effect value for a given effect slot.
+ * $s1, $s2, $s3 = effect_base_points[N] + effect_die_sides[N]
+ */
+function getEffectValue(spell: WoWSpell, index: number): number {
+  if (index < 0 || index >= 3) return 0;
+  const basePoints = spell.effect_base_points[index] ?? 0;
+  const dieSides = spell.effect_die_sides[index] ?? 0;
+  // The actual value is base_points + 1 (when die_sides = 1) or base_points + die_sides
+  return basePoints + Math.max(dieSides, 1);
+}
+
+/**
+ * Get the total periodic value over the spell's duration.
+ * $o1, $o2, $o3 = effect_value * (duration / period)
+ */
+function getTotalPeriodicValue(spell: WoWSpell, index: number): number {
+  if (index < 0 || index >= 3) return 0;
+  const effectValue = getEffectValue(spell, index);
+  const period = spell.effect_aura_period[index] ?? 0;
+  const duration = spell.duration.Duration ?? 0;
+  if (period <= 0 || duration <= 0) return effectValue;
+  const ticks = Math.floor(duration / period);
+  return effectValue * ticks;
+}
+
+/**
+ * Resolve a single template variable.
+ */
+function resolveVariable(spell: WoWSpell, variable: string): string {
+  // Match patterns like $s1, $o1, $d, $t1, $a1, $e1, $m1, $x1, $n, $h, etc.
+  
+  // Duration: $d
+  if (variable === "$d") {
+    return formatDurationMs(spell.duration.Duration);
+  }
+
+  // Match indexed variables: $X# where X is a letter and # is 1, 2, or 3
+  const indexedMatch = variable.match(/^\$([a-zA-Z])(\d)$/);
+  if (indexedMatch) {
+    const type = indexedMatch[1].toLowerCase();
+    const index = parseInt(indexedMatch[2], 10) - 1; // Convert 1-indexed to 0-indexed
+
+    switch (type) {
+      case "s": // Effect value (base + die)
+      case "m": // Modified effect value (same as $s for our purposes)
+        return String(Math.abs(getEffectValue(spell, index)));
+
+      case "o": // Total over duration
+        return String(Math.abs(getTotalPeriodicValue(spell, index)));
+
+      case "t": // Tick interval in seconds
+        const period = spell.effect_aura_period[index] ?? 0;
+        return period > 0 ? String(period / 1000) : "0";
+
+      case "a": // AOE radius
+        const radius = spell.effect_radius[index];
+        return radius ? String(radius.Radius) : "0";
+
+      case "e": // Effect amplitude/proc value
+        return String(spell.effect_amplitude[index] ?? 0);
+
+      case "x": // Chain targets
+        return String(spell.effect_chain_targets[index] ?? 0);
+
+      case "b": // Points per combo point
+        return String(spell.effect_points_per_combo[index] ?? 0);
+
+      case "f": // Max stacks (not always per-effect, but sometimes used)
+        return String(spell.cumulative_aura || 0);
+    }
+  }
+
+  // Non-indexed variables
+  switch (variable) {
+    case "$n": // Proc charges / stacks
+      return String(spell.proc_charges || 1);
+
+    case "$h": // Proc chance
+      return String(spell.proc_chance || 0);
+
+    case "$r": // Range
+      return String(spell.range.RangeMax || 0);
+
+    case "$u": // Max stacks / cumulative aura
+      return String(spell.cumulative_aura || 0);
+
+    case "$v": // Max target level
+      return String(spell.max_target_level || 0);
+
+    case "$z": // Home location (runtime, not available)
+      return "[Home]";
+
+    case "$c": // Caster (runtime)
+      return "the caster";
+
+    case "$l": // Level (runtime)
+      return String(spell.spell_level || 0);
+
+    default:
+      // Return the original variable if we can't resolve it
+      return variable;
+  }
+}
+
+/**
+ * Resolve all template variables in a spell description string.
+ *
+ * Supported variables:
+ * - $s1, $s2, $s3: Effect value (base_points + die_sides)
+ * - $o1, $o2, $o3: Total periodic value over duration
+ * - $d: Spell duration
+ * - $t1, $t2, $t3: Tick interval in seconds
+ * - $a1, $a2, $a3: AOE radius
+ * - $r: Spell range
+ * - $n: Proc charges
+ * - $h: Proc chance
+ * - $x1, $x2, $x3: Chain targets
+ * - $b1, $b2, $b3: Points per combo point
+ */
+export function resolveSpellDescription(
+  spell: WoWSpell,
+  template: string
+): string {
+  if (!template) return "";
+
+  // Match all template variables: $letter or $letter+digit
+  // Also handles negative values like -$s1
+  return template.replace(/(-?)\$([a-zA-Z])(\d)?/g, (_match, negative, type, index) => {
+    const variable = `$${type}${index || ""}`;
+    const resolved = resolveVariable(spell, variable);
+    
+    // If the original had a negative sign and we resolved to a number, apply it
+    if (negative === "-" && !isNaN(Number(resolved))) {
+      return String(-Math.abs(Number(resolved)));
+    }
+    
+    return resolved;
+  });
+}
+
+/**
+ * Get the resolved English description for a spell.
+ */
+export function getResolvedDescription(spell: WoWSpell): string {
+  const template = getEnglishText(spell.description);
+  return resolveSpellDescription(spell, template);
+}
+
+/**
+ * Get the resolved English aura description for a spell.
+ */
+export function getResolvedAuraDescription(spell: WoWSpell): string {
+  const template = getEnglishText(spell.aura_description);
+  return resolveSpellDescription(spell, template);
+}
+

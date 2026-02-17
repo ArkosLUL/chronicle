@@ -1,12 +1,28 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Loader2, ArrowLeft, Search } from "lucide-react";
 import { useState } from "react";
 import { useSpell } from "@/api/queries";
 import { SpellTooltip } from "./SpellTooltip";
+import { LocaleSelector } from "./LocaleSelector";
+import type { LocaleIndex } from "@/api/wowdb";
 
 export function SpellPage() {
   const { spellId } = useParams<{ spellId: string }>();
   const [searchId, setSearchId] = useState(spellId || "");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const locale = (searchParams.get("locale") || "0") as LocaleIndex;
+
+  const setLocale = (newLocale: LocaleIndex) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newLocale === "0") {
+        next.delete("locale");
+      } else {
+        next.set("locale", newLocale);
+      }
+      return next;
+    });
+  };
   
   const { data: spell, isLoading, error } = useSpell(spellId || "", {
     enabled: !!spellId,
@@ -30,10 +46,15 @@ export function SpellPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
-        <h1 className="text-2xl font-bold">Spell Database</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          View spell data from World of Warcraft
-        </p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Spell Database</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              View spell data from World of Warcraft
+            </p>
+          </div>
+          <LocaleSelector value={locale} onChange={setLocale} />
+        </div>
       </div>
 
       {/* Search */}
@@ -100,7 +121,7 @@ export function SpellPage() {
             <h2 className="text-sm font-medium text-muted-foreground mb-2">
               Tooltip Preview
             </h2>
-            <SpellTooltip spell={spell} />
+            <SpellTooltip spell={spell} locale={locale} />
           </div>
 
           {/* Raw Data */}

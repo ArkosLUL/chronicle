@@ -1,23 +1,31 @@
-import type { WoWSpell } from "@/api/wowdb";
+import type { WoWSpell, LocaleIndex } from "@/api/wowdb";
 import {
-  getEnglishText,
+  getLocalizedText,
   getSpellIconUrl,
   formatCastTime,
   formatRange,
   formatCooldown,
   formatDuration,
+  resolveSpellDescription,
   SCHOOL_COLORS,
 } from "@/api/wowdb";
 
 interface SpellTooltipProps {
   spell: WoWSpell;
+  locale?: LocaleIndex;
 }
 
-export function SpellTooltip({ spell }: SpellTooltipProps) {
-  const name = getEnglishText(spell.name);
-  const rank = getEnglishText(spell.subtext);
-  const description = getEnglishText(spell.description);
-  const auraDesc = getEnglishText(spell.aura_description);
+export function SpellTooltip({ spell, locale = "0" }: SpellTooltipProps) {
+  const name = getLocalizedText(spell.name, locale);
+  const rank = getLocalizedText(spell.subtext, locale);
+  const description = resolveSpellDescription(
+    spell,
+    getLocalizedText(spell.description, locale)
+  );
+  const auraDesc = resolveSpellDescription(
+    spell,
+    getLocalizedText(spell.aura_description, locale)
+  );
   const iconUrl = getSpellIconUrl(spell.spell_icon);
   const cooldown = formatCooldown(spell.recovery_time);
   const schoolColor = SCHOOL_COLORS[spell.school.value] || "text-white";

@@ -124,7 +124,6 @@ func SpellFromDB(def *dbdefs.Ent_Spell) *Spell {
 		RequiredAuraVision: def.RequiredAuraVision,
 		MinFactionID:       def.MinFactionID,
 		MinReputation:      def.MinReputation,
-		SpellVisualID:      def.SpellVisualID,
 	}
 
 	// AuraInterruptFlags - use first element if available
@@ -139,12 +138,18 @@ func SpellFromDB(def *dbdefs.Ent_Spell) *Spell {
 		s.SpellClassMask = SpellClassMask(uint32(def.SpellClassMask[0]))
 	}
 
-	// Reagents
-	s.Reagent = make([]ItemID, 0, len(def.Reagent))
-	for _, r := range def.Reagent {
-		s.Reagent = append(s.Reagent, ItemID(r))
+	// Reagents (fixed-size arrays)
+	for i := 0; i < 8 && i < len(def.Reagent); i++ {
+		s.Reagent[i] = ItemID(def.Reagent[i])
 	}
-	s.ReagentCount = def.ReagentCount
+	for i := 0; i < 8 && i < len(def.ReagentCount); i++ {
+		s.ReagentCount[i] = def.ReagentCount[i]
+	}
+
+	// SpellVisualID (fixed-size array)
+	for i := 0; i < 2 && i < len(def.SpellVisualID); i++ {
+		s.SpellVisualID[i] = def.SpellVisualID[i]
+	}
 
 	// Totems
 	for i := 0; i < 2 && i < len(def.Totem); i++ {

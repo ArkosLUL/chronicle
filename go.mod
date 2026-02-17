@@ -341,3 +341,5 @@ tool (
 replace github.com/lib/pq => github.com/coder/pq v1.10.5-0.20250807075151-6ad9b0a25151
 
 replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260217042645-fddd00b2f688
+
+replace github.com/cybriq/gotiny => github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688

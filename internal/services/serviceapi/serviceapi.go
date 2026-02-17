@@ -22,6 +22,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
+	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 
 	"github.com/coder/serpent"
 )
@@ -73,6 +74,7 @@ func (s *Service) DependsOn() []string {
 		servicechronicle.OnChronicle(),
 		serviceprometheus.OnPrometheus(),
 		serviceauthz.OnAuthz(),
+		servicewowdb.OnWoWDB(),
 	}
 }
 
@@ -129,6 +131,7 @@ func (s *Service) Start(ctx context.Context) error {
 	if s.saffronURL.Scheme == "" {
 		saffronURL = nil
 	}
+	wowdb := servicewowdb.WoWDB(s.broker)
 	handler, err := api.New(ctx, api.Options{
 		Logger:     logger,
 		Storage:    st,
@@ -139,6 +142,7 @@ func (s *Service) Start(ctx context.Context) error {
 		Registry:   reg,
 		Zed:        zed,
 		SaffronURL: saffronURL,
+		WoWDB:      wowdb,
 
 		AccessURL: au,
 		DevOAuth:  s.devAuth,

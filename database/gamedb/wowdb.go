@@ -37,6 +37,10 @@ func New(opts Options) (*WoWDB, error) {
 	}, nil
 }
 
+func (w *WoWDB) Spell(id int) (*chrondbc.Spell, error) {
+	return w.spells.ID(id)
+}
+
 func (w *WoWDB) Close() error {
 	_ = w.spellFiles.Close()
 	return nil

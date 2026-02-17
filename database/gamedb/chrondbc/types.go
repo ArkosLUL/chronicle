@@ -1,13 +1,18 @@
 package chrondbc
 
 import (
-	"github.com/Emyrk/chronicle/database/gamedb/dbc/dbcmem"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem"
 	"github.com/Emyrk/chronicle/internal/bitmask"
 )
 
 type ItemID int32
 type SpellID int32
 type IconID int32
+
+func (i IconID) Get() dbcmem.SpellIcon {
+	return dbcmem.SpellIcons[int32(i)]
+}
+
 type SpellCategoryID int32
 
 func (s SpellCategoryID) Get() dbcmem.SpellCategory {
@@ -111,6 +116,8 @@ const (
 
 type ProcFlags bitmask.Bitmask32
 
+func (b ProcFlags) Has(flag ProcFlags) bool { return b&flag != 0 }
+
 const (
 	ProcFlagNone                       ProcFlags = 0x00000000
 	ProcFlagKilled                     ProcFlags = 0x00000001 // 00 Killed by aggressor
@@ -141,6 +148,8 @@ const (
 )
 
 type AuraInterruptFlags bitmask.Bitmask32
+
+func (b AuraInterruptFlags) Has(flag AuraInterruptFlags) bool { return b&flag != 0 }
 
 const (
 	AuraInterruptFlagHitBySpell            AuraInterruptFlags = 0x00000001 // Cancelled when hit by any spell
@@ -173,7 +182,9 @@ const (
 )
 
 // WeaponSubclass is a bitmask for EquippedItemSubclass when ItemClass = Weapon
-type WeaponSubclass = bitmask.Bitmask32
+type WeaponSubclass bitmask.Bitmask32
+
+func (b WeaponSubclass) Has(flag WeaponSubclass) bool { return b&flag != 0 }
 
 const (
 	WeaponSubclassAxe1H       WeaponSubclass = 0x00000001 // 0
@@ -230,7 +241,9 @@ const (
 )
 
 // ArmorSubclass is a bitmask for EquippedItemSubclass when ItemClass = Armor
-type ArmorSubclass = bitmask.Bitmask32
+type ArmorSubclass bitmask.Bitmask32
+
+func (b ArmorSubclass) Has(flag ArmorSubclass) bool { return b&flag != 0 }
 
 const (
 	ArmorSubclassMisc    ArmorSubclass = 0x00000001 // 0 (miscellaneous)
@@ -245,7 +258,9 @@ const (
 	ArmorSubclassTotem   ArmorSubclass = 0x00000200 // 9 (Shaman relic)
 )
 
-type EquippedItemInvTypes = bitmask.Bitmask32
+type EquippedItemInvTypes bitmask.Bitmask32
+
+func (b EquippedItemInvTypes) Has(flag EquippedItemInvTypes) bool { return b&flag != 0 }
 
 const (
 	InvTypeHead        EquippedItemInvTypes = 0x00000001
@@ -1100,7 +1115,9 @@ const (
 	PreventionTypePacify  PreventionType = 2 // Blocked by pacify effects (disarms, etc.)
 )
 
-type InterruptFlags = bitmask.Bitmask32
+type InterruptFlags bitmask.Bitmask32
+
+func (b InterruptFlags) Has(flag InterruptFlags) bool { return b&flag != 0 }
 
 const (
 	InterruptFlagMovement   InterruptFlags = 0x00000001 // Interrupted by moving
@@ -1180,7 +1197,9 @@ const (
 	AuraStateStealthInvis       AuraState = 23 // In stealth or invisible
 )
 
-type TargetCreatureType = bitmask.Bitmask32
+type TargetCreatureType bitmask.Bitmask32
+
+func (b TargetCreatureType) Has(flag TargetCreatureType) bool { return b&flag != 0 }
 
 const (
 	CreatureTypeBeast        TargetCreatureType = 0x00000001 // 0
@@ -1275,7 +1294,9 @@ const (
 	ImplicitTargetUnitTargetPassenger       ImplicitTarget = 95
 )
 
-type ProcFlagsEx = bitmask.Bitmask32
+type ProcFlagsEx bitmask.Bitmask32
+
+func (b ProcFlagsEx) Has(flag ProcFlagsEx) bool { return b&flag != 0 }
 
 const (
 	ProcExNone            ProcFlagsEx = 0x00000000

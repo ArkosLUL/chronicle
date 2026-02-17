@@ -33,6 +33,7 @@ type Options struct {
 	RiverQueue *riverqueue.Queues
 	Bot        *chroniclebot.Bot
 	SaffronURL *url.URL
+	WoWDB      http.Handler
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -118,6 +119,9 @@ func (api *API) Routes() chi.Router {
 		})
 
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
+		if api.Opts.WoWDB != nil {
+			r.Mount("/wowdb", api.Opts.WoWDB)
+		}
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Get("/supported", api.SupportedInstances)

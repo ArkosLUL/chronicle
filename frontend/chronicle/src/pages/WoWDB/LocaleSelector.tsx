@@ -6,8 +6,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu/DropdownMenu";
-import { Button } from "@/components/ui/Button";
-import { LOCALES, LocaleIndex } from "@/api/wowdb";
+import { Button } from "@/components/ui/button";
+import { LOCALES, type LocaleIndex } from "@/api/wowdb";
 
 interface LocaleSelectorProps {
   value: LocaleIndex;

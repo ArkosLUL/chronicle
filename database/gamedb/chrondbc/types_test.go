@@ -1,4 +1,4 @@
-package dbc_test
+package chrondbc_test
 
 import (
 	"testing"
@@ -10,5 +10,5 @@ import (
 func TestSpellClassMask(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, dbc.NewSpellClassMask(1, 0), uint64(1))
+	require.Equal(t, chrondbc.NewSpellClassMask(1, 0), uint64(1))
 }

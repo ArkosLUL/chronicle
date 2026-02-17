@@ -1,4 +1,4 @@
-package dbc
+package chrondbc
 
 import (
 	"github.com/Emyrk/chronicle/database/gamedb/dbc/dbcmem"

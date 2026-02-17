@@ -9,6 +9,8 @@ type Table[T any] interface {
 	Len() int
 	Range(f func(cursor *T) bool) error
 	Index(i int) (*T, error)
+	ID(id int) (*T, error)
+	StringRef(i int) (string, error)
 }
 
 func WrapTable[T any](t *dbc.Table) Table[T] {
@@ -33,10 +35,22 @@ func (w *WrappedTable[T]) Range(f func(cursor *T) bool) error {
 	})
 }
 
+func (w *WrappedTable[T]) ID(i int) (*T, error) {
+	x := new(T)
+	if err := w.wrapped.ID(i, x); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
 func (w *WrappedTable[T]) Index(i int) (*T, error) {
 	x := new(T)
 	if err := w.wrapped.Index(i, x); err != nil {
 		return nil, err
 	}
 	return x, nil
+}
+
+func (w *WrappedTable[T]) StringRef(i int) (string, error) {
+	return w.wrapped.StringRef(i)
 }

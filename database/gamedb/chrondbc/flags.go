@@ -1,4 +1,4 @@
-package dbc
+package chrondbc
 
 type TargetFlags uint32
 

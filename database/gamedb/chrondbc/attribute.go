@@ -1,4 +1,4 @@
-package dbc
+package chrondbc
 
 import "github.com/Gophercraft/core/format/dbc/dbdefs"
 

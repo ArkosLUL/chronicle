@@ -5,9 +5,8 @@ package gamedb
 import (
 	"os"
 
-	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Gophercraft/core/format/dbc"
-	"github.com/Gophercraft/core/format/dbc/dbdefs"
 	"github.com/Gophercraft/core/vsn"
 )
 
@@ -17,7 +16,7 @@ type Options struct {
 
 type WoWDB struct {
 	spellFiles *os.File
-	spells     dbcdb.Table[dbdefs.Ent_Spell]
+	spells     *chrondbc.SpellsDBC
 }
 
 func New(opts Options) (*WoWDB, error) {
@@ -34,7 +33,7 @@ func New(opts Options) (*WoWDB, error) {
 
 	return &WoWDB{
 		spellFiles: sf,
-		spells:     dbcdb.WrapTable[dbdefs.Ent_Spell](v),
+		spells:     chrondbc.NewSpells(v),
 	}, nil
 }
 

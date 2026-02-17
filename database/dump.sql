@@ -160,38 +160,6 @@ CREATE TABLE guilds (
     created_at timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE item_effects (
-    id uuid NOT NULL,
-    item_id integer NOT NULL,
-    effect_type item_effect_type NOT NULL,
-    effect_index smallint,
-    spell_id integer NOT NULL
-);
-
-CREATE TABLE item_templates (
-    id integer NOT NULL,
-    name text NOT NULL,
-    quality smallint NOT NULL,
-    item_level smallint NOT NULL,
-    required_level smallint,
-    class smallint NOT NULL,
-    sub_class smallint NOT NULL,
-    inventory_slot smallint NOT NULL,
-    icon text,
-    unique_limit smallint,
-    bind_type smallint,
-    stack_size smallint DEFAULT 1,
-    description text,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone
-);
-
-COMMENT ON TABLE item_templates IS 'Items without data such as enchants.';
-
-COMMENT ON COLUMN item_templates.id IS 'Matches the item id in WoW.';
-
-COMMENT ON COLUMN item_templates.quality IS '0 grey, 1 white, 2 green, 3 blue, 4 purple, 5 legendary, 6 artifact';
-
 CREATE TABLE log_instance_encounter_damage_unit_summary (
     encounter_id uuid NOT NULL,
     unit_guid wow_guid NOT NULL,
@@ -371,47 +339,6 @@ CREATE TABLE river_queue (
     updated_at timestamp with time zone NOT NULL
 );
 
-CREATE TABLE spell_templates (
-    id integer NOT NULL,
-    name text NOT NULL,
-    school spell_school NOT NULL,
-    description text,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
-    subtext text DEFAULT ''::text,
-    aura_description text DEFAULT ''::text,
-    icon_id integer DEFAULT 0,
-    school_mask integer DEFAULT 0,
-    power_type integer DEFAULT 0,
-    mana_cost integer DEFAULT 0,
-    mana_cost_pct integer DEFAULT 0,
-    cast_time_index integer DEFAULT 0,
-    recovery_time integer DEFAULT 0,
-    range_index integer DEFAULT 0,
-    attributes bigint[] DEFAULT '{}'::bigint[],
-    targets integer DEFAULT 0
-);
-
-COMMENT ON COLUMN spell_templates.subtext IS 'Rank text like "Rank 1", "Passive", etc.';
-
-COMMENT ON COLUMN spell_templates.aura_description IS 'Description shown when spell is an aura/buff';
-
-COMMENT ON COLUMN spell_templates.icon_id IS 'SpellIconID for icon lookup';
-
-COMMENT ON COLUMN spell_templates.school_mask IS 'Bitmask: 1=phys, 2=holy, 4=fire, 8=nature, 16=frost, 32=shadow, 64=arcane';
-
-COMMENT ON COLUMN spell_templates.power_type IS '0=mana, 1=rage, 2=focus, 3=energy';
-
-COMMENT ON COLUMN spell_templates.cast_time_index IS 'Index into SpellCastTimes.dbc';
-
-COMMENT ON COLUMN spell_templates.recovery_time IS 'Cooldown in milliseconds';
-
-COMMENT ON COLUMN spell_templates.range_index IS 'Index into SpellRange.dbc';
-
-COMMENT ON COLUMN spell_templates.attributes IS '9-element array of uint32 attribute bitmasks';
-
-COMMENT ON COLUMN spell_templates.targets IS 'Target flags bitmask';
-
 CREATE TABLE user_auth_links (
     id uuid NOT NULL,
     linked_id text NOT NULL,
@@ -463,12 +390,6 @@ ALTER TABLE ONLY guilds
 ALTER TABLE ONLY guilds
     ADD CONSTRAINT guilds_realm_id_name_key UNIQUE (realm_id, name);
 
-ALTER TABLE ONLY item_effects
-    ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY item_templates
-    ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
 
@@ -510,9 +431,6 @@ ALTER TABLE ONLY river_migration
 
 ALTER TABLE ONLY river_queue
     ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
-
-ALTER TABLE ONLY spell_templates
-    ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
@@ -557,12 +475,6 @@ ALTER TABLE ONLY data_limit
 
 ALTER TABLE ONLY guilds
     ADD CONSTRAINT guilds_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
-
-ALTER TABLE ONLY item_effects
-    ADD CONSTRAINT item_effects_item_id_fkey FOREIGN KEY (item_id) REFERENCES item_templates(id);
-
-ALTER TABLE ONLY item_effects
-    ADD CONSTRAINT item_effects_spell_id_fkey FOREIGN KEY (spell_id) REFERENCES spell_templates(id);
 
 ALTER TABLE ONLY log_file
     ADD CONSTRAINT log_file_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);

@@ -19,7 +19,6 @@ import (
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 	context2 "github.com/gorilla/context"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -87,7 +86,7 @@ func (api *API) Routes() chi.Router {
 		httpmw.Recover(api.Opts.Logger),
 		context2.ClearHandler,
 		// TODO: Finish cors options
-		cors.Handler(cors.Options{}),
+		Cors(api.Opts.AccessURL),
 		httpmw.NoWWW(),
 		httpmw.PrometheusMW(api.Opts.Registry),
 	)

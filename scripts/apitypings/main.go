@@ -24,6 +24,7 @@ func main() {
 	generateDirectories := map[string]string{
 		"github.com/Emyrk/chronicle/api/chroniclesdk":       "",
 		"github.com/Emyrk/chronicle/combatlog/parser/types": "WoW",
+		//"github.com/Emyrk/chronicle/database/gamedb/chrondbc": "DBC",
 	}
 	for dir, prefix := range generateDirectories {
 		err = gen.IncludeGenerateWithPrefix(dir, prefix)
@@ -132,6 +133,8 @@ func TypeMappings(gen *guts.GoParser) error {
 		"encoding/json.RawMessage":                               "map[string]string",
 		"github.com/Emyrk/chronicle/api/chroniclesdk.GUIDString": "string",
 		"github.com/jackc/pgx/v5/pgtype.Timestamptz":             "string",
+
+		//"github.com/Emyrk/chronicle/database/gamedb/chrondbc": "",
 	})
 	if err != nil {
 		return xerrors.Errorf("include custom: %w", err)

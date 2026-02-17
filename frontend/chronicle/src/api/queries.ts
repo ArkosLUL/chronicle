@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
+import type { WoWSpell } from "./wowdb";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -346,3 +347,21 @@ export function useSetUserDataLimit() {
     },
   });
 }
+// WoWDB queries
+
+export function useSpell(
+  spellId: string,
+  options?: Omit<UseQueryOptions<WoWSpell>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["wowdb", "spell", spellId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/wowdb/spell/${spellId}`);
+      if (!response.ok) throw new Error("Spell not found");
+      return response.json() as Promise<WoWSpell>;
+    },
+    staleTime: Infinity, // DBC data never changes
+    ...options,
+  });
+}
+

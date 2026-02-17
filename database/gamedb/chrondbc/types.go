@@ -83,7 +83,7 @@ func (m SpellClassMask) Has(other SpellClassMask) bool {
 	return m&other != 0
 }
 
-//go:generate stringer -type Power -trimprefix=Power
+//go:generate stringer -type SpellClassSet -trimprefix=SpellClassSet
 type SpellClassSet int32
 
 const (
@@ -146,6 +146,7 @@ const (
 	ProcFlagDoneMainhandAttack         ProcFlags = 0x00400000 // 22 Done main-hand melee attacks (spell and autoattack)
 	ProcFlagDoneOffhandAttack          ProcFlags = 0x00800000 // 23 Done off-hand melee attacks (spell and autoattack)
 	ProcFlagDeath                      ProcFlags = 0x01000000 // 24 Died in any way
+	ProcFlag_END                       ProcFlags = 0x02000000 // Sentinel for iteration
 )
 
 //go:generate stringer -type AuraInterruptFlags -trimprefix=AuraInterruptFlags
@@ -181,6 +182,7 @@ const (
 	AuraInterruptFlagEnterPvPCombat        AuraInterruptFlags = 0x01000000 // Cancelled when entering PvP combat
 	AuraInterruptFlagDirectDamage          AuraInterruptFlags = 0x02000000 // Cancelled by direct damage (not DoT)
 	AuraInterruptFlagLanding               AuraInterruptFlags = 0x04000000 // Cancelled when landing (flying mount)
+	AuraInterruptFlag_END                  AuraInterruptFlags = 0x08000000 // Sentinel for iteration
 )
 
 //go:generate stringer -type WeaponSubclass -trimprefix=WeaponSubclass
@@ -296,7 +298,8 @@ const (
 	InvTypeHoldable    EquippedItemInvTypes = 0x00400000 // Off-hand frill (books, orbs)
 	InvTypeAmmo        EquippedItemInvTypes = 0x00800000
 	InvTypeThrown      EquippedItemInvTypes = 0x01000000
-	InvTypeRangedRight EquippedItemInvTypes = 0x02000000 // Wands
+	InvTypeRangedRight   EquippedItemInvTypes = 0x02000000 // Wands
+	InvType_END          EquippedItemInvTypes = 0x04000000 // Sentinel for iteration
 )
 
 //go:generate stringer -type AuraEffect -trimprefix=AuraEffect
@@ -1134,6 +1137,7 @@ const (
 	InterruptFlagInterrupt  InterruptFlags = 0x00000004 // Can be interrupted (Kick, Counterspell)
 	InterruptFlagAutoAttack InterruptFlags = 0x00000008 // Interrupted by auto-attack
 	InterruptFlagDamage     InterruptFlags = 0x00000010 // Interrupted by any damage
+	InterruptFlag_END       InterruptFlags = 0x00000020 // Sentinel for iteration
 )
 
 //go:generate stringer -type Mechanic -trimprefix Mechanic
@@ -1206,6 +1210,7 @@ const (
 	AuraStateStealthInvis       AuraState = 23 // In stealth or invisible
 )
 
+//go:generate stringer -type TargetCreatureType -trimprefix TargetCreatureType
 type TargetCreatureType bitmask.Bitmask32
 
 func (b TargetCreatureType) Has(flag TargetCreatureType) bool { return b&flag != 0 }
@@ -1224,6 +1229,7 @@ const (
 	CreatureTypeTotem        TargetCreatureType = 0x00000400 // 10
 	CreatureTypeNonCombatPet TargetCreatureType = 0x00000800 // 11
 	CreatureTypeGasCloud     TargetCreatureType = 0x00001000 // 12
+	CreatureType_END         TargetCreatureType = 0x00002000 // Sentinel for iteration
 )
 
 //go:generate stringer -type ImplicitTarget -trimprefix ImplicitTarget
@@ -1329,4 +1335,43 @@ const (
 	ProcExTriggerAlways   ProcFlagsEx = 0x00010000 // Always trigger (ignore other conditions)
 	ProcExOneTimeTrigger  ProcFlagsEx = 0x00020000 // Remove aura after proc
 	ProcExOnlyActiveSpell ProcFlagsEx = 0x00040000 // Only trigger from active spells
+	ProcEx_END            ProcFlagsEx = 0x00080000 // Sentinel for iteration
+)
+
+//go:generate stringer -type TargetFlags -trimprefix=TargetFlags
+type TargetFlags uint32
+
+func (h TargetFlags) Has(flag TargetFlags) bool {
+	return h&flag != 0
+}
+
+const (
+	TargetSelf                TargetFlags = 0x00000000
+	TargetSpellDynamic1       TargetFlags = 0x00000001
+	TargetUnit                TargetFlags = 0x00000002
+	TargetUnitRaid            TargetFlags = 0x00000004
+	TargetUnitParty           TargetFlags = 0x00000008
+	TargetItem                TargetFlags = 0x00000010
+	TargetSourceLocation      TargetFlags = 0x00000020
+	TargetDestinationLocation TargetFlags = 0x00000040
+	TargetUnitEnemy           TargetFlags = 0x00000080
+	TargetUnitAlly            TargetFlags = 0x00000100
+	TargetCorpseEnemy         TargetFlags = 0x00000200
+	TargetUnitDead            TargetFlags = 0x00000400
+	TargetGameObject          TargetFlags = 0x00000800
+	TargetTradeItem           TargetFlags = 0x00001000
+	TargetNameString          TargetFlags = 0x00002000
+	TargetGameObjectItem      TargetFlags = 0x00004000
+	TargetCorpseAlly          TargetFlags = 0x00008000
+	TargetUnitMinipet         TargetFlags = 0x00010000
+	TargetGlyph               TargetFlags = 0x00020000
+	TargetDestinationTarget   TargetFlags = 0x00040000
+	TargetExtraTargets        TargetFlags = 0x00080000 // 4.x VisualChain
+	TargetUnitPassenger       TargetFlags = 0x00100000
+	TargetUnk400000           TargetFlags = 0x00400000
+	TargetUnk1000000          TargetFlags = 0x01000000
+	TargetUnk4000000          TargetFlags = 0x04000000
+	TargetUnk10000000         TargetFlags = 0x10000000
+	TargetUnk40000000         TargetFlags = 0x40000000
+	Target_END                TargetFlags = 0x80000000 // Sentinel for iteration
 )

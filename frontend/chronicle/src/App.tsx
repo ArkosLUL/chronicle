@@ -15,6 +15,7 @@ import { RecentRaids } from "./pages/Recent/RecentRaids"
 import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
 import { AdminPage } from "./pages/Admin/AdminPage"
+import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { 
   AccountLayout, 
   ProfileSettings, 
@@ -56,6 +57,8 @@ function App() {
         <Route path="/instances/:instanceId" element={<InstancePage />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/wowdb/spell" element={<SpellPage />} />
+        <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/disclaimer" element={<Disclaimer />} />

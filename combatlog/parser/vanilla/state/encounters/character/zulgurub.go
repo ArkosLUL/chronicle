@@ -141,3 +141,43 @@ func (c *HighPriestThekalParty) Start(reason string, m messages.Message) {
 	}
 	c.Common.Start(reason, m)
 }
+
+const (
+	hooktooth = 11374
+)
+
+type HooktoothFrenzy struct {
+	*Common
+}
+
+func NewHooktoothFrenzy(id guid.GUID, all *Characters) (Character, bool) {
+	if !id.IsCreature() {
+		return nil, false
+	}
+	entry, ok := id.GetEntry()
+	if !ok || entry != hooktooth {
+		return nil, false
+	}
+	return &HooktoothFrenzy{
+		NewCommonCharacter(id, all),
+	}, true
+}
+
+func (c *HooktoothFrenzy) Process(m messages.Message) error {
+	// Timeouts should be checked on every timestamp
+	cur, ok := c.Activity.Current()
+	if ok {
+		if cur.HandleTimeout(m.Date()) {
+			// We treat timeouts as deaths for these fish.
+			// They are insignificant, and they can't exit the water, so they just time out.
+			cur.Slain = true
+		}
+	}
+
+	err := processCommonActivity(c, m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

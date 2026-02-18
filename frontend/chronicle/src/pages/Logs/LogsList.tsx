@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link, useSearchParams } from "react-router-dom";
 import { FileText, LogIn, Loader2, Upload as UploadIcon, HardDrive, HelpCircle } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
@@ -88,7 +89,7 @@ export function LogsListView({
   
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [showUploadDates, setShowUploadDates] = useState(false);
+  const [showUploadDates, setShowUploadDates] = useLocalStorage("logs-show-uploads", false);
   
   // Table sort state
   const [sortField, setSortField] = useState<SortField>("date");

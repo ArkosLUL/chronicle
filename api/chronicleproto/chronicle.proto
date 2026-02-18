@@ -36,9 +36,15 @@ message Tailer {
   uint32 hitType = 2;
 }
 
+message ActivityEntry {
+  string guid = 1;
+  string eventType = 2;  // "start", "end", "slain", "bump"
+}
+
 message EventMeta {
   int32 index = 1;
   int64 offsetMilli = 2;
+  repeated ActivityEntry activity = 3;
 }
 
 message Heal {

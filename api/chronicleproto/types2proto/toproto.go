@@ -11,12 +11,24 @@ import (
 	"github.com/Emyrk/chronicle/internal/slice"
 )
 
+// EventMeta creates an EventMeta proto from a message, including activity data.
+func EventMeta(from time.Time, idx int32, msg messages.Message) *chronicleproto.EventMeta {
+	meta := &chronicleproto.EventMeta{
+		Index:       idx,
+		OffsetMilli: msg.Date().UnixMilli() - from.UnixMilli(),
+	}
+	for gid, actType := range msg.Activity() {
+		meta.Activity = append(meta.Activity, &chronicleproto.ActivityEntry{
+			Guid:      gid.String(),
+			EventType: string(actType),
+		})
+	}
+	return meta
+}
+
 func Damage(from time.Time, idx int32, dmg *messages.Damage) *chronicleproto.Damage {
 	return &chronicleproto.Damage{
-		Meta: &chronicleproto.EventMeta{
-			Index:       idx,
-			OffsetMilli: dmg.Timestamp.UnixMilli() - from.UnixMilli(),
-		},
+		Meta: EventMeta(from, idx, dmg),
 		Caster:     OptionalGUID(dmg.Caster),
 		SourceName: dmg.SourceName(),
 		Target:     dmg.Target.String(),
@@ -29,10 +41,7 @@ func Damage(from time.Time, idx int32, dmg *messages.Damage) *chronicleproto.Dam
 
 func Heal(from time.Time, idx int32, heal *messages.Heal) *chronicleproto.Heal {
 	return &chronicleproto.Heal{
-		Meta: &chronicleproto.EventMeta{
-			Index:       idx,
-			OffsetMilli: heal.Timestamp.UnixMilli() - from.UnixMilli(),
-		},
+		Meta:       EventMeta(from, idx, heal),
 		Caster:     heal.Caster.String(),
 		Target:     heal.Target.String(),
 		SourceName: heal.SpellName,
@@ -43,10 +52,7 @@ func Heal(from time.Time, idx int32, heal *messages.Heal) *chronicleproto.Heal {
 
 func ResourceChange(from time.Time, idx int32, rc *messages.ResourceChange) *chronicleproto.ResourceChange {
 	return &chronicleproto.ResourceChange{
-		Meta: &chronicleproto.EventMeta{
-			Index:       idx,
-			OffsetMilli: rc.Timestamp.UnixMilli() - from.UnixMilli(),
-		},
+		Meta:         EventMeta(from, idx, rc),
 		Target:       rc.Target.String(),
 		Amount:       rc.Amount,
 		ResourceType: rc.Resource.String(),
@@ -58,10 +64,7 @@ func ResourceChange(from time.Time, idx int32, rc *messages.ResourceChange) *chr
 
 func ExtraAttack(from time.Time, idx int32, ea *messages.ExtraAttack) *chronicleproto.ExtraAttack {
 	return &chronicleproto.ExtraAttack{
-		Meta: &chronicleproto.EventMeta{
-			Index:       idx,
-			OffsetMilli: ea.Timestamp.UnixMilli() - from.UnixMilli(),
-		},
+		Meta:       EventMeta(from, idx, ea),
 		Amount:     ea.Amount,
 		Target:     ea.Caster.String(), // Extra attacks are granted to the caster
 		SourceName: ea.FromSpellName,
@@ -81,10 +84,7 @@ func Slain(from time.Time, idx int32, ea *messages.Slain) *chronicleproto.Slain 
 		}
 	}
 	return &chronicleproto.Slain{
-		Meta: &chronicleproto.EventMeta{
-			Index:       idx,
-			OffsetMilli: ea.Timestamp.UnixMilli() - from.UnixMilli(),
-		},
+		Meta:        EventMeta(from, idx, ea),
 		Target:      ea.Victim.String(),
 		Caster:      OptionalGUID(ea.Killer),
 		Attribution: att,
@@ -97,10 +97,7 @@ func Cast(from time.Time, idx int32, ca *messages.Cast) *chronicleproto.Cast {
 		target = ptr.Ref(ca.Target.Gid.String())
 	}
 	return &chronicleproto.Cast{
-		Meta: &chronicleproto.EventMeta{
-			Index:       idx,
-			OffsetMilli: ca.Timestamp.UnixMilli() - from.UnixMilli(),
-		},
+		Meta:   EventMeta(from, idx, ca),
 		Caster: ca.Caster.Gid.String(),
 		Action: CastAction(ca.Action),
 		Target: target,
@@ -109,17 +106,12 @@ func Cast(from time.Time, idx int32, ca *messages.Cast) *chronicleproto.Cast {
 }
 
 func Aura(from time.Time, idx int32, a *messages.Aura) *chronicleproto.Aura {
-	{
-		return &chronicleproto.Aura{
-			Meta: &chronicleproto.EventMeta{
-				Index:       idx,
-				OffsetMilli: a.Timestamp.UnixMilli() - from.UnixMilli(),
-			},
-			Target:      a.Target.String(),
-			SpellName:   a.SpellName,
-			Amount:      a.Amount,
-			Application: Application(a.Application),
-		}
+	return &chronicleproto.Aura{
+		Meta:        EventMeta(from, idx, a),
+		Target:      a.Target.String(),
+		SpellName:   a.SpellName,
+		Amount:      a.Amount,
+		Application: Application(a.Application),
 	}
 }
 

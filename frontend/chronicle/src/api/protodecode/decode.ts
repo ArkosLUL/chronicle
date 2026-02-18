@@ -226,6 +226,15 @@ export interface ReusableTailer {
 }
 
 /**
+ * Activity entry from encounter period tracking.
+ * Indicates when a unit becomes active, ends activity, is slain, or bumps its activity timer.
+ */
+export interface ReusableActivityEntry {
+  guid: string;
+  eventType: string;  // "start" | "end" | "slain" | "bump"
+}
+
+/**
  * Reusable Damage message structure - mutated in place during decoding.
  * If the callback needs to keep data, it must copy what it needs.
  */
@@ -241,6 +250,8 @@ export interface ReusableDamage {
   school: number;
   tailers: ReusableTailer[];
   tailerCount: number;  // Actual number of tailers (tailers array may have extra capacity)
+  activity: ReusableActivityEntry[];
+  activityCount: number;  // Actual number of activity entries
 }
 
 /**
@@ -264,6 +275,8 @@ export class DamageDecoder {
     school: 0,
     tailers: [],
     tailerCount: 0,
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -284,6 +297,7 @@ export class DamageDecoder {
     msg.amount = 0;
     msg.school = 0;
     msg.tailerCount = 0;
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -316,6 +330,33 @@ export class DamageDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 3) {
@@ -374,6 +415,8 @@ export interface ReusableHeal {
   hitType: number;
   amount: number;
   school: number; // Always 0 for heals, but kept for interface compat
+  activity: ReusableActivityEntry[];
+  activityCount: number;
 }
 
 /**
@@ -402,6 +445,8 @@ export class HealDecoder {
     hitType: 0,
     amount: 0,
     school: 0,
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -421,6 +466,7 @@ export class HealDecoder {
     msg.hitType = 0;
     msg.amount = 0;
     msg.school = 0;
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -452,6 +498,33 @@ export class HealDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 3) {
@@ -617,6 +690,8 @@ export interface ReusableResourceChange {
   amount: number;
   resourceType: string;
   direction: string;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
 }
 
 /**
@@ -646,6 +721,8 @@ export class ResourceChangeDecoder {
     amount: 0,
     resourceType: "",
     direction: "",
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -665,6 +742,7 @@ export class ResourceChangeDecoder {
     msg.amount = 0;
     msg.resourceType = "";
     msg.direction = "";
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -695,6 +773,33 @@ export class ResourceChangeDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 3) {
@@ -861,6 +966,8 @@ export interface ReusableExtraAttack {
   target: string;
   amount: number;
   sourceName: string;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
 }
 
 /**
@@ -884,6 +991,8 @@ export class ExtraAttackDecoder {
     target: "",
     amount: 0,
     sourceName: "",
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -900,6 +1009,7 @@ export class ExtraAttackDecoder {
     msg.target = "";
     msg.amount = 0;
     msg.sourceName = "";
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -924,6 +1034,33 @@ export class ExtraAttackDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 2) {
@@ -1099,6 +1236,8 @@ export interface ReusableSlain {
   target: string;
   caster: string;
   attribution: ReusableAttributionDamage | null;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
 }
 
 /**
@@ -1139,6 +1278,8 @@ export class SlainDecoder {
     target: "",
     caster: "",
     attribution: null,
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -1155,6 +1296,7 @@ export class SlainDecoder {
     msg.target = "";
     msg.caster = "";
     msg.attribution = null;
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -1179,6 +1321,33 @@ export class SlainDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 2) {
@@ -1400,6 +1569,8 @@ export interface ReusableCast {
   action: CastAction;
   target: string;
   spell: ReusableSpell;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
 }
 
 /**
@@ -1436,6 +1607,8 @@ export class CastDecoder {
     action: CastAction.Unknown,
     target: "",
     spell: this.reusableSpell,
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -1456,6 +1629,7 @@ export class CastDecoder {
     spell.name = "";
     spell.id = 0;
     spell.rank = null;
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -1480,6 +1654,33 @@ export class CastDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 2) {
@@ -1680,6 +1881,8 @@ export interface ReusableAura {
   spellName: string;
   amount: number;
   application: AuraApplication;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
 }
 
 /**
@@ -1705,6 +1908,8 @@ export class AuraDecoder {
     spellName: "",
     amount: 0,
     application: AuraApplication.Unknown,
+    activity: [],
+    activityCount: 0,
   };
   
   /**
@@ -1722,6 +1927,7 @@ export class AuraDecoder {
     msg.spellName = "";
     msg.amount = 0;
     msg.application = AuraApplication.Unknown;
+    msg.activityCount = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -1753,6 +1959,33 @@ export class AuraDecoder {
               offset += bytesRead;
               if (metaField === 1) msg.index = value;
               else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
             }
           }
         } else if (fieldNumber === 2) {

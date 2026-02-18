@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file chronicle.proto.
  */
 export const file_chronicle: GenFile = /*@__PURE__*/
-  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiLwoJRXZlbnRNZXRhEg0KBWluZGV4GAEgASgFEhMKC29mZnNldE1pbGxpGAIgASgDIoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSKiAQoFU2xhaW4SJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRIOCgZ0YXJnZXQYAiABKAkSEwoGY2FzdGVyGAMgASgJSACIAQESMAoLYXR0cmlidXRpb24YBCABKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2VIAYgBAUIJCgdfY2FzdGVyQg4KDF9hdHRyaWJ1dGlvbiI9CgVTcGVsbBIMCgRuYW1lGAEgASgJEgoKAmlkGAIgASgFEhEKBHJhbmsYAyABKAVIAIgBAUIHCgVfcmFuayKxAQoEQ2FzdBInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBmNhc3RlchgCIAEoCRIqCgZhY3Rpb24YAyABKA4yGi5jaHJvbmljbGVwcm90by5DYXN0QWN0aW9uEhMKBnRhcmdldBgEIAEoCUgAiAEBEiQKBXNwZWxsGAUgASgLMhUuY2hyb25pY2xlcHJvdG8uU3BlbGxCCQoHX3RhcmdldCKYAQoEQXVyYRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIRCglzcGVsbE5hbWUYAyABKAkSDgoGYW1vdW50GAQgASgFEjQKC2FwcGxpY2F0aW9uGAUgASgOMh8uY2hyb25pY2xlcHJvdG8uQXVyYUFwcGxpY2F0aW9uKnAKBlNjaG9vbBILCgdVbmtub3duEAASCAoETm9uZRABEgwKCFBoeXNpY2FsEAISCAoESG9seRADEggKBEZpcmUQBBIKCgZOYXR1cmUQBRIJCgVGcm9zdBAGEgoKBlNoYWRvdxAHEgoKBkFyY2FuZRAIKnQKCkNhc3RBY3Rpb24SEQoNQWN0aW9uVW5rbm93bhAAEg8KC0FjdGlvbkNhc3RzEAESFgoSQWN0aW9uQmVnaW5zVG9DYXN0EAISEgoOQWN0aW9uQ2hhbm5lbHMQAxIWChJBY3Rpb25GYWlsc0Nhc3RpbmcQBCptCg9BdXJhQXBwbGljYXRpb24SFgoSQXBwbGljYXRpb25Vbmtub3duEAASFAoQQXBwbGljYXRpb25HYWlucxABEhQKEEFwcGxpY2F0aW9uRmFkZXMQAhIWChJBcHBsaWNhdGlvblJlbW92ZWQQA0IvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
+  fileDesc("Cg9jaHJvbmljbGUucHJvdG8SDmNocm9uaWNsZXByb3RvIjkKBlRhaWxlchITCgZhbW91bnQYASABKA1IAIgBARIPCgdoaXRUeXBlGAIgASgNQgkKB19hbW91bnQiMAoNQWN0aXZpdHlFbnRyeRIMCgRndWlkGAEgASgJEhEKCWV2ZW50VHlwZRgCIAEoCSJgCglFdmVudE1ldGESDQoFaW5kZXgYASABKAUSEwoLb2Zmc2V0TWlsbGkYAiABKAMSLwoIYWN0aXZpdHkYAyADKAsyHS5jaHJvbmljbGVwcm90by5BY3Rpdml0eUVudHJ5IoQBCgRIZWFsEicKBG1ldGEYASABKAsyGS5jaHJvbmljbGVwcm90by5FdmVudE1ldGESDgoGY2FzdGVyGAMgASgJEg4KBnRhcmdldBgEIAEoCRISCgpzb3VyY2VOYW1lGAUgASgJEg4KBmFtb3VudBgGIAEoBRIPCgdoaXRUeXBlGAcgASgNIucBCgZEYW1hZ2USJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRITCgZjYXN0ZXIYAyABKAlIAIgBARISCgpzb3VyY2VOYW1lGAQgASgJEg4KBnRhcmdldBgFIAEoCRIPCgdoaXRUeXBlGAYgASgNEg4KBmFtb3VudBgHIAEoBRImCgZzY2hvb2wYCCABKA4yFi5jaHJvbmljbGVwcm90by5TY2hvb2wSJwoHdGFpbGVycxgJIAMoCzIWLmNocm9uaWNsZXByb3RvLlRhaWxlckIJCgdfY2FzdGVyIsoBCg5SZXNvdXJjZUNoYW5nZRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgDIAEoCRIOCgZhbW91bnQYBCABKAUSFAoMcmVzb3VyY2VUeXBlGAUgASgJEhMKBmNhc3RlchgGIAEoCUgAiAEBEhcKCnNvdXJjZU5hbWUYByABKAlIAYgBARIRCglkaXJlY3Rpb24YCCABKAlCCQoHX2Nhc3RlckINCgtfc291cmNlTmFtZSJqCgtFeHRyYUF0dGFjaxInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIOCgZhbW91bnQYAyABKAUSEgoKc291cmNlTmFtZRgFIAEoCSKiAQoFU2xhaW4SJwoEbWV0YRgBIAEoCzIZLmNocm9uaWNsZXByb3RvLkV2ZW50TWV0YRIOCgZ0YXJnZXQYAiABKAkSEwoGY2FzdGVyGAMgASgJSACIAQESMAoLYXR0cmlidXRpb24YBCABKAsyFi5jaHJvbmljbGVwcm90by5EYW1hZ2VIAYgBAUIJCgdfY2FzdGVyQg4KDF9hdHRyaWJ1dGlvbiI9CgVTcGVsbBIMCgRuYW1lGAEgASgJEgoKAmlkGAIgASgFEhEKBHJhbmsYAyABKAVIAIgBAUIHCgVfcmFuayKxAQoEQ2FzdBInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBmNhc3RlchgCIAEoCRIqCgZhY3Rpb24YAyABKA4yGi5jaHJvbmljbGVwcm90by5DYXN0QWN0aW9uEhMKBnRhcmdldBgEIAEoCUgAiAEBEiQKBXNwZWxsGAUgASgLMhUuY2hyb25pY2xlcHJvdG8uU3BlbGxCCQoHX3RhcmdldCKYAQoEQXVyYRInCgRtZXRhGAEgASgLMhkuY2hyb25pY2xlcHJvdG8uRXZlbnRNZXRhEg4KBnRhcmdldBgCIAEoCRIRCglzcGVsbE5hbWUYAyABKAkSDgoGYW1vdW50GAQgASgFEjQKC2FwcGxpY2F0aW9uGAUgASgOMh8uY2hyb25pY2xlcHJvdG8uQXVyYUFwcGxpY2F0aW9uKnAKBlNjaG9vbBILCgdVbmtub3duEAASCAoETm9uZRABEgwKCFBoeXNpY2FsEAISCAoESG9seRADEggKBEZpcmUQBBIKCgZOYXR1cmUQBRIJCgVGcm9zdBAGEgoKBlNoYWRvdxAHEgoKBkFyY2FuZRAIKnQKCkNhc3RBY3Rpb24SEQoNQWN0aW9uVW5rbm93bhAAEg8KC0FjdGlvbkNhc3RzEAESFgoSQWN0aW9uQmVnaW5zVG9DYXN0EAISEgoOQWN0aW9uQ2hhbm5lbHMQAxIWChJBY3Rpb25GYWlsc0Nhc3RpbmcQBCptCg9BdXJhQXBwbGljYXRpb24SFgoSQXBwbGljYXRpb25Vbmtub3duEAASFAoQQXBwbGljYXRpb25HYWlucxABEhQKEEFwcGxpY2F0aW9uRmFkZXMQAhIWChJBcHBsaWNhdGlvblJlbW92ZWQQA0IvWi1naXRodWIuY29tL0VteXJrL2Nocm9uaWNsZS9hcGkvY2hyb25pY2xlcHJvdG9iBnByb3RvMw");
 
 /**
  * @generated from message chronicleproto.Tailer
@@ -36,6 +36,30 @@ export const TailerSchema: GenMessage<Tailer> = /*@__PURE__*/
   messageDesc(file_chronicle, 0);
 
 /**
+ * @generated from message chronicleproto.ActivityEntry
+ */
+export type ActivityEntry = Message<"chronicleproto.ActivityEntry"> & {
+  /**
+   * @generated from field: string guid = 1;
+   */
+  guid: string;
+
+  /**
+   * "start", "end", "slain", "bump"
+   *
+   * @generated from field: string eventType = 2;
+   */
+  eventType: string;
+};
+
+/**
+ * Describes the message chronicleproto.ActivityEntry.
+ * Use `create(ActivityEntrySchema)` to create a new message.
+ */
+export const ActivityEntrySchema: GenMessage<ActivityEntry> = /*@__PURE__*/
+  messageDesc(file_chronicle, 1);
+
+/**
  * @generated from message chronicleproto.EventMeta
  */
 export type EventMeta = Message<"chronicleproto.EventMeta"> & {
@@ -48,6 +72,11 @@ export type EventMeta = Message<"chronicleproto.EventMeta"> & {
    * @generated from field: int64 offsetMilli = 2;
    */
   offsetMilli: bigint;
+
+  /**
+   * @generated from field: repeated chronicleproto.ActivityEntry activity = 3;
+   */
+  activity: ActivityEntry[];
 };
 
 /**
@@ -55,7 +84,7 @@ export type EventMeta = Message<"chronicleproto.EventMeta"> & {
  * Use `create(EventMetaSchema)` to create a new message.
  */
 export const EventMetaSchema: GenMessage<EventMeta> = /*@__PURE__*/
-  messageDesc(file_chronicle, 1);
+  messageDesc(file_chronicle, 2);
 
 /**
  * @generated from message chronicleproto.Heal
@@ -97,7 +126,7 @@ export type Heal = Message<"chronicleproto.Heal"> & {
  * Use `create(HealSchema)` to create a new message.
  */
 export const HealSchema: GenMessage<Heal> = /*@__PURE__*/
-  messageDesc(file_chronicle, 2);
+  messageDesc(file_chronicle, 3);
 
 /**
  * @generated from message chronicleproto.Damage
@@ -151,7 +180,7 @@ export type Damage = Message<"chronicleproto.Damage"> & {
  * Use `create(DamageSchema)` to create a new message.
  */
 export const DamageSchema: GenMessage<Damage> = /*@__PURE__*/
-  messageDesc(file_chronicle, 3);
+  messageDesc(file_chronicle, 4);
 
 /**
  * @generated from message chronicleproto.ResourceChange
@@ -198,7 +227,7 @@ export type ResourceChange = Message<"chronicleproto.ResourceChange"> & {
  * Use `create(ResourceChangeSchema)` to create a new message.
  */
 export const ResourceChangeSchema: GenMessage<ResourceChange> = /*@__PURE__*/
-  messageDesc(file_chronicle, 4);
+  messageDesc(file_chronicle, 5);
 
 /**
  * @generated from message chronicleproto.ExtraAttack
@@ -230,7 +259,7 @@ export type ExtraAttack = Message<"chronicleproto.ExtraAttack"> & {
  * Use `create(ExtraAttackSchema)` to create a new message.
  */
 export const ExtraAttackSchema: GenMessage<ExtraAttack> = /*@__PURE__*/
-  messageDesc(file_chronicle, 5);
+  messageDesc(file_chronicle, 6);
 
 /**
  * @generated from message chronicleproto.Slain
@@ -262,7 +291,7 @@ export type Slain = Message<"chronicleproto.Slain"> & {
  * Use `create(SlainSchema)` to create a new message.
  */
 export const SlainSchema: GenMessage<Slain> = /*@__PURE__*/
-  messageDesc(file_chronicle, 6);
+  messageDesc(file_chronicle, 7);
 
 /**
  * @generated from message chronicleproto.Spell
@@ -289,7 +318,7 @@ export type Spell = Message<"chronicleproto.Spell"> & {
  * Use `create(SpellSchema)` to create a new message.
  */
 export const SpellSchema: GenMessage<Spell> = /*@__PURE__*/
-  messageDesc(file_chronicle, 7);
+  messageDesc(file_chronicle, 8);
 
 /**
  * @generated from message chronicleproto.Cast
@@ -326,7 +355,7 @@ export type Cast = Message<"chronicleproto.Cast"> & {
  * Use `create(CastSchema)` to create a new message.
  */
 export const CastSchema: GenMessage<Cast> = /*@__PURE__*/
-  messageDesc(file_chronicle, 8);
+  messageDesc(file_chronicle, 9);
 
 /**
  * @generated from message chronicleproto.Aura
@@ -363,7 +392,7 @@ export type Aura = Message<"chronicleproto.Aura"> & {
  * Use `create(AuraSchema)` to create a new message.
  */
 export const AuraSchema: GenMessage<Aura> = /*@__PURE__*/
-  messageDesc(file_chronicle, 9);
+  messageDesc(file_chronicle, 10);
 
 /**
  * @generated from enum chronicleproto.School

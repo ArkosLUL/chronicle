@@ -85,14 +85,16 @@ function RawEventRow({ event, index }: RawEventRowProps) {
   );
   
   // ActivityEvent column - shows debug annotations when present
+  // Activity types: start (green), end (red), slain (red+skull), bump (yellow)
   const activityEventElement = event.activityEvent ? (
     <span className={cn(
       "w-10 text-center shrink-0 text-[10px] font-semibold",
       event.activityEvent === "start" && "text-green-400",
       event.activityEvent === "end" && "text-red-400",
-      event.activityEvent === "tick" && "text-yellow-400",
+      event.activityEvent === "slain" && "text-red-500",
+      event.activityEvent === "bump" && "text-yellow-400",
     )}>
-      {event.activityEvent}
+      {event.activityEvent === "slain" ? "💀" : event.activityEvent}
     </span>
   ) : (
     <span className="w-10 text-center shrink-0 text-muted-foreground/30">-</span>

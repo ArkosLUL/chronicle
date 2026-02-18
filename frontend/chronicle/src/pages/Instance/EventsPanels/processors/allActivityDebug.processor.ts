@@ -17,7 +17,7 @@ export type ResourceType = "Health" | "Mana" | "Rage" | "Happiness" | "Energy" |
  * Activity event types from debug parser annotations.
  * These indicate when units become "active" during encounters.
  */
-export type ActivityEventType = "start" | "end" | "tick" | null;
+export type ActivityEventType = "start" | "end" | "slain" | "bump" | null;
 
 export interface RawDebugEvent {
   index: number;
@@ -262,6 +262,20 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       amount = regularEvent.amount;
     }
     
+    // Extract activity event if present (from debug reparse)
+    // Activity tracks when a GUID becomes active/inactive in encounter period detection
+    let activityEvent: ActivityEventType = null;
+    if (event.activityCount > 0) {
+      // Look for activity on target or caster GUID
+      for (let i = 0; i < event.activityCount; i++) {
+        const entry = event.activity[i];
+        if (entry.guid === eventTarget || entry.guid === eventCaster) {
+          activityEvent = entry.eventType as ActivityEventType;
+          break;
+        }
+      }
+    }
+    
     const rawEvent: RawDebugEvent = {
       index: event.index,
       offsetMilli: event.offsetMilli,
@@ -273,6 +287,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       target: eventTarget,
       targetName,
       amount,
+      activityEvent,
     };
     
     // Add stream-specific info based on streamType

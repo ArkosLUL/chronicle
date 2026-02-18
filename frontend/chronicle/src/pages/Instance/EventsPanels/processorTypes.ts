@@ -212,6 +212,8 @@ export interface ProcessorPagination {
   abilityFilter?: string;
   /** Filter events by caster/source name (case-insensitive substring match) */
   sourceFilter?: string;
+  /** Filter events by target name (case-insensitive substring match) */
+  targetFilter?: string;
 }
 
 /**

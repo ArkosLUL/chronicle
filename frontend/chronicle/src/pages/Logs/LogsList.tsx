@@ -134,15 +134,15 @@ export function LogsListView({
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Your Logs</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold">Your Logs</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             View and manage your uploaded raid logs.
           </p>
         </div>
-        <Link to="/upload">
+        <Link to="/upload" className="self-start sm:self-auto">
           <Button>
             <UploadIcon className="h-4 w-4 mr-2" />
             Upload New
@@ -218,7 +218,7 @@ export function LogsListView({
               onMonthChange={setCurrentMonth}
               dayContent={renderDayContent}
               headerRight={
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   {/* Show uploads toggle */}
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
@@ -233,9 +233,9 @@ export function LogsListView({
                   {/* Instance filter */}
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Instance:</span>
-                    <div className="relative">
+                    <div className="relative flex-1 sm:flex-none">
                       <select
-                        className="text-sm bg-secondary border border-border rounded px-3 py-1.5 pr-8 cursor-pointer appearance-none"
+                        className="w-full text-sm bg-secondary border border-border rounded px-3 py-1.5 pr-8 cursor-pointer appearance-none"
                         value={instanceFilter ?? ""}
                         onChange={(e) => setInstanceFilter(e.target.value || null)}
                       >

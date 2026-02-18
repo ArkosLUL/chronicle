@@ -299,7 +299,6 @@ func ZulGurubHostiles() map[uint32]Identity {
 		15041: "Spawn of Mar'li",
 		11339: "Hakkari Shadow Hunter",
 		14880: "Razzashi Skitterer",
-		14507: "High Priest Venoxis",
 		11340: "Hakkari Blood Priest",
 		11356: "Gurubashi Champion",
 		11351: "Gurubashi Headhunter",
@@ -328,6 +327,8 @@ func ZulGurubHostiles() map[uint32]Identity {
 		11348: "High Priest Thekal", // "Zealot Zath"
 		11347: "High Priest Thekal", // "Zealot Lor'Khan"
 		14599: "High Priest Thekal",
+
+		14507: "High Priest Venoxis",
 
 		14988: "Bloodlord Mandokir", // "Ohgan", the mount
 		11382: "Bloodlord Mandokir",

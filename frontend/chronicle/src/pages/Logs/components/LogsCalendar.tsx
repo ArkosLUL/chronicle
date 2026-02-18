@@ -29,7 +29,7 @@ export function LogsCalendar({
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {format(month, "MMMM yyyy")}
@@ -56,61 +56,63 @@ export function LogsCalendar({
         {headerRight}
       </div>
 
-      {/* Calendar grid */}
-      <div className="border border-border rounded-lg overflow-hidden">
-        {/* Day names header */}
-        <div className="grid grid-cols-7 bg-muted/50">
-          {DAY_NAMES.map((day) => (
-            <div
-              key={day}
-              className="py-2 text-center text-xs font-medium text-muted-foreground border-b border-border"
-            >
-              {day}
+      {/* Calendar grid - horizontal scroll on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="border border-border rounded-lg overflow-hidden min-w-[500px] sm:min-w-0">
+          {/* Day names header */}
+          <div className="grid grid-cols-7 bg-muted/50">
+            {DAY_NAMES.map((day) => (
+              <div
+                key={day}
+                className="py-2 text-center text-xs font-medium text-muted-foreground border-b border-border"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Weeks */}
+          {weeks.map((week, weekIndex) => (
+            <div key={weekIndex} className="grid grid-cols-7">
+              {week.map((date, dayIndex) => {
+                const inCurrentMonth = isSameMonth(date, month);
+                const today = isToday(date);
+
+                return (
+                  <div
+                    key={dayIndex}
+                    className={`
+                      min-h-[80px] sm:min-h-[100px] p-1 sm:p-1.5 border-b border-r border-border last:border-r-0
+                      ${!inCurrentMonth ? "bg-muted/30" : ""}
+                      ${today ? "bg-primary/5" : ""}
+                    `}
+                  >
+                    {/* Date number */}
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className={`
+                          text-xs sm:text-sm font-medium
+                          ${!inCurrentMonth ? "text-muted-foreground/50" : ""}
+                          ${today ? "text-primary font-bold" : ""}
+                        `}
+                      >
+                        {format(date, "d")}
+                      </span>
+                      {today && (
+                        <span className="text-[10px] sm:text-xs text-primary font-medium">
+                          Today
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Day content (instances, upload badges, etc.) */}
+                    <div className="space-y-1">{dayContent(date)}</div>
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
-
-        {/* Weeks */}
-        {weeks.map((week, weekIndex) => (
-          <div key={weekIndex} className="grid grid-cols-7">
-            {week.map((date, dayIndex) => {
-              const inCurrentMonth = isSameMonth(date, month);
-              const today = isToday(date);
-
-              return (
-                <div
-                  key={dayIndex}
-                  className={`
-                    min-h-[100px] p-1.5 border-b border-r border-border last:border-r-0
-                    ${!inCurrentMonth ? "bg-muted/30" : ""}
-                    ${today ? "bg-primary/5" : ""}
-                  `}
-                >
-                  {/* Date number */}
-                  <div className="flex items-center justify-between mb-1">
-                    <span
-                      className={`
-                        text-sm font-medium
-                        ${!inCurrentMonth ? "text-muted-foreground/50" : ""}
-                        ${today ? "text-primary font-bold" : ""}
-                      `}
-                    >
-                      {format(date, "d")}
-                    </span>
-                    {today && (
-                      <span className="text-xs text-primary font-medium">
-                        Today
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Day content (instances, upload badges, etc.) */}
-                  <div className="space-y-1">{dayContent(date)}</div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
       </div>
     </div>
   );

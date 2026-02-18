@@ -87,8 +87,83 @@ export function UploadsTable({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border border-border rounded-lg overflow-hidden">
+      {/* Mobile card view */}
+      <div className="sm:hidden space-y-3">
+        {sortedLogs.map((log) => {
+          const parsed = parseParsedOutput(log.processing_output);
+          const instances = (parsed?.instances ?? []) as WoWSimpleParsedInstance[];
+          const uploadDate = parseTimestamp(log.created_at);
+          const totalBytes = log.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+          const filesDeleted = log.files?.some((f) => f.storage_deleted_at) ?? false;
+          const realmName = instances[0] ? getRealmName(instances[0].realm_id) : "—";
+
+          return (
+            <div key={log.id} className="border border-border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {uploadDate ? format(uploadDate, "MMM d, yyyy") : "Unknown"}
+                </span>
+                <span className="text-xs text-muted-foreground">{realmName}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {instances.slice(0, 3).map((inst) => {
+                  const instanceDate = getInstanceDate(inst);
+                  const instanceUrl = inst.slug
+                    ? `/instances/${inst.slug}`
+                    : `/instances/${inst.id}`;
+                  return (
+                    <Link
+                      key={inst.id}
+                      to={instanceUrl}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/15 hover:bg-green-500/25 text-green-400 rounded text-xs transition-colors"
+                    >
+                      <Castle className="h-3 w-3" />
+                      <span>{inst.name}</span>
+                      {instanceDate && (
+                        <span className="text-muted-foreground">({instanceDate})</span>
+                      )}
+                    </Link>
+                  );
+                })}
+                {instances.length > 3 && (
+                  <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded">
+                    +{instances.length - 3} more
+                  </span>
+                )}
+                {instances.length === 0 && (
+                  <span className="text-xs text-muted-foreground italic">
+                    {parsed?.complete ? "No instances" : "Processing..."}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border">
+                <span>
+                  {filesDeleted ? (
+                    <span className="italic">removed</span>
+                  ) : (
+                    formatBytes(totalBytes)
+                  )}
+                </span>
+                <Link
+                  to={`/logs/${log.id}`}
+                  className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+        {sortedLogs.length === 0 && (
+          <div className="border border-border rounded-lg p-8 text-center text-muted-foreground">
+            No logs found
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden sm:block border border-border rounded-lg overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="bg-muted/50 text-sm">

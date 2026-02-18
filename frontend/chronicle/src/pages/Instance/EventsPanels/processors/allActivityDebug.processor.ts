@@ -182,6 +182,22 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       }
     }
     
+    // Filter by target name if specified
+    const targetFilter = context.pagination?.targetFilter?.toLowerCase().trim();
+    if (targetFilter) {
+      // Look up target name from players or units
+      const targetName = eventTarget
+        ? (context.players[eventTarget]?.name ?? 
+           context.units?.[eventTarget]?.name ?? 
+           eventTarget)
+        : "";
+      
+      // Check if the target name contains the filter string (case-insensitive)
+      if (!targetName.toLowerCase().includes(targetFilter)) {
+        return;
+      }
+    }
+    
     // Increment total processed (only for enabled streams)
     state.totalProcessed++;
     

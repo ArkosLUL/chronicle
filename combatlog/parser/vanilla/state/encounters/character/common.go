@@ -60,7 +60,8 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 
 		if data.Application == types.AuraApplicationGains && data.Amount == 1 {
 			switch data.SpellName {
-			case "Polymorph", "Freezing Trap Effect", "Sap":
+			// Any CC style aura should start activity
+			case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate":
 				c.Start(fmt.Sprintf("cc_%s", data.SpellName), m)
 			}
 		}

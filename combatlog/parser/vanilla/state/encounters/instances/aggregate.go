@@ -8,6 +8,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -18,6 +19,8 @@ type OngoingFight struct {
 	EncounterID    uuid.UUID
 	ActiveHostiles map[guid.GUID]struct{}
 	Events         *encounterevents.EncounterEventsInProgress
+	// PlayerDeaths helps track a reset vs a "wipe".
+	PlayerDeaths []messages.Message
 
 	Start *period.Moment
 	End   *period.Moment
@@ -33,6 +36,8 @@ const (
 	KillTypePartial KillType = "partial"
 	// KillTypeWipe means the boss was not killed - raid wiped or reset.
 	KillTypeWipe KillType = "wipe"
+	// KillTypeReset is when all the mobs were reset
+	KillTypeReset KillType = "reset"
 )
 
 // Encounter represents a named combat period in the logs.
@@ -81,7 +86,8 @@ type Fight struct {
 	// Hostiles contains all hostile characters that participated in this fight.
 	// Each CharacterFight contains all activity periods from that character
 	// that belong to this fight.
-	Hostiles map[guid.GUID]CharacterFight
+	Hostiles     map[guid.GUID]CharacterFight
+	PlayerDeaths []messages.Message
 
 	// Start is the earliest start time across all hostile activity periods.
 	Start time.Time
@@ -90,14 +96,31 @@ type Fight struct {
 	End time.Time
 }
 
-func (f Fight) Remaining() []guid.GUID {
+type RemainingReport struct {
+	Slain     int
+	Reset     int
+	Remaining []guid.GUID
+}
+
+func (f Fight) Remaining() RemainingReport {
+	slain := 0
+	reset := 0
 	remaining := make([]guid.GUID, 0)
 	for _, h := range f.Hostiles {
-		if h.Activity[len(h.Activity)-1].EndState != period.EndStateSlain {
+		switch h.Activity[len(h.Activity)-1].EndState {
+		case period.EndStateSlain:
+			slain++
+		case period.EndStateReset:
+			reset++
+		default:
 			remaining = append(remaining, h.ID)
 		}
 	}
-	return remaining
+	return RemainingReport{
+		Slain:     slain,
+		Reset:     reset,
+		Remaining: remaining,
+	}
 }
 
 func (f Fight) NamedString(db *unitdb.Units) string {

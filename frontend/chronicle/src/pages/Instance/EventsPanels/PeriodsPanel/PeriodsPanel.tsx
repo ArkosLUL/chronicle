@@ -223,7 +223,7 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                         <div className="text-red-400 pt-1">💀 Slain</div>
                       )}
                       {period.end_state === "reset" && (
-                        <div className="text-yellow-400 pt-1">🔄 Reset</div>
+                        <div className="text-orange-400 pt-1">🔄 Reset</div>
                       )}
                       {period.end_state === "timeout" && (
                         <div className="text-gray-400 pt-1">⏱️ Timeout</div>
@@ -239,7 +239,7 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                             "absolute h-full rounded cursor-help transition-opacity hover:opacity-100",
                             entry.boss ? "bg-yellow-500/70" : "bg-blue-500/50",
                             period.end_state === "slain" && "border-r-2 border-red-500",
-                            period.end_state === "reset" && "border-r-2 border-yellow-500",
+                            period.end_state === "reset" && "border-r-2 border-orange-500",
                             period.end_state === "timeout" && "border-r-2 border-gray-500"
                           )}
                           style={{ 
@@ -272,7 +272,15 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-blue-500/50 rounded border-r-2 border-red-500" />
-            <span>Slain</span>
+            <span>💀 Slain</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-blue-500/50 rounded border-r-2 border-orange-500" />
+            <span>🔄 Reset</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-blue-500/50 rounded border-r-2 border-gray-500" />
+            <span>⏱️ Timeout</span>
           </div>
         </div>
       </div>

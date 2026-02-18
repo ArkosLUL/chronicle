@@ -9,8 +9,6 @@ const (
 	UniqueDataLimitPkey                             UniqueConstraint = "data_limit_pkey"                                 // ALTER TABLE ONLY data_limit ADD CONSTRAINT data_limit_pkey PRIMARY KEY (user_id);
 	UniqueGuildsPkey                                UniqueConstraint = "guilds_pkey"                                     // ALTER TABLE ONLY guilds ADD CONSTRAINT guilds_pkey PRIMARY KEY (id);
 	UniqueGuildsRealmIDNameKey                      UniqueConstraint = "guilds_realm_id_name_key"                        // ALTER TABLE ONLY guilds ADD CONSTRAINT guilds_realm_id_name_key UNIQUE (realm_id, name);
-	UniqueItemEffectsPkey                           UniqueConstraint = "item_effects_pkey"                               // ALTER TABLE ONLY item_effects ADD CONSTRAINT item_effects_pkey PRIMARY KEY (id);
-	UniqueItemTemplatesPkey                         UniqueConstraint = "item_templates_pkey"                             // ALTER TABLE ONLY item_templates ADD CONSTRAINT item_templates_pkey PRIMARY KEY (id);
 	UniqueLogFilePkey                               UniqueConstraint = "log_file_pkey"                                   // ALTER TABLE ONLY log_file ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
 	UniqueLogInstanceEncounterDamageUnitSummaryPkey UniqueConstraint = "log_instance_encounter_damage_unit_summary_pkey" // ALTER TABLE ONLY log_instance_encounter_damage_unit_summary ADD CONSTRAINT log_instance_encounter_damage_unit_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
 	UniqueLogInstanceEncounterHostilesPkey          UniqueConstraint = "log_instance_encounter_hostiles_pkey"            // ALTER TABLE ONLY log_instance_encounter_hostiles ADD CONSTRAINT log_instance_encounter_hostiles_pkey PRIMARY KEY (encounter_id, id);
@@ -25,7 +23,6 @@ const (
 	UniqueRiverLeaderPkey                           UniqueConstraint = "river_leader_pkey"                               // ALTER TABLE ONLY river_leader ADD CONSTRAINT river_leader_pkey PRIMARY KEY (name);
 	UniqueRiverMigrationPkey1                       UniqueConstraint = "river_migration_pkey1"                           // ALTER TABLE ONLY river_migration ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
 	UniqueRiverQueuePkey                            UniqueConstraint = "river_queue_pkey"                                // ALTER TABLE ONLY river_queue ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
-	UniqueSpellTemplatesPkey                        UniqueConstraint = "spell_templates_pkey"                            // ALTER TABLE ONLY spell_templates ADD CONSTRAINT spell_templates_pkey PRIMARY KEY (id);
 	UniqueUserAuthLinksPkey                         UniqueConstraint = "user_auth_links_pkey"                            // ALTER TABLE ONLY user_auth_links ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 	UniqueUserAuthSessionPkey                       UniqueConstraint = "user_auth_session_pkey"                          // ALTER TABLE ONLY user_auth_session ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
 	UniqueUsersPkey                                 UniqueConstraint = "users_pkey"                                      // ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id);

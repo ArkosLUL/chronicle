@@ -13,7 +13,8 @@ CREATE TYPE item_effect_type AS ENUM (
 CREATE TYPE kill_type AS ENUM (
     'clean',
     'partial',
-    'wipe'
+    'wipe',
+    'reset'
 );
 
 CREATE TYPE log_instance_event_type AS ENUM (

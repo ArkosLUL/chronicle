@@ -13,6 +13,7 @@ type IsPeriod interface {
 	End(reason string, ts messages.Message, endState EndState)
 	Timeout(reason string, date time.Time)
 	Bump(reason string, ts messages.Message)
+	EnterResetGracePeriod(reason string, m messages.Message)
 	IsActive() bool
 	Get() Period
 	String() string
@@ -119,6 +120,8 @@ func (p *WorkingPeriod[M]) Begin(reason string, ts messages.Message) {
 	p.Start = m
 }
 
+
+
 func (p *WorkingPeriod[M]) End(reason string, ts messages.Message, endState EndState) {
 	m := &Moment{
 		Timestamp: ts,
@@ -143,6 +146,18 @@ func (p *WorkingPeriod[M]) End(reason string, ts messages.Message, endState EndS
 	default:
 		ts.AddActivity(p.me, messages.ActivityEnd)
 	}
+}
+
+// ResetTimeout is a timeout from a reset grace period.
+func (p *WorkingPeriod[M]) ResetTimeout(reason string, date time.Time) {
+  if !p.IsActive() {
+    return
+  }
+  p.Period.End = &Moment{
+    Timestamp: messages.TimedOut(date),
+    Reason:    fmt.Sprintf("Reset: %s", reason),
+  }
+  p.EndState = EndStateReset
 }
 
 // Timeout does not bump the last active time, as it does not indicate activity.

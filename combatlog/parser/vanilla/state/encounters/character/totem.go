@@ -50,6 +50,11 @@ func (t *TotemPeriod) HandleTimeout(now time.Time) {
 	}
 }
 
+// EnterResetGracePeriod is a no-op for totems - they don't support reset grace periods.
+func (t *TotemPeriod) EnterResetGracePeriod(reason string, m messages.Message) {
+	// Totems don't get CC'd and don't need reset grace periods
+}
+
 type Totem struct {
 	*Base[*TotemPeriod]
 	Self totems.Totem

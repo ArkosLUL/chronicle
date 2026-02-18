@@ -77,6 +77,10 @@ func (c *Base[_]) CurrentPeriod() (period.Period, bool) {
 	return cur.Get(), true
 }
 
+func (c *Base[M]) CurrentPeriodIsPeriod() (period.IsPeriod, bool) {
+	return c.Activity.Current()
+}
+
 func (c *Base[_]) IsActive() bool {
 	return c.Activity.IsActive()
 }
@@ -92,6 +96,10 @@ func (c *Base[_]) Periods() []period.Period {
 func (c *Base[_]) Died(reason string, m messages.Message) {
 	c.Activity.End(reason, m, period.EndStateSlain)
 	c.LastSlain = m
+}
+
+func (c *Base[_]) End(reason string, m messages.Message, state period.EndState) {
+	c.Activity.End(reason, m, state)
 }
 
 func (c *Base[_]) Bump(reason string, m messages.Message) {

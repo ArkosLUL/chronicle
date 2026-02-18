@@ -83,6 +83,7 @@ const (
 	KillTypeClean   KillType = "clean"
 	KillTypePartial KillType = "partial"
 	KillTypeWipe    KillType = "wipe"
+	KillTypeReset   KillType = "reset"
 )
 
 func (e *KillType) Scan(src interface{}) error {
@@ -124,7 +125,8 @@ func (e KillType) Valid() bool {
 	switch e {
 	case KillTypeClean,
 		KillTypePartial,
-		KillTypeWipe:
+		KillTypeWipe,
+		KillTypeReset:
 		return true
 	}
 	return false
@@ -135,6 +137,7 @@ func AllKillTypeValues() []KillType {
 		KillTypeClean,
 		KillTypePartial,
 		KillTypeWipe,
+		KillTypeReset,
 	}
 }
 
@@ -560,22 +563,6 @@ type Guild struct {
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
-type ItemTemplate struct {
-	ID            int32              `db:"id" json:"id"`
-	Name          pgtype.Text        `db:"name" json:"name"`
-	Quality       pgtype.Int4        `db:"quality" json:"quality"`
-	ItemLevel     pgtype.Int4        `db:"item_level" json:"item_level"`
-	RequiredLevel pgtype.Int4        `db:"required_level" json:"required_level"`
-	InventoryType pgtype.Int4        `db:"inventory_type" json:"inventory_type"`
-	ItemClass     pgtype.Int4        `db:"item_class" json:"item_class"`
-	ItemSubclass  pgtype.Int4        `db:"item_subclass" json:"item_subclass"`
-	IconID        pgtype.Int4        `db:"icon_id" json:"icon_id"`
-	Description   pgtype.Text        `db:"description" json:"description"`
-	Flags         pgtype.Int4        `db:"flags" json:"flags"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
 type LogFile struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
@@ -739,27 +726,6 @@ type RiverQueue struct {
 	Metadata  []byte             `db:"metadata" json:"metadata"`
 	PausedAt  pgtype.Timestamptz `db:"paused_at" json:"paused_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
-type SpellTemplate struct {
-	ID              int32              `db:"id" json:"id"`
-	Name            pgtype.Text        `db:"name" json:"name"`
-	School          pgtype.Text        `db:"school" json:"school"`
-	Description     pgtype.Text        `db:"description" json:"description"`
-	Subtext         pgtype.Text        `db:"subtext" json:"subtext"`
-	AuraDescription pgtype.Text        `db:"aura_description" json:"aura_description"`
-	IconID          pgtype.Int4        `db:"icon_id" json:"icon_id"`
-	SchoolMask      pgtype.Int4        `db:"school_mask" json:"school_mask"`
-	PowerType       pgtype.Int4        `db:"power_type" json:"power_type"`
-	ManaCost        pgtype.Int4        `db:"mana_cost" json:"mana_cost"`
-	ManaCostPct     pgtype.Float8      `db:"mana_cost_pct" json:"mana_cost_pct"`
-	CastTimeIndex   pgtype.Int4        `db:"cast_time_index" json:"cast_time_index"`
-	RecoveryTime    pgtype.Int4        `db:"recovery_time" json:"recovery_time"`
-	RangeIndex      pgtype.Int4        `db:"range_index" json:"range_index"`
-	Attributes      pgtype.Text        `db:"attributes" json:"attributes"`
-	Targets         pgtype.Text        `db:"targets" json:"targets"`
-	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type User struct {

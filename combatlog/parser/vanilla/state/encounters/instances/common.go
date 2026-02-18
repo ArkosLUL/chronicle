@@ -107,18 +107,25 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			}
 		}
 
-		remaining := fight.Remaining()
+		rr := fight.Remaining()
 
 		// Determine kill type based on remaining enemies and boss status
 		var killType KillType
-		if len(remaining) == 0 {
+		if len(rr.Remaining) == 0 {
 			killType = KillTypeClean
+			if rr.Slain == 0 && rr.Reset > 0 {
+				killType = KillTypeReset
+			}
 		} else if isBossFight && !aBossRemains {
 			// No bosses remain, but it was a boss fight.
 			// An add probably lived
 			killType = KillTypePartial
 		} else {
-			killType = KillTypeWipe
+			if len(fight.PlayerDeaths) == 0 {
+				killType = KillTypeReset
+			} else {
+				killType = KillTypeWipe
+			}
 		}
 
 		encounters = append(encounters, Encounter{
@@ -126,7 +133,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			Type:      encounterType,
 			Combat:    fight,
 			KillType:  killType,
-			Remaining: remaining,
+			Remaining: rr.Remaining,
 			Boss:      isBossFight,
 		})
 	}
@@ -207,6 +214,14 @@ func (c *Common) Process(m messages.Message) error {
 			return fmt.Errorf("processing fight: %w", err)
 		}
 	} else if c.currentFight != nil && c.currentFight.Start != nil {
+		// Keep track of player deaths.
+		// TODO: Ideally this code is in a tracker of some sort.
+		if isSlain, ok := m.(*messages.Slain); ok {
+			if isSlain.Victim.IsPlayer() {
+				c.currentFight.PlayerDeaths = append(c.currentFight.PlayerDeaths, isSlain)
+			}
+		}
+
 		// Inside a fight, record all events.
 		err = c.currentFight.Events.Process(m)
 		if err != nil {
@@ -321,10 +336,11 @@ func (c *Common) FightDetectionHandler(m messages.Message) error {
 
 func (c *Common) finalizeFight() error {
 	fight := Fight{
-		Hostiles:    map[guid.GUID]CharacterFight{},
-		Start:       c.currentFight.Start.Timestamp.Date(),
-		End:         c.currentFight.End.Timestamp.Date(),
-		EncounterID: c.currentFight.EncounterID,
+		Hostiles:     map[guid.GUID]CharacterFight{},
+		Start:        c.currentFight.Start.Timestamp.Date(),
+		End:          c.currentFight.End.Timestamp.Date(),
+		EncounterID:  c.currentFight.EncounterID,
+		PlayerDeaths: c.currentFight.PlayerDeaths,
 	}
 
 	for id := range c.currentFight.ActiveHostiles {

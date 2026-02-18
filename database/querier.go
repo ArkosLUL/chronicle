@@ -14,8 +14,6 @@ import (
 type sqlcQuerier interface {
 	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
-	DeleteAllSpellTemplates(ctx context.Context) error
-	DeleteThisQuery(ctx context.Context) error
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLogGroupFilesParams) ([]LogFile, error)
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
@@ -24,8 +22,6 @@ type sqlcQuerier interface {
 	GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterHostile, error)
 	GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (LogInstanceYoutubeTimestamped, error)
 	GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error)
-	GetSpellTemplate(ctx context.Context, id int32) (SpellTemplate, error)
-	GetSpellTemplatesByIDs(ctx context.Context, dollar_1 []int32) ([]SpellTemplate, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserAuthLinkByUserID(ctx context.Context, userID uuid.UUID) (UserAuthLink, error)
 	GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (UserAuthSession, error)
@@ -58,10 +54,8 @@ type sqlcQuerier interface {
 	ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error)
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	SetUserStorageLimit(ctx context.Context, arg SetUserStorageLimitParams) (DataLimit, error)
-	SpellTemplateCount(ctx context.Context) (int64, error)
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
 	UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error)
-	UpsertSpellTemplate(ctx context.Context, arg UpsertSpellTemplateParams) error
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

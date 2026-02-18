@@ -41,9 +41,11 @@ func (c *Common) Start(reason string, m messages.Message) {
 type characterBase interface {
 	Character
 
+	End(reason string, m messages.Message, state period.EndState)
 	Died(reason string, m messages.Message)
 	Bump(reason string, m messages.Message)
 	Start(reason string, m messages.Message)
+	CurrentPeriodIsPeriod() (period.IsPeriod, bool)
 
 	Owner() (guid.GUID, bool)
 	Lookup() *Characters
@@ -58,11 +60,21 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			return nil
 		}
 
-		if data.Application == types.AuraApplicationGains && data.Amount == 1 {
-			switch data.SpellName {
-			// Any CC style aura should start activity
-			case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate":
+		applied := data.Application == types.AuraApplicationGains && data.Amount == 1
+		removed := data.Application == types.AuraApplicationFades && data.Amount == 0
+
+		switch data.SpellName {
+		// Any CC style aura should start activity
+		case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate", "Banish":
+			if applied {
 				c.Start(fmt.Sprintf("cc_%s", data.SpellName), m)
+			} else if removed {
+				// Enter grace period instead of immediate reset
+				// If activity occurs within 5s, the reset is cancelled
+				cur, ok := c.CurrentPeriodIsPeriod()
+				if ok {
+					cur.EnterResetGracePeriod("cc removed", m)
+				}
 			}
 		}
 

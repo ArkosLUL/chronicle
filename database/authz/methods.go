@@ -19,10 +19,6 @@ func (z *interceptor) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.
 	return z.Store.DeleteAllParsedLogsByGroupID(ctx, id)
 }
 
-func (z *interceptor) DeleteThisQuery(ctx context.Context) error {
-	return z.Store.DeleteThisQuery(ctx)
-}
-
 func (z *interceptor) DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error {
 	b := policy.New().Raid_log(id).Object()
 	f := rel.NewFilter(b.Typ, b.ID, "")

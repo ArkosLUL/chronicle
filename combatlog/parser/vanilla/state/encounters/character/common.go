@@ -1,6 +1,7 @@
 package character
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -19,7 +20,7 @@ type Common struct {
 
 func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
 	return &Common{
-		Base:          NewBaseCharacter[*period.InactivityPeriod](id, all),
+		Base: NewBaseCharacter[*period.InactivityPeriod](id, all),
 	}
 }
 
@@ -52,6 +53,18 @@ type characterBase interface {
 // processCommonActivity handles the basics of activity processing for a character.
 func processCommonActivity(c characterBase, m messages.Message) error {
 	switch data := m.(type) {
+	case messages.Aura:
+		if c.ID() != data.Target {
+			return nil
+		}
+
+		if data.Application == types.AuraApplicationGains && data.Amount == 1 {
+			switch data.SpellName {
+			case "Polymorph", "Freezing Trap Effect", "Sap":
+				c.Start(fmt.Sprintf("cc_%s", data.SpellName), m)
+			}
+		}
+
 	case messages.Slain:
 		if c.ID() == data.Victim {
 			c.Died(ReasonSlain, m)
@@ -100,9 +113,9 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 }
 
 func (c *Common) Is(entry uint32) bool {
-  charEntry, ok := c.ID().GetEntry()
-  if !ok {
-    return false
-  }
-  return charEntry == entry
+	charEntry, ok := c.ID().GetEntry()
+	if !ok {
+		return false
+	}
+	return charEntry == entry
 }

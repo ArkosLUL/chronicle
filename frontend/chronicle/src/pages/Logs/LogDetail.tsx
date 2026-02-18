@@ -737,6 +737,23 @@ export function LogDetailView({
                 </Button>
               )}
             </div>
+            
+            {/* Warning about deleting files */}
+            {log.files && log.files.length > 0 && !log.files.every(f => f.storage_deleted_at) && (
+              <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <p className="text-sm text-amber-200">
+                  <strong>Before deleting:</strong> These are your raw combat log files. Chronicle stores a compressed version of the parsed data, but if there are any parsing errors or missing data, the raw files are needed to investigate and re-parse.
+                </p>
+                <p className="text-sm text-amber-200/80 mt-2">
+                  Only delete if:
+                </p>
+                <ul className="text-sm text-amber-200/80 list-disc list-inside ml-2">
+                  <li>You need more storage space (feel free to ask for more!)</li>
+                  <li>The instance page looks perfect with no issues</li>
+                </ul>
+              </div>
+            )}
+            
             <div className="space-y-2">
               {log.files && log.files.length > 0 ? (
                 log.files.map((file: WoWLogFile) => (

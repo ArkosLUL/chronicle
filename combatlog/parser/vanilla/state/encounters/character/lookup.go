@@ -33,6 +33,7 @@ var characterFactories = []characterFactory{
 	NewHighPriestMarli,
 	NewHighPriestessJeklik,
 	NewHighPriestThekalParty,
+	NewJindoHexxer,
 	// Scholomance
 	NewJandiceBarov,
 	NewDiseasedGhoul,

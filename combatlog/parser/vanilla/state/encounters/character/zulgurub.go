@@ -34,6 +34,13 @@ func NewHighPriestArlokk(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(highPriestArlokk, zulianProwler)(id, all)
 }
 
+// NewJindoHexxer handles the "Sacrificed Trolls". Idk what is going on, maybe it
+// is a range issue? But they are not always seen to be killed.
+// They are insignificant, so just kill them with the boss.
+func NewJindoHexxer(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(11380, 14826)(id, all)
+}
+
 type HighPriestThekalParty struct {
 	*Common
 	all *Characters

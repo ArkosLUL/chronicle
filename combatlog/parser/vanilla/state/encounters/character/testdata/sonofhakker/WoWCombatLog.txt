@@ -1,0 +1,537 @@
+2/16 21:05:22.755  CAST: The Lost begins to cast Soul Rot(51128) on Son of Hakkar.
+2/16 21:05:23.569  CAST: Satrell casts Faerie Fire (Feral)(17391)(Rank 3) on Son of Hakkar.
+2/16 21:05:23.570  Son of Hakkar is afflicted by Faerie Fire (Feral) (1).
+2/16 21:05:24.261  Son of Hakkar attacks. Satrell dodges.
+2/16 21:05:24.890  Satrell crits Son of Hakkar for 488.
+2/16 21:05:25.006  Your Fire Strike hits Son of Hakkar for 4 Fire damage.
+2/16 21:05:25.006  Your Seal of Righteousness hits Son of Hakkar for 95 Holy damage.
+2/16 21:05:25.007  Your Fire Strike hits Son of Hakkar for 3 Fire damage. (1 resisted)
+2/16 21:05:25.007  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:25.007  CAST: Nefras casts Vindication(26017)(Rank 2) on Son of Hakkar.
+2/16 21:05:25.007  Your Divine Strike hits Son of Hakkar for 3 Holy damage.
+2/16 21:05:25.007  You hit Son of Hakkar for 155.
+2/16 21:05:25.007  Son of Hakkar is afflicted by Vindication (1).
+2/16 21:05:25.156  CAST: Satrell casts Savage Bite(45736) on Son of Hakkar.
+2/16 21:05:25.156  Satrell's Savage Bite hits Son of Hakkar for 262.
+2/16 21:05:25.353  CAST: Gustas casts Frostbolt(52663) on Son of Hakkar.
+2/16 21:05:25.353  Gustas hits Son of Hakkar for 176.
+2/16 21:05:25.668  Gustas's Frostbolt hits Son of Hakkar for 35 Frost damage.
+2/16 21:05:25.668  CAST: Nefras casts Crusader Strike(10337)(Rank 5) on Son of Hakkar.
+2/16 21:05:25.668  Your Crusader Strike was dodged by Son of Hakkar.
+2/16 21:05:25.668  Son of Hakkar is afflicted by Frostbolt (1).
+2/16 21:05:25.842  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:05:25.842  Satrell's Swipe hits Son of Hakkar for 104.
+2/16 21:05:26.096  CAST: Gustas casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:05:26.096  CAST: Gustas casts Deep Wound(12721) on Son of Hakkar.
+2/16 21:05:26.096  Gustas crits Son of Hakkar for 162.
+2/16 21:05:26.133  Son of Hakkar is afflicted by Deep Wound (1).
+2/16 21:05:26.284  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:05:26.284  Son of Hakkar hits Satrell for 322.
+2/16 21:05:26.664  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:05:26.664  Your Seal of Righteousness hits Son of Hakkar for 125 Holy damage.
+2/16 21:05:26.664  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:05:26.664  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:26.664  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:26.664  CAST: Nefras casts Thunderfury(21992) on Son of Hakkar.
+2/16 21:05:26.664  CAST: Nefras casts Thunderfury(27648) on Son of Hakkar.
+2/16 21:05:26.664  Your Thunderfury hits Son of Hakkar for 345 Nature damage.
+2/16 21:05:26.664  You hit Son of Hakkar for 146.
+2/16 21:05:26.664  Son of Hakkar is afflicted by Thunderfury (1).
+2/16 21:05:26.664  Son of Hakkar is afflicted by Thunderfury (1).
+2/16 21:05:27.202  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:05:27.202  Satrell's Maul hits Son of Hakkar for 383.
+2/16 21:05:27.202  CAST: Gustas casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:05:27.202  Gustas crits Son of Hakkar for 350.
+2/16 21:05:27.440  CAST: Gustas casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:05:27.440  Gustas crits Son of Hakkar for 164.
+2/16 21:05:27.544  Son of Hakkar suffers 28 Physical damage from Gustas's Deep Wound.
+2/16 21:05:27.825  CAST: Kindspirit casts Shoot(5019) on Son of Hakkar.
+2/16 21:05:27.825  CAST: Nefras casts Judgement(20271) on Son of Hakkar.
+2/16 21:05:27.825  Son of Hakkar is afflicted by Judgement of Wisdom (1).
+2/16 21:05:28.285  CAST: Gustas casts Bloodthirst(23894)(Rank 4) on Son of Hakkar.
+2/16 21:05:28.285  Gustas's Bloodthirst hits Son of Hakkar for 347.
+2/16 21:05:28.285  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:05:28.285  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:28.290  You hit Son of Hakkar for 127.
+2/16 21:05:28.431  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:05:28.431  Son of Hakkar hits Satrell for 327.
+2/16 21:05:28.610  CAST: Mooshmallows casts Flame Shock(10448)(Rank 5) on Son of Hakkar.
+2/16 21:05:28.610  Mooshmallows's Flame Shock hits Son of Hakkar for 435 Fire damage.
+2/16 21:05:28.610  Son of Hakkar is afflicted by Flame Shock (1).
+2/16 21:05:28.787  Gustas hits Son of Hakkar for 72. (glancing)
+2/16 21:05:28.969  CAST: Gustas casts Heroic Strike(11567)(Rank 8) on Son of Hakkar.
+2/16 21:05:28.969  Gustas's Heroic Strike hits Son of Hakkar for 243.
+2/16 21:05:29.075  CAST: Son of Hakkar casts Knockdown(16790) on Satrell.
+2/16 21:05:29.075  Son of Hakkar suffers 28 Physical damage from Gustas's Deep Wound.
+2/16 21:05:29.335  Kindspirit's Shoot hits Son of Hakkar for 113 Shadow damage.
+2/16 21:05:29.336  CAST: Kindspirit casts Shoot(5019) on Son of Hakkar.
+2/16 21:05:29.336  Son of Hakkar's Knockdown hits Satrell for 46.
+2/16 21:05:29.336  Son of Hakkar's Knockdown hits you for 72.
+2/16 21:05:29.336  Son of Hakkar's Knockdown hits Gustas for 106.
+2/16 21:05:30.175  CAST: Mooshmallows begins to cast Chain Lightning(10605)(Rank 4) on Son of Hakkar.
+2/16 21:05:30.546  Son of Hakkar suffers 28 Physical damage from Gustas's Deep Wound.
+2/16 21:05:30.902  Kindspirit's Shoot hits Son of Hakkar for 112 Shadow damage.
+2/16 21:05:30.902  CAST: Kindspirit casts Shoot(5019) on Son of Hakkar.
+2/16 21:05:31.027  CAST: Netheras casts Sinister Strike(11294)(Rank 8) on Son of Hakkar.
+2/16 21:05:31.027  Netheras's Sinister Strike hits Son of Hakkar for 246.
+2/16 21:05:31.027  CAST: Netheras casts Dissolvent Poison II(45880)(Rank 2) on Son of Hakkar.
+2/16 21:05:31.027  Netheras's Dissolvent Poison II hits Son of Hakkar for 175.
+2/16 21:05:31.097  Netheras crits Son of Hakkar for 400.
+2/16 21:05:31.097  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:05:31.097  Son of Hakkar hits Satrell for 340.
+2/16 21:05:31.212  Netheras hits Son of Hakkar for 199.
+2/16 21:05:31.212  Netheras hits Son of Hakkar for 111. (glancing)
+2/16 21:05:31.390  Satrell hits Son of Hakkar for 235. (glancing)
+2/16 21:05:31.390  Gustas hits Son of Hakkar for 153.
+2/16 21:05:31.390  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:05:31.398  Your Seal of Righteousness hits Son of Hakkar for 127 Holy damage.
+2/16 21:05:31.398  Your Fire Strike hits Son of Hakkar for 4 Fire damage.
+2/16 21:05:31.398  CAST: Nefras casts Vindication(26017)(Rank 2) on Son of Hakkar.
+2/16 21:05:31.398  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:31.398  Your Divine Strike crits Son of Hakkar for 6 Holy damage.
+2/16 21:05:31.414  CAST: Nefras casts Thunderfury(21992) on Son of Hakkar.
+2/16 21:05:31.414  CAST: Nefras casts Thunderfury(27648) on Son of Hakkar.
+2/16 21:05:31.414  Your Thunderfury crits Son of Hakkar for 518 Nature damage.
+2/16 21:05:31.414  You hit Son of Hakkar for 144.
+2/16 21:05:31.484  Gustas hits Son of Hakkar for 81.
+2/16 21:05:31.484  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:05:31.484  Your Seal of Righteousness hits Son of Hakkar for 125 Holy damage.
+2/16 21:05:31.484  Your Fire Strike hits Son of Hakkar for 4 Fire damage.
+2/16 21:05:31.484  Your Divine Strike hits Son of Hakkar for 3 Holy damage.
+2/16 21:05:31.492  CAST: Nefras casts Thunderfury(21992) on Son of Hakkar.
+2/16 21:05:31.492  CAST: Nefras casts Thunderfury(27648) on Son of Hakkar.
+2/16 21:05:31.492  Your Thunderfury crits Son of Hakkar for 517 Nature damage.
+2/16 21:05:31.492  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:31.492  CAST: Nefras casts Thunderfury(21992) on Son of Hakkar.
+2/16 21:05:31.492  CAST: Nefras casts Thunderfury(27648) on Son of Hakkar.
+2/16 21:05:31.492  Your Thunderfury crits Son of Hakkar for 518 Nature damage.
+2/16 21:05:31.508  You hit Son of Hakkar for 120. (36 blocked)
+2/16 21:05:31.555  CAST: Mooshmallows casts Chain Lightning(10605)(Rank 4) on Son of Hakkar.
+2/16 21:05:31.555  Mooshmallows's Chain Lightning hits Son of Hakkar for 832 Nature damage.
+2/16 21:05:31.572  Son of Hakkar suffers 120 Fire damage from Mooshmallows's Flame Shock.
+2/16 21:05:31.572  Frostbolt fades from Son of Hakkar.
+2/16 21:05:31.703  CAST: Satrell casts Savage Bite(45736) on Son of Hakkar.
+2/16 21:05:31.703  Satrell's Savage Bite hits Son of Hakkar for 261.
+2/16 21:05:31.760  CAST: Nefras casts Crusader Strike(10337)(Rank 5) on Son of Hakkar.
+2/16 21:05:31.760  Your Crusader Strike hits Son of Hakkar for 247.
+2/16 21:05:31.760  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:05:31.760  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:05:32.004  CAST: Netheras casts Rupture(11275)(Rank 6) on Son of Hakkar.
+2/16 21:05:32.004  Son of Hakkar is afflicted by Rupture (1).
+2/16 21:05:32.106  Son of Hakkar suffers 28 Physical damage from Gustas's Deep Wound.
+2/16 21:05:32.106  Deep Wound fades from Son of Hakkar.
+2/16 21:05:32.478  Kindspirit's Shoot hits Son of Hakkar for 128 Shadow damage.
+2/16 21:05:32.478  CAST: Kindspirit casts Shoot(5019) on Son of Hakkar.
+2/16 21:05:32.850  CAST: Qoppa casts Fire Blast(10199)(Rank 7) on Son of Hakkar.
+2/16 21:05:32.850  Qoppa's Fire Blast hits Son of Hakkar for 626 Fire damage.
+2/16 21:05:32.850  CAST: Qoppa casts Ancient Accord(44095) on Son of Hakkar.
+2/16 21:05:32.852  Qoppa's Ancient Accord hits Son of Hakkar for 474 Arcane damage.
+2/16 21:05:32.852  Son of Hakkar dies.
+2/16 21:05:32.852  UNIT_DIED:Son of Hakkar:0xF130002C5D00BF8A
+2/16 21:05:32.868  CAST: Son of Hakkar casts Poisonous Blood(24320) on Son of Hakkar.
+2/16 21:05:41.346  CAST: Satrell casts Faerie Fire (Feral)(17391)(Rank 3) on Son of Hakkar.
+2/16 21:05:41.346  Son of Hakkar is afflicted by Faerie Fire (Feral) (1).
+2/16 21:05:43.915  Son of Hakkar is afflicted by Consecration (1).
+2/16 21:05:44.017  Son of Hakkar is afflicted by Consecration (1).
+2/16 21:05:44.883  Son of Hakkar suffers 82 Holy damage from your Consecration.
+2/16 21:05:44.989  Son of Hakkar suffers 82 Holy damage from your Consecration.
+2/16 21:05:45.054  Son of Hakkar attacks. You parry.
+2/16 21:05:45.054  Consecration fades from Son of Hakkar.
+2/16 21:05:45.116  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:05:45.116  Son of Hakkar crits Satrell for 1190.
+2/16 21:05:45.117  Consecration fades from Son of Hakkar.
+2/16 21:05:46.252  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:05:46.252  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:05:46.450  CAST: Azrellion casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:05:46.450  CAST: Azrellion casts Deep Wound(12721) on Son of Hakkar.
+2/16 21:05:46.450  Azrellion crits Son of Hakkar for 350.
+2/16 21:05:46.450  Son of Hakkar is afflicted by Deep Wound (1).
+2/16 21:05:46.537  Azrellion reflects 4 Fire damage to Son of Hakkar.
+2/16 21:05:46.537  Son of Hakkar hits Azrellion for 737.
+2/16 21:05:46.537  Azrellion reflects 4 Fire damage to Son of Hakkar.
+2/16 21:05:46.537  Son of Hakkar hits Azrellion for 729. (97 blocked)
+2/16 21:05:47.290  Son of Hakkar hits you for 966.
+2/16 21:05:47.838  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:05:48.469  Azrellion reflects 4 Fire damage to Son of Hakkar.
+2/16 21:05:48.469  Son of Hakkar hits Azrellion for 829.
+2/16 21:05:49.314  CAST: Son of Hakkar casts Knockdown(16790) on Azrellion.
+2/16 21:05:49.314  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:05:49.648  Son of Hakkar's Knockdown hits Azrellion for 68.
+2/16 21:05:49.648  Son of Hakkar's Knockdown hits Gustas for 118.
+2/16 21:05:49.648  Son of Hakkar's Knockdown hits Ashsoul for 73.
+2/16 21:05:50.456  CAST: Plars casts Flame Shock(10448)(Rank 5) on Son of Hakkar.
+2/16 21:05:50.456  Plars's Flame Shock hits Son of Hakkar for 374 Fire damage.
+2/16 21:05:50.493  Son of Hakkar is afflicted by Flame Shock (1).
+2/16 21:05:50.644  Azrellion reflects 4 Fire damage to Son of Hakkar.
+2/16 21:05:50.644  Son of Hakkar hits Azrellion for 735.
+2/16 21:05:50.839  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:05:51.627  Azrellion hits Son of Hakkar for 171.
+2/16 21:05:51.691  Azrellion hits Son of Hakkar for 144.
+2/16 21:05:52.385  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:05:52.385  Deep Wound fades from Son of Hakkar.
+2/16 21:05:52.904  Son of Hakkar hits you for 886.
+2/16 21:05:53.015  Plars crits Son of Hakkar for 648.
+2/16 21:05:53.100  Azrellion reflects 4 Fire damage to Son of Hakkar.
+2/16 21:05:53.100  Son of Hakkar hits Azrellion for 750.
+2/16 21:05:53.407  Son of Hakkar suffers 112 Fire damage from Plars's Flame Shock.
+2/16 21:05:53.602  CAST: Plars casts Stormstrike(17364) on Son of Hakkar.
+2/16 21:05:53.602  Plars's Stormstrike crits Son of Hakkar for 660.
+2/16 21:05:53.945  CAST: Satrell casts Savage Bite(45736) on Son of Hakkar.
+2/16 21:05:53.945  Satrell's Savage Bite was parried by Son of Hakkar.
+2/16 21:05:54.045  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:05:54.045  Satrell's Maul hits Son of Hakkar for 395.
+2/16 21:05:54.045  Fire Nova Totem IV (Plars)'s Fire Nova hits Son of Hakkar for 324 Fire damage.
+2/16 21:05:55.098  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:05:55.098  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:05:55.098  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:05:55.098  Son of Hakkar hits Satrell for 545.
+2/16 21:05:55.207  CAST: Plars casts Lightning Strike(52422)(Rank 3) on Son of Hakkar.
+2/16 21:05:55.207  Plars's Lightning Strike hits Son of Hakkar for 164 Nature damage.
+2/16 21:05:55.207  Plars's Lightning Strike crits Son of Hakkar for 418.
+2/16 21:05:55.313  CAST: Plars casts Echoed Thunder(51842) on Son of Hakkar.
+2/16 21:05:55.313  Plars's Echoed Thunder hits Son of Hakkar for 45 Nature damage.
+2/16 21:05:55.313  Plars hits Son of Hakkar for 368. (glancing)
+2/16 21:05:55.313  Plars crits Son of Hakkar for 680.
+2/16 21:05:55.401  CAST: Son of Hakkar casts Knockdown(16790) on Satrell.
+2/16 21:05:55.664  CAST: Azrellion casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:05:55.664  CAST: Azrellion casts Deep Wound(12721) on Son of Hakkar.
+2/16 21:05:55.664  Azrellion crits Son of Hakkar for 290.
+2/16 21:05:55.664  Son of Hakkar's Knockdown hits Satrell for 46.
+2/16 21:05:55.664  Son of Hakkar's Knockdown hits Qoppa for 136.
+2/16 21:05:55.664  Son of Hakkar's Knockdown hits Azrellion for 0. (64 absorbed)
+2/16 21:05:55.664  Son of Hakkar is afflicted by Deep Wound (1).
+2/16 21:05:55.779  Son of Hakkar hits Plars for 1121.
+2/16 21:05:56.419  Son of Hakkar suffers 112 Fire damage from Plars's Flame Shock.
+2/16 21:05:56.752  CAST: Plars casts Earth Shock(10414)(Rank 7) on Son of Hakkar.
+2/16 21:05:56.752  Plars's Earth Shock crits Son of Hakkar for 1368 Nature damage.
+2/16 21:05:57.133  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:05:57.351  Satrell reflects 37 Nature damage to Son of Hakkar.
+2/16 21:05:57.351  Son of Hakkar hits Satrell for 533.
+2/16 21:05:57.505  CAST: Gustas casts Heroic Strike(11567)(Rank 8) on Son of Hakkar.
+2/16 21:05:57.505  Gustas's Heroic Strike hits Son of Hakkar for 249.
+2/16 21:05:57.568  Gustas hits Son of Hakkar for 81.
+2/16 21:05:57.844  Son of Hakkar hits Plars for 1056.
+2/16 21:05:57.926  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:05:57.926  Satrell's Swipe hits Son of Hakkar for 104.
+2/16 21:05:57.926  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:05:57.926  Plars crits Son of Hakkar for 688.
+2/16 21:05:58.633  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:05:59.496  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:05:59.496  Satrell's Swipe was dodged by Son of Hakkar.
+2/16 21:05:59.496  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:05:59.496  Son of Hakkar misses Satrell.
+2/16 21:05:59.496  Son of Hakkar suffers 112 Fire damage from Plars's Flame Shock.
+2/16 21:05:59.688  CAST: Satrell casts Growl(6795) on Son of Hakkar.
+2/16 21:05:59.688  Satrell performs Growl on Son of Hakkar.
+2/16 21:05:59.688  Son of Hakkar is afflicted by Growl (1).
+2/16 21:05:59.939  CAST: Netheras casts Sinister Strike(11294)(Rank 8) on Son of Hakkar.
+2/16 21:05:59.939  Netheras's Sinister Strike was parried by Son of Hakkar.
+2/16 21:05:59.939  Netheras hits Son of Hakkar for 177.
+2/16 21:06:00.111  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:06:00.111  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:06:00.111  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:06:00.111  Son of Hakkar hits Satrell for 585.
+2/16 21:06:00.111  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:06:00.111  Son of Hakkar hits Satrell for 563.
+2/16 21:06:00.111  CAST: Son of Hakkar casts Knockdown(16790) on Satrell.
+2/16 21:06:00.111  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:06:00.328  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:06:00.328  Son of Hakkar hits Satrell for 595.
+2/16 21:06:00.404  CAST: Satrell casts Savage Bite(45736) on Son of Hakkar.
+2/16 21:06:00.404  Satrell's Savage Bite hits Son of Hakkar for 253.
+2/16 21:06:00.404  Son of Hakkar's Knockdown hits Satrell for 45.
+2/16 21:06:00.404  Son of Hakkar's Knockdown hits Ashsoul for 75.
+2/16 21:06:00.404  Son of Hakkar's Knockdown hits Netheras for 101.
+2/16 21:06:00.989  CAST: Dimitriiy channels Arcane Missiles(25345)(Rank 8) on Son of Hakkar.
+2/16 21:06:01.239  CAST: Plars casts Stormstrike(17364) on Son of Hakkar.
+2/16 21:06:01.239  Plars's Stormstrike hits Son of Hakkar for 342.
+2/16 21:06:01.431  Satrell crits Son of Hakkar for 540.
+2/16 21:06:01.630  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:06:01.630  Satrell's Swipe hits Son of Hakkar for 104.
+2/16 21:06:01.630  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:06:01.630  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:06:01.633  Deep Wound fades from Son of Hakkar.
+2/16 21:06:01.820  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:06:01.820  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:06:01.820  CAST: Dimitriiy casts Arcane Missiles(25346)(Rank 8) on Son of Hakkar.
+2/16 21:06:01.820  Satrell reflects 37 Nature damage to Son of Hakkar.
+2/16 21:06:01.820  Son of Hakkar hits Satrell for 539.
+2/16 21:06:01.820  Son of Hakkar attacks. Satrell dodges.
+2/16 21:06:01.981  Azrellion hits Son of Hakkar for 147.
+2/16 21:06:02.071  You have slain Son of Hakkar!
+2/16 21:06:02.071  Son of Hakkar dies.
+2/16 21:06:02.071  UNIT_DIED:Son of Hakkar:0xF130002C5D00C8E2
+2/16 21:06:02.071  CAST: Son of Hakkar casts Poisonous Blood(24320) on Son of Hakkar.
+2/16 21:06:02.071  Plars crits Son of Hakkar for 662.
+2/16 21:06:02.273  Son of Hakkar attacks. Satrell dodges.
+2/16 21:06:02.820  CAST: Netheras casts Dissolvent Poison II(45880)(Rank 2) on Son of Hakkar.
+2/16 21:06:02.820  Netheras's Dissolvent Poison II hits Son of Hakkar for 200.
+2/16 21:06:02.820  Netheras hits Son of Hakkar for 167. (glancing)
+2/16 21:06:03.128  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:06:03.128  Satrell's Swipe crits Son of Hakkar for 201.
+2/16 21:06:03.281  CAST: Plars casts Earth Shock(10414)(Rank 7) on Son of Hakkar.
+2/16 21:06:03.281  Plars's Earth Shock hits Son of Hakkar for 890 Nature damage.
+2/16 21:06:03.646  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:06:03.646  Satrell's Maul hits Son of Hakkar for 404.
+2/16 21:06:03.737  CAST: Azrellion casts Cleave(20569)(Rank 5) on Son of Hakkar.
+2/16 21:06:03.737  Azrellion's Cleave hits Son of Hakkar for 189.
+2/16 21:06:04.490  Satrell reflects 37 Nature damage to Son of Hakkar.
+2/16 21:06:04.490  Son of Hakkar hits Satrell for 544.
+2/16 21:06:04.615  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:06:04.615  Satrell's Swipe hits Son of Hakkar for 64. (36 blocked)
+2/16 21:06:04.615  Satrell crits Son of Hakkar for 522.
+2/16 21:06:05.509  Azrellion hits Son of Hakkar for 142. (glancing)
+2/16 21:06:05.592  Azrellion hits Son of Hakkar for 163.
+2/16 21:06:06.530  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:06:06.530  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:06:06.810  Son of Hakkar is afflicted by Consecration (1).
+2/16 21:06:07.009  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:06:07.009  Son of Hakkar hits Satrell for 553.
+2/16 21:06:07.742  Qoppa's Ancient Accord hits Son of Hakkar for 131 Arcane damage.
+2/16 21:06:07.742  Son of Hakkar suffers 82 Holy damage from your Consecration.
+2/16 21:06:07.958  Son of Hakkar attacks. Satrell dodges.
+2/16 21:06:07.958  Son of Hakkar misses Satrell.
+2/16 21:06:08.039  CAST: Son of Hakkar casts Knockdown(16790) on Satrell.
+2/16 21:06:08.221  CAST: Mooshmallows casts Earth Shock(10414)(Rank 7) on Son of Hakkar.
+2/16 21:06:08.226  Mooshmallows's Earth Shock hits Son of Hakkar for 774 Nature damage.
+2/16 21:06:08.226  Mooshmallows's Flametongue Attack hits Son of Hakkar for 67 Fire damage.
+2/16 21:06:08.226  Mooshmallows hits Son of Hakkar for 48. (glancing)
+2/16 21:06:08.304  Son of Hakkar's Knockdown hits Satrell for 49.
+2/16 21:06:08.304  Son of Hakkar's Knockdown hits Mooshmallows for 124.
+2/16 21:06:08.304  Son of Hakkar's Knockdown hits Plars for 100.
+2/16 21:06:08.808  Son of Hakkar suffers 82 Holy damage from your Consecration.
+2/16 21:06:09.223  CAST: Azrellion casts Cleave(20569)(Rank 5) on Son of Hakkar.
+2/16 21:06:09.223  Azrellion's Cleave hits Son of Hakkar for 166.
+2/16 21:06:09.610  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:06:09.610  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:06:09.610  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:06:09.610  Son of Hakkar hits Satrell for 556.
+2/16 21:06:09.610  Son of Hakkar attacks. Satrell dodges.
+2/16 21:06:09.805  Your Consecration was resisted by Son of Hakkar.
+2/16 21:06:09.883  Son of Hakkar is afflicted by Thunderfury (1).
+2/16 21:06:09.932  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:06:10.027  CAST: Plars casts Echoed Thunder(51842) on Son of Hakkar.
+2/16 21:06:10.027  Plars's Echoed Thunder hits Son of Hakkar for 71 Nature damage.
+2/16 21:06:10.027  Plars crits Son of Hakkar for 572.
+2/16 21:06:10.135  CAST: Plars casts Stormstrike(17364) on Son of Hakkar.
+2/16 21:06:10.135  Plars's Stormstrike hits Son of Hakkar for 333.
+2/16 21:06:10.135  Plars hits Son of Hakkar for 343.
+2/16 21:06:10.135  Plars hits Son of Hakkar for 373.
+2/16 21:06:10.349  CAST: Netheras casts Dissolvent Poison II(45880)(Rank 2) on Son of Hakkar.
+2/16 21:06:10.349  Netheras's Dissolvent Poison II hits Son of Hakkar for 190.
+2/16 21:06:10.349  Netheras crits Son of Hakkar for 238.
+2/16 21:06:10.480  Mooshmallows's Flametongue Attack hits Son of Hakkar for 67 Fire damage.
+2/16 21:06:10.480  Mooshmallows hits Son of Hakkar for 59.
+2/16 21:06:10.533  CAST: Mooshmallows begins to cast Chain Lightning(10605)(Rank 4) on Son of Hakkar.
+2/16 21:06:10.533  CAST: Netheras casts Sinister Strike(11294)(Rank 8) on Son of Hakkar.
+2/16 21:06:10.533  Netheras's Sinister Strike hits Son of Hakkar for 260.
+2/16 21:06:10.724  Son of Hakkar suffers 82 Holy damage from your Consecration.
+2/16 21:06:10.937  CAST: Gustas casts Frostbolt(52663) on Son of Hakkar.
+2/16 21:06:10.937  Gustas hits Son of Hakkar for 133. (glancing)
+2/16 21:06:10.995  CAST: Netheras casts Dissolvent Poison II(45880)(Rank 2) on Son of Hakkar.
+2/16 21:06:10.995  Netheras's Dissolvent Poison II hits Son of Hakkar for 186.
+2/16 21:06:10.995  Netheras hits Son of Hakkar for 196.
+2/16 21:06:10.995  CAST: Azrellion casts Cleave(20569)(Rank 5) on Son of Hakkar.
+2/16 21:06:10.995  Azrellion's Cleave hits Son of Hakkar for 196.
+2/16 21:06:10.995  CAST: Dimitriiy channels Arcane Missiles(25345)(Rank 8) on Son of Hakkar.
+2/16 21:06:11.074  Netheras crits Son of Hakkar for 396.
+2/16 21:06:11.181  CAST: Qoppa begins to cast Arcane Rupture(51954)(Rank 6) on Son of Hakkar.
+2/16 21:06:11.254  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:06:11.254  Satrell's Maul crits Son of Hakkar for 746. (36 blocked)
+2/16 21:06:11.264  You have slain Son of Hakkar!
+2/16 21:06:11.264  Son of Hakkar dies.
+2/16 21:06:11.264  UNIT_DIED:Son of Hakkar:0xF130002C5D00C8E1
+2/16 21:06:11.264  CAST: Son of Hakkar casts Poisonous Blood(24320) on Son of Hakkar.
+2/16 21:07:09.878  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:07:09.878  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:07:10.667  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:10.667  Son of Hakkar hits Satrell for 558.
+2/16 21:07:10.667  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:10.667  Son of Hakkar crits Satrell for 1152.
+2/16 21:07:10.759  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:10.759  Son of Hakkar hits Satrell for 547.
+2/16 21:07:10.926  CAST: Azrellion casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:07:10.926  CAST: Azrellion casts Deep Wound(12721) on Son of Hakkar.
+2/16 21:07:10.926  Azrellion crits Son of Hakkar for 302.
+2/16 21:07:10.926  Son of Hakkar is afflicted by Deep Wound (1).
+2/16 21:07:11.144  Son of Hakkar is afflicted by Demoralizing Roar (1).
+2/16 21:07:11.144  Son of Hakkar is afflicted by Demoralizing Roar (1).
+2/16 21:07:11.355  CAST: Son of Hakkar casts Knockdown(16790) on Azrellion.
+2/16 21:07:11.624  Son of Hakkar's Knockdown hits Azrellion for 63.
+2/16 21:07:11.624  Son of Hakkar's Knockdown hits Satrell for 45.
+2/16 21:07:11.624  Son of Hakkar's Knockdown hits Ashsoul for 76.
+2/16 21:07:12.446  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:07:12.723  Azrellion reflects 4 Fire damage to Son of Hakkar.
+2/16 21:07:12.723  Son of Hakkar hits Azrellion for 406.
+2/16 21:07:12.831  CAST: Son of Hakkar casts Knockdown(16790) on Satrell.
+2/16 21:07:13.008  Plars crits Son of Hakkar for 662.
+2/16 21:07:13.008  Son of Hakkar's Knockdown hits Satrell for 46.
+2/16 21:07:13.008  Son of Hakkar's Knockdown hits Azrellion for 63.
+2/16 21:07:13.008  Son of Hakkar's Knockdown hits Ashsoul for 76.
+2/16 21:07:13.008  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:13.008  Son of Hakkar hits Satrell for 307.
+2/16 21:07:13.313  CAST: Plars casts Stormstrike(17364) on Son of Hakkar.
+2/16 21:07:13.313  Plars's Stormstrike crits Son of Hakkar for 721.
+2/16 21:07:13.867  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:07:13.990  Azrellion hits Son of Hakkar for 152.
+2/16 21:07:14.292  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:07:14.292  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:07:14.292  Satrell's Swipe crits Son of Hakkar for 200.
+2/16 21:07:14.446  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:07:14.446  Satrell's Maul hits Son of Hakkar for 376.
+2/16 21:07:14.542  Satrell attacks. Son of Hakkar dodges.
+2/16 21:07:14.943  CAST: Plars casts Lightning Strike(52422)(Rank 3) on Son of Hakkar.
+2/16 21:07:14.943  Plars's Lightning Strike hits Son of Hakkar for 187 Nature damage.
+2/16 21:07:14.943  Plars's Lightning Strike crits Son of Hakkar for 411. (36 blocked)
+2/16 21:07:14.945  CAST: Plars casts Echoed Thunder(51842) on Son of Hakkar.
+2/16 21:07:14.945  Plars's Echoed Thunder hits Son of Hakkar for 46 Nature damage.
+2/16 21:07:14.945  Plars hits Son of Hakkar for 373.
+2/16 21:07:14.945  Plars crits Son of Hakkar for 724.
+2/16 21:07:14.945  Son of Hakkar hits Plars for 681.
+2/16 21:07:15.178  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:15.178  Son of Hakkar hits Satrell for 311.
+2/16 21:07:15.452  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:07:15.834  CAST: Azrellion casts Heroic Strike(25286)(Rank 9) on Son of Hakkar.
+2/16 21:07:15.834  Azrellion's Heroic Strike hits Son of Hakkar for 225.
+2/16 21:07:16.114  CAST: Mooshmallows begins to cast Earthquake(48308)(Rank 3) on Son of Hakkar.
+2/16 21:07:16.470  CAST: Plars casts Earth Shock(10414)(Rank 7) on Son of Hakkar.
+2/16 21:07:16.470  Plars's Earth Shock hits Son of Hakkar for 907 Nature damage.
+2/16 21:07:16.671  Satrell hits Son of Hakkar for 254.
+2/16 21:07:16.772  Satrell hits Son of Hakkar for 254.
+2/16 21:07:16.877  Son of Hakkar suffers 56 Physical damage from Azrellion's Deep Wound.
+2/16 21:07:16.877  Deep Wound fades from Son of Hakkar.
+2/16 21:07:16.987  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:07:16.987  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:07:16.987  Son of Hakkar attacks. Plars dodges.
+2/16 21:07:17.301  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:17.304  Son of Hakkar hits Satrell for 322.
+2/16 21:07:17.611  Plars hits Son of Hakkar for 356.
+2/16 21:07:17.611  Azrellion hits Son of Hakkar for 163.
+2/16 21:07:17.722  Plars crits Son of Hakkar for 744.
+2/16 21:07:17.722  Plars hits Son of Hakkar for 375. (glancing)
+2/16 21:07:17.722  CAST: Son of Hakkar casts Thrash(3391) on Satrell.
+2/16 21:07:17.722  Son of Hakkar gains 2 extra attacks through Thrash.
+2/16 21:07:17.727  Satrell reflects 37 Nature damage to Son of Hakkar.
+2/16 21:07:17.727  Son of Hakkar hits Satrell for 331.
+2/16 21:07:17.727  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:17.727  Son of Hakkar hits Satrell for 315.
+2/16 21:07:18.384  CAST: Satrell casts Growl(6795) on Son of Hakkar.
+2/16 21:07:18.384  Satrell performs Growl on Son of Hakkar.
+2/16 21:07:18.384  Son of Hakkar is afflicted by Growl (1).
+2/16 21:07:18.501  CAST: Mooshmallows casts Earthquake(48308)(Rank 3) on Son of Hakkar.
+2/16 21:07:18.501  Mooshmallows's Earthquake hits Son of Hakkar for 763 Nature damage.
+2/16 21:07:18.501  Son of Hakkar is afflicted by Earthquake (1).
+2/16 21:07:18.501  Son of Hakkar is afflicted by Earthquake (1).
+2/16 21:07:18.620  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:07:18.620  Satrell's Swipe crits Son of Hakkar for 201.
+2/16 21:07:18.620  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:07:18.620  CAST: Mooshmallows casts Earthquake(51489) on Son of Hakkar.
+2/16 21:07:18.620  Mooshmallows's Earthquake hits Son of Hakkar for 221 Nature damage. (73 resisted)
+2/16 21:07:18.620  Mooshmallows's Earthquake hits Son of Hakkar for 294 Nature damage.
+2/16 21:07:18.713  CAST: Mooshmallows casts Flame Shock(10448)(Rank 5) on Son of Hakkar.
+2/16 21:07:18.713  Mooshmallows's Flame Shock crits Son of Hakkar for 870 Fire damage.
+2/16 21:07:18.713  Son of Hakkar is afflicted by Flame Shock (1).
+2/16 21:07:18.940  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:07:18.940  Satrell's Maul hits Son of Hakkar for 397.
+2/16 21:07:19.133  Satrell reflects 37 Nature damage to Son of Hakkar.
+2/16 21:07:19.133  Son of Hakkar hits Satrell for 326.
+2/16 21:07:19.247  CAST: Satrell casts Savage Bite(45736) on Son of Hakkar.
+2/16 21:07:19.247  Satrell's Savage Bite was dodged by Son of Hakkar.
+2/16 21:07:19.448  CAST: Azrellion casts Cleave(20569)(Rank 5) on Son of Hakkar.
+2/16 21:07:19.448  Azrellion's Cleave hits Son of Hakkar for 193.
+2/16 21:07:19.448  Azrellion's Cleave hits Son of Hakkar for 198.
+2/16 21:07:19.843  Satrell reflects 37 Nature damage to Son of Hakkar.
+2/16 21:07:19.843  Son of Hakkar hits Satrell for 342.
+2/16 21:07:20.314  Son of Hakkar dies.
+2/16 21:07:20.314  UNIT_DIED:Son of Hakkar:0xF130002C5D00C8E5
+2/16 21:07:20.314  CAST: Son of Hakkar casts Poisonous Blood(24320) on Son of Hakkar.
+2/16 21:07:20.314  Plars hits Son of Hakkar for 366.
+2/16 21:07:20.995  Earthquake fades from Son of Hakkar.
+2/16 21:07:21.778  Son of Hakkar is afflicted by Consecration (1).
+2/16 21:07:22.055  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:22.055  Son of Hakkar hits Satrell for 311.
+2/16 21:07:22.195  Son of Hakkar is afflicted by Thunderfury (1).
+2/16 21:07:22.501  CAST: Son of Hakkar casts Knockdown(16790) on Satrell.
+2/16 21:07:22.567  CAST: Mooshmallows casts Earthquake(51489) on Son of Hakkar.
+2/16 21:07:22.706  Son of Hakkar's Knockdown hits Satrell for 50.
+2/16 21:07:22.706  Son of Hakkar's Knockdown hits you for 80.
+2/16 21:07:22.706  Son of Hakkar's Knockdown hits Gustas for 113.
+2/16 21:07:22.706  Son of Hakkar suffers 96 Holy damage from your Consecration.
+2/16 21:07:23.025  CAST: Plars casts Stormstrike(17364) on Son of Hakkar.
+2/16 21:07:23.025  Plars's Stormstrike hits Son of Hakkar for 389.
+2/16 21:07:23.025  Plars hits Son of Hakkar for 356.
+2/16 21:07:23.213  CAST: Qoppa channels Arcane Missiles(25345)(Rank 8) on Son of Hakkar.
+2/16 21:07:23.462  Mooshmallows's Flametongue Attack hits Son of Hakkar for 67 Fire damage.
+2/16 21:07:23.462  Mooshmallows hits Son of Hakkar for 62.
+2/16 21:07:23.644  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:07:23.644  Satrell's Swipe hits Son of Hakkar for 100.
+2/16 21:07:23.762  Son of Hakkar suffers 97 Holy damage from your Consecration.
+2/16 21:07:24.135  CAST: Qoppa casts Arcane Missiles(25346)(Rank 8) on Son of Hakkar.
+2/16 21:07:24.135  Satrell reflects 38 Nature damage to Son of Hakkar.
+2/16 21:07:24.135  Son of Hakkar hits Satrell for 329.
+2/16 21:07:24.309  CAST: Satrell casts Maul(9881)(Rank 7) on Son of Hakkar.
+2/16 21:07:24.309  Satrell's Maul was dodged by Son of Hakkar.
+2/16 21:07:24.309  CAST: Dimitriiy channels Arcane Missiles(25345)(Rank 8) on Son of Hakkar.
+2/16 21:07:24.656  CAST: Netheras casts Sinister Strike(11294)(Rank 8) on Son of Hakkar.
+2/16 21:07:24.656  Netheras's Sinister Strike hits Son of Hakkar for 283.
+2/16 21:07:24.656  Netheras crits Son of Hakkar for 304.
+2/16 21:07:24.656  CAST: Plars casts Lightning Strike(52422)(Rank 3) on Son of Hakkar.
+2/16 21:07:24.656  Plars's Lightning Strike hits Son of Hakkar for 187 Nature damage.
+2/16 21:07:24.656  Plars's Lightning Strike crits Son of Hakkar for 432.
+2/16 21:07:24.656  CAST: Plars casts Echoed Thunder(51842) on Son of Hakkar.
+2/16 21:07:24.656  Plars's Echoed Thunder hits Son of Hakkar for 46 Nature damage.
+2/16 21:07:24.656  Plars hits Son of Hakkar for 372.
+2/16 21:07:24.656  Plars hits Son of Hakkar for 389.
+2/16 21:07:24.768  Son of Hakkar suffers 96 Holy damage from your Consecration.
+2/16 21:07:24.872  Mooshmallows's Flametongue Attack hits Son of Hakkar for 68 Fire damage.
+2/16 21:07:24.872  Mooshmallows hits Son of Hakkar for 56.
+2/16 21:07:24.956  CAST: Qoppa casts Arcane Missiles(25346)(Rank 8) on Son of Hakkar.
+2/16 21:07:25.074  CAST: Azrellion casts Heroic Strike(25286)(Rank 9) on Son of Hakkar.
+2/16 21:07:25.074  Azrellion's Heroic Strike crits Son of Hakkar for 577.
+2/16 21:07:25.074  CAST: Azrellion casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:07:25.074  CAST: Azrellion casts Deep Wound(12721) on Son of Hakkar.
+2/16 21:07:25.074  Son of Hakkar is afflicted by Deep Wound (1).
+2/16 21:07:25.207  CAST: Satrell casts Swipe(9908)(Rank 5) on Son of Hakkar.
+2/16 21:07:25.207  Satrell's Swipe crits Son of Hakkar for 201.
+2/16 21:07:25.207  CAST: Netheras casts Dissolvent Poison II(45880)(Rank 2) on Son of Hakkar.
+2/16 21:07:25.207  Netheras's Dissolvent Poison II hits Son of Hakkar for 209.
+2/16 21:07:25.207  Netheras hits Son of Hakkar for 207. (glancing)
+2/16 21:07:25.207  CAST: Azrellion casts Deep Wounds(12868)(Rank 3) on Son of Hakkar.
+2/16 21:07:25.207  Azrellion crits Son of Hakkar for 332.
+2/16 21:07:25.207  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:07:25.207  Your Seal of Righteousness hits Son of Hakkar for 125 Holy damage.
+2/16 21:07:25.211  Your Fire Strike hits Son of Hakkar for 3 Fire damage. (1 resisted)
+2/16 21:07:25.211  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:07:25.211  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:07:25.211  You hit Son of Hakkar for 127. (glancing)
+2/16 21:07:25.211  CAST: Dimitriiy casts Arcane Missiles(25346)(Rank 8) on Son of Hakkar.
+2/16 21:07:25.287  Your Fire Strike hits Son of Hakkar for 4 Fire damage. (1 resisted)
+2/16 21:07:25.287  Your Seal of Righteousness hits Son of Hakkar for 126 Holy damage.
+2/16 21:07:25.289  Your Fire Strike hits Son of Hakkar for 5 Fire damage.
+2/16 21:07:25.289  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:07:25.289  CAST: Nefras casts Vindication(26017)(Rank 2) on Son of Hakkar.
+2/16 21:07:25.289  Your Divine Strike hits Son of Hakkar for 4 Holy damage.
+2/16 21:07:25.289  You hit Son of Hakkar for 148.
+2/16 21:07:25.320  Son of Hakkar is afflicted by Vindication (1).
+2/16 21:07:25.430  CAST: Mooshmallows begins to cast Chain Lightning(10605)(Rank 4) on Son of Hakkar.
+2/16 21:07:25.524  CAST: Satrell casts Savage Bite(45736) on Son of Hakkar.
+2/16 21:07:25.524  Satrell's Savage Bite crits Son of Hakkar for 539.
+2/16 21:07:25.623  CAST: Gustas casts Cleave(20569)(Rank 5) on Son of Hakkar.
+2/16 21:07:25.623  Gustas's Cleave hits Son of Hakkar for 194.
+2/16 21:07:25.699  Qoppa's Arcane Missiles crits Son of Hakkar for 942 Arcane damage.
+2/16 21:07:25.699  CAST: Qoppa casts Arcane Instability(51977) on Son of Hakkar.
+2/16 21:07:25.699  Qoppa's Arcane Instability hits Son of Hakkar for 236 Arcane damage.
+2/16 21:07:25.699  CAST: Gustas casts Frostbolt(52663) on Son of Hakkar.
+2/16 21:07:25.699  Gustas hits Son of Hakkar for 69.
+2/16 21:07:25.779  Dimitriiy's Arcane Missiles hits Son of Hakkar for 441 Arcane damage.
+2/16 21:07:25.779  Son of Hakkar suffers 97 Holy damage from your Consecration.
+2/16 21:07:25.869  CAST: Netheras casts Eviscerate(31016)(Rank 9) on Son of Hakkar.
+2/16 21:07:25.869  Netheras's Eviscerate hits Son of Hakkar for 265.
+2/16 21:07:25.869  CAST: Qoppa casts Arcane Missiles(25346)(Rank 8) on Son of Hakkar.
+2/16 21:07:25.948  Gustas's Frostbolt hits Son of Hakkar for 37 Frost damage.
+2/16 21:07:25.948  Son of Hakkar is afflicted by Frostbolt (1).
+2/16 21:07:26.112  CAST: Dimitriiy casts Arcane Missiles(25346)(Rank 8) on Son of Hakkar.
+2/16 21:07:26.243  Son of Hakkar dies.
+2/16 21:07:26.243  UNIT_DIED:Son of Hakkar:0xF130002C5D00C8E4
+2/16 21:07:26.243  CAST: Son of Hakkar casts Poisonous Blood(24320) on Son of Hakkar.
+2/16 21:07:26.243  Netheras crits Son of Hakkar for 314.

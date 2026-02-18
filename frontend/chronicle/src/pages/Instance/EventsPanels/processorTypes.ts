@@ -8,11 +8,23 @@
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
+ * Activity entry from encounter period tracking.
+ * Indicates when a unit becomes active, ends activity, is slain, or bumps its activity timer.
+ */
+export interface ActivityEntry {
+  guid: string;
+  eventType: string;  // "start" | "end" | "slain" | "bump"
+}
+
+/**
  * Common event metadata present in all event types.
  */
 interface EventMeta {
   index: number;
   offsetMilli: number;
+  /** Activity tracking entries from encounter period detection */
+  activity: ActivityEntry[];
+  activityCount: number;
 }
 
 /**

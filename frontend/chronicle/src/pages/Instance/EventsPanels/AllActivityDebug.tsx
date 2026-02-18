@@ -117,18 +117,22 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
   
   // ActivityEvent column - shows debug annotations when present
   // Activity types: start (green), end (red), slain (red+skull), bump (yellow)
+  // Now shows both the event type and the entity name
   const activityEventElement = event.activityEvent ? (
-    <span className={cn(
-      "w-10 text-center shrink-0 text-[10px] font-semibold",
-      event.activityEvent === "start" && "text-green-400",
-      event.activityEvent === "end" && "text-red-400",
-      event.activityEvent === "slain" && "text-red-500",
-      event.activityEvent === "bump" && "text-yellow-400",
-    )}>
-      {event.activityEvent === "slain" ? "💀" : event.activityEvent}
+    <span 
+      className={cn(
+        "w-32 shrink-0 text-[10px] font-semibold truncate",
+        event.activityEvent.type === "start" && "text-green-400",
+        event.activityEvent.type === "end" && "text-red-400",
+        event.activityEvent.type === "slain" && "text-red-500",
+        event.activityEvent.type === "bump" && "text-yellow-400",
+      )}
+      title={`${event.activityEvent.type}: ${event.activityEvent.name} (${event.activityEvent.guid})`}
+    >
+      {event.activityEvent.type === "slain" ? "💀" : event.activityEvent.type}: {event.activityEvent.name}
     </span>
   ) : (
-    <span className="w-10 text-center shrink-0 text-muted-foreground/30">-</span>
+    <span className="w-32 shrink-0 text-muted-foreground/30">-</span>
   );
   
   return (

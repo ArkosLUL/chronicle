@@ -17,7 +17,13 @@ export type ResourceType = "Health" | "Mana" | "Rage" | "Happiness" | "Energy" |
  * Activity event types from debug parser annotations.
  * These indicate when units become "active" during encounters.
  */
-export type ActivityEventType = "start" | "end" | "slain" | "bump" | null;
+export type ActivityEventTypeValue = "start" | "end" | "slain" | "bump";
+
+export interface ActivityEventInfo {
+  type: ActivityEventTypeValue;
+  guid: string;
+  name: string;
+}
 
 export interface RawDebugEvent {
   index: number;
@@ -40,7 +46,7 @@ export interface RawDebugEvent {
   // Aura-specific fields
   auraApplication?: AuraApplication;
   // Debug annotations (when WithDebug is enabled during reparse)
-  activityEvent?: ActivityEventType;
+  activityEvent?: ActivityEventInfo;
 }
 
 /**
@@ -265,9 +271,22 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       amount = regularEvent.amount;
     }
     
-    // Activity event tracking - not currently available in event streams
-    // Would track when a GUID becomes active/inactive in encounter period detection
-    const activityEvent: ActivityEventType = null;
+    // Extract activity event if present (from debug reparse)
+    // Activity tracks when a GUID becomes active/inactive in encounter period detection
+    // Show the first activity entry (usually there's only one per event)
+    let activityEvent: ActivityEventInfo | undefined = undefined;
+    if (event.activityCount > 0) {
+      const entry = event.activity[0];
+      // Look up entity name from context
+      const entityName = context.players[entry.guid]?.name 
+        ?? context.units?.[entry.guid]?.name 
+        ?? entry.guid;
+      activityEvent = {
+        type: entry.eventType as ActivityEventTypeValue,
+        guid: entry.guid,
+        name: entityName,
+      };
+    }
     
     const rawEvent: RawDebugEvent = {
       index: event.index,

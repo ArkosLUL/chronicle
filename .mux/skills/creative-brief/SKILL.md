@@ -1,18 +1,20 @@
+---
+description: Chronicle product vision, target audience, brand positioning, and design principles. Provides context for understanding product decisions, tone, and priorities.
+globs: []
+alwaysApply: false
+---
+
 # Chronicle Creative Brief
 
 ## Game-Play Performance Analysis for Classic World of Warcraft
 
-## 
-
-## **1\. Product Overview**
+## **1. Product Overview**
 
 **Chronicle** is a game-play performance analysis tool for **Classic World of Warcraft**, launching on the **Turtle WoW server**. It transforms complex raid logs into a **clear, accessible, and leadership-focused experience**, empowering raid leaders to coach more effectively and guilds to improve performance, efficiency, and accountability.
 
 Unlike existing tools, Chronicle prioritizes **readability, contribution clarity, and missing performance context**, such as consumable investment and true raid impact. Chronicle is designed to grow in analytical depth over time while remaining approachable from day one.
 
-## 
-
-## **2\. Problem Statement**
+## **2. Problem Statement**
 
 Current log-analysis tools on Turtle WoW suffer from three core issues:
 
@@ -25,9 +27,7 @@ Current log-analysis tools on Turtle WoW suffer from three core issues:
 
 Chronicle exists to **reduce friction, expand insight, and support better leadership decisions**.
 
-## 
-
-## **3\. Target Audience**
+## **3. Target Audience**
 
 ### **Primary Audience**
 
@@ -47,15 +47,13 @@ Chronicle exists to **reduce friction, expand insight, and support better leader
 
 ### **Tertiary / Early Adopters**
 
-* Hardcore players and edge-case communities (e.g., “level one lunatics”)  
+* Hardcore players and edge-case communities (e.g., "level one lunatics")  
 * Highly motivated, eager testers with no existing alternatives  
   Provide early feedback and stress-test data depth
 
 **Important:** Individual players consume data but do not generate uploads. Upload authority belongs to leadership.
 
-## 
-
-## **4\. Product Goals**
+## **4. Product Goals**
 
 ### **User Outcomes**
 
@@ -72,7 +70,7 @@ Chronicle exists to **reduce friction, expand insight, and support better leader
   * Engagement with advanced insights  
   * Qualitative feedback via Discord or direct channels
 
-## **5\. Core Features (Launch Scope)**
+## **5. Core Features (Launch Scope)**
 
 ### **Data Input**
 
@@ -97,7 +95,7 @@ Chronicle exists to **reduce friction, expand insight, and support better leader
 * Analytical and neutral tone  
 * Designed for leaders seeking deeper understanding, not surface-level judgment
 
-## **6\. Non-Goals (Initial)**
+## **6. Non-Goals (Initial)**
 
 * No live resource tracking (mana/health)  
 * No player positioning replay  
@@ -106,7 +104,7 @@ Chronicle exists to **reduce friction, expand insight, and support better leader
 
 These are acknowledged future possibilities but intentionally excluded to preserve focus and stability.
 
-## **7\. Differentiation & Positioning**
+## **7. Differentiation & Positioning**
 
 ### **Competitive Landscape**
 
@@ -114,7 +112,7 @@ These are acknowledged future possibilities but intentionally excluded to preser
 * **Turt Logs** (primary competitor)  
 * Ad-hoc GitHub scripts (functional but inaccessible)
 
-### **Chronicle’s Core Difference**
+### **Chronicle's Core Difference**
 
 *Chronicle provides a unified, accessible interface that makes raid data readable, contextual, and useful for leadership.*
 
@@ -126,7 +124,7 @@ Key differentiators:
 * Expandable analytical depth  
 * Neutral, scholarly presentation
 
-## **8\. Brand Positioning**
+## **8. Brand Positioning**
 
 ### **Brand Attributes**
 
@@ -146,7 +144,7 @@ Key differentiators:
 * Arcane library / chronicle-keeping visual language  
 * Avoids direct lore references or copyrighted material
 
-## **9\. Tone & Voice Guidelines**
+## **9. Tone & Voice Guidelines**
 
 * Analytical, not judgmental  
 * Neutral and factual  
@@ -154,7 +152,7 @@ Key differentiators:
 * Avoids elitism and parse-culture language  
 * Focuses on insight, not shaming
 
-## **10\. Website Scope & Information Architecture**
+## **10. Website Scope & Information Architecture**
 
 ### **Core Pages**
 
@@ -171,13 +169,13 @@ Key differentiators:
 * Designed as shareable progression artifacts  
 * Serve both internal leadership and external visibility (e.g., recruitment)
 
-## **11\. Monetization**
+## **11. Monetization**
 
 * Free, donation-supported tool  
 * No paywalls at launch  
 * Future consideration for privacy or premium features tied to significant donations
 
-## **12\. Roadmap Awareness**
+## **12. Roadmap Awareness**
 
 ### **Near-Term**
 
@@ -191,7 +189,7 @@ Key differentiators:
 * Support for additional Classic servers  
 * Brand remains Classic-aligned but server-agnostic
 
-## **13\. Constraints & Principles**
+## **13. Constraints & Principles**
 
 * Accessibility over exhaustiveness  
 * Stability over feature breadth  

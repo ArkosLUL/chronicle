@@ -58,10 +58,7 @@ func isImmobilizeCC(spellName string) bool {
 	case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate", "Banish":
 		return true
 	}
-	if strings.HasPrefix(spellName, "Polymorph: ") {
-		return true
-	}
-	return false
+	return strings.HasPrefix(spellName, "Polymorph: ")
 }
 
 // processCommonActivity handles the basics of activity processing for a character.

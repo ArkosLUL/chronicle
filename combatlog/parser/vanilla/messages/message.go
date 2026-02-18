@@ -20,9 +20,10 @@ import (
 type ActivityEventType string
 
 const (
-	StartActivity ActivityEventType = "start"
-	EndActivity   ActivityEventType = "end"
-	BumpActivity  ActivityEventType = "bump"
+	ActivityStart ActivityEventType = "start"
+	ActivityEnd   ActivityEventType = "end"
+	ActivitySlain ActivityEventType = "slain"
+	ActivityBump  ActivityEventType = "bump"
 )
 
 func ToString(msg Message) string {
@@ -34,12 +35,16 @@ type Message interface {
 	Date() time.Time
 	Affects() []guid.GUID
 	IsSynthetic() bool
-	ActivityEvent() map[guid.GUID]ActivityEventType
+	Activity() map[guid.GUID]ActivityEventType
+	AddActivity(guid.GUID, ActivityEventType)
 }
 
 type MessageBase struct {
 	Timestamp time.Time `json:"timestamp"`
 	Synthetic bool      `json:"synthetic,omitempty"`
+
+	// activity is used for debugging
+	activity map[guid.GUID]ActivityEventType
 }
 
 func WithSynthetic() func(*MessageBase) {
@@ -51,6 +56,7 @@ func WithSynthetic() func(*MessageBase) {
 func Base(ts time.Time, opts ...func(m *MessageBase)) MessageBase {
 	b := MessageBase{
 		Timestamp: ts,
+		activity:  map[guid.GUID]ActivityEventType{},
 	}
 	for _, opt := range opts {
 		opt(&b)
@@ -73,8 +79,15 @@ func (m MessageBase) Date() time.Time {
 	return m.Timestamp
 }
 
-func (m MessageBase) ActivityEvent() map[guid.GUID]ActivityEventType {
-	return map[guid.GUID]ActivityEventType{}
+func (m MessageBase) Activity() map[guid.GUID]ActivityEventType {
+	return m.activity
+}
+
+func (m *MessageBase) AddActivity(guid guid.GUID, eventType ActivityEventType) {
+	if m == nil {
+		return
+	}
+	m.activity[guid] = eventType
 }
 
 type SkippedMessage struct {

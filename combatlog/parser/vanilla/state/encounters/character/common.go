@@ -35,7 +35,7 @@ func (c *Common) Process(m messages.Message) error {
 }
 
 func (c *Common) Start(reason string, m messages.Message) {
-	c.Activity.Start(period.NewInactivityPeriod(InactivityTimeout), reason, m)
+	c.Activity.Start(period.NewInactivityPeriod(c.ID(), InactivityTimeout), reason, m)
 }
 
 type characterBase interface {

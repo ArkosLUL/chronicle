@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
@@ -77,13 +78,15 @@ type PeriodMeta interface {
 // and detection.
 type WorkingPeriod[M PeriodMeta] struct {
 	*Period
+	me   guid.GUID
 	Meta *M
 }
 
-func New[M PeriodMeta](meta *M) *WorkingPeriod[M] {
+func New[M PeriodMeta](me guid.GUID, meta *M) *WorkingPeriod[M] {
 	return &WorkingPeriod[M]{
 		Period: &Period{},
 		Meta:   meta,
+		me:     me,
 	}
 }
 
@@ -104,11 +107,13 @@ func (p *WorkingPeriod[M]) Begin(reason string, ts messages.Message) {
 	if p.IsActive() {
 		return
 	}
+	ts.AddActivity(p.me, messages.ActivityStart)
 	p.Start = m
 }
 
 func (p *WorkingPeriod[M]) Killed(reason string, ts messages.Message) {
 	p.Close(reason, ts)
+	ts.AddActivity(p.me, messages.ActivitySlain)
 	p.Slain = true
 }
 
@@ -125,6 +130,7 @@ func (p *WorkingPeriod[M]) Close(reason string, ts messages.Message) {
 	if !p.IsActive() {
 		return
 	}
+	ts.AddActivity(p.me, messages.ActivityEnd)
 	p.End = m
 }
 
@@ -145,6 +151,7 @@ func (p *WorkingPeriod[M]) Bump(reason string, ts messages.Message) {
 	if !p.IsActive() {
 		return
 	}
+	ts.AddActivity(p.me, messages.ActivityBump)
 	p.LastActive = &Moment{
 		Timestamp: ts,
 		Reason:    reason,

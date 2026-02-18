@@ -3,6 +3,7 @@ package period
 import (
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
@@ -31,9 +32,9 @@ type InactivityPeriod struct {
 
 // NewInactivityPeriod creates a new inactivity-based period with the given
 // bump duration. The period is inactive until Begin is called.
-func NewInactivityPeriod(bumpBy time.Duration) *InactivityPeriod {
+func NewInactivityPeriod(me guid.GUID, bumpBy time.Duration) *InactivityPeriod {
 	return &InactivityPeriod{
-		WorkingPeriod: New[InactivityTimer](&InactivityTimer{
+		WorkingPeriod: New[InactivityTimer](me, &InactivityTimer{
 			BumpBy: bumpBy,
 		}),
 	}

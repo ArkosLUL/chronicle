@@ -13,7 +13,8 @@ import (
 const KindLogReparse = "log-reparse"
 
 type ArgsLogReparse struct {
-	LogID uuid.UUID `json:"log_group_id"`
+	LogID   uuid.UUID `json:"log_group_id"`
+	Verbose bool      `json:"verbose,omitempty"`
 }
 
 func (ArgsLogReparse) InsertOpts() river.InsertOpts {
@@ -96,9 +97,10 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 	return nil
 }
 
-func (c *Chronicle) EnqueueReParseLog(ctx context.Context, logID uuid.UUID) (*rivertype.JobInsertResult, error) {
+func (c *Chronicle) EnqueueReParseLog(ctx context.Context, logID uuid.UUID, verbose bool) (*rivertype.JobInsertResult, error) {
 	res, err := c.queue.Insert(ctx, ArgsLogReparse{
-		LogID: logID,
+		LogID:   logID,
+		Verbose: verbose,
 	}, &river.InsertOpts{
 		Tags: []string{},
 	})

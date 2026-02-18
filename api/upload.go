@@ -52,7 +52,7 @@ func (api *API) WoWLogReparse(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID)
+	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID, r.URL.Query().Get("verbose") == "true")
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

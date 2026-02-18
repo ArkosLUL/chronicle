@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Minimize2, Maximize2, Move, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/Switch/Switch";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { VideoTimestamp } from "@/api/typesGenerated";
@@ -198,6 +199,11 @@ function videoTimeToCombatLogTime(
 export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, onClose }: YouTubeOverlayProps) {
   const isMobile = useIsMobile();
   const syncMode = useSyncModeContextOptional();
+  
+  // Extract sync mode controls for the Live Sync toggle
+  const syncEnabled = syncMode?.enabled ?? false;
+  const enableSync = syncMode?.enable;
+  const disableSync = syncMode?.disable;
   
   // Register YouTube as external driver when mounted, clear on unmount
   // Use setExternalDriver directly as dependency (stable from useCallback) rather than
@@ -499,12 +505,25 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           {/* Header */}
           <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 border-b border-border shrink-0">
             <span className="text-sm font-medium">YouTube</span>
-            <button
-              onClick={onClose}
-              className="p-2 rounded bg-destructive/5 text-destructive/75 hover:bg-destructive/25 hover:text-destructive cursor-pointer transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Live Sync toggle */}
+              {syncMode && (
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                  <span>Live Sync</span>
+                  <Switch 
+                    size="sm" 
+                    checked={syncEnabled} 
+                    onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
+                  />
+                </label>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 rounded bg-destructive/5 text-destructive/75 hover:bg-destructive/25 hover:text-destructive cursor-pointer transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           {/* Video player - 16:9 aspect ratio */}
           <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
@@ -560,6 +579,17 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           <span className="truncate max-w-[150px]">YouTube</span>
         </div>
         <div className="flex items-center gap-0.5">
+          {/* Live Sync toggle */}
+          {syncMode && (
+            <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
+              <span>Live Sync</span>
+              <Switch 
+                size="sm" 
+                checked={syncEnabled} 
+                onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
+              />
+            </label>
+          )}
           <Button
             variant="ghost"
             size="icon"

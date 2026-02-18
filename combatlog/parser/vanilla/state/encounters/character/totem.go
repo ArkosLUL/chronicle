@@ -145,7 +145,7 @@ func (c *Totem) Start(reason string, m messages.Message) {
 	const totemTimeout = time.Second * 30
 
 	c.Activity.Start(&TotemPeriod{
-		WorkingPeriod: period.New(&TotemMeta{
+		WorkingPeriod: period.New(c.ID(), &TotemMeta{
 			NextTimeout: now.Add(totemTimeout),
 			BumpBy:      totemTimeout,
 			MaxLifetime: now.Add(c.Self.MaxDuration()),

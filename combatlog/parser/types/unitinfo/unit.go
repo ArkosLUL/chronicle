@@ -111,7 +111,6 @@ func ParseUnitInfo(ri *realmclock.Info, content string) (Info, error) {
 		if err != nil {
 			trimmedBuffs := strings.TrimSuffix(parts[6], "na")
 			if trimmedBuffs == "-1" {
-				err = nil
 			} else {
 				// So jank, but there is a bugged version of the addon that puts the unit level
 				// plus "na" in this part.

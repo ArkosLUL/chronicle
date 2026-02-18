@@ -194,7 +194,7 @@ func Zoner() *serpent.Command {
 				lastMessage = m.Date()
 				switch ty := m.(type) {
 				case *messages.Zone:
-					was := z.Zone.Name
+					was := z.Name
 					if z.Process(*ty) {
 						if last.IsZero() {
 							last = ty.Timestamp

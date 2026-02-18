@@ -17,12 +17,20 @@ type PeriodMoment struct {
 	Message     json.RawMessage `json:"message,omitempty"`
 }
 
+// EndState describes how an activity period ended
+type EndState string
+
+const (
+	EndStateSlain   EndState = "slain"   // Unit was killed
+	EndStateReset   EndState = "reset"   // Unit left combat without dying
+	EndStateTimeout EndState = "timeout" // Inactivity timeout
+)
+
 type ActivityPeriod struct {
 	Start      *PeriodMoment `json:"start,omitempty"`
 	End        *PeriodMoment `json:"end,omitempty"`
 	LastActive *PeriodMoment `json:"last_active,omitempty"`
-
-	Slain bool `json:"slain"`
+	EndState   EndState      `json:"end_state,omitempty"`
 }
 
 type GUIDString = guid.GUID

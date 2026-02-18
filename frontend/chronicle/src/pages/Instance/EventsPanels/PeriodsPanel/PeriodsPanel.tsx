@@ -219,8 +219,14 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                       <div className="pt-1 font-medium">
                         Duration: {formatDuration(end - start)}
                       </div>
-                      {period.slain && (
+                      {period.end_state === "slain" && (
                         <div className="text-red-400 pt-1">💀 Slain</div>
+                      )}
+                      {period.end_state === "reset" && (
+                        <div className="text-yellow-400 pt-1">🔄 Reset</div>
+                      )}
+                      {period.end_state === "timeout" && (
+                        <div className="text-gray-400 pt-1">⏱️ Timeout</div>
                       )}
                     </div>
                   );
@@ -232,7 +238,9 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                           className={cn(
                             "absolute h-full rounded cursor-help transition-opacity hover:opacity-100",
                             entry.boss ? "bg-yellow-500/70" : "bg-blue-500/50",
-                            period.slain && "border-r-2 border-red-500"
+                            period.end_state === "slain" && "border-r-2 border-red-500",
+                            period.end_state === "reset" && "border-r-2 border-yellow-500",
+                            period.end_state === "timeout" && "border-r-2 border-gray-500"
                           )}
                           style={{ 
                             left: `${left}%`, 

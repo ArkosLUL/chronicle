@@ -76,6 +76,24 @@ export function UploadView({
         </AlertDescription>
       </Alert>
 
+      {/* Multiboxing Warning */}
+      <Alert className="border-blue-500/50 bg-blue-500/10 text-blue-200 [&>svg]:text-blue-500">
+        <Info className="h-4 w-4" />
+        <AlertTitle className="text-blue-200">Multiboxing?</AlertTitle>
+        <AlertDescription className="text-blue-200/80">
+          <p>
+            If you play multiple characters at the same time, only <b>one character</b> should have 
+            the <code className="bg-blue-500/20 px-1 rounded">ChronicleCompanion</code> and{" "}
+            <code className="bg-blue-500/20 px-1 rounded">SuperWoWLogger</code> addons enabled. 
+            Disable these addons on all other characters to avoid corrupted log data.
+          </p>
+          <p className="mt-2">
+            Run <code className="bg-blue-500/20 px-1 rounded">/script LoggingCombat(0)</code> on 
+            non-logging characters to ensure combat logging is off.
+          </p>
+        </AlertDescription>
+      </Alert>
+
       {/* Auth Check */}
       {!authLoading && !isAuthenticated ? (
         <Card className="p-6">
@@ -303,6 +321,13 @@ export function UploadView({
                 <p className="text-muted-foreground mt-1">
                   It replaces and extends SuperWoWCombatLogger with additional logging information.
                   Chronicle uses different log formats than TurtLogs, so we maintain our own addon.
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Why disable logging on multibox characters?</p>
+                <p className="text-muted-foreground mt-1">
+                  All WoW clients write to the same combat log file. When multiple characters log simultaneously, 
+                  they create conflicting states and overwrite each other's data, corrupting the log.
                 </p>
               </div>
             </div>

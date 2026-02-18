@@ -128,7 +128,7 @@ func (c *Totem) Process(m messages.Message) error {
 			*data.Caster == owner && data.Target == owner &&
 			data.SpellName != nil && *data.SpellName == "Totemic Recall" {
 			// Owner cast totemic recall, totem should end activity
-			c.Activity.End("totemic recall", m, true)
+			c.Activity.End("totemic recall", m, period.EndStateSlain)
 			return nil
 		}
 	}

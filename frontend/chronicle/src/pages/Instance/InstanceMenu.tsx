@@ -21,7 +21,7 @@ interface InstanceMenuProps {
 
 export function InstanceMenu({ layout, onLayoutChange, logDetailUrl }: InstanceMenuProps) {
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
           <Menu className="h-4 w-4" />

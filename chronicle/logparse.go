@@ -292,7 +292,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 								Start:      momentToDatabaseMoment(p.Start),
 								End:        momentToDatabaseMoment(p.End),
 								LastActive: momentToDatabaseMoment(p.LastActive),
-								Slain:      p.Slain,
+								EndState:   database.EndState(p.EndState),
 							}
 						}),
 					})

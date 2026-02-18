@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -51,5 +52,5 @@ func TestSpectralTutor(t *testing.T) {
 	tutor, ok := fights[0].Hostiles[0xF13000290200BF40]
 	require.True(t, ok)
 	require.Len(t, tutor.Activity, 1)
-	require.True(t, tutor.Activity[0].Slain)
+	require.Equal(t, period.EndStateSlain, tutor.Activity[0].EndState)
 }

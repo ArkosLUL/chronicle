@@ -5,6 +5,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
 const (
@@ -170,7 +171,7 @@ func (c *HooktoothFrenzy) Process(m messages.Message) error {
 		if cur.HandleTimeout(m.Date()) {
 			// We treat timeouts as deaths for these fish.
 			// They are insignificant, and they can't exit the water, so they just time out.
-			cur.Slain = true
+			cur.EndState = period.EndStateSlain
 		}
 	}
 

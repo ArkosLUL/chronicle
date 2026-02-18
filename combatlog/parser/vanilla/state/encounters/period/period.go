@@ -10,14 +10,23 @@ import (
 
 type IsPeriod interface {
 	Begin(reason string, ts messages.Message)
-	Killed(reason string, ts messages.Message)
-	Close(reason string, ts messages.Message)
+	End(reason string, ts messages.Message, endState EndState)
 	Timeout(reason string, date time.Time)
 	Bump(reason string, ts messages.Message)
 	IsActive() bool
 	Get() Period
 	String() string
 }
+
+// EndState describes how an activity period ended
+type EndState string
+
+const (
+	EndStateNone    EndState = ""        // Period still active (no end)
+	EndStateSlain   EndState = "slain"   // Unit was killed
+	EndStateReset   EndState = "reset"   // Unit left combat without dying
+	EndStateTimeout EndState = "timeout" // Inactivity timeout
+)
 
 func PeriodsDuring(periods []Period, start, end time.Time) ([]Period, error) {
 	// Minor buffer allowed
@@ -53,11 +62,10 @@ func PeriodsDuring(periods []Period, start, end time.Time) ([]Period, error) {
 // the moment at which the period was closed, while LastActive will remain set to
 // the final moment of actual activity and may therefore differ from End.
 type Period struct {
-	Start      *Moment `json:"start"`
-	End        *Moment `json:"end"`
-	LastActive *Moment `json:"last_active"`
-	// Slain is set to true if the unit was slain to terminate the period.
-	Slain bool `json:"slain"`
+	Start      *Moment  `json:"start"`
+	End        *Moment  `json:"end"`
+	LastActive *Moment  `json:"last_active"`
+	EndState   EndState `json:"end_state,omitempty"`
 }
 
 func (p Period) IsActive() bool {
@@ -111,27 +119,30 @@ func (p *WorkingPeriod[M]) Begin(reason string, ts messages.Message) {
 	p.Start = m
 }
 
-func (p *WorkingPeriod[M]) Killed(reason string, ts messages.Message) {
-	p.Close(reason, ts)
-	ts.AddActivity(p.me, messages.ActivitySlain)
-	p.Slain = true
-}
-
-func (p *WorkingPeriod[M]) Close(reason string, ts messages.Message) {
+func (p *WorkingPeriod[M]) End(reason string, ts messages.Message, endState EndState) {
 	m := &Moment{
 		Timestamp: ts,
 		Reason:    reason,
 	}
 	defer func() {
-		// Always bump the last active time on close
+		// Always bump the last active time on end
 		p.Bump(reason, ts)
 	}()
 
 	if !p.IsActive() {
 		return
 	}
-	ts.AddActivity(p.me, messages.ActivityEnd)
-	p.End = m
+
+	p.Period.End = m
+	p.EndState = endState
+
+	// Add activity event based on end state
+	switch endState {
+	case EndStateSlain:
+		ts.AddActivity(p.me, messages.ActivitySlain)
+	default:
+		ts.AddActivity(p.me, messages.ActivityEnd)
+	}
 }
 
 // Timeout does not bump the last active time, as it does not indicate activity.
@@ -139,10 +150,11 @@ func (p *WorkingPeriod[M]) Timeout(reason string, date time.Time) {
 	if !p.IsActive() {
 		return
 	}
-	p.End = &Moment{
+	p.Period.End = &Moment{
 		Timestamp: messages.TimedOut(date),
 		Reason:    fmt.Sprintf("Timeout: %s", reason),
 	}
+	p.EndState = EndStateTimeout
 }
 
 // Bump advances LastActive without starting a new period.

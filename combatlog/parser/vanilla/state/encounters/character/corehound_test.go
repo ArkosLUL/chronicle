@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -87,7 +88,7 @@ func TestCoreHoundDeathDamageAfter(t *testing.T) {
 
 	hound, ok := fights[0].Hostiles[0xF130002D9700DD38]
 	require.True(t, ok)
-	require.True(t, hound.Activity[0].Slain, "hound should be dead")
+	require.Equal(t, period.EndStateSlain, hound.Activity[0].EndState, "hound should be dead")
 
 	// The corehound leaks into the Lucifron fight, but it should be killed in the first fight
 	_, ok = fights[1].Hostiles[0xF130002D9700DD38]

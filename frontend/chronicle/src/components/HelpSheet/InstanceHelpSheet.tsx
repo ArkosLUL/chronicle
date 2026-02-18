@@ -7,9 +7,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle, MousePointerClick, Users, LayoutGrid, Lightbulb } from "lucide-react";
+import { HelpCircle, MousePointerClick, Users, LayoutGrid, Lightbulb, Eye, MousePointer2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 // -----------------------------------------------------------------------------
 // Feature Map Configuration
@@ -264,9 +265,12 @@ export function InstanceHelpSheet({ open: controlledOpen, onOpenChange }: Instan
             </SheetTitle>
           </SheetHeader>
           
-          <p className="text-xs text-muted-foreground px-4 pb-2">
-            Hover over items to see where they are on the page
-          </p>
+          <div className="mx-4 mb-4 p-3 rounded-lg bg-[color:var(--tertiary)]/10 border border-[color:var(--tertiary)]/20">
+            <div className="flex items-center gap-2 text-sm font-medium text-[color:var(--tertiary)]">
+              <MousePointer2 className="h-4 w-4 shrink-0 animate-bounce" />
+              <span>Hover items to see them highlighted on the page!</span>
+            </div>
+          </div>
           
           <div className="px-4 pb-4 space-y-6">
             {FEATURE_MAP.map(category => (
@@ -275,23 +279,35 @@ export function InstanceHelpSheet({ open: controlledOpen, onOpenChange }: Instan
                   {category.icon}
                   {category.title}
                 </h3>
-                <ul className="space-y-0.5">
+                <ul className="space-y-1">
                   {category.items.map(item => (
                     <li
                       key={item.id}
-                      className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-all group",
                         item.selector 
-                          ? "cursor-pointer hover:bg-muted" 
-                          : "text-muted-foreground"
-                      } ${hoveredItem?.id === item.id ? "bg-muted" : ""}`}
+                          ? "cursor-pointer border border-transparent hover:border-[color:var(--tertiary)]/50 hover:bg-[color:var(--tertiary)]/10 hover:shadow-sm" 
+                          : "text-muted-foreground",
+                        hoveredItem?.id === item.id && "border-[color:var(--tertiary)]/50 bg-[color:var(--tertiary)]/10 shadow-sm"
+                      )}
                       onMouseEnter={() => item.selector && setHoveredItem(item)}
                       onMouseLeave={() => setHoveredItem(null)}
                     >
-                      {item.label}
-                      {!item.selector && (
-                        <span className="block text-xs text-muted-foreground mt-0.5">
-                          {item.description}
-                        </span>
+                      {item.selector ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-[color:var(--tertiary)]/60" />
+                            <span>{item.label}</span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </>
+                      ) : (
+                        <div>
+                          <span>{item.label}</span>
+                          <span className="block text-xs text-muted-foreground mt-0.5">
+                            {item.description}
+                          </span>
+                        </div>
                       )}
                     </li>
                   ))}

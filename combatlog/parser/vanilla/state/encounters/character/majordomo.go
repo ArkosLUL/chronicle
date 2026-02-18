@@ -3,6 +3,7 @@ package character
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
 type MajordomoParty struct {
@@ -142,7 +143,7 @@ func (c *MajordomoParty) processAddCheck(m messages.Message) {
 		}
 
 		pd, ok := c.CurrentPeriod()
-		if !ok || !pd.Slain {
+		if !ok || pd.EndState != period.EndStateSlain {
 			return
 		}
 	}

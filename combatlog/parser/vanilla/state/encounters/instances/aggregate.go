@@ -93,7 +93,7 @@ type Fight struct {
 func (f Fight) Remaining() []guid.GUID {
 	remaining := make([]guid.GUID, 0)
 	for _, h := range f.Hostiles {
-		if !h.Activity[len(h.Activity)-1].Slain {
+		if h.Activity[len(h.Activity)-1].EndState != period.EndStateSlain {
 			remaining = append(remaining, h.ID)
 		}
 	}

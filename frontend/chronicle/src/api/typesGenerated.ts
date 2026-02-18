@@ -7,7 +7,7 @@ export interface ActivityPeriod {
     readonly start?: PeriodMoment;
     readonly end?: PeriodMoment;
     readonly last_active?: PeriodMoment;
-    readonly slain: boolean;
+    readonly end_state?: EndState;
 }
 
 // From chroniclesdk/user.go
@@ -64,6 +64,11 @@ export interface ChronicleEncounterEvents {
     readonly payload: string;
     readonly start_time: string;
 }
+
+// From chroniclesdk/log.go
+export type EndState = "reset" | "slain" | "timeout";
+
+export const EndStates: EndState[] = ["reset", "slain", "timeout"];
 
 // From chroniclesdk/log.go
 export type GUIDString = string;

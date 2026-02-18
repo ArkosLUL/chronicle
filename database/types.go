@@ -73,12 +73,20 @@ func (a Ability) Value() (driver.Value, error) {
 
 type Periods []Period
 
+// EndState describes how an activity period ended
+type EndState string
+
+const (
+	EndStateSlain   EndState = "slain"   // Unit was killed
+	EndStateReset   EndState = "reset"   // Unit left combat without dying
+	EndStateTimeout EndState = "timeout" // Inactivity timeout
+)
+
 type Period struct {
 	Start      *PeriodMoment `json:"start,omitempty"`
 	End        *PeriodMoment `json:"end,omitempty"`
 	LastActive *PeriodMoment `json:"last_active,omitempty"`
-
-	Slain bool `json:"slain"`
+	EndState   EndState      `json:"end_state,omitempty"`
 }
 
 type PeriodMoment struct {

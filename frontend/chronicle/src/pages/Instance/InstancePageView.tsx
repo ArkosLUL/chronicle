@@ -5,6 +5,7 @@ import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, Pa
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useInstanceViewState, type PanelType, type LayoutType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
@@ -1158,6 +1159,16 @@ export function InstancePageView({
   // Get user preference for showing helpful hints
   const showHints = useHelpfulHints();
   
+  // Track first-time visit to highlight Help button
+  const [hasSeenHelp, setHasSeenHelp] = useLocalStorage("instance-help-seen", false);
+  
+  // Dismiss highlight when help opens (via click or URL)
+  useEffect(() => {
+    if (helpOpen && !hasSeenHelp) {
+      setHasSeenHelp(true);
+    }
+  }, [helpOpen, hasSeenHelp, setHasSeenHelp]);
+  
   // Compute all enemies from all encounters (GUID-sorted for stable URL indexing)
   const allMergedEnemies = useMemo(
     () => mergeEnemiesByGuid(instance.encounters),
@@ -1356,10 +1367,26 @@ export function InstancePageView({
             {youtubeButton}
             {showHints && !isMobile && (
               <>
-                <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setHelpOpen(true)}>
-                  <HelpCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Help</span>
-                </Button>
+                <div className="relative">
+                  <Button
+                    variant={hasSeenHelp ? "ghost" : "default"}
+                    size="sm"
+                    className={cn(
+                      "gap-1.5",
+                      !hasSeenHelp && "animate-bounce shadow-lg shadow-primary/25"
+                    )}
+                    onClick={() => setHelpOpen(true)}
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Help</span>
+                    {!hasSeenHelp && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
+                      </span>
+                    )}
+                  </Button>
+                </div>
                 <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
               </>
             )}

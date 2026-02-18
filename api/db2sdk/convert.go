@@ -144,7 +144,7 @@ func ActivityPeriod(period database.Period) chroniclesdk.ActivityPeriod {
 		Start:      PeriodMoment(period.Start),
 		End:        PeriodMoment(period.End),
 		LastActive: PeriodMoment(period.LastActive),
-		Slain:      period.Slain,
+		EndState:   chroniclesdk.EndState(period.EndState),
 	}
 }
 

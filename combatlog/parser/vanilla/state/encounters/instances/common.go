@@ -90,7 +90,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 				isBossFight = true
 				// Check if this boss was slain
 				lastPeriod := h.Activity[len(h.Activity)-1]
-				aBossRemains = aBossRemains || !lastPeriod.Slain
+				aBossRemains = aBossRemains || lastPeriod.EndState != period.EndStateSlain
 			}
 
 			// Always take the encounter name if set

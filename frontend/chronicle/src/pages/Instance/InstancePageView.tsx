@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams, Link } from "react-router-dom";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, FileText, Copy } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
@@ -24,7 +24,7 @@ import { PanelExplainerView } from "./PanelExplainer";
 import { RandomTip } from "@/components/RandomTip";
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
-import { LayoutSwitcher } from "./LayoutSwitcher";
+import { InstanceMenu } from "./InstanceMenu";
 
 // ============================================================================
 // Formatting helpers
@@ -594,7 +594,6 @@ interface EncounterDetailProps {
   onPanelTypeChange: (index: 0 | 1 | 2 | 3 | 4 | 5, type: PanelType) => void;
   onPanelOptionChange: (index: 0 | 1 | 2 | 3 | 4 | 5, option: string | null) => void;
   layout: LayoutType;
-  onLayoutChange: (layout: LayoutType) => void;
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
@@ -617,7 +616,6 @@ function EncounterDetail({
   onPanelTypeChange,
   onPanelOptionChange,
   layout,
-  onLayoutChange,
   onToggleEnemy,
   onSelectEnemies,
   onTogglePlayer,
@@ -979,10 +977,7 @@ function EncounterDetail({
           </Card>
         </Collapsible>
       </Tabs>
-      {/* Layout switcher + Events Panels */}
-      <div className="flex justify-end mt-4 mb-2">
-        <LayoutSwitcher layout={layout} onLayoutChange={onLayoutChange} />
-      </div>
+      {/* Events Panels */}
       <PanelTimingProvider panelCount={layout === "alternate" ? 4 : 5}>
         <PanelTimingResetter encounters={encounters} />
         
@@ -1363,15 +1358,6 @@ export function InstancePageView({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View Log button - desktop only, when user can manage the log */}
-            {!isMobile && logDetailUrl && (
-              <Button variant="outline" size="sm" className="gap-1.5" asChild>
-                <Link to={logDetailUrl}>
-                  <FileText className="h-4 w-4" />
-                  View Log
-                </Link>
-              </Button>
-            )}
             {youtubeButton}
             {showHints && !isMobile && (
               <>
@@ -1382,6 +1368,12 @@ export function InstancePageView({
                 <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
               </>
             )}
+            {/* Hamburger menu with layout options + view log */}
+            <InstanceMenu
+              layout={viewState.layout}
+              onLayoutChange={setLayout}
+              logDetailUrl={logDetailUrl}
+            />
           </div>
         </div>
       </div>
@@ -1435,7 +1427,6 @@ export function InstancePageView({
             onPanelTypeChange={setPanelType}
             onPanelOptionChange={setPanelOption}
             layout={viewState.layout}
-            onLayoutChange={setLayout}
             onToggleEnemy={toggleEnemySelection}
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}

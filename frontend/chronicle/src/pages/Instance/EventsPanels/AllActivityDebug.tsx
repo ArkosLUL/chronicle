@@ -116,23 +116,28 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
   );
   
   // ActivityEvent column - shows debug annotations when present
-  // Activity types: start (green), end (red), slain (red+skull), bump (yellow)
-  // Now shows both the event type and the entity name
-  const activityEventElement = event.activityEvent ? (
-    <span 
-      className={cn(
-        "w-32 shrink-0 text-[10px] font-semibold truncate",
-        event.activityEvent.type === "start" && "text-green-400",
-        event.activityEvent.type === "end" && "text-red-400",
-        event.activityEvent.type === "slain" && "text-red-500",
-        event.activityEvent.type === "bump" && "text-yellow-400",
-      )}
-      title={`${event.activityEvent.type}: ${event.activityEvent.name} (${event.activityEvent.guid})`}
-    >
-      {event.activityEvent.type === "slain" ? "💀" : event.activityEvent.type}: {event.activityEvent.name}
+  // Activity types indicated by color: start (green), bump (yellow), end (orange), slain (red+skull)
+  // Shows entity names only, comma-separated if multiple
+  const activityEventElement = event.activityEvents && event.activityEvents.length > 0 ? (
+    <span className="w-36 shrink-0 text-[10px] truncate flex items-center gap-1">
+      {event.activityEvents.map((activity, i) => (
+        <span
+          key={i}
+          className={cn(
+            "font-semibold",
+            activity.type === "start" && "text-green-400",
+            activity.type === "bump" && "text-yellow-400",
+            activity.type === "end" && "text-orange-400",
+            activity.type === "slain" && "text-red-500",
+          )}
+          title={`${activity.type}: ${activity.name} (${activity.guid})`}
+        >
+          {activity.type === "slain" && "💀"}{activity.name}{i < event.activityEvents!.length - 1 && ","}
+        </span>
+      ))}
     </span>
   ) : (
-    <span className="w-32 shrink-0 text-muted-foreground/30">-</span>
+    <span className="w-36 shrink-0 text-muted-foreground/30">-</span>
   );
   
   return (
@@ -483,7 +488,19 @@ function AllActivityContent({
             <span className="shrink-0"></span>
             <span className="w-24 shrink-0">Target</span>
             <span className="w-12 text-right shrink-0">Amount</span>
-            <span className="w-10 text-center shrink-0">Activity</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="w-36 shrink-0 cursor-help">Activity <span className="text-muted-foreground">ⓘ</span></span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <div className="space-y-1">
+                  <div><span className="text-green-400 font-semibold">■</span> start - period began</div>
+                  <div><span className="text-yellow-400 font-semibold">■</span> bump - timer extended</div>
+                  <div><span className="text-orange-400 font-semibold">■</span> end - period ended</div>
+                  <div><span className="text-red-500 font-semibold">■</span> 💀 slain - unit died</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
           </div>
           
           {sortedEvents.length === 0 ? (

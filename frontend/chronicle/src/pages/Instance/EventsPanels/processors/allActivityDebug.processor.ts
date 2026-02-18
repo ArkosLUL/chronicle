@@ -46,7 +46,8 @@ export interface RawDebugEvent {
   // Aura-specific fields
   auraApplication?: AuraApplication;
   // Debug annotations (when WithDebug is enabled during reparse)
-  activityEvent?: ActivityEventInfo;
+  // Can have multiple activity entries per event
+  activityEvents?: ActivityEventInfo[];
 }
 
 /**
@@ -271,21 +272,23 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       amount = regularEvent.amount;
     }
     
-    // Extract activity event if present (from debug reparse)
+    // Extract all activity events if present (from debug reparse)
     // Activity tracks when a GUID becomes active/inactive in encounter period detection
-    // Show the first activity entry (usually there's only one per event)
-    let activityEvent: ActivityEventInfo | undefined = undefined;
+    let activityEvents: ActivityEventInfo[] | undefined = undefined;
     if (event.activityCount > 0) {
-      const entry = event.activity[0];
-      // Look up entity name from context
-      const entityName = context.players[entry.guid]?.name 
-        ?? context.units?.[entry.guid]?.name 
-        ?? entry.guid;
-      activityEvent = {
-        type: entry.eventType as ActivityEventTypeValue,
-        guid: entry.guid,
-        name: entityName,
-      };
+      activityEvents = [];
+      for (let i = 0; i < event.activityCount; i++) {
+        const entry = event.activity[i];
+        // Look up entity name from context
+        const entityName = context.players[entry.guid]?.name 
+          ?? context.units?.[entry.guid]?.name 
+          ?? entry.guid;
+        activityEvents.push({
+          type: entry.eventType as ActivityEventTypeValue,
+          guid: entry.guid,
+          name: entityName,
+        });
+      }
     }
     
     const rawEvent: RawDebugEvent = {
@@ -300,7 +303,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       target: eventTarget,
       targetName,
       amount,
-      activityEvent,
+      activityEvents,
     };
     
     // Add stream-specific info based on streamType

@@ -319,7 +319,7 @@ func (c *Common) FightDetectionHandler(m messages.Message) error {
 		return nil
 	}
 
-	if c.currentFight.End == nil {
+	if c.currentFight.Start != nil {
 		err := c.currentFight.Events.Process(m)
 		if err != nil {
 			return fmt.Errorf("processing encounter messages: %w", err)

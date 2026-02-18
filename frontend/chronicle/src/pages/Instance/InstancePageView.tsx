@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams, Link } from "react-router-dom";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, FileText, Copy } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
-import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
+import { useInstanceViewState, type PanelType, type LayoutType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { PanelExplainerView } from "./PanelExplainer";
 import { RandomTip } from "@/components/RandomTip";
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
+import { InstanceMenu } from "./InstanceMenu";
 
 // ============================================================================
 // Formatting helpers
@@ -588,10 +589,11 @@ interface EncounterDetailProps {
   encounters: Encounter[];
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
-  panelTypes: [PanelType, PanelType, PanelType, PanelType, PanelType];
-  panelOptions: [string | null, string | null, string | null, string | null, string | null];
-  onPanelTypeChange: (index: 0 | 1 | 2 | 3 | 4, type: PanelType) => void;
-  onPanelOptionChange: (index: 0 | 1 | 2 | 3 | 4, option: string | null) => void;
+  panelTypes: [PanelType, PanelType, PanelType, PanelType, PanelType, PanelType];
+  panelOptions: [string | null, string | null, string | null, string | null, string | null, string | null];
+  onPanelTypeChange: (index: 0 | 1 | 2 | 3 | 4 | 5, type: PanelType) => void;
+  onPanelOptionChange: (index: 0 | 1 | 2 | 3 | 4 | 5, option: string | null) => void;
+  layout: LayoutType;
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
@@ -613,6 +615,7 @@ function EncounterDetail({
   panelOptions,
   onPanelTypeChange,
   onPanelOptionChange,
+  layout,
   onToggleEnemy,
   onSelectEnemies,
   onTogglePlayer,
@@ -627,20 +630,22 @@ function EncounterDetail({
   
   // Panel types from props (managed by parent via URL state)
   // Note: PanelType and EventsPanelType are identical unions, cast for compatibility
-  const [eventsPanel1Type, eventsPanel2Type, eventsPanel3Type, eventsPanel4Type, eventsPanel5Type] = panelTypes;
+  const [eventsPanel1Type, eventsPanel2Type, eventsPanel3Type, eventsPanel4Type, eventsPanel5Type, eventsPanel6Type] = panelTypes;
   const setEventsPanel1Type = (type: EventsPanelType) => onPanelTypeChange(0, type as PanelType);
   const setEventsPanel2Type = (type: EventsPanelType) => onPanelTypeChange(1, type as PanelType);
   const setEventsPanel3Type = (type: EventsPanelType) => onPanelTypeChange(2, type as PanelType);
   const setEventsPanel4Type = (type: EventsPanelType) => onPanelTypeChange(3, type as PanelType);
   const setEventsPanel5Type = (type: EventsPanelType) => onPanelTypeChange(4, type as PanelType);
+  const setEventsPanel6Type = (type: EventsPanelType) => onPanelTypeChange(5, type as PanelType);
   
   // Panel options (managed by parent via URL state)
-  const [panelOption1, panelOption2, panelOption3, panelOption4, panelOption5] = panelOptions;
+  const [panelOption1, panelOption2, panelOption3, panelOption4, panelOption5, panelOption6] = panelOptions;
   const setPanelOption1 = (opt: string | null) => onPanelOptionChange(0, opt);
   const setPanelOption2 = (opt: string | null) => onPanelOptionChange(1, opt);
   const setPanelOption3 = (opt: string | null) => onPanelOptionChange(2, opt);
   const setPanelOption4 = (opt: string | null) => onPanelOptionChange(3, opt);
   const setPanelOption5 = (opt: string | null) => onPanelOptionChange(4, opt);
+  const setPanelOption6 = (opt: string | null) => onPanelOptionChange(5, opt);
   
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
@@ -972,69 +977,129 @@ function EncounterDetail({
           </Card>
         </Collapsible>
       </Tabs>
-      {/* Events Panels - 2x2 grid + full-width 5th panel */}
-      <PanelTimingProvider panelCount={5}>
+      {/* Events Panels */}
+      <PanelTimingProvider panelCount={layout === "alternate" ? 4 : 5}>
         <PanelTimingResetter encounters={encounters} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
-          <EventsPanel
-            panelType={eventsPanel1Type}
-            onPanelTypeChange={setEventsPanel1Type}
-            durationMs={totalDurationMs}
-            context={panelContext}
-            panelIndex={0}
-            onExplainerClick={onExplainerClick}
-            showHints={showHints}
-            panelOption={panelOption1}
-            onPanelOptionChange={setPanelOption1}
-          />
-          <EventsPanel
-            panelType={eventsPanel2Type}
-            onPanelTypeChange={setEventsPanel2Type}
-            durationMs={totalDurationMs}
-            context={panelContext}
-            panelIndex={1}
-            onExplainerClick={onExplainerClick}
-            showHints={showHints}
-            panelOption={panelOption2}
-            onPanelOptionChange={setPanelOption2}
-          />
-          <EventsPanel
-            panelType={eventsPanel3Type}
-            onPanelTypeChange={setEventsPanel3Type}
-            durationMs={totalDurationMs}
-            context={panelContext}
-            panelIndex={2}
-            onExplainerClick={onExplainerClick}
-            showHints={showHints}
-            panelOption={panelOption3}
-            onPanelOptionChange={setPanelOption3}
-          />
-          <EventsPanel
-            panelType={eventsPanel4Type}
-            onPanelTypeChange={setEventsPanel4Type}
-            durationMs={totalDurationMs}
-            context={panelContext}
-            panelIndex={3}
-            onExplainerClick={onExplainerClick}
-            showHints={showHints}
-            panelOption={panelOption4}
-            onPanelOptionChange={setPanelOption4}
-          />
-          {/* 5th panel spans full width */}
-          <div className="lg:col-span-2">
+        
+        {layout === "standard" ? (
+          /* Standard layout: 2×2 grid + 1 full-width panel */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <EventsPanel
-              panelType={eventsPanel5Type}
-              onPanelTypeChange={setEventsPanel5Type}
+              panelType={eventsPanel1Type}
+              onPanelTypeChange={setEventsPanel1Type}
               durationMs={totalDurationMs}
               context={panelContext}
-              panelIndex={4}
+              panelIndex={0}
               onExplainerClick={onExplainerClick}
               showHints={showHints}
-              panelOption={panelOption5}
-              onPanelOptionChange={setPanelOption5}
+              panelOption={panelOption1}
+              onPanelOptionChange={setPanelOption1}
             />
+            <EventsPanel
+              panelType={eventsPanel2Type}
+              onPanelTypeChange={setEventsPanel2Type}
+              durationMs={totalDurationMs}
+              context={panelContext}
+              panelIndex={1}
+              onExplainerClick={onExplainerClick}
+              showHints={showHints}
+              panelOption={panelOption2}
+              onPanelOptionChange={setPanelOption2}
+            />
+            <EventsPanel
+              panelType={eventsPanel3Type}
+              onPanelTypeChange={setEventsPanel3Type}
+              durationMs={totalDurationMs}
+              context={panelContext}
+              panelIndex={2}
+              onExplainerClick={onExplainerClick}
+              showHints={showHints}
+              panelOption={panelOption3}
+              onPanelOptionChange={setPanelOption3}
+            />
+            <EventsPanel
+              panelType={eventsPanel4Type}
+              onPanelTypeChange={setEventsPanel4Type}
+              durationMs={totalDurationMs}
+              context={panelContext}
+              panelIndex={3}
+              onExplainerClick={onExplainerClick}
+              showHints={showHints}
+              panelOption={panelOption4}
+              onPanelOptionChange={setPanelOption4}
+            />
+            {/* 5th panel spans full width */}
+            <div className="lg:col-span-2">
+              <EventsPanel
+                panelType={eventsPanel5Type}
+                onPanelTypeChange={setEventsPanel5Type}
+                durationMs={totalDurationMs}
+                context={panelContext}
+                panelIndex={4}
+                onExplainerClick={onExplainerClick}
+                showHints={showHints}
+                panelOption={panelOption5}
+                onPanelOptionChange={setPanelOption5}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Alternate layout: 1+1 (top) + 2 full-width panels */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Top row: 2 small panels */}
+            <EventsPanel
+              panelType={eventsPanel1Type}
+              onPanelTypeChange={setEventsPanel1Type}
+              durationMs={totalDurationMs}
+              context={panelContext}
+              panelIndex={0}
+              onExplainerClick={onExplainerClick}
+              showHints={showHints}
+              panelOption={panelOption1}
+              onPanelOptionChange={setPanelOption1}
+            />
+            <EventsPanel
+              panelType={eventsPanel2Type}
+              onPanelTypeChange={setEventsPanel2Type}
+              durationMs={totalDurationMs}
+              context={panelContext}
+              panelIndex={1}
+              onExplainerClick={onExplainerClick}
+              showHints={showHints}
+              panelOption={panelOption2}
+              onPanelOptionChange={setPanelOption2}
+            />
+            {/* Middle row: full-width panel (typically AllActivity) */}
+            <div className="lg:col-span-2">
+              <EventsPanel
+                panelType={eventsPanel5Type}
+                onPanelTypeChange={setEventsPanel5Type}
+                durationMs={totalDurationMs}
+                context={panelContext}
+                panelIndex={2}
+                onExplainerClick={onExplainerClick}
+                showHints={showHints}
+                panelOption={panelOption5}
+                onPanelOptionChange={setPanelOption5}
+              />
+            </div>
+            {/* Bottom row: full-width panel (Periods) */}
+            <div className="lg:col-span-2">
+              <EventsPanel
+                panelType={eventsPanel6Type}
+                onPanelTypeChange={setEventsPanel6Type}
+                durationMs={totalDurationMs}
+                context={panelContext}
+                panelIndex={3}
+                onExplainerClick={onExplainerClick}
+                showHints={showHints}
+                panelOption={panelOption6}
+                onPanelOptionChange={setPanelOption6}
+              />
+            </div>
+          </div>
+        )}
+        
         <div className="mt-4 flex justify-end">
           <PanelTimingDisplay />
         </div>
@@ -1112,6 +1177,7 @@ export function InstancePageView({
     setPlayers: setUrlPlayerIds, 
     setPanelType,
     setPanelOption,
+    setLayout,
     clearEntitySelection,
   } = useInstanceViewState({
     encounters: instance.encounters,
@@ -1119,7 +1185,7 @@ export function InstancePageView({
     players: instance.players ?? {},
     defaults: {
       encounterIds: instance.encounters.map(e => e.id),
-      panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done', 'empty'],
+      panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done', 'all_activity', 'periods'],
     },
   });
   
@@ -1292,15 +1358,6 @@ export function InstancePageView({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View Log button - desktop only, when user can manage the log */}
-            {!isMobile && logDetailUrl && (
-              <Button variant="outline" size="sm" className="gap-1.5" asChild>
-                <Link to={logDetailUrl}>
-                  <FileText className="h-4 w-4" />
-                  View Log
-                </Link>
-              </Button>
-            )}
             {youtubeButton}
             {showHints && !isMobile && (
               <>
@@ -1311,6 +1368,12 @@ export function InstancePageView({
                 <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
               </>
             )}
+            {/* Hamburger menu with layout options + view log */}
+            <InstanceMenu
+              layout={viewState.layout}
+              onLayoutChange={setLayout}
+              logDetailUrl={logDetailUrl}
+            />
           </div>
         </div>
       </div>
@@ -1363,6 +1426,7 @@ export function InstancePageView({
             panelOptions={viewState.panelOptions}
             onPanelTypeChange={setPanelType}
             onPanelOptionChange={setPanelOption}
+            layout={viewState.layout}
             onToggleEnemy={toggleEnemySelection}
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}

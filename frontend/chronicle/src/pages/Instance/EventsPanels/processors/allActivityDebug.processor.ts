@@ -13,6 +13,12 @@ import type { StreamType } from "@/hooks/instanceEvents";
  */
 export type ResourceType = "Health" | "Mana" | "Rage" | "Happiness" | "Energy" | "Focus";
 
+/**
+ * Activity event types from debug parser annotations.
+ * These indicate when units become "active" during encounters.
+ */
+export type ActivityEventType = "start" | "end" | "tick" | null;
+
 export interface RawDebugEvent {
   index: number;
   offsetMilli: number;
@@ -32,6 +38,8 @@ export interface RawDebugEvent {
   spellRank?: number | null;
   // Aura-specific fields
   auraApplication?: AuraApplication;
+  // Debug annotations (when WithDebug is enabled during reparse)
+  activityEvent?: ActivityEventType;
 }
 
 /**

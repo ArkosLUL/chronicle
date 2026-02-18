@@ -633,7 +633,29 @@ const PANEL_CODES: Record<PanelType, string> = {
   judgement: 'jdg',
   // Aura tracking
   aura_uptime: 'au',
+  // Debug/Analysis
+  periods: 'per',
 };
+
+// ============================================================================
+// Layout Types
+// ============================================================================
+
+/**
+ * Layout types for the Instance page.
+ * - standard: 2×2 grid + 1 full-width panel (5 panels total)
+ * - alternate: 1×1 + 1×1 (top) + 2×1 + 2×1 (4 panels, 2 are full-width)
+ */
+export type LayoutType = "standard" | "alternate";
+
+const LAYOUT_CODES: Record<LayoutType, string> = {
+  standard: "s",
+  alternate: "a",
+};
+
+const CODE_TO_LAYOUT: Record<string, LayoutType> = Object.fromEntries(
+  Object.entries(LAYOUT_CODES).map(([k, v]) => [v, k as LayoutType])
+);
 
 const CODE_TO_PANEL: Record<string, PanelType> = Object.fromEntries(
   Object.entries(PANEL_CODES).map(([k, v]) => [v, k as PanelType])
@@ -663,8 +685,8 @@ function serializePanelCode(code: string, option: string | null): string {
   return option ? `${code}[${option}]` : code;
 }
 
-/** Panel option tuple type */
-export type PanelOptions = [string | null, string | null, string | null, string | null, string | null];
+/** Panel option tuple type (6 panels) */
+export type PanelOptions = [string | null, string | null, string | null, string | null, string | null, string | null];
 
 /**
  * View state structure for the Instance page
@@ -676,10 +698,12 @@ export interface InstanceViewState {
   enemies: Set<string>;
   /** Selected player IDs */
   players: Set<string>;
-  /** Panel types for panels 1-5 (5th is full-width) */
-  panels: [PanelType, PanelType, PanelType, PanelType, PanelType];
+  /** Panel types for panels 1-6 (5th and 6th are full-width in alternate layout) */
+  panels: [PanelType, PanelType, PanelType, PanelType, PanelType, PanelType];
   /** Panel-specific options (e.g., selected aura name) */
   panelOptions: PanelOptions;
+  /** Layout type: standard (2×2+1) or alternate (1+1 + 2×1 + 2×1) */
+  layout: LayoutType;
 }
 
 export interface InstanceViewStateConfig {
@@ -692,7 +716,7 @@ export interface InstanceViewStateConfig {
   /** Default values */
   defaults: {
     encounterIds: string[];
-    panels: [PanelType, PanelType, PanelType, PanelType, PanelType];
+    panels: [PanelType, PanelType, PanelType, PanelType, PanelType, PanelType];
   };
 }
 
@@ -726,8 +750,9 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
   setEncounters: (ids: string[] | ((prev: string[]) => string[])) => void;
   setEnemies: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   setPlayers: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
-  setPanelType: (index: 0 | 1 | 2 | 3 | 4, type: PanelType) => void;
-  setPanelOption: (index: 0 | 1 | 2 | 3 | 4, option: string | null) => void;
+  setPanelType: (index: 0 | 1 | 2 | 3 | 4 | 5, type: PanelType) => void;
+  setPanelOption: (index: 0 | 1 | 2 | 3 | 4 | 5, option: string | null) => void;
+  setLayout: (layout: LayoutType) => void;
   clearEntitySelection: () => void;
 } {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -776,13 +801,17 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
   // Parse state from URL
   const state = useMemo((): InstanceViewState => {
     const raw = searchParams.get('v');
+    const layoutCode = searchParams.get('l');
+    const layout: LayoutType = CODE_TO_LAYOUT[layoutCode ?? ''] ?? 'standard';
+    
     if (!raw) {
       return {
         encounters: config.defaults.encounterIds,
         enemies: new Set(),
         players: new Set(),
         panels: config.defaults.panels,
-        panelOptions: [null, null, null, null, null],
+        panelOptions: [null, null, null, null, null, null],
+        layout,
       };
     }
     
@@ -827,17 +856,18 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
           .filter((id): id is string => id !== undefined)
       );
       
-      // Parse panels (backward compatible - missing 5th defaults to config default)
+      // Parse panels (backward compatible - missing 5th/6th defaults to config default)
       // Format: code or code[option] separated by dashes
       const panelParts = (panelPart || '').split('-');
       const parsedPanels = panelParts.map(parsePanelCode);
       
-      const panels: [PanelType, PanelType, PanelType, PanelType, PanelType] = [
+      const panels: [PanelType, PanelType, PanelType, PanelType, PanelType, PanelType] = [
         CODE_TO_PANEL[parsedPanels[0]?.code] ?? config.defaults.panels[0],
         CODE_TO_PANEL[parsedPanels[1]?.code] ?? config.defaults.panels[1],
         CODE_TO_PANEL[parsedPanels[2]?.code] ?? config.defaults.panels[2],
         CODE_TO_PANEL[parsedPanels[3]?.code] ?? config.defaults.panels[3],
         CODE_TO_PANEL[parsedPanels[4]?.code] ?? config.defaults.panels[4],
+        CODE_TO_PANEL[parsedPanels[5]?.code] ?? config.defaults.panels[5],
       ];
       
       const panelOptions: PanelOptions = [
@@ -846,16 +876,18 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
         parsedPanels[2]?.option ?? null,
         parsedPanels[3]?.option ?? null,
         parsedPanels[4]?.option ?? null,
+        parsedPanels[5]?.option ?? null,
       ];
       
-      return { encounters, enemies, players, panels, panelOptions };
+      return { encounters, enemies, players, panels, panelOptions, layout };
     } catch {
       return {
         encounters: config.defaults.encounterIds,
         enemies: new Set(),
         players: new Set(),
         panels: config.defaults.panels,
-        panelOptions: [null, null, null, null, null],
+        panelOptions: [null, null, null, null, null, null],
+        layout,
       };
     }
   }, [searchParams, config.defaults, encounterMaps, enemyMaps, playerMaps]);
@@ -920,6 +952,12 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
       } else {
         newParams.set('v', serializeState(newState));
       }
+      // Handle layout separately (it's a separate URL param)
+      if (newState.layout === 'standard') {
+        newParams.delete('l');
+      } else {
+        newParams.set('l', LAYOUT_CODES[newState.layout]);
+      }
       return newParams;
     }, { replace: true });
   }, [setSearchParams, serializeState, isDefaultState]);
@@ -940,8 +978,8 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
     updateUrl({ ...state, players: newPlayers });
   }, [state, updateUrl]);
 
-  const setPanelType = useCallback((index: 0 | 1 | 2 | 3 | 4, type: PanelType) => {
-    const newPanels = [...state.panels] as [PanelType, PanelType, PanelType, PanelType, PanelType];
+  const setPanelType = useCallback((index: 0 | 1 | 2 | 3 | 4 | 5, type: PanelType) => {
+    const newPanels = [...state.panels] as [PanelType, PanelType, PanelType, PanelType, PanelType, PanelType];
     newPanels[index] = type;
     // Clear the option when changing panel type
     const newOptions = [...state.panelOptions] as PanelOptions;
@@ -949,15 +987,19 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
     updateUrl({ ...state, panels: newPanels, panelOptions: newOptions });
   }, [state, updateUrl]);
 
-  const setPanelOption = useCallback((index: 0 | 1 | 2 | 3 | 4, option: string | null) => {
+  const setPanelOption = useCallback((index: 0 | 1 | 2 | 3 | 4 | 5, option: string | null) => {
     const newOptions = [...state.panelOptions] as PanelOptions;
     newOptions[index] = option;
     updateUrl({ ...state, panelOptions: newOptions });
+  }, [state, updateUrl]);
+
+  const setLayout = useCallback((layout: LayoutType) => {
+    updateUrl({ ...state, layout });
   }, [state, updateUrl]);
 
   const clearEntitySelection = useCallback(() => {
     updateUrl({ ...state, enemies: new Set(), players: new Set() });
   }, [state, updateUrl]);
 
-  return { state, setEncounters, setEnemies, setPlayers, setPanelType, setPanelOption, clearEntitySelection };
+  return { state, setEncounters, setEnemies, setPlayers, setPanelType, setPanelOption, setLayout, clearEntitySelection };
 }

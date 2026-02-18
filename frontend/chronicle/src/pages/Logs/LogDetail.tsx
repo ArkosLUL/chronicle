@@ -941,12 +941,14 @@ export function LogDetail() {
     });
   };
 
-  const handleReparse = () => {
+  const handleReparse = (withDebug = false) => {
     if (!logId) return;
-    reparseLogGroup.mutate(logId, {
+    reparseLogGroup.mutate({ logId, withDebug }, {
       onSuccess: () => {
-        toast.success("Reparse started", {
-          description: "Your log is being reprocessed.",
+        toast.success(withDebug ? "Debug reparse started" : "Reparse started", {
+          description: withDebug 
+            ? "Your log is being reprocessed with debug annotations." 
+            : "Your log is being reprocessed.",
         });
         refetch();
       },
@@ -1056,12 +1058,14 @@ export function LogDetailByHash() {
     });
   };
 
-  const handleReparse = () => {
+  const handleReparse = (withDebug = false) => {
     if (!logId) return;
-    reparseLogGroup.mutate(logId, {
+    reparseLogGroup.mutate({ logId, withDebug }, {
       onSuccess: () => {
-        toast.success("Reparse started", {
-          description: "Your log is being reprocessed.",
+        toast.success(withDebug ? "Debug reparse started" : "Reparse started", {
+          description: withDebug 
+            ? "Your log is being reprocessed with debug annotations." 
+            : "Your log is being reprocessed.",
         });
         refetch();
       },

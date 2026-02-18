@@ -9,6 +9,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
+	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
@@ -16,6 +17,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/consumeeach"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 
 	"github.com/coder/serpent"
 )
@@ -55,7 +57,7 @@ func ParseCmd() *serpent.Command {
 			}
 
 			p := vanilla.NewFromScanner(logger, liner, scan)
-			output := encounters.New(logger)
+			output := encounters.New(ctx, logger)
 			c := consumers.New(logger, output)
 			err = c.ConsumeAll(ctx, p)
 			if err != nil {
@@ -157,6 +159,59 @@ func CreaturesCmd() *serpent.Command {
 					}
 				}
 			}
+
+			return nil
+		},
+	}
+
+	return cmd
+}
+
+func Zoner() *serpent.Command {
+	cmd := &serpent.Command{
+		Use:        "zoner <file> <file>",
+		Middleware: serpent.RequireNArgs(2),
+		Handler: func(i *serpent.Invocation) error {
+			ctx := i.Context()
+			logger := getLogger(i)
+
+			files, err := openFileReaders(i.Args[0], i.Args[1])
+			if err != nil {
+				return err
+			}
+			defer func() { closeFiles(files...) }()
+
+			m := vanilla.Merger(logger, merge.WithoutTimeAdjustments())
+			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
+			if err != nil {
+				return err
+			}
+			z := zoner.NewLocation()
+
+			var lastMessage time.Time
+			var last time.Time
+			each := consumeeach.New(func(m messages.Message) error {
+				lastMessage = m.Date()
+				switch ty := m.(type) {
+				case *messages.Zone:
+					was := z.Zone.Name
+					if z.Process(*ty) {
+						if last.IsZero() {
+							last = ty.Timestamp
+						}
+						fmt.Printf("Zone changed (was %s): %s, in for %s\n", was, z.Name, ty.Timestamp.Sub(last).String())
+						last = ty.Timestamp
+					}
+				}
+				return nil
+			})
+
+			p := vanilla.NewFromScanner(logger, liner, scan)
+			err = consumers.New(logger, each).ConsumeAll(ctx, p)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("last zone for %s\n", lastMessage.Sub(last).String())
 
 			return nil
 		},

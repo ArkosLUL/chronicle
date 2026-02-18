@@ -31,7 +31,7 @@ func TestMajordomo(t *testing.T) {
 	require.NoError(t, err)
 
 	p := vanilla.NewFromScanner(logger, liner, scans)
-	output := encounters.New(logger)
+	output := encounters.New(ctx, logger)
 	for {
 		msgs, err := p.Advance()
 		if errors.Is(err, io.EOF) {

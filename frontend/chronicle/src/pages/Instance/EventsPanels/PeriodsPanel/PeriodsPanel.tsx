@@ -9,7 +9,7 @@
 import { useMemo } from "react";
 import { Clock } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
+import { HintTooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 import type { PanelDefinition, PanelRenderProps, PanelContext } from "../types";
 import type { ActivityPeriod } from "@/api/typesGenerated";
@@ -166,20 +166,19 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                 const tooltipContent = (
                   <div className="text-xs space-y-1.5">
                     <div className="font-medium">{entry.name}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono break-all">{entry.guid}</div>
                     <PeriodMomentDisplay 
                       moment={period.start} 
                       label="Start" 
                       fallback="encounter start"
-                      compact 
                     />
                     <PeriodMomentDisplay 
                       moment={period.end} 
                       label="End" 
                       fallback="ongoing"
-                      compact 
                     />
                     {period.last_active && (
-                      <PeriodMomentDisplay moment={period.last_active} label="Last Active" compact />
+                      <PeriodMomentDisplay moment={period.last_active} label="Last Active" />
                     )}
                     <div className="pt-1 font-medium">
                       Duration: {formatDuration(end - start)}
@@ -191,7 +190,7 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                 );
                 
                 return (
-                  <Tooltip key={idx}>
+                  <HintTooltip key={idx}>
                     <TooltipTrigger asChild>
                       <div
                         className={cn(
@@ -209,7 +208,7 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                     <TooltipContent side="top" hideArrow className="max-w-xs bg-popover text-popover-foreground">
                       {tooltipContent}
                     </TooltipContent>
-                  </Tooltip>
+                  </HintTooltip>
                 );
               })}
             </div>

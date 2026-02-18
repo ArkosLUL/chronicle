@@ -201,17 +201,16 @@ func (c *Common) Process(m messages.Message) error {
 		return fmt.Errorf("processing characters: %w", err)
 	}
 
-	if c.currentFight != nil && c.currentFight.Start != nil {
+	if actChange {
+		err = c.FightDetectionHandler(m)
+		if err != nil {
+			return fmt.Errorf("processing fight: %w", err)
+		}
+	} else if c.currentFight != nil && c.currentFight.Start != nil {
+		// Inside a fight, record all events.
 		err = c.currentFight.Events.Process(m)
 		if err != nil {
 			return fmt.Errorf("processing encounter messages: %w", err)
-		}
-	}
-
-	if actChange {
-		err = c.CharacterActivityChange()
-		if err != nil {
-			return fmt.Errorf("processing fight: %w", err)
 		}
 	}
 
@@ -238,9 +237,12 @@ func (c *Common) Fights() []Fight {
 	return fights
 }
 
-// CharacterActivityChange updates live fight state based on character activity changes.
+// FightDetectionHandler updates live fight state based on character activity changes.
 // Call this after Characters.Process returns true (activity changed).
-func (c *Common) CharacterActivityChange() error {
+//
+// Make sure to add any events to the current fight. This is the edge detection,
+// and these events must be added in here.
+func (c *Common) FightDetectionHandler(m messages.Message) error {
 	if c.currentFight == nil {
 		c.currentFight = &OngoingFight{
 			EncounterID:    uuid.New(),
@@ -251,7 +253,8 @@ func (c *Common) CharacterActivityChange() error {
 		}
 	}
 
-	// First handle the start time
+	// First handle the start time by iterating over all characters and looking for
+	// active hostiles.
 	activeTotal := 0
 	var latestEnd *period.Moment
 	for _, char := range c.Characters.All.Map() {
@@ -298,6 +301,13 @@ func (c *Common) CharacterActivityChange() error {
 		return nil
 	}
 
+	if c.currentFight.End == nil {
+		err := c.currentFight.Events.Process(m)
+		if err != nil {
+			return fmt.Errorf("processing encounter messages: %w", err)
+		}
+	}
+
 	// Now handle the end time
 	if activeTotal == 0 {
 		c.currentFight.End = latestEnd
@@ -314,7 +324,6 @@ func (c *Common) finalizeFight() error {
 		Hostiles:    map[guid.GUID]CharacterFight{},
 		Start:       c.currentFight.Start.Timestamp.Date(),
 		End:         c.currentFight.End.Timestamp.Date(),
-		Events:      nil,
 		EncounterID: c.currentFight.EncounterID,
 	}
 

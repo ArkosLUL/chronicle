@@ -170,11 +170,16 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                   <div className="text-xs space-y-0.5">
                     <div className="font-medium">{entry.name}</div>
                     <div className="opacity-80">
-                      Start: {period.start ? formatTime(period.start.timestamp) : "encounter start"}
+                      Start: {period.start ? `${formatTime(period.start.timestamp)} (${period.start.reason})` : "encounter start"}
                     </div>
                     <div className="opacity-80">
-                      End: {period.end ? formatTime(period.end.timestamp) : "ongoing"}
+                      End: {period.end ? `${formatTime(period.end.timestamp)} (${period.end.reason})` : "ongoing"}
                     </div>
+                    {period.last_active && (
+                      <div className="opacity-80">
+                        Last Active: {formatTime(period.last_active.timestamp)} ({period.last_active.reason})
+                      </div>
+                    )}
                     <div className="pt-1 font-medium">
                       Duration: {formatDuration(end - start)}
                     </div>

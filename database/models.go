@@ -560,31 +560,18 @@ type Guild struct {
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
-type ItemEffect struct {
-	ID          uuid.UUID      `db:"id" json:"id"`
-	ItemID      int32          `db:"item_id" json:"item_id"`
-	EffectType  ItemEffectType `db:"effect_type" json:"effect_type"`
-	EffectIndex pgtype.Int2    `db:"effect_index" json:"effect_index"`
-	SpellID     int32          `db:"spell_id" json:"spell_id"`
-}
-
-// Items without data such as enchants.
 type ItemTemplate struct {
-	// Matches the item id in WoW.
-	ID   int32  `db:"id" json:"id"`
-	Name string `db:"name" json:"name"`
-	// 0 grey, 1 white, 2 green, 3 blue, 4 purple, 5 legendary, 6 artifact
-	Quality       int16              `db:"quality" json:"quality"`
-	ItemLevel     int16              `db:"item_level" json:"item_level"`
-	RequiredLevel pgtype.Int2        `db:"required_level" json:"required_level"`
-	Class         int16              `db:"class" json:"class"`
-	SubClass      int16              `db:"sub_class" json:"sub_class"`
-	InventorySlot int16              `db:"inventory_slot" json:"inventory_slot"`
-	Icon          pgtype.Text        `db:"icon" json:"icon"`
-	UniqueLimit   pgtype.Int2        `db:"unique_limit" json:"unique_limit"`
-	BindType      pgtype.Int2        `db:"bind_type" json:"bind_type"`
-	StackSize     pgtype.Int2        `db:"stack_size" json:"stack_size"`
+	ID            int32              `db:"id" json:"id"`
+	Name          pgtype.Text        `db:"name" json:"name"`
+	Quality       pgtype.Int4        `db:"quality" json:"quality"`
+	ItemLevel     pgtype.Int4        `db:"item_level" json:"item_level"`
+	RequiredLevel pgtype.Int4        `db:"required_level" json:"required_level"`
+	InventoryType pgtype.Int4        `db:"inventory_type" json:"inventory_type"`
+	ItemClass     pgtype.Int4        `db:"item_class" json:"item_class"`
+	ItemSubclass  pgtype.Int4        `db:"item_subclass" json:"item_subclass"`
+	IconID        pgtype.Int4        `db:"icon_id" json:"icon_id"`
 	Description   pgtype.Text        `db:"description" json:"description"`
+	Flags         pgtype.Int4        `db:"flags" json:"flags"`
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -755,34 +742,24 @@ type RiverQueue struct {
 }
 
 type SpellTemplate struct {
-	ID          int32              `db:"id" json:"id"`
-	Name        string             `db:"name" json:"name"`
-	School      SpellSchool        `db:"school" json:"school"`
-	Description pgtype.Text        `db:"description" json:"description"`
-	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	// Rank text like "Rank 1", "Passive", etc.
-	Subtext pgtype.Text `db:"subtext" json:"subtext"`
-	// Description shown when spell is an aura/buff
-	AuraDescription pgtype.Text `db:"aura_description" json:"aura_description"`
-	// SpellIconID for icon lookup
-	IconID pgtype.Int4 `db:"icon_id" json:"icon_id"`
-	// Bitmask: 1=phys, 2=holy, 4=fire, 8=nature, 16=frost, 32=shadow, 64=arcane
-	SchoolMask pgtype.Int4 `db:"school_mask" json:"school_mask"`
-	// 0=mana, 1=rage, 2=focus, 3=energy
-	PowerType   pgtype.Int4 `db:"power_type" json:"power_type"`
-	ManaCost    pgtype.Int4 `db:"mana_cost" json:"mana_cost"`
-	ManaCostPct pgtype.Int4 `db:"mana_cost_pct" json:"mana_cost_pct"`
-	// Index into SpellCastTimes.dbc
-	CastTimeIndex pgtype.Int4 `db:"cast_time_index" json:"cast_time_index"`
-	// Cooldown in milliseconds
-	RecoveryTime pgtype.Int4 `db:"recovery_time" json:"recovery_time"`
-	// Index into SpellRange.dbc
-	RangeIndex pgtype.Int4 `db:"range_index" json:"range_index"`
-	// 9-element array of uint32 attribute bitmasks
-	Attributes []int64 `db:"attributes" json:"attributes"`
-	// Target flags bitmask
-	Targets pgtype.Int4 `db:"targets" json:"targets"`
+	ID              int32              `db:"id" json:"id"`
+	Name            pgtype.Text        `db:"name" json:"name"`
+	School          pgtype.Text        `db:"school" json:"school"`
+	Description     pgtype.Text        `db:"description" json:"description"`
+	Subtext         pgtype.Text        `db:"subtext" json:"subtext"`
+	AuraDescription pgtype.Text        `db:"aura_description" json:"aura_description"`
+	IconID          pgtype.Int4        `db:"icon_id" json:"icon_id"`
+	SchoolMask      pgtype.Int4        `db:"school_mask" json:"school_mask"`
+	PowerType       pgtype.Int4        `db:"power_type" json:"power_type"`
+	ManaCost        pgtype.Int4        `db:"mana_cost" json:"mana_cost"`
+	ManaCostPct     pgtype.Float8      `db:"mana_cost_pct" json:"mana_cost_pct"`
+	CastTimeIndex   pgtype.Int4        `db:"cast_time_index" json:"cast_time_index"`
+	RecoveryTime    pgtype.Int4        `db:"recovery_time" json:"recovery_time"`
+	RangeIndex      pgtype.Int4        `db:"range_index" json:"range_index"`
+	Attributes      pgtype.Text        `db:"attributes" json:"attributes"`
+	Targets         pgtype.Text        `db:"targets" json:"targets"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type User struct {

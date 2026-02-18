@@ -35,38 +35,40 @@ func _() {
 	_ = x[AuraInterruptFlagEnterPvPCombat-16777216]
 	_ = x[AuraInterruptFlagDirectDamage-33554432]
 	_ = x[AuraInterruptFlagLanding-67108864]
+	_ = x[AuraInterruptFlag_END-134217728]
 }
 
-const _AuraInterruptFlags_name = "AuraInterruptFlagHitBySpellAuraInterruptFlagTakeDamageAuraInterruptFlagCastAuraInterruptFlagMoveAuraInterruptFlagTurningAuraInterruptFlagJumpAuraInterruptFlagNotMountedAuraInterruptFlagNotAbovewaterAuraInterruptFlagNotUnderwaterAuraInterruptFlagNotSheathedAuraInterruptFlagTalkAuraInterruptFlagUseAuraInterruptFlagMeleeAttackAuraInterruptFlagSpellAttackAuraInterruptFlagUnknown14AuraInterruptFlagTransformAuraInterruptFlagUnknown16AuraInterruptFlagUnknown17AuraInterruptFlagMountAuraInterruptFlagNotSeatedAuraInterruptFlagChangeMapAuraInterruptFlagImmuneOrLostSelectionAuraInterruptFlagUnattackableAuraInterruptFlagTeleportedAuraInterruptFlagEnterPvPCombatAuraInterruptFlagDirectDamageAuraInterruptFlagLanding"
+const _AuraInterruptFlags_name = "AuraInterruptFlagHitBySpellAuraInterruptFlagTakeDamageAuraInterruptFlagCastAuraInterruptFlagMoveAuraInterruptFlagTurningAuraInterruptFlagJumpAuraInterruptFlagNotMountedAuraInterruptFlagNotAbovewaterAuraInterruptFlagNotUnderwaterAuraInterruptFlagNotSheathedAuraInterruptFlagTalkAuraInterruptFlagUseAuraInterruptFlagMeleeAttackAuraInterruptFlagSpellAttackAuraInterruptFlagUnknown14AuraInterruptFlagTransformAuraInterruptFlagUnknown16AuraInterruptFlagUnknown17AuraInterruptFlagMountAuraInterruptFlagNotSeatedAuraInterruptFlagChangeMapAuraInterruptFlagImmuneOrLostSelectionAuraInterruptFlagUnattackableAuraInterruptFlagTeleportedAuraInterruptFlagEnterPvPCombatAuraInterruptFlagDirectDamageAuraInterruptFlagLandingAuraInterruptFlag_END"
 
 var _AuraInterruptFlags_map = map[AuraInterruptFlags]string{
-	1:        _AuraInterruptFlags_name[0:27],
-	2:        _AuraInterruptFlags_name[27:54],
-	4:        _AuraInterruptFlags_name[54:75],
-	8:        _AuraInterruptFlags_name[75:96],
-	16:       _AuraInterruptFlags_name[96:120],
-	32:       _AuraInterruptFlags_name[120:141],
-	64:       _AuraInterruptFlags_name[141:168],
-	128:      _AuraInterruptFlags_name[168:198],
-	256:      _AuraInterruptFlags_name[198:228],
-	512:      _AuraInterruptFlags_name[228:256],
-	1024:     _AuraInterruptFlags_name[256:277],
-	2048:     _AuraInterruptFlags_name[277:297],
-	4096:     _AuraInterruptFlags_name[297:325],
-	8192:     _AuraInterruptFlags_name[325:353],
-	16384:    _AuraInterruptFlags_name[353:379],
-	32768:    _AuraInterruptFlags_name[379:405],
-	65536:    _AuraInterruptFlags_name[405:431],
-	131072:   _AuraInterruptFlags_name[431:457],
-	262144:   _AuraInterruptFlags_name[457:479],
-	524288:   _AuraInterruptFlags_name[479:505],
-	1048576:  _AuraInterruptFlags_name[505:531],
-	2097152:  _AuraInterruptFlags_name[531:569],
-	4194304:  _AuraInterruptFlags_name[569:598],
-	8388608:  _AuraInterruptFlags_name[598:625],
-	16777216: _AuraInterruptFlags_name[625:656],
-	33554432: _AuraInterruptFlags_name[656:685],
-	67108864: _AuraInterruptFlags_name[685:709],
+	1:         _AuraInterruptFlags_name[0:27],
+	2:         _AuraInterruptFlags_name[27:54],
+	4:         _AuraInterruptFlags_name[54:75],
+	8:         _AuraInterruptFlags_name[75:96],
+	16:        _AuraInterruptFlags_name[96:120],
+	32:        _AuraInterruptFlags_name[120:141],
+	64:        _AuraInterruptFlags_name[141:168],
+	128:       _AuraInterruptFlags_name[168:198],
+	256:       _AuraInterruptFlags_name[198:228],
+	512:       _AuraInterruptFlags_name[228:256],
+	1024:      _AuraInterruptFlags_name[256:277],
+	2048:      _AuraInterruptFlags_name[277:297],
+	4096:      _AuraInterruptFlags_name[297:325],
+	8192:      _AuraInterruptFlags_name[325:353],
+	16384:     _AuraInterruptFlags_name[353:379],
+	32768:     _AuraInterruptFlags_name[379:405],
+	65536:     _AuraInterruptFlags_name[405:431],
+	131072:    _AuraInterruptFlags_name[431:457],
+	262144:    _AuraInterruptFlags_name[457:479],
+	524288:    _AuraInterruptFlags_name[479:505],
+	1048576:   _AuraInterruptFlags_name[505:531],
+	2097152:   _AuraInterruptFlags_name[531:569],
+	4194304:   _AuraInterruptFlags_name[569:598],
+	8388608:   _AuraInterruptFlags_name[598:625],
+	16777216:  _AuraInterruptFlags_name[625:656],
+	33554432:  _AuraInterruptFlags_name[656:685],
+	67108864:  _AuraInterruptFlags_name[685:709],
+	134217728: _AuraInterruptFlags_name[709:730],
 }
 
 func (i AuraInterruptFlags) String() string {

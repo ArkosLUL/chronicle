@@ -115,6 +115,7 @@ func (api *API) Routes() chi.Router {
 			r.Post("/users/{userID}/resync", api.AdminResyncUserRoles)
 			r.Put("/users/{userID}/data-limit", api.SetUserDataLimit)
 			r.Get("/logs", api.AdminListLogs)
+			r.Get("/instance-names", api.AdminListInstanceNames)
 		})
 
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })

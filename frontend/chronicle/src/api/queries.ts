@@ -293,15 +293,52 @@ export function useAdminUsers(options?: Omit<UseQueryOptions<AdminUsersResponse>
   });
 }
 
-export function useAdminLogs(options?: Omit<UseQueryOptions<AdminLogsResponse>, "queryKey" | "queryFn">) {
+export type AdminLogsSortField = "date" | "user" | "size" | "instance";
+
+export interface AdminLogsParams {
+  limit?: number;
+  offset?: number;
+  sortBy?: AdminLogsSortField;
+  sortOrder?: "asc" | "desc";
+  userId?: string;
+  instanceName?: string;
+}
+
+export function useAdminLogs(
+  params: AdminLogsParams = {},
+  options?: Omit<UseQueryOptions<AdminLogsResponse>, "queryKey" | "queryFn">
+) {
+  const { limit = 50, offset = 0, sortBy = "date", sortOrder = "desc", userId, instanceName } = params;
+
   return useQuery({
-    queryKey: ["admin", "logs"],
+    queryKey: ["admin", "logs", { limit, offset, sortBy, sortOrder, userId, instanceName }],
     queryFn: async () => {
-      const response = await fetch("/api/v1/admin/logs");
+      const searchParams = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      if (userId) searchParams.set("user_id", userId);
+      if (instanceName) searchParams.set("instance_name", instanceName);
+      const response = await fetch(`/api/v1/admin/logs?${searchParams}`);
       if (!response.ok) throw new Error("Failed to fetch logs");
       return response.json() as Promise<AdminLogsResponse>;
     },
     retry: false,
+    ...options,
+  });
+}
+
+export function useAdminInstanceNames(options?: Omit<UseQueryOptions<string[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["admin", "instance-names"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/admin/instance-names");
+      if (!response.ok) throw new Error("Failed to fetch instance names");
+      return response.json() as Promise<string[]>;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     ...options,
   });
 }

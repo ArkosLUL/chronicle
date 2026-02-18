@@ -37,6 +37,35 @@ func (q *sqlQuerier) InstanceEvent(ctx context.Context, arg InstanceEventParams)
 	return i, err
 }
 
+const countAllWoWLogGroups = `-- name: CountAllWoWLogGroups :one
+SELECT COUNT(*)::int FROM wow_log_groups
+LEFT JOIN LATERAL (
+  SELECT array_agg(li.name) AS instance_names
+  FROM log_instances li
+  WHERE li.log_group_id = wow_log_groups.id
+) instances_agg ON true
+WHERE 
+  CASE WHEN $1::uuid != '00000000-0000-0000-0000-000000000000'::uuid 
+       THEN wow_log_groups.owner = $1 
+       ELSE true END
+  AND
+  CASE WHEN $2::text != '' 
+       THEN $2 = ANY(instances_agg.instance_names)
+       ELSE true END
+`
+
+type CountAllWoWLogGroupsParams struct {
+	FilterUserID       uuid.UUID `db:"filter_user_id" json:"filter_user_id"`
+	FilterInstanceName string    `db:"filter_instance_name" json:"filter_instance_name"`
+}
+
+func (q *sqlQuerier) CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countAllWoWLogGroups, arg.FilterUserID, arg.FilterInstanceName)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const deleteWoWLogGroup = `-- name: DeleteWoWLogGroup :exec
 DELETE FROM
   wow_log_groups
@@ -479,6 +508,164 @@ func (q *sqlQuerier) ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAl
 	return items, nil
 }
 
+const listAllWoWLogGroupsWithOwnerPaginated = `-- name: ListAllWoWLogGroupsWithOwnerPaginated :many
+SELECT
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  u.username AS owner_name,
+  files_agg.files,
+  files_agg.total_size_bytes,
+  latest_job.output AS processing_output,
+  instances_agg.instance_names,
+  instances_agg.first_instance_name
+FROM
+  wow_log_groups
+    LEFT JOIN users u ON u.id = wow_log_groups.owner
+    -- Files aggregate with total size
+    LEFT JOIN LATERAL (
+      SELECT 
+        COALESCE(
+          jsonb_agg(
+            jsonb_build_object(
+              'id', lf.id,
+              'owner', lf.owner,
+              'wow_log_id', lf.wow_log_id,
+              'hash', lf.hash,
+              'size_bytes', lf.size_bytes,
+              'mime_type', lf.mime_type,
+              'created_at', lf.created_at,
+              'updated_at', lf.updated_at
+            )
+            ORDER BY lf.created_at
+          ) FILTER (WHERE lf.id IS NOT NULL),
+          '[]'::jsonb
+        )::wow_log_group_files AS files,
+        COALESCE(SUM(lf.size_bytes), 0) AS total_size_bytes
+      FROM log_file lf
+      WHERE lf.wow_log_id = wow_log_groups.id
+    ) files_agg ON true
+    -- Latest job output
+    LEFT JOIN LATERAL (
+      SELECT rj.metadata->'output' AS output
+      FROM river_job rj
+      WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
+      ORDER BY rj.created_at DESC
+      LIMIT 1
+    ) latest_job ON true
+    -- Instance names aggregate
+    LEFT JOIN LATERAL (
+      SELECT 
+        COALESCE(array_agg(li.name ORDER BY li.name), ARRAY[]::text[]) AS instance_names,
+        MIN(li.name) AS first_instance_name
+      FROM log_instances li
+      WHERE li.log_group_id = wow_log_groups.id
+    ) instances_agg ON true
+WHERE
+  -- Filter by user ID (skip if nil UUID)
+  CASE WHEN $1::uuid != '00000000-0000-0000-0000-000000000000'::uuid 
+       THEN wow_log_groups.owner = $1 
+       ELSE true END
+  AND
+  -- Filter by instance name (skip if empty string)
+  CASE WHEN $2::text != '' 
+       THEN $2 = ANY(instances_agg.instance_names)
+       ELSE true END
+ORDER BY
+  CASE WHEN $3::text = 'date' AND $4::text = 'desc' THEN wow_log_groups.created_at END DESC,
+  CASE WHEN $3::text = 'date' AND $4::text = 'asc' THEN wow_log_groups.created_at END ASC,
+  CASE WHEN $3::text = 'user' AND $4::text = 'desc' THEN u.username END DESC NULLS LAST,
+  CASE WHEN $3::text = 'user' AND $4::text = 'asc' THEN u.username END ASC NULLS LAST,
+  CASE WHEN $3::text = 'size' AND $4::text = 'desc' THEN files_agg.total_size_bytes END DESC,
+  CASE WHEN $3::text = 'size' AND $4::text = 'asc' THEN files_agg.total_size_bytes END ASC,
+  CASE WHEN $3::text = 'instance' AND $4::text = 'desc' THEN instances_agg.first_instance_name END DESC NULLS LAST,
+  CASE WHEN $3::text = 'instance' AND $4::text = 'asc' THEN instances_agg.first_instance_name END ASC NULLS LAST,
+  wow_log_groups.id
+LIMIT $6
+OFFSET $5
+`
+
+type ListAllWoWLogGroupsWithOwnerPaginatedParams struct {
+	FilterUserID       uuid.UUID `db:"filter_user_id" json:"filter_user_id"`
+	FilterInstanceName string    `db:"filter_instance_name" json:"filter_instance_name"`
+	SortBy             string    `db:"sort_by" json:"sort_by"`
+	SortOrder          string    `db:"sort_order" json:"sort_order"`
+	OffsetCount        int32     `db:"offset_count" json:"offset_count"`
+	LimitCount         int32     `db:"limit_count" json:"limit_count"`
+}
+
+type ListAllWoWLogGroupsWithOwnerPaginatedRow struct {
+	WoWLogGroup       WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
+	OwnerName         pgtype.Text `db:"owner_name" json:"owner_name"`
+	Files             []LogFile   `db:"files" json:"files"`
+	TotalSizeBytes    interface{} `db:"total_size_bytes" json:"total_size_bytes"`
+	ProcessingOutput  interface{} `db:"processing_output" json:"processing_output"`
+	InstanceNames     interface{} `db:"instance_names" json:"instance_names"`
+	FirstInstanceName interface{} `db:"first_instance_name" json:"first_instance_name"`
+}
+
+func (q *sqlQuerier) ListAllWoWLogGroupsWithOwnerPaginated(ctx context.Context, arg ListAllWoWLogGroupsWithOwnerPaginatedParams) ([]ListAllWoWLogGroupsWithOwnerPaginatedRow, error) {
+	rows, err := q.db.Query(ctx, listAllWoWLogGroupsWithOwnerPaginated,
+		arg.FilterUserID,
+		arg.FilterInstanceName,
+		arg.SortBy,
+		arg.SortOrder,
+		arg.OffsetCount,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllWoWLogGroupsWithOwnerPaginatedRow
+	for rows.Next() {
+		var i ListAllWoWLogGroupsWithOwnerPaginatedRow
+		if err := rows.Scan(
+			&i.WoWLogGroup.ID,
+			&i.WoWLogGroup.Owner,
+			&i.WoWLogGroup.CreatedAt,
+			&i.WoWLogGroup.UpdatedAt,
+			&i.OwnerName,
+			&i.Files,
+			&i.TotalSizeBytes,
+			&i.ProcessingOutput,
+			&i.InstanceNames,
+			&i.FirstInstanceName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDistinctInstanceNames = `-- name: ListDistinctInstanceNames :many
+SELECT DISTINCT li.name
+FROM log_instances li
+ORDER BY li.name ASC
+`
+
+func (q *sqlQuerier) ListDistinctInstanceNames(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listDistinctInstanceNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertGuild = `-- name: UpsertGuild :one
 INSERT INTO
   guilds (realm_id, name, created_at)
@@ -508,7 +695,7 @@ func (q *sqlQuerier) UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Gu
 }
 
 const deleteThisQuery = `-- name: DeleteThisQuery :exec
-SELECT id, name, quality, item_level, required_level, class, sub_class, inventory_slot, icon, unique_limit, bind_type, stack_size, description, created_at, updated_at FROM item_templates
+SELECT id, name, quality, item_level, required_level, inventory_type, item_class, item_subclass, icon_id, description, flags, created_at, updated_at FROM item_templates
 `
 
 func (q *sqlQuerier) DeleteThisQuery(ctx context.Context) error {
@@ -1100,7 +1287,7 @@ func (q *sqlQuerier) DeleteAllSpellTemplates(ctx context.Context) error {
 }
 
 const getSpellTemplate = `-- name: GetSpellTemplate :one
-SELECT id, name, school, description, created_at, updated_at, subtext, aura_description, icon_id, school_mask, power_type, mana_cost, mana_cost_pct, cast_time_index, recovery_time, range_index, attributes, targets FROM spell_templates WHERE id = $1
+SELECT id, name, school, description, subtext, aura_description, icon_id, school_mask, power_type, mana_cost, mana_cost_pct, cast_time_index, recovery_time, range_index, attributes, targets, created_at, updated_at FROM spell_templates WHERE id = $1
 `
 
 func (q *sqlQuerier) GetSpellTemplate(ctx context.Context, id int32) (SpellTemplate, error) {
@@ -1111,8 +1298,6 @@ func (q *sqlQuerier) GetSpellTemplate(ctx context.Context, id int32) (SpellTempl
 		&i.Name,
 		&i.School,
 		&i.Description,
-		&i.CreatedAt,
-		&i.UpdatedAt,
 		&i.Subtext,
 		&i.AuraDescription,
 		&i.IconID,
@@ -1125,12 +1310,14 @@ func (q *sqlQuerier) GetSpellTemplate(ctx context.Context, id int32) (SpellTempl
 		&i.RangeIndex,
 		&i.Attributes,
 		&i.Targets,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getSpellTemplatesByIDs = `-- name: GetSpellTemplatesByIDs :many
-SELECT id, name, school, description, created_at, updated_at, subtext, aura_description, icon_id, school_mask, power_type, mana_cost, mana_cost_pct, cast_time_index, recovery_time, range_index, attributes, targets FROM spell_templates WHERE id = ANY($1::int[])
+SELECT id, name, school, description, subtext, aura_description, icon_id, school_mask, power_type, mana_cost, mana_cost_pct, cast_time_index, recovery_time, range_index, attributes, targets, created_at, updated_at FROM spell_templates WHERE id = ANY($1::int[])
 `
 
 func (q *sqlQuerier) GetSpellTemplatesByIDs(ctx context.Context, dollar_1 []int32) ([]SpellTemplate, error) {
@@ -1147,8 +1334,6 @@ func (q *sqlQuerier) GetSpellTemplatesByIDs(ctx context.Context, dollar_1 []int3
 			&i.Name,
 			&i.School,
 			&i.Description,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 			&i.Subtext,
 			&i.AuraDescription,
 			&i.IconID,
@@ -1161,6 +1346,8 @@ func (q *sqlQuerier) GetSpellTemplatesByIDs(ctx context.Context, dollar_1 []int3
 			&i.RangeIndex,
 			&i.Attributes,
 			&i.Targets,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1216,22 +1403,22 @@ ON CONFLICT (id) DO UPDATE SET
 `
 
 type UpsertSpellTemplateParams struct {
-	ID              int32       `db:"id" json:"id"`
-	Name            string      `db:"name" json:"name"`
-	School          SpellSchool `db:"school" json:"school"`
-	Description     pgtype.Text `db:"description" json:"description"`
-	Subtext         pgtype.Text `db:"subtext" json:"subtext"`
-	AuraDescription pgtype.Text `db:"aura_description" json:"aura_description"`
-	IconID          pgtype.Int4 `db:"icon_id" json:"icon_id"`
-	SchoolMask      pgtype.Int4 `db:"school_mask" json:"school_mask"`
-	PowerType       pgtype.Int4 `db:"power_type" json:"power_type"`
-	ManaCost        pgtype.Int4 `db:"mana_cost" json:"mana_cost"`
-	ManaCostPct     pgtype.Int4 `db:"mana_cost_pct" json:"mana_cost_pct"`
-	CastTimeIndex   pgtype.Int4 `db:"cast_time_index" json:"cast_time_index"`
-	RecoveryTime    pgtype.Int4 `db:"recovery_time" json:"recovery_time"`
-	RangeIndex      pgtype.Int4 `db:"range_index" json:"range_index"`
-	Attributes      []int64     `db:"attributes" json:"attributes"`
-	Targets         pgtype.Int4 `db:"targets" json:"targets"`
+	ID              int32         `db:"id" json:"id"`
+	Name            pgtype.Text   `db:"name" json:"name"`
+	School          pgtype.Text   `db:"school" json:"school"`
+	Description     pgtype.Text   `db:"description" json:"description"`
+	Subtext         pgtype.Text   `db:"subtext" json:"subtext"`
+	AuraDescription pgtype.Text   `db:"aura_description" json:"aura_description"`
+	IconID          pgtype.Int4   `db:"icon_id" json:"icon_id"`
+	SchoolMask      pgtype.Int4   `db:"school_mask" json:"school_mask"`
+	PowerType       pgtype.Int4   `db:"power_type" json:"power_type"`
+	ManaCost        pgtype.Int4   `db:"mana_cost" json:"mana_cost"`
+	ManaCostPct     pgtype.Float8 `db:"mana_cost_pct" json:"mana_cost_pct"`
+	CastTimeIndex   pgtype.Int4   `db:"cast_time_index" json:"cast_time_index"`
+	RecoveryTime    pgtype.Int4   `db:"recovery_time" json:"recovery_time"`
+	RangeIndex      pgtype.Int4   `db:"range_index" json:"range_index"`
+	Attributes      pgtype.Text   `db:"attributes" json:"attributes"`
+	Targets         pgtype.Text   `db:"targets" json:"targets"`
 }
 
 func (q *sqlQuerier) UpsertSpellTemplate(ctx context.Context, arg UpsertSpellTemplateParams) error {

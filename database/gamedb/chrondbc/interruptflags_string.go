@@ -13,6 +13,7 @@ func _() {
 	_ = x[InterruptFlagInterrupt-4]
 	_ = x[InterruptFlagAutoAttack-8]
 	_ = x[InterruptFlagDamage-16]
+	_ = x[InterruptFlag_END-32]
 }
 
 const (
@@ -20,6 +21,7 @@ const (
 	_InterruptFlags_name_1 = "InterruptFlagInterrupt"
 	_InterruptFlags_name_2 = "InterruptFlagAutoAttack"
 	_InterruptFlags_name_3 = "InterruptFlagDamage"
+	_InterruptFlags_name_4 = "InterruptFlag_END"
 )
 
 var (
@@ -37,6 +39,8 @@ func (i InterruptFlags) String() string {
 		return _InterruptFlags_name_2
 	case i == 16:
 		return _InterruptFlags_name_3
+	case i == 32:
+		return _InterruptFlags_name_4
 	default:
 		return "InterruptFlags(" + strconv.FormatInt(int64(i), 10) + ")"
 	}

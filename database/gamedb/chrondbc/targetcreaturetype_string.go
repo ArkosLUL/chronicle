@@ -21,9 +21,10 @@ func _() {
 	_ = x[CreatureTypeTotem-1024]
 	_ = x[CreatureTypeNonCombatPet-2048]
 	_ = x[CreatureTypeGasCloud-4096]
+	_ = x[CreatureType_END-8192]
 }
 
-const _TargetCreatureType_name = "CreatureTypeBeastCreatureTypeDragonkinCreatureTypeDemonCreatureTypeElementalCreatureTypeGiantCreatureTypeUndeadCreatureTypeHumanoidCreatureTypeCritterCreatureTypeMechanicalCreatureTypeNotSpecifiedCreatureTypeTotemCreatureTypeNonCombatPetCreatureTypeGasCloud"
+const _TargetCreatureType_name = "CreatureTypeBeastCreatureTypeDragonkinCreatureTypeDemonCreatureTypeElementalCreatureTypeGiantCreatureTypeUndeadCreatureTypeHumanoidCreatureTypeCritterCreatureTypeMechanicalCreatureTypeNotSpecifiedCreatureTypeTotemCreatureTypeNonCombatPetCreatureTypeGasCloudCreatureType_END"
 
 var _TargetCreatureType_map = map[TargetCreatureType]string{
 	1:    _TargetCreatureType_name[0:17],
@@ -39,6 +40,7 @@ var _TargetCreatureType_map = map[TargetCreatureType]string{
 	1024: _TargetCreatureType_name[196:213],
 	2048: _TargetCreatureType_name[213:237],
 	4096: _TargetCreatureType_name[237:257],
+	8192: _TargetCreatureType_name[257:273],
 }
 
 func (i TargetCreatureType) String() string {

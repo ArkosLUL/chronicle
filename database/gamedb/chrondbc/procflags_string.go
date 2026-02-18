@@ -34,9 +34,10 @@ func _() {
 	_ = x[ProcFlagDoneMainhandAttack-4194304]
 	_ = x[ProcFlagDoneOffhandAttack-8388608]
 	_ = x[ProcFlagDeath-16777216]
+	_ = x[ProcFlag_END-33554432]
 }
 
-const _ProcFlags_name = "NoneKilledKillDoneMeleeAutoAttackTakenMeleeAutoAttackDoneSpellMeleeDmgClassTakenSpellMeleeDmgClassDoneRangedAutoAttackTakenRangedAutoAttackDoneSpellRangedDmgClassTakenSpellRangedDmgClassDoneSpellNoneDmgClassPosTakenSpellNoneDmgClassPosDoneSpellNoneDmgClassNegTakenSpellNoneDmgClassNegDoneSpellMagicDmgClassPosTakenSpellMagicDmgClassPosDoneSpellMagicDmgClassNegTakenSpellMagicDmgClassNegDonePeriodicTakenPeriodicTakenDamageDoneTrapActivationDoneMainhandAttackDoneOffhandAttackDeath"
+const _ProcFlags_name = "NoneKilledKillDoneMeleeAutoAttackTakenMeleeAutoAttackDoneSpellMeleeDmgClassTakenSpellMeleeDmgClassDoneRangedAutoAttackTakenRangedAutoAttackDoneSpellRangedDmgClassTakenSpellRangedDmgClassDoneSpellNoneDmgClassPosTakenSpellNoneDmgClassPosDoneSpellNoneDmgClassNegTakenSpellNoneDmgClassNegDoneSpellMagicDmgClassPosTakenSpellMagicDmgClassPosDoneSpellMagicDmgClassNegTakenSpellMagicDmgClassNegDonePeriodicTakenPeriodicTakenDamageDoneTrapActivationDoneMainhandAttackDoneOffhandAttackDeath_END"
 
 var _ProcFlags_map = map[ProcFlags]string{
 	0:        _ProcFlags_name[0:4],
@@ -65,6 +66,7 @@ var _ProcFlags_map = map[ProcFlags]string{
 	4194304:  _ProcFlags_name[440:458],
 	8388608:  _ProcFlags_name[458:475],
 	16777216: _ProcFlags_name[475:480],
+	33554432: _ProcFlags_name[480:484],
 }
 
 func (i ProcFlags) String() string {

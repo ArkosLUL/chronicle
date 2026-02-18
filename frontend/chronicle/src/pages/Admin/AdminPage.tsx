@@ -3,14 +3,16 @@ import { Link } from "react-router-dom";
 import { 
   useAdminUsers, 
   useAdminLogs, 
+  useAdminInstanceNames,
   useResyncUserRoles,
   useSetUserDataLimit,
   useAuthorizationCheck,
   type User,
   type AdminLog,
+  type AdminLogsSortField,
 } from "@/api/queries";
 import { useAuth } from "@/hooks/useAuth";
-import { RefreshCw, Users, FileText, Shield, ShieldCheck, TestTube, Loader2, ChevronRight, HardDrive, Check, Pencil } from "lucide-react";
+import { RefreshCw, Users, FileText, Shield, ShieldCheck, TestTube, Loader2, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, HardDrive, Check, Pencil, ArrowUpDown, ArrowUp, ArrowDown, X, Filter } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 
@@ -263,7 +265,18 @@ function LogRow({ log }: { log: AdminLog }) {
           by {log.owner_name || "Unknown"}
         </span>
       </div>
-      <span className="text-xs text-muted-foreground">
+      {/* Instance names */}
+      {log.instance_names && log.instance_names.length > 0 && (
+        <span className="text-xs text-muted-foreground truncate max-w-32" title={log.instance_names.join(", ")}>
+          {log.instance_names.join(", ")}
+        </span>
+      )}
+      {/* Size */}
+      <span className="text-xs text-muted-foreground tabular-nums w-16 text-right">
+        {formatBytes(log.size_bytes)}
+      </span>
+      {/* Date */}
+      <span className="text-xs text-muted-foreground w-24 text-right">
         {new Date(log.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
       </span>
       <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -271,13 +284,271 @@ function LogRow({ log }: { log: AdminLog }) {
   );
 }
 
-function LogsSection({ logs }: { logs: readonly AdminLog[] }) {
+interface SortButtonProps {
+  field: AdminLogsSortField;
+  current: AdminLogsSortField;
+  order: "asc" | "desc";
+  onToggle: (field: AdminLogsSortField) => void;
+  children: React.ReactNode;
+}
+
+function SortButton({ field, current, order, onToggle, children }: SortButtonProps) {
+  const isActive = current === field;
   return (
-    <Card className="overflow-hidden divide-y divide-border/50">
-      {logs.map((log) => (
-        <LogRow key={log.id} log={log} />
-      ))}
-    </Card>
+    <Button
+      variant={isActive ? "secondary" : "ghost"}
+      size="sm"
+      onClick={() => onToggle(field)}
+      className="gap-1.5"
+    >
+      {children}
+      {isActive ? (
+        order === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+      ) : (
+        <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
+      )}
+    </Button>
+  );
+}
+
+interface PaginationControlsProps {
+  currentPage: number;
+  totalPages: number;
+  hasMore: boolean;
+  onPageChange: (page: number) => void;
+  isLoading?: boolean;
+}
+
+function PaginationControls({ currentPage, totalPages, hasMore, onPageChange, isLoading }: PaginationControlsProps) {
+  const canGoPrev = currentPage > 1;
+  const canGoNext = hasMore || currentPage < totalPages;
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-muted-foreground">
+        Page {currentPage} of {totalPages || 1}
+      </span>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(1)}
+          disabled={!canGoPrev || isLoading}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!canGoPrev || isLoading}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!canGoNext || isLoading}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(totalPages)}
+          disabled={!canGoNext || isLoading}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function LogsSection({ users }: { users: readonly User[] }) {
+  const [sortBy, setSortBy] = useState<AdminLogsSortField>("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(0);
+  const [filterUserId, setFilterUserId] = useState<string>("");
+  const [filterInstanceName, setFilterInstanceName] = useState<string>("");
+  const pageSize = 50;
+
+  // Fetch instance names for filter dropdown
+  const { data: instanceNames } = useAdminInstanceNames();
+
+  const { data, isLoading, error } = useAdminLogs({
+    limit: pageSize,
+    offset: page * pageSize,
+    sortBy,
+    sortOrder,
+    userId: filterUserId || undefined,
+    instanceName: filterInstanceName || undefined,
+  });
+
+  const toggleSort = (field: AdminLogsSortField) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortOrder("desc");
+    }
+    setPage(0); // Reset to first page on sort change
+  };
+
+  const handleFilterChange = (type: "user" | "instance", value: string) => {
+    if (type === "user") {
+      setFilterUserId(value);
+    } else {
+      setFilterInstanceName(value);
+    }
+    setPage(0); // Reset to first page on filter change
+  };
+
+  const clearFilters = () => {
+    setFilterUserId("");
+    setFilterInstanceName("");
+    setPage(0);
+  };
+
+  const hasActiveFilters = filterUserId || filterInstanceName;
+  const totalPages = data ? Math.ceil(data.total_count / pageSize) : 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Filters:</span>
+        </div>
+        
+        {/* User filter */}
+        <select
+          value={filterUserId}
+          onChange={(e) => handleFilterChange("user", e.target.value)}
+          className="h-8 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">All users</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.username}
+            </option>
+          ))}
+        </select>
+
+        {/* Instance filter */}
+        <select
+          value={filterInstanceName}
+          onChange={(e) => handleFilterChange("instance", e.target.value)}
+          className="h-8 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">All instances</option>
+          {instanceNames?.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+
+        {/* Clear filters button */}
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1">
+            <X className="h-3.5 w-3.5" />
+            Clear
+          </Button>
+        )}
+
+        {/* Result count */}
+        {data && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            {data.total_count} {data.total_count === 1 ? "log" : "logs"}
+          </span>
+        )}
+      </div>
+
+      {/* Sort controls */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-muted-foreground">Sort by:</span>
+        <SortButton field="date" current={sortBy} order={sortOrder} onToggle={toggleSort}>
+          Date
+        </SortButton>
+        <SortButton field="user" current={sortBy} order={sortOrder} onToggle={toggleSort}>
+          User
+        </SortButton>
+        <SortButton field="size" current={sortBy} order={sortOrder} onToggle={toggleSort}>
+          Size
+        </SortButton>
+        <SortButton field="instance" current={sortBy} order={sortOrder} onToggle={toggleSort}>
+          Instance
+        </SortButton>
+      </div>
+
+      {/* Loading state */}
+      {isLoading && (
+        <Card className="p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">Loading logs...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Error state */}
+      {error && !isLoading && (
+        <Card className="p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div>
+              <h2 className="font-semibold text-lg text-destructive">Error Loading Logs</h2>
+              <p className="text-muted-foreground mt-1">{error.message}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && (!data || data.logs.length === 0) && (
+        <Card className="p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <FileText className="h-12 w-12 text-muted-foreground" />
+            <div>
+              <h2 className="font-semibold text-lg">No Logs Found</h2>
+              <p className="text-muted-foreground mt-1">
+                {hasActiveFilters 
+                  ? "No logs match the current filters." 
+                  : "There are no logs in the system."}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Logs list */}
+      {!isLoading && !error && data && data.logs.length > 0 && (
+        <>
+          <Card className="overflow-hidden divide-y divide-border/50">
+            {data.logs.map((log) => (
+              <LogRow key={log.id} log={log} />
+            ))}
+          </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <PaginationControls
+              currentPage={page + 1}
+              totalPages={totalPages}
+              hasMore={data.has_more}
+              onPageChange={(p) => setPage(p - 1)}
+              isLoading={isLoading}
+            />
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -294,7 +565,6 @@ export function AdminPage() {
   const isAdmin = authz?.admin ?? false;
   
   const { data: usersData, isLoading: usersLoading, error: usersError } = useAdminUsers();
-  const { data: logsData, isLoading: logsLoading, error: logsError } = useAdminLogs();
   
   const [activeTab, setActiveTab] = useState<"users" | "logs">("users");
 
@@ -364,11 +634,6 @@ export function AdminPage() {
         >
           <FileText className="h-4 w-4" />
           All Logs
-          {logsData && (
-            <span className="ml-1 py-0.5 px-2 rounded-full text-xs bg-accent">
-              {logsData.logs.length}
-            </span>
-          )}
         </Button>
       </div>
 
@@ -407,39 +672,7 @@ export function AdminPage() {
         </>
       )}
 
-      {activeTab === "logs" && (
-        <>
-          {logsLoading ? (
-            <Card className="p-6">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-muted-foreground">Loading logs...</p>
-              </div>
-            </Card>
-          ) : logsError ? (
-            <Card className="p-6">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div>
-                  <h2 className="font-semibold text-lg text-destructive">Error Loading Logs</h2>
-                  <p className="text-muted-foreground mt-1">{logsError.message}</p>
-                </div>
-              </div>
-            </Card>
-          ) : logsData && logsData.logs.length > 0 ? (
-            <LogsSection logs={logsData.logs} />
-          ) : (
-            <Card className="p-6">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground" />
-                <div>
-                  <h2 className="font-semibold text-lg">No Logs Found</h2>
-                  <p className="text-muted-foreground mt-1">There are no logs in the system.</p>
-                </div>
-              </div>
-            </Card>
-          )}
-        </>
-      )}
+      {activeTab === "logs" && <LogsSection users={usersData?.users ?? []} />}
     </div>
   );
 }

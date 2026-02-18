@@ -34,9 +34,10 @@ func _() {
 	_ = x[InvTypeAmmo-8388608]
 	_ = x[InvTypeThrown-16777216]
 	_ = x[InvTypeRangedRight-33554432]
+	_ = x[InvType_END-67108864]
 }
 
-const _EquippedItemInvTypes_name = "InvTypeHeadInvTypeNeckInvTypeShoulderInvTypeBodyInvTypeChestInvTypeWaistInvTypeLegsInvTypeFeetInvTypeWristsInvTypeHandsInvTypeFingerInvTypeTrinketInvTypeOneHandInvTypeShieldInvTypeRangedInvTypeBackInvTypeTwoHandInvTypeBagInvTypeTabardInvTypeRobeInvTypeMainHandInvTypeOffHandInvTypeHoldableInvTypeAmmoInvTypeThrownInvTypeRangedRight"
+const _EquippedItemInvTypes_name = "InvTypeHeadInvTypeNeckInvTypeShoulderInvTypeBodyInvTypeChestInvTypeWaistInvTypeLegsInvTypeFeetInvTypeWristsInvTypeHandsInvTypeFingerInvTypeTrinketInvTypeOneHandInvTypeShieldInvTypeRangedInvTypeBackInvTypeTwoHandInvTypeBagInvTypeTabardInvTypeRobeInvTypeMainHandInvTypeOffHandInvTypeHoldableInvTypeAmmoInvTypeThrownInvTypeRangedRightInvType_END"
 
 var _EquippedItemInvTypes_map = map[EquippedItemInvTypes]string{
 	1:        _EquippedItemInvTypes_name[0:11],
@@ -65,6 +66,7 @@ var _EquippedItemInvTypes_map = map[EquippedItemInvTypes]string{
 	8388608:  _EquippedItemInvTypes_name[289:300],
 	16777216: _EquippedItemInvTypes_name[300:313],
 	33554432: _EquippedItemInvTypes_name[313:331],
+	67108864: _EquippedItemInvTypes_name[331:342],
 }
 
 func (i EquippedItemInvTypes) String() string {

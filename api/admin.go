@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -167,25 +168,110 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(r.Context(), w, http.StatusOK, db2sdk.User(user, roles))
 }
 
-// AdminListLogs returns all logs in the system.
+const (
+	defaultAdminLogsLimit = 50
+	maxAdminLogsLimit     = 100
+)
+
+// AdminListLogs returns all logs in the system with pagination, sorting, and filtering.
 // @Summary List all logs
 // @Tags Admin
+// @Param limit query int false "Number of results per page (default 50, max 100)"
+// @Param offset query int false "Offset for pagination"
+// @Param sort_by query string false "Sort field: date, user, size, instance (default: date)"
+// @Param sort_order query string false "Sort order: asc, desc (default: desc)"
+// @Param user_id query string false "Filter by user ID (UUID)"
+// @Param instance_name query string false "Filter by instance name"
 // @Success 200 {object} chroniclesdk.AdminLogsResponse
 // @Router /api/v1/admin/logs [get]
 func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
-	logs, err := a.Opts.DB.ListAllWoWLogGroupsWithOwner(r.Context())
+	ctx := r.Context()
+
+	// Parse limit
+	limit := defaultAdminLogsLimit
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+	if limit > maxAdminLogsLimit {
+		limit = maxAdminLogsLimit
+	}
+
+	// Parse offset
+	offset := 0
+	if o := r.URL.Query().Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	// Parse sort_by with allowlist validation
+	sortBy := r.URL.Query().Get("sort_by")
+	if sortBy == "" {
+		sortBy = "date"
+	}
+	if sortBy != "date" && sortBy != "user" && sortBy != "size" && sortBy != "instance" {
+		sortBy = "date"
+	}
+
+	// Parse sort_order with allowlist validation
+	sortOrder := r.URL.Query().Get("sort_order")
+	if sortOrder == "" {
+		sortOrder = "desc"
+	}
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
+	// Parse filter parameters
+	filterUserID := uuid.Nil
+	if userIDStr := r.URL.Query().Get("user_id"); userIDStr != "" {
+		if parsed, err := uuid.Parse(userIDStr); err == nil {
+			filterUserID = parsed
+		}
+	}
+	filterInstanceName := r.URL.Query().Get("instance_name")
+
+	// Fetch total count for pagination (with filters applied)
+	totalCount, err := a.Opts.DB.CountAllWoWLogGroups(ctx, database.CountAllWoWLogGroupsParams{
+		FilterUserID:       filterUserID,
+		FilterInstanceName: filterInstanceName,
+	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	resp := chroniclesdk.AdminLogsResponse{
-		Logs: make([]chroniclesdk.AdminLog, len(logs)),
+	// Fetch logs with +1 to detect hasMore
+	logs, err := a.Opts.DB.ListAllWoWLogGroupsWithOwnerPaginated(ctx, database.ListAllWoWLogGroupsWithOwnerPaginatedParams{
+		FilterUserID:       filterUserID,
+		FilterInstanceName: filterInstanceName,
+		SortBy:             sortBy,
+		SortOrder:          sortOrder,
+		LimitCount:         int32(limit + 1),
+		OffsetCount:        int32(offset),
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
 	}
+
+	// Determine hasMore
+	hasMore := len(logs) > limit
+	if hasMore {
+		logs = logs[:limit]
+	}
+
+	resp := chroniclesdk.AdminLogsResponse{
+		Logs:       make([]chroniclesdk.AdminLog, len(logs)),
+		HasMore:    hasMore,
+		TotalCount: int(totalCount),
+	}
+
 	for i, l := range logs {
 		state := "unknown"
 		if l.ProcessingOutput != nil {
-			// Try to extract state from processing output
 			state = "processed"
 		}
 
@@ -194,15 +280,66 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 			ownerName = l.OwnerName.String
 		}
 
+		// Extract total size from interface{}
+		var sizeBytes int64
+		if l.TotalSizeBytes != nil {
+			switch v := l.TotalSizeBytes.(type) {
+			case int64:
+				sizeBytes = v
+			case float64:
+				sizeBytes = int64(v)
+			}
+		}
+
+		// Extract instance names from interface{}
+		var instanceNames []string
+		if l.InstanceNames != nil {
+			if names, ok := l.InstanceNames.([]interface{}); ok {
+				for _, n := range names {
+					if s, ok := n.(string); ok {
+						instanceNames = append(instanceNames, s)
+					}
+				}
+			}
+		}
+		if instanceNames == nil {
+			instanceNames = []string{}
+		}
+
 		resp.Logs[i] = chroniclesdk.AdminLog{
-			ID:          l.WoWLogGroup.ID,
-			OwnerID:     l.WoWLogGroup.Owner,
-			OwnerName:   ownerName,
-			Description: "", // Could be enhanced later
-			CreatedAt:   l.WoWLogGroup.CreatedAt.Time.Format("2006-01-02T15:04:05Z"),
-			State:       state,
+			ID:            l.WoWLogGroup.ID,
+			OwnerID:       l.WoWLogGroup.Owner,
+			OwnerName:     ownerName,
+			Description:   "",
+			CreatedAt:     l.WoWLogGroup.CreatedAt.Time.Format("2006-01-02T15:04:05Z"),
+			State:         state,
+			SizeBytes:     sizeBytes,
+			InstanceNames: instanceNames,
 		}
 	}
 
-	httpapi.Write(r.Context(), w, http.StatusOK, resp)
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+
+// AdminListInstanceNames returns all distinct instance names for filtering.
+// @Summary List all instance names
+// @Tags Admin
+// @Success 200 {array} string
+// @Router /api/v1/admin/instance-names [get]
+func (a *API) AdminListInstanceNames(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	names, err := a.Opts.DB.ListDistinctInstanceNames(ctx)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	// Ensure we return an empty array, not null
+	if names == nil {
+		names = []string{}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, names)
 }

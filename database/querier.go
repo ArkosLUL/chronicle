@@ -12,6 +12,7 @@ import (
 )
 
 type sqlcQuerier interface {
+	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
 	DeleteAllSpellTemplates(ctx context.Context) error
 	DeleteThisQuery(ctx context.Context) error
@@ -52,6 +53,8 @@ type sqlcQuerier interface {
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 	ListAllUsers(ctx context.Context) ([]ChronicleUser, error)
 	ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAllWoWLogGroupsWithOwnerRow, error)
+	ListAllWoWLogGroupsWithOwnerPaginated(ctx context.Context, arg ListAllWoWLogGroupsWithOwnerPaginatedParams) ([]ListAllWoWLogGroupsWithOwnerPaginatedRow, error)
+	ListDistinctInstanceNames(ctx context.Context) ([]string, error)
 	ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error)
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	SetUserStorageLimit(ctx context.Context, arg SetUserStorageLimitParams) (DataLimit, error)

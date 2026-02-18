@@ -28,9 +28,10 @@ func _() {
 	_ = x[ProcExTriggerAlways-65536]
 	_ = x[ProcExOneTimeTrigger-131072]
 	_ = x[ProcExOnlyActiveSpell-262144]
+	_ = x[ProcEx_END-524288]
 }
 
-const _ProcFlagsEx_name = "ProcExNoneProcExNormalHitProcExCriticalHitProcExMissProcExResistProcExDodgeProcExParryProcExBlockProcExEvadeProcExImmuneProcExDeflectProcExAbsorbProcExReflectProcExInterruptProcExFullBlockProcExOnCastEndProcExNotActiveSpellProcExTriggerAlwaysProcExOneTimeTriggerProcExOnlyActiveSpell"
+const _ProcFlagsEx_name = "ProcExNoneProcExNormalHitProcExCriticalHitProcExMissProcExResistProcExDodgeProcExParryProcExBlockProcExEvadeProcExImmuneProcExDeflectProcExAbsorbProcExReflectProcExInterruptProcExFullBlockProcExOnCastEndProcExNotActiveSpellProcExTriggerAlwaysProcExOneTimeTriggerProcExOnlyActiveSpellProcEx_END"
 
 var _ProcFlagsEx_map = map[ProcFlagsEx]string{
 	0:      _ProcFlagsEx_name[0:10],
@@ -53,6 +54,7 @@ var _ProcFlagsEx_map = map[ProcFlagsEx]string{
 	65536:  _ProcFlagsEx_name[223:242],
 	131072: _ProcFlagsEx_name[242:262],
 	262144: _ProcFlagsEx_name[262:283],
+	524288: _ProcFlagsEx_name[283:293],
 }
 
 func (i ProcFlagsEx) String() string {

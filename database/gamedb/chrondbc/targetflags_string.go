@@ -35,9 +35,10 @@ func _() {
 	_ = x[TargetUnk4000000-67108864]
 	_ = x[TargetUnk10000000-268435456]
 	_ = x[TargetUnk40000000-1073741824]
+	_ = x[Target_END-2147483648]
 }
 
-const _TargetFlags_name = "TargetSelfTargetSpellDynamic1TargetUnitTargetUnitRaidTargetUnitPartyTargetItemTargetSourceLocationTargetDestinationLocationTargetUnitEnemyTargetUnitAllyTargetCorpseEnemyTargetUnitDeadTargetGameObjectTargetTradeItemTargetNameStringTargetGameObjectItemTargetCorpseAllyTargetUnitMinipetTargetGlyphTargetDestinationTargetTargetExtraTargetsTargetUnitPassengerTargetUnk400000TargetUnk1000000TargetUnk4000000TargetUnk10000000TargetUnk40000000"
+const _TargetFlags_name = "TargetSelfTargetSpellDynamic1TargetUnitTargetUnitRaidTargetUnitPartyTargetItemTargetSourceLocationTargetDestinationLocationTargetUnitEnemyTargetUnitAllyTargetCorpseEnemyTargetUnitDeadTargetGameObjectTargetTradeItemTargetNameStringTargetGameObjectItemTargetCorpseAllyTargetUnitMinipetTargetGlyphTargetDestinationTargetTargetExtraTargetsTargetUnitPassengerTargetUnk400000TargetUnk1000000TargetUnk4000000TargetUnk10000000TargetUnk40000000Target_END"
 
 var _TargetFlags_map = map[TargetFlags]string{
 	0:          _TargetFlags_name[0:10],
@@ -67,6 +68,7 @@ var _TargetFlags_map = map[TargetFlags]string{
 	67108864:   _TargetFlags_name[385:401],
 	268435456:  _TargetFlags_name[401:418],
 	1073741824: _TargetFlags_name[418:435],
+	2147483648: _TargetFlags_name[435:445],
 }
 
 func (i TargetFlags) String() string {

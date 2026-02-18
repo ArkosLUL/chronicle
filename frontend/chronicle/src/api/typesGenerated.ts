@@ -18,11 +18,15 @@ export interface AdminLog {
     readonly description: string;
     readonly created_at: string;
     readonly state: string;
+    readonly size_bytes: number;
+    readonly instance_names: readonly string[];
 }
 
 // From chroniclesdk/user.go
 export interface AdminLogsResponse {
     readonly logs: readonly AdminLog[];
+    readonly has_more: boolean;
+    readonly total_count: number;
 }
 
 // From chroniclesdk/user.go

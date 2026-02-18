@@ -36,16 +36,20 @@ type AdminUsersResponse struct {
 }
 
 type AdminLogsResponse struct {
-	Logs []AdminLog `json:"logs"`
+	Logs       []AdminLog `json:"logs"`
+	HasMore    bool       `json:"has_more"`
+	TotalCount int        `json:"total_count"`
 }
 
 type AdminLog struct {
-	ID          uuid.UUID `json:"id"`
-	OwnerID     uuid.UUID `json:"owner_id"`
-	OwnerName   string    `json:"owner_name"`
-	Description string    `json:"description"`
-	CreatedAt   string    `json:"created_at"`
-	State       string    `json:"state"`
+	ID            uuid.UUID `json:"id"`
+	OwnerID       uuid.UUID `json:"owner_id"`
+	OwnerName     string    `json:"owner_name"`
+	Description   string    `json:"description"`
+	CreatedAt     string    `json:"created_at"`
+	State         string    `json:"state"`
+	SizeBytes     int64     `json:"size_bytes"`
+	InstanceNames []string  `json:"instance_names"`
 }
 
 type SetUserDataLimitRequest struct {

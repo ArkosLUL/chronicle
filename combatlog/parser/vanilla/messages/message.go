@@ -17,6 +17,14 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
 
+type ActivityEventType string
+
+const (
+	StartActivity ActivityEventType = "start"
+	EndActivity   ActivityEventType = "end"
+	BumpActivity  ActivityEventType = "bump"
+)
+
 func ToString(msg Message) string {
 	return fmt.Sprintf("[%T] %s", msg, msg.Date().Format("15:04:05.000"))
 }
@@ -26,6 +34,7 @@ type Message interface {
 	Date() time.Time
 	Affects() []guid.GUID
 	IsSynthetic() bool
+	ActivityEvent() map[guid.GUID]ActivityEventType
 }
 
 type MessageBase struct {
@@ -64,6 +73,10 @@ func (m MessageBase) Date() time.Time {
 	return m.Timestamp
 }
 
+func (m MessageBase) ActivityEvent() map[guid.GUID]ActivityEventType {
+	return map[guid.GUID]ActivityEventType{}
+}
+
 type SkippedMessage struct {
 	MessageBase
 	Reason string
@@ -89,7 +102,7 @@ type UnparsedLine struct {
 }
 
 func (UnparsedLine) Affects() []guid.GUID { return nil }
-func (*UnparsedLine) isMessage()           {}
+func (*UnparsedLine) isMessage()          {}
 
 func Unparsed(ts time.Time, content string) []Message {
 	return set(&UnparsedLine{
@@ -151,7 +164,7 @@ type Combatant struct {
 }
 
 func (c Combatant) Affects() []guid.GUID { return []guid.GUID{c.Guid} }
-func (*Combatant) isMessage()             {}
+func (*Combatant) isMessage()            {}
 
 type Realm struct {
 	MessageBase
@@ -167,7 +180,7 @@ type UnitDied struct {
 }
 
 func (u UnitDied) Affects() []guid.GUID { return []guid.GUID{u.ID} }
-func (*UnitDied) isMessage()             {}
+func (*UnitDied) isMessage()            {}
 
 type PlayerPosition struct {
 	MessageBase
@@ -175,7 +188,7 @@ type PlayerPosition struct {
 }
 
 func (u PlayerPosition) Affects() []guid.GUID { return []guid.GUID{} }
-func (*PlayerPosition) isMessage()             {}
+func (*PlayerPosition) isMessage()            {}
 
 type Zone struct {
 	MessageBase
@@ -191,7 +204,7 @@ type CombatCount struct {
 }
 
 func (c CombatCount) Affects() []guid.GUID { return []guid.GUID{} }
-func (*CombatCount) isMessage()             {}
+func (*CombatCount) isMessage()            {}
 
 type Clock struct {
 	MessageBase
@@ -309,7 +322,7 @@ type Interrupt struct {
 }
 
 func (i Interrupt) Affects() []guid.GUID { return []guid.GUID{i.Caster, i.Target} }
-func (*Interrupt) isMessage()             {}
+func (*Interrupt) isMessage()            {}
 
 type Create struct {
 	MessageBase
@@ -330,7 +343,7 @@ type ExtraAttack struct {
 }
 
 func (e ExtraAttack) Affects() []guid.GUID { return []guid.GUID{e.Caster} }
-func (*ExtraAttack) isMessage()             {}
+func (*ExtraAttack) isMessage()            {}
 
 type Timeout struct {
 	MessageBase

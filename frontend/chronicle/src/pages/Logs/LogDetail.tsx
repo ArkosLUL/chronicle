@@ -27,6 +27,12 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu/DropdownMenu";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   useLogGroup,
@@ -420,7 +426,7 @@ export interface LogDetailViewProps {
   isDeleting: boolean;
   showDeleteConfirm: boolean;
   setShowDeleteConfirm: (show: boolean) => void;
-  onReparse: () => void;
+  onReparse: (verbose: boolean) => void;
   isReparsing: boolean;
   canReparse: boolean;
   onDeleteFiles: () => void;
@@ -550,23 +556,36 @@ export function LogDetailView({
               Refresh
             </Button>
 {canReparse && (
-              <Button 
-                variant="outline" 
-                onClick={onReparse}
-                disabled={isReparsing || !isJobComplete(log.status.state)}
-              >
-                {isReparsing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Reparsing...
-                  </>
-                ) : (
-                  <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    disabled={isReparsing || !isJobComplete(log.status.state)}
+                  >
+                    {isReparsing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Reparsing...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Reparse
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onReparse(false)}>
                     <Play className="h-4 w-4 mr-2" />
                     Reparse
-                  </>
-                )}
-              </Button>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onReparse(true)}>
+                    <Play className="h-4 w-4 mr-2 text-yellow-500" />
+                    Reparse (Verbose)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 

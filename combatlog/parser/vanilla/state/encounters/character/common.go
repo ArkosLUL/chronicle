@@ -2,6 +2,7 @@ package character
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -52,9 +53,26 @@ type characterBase interface {
 	ContainsMe(ids ...guid.GUID) bool
 }
 
+func isImmobilizeCC(spellName string) bool {
+	switch spellName {
+	case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate", "Banish":
+		return true
+	}
+	if strings.HasPrefix(spellName, "Polymorph: ") {
+		return true
+	}
+	return false
+}
+
 // processCommonActivity handles the basics of activity processing for a character.
 func processCommonActivity(c characterBase, m messages.Message) error {
 	switch data := m.(type) {
+	case *messages.Cast:
+		if data.Target != nil && (*data.Target).Gid == c.ID() {
+			if data.Action == types.CastActionsCasts && isImmobilizeCC(data.Spell.Name) {
+				c.Start(fmt.Sprintf("cc_%s", data.Spell.Name), m)
+			}
+		}
 	case *messages.Aura:
 		if c.ID() != data.Target {
 			return nil
@@ -63,9 +81,7 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 		applied := data.Application == types.AuraApplicationGains && data.Amount == 1
 		removed := data.Application == types.AuraApplicationFades && data.Amount == 0
 
-		switch data.SpellName {
-		// Any CC style aura should start activity
-		case "Polymorph", "Freezing Trap Effect", "Sap", "Hibernate", "Banish":
+		if isImmobilizeCC(data.SpellName) {
 			if applied {
 				c.Start(fmt.Sprintf("cc_%s", data.SpellName), m)
 			} else if removed {
@@ -77,7 +93,6 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 				}
 			}
 		}
-
 	case *messages.Slain:
 		if c.ID() == data.Victim {
 			c.Died(ReasonSlain, m)

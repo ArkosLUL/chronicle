@@ -107,14 +107,17 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			}
 		}
 
-		rr := fight.Remaining()
+		rr := fight.EndStates()
 
 		// Determine kill type based on remaining enemies and boss status
 		var killType KillType
-		if len(rr.Remaining) == 0 {
+		if len(rr.Timeouts) == 0 {
 			killType = KillTypeClean
 			if rr.Slain == 0 && rr.Reset > 0 {
 				killType = KillTypeReset
+				if isBossFight && !aBossRemains {
+					killType = KillTypePartial
+				}
 			}
 		} else if isBossFight && !aBossRemains {
 			// No bosses remain, but it was a boss fight.
@@ -133,7 +136,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			Type:      encounterType,
 			Combat:    fight,
 			KillType:  killType,
-			Remaining: rr.Remaining,
+			Remaining: rr.Timeouts,
 			Boss:      isBossFight,
 		})
 	}

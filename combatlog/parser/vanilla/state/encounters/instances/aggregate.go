@@ -96,16 +96,16 @@ type Fight struct {
 	End time.Time
 }
 
-type RemainingReport struct {
-	Slain     int
-	Reset     int
-	Remaining []guid.GUID
+type EndStatesReport struct {
+	Slain    int
+	Reset    int
+	Timeouts []guid.GUID
 }
 
-func (f Fight) Remaining() RemainingReport {
+func (f Fight) EndStates() EndStatesReport {
 	slain := 0
 	reset := 0
-	remaining := make([]guid.GUID, 0)
+	timeouts := make([]guid.GUID, 0)
 	for _, h := range f.Hostiles {
 		switch h.Activity[len(h.Activity)-1].EndState {
 		case period.EndStateSlain:
@@ -113,13 +113,13 @@ func (f Fight) Remaining() RemainingReport {
 		case period.EndStateReset:
 			reset++
 		default:
-			remaining = append(remaining, h.ID)
+			timeouts = append(timeouts, h.ID)
 		}
 	}
-	return RemainingReport{
-		Slain:     slain,
-		Reset:     reset,
-		Remaining: remaining,
+	return EndStatesReport{
+		Slain:    slain,
+		Reset:    reset,
+		Timeouts: timeouts,
 	}
 }
 

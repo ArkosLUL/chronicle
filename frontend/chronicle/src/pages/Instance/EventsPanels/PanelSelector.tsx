@@ -52,7 +52,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Utility",
-    items: ["roles", "all_activity", "empty"],
+    items: ["roles", "all_activity", "periods", "empty"],
     icon: <Toolbox className="h-4 w-4" />,
   },
   {

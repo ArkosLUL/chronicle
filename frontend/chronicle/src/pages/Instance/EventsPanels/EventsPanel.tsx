@@ -34,6 +34,7 @@ import { createInnervatePanel } from "./Innervate/Innervate";
 import { createSunderPanel } from "./Sunder/Sunder";
 import { createJudgementPanel } from "./Judgement/Judgement";
 import { createAuraUptimePanel } from "./AuraUptime/AuraUptime";
+import { PeriodsPanel } from "./PeriodsPanel/PeriodsPanel";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -68,6 +69,8 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   judgement: createJudgementPanel(),
   // Aura tracking
   aura_uptime: createAuraUptimePanel(),
+  // Debug/Analysis
+  periods: PeriodsPanel,
 };
 
 export type EventsPanelType = keyof typeof PANELS;

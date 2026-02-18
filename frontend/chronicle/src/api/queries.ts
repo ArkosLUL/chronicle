@@ -184,12 +184,22 @@ export function useDeleteLogGroup() {
   });
 }
 
+export interface ReparseLogGroupOptions {
+  logId: string;
+  /** Enable debug mode annotations in parsed output */
+  withDebug?: boolean;
+}
+
 export function useReparseLogGroup() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (logId: string) => {
-      const response = await fetch(`/api/v1/raidlogs/logs/${logId}/reparse`, {
+    mutationFn: async ({ logId, withDebug = false }: ReparseLogGroupOptions) => {
+      const url = new URL(`/api/v1/raidlogs/logs/${logId}/reparse`, window.location.origin);
+      if (withDebug) {
+        url.searchParams.set("debug", "true");
+      }
+      const response = await fetch(url.toString(), {
         method: "POST",
       });
       if (!response.ok) {
@@ -198,7 +208,7 @@ export function useReparseLogGroup() {
       }
       return response.json() as Promise<WoWLogGroupState>;
     },
-    onSuccess: (_data, logId) => {
+    onSuccess: (_data, { logId }) => {
       // Invalidate to refetch with new job status
       queryClient.invalidateQueries({ queryKey: ["logGroup", logId] });
     },

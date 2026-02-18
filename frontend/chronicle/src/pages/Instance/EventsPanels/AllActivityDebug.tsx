@@ -84,6 +84,20 @@ function RawEventRow({ event, index }: RawEventRowProps) {
     <span className={cn("w-12 text-right shrink-0", amountColor)}>{event.amount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 1})}</span>
   );
   
+  // ActivityEvent column - shows debug annotations when present
+  const activityEventElement = event.activityEvent ? (
+    <span className={cn(
+      "w-10 text-center shrink-0 text-[10px] font-semibold",
+      event.activityEvent === "start" && "text-green-400",
+      event.activityEvent === "end" && "text-red-400",
+      event.activityEvent === "tick" && "text-yellow-400",
+    )}>
+      {event.activityEvent}
+    </span>
+  ) : (
+    <span className="w-10 text-center shrink-0 text-muted-foreground/30">-</span>
+  );
+  
   return (
     <div className="flex items-center gap-2 text-xs font-mono py-0.5 border-b border-border/30 hover:bg-muted/30">
       <span className="text-muted-foreground w-6 text-right shrink-0">{index}</span>
@@ -101,6 +115,7 @@ function RawEventRow({ event, index }: RawEventRowProps) {
       ) : (
         amountElement
       )}
+      {activityEventElement}
     </div>
   );
 }
@@ -419,6 +434,7 @@ function AllActivityContent({
             <span className="shrink-0"></span>
             <span className="w-24 shrink-0">Target</span>
             <span className="w-12 text-right shrink-0">Amount</span>
+            <span className="w-10 text-center shrink-0">Activity</span>
           </div>
           
           {sortedEvents.length === 0 ? (

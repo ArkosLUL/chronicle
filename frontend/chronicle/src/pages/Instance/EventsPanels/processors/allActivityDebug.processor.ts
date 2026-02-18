@@ -265,19 +265,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       amount = regularEvent.amount;
     }
     
-    // Extract activity event if present (from debug reparse)
-    // Activity tracks when a GUID becomes active/inactive in encounter period detection
-    let activityEvent: ActivityEventType = null;
-    if (event.activityCount > 0) {
-      // Look for activity on target or caster GUID
-      for (let i = 0; i < event.activityCount; i++) {
-        const entry = event.activity[i];
-        if (entry.guid === eventTarget || entry.guid === eventCaster) {
-          activityEvent = entry.eventType as ActivityEventType;
-          break;
-        }
-      }
-    }
+    // Activity event tracking - not currently available in event streams
+    // Would track when a GUID becomes active/inactive in encounter period detection
+    const activityEvent: ActivityEventType = null;
     
     const rawEvent: RawDebugEvent = {
       index: event.index,

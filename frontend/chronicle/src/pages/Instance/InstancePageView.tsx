@@ -104,8 +104,8 @@ function formatPeriodsTooltip(guid: string, periods: readonly ActivityPeriod[]):
                   ({formatDurationMs(duration)})
                 </span>
               )}
-              <span className={period.slain ? "text-green-400" : "text-red-400"}>
-                {period.slain ? "✓" : "✗"}
+              <span className={period.end_state === "slain" ? "text-green-400" : "text-red-400"}>
+                {period.end_state === "slain" ? "✓" : "✗"}
               </span>
             </div>
           </div>
@@ -123,7 +123,7 @@ function formatPeriodsTooltip(guid: string, periods: readonly ActivityPeriod[]):
               <PeriodMomentDisplay moment={period.start} label="Start" />
               <PeriodMomentDisplay moment={period.end} label="End" />
               <PeriodMomentDisplay moment={period.last_active} label="Last Active" />
-              <div>Slain: {period.slain ? "true" : "false"}</div>
+              <div>End State: {period.end_state ?? "active"}</div>
             </div>
           ))}
         </div>

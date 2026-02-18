@@ -39,3 +39,9 @@
 - Sunder casts, add dodge/parry/miss to the sunder `CASTv2` message if the dodge/parry/miss message comes right after
 - First action into encounter panel to see how long it took a player to do something
 
+
+# Guild pages
+
+References
+- https://guildsofwow.com/v-a-l-o-r
+- https://guildsofwow.com/looking-for-guild

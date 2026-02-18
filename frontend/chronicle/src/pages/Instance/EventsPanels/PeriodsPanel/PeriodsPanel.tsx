@@ -205,7 +205,7 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                         }}
                       />
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
+                    <TooltipContent side="top" className="max-w-xs bg-popover text-popover-foreground">
                       {tooltipContent}
                     </TooltipContent>
                   </Tooltip>

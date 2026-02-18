@@ -63,17 +63,48 @@ function StreamToggle({ streamType, enabled, count, onToggle }: StreamToggleProp
   );
 }
 
+// Time formatting helpers
+function formatTimestamp(absoluteMilli: number, useLocalTime: boolean = false): string {
+  const eventTime = new Date(absoluteMilli);
+  if (useLocalTime) {
+    return eventTime.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  }
+  // UTC format
+  const hours = eventTime.getUTCHours().toString().padStart(2, "0");
+  const minutes = eventTime.getUTCMinutes().toString().padStart(2, "0");
+  const seconds = eventTime.getUTCSeconds().toString().padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+function formatRelativeTime(offsetMilli: number): string {
+  const sign = offsetMilli >= 0 ? "+" : "-";
+  const absOffset = Math.abs(offsetMilli);
+  const totalSeconds = absOffset / 1000;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = (totalSeconds % 60).toFixed(1);
+  return `${sign}${minutes}:${seconds.padStart(4, "0")}`;
+}
+
 interface RawEventRowProps {
   event: RawDebugEvent;
   index: number;
+  useRelativeTime?: boolean;
+  useLocalTime?: boolean;
 }
 
-function RawEventRow({ event, index }: RawEventRowProps) {
+function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = false }: RawEventRowProps) {
   const config = STREAM_CONFIG[event.streamType];
   const Icon = config.icon;
   
-  // Format timestamp as +XXXms
-  const timeStr = `+${event.offsetMilli.toString().padStart(6, ' ')}ms`;
+  // Format timestamp: relative offset or absolute time (UTC by default, local if toggled)
+  const timeStr = useRelativeTime 
+    ? formatRelativeTime(event.offsetMilli)
+    : formatTimestamp(event.dateMilli, useLocalTime);
   
   // Determine amount color: use resource-specific color for resource_change, stream color otherwise
   const amountColor = event.resourceType 
@@ -245,6 +276,7 @@ interface AllActivityContentProps {
   onSourceFilterChange: (filter: string) => void;
   targetFilter: string;
   onTargetFilterChange: (filter: string) => void;
+  useRelativeTime?: boolean;
 }
 
 function AllActivityContent({
@@ -264,7 +296,11 @@ function AllActivityContent({
   onSourceFilterChange,
   targetFilter,
   onTargetFilterChange,
+  useRelativeTime = false,
 }: AllActivityContentProps) {
+  // Local time toggle state (UTC by default)
+  const [useLocalTime, setUseLocalTime] = useState(false);
+  
   // Default state during loading
   const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
@@ -430,7 +466,14 @@ function AllActivityContent({
           <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground py-1 border-b sticky top-0 bg-background">
             <span className="w-6 text-right shrink-0">#</span>
             <span className="w-3 shrink-0"></span>
-            <span className="w-20 shrink-0">Time</span>
+            <button
+              type="button"
+              onClick={() => setUseLocalTime((prev) => !prev)}
+              className="w-20 shrink-0 text-left hover:text-foreground transition-colors cursor-pointer"
+              title={useLocalTime ? "Click to show UTC time" : "Click to show local time"}
+            >
+              Time {useRelativeTime ? "" : useLocalTime ? "(local)" : "(UTC)"}
+            </button>
             <span className="w-24 shrink-0">Caster</span>
             <span className="w-24 shrink-0">Ability</span>
             <span className="shrink-0"></span>
@@ -463,7 +506,7 @@ function AllActivityContent({
                         <span className="px-1">📍 Encounter: {event.encounterID.slice(0, 8)}... @ {timestamp}</span>
                       </div>
                     )}
-                    <RawEventRow event={event} index={globalOffset + idx} />
+                    <RawEventRow event={event} index={globalOffset + idx} useRelativeTime={useRelativeTime} useLocalTime={useLocalTime} />
                   </div>
                 );
               });
@@ -482,11 +525,12 @@ function AllActivityContent({
  */
 interface AllActivityWrapperProps {
   context: PanelContext;
+  useRelativeTime?: boolean;
 }
 
 const DEFAULT_ENABLED_STREAMS = new Set<StreamType>(["damage", "heal", "resource_change"]);
 
-function AllActivityWrapper({ context }: AllActivityWrapperProps) {
+function AllActivityWrapper({ context, useRelativeTime = false }: AllActivityWrapperProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [enabledStreams, setEnabledStreams] = useState<Set<StreamType>>(DEFAULT_ENABLED_STREAMS);
   const [abilityFilter, setAbilityFilter] = useState("");
@@ -583,6 +627,7 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
       onSourceFilterChange={handleSourceFilterChange}
       targetFilter={targetFilter}
       onTargetFilterChange={handleTargetFilterChange}
+      useRelativeTime={useRelativeTime}
     />
   );
 }
@@ -593,7 +638,7 @@ function AllActivityWrapper({ context }: AllActivityWrapperProps) {
  */
 function AllActivityRender(props: PanelRenderProps<AllActivityState>) {
   // The wrapper manages its own aggregation with pagination
-  return <AllActivityWrapper context={props.context} />;
+  return <AllActivityWrapper context={props.context} useRelativeTime={props.checkboxChecked} />;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -603,6 +648,7 @@ export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
   icon: <Skull className="h-4 w-4" />,
   // This panel manages its own aggregation to support pagination
   selfManagesAggregation: true,
+  checkboxLabel: "Encounter offset",
   
   render: (props: PanelRenderProps<AllActivityState>) => (
     <AllActivityRender {...props} />

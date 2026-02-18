@@ -57,7 +57,7 @@ func WithSynthetic() func(*MessageBase) {
 func Base(ts time.Time, opts ...func(m *MessageBase)) MessageBase {
 	b := MessageBase{
 		Timestamp: ts,
-		activity:  map[guid.GUID]ActivityEventType{},
+		activity:  nil,
 	}
 	for _, opt := range opts {
 		opt(&b)
@@ -88,16 +88,19 @@ func (m *MessageBase) ResetActivity() {
 	m.activity = nil
 }
 
-func (m *MessageBase) AddActivity(guid guid.GUID, eventType ActivityEventType) {
+func (m *MessageBase) AddActivity(id guid.GUID, eventType ActivityEventType) {
 	if m == nil {
 		return
 	}
+	if m.activity == nil {
+		m.activity = make(map[guid.GUID]ActivityEventType)
+	}
 	if eventType == ActivityBump {
-		if _, ok := m.activity[guid]; ok {
+		if _, ok := m.activity[id]; ok {
 			return
 		}
 	}
-	m.activity[guid] = eventType
+	m.activity[id] = eventType
 }
 
 type SkippedMessage struct {

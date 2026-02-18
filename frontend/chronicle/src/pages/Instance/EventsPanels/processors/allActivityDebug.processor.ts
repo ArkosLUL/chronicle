@@ -22,6 +22,7 @@ export type ActivityEventType = "start" | "end" | "slain" | "bump" | null;
 export interface RawDebugEvent {
   index: number;
   offsetMilli: number;
+  dateMilli: number;  // Absolute timestamp for display toggle
   encounterID: string;
   streamType: StreamType;
   caster: string;
@@ -174,7 +175,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       }
     }
     
-    // Filter by source/caster name if specified
+    // Filter by source/caster name or GUID if specified
     const sourceFilter = context.pagination?.sourceFilter?.toLowerCase().trim();
     if (sourceFilter) {
       // Look up caster name from players or units
@@ -184,13 +185,14 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
            eventCaster)
         : "";
       
-      // Check if the caster name contains the filter string (case-insensitive)
-      if (!casterName.toLowerCase().includes(sourceFilter)) {
+      // Check if the caster name OR GUID contains the filter string (case-insensitive)
+      const casterGuid = eventCaster?.toLowerCase() ?? "";
+      if (!casterName.toLowerCase().includes(sourceFilter) && !casterGuid.includes(sourceFilter)) {
         return;
       }
     }
     
-    // Filter by target name if specified
+    // Filter by target name or GUID if specified
     const targetFilter = context.pagination?.targetFilter?.toLowerCase().trim();
     if (targetFilter) {
       // Look up target name from players or units
@@ -200,8 +202,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
            eventTarget)
         : "";
       
-      // Check if the target name contains the filter string (case-insensitive)
-      if (!targetName.toLowerCase().includes(targetFilter)) {
+      // Check if the target name OR GUID contains the filter string (case-insensitive)
+      const targetGuid = eventTarget?.toLowerCase() ?? "";
+      if (!targetName.toLowerCase().includes(targetFilter) && !targetGuid.includes(targetFilter)) {
         return;
       }
     }
@@ -279,6 +282,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     const rawEvent: RawDebugEvent = {
       index: event.index,
       offsetMilli: event.offsetMilli,
+      dateMilli: firstTimestamp.getTime() + event.offsetMilli,
       encounterID,
       streamType,
       caster: eventCaster,

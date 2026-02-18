@@ -21,15 +21,20 @@ interface PeriodsState {
   // Empty - all data comes from context.instance.encounters
 }
 
+interface EncounterData {
+  encounterID: string;
+  encounterName: string;
+  encounterStart: number;  // ms timestamp
+  encounterEnd: number;    // ms timestamp
+  periods: readonly ActivityPeriod[];
+}
+
 interface TimelineEntry {
   guid: string;
   name: string;
   boss: boolean;
-  encounterID: string;
-  encounterName: string;
-  periods: readonly ActivityPeriod[];
-  encounterStart: number;  // ms timestamp
-  encounterEnd: number;    // ms timestamp
+  // Support multiple encounters for the same unit
+  encounters: EncounterData[];
 }
 
 function formatDuration(ms: number): string {
@@ -43,9 +48,9 @@ function formatDuration(ms: number): string {
 }
 
 function PeriodsTimeline({ context }: { context: PanelContext }) {
-  // Extract all hostiles with periods from selected encounters
+  // Extract all hostiles with periods from selected encounters, grouped by GUID
   const timelineData = useMemo(() => {
-    const entries: TimelineEntry[] = [];
+    const byGuid = new Map<string, TimelineEntry>();
     
     for (const encounter of context.instance.encounters) {
       if (!context.selectedEncounterIds.includes(encounter.id)) continue;
@@ -54,20 +59,39 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
       const encEnd = new Date(encounter.end_time).getTime();
       
       for (const enemy of encounter.enemies ?? []) {
-        if (enemy.periods.length > 0) {
-          entries.push({
+        if (enemy.periods.length === 0) continue;
+        
+        const existing = byGuid.get(enemy.id);
+        if (existing) {
+          // Add this encounter's data to existing entry
+          existing.encounters.push({
+            encounterID: encounter.id,
+            encounterName: encounter.name,
+            encounterStart: encStart,
+            encounterEnd: encEnd,
+            periods: enemy.periods,
+          });
+          // Promote to boss if any encounter marks it as boss
+          if (enemy.boss) existing.boss = true;
+        } else {
+          // Create new entry
+          byGuid.set(enemy.id, {
             guid: enemy.id,
             name: enemy.name,
             boss: enemy.boss,
-            encounterID: encounter.id,
-            encounterName: encounter.name,
-            periods: enemy.periods,
-            encounterStart: encStart,
-            encounterEnd: encEnd,
+            encounters: [{
+              encounterID: encounter.id,
+              encounterName: encounter.name,
+              encounterStart: encStart,
+              encounterEnd: encEnd,
+              periods: enemy.periods,
+            }],
           });
         }
       }
     }
+    
+    const entries = Array.from(byGuid.values());
     
     // Sort: bosses first, then by name
     entries.sort((a, b) => {
@@ -82,8 +106,10 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
   const { minTime, maxTime } = useMemo(() => {
     let min = Infinity, max = -Infinity;
     for (const entry of timelineData) {
-      min = Math.min(min, entry.encounterStart);
-      max = Math.max(max, entry.encounterEnd);
+      for (const enc of entry.encounters) {
+        min = Math.min(min, enc.encounterStart);
+        max = Math.max(max, enc.encounterEnd);
+      }
     }
     return { minTime: min, maxTime: max };
   }, [timelineData]);
@@ -117,9 +143,9 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
           </span>
         </div>
         
-        {timelineData.map((entry, entryIdx) => (
+        {timelineData.map((entry) => (
           <div 
-            key={`${entry.encounterID}-${entry.guid}-${entryIdx}`} 
+            key={entry.guid} 
             className="flex items-center gap-2 py-1 border-b border-border/30 hover:bg-muted/20"
           >
             {/* Unit name */}
@@ -133,84 +159,95 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
               {entry.name}
             </span>
             
-            {/* Encounter indicator */}
-            <span className="w-20 text-[10px] text-muted-foreground truncate shrink-0 text-center" title={entry.encounterName}>
-              {entry.encounterName.slice(0, 8)}...
+            {/* Encounter count indicator */}
+            <span 
+              className="w-20 text-[10px] text-muted-foreground shrink-0 text-center" 
+              title={entry.encounters.map(e => e.encounterName).join(", ")}
+            >
+              {entry.encounters.length === 1 
+                ? entry.encounters[0].encounterName.slice(0, 8) + "..."
+                : `${entry.encounters.length} enc.`}
             </span>
             
             {/* Timeline bar container */}
             <div className="flex-1 h-5 bg-muted/30 rounded relative min-w-[300px]">
-              {/* Encounter boundary markers */}
-              {(() => {
-                const encLeft = ((entry.encounterStart - minTime) / totalDuration) * 100;
-                const encWidth = ((entry.encounterEnd - entry.encounterStart) / totalDuration) * 100;
+              {/* Encounter boundary markers for each encounter */}
+              {entry.encounters.map((enc) => {
+                const encLeft = ((enc.encounterStart - minTime) / totalDuration) * 100;
+                const encWidth = ((enc.encounterEnd - enc.encounterStart) / totalDuration) * 100;
                 return (
                   <div
+                    key={enc.encounterID}
                     className="absolute h-full border-l border-r border-muted-foreground/30"
                     style={{ left: `${encLeft}%`, width: `${encWidth}%` }}
                   />
                 );
-              })()}
-              
-              {/* Period bars */}
-              {entry.periods.map((period, idx) => {
-                const start = period.start 
-                  ? new Date(period.start.timestamp).getTime() 
-                  : entry.encounterStart;
-                const end = period.end 
-                  ? new Date(period.end.timestamp).getTime() 
-                  : entry.encounterEnd;
-                const left = ((start - minTime) / totalDuration) * 100;
-                const width = ((end - start) / totalDuration) * 100;
-                
-                const tooltipContent = (
-                  <div className="text-xs space-y-1.5">
-                    <div className="font-medium">{entry.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono break-all">{entry.guid}</div>
-                    <PeriodMomentDisplay 
-                      moment={period.start} 
-                      label="Start" 
-                      fallback="encounter start"
-                    />
-                    <PeriodMomentDisplay 
-                      moment={period.end} 
-                      label="End" 
-                      fallback="ongoing"
-                    />
-                    {period.last_active && (
-                      <PeriodMomentDisplay moment={period.last_active} label="Last Active" />
-                    )}
-                    <div className="pt-1 font-medium">
-                      Duration: {formatDuration(end - start)}
-                    </div>
-                    {period.slain && (
-                      <div className="text-red-400 pt-1">💀 Slain</div>
-                    )}
-                  </div>
-                );
-                
-                return (
-                  <HintTooltip key={idx}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={cn(
-                          "absolute h-full rounded cursor-help transition-opacity hover:opacity-100",
-                          entry.boss ? "bg-yellow-500/70" : "bg-blue-500/50",
-                          period.slain && "border-r-2 border-red-500"
-                        )}
-                        style={{ 
-                          left: `${left}%`, 
-                          width: `${Math.max(width, 0.5)}%`,
-                          opacity: 0.8,
-                        }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" hideArrow className="max-w-xs bg-popover text-popover-foreground">
-                      {tooltipContent}
-                    </TooltipContent>
-                  </HintTooltip>
-                );
               })}
+              
+              {/* Period bars from all encounters */}
+              {entry.encounters.flatMap((enc) =>
+                enc.periods.map((period, periodIdx) => {
+                  const start = period.start 
+                    ? new Date(period.start.timestamp).getTime() 
+                    : enc.encounterStart;
+                  const end = period.end 
+                    ? new Date(period.end.timestamp).getTime() 
+                    : enc.encounterEnd;
+                  const left = ((start - minTime) / totalDuration) * 100;
+                  const width = ((end - start) / totalDuration) * 100;
+                  
+                  const tooltipContent = (
+                    <div className="text-xs space-y-1.5">
+                      <div className="font-medium">{entry.name}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono break-all">{entry.guid}</div>
+                      <div className="text-[10px] text-muted-foreground border-b border-border pb-1 mb-1">
+                        Encounter: {enc.encounterName}
+                      </div>
+                      <PeriodMomentDisplay 
+                        moment={period.start} 
+                        label="Start" 
+                        fallback="encounter start"
+                      />
+                      <PeriodMomentDisplay 
+                        moment={period.end} 
+                        label="End" 
+                        fallback="ongoing"
+                      />
+                      {period.last_active && (
+                        <PeriodMomentDisplay moment={period.last_active} label="Last Active" />
+                      )}
+                      <div className="pt-1 font-medium">
+                        Duration: {formatDuration(end - start)}
+                      </div>
+                      {period.slain && (
+                        <div className="text-red-400 pt-1">💀 Slain</div>
+                      )}
+                    </div>
+                  );
+                  
+                  return (
+                    <HintTooltip key={`${enc.encounterID}-${periodIdx}`}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={cn(
+                            "absolute h-full rounded cursor-help transition-opacity hover:opacity-100",
+                            entry.boss ? "bg-yellow-500/70" : "bg-blue-500/50",
+                            period.slain && "border-r-2 border-red-500"
+                          )}
+                          style={{ 
+                            left: `${left}%`, 
+                            width: `${Math.max(width, 0.5)}%`,
+                            opacity: 0.8,
+                          }}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" hideArrow className="max-w-xs bg-popover text-popover-foreground">
+                        {tooltipContent}
+                      </TooltipContent>
+                    </HintTooltip>
+                  );
+                })
+              )}
             </div>
           </div>
         ))}

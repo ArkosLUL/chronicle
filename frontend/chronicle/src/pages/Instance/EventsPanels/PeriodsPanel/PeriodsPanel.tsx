@@ -167,24 +167,24 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                 const width = ((end - start) / totalDuration) * 100;
                 
                 const tooltipContent = (
-                  <div className="text-xs">
-                    <div className="font-medium mb-1">{entry.name}</div>
-                    <div className="text-muted-foreground">
+                  <div className="text-xs space-y-0.5">
+                    <div className="font-medium">{entry.name}</div>
+                    <div className="opacity-80">
                       Start: {period.start ? `${formatTime(period.start.timestamp)} (${period.start.reason})` : "encounter start"}
                     </div>
-                    <div className="text-muted-foreground">
+                    <div className="opacity-80">
                       End: {period.end ? `${formatTime(period.end.timestamp)} (${period.end.reason})` : "ongoing"}
                     </div>
                     {period.last_active && (
-                      <div className="text-muted-foreground">
+                      <div className="opacity-80">
                         Last Active: {formatTime(period.last_active.timestamp)} ({period.last_active.reason})
                       </div>
                     )}
-                    <div className="mt-1">
+                    <div className="pt-1 font-medium">
                       Duration: {formatDuration(end - start)}
                     </div>
                     {period.slain && (
-                      <div className="text-red-400 mt-1">💀 Slain</div>
+                      <div className="text-red-400 pt-1">💀 Slain</div>
                     )}
                   </div>
                 );

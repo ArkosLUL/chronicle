@@ -37,6 +37,7 @@ type Message interface {
 	IsSynthetic() bool
 	Activity() map[guid.GUID]ActivityEventType
 	AddActivity(guid.GUID, ActivityEventType)
+	ResetActivity()
 }
 
 type MessageBase struct {
@@ -83,9 +84,18 @@ func (m MessageBase) Activity() map[guid.GUID]ActivityEventType {
 	return m.activity
 }
 
+func (m *MessageBase) ResetActivity() {
+	m.activity = nil
+}
+
 func (m *MessageBase) AddActivity(guid guid.GUID, eventType ActivityEventType) {
 	if m == nil {
 		return
+	}
+	if eventType == ActivityBump {
+		if _, ok := m.activity[guid]; ok {
+			return
+		}
 	}
 	m.activity[guid] = eventType
 }

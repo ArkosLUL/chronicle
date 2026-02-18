@@ -82,8 +82,10 @@ type Period struct {
 }
 
 type PeriodMoment struct {
-	Timestamp time.Time `json:"timestamp"`
-	Reason    string    `json:"reason"`
+	Timestamp   time.Time       `json:"timestamp"`
+	Reason      string          `json:"reason"`
+	MessageType string          `json:"message_type,omitempty"`
+	Message     json.RawMessage `json:"message,omitempty"`
 }
 
 func (a *Periods) Scan(src interface{}) error {

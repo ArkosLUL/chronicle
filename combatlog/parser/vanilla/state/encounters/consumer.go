@@ -1,9 +1,11 @@
 package encounters
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
+	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
@@ -23,16 +25,18 @@ type State struct {
 	// Friendly/Foe/Relationships, etc.
 	Units *unitdb.Units
 
-	reg *registry.Registry
+	reg     *registry.Registry
+	verbose bool
 }
 
-func New(logger *slog.Logger) *State {
+func New(ctx context.Context, logger *slog.Logger) *State {
 	s := &State{
 		logger:      logger,
 		Units:       unitdb.New(),
 		CurrentZone: zoner.NewLocation(),
 		reg:         registry.DefaultRegistry(logger),
 		Instances:   make([]instances.Instance, 0),
+		verbose:     parseoptions.IsVerbose(ctx),
 	}
 	return s
 }
@@ -89,7 +93,7 @@ func (s *State) Zone(z messages.Zone) {
 	}
 
 	if !matched {
-		s.CurrentInstance = s.reg.GetInstance(z.Zone, s.Units)
+		s.CurrentInstance = s.reg.GetInstance(s.verbose, z.Zone, s.Units)
 		if s.CurrentInstance != nil {
 			s.logger.Info("Matched new instance",
 				slog.String("name", s.CurrentInstance.Name()),

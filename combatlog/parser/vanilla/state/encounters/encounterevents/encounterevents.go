@@ -14,6 +14,7 @@ type EncounterEventsInProgress EncounterEvents
 
 type EncounterEvents struct {
 	first          time.Time
+	verbose        bool
 	Damage         *Builder[*messages.Damage, *chronicleproto.Damage]
 	Heal           *Builder[*messages.Heal, *chronicleproto.Heal]
 	ResourceChange *Builder[*messages.ResourceChange, *chronicleproto.ResourceChange]
@@ -24,8 +25,9 @@ type EncounterEvents struct {
 	cnter          int32
 }
 
-func New() *EncounterEventsInProgress {
+func New(verbose bool) *EncounterEventsInProgress {
 	return &EncounterEventsInProgress{
+		verbose:        verbose,
 		Damage:         NewBuilder[*messages.Damage, *chronicleproto.Damage](),
 		Heal:           NewBuilder[*messages.Heal, *chronicleproto.Heal](),
 		ResourceChange: NewBuilder[*messages.ResourceChange, *chronicleproto.ResourceChange](),
@@ -85,6 +87,9 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 	e.setFirsts(m.Date())
+	if !e.verbose {
+		m.ResetActivity()
+	}
 	switch ty := m.(type) {
 	case *messages.Damage:
 		err := AddToBuilder(e.Damage, ty, e.nextIndex(), types2proto.Damage)
@@ -135,8 +140,8 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.ResourceChange.SetZero(e.first)
 	e.ExtraAttack.SetZero(e.first)
 	e.Slain.SetZero(e.first)
-	e.Aura.SetZero(e.first)
 	e.Casts.SetZero(e.first)
+	e.Aura.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

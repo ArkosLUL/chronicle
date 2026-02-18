@@ -13,6 +13,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip
 import { cn } from "@/lib/utils";
 import type { PanelDefinition, PanelRenderProps, PanelContext } from "../types";
 import type { ActivityPeriod } from "@/api/typesGenerated";
+import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
 
 // Periods panel doesn't process event streams - it reads from context
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -39,10 +40,6 @@ function formatDuration(ms: number): string {
     return `${minutes}m ${secs}s`;
   }
   return `${secs}s`;
-}
-
-function formatTime(timestamp: string): string {
-  return new Date(timestamp).toLocaleTimeString();
 }
 
 function PeriodsTimeline({ context }: { context: PanelContext }) {
@@ -167,18 +164,22 @@ function PeriodsTimeline({ context }: { context: PanelContext }) {
                 const width = ((end - start) / totalDuration) * 100;
                 
                 const tooltipContent = (
-                  <div className="text-xs space-y-0.5">
+                  <div className="text-xs space-y-1.5">
                     <div className="font-medium">{entry.name}</div>
-                    <div className="opacity-80">
-                      Start: {period.start ? `${formatTime(period.start.timestamp)} (${period.start.reason})` : "encounter start"}
-                    </div>
-                    <div className="opacity-80">
-                      End: {period.end ? `${formatTime(period.end.timestamp)} (${period.end.reason})` : "ongoing"}
-                    </div>
+                    <PeriodMomentDisplay 
+                      moment={period.start} 
+                      label="Start" 
+                      fallback="encounter start"
+                      compact 
+                    />
+                    <PeriodMomentDisplay 
+                      moment={period.end} 
+                      label="End" 
+                      fallback="ongoing"
+                      compact 
+                    />
                     {period.last_active && (
-                      <div className="opacity-80">
-                        Last Active: {formatTime(period.last_active.timestamp)} ({period.last_active.reason})
-                      </div>
+                      <PeriodMomentDisplay moment={period.last_active} label="Last Active" compact />
                     )}
                     <div className="pt-1 font-medium">
                       Duration: {formatDuration(end - start)}

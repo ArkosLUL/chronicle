@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
@@ -44,7 +47,8 @@ type OutputLogParse struct {
 }
 
 type ArgsLogParse struct {
-	LogID uuid.UUID `json:"log_group_id"`
+	LogID   uuid.UUID `json:"log_group_id"`
+	Verbose bool      `json:"verbose,omitempty"`
 }
 
 func (ArgsLogParse) InsertOpts() river.InsertOpts {
@@ -107,6 +111,7 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) 
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
 	db := w.parent.Zed
+	ctx = parseoptions.WithVerbose(ctx, job.Args.Verbose)
 
 	files, err := db.GetWoWLogFilesByGroupID(ctx, job.Args.LogID)
 	if err != nil {
@@ -145,7 +150,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	p := vanilla.NewFromScanner(logger, liner, scan)
 	// encounters
-	encountersState := encounters.New(logger)
+	encountersState := encounters.New(ctx, logger)
 
 	c := consumers.New(logger, encountersState)
 	err = c.ConsumeAll(ctx, p)
@@ -485,9 +490,10 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 	}
 }
 
-func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup) (*rivertype.JobInsertResult, error) {
+func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool) (*rivertype.JobInsertResult, error) {
 	res, err := c.queue.Insert(ctx, ArgsLogParse{
-		LogID: log.ID,
+		LogID:   log.ID,
+		Verbose: verbose,
 	}, &river.InsertOpts{
 		Tags: []string{
 			fmt.Sprintf("owner_%s", log.Owner.String()),
@@ -501,9 +507,13 @@ func momentToDatabaseMoment(t *period.Moment) *database.PeriodMoment {
 	if t == nil {
 		return nil
 	}
+	mt := reflect.TypeOf(t.Timestamp)
+	msgData, _ := json.Marshal(t.Timestamp)
 
 	return &database.PeriodMoment{
-		Timestamp: t.Timestamp.Date(),
-		Reason:    t.String(),
+		Timestamp:   t.Timestamp.Date(),
+		Reason:      t.String(),
+		MessageType: mt.String(),
+		Message:     msgData,
 	}
 }

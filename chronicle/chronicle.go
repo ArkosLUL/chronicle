@@ -230,7 +230,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		clean.Add(func() { _, _ = c.Storage.RemoveFile(ctx, BucketRaidLogs, []string{storageObject.Key}) })
 	}
 
-	res, err := c.EnqueueParseLog(ctx, group)
+	res, err := c.EnqueueParseLog(ctx, group, false)
 	if err != nil {
 		return nil, nil, fmt.Errorf("enqueue log parse job: %w", err)
 	}

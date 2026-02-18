@@ -86,7 +86,7 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 		}
 	}
 
-	res, err := w.parent.EnqueueParseLog(ctx, logGroup.WoWLogGroup)
+	res, err := w.parent.EnqueueParseLog(ctx, logGroup.WoWLogGroup, job.Args.Verbose)
 	if err != nil {
 		return fmt.Errorf("enqueue log parse job: %w", err)
 	}

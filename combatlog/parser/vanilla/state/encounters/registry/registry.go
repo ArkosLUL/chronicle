@@ -1,16 +1,18 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
+	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 // InstanceFactory creates a new instance
-type InstanceFactory func(logger *slog.Logger, db *unitdb.Units, z zone.Zone) instances.Instance
+type InstanceFactory func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) instances.Instance
 
 // DefaultRegistry returns a registry with all known instances
 func DefaultRegistry(logger *slog.Logger) *Registry {
@@ -60,7 +62,7 @@ func NewRegistry(logger *slog.Logger) *Registry {
 
 func (r *Registry) RegisterWithComment(factory InstanceFactory, comment string) {
 	// temporary instance to get the name
-	tmp := factory(nil, nil, zone.Zone{})
+	tmp := factory(nil, nil, nil, zone.Zone{})
 	name := tmp.Name()
 	if _, exists := r.factories[name]; exists {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
@@ -72,7 +74,7 @@ func (r *Registry) RegisterWithComment(factory InstanceFactory, comment string) 
 // Register adds an instance factory to the registry
 func (r *Registry) Register(factory InstanceFactory) {
 	// temporary instance to get the name
-	tmp := factory(nil, nil, zone.Zone{})
+	tmp := factory(nil, nil, nil, zone.Zone{})
 	name := tmp.Name()
 	if _, exists := r.factories[name]; exists {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
@@ -81,10 +83,10 @@ func (r *Registry) Register(factory InstanceFactory) {
 }
 
 // GetInstance returns an instance for the given zone, or nil if none match
-func (r *Registry) GetInstance(z zone.Zone, db *unitdb.Units) instances.Instance {
+func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) instances.Instance {
 	for name, factory := range r.factories {
 		// Create a temporary instance to check if it matches
-		inst := factory(r.logger, db, z)
+		inst := factory(parseoptions.WithVerbose(context.Background(), verbose), r.logger, db, z)
 		if inst.MatchesZone(z) {
 			r.logger.Debug("matched instance",
 				slog.String("zone", z.Name),
@@ -114,8 +116,8 @@ func (r *Registry) AllInstancesWithComments() map[string]string {
 	return all
 }
 
-func wrap[i instances.Instance](do func(logger *slog.Logger, db *unitdb.Units, z zone.Zone) i) InstanceFactory {
-	return func(logger *slog.Logger, db *unitdb.Units, z zone.Zone) instances.Instance {
-		return do(logger, db, z)
+func wrap[i instances.Instance](do func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) i) InstanceFactory {
+	return func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) instances.Instance {
+		return do(ctx, logger, db, z)
 	}
 }

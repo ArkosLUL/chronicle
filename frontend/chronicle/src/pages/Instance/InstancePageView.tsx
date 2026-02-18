@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useInstanceViewState, type PanelType, type LayoutType } from "@/hooks/useUrlState";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
+import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,12 +65,6 @@ function formatTime(timestamp: string): string {
   return new Date(timestamp).toLocaleString();
 }
 
-function formatPeriodMoment(moment: { timestamp: string; reason: string } | undefined): string {
-  if (!moment) return "N/A";
-  const time = new Date(moment.timestamp).toLocaleTimeString();
-  return `${time} (${moment.reason})`;
-}
-
 function computePeriodDuration(period: ActivityPeriod): number | null {
   if (!period.start || !period.end) return null;
   const startMs = new Date(period.start.timestamp).getTime();
@@ -123,10 +118,10 @@ function formatPeriodsTooltip(guid: string, periods: readonly ActivityPeriod[]):
         <div className="mt-2 space-y-2 font-mono text-[10px] text-muted-foreground">
           <div>GUID: <span className="break-all">{guid}</span></div>
           {periods.map((period, idx) => (
-            <div key={idx} className="border-l border-border pl-2">
-              <div>Start: {formatPeriodMoment(period.start)}</div>
-              <div>End: {formatPeriodMoment(period.end)}</div>
-              <div>Last Active: {formatPeriodMoment(period.last_active)}</div>
+            <div key={idx} className="border-l border-border pl-2 space-y-2">
+              <PeriodMomentDisplay moment={period.start} label="Start" />
+              <PeriodMomentDisplay moment={period.end} label="End" />
+              <PeriodMomentDisplay moment={period.last_active} label="Last Active" />
               <div>Slain: {period.slain ? "true" : "false"}</div>
             </div>
           ))}

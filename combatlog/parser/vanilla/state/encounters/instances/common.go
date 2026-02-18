@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
@@ -27,6 +28,7 @@ var _ Instance = (*Common)(nil)
 type Common struct {
 	name          string
 	zoneNameMatch string
+	verbose       bool
 
 	logger *slog.Logger
 	db     *unitdb.Units
@@ -142,7 +144,7 @@ type CommonFactory struct {
 	Hostiles func() *Identifier
 }
 
-func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Common {
+func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Common {
 	characters := character.NewCharacters(db)
 	c := &Common{
 		name:          f.Name,
@@ -155,6 +157,7 @@ func (f *CommonFactory) New(logger *slog.Logger, db *unitdb.Units, z zone.Zone) 
 		events:        encounterevents.NewEvents(),
 		seen:          make(map[guid.GUID]struct{}),
 		Guild:         guild.New(),
+		verbose:       parseoptions.IsVerbose(ctx),
 	}
 
 	return c
@@ -242,7 +245,7 @@ func (c *Common) CharacterActivityChange() error {
 		c.currentFight = &OngoingFight{
 			EncounterID:    uuid.New(),
 			ActiveHostiles: make(map[guid.GUID]struct{}),
-			Events:         encounterevents.New(),
+			Events:         encounterevents.New(c.verbose),
 			Start:          nil,
 			End:            nil,
 		}

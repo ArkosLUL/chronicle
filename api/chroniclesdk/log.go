@@ -1,6 +1,7 @@
 package chroniclesdk
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -10,8 +11,10 @@ import (
 )
 
 type PeriodMoment struct {
-	Timestamp time.Time `json:"timestamp"`
-	Reason    string    `json:"reason"`
+	Timestamp   time.Time       `json:"timestamp"`
+	Reason      string          `json:"reason"`
+	MessageType string          `json:"message_type,omitempty"`
+	Message     json.RawMessage `json:"message,omitempty"`
 }
 
 type ActivityPeriod struct {

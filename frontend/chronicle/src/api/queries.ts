@@ -197,7 +197,7 @@ export function useReparseLogGroup() {
     mutationFn: async ({ logId, withDebug = false }: ReparseLogGroupOptions) => {
       const url = new URL(`/api/v1/raidlogs/logs/${logId}/reparse`, window.location.origin);
       if (withDebug) {
-        url.searchParams.set("debug", "true");
+        url.searchParams.set("verbose", "true");
       }
       const response = await fetch(url.toString(), {
         method: "POST",

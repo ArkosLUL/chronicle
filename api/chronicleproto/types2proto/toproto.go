@@ -28,7 +28,7 @@ func EventMeta(from time.Time, idx int32, msg messages.Message) *chronicleproto.
 
 func Damage(from time.Time, idx int32, dmg *messages.Damage) *chronicleproto.Damage {
 	return &chronicleproto.Damage{
-		Meta: EventMeta(from, idx, dmg),
+		Meta:       EventMeta(from, idx, dmg),
 		Caster:     OptionalGUID(dmg.Caster),
 		SourceName: dmg.SourceName(),
 		Target:     dmg.Target.String(),

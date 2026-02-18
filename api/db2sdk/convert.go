@@ -132,8 +132,10 @@ func PeriodMoment(moment *database.PeriodMoment) *chroniclesdk.PeriodMoment {
 		return nil
 	}
 	return &chroniclesdk.PeriodMoment{
-		Timestamp: moment.Timestamp,
-		Reason:    moment.Reason,
+		Timestamp:   moment.Timestamp,
+		Reason:      moment.Reason,
+		MessageType: moment.MessageType,
+		Message:     moment.Message,
 	}
 }
 

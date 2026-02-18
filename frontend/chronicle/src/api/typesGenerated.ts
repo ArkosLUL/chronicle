@@ -119,6 +119,8 @@ export interface LogUploadResponse {
 export interface PeriodMoment {
     readonly timestamp: string;
     readonly reason: string;
+    readonly message_type?: string;
+    readonly message?: Record<string, string>;
 }
 
 // From chroniclesdk/user.go

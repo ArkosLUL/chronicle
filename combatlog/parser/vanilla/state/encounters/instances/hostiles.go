@@ -538,3 +538,48 @@ func ScholomanceHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func BlackwingLairHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		14263: "Bronze Drakonid",
+		14264: "Red Drakonid",
+		12464: "Death Talon Seether",
+		12468: "Death Talon Hatcher",
+		14022: "Corrupted Blue Whelp",
+		12458: "Blackwing Taskmaster",
+		12557: "Grethok the Controller",
+		12420: "Blackwing Mage",
+		14401: "Master Elemental Shaper Krixix",
+		12416: "Blackwing Legionnaire",
+		12422: "Death Talon Dragonspawn",
+		12463: "Death Talon Flamescale",
+		12461: "Death Talon Overseer",
+		12457: "Blackwing Spellbinder",
+		14456: "Blackwing Guardsman",
+		12467: "Death Talon Captain",
+		14101: "Enraged Felguard",
+		3909:  "Healing Stream Totem V",
+		14024: "Corrupted Bronze Whelp",
+		12459: "Blackwing Warlock",
+		12460: "Death Talon Wyrmguard",
+		13996: "Blackwing Technician",
+		14605: "Bone Construct",
+		12465: "Death Talon Wyrmkin",
+		14025: "Corrupted Green Whelp",
+		14023: "Corrupted Green Whelp",
+		14302: "Chromatic Drakonid",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		11583: "Nefarian",
+		12435: "Razorgore the Untamed",
+		12017: "Broodlord Lashlayer",
+		11983: "Firemaw",
+		11981: "Flamegor",
+		14020: "Chromaggus",
+		13020: "Vaelastrasz the Corrupt",
+		14601: "Ebonroc",
+	})
+	return hostile
+}

@@ -40,6 +40,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.Register(wrap(instances.Onyxia))
 	r.Register(wrap(instances.EmeraldSanctum))
 	r.RegisterWithComment(wrap(instances.TempleOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
+	r.RegisterWithComment(wrap(instances.BlackwingLair), "**new** mobs registered, mechanics not implemented")
 
 	return r
 }

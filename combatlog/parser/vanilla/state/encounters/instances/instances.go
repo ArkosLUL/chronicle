@@ -3,91 +3,91 @@ package instances
 var (
 	Deadmines = (&CommonFactory{
 		Name:     "Deadmines",
-		ZoneName: "the deadmines",
+		ZoneName: ZoneNameMatcher("the deadmines"),
 		Hostiles: FromMap(DeadminesHostiles()),
 	}).New
 
 	ScarletMonasteryCathedral = (&CommonFactory{
 		Name:     "Scarlet Monastery Cathedral",
-		ZoneName: "scarlet monastery cathedral",
+		ZoneName: ZoneNameMatcher("scarlet monastery cathedral"),
 		Hostiles: FromMap(CathedralHostiles()),
 	}).New
 
 	ScarletMonasteryLibrary = (&CommonFactory{
 		Name:     "Scarlet Monastery Library",
-		ZoneName: "scarlet monastery library",
+		ZoneName: ZoneNameMatcher("scarlet monastery library"),
 		Hostiles: FromMap(SMLibraryHostiles()),
 	}).New
 
 	BlackrockSpire = (&CommonFactory{
 		Name:     "Blackrock Spire",
-		ZoneName: "blackrock spire",
+		ZoneName: ZoneNameMatcher("blackrock spire"),
 		Hostiles: FromMap(BlackrockSpireHostiles()),
 	}).New
 
 	MoltenCore = (&CommonFactory{
 		Name:     "Molten Core",
-		ZoneName: "molten core",
+		ZoneName: ZoneNameMatcher("molten core"),
 		Hostiles: FromMap(MoltenCoreHostiles()),
 	}).New
 
 	TowerOfKarazhan = (&CommonFactory{
 		Name:     "Tower of Karazhan",
-		ZoneName: "tower of karazhan",
+		ZoneName: ZoneNameMatcher("tower of karazhan"),
 		Hostiles: FromMap(TowerOfKarazhanHostiles()),
 	}).New
 
 	Onyxia = (&CommonFactory{
 		Name:     "Onyxia's Lair",
-		ZoneName: "onyxia's lair",
+		ZoneName: ZoneNameMatcher("onyxia's lair"),
 		Hostiles: FromMap(OnyxiaHostiles()),
 	}).New
 
 	RagefireChasm = (&CommonFactory{
 		Name:     "Ragefire Chasm",
-		ZoneName: "ragefire chasm",
+		ZoneName: ZoneNameMatcher("ragefire chasm"),
 		Hostiles: FromMap(RagefireChasmHostiles()),
 	}).New
 
 	ZulGurub = (&CommonFactory{
 		Name:     "Zul'Gurub",
-		ZoneName: "zul'gurub",
+		ZoneName: ZoneNameMatcher("zul'gurub"),
 		Hostiles: FromMap(ZulGurubHostiles()),
 	}).New
 
 	EmeraldSanctum = (&CommonFactory{
 		Name:     "Emerald Sanctum",
-		ZoneName: "emerald sanctum",
+		ZoneName: ZoneNameMatcher("emerald sanctum"),
 		Hostiles: FromMap(EmeraldSanctumHostiles()),
 	}).New
 
 	BlackrockDepths = (&CommonFactory{
 		Name:     "Blackrock Depths",
-		ZoneName: "blackrock depths",
+		ZoneName: ZoneNameMatcher("blackrock depths"),
 		Hostiles: FromMap(BlackrockDepthsHostiles()),
 	}).New
 
 	Scholomance = (&CommonFactory{
 		Name:     "Scholomance",
-		ZoneName: "scholomance",
+		ZoneName: ZoneNameMatcher("scholomance"),
 		Hostiles: FromMap(ScholomanceHostiles()),
 	}).New
 
 	TempleOfAhnQiraj = (&CommonFactory{
 		Name:     "Temple of Ahn'Qiraj",
-		ZoneName: "ahn'qiraj",
+		ZoneName: ZoneNameMatcher("ahn'qiraj"),
 		Hostiles: FromMap(TempleOfAhnQirajHostiles()),
 	}).New
 
 	BlackwingLair = (&CommonFactory{
 		Name:     "Blackwing Lair",
-		ZoneName: "blackwing lair",
+		ZoneName: ZoneNameMatcher("blackwing lair"),
 		Hostiles: FromMap(BlackwingLairHostiles()),
 	}).New
 
 	Naxxramas = (&CommonFactory{
 		Name:     "Naxxramas",
-		ZoneName: "naxxramas",
+		ZoneName: ZoneNameMatcher("naxxramas", "the upper necropolis"),
 		Hostiles: FromMap(NaxxramasHostiles()),
 	}).New
 )

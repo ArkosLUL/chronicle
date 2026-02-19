@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -27,7 +26,7 @@ var _ Instance = (*Common)(nil)
 // mechanics.
 type Common struct {
 	name          string
-	zoneNameMatch string
+	zoneNameMatch func(z string) bool
 	verbose       bool
 
 	logger *slog.Logger
@@ -148,10 +147,22 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	}, nil
 }
 
+func ZoneNameMatcher(names ...string) func(z string) bool {
+	return func(z string) bool {
+		for _, name := range names {
+			if z == name {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 type CommonFactory struct {
-	Name     string
-	ZoneName string
-	Hostiles func() *Identifier
+	Name           string
+	ZoneName       func(z string) bool
+	OtherZoneNames []string
+	Hostiles       func() *Identifier
 }
 
 func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Common {
@@ -186,7 +197,7 @@ func (c *Common) Name() string {
 }
 
 func (c *Common) MatchesZone(z zone.Zone) bool {
-	return strings.ToLower(z.Name) == c.zoneNameMatch
+	return c.zoneNameMatch(z.Name)
 }
 
 func (c *Common) Process(m messages.Message) error {

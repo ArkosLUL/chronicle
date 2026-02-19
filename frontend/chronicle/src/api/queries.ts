@@ -408,6 +408,7 @@ export function useSpell(
       return response.json() as Promise<WoWSpell>;
     },
     staleTime: Infinity, // DBC data never changes
+    retry: false, // Don't retry on 404
     ...options,
   });
 }
@@ -424,6 +425,7 @@ export function useSpellsByName(
       return response.json() as Promise<WoWSpell[]>;
     },
     staleTime: Infinity, // DBC data never changes
+    retry: false, // Don't retry on 404
     ...options,
   });
 }

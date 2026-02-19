@@ -207,20 +207,21 @@ function ComparisonTable({ spells, locale }: ComparisonTableProps) {
                 className="border-b border-border/50 hover:bg-muted/20"
               >
                 <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <SpellIconWithTooltip spell={spell} locale={locale} size={24} />
-                    <Link
-                      to={`/wowdb/spell/${spell.id}`}
-                      className="hover:text-primary"
-                    >
-                      {getLocalizedText(spell.name, locale)}
-                      {getLocalizedText(spell.subtext, locale) && (
-                        <span className="text-muted-foreground ml-1">
-                          ({getLocalizedText(spell.subtext, locale)})
-                        </span>
-                      )}
-                    </Link>
-                  </div>
+                  <Link
+                    to={`/wowdb/spell/${spell.id}`}
+                    className="hover:text-primary"
+                  >
+                    <SpellIconWithTooltip spell={spell} locale={locale} size={24}>
+                      <span>
+                        {getLocalizedText(spell.name, locale)}
+                        {getLocalizedText(spell.subtext, locale) && (
+                          <span className="text-muted-foreground ml-1">
+                            ({getLocalizedText(spell.subtext, locale)})
+                          </span>
+                        )}
+                      </span>
+                    </SpellIconWithTooltip>
+                  </Link>
                 </td>
                 <td className="p-3">{spell.defense_type.string}</td>
                 <td className="p-3">
@@ -267,28 +268,34 @@ function AuraEffectsList({ effects }: { effects: EnumValue[] }) {
   );
 }
 
-function AttributesSummary({ attributes }: { attributes: number[] }) {
-  // Count how many attribute blocks have flags set
-  const setBits = attributes.filter((a) => a !== 0);
+function AttributesSummary({ attributes }: { attributes: { blocks: number[]; string: string } | number[] }) {
+  // Handle both old format (number[]) and new format ({ blocks, string })
+  if (Array.isArray(attributes)) {
+    const setBits = attributes.filter((a) => a !== 0);
+    if (setBits.length === 0) {
+      return <span className="text-muted-foreground">None</span>;
+    }
+    return <span className="text-muted-foreground">{setBits.length} block(s) set</span>;
+  }
 
-  if (setBits.length === 0) {
+  if (!attributes.string || attributes.string === "none") {
     return <span className="text-muted-foreground">None</span>;
   }
+
+  // Split the pipe-separated string into individual attributes
+  const attrList = attributes.string.split(" | ");
 
   return (
     <details className="cursor-pointer">
       <summary className="text-blue-400 hover:text-blue-300">
-        {setBits.length} block(s) set
+        {attrList.length} attribute(s)
       </summary>
       <div className="mt-1 text-xs space-y-0.5">
-        {attributes.map((attr, i) => {
-          if (attr === 0) return null;
-          return (
-            <div key={i} className="font-mono text-muted-foreground">
-              [{i}]: 0x{attr.toString(16).toUpperCase().padStart(8, "0")}
-            </div>
-          );
-        })}
+        {attrList.map((attr, i) => (
+          <div key={i} className="text-muted-foreground">
+            {attr}
+          </div>
+        ))}
       </div>
     </details>
   );

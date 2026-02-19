@@ -61,6 +61,12 @@ export interface SpellCategory {
   TypeMask: number;
 }
 
+// Spell attributes with both raw blocks and human-readable string
+export interface SpellAttributes {
+  blocks: number[]; // 9 uint32 bitmasks
+  string: string;   // Human-readable: "Passive | Channeled1 | ..."
+}
+
 export interface WoWSpell {
   id: number;
   name: I18nText;
@@ -146,8 +152,8 @@ export interface WoWSpell {
   max_target_level: number;
   target_creature_type: MaskValue;
 
-  // Attributes (9 uint32 bitmasks)
-  attributes: number[];
+  // Attributes (9 uint32 bitmasks with human-readable string)
+  attributes: SpellAttributes;
 
   // Equipped item requirements
   equipped_item_class: EnumValue;

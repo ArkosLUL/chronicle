@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 interface SpellIconWithTooltipProps {
   spell: WoWSpell;
@@ -18,11 +19,16 @@ interface SpellIconWithTooltipProps {
   className?: string;
   /** Whether to show the tooltip. Defaults to true. */
   showTooltip?: boolean;
+  /** Optional children to render alongside the icon (e.g., spell name). Both will trigger the tooltip. */
+  children?: ReactNode;
 }
 
 /**
  * A spell icon that shows the full SpellTooltip on hover.
  * Reusable across the site wherever spell icons are displayed.
+ * 
+ * If children are provided, both the icon and children will be wrapped
+ * together and trigger the tooltip on hover.
  */
 export function SpellIconWithTooltip({
   spell,
@@ -30,14 +36,11 @@ export function SpellIconWithTooltip({
   size = 24,
   className,
   showTooltip = true,
+  children,
 }: SpellIconWithTooltipProps) {
   const iconUrl = getSpellIconUrl(spell.spell_icon);
 
-  if (!iconUrl) {
-    return null;
-  }
-
-  const icon = (
+  const icon = iconUrl ? (
     <img
       src={iconUrl}
       alt=""
@@ -48,17 +51,30 @@ export function SpellIconWithTooltip({
         className
       )}
     />
+  ) : null;
+
+  const content = children ? (
+    <span className="inline-flex items-center gap-2">
+      {icon}
+      {children}
+    </span>
+  ) : (
+    icon
   );
 
+  if (!content) {
+    return null;
+  }
+
   if (!showTooltip) {
-    return icon;
+    return content;
   }
 
   return (
     <TooltipProvider>
       <Tooltip delayDuration={150}>
         <TooltipTrigger asChild>
-          <span className="cursor-pointer">{icon}</span>
+          <span className="cursor-pointer">{content}</span>
         </TooltipTrigger>
         <TooltipContent
           side="right"

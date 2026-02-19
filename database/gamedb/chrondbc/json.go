@@ -171,3 +171,17 @@ func (t TargetFlags) MarshalJSON() ([]byte, error) {
 	str := bitmaskString(t, Target_END, func(v TargetFlags) string { return v.String() })
 	return json.Marshal(BitmaskJSON{Mask: uint32(t), String: str})
 }
+
+// SpellAttributesJSON is the JSON representation for spell attributes.
+// Includes both the raw block values and the human-readable string representation.
+type SpellAttributesJSON struct {
+	Blocks [9]uint32 `json:"blocks"`
+	String string    `json:"string"`
+}
+
+func (sa SpellAttributes) MarshalJSON() ([]byte, error) {
+	return json.Marshal(SpellAttributesJSON{
+		Blocks: sa,
+		String: sa.String(),
+	})
+}

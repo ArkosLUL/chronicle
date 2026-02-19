@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
@@ -102,7 +103,14 @@ func (s *Service) handleGetSpellByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ids, err := s.db.SpellByName(name)
+	// URL-decode the name (chi gives us the raw URL-encoded value)
+	decodedName, err := url.PathUnescape(name)
+	if err != nil {
+		http.Error(w, "invalid name encoding", http.StatusBadRequest)
+		return
+	}
+
+	ids, err := s.db.SpellByName(decodedName)
 	if err != nil {
 		http.Error(w, "spell not found", http.StatusNotFound)
 		return

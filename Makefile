@@ -28,7 +28,7 @@ develop: frontend/chronicle/dist create-db
 	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
 
 develop-backend: create-db
-	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
+	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4
 
 .PHONY: build
 build: build-backend frontend/chronicle/dist

@@ -41,5 +41,8 @@ export async function compressGzip(data: Uint8Array): Promise<Uint8Array> {
 export async function compressFile(file: File): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const compressed = await compressGzip(new Uint8Array(arrayBuffer));
-  return new Blob([compressed], { type: "application/gzip" });
+  // Copy to a new ArrayBuffer to satisfy BlobPart type requirements
+  const buffer = new ArrayBuffer(compressed.byteLength);
+  new Uint8Array(buffer).set(compressed);
+  return new Blob([buffer], { type: "application/gzip" });
 }

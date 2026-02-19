@@ -21,7 +21,7 @@ import (
 func BenchmarkParsing(b *testing.B) {
 	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
 	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zerologLogger}.NewZerologHandler())
-	p, err := New(logger, strings.NewReader(""))
+	p, err := New(logger, strings.NewReader(""), nil)
 	require.NoError(b, err)
 
 	someLogs := []string{
@@ -47,7 +47,7 @@ func TestParserMessages(t *testing.T) {
 
 	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
 	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zerologLogger}.NewZerologHandler())
-	p, err := New(logger, strings.NewReader(""))
+	p, err := New(logger, strings.NewReader(""), nil)
 	require.NoError(t, err)
 
 	//t.Run("Spell Cast Attempt", func(t *testing.T) {

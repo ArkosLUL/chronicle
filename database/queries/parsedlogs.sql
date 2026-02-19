@@ -116,8 +116,8 @@ SELECT
     (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
-    (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
-     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
+    COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name
 FROM log_instances li
@@ -162,8 +162,8 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     (SELECT COUNT(*) FROM log_instance_players lip2 WHERE lip2.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
-    (SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
-     FROM log_instance_encounters lie WHERE lie.instance_id = li.id)::float8 as duration_ms,
+    COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name
 FROM log_instances li

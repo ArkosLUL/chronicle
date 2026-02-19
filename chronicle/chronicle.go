@@ -20,11 +20,13 @@ import (
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/internal/cleanup"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -39,13 +41,17 @@ type Chronicle struct {
 	TemporaryDirectory string
 	queue              *riverqueue.Queues
 	Zed                *authz.Authz
+	WoWDB              *gamedb.WoWDB
+	metrics            *logParseMetrics
 
 	mu sync.Mutex
 }
 
 type Options struct {
-	Storage storage.ObjectStorage
-	Zed     *authz.Authz
+	Storage  storage.ObjectStorage
+	Zed      *authz.Authz
+	WoWDB    *gamedb.WoWDB
+	Registry prometheus.Registerer
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
@@ -54,7 +60,9 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		Storage:            opts.Storage,
 		Zed:                opts.Zed,
 		logger:             logger,
+		WoWDB:              opts.WoWDB,
 		TemporaryDirectory: filepath.Join(os.TempDir(), "chronicle_uploads"),
+		metrics:            newLogParseMetrics(opts.Registry),
 	}
 
 	err := c.initStorage(ctx)

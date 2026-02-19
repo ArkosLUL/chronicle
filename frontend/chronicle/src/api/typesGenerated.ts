@@ -82,6 +82,9 @@ export type DeviceVisibility = "all" | "desktop" | "mobile";
 export const DeviceVisibilitys: DeviceVisibility[] = ["all", "desktop", "mobile"];
 
 // From chroniclesdk/log.go
+export type Duration = number;
+
+// From chroniclesdk/log.go
 export type EndState = "reset" | "slain" | "timeout";
 
 export const EndStates: EndState[] = ["reset", "slain", "timeout"];
@@ -166,6 +169,17 @@ export interface InstancePlayer {
 }
 
 // From chroniclesdk/log.go
+/**
+ * InstanceReport contains timing details for a single parsed instance.
+ */
+export interface InstanceReport {
+    readonly name: string;
+    readonly finalize_duration_ms: Duration;
+    readonly db_insert_duration_ms: Duration;
+    readonly encounter_count: number;
+}
+
+// From chroniclesdk/log.go
 export interface InstanceUnit {
     readonly name: string;
     readonly owner: GUID | null;
@@ -196,6 +210,27 @@ export const KillTypes: KillType[] = ["clean", "partial", "wipe"];
 export interface ListGuildsResponse {
     readonly guilds: readonly GuildInfo[];
     readonly total: number;
+}
+
+// From chroniclesdk/log.go
+/**
+ * LogParseReport contains detailed timing breakdown for a log parse job.
+ */
+export interface LogParseReport {
+    readonly total_duration_ms: Duration;
+    readonly load_file_duration_ms: Duration;
+    readonly parse_duration_ms: Duration;
+    readonly finalize_duration_ms: Duration;
+    readonly db_insert_duration_ms: Duration;
+    readonly total_lines: number;
+    /**
+     * Instances contains per-instance timing breakdown.
+     */
+    readonly instances?: readonly InstanceReport[];
+    /**
+     * ConsumerTimes contains timing for each consumer (encounter detection, etc.)
+     */
+    readonly consumer_times?: Record<string, Duration>;
 }
 
 // From chroniclesdk/response.go
@@ -523,6 +558,10 @@ export interface WoWParsedLogJobOutput {
     readonly complete: string | null;
     readonly instance_failures: Record<string, string>;
     readonly instances: readonly WoWSimpleParsedInstance[];
+    /**
+     * Report contains detailed timing and performance metrics for the parse job.
+     */
+    readonly report?: LogParseReport;
 }
 
 // From types/constants.go

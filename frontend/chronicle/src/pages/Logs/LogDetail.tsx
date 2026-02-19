@@ -24,6 +24,8 @@ import {
   Shield,
   Youtube,
   Download,
+  Timer,
+  ChevronRight,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +51,7 @@ import {
   type WoWEncounter,
   type Video,
 } from "@/api/queries";
-import type { WoWSimpleParsedInstance } from "@/api/typesGenerated";
+import type { WoWSimpleParsedInstance, LogParseReport, Duration } from "@/api/typesGenerated";
 
 function formatDate(timestamp: unknown): string {
   if (!timestamp) return "Unknown";
@@ -188,6 +190,108 @@ function StatusBadge({ state }: { state: RiverJobState }) {
         </div>
       );
   }
+}
+
+// Format milliseconds to human-readable duration
+function formatMs(ms: Duration): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
+  const minutes = Math.floor(ms / 60000);
+  const seconds = ((ms % 60000) / 1000).toFixed(1);
+  return `${minutes}m ${seconds}s`;
+}
+
+function TimingSection({ report }: { report: LogParseReport }) {
+  return (
+    <Card className="p-6">
+      <details className="group">
+        <summary className="cursor-pointer flex items-center gap-2 font-semibold text-lg list-none [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-open:rotate-90" />
+          <Timer className="h-5 w-5 text-muted-foreground" />
+          Timing Report
+        </summary>
+        
+        <div className="mt-4 space-y-4">
+          {/* Overview Stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Total Duration</p>
+              <p className="text-xl font-semibold">{formatMs(report.total_duration_ms)}</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Lines Processed</p>
+              <p className="text-xl font-semibold">{report.total_lines.toLocaleString()}</p>
+            </div>
+            {report.instances && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Instances</p>
+                <p className="text-xl font-semibold">{report.instances.length}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Stage Breakdown */}
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">Stage Breakdown</h4>
+            <div className="grid gap-2 text-sm">
+              <div className="flex justify-between p-2 bg-muted/50 rounded">
+                <span>Load Files</span>
+                <span className="font-mono">{formatMs(report.load_file_duration_ms)}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/50 rounded">
+                <span>Parse Log</span>
+                <span className="font-mono">{formatMs(report.parse_duration_ms)}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/50 rounded">
+                <span>Finalize Instances</span>
+                <span className="font-mono">{formatMs(report.finalize_duration_ms)}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/50 rounded">
+                <span>Database Insert</span>
+                <span className="font-mono">{formatMs(report.db_insert_duration_ms)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Per-Instance Breakdown */}
+          {report.instances && report.instances.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Per-Instance Timing</h4>
+              <div className="space-y-1">
+                {report.instances.map((inst, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-2 bg-muted/50 rounded text-sm">
+                    <span className="flex items-center gap-2">
+                      <Castle className="h-4 w-4 text-muted-foreground" />
+                      {inst.name}
+                      <span className="text-muted-foreground">({inst.encounter_count} encounters)</span>
+                    </span>
+                    <span className="font-mono text-muted-foreground">
+                      finalize: {formatMs(inst.finalize_duration_ms)}, db: {formatMs(inst.db_insert_duration_ms)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Consumer Times */}
+          {report.consumer_times && Object.keys(report.consumer_times).length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Consumer Processing</h4>
+              <div className="grid gap-2 text-sm">
+                {Object.entries(report.consumer_times).map(([name, duration]) => (
+                  <div key={name} className="flex justify-between p-2 bg-muted/50 rounded">
+                    <span className="font-mono text-xs">{name}</span>
+                    <span className="font-mono">{formatMs(duration)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </details>
+    </Card>
+  );
 }
 
 function BossEncounterRow({ encounter }: { encounter: WoWEncounter }) {
@@ -853,6 +957,12 @@ export function LogDetailView({
               </div>
             </dl>
           </Card>
+
+          {/* Timing Report - only shows for completed log-parse jobs with report */}
+          {(() => {
+            const parsedOutput = parseLogParseOutput(log.status.output, log.status.kind);
+            return parsedOutput?.report ? <TimingSection report={parsedOutput.report} /> : null;
+          })()}
 
           {/* Delete Section */}
           <Card className="p-6 border-destructive/50">

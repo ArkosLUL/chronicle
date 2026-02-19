@@ -31,7 +31,7 @@ func TestSpectralTutor(t *testing.T) {
 	liner, scans, err := m.LineScanner(ctx, nil, logfile.New(nil, raw), logfile.New(nil, logs))
 	require.NoError(t, err)
 
-	p := vanilla.NewFromScanner(logger, liner, scans)
+	p := vanilla.NewFromScanner(logger, liner, scans, nil)
 	output := encounters.New(ctx, logger)
 	for {
 		msgs, err := p.Advance()

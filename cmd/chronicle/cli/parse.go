@@ -56,7 +56,7 @@ func ParseCmd() *serpent.Command {
 				return err
 			}
 
-			p := vanilla.NewFromScanner(logger, liner, scan)
+			p := vanilla.NewFromScanner(logger, liner, scan, nil)
 			output := encounters.New(ctx, logger)
 			c := consumers.New(logger, output)
 			err = c.ConsumeAll(ctx, p)
@@ -138,7 +138,7 @@ func CreaturesCmd() *serpent.Command {
 				return err
 			}
 
-			p := vanilla.NewFromScanner(logger, liner, scan)
+			p := vanilla.NewFromScanner(logger, liner, scan, nil)
 			output := creatures.New(logger)
 			err = output.Consume(ctx, p)
 			if err != nil {
@@ -206,7 +206,7 @@ func Zoner() *serpent.Command {
 				return nil
 			})
 
-			p := vanilla.NewFromScanner(logger, liner, scan)
+			p := vanilla.NewFromScanner(logger, liner, scan, nil)
 			err = consumers.New(logger, each).ConsumeAll(ctx, p)
 			if err != nil {
 				return err
@@ -254,7 +254,7 @@ func RegrowthBug() *serpent.Command {
 				return nil
 			})
 
-			p := vanilla.NewFromScanner(logger, liner, scan)
+			p := vanilla.NewFromScanner(logger, liner, scan, nil)
 			err = consumers.New(logger, each).ConsumeAll(ctx, p)
 			if err != nil {
 				return err
@@ -287,7 +287,7 @@ func HitTypeCMD() *serpent.Command {
 				return err
 			}
 
-			p := vanilla.NewFromScanner(logger, liner, scan)
+			p := vanilla.NewFromScanner(logger, liner, scan, nil)
 			h := &hitTypeConsumer{}
 			c := consumers.New(logger, h)
 			err = c.ConsumeAll(ctx, p)

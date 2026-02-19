@@ -26,7 +26,7 @@ func TestTotemicRecall(t *testing.T) {
 
 	logger := testutil.Logger(t)
 	liner := lines.NewLiner()
-	p := vanilla.NewFromScanner(logger, liner, merge.FromIOReader(liner, strings.NewReader(logs)))
+	p := vanilla.NewFromScanner(logger, liner, merge.FromIOReader(liner, strings.NewReader(logs)), nil)
 
 	db := unitdb.New()
 	c := character.NewCharacters(db)

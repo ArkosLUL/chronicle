@@ -110,6 +110,21 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) 
 }
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
+	jobStart := time.Now()
+	metrics := w.parent.metrics
+	report := &chroniclesdk.LogParseReport{
+		Instances: make([]chroniclesdk.InstanceReport, 0),
+	}
+
+	// Track job completion for metrics (defer only handles Prometheus metrics)
+	var jobResult string
+	defer func() {
+		metrics.jobDuration.Observe(time.Since(jobStart).Seconds())
+		if jobResult != "" {
+			metrics.jobsTotal.WithLabelValues(jobResult).Inc()
+		}
+	}()
+
 	db := w.parent.Zed
 	ctx = parseoptions.WithVerbose(ctx, job.Args.Verbose)
 
@@ -117,17 +132,20 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			w.parent.logger.Warn("log parse job for non-existent log group", "log_id", job.Args.LogID)
-
+			jobResult = "cancelled"
 			return nil
 		}
-
+		jobResult = "failure"
 		return fmt.Errorf("fetch log group: %w", err)
 	}
 
 	if len(files) != 2 {
+		jobResult = "cancelled"
 		return river.JobCancel(fmt.Errorf("log group does not have exactly 2 files, has %d", len(files)))
 	}
 
+	// Load and sort files
+	loadStart := time.Now()
 	var ri *realmclock.Info
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 	rdrs := make([]logfile.Reader, len(files))
@@ -135,29 +153,57 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		var fri *realmclock.Info
 		rdrs[i], fri, err = w.loadAndSortFile(ctx, file.ID)
 		if err != nil {
+			jobResult = "failure"
 			return err
 		}
 		if ri == nil && fri != nil {
 			ri = fri
 		}
 	}
+	loadDuration := time.Since(loadStart)
+	report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
+	metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
 	m := vanilla.Merger(logger)
 	liner, scan, err := m.LineScanner(ctx, ri, rdrs[0], rdrs[1])
 	if err != nil {
+		jobResult = "failure"
 		return fmt.Errorf("create line scanner: %w", err)
 	}
 
-	p := vanilla.NewFromScanner(logger, liner, scan)
+	p := vanilla.NewFromScanner(logger, liner, scan, w.parent.WoWDB)
 	// encounters
 	encountersState := encounters.New(ctx, logger)
 
+	// Parse combat log
+	parseStart := time.Now()
 	c := consumers.New(logger, encountersState)
 	err = c.ConsumeAll(ctx, p)
+	parseDuration := time.Since(parseStart)
+	report.ParseDuration = chroniclesdk.DurationFrom(parseDuration)
+	metrics.parseDuration.Observe(parseDuration.Seconds())
+
+	// Capture parser metrics
+	parserMetrics := p.Metrics()
+	report.TotalLines = parserMetrics.TotalLinesParsed
+	metrics.linesProcessed.Add(float64(parserMetrics.TotalLinesParsed))
+
+	// Capture consumer times
+	consumerTimes := c.Times()
+	if len(consumerTimes) > 0 {
+		report.ConsumerTimes = make(map[string]chroniclesdk.Duration, len(consumerTimes))
+		for k, v := range consumerTimes {
+			report.ConsumerTimes[k] = chroniclesdk.DurationFrom(v)
+		}
+	}
+
 	if err != nil {
 		err = fmt.Errorf("consume log: %w", err)
 		if !errors.Is(err, context.Canceled) {
+			jobResult = "cancelled"
 			err = river.JobCancel(err)
+		} else {
+			jobResult = "failure"
 		}
 		return err
 	}
@@ -165,21 +211,41 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	jobOut := chroniclesdk.WoWParsedLogJobOutput{
 		InstanceFailures: make(map[string]string),
 		Instances:        make([]chroniclesdk.WoWSimpleParsedInstance, 0),
+		Report:           report,
 	}
 
 	err = db.InsertParsedLogGroup(ctx, job.Args.LogID)
 	if err != nil {
+		jobResult = "cancelled"
 		return river.JobCancel(fmt.Errorf("insert parsed log group: %w", err))
 	}
+
+	// Track total finalize and DB insert durations
+	var totalFinalizeDuration time.Duration
+	var totalDBInsertDuration time.Duration
 
 	for i, inst := range encountersState.Instances {
 		instanceID := uuid.New()
 		builder := newInstanceBuilder(encountersState.Units, instanceID)
+
+		// Time finalization
+		finalizeStart := time.Now()
 		finalized, err := inst.Finalize(ctx)
+		instFinalizeDuration := time.Since(finalizeStart)
+		totalFinalizeDuration += instFinalizeDuration
+
+		instReport := chroniclesdk.InstanceReport{
+			Name:             inst.Name(),
+			FinalizeDuration: chroniclesdk.DurationFrom(instFinalizeDuration),
+		}
+
 		if err != nil {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = err.Error()
+			report.Instances = append(report.Instances, instReport)
 			continue
 		}
+
+		instReport.EncounterCount = len(finalized.Encounters)
 
 		// TODO: Remove this crutch
 		var realmID = dbstatic.RealmAmbershire()
@@ -190,6 +256,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 		}
 
+		// Time DB insert
+		dbInsertStart := time.Now()
 		err = db.InTx(func(tx *authz.AuthzTX) error {
 			guildIDs := make(map[string]uuid.UUID)
 			mostGuildPlayers := 0
@@ -318,10 +386,25 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 			return nil
 		}, nil)
+		instDBDuration := time.Since(dbInsertStart)
+		totalDBInsertDuration += instDBDuration
+		instReport.DBInsertDuration = chroniclesdk.DurationFrom(instDBDuration)
+		report.Instances = append(report.Instances, instReport)
+
 		if err != nil {
+			jobResult = "cancelled"
 			return river.JobCancel(fmt.Errorf("insert finalized encounters: %w", err))
 		}
+
+		metrics.encountersParsed.Add(float64(len(finalized.Encounters)))
 	}
+
+	// Record aggregate timing
+	report.FinalizeDuration = chroniclesdk.DurationFrom(totalFinalizeDuration)
+	report.DBInsertDuration = chroniclesdk.DurationFrom(totalDBInsertDuration)
+	metrics.finalizeDuration.Observe(totalFinalizeDuration.Seconds())
+	metrics.dbInsertDuration.Observe(totalDBInsertDuration.Seconds())
+	metrics.instancesParsed.Add(float64(len(encountersState.Instances)))
 
 	slices.SortFunc(jobOut.Instances, func(a, b chroniclesdk.WoWSimpleParsedInstance) int {
 		if len(a.Encounters) == 0 && len(b.Encounters) == 0 {
@@ -336,7 +419,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return int(a.Encounters[0].StartTime.Unix() - b.Encounters[0].StartTime.Unix())
 	})
 
+	// Set total duration right before recording output (not in defer)
+	report.TotalDuration = chroniclesdk.DurationFrom(time.Since(jobStart))
+
 	jobOut.Complete = ptr.Ref(time.Now())
+	jobResult = "success"
 	_ = river.RecordOutput(ctx, jobOut)
 
 	return nil

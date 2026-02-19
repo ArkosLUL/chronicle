@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/internal/services"
 
+	"cdr.dev/slog"
 	"github.com/coder/serpent"
 )
 
@@ -44,11 +46,14 @@ func (s *Service) Name() string {
 }
 
 func (s *Service) DependsOn() []string {
-	return []string{}
+	return []string{
+		servicelogger.OnLogger(),
+	}
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	db, err := gamedb.New(gamedb.Options{
+	logger := servicelogger.Logger(s.broker)
+	db, err := gamedb.New(ctx, gamedb.Options{
 		SpellsDBCPath: s.spellDBCPath,
 	})
 	if err != nil {
@@ -58,6 +63,9 @@ func (s *Service) Start(ctx context.Context) error {
 
 	s.router = chi.NewRouter()
 	s.setupRoutes()
+	logger.Info("WoWDB service started",
+		slog.F("spell_count", s.db.TotalSpells()),
+	)
 
 	return nil
 }

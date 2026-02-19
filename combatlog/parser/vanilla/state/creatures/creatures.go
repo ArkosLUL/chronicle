@@ -27,6 +27,7 @@ type Creatures struct {
 	CurrentZone  zone.Zone
 	ZonedUnits   map[string]map[uint32]string
 	UnknownUnits map[string]map[uint32]int
+	UnitSpells   map[uint32]map[string]struct{}
 
 	// Units holds information about all units seen so far.
 	// Friendly/Foe/Relationships, etc.
@@ -40,6 +41,7 @@ func New(logger *slog.Logger) *Creatures {
 		CurrentZone:  zone.Zone{},
 		UnknownUnits: make(map[string]map[uint32]int),
 		ZonedUnits:   map[string]map[uint32]string{},
+		UnitSpells:   make(map[uint32]map[string]struct{}),
 	}
 	return s
 }
@@ -71,6 +73,17 @@ func (s *Creatures) Consume(ctx context.Context, p *vanilla.Parser) error {
 	}
 }
 
+func (s *Creatures) UnitCastedSpell(id guid.GUID, spell string) {
+	entry, ok := id.GetEntry()
+	if !ok {
+		return
+	}
+	if s.UnitSpells[entry] == nil {
+		s.UnitSpells[entry] = make(map[string]struct{})
+	}
+	s.UnitSpells[entry][spell] = struct{}{}
+}
+
 func (s *Creatures) Process(m messages.Message) error {
 	switch typed := m.(type) {
 	case *messages.Zone:
@@ -81,7 +94,13 @@ func (s *Creatures) Process(m messages.Message) error {
 		s.Unit(*typed)
 	case *messages.UnitDied:
 		s.UnitDied(*typed)
-
+	case *messages.Cast:
+		// Track which spells are cast by which units, so we can later use this to help identify unknown units by their spell casts.
+		s.UnitCastedSpell(typed.Caster.Gid, typed.Spell.Name)
+	case *messages.Damage:
+		if typed.Caster != nil && typed.SpellName != nil {
+			s.UnitCastedSpell(*typed.Caster, *typed.SpellName)
+		}
 	}
 
 	for _, gid := range m.Affects() {

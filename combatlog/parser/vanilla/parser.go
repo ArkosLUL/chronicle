@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
+	"github.com/Emyrk/chronicle/database/gamedb"
 )
 
 type parseLine = func(lCtx *logfile.Context, ts time.Time, content string) ([]messages.Message, error)
@@ -40,7 +41,7 @@ type Parser struct {
 	synthetics   *synthetic.Synthetic
 }
 
-func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
+func New(logger *slog.Logger, r io.Reader, wowDB *gamedb.WoWDB) (*Parser, error) {
 	// Single liner shared between scanner and parser so CLOCK_INFO from scanner
 	// propagates to parser for timestamp adjustments.
 	liner := lines.NewLiner()
@@ -48,7 +49,7 @@ func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
 		logger:     logger,
 		scanner:    merge.FromIOReader(liner, r),
 		liner:      liner,
-		synthetics: synthetic.New(logger),
+		synthetics: synthetic.New(logger, wowDB),
 		metrics: Metrics{
 			PreProcessDuration: 0,
 			TotalParseDuration: 0,
@@ -60,7 +61,7 @@ func New(logger *slog.Logger, r io.Reader) (*Parser, error) {
 	}, nil
 }
 
-func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan) *Parser {
+func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan, wowDB *gamedb.WoWDB) *Parser {
 	return &Parser{
 		logger:  logger,
 		scanner: scan,
@@ -73,7 +74,7 @@ func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan) *P
 			MatchingTime:       make(map[string]time.Duration),
 			UnmatchingTime:     make(map[string]time.Duration),
 		},
-		synthetics: synthetic.New(logger),
+		synthetics: synthetic.New(logger, wowDB),
 	}
 }
 

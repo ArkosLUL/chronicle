@@ -34,7 +34,7 @@ func TestSonOfHakkar(t *testing.T) {
 	liner, scans, err := m.LineScanner(ctx, nil, logfile.New(nil, raw), logfile.New(nil, logs))
 	require.NoError(t, err)
 
-	p := vanilla.NewFromScanner(logger, liner, scans)
+	p := vanilla.NewFromScanner(logger, liner, scans, nil)
 	output := encounters.New(ctx, logger)
 	for {
 		msgs, err := p.Advance()
@@ -53,7 +53,7 @@ func TestSonOfHakkar(t *testing.T) {
 	fights := output.CurrentInstance.Fights()
 	t.Logf("Number of fights: %d", len(fights))
 	for i, f := range fights {
-		t.Logf("Fight[%d]: EncounterID=%s, Hostiles=%d, Start=%s, End=%s", 
+		t.Logf("Fight[%d]: EncounterID=%s, Hostiles=%d, Start=%s, End=%s",
 			i, f.EncounterID, len(f.Hostiles), f.Start.Format("15:04:05"), f.End.Format("15:04:05"))
 	}
 	require.GreaterOrEqual(t, len(fights), 1, "expected at least 1 fight")
@@ -61,10 +61,10 @@ func TestSonOfHakkar(t *testing.T) {
 	// Get the global events (all fights merged into one Events struct)
 	// Target GUID we're looking for: 0xF130002C5D00BF8A
 	targetGUID := "0xF130002C5D00BF8A"
-	
+
 	globalEvents := output.CurrentInstance.Events()
 	require.NotNil(t, globalEvents, "globalEvents is nil")
-	
+
 	// The damage data contains multiple encounters concatenated together
 	// Format: [header1][body1][header2][body2]...
 	damageData := globalEvents.Damage
@@ -74,10 +74,10 @@ func TestSonOfHakkar(t *testing.T) {
 	var starfireEvents []*chronicleproto.Damage
 	var eventsToTarget []*chronicleproto.Damage
 	encounterNum := 0
-	
+
 	for len(damageData) > 0 {
 		encounterNum++
-		
+
 		// Decode header: encounterID (string), timestamp (varint), count (varint), bodyLen (varint)
 		encounterID, n := protowire.ConsumeString(damageData)
 		require.True(t, n > 0, "failed to read encounterID for encounter %d", encounterNum)
@@ -95,7 +95,7 @@ func TestSonOfHakkar(t *testing.T) {
 		require.True(t, n > 0, "failed to read bodyLen for encounter %d", encounterNum)
 		damageData = damageData[n:]
 
-		t.Logf("Encounter[%d]: ID=%s, timestamp=%d, count=%d, bodyLen=%d", 
+		t.Logf("Encounter[%d]: ID=%s, timestamp=%d, count=%d, bodyLen=%d",
 			encounterNum, encounterID, timestamp, count, bodyLen)
 
 		// Parse each damage event in this encounter

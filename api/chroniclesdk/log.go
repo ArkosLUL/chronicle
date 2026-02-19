@@ -116,6 +116,42 @@ type WoWParsedLogJobOutput struct {
 	Complete         *time.Time                `json:"complete"`
 	InstanceFailures map[string]string         `json:"instance_failures"`
 	Instances        []WoWSimpleParsedInstance `json:"instances"`
+
+	// Report contains detailed timing and performance metrics for the parse job.
+	Report *LogParseReport `json:"report,omitempty"`
+}
+
+// LogParseReport contains detailed timing breakdown for a log parse job.
+type LogParseReport struct {
+	TotalDuration    Duration `json:"total_duration_ms"`
+	LoadFileDuration Duration `json:"load_file_duration_ms"`
+	ParseDuration    Duration `json:"parse_duration_ms"`
+	FinalizeDuration Duration `json:"finalize_duration_ms"`
+	DBInsertDuration Duration `json:"db_insert_duration_ms"`
+
+	TotalLines int64 `json:"total_lines"`
+
+	// Instances contains per-instance timing breakdown.
+	Instances []InstanceReport `json:"instances,omitempty"`
+
+	// ConsumerTimes contains timing for each consumer (encounter detection, etc.)
+	ConsumerTimes map[string]Duration `json:"consumer_times,omitempty"`
+}
+
+// InstanceReport contains timing details for a single parsed instance.
+type InstanceReport struct {
+	Name             string   `json:"name"`
+	FinalizeDuration Duration `json:"finalize_duration_ms"`
+	DBInsertDuration Duration `json:"db_insert_duration_ms"`
+	EncounterCount   int      `json:"encounter_count"`
+}
+
+// Duration wraps time.Duration for JSON serialization as milliseconds.
+type Duration int64
+
+// DurationFrom converts a time.Duration to Duration (milliseconds).
+func DurationFrom(d time.Duration) Duration {
+	return Duration(d.Milliseconds())
 }
 
 type WoWSimpleParsedInstance struct {

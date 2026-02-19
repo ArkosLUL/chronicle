@@ -3,6 +3,7 @@
 package gamedb
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -17,12 +18,15 @@ type Options struct {
 }
 
 type WoWDB struct {
+	ctx        context.Context
 	spellFiles *os.File
 	spells     *chrondbc.SpellsDBC
 	spellLRU   *lru.Cache[int, *chrondbc.Spell]
+	// spellNames is a READONLY map
+	spellNames map[string][]int32
 }
 
-func New(opts Options) (*WoWDB, error) {
+func New(ctx context.Context, opts Options) (*WoWDB, error) {
 	db := dbc.NewDB(vsn.V1_12_1)
 	sf, err := os.Open(opts.SpellsDBCPath)
 	if err != nil {
@@ -40,11 +44,42 @@ func New(opts Options) (*WoWDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("lru: %w", err)
 	}
+
+	spDBC := chrondbc.NewSpells(v)
+	spNames, err := loadSpellName(ctx, spDBC)
+	if err != nil {
+		return nil, fmt.Errorf("load spell names: %w", err)
+	}
+
 	return &WoWDB{
+		ctx:        ctx,
 		spellLRU:   c,
 		spellFiles: sf,
-		spells:     chrondbc.NewSpells(v),
+		spells:     spDBC,
+		spellNames: spNames,
 	}, nil
+}
+
+func (w *WoWDB) TotalSpells() int {
+	return w.spells.Len()
+}
+
+func (w *WoWDB) SpellByName(name string) ([]*chrondbc.Spell, error) {
+	return nil, nil
+}
+
+func loadSpellName(ctx context.Context, spDBC *chrondbc.SpellsDBC) (map[string][]int32, error) {
+	spellNames := make(map[string][]int32, spDBC.Len())
+	err := spDBC.Range(func(cursor *chrondbc.Spell) bool {
+		spellNames[cursor.Name()] = append(spellNames[cursor.Name()], int32(cursor.ID))
+		return true
+	})
+
+	//go func() {
+	//	spellNameDifferences(ctx, spDBC, spellNames)
+	//}()
+
+	return spellNames, err
 }
 
 func (w *WoWDB) Spell(id int) (*chrondbc.Spell, error) {

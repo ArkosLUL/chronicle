@@ -36,7 +36,6 @@ const (
 type Options struct {
 	AccessURL *url.URL
 	DevServer bool
-	Database  database.Store
 	Zed       *authz.Authz
 	Discord   DiscordOAuth
 	Bot       *chroniclebot.Bot
@@ -58,7 +57,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 	if opts.DevServer && !strings.Contains(opts.AccessURL.String(), "localhost") {
 		return nil, fmt.Errorf("dev server can only be used with localhost access url, not %s", opts.AccessURL)
 	}
-	if opts.Database == nil {
+	if opts.Zed == nil {
 		return nil, fmt.Errorf("no database store provided")
 	}
 

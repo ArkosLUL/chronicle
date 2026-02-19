@@ -16,6 +16,7 @@ import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
 import { AdminPage } from "./pages/Admin/AdminPage"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
+import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
 import { 
   AccountLayout, 
   ProfileSettings, 
@@ -60,6 +61,8 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/wowdb/spell" element={<SpellPage />} />
         <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
+        <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />
+        <Route path="/wowdb/spell-by-name/:name" element={<SpellByNamePage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/disclaimer" element={<Disclaimer />} />

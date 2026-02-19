@@ -21,6 +21,7 @@ type WoWDB struct {
 	ctx        context.Context
 	spellFiles *os.File
 	spells     *chrondbc.SpellsDBC
+	memory     map[int]*chrondbc.Spell
 	spellLRU   *lru.Cache[int, *chrondbc.Spell]
 	// spellNames is a READONLY map
 	spellNames map[string][]int32

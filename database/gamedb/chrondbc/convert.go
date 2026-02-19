@@ -28,9 +28,9 @@ func NewSpells(v *dbc.Table) *SpellsDBC {
 	}
 }
 
-func (s SpellsDBC) Underlying() *dbc.Table { return s.under.Underlying() }
-func (s SpellsDBC) Len() int               { return s.under.Len() }
-func (s SpellsDBC) StringRef(i int) (string, error) {return s.under.StringRef(i)}
+func (s SpellsDBC) Underlying() *dbc.Table          { return s.under.Underlying() }
+func (s SpellsDBC) Len() int                        { return s.under.Len() }
+func (s SpellsDBC) StringRef(i int) (string, error) { return s.under.StringRef(i) }
 
 func (s SpellsDBC) Range(f func(cursor *Spell) bool) error {
 	return s.under.Range(func(cursor *dbdefs.Ent_Spell) bool {
@@ -48,16 +48,14 @@ func (s SpellsDBC) Index(i int) (*Spell, error) {
 	return sp, nil
 }
 
-
 func (s SpellsDBC) ID(id int) (*Spell, error) {
-  dbSp, err := s.under.ID(id)
-  if err != nil {
-    return nil, err
-  }
-  sp := SpellFromDB(dbSp)
-  return sp, nil
+	dbSp, err := s.under.ID(id)
+	if err != nil {
+		return nil, err
+	}
+	sp := SpellFromDB(dbSp)
+	return sp, nil
 }
-
 
 // SpellFromDB converts a raw DBC spell entry to our typed Spell struct.
 func SpellFromDB(def *dbdefs.Ent_Spell) *Spell {

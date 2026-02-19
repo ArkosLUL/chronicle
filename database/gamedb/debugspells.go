@@ -6,9 +6,10 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
+//nolint:gocritic,unused
 func spellNameDifferences(ctx context.Context, db *chrondbc.SpellsDBC, names map[string][]int32) {
 	lookup := make(map[chrondbc.SpellID]*chrondbc.Spell)
-	db.Range(func(cursor *chrondbc.Spell) bool {
+	_ = db.Range(func(cursor *chrondbc.Spell) bool {
 		lookup[cursor.ID] = cursor
 		return true
 	})

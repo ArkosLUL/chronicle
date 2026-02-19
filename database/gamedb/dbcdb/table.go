@@ -1,6 +1,8 @@
 package dbcdb
 
 import (
+	"reflect"
+
 	"github.com/Gophercraft/core/format/dbc"
 )
 
@@ -14,11 +16,29 @@ type Table[T any] interface {
 }
 
 func WrapTable[T any](t *dbc.Table) Table[T] {
-	return &WrappedTable[T]{wrapped: t}
+	// Lookup by index is O(1), but lookup by ID is O(n) since we have to scan through the records to find the matching ID.
+	// Optimize ID lookups by building a mapping of ID to index when we wrap the table.
+	lookup := make(map[int]int)
+	idx := 0
+	err := t.Range(func(cursor *T) bool {
+		id := reflect.ValueOf(cursor).Elem().Field(0).Int()
+		lookup[int(id)] = idx
+		idx++
+		return true
+	})
+	if err != nil {
+		panic("failed to wrap table: " + err.Error())
+	}
+
+	return &WrappedTable[T]{
+		wrapped:    t,
+		idxMapping: lookup,
+	}
 }
 
 type WrappedTable[T any] struct {
-	wrapped *dbc.Table
+	wrapped    *dbc.Table
+	idxMapping map[int]int
 }
 
 func (w WrappedTable[T]) Len() int {
@@ -36,6 +56,10 @@ func (w *WrappedTable[T]) Range(f func(cursor *T) bool) error {
 }
 
 func (w *WrappedTable[T]) ID(i int) (*T, error) {
+	if idx, ok := w.idxMapping[i]; ok {
+		return w.Index(idx)
+	}
+
 	x := new(T)
 	if err := w.wrapped.ID(i, x); err != nil {
 		return nil, err

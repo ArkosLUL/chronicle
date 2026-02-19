@@ -1,0 +1,1 @@
+export { SpellIconWithTooltip } from "./SpellIconWithTooltip";

@@ -72,6 +72,7 @@ func (s *Service) Start(ctx context.Context) error {
 
 func (s *Service) setupRoutes() {
 	s.router.Get("/spell/{id}", s.handleGetSpell)
+	s.router.Get("/spell-by-name/{name}", s.handleGetSpellByName)
 }
 
 func (s *Service) handleGetSpell(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +93,39 @@ func (s *Service) handleGetSpell(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(spell)
+}
+
+func (s *Service) handleGetSpellByName(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	if name == "" {
+		http.Error(w, "name is required", http.StatusBadRequest)
+		return
+	}
+
+	ids, err := s.db.SpellByName(name)
+	if err != nil {
+		http.Error(w, "spell not found", http.StatusNotFound)
+		return
+	}
+
+	// Fetch all spells by ID
+	spells := make([]any, 0, len(ids))
+	for _, id := range ids {
+		if r.Context().Err() != nil {
+			http.Error(w, "cancelled", http.StatusInternalServerError)
+			return
+		}
+		spell, err := s.db.Spell(int(id))
+		if err != nil {
+			continue // Skip missing spells
+		}
+		spells = append(spells, spell)
+	}
+
+	// Cache for 24 hours since these are static data that won't change for the most part.
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(spells)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -412,3 +412,19 @@ export function useSpell(
   });
 }
 
+export function useSpellsByName(
+  name: string,
+  options?: Omit<UseQueryOptions<WoWSpell[]>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["wowdb", "spell-by-name", name],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/wowdb/spell-by-name/${encodeURIComponent(name)}`);
+      if (!response.ok) throw new Error("Spell not found");
+      return response.json() as Promise<WoWSpell[]>;
+    },
+    staleTime: Infinity, // DBC data never changes
+    ...options,
+  });
+}
+

@@ -84,4 +84,10 @@ var (
 		ZoneName: "blackwing lair",
 		Hostiles: FromMap(BlackwingLairHostiles()),
 	}).New
+
+	Naxxramas = (&CommonFactory{
+		Name:     "Naxxramas",
+		ZoneName: "naxxramas",
+		Hostiles: FromMap(NaxxramasHostiles()),
+	}).New
 )

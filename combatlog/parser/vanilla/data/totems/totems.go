@@ -105,6 +105,14 @@ func init() {
 		variant{id: 9689, duration: 120 * time.Second},
 	)
 
+	register("Windfury Totem",
+		modifierTotemicMastery,
+		variant{id: 6112, duration: 120 * time.Second},
+		variant{id: 52144, duration: 120 * time.Second},
+		variant{id: 7483, duration: 120 * time.Second},
+		variant{id: 7484, duration: 120 * time.Second},
+	)
+
 	register("Tremor Totem",
 		modifierTotemicMastery,
 		variant{id: 5913, duration: 120 * time.Second},

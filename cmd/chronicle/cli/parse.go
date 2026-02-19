@@ -102,7 +102,17 @@ func ParseCmd() *serpent.Command {
 }
 
 func CreaturesCmd() *serpent.Command {
+	dumpSpells := false
 	cmd := &serpent.Command{
+		Options: serpent.OptionSet{
+			{
+				Name:        "Dump Spells",
+				Description: "Print spells cast by each unit after parsing.",
+				Required:    false,
+				Flag:        "dump-spells",
+				Value:       serpent.BoolOf(&dumpSpells),
+			},
+		},
 		Use:        "creatures <file> <file>",
 		Middleware: serpent.RequireNArgs(2),
 		Handler: func(i *serpent.Invocation) error {
@@ -146,9 +156,25 @@ func CreaturesCmd() *serpent.Command {
 			}
 
 			for z, units := range output.ZonedUnits {
+				zoneSpells := make(map[string]struct{})
 				fmt.Println("Zone:", z)
 				for id, name := range units {
 					fmt.Printf("  %d: %q,\n", id, name)
+					if dumpSpells {
+						if spells, ok := output.UnitSpells[id]; ok {
+							fmt.Printf("    Spells cast:\n")
+							for spell := range spells {
+								zoneSpells[spell] = struct{}{}
+								fmt.Printf("      %s\n", spell)
+							}
+						}
+					}
+					if dumpSpells {
+						fmt.Printf("  Zone %s had spell cast:\n", z)
+						for spellName := range zoneSpells {
+							fmt.Printf("      %s\n", spellName)
+						}
+					}
 				}
 				fmt.Println()
 

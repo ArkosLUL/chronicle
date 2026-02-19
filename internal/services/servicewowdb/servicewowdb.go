@@ -3,7 +3,7 @@ package servicewowdb
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -13,7 +13,6 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/internal/services"
 
-	"cdr.dev/slog"
 	"github.com/coder/serpent"
 )
 
@@ -65,7 +64,7 @@ func (s *Service) Start(ctx context.Context) error {
 	s.router = chi.NewRouter()
 	s.setupRoutes()
 	logger.Info("WoWDB service started",
-		slog.F("spell_count", fmt.Sprintf("%d", s.db.TotalSpells())),
+		slog.Int("spell_count", s.db.TotalSpells()),
 	)
 
 	return nil

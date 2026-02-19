@@ -64,8 +64,12 @@ func (w *WoWDB) TotalSpells() int {
 	return w.spells.Len()
 }
 
-func (w *WoWDB) SpellByName(name string) ([]*chrondbc.Spell, error) {
-	return nil, nil
+func (w *WoWDB) SpellByName(name string) ([]int32, error) {
+	ids, ok := w.spellNames[name]
+	if !ok {
+		return nil, fmt.Errorf("spell not found: %s", name)
+	}
+	return ids, nil
 }
 
 func loadSpellName(ctx context.Context, spDBC *chrondbc.SpellsDBC) (map[string][]int32, error) {

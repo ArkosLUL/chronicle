@@ -45,3 +45,8 @@
 References
 - https://guildsofwow.com/v-a-l-o-r
 - https://guildsofwow.com/looking-for-guild
+
+# Mods
+
+- UnitXP3 https://codeberg.org/konaka/UnitXP_SP3/wiki
+- Nampower https://gitea.com/avitasia/nampower/src/branch/master/EVENTS.md#spell_damage_event_self-and-spell_damage_event_other

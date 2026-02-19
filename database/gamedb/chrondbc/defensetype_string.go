@@ -9,13 +9,14 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[DefenseTypeNone-0]
-	_ = x[DefenseTypeMelee-1]
-	_ = x[DefenseTypeRanged-2]
+	_ = x[DefenseTypeMagic-1]
+	_ = x[DefenseTypeMelee-2]
+	_ = x[DefenseTypeRanged-3]
 }
 
-const _DefenseType_name = "NoneMeleeRanged"
+const _DefenseType_name = "NoneMagicMeleeRanged"
 
-var _DefenseType_index = [...]uint8{0, 4, 9, 15}
+var _DefenseType_index = [...]uint8{0, 4, 9, 14, 20}
 
 func (i DefenseType) String() string {
 	if i < 0 || i >= DefenseType(len(_DefenseType_index)-1) {

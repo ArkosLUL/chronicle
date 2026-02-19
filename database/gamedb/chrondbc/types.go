@@ -298,8 +298,8 @@ const (
 	InvTypeHoldable    EquippedItemInvTypes = 0x00400000 // Off-hand frill (books, orbs)
 	InvTypeAmmo        EquippedItemInvTypes = 0x00800000
 	InvTypeThrown      EquippedItemInvTypes = 0x01000000
-	InvTypeRangedRight   EquippedItemInvTypes = 0x02000000 // Wands
-	InvType_END          EquippedItemInvTypes = 0x04000000 // Sentinel for iteration
+	InvTypeRangedRight EquippedItemInvTypes = 0x02000000 // Wands
+	InvType_END        EquippedItemInvTypes = 0x04000000 // Sentinel for iteration
 )
 
 //go:generate stringer -type AuraEffect -trimprefix=AuraEffect
@@ -1182,9 +1182,10 @@ const (
 type DefenseType int32
 
 const (
-	DefenseTypeNone   DefenseType = 0 // Magic — uses spell hit/resist, no dodge/parry/block
-	DefenseTypeMelee  DefenseType = 1 // Can be dodged, parried, blocked
-	DefenseTypeRanged DefenseType = 2 // Can be dodged, can't be parried/blocked
+	DefenseTypeNone   DefenseType = 0 //
+	DefenseTypeMagic  DefenseType = 1 // Magic — uses spell hit/resist, no dodge/parry/block
+	DefenseTypeMelee  DefenseType = 2 // Can be dodged, parried, blocked
+	DefenseTypeRanged DefenseType = 3 // Can be dodged, can't be parried/blocked
 )
 
 //go:generate stringer -type AuraState -trimprefix AuraState

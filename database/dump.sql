@@ -124,10 +124,18 @@ CREATE TABLE log_file (
     mime_type text NOT NULL,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
-    storage_deleted_at timestamp with time zone
+    storage_deleted_at timestamp with time zone,
+    compressed_size_bytes bigint,
+    content_encoding text
 );
 
+COMMENT ON COLUMN log_file.size_bytes IS 'Original uncompressed file size in bytes';
+
 COMMENT ON COLUMN log_file.storage_deleted_at IS 'The timestamp when the file was deleted from storage. This allows us to keep track of files that have been removed from storage, even if the log_file record still exists in the database.';
+
+COMMENT ON COLUMN log_file.compressed_size_bytes IS 'Compressed file size in bytes (NULL if stored uncompressed)';
+
+COMMENT ON COLUMN log_file.content_encoding IS 'Content encoding used for storage (e.g., gzip), NULL if stored raw';
 
 CREATE TABLE users (
     id uuid NOT NULL,

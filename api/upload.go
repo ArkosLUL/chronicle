@@ -2,17 +2,20 @@ package api
 
 import (
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/google/uuid"
 )
 
-const MaxLogFileSize = 150 * 1024 * 1024 // 150 MB
+const MaxLogFileSize = 250 * 1024 * 1024 // 250 MB
 
 func (api *API) WoWLogReparse(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -100,7 +103,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	//uc := chronauth.MustAuthenticatedClaims(ctx)
 
-	first, header, err := r.FormFile("combat_log_1")
+	first, firstHeader, err := r.FormFile("combat_log_1")
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
 			Message: "Failed to get first file from form",
@@ -108,16 +111,17 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	defer func() { _ = first.Close() }()
 
-	if header.Size > MaxLogFileSize {
+	if firstHeader.Size > MaxLogFileSize {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "First log file is too large, exceeds maximum allowed size of 50 MB",
-			Detail:  fmt.Sprintf("file size: %d bytes", header.Size),
+			Message: "First log file is too large, exceeds maximum allowed size of 250 MB",
+			Detail:  fmt.Sprintf("file size: %d bytes", firstHeader.Size),
 		})
 		return
 	}
 
-	second, header, err := r.FormFile("combat_log_2")
+	second, secondHeader, err := r.FormFile("combat_log_2")
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
 			Message: "Failed to get second file from form",
@@ -125,16 +129,27 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	defer func() { _ = second.Close() }()
 
-	if header.Size > MaxLogFileSize {
+	if secondHeader.Size > MaxLogFileSize {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "First log file is too large, exceeds maximum allowed size of 50 MB",
-			Detail:  fmt.Sprintf("file size: %d bytes", header.Size),
+			Message: "Second log file is too large, exceeds maximum allowed size of 250 MB",
+			Detail:  fmt.Sprintf("file size: %d bytes", secondHeader.Size),
 		})
 		return
 	}
 
-	group, files, err := api.Chronicle.UploadLogs(ctx, first, second)
+	// Create upload inputs, detecting if files are gzip-compressed
+	firstInput := chronicle.UploadInput{
+		Reader:    first,
+		IsGzipped: isGzipped(firstHeader),
+	}
+	secondInput := chronicle.UploadInput{
+		Reader:    second,
+		IsGzipped: isGzipped(secondHeader),
+	}
+
+	group, files, err := api.Chronicle.UploadLogs(ctx, firstInput, secondInput)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -155,4 +170,10 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		LogID: group.ID,
 		Files: fileIDs,
 	})
+}
+
+// isGzipped checks if a file header indicates gzip compression
+func isGzipped(header *multipart.FileHeader) bool {
+	return strings.HasSuffix(header.Filename, ".gz") ||
+		header.Header.Get("Content-Type") == "application/gzip"
 }

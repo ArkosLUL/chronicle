@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle, FolderOpen, AlertTriangle, ArrowRight } from "lucide-react";
+import { compressFile } from "@/api/compress";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
@@ -368,7 +369,7 @@ export function Upload() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = useCallback(async () => {
     if (!combatLog || !rawCombatLog) return;
 
     setUploading(true);
@@ -376,69 +377,86 @@ export function Upload() {
     setError(null);
     setSuccess(null);
 
-    const formData = new FormData();
-    formData.append("combat_log_1", combatLog);
-    formData.append("combat_log_2", rawCombatLog);
+    try {
+      // Compress files before upload for faster transfer
+      const [compressedLog, compressedRawLog] = await Promise.all([
+        compressFile(combatLog),
+        compressFile(rawCombatLog),
+      ]);
 
-    const xhr = new XMLHttpRequest();
-    
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) {
-        setUploadProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    });
+      const formData = new FormData();
+      // Append with .gz extension to signal compression to the server
+      formData.append("combat_log_1", compressedLog, combatLog.name + ".gz");
+      formData.append("combat_log_2", compressedRawLog, rawCombatLog.name + ".gz");
 
-    xhr.addEventListener("load", () => {
-      setUploading(false);
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          setSuccess({ 
-            message: "Your logs are being processed.", 
-            logId: data.log_id 
-          });
-        } catch {
-          setSuccess({ message: "Upload successful", logId: "" });
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 100));
         }
-      } else {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          // Special handling for 403 - missing role
-          if (xhr.status === 403) {
-            setError({ 
-              message: "You don't have permission to upload logs.",
-              call_to_action: "Ask for the alpha role in Discord to get upload access.",
+      });
+
+      xhr.addEventListener("load", () => {
+        setUploading(false);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            setSuccess({
+              message: "Your logs are being processed.",
+              logId: data.log_id,
             });
-          } else {
-            setError({ 
-              message: data.message || "Upload failed",
-              call_to_action: data.call_to_action,
-              detail: data.detail,
-              link: data.link,
-              link_text: data.link_text,
-            });
+          } catch {
+            setSuccess({ message: "Upload successful", logId: "" });
           }
-        } catch {
-          if (xhr.status === 403) {
-            setError({ 
-              message: "You don't have permission to upload logs.",
-              call_to_action: "Ask for the alpha role in Discord to get upload access.",
-            });
-          } else {
-            setError({ message: "Upload failed" });
+        } else {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            // Special handling for 403 - missing role
+            if (xhr.status === 403) {
+              setError({
+                message: "You don't have permission to upload logs.",
+                call_to_action:
+                  "Ask for the alpha role in Discord to get upload access.",
+              });
+            } else {
+              setError({
+                message: data.message || "Upload failed",
+                call_to_action: data.call_to_action,
+                detail: data.detail,
+                link: data.link,
+                link_text: data.link_text,
+              });
+            }
+          } catch {
+            if (xhr.status === 403) {
+              setError({
+                message: "You don't have permission to upload logs.",
+                call_to_action:
+                  "Ask for the alpha role in Discord to get upload access.",
+              });
+            } else {
+              setError({ message: "Upload failed" });
+            }
           }
         }
-      }
-    });
+      });
 
-    xhr.addEventListener("error", () => {
+      xhr.addEventListener("error", () => {
+        setUploading(false);
+        setError({ message: "Upload failed - network error" });
+      });
+
+      xhr.open("POST", "/api/v1/raidlogs/logs/upload");
+      xhr.send(formData);
+    } catch (err) {
       setUploading(false);
-      setError({ message: "Upload failed - network error" });
-    });
-
-    xhr.open("POST", "/api/v1/raidlogs/logs/upload");
-    xhr.send(formData);
-  };
+      setError({
+        message: "Failed to compress files before upload",
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [combatLog, rawCombatLog]);
 
   return (
     <UploadView

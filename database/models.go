@@ -598,16 +598,21 @@ type GuildPageTab struct {
 }
 
 type LogFile struct {
-	ID        uuid.UUID          `db:"id" json:"id"`
-	Owner     uuid.UUID          `db:"owner" json:"owner"`
-	WowLogID  uuid.UUID          `db:"wow_log_id" json:"wow_log_id"`
-	Hash      string             `db:"hash" json:"hash"`
+	ID       uuid.UUID `db:"id" json:"id"`
+	Owner    uuid.UUID `db:"owner" json:"owner"`
+	WowLogID uuid.UUID `db:"wow_log_id" json:"wow_log_id"`
+	Hash     string    `db:"hash" json:"hash"`
+	// Original uncompressed file size in bytes
 	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
 	MimeType  string             `db:"mime_type" json:"mime_type"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	// The timestamp when the file was deleted from storage. This allows us to keep track of files that have been removed from storage, even if the log_file record still exists in the database.
 	StorageDeletedAt pgtype.Timestamptz `db:"storage_deleted_at" json:"storage_deleted_at"`
+	// Compressed file size in bytes (NULL if stored uncompressed)
+	CompressedSizeBytes pgtype.Int8 `db:"compressed_size_bytes" json:"compressed_size_bytes"`
+	// Content encoding used for storage (e.g., gzip), NULL if stored raw
+	ContentEncoding pgtype.Text `db:"content_encoding" json:"content_encoding"`
 }
 
 type LogInstance struct {

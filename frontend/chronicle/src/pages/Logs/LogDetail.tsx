@@ -895,7 +895,18 @@ export function LogDetailView({
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right text-sm text-muted-foreground">
-                        <p>{formatBytes(file.size_bytes)}</p>
+                        {file.compressed_size_bytes != null ? (
+                          <>
+                            <p className="text-xs">
+                              <span className="text-muted-foreground/70">Original:</span> {formatBytes(file.size_bytes)}
+                            </p>
+                            <p>
+                              <span className="text-muted-foreground/70">Stored:</span> {formatBytes(file.compressed_size_bytes)}
+                            </p>
+                          </>
+                        ) : (
+                          <p>{formatBytes(file.size_bytes)}</p>
+                        )}
                         <p className="text-xs">{formatDate(file.created_at)}</p>
                         {file.storage_deleted_at && (
                           <p className="text-xs text-destructive">
@@ -949,10 +960,30 @@ export function LogDetailView({
               <div>
                 <dt className="text-muted-foreground">Total Size</dt>
                 <dd className="mt-1">
-                  {log.files 
-                    ? formatBytes(log.files.reduce((acc, f) => acc + f.size_bytes, 0))
-                    : "0 B"
-                  }
+                  {log.files ? (
+                    (() => {
+                      const totalOriginal = log.files.reduce((acc, f) => acc + f.size_bytes, 0);
+                      const totalStored = log.files.reduce(
+                        (acc, f) => acc + (f.compressed_size_bytes ?? f.size_bytes),
+                        0
+                      );
+                      const hasCompressed = log.files.some(f => f.compressed_size_bytes != null);
+                      
+                      if (hasCompressed && totalStored !== totalOriginal) {
+                        return (
+                          <span>
+                            {formatBytes(totalStored)}{" "}
+                            <span className="text-muted-foreground/70 text-xs">
+                              ({formatBytes(totalOriginal)} uncompressed)
+                            </span>
+                          </span>
+                        );
+                      }
+                      return formatBytes(totalOriginal);
+                    })()
+                  ) : (
+                    "0 B"
+                  )}
                 </dd>
               </div>
             </dl>

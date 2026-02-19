@@ -525,6 +525,8 @@ export interface WoWLogFile {
     readonly hash: string;
     readonly size_bytes: number;
     readonly mime_type: string;
+    readonly compressed_size_bytes?: number;
+    readonly content_encoding?: string;
     readonly created_at: string;
     readonly updated_at: string;
     readonly storage_deleted_at?: string;

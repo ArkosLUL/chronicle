@@ -23,6 +23,25 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
+interface FileSizes {
+  stored: number;
+  original: number;
+  hasCompression: boolean;
+}
+
+function getFileSizes(files: WoWLogGroup["files"]): FileSizes {
+  if (!files) return { stored: 0, original: 0, hasCompression: false };
+  
+  const original = files.reduce((acc, f) => acc + f.size_bytes, 0);
+  const stored = files.reduce(
+    (acc, f) => acc + (f.compressed_size_bytes ?? f.size_bytes),
+    0
+  );
+  const hasCompression = files.some(f => f.compressed_size_bytes != null);
+  
+  return { stored, original, hasCompression };
+}
+
 function parseTimestamp(timestamp: unknown): Date | null {
   if (!timestamp) return null;
   const ts = timestamp as { Time?: string; Valid?: boolean } | string;
@@ -93,7 +112,7 @@ export function UploadsTable({
           const parsed = parseParsedOutput(log.processing_output);
           const instances = (parsed?.instances ?? []) as WoWSimpleParsedInstance[];
           const uploadDate = parseTimestamp(log.created_at);
-          const totalBytes = log.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+          const sizes = getFileSizes(log.files);
           const filesDeleted = log.files?.some((f) => f.storage_deleted_at) ?? false;
           const realmName = instances[0] ? getRealmName(instances[0].realm_id) : "—";
 
@@ -140,8 +159,12 @@ export function UploadsTable({
                 <span>
                   {filesDeleted ? (
                     <span className="italic">removed</span>
+                  ) : sizes.hasCompression ? (
+                    <span title={`${formatBytes(sizes.original)} uncompressed`}>
+                      {formatBytes(sizes.stored)}
+                    </span>
                   ) : (
-                    formatBytes(totalBytes)
+                    formatBytes(sizes.original)
                   )}
                 </span>
                 <Link
@@ -189,7 +212,7 @@ export function UploadsTable({
               const parsed = parseParsedOutput(log.processing_output);
               const instances = (parsed?.instances ?? []) as WoWSimpleParsedInstance[];
               const uploadDate = parseTimestamp(log.created_at);
-              const totalBytes = log.files?.reduce((acc, f) => acc + f.size_bytes, 0) ?? 0;
+              const sizes = getFileSizes(log.files);
               const filesDeleted = log.files?.some((f) => f.storage_deleted_at) ?? false;
               
               // Get realm from first instance
@@ -241,8 +264,12 @@ export function UploadsTable({
                   <td className="px-4 py-3 text-sm text-right text-muted-foreground">
                     {filesDeleted ? (
                       <span className="italic text-xs">removed</span>
+                    ) : sizes.hasCompression ? (
+                      <span title={`${formatBytes(sizes.original)} uncompressed`}>
+                        {formatBytes(sizes.stored)}
+                      </span>
                     ) : (
-                      formatBytes(totalBytes)
+                      formatBytes(sizes.original)
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">

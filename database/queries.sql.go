@@ -85,7 +85,7 @@ SET
   storage_deleted_at = $1
 WHERE
   wow_log_id = $2
-RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at
+RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at, compressed_size_bytes, content_encoding
 `
 
 type DeleteWoWLogGroupFilesParams struct {
@@ -112,6 +112,8 @@ func (q *sqlQuerier) DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLo
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.StorageDeletedAt,
+			&i.CompressedSizeBytes,
+			&i.ContentEncoding,
 		); err != nil {
 			return nil, err
 		}
@@ -124,7 +126,7 @@ func (q *sqlQuerier) DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLo
 }
 
 const getFileByHash = `-- name: GetFileByHash :one
-SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at FROM log_file WHERE hash = $1
+SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at, compressed_size_bytes, content_encoding FROM log_file WHERE hash = $1
 `
 
 func (q *sqlQuerier) GetFileByHash(ctx context.Context, hash string) (LogFile, error) {
@@ -140,12 +142,14 @@ func (q *sqlQuerier) GetFileByHash(ctx context.Context, hash string) (LogFile, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.StorageDeletedAt,
+		&i.CompressedSizeBytes,
+		&i.ContentEncoding,
 	)
 	return i, err
 }
 
 const getLogFile = `-- name: GetLogFile :one
-SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at FROM log_file WHERE id = $1
+SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at, compressed_size_bytes, content_encoding FROM log_file WHERE id = $1
 `
 
 func (q *sqlQuerier) GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error) {
@@ -161,13 +165,15 @@ func (q *sqlQuerier) GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, err
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.StorageDeletedAt,
+		&i.CompressedSizeBytes,
+		&i.ContentEncoding,
 	)
 	return i, err
 }
 
 const getWoWLogFilesByGroupID = `-- name: GetWoWLogFilesByGroupID :many
 SELECT
-  id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at
+  id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at, compressed_size_bytes, content_encoding
 FROM
   log_file
 WHERE
@@ -195,6 +201,8 @@ func (q *sqlQuerier) GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.StorageDeletedAt,
+			&i.CompressedSizeBytes,
+			&i.ContentEncoding,
 		); err != nil {
 			return nil, err
 		}
@@ -218,6 +226,8 @@ SELECT
         'hash', json_file.hash,
         'size_bytes', json_file.size_bytes,
         'mime_type', json_file.mime_type,
+        'compressed_size_bytes', json_file.compressed_size_bytes,
+        'content_encoding', json_file.content_encoding,
         'created_at', json_file.created_at,
         'updated_at', json_file.updated_at,
         'storage_deleted_at', json_file.storage_deleted_at
@@ -271,6 +281,8 @@ FROM
         'hash', lf.hash,
         'size_bytes', lf.size_bytes,
         'mime_type', lf.mime_type,
+        'compressed_size_bytes', lf.compressed_size_bytes,
+        'content_encoding', lf.content_encoding,
         'created_at', lf.created_at,
         'updated_at', lf.updated_at,
         'storage_deleted_at', lf.storage_deleted_at
@@ -337,6 +349,8 @@ INSERT INTO
     wow_log_id,
     size_bytes,
     mime_type,
+    compressed_size_bytes,
+    content_encoding,
     created_at,
     updated_at
   )
@@ -349,20 +363,24 @@ VALUES
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9,
+    $10
    )
-RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at
+RETURNING id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at, compressed_size_bytes, content_encoding
 `
 
 type InsertLogFileParams struct {
-	ID        uuid.UUID          `db:"id" json:"id"`
-	Owner     uuid.UUID          `db:"owner" json:"owner"`
-	Hash      string             `db:"hash" json:"hash"`
-	WowLogID  uuid.UUID          `db:"wow_log_id" json:"wow_log_id"`
-	SizeBytes int64              `db:"size_bytes" json:"size_bytes"`
-	MimeType  string             `db:"mime_type" json:"mime_type"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID                  uuid.UUID          `db:"id" json:"id"`
+	Owner               uuid.UUID          `db:"owner" json:"owner"`
+	Hash                string             `db:"hash" json:"hash"`
+	WowLogID            uuid.UUID          `db:"wow_log_id" json:"wow_log_id"`
+	SizeBytes           int64              `db:"size_bytes" json:"size_bytes"`
+	MimeType            string             `db:"mime_type" json:"mime_type"`
+	CompressedSizeBytes pgtype.Int8        `db:"compressed_size_bytes" json:"compressed_size_bytes"`
+	ContentEncoding     pgtype.Text        `db:"content_encoding" json:"content_encoding"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 func (q *sqlQuerier) InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error) {
@@ -373,6 +391,8 @@ func (q *sqlQuerier) InsertLogFile(ctx context.Context, arg InsertLogFileParams)
 		arg.WowLogID,
 		arg.SizeBytes,
 		arg.MimeType,
+		arg.CompressedSizeBytes,
+		arg.ContentEncoding,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -387,6 +407,8 @@ func (q *sqlQuerier) InsertLogFile(ctx context.Context, arg InsertLogFileParams)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.StorageDeletedAt,
+		&i.CompressedSizeBytes,
+		&i.ContentEncoding,
 	)
 	return i, err
 }
@@ -452,6 +474,8 @@ FROM
         'hash', lf.hash,
         'size_bytes', lf.size_bytes,
         'mime_type', lf.mime_type,
+        'compressed_size_bytes', lf.compressed_size_bytes,
+        'content_encoding', lf.content_encoding,
         'created_at', lf.created_at,
         'updated_at', lf.updated_at
       )
@@ -532,6 +556,8 @@ FROM
               'hash', lf.hash,
               'size_bytes', lf.size_bytes,
               'mime_type', lf.mime_type,
+              'compressed_size_bytes', lf.compressed_size_bytes,
+              'content_encoding', lf.content_encoding,
               'created_at', lf.created_at,
               'updated_at', lf.updated_at
             )

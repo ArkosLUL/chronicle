@@ -50,16 +50,27 @@ func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGro
 }
 
 func WoWLogFile(file database.LogFile) chroniclesdk.WoWLogFile {
+	var compressedSize *int64
+	if file.CompressedSizeBytes.Valid {
+		compressedSize = &file.CompressedSizeBytes.Int64
+	}
+	var contentEncoding *string
+	if file.ContentEncoding.Valid {
+		contentEncoding = &file.ContentEncoding.String
+	}
+
 	return chroniclesdk.WoWLogFile{
-		ID:               file.ID,
-		Owner:            file.Owner,
-		WowLogID:         file.WowLogID,
-		Hash:             file.Hash,
-		SizeBytes:        file.SizeBytes,
-		MimeType:         file.MimeType,
-		CreatedAt:        file.CreatedAt,
-		UpdatedAt:        file.UpdatedAt,
-		StorageDeletedAt: file.StorageDeletedAt,
+		ID:                  file.ID,
+		Owner:               file.Owner,
+		WowLogID:            file.WowLogID,
+		Hash:                file.Hash,
+		SizeBytes:           file.SizeBytes,
+		MimeType:            file.MimeType,
+		CompressedSizeBytes: compressedSize,
+		ContentEncoding:     contentEncoding,
+		CreatedAt:           file.CreatedAt,
+		UpdatedAt:           file.UpdatedAt,
+		StorageDeletedAt:    file.StorageDeletedAt,
 	}
 }
 

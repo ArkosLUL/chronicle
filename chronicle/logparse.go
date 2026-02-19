@@ -2,11 +2,13 @@ package chronicle
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"reflect"
@@ -83,23 +85,39 @@ func (c *Chronicle) NewWorkerLogParse() river.Worker[ArgsLogParse] {
 	}
 }
 
-func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, fileID uuid.UUID) (logfile.Reader, *realmclock.Info, error) {
+func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, file database.LogFile) (logfile.Reader, *realmclock.Info, error) {
 	storage := w.parent.Storage
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 
-	fd, err := storage.DownloadFile(ctx, BucketRaidLogs, w.parent.logPath(fileID))
+	fd, err := storage.DownloadFile(ctx, BucketRaidLogs, w.parent.logPath(file.ID))
 	if err != nil {
-		err = fmt.Errorf("download log file %s: %w", fileID, err)
+		err = fmt.Errorf("download log file %s: %w", file.ID, err)
 		if errors.Is(err, os.ErrNotExist) {
 			err = river.JobCancel(err)
 		}
 		return nil, nil, err
 	}
 
+	// Decompress if stored as gzip
+	var reader io.Reader = bytes.NewReader(fd)
+	if file.ContentEncoding.Valid && file.ContentEncoding.String == "gzip" {
+		gzReader, err := gzip.NewReader(reader)
+		if err != nil {
+			return nil, nil, fmt.Errorf("decompress log file %s: %w", file.ID, err)
+		}
+		defer func() { _ = gzReader.Close() }()
+
+		decompressed := &bytes.Buffer{}
+		if _, err := io.Copy(decompressed, gzReader); err != nil {
+			return nil, nil, fmt.Errorf("read decompressed log file %s: %w", file.ID, err)
+		}
+		reader = decompressed
+	}
+
 	fileData := &bytes.Buffer{}
-	sum, ri, err := sorter.SortLogs(ctx, logger, bytes.NewReader(fd), fileData)
+	sum, ri, err := sorter.SortLogs(ctx, logger, reader, fileData)
 	if err != nil {
-		return nil, ri, fmt.Errorf("sort log file %s: %w", fileID, err)
+		return nil, ri, fmt.Errorf("sort log file %s: %w", file.ID, err)
 	}
 
 	// Help GC
@@ -151,7 +169,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	rdrs := make([]logfile.Reader, len(files))
 	for i, file := range files {
 		var fri *realmclock.Info
-		rdrs[i], fri, err = w.loadAndSortFile(ctx, file.ID)
+		rdrs[i], fri, err = w.loadAndSortFile(ctx, file)
 		if err != nil {
 			jobResult = "failure"
 			return err

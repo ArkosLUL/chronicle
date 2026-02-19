@@ -1,6 +1,7 @@
 package chronicle
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -28,6 +29,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+// UploadInput represents a file to be uploaded, potentially gzip-compressed.
+type UploadInput struct {
+	// Reader provides the raw file data (compressed if IsGzipped is true)
+	Reader io.Reader
+	// IsGzipped indicates whether the data is gzip-compressed
+	IsGzipped bool
+}
 
 const (
 	BucketRaidLogs  = "raidlogs"
@@ -102,7 +111,7 @@ func (c *Chronicle) initStorage(ctx context.Context) error {
 	return nil
 }
 
-func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*database.WoWLogGroup, []database.LogFile, error) {
+func (c *Chronicle) UploadLogs(ctx context.Context, one, two UploadInput) (*database.WoWLogGroup, []database.LogFile, error) {
 	clean := cleanup.New()
 	defer clean.Do()
 
@@ -131,13 +140,20 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 	defer c.clearTemporaryFiles()
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	rdrs := []io.Reader{one, two}
+	inputs := []UploadInput{one, two}
 	hashes := make([]string, 0, len(tmpIDs))
 	tmpFiles := make([]*os.File, 0, len(tmpIDs))
 	dbFiles := make([]database.LogFile, 0, len(tmpIDs))
+	// Track file metadata for each upload
+	type fileMeta struct {
+		originalSize   int64
+		compressedSize *int64 // nil if not compressed
+		contentEnc     *string
+	}
+	fileMetas := make([]fileMeta, 0, len(tmpIDs))
 
 	for i, tmp := range tmpIDs {
-		rdr := rdrs[i]
+		input := inputs[i]
 		tmpPath := filepath.Join(c.TemporaryDirectory, tmp.String())
 		f, err := os.Create(tmpPath)
 		if err != nil {
@@ -148,24 +164,78 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 		tmpFiles = append(tmpFiles, f)
 
 		var h = sha256.New()
-		writer := io.MultiWriter(f, h)
+		var meta fileMeta
 
-		if _, err := io.Copy(writer, rdr); err != nil {
-			return nil, nil, fmt.Errorf("write temp file: %w", err)
-		}
+		if input.IsGzipped {
+			// For gzipped input: store compressed data but compute hash of
+			// decompressed content for deduplication.
 
-		err = tmpFiles[i].Sync()
-		if err != nil {
-			return nil, nil, fmt.Errorf("flush temp file: %w", err)
-		}
+			// Write compressed data to temp file
+			written, err := io.Copy(f, input.Reader)
+			if err != nil {
+				return nil, nil, fmt.Errorf("write compressed temp file: %w", err)
+			}
 
-		// Reset so it can be read back
-		_, err = tmpFiles[i].Seek(0, io.SeekStart)
-		if err != nil {
-			return nil, nil, fmt.Errorf("seek temp file: %w", err)
+			// Sync and seek back
+			if err := f.Sync(); err != nil {
+				return nil, nil, fmt.Errorf("flush temp file: %w", err)
+			}
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				return nil, nil, fmt.Errorf("seek temp file: %w", err)
+			}
+
+			// Decompress from temp file to compute hash of original content
+			gzReader, err := gzip.NewReader(f)
+			if err != nil {
+				return nil, nil, fmt.Errorf("create gzip reader for hashing: %w", err)
+			}
+
+			// Count original bytes while hashing
+			originalCounter := &countingWriter{w: io.Discard}
+			hashWriter := io.MultiWriter(h, originalCounter)
+			if _, err := io.Copy(hashWriter, gzReader); err != nil {
+				_ = gzReader.Close()
+				return nil, nil, fmt.Errorf("hash decompressed content: %w", err)
+			}
+			_ = gzReader.Close()
+
+			// Seek back for storage upload
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				return nil, nil, fmt.Errorf("seek temp file for upload: %w", err)
+			}
+
+			meta.originalSize = originalCounter.count
+			meta.compressedSize = ptr.Ref(written)
+			meta.contentEnc = ptr.Ref("gzip")
+		} else {
+			// Uncompressed: write to file and hash simultaneously
+			writer := io.MultiWriter(f, h)
+			if _, err := io.Copy(writer, input.Reader); err != nil {
+				return nil, nil, fmt.Errorf("write temp file: %w", err)
+			}
+
+			if err := f.Sync(); err != nil {
+				return nil, nil, fmt.Errorf("flush temp file: %w", err)
+			}
+
+			// Get file size
+			info, err := f.Stat()
+			if err != nil {
+				return nil, nil, fmt.Errorf("stat temp file: %w", err)
+			}
+
+			// Reset so it can be read back
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				return nil, nil, fmt.Errorf("seek temp file: %w", err)
+			}
+
+			meta.originalSize = info.Size()
+			meta.compressedSize = nil
+			meta.contentEnc = nil
 		}
 
 		hashes = append(hashes, hex.EncodeToString(h.Sum(nil)))
+		fileMetas = append(fileMetas, meta)
 	}
 
 	if hashes[0] == hashes[1] {
@@ -175,7 +245,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 	var group database.WoWLogGroup
 	// tmpFiles and hashes are the files that were uploaded now on local disk.
 	err = c.Zed.InTx(func(tx *authz.AuthzTX) error {
-		// Insert the log grouo
+		// Insert the log group
 		var err error
 		group, err = tx.InsertWoWLogGroup(ctx, database.InsertWoWLogGroupParams{
 			ID:        uuid.New(),
@@ -189,21 +259,19 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 		// Insert both files
 		for i := range hashes {
-			tmpFile := tmpFiles[i]
-			info, err := tmpFile.Stat()
-			if err != nil {
-				return fmt.Errorf("stat temp file: %w", err)
-			}
+			meta := fileMetas[i]
 
 			dbFile, err := tx.InsertLogFile(ctx, database.InsertLogFileParams{
-				ID:        tmpIDs[i],
-				Owner:     cl.Subject,
-				Hash:      hashes[i],
-				WowLogID:  group.ID,
-				SizeBytes: info.Size(),
-				MimeType:  "text/plain;charset=UTF-8", // logs are only plaintext
-				CreatedAt: database.Timestamptz(now),
-				UpdatedAt: database.Timestamptz(now),
+				ID:                  tmpIDs[i],
+				Owner:               cl.Subject,
+				Hash:                hashes[i],
+				WowLogID:            group.ID,
+				SizeBytes:           meta.originalSize,
+				MimeType:            "text/plain;charset=UTF-8", // logs are only plaintext
+				CompressedSizeBytes: database.Int8(meta.compressedSize),
+				ContentEncoding:     database.Text(meta.contentEnc),
+				CreatedAt:           database.Timestamptz(now),
+				UpdatedAt:           database.Timestamptz(now),
 			})
 			if err != nil {
 				if database.IsUniqueViolation(err, database.UniqueFilesUniqueOwnerHash) {
@@ -229,8 +297,15 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Now store the logs in object storage
 	for i := range tmpIDs {
+		meta := fileMetas[i]
+		contentType := "text/plain;charset=UTF-8"
+		if meta.contentEnc != nil {
+			// Store as gzip with appropriate content type
+			contentType = "application/gzip"
+		}
+
 		storageObject, err := c.Storage.UploadFile(ctx, BucketRaidLogs, c.logPath(tmpIDs[i]), tmpFiles[i], storage.FileOptions{
-			ContentType: ptr.Ref("text/plain;charset=UTF-8"),
+			ContentType: ptr.Ref(contentType),
 		})
 		if err != nil {
 			return nil, nil, fmt.Errorf("upload log file to object storage: %w", err)
@@ -249,6 +324,18 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two io.Reader) (*databa
 
 	// Both files are now fully uploaded in the database and object storage
 	return &group, dbFiles, nil
+}
+
+// countingWriter wraps a writer and counts bytes written
+type countingWriter struct {
+	w     io.Writer
+	count int64
+}
+
+func (c *countingWriter) Write(p []byte) (n int, err error) {
+	n, err = c.w.Write(p)
+	c.count += int64(n)
+	return
 }
 
 func (c *Chronicle) WoWLogGroup(ctx context.Context, groupID uuid.UUID) (*chroniclesdk.WoWLogGroupState, error) {

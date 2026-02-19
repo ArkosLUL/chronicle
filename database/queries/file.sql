@@ -7,6 +7,8 @@ INSERT INTO
     wow_log_id,
     size_bytes,
     mime_type,
+    compressed_size_bytes,
+    content_encoding,
     created_at,
     updated_at
   )
@@ -19,7 +21,9 @@ VALUES
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9,
+    $10
    )
 RETURNING *
 ;
@@ -89,6 +93,8 @@ FROM
         'hash', lf.hash,
         'size_bytes', lf.size_bytes,
         'mime_type', lf.mime_type,
+        'compressed_size_bytes', lf.compressed_size_bytes,
+        'content_encoding', lf.content_encoding,
         'created_at', lf.created_at,
         'updated_at', lf.updated_at
       )
@@ -134,6 +140,8 @@ FROM
               'hash', lf.hash,
               'size_bytes', lf.size_bytes,
               'mime_type', lf.mime_type,
+              'compressed_size_bytes', lf.compressed_size_bytes,
+              'content_encoding', lf.content_encoding,
               'created_at', lf.created_at,
               'updated_at', lf.updated_at
             )
@@ -223,6 +231,8 @@ FROM
         'hash', lf.hash,
         'size_bytes', lf.size_bytes,
         'mime_type', lf.mime_type,
+        'compressed_size_bytes', lf.compressed_size_bytes,
+        'content_encoding', lf.content_encoding,
         'created_at', lf.created_at,
         'updated_at', lf.updated_at,
         'storage_deleted_at', lf.storage_deleted_at
@@ -267,6 +277,8 @@ SELECT
         'hash', json_file.hash,
         'size_bytes', json_file.size_bytes,
         'mime_type', json_file.mime_type,
+        'compressed_size_bytes', json_file.compressed_size_bytes,
+        'content_encoding', json_file.content_encoding,
         'created_at', json_file.created_at,
         'updated_at', json_file.updated_at,
         'storage_deleted_at', json_file.storage_deleted_at

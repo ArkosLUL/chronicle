@@ -77,11 +77,6 @@ func (s *Service) Start(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("provision S3 storage: %w", err)
 		}
-	case "supabase":
-		files, err = storage.NewSupabaseStorage(s.supabaseProjectID, s.supabaseAPIKey)
-		if err != nil {
-			return fmt.Errorf("provision Supabase storage: %w", err)
-		}
 	default:
 		return fmt.Errorf("unknown storage type: %s (valid: local, s3, supabase)", s.storageType)
 	}

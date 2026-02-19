@@ -15,6 +15,7 @@ definition chronicle {
   permission administer   = admin + technical_admin
   permission administer_authz = technical_admin
   permission admin_logs   = administer
+  permission admin_guilds = administer
   permission admin_users  = administer
   permission admin_queues = technical_admin
   permission upload_youtube = administer
@@ -26,6 +27,17 @@ definition river_queue {
   relation chronicle: chronicle
 
   permission access = chronicle->admin_queues
+}
+
+definition guild {
+  relation chronicle: chronicle
+  // TODO: Add more roles
+  relation leader: user
+  relation member: user
+
+  permission admin_guild = leader + chronicle->admin_guilds
+  permission manage_role_leader = chronicle->admin_guilds
+  permission add_member = leader + chronicle->admin_guilds
 }
 
 definition raid_log {

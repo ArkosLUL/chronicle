@@ -47,7 +47,6 @@ type Options struct {
 type Service struct {
 	Providers goth.Providers
 	Store     *sessions.CookieStore
-	Database  database.Store
 	Zed       *authz.Authz
 	Bot       *chroniclebot.Bot
 	logger    *slog.Logger
@@ -101,7 +100,6 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 	return &Service{
 		Providers: providers,
 		Store:     store,
-		Database:  opts.Database,
 		logger:    logger.With(slog.String("service", "auth")),
 		sessions:  sess,
 		Bot:       opts.Bot,

@@ -82,7 +82,6 @@ func (s *Service) Start(ctx context.Context) error {
 	logger := servicelogger.Logger(s.broker)
 	st := servicestorage.Storage(s.broker)
 	bot := servicebot.DiscordBot(s.broker)
-	db := servicedbstore.DatabaseStore(s.broker)
 	que := serviceriver.RiverQueue(s.broker)
 	chron := servicechronicle.Chronicle(s.broker)
 	reg := serviceprometheus.Registry(s.broker)
@@ -135,7 +134,6 @@ func (s *Service) Start(ctx context.Context) error {
 	handler, err := api.New(ctx, api.Options{
 		Logger:     logger,
 		Storage:    st,
-		DB:         db,
 		Chronicle:  chron,
 		RiverQueue: que,
 		Bot:        bot,

@@ -22,7 +22,7 @@ import (
 // @Success 200 {object} chroniclesdk.AdminUsersResponse
 // @Router /api/v1/admin/users [get]
 func (a *API) AdminListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := a.Opts.DB.ListAllUsers(r.Context())
+	users, err := a.Opts.Zed.ListAllUsers(r.Context())
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -78,7 +78,7 @@ func (a *API) SetUserDataLimit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.Opts.DB.SetUserStorageLimit(ctx, database.SetUserStorageLimitParams{
+	_, err = a.Opts.Zed.SetUserStorageLimit(ctx, database.SetUserStorageLimitParams{
 		UserID:          userID,
 		MaxStorageBytes: req.MaxStorageBytes,
 		UpdatedAt:       pgtype.Timestamptz{Time: time.Now(), Valid: true},
@@ -89,7 +89,7 @@ func (a *API) SetUserDataLimit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch updated user to return
-	user, err := a.Opts.DB.GetUserByID(ctx, userID)
+	user, err := a.Opts.Zed.GetUserByID(ctx, userID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -121,7 +121,7 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the user's Discord link
-	link, err := a.Opts.DB.GetUserAuthLinkByUserID(r.Context(), userID)
+	link, err := a.Opts.Zed.GetUserAuthLinkByUserID(r.Context(), userID)
 	if err != nil {
 		httpapi.Write(r.Context(), w, http.StatusNotFound, map[string]string{
 			"message": "User has no linked Discord account",
@@ -153,7 +153,7 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch updated user
-	user, err := a.Opts.DB.GetUserByID(r.Context(), userID)
+	user, err := a.Opts.Zed.GetUserByID(r.Context(), userID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -234,7 +234,7 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 	filterInstanceName := r.URL.Query().Get("instance_name")
 
 	// Fetch total count for pagination (with filters applied)
-	totalCount, err := a.Opts.DB.CountAllWoWLogGroups(ctx, database.CountAllWoWLogGroupsParams{
+	totalCount, err := a.Opts.Zed.CountAllWoWLogGroups(ctx, database.CountAllWoWLogGroupsParams{
 		FilterUserID:       filterUserID,
 		FilterInstanceName: filterInstanceName,
 	})
@@ -244,7 +244,7 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch logs with +1 to detect hasMore
-	logs, err := a.Opts.DB.ListAllWoWLogGroupsWithOwnerPaginated(ctx, database.ListAllWoWLogGroupsWithOwnerPaginatedParams{
+	logs, err := a.Opts.Zed.ListAllWoWLogGroupsWithOwnerPaginated(ctx, database.ListAllWoWLogGroupsWithOwnerPaginatedParams{
 		FilterUserID:       filterUserID,
 		FilterInstanceName: filterInstanceName,
 		SortBy:             sortBy,
@@ -321,7 +321,6 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-
 // AdminListInstanceNames returns all distinct instance names for filtering.
 // @Summary List all instance names
 // @Tags Admin
@@ -330,7 +329,7 @@ func (a *API) AdminListLogs(w http.ResponseWriter, r *http.Request) {
 func (a *API) AdminListInstanceNames(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	names, err := a.Opts.DB.ListDistinctInstanceNames(ctx)
+	names, err := a.Opts.Zed.ListDistinctInstanceNames(ctx)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return

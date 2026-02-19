@@ -9,6 +9,7 @@ import (
 
 	"github.com/Emyrk/chronicle/api/chronauth/claims"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/google/uuid"
 )
 
@@ -36,9 +37,9 @@ func (s *Service) RefreshSession(ctx context.Context, w http.ResponseWriter, r *
 		return fmt.Errorf("provider not found")
 	}
 
-	err := s.Database.InTx(func(tx database.Store) error {
+	err := s.Zed.InTx(func(tx *authz.AuthzTX) error {
 		// 1. Get the existing session from DB
-		session, err := s.Database.GetUserAuthSessionByID(ctx, currentClaims.SessionID)
+		session, err := s.Zed.GetUserAuthSessionByID(ctx, currentClaims.SessionID)
 		if err != nil {
 			return fmt.Errorf("get session: %w", err)
 		}
@@ -56,7 +57,7 @@ func (s *Service) RefreshSession(ctx context.Context, w http.ResponseWriter, r *
 
 		newToken, err := provider.RefreshToken(session.RefreshToken)
 		if err != nil {
-			_, err := s.Database.UpdateUserAuthSessionTokens(ctx, database.UpdateUserAuthSessionTokensParams{
+			_, err := s.Zed.UpdateUserAuthSessionTokens(ctx, database.UpdateUserAuthSessionTokensParams{
 				ID:                session.ID,
 				AccessToken:       session.AccessToken,
 				AccessTokenSecret: session.AccessTokenSecret,
@@ -70,7 +71,7 @@ func (s *Service) RefreshSession(ctx context.Context, w http.ResponseWriter, r *
 			return fmt.Errorf("refresh token: %w", err)
 		}
 
-		newSession, err := s.Database.UpdateUserAuthSessionTokens(ctx, database.UpdateUserAuthSessionTokensParams{
+		newSession, err := s.Zed.UpdateUserAuthSessionTokens(ctx, database.UpdateUserAuthSessionTokensParams{
 			ID:                session.ID,
 			AccessToken:       newToken.AccessToken,
 			AccessTokenSecret: "", // What is this?

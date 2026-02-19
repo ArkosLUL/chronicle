@@ -8,16 +8,17 @@ import (
 	"net/url"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/guildapi"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chroniclebot"
-	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
+	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 	context2 "github.com/gorilla/context"
 	"github.com/prometheus/client_golang/prometheus"
@@ -27,7 +28,6 @@ type Options struct {
 	Logger     *slog.Logger
 	Storage    storage.ObjectStorage
 	Zed        *authz.Authz
-	DB         database.Store
 	Chronicle  *chronicle.Chronicle
 	RiverQueue *riverqueue.Queues
 	Bot        *chroniclebot.Bot
@@ -57,7 +57,6 @@ func New(ctx context.Context, opts Options) (*API, error) {
 	service, err := chronauth.New(ctx, opts.Logger, chronauth.Options{
 		AccessURL: opts.AccessURL,
 		DevServer: opts.DevOAuth,
-		Database:  opts.DB,
 		Discord:   opts.Discord,
 		Bot:       opts.Bot,
 		Zed:       opts.Zed,
@@ -117,9 +116,6 @@ func (api *API) Routes() chi.Router {
 			r.Get("/logs", api.AdminListLogs)
 			r.Get("/instance-names", api.AdminListInstanceNames)
 
-			// Guild member management (admin only)
-			r.Post("/guilds/{guildID}/members", api.AdminAddGuildMember)
-			r.Delete("/guilds/{guildID}/members/{userID}", api.AdminRemoveGuildMember)
 		})
 
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
@@ -130,12 +126,25 @@ func (api *API) Routes() chi.Router {
 		r.Route("/guilds", func(r chi.Router) {
 			r.Get("/", api.ListGuilds)
 			r.Route("/{guildID}", func(r chi.Router) {
+				r.Use(httpmw.GuildIDMiddleware(api.Zed))
 				r.Get("/", api.GetGuild)
 				r.Get("/page", api.GetGuildPage)
 
 				// Protected guild page editing routes
 				r.Group(func(r chi.Router) {
-					r.Use(api.Auth.Authenticated(false))
+					r.Use(
+						api.Auth.Authenticated(false),
+						// TODO: Make different perms for managing members vs editing page content
+						guildapi.Can(api.Zed, func(on *policy.ObjGuild) func(sub *policy.ObjUser) rel.Relationship {
+							return on.CanAdmin_guild_User
+						}),
+					)
+					r.Route("/members", func(r chi.Router) {
+						// Guild member management (admin only)
+						r.Post("/", api.AdminAddGuildMember)
+						r.Delete("/{userID}", api.AdminRemoveGuildMember)
+					})
+
 					r.Put("/page", api.UpsertGuildPage)
 					r.Post("/page/tabs", api.CreateGuildPageTab)
 					r.Put("/page/tabs/reorder", api.ReorderGuildPageTabs)
@@ -179,7 +188,7 @@ func (api *API) Routes() chi.Router {
 				r.Group(func(r chi.Router) {
 					r.Route("/instances", func(r chi.Router) {
 						r.Route("/{instance_id}", func(r chi.Router) {
-							r.Use(httpmw.InstanceIDMiddleware(api.Opts.DB))
+							r.Use(httpmw.InstanceIDMiddleware(api.Opts.Zed))
 							r.Get("/events/{type}", api.InstanceEvents)
 							r.Get("/", api.Instance)
 

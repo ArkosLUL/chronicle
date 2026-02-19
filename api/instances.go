@@ -24,7 +24,7 @@ func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
 func (api *API) InstanceEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	inst := httpmw.Instance(ctx)
-	db := api.Opts.DB
+	db := api.Opts.Zed
 	eventType := chi.URLParam(r, "type")
 
 	evts, err := db.InstanceEvent(ctx, database.InstanceEventParams{
@@ -55,7 +55,7 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	inst := httpmw.Instance(ctx)
 
-	db := api.Opts.DB
+	db := api.Opts.Zed
 
 	encounters, err := db.EncountersByInstanceID(ctx, inst.ID)
 	if err != nil {
@@ -107,7 +107,7 @@ func (api *API) Instance(w http.ResponseWriter, r *http.Request) {
 func (api *API) PostInstanceYoutube(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	inst := httpmw.Instance(ctx)
-	db := api.Opts.DB
+	db := api.Opts.Zed
 
 	var req chroniclesdk.Video
 	if !httpapi.Read(ctx, w, r, &req) {
@@ -139,7 +139,7 @@ func (api *API) PostInstanceYoutube(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetInstanceYoutube(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	inst := httpmw.Instance(ctx)
-	db := api.Opts.DB
+	db := api.Opts.Zed
 
 	data, err := db.GetInstanceYoutubeData(ctx, inst.ID)
 	if err != nil {

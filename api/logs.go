@@ -23,7 +23,7 @@ func (api *API) WoWLogGroups(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uc := chronauth.MustAuthenticatedClaims(ctx)
 
-	groups, err := api.Opts.DB.GetWoWLogGroupsByOwner(ctx, uc.Subject)
+	groups, err := api.Opts.Zed.GetWoWLogGroupsByOwner(ctx, uc.Subject)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -44,7 +44,7 @@ func (api *API) WoWLogGroupByFile(w http.ResponseWriter, r *http.Request) {
 	fileHash := chi.URLParam(r, "file-hash")
 
 	// Look up the log file by hash to get the log group ID
-	file, err := api.Opts.DB.GetFileByHash(ctx, fileHash)
+	file, err := api.Opts.Zed.GetFileByHash(ctx, fileHash)
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
 			Message: "Log file not found",
@@ -144,7 +144,7 @@ func (api *API) WoWLogFileDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get file metadata
-	file, err := api.Opts.DB.GetLogFile(ctx, fileID)
+	file, err := api.Opts.Zed.GetLogFile(ctx, fileID)
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
 			Message: "File not found",
@@ -183,4 +183,3 @@ func (api *API) WoWLogFileDownload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(contents)
 }
-

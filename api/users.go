@@ -18,7 +18,7 @@ func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch user storage info
-	user, err := a.Opts.DB.GetUserByID(ctx, state.Claims.Subject)
+	user, err := a.Opts.Zed.GetUserByID(ctx, state.Claims.Subject)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return

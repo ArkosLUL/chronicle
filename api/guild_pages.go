@@ -9,7 +9,10 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -21,7 +24,7 @@ func (api *API) ListGuilds(w http.ResponseWriter, r *http.Request) {
 	limit := 50
 	offset := 0
 
-	guilds, err := api.Opts.DB.ListGuildsWithPages(ctx, database.ListGuildsWithPagesParams{
+	guilds, err := api.Opts.Zed.ListGuildsWithPages(ctx, database.ListGuildsWithPagesParams{
 		Column1: search, // Empty string handled in SQL with IS NULL check
 		Limit:   int32(limit),
 		Offset:  int32(offset),
@@ -41,7 +44,7 @@ func (api *API) ListGuilds(w http.ResponseWriter, r *http.Request) {
 	for _, g := range guilds {
 		canEdit := false
 		if userID != uuid.Nil {
-			_, err := api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
+			_, err := api.Opts.Zed.GetGuildMember(ctx, database.GetGuildMemberParams{
 				GuildID: g.ID,
 				UserID:  userID,
 			})
@@ -67,6 +70,7 @@ func (api *API) ListGuilds(w http.ResponseWriter, r *http.Request) {
 // GetGuild returns info about a specific guild
 func (api *API) GetGuild(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	guild := httpmw.Guild(ctx)
 	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
@@ -75,26 +79,14 @@ func (api *API) GetGuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guild, err := api.Opts.DB.GetGuildByID(ctx, guildID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
-				Message: "Guild not found",
-			})
-			return
-		}
-		httpapi.InternalServerError(w, err)
-		return
-	}
-
 	// Check if page exists
-	_, pageErr := api.Opts.DB.GetGuildPage(ctx, guildID)
+	_, pageErr := api.Opts.Zed.GetGuildPage(ctx, guildID)
 	hasPage := pageErr == nil
 
 	// Check if user can edit
 	canEdit := false
 	if claims, ok := chronauth.AuthenticatedClaims(ctx); ok {
-		_, err := api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
+		_, err := api.Opts.Zed.GetGuildMember(ctx, database.GetGuildMemberParams{
 			GuildID: guildID,
 			UserID:  claims.Subject,
 		})
@@ -114,15 +106,9 @@ func (api *API) GetGuild(w http.ResponseWriter, r *http.Request) {
 // GetGuildPage returns the full page configuration for a guild
 func (api *API) GetGuildPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
+	guild := httpmw.Guild(ctx)
 
-	page, err := api.Opts.DB.GetFullGuildPage(ctx, guildID)
+	page, err := api.Opts.Zed.GetFullGuildPage(ctx, guild.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
@@ -135,17 +121,13 @@ func (api *API) GetGuildPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if user can edit
-	canEdit := false
-	if claims, ok := chronauth.AuthenticatedClaims(ctx); ok {
-		_, err := api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
-			GuildID: guildID,
-			UserID:  claims.Subject,
-		})
-		canEdit = err == nil
-	}
+	// TODO: This should be an auth check call
+	actor, _ := authz.ActorFromContext(ctx)
+	ok, err := api.Zed.CheckOne(ctx, nil, policy.New().Guild(guild.ID).CanAdmin_guild_User(actor))
+	canEdit := ok && err == nil
 
 	// Load tabs and panels
-	tabs, err := api.Opts.DB.ListGuildPageTabs(ctx, page.ID)
+	tabs, err := api.Opts.Zed.ListGuildPageTabs(ctx, page.ID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -153,7 +135,7 @@ func (api *API) GetGuildPage(w http.ResponseWriter, r *http.Request) {
 
 	sdkTabs := make([]chroniclesdk.GuildPageTab, 0, len(tabs))
 	for _, t := range tabs {
-		panels, err := api.Opts.DB.ListGuildPagePanels(ctx, t.ID)
+		panels, err := api.Opts.Zed.ListGuildPagePanels(ctx, t.ID)
 		if err != nil {
 			httpapi.InternalServerError(w, err)
 			return
@@ -216,26 +198,7 @@ func (api *API) GetPublicGuildPage(w http.ResponseWriter, r *http.Request) {
 // UpsertGuildPage creates or updates a guild page
 func (api *API) UpsertGuildPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
-
-	// Check if user is a member
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	_, err = api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
-		GuildID: guildID,
-		UserID:  claims.Subject,
-	})
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
-			Message: "You are not authorized to edit this guild page",
-		})
-		return
-	}
+	guild := httpmw.Guild(ctx)
 
 	var req chroniclesdk.UpdateGuildPageRequest
 	if !httpapi.Read(ctx, w, r, &req) {
@@ -248,8 +211,8 @@ func (api *API) UpsertGuildPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := api.Opts.DB.UpsertGuildPage(ctx, database.UpsertGuildPageParams{
-		GuildID: guildID,
+	page, err := api.Opts.Zed.UpsertGuildPage(ctx, database.UpsertGuildPageParams{
+		GuildID: guild.ID,
 		Theme:   themeJSON,
 	})
 	if err != nil {
@@ -266,29 +229,10 @@ func (api *API) UpsertGuildPage(w http.ResponseWriter, r *http.Request) {
 // CreateGuildPageTab creates a new tab for a guild page
 func (api *API) CreateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
-
-	// Check authorization
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	_, err = api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
-		GuildID: guildID,
-		UserID:  claims.Subject,
-	})
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
-			Message: "You are not authorized to edit this guild page",
-		})
-		return
-	}
+	guild := httpmw.Guild(ctx)
 
 	// Get the page
-	page, err := api.Opts.DB.GetGuildPage(ctx, guildID)
+	page, err := api.Opts.Zed.GetGuildPage(ctx, guild.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
@@ -306,14 +250,14 @@ func (api *API) CreateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get current max sort order
-	tabs, err := api.Opts.DB.ListGuildPageTabs(ctx, page.ID)
+	tabs, err := api.Opts.Zed.ListGuildPageTabs(ctx, page.ID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 	sortOrder := len(tabs)
 
-	tab, err := api.Opts.DB.InsertGuildPageTab(ctx, database.InsertGuildPageTabParams{
+	tab, err := api.Opts.Zed.InsertGuildPageTab(ctx, database.InsertGuildPageTabParams{
 		PageID:    page.ID,
 		Label:     req.Label,
 		Slug:      req.Slug,
@@ -336,13 +280,6 @@ func (api *API) CreateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 // UpdateGuildPageTab updates a tab and its panels
 func (api *API) UpdateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
 	tabID, err := uuid.Parse(chi.URLParam(r, "tabID"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
@@ -351,21 +288,8 @@ func (api *API) UpdateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check authorization
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	_, err = api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
-		GuildID: guildID,
-		UserID:  claims.Subject,
-	})
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
-			Message: "You are not authorized to edit this guild page",
-		})
-		return
-	}
-
 	// Get the existing tab
-	tab, err := api.Opts.DB.GetGuildPageTab(ctx, tabID)
+	tab, err := api.Opts.Zed.GetGuildPageTab(ctx, tabID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
@@ -383,7 +307,7 @@ func (api *API) UpdateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update the tab
-	updatedTab, err := api.Opts.DB.UpdateGuildPageTab(ctx, database.UpdateGuildPageTabParams{
+	updatedTab, err := api.Opts.Zed.UpdateGuildPageTab(ctx, database.UpdateGuildPageTabParams{
 		ID:        tabID,
 		Label:     req.Label,
 		Slug:      tab.Slug, // Keep original slug
@@ -395,7 +319,7 @@ func (api *API) UpdateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete existing panels and recreate
-	if err := api.Opts.DB.DeleteGuildPagePanelsByTab(ctx, tabID); err != nil {
+	if err := api.Opts.Zed.DeleteGuildPagePanelsByTab(ctx, tabID); err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
@@ -411,7 +335,7 @@ func (api *API) UpdateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 			positionJSON = []byte(`{"x":0,"y":0,"w":6,"h":2}`)
 		}
 
-		panel, err := api.Opts.DB.InsertGuildPagePanel(ctx, database.InsertGuildPagePanelParams{
+		panel, err := api.Opts.Zed.InsertGuildPagePanel(ctx, database.InsertGuildPagePanelParams{
 			TabID:     tabID,
 			PanelType: p.PanelType,
 			Config:    configJSON,
@@ -442,13 +366,6 @@ func (api *API) UpdateGuildPageTab(w http.ResponseWriter, r *http.Request) {
 // DeleteGuildPageTab deletes a tab
 func (api *API) DeleteGuildPageTab(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
 	tabID, err := uuid.Parse(chi.URLParam(r, "tabID"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
@@ -457,20 +374,7 @@ func (api *API) DeleteGuildPageTab(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check authorization
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	_, err = api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
-		GuildID: guildID,
-		UserID:  claims.Subject,
-	})
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
-			Message: "You are not authorized to edit this guild page",
-		})
-		return
-	}
-
-	if err := api.Opts.DB.DeleteGuildPageTab(ctx, tabID); err != nil {
+	if err := api.Opts.Zed.DeleteGuildPageTab(ctx, tabID); err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
@@ -483,26 +387,6 @@ func (api *API) DeleteGuildPageTab(w http.ResponseWriter, r *http.Request) {
 // ReorderGuildPageTabs reorders tabs
 func (api *API) ReorderGuildPageTabs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
-
-	// Check authorization
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	_, err = api.Opts.DB.GetGuildMember(ctx, database.GetGuildMemberParams{
-		GuildID: guildID,
-		UserID:  claims.Subject,
-	})
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
-			Message: "You are not authorized to edit this guild page",
-		})
-		return
-	}
 
 	var req chroniclesdk.ReorderTabsRequest
 	if !httpapi.Read(ctx, w, r, &req) {
@@ -511,11 +395,11 @@ func (api *API) ReorderGuildPageTabs(w http.ResponseWriter, r *http.Request) {
 
 	// Update each tab's sort order
 	for i, tabID := range req.TabIDs {
-		tab, err := api.Opts.DB.GetGuildPageTab(ctx, tabID)
+		tab, err := api.Opts.Zed.GetGuildPageTab(ctx, tabID)
 		if err != nil {
 			continue
 		}
-		_, err = api.Opts.DB.UpdateGuildPageTab(ctx, database.UpdateGuildPageTabParams{
+		_, err = api.Opts.Zed.UpdateGuildPageTab(ctx, database.UpdateGuildPageTabParams{
 			ID:        tabID,
 			Label:     tab.Label,
 			Slug:      tab.Slug,
@@ -535,21 +419,15 @@ func (api *API) ReorderGuildPageTabs(w http.ResponseWriter, r *http.Request) {
 // AdminAddGuildMember adds a member to a guild (admin only)
 func (api *API) AdminAddGuildMember(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
+	guild := httpmw.Guild(ctx)
 
 	var req chroniclesdk.AddGuildMemberRequest
 	if !httpapi.Read(ctx, w, r, &req) {
 		return
 	}
 
-	member, err := api.Opts.DB.InsertGuildMember(ctx, database.InsertGuildMemberParams{
-		GuildID: guildID,
+	member, err := api.Opts.Zed.InsertGuildMember(ctx, database.InsertGuildMemberParams{
+		GuildID: guild.ID,
 		UserID:  req.UserID,
 	})
 	if err != nil {
@@ -567,13 +445,7 @@ func (api *API) AdminAddGuildMember(w http.ResponseWriter, r *http.Request) {
 // AdminRemoveGuildMember removes a member from a guild (admin only)
 func (api *API) AdminRemoveGuildMember(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guildID, err := uuid.Parse(chi.URLParam(r, "guildID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid guild ID",
-		})
-		return
-	}
+	guild := httpmw.Guild(ctx)
 	userID, err := uuid.Parse(chi.URLParam(r, "userID"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
@@ -582,8 +454,9 @@ func (api *API) AdminRemoveGuildMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := api.Opts.DB.DeleteGuildMember(ctx, database.DeleteGuildMemberParams{
-		GuildID: guildID,
+	// TODO: Cannot remove members that are also admins - need to check if the user is an admin before allowing removal
+	if err := api.Opts.Zed.DeleteGuildMember(ctx, database.DeleteGuildMemberParams{
+		GuildID: guild.ID,
 		UserID:  userID,
 	}); err != nil {
 		httpapi.InternalServerError(w, err)

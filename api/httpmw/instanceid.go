@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -26,7 +27,7 @@ func InstanceByID(ctx context.Context) bool {
 	return id
 }
 
-func InstanceIDMiddleware(db database.Store) func(next http.Handler) http.Handler {
+func InstanceIDMiddleware(db *authz.Authz) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			instanceIDStr := chi.URLParam(r, "instance_id")

@@ -97,7 +97,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	var rows []database.ListRecentInstancesRow
 	if playerName != "" {
 		// Use the player search query
-		playerRows, err := api.Opts.DB.ListRecentInstancesByPlayer(ctx, database.ListRecentInstancesByPlayerParams{
+		playerRows, err := api.Opts.Zed.ListRecentInstancesByPlayer(ctx, database.ListRecentInstancesByPlayerParams{
 			PlayerName:   "%" + playerName + "%",
 			InstanceName: instanceName,
 			RealmID:      realmID,
@@ -121,7 +121,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 			rows = append(rows, database.ListRecentInstancesRow(pr))
 		}
 	} else {
-		rows, err = api.Opts.DB.ListRecentInstances(ctx, database.ListRecentInstancesParams{
+		rows, err = api.Opts.Zed.ListRecentInstances(ctx, database.ListRecentInstancesParams{
 			InstanceName: instanceName,
 			RealmID:      realmID,
 			CursorTime:   pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
@@ -175,7 +175,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Fetch encounter summaries for this instance
-		encounters, err := api.Opts.DB.GetEncounterSummariesByInstanceID(ctx, row.ID)
+		encounters, err := api.Opts.Zed.GetEncounterSummariesByInstanceID(ctx, row.ID)
 		if err == nil {
 			inst.Encounters = make([]chroniclesdk.RecentEncounter, 0, len(encounters))
 			for _, enc := range encounters {

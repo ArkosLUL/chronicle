@@ -3,6 +3,7 @@ package servicewowdb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -64,7 +65,7 @@ func (s *Service) Start(ctx context.Context) error {
 	s.router = chi.NewRouter()
 	s.setupRoutes()
 	logger.Info("WoWDB service started",
-		slog.F("spell_count", s.db.TotalSpells()),
+		slog.F("spell_count", fmt.Sprintf("%d", s.db.TotalSpells())),
 	)
 
 	return nil

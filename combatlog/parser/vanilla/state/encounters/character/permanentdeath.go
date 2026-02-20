@@ -1,6 +1,9 @@
 package character
 
-import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+import (
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
+)
 
 type PermanentDeath struct {
 	Character
@@ -17,10 +20,15 @@ func (c *PermanentDeath) Process(m messages.Message) error {
 	if c.dead {
 		return nil
 	}
-	return c.Character.Process(m)
-}
 
-func (c *PermanentDeath) Died(reason string, m messages.Message) {
-	c.dead = true
-	c.Character.Died(reason, m)
+	err := c.Character.Process(m)
+	if err != nil {
+		return err
+	}
+
+	if p, ok := c.CurrentPeriod(); ok && p.EndState == period.EndStateSlain {
+		c.dead = true
+	}
+
+	return nil
 }

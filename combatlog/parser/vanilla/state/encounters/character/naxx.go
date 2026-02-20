@@ -24,6 +24,7 @@ func NewGrobbulus(id guid.GUID, all *Characters) (Character, bool) {
 	if entry, ok := id.GetEntry(); !ok || entry != 15931 {
 		return nil, false
 	}
+
 	return NewPermanentDeath(NewCommonCharacter(id, all)), true
 }
 

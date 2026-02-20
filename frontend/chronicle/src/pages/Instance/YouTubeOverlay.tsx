@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Minimize2, Maximize2, Move, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/Switch/Switch";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { VideoTimestamp, WoWEncounterWithHostiles } from "@/api/typesGenerated";
@@ -214,11 +215,9 @@ function videoTimeToCombatLogTime(
  */
 function findEncounterAtTime(
   combatLogTime: Date,
-  encounters: readonly WoWEncounterWithHostiles[],
-  _debug = false
+  encounters: readonly WoWEncounterWithHostiles[]
 ): WoWEncounterWithHostiles | null {
   const time = combatLogTime.getTime();
-  
   for (const encounter of encounters) {
     const start = new Date(encounter.start_time).getTime();
     const end = new Date(encounter.end_time).getTime();
@@ -256,6 +255,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const [isResizing, setIsResizing] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const [pauseAtEnd, setPauseAtEnd] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -373,15 +373,15 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
       playerRef.current.seekTo(videoTime, true);
     }
 
-    // Calculate pause time if pauseTime is set
-    if (pauseTime) {
+    // Calculate pause time if pauseTime is set AND pauseAtEnd is enabled
+    if (pauseTime && pauseAtEnd) {
       const pauseSeconds = isoToTimeOfDaySeconds(pauseTime);
       const pauseVideoTime = calculateVideoTime(pauseSeconds, timestamps);
       pauseVideoTimeRef.current = pauseVideoTime;
     } else {
       pauseVideoTimeRef.current = null;
     }
-  }, [targetTime, pauseTime, timestamps, playerReady]);
+  }, [targetTime, pauseTime, timestamps, playerReady, pauseAtEnd]);
 
   // Monitor video time, update current time state, and auto-pause at encounter end
   // When sync mode is enabled, poll faster (100ms) and report time to sync context
@@ -409,16 +409,10 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
       
       // Auto-select encounter if video is within one (works regardless of sync mode)
       if (combatLogTime && encounters && onEncounterChange) {
-        const encounter = findEncounterAtTime(combatLogTime, encounters, false);
+        const encounter = findEncounterAtTime(combatLogTime, encounters);
         if (encounter && encounter.id !== currentVideoEncounterRef.current) {
-          console.log('[YT Debug] ENCOUNTER CHANGE:', {
-            from: currentVideoEncounterRef.current,
-            to: encounter.id,
-            name: encounter.name,
-          });
           currentVideoEncounterRef.current = encounter.id;
           onEncounterChange(encounter.id);
-          console.log('[YT Debug] onEncounterChange called');
         }
       }
       
@@ -520,9 +514,11 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
     const seekTime = encounterVideoTimes.start + percent * encounterVideoTimes.duration;
     
     playerRef.current.seekTo(seekTime, true);
-    // Re-enable auto-pause when user seeks within encounter
-    pauseVideoTimeRef.current = encounterVideoTimes.end;
-  }, [encounterVideoTimes]);
+    // Re-enable auto-pause when user seeks within encounter (if pauseAtEnd is enabled)
+    if (pauseAtEnd) {
+      pauseVideoTimeRef.current = encounterVideoTimes.end;
+    }
+  }, [encounterVideoTimes, pauseAtEnd]);
 
   // Calculate seek bar progress
   const seekBarProgress = useMemo(() => {
@@ -558,16 +554,39 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 border-b border-border shrink-0">
             <span className="text-sm font-medium">YouTube</span>
             <div className="flex items-center gap-2">
+              {/* Pause at End toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                    <span>Pause at End</span>
+                    <Switch 
+                      size="sm" 
+                      checked={pauseAtEnd} 
+                      onCheckedChange={setPauseAtEnd} 
+                    />
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="z-[10001]">
+                  <p>Pause video when the selected encounter ends</p>
+                </TooltipContent>
+              </Tooltip>
               {/* Live Sync toggle */}
               {syncMode && (
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                  <span>Live Sync</span>
-                  <Switch 
-                    size="sm" 
-                    checked={syncEnabled} 
-                    onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
-                  />
-                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                      <span>Live Sync</span>
+                      <Switch 
+                        size="sm" 
+                        checked={syncEnabled} 
+                        onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
+                      />
+                    </label>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="z-[10001]">
+                    <p>Sync panel data with video playback position</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
               <button
                 onClick={onClose}
@@ -631,16 +650,39 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           <span className="truncate max-w-[150px]">YouTube</span>
         </div>
         <div className="flex items-center gap-0.5">
+          {/* Pause at End toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
+                <span>Pause at End</span>
+                <Switch 
+                  size="sm" 
+                  checked={pauseAtEnd} 
+                  onCheckedChange={setPauseAtEnd} 
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="z-[10001]">
+              <p>Pause video when the selected encounter ends</p>
+            </TooltipContent>
+          </Tooltip>
           {/* Live Sync toggle */}
           {syncMode && (
-            <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
-              <span>Live Sync</span>
-              <Switch 
-                size="sm" 
-                checked={syncEnabled} 
-                onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
-              />
-            </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
+                  <span>Live Sync</span>
+                  <Switch 
+                    size="sm" 
+                    checked={syncEnabled} 
+                    onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
+                  />
+                </label>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="z-[10001]">
+                <p>Sync panel data with video playback position</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           <Button
             variant="ghost"

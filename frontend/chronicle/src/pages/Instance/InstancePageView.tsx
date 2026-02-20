@@ -1213,6 +1213,21 @@ export function InstancePageView({
     onSelectEncounters?.(ids);
   }, [setUrlEncounterIds, onSelectEncounters]);
   
+  // Sync external selection prop to URL state when it changes
+  // This allows parent components (like YouTube overlay) to control selection
+  useEffect(() => {
+    if (_selectedEncounterIds && _selectedEncounterIds.length > 0) {
+      // Only sync if different from current URL state
+      const currentIds = viewState.encounters;
+      const propsIds = _selectedEncounterIds;
+      const isDifferent = propsIds.length !== currentIds.length || 
+        propsIds.some(id => !currentIds.includes(id));
+      if (isDifferent) {
+        setUrlEncounterIds(propsIds);
+      }
+    }
+  }, [_selectedEncounterIds, viewState.encounters, setUrlEncounterIds]);
+  
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   

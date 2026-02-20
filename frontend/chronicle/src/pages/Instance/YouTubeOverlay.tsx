@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/Switch/Switch";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import type { VideoTimestamp } from "@/api/typesGenerated";
+import type { VideoTimestamp, WoWEncounterWithHostiles } from "@/api/typesGenerated";
 import type { YTPlayer } from "@/types/youtube";
 import { useSyncModeContextOptional } from "./SyncModeContext";
 
@@ -17,6 +17,10 @@ interface YouTubeOverlayProps {
   /** ISO timestamp to pause at (e.g., encounter end_time) */
   pauseTime?: string;
   onClose: () => void;
+  /** List of encounters for auto-selection during video playback */
+  encounters?: readonly WoWEncounterWithHostiles[];
+  /** Callback when video enters a new encounter boundary */
+  onEncounterChange?: (encounterId: string) => void;
 }
 
 function parseYouTubeVideoId(url: string): string | null {
@@ -183,20 +187,49 @@ function videoTimeToCombatLogTime(
     }
   }
 
-  // Handle day wraparound (serverSeconds can be negative or > 86400)
-  while (serverSeconds < 0) serverSeconds += 86400;
-  while (serverSeconds >= 86400) serverSeconds -= 86400;
+  // Handle day wraparound - track how many days we've crossed
+  let daysOffset = 0;
+  while (serverSeconds < 0) {
+    serverSeconds += 86400;
+    daysOffset -= 1;
+  }
+  while (serverSeconds >= 86400) {
+    serverSeconds -= 86400;
+    daysOffset += 1;
+  }
 
   // Reconstruct full Date using reference date
   const result = new Date(referenceDate);
   result.setUTCHours(0, 0, 0, 0);
+  result.setUTCDate(result.getUTCDate() + daysOffset);  // Apply day offset
   result.setUTCSeconds(Math.floor(serverSeconds));
   result.setUTCMilliseconds(Math.round((serverSeconds % 1) * 1000));
 
   return result;
 }
 
-export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, onClose }: YouTubeOverlayProps) {
+/**
+ * Find the encounter that contains the given combat log timestamp.
+ * Returns null if the timestamp is outside all encounters.
+ */
+function findEncounterAtTime(
+  combatLogTime: Date,
+  encounters: readonly WoWEncounterWithHostiles[],
+  _debug = false
+): WoWEncounterWithHostiles | null {
+  const time = combatLogTime.getTime();
+  
+  for (const encounter of encounters) {
+    const start = new Date(encounter.start_time).getTime();
+    const end = new Date(encounter.end_time).getTime();
+    if (time >= start && time <= end) {
+      return encounter;
+    }
+  }
+  return null;
+}
+
+export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, onClose, encounters, onEncounterChange }: YouTubeOverlayProps) {
   const isMobile = useIsMobile();
   const syncMode = useSyncModeContextOptional();
   
@@ -230,6 +263,8 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const pauseVideoTimeRef = useRef<number | null>(null);
+  // Track the current encounter based on video position (for auto-selection)
+  const currentVideoEncounterRef = useRef<string | null>(null);
 
   const videoId = parseYouTubeVideoId(videoUrl);
   
@@ -362,11 +397,28 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
       const currentTime = playerRef.current.getCurrentTime();
       setCurrentVideoTime(currentTime);
       
+      // Convert video time to combat log time (needed for both sync mode and encounter selection)
+      const combatLogTime = timestamps?.length 
+        ? videoTimeToCombatLogTime(currentTime, timestamps, referenceDate)
+        : null;
+      
       // Report video time to sync mode if enabled
-      if (isSyncEnabled && timestamps?.length && syncMode) {
-        const combatLogTime = videoTimeToCombatLogTime(currentTime, timestamps, referenceDate);
-        if (combatLogTime) {
-          syncMode.setTimestamp(combatLogTime);
+      if (isSyncEnabled && combatLogTime && syncMode) {
+        syncMode.setTimestamp(combatLogTime);
+      }
+      
+      // Auto-select encounter if video is within one (works regardless of sync mode)
+      if (combatLogTime && encounters && onEncounterChange) {
+        const encounter = findEncounterAtTime(combatLogTime, encounters, false);
+        if (encounter && encounter.id !== currentVideoEncounterRef.current) {
+          console.log('[YT Debug] ENCOUNTER CHANGE:', {
+            from: currentVideoEncounterRef.current,
+            to: encounter.id,
+            name: encounter.name,
+          });
+          currentVideoEncounterRef.current = encounter.id;
+          onEncounterChange(encounter.id);
+          console.log('[YT Debug] onEncounterChange called');
         }
       }
       
@@ -379,7 +431,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
 
     const interval = setInterval(checkTime, pollInterval);
     return () => clearInterval(interval);
-  }, [playerReady, syncMode, timestamps, referenceDate]);
+  }, [playerReady, syncMode, timestamps, referenceDate, encounters, onEncounterChange]);
 
   // Drag handlers
   const handleDragStart = useCallback((e: React.MouseEvent) => {

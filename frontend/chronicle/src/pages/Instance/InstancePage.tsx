@@ -129,6 +129,7 @@ function InstancePageInner({
   youtubeData,
   selectedEncounterTimes,
   logDetailUrl,
+  rawEncounters,
 }: {
   instance: Instance;
   selectedEncounterIds: string[];
@@ -136,7 +137,9 @@ function InstancePageInner({
   youtubeData: { url: string; results: readonly import("@/api/typesGenerated").VideoTimestamp[] } | null | undefined;
   selectedEncounterTimes: { start: string | undefined; end: string | undefined };
   logDetailUrl?: string;
+  rawEncounters?: readonly import("@/api/typesGenerated").WoWEncounterWithHostiles[];
 }) {
+  console.log('[InstancePageInner] Rendering with selectedEncounterIds:', selectedEncounterIds);
   const [showYoutube, setShowYoutube] = useState(false);
   const [showSyncPanel, setShowSyncPanel] = useState(false);
   const { setEncounterBounds, enabled: syncEnabled } = useSyncModeContext();
@@ -200,6 +203,12 @@ function InstancePageInner({
           targetTime={selectedEncounterTimes.start}
           pauseTime={selectedEncounterTimes.end}
           onClose={() => setShowYoutube(false)}
+          encounters={rawEncounters}
+          onEncounterChange={(id) => {
+            console.log('[InstancePage] onEncounterChange received:', id);
+            onSelectEncounters([id]);
+            console.log('[InstancePage] onSelectEncounters called with:', [id]);
+          }}
         />
       )}
     </>
@@ -247,6 +256,11 @@ export function InstancePage() {
 
   // Use user selection if set, otherwise use default (all)
   const selectedEncounterIds = useMemo(() => {
+    console.log('[InstancePage] Computing selectedEncounterIds:', {
+      userSelectedEncounterIds,
+      defaultEncounterIdsLength: defaultEncounterIds.length,
+      result: userSelectedEncounterIds !== null ? userSelectedEncounterIds : 'using defaults',
+    });
     if (userSelectedEncounterIds !== null) return userSelectedEncounterIds;
     return defaultEncounterIds;
   }, [userSelectedEncounterIds, defaultEncounterIds]);
@@ -312,6 +326,7 @@ export function InstancePage() {
           youtubeData={youtubeData}
           selectedEncounterTimes={selectedEncounterTimes}
           logDetailUrl={logDetailUrl}
+          rawEncounters={apiInstance?.encounters}
         />
       </InstanceEventsProvider>
     </SyncModeProvider>

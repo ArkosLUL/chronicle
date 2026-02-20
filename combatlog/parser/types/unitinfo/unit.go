@@ -33,7 +33,7 @@ type Info struct {
 	CanCooperate bool
 	Owner        *guid.GUID
 	Buffs        []Buff
-	Level        int
+	Level        int32
 	Challenges   []string
 }
 

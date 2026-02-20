@@ -82,6 +82,19 @@ func (m *Matched) Guid() guid.GUID {
 	return parseMatch(m, guid.FromString)
 }
 
+func (m *Matched) OptionalGuid() *guid.GUID {
+	return parseMatch(m, func(s string) (*guid.GUID, error) {
+		if s == "" || s == "nil" {
+			return nil, nil
+		}
+		id, err := guid.FromString(s)
+		if err != nil {
+			return nil, err
+		}
+		return &id, nil
+	})
+}
+
 func (m *Matched) HitInfo() HitInfo {
 	v := m.Uint64()
 	return HitInfo(v)
@@ -111,7 +124,7 @@ func (m *Matched) Int32s() []int32 {
 			all = append(all, int32(v))
 		}
 
-		return all
+		return all, nil
 	})
 }
 

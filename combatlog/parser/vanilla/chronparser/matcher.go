@@ -2,12 +2,44 @@ package chronparser
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
+
+func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	id := m.Guid()
+	isPlayer := m.Int64() == 1
+	name := m.String()
+	canCooperate := m.Int64() == 1
+	owner := m.OptionalGuid()
+	buffs, err := unitinfo.ParseBuffs(m.String())
+	if err != nil {
+		return nil, fmt.Errorf("unit buffs: %w", err)
+	}
+	level := m.Int64()
+	_ = m.skip // TODO: Challenges
+	_ = m.skip // Max health
+
+	return set(&messages.Unit{
+		MessageBase: messages.Base(ts),
+		Info: unitinfo.Info{
+			Seen:         ts,
+			Guid:         id,
+			IsPlayer:     isPlayer,
+			Name:         name,
+			CanCooperate: canCooperate,
+			Owner:        owner,
+			Buffs:        buffs,
+			Level:        int32(level),
+			Challenges:   nil,
+		},
+	})
+}
 
 // 1771542038|SWING|0xF130002C3600BE05|0x000000000001C80A|52|2|1|1|0|0|0
 func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {

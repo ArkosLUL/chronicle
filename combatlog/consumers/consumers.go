@@ -10,6 +10,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 )
 
 type Consumer interface {
@@ -55,7 +56,7 @@ func (c Consumers) Advance(p *vanilla.Parser) ([]messages.Message, error) {
 	msgs, err := p.Advance()
 	c.time["parser"] += time.Since(now)
 	if err != nil {
-		if vanilla.IsFatalError(err) {
+		if parseerrors.IsFatalError(err) {
 			return nil, fmt.Errorf("fatal parser error: %w", err)
 		}
 		if errors.Is(err, io.EOF) {

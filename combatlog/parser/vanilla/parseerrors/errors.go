@@ -1,4 +1,4 @@
-package vanilla
+package parseerrors
 
 import "errors"
 

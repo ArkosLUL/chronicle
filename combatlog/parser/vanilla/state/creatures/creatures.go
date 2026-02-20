@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/critters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -53,7 +54,7 @@ func (s *Creatures) Consume(ctx context.Context, p *vanilla.Parser) error {
 		}
 		msgs, err := p.Advance()
 		if err != nil {
-			if vanilla.IsFatalError(err) {
+			if parseerrors.IsFatalError(err) {
 				return fmt.Errorf("fatal parser error: %w", err)
 			}
 			if errors.Is(err, io.EOF) {

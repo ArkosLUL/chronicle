@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitdied"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 type ActivityEventType string
@@ -302,6 +303,7 @@ type Heal struct {
 	Caster    guid.GUID
 	Target    guid.GUID
 	SpellName string
+	SpellData     *chrondbc.Spell
 	Amount    int32
 	HitType   types.HitType
 }

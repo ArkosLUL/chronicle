@@ -1709,7 +1709,8 @@ SELECT
     COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
-    g.name as guild_name
+    g.name as guild_name,
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -1749,20 +1750,21 @@ type ListRecentInstancesParams struct {
 }
 
 type ListRecentInstancesRow struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	Slug         pgtype.Text        `db:"slug" json:"slug"`
-	Name         string             `db:"name" json:"name"`
-	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
-	RealmName    string             `db:"realm_name" json:"realm_name"`
-	UploaderID   uuid.UUID          `db:"uploader_id" json:"uploader_id"`
-	UploaderName string             `db:"uploader_name" json:"uploader_name"`
-	UploadedAt   pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
-	PlayerCount  int64              `db:"player_count" json:"player_count"`
-	BossCount    int64              `db:"boss_count" json:"boss_count"`
-	BossKills    int64              `db:"boss_kills" json:"boss_kills"`
-	DurationMs   float64            `db:"duration_ms" json:"duration_ms"`
-	GuildID      uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	GuildName    pgtype.Text        `db:"guild_name" json:"guild_name"`
+	ID              uuid.UUID          `db:"id" json:"id"`
+	Slug            pgtype.Text        `db:"slug" json:"slug"`
+	Name            string             `db:"name" json:"name"`
+	RealmID         uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName       string             `db:"realm_name" json:"realm_name"`
+	UploaderID      uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName    string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt      pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	PlayerCount     int64              `db:"player_count" json:"player_count"`
+	BossCount       int64              `db:"boss_count" json:"boss_count"`
+	BossKills       int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs      float64            `db:"duration_ms" json:"duration_ms"`
+	GuildID         uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName       pgtype.Text        `db:"guild_name" json:"guild_name"`
+	HasYoutubeVideo bool               `db:"has_youtube_video" json:"has_youtube_video"`
 }
 
 func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error) {
@@ -1795,6 +1797,7 @@ func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInst
 			&i.DurationMs,
 			&i.GuildID,
 			&i.GuildName,
+			&i.HasYoutubeVideo,
 		); err != nil {
 			return nil, err
 		}
@@ -1822,7 +1825,8 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
-    g.name as guild_name
+    g.name as guild_name,
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
@@ -1864,20 +1868,21 @@ type ListRecentInstancesByPlayerParams struct {
 }
 
 type ListRecentInstancesByPlayerRow struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	Slug         pgtype.Text        `db:"slug" json:"slug"`
-	Name         string             `db:"name" json:"name"`
-	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
-	RealmName    string             `db:"realm_name" json:"realm_name"`
-	UploaderID   uuid.UUID          `db:"uploader_id" json:"uploader_id"`
-	UploaderName string             `db:"uploader_name" json:"uploader_name"`
-	UploadedAt   pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
-	PlayerCount  int64              `db:"player_count" json:"player_count"`
-	BossCount    int64              `db:"boss_count" json:"boss_count"`
-	BossKills    int64              `db:"boss_kills" json:"boss_kills"`
-	DurationMs   float64            `db:"duration_ms" json:"duration_ms"`
-	GuildID      uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	GuildName    pgtype.Text        `db:"guild_name" json:"guild_name"`
+	ID              uuid.UUID          `db:"id" json:"id"`
+	Slug            pgtype.Text        `db:"slug" json:"slug"`
+	Name            string             `db:"name" json:"name"`
+	RealmID         uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName       string             `db:"realm_name" json:"realm_name"`
+	UploaderID      uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName    string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt      pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	PlayerCount     int64              `db:"player_count" json:"player_count"`
+	BossCount       int64              `db:"boss_count" json:"boss_count"`
+	BossKills       int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs      float64            `db:"duration_ms" json:"duration_ms"`
+	GuildID         uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName       pgtype.Text        `db:"guild_name" json:"guild_name"`
+	HasYoutubeVideo bool               `db:"has_youtube_video" json:"has_youtube_video"`
 }
 
 func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error) {
@@ -1911,6 +1916,7 @@ func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRe
 			&i.DurationMs,
 			&i.GuildID,
 			&i.GuildName,
+			&i.HasYoutubeVideo,
 		); err != nil {
 			return nil, err
 		}

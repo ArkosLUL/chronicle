@@ -151,17 +151,18 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	instances := make([]chroniclesdk.RecentInstance, 0, len(rows))
 	for _, row := range rows {
 		inst := chroniclesdk.RecentInstance{
-			ID:           row.ID,
-			Slug:         row.Slug.String,
-			Name:         row.Name,
-			RealmID:      row.RealmID,
-			RealmName:    row.RealmName,
-			UploaderID:   row.UploaderID,
-			UploaderName: row.UploaderName,
-			UploadedAt:   row.UploadedAt.Time,
-			PlayerCount:  row.PlayerCount,
-			BossCount:    row.BossCount,
-			BossKills:    row.BossKills,
+			ID:              row.ID,
+			Slug:            row.Slug.String,
+			Name:            row.Name,
+			RealmID:         row.RealmID,
+			RealmName:       row.RealmName,
+			UploaderID:      row.UploaderID,
+			UploaderName:    row.UploaderName,
+			UploadedAt:      row.UploadedAt.Time,
+			PlayerCount:     row.PlayerCount,
+			BossCount:       row.BossCount,
+			BossKills:       row.BossKills,
+			HasYoutubeVideo: row.HasYoutubeVideo,
 		}
 		if row.DurationMs != 0 {
 			d := row.DurationMs

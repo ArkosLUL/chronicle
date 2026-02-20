@@ -11,6 +11,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/stretchr/testify/require"
@@ -143,7 +144,7 @@ fixtureLoop:
 				if err == io.EOF {
 					break
 				}
-				if vanilla.IsFatalError(err) {
+				if parseerrors.IsFatalError(err) {
 					b.Logf("skipping %s: fatal parse error: %v", fixture.name, err)
 					continue fixtureLoop
 				}
@@ -169,7 +170,7 @@ fixtureLoop:
 							break
 						}
 						// Non-fatal errors are expected for some lines
-						if vanilla.IsFatalError(err) {
+						if parseerrors.IsFatalError(err) {
 							b.Fatal(err)
 						}
 					}

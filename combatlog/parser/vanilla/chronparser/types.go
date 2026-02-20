@@ -64,7 +64,7 @@ func HitType(info HitInfo, state VictimState) types.HitType {
 	case info.Has(HITINFO_NOACTION):
 		// TODO: ?
 	case info.Has(HITINFO_AFFECTS_VICTIM):
-		// TODO: ?
+		t |= types.HitTypeHit
 	default:
 		t |= types.HitTypeHit
 	}

@@ -127,7 +127,7 @@ func ParseUnitInfo(ri *realmclock.Info, content string) (Info, error) {
 		if err != nil {
 			return Info{}, fmt.Errorf("invalid level %q: %w", parts[7], err)
 		}
-		info.Level = level
+		info.Level = int32(level)
 	}
 	if len(parts) >= 9 {
 		challenges := strings.Split(parts[8], ",")

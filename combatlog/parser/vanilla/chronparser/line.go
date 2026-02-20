@@ -27,6 +27,10 @@ func ParseLine(content string) (time.Time, string, *Matched, error) {
 		return time.Now(), "", nil, err
 	}
 
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+
 	return time.UnixMilli(unixMilli), parts[1], &Matched{
 		parts: parts[2:],
 		index: 0,

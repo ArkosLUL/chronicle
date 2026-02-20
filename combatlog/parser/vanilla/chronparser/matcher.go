@@ -7,9 +7,34 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
+
+func (p *Parser) zoneInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	name := m.String()
+	instanceID := uint32(m.Uint64())
+	inInstance := m.Int64() == 1
+	instanceType := m.String() // none, party, raid, pvp
+	isGhost := m.Int64() == 1
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	return set(&messages.Zone{
+		MessageBase: messages.Base(ts),
+		Zone: zone.Zone{
+			Seen:         ts,
+			Name:         name,
+			InstanceID:   instanceID,
+			Ghost:        isGhost,
+			InstanceType: instanceType,
+			IsInstance:   inInstance,
+		},
+	})
+}
 
 func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	id := m.Guid()
@@ -24,6 +49,10 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	level := m.Int64()
 	_ = m.skip // TODO: Challenges
 	_ = m.skip // Max health
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
 
 	return set(&messages.Unit{
 		MessageBase: messages.Base(ts),
@@ -48,17 +77,13 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 	amount := int32(m.Int64())
 	info := m.HitInfo()
 	victimState := VictimState(m.Int64())
-	subDamage := m.Int32s()
+	_ = m.Int64() // Number of damage components probably does not matter
 	blocked := int32(m.Int64())
 	absorbed := int32(m.Int64())
 	resisted := int32(m.Int64())
 
 	if err := m.Error(); err != nil {
 		return nil, err
-	}
-
-	for _, d := range subDamage {
-		amount += d
 	}
 
 	return set(&messages.Damage{
@@ -71,7 +96,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 		School:          types.PhysicalSchool,
 		Trailer:         Trailer(blocked, absorbed, resisted),
 		EnvironmentType: nil,
-	}, nil)
+	})
 }
 
 // 1771542037|HEAL|0x000000000001C80A|0x000000000001C80A|27805|507|0|0
@@ -108,6 +133,21 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 		SpellData:   spell,
 		Amount:      amount,
 		HitType:     hit,
+	})
+}
+
+func (p *Parser) slain(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	id := m.Guid()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	return set(&messages.Slain{
+		MessageBase: messages.Base(ts),
+		Victim:      id,
+		Killer:      nil,
+		Attribution: nil,
 	})
 }
 

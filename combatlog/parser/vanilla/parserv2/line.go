@@ -60,6 +60,7 @@ func (m *Matched) skip() {
 	m.index++
 }
 
+// nolint: unused
 func (m *Matched) peek() string {
 	if m.index >= len(m.parts) {
 		return ""

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -20,7 +19,6 @@ type Parser struct {
 	scanner *bufio.Scanner
 
 	lastDate time.Time
-	init     sync.Once
 }
 
 func New(logger *slog.Logger, r io.Reader, wowDB *gamedb.WoWDB) *Parser {
@@ -68,10 +66,4 @@ func (p *Parser) Advance(ctx context.Context) (_ []messages.Message, final error
 	}
 
 	return messages.Unparsed(ts, next), nil
-}
-
-func (p *Parser) consumeHeader() {
-	p.init.Do(func() {
-
-	})
 }

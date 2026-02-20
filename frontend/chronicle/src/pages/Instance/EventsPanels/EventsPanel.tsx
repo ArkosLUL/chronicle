@@ -2,7 +2,7 @@
  * EventsPanel - Container component for event aggregation panels
  */
 
-import { useState } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { HelpCircle, Construction } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,14 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
 
 export type EventsPanelType = keyof typeof PANELS;
 
+/**
+ * Get localStorage key for a panel's toggle state.
+ * Each panel type has its own independent toggle state.
+ */
+function getToggleStorageKey(panelType: string): string {
+  return `panel-toggle:${panelType}`;
+}
+
 export interface EventsPanelProps {
   panelType: EventsPanelType;
   onPanelTypeChange: (type: EventsPanelType) => void;
@@ -103,16 +111,21 @@ export function EventsPanel({
   panelOption,
   onPanelOptionChange,
 }: EventsPanelProps) {
-  const [checkboxChecked, setCheckboxChecked] = useState(false);
   const isMobile = useIsMobile();
   const panel = PANELS[panelType];
   
+  // Determine checkbox label first (needed for storage key)
+  const checkboxLabel = panel.checkboxLabel || "Per second";
+  const showCheckbox = panel.supportsPerSecond || panel.checkboxLabel;
+  
+  // Persist toggle state to localStorage per panel type
+  const [checkboxChecked, setCheckboxChecked] = useLocalStorage(
+    getToggleStorageKey(panelType),
+    false
+  );
+  
   // Only show explainer button on desktop, if hints are enabled, and if panel has an explainer
   const showExplainerButton = showHints && !isMobile && hasExplainer(panelType) && onExplainerClick;
-  
-  // Determine if checkbox should be shown and its label
-  const showCheckbox = panel.supportsPerSecond || panel.checkboxLabel;
-  const checkboxLabel = panel.checkboxLabel || "Per second";
 
   // Only run aggregation if panel doesn't manage its own
   const {

@@ -1,4 +1,4 @@
-package chronparser
+package parserv2
 
 import (
 	"bufio"
@@ -63,6 +63,8 @@ func (p *Parser) Advance(ctx context.Context) (_ []messages.Message, final error
 		return p.heal(ctx, ts, m)
 	case "DEATH":
 		return p.slain(ctx, ts, m)
+	case "SPELL_DMG":
+		return p.spell_dmg(ctx, ts, m)
 	}
 
 	return messages.Unparsed(ts, next), nil

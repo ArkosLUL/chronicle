@@ -1,4 +1,4 @@
-package chronparser
+package parserv2
 
 import (
 	"context"
@@ -66,7 +66,7 @@ func TestParserMessages(t *testing.T) {
 
 	t.Run("SwingCrit", func(t *testing.T) {
 		t.Parallel()
-		// HitInfo=130 (HITINFO_AFFECTS_VICTIM | HITINFO_CRITICALHIT) + VictimState=1 = Crit
+		// SwingHitInfo=130 (HITINFO_AFFECTS_VICTIM | HITINFO_CRITICALHIT) + VictimState=1 = Crit
 		testCase(t,
 			"1771542038|SWING|0xF130002C3600BE05|0x000000000001C80A|100|130|1|0|0|0|0",
 			&messages.Damage{

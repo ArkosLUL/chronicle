@@ -21,7 +21,7 @@ type WoWDB struct {
 	ctx        context.Context
 	spellFiles *os.File
 	spells     *chrondbc.SpellsDBC
-	spellLRU   *lru.Cache[int, *chrondbc.Spell]
+	spellLRU   *lru.Cache[chrondbc.SpellID, *chrondbc.Spell]
 	// spellNames is a READONLY map
 	spellNames map[string][]int32
 }
@@ -40,7 +40,7 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 
 	// Responses are already cached by the client browser, so not sure how useful
 	// this really is.
-	c, err := lru.New[int, *chrondbc.Spell](50)
+	c, err := lru.New[chrondbc.SpellID, *chrondbc.Spell](50)
 	if err != nil {
 		return nil, fmt.Errorf("lru: %w", err)
 	}
@@ -86,11 +86,11 @@ func loadSpellName(ctx context.Context, spDBC *chrondbc.SpellsDBC) (map[string][
 	return spellNames, err
 }
 
-func (w *WoWDB) Spell(id int) (*chrondbc.Spell, error) {
+func (w *WoWDB) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	if sp, ok := w.spellLRU.Get(id); ok {
 		return sp, nil
 	}
-	sp, err := w.spells.ID(id)
+	sp, err := w.spells.ID(int(id))
 	if err != nil {
 		return nil, err
 	}

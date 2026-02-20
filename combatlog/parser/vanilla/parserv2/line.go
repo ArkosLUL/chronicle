@@ -1,4 +1,4 @@
-package chronparser
+package parserv2
 
 import (
 	"errors"
@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/database/gamedb"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 type Matched struct {
@@ -99,9 +101,9 @@ func (m *Matched) OptionalGuid() *guid.GUID {
 	})
 }
 
-func (m *Matched) HitInfo() HitInfo {
+func (m *Matched) SwingHitInfo() SwingHitInfo {
 	v := m.Uint64()
-	return HitInfo(v)
+	return SwingHitInfo(v)
 }
 
 func (m *Matched) Uint64() uint64 {
@@ -134,4 +136,15 @@ func (m *Matched) Int32s() []int32 {
 
 func (m *Matched) String() string {
 	return m.pop()
+}
+
+func (m *Matched) DBCSpellByID(db *gamedb.WoWDB) *chrondbc.Spell {
+	return parseMatch(m, func(s string) (*chrondbc.Spell, error) {
+		id, err := strconv.ParseInt(s, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+
+		return db.Spell(chrondbc.SpellID(int32(id)))
+	})
 }

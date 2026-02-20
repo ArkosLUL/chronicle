@@ -1,4 +1,4 @@
-package chronparser
+package parserv2
 
 import (
 	"context"
@@ -75,7 +75,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 	caster := m.Guid()
 	target := m.Guid()
 	amount := int32(m.Int64())
-	info := m.HitInfo()
+	info := m.SwingHitInfo()
 	victimState := VictimState(m.Int64())
 	_ = m.Int64() // Number of damage components probably does not matter
 	blocked := int32(m.Int64())
@@ -103,7 +103,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	target := m.Guid()
 	caster := m.Guid()
-	spellID := int(m.Int64())
+	spell := m.DBCSpellByID(p.wowDB)
 	amount := int32(m.Int64())
 	crit := m.Int64() == 1
 	periodic := m.Int64() == 1
@@ -120,11 +120,6 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 		return nil, err
 	}
 
-	spell, err := p.wowDB.Spell(spellID)
-	if err != nil {
-		return nil, err
-	}
-
 	return set(&messages.Heal{
 		MessageBase: messages.Base(ts),
 		Caster:      caster,
@@ -133,6 +128,49 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 		SpellData:   spell,
 		Amount:      amount,
 		HitType:     hit,
+	})
+}
+
+// 1771564201000|SPELL_DMG|0xF130002C3800949D|0x000000000001C7AC|22482|67|0,0,0|0|0|2,0,0,0
+func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	target := m.Guid()
+	caster := m.Guid()
+	spell := m.DBCSpellByID(p.wowDB)
+	amount := int32(m.Int64())
+	mitigated := m.Int32s() // 3 values: blocked, absorbed, resisted
+	hitInfo := m.Int64()
+	school := m.Int64()   // TODO: Map to types.School
+	effects := m.Int32s() // effect1, effect2, effect3, auraType
+
+	// TODO: Periodic? Absorbed, resisted?
+	hit := types.HitTypeHit
+	if hitInfo == 2 {
+		hit = types.HitTypeCrit
+	}
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	if len(mitigated) != 3 {
+		return nil, fmt.Errorf("expected 3 mitigated values, got %d", len(mitigated))
+	}
+
+	if len(effects) != 4 {
+		return nil, fmt.Errorf("expected 4 effect values, got %d", len(effects))
+	}
+	var _ = school
+
+	return set(&messages.Damage{
+		MessageBase:     messages.Base(ts),
+		SpellName:       ptr.Ref(spell.Name()),
+		Caster:          ptr.Ref(caster),
+		Target:          target,
+		HitType:         hit,
+		Amount:          amount,
+		School:          0,
+		Trailer:         nil,
+		EnvironmentType: nil,
 	})
 }
 

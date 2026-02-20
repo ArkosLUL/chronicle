@@ -24,6 +24,7 @@
 - Guild attendance tracking.
 - Some discord cli commands
 - Guild page can show demand for class/spec combinations
+- A rogue's distract ability should not cause a start of activity.
 
 # Synthetic Messages
 

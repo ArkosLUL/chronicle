@@ -1,4 +1,4 @@
-package chronparser
+package parserv2
 
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
@@ -6,28 +6,28 @@ import (
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
-type HitInfo bitmask.Bitmask32
+type SwingHitInfo bitmask.Bitmask32
 
-func (h HitInfo) Has(flag HitInfo) bool {
+func (h SwingHitInfo) Has(flag SwingHitInfo) bool {
 	return h&flag == flag
 }
 
 const (
-	HITINFO_NORMALSWING     HitInfo = 0
-	HITINFO_UNK0            HitInfo = 1
-	HITINFO_AFFECTS_VICTIM  HitInfo = 2
-	HITINFO_LEFTSWING       HitInfo = 4 //       -- Off-hand attack
-	HITINFO_UNK3            HitInfo = 8
-	HITINFO_MISS            HitInfo = 16
-	HITINFO_ABSORB          HitInfo = 32
-	HITINFO_RESIST          HitInfo = 64
-	HITINFO_CRITICALHIT     HitInfo = 128
-	HITINFO_UNK8            HitInfo = 256
-	HITINFO_UNK9            HitInfo = 8192
-	HITINFO_GLANCING        HitInfo = 16384
-	HITINFO_CRUSHING        HitInfo = 32768
-	HITINFO_NOACTION        HitInfo = 65536
-	HITINFO_SWINGNOHITSOUND HitInfo = 524288
+	HITINFO_NORMALSWING     SwingHitInfo = 0
+	HITINFO_UNK0            SwingHitInfo = 1
+	HITINFO_AFFECTS_VICTIM  SwingHitInfo = 2
+	HITINFO_LEFTSWING       SwingHitInfo = 4 //       -- Off-hand attack
+	HITINFO_UNK3            SwingHitInfo = 8
+	HITINFO_MISS            SwingHitInfo = 16
+	HITINFO_ABSORB          SwingHitInfo = 32
+	HITINFO_RESIST          SwingHitInfo = 64
+	HITINFO_CRITICALHIT     SwingHitInfo = 128
+	HITINFO_UNK8            SwingHitInfo = 256
+	HITINFO_UNK9            SwingHitInfo = 8192
+	HITINFO_GLANCING        SwingHitInfo = 16384
+	HITINFO_CRUSHING        SwingHitInfo = 32768
+	HITINFO_NOACTION        SwingHitInfo = 65536
+	HITINFO_SWINGNOHITSOUND SwingHitInfo = 524288
 )
 
 type VictimState uint16
@@ -44,7 +44,7 @@ const (
 	VICTIMSTATE_DEFLECTS   VictimState = 8
 )
 
-func HitType(info HitInfo, state VictimState) types.HitType {
+func HitType(info SwingHitInfo, state VictimState) types.HitType {
 	// TODO: Handle blocks, evades, immunities, deflections
 	var t types.HitType
 	switch {

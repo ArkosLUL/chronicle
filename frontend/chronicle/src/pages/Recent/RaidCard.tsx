@@ -97,6 +97,7 @@ interface RaidCardProps {
 
 export function RaidCard({ instance }: RaidCardProps) {
   const [imageError, setImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const uploadedAt = new Date(instance.uploaded_at);
   const backgroundImage = getInstanceBackground(instance.name);
   
@@ -112,7 +113,11 @@ export function RaidCard({ instance }: RaidCardProps) {
 
   return (
     <Link to={instanceUrl}>
-      <div className="relative h-full rounded-lg overflow-hidden group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl">
+      <div 
+        className="relative h-full rounded-lg overflow-hidden group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         {/* Solid color fallback background */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
         
@@ -145,6 +150,53 @@ export function RaidCard({ instance }: RaidCardProps) {
           <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5 bg-red-600/75 backdrop-blur-sm text-white/85 px-2 py-1 rounded shadow-lg" title="Has YouTube video">
             <Youtube className="h-4 w-4" />
             <span className="text-xs font-semibold">Video</span>
+          </div>
+        )}
+        
+        {/* Animated DPS bars - only shown on hover for cards with video */}
+        {instance.has_youtube_video && isHovered && (
+          <div className="absolute bottom-20 left-4 right-16 z-5 space-y-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {(() => {
+              // Use uploaded_at as seed for deterministic randomization
+              const seed = new Date(instance.uploaded_at).getTime();
+              const seededRandom = (i: number) => {
+                const x = Math.sin(seed + i * 9999) * 10000;
+                return x - Math.floor(x);
+              };
+              
+              const colors = [
+                'bg-red-500',      // Warrior
+                'bg-purple-500',   // Warlock  
+                'bg-orange-500',   // Druid
+                'bg-blue-400',     // Mage
+                'bg-green-500',    // Hunter
+              ];
+              
+              // Shuffle colors based on seed
+              const shuffledColors = [...colors].sort((_, __, idx = 0) => seededRandom(idx++) - 0.5);
+              
+              // Generate widths: start at 85-100, decrease by 8-18 each
+              const widths: number[] = [];
+              let currentWidth = 85 + seededRandom(100) * 15; // 85-100
+              for (let i = 0; i < 5; i++) {
+                widths.push(Math.round(currentWidth));
+                currentWidth -= 8 + seededRandom(200 + i) * 10; // decrease by 8-18
+              }
+              
+              return widths.map((width, i) => ({ width: Math.max(width, 20), color: shuffledColors[i] }));
+            })().map((bar, i) => (
+              <div 
+                key={i}
+                className={`h-2 ${bar.color} rounded-sm origin-left`}
+                style={{ 
+                  width: `${bar.width}%`,
+                  transform: 'scaleX(0)',
+                  opacity: 0,
+                  animation: `barPulse 4s ease-in-out infinite`,
+                  animationDelay: `${i * 150}ms`,
+                }}
+              />
+            ))}
           </div>
         )}
         

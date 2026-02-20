@@ -28,6 +28,14 @@
   50% { opacity: 0.6; }
 }
 
+/* Animated DPS bar pulse effect for raid cards with video */
+@keyframes barPulse {
+  0% { opacity: 0; transform: scaleX(0); }
+  25% { opacity: 0.4; transform: scaleX(1); }
+  50%, 100% { opacity: 0.2; transform: scaleX(0.95); }
+  75% { opacity: 0.4; transform: scaleX(1); }
+}
+
 .magic-particles .particle {
   position: absolute;
   width: var(--size, 3px);

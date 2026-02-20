@@ -139,7 +139,8 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	amount := int32(m.Int64())
 	mitigated := m.Int32s() // 3 values: blocked, absorbed, resisted
 	hitInfo := m.Int64()
-	school := m.Int64()   // TODO: Map to types.School
+	schoolV := m.Int64() // TODO: Map to types.School
+
 	effects := m.Int32s() // effect1, effect2, effect3, auraType
 
 	// TODO: Periodic? Absorbed, resisted?
@@ -159,7 +160,6 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	if len(effects) != 4 {
 		return nil, fmt.Errorf("expected 4 effect values, got %d", len(effects))
 	}
-	var _ = school
 
 	return set(&messages.Damage{
 		MessageBase:     messages.Base(ts),
@@ -168,7 +168,7 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		Target:          target,
 		HitType:         hit,
 		Amount:          amount,
-		School:          0,
+		School:          School(int32(schoolV)),
 		Trailer:         nil,
 		EnvironmentType: nil,
 	})

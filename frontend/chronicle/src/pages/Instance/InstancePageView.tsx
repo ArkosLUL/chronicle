@@ -283,7 +283,7 @@ function EncounterSidebar({
   const isGroupExpanded = (groupName: string) => 
     manualExpandedGroup === groupName || groupsWithSelectedTrash.includes(groupName);
 
-  const handleClick = (id: string, e: React.MouseEvent) => {
+  const handleClick = (id: string, e: React.MouseEvent | React.KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey) {
       onSelect(id, 'toggle');
     } else {
@@ -397,11 +397,19 @@ function EncounterSidebar({
             const isWipe = encounter.kill_type === "wipe";
             
             return (
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 key={encounter.id}
                 onClick={(e) => handleClick(encounter.id, e)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleClick(encounter.id, e);
+                  }
+                }}
                 className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150",
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150 cursor-pointer",
                   isSelected
                     ? "bg-primary/90 text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
                     : "hover:bg-accent/50 hover:translate-x-0.5",
@@ -434,7 +442,7 @@ function EncounterSidebar({
                     <Copy className="h-3 w-3" />
                   </button>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
@@ -447,11 +455,19 @@ function EncounterSidebar({
           const isWipe = encounter.kill_type === "wipe";
           
           return (
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               key={encounter.id}
               onClick={(e) => handleClick(encounter.id, e)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClick(encounter.id, e);
+                }
+              }}
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150",
+                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150 cursor-pointer",
                 isSelected
                   ? "bg-primary/90 text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
                   : "hover:bg-accent/50 hover:translate-x-0.5",
@@ -481,7 +497,7 @@ function EncounterSidebar({
                   <Copy className="h-3 w-3" />
                 </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -525,11 +541,19 @@ function EncounterSidebar({
                       {group.encounters.map((encounter, idx) => {
                         const isSelected = selectedIds.includes(encounter.id);
                         return (
-                          <button
+                          <div
+                            role="button"
+                            tabIndex={0}
                             key={encounter.id}
                             onClick={(e) => handleClick(encounter.id, e)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleClick(encounter.id, e);
+                              }
+                            }}
                             className={cn(
-                              "w-full flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-all duration-150",
+                              "w-full flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-all duration-150 cursor-pointer",
                               isSelected
                                 ? "bg-primary/90 text-primary-foreground border-l-2 border-l-primary-foreground/70"
                                 : "hover:bg-accent/50 hover:translate-x-0.5 opacity-60"
@@ -558,7 +582,7 @@ function EncounterSidebar({
                                 <Copy className="h-3 w-3" />
                               </button>
                             )}
-                          </button>
+                          </div>
                         );
                       })}
                     </div>

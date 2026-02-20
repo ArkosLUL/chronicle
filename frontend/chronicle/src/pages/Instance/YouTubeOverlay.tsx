@@ -258,16 +258,18 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const enableSync = syncMode?.enable;
   const disableSync = syncMode?.disable;
   
-  // Register YouTube as external driver when mounted, clear on unmount
+  // Register YouTube as external driver and enable sync mode when mounted
   // Use setExternalDriver directly as dependency (stable from useCallback) rather than
   // syncMode object which changes on every timestamp update
   const setExternalDriver = syncMode?.setExternalDriver;
   useEffect(() => {
     if (setExternalDriver) {
       setExternalDriver('youtube');
+      // Enable sync mode by default when YouTube overlay opens
+      enableSync?.();
       return () => setExternalDriver('none');
     }
-  }, [setExternalDriver]);
+  }, [setExternalDriver, enableSync]);
   
   const [position, setPosition] = useState({ x: 20, y: 80 });
   const [size, setSize] = useState({ width: 480, height: 270 });

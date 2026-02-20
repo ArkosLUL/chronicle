@@ -134,3 +134,24 @@ func Absorbed(absorbed int32) types.TrailerEntry {
 		HitType: types.HitTypePartialAbsorb,
 	}
 }
+
+func School(s int32) types.School {
+	switch s {
+	case 0:
+		return types.PhysicalSchool
+	case 1:
+		return types.HolySchool
+	case 2:
+		return types.FireSchool
+	case 3:
+		return types.NatureSchool
+	case 4:
+		return types.FrostSchool
+	case 5:
+		return types.ShadowSchool
+	case 6:
+		return types.ArcaneSchool
+	default:
+		return types.NoneSchool
+	}
+}

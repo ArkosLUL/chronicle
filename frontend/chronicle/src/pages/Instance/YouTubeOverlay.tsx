@@ -199,6 +199,27 @@ function videoTimeToCombatLogTime(
     daysOffset += 1;
   }
 
+  // Handle midnight crossing relative to referenceDate
+  // If referenceDate is just after midnight (e.g., 00:30) but serverSeconds is 
+  // near end of day (e.g., 23:40), we crossed midnight backward → subtract a day
+  // If referenceDate is just before midnight (e.g., 23:30) but serverSeconds is
+  // near start of day (e.g., 00:20), we crossed midnight forward → add a day
+  const refTimeOfDay = 
+    referenceDate.getUTCHours() * 3600 + 
+    referenceDate.getUTCMinutes() * 60 + 
+    referenceDate.getUTCSeconds();
+  
+  const SIX_HOURS = 6 * 3600;
+  const EIGHTEEN_HOURS = 18 * 3600;
+  
+  if (refTimeOfDay < SIX_HOURS && serverSeconds > EIGHTEEN_HOURS) {
+    // Reference is early morning, calculated is late night → went backward over midnight
+    daysOffset -= 1;
+  } else if (refTimeOfDay > EIGHTEEN_HOURS && serverSeconds < SIX_HOURS) {
+    // Reference is late night, calculated is early morning → went forward over midnight
+    daysOffset += 1;
+  }
+
   // Reconstruct full Date using reference date
   const result = new Date(referenceDate);
   result.setUTCHours(0, 0, 0, 0);
@@ -265,6 +286,10 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const pauseVideoTimeRef = useRef<number | null>(null);
   // Track the current encounter based on video position (for auto-selection)
   const currentVideoEncounterRef = useRef<string | null>(null);
+  // Ref to checkTime function so onStateChange can call it immediately after seek
+  const checkTimeRef = useRef<(() => void) | null>(null);
+  // Track whether the last encounter change came from video position (to avoid seek loop)
+  const encounterChangeFromVideoRef = useRef(false);
 
   const videoId = parseYouTubeVideoId(videoUrl);
   
@@ -316,6 +341,14 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
         onReady: () => {
           setPlayerReady(true);
         },
+        onStateChange: (event: { data: number }) => {
+          // When video starts playing (including after seek), immediately check time
+          // YT.PlayerState.PLAYING = 1
+          if (event.data === 1) {
+            // Use setTimeout to ensure getCurrentTime() returns the new position
+            setTimeout(() => checkTimeRef.current?.(), 0);
+          }
+        },
       },
     });
   }, [videoId]);
@@ -366,6 +399,21 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   useEffect(() => {
     if (!playerReady || !playerRef.current || !targetTime || !timestamps?.length) return;
 
+    // Skip seeking if the encounter change came from video position (avoid seek loop)
+    // This happens when user seeks in video → encounter auto-selected → targetTime changes
+    if (encounterChangeFromVideoRef.current) {
+      encounterChangeFromVideoRef.current = false;
+      // Still update pause time if needed
+      if (pauseTime && pauseAtEnd) {
+        const pauseSeconds = isoToTimeOfDaySeconds(pauseTime);
+        const pauseVideoTime = calculateVideoTime(pauseSeconds, timestamps);
+        pauseVideoTimeRef.current = pauseVideoTime;
+      } else {
+        pauseVideoTimeRef.current = null;
+      }
+      return;
+    }
+
     const targetSeconds = isoToTimeOfDaySeconds(targetTime);
     const videoTime = calculateVideoTime(targetSeconds, timestamps);
 
@@ -407,12 +455,21 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
         syncMode.setTimestamp(combatLogTime);
       }
       
-      // Auto-select encounter if video is within one (works regardless of sync mode)
-      if (combatLogTime && encounters && onEncounterChange) {
+      // Auto-select encounter based on video position (only when sync mode is enabled)
+      // When sync is disabled, user is just watching video without affecting panel selection
+      if (isSyncEnabled && combatLogTime && encounters && onEncounterChange) {
         const encounter = findEncounterAtTime(combatLogTime, encounters);
-        if (encounter && encounter.id !== currentVideoEncounterRef.current) {
-          currentVideoEncounterRef.current = encounter.id;
-          onEncounterChange(encounter.id);
+        
+        if (encounter) {
+          if (encounter.id !== currentVideoEncounterRef.current) {
+            currentVideoEncounterRef.current = encounter.id;
+            // Mark that this change came from video position (to avoid seek loop)
+            encounterChangeFromVideoRef.current = true;
+            onEncounterChange(encounter.id);
+          }
+        } else {
+          // In a gap between encounters - clear ref so entering next encounter triggers selection
+          currentVideoEncounterRef.current = null;
         }
       }
       
@@ -423,8 +480,14 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
       }
     };
 
+    // Store checkTime in ref so onStateChange can call it immediately after seek
+    checkTimeRef.current = checkTime;
+
     const interval = setInterval(checkTime, pollInterval);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      checkTimeRef.current = null;
+    };
   }, [playerReady, syncMode, timestamps, referenceDate, encounters, onEncounterChange]);
 
   // Drag handlers

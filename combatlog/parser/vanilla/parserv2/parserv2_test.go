@@ -96,7 +96,7 @@ func TestParserMessages(t *testing.T) {
 					Name:         "Priests",
 					CanCooperate: true,
 					Owner:        nil,
-					Buffs:        nil,
+					Buffs:        []unitinfo.Buff{},
 					Level:        60,
 					Challenges:   nil,
 				},

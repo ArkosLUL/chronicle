@@ -10,8 +10,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
@@ -205,7 +205,7 @@ func (c *Common) Process(m messages.Message) error {
 	case *messages.Realm:
 		if c.realm != nil {
 			if c.realm.RealmName != msg.RealmName {
-				return vanilla.AsFatalError(fmt.Errorf("realm name changed from %q to %q during instance", c.realm.RealmName, msg.RealmName))
+				return parseerrors.AsFatalError(fmt.Errorf("realm name changed from %q to %q during instance", c.realm.RealmName, msg.RealmName))
 			}
 		}
 		c.realm = &msg.Info

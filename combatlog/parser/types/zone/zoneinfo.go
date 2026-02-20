@@ -19,9 +19,12 @@ func IsZoneInfo(content string) (string, bool) {
 }
 
 type Zone struct {
-	Seen       time.Time
-	Name       string
-	InstanceID uint32
+	Seen         time.Time
+	Name         string
+	InstanceID   uint32
+	Ghost        bool
+	InstanceType string
+	IsInstance   bool
 }
 
 func (z Zone) ID() string {

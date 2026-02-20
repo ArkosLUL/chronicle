@@ -282,6 +282,7 @@ export interface RecentInstance {
     readonly guild_id?: string;
     readonly guild_name?: string;
     readonly encounters?: readonly RecentEncounter[];
+    readonly has_youtube_video: boolean;
 }
 
 // From chroniclesdk/log.go

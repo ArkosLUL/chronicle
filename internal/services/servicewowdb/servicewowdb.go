@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/go-chi/chi/v5"
 
@@ -84,7 +85,7 @@ func (s *Service) handleGetSpell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spell, err := s.db.Spell(id)
+	spell, err := s.db.Spell(chrondbc.SpellID(id))
 	if err != nil {
 		http.Error(w, "spell not found", http.StatusNotFound)
 		return
@@ -123,7 +124,7 @@ func (s *Service) handleGetSpellByName(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "cancelled", http.StatusInternalServerError)
 			return
 		}
-		spell, err := s.db.Spell(int(id))
+		spell, err := s.db.Spell(chrondbc.SpellID(id))
 		if err != nil {
 			continue // Skip missing spells
 		}

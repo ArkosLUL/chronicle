@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Users, Swords, CheckCircle, XCircle } from "lucide-react";
+import { Clock, Users, Swords, CheckCircle, XCircle, Youtube } from "lucide-react";
 import type { RecentInstance } from "@/api/typesGenerated";
 
 // Unified instance configuration - one place to configure each instance
@@ -139,6 +139,14 @@ export function RaidCard({ instance }: RaidCardProps) {
         
         {/* Dark gradient overlay for text readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
+        
+        {/* YouTube badge - top right corner */}
+        {instance.has_youtube_video && (
+          <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5 bg-red-600/75 backdrop-blur-sm text-white/85 px-2 py-1 rounded shadow-lg" title="Has YouTube video">
+            <Youtube className="h-4 w-4" />
+            <span className="text-xs font-semibold">Video</span>
+          </div>
+        )}
         
         {/* Content */}
         <div className="relative z-10 p-4 h-full flex flex-col min-h-[200px]">

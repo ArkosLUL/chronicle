@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/whoami"
 	"github.com/Emyrk/chronicle/database/gamedb"
@@ -118,7 +119,7 @@ func (p *Parser) init() error {
 func (p *Parser) Advance() ([]messages.Message, error) {
 	err := p.init()
 	if err != nil {
-		return nil, AsFatalError(fmt.Errorf("init: %w", err))
+		return nil, parseerrors.AsFatalError(fmt.Errorf("init: %w", err))
 	}
 	now := time.Now()
 
@@ -132,7 +133,7 @@ func (p *Parser) Advance() ([]messages.Message, error) {
 	}
 
 	if ts.Before(p.lastLogDate.Add(-time.Second)) {
-		return nil, AsFatalError(fmt.Errorf("log dates went backwards: last %v, current %v", p.lastLogDate, ts))
+		return nil, parseerrors.AsFatalError(fmt.Errorf("log dates went backwards: last %v, current %v", p.lastLogDate, ts))
 	}
 
 	preNow := time.Now()

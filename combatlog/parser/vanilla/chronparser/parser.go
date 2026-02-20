@@ -48,6 +48,10 @@ func (p *Parser) Advance(ctx context.Context) ([]messages.Message, error) {
 	p.lastDate = ts
 
 	switch event {
+	case "UNIT_INFO":
+		return p.unitInfo(ctx, ts, m)
+	case "SWING":
+		return p.swing(ctx, ts, m)
 	case "HEAL":
 		return p.heal(ctx, ts, m)
 	}

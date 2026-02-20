@@ -40,6 +40,11 @@ var characterFactories = []characterFactory{
 	NewDiseasedGhoul,
 	// AQ 40
 	NewCthun,
+	// Naxx,
+	NewKelThuzad,
+	NewGluth,
+	NewGrobbulus,
+	//NewDiseasedMaggot,
 }
 
 type Characters struct {

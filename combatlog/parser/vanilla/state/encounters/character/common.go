@@ -129,6 +129,11 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 				return nil
 			}
 
+			if data.HitType.Has(types.HitTypeImmune) || data.HitType.Has(types.HitTypeEvade) {
+				c.Bump("immune/evade damage", data)
+				return nil
+			}
+
 			c.Start("direct damage", data)
 			return nil
 		}

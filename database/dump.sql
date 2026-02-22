@@ -27,6 +27,11 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'aura'
 );
 
+CREATE TYPE log_type AS ENUM (
+    'v1',
+    'v2'
+);
+
 CREATE TYPE river_job_state AS ENUM (
     'available',
     'cancelled',
@@ -408,7 +413,8 @@ CREATE TABLE wow_log_groups (
     id uuid NOT NULL,
     owner uuid NOT NULL,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    log_type log_type DEFAULT 'v1'::log_type NOT NULL
 );
 
 CREATE TABLE wow_server_realms (

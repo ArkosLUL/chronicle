@@ -139,7 +139,7 @@ fixtureLoop:
 			continue
 		}
 		for {
-			_, err := testParser.Advance()
+			_, err := testParser.Advance(context.Background())
 			if err != nil {
 				if err == io.EOF {
 					break
@@ -164,7 +164,7 @@ fixtureLoop:
 
 				// Just parse, no consumers
 				for {
-					_, err := p.Advance()
+					_, err := p.Advance(context.Background())
 					if err != nil {
 						if err == io.EOF {
 							break

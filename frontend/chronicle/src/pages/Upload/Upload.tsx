@@ -5,6 +5,8 @@ import { compressFile } from "@/api/compress";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
+import { Switch } from "@/components/ui/Switch/Switch";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck } from "@/api/queries";
 
@@ -20,6 +22,8 @@ export interface UploadViewProps {
   success: { message: string; logId: string } | null;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>, type: "combat" | "raw") => void;
   onUpload: () => void;
+  useV2Upload: boolean;
+  onToggleV2Upload: (checked: boolean) => void;
 }
 
 export function UploadView({
@@ -34,6 +38,8 @@ export function UploadView({
   success,
   onFileSelect,
   onUpload,
+  useV2Upload,
+  onToggleV2Upload,
 }: UploadViewProps) {
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -156,84 +162,138 @@ export function UploadView({
             </Alert>
           )}
 
-          {/* File Selection */}
-          <div className="grid gap-6 md:grid-cols-2">
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <h2 className="font-semibold">Combat Log</h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Select your WoWCombatLog.txt file
-            </p>
-            <label className="block">
-              <input
-                type="file"
-                accept=".txt"
-                onChange={(e) => onFileSelect(e, "combat")}
-                className="hidden"
-              />
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                {combatLog ? (
-                  <div className="space-y-1">
-                    <FileText className="h-8 w-8 mx-auto text-primary" />
-                    <p className="text-sm font-medium">{combatLog.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(combatLog.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to select file
-                    </p>
-                  </div>
-                )}
-              </div>
-            </label>
+          {/* V2 Upload Toggle */}
+          <div className="flex items-center gap-3">
+            <Switch
+              id="upload-version"
+              checked={useV2Upload}
+              onCheckedChange={onToggleV2Upload}
+            />
+            <Label htmlFor="upload-version" className="cursor-pointer">
+              Upload V2 (single file)
+            </Label>
           </div>
-        </Card>
 
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <h2 className="font-semibold">Raw Combat Log</h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Select your WoWRawCombatLog.txt
-            </p>
-            <label className="block">
-              <input
-                type="file"
-                accept=".txt,.csv"
-                onChange={(e) => onFileSelect(e, "raw")}
-                className="hidden"
-              />
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                {rawCombatLog ? (
-                  <div className="space-y-1">
-                    <FileText className="h-8 w-8 mx-auto text-primary" />
-                    <p className="text-sm font-medium">{rawCombatLog.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(rawCombatLog.size / 1024).toFixed(2)} KB
-                    </p>
+          {/* File Selection */}
+          {useV2Upload ? (
+            // V2: Single file upload
+            <Card className="p-6 max-w-md mx-auto">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="font-semibold">Combat Log</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Select your WoWCombatLog.txt file
+                </p>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept=".txt"
+                    onChange={(e) => onFileSelect(e, "combat")}
+                    className="hidden"
+                  />
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                    {combatLog ? (
+                      <div className="space-y-1">
+                        <FileText className="h-8 w-8 mx-auto text-primary" />
+                        <p className="text-sm font-medium">{combatLog.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(combatLog.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Click to select file
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to select file
-                    </p>
-                  </div>
-                )}
+                </label>
               </div>
-            </label>
-          </div>
-        </Card>
-      </div>
+            </Card>
+          ) : (
+            // V1: Original 2-file upload
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <h2 className="font-semibold">Combat Log</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Select your WoWCombatLog.txt file
+                  </p>
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept=".txt"
+                      onChange={(e) => onFileSelect(e, "combat")}
+                      className="hidden"
+                    />
+                    <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                      {combatLog ? (
+                        <div className="space-y-1">
+                          <FileText className="h-8 w-8 mx-auto text-primary" />
+                          <p className="text-sm font-medium">{combatLog.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(combatLog.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Click to select file
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <h2 className="font-semibold">Raw Combat Log</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Select your WoWRawCombatLog.txt
+                  </p>
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept=".txt,.csv"
+                      onChange={(e) => onFileSelect(e, "raw")}
+                      className="hidden"
+                    />
+                    <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                      {rawCombatLog ? (
+                        <div className="space-y-1">
+                          <FileText className="h-8 w-8 mx-auto text-primary" />
+                          <p className="text-sm font-medium">{rawCombatLog.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(rawCombatLog.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Click to select file
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </Card>
+            </div>
+          )}
 
       {uploading && (
         <div className="space-y-2">
@@ -252,11 +312,11 @@ export function UploadView({
 
       <Button
         onClick={onUpload}
-        disabled={!combatLog || !rawCombatLog || uploading}
+        disabled={useV2Upload ? !combatLog || uploading : !combatLog || !rawCombatLog || uploading}
         className="w-full md:w-auto"
       >
         <UploadIcon className="h-4 w-4 mr-2" />
-        {uploading ? "Uploading..." : "Upload Files"}
+        {uploading ? "Uploading..." : useV2Upload ? "Upload File" : "Upload Files"}
       </Button>
         </>
       )}
@@ -356,6 +416,16 @@ export function Upload() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<{ message: string; call_to_action?: string; detail?: string; link?: string; link_text?: string } | null>(null);
   const [success, setSuccess] = useState<{ message: string; logId: string } | null>(null);
+  const [useV2Upload, setUseV2Upload] = useState(false);
+
+  const handleToggleV2Upload = useCallback((checked: boolean) => {
+    setUseV2Upload(checked);
+    // Clear files when switching modes
+    setCombatLog(null);
+    setRawCombatLog(null);
+    setError(null);
+    setSuccess(null);
+  }, []);
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -370,7 +440,12 @@ export function Upload() {
   };
 
   const handleUpload = useCallback(async () => {
-    if (!combatLog || !rawCombatLog) return;
+    // V2 only needs combatLog; V1 needs both
+    if (useV2Upload) {
+      if (!combatLog) return;
+    } else {
+      if (!combatLog || !rawCombatLog) return;
+    }
 
     setUploading(true);
     setUploadProgress(0);
@@ -378,16 +453,21 @@ export function Upload() {
     setSuccess(null);
 
     try {
-      // Compress files before upload for faster transfer
-      const [compressedLog, compressedRawLog] = await Promise.all([
-        compressFile(combatLog),
-        compressFile(rawCombatLog),
-      ]);
-
       const formData = new FormData();
-      // Append with .gz extension to signal compression to the server
-      formData.append("combat_log_1", compressedLog, combatLog.name + ".gz");
-      formData.append("combat_log_2", compressedRawLog, rawCombatLog.name + ".gz");
+
+      if (useV2Upload) {
+        // V2 upload: single file
+        const compressedLog = await compressFile(combatLog);
+        formData.append("combat_log", compressedLog, combatLog.name + ".gz");
+      } else {
+        // V1 upload: two files
+        const [compressedLog, compressedRawLog] = await Promise.all([
+          compressFile(combatLog),
+          compressFile(rawCombatLog!),
+        ]);
+        formData.append("combat_log_1", compressedLog, combatLog.name + ".gz");
+        formData.append("combat_log_2", compressedRawLog, rawCombatLog!.name + ".gz");
+      }
 
       const xhr = new XMLHttpRequest();
 
@@ -447,7 +527,11 @@ export function Upload() {
         setError({ message: "Upload failed - network error" });
       });
 
-      xhr.open("POST", "/api/v1/raidlogs/logs/upload");
+      // Use different endpoint based on upload version
+      const endpoint = useV2Upload
+        ? "/api/v1/raidlogs/logs/upload-v2"
+        : "/api/v1/raidlogs/logs/upload";
+      xhr.open("POST", endpoint);
       xhr.send(formData);
     } catch (err) {
       setUploading(false);
@@ -456,7 +540,7 @@ export function Upload() {
         detail: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [combatLog, rawCombatLog]);
+  }, [combatLog, rawCombatLog, useV2Upload]);
 
   return (
     <UploadView
@@ -471,6 +555,8 @@ export function Upload() {
       success={success}
       onFileSelect={handleFileSelect}
       onUpload={handleUpload}
+      useV2Upload={useV2Upload}
+      onToggleV2Upload={handleToggleV2Upload}
     />
   );
 }

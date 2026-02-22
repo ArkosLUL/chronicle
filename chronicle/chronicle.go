@@ -111,9 +111,13 @@ func (c *Chronicle) initStorage(ctx context.Context) error {
 	return nil
 }
 
-func (c *Chronicle) UploadLogs(ctx context.Context, one, two UploadInput) (*database.WoWLogGroup, []database.LogFile, error) {
+func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logType database.LogType) (*database.WoWLogGroup, []database.LogFile, error) {
 	clean := cleanup.New()
 	defer clean.Do()
+
+	if len(inputs) == 0 {
+		return nil, nil, fmt.Errorf("at least one file is required")
+	}
 
 	now := time.Now()
 	cl, ok := chronauth.AuthenticatedClaims(ctx)
@@ -134,13 +138,15 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two UploadInput) (*data
 
 	// Save the files locally to disk first, then upload them to object storage.
 	// This allows us to hash them and store in the database first, and keep them tracked.
-	tmpIDs := []uuid.UUID{uuid.New(), uuid.New()}
+	tmpIDs := make([]uuid.UUID, len(inputs))
+	for i := range tmpIDs {
+		tmpIDs[i] = uuid.New()
+	}
 
 	//nolint:errcheck
 	defer c.clearTemporaryFiles()
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	inputs := []UploadInput{one, two}
 	hashes := make([]string, 0, len(tmpIDs))
 	tmpFiles := make([]*os.File, 0, len(tmpIDs))
 	dbFiles := make([]database.LogFile, 0, len(tmpIDs))
@@ -238,8 +244,15 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two UploadInput) (*data
 		fileMetas = append(fileMetas, meta)
 	}
 
-	if hashes[0] == hashes[1] {
-		return nil, nil, fmt.Errorf("the same file was uploaded twice; please upload two different log files")
+	// Check for duplicate files (only relevant when uploading multiple files)
+	if len(hashes) > 1 {
+		seen := make(map[string]bool, len(hashes))
+		for _, h := range hashes {
+			if seen[h] {
+				return nil, nil, fmt.Errorf("the same file was uploaded twice; please upload different log files")
+			}
+			seen[h] = true
+		}
 	}
 
 	var group database.WoWLogGroup
@@ -250,6 +263,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two UploadInput) (*data
 		group, err = tx.InsertWoWLogGroup(ctx, database.InsertWoWLogGroupParams{
 			ID:        uuid.New(),
 			Owner:     cl.Subject,
+			LogType:   logType,
 			CreatedAt: database.Timestamptz(now),
 			UpdatedAt: database.Timestamptz(now),
 		})
@@ -327,6 +341,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, one, two UploadInput) (*data
 }
 
 // countingWriter wraps a writer and counts bytes written
+
 type countingWriter struct {
 	w     io.Writer
 	count int64

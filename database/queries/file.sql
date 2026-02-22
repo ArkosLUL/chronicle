@@ -33,6 +33,7 @@ INSERT INTO
   wow_log_groups(
     id,
     owner,
+    log_type,
     created_at,
     updated_at
   )
@@ -41,7 +42,8 @@ VALUES
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
   )
 RETURNING *
 ;

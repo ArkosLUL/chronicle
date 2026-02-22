@@ -214,6 +214,64 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 	}
 }
 
+type LogType string
+
+const (
+	LogTypeV1 LogType = "v1"
+	LogTypeV2 LogType = "v2"
+)
+
+func (e *LogType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LogType(s)
+	case string:
+		*e = LogType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LogType: %T", src)
+	}
+	return nil
+}
+
+type NullLogType struct {
+	LogType LogType `json:"log_type"`
+	Valid   bool    `json:"valid"` // Valid is true if LogType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullLogType) Scan(value interface{}) error {
+	if value == nil {
+		ns.LogType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.LogType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullLogType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.LogType), nil
+}
+
+func (e LogType) Valid() bool {
+	switch e {
+	case LogTypeV1,
+		LogTypeV2:
+		return true
+	}
+	return false
+}
+
+func AllLogTypeValues() []LogType {
+	return []LogType{
+		LogTypeV1,
+		LogTypeV2,
+	}
+}
+
 type RiverJobState string
 
 const (
@@ -802,6 +860,7 @@ type WoWLogGroup struct {
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	LogType   LogType            `db:"log_type" json:"log_type"`
 }
 
 type WowServer struct {

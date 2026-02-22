@@ -33,6 +33,7 @@ func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGro
 			Owner:            g.WoWLogGroup.Owner,
 			CreatedAt:        g.WoWLogGroup.CreatedAt,
 			UpdatedAt:        g.WoWLogGroup.UpdatedAt,
+			LogType:          string(g.WoWLogGroup.LogType),
 			Files:            slice.List(g.Files, WoWLogFile),
 			ProcessingOutput: g.ProcessingOutput,
 		}
@@ -42,6 +43,7 @@ func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGro
 			Owner:     g.WoWLogGroup.Owner,
 			CreatedAt: g.WoWLogGroup.CreatedAt,
 			UpdatedAt: g.WoWLogGroup.UpdatedAt,
+			LogType:   string(g.WoWLogGroup.LogType),
 			Files:     slice.List(g.Files, WoWLogFile),
 		}
 	default:

@@ -137,6 +137,12 @@ func (m *Matched) Int64() int64 {
 	})
 }
 
+func (m *Matched) Bool() bool {
+	return parseMatch(m, func(s string) (bool, error) {
+		return strconv.ParseBool(s)
+	})
+}
+
 func (m *Matched) Int32s() []int32 {
 	return parseMatch(m, func(s string) ([]int32, error) {
 		parts := strings.Split(s, ",")
@@ -155,6 +161,28 @@ func (m *Matched) Int32s() []int32 {
 
 func (m *Matched) String() string {
 	return m.pop()
+}
+
+func (m *Matched) HeroClass() types.HeroClasses {
+	return parseMatch(m, func(s string) (types.HeroClasses, error) {
+		return types.ParseHeroClasses(s)
+	})
+}
+
+func (m *Matched) HeroRace() types.HeroRaces {
+	return parseMatch(m, func(s string) (types.HeroRaces, error) {
+		return types.ParseHeroRaces(s)
+	})
+}
+
+func (m *Matched) HeroGender() types.HeroGender {
+	return parseMatch(m, func(s string) (types.HeroGender, error) {
+		return types.ParseHeroGender(s)
+	})
+}
+
+func (m *Matched) CSV() []string {
+	return strings.Split(m.pop(), ",")
 }
 
 func (m *Matched) DBCSpellByID(db gamedb.SpellFetcher) *chrondbc.Spell {

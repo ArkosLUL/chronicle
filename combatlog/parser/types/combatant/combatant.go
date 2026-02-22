@@ -99,45 +99,14 @@ func ParseCombatantInfo(ri *realmclock.Info, content string) (Combatant, error) 
 		player.Guild = &Guild{
 			Name:      info.guildName(),
 			RankName:  info.guildRankName(),
-			RankIndex: info.guildRankIndex(),
+			RankIndex: 0, // info.guildRankIndex(), // TODO
 		}
 	}
 
 	// Parse gear (items 9-27, 19 slots)
 	gear, hasGear := info.gear()
 	if hasGear {
-		gearItems := make([]GearItem, 0, 19)
-		for _, arg := range gear {
-			if arg == "nil" {
-				continue
-			}
-
-			itemArgs := strings.Split(arg, ":")
-			if len(itemArgs) < 2 {
-				continue
-			}
-
-			itemID, err := strconv.Atoi(itemArgs[0])
-			if err != nil {
-				// TODO: LOG
-				continue
-			}
-			enchantID, err := strconv.Atoi(itemArgs[1])
-			if err != nil {
-				// TODO: LOG
-				continue
-			}
-
-			item := GearItem{
-				ItemID: itemID,
-			}
-			if enchantID != 0 {
-				item.EnchantID = &enchantID
-			}
-
-			gearItems = append(gearItems, item)
-		}
-		player.GearSetups = gearItems
+		player.GearSetups = ParseGear(gear)
 	}
 
 	//// Parse talents (item 28)
@@ -170,7 +139,7 @@ type Guild struct {
 	Name     string
 	RankName string
 	// TODO: RankIndex should probably be an integer
-	RankIndex string
+	RankIndex int32
 }
 
 // GearItem represents an equipped item with optional enchant
@@ -179,6 +148,53 @@ type GearItem struct {
 	EnchantID *int
 	// TODO: slot source?
 }
+
+// ParseGear parses gear slot strings into GearItem slices.
+// Each gear string is expected in format "itemID:enchantID" (e.g., "12345:678").
+// Returns nil for empty input. Skips "nil" entries and malformed items.
+func ParseGear(gear []string) []GearItem {
+	if len(gear) == 0 {
+		return nil
+	}
+
+	gearItems := make([]GearItem, 0, len(gear))
+	for _, arg := range gear {
+		if arg == "nil" {
+			continue
+		}
+
+		itemArgs := strings.Split(arg, ":")
+		if len(itemArgs) < 2 {
+			continue
+		}
+
+		itemID, err := strconv.Atoi(itemArgs[0])
+		if err != nil {
+			// TODO: LOG
+			continue
+		}
+		enchantID, err := strconv.Atoi(itemArgs[1])
+		if err != nil {
+			// TODO: LOG
+			continue
+		}
+
+		item := GearItem{
+			ItemID: itemID,
+		}
+		if enchantID != 0 {
+			item.EnchantID = &enchantID
+		}
+
+		gearItems = append(gearItems, item)
+	}
+
+	if len(gearItems) == 0 {
+		return nil
+	}
+	return gearItems
+}
+
 
 type Talents struct {
 	// Summary is the total number of points spent in each tree
@@ -191,7 +207,7 @@ type Talents struct {
 // ParseTalents parses the talent string into a Talents struct
 // 215303100000000000}055051000050122231}00000000000000000000
 func ParseTalents(input string) (*Talents, error) {
-	if input == "nil" {
+	if input == "nil" || input == ""{
 		return nil, nil
 	}
 

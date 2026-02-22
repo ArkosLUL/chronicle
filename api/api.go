@@ -168,6 +168,7 @@ func (api *API) Routes() chi.Router {
 					r.Group(func(r chi.Router) {
 						r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_log_User))
 						r.Post("/upload", api.WoWLogUpload)
+						r.Post("/upload-v2", api.WoWLogUploadV2)
 					})
 					r.Get("/", api.WoWLogGroups)
 					r.Get("/by-file-hash/{file-hash}", api.WoWLogGroupByFile)

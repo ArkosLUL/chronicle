@@ -8,6 +8,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
+	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 
 	"github.com/coder/serpent"
 )
@@ -44,6 +45,7 @@ func (s *Service) DependsOn() []string {
 		servicelogger.OnLogger(),
 		serviceauthz.OnAuthz(),
 		servicestorage.OnStorage(),
+		servicewowdb.OnWoWDB(),
 	}
 }
 
@@ -51,10 +53,12 @@ func (s *Service) Start(ctx context.Context) error {
 	logger := servicelogger.Logger(s.broker)
 	st := servicestorage.Storage(s.broker)
 	zed := serviceauthz.Authz(s.broker)
+	wowDB := servicewowdb.WoWDB(s.broker)
 
 	c, err := chronicle.New(ctx, logger, chronicle.Options{
 		Storage: st,
 		Zed:     zed,
+		WoWDB:   wowDB.GameDB(),
 	})
 	if err != nil {
 		return err

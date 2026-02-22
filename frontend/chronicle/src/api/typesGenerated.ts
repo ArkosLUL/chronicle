@@ -445,6 +445,11 @@ export type WoWCastActions = "begins to cast" | "casts" | "channels" | "fails ca
 export const WoWCastActionses: WoWCastActions[] = ["begins to cast", "casts", "channels", "fails casting"];
 
 // From types/constants.go
+export type WoWCastFlags = 32 | 1 | 0 | 2 | 4 | 8 | 16 | 64 | 128 | 256;
+
+export const WoWCastFlagses: WoWCastFlags[] = [32, 1, 0, 2, 4, 8, 16, 64, 128, 256];
+
+// From types/constants.go
 export type WoWChangeDirection = "Gain" | "Loss";
 
 export const WoWChangeDirections: WoWChangeDirection[] = ["Gain", "Loss"];

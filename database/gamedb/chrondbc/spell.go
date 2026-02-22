@@ -30,8 +30,8 @@ type Spell struct {
 	School             School             `json:"school"`           // Magic school: physical, holy, fire, nature, frost, shadow, arcane
 	SpellPriority      int32              `json:"spell_priority"`   // AI priority for NPC spell selection
 	StanceBarOrder     int32              `json:"stance_bar_order"` // Position on stance/shapeshift action bar
-	ProcTypeMask       ProcFlags          `json:"proc_type_mask"`   // Events that can trigger this spell (on hit, on crit, on kill, etc.)
-	ProcFlags          ProcFlagsEx        `json:"proc_flags"`       // Additional proc configuration
+	ProcTypeMask       bitmask.Bitmask32  `json:"proc_type_mask"`   // Events that can trigger this spell (on hit, on crit, on kill, etc.)
+	ProcFlags          ProcFlags          `json:"proc_flags"`       // Additional proc configuration
 	ProcChance         int32              `json:"proc_chance"`      // Percent chance to proc (>100 means server-side calculation)
 	ProcCharges        int32              `json:"proc_charges"`     // Number of times proc can trigger before aura fades (0 = unlimited)
 	Speed              float32            `json:"speed"`            // Projectile travel speed in yards/sec (0 = instant)

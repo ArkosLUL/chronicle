@@ -24,6 +24,9 @@ type Parser struct {
 }
 
 func New(logger *slog.Logger, r io.Reader, wowDB *gamedb.WoWDB) (*Parser, error) {
+	if wowDB == nil {
+		return nil, fmt.Errorf("wowDB cannot be nil")
+	}
 	return &Parser{
 		logger:  logger,
 		wowDB:   wowDB,
@@ -57,14 +60,16 @@ func (p *Parser) Advance(ctx context.Context) (_ []messages.Message, final error
 		return p.zoneInfo(ctx, ts, m)
 	case "UNIT_INFO":
 		return p.unitInfo(ctx, ts, m)
+	case "COMBATANT_INFO":
+		return p.combatantInfo(ctx, ts, m)
 	case "SWING":
 		return p.swing(ctx, ts, m)
 	case "HEAL":
 		return p.heal(ctx, ts, m)
 	case "DEATH":
 		return p.slain(ctx, ts, m)
-  case "SPELL_GO":
-    return p.spellGo(ctx, ts, m)
+	case "SPELL_GO":
+		return p.spellGo(ctx, ts, m)
 	case "SPELL_DMG":
 		return p.spell_dmg(ctx, ts, m)
 	}

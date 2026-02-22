@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/chronicle"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/google/uuid"
@@ -149,7 +150,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		IsGzipped: isGzipped(secondHeader),
 	}
 
-	group, files, err := api.Chronicle.UploadLogs(ctx, firstInput, secondInput)
+	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{firstInput, secondInput}, database.LogTypeV1)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -177,3 +178,54 @@ func isGzipped(header *multipart.FileHeader) bool {
 	return strings.HasSuffix(header.Filename, ".gz") ||
 		header.Header.Get("Content-Type") == "application/gzip"
 }
+
+// WoWLogUploadV2 handles single-file uploads for parserv2 logs.
+func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	file, header, err := r.FormFile("combat_log")
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Failed to get file from form",
+			Detail:  err.Error(),
+		})
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	if header.Size > MaxLogFileSize {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Log file is too large, exceeds maximum allowed size of 250 MB",
+			Detail:  fmt.Sprintf("file size: %d bytes", header.Size),
+		})
+		return
+	}
+
+	input := chronicle.UploadInput{
+		Reader:    file,
+		IsGzipped: isGzipped(header),
+	}
+
+	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, database.LogTypeV2)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to process uploaded log file",
+				Detail:  err.Error(),
+			},
+			Status: http.StatusInternalServerError,
+		})
+		return
+	}
+
+	fileIDs := make([]uuid.UUID, 0, len(files))
+	for _, f := range files {
+		fileIDs = append(fileIDs, f.ID)
+	}
+
+	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
+		LogID: group.ID,
+		Files: fileIDs,
+	})
+}
+

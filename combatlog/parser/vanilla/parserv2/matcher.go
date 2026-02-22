@@ -3,9 +3,12 @@ package parserv2
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -26,8 +29,9 @@ func (p *Parser) zoneInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	return set(&messages.Zone{
 		MessageBase: messages.Base(ts),
 		Zone: zone.Zone{
-			Seen:         ts,
-			Name:         name,
+			Seen: ts,
+			// For some reason, a zone name came across as all caps once.
+			Name:         strings.ToLower(name),
 			InstanceID:   instanceID,
 			Ghost:        isGhost,
 			InstanceType: instanceType,
@@ -38,7 +42,7 @@ func (p *Parser) zoneInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 
 func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	id := m.Guid()
-	isPlayer := m.Int64() == 1
+	isPlayer := m.Bool()
 	name := m.String()
 	canCooperate := m.Int64() == 1
 	owner := m.OptionalGuid()
@@ -47,8 +51,9 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 		return nil, fmt.Errorf("unit buffs: %w", err)
 	}
 	level := m.Int64()
-	_ = m.skip // TODO: Challenges
-	_ = m.skip // Max health
+	challenges := m.CSV()
+	maxHealth := m.Int64()
+	var _ = maxHealth
 
 	if err := m.Error(); err != nil {
 		return nil, err
@@ -65,7 +70,60 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 			Owner:        owner,
 			Buffs:        buffs,
 			Level:        int32(level),
-			Challenges:   nil,
+			Challenges:   challenges,
+		},
+	})
+}
+
+func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	var guild *combatant.Guild
+
+	id := m.Guid()
+	name := m.String()
+	class := m.HeroClass()
+	race := m.HeroRace()
+	gender := m.HeroGender()
+	guildName := m.String()
+	if guildName != "" {
+		guildRankName := m.String()
+		guildRank := m.Int32()
+		guild = &combatant.Guild{
+			Name:      guildName,
+			RankName:  guildRankName,
+			RankIndex: guildRank,
+		}
+	} else {
+		m.skip()
+		m.skip()
+	}
+	gearStr := m.String()
+	talentsStr := m.String()
+	petName := m.String()
+	petGuid := m.OptionalGuid()
+
+	var _ = petGuid
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	talents, err := combatant.ParseTalents(talentsStr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing talents: %w", err)
+	}
+
+	return set(&messages.Combatant{
+		MessageBase: messages.Base(ts),
+		Combatant: combatant.Combatant{
+			Name:       name,
+			Guid:       id,
+			Seen:       ts,
+			HeroClass:  class,
+			Gender:     gender,
+			Race:       race,
+			PetName:    petName,
+			Guild:      guild,
+			GearSetups: combatant.ParseGear(strings.Split(gearStr, "&")),
+			Talents:    talents,
 		},
 	})
 }
@@ -218,7 +276,10 @@ func (p *Parser) spellGo(_ context.Context, ts time.Time, m *Matched) ([]message
 	castFlags := m.CastFlags()
 	targetsHit := m.Int32()
 	numMissed := m.Int32()
-	corpseOwner := m.OptionalGuid()
+	var corpseOwner *guid.GUID
+	if m.peek() != "" {
+		corpseOwner = m.OptionalGuid()
+	}
 
 	if err := m.Error(); err != nil {
 		return nil, err

@@ -80,9 +80,7 @@ func NewFromScanner(logger *slog.Logger, liner *lines.Liner, scan merge.Scan, wo
 	}
 }
 
-func (p *Parser) Metrics() Metrics {
-	return p.metrics
-}
+func (p *Parser) Metrics() Metrics { return p.metrics }
 
 //func (p *Parser) State() *state.State {
 //	return p.state

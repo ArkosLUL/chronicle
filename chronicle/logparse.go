@@ -27,6 +27,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -85,9 +86,8 @@ func (c *Chronicle) NewWorkerLogParse() river.Worker[ArgsLogParse] {
 	}
 }
 
-func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, file database.LogFile) (logfile.Reader, *realmclock.Info, error) {
+func (w *WorkerLogParse) loadFile(ctx context.Context, file database.LogFile) (io.Reader, error) {
 	storage := w.parent.Storage
-	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 
 	fd, err := storage.DownloadFile(ctx, BucketRaidLogs, w.parent.logPath(file.ID))
 	if err != nil {
@@ -95,7 +95,7 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, file database.LogF
 		if errors.Is(err, os.ErrNotExist) {
 			err = river.JobCancel(err)
 		}
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Decompress if stored as gzip
@@ -103,31 +103,43 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, file database.LogF
 	if file.ContentEncoding.Valid && file.ContentEncoding.String == "gzip" {
 		gzReader, err := gzip.NewReader(reader)
 		if err != nil {
-			return nil, nil, fmt.Errorf("decompress log file %s: %w", file.ID, err)
+			return nil, fmt.Errorf("decompress log file %s: %w", file.ID, err)
 		}
 		defer func() { _ = gzReader.Close() }()
 
 		decompressed := &bytes.Buffer{}
 		if _, err := io.Copy(decompressed, gzReader); err != nil {
-			return nil, nil, fmt.Errorf("read decompressed log file %s: %w", file.ID, err)
+			return nil, fmt.Errorf("read decompressed log file %s: %w", file.ID, err)
 		}
 		reader = decompressed
-	}
-
-	fileData := &bytes.Buffer{}
-	sum, ri, err := sorter.SortLogs(ctx, logger, reader, fileData)
-	if err != nil {
-		return nil, ri, fmt.Errorf("sort log file %s: %w", file.ID, err)
 	}
 
 	// Help GC
 	//nolint:ineffassign
 	fd = nil
 
+	return reader, nil
+}
+
+func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, file database.LogFile) (logfile.Reader, *realmclock.Info, error) {
+	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
+
+	rdr, err := w.loadFile(ctx, file)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fileData := &bytes.Buffer{}
+	sum, ri, err := sorter.SortLogs(ctx, logger, rdr, fileData)
+	if err != nil {
+		return nil, ri, fmt.Errorf("sort log file %s: %w", file.ID, err)
+	}
+
 	return logfile.New(&sum.IsRaw, fileData), ri, nil
 }
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
+	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 	jobStart := time.Now()
 	metrics := w.parent.metrics
 	report := &chroniclesdk.LogParseReport{
@@ -146,7 +158,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	db := w.parent.Zed
 	ctx = parseoptions.WithVerbose(ctx, job.Args.Verbose)
 
-	files, err := db.GetWoWLogFilesByGroupID(ctx, job.Args.LogID)
+	// Fetch the log group to determine log type
+	logGroup, err := db.GetWoWLogGroupByID(ctx, job.Args.LogID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			w.parent.logger.Warn("log parse job for non-existent log group", "log_id", job.Args.LogID)
@@ -157,54 +170,106 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return fmt.Errorf("fetch log group: %w", err)
 	}
 
-	if len(files) != 2 {
-		jobResult = "cancelled"
-		return river.JobCancel(fmt.Errorf("log group does not have exactly 2 files, has %d", len(files)))
-	}
-
-	// Load and sort files
-	loadStart := time.Now()
-	var ri *realmclock.Info
-	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
-	rdrs := make([]logfile.Reader, len(files))
-	for i, file := range files {
-		var fri *realmclock.Info
-		rdrs[i], fri, err = w.loadAndSortFile(ctx, file)
-		if err != nil {
-			jobResult = "failure"
-			return err
-		}
-		if ri == nil && fri != nil {
-			ri = fri
-		}
-	}
-	loadDuration := time.Since(loadStart)
-	report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
-	metrics.loadFileDuration.Observe(loadDuration.Seconds())
-
-	m := vanilla.Merger(logger)
-	liner, scan, err := m.LineScanner(ctx, ri, rdrs[0], rdrs[1])
+	files, err := db.GetWoWLogFilesByGroupID(ctx, job.Args.LogID)
 	if err != nil {
 		jobResult = "failure"
-		return fmt.Errorf("create line scanner: %w", err)
+		return fmt.Errorf("fetch log files: %w", err)
 	}
 
-	p := vanilla.NewFromScanner(logger, liner, scan, w.parent.WoWDB)
+	// Validate file count based on log type
+	expectedFiles := 2
+	if logGroup.WoWLogGroup.LogType == database.LogTypeV2 {
+		expectedFiles = 1
+	}
+	if len(files) != expectedFiles {
+		jobResult = "cancelled"
+		return river.JobCancel(fmt.Errorf("log group (type %s) expects %d files, has %d", logGroup.WoWLogGroup.LogType, expectedFiles, len(files)))
+	}
+
 	// encounters
 	encountersState := encounters.New(ctx, logger)
 
-	// Parse combat log
+	// Parse combat log - branch based on log type
 	parseStart := time.Now()
 	c := consumers.New(logger, encountersState)
-	err = c.ConsumeAll(ctx, p)
+
+	var consumeErr error
+	switch logGroup.WoWLogGroup.LogType {
+	case database.LogTypeV1:
+		// Load and sort files
+		loadStart := time.Now()
+		var ri *realmclock.Info
+		rdrs := make([]logfile.Reader, len(files))
+		for i, file := range files {
+			var fri *realmclock.Info
+			rdrs[i], fri, err = w.loadAndSortFile(ctx, file)
+			if err != nil {
+				jobResult = "failure"
+				return err
+			}
+			if ri == nil && fri != nil {
+				ri = fri
+			}
+		}
+		loadDuration := time.Since(loadStart)
+		report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
+		metrics.loadFileDuration.Observe(loadDuration.Seconds())
+
+		// V1 parser: requires 2 files merged
+		m := vanilla.Merger(logger)
+		liner, scan, err := m.LineScanner(ctx, ri, rdrs[0], rdrs[1])
+		if err != nil {
+			jobResult = "failure"
+			return fmt.Errorf("create line scanner: %w", err)
+		}
+
+		p := vanilla.NewFromScanner(logger, liner, scan, w.parent.WoWDB)
+		consumeErr = c.ConsumeAll(ctx, p)
+		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
+			jobResult = "failure"
+			return fmt.Errorf("consume v1 log: %w", consumeErr)
+		}
+
+		// Capture parser metrics
+		parserMetrics := p.Metrics()
+		report.TotalLines = parserMetrics.TotalLinesParsed
+		metrics.linesProcessed.Add(float64(parserMetrics.TotalLinesParsed))
+
+	case database.LogTypeV2:
+		// Load and sort files
+		loadStart := time.Now()
+		rdr, err := w.loadFile(ctx, files[0])
+		if err != nil {
+			return fmt.Errorf("load log file: %w", err)
+		}
+		loadDuration := time.Since(loadStart)
+		report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
+		metrics.loadFileDuration.Observe(loadDuration.Seconds())
+
+		// V2 parser: single file
+		p, err := parserv2.New(logger, rdr, w.parent.WoWDB)
+		if err != nil {
+			jobResult = "failure"
+			return fmt.Errorf("create v2 parser: %w", err)
+		}
+
+		consumeErr = c.ConsumeAll(ctx, p)
+		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
+			jobResult = "failure"
+			return fmt.Errorf("consume v2 log: %w", consumeErr)
+		}
+
+		// V2 parser doesn't have metrics yet
+		// TODO: Add metrics to v2 parser
+
+	default:
+		jobResult = "failure"
+		return fmt.Errorf("unknown log type: %s", logGroup.WoWLogGroup.LogType)
+	}
+
 	parseDuration := time.Since(parseStart)
 	report.ParseDuration = chroniclesdk.DurationFrom(parseDuration)
 	metrics.parseDuration.Observe(parseDuration.Seconds())
-
-	// Capture parser metrics
-	parserMetrics := p.Metrics()
-	report.TotalLines = parserMetrics.TotalLinesParsed
-	metrics.linesProcessed.Add(float64(parserMetrics.TotalLinesParsed))
 
 	// Capture consumer times
 	consumerTimes := c.Times()
@@ -215,15 +280,15 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 	}
 
-	if err != nil {
-		err = fmt.Errorf("consume log: %w", err)
-		if !errors.Is(err, context.Canceled) {
+	if consumeErr != nil {
+		consumeErr = fmt.Errorf("consume log: %w", consumeErr)
+		if !errors.Is(consumeErr, context.Canceled) {
 			jobResult = "cancelled"
-			err = river.JobCancel(err)
+			consumeErr = river.JobCancel(consumeErr)
 		} else {
 			jobResult = "failure"
 		}
-		return err
+		return consumeErr
 	}
 
 	jobOut := chroniclesdk.WoWParsedLogJobOutput{

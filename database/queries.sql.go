@@ -216,7 +216,7 @@ func (q *sqlQuerier) GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.
 
 const getWoWLogGroupByID = `-- name: GetWoWLogGroupByID :one
 SELECT
-  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type,
   COALESCE(
       jsonb_agg(
       jsonb_build_object(
@@ -259,6 +259,7 @@ func (q *sqlQuerier) GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetW
 		&i.WoWLogGroup.Owner,
 		&i.WoWLogGroup.CreatedAt,
 		&i.WoWLogGroup.UpdatedAt,
+		&i.WoWLogGroup.LogType,
 		&i.Files,
 	)
 	return i, err
@@ -266,7 +267,7 @@ func (q *sqlQuerier) GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetW
 
 const getWoWLogGroupsByOwner = `-- name: GetWoWLogGroupsByOwner :many
 SELECT
-  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type,
   files_agg.files,
   latest_job.output AS processing_output
 FROM
@@ -327,6 +328,7 @@ func (q *sqlQuerier) GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID
 			&i.WoWLogGroup.Owner,
 			&i.WoWLogGroup.CreatedAt,
 			&i.WoWLogGroup.UpdatedAt,
+			&i.WoWLogGroup.LogType,
 			&i.Files,
 			&i.ProcessingOutput,
 		); err != nil {
@@ -418,6 +420,7 @@ INSERT INTO
   wow_log_groups(
     id,
     owner,
+    log_type,
     created_at,
     updated_at
   )
@@ -426,14 +429,16 @@ VALUES
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
   )
-RETURNING id, owner, created_at, updated_at
+RETURNING id, owner, created_at, updated_at, log_type
 `
 
 type InsertWoWLogGroupParams struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	Owner     uuid.UUID          `db:"owner" json:"owner"`
+	LogType   LogType            `db:"log_type" json:"log_type"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -442,6 +447,7 @@ func (q *sqlQuerier) InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGrou
 	row := q.db.QueryRow(ctx, insertWoWLogGroup,
 		arg.ID,
 		arg.Owner,
+		arg.LogType,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -451,13 +457,14 @@ func (q *sqlQuerier) InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGrou
 		&i.Owner,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LogType,
 	)
 	return i, err
 }
 
 const listAllWoWLogGroupsWithOwner = `-- name: ListAllWoWLogGroupsWithOwner :many
 SELECT
-  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type,
   u.username AS owner_name,
   files_agg.files,
   latest_job.output AS processing_output
@@ -518,6 +525,7 @@ func (q *sqlQuerier) ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAl
 			&i.WoWLogGroup.Owner,
 			&i.WoWLogGroup.CreatedAt,
 			&i.WoWLogGroup.UpdatedAt,
+			&i.WoWLogGroup.LogType,
 			&i.OwnerName,
 			&i.Files,
 			&i.ProcessingOutput,
@@ -534,7 +542,7 @@ func (q *sqlQuerier) ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAl
 
 const listAllWoWLogGroupsWithOwnerPaginated = `-- name: ListAllWoWLogGroupsWithOwnerPaginated :many
 SELECT
-  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at,
+  wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type,
   u.username AS owner_name,
   files_agg.files,
   files_agg.total_size_bytes,
@@ -649,6 +657,7 @@ func (q *sqlQuerier) ListAllWoWLogGroupsWithOwnerPaginated(ctx context.Context, 
 			&i.WoWLogGroup.Owner,
 			&i.WoWLogGroup.CreatedAt,
 			&i.WoWLogGroup.UpdatedAt,
+			&i.WoWLogGroup.LogType,
 			&i.OwnerName,
 			&i.Files,
 			&i.TotalSizeBytes,

@@ -14,13 +14,111 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/consumeeach"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
+	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/servicelogger"
+	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 
 	"github.com/coder/serpent"
 )
+
+func ParseV2Cmd() *serpent.Command {
+	var (
+		dumpMetrics bool
+	)
+
+	srvs := services.New()
+	err := srvs.Register(
+		servicelogger.New(srvs),
+		servicewowdb.New(srvs),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("register service: %v", err))
+	}
+	optionSet := srvs.OptionSet()
+
+	profileOpt, profileMW := ProfileCommand()
+	optionSet = append(optionSet, serpent.OptionSet{
+		{
+			Name:        "dump-metrics",
+			Description: "Print metrics information after parsing.",
+			Required:    false,
+			Flag:        "metrics",
+			Value:       serpent.BoolOf(&dumpMetrics),
+		},
+		profileOpt,
+	}...)
+
+	cmd := &serpent.Command{
+		Use:        "parsev2 <file>",
+		Middleware: serpent.Chain(serpent.RequireNArgs(1), profileMW),
+		Options:    optionSet,
+		Handler: func(i *serpent.Invocation) error {
+			ctx := i.Context()
+			logger := getLogger(i)
+			err := srvs.Start(ctx, logger)
+			if err != nil {
+				return fmt.Errorf("starting services: %w", err)
+			}
+
+			files, err := openFileReaders(i.Args[0])
+			if err != nil {
+				return err
+			}
+			defer func() { closeFiles(files...) }()
+
+			p, err := parserv2.New(logger, files[0], servicewowdb.WoWDB(srvs).GameDB())
+			if err != nil {
+				return fmt.Errorf("creating parser: %w", err)
+			}
+
+			output := encounters.New(ctx, logger)
+			c := consumers.New(logger, output)
+			err = c.ConsumeAll(ctx, p)
+			if err != nil {
+				return err
+			}
+
+			for _, inst := range output.Instances {
+				logger.Info("Parsed instance",
+					slog.String("name", inst.Name()),
+				)
+
+				enc, err := inst.Finalize(ctx)
+				if err != nil {
+					return fmt.Errorf("finalizing instance %q: %w", inst.Name(), err)
+				}
+				for _, e := range enc.Encounters {
+					fmt.Println(e.NamedString(output.Units))
+				}
+			}
+
+			consumerLog := logger.With("component", "consumers")
+			for k, v := range c.Times() {
+				consumerLog = consumerLog.With(slog.String(k+"_duration", v.String()))
+			}
+			consumerLog.Info("Consumer processing times")
+
+			//mets := p.Metrics()
+			//logger.Info("Parsing complete",
+			//	slog.Int64("total_lines_parsed", mets.TotalLinesParsed),
+			//	slog.String("total_parse_duration", mets.TotalParseDuration.String()),
+			//	slog.String("average_line_parse_duration", (mets.TotalParseDuration/time.Duration(mets.TotalLinesParsed)).String()),
+			//	slog.String("total_unmatched_time", mets.UnmatchedTime.String()),
+			//)
+			//if dumpMetrics {
+			//	fmt.Println(mets.Format())
+			//}
+			return nil
+		},
+	}
+
+	return cmd
+}
 
 func ParseCmd() *serpent.Command {
 	var (

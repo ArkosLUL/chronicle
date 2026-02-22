@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 )
@@ -36,12 +35,16 @@ func (c Consumers) Times() map[string]time.Duration {
 	return c.time
 }
 
-func (c Consumers) ConsumeAll(ctx context.Context, p *vanilla.Parser) error {
+type Advancer interface {
+	Advance(ctx context.Context) ([]messages.Message, error)
+}
+
+func (c Consumers) ConsumeAll(ctx context.Context, p Advancer) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		_, err := c.Advance(p)
+		_, err := c.Advance(ctx, p)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
@@ -51,9 +54,9 @@ func (c Consumers) ConsumeAll(ctx context.Context, p *vanilla.Parser) error {
 	}
 }
 
-func (c Consumers) Advance(p *vanilla.Parser) ([]messages.Message, error) {
+func (c Consumers) Advance(ctx context.Context, p Advancer) ([]messages.Message, error) {
 	now := time.Now()
-	msgs, err := p.Advance()
+	msgs, err := p.Advance(ctx)
 	c.time["parser"] += time.Since(now)
 	if err != nil {
 		if parseerrors.IsFatalError(err) {

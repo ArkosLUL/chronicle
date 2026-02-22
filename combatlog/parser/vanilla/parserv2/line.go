@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
@@ -98,6 +99,9 @@ func (m *Matched) OptionalGuid() *guid.GUID {
 		if err != nil {
 			return nil, err
 		}
+		if id == 0 {
+			return nil, nil
+		}
 		return &id, nil
 	})
 }
@@ -107,10 +111,24 @@ func (m *Matched) SwingHitInfo() SwingHitInfo {
 	return SwingHitInfo(v)
 }
 
+func (m *Matched) CastFlags() types.CastFlags {
+	return parseMatch(m, func(s string) (types.CastFlags, error) {
+		cf, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		return types.CastFlags(cf), nil
+	})
+}
+
 func (m *Matched) Uint64() uint64 {
 	return parseMatch(m, func(s string) (uint64, error) {
 		return strconv.ParseUint(s, 10, 64)
 	})
+}
+
+func (m *Matched) Int32() int32 {
+	return int32(m.Int64())
 }
 
 func (m *Matched) Int64() int64 {
@@ -139,7 +157,7 @@ func (m *Matched) String() string {
 	return m.pop()
 }
 
-func (m *Matched) DBCSpellByID(db *gamedb.WoWDB) *chrondbc.Spell {
+func (m *Matched) DBCSpellByID(db gamedb.SpellFetcher) *chrondbc.Spell {
 	return parseMatch(m, func(s string) (*chrondbc.Spell, error) {
 		id, err := strconv.ParseInt(s, 10, 32)
 		if err != nil {

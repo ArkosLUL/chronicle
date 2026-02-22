@@ -103,7 +103,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	target := m.Guid()
 	caster := m.Guid()
-	spell := m.DBCSpellByID(p.wowDB)
+	spell := m.DBCSpellByID(p)
 	amount := int32(m.Int64())
 	crit := m.Int64() == 1
 	periodic := m.Int64() == 1
@@ -135,7 +135,7 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	target := m.Guid()
 	caster := m.Guid()
-	spell := m.DBCSpellByID(p.wowDB)
+	spell := m.DBCSpellByID(p)
 	amount := int32(m.Int64())
 	mitigated := m.Int32s() // 3 values: blocked, absorbed, resisted
 	hitInfo := m.Int64()
@@ -174,7 +174,42 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	})
 }
 
-func (p *Parser) slain(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+// spellGo does indicate a spell being landed/missed. These logs also appear as
+// SPELL_DMG and "MISS" logs.
+func (p *Parser) spellGo(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	itemID := m.Int32() // 0 if no item triggered it
+	spellData := m.DBCSpellByID(p)
+	caster := m.Guid()
+	target := m.OptionalGuid() // 0x0000000000000000 if no target
+	castFlags := m.CastFlags()
+	targetsHit := m.Int32()
+	numMissed := m.Int32()
+	corpseOwner := m.OptionalGuid()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	var item *int32
+	if itemID != 0 {
+		item = ptr.Ref(itemID)
+	}
+
+	return set(&messages.SpellGo{
+		MessageBase:      messages.Base(ts),
+		ItemID:           item,
+		SpellID:          spellData.ID,
+		SpellData:        spellData,
+		Caster:           caster,
+		Target:           target,
+		Flags:            castFlags,
+		NumTargetsHit:    targetsHit,
+		NumTargetsMissed: numMissed,
+		CorpseOwner:      corpseOwner,
+	})
+}
+
+func (p *Parser) slain(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	id := m.Guid()
 
 	if err := m.Error(); err != nil {

@@ -303,7 +303,7 @@ type Heal struct {
 	Caster    guid.GUID
 	Target    guid.GUID
 	SpellName string
-	SpellData     *chrondbc.Spell
+	SpellData *chrondbc.Spell
 	Amount    int32
 	HitType   types.HitType
 }
@@ -361,12 +361,44 @@ type Create struct {
 func (c Create) Affects() []guid.GUID { return []guid.GUID{c.Caster} }
 func (*Create) isMessage()            {}
 
+// SpellGo is fired when a spell goes off.
+type SpellGo struct {
+	MessageBase
+	// Item is set if triggered by an item, otherwise nil.
+	ItemID           *int32
+	SpellID          chrondbc.SpellID
+	SpellData        *chrondbc.Spell
+	Caster           guid.GUID
+	Target           *guid.GUID
+	Flags            types.CastFlags
+	NumTargetsHit    int32
+	NumTargetsMissed int32
+	CorpseOwner      *guid.GUID
+}
+
+func (c SpellGo) Affects() []guid.GUID {
+	if c.Target == nil && c.CorpseOwner == nil {
+		return []guid.GUID{c.Caster}
+	}
+	ids := []guid.GUID{c.Caster}
+	if c.Target != nil {
+		ids = append(ids, *c.Target)
+	}
+	if c.CorpseOwner != nil {
+		ids = append(ids, *c.CorpseOwner)
+	}
+	return ids
+}
+func (*SpellGo) isMessage() {}
+
 // ExtraAttack is a bit strange, but it's a unique message that triggers when extra
 // white attacks are granted via some proc.
 type ExtraAttack struct {
 	MessageBase
-	Caster        guid.GUID
-	Amount        int32
+	Caster    guid.GUID
+	Amount    int32
+	Spell *chrondbc.Spell
+	// FromSpellName is deprecated
 	FromSpellName string
 }
 

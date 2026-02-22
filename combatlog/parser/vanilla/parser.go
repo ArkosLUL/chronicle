@@ -1,6 +1,7 @@
 package vanilla
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -116,7 +117,7 @@ func (p *Parser) init() error {
 	return initErr
 }
 
-func (p *Parser) Advance() ([]messages.Message, error) {
+func (p *Parser) Advance(_ context.Context) ([]messages.Message, error) {
 	err := p.init()
 	if err != nil {
 		return nil, parseerrors.AsFatalError(fmt.Errorf("init: %w", err))

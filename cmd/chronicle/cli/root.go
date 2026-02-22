@@ -26,6 +26,7 @@ func RootCmd() *serpent.Command {
 		versionCmd(),
 		MergeCmd(),
 		ParseCmd(),
+		ParseV2Cmd(),
 		CreaturesCmd(),
 		Zoner(),
 		RegrowthBug(),

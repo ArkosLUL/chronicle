@@ -13,6 +13,10 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
+type SpellFetcher interface {
+	Spell(id chrondbc.SpellID) (*chrondbc.Spell, error)
+}
+
 type Options struct {
 	SpellsDBCPath string
 }

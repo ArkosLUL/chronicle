@@ -1,0 +1,58 @@
+package synthetic
+
+import (
+	"log/slog"
+
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic/spelldata"
+	"github.com/Emyrk/chronicle/database/gamedb"
+)
+
+// 11815 is the item id for HoJ
+
+type extraAttack struct {
+	WoWDB       gamedb.SpellFetcher
+	logger      *slog.Logger
+	currentZone *zoner.Location
+	lastDamage  map[guid.GUID]*messages.Damage
+}
+
+func newExtraAttack(logger *slog.Logger, wowDB gamedb.SpellFetcher) *extraAttack {
+	return &extraAttack{
+		WoWDB:       wowDB,
+		logger:      logger,
+		currentZone: zoner.NewLocation(),
+		lastDamage:  make(map[guid.GUID]*messages.Damage),
+	}
+}
+
+func (s *extraAttack) ProcessMessage(msgs []messages.Message) []messages.Message {
+	var add []messages.Message
+	for _, msg := range msgs {
+		switch m := msg.(type) {
+		case *messages.SpellGo:
+			if extra, ok := spelldata.ExtraAttackSpells[m.SpellID]; ok {
+				spellData, err := s.WoWDB.Spell(m.SpellID)
+				if err != nil {
+					s.logger.Error("failed to fetch spell data for extra attack", "spellID", m.SpellID, "error", err)
+				}
+
+				add = append(add, &messages.ExtraAttack{
+					MessageBase:   messages.Base(msg.Date()),
+					Caster:        m.Caster,
+					Amount:        1,
+					Spell:         spellData,
+					FromSpellName: extra,
+				})
+			}
+		}
+	}
+
+	if len(add) == 0 {
+		return msgs
+	}
+
+	return append(msgs, add...)
+}

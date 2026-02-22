@@ -52,7 +52,7 @@ func (s *Creatures) Consume(ctx context.Context, p *vanilla.Parser) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		msgs, err := p.Advance()
+		msgs, err := p.Advance(ctx)
 		if err != nil {
 			if parseerrors.IsFatalError(err) {
 				return fmt.Errorf("fatal parser error: %w", err)

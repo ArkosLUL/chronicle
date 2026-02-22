@@ -8,11 +8,11 @@ import (
 )
 
 type mitigator struct {
-	WoWDB  *gamedb.WoWDB
+	WoWDB  gamedb.SpellFetcher
 	logger *slog.Logger
 }
 
-func newMitigator(logger *slog.Logger, wowDB *gamedb.WoWDB) *mitigator {
+func newMitigator(logger *slog.Logger, wowDB gamedb.SpellFetcher) *mitigator {
 	return &mitigator{
 		WoWDB:  wowDB,
 		logger: logger,

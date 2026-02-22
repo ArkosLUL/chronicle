@@ -1,22 +1,23 @@
 package parserv2
 
 import (
-	"context"
-	"log/slog"
-	"os"
-	"strings"
-	"testing"
-	"time"
+  "context"
+  "log/slog"
+  "os"
+  "strings"
+  "testing"
+  "time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/database/gamedb"
-	"github.com/Emyrk/chronicle/internal/ptr"
-	"github.com/rs/zerolog"
-	slogzerolog "github.com/samber/slog-zerolog/v2"
-	"github.com/stretchr/testify/require"
+  "github.com/Emyrk/chronicle/combatlog/parser/guid"
+  "github.com/Emyrk/chronicle/combatlog/parser/types"
+  "github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
+  "github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+  "github.com/Emyrk/chronicle/database/gamedb"
+  "github.com/Emyrk/chronicle/internal/ptr"
+  "github.com/rs/zerolog"
+  slogzerolog "github.com/samber/slog-zerolog/v2"
+  "github.com/stretchr/testify/require"
 )
 
 // testCase parses line and asserts result matches expected message
@@ -33,7 +34,8 @@ func testCaseWithDB[T messages.Message](t *testing.T, line string, expected T, w
 	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
 	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zerologLogger}.NewZerologHandler())
 
-	p := New(logger, strings.NewReader(line), wowDB)
+	p, err := New(logger, strings.NewReader(line), wowDB)
+  require.NoError(t, err)
 	msgs, err := p.Advance(ctx)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1, "expected single message, got %d", len(msgs))
@@ -103,6 +105,20 @@ func TestParserMessages(t *testing.T) {
 			},
 		)
 	})
+  
+  t.Run("Spell Go", func(t *testing.T) {
+    t.Parallel()
+    testCase(t,
+      "1771770885937|SPELL_GO|0|15237|0x000000000001C80A|0x0000000000000000|256|0|1",
+      &messages.Cast{
+        MessageBase: messages.Base(time.UnixMilli(1771563953000)),
+        CastV2:      castv2.CastV2{
+          Caster: types.Unit{},
+          Action: "",
+          Target: nil,
+          Spell:  types.Spell{},
+        },
+      })
 
 	// Add more test cases:
 	// t.Run("Heal", func(t *testing.T) {

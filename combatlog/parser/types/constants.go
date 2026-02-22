@@ -214,3 +214,47 @@ func ParseResourceChange(s string) (ChangeDirection, error) {
 		return "", errors.New("invalid resource change direction")
 	}
 }
+
+type CastFlags uint32
+
+func (h CastFlags) Has(flag CastFlags) bool {
+	return h&flag != 0
+}
+func (h CastFlags) String() string {
+	var parts []string
+	for k, v := range map[CastFlags]string{
+		CAST_FLAG_NONE:             "none",
+		CAST_FLAG_HIDDEN_COMBATLOG: "hidden combatlog",
+		CAST_FLAG_UNKNOWN2:         "unknown 2",
+		CAST_FLAG_UNKNOWN3:         "unknown 3",
+		CAST_FLAG_UNKNOWN4:         "unknown 4",
+		CAST_FLAG_UNKNOWN5:         "unknown 5",
+		CAST_FLAG_AMMO:             "ammo",
+		CAST_FLAG_UNKNOWN7:         "unknown 7",
+		CAST_FLAG_UNKNOWN8:         "unknown 8",
+		CAST_FLAG_UNKNOWN9:         "unknown 9",
+	} {
+		if h.Has(k) {
+			parts = append(parts, v)
+		}
+	}
+
+	if len(parts) == 0 {
+		return "None"
+	}
+
+	return strings.Join(parts, "|")
+}
+
+const (
+	CAST_FLAG_NONE             CastFlags = 0   // (0x00000000)
+	CAST_FLAG_HIDDEN_COMBATLOG CastFlags = 1   // (0x00000001)
+	CAST_FLAG_UNKNOWN2         CastFlags = 2   // (0x00000002)
+	CAST_FLAG_UNKNOWN3         CastFlags = 4   // (0x00000004)
+	CAST_FLAG_UNKNOWN4         CastFlags = 8   // (0x00000008)
+	CAST_FLAG_UNKNOWN5         CastFlags = 16  // (0x00000010)
+	CAST_FLAG_AMMO             CastFlags = 32  // (0x00000020)
+	CAST_FLAG_UNKNOWN7         CastFlags = 64  // (0x00000040)
+	CAST_FLAG_UNKNOWN8         CastFlags = 128 // (0x00000080)
+	CAST_FLAG_UNKNOWN9         CastFlags = 256 // (0x00000100)
+)

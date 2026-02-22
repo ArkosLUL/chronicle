@@ -7,6 +7,18 @@ var (
 		Hostiles: FromMap(DeadminesHostiles()),
 	}).New
 
+	WailingCaverns = (&CommonFactory{
+		Name:     "Wailing Caverns",
+		ZoneName: ZoneNameMatcher("wailing caverns"),
+		Hostiles: FromMap(WailingCavernsHostiles()),
+	}).New
+
+  RazorfenKraul = (&CommonFactory{
+		Name:     "Razorfen Kraul",
+		ZoneName: ZoneNameMatcher("razorfen kraul"),
+		Hostiles: FromMap(RazorfenKraulHostiles()),
+	}).New
+
 	ScarletMonasteryCathedral = (&CommonFactory{
 		Name:     "Scarlet Monastery Cathedral",
 		ZoneName: ZoneNameMatcher("scarlet monastery cathedral"),

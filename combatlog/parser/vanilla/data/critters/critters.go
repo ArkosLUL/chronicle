@@ -10,6 +10,7 @@ var critters = map[uint32]string{
 	883:   "Deer",
 	1420:  "Toad",
 	16030: "Maggot",
+	3835:  "Biletoad",
 }
 
 func IsCritter(id guid.GUID) bool {

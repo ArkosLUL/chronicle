@@ -21,6 +21,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	// Register instances here as you add them
 	// 5 man
 	r.Register(wrap(instances.Deadmines))
+	r.Register(wrap(instances.WailingCaverns))
 	r.Register(wrap(instances.RagefireChasm))
 	r.Register(wrap(instances.ScarletMonasteryCathedral))
 	r.Register(wrap(instances.ScarletMonasteryLibrary))

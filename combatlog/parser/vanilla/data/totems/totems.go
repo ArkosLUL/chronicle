@@ -66,6 +66,14 @@ func init() {
 		variant{id: 7845, duration: 5 * time.Second},
 	)
 
+	register("Healing Stream Totem", 0,
+		variant{id: 3527, duration: 60 * time.Second},
+		variant{id: 3906, duration: 60 * time.Second},
+		variant{id: 3907, duration: 60 * time.Second},
+		variant{id: 3908, duration: 60 * time.Second},
+		variant{id: 3909, duration: 60 * time.Second},
+	)
+
 	register("Fire Resistance Totem",
 		modifierTotemicMastery,
 		variant{id: 5927, duration: 120 * time.Second},
@@ -118,6 +126,11 @@ func init() {
 		variant{id: 5913, duration: 120 * time.Second},
 	)
 
+  register("Earthbind Totem",
+    modifierTotemicMastery,
+    variant{id: 5913, duration: 45 * time.Second},
+  )
+
 	// Comes from "Enamored Water Spirit" item
 	// https://database.turtle-wow.org/?item=20503
 	register("Ancient Mana Spring Totem", 0,
@@ -136,6 +149,10 @@ func init() {
 
 	register("Powerful Healing Ward", 0,
 		variant{id: 14987, duration: 60 * time.Second * 4},
+	)
+
+	register("Lava Spout Totem", 0,
+		variant{id: 6017, duration: 20 * time.Second},
 	)
 }
 

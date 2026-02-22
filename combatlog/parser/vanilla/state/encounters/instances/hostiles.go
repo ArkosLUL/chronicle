@@ -166,7 +166,6 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		59955: "Manascale Whelp",
 		62604: "Desolate Invader",
 		61950: "Arcane Anomaly",
-		3909:  "Healing Stream Totem V",
 		61940: "Manascale Drake",
 		59989: "Manascale Ley-Seeker",
 		61953: "Karazhan Protector Golem",
@@ -339,6 +338,94 @@ func ZulGurubHostiles() map[uint32]Identity {
 		11380: "Jin'do the Hexxer",
 		15114: "Gahz'ranka",
 		14834: "Hakkar",
+	})
+	return hostile
+}
+
+func RazorfenKraulHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		4532:  "Razorfen Beastmaster",
+		4531:  "Razorfen Beast Trainer",
+		4515:  "Death's Head Acolyte",
+		4514:  "Raging Agam'ar",
+		4541:  "Blood of Agamaggan",
+		4511:  "Agam'ar",
+		4512:  "Rotting Agam'ar",
+		4442:  "Razorfen Defender",
+		4436:  "Razorfen Quilguard",
+		4516:  "Death's Head Adept",
+		4538:  "Kraul Bat",
+		4522:  "Razorfen Dustweaver",
+		4530:  "Razorfen Handler",
+		6035:  "Razorfen Stalker",
+		4625:  "Death's Head Ward Keeper",
+		4517:  "Death's Head Priest",
+		4520:  "Razorfen Geomancer",
+		4523:  "Razorfen Groundshaker",
+		62501: "Bramblehide Rootshaper",
+		4437:  "Razorfen Warden",
+		4427:  "Ward Guardian",
+		4623:  "Quilguard Champion",
+		4440:  "Razorfen Totemic",
+		4539:  "Greater Kraul Bat",
+		4519:  "Death's Head Seer",
+		4435:  "Razorfen Warrior",
+		4525:  "Razorfen Earthbreaker",
+		4518:  "Death's Head Sage",
+		62502: "Gnarled Bramblehide",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		4424:  "Aggem Thorncurse",
+		4428:  "Death Speaker Jargba",
+		4420:  "Overlord Ramtusk",
+		4438:  "Razorfen Spearhide",
+		4422:  "Agathelos the Raging",
+		4425:  "Blind Hunter",
+		4421:  "Charlga Razorflank",
+		4842:  "Earthcaller Halmgar",
+		62503: "Rotthorn",
+	})
+
+	return hostile
+}
+
+func WailingCavernsHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		3678:  "Disciple of Naralex",
+		5055:  "Deviate Lasher",
+		61966: "Kolkar Truthseeker",
+		3641:  "Deviate Lurker",
+		3640:  "Evolving Ectoplasm",
+		5756:  "Deviate Venomwing",
+		3637:  "Deviate Guardian",
+		61967: "Kolkar Explorer",
+		5755:  "Deviate Viper",
+		8886:  "Deviate Python",
+		5056:  "Deviate Dreadfang",
+		5762:  "Deviate Moccasin",
+		3636:  "Deviate Ravager",
+		5053:  "Deviate Crocolisk",
+		5761:  "Deviate Shambler",
+		5048:  "Deviate Adder",
+		5763:  "Nightmare Ectoplasm",
+		3840:  "Druid of the Fang",
+		61964: "Unnatural Overgrowth",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		3671:  "Lady Anacondra",
+		3669:  "Lord Cobrahn",
+		3653:  "Kresh",
+		3674:  "Skum",
+		61968: "Zandara Windhoof",
+		3670:  "Lord Pythas",
+		61965: "Vangros",
+		3673:  "Lord Serpentis",
+		5775:  "Verdan the Everliving",
+		3654:  "Mutanus the Devourer",
+		5912:  "Deviate Faerie Dragon",
 	})
 	return hostile
 }
@@ -559,7 +646,6 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		14456: "Blackwing Guardsman",
 		12467: "Death Talon Captain",
 		14101: "Enraged Felguard",
-		3909:  "Healing Stream Totem V",
 		14024: "Corrupted Bronze Whelp",
 		12459: "Blackwing Warlock",
 		12460: "Death Talon Wyrmguard",
@@ -631,7 +717,6 @@ func NaxxramasHostiles() map[uint32]Identity {
 		16167: "Bony Construct",
 		16157: "Doom Touched Warrior",
 		16452: "Necro Knight Guardian",
-		3527:  "Healing Stream Totem",
 		16068: "Larva",
 		16446: "Plagued Gargoyle",
 		16029: "Sludge Belcher",
@@ -646,7 +731,6 @@ func NaxxramasHostiles() map[uint32]Identity {
 		15929: "Stalagg",
 		16018: "Bile Retcher",
 		16025: "Stitched Spewer",
-		3909:  "Healing Stream Totem V",
 		16124: "Unrelenting Trainee",
 		16127: "Spectral Trainee",
 		16056: "Diseased Maggot",

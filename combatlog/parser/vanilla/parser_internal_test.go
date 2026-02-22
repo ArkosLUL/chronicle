@@ -87,9 +87,9 @@ func TestParserMessages(t *testing.T) {
 			SpellName:       ptr.Ref("Curse of Agony"),
 			Caster:          ptr.Ref(guid.GUID(0x000000000010408D)),
 			Target:          0xF130002F6100CB52,
-			HitType:         0,
-			Amount:          0,
-			School:          0,
+			HitType:         types.HitTypePeriodic,
+			Amount:          285,
+			School:          types.ShadowSchool,
 			Trailer:         nil,
 			EnvironmentType: nil,
 		}, wl)

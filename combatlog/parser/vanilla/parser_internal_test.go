@@ -79,6 +79,21 @@ func TestParserMessages(t *testing.T) {
 	})
 
 	t.Run("Damage", func(t *testing.T) {
+		wl, err := exp[*messages.Damage](p.ParseContent(nil, time.Time{}, "0xF130002F6100CB52 suffers 285 Shadow damage from 0x000000000010408D 's Curse of Agony."))
+		require.NoError(t, err)
+
+		require.Equal(t, &messages.Damage{
+			MessageBase:     messages.MessageBase{},
+			SpellName:       ptr.Ref("Curse of Agony"),
+			Caster:          ptr.Ref(guid.GUID(0x000000000010408D)),
+			Target:          0xF130002F6100CB52,
+			HitType:         0,
+			Amount:          0,
+			School:          0,
+			Trailer:         nil,
+			EnvironmentType: nil,
+		}, wl)
+
 		gl, err := exp[*messages.Damage](p.ParseContent(nil, time.Time{}, "0x000000000008B2C1 hits 0xF130002FE800DD20 for 60. (glancing)"))
 		require.NoError(t, err)
 

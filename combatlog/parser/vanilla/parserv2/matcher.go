@@ -9,11 +9,44 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
+
+func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	player := m.Guid()
+	realmName := m.String()
+	zone := m.String()
+	addonVersion := m.String()
+	superWoWVersion := m.String()
+	namPowerVersion := m.String()
+	xp3Version := m.String()
+	wowVersion := m.String()
+	wowBuild := m.Int32()
+	wowBuildDate := m.String()
+	localTime := m.String()
+	utcTime := m.String()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	return set(
+		&messages.Realm{
+			MessageBase: messages.Base(ts),
+			Info: realm.Info{
+				Seen:      ts,
+				Version:   wowVersion,
+				Build:     wowBuild,
+				BuildDate: wowBuildDate,
+				RealmName: "",
+			},
+		},
+	)
+}
 
 func (p *Parser) zoneInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	name := m.String()

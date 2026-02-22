@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync/atomic"
 
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Gophercraft/core/format/dbc"
@@ -26,8 +27,9 @@ type WoWDB struct {
 	spellFiles *os.File
 	spells     *chrondbc.SpellsDBC
 	spellLRU   *lru.Cache[chrondbc.SpellID, *chrondbc.Spell]
+
 	// spellNames is a READONLY map
-	spellNames map[string][]int32
+	spellNames atomic.Pointer[map[string][]int32]
 }
 
 func New(ctx context.Context, opts Options) (*WoWDB, error) {
@@ -50,18 +52,24 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 	}
 
 	spDBC := chrondbc.NewSpells(v)
-	spNames, err := loadSpellName(ctx, spDBC)
-	if err != nil {
-		return nil, fmt.Errorf("load spell names: %w", err)
-	}
 
-	return &WoWDB{
+	wdb := &WoWDB{
 		ctx:        ctx,
 		spellLRU:   c,
 		spellFiles: sf,
 		spells:     spDBC,
-		spellNames: spNames,
-	}, nil
+	}
+	go func() {
+		spNames, err := loadSpellName(ctx, spDBC)
+		if err != nil {
+			return
+			//return fmt.Errorf("load spell names: %w", err)
+		}
+
+		wdb.spellNames.Store(&spNames)
+	}()
+
+	return wdb, nil
 }
 
 func (w *WoWDB) TotalSpells() int {
@@ -69,7 +77,12 @@ func (w *WoWDB) TotalSpells() int {
 }
 
 func (w *WoWDB) SpellByName(name string) ([]int32, error) {
-	ids, ok := w.spellNames[name]
+	m := w.spellNames.Load()
+	if m == nil {
+		return nil, fmt.Errorf("spell names not loaded yet")
+	}
+
+	ids, ok := (*m)[name]
 	if !ok {
 		return nil, fmt.Errorf("spell not found: %s", name)
 	}

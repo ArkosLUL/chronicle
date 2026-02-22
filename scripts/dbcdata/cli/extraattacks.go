@@ -104,6 +104,7 @@ func writeTemplate(path string, tmpl *template.Template, data any) error {
 	if err != nil {
 		return err
 	}
+	//nolint:errcheck
 	defer f.Close()
 	return tmpl.Execute(f, data)
 }

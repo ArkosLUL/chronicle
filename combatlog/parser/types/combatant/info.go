@@ -42,6 +42,7 @@ func (i combatantInfo) guildRankName() string {
 	return i.getArg(7)
 }
 
+//nolint:unused
 func (i combatantInfo) guildRankIndex() string {
 	return i.getArg(8)
 }

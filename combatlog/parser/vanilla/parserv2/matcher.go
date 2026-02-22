@@ -30,6 +30,9 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	localTime := m.String()
 	utcTime := m.String()
 
+	var _ = player
+	var _, _, _, _, _, _, _ = zone, addonVersion, superWoWVersion, namPowerVersion, xp3Version, localTime, utcTime
+
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
@@ -40,9 +43,9 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 			Info: realm.Info{
 				Seen:      ts,
 				Version:   wowVersion,
-				Build:     wowBuild,
+				Build:     int(wowBuild),
 				BuildDate: wowBuildDate,
-				RealmName: "",
+				RealmName: realmName,
 			},
 		},
 	)

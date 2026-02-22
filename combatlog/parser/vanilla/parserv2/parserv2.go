@@ -72,6 +72,8 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 	p.lastDate = ts
 
 	switch event {
+	case "HEADER":
+		return p.header(ctx, ts, m)
 	case "ZONE_INFO":
 		return p.zoneInfo(ctx, ts, m)
 	case "UNIT_INFO":

@@ -174,6 +174,40 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	})
 }
 
+//func (p *Parser) spellStart(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+//	itemID := m.Int32() // 0 if no item triggered it
+//	spellData := m.DBCSpellByID(p)
+//	caster := m.Guid()
+//	target := m.OptionalGuid() // 0x0000000000000000 if no target
+//	castFlags := m.CastFlags()
+//	castTime := m.Int32()        // In millis
+//	channelDuration := m.Int32() // In millis, 0 if not a channel
+//	spellType := m.Int32()       // 0 = normal, 1 = channel, 2 = auto repeating
+//	corpseOwner := m.OptionalGuid()
+//
+//	if err := m.Error(); err != nil {
+//		return nil, err
+//	}
+//
+//	var item *int32
+//	if itemID != 0 {
+//		item = ptr.Ref(itemID)
+//	}
+//
+//	return set(&messages.SpellGo{
+//		MessageBase:      messages.Base(ts),
+//		ItemID:           item,
+//		SpellID:          spellData.ID,
+//		SpellData:        spellData,
+//		Caster:           caster,
+//		Target:           target,
+//		Flags:            castFlags,
+//		NumTargetsHit:    targetsHit,
+//		NumTargetsMissed: numMissed,
+//		CorpseOwner:      corpseOwner,
+//	})
+//}
+
 // spellGo does indicate a spell being landed/missed. These logs also appear as
 // SPELL_DMG and "MISS" logs.
 func (p *Parser) spellGo(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {

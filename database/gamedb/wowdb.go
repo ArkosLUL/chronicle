@@ -86,6 +86,15 @@ func loadSpellName(ctx context.Context, spDBC *chrondbc.SpellsDBC) (map[string][
 	return spellNames, err
 }
 
+func (w *WoWDB) RangeSpells(f func(*chrondbc.Spell) bool) error {
+	return w.spells.Range(func(sp *chrondbc.Spell) bool {
+		if sp == nil {
+			return true
+		}
+		return f(sp)
+	})
+}
+
 func (w *WoWDB) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	if sp, ok := w.spellLRU.Get(id); ok {
 		return sp, nil

@@ -43,6 +43,10 @@ func New(broker *services.Services) *Service {
 	}
 }
 
+func (s *Service) GameDB() *gamedb.WoWDB {
+	return s.db
+}
+
 func (s *Service) Name() string {
 	return services.ServiceWoWDB
 }

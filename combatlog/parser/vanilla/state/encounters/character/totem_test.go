@@ -1,6 +1,7 @@
 package character_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"strings"
@@ -31,7 +32,7 @@ func TestTotemicRecall(t *testing.T) {
 	db := unitdb.New()
 	c := character.NewCharacters(db)
 	for {
-		msgs, err := p.Advance()
+		msgs, err := p.Advance(context.Background())
 		if errors.Is(err, io.EOF) {
 			break
 		}

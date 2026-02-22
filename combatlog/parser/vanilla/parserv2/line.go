@@ -177,12 +177,20 @@ func (m *Matched) HeroRace() types.HeroRaces {
 
 func (m *Matched) HeroGender() types.HeroGender {
 	return parseMatch(m, func(s string) (types.HeroGender, error) {
-		return types.ParseHeroGender(s)
+		genderInt, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		return types.HeroGender(genderInt), nil
 	})
 }
 
 func (m *Matched) CSV() []string {
-	return strings.Split(m.pop(), ",")
+	str := m.pop()
+	if str == "" {
+		return []string{}
+	}
+	return strings.Split(str, ",")
 }
 
 func (m *Matched) DBCSpellByID(db gamedb.SpellFetcher) *chrondbc.Spell {

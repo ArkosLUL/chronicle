@@ -10,31 +10,47 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 type Parser struct {
 	logger  *slog.Logger
-	wowDB   *gamedb.WoWDB
+	wowDB   gamedb.SpellFetcher
 	scanner *bufio.Scanner
 
 	lastDate   time.Time
-	spellCache map[chrondbc.SpellID]*chrondbc.Spell
+	synthetics *synthetic.Synthetic
 }
 
-func New(logger *slog.Logger, r io.Reader, wowDB *gamedb.WoWDB) (*Parser, error) {
+func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher) (*Parser, error) {
 	if wowDB == nil {
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
 	return &Parser{
-		logger:  logger,
-		wowDB:   wowDB,
-		scanner: bufio.NewScanner(r),
+		logger:     logger,
+		wowDB:      wowDB,
+		scanner:    bufio.NewScanner(r),
+		synthetics: synthetic.New(logger, wowDB),
 	}, nil
 }
 
-func (p *Parser) Advance(ctx context.Context) (_ []messages.Message, final error) {
+func (p *Parser) Advance(ctx context.Context) ([]messages.Message, error) {
+	msgs, err := p.advance(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	msgs, err = p.synthetics.ProcessMessages(msgs)
+	if err != nil {
+		return nil, fmt.Errorf("processing synthetics: %w", err)
+	}
+
+	return msgs, nil
+}
+
+func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error) {
 	ok := p.scanner.Scan()
 	if !ok {
 		return nil, io.EOF
@@ -78,8 +94,5 @@ func (p *Parser) Advance(ctx context.Context) (_ []messages.Message, final error
 }
 
 func (p *Parser) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
-	if sp, ok := p.spellCache[id]; ok {
-		return sp, nil
-	}
 	return p.wowDB.Spell(id)
 }

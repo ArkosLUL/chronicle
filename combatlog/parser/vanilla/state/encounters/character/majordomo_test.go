@@ -33,7 +33,7 @@ func TestMajordomo(t *testing.T) {
 	p := vanilla.NewFromScanner(logger, liner, scans, nil)
 	output := encounters.New(ctx, logger)
 	for {
-		msgs, err := p.Advance()
+		msgs, err := p.Advance(ctx)
 		if errors.Is(err, io.EOF) {
 			break
 		}

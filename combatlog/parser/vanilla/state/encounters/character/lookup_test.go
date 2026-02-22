@@ -1,6 +1,7 @@
 package character_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"strings"
@@ -117,7 +118,7 @@ func TestCharacters(t *testing.T) {
 		require.NoError(t, err)
 
 		for {
-			msgs, err := parser.Advance()
+			msgs, err := parser.Advance(context.Background())
 			if errors.Is(err, io.EOF) {
 				break
 			}

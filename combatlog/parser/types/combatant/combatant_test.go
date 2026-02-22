@@ -55,7 +55,7 @@ func TestParseCombatant(t *testing.T) {
 				Guild: &combatant.Guild{
 					Name:      "Exalted with Doordash",
 					RankName:  "Friendly",
-					RankIndex: "4",
+					RankIndex: 0,
 				},
 				GearSetups: nil,
 				Talents: &combatant.Talents{

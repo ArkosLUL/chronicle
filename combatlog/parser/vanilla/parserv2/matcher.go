@@ -16,6 +16,8 @@ import (
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
+const dateLayout = "02.01.06 15:04:05"
+
 func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	player := m.Guid()
 	realmName := m.String()
@@ -27,29 +29,45 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	wowVersion := m.String()
 	wowBuild := m.Int32()
 	wowBuildDate := m.String()
-	localTime := m.String()
-	utcTime := m.String()
+	localTimeStr := m.String()
+	utcTimeStr := m.String()
 
 	// TODO: If ts is 0, set to utc time
 
 	var _ = player
-	var _, _, _, _, _, _ = addonVersion, superWoWVersion, namPowerVersion, xp3Version, localTime, utcTime
+	var _ = zoneName
+	var _, _, _, _ = addonVersion, superWoWVersion, namPowerVersion, xp3Version
 
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
 
+	localTime, err := time.Parse(dateLayout, localTimeStr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing local time: %w", err)
+	}
+	var _ = localTime
+
+	utcTime, err := time.Parse(dateLayout, utcTimeStr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing local time: %w", err)
+	}
+
+	if ts.IsZero() {
+		ts = utcTime
+	}
+
 	return set(
-		&messages.Zone{
-			MessageBase: messages.Base(ts),
-			Zone: zone.Zone{
-				Name:         zoneName,
-				InstanceID:   0,
-				Ghost:        false,
-				InstanceType: "",
-				IsInstance:   false,
-			},
-		},
+		//&messages.Zone{
+		//	MessageBase: messages.Base(ts),
+		//	Zone: zone.Zone{
+		//		Name:         zoneName,
+		//		InstanceID:   0,
+		//		Ghost:        false,
+		//		InstanceType: "",
+		//		IsInstance:   false,
+		//	},
+		//},
 		&messages.Realm{
 			MessageBase: messages.Base(ts),
 			Info: realm.Info{

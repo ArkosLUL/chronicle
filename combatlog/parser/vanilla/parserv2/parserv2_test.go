@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb"
@@ -69,10 +70,20 @@ func TestParserMessages(t *testing.T) {
 
 	t.Run("Header", func(t *testing.T) {
 		t.Parallel()
+		ts := time.Date(2026, 2, 23, 18, 17, 5, 0, time.UTC)
 
 		testCase(t,
-			"1771870624417|HEADER|0x0000000000432A74|Nordanaar|Ragefire Chasm|0.5|1.5||1771083771|1.18.0|7234|Dec 19 2025|23.02.26 19:17:05|23.02.26 18:17:05|200",
-			&messages.Realm{},
+			"0|HEADER|0x0000000000432A74|Nordanaar|Ragefire Chasm|0.5|1.5||1771083771|1.18.0|7234|Dec 19 2025|23.02.26 19:17:05|23.02.26 18:17:05|200",
+			&messages.Realm{
+				MessageBase: messages.Base(ts),
+				Info: realm.Info{
+					Seen:      ts,
+					Version:   "1.18.0",
+					Build:     7234,
+					BuildDate: "Dec 19 2025",
+					RealmName: "Nordanaar",
+				},
+			},
 		)
 	})
 

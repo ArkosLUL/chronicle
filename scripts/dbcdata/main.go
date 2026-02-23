@@ -101,7 +101,7 @@ func demo() *serpent.Command {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			spdb.Range(func(cursor *dbdefs.Ent_SpellAuraNames) bool {
+			_ = spdb.Range(func(cursor *dbdefs.Ent_SpellAuraNames) bool {
 				fmt.Println(cursor.EnumID, cursor.Name_lang.String())
 				return true
 			})

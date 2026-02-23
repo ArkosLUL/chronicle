@@ -434,7 +434,7 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		HitType:         hit,
 		Amount:          amount,
 		School:          school,
-		Trailer:         nil,
+		Trailer:         trailer,
 		EnvironmentType: nil,
 	})
 }

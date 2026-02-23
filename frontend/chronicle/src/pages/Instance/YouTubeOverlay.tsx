@@ -292,6 +292,8 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const checkTimeRef = useRef<(() => void) | null>(null);
   // Track whether the last encounter change came from video position (to avoid seek loop)
   const encounterChangeFromVideoRef = useRef(false);
+  // Queue seeks until video is loaded
+  const pendingSeekRef = useRef<number | null>(null);
 
   const videoId = parseYouTubeVideoId(videoUrl);
   
@@ -344,9 +346,19 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           setPlayerReady(true);
         },
         onStateChange: (event: { data: number }) => {
+          const state = event.data;
+          
+          // Apply any pending seek when video becomes ready
+          // VIDEO_CUED (5), PLAYING (1), PAUSED (2), BUFFERING (3) indicate video is loaded
+          if (state === 5 || state === 1 || state === 2 || state === 3) {
+            if (pendingSeekRef.current !== null && playerRef.current) {
+              playerRef.current.seekTo(pendingSeekRef.current, true);
+              pendingSeekRef.current = null;
+            }
+          }
+          
           // When video starts playing (including after seek), immediately check time
-          // YT.PlayerState.PLAYING = 1
-          if (event.data === 1) {
+          if (state === 1) {
             // Use setTimeout to ensure getCurrentTime() returns the new position
             setTimeout(() => checkTimeRef.current?.(), 0);
           }
@@ -397,6 +409,11 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
     };
   }, []);
 
+  // Clear pending seek when videoId changes
+  useEffect(() => {
+    pendingSeekRef.current = null;
+  }, [videoId]);
+
   // Seek when targetTime changes and calculate pause time
   useEffect(() => {
     if (!playerReady || !playerRef.current || !targetTime || !timestamps?.length) return;
@@ -420,7 +437,15 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
     const videoTime = calculateVideoTime(targetSeconds, timestamps);
 
     if (videoTime !== null) {
-      playerRef.current.seekTo(videoTime, true);
+      // Check if video is loaded before seeking
+      const state = playerRef.current.getPlayerState();
+      if (state === -1) {
+        // Video not started - queue the seek for when it loads
+        pendingSeekRef.current = videoTime;
+      } else {
+        playerRef.current.seekTo(videoTime, true);
+        pendingSeekRef.current = null; // Clear any pending seek
+      }
     }
 
     // Calculate pause time if pauseTime is set AND pauseAtEnd is enabled
@@ -439,10 +464,13 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
     if (!playerReady || !playerRef.current) return;
 
     const isSyncEnabled = syncMode?.enabled ?? false;
-    const pollInterval = isSyncEnabled ? 100 : 500;
+    const pollInterval = isSyncEnabled ? 250 : 500;
 
     const checkTime = () => {
       if (!playerRef.current) return;
+      
+      // Skip time checks if a seek is pending (video not loaded yet)
+      if (pendingSeekRef.current !== null) return;
       
       const currentTime = playerRef.current.getCurrentTime();
       setCurrentVideoTime(currentTime);

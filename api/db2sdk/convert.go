@@ -1,6 +1,8 @@
 package db2sdk
 
 import (
+	"time"
+
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
@@ -11,6 +13,10 @@ import (
 )
 
 func User(user database.ChronicleUser, roles []string) chroniclesdk.User {
+	var dataLimitUpdated time.Time
+	if t, ok := user.DataLimitUpdatedAt.(time.Time); ok {
+		dataLimitUpdated = t
+	}
 	return chroniclesdk.User{
 		ID:                     user.ID,
 		Username:               user.Username,
@@ -18,8 +24,8 @@ func User(user database.ChronicleUser, roles []string) chroniclesdk.User {
 		Roles:                  roles,
 		CreatedAt:              user.CreatedAt.Time,
 		UpdatedAt:              user.UpdatedAt.Time,
-		MaxStorageBytes:        user.MaxStorageBytes.Int64,
-		MaxStorageBytesUpdated: user.DataLimitUpdatedAt.Time,
+		MaxStorageBytes:        user.MaxStorageBytes,
+		MaxStorageBytesUpdated: dataLimitUpdated,
 		ConsumedStorageBytes:   user.ConsumedStorageBytes,
 	}
 }
@@ -245,4 +251,23 @@ func VideoTimestamp(timestamp database.VideoTimestamp) chroniclesdk.VideoTimesta
 		Confidence:       timestamp.Confidence,
 		UTCTime:          timestamp.UTCTime,
 	}
+}
+
+func DataGrant(g database.DataGrant) chroniclesdk.DataGrant {
+	var expiresAt *time.Time
+	if g.ExpiresAt.Valid {
+		expiresAt = &g.ExpiresAt.Time
+	}
+	return chroniclesdk.DataGrant{
+		ID:           g.ID.String(),
+		Source:       g.Source,
+		StorageBytes: g.StorageBytes,
+		Description:  g.Description.String,
+		CreatedAt:    g.CreatedAt.Time,
+		ExpiresAt:    expiresAt,
+	}
+}
+
+func DataGrants(gs []database.DataGrant) []chroniclesdk.DataGrant {
+	return slice.List(gs, DataGrant)
 }

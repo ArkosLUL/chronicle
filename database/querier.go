@@ -15,6 +15,7 @@ type sqlcQuerier interface {
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
 	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.UUID) error
+	DeleteDataGrant(ctx context.Context, arg DeleteDataGrantParams) error
 	DeleteGuildMember(ctx context.Context, arg DeleteGuildMemberParams) error
 	DeleteGuildPage(ctx context.Context, guildID uuid.UUID) error
 	DeleteGuildPagePanel(ctx context.Context, id uuid.UUID) error
@@ -43,6 +44,7 @@ type sqlcQuerier interface {
 	GetUserAuthLinkByUserID(ctx context.Context, userID uuid.UUID) (UserAuthLink, error)
 	GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (UserAuthSession, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (ChronicleUser, error)
+	GetUserDataGrants(ctx context.Context, userID uuid.UUID) ([]DataGrant, error)
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
 	GetWoWLogGroupsByOwner(ctx context.Context, owner uuid.UUID) ([]GetWoWLogGroupsByOwnerRow, error)
@@ -80,10 +82,10 @@ type sqlcQuerier interface {
 	ListGuildsWithPages(ctx context.Context, arg ListGuildsWithPagesParams) ([]ListGuildsWithPagesRow, error)
 	ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error)
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
-	SetUserStorageLimit(ctx context.Context, arg SetUserStorageLimitParams) (DataLimit, error)
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)
 	UpdateGuildPageTab(ctx context.Context, arg UpdateGuildPageTabParams) (GuildPageTab, error)
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
+	UpsertDataGrant(ctx context.Context, arg UpsertDataGrantParams) (DataGrant, error)
 	UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error)
 	UpsertGuildPage(ctx context.Context, arg UpsertGuildPageParams) (GuildPage, error)
 }

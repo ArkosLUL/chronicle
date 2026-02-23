@@ -66,6 +66,10 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		}
 	}()
 
+	if event == "HEADER" {
+		ts = p.lastDate
+	}
+
 	if !p.lastDate.IsZero() && ts.Before(p.lastDate.Add(-time.Second)) {
 		return nil, parseerrors.AsFatalError(fmt.Errorf("log dates went backwards: last %v, current %v", p.lastDate, ts))
 	}

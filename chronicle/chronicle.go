@@ -129,10 +129,10 @@ func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logTyp
 	if err != nil {
 		return nil, nil, fmt.Errorf("fetch user: %w", err)
 	}
-	if user.ConsumedStorageBytes > user.MaxStorageBytes.Int64 {
+	if user.ConsumedStorageBytes > user.MaxStorageBytes {
 		return nil, nil, httpapi.NewAPIError(
 			fmt.Errorf("storage limit exceeded"),
-			fmt.Sprintf("Reached storage limit of %s bytes, delete log files to free up space", humanize.Bytes(uint64(user.MaxStorageBytes.Int64))),
+			fmt.Sprintf("Reached storage limit of %s bytes, delete log files to free up space", humanize.Bytes(uint64(user.MaxStorageBytes))),
 			http.StatusBadRequest)
 	}
 

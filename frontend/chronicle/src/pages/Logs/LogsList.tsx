@@ -34,10 +34,12 @@ function StorageUsageCard({ consumed, max }: { consumed: number; max: number }) 
         <HardDrive className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Storage Usage</span>
-            <span className="text-sm text-muted-foreground">
+            <Link to="/account/storage" className="text-sm font-medium hover:underline">
+              Storage Usage
+            </Link>
+            <Link to="/account/storage" className="text-sm text-muted-foreground hover:text-foreground">
               {formatBytes(consumed)} / {formatBytes(max)}
-            </span>
+            </Link>
           </div>
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <div 
@@ -58,6 +60,10 @@ function StorageUsageCard({ consumed, max }: { consumed: number; max: number }) 
                 ? "You're approaching your storage limit. Consider deleting stored log files to free up space."
                 : "To help control server costs, you can delete stored log files after they've been parsed. Your parsed data will be preserved."
             }
+            {" "}
+            <Link to="/account/storage" className="underline hover:text-foreground">
+              View details
+            </Link>
           </p>
         </div>
       </div>

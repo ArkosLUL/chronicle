@@ -6,7 +6,8 @@ type UniqueConstraint string
 
 // UniqueConstraint enums.
 const (
-	UniqueDataLimitPkey                             UniqueConstraint = "data_limit_pkey"                                 // ALTER TABLE ONLY data_limit ADD CONSTRAINT data_limit_pkey PRIMARY KEY (user_id);
+	UniqueDataGrantsPkey                            UniqueConstraint = "data_grants_pkey"                                // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_pkey PRIMARY KEY (id);
+	UniqueDataGrantsUserIDSourceKey                 UniqueConstraint = "data_grants_user_id_source_key"                  // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
 	UniqueGuildMembersGuildIDUserIDKey              UniqueConstraint = "guild_members_guild_id_user_id_key"              // ALTER TABLE ONLY guild_members ADD CONSTRAINT guild_members_guild_id_user_id_key UNIQUE (guild_id, user_id);
 	UniqueGuildMembersPkey                          UniqueConstraint = "guild_members_pkey"                              // ALTER TABLE ONLY guild_members ADD CONSTRAINT guild_members_pkey PRIMARY KEY (id);
 	UniqueGuildPagePanelsPkey                       UniqueConstraint = "guild_page_panels_pkey"                          // ALTER TABLE ONLY guild_page_panels ADD CONSTRAINT guild_page_panels_pkey PRIMARY KEY (id);

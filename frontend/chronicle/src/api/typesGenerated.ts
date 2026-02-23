@@ -76,6 +76,19 @@ export interface CreateTabRequest {
     readonly slug: string;
 }
 
+// From chroniclesdk/user.go
+/**
+ * DataGrant represents a storage grant given to a user from various sources
+ */
+export interface DataGrant {
+    readonly id: string;
+    readonly source: string;
+    readonly storage_bytes: number;
+    readonly description?: string;
+    readonly created_at: string;
+    readonly expires_at?: string;
+}
+
 // From chroniclesdk/guild_page.go
 export type DeviceVisibility = "all" | "desktop" | "mobile";
 
@@ -376,11 +389,6 @@ export interface Session {
     readonly preferences: Preferences;
 }
 
-// From chroniclesdk/user.go
-export interface SetUserDataLimitRequest {
-    readonly max_storage_bytes: number;
-}
-
 // From chroniclesdk/guild_page.go
 export interface UpdateGuildPageRequest {
     readonly theme: GuildPageTheme;
@@ -390,6 +398,17 @@ export interface UpdateGuildPageRequest {
 export interface UpdateTabRequest {
     readonly label: string;
     readonly panels: readonly GuildPagePanel[];
+}
+
+// From chroniclesdk/user.go
+/**
+ * UpsertDataGrantRequest is used to create or update a storage grant
+ */
+export interface UpsertDataGrantRequest {
+    readonly source: string;
+    readonly storage_bytes: number;
+    readonly description?: string;
+    readonly expires_at?: string;
 }
 
 // From chroniclesdk/user.go
@@ -403,6 +422,16 @@ export interface User {
     readonly max_storage_bytes: number;
     readonly max_storage_bytes_updated: string;
     readonly consumed_storage_bytes: number;
+}
+
+// From chroniclesdk/user.go
+/**
+ * UserStorageInfo contains storage usage and grant breakdown for a user
+ */
+export interface UserStorageInfo {
+    readonly max_storage_bytes: number;
+    readonly consumed_storage_bytes: number;
+    readonly grants: readonly DataGrant[];
 }
 
 // From chroniclesdk/youtube.go
@@ -544,6 +573,7 @@ export interface WoWLogGroup {
     readonly owner: string;
     readonly created_at: string;
     readonly updated_at: string;
+    readonly log_type: string;
     readonly files: readonly WoWLogFile[];
     // empty interface{} type, falling back to unknown
     readonly processing_output?: unknown;

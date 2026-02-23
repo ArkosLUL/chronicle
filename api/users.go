@@ -5,6 +5,7 @@ import (
 
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 )
 
@@ -28,11 +29,36 @@ func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
 		UserID:               state.Claims.Subject,
 		SessionID:            state.Claims.SessionID,
 		Roles:                roles,
-		MaxStorageBytes:      user.MaxStorageBytes.Int64,
+		MaxStorageBytes:      user.MaxStorageBytes,
 		ConsumedStorageBytes: user.ConsumedStorageBytes,
 		Preferences: chroniclesdk.Preferences{
 			// Should allow people to disable hints if they want, but for now we'll just enable them by default
 			HelpfulHints: true,
 		},
+	})
+}
+
+// GetMyStorage returns the current user's storage info with grant breakdown
+func (a *API) GetMyStorage(w http.ResponseWriter, r *http.Request) {
+	state := chronauth.AuthenticationState(r)
+	ctx := r.Context()
+	userID := state.Claims.Subject
+
+	user, err := a.Opts.Zed.GetUserByID(ctx, userID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	grants, err := a.Opts.Zed.GetUserDataGrants(ctx, userID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.UserStorageInfo{
+		MaxStorageBytes:      user.MaxStorageBytes,
+		ConsumedStorageBytes: user.ConsumedStorageBytes,
+		Grants:               db2sdk.DataGrants(grants),
 	})
 }

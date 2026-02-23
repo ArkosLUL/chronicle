@@ -603,15 +603,19 @@ type ChronicleUser struct {
 	Email                string             `db:"email" json:"email"`
 	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	MaxStorageBytes      pgtype.Int8        `db:"max_storage_bytes" json:"max_storage_bytes"`
-	DataLimitUpdatedAt   pgtype.Timestamptz `db:"data_limit_updated_at" json:"data_limit_updated_at"`
+	MaxStorageBytes      int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
+	DataLimitUpdatedAt   interface{}        `db:"data_limit_updated_at" json:"data_limit_updated_at"`
 	ConsumedStorageBytes int64              `db:"consumed_storage_bytes" json:"consumed_storage_bytes"`
 }
 
-type DataLimit struct {
-	UserID          uuid.UUID          `db:"user_id" json:"user_id"`
-	MaxStorageBytes int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
-	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+type DataGrant struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	Source       string             `db:"source" json:"source"`
+	StorageBytes int64              `db:"storage_bytes" json:"storage_bytes"`
+	Description  pgtype.Text        `db:"description" json:"description"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ExpiresAt    pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
 }
 
 type Guild struct {
@@ -853,6 +857,12 @@ type UserAuthSession struct {
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	JwtID             uuid.UUID          `db:"jwt_id" json:"jwt_id"`
+}
+
+type UserStorageLimit struct {
+	UserID          uuid.UUID   `db:"user_id" json:"user_id"`
+	MaxStorageBytes int64       `db:"max_storage_bytes" json:"max_storage_bytes"`
+	UpdatedAt       interface{} `db:"updated_at" json:"updated_at"`
 }
 
 type WoWLogGroup struct {

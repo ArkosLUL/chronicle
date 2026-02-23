@@ -6,7 +6,7 @@ type ForeignKeyConstraint string
 
 // ForeignKeyConstraint enums.
 const (
-	ForeignKeyDataLimitUserID                                  ForeignKeyConstraint = "data_limit_user_id_fkey"                                      // ALTER TABLE ONLY data_limit ADD CONSTRAINT data_limit_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+	ForeignKeyDataGrantsUserID                                 ForeignKeyConstraint = "data_grants_user_id_fkey"                                     // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 	ForeignKeyGuildMembersGuildID                              ForeignKeyConstraint = "guild_members_guild_id_fkey"                                  // ALTER TABLE ONLY guild_members ADD CONSTRAINT guild_members_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
 	ForeignKeyGuildMembersUserID                               ForeignKeyConstraint = "guild_members_user_id_fkey"                                   // ALTER TABLE ONLY guild_members ADD CONSTRAINT guild_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 	ForeignKeyGuildPagePanelsTabID                             ForeignKeyConstraint = "guild_page_panels_tab_id_fkey"                                // ALTER TABLE ONLY guild_page_panels ADD CONSTRAINT guild_page_panels_tab_id_fkey FOREIGN KEY (tab_id) REFERENCES guild_page_tabs(id) ON DELETE CASCADE;

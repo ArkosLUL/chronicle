@@ -88,12 +88,12 @@ CREATE TYPE wow_playable_race AS ENUM (
     'Unknown'
 );
 
-CREATE FUNCTION insert_default_data_limit() RETURNS trigger
+CREATE FUNCTION insert_default_data_grant() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  INSERT INTO data_limit (user_id, max_storage_bytes)
-  VALUES (NEW.id, 500000000); -- 500MB default
+  INSERT INTO data_grants (user_id, source, storage_bytes, description)
+  VALUES (NEW.id, 'base', 500000000, 'Default storage allocation');
   RETURN NEW;
 END;
 $$;
@@ -114,10 +114,14 @@ CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) R
     END = 1;
 $$;
 
-CREATE TABLE data_limit (
+CREATE TABLE data_grants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
-    max_storage_bytes bigint NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    source text NOT NULL,
+    storage_bytes bigint NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone
 );
 
 CREATE TABLE log_file (
@@ -142,6 +146,14 @@ COMMENT ON COLUMN log_file.compressed_size_bytes IS 'Compressed file size in byt
 
 COMMENT ON COLUMN log_file.content_encoding IS 'Content encoding used for storage (e.g., gzip), NULL if stored raw';
 
+CREATE VIEW user_storage_limits AS
+ SELECT data_grants.user_id,
+    sum(data_grants.storage_bytes) AS max_storage_bytes,
+    max(data_grants.created_at) AS updated_at
+   FROM data_grants
+  WHERE ((data_grants.expires_at IS NULL) OR (data_grants.expires_at > now()))
+  GROUP BY data_grants.user_id;
+
 CREATE TABLE users (
     id uuid NOT NULL,
     username text NOT NULL,
@@ -156,11 +168,11 @@ CREATE VIEW chronicle_users AS
     u.email,
     u.created_at,
     u.updated_at,
-    dl.max_storage_bytes,
-    dl.updated_at AS data_limit_updated_at,
+    COALESCE(sl.max_storage_bytes, (0)::numeric) AS max_storage_bytes,
+    sl.updated_at AS data_limit_updated_at,
     COALESCE(lf.total_size_bytes, (0)::numeric) AS consumed_storage_bytes
    FROM ((public.users u
-     LEFT JOIN data_limit dl ON ((dl.user_id = u.id)))
+     LEFT JOIN user_storage_limits sl ON ((sl.user_id = u.id)))
      LEFT JOIN ( SELECT log_file.owner,
             sum(log_file.size_bytes) AS total_size_bytes
            FROM log_file
@@ -430,8 +442,11 @@ CREATE TABLE wow_servers (
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
-ALTER TABLE ONLY data_limit
-    ADD CONSTRAINT data_limit_pkey PRIMARY KEY (user_id);
+ALTER TABLE ONLY data_grants
+    ADD CONSTRAINT data_grants_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY data_grants
+    ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
 
 ALTER TABLE ONLY guild_members
     ADD CONSTRAINT guild_members_guild_id_user_id_key UNIQUE (guild_id, user_id);
@@ -522,6 +537,8 @@ ALTER TABLE ONLY wow_servers
 
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 
+CREATE INDEX idx_data_grants_user_id ON data_grants USING btree (user_id);
+
 CREATE INDEX idx_guild_members_guild ON guild_members USING btree (guild_id);
 
 CREATE INDEX idx_guild_members_user ON guild_members USING btree (user_id);
@@ -546,10 +563,10 @@ CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) W
 
 CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
 
-CREATE TRIGGER trigger_insert_default_data_limit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION insert_default_data_limit();
+CREATE TRIGGER trigger_insert_default_data_grant AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION insert_default_data_grant();
 
-ALTER TABLE ONLY data_limit
-    ADD CONSTRAINT data_limit_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE ONLY data_grants
+    ADD CONSTRAINT data_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY guild_members
     ADD CONSTRAINT guild_members_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;

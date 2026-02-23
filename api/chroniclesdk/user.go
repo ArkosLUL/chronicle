@@ -52,6 +52,27 @@ type AdminLog struct {
 	InstanceNames []string  `json:"instance_names"`
 }
 
-type SetUserDataLimitRequest struct {
-	MaxStorageBytes int64 `json:"max_storage_bytes"`
+// DataGrant represents a storage grant given to a user from various sources
+type DataGrant struct {
+	ID           string     `json:"id"`
+	Source       string     `json:"source"`
+	StorageBytes int64      `json:"storage_bytes"`
+	Description  string     `json:"description,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+}
+
+// UserStorageInfo contains storage usage and grant breakdown for a user
+type UserStorageInfo struct {
+	MaxStorageBytes      int64       `json:"max_storage_bytes"`
+	ConsumedStorageBytes int64       `json:"consumed_storage_bytes"`
+	Grants               []DataGrant `json:"grants"`
+}
+
+// UpsertDataGrantRequest is used to create or update a storage grant
+type UpsertDataGrantRequest struct {
+	Source       string     `json:"source"`
+	StorageBytes int64      `json:"storage_bytes"`
+	Description  string     `json:"description,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }

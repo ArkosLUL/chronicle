@@ -58,7 +58,7 @@ func (ArgsLogParse) InsertOpts() river.InsertOpts {
 	return river.InsertOpts{
 		Queue:       riverqueue.QueueLogParsing,
 		Priority:    riverqueue.PriorityDefault,
-		MaxAttempts: 5,
+		MaxAttempts: 2,
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 			ByState: []rivertype.JobState{

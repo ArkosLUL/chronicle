@@ -641,9 +641,20 @@ export function AdminPage() {
           <FileText className="h-4 w-4" />
           All Logs
         </Button>
+        <div className="border-l h-6 mx-1" />
+        <Link to="/admin/users">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Manage Users
+          </Button>
+        </Link>
         <Link to="/admin/storage">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="gap-2"
           >

@@ -46,7 +46,7 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 
 	// Responses are already cached by the client browser, so not sure how useful
 	// this really is.
-	c, err := lru.New[chrondbc.SpellID, *chrondbc.Spell](50)
+	c, err := lru.New[chrondbc.SpellID, *chrondbc.Spell](2000)
 	if err != nil {
 		return nil, fmt.Errorf("lru: %w", err)
 	}

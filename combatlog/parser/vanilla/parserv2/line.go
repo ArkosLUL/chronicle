@@ -2,6 +2,7 @@ package parserv2
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ type Matched struct {
 func ParseLine(content string) (time.Time, string, *Matched, error) {
 	parts := strings.Split(content, "|")
 	if len(parts) < 3 {
-		return time.Time{}, "", nil, nil
+		return time.Time{}, "", nil, fmt.Errorf("invalid line format: expected at least 3 parts, got %d", len(parts))
 	}
 
 	unixMilli, err := strconv.ParseInt(parts[0], 10, 64)

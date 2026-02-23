@@ -290,8 +290,9 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const currentVideoEncounterRef = useRef<string | null>(null);
   // Ref to checkTime function so onStateChange can call it immediately after seek
   const checkTimeRef = useRef<(() => void) | null>(null);
-  // Track whether the last encounter change came from video position (to avoid seek loop)
-  const encounterChangeFromVideoRef = useRef(false);
+  // Track whether we're in the middle of a programmatic seek (to avoid seek loop)
+  // When true, checkTime should not trigger encounter changes
+  const isProgrammaticSeekRef = useRef(false);
 
   const videoId = parseYouTubeVideoId(videoUrl);
   
@@ -401,26 +402,26 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   useEffect(() => {
     if (!playerReady || !playerRef.current || !targetTime || !timestamps?.length) return;
 
-    // Skip seeking if the encounter change came from video position (avoid seek loop)
-    // This happens when user seeks in video → encounter auto-selected → targetTime changes
-    if (encounterChangeFromVideoRef.current) {
-      encounterChangeFromVideoRef.current = false;
-      // Still update pause time if needed
-      if (pauseTime && pauseAtEnd) {
-        const pauseSeconds = isoToTimeOfDaySeconds(pauseTime);
-        const pauseVideoTime = calculateVideoTime(pauseSeconds, timestamps);
-        pauseVideoTimeRef.current = pauseVideoTime;
-      } else {
-        pauseVideoTimeRef.current = null;
-      }
-      return;
-    }
-
     const targetSeconds = isoToTimeOfDaySeconds(targetTime);
     const videoTime = calculateVideoTime(targetSeconds, timestamps);
 
     if (videoTime !== null) {
+      // Mark that we're doing a programmatic seek - checkTime should ignore position changes
+      isProgrammaticSeekRef.current = true;
+      
       playerRef.current.seekTo(videoTime, true);
+      
+      // Update currentVideoEncounterRef to match where we're seeking
+      if (encounters) {
+        const targetDate = new Date(targetTime);
+        const encounter = findEncounterAtTime(targetDate, encounters);
+        currentVideoEncounterRef.current = encounter?.id ?? null;
+      }
+      
+      // Clear the programmatic seek flag after a delay to allow seek to complete
+      setTimeout(() => {
+        isProgrammaticSeekRef.current = false;
+      }, 500);
     }
 
     // Calculate pause time if pauseTime is set AND pauseAtEnd is enabled
@@ -431,7 +432,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
     } else {
       pauseVideoTimeRef.current = null;
     }
-  }, [targetTime, pauseTime, timestamps, playerReady, pauseAtEnd]);
+  }, [targetTime, pauseTime, timestamps, playerReady, pauseAtEnd, encounters]);
 
   // Monitor video time, update current time state, and auto-pause at encounter end
   // When sync mode is enabled, poll faster (100ms) and report time to sync context
@@ -459,14 +460,13 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
       
       // Auto-select encounter based on video position (only when sync mode is enabled)
       // When sync is disabled, user is just watching video without affecting panel selection
-      if (isSyncEnabled && combatLogTime && encounters && onEncounterChange) {
+      // Skip if we're in the middle of a programmatic seek
+      if (isSyncEnabled && combatLogTime && encounters && onEncounterChange && !isProgrammaticSeekRef.current) {
         const encounter = findEncounterAtTime(combatLogTime, encounters);
         
         if (encounter) {
           if (encounter.id !== currentVideoEncounterRef.current) {
             currentVideoEncounterRef.current = encounter.id;
-            // Mark that this change came from video position (to avoid seek loop)
-            encounterChangeFromVideoRef.current = true;
             onEncounterChange(encounter.id);
           }
         } else {

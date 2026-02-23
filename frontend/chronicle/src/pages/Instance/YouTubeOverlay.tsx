@@ -258,6 +258,12 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
   const enableSync = syncMode?.enable;
   const disableSync = syncMode?.disable;
   
+  // Wrap onClose to disable sync mode when overlay closes
+  const handleClose = useCallback(() => {
+    disableSync?.();
+    onClose();
+  }, [disableSync, onClose]);
+  
   // Register YouTube as external driver and enable sync mode when mounted
   // Use setExternalDriver directly as dependency (stable from useCallback) rather than
   // syncMode object which changes on every timestamp update
@@ -654,7 +660,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
                 </Tooltip>
               )}
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-2 rounded bg-destructive/5 text-destructive/75 hover:bg-destructive/25 hover:text-destructive cursor-pointer transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -765,7 +771,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
             variant="ghost"
             size="icon"
             className="h-5 w-5 hover:bg-destructive/20 hover:text-destructive"
-            onClick={onClose}
+            onClick={handleClose}
           >
             <X className="h-3 w-3" />
           </Button>

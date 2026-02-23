@@ -187,3 +187,12 @@ func (s Spell) Affects(other Spell) bool {
 	}
 	return false
 }
+
+func (s Spell) IsPeriodic() bool {
+	for _, eff := range s.EffectAura {
+		if eff == AuraEffectPeriodicDamage || eff == AuraEffectPeriodicHeal {
+			return true
+		}
+	}
+	return false
+}

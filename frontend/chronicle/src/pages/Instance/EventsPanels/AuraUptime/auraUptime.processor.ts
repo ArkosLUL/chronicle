@@ -9,7 +9,7 @@
  */
 
 import type { PanelProcessor, ProcessorContext, AuraProcessorEvent, SlainProcessorEvent } from "../processorTypes";
-import { AuraApplication } from "../processorTypes";
+import { AuraState } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /** A segment of time when an aura was active */
@@ -200,7 +200,13 @@ function processAuraEvent(
 
   const key = activeKey(event.target, event.spellName);
   
-  if (event.application === AuraApplication.Gains) {
+  // Handle aura state: Added, Removed, or Modified (based on stack count)
+  const isAuraGained = event.state === AuraState.Added || 
+    (event.state === AuraState.Modified && event.amount > 0);
+  const isAuraEnded = event.state === AuraState.Removed || 
+    (event.state === AuraState.Modified && event.amount === 0);
+
+  if (isAuraGained) {
     // If there's an existing active aura of this type, finalize it first
     const existingActive = state.activeAuras.get(key);
     if (existingActive) {
@@ -224,7 +230,7 @@ function processAuraEvent(
       state.auraNames.push(event.spellName);
     }
     
-  } else if (event.application === AuraApplication.Fades || event.application === AuraApplication.Removed) {
+  } else if (isAuraEnded) {
     // Aura ended - finalize uptime
     const active = state.activeAuras.get(key);
     if (active) {

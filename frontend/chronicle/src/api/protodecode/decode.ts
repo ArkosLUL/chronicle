@@ -1871,6 +1871,18 @@ export const AuraApplication = {
 export type AuraApplication = typeof AuraApplication[keyof typeof AuraApplication];
 
 /**
+ * Aura state types from proto enum (preferred over AuraApplication)
+ */
+export const AuraState = {
+  Unknown: 0,
+  Added: 1,
+  Removed: 2,
+  Modified: 3,
+} as const;
+
+export type AuraState = (typeof AuraState)[keyof typeof AuraState];
+
+/**
  * Reusable Aura message object
  */
 export interface ReusableAura {
@@ -1881,6 +1893,7 @@ export interface ReusableAura {
   spellName: string;
   amount: number;
   application: AuraApplication;
+  state: AuraState;
   activity: ReusableActivityEntry[];
   activityCount: number;
 }
@@ -1927,6 +1940,7 @@ export class AuraDecoder {
     msg.spellName = "";
     msg.amount = 0;
     msg.application = AuraApplication.Unknown;
+    msg.state = AuraState.Unknown;
     msg.activityCount = 0;
     
     while (offset < end) {
@@ -1941,6 +1955,7 @@ export class AuraDecoder {
         
         if (fieldNumber === 4) msg.amount = value;
         else if (fieldNumber === 5) msg.application = value as AuraApplication;
+        else if (fieldNumber === 6) msg.state = value as AuraState;
       } else if (wireType === 2) {
         // Length-delimited
         const { value: len, bytesRead } = readVarintFast(data, offset);

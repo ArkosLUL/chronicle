@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
@@ -19,6 +20,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
+	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
@@ -392,27 +394,64 @@ func RegrowthBug() *serpent.Command {
 }
 
 func HitTypeCMD() *serpent.Command {
+	var casterStr string
 	cmd := &serpent.Command{
-		Use:        "hits <file> <file>",
-		Middleware: serpent.RequireNArgs(2),
+		Use: "hits <file> <file>",
+		Options: serpent.OptionSet{
+			{
+				Name:        "caster",
+				Description: "Filter by caster name.",
+				Required:    false,
+				Flag:        "caster",
+				Value:       serpent.StringOf(&casterStr),
+				Default:     "",
+			},
+		},
+		Middleware: serpent.RequireRangeArgs(1, 2),
 		Handler: func(i *serpent.Invocation) error {
 			ctx := i.Context()
 			logger := getLogger(i)
 
-			files, err := openFileReaders(i.Args[0], i.Args[1])
+			files, err := openFileReaders(i.Args...)
 			if err != nil {
 				return err
 			}
 			defer func() { closeFiles(files...) }()
 
-			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
-			if err != nil {
-				return err
+			var caster *guid.GUID
+			if casterStr != "" {
+				id, err := guid.FromString(casterStr)
+				if err != nil {
+					return fmt.Errorf("parsing caster GUID: %w", err)
+				}
+				caster = &id
 			}
 
-			p := vanilla.NewFromScanner(logger, liner, scan, nil)
-			h := &hitTypeConsumer{}
+			var p consumers.Advancer
+			if len(files) == 1 {
+				wowDB, err := gamedb.New(ctx, gamedb.Options{
+					SpellsDBCPath: "./assets/Spell.dbc",
+				})
+				if err != nil {
+					return fmt.Errorf("creating wowdb: %w", err)
+				}
+				p, err = parserv2.New(logger, files[0], wowDB)
+				if err != nil {
+					return fmt.Errorf("creating parser: %w", err)
+				}
+			} else {
+				m := vanilla.Merger(logger, merge.WithoutTimeAdjustments())
+				liner, scan, err := m.LineScanner(ctx, nil, logfile.New(nil, files[0]), logfile.New(nil, files[1]))
+				if err != nil {
+					return err
+				}
+
+				p = vanilla.NewFromScanner(logger, liner, scan, nil)
+			}
+
+			h := &hitTypeConsumer{
+				caster: caster,
+			}
 			c := consumers.New(logger, h)
 			err = c.ConsumeAll(ctx, p)
 			if err != nil {
@@ -439,6 +478,7 @@ func HitTypeCMD() *serpent.Command {
 }
 
 type hitTypeConsumer struct {
+	caster      *guid.GUID
 	SpellName   map[string]map[types.HitType]int
 	SpellSchool map[string]map[types.School]int
 }
@@ -450,6 +490,10 @@ func (h *hitTypeConsumer) Process(m messages.Message) error {
 	}
 	switch msg := m.(type) {
 	case *messages.Heal:
+		if h.caster != nil && msg.Caster != *h.caster {
+			return nil
+		}
+
 		if _, ok := h.SpellName[msg.SpellName]; !ok {
 			h.SpellName[msg.SpellName] = make(map[types.HitType]int)
 			h.SpellSchool[msg.SpellName] = make(map[types.School]int)
@@ -458,6 +502,14 @@ func (h *hitTypeConsumer) Process(m messages.Message) error {
 	case *messages.Damage:
 		if msg.SpellName == nil {
 			return nil
+		}
+		if h.caster != nil {
+			if msg.Caster == nil {
+				return nil
+			}
+			if *msg.Caster != *h.caster {
+				return nil
+			}
 		}
 
 		if _, ok := h.SpellName[*msg.SpellName]; !ok {

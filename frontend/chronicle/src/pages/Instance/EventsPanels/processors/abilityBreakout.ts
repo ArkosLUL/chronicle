@@ -106,7 +106,7 @@ export function updateAbilityBreakout(
     updateHitTypeStats(breakout.CrushingStats, amount);
   } else {
     breakout.Unknown = (breakout.Unknown || 0) + 1;
-    // console.log("Unknown hit type:", sourceName, hitType);
+    // console.log("Unknown hit type:", _sourceName, hitType);
   }
 }
 

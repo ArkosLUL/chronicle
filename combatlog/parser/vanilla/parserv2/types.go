@@ -44,29 +44,33 @@ const (
 	VICTIMSTATE_DEFLECTS   VictimState = 8
 )
 
-func HitType(info SwingHitInfo, state VictimState) types.HitType {
+func HitType(amount int32, components int32, info SwingHitInfo, state VictimState) types.HitType {
 	// TODO: Handle blocks, evades, immunities, deflections
 	var t types.HitType
+
+	base := types.HitTypeNone
+
+	if info.Has(HITINFO_RESIST) && components > 1 {
+		// The proc was resisted.
+		// TODO: Should we care?
+	}
+
 	switch {
 	case info.Has(HITINFO_CRITICALHIT):
-		t |= types.HitTypeCrit
+		base = types.HitTypeCrit
 	case info.Has(HITINFO_GLANCING):
-		t |= types.HitTypeGlancing
+		base = types.HitTypeGlancing
 	case info.Has(HITINFO_CRUSHING):
-		t |= types.HitTypeCrushing
+		base = types.HitTypeCrushing
 	case info.Has(HITINFO_MISS):
-		t |= types.HitTypeMiss
-	case info.Has(HITINFO_RESIST):
-		t |= types.HitTypeFullResist
+		base = types.HitTypeMiss
 	case info.Has(HITINFO_ABSORB):
-		// TODO: Remove the concept of partial & full absorb
-		t |= types.HitTypeFullAbsorb
+		// Trailer is done separately, but we can still mark it as a hit
+		t |= types.HitTypeHit
 	case info.Has(HITINFO_NOACTION):
-		// TODO: ?
+	// TODO: ?
 	case info.Has(HITINFO_AFFECTS_VICTIM):
-		t |= types.HitTypeHit
-	default:
-		t |= types.HitTypeHit
+		// This happens on dodge/parry as well
 	}
 
 	if info.Has(HITINFO_LEFTSWING) {
@@ -79,7 +83,11 @@ func HitType(info SwingHitInfo, state VictimState) types.HitType {
 	case VICTIMSTATE_DODGE:
 		t |= types.HitTypeDodge
 	case VICTIMSTATE_BLOCKS:
-		t |= types.HitTypeFullBlock // TODO: Remove the concept of partial & full block
+		if amount == 0 {
+			t |= types.HitTypeFullBlock
+		} else {
+			t |= types.HitTypePartialBlock
+		}
 	case VICTIMSTATE_DEFLECTS:
 		t |= types.HitTypeDeflect
 	case VICTIMSTATE_EVADES:
@@ -91,6 +99,11 @@ func HitType(info SwingHitInfo, state VictimState) types.HitType {
 	case VICTIMSTATE_INTERRUPT:
 		// TODO: ?
 	case VICTIMSTATE_NORMAL:
+		if base == 0 {
+			base = types.HitTypeHit
+		}
+		t |= base
+	default:
 		// TODO: ?
 	}
 

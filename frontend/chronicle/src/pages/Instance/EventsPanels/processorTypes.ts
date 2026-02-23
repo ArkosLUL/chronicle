@@ -159,6 +159,18 @@ export const AuraApplication = {
 export type AuraApplication = typeof AuraApplication[keyof typeof AuraApplication];
 
 /**
+ * Aura state constants matching AuraState proto (preferred over AuraApplication)
+ */
+export const AuraState = {
+  Unknown: 0,
+  Added: 1,
+  Removed: 2,
+  Modified: 3,
+} as const;
+
+export type AuraState = (typeof AuraState)[keyof typeof AuraState];
+
+/**
  * Aura event from the "aura" stream.
  * Tracks buff/debuff gains, fades, and removals.
  */
@@ -166,8 +178,9 @@ export interface AuraProcessorEvent extends EventMeta {
   type: "aura";
   target: string;  // The unit affected by the aura
   spellName: string;  // Name of the aura/buff/debuff
-  amount: number;  // Stack count or duration
-  application: AuraApplication;  // Gains, Fades, or Removed
+  amount: number;  // Stack count (for Modified events, 0 means ended)
+  application: AuraApplication;  // Deprecated: use state instead
+  state: AuraState;  // Added, Removed, or Modified
 }
 
 /**

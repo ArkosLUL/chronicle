@@ -19,7 +19,7 @@ import (
 const dateLayout = "02.01.06 15:04:05"
 
 func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
-	player := m.Guid()
+	player := m.OptionalGuid()
 	realmName := m.String()
 	zoneName := m.String()
 	addonVersion := m.String()
@@ -271,7 +271,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 	amount := int32(m.Int64())
 	info := m.SwingHitInfo()
 	victimState := VictimState(m.Int64())
-	_ = m.Int64() // Number of damage components probably does not matter
+	components := m.Int32() // Number of damage components probably does not matter
 	blocked := int32(m.Int64())
 	absorbed := int32(m.Int64())
 	resisted := int32(m.Int64())
@@ -284,6 +284,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 	if err != nil {
 		return nil, fmt.Errorf("fetching auto attack spell: %w", err)
 	}
+	ht := HitType(amount, components, info, victimState)
 
 	return set(&messages.Damage{
 		MessageBase:     messages.Base(ts),
@@ -291,7 +292,7 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 		SpellData:       auto,
 		Caster:          ptr.Ref(caster),
 		Target:          target,
-		HitType:         HitType(info, victimState),
+		HitType:         ht,
 		Amount:          amount,
 		School:          types.PhysicalSchool,
 		Trailer:         Trailer(blocked, absorbed, resisted),
@@ -384,6 +385,10 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	hit := types.HitTypeHit
 	if hitInfo == 2 {
 		hit = types.HitTypeCrit
+	}
+	if spell.IsPeriodic() {
+		// TODO: Maybe overlap with hit?
+		hit = types.HitTypePeriodic
 	}
 
 	if err := m.Error(); err != nil {

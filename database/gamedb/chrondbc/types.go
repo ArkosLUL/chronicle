@@ -50,16 +50,16 @@ func (d SpellFocusObject) Get() dbcmem.SpellFocusObject {
 }
 
 //go:generate stringer -type School -trimprefix=School
-type School int32
+type School bitmask.Bitmask32
 
 const (
-	SchoolNone   School = 0x00
-	SchoolHoly   School = 1
-	SchoolFire   School = 2
-	SchoolNature School = 3
-	SchoolFrost  School = 4
-	SchoolShadow School = 5
-	SchoolArcane School = 6
+	SchoolPhysical School = 0
+	SchoolHoly     School = 1
+	SchoolFire     School = 2
+	SchoolNature   School = 4
+	SchoolFrost    School = 8
+	SchoolShadow   School = 16
+	SchoolArcane   School = 32
 )
 
 //go:generate stringer -type Power -trimprefix=Power

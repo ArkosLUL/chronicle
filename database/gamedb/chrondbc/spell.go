@@ -175,3 +175,15 @@ func (s Spell) Description() string {
 func (s Spell) AuraDescription() string {
 	return s.AuraDescription_lang.String()
 }
+
+func (s Spell) Affects(other Spell) bool {
+	for i, effect := range s.EffectAura {
+		if effect == AuraEffectModDamagePercentTaken {
+			mask := s.EffectMiscValue[i]
+			if School(mask)&other.School != 0 {
+				return true
+			}
+		}
+	}
+	return false
+}

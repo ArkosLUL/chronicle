@@ -59,6 +59,24 @@ func (s SpellsDBC) ID(id int) (*Spell, error) {
 
 // SpellFromDB converts a raw DBC spell entry to our typed Spell struct.
 func SpellFromDB(def *dbdefs.Ent_Spell) *Spell {
+	var sch School
+	switch def.School {
+	case 0:
+		sch = SchoolPhysical
+	case 1:
+		sch = SchoolHoly
+	case 2:
+		sch = SchoolFire
+	case 3:
+		sch = SchoolNature
+	case 4:
+		sch = SchoolFrost
+	case 5:
+		sch = SchoolShadow
+	case 6:
+		sch = SchoolArcane
+	}
+
 	s := &Spell{
 		// === Core Identification ===
 		ID:                   SpellID(def.ID),
@@ -79,7 +97,7 @@ func SpellFromDB(def *dbdefs.Ent_Spell) *Spell {
 		MaxTargetLevel: def.MaxTargetLevel,
 
 		// === Behavior ===
-		School:             School(def.School),
+		School:             sch,
 		SpellPriority:      def.SpellPriority,
 		StanceBarOrder:     def.StanceBarOrder,
 		ProcTypeMask:       bitmask.Bitmask32(def.ProcTypeMask),

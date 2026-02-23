@@ -8,22 +8,40 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[SchoolNone-0]
+	_ = x[SchoolPhysical-0]
 	_ = x[SchoolHoly-1]
 	_ = x[SchoolFire-2]
-	_ = x[SchoolNature-3]
-	_ = x[SchoolFrost-4]
-	_ = x[SchoolShadow-5]
-	_ = x[SchoolArcane-6]
+	_ = x[SchoolNature-4]
+	_ = x[SchoolFrost-8]
+	_ = x[SchoolShadow-16]
+	_ = x[SchoolArcane-32]
 }
 
-const _School_name = "NoneHolyFireNatureFrostShadowArcane"
+const (
+	_School_name_0 = "PhysicalHolyFire"
+	_School_name_1 = "Nature"
+	_School_name_2 = "Frost"
+	_School_name_3 = "Shadow"
+	_School_name_4 = "Arcane"
+)
 
-var _School_index = [...]uint8{0, 4, 8, 12, 18, 23, 29, 35}
+var (
+	_School_index_0 = [...]uint8{0, 8, 12, 16}
+)
 
 func (i School) String() string {
-	if i < 0 || i >= School(len(_School_index)-1) {
+	switch {
+	case i <= 2:
+		return _School_name_0[_School_index_0[i]:_School_index_0[i+1]]
+	case i == 4:
+		return _School_name_1
+	case i == 8:
+		return _School_name_2
+	case i == 16:
+		return _School_name_3
+	case i == 32:
+		return _School_name_4
+	default:
 		return "School(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _School_name[_School_index[i]:_School_index[i+1]]
 }

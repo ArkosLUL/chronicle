@@ -19,7 +19,7 @@ import (
 func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	player := m.Guid()
 	realmName := m.String()
-	zone := m.String()
+	zoneName := m.String()
 	addonVersion := m.String()
 	superWoWVersion := m.String()
 	namPowerVersion := m.String()
@@ -31,13 +31,23 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	utcTime := m.String()
 
 	var _ = player
-	var _, _, _, _, _, _, _ = zone, addonVersion, superWoWVersion, namPowerVersion, xp3Version, localTime, utcTime
+	var _, _, _, _, _, _ = addonVersion, superWoWVersion, namPowerVersion, xp3Version, localTime, utcTime
 
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
 
 	return set(
+		&messages.Zone{
+			MessageBase: messages.Base(ts),
+			Zone: zone.Zone{
+				Name:         zoneName,
+				InstanceID:   0,
+				Ghost:        false,
+				InstanceType: "",
+				IsInstance:   false,
+			},
+		},
 		&messages.Realm{
 			MessageBase: messages.Base(ts),
 			Info: realm.Info{

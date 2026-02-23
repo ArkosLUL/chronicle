@@ -81,6 +81,76 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	)
 }
 
+func (p *Parser) auraUpdate(ctx context.Context, ts time.Time, buff bool, m *Matched) ([]messages.Message, error) {
+	return messages.Skip(ts, "not yet implements"), nil
+}
+
+func (p *Parser) energize(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	target := m.Guid()
+	caster := m.OptionalGuid()
+	spell := m.DBCSpellByID(p.wowDB)
+	powerType := m.PowerType()
+	amount := m.Int32()
+	periodic := m.Int64() == 1
+
+	var _ = periodic
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	dir := types.ChangeDirectionGain
+	if amount < 0 {
+		dir = types.ChangeDirectionLoss
+		amount = -amount
+	}
+
+	var name *string
+	if spell != nil {
+		name = ptr.Ref(spell.Name())
+	}
+
+	return set(&messages.ResourceChange{
+		MessageBase: messages.Base(ts),
+		Target:      target,
+		Amount:      amount,
+		Resource:    powerType,
+		Caster:      caster,
+		SpellName:   name,
+		SpellData:   spell,
+		Direction:   dir,
+	})
+}
+
+func (p *Parser) aura(ctx context.Context, ts time.Time, buff bool, m *Matched) ([]messages.Message, error) {
+	target := m.Guid()
+	m.skip() // buff slot
+	spell := m.DBCSpellByID(p.wowDB)
+	stack := m.Int32()
+	m.skip() // aura level
+	m.skip() // aura slot
+	state := m.AuraState()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	spName := ""
+	if spell != nil {
+		spName = spell.Name()
+	}
+
+	return set(&messages.Aura{
+		MessageBase: messages.Base(ts),
+		IsBuff:      buff,
+		Target:      target,
+		SpellName:   spName,
+		SpellData:   spell,
+		Amount:      stack,
+		State:       state,
+	})
+}
+
 func (p *Parser) zoneInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	name := m.String()
 	instanceID := uint32(m.Uint64())
@@ -210,9 +280,15 @@ func (p *Parser) swing(ctx context.Context, ts time.Time, m *Matched) ([]message
 		return nil, err
 	}
 
+	auto, err := p.wowDB.Spell(6603)
+	if err != nil {
+		return nil, fmt.Errorf("fetching auto attack spell: %w", err)
+	}
+
 	return set(&messages.Damage{
 		MessageBase:     messages.Base(ts),
 		SpellName:       ptr.Ref("Auto Attack"),
+		SpellData:       auto,
 		Caster:          ptr.Ref(caster),
 		Target:          target,
 		HitType:         HitType(info, victimState),
@@ -244,14 +320,53 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 		return nil, err
 	}
 
+	var name string
+	if spell != nil {
+		name = spell.Name()
+	}
+
 	return set(&messages.Heal{
 		MessageBase: messages.Base(ts),
 		Caster:      caster,
 		Target:      target,
-		SpellName:   spell.Name(),
+		SpellName:   name,
 		SpellData:   spell,
 		Amount:      amount,
 		HitType:     hit,
+	})
+}
+
+func (p *Parser) spellMiss(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	caster := m.Guid()
+	target := m.Guid()
+	spell := m.DBCSpellByID(p)
+	hit := m.SpellMissInfo()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	var name *string
+	if spell != nil {
+		name = ptr.Ref(spell.Name())
+	}
+
+	var school types.School
+	if spell != nil {
+		school = spell.School.ToType()
+	}
+
+	return set(&messages.Damage{
+		MessageBase:     messages.Base(ts),
+		SpellName:       name,
+		SpellData:       spell,
+		Caster:          ptr.Ref(caster),
+		Target:          target,
+		HitType:         hit,
+		Amount:          0,
+		School:          school,
+		Trailer:         nil,
+		EnvironmentType: nil,
 	})
 }
 
@@ -263,11 +378,9 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	amount := int32(m.Int64())
 	mitigated := m.Int32s() // 3 values: blocked, absorbed, resisted
 	hitInfo := m.Int64()
-	schoolV := m.Int64() // TODO: Map to types.School
-
+	school := m.School()
 	effects := m.Int32s() // effect1, effect2, effect3, auraType
 
-	// TODO: Periodic? Absorbed, resisted?
 	hit := types.HitTypeHit
 	if hitInfo == 2 {
 		hit = types.HitTypeCrit
@@ -285,14 +398,42 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		return nil, fmt.Errorf("expected 4 effect values, got %d", len(effects))
 	}
 
+	var trailer types.Trailer
+	if mitigated[0] > 0 || mitigated[1] > 0 || mitigated[2] > 0 {
+		if mitigated[0] > 0 {
+			trailer = append(trailer, types.TrailerEntry{
+				Amount:  ptr.Ref(uint32(mitigated[0])),
+				HitType: types.HitTypePartialBlock,
+			})
+		}
+		if mitigated[1] > 0 {
+			trailer = append(trailer, types.TrailerEntry{
+				Amount:  ptr.Ref(uint32(mitigated[1])),
+				HitType: types.HitTypePartialAbsorb,
+			})
+		}
+		if mitigated[2] > 0 {
+			trailer = append(trailer, types.TrailerEntry{
+				Amount:  ptr.Ref(uint32(mitigated[2])),
+				HitType: types.HitTypePartialResist,
+			})
+		}
+	}
+
+	var name *string
+	if spell != nil {
+		name = ptr.Ref(spell.Name())
+	}
+
 	return set(&messages.Damage{
 		MessageBase:     messages.Base(ts),
-		SpellName:       ptr.Ref(spell.Name()),
+		SpellName:       name,
+		SpellData:       spell,
 		Caster:          ptr.Ref(caster),
 		Target:          target,
 		HitType:         hit,
 		Amount:          amount,
-		School:          School(int32(schoolV)),
+		School:          school,
 		Trailer:         nil,
 		EnvironmentType: nil,
 	})
@@ -359,7 +500,6 @@ func (p *Parser) spellGo(_ context.Context, ts time.Time, m *Matched) ([]message
 	return set(&messages.SpellGo{
 		MessageBase:      messages.Base(ts),
 		ItemID:           item,
-		SpellID:          spellData.ID,
 		SpellData:        spellData,
 		Caster:           caster,
 		Target:           target,

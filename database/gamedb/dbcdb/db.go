@@ -113,6 +113,21 @@ func (w *WoWClient) SpellEffectNames() (Table[dbdefs.Ent_SpellEffectNames], erro
 	return WrapTable[dbdefs.Ent_SpellEffectNames](table), nil
 }
 
+func (w *WoWClient) SpellVisualEffectName() (Table[dbdefs.Ent_SpellVisualEffectName], error) {
+	data, err := w.ReadFile("DBFilesClient\\SpellVisualEffectName.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("SpellVisualEffectName", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_SpellVisualEffectName](table), nil
+}
+
 func (w *WoWClient) SpellCooldowns() (Table[dbdefs.Ent_SpellCooldowns], error) {
 	data, err := w.ReadFile("DBFilesClient\\SpellCooldowns.dbc")
 	if err != nil {

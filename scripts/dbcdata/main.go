@@ -96,10 +96,15 @@ func demo() *serpent.Command {
 				return fmt.Errorf("open wow client: %w", err)
 			}
 
-			spdb, err := wc.SpellIcons()
+			spdb, err := wc.SpellAuraNames()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)
 			}
+
+			spdb.Range(func(cursor *dbdefs.Ent_SpellAuraNames) bool {
+				fmt.Println(cursor.EnumID, cursor.Name_lang.String())
+				return true
+			})
 
 			fmt.Println(spdb.Len())
 			//c := make(map[int]int)

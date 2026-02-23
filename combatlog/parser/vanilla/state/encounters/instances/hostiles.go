@@ -806,3 +806,44 @@ func NaxxramasHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func StratholmeHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		10408: "Rockwing Gargoyle",
+		10412: "Crypt Crawler",
+		10391: "Skeletal Berserker",
+		10383: "Broken Cadaver",
+		10399: "Thuzadin Acolyte",
+		10407: "Fleshflayer Ghoul",
+		10381: "Ravaged Cadaver",
+		10464: "Wailing Banshee",
+		10398: "Thuzadin Shadowcaster",
+		11030: "Mindless Undead",
+		10463: "Shrieking Banshee",
+		10809: "Stonespine",
+		10406: "Ghoul Ravener",
+		10577: "Crypt Scarab",
+		10400: "Thuzadin Necromancer",
+		10435: "Magistrate Barthilas",
+		10417: "Venom Belcher",
+		10390: "Skeletal Guardian",
+		10411: "Eye of Naxxramas",
+		10405: "Plague Ghoul",
+		10697: "Bile Slime",
+		10876: "Undead Scarab",
+		10416: "Bile Spewer",
+		10394: "Black Guard Sentry",
+		10382: "Mangled Cadaver",
+		10413: "Crypt Beast",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		10438: "Maleki the Pallid",
+		10436: "Baroness Anastari",
+		10440: "Baron Rivendare",
+		10437: "Nerub'enkan",
+		10439: "Ramstein the Gorger",
+	})
+
+	return hostile
+}

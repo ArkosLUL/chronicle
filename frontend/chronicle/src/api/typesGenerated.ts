@@ -469,6 +469,11 @@ export type WoWAuraApplication = "Fades" | "Gains" | "Removed" | "Unknown";
 export const WoWAuraApplications: WoWAuraApplication[] = ["Fades", "Gains", "Removed", "Unknown"];
 
 // From types/constants.go
+export type WoWAuraState = 1 | 3 | 2 | 0;
+
+export const WoWAuraStates: WoWAuraState[] = [1, 3, 2, 0];
+
+// From types/constants.go
 export type WoWCastActions = "begins to cast" | "casts" | "channels" | "fails casting";
 
 export const WoWCastActionses: WoWCastActions[] = ["begins to cast", "casts", "channels", "fails casting"];
@@ -603,9 +608,9 @@ export interface WoWParsedLogJobOutput {
 }
 
 // From types/constants.go
-export type WoWResource = "Energy" | "Focus" | "Happiness" | "Health" | "Mana" | "Rage";
+export type WoWResource = "Energy" | "Focus" | "Happiness" | "Health" | "Mana" | "Rage" | "Unknown";
 
-export const WoWResources: WoWResource[] = ["Energy", "Focus", "Happiness", "Health", "Mana", "Rage"];
+export const WoWResources: WoWResource[] = ["Energy", "Focus", "Happiness", "Health", "Mana", "Rage", "Unknown"];
 
 // From types/constants.go
 export type WoWSchool = 64 | 4 | 16 | 2 | 8 | 0 | 1 | 32;

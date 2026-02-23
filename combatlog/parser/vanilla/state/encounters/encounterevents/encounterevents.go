@@ -22,6 +22,7 @@ type EncounterEvents struct {
 	Slain          *Builder[*messages.Slain, *chronicleproto.Slain]
 	Casts          *Builder[*messages.Cast, *chronicleproto.Cast]
 	Aura           *Builder[*messages.Aura, *chronicleproto.Aura]
+	SpellGo        *Builder[*messages.SpellGo, *chronicleproto.SpellGo]
 	cnter          int32
 }
 
@@ -35,6 +36,7 @@ func New(verbose bool) *EncounterEventsInProgress {
 		Slain:          NewBuilder[*messages.Slain, *chronicleproto.Slain](),
 		Casts:          NewBuilder[*messages.Cast, *chronicleproto.Cast](),
 		Aura:           NewBuilder[*messages.Aura, *chronicleproto.Aura](),
+		SpellGo:        NewBuilder[*messages.SpellGo, *chronicleproto.SpellGo](),
 	}
 }
 
@@ -74,6 +76,11 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing casts events: %w", err)
 	}
 
+	spellGo, err := e.SpellGo.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing spell go events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
@@ -81,6 +88,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.Slain = append(merge.Slain, slain...)
 	merge.Cast = append(merge.Cast, casts...)
 	merge.Aura = append(merge.Aura, auras...)
+	merge.SpellGo = append(merge.SpellGo, spellGo...)
 
 	return nil
 }
@@ -125,6 +133,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		err := AddToBuilder(e.Aura, ty, e.nextIndex(), types2proto.Aura)
 		if err != nil {
 			return fmt.Errorf("aura proto: %w", err)
+		}
+	case *messages.SpellGo:
+		err := AddToBuilder(e.SpellGo, ty, e.nextIndex(), types2proto.SpellGo)
+		if err != nil {
+			return fmt.Errorf("spell go proto: %w", err)
 		}
 	}
 	return nil

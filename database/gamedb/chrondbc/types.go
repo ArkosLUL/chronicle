@@ -1,6 +1,7 @@
 package chrondbc
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem"
 	"github.com/Emyrk/chronicle/internal/bitmask"
 )
@@ -61,6 +62,27 @@ const (
 	SchoolShadow   School = 16
 	SchoolArcane   School = 32
 )
+
+func (s School) ToType() types.School {
+	switch s {
+	case SchoolPhysical:
+		return types.PhysicalSchool
+	case SchoolHoly:
+		return types.HolySchool
+	case SchoolFire:
+		return types.FireSchool
+	case SchoolNature:
+		return types.NatureSchool
+	case SchoolFrost:
+		return types.FrostSchool
+	case SchoolShadow:
+		return types.ShadowSchool
+	case SchoolArcane:
+		return types.ArcaneSchool
+	default:
+		return types.NoneSchool
+	}
+}
 
 //go:generate stringer -type Power -trimprefix=Power
 type Power int32

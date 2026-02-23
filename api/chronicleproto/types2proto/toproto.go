@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/slice"
 )
@@ -26,6 +27,15 @@ func EventMeta(from time.Time, idx int32, msg messages.Message) *chronicleproto.
 	return meta
 }
 
+func SpellData(spell *chrondbc.Spell) *chronicleproto.SpellData {
+	if spell == nil {
+		return nil
+	}
+	return &chronicleproto.SpellData{
+		Id: int32(spell.ID),
+	}
+}
+
 func Damage(from time.Time, idx int32, dmg *messages.Damage) *chronicleproto.Damage {
 	return &chronicleproto.Damage{
 		Meta:       EventMeta(from, idx, dmg),
@@ -36,6 +46,7 @@ func Damage(from time.Time, idx int32, dmg *messages.Damage) *chronicleproto.Dam
 		Amount:     dmg.Amount,
 		School:     School(dmg.School),
 		Tailers:    slice.List(dmg.Trailer, TrailerEntry),
+		SpellData:  SpellData(dmg.SpellData),
 	}
 }
 
@@ -47,6 +58,7 @@ func Heal(from time.Time, idx int32, heal *messages.Heal) *chronicleproto.Heal {
 		SourceName: heal.SpellName,
 		Amount:     heal.Amount,
 		HitType:    HitType(heal.HitType),
+		SpellData:  SpellData(heal.SpellData),
 	}
 }
 
@@ -59,15 +71,17 @@ func ResourceChange(from time.Time, idx int32, rc *messages.ResourceChange) *chr
 		Caster:       OptionalGUID(rc.Caster),
 		SourceName:   rc.SpellName,
 		Direction:    rc.Direction.String(),
+		SpellData:    SpellData(rc.SpellData),
 	}
 }
 
 func ExtraAttack(from time.Time, idx int32, ea *messages.ExtraAttack) *chronicleproto.ExtraAttack {
 	return &chronicleproto.ExtraAttack{
 		Meta:       EventMeta(from, idx, ea),
-		Amount:     ea.Amount,
 		Target:     ea.Caster.String(), // Extra attacks are granted to the caster
+		Amount:     ea.Amount,
 		SourceName: ea.FromSpellName,
+		SpellData:  SpellData(ea.Spell),
 	}
 }
 
@@ -91,6 +105,27 @@ func Slain(from time.Time, idx int32, ea *messages.Slain) *chronicleproto.Slain 
 	}
 }
 
+func SpellGo(from time.Time, idx int32, ca *messages.SpellGo) *chronicleproto.SpellGo {
+	var target *string
+	if ca.Target != nil {
+		target = ptr.Ref(ca.Target.String())
+	}
+	var corpseOwner *string
+	if ca.CorpseOwner != nil {
+		corpseOwner = ptr.Ref(ca.CorpseOwner.String())
+	}
+	return &chronicleproto.SpellGo{
+		Meta:        EventMeta(from, idx, ca),
+		ItemID:      ca.ItemID,
+		SpellData:   SpellData(ca.SpellData),
+		Caster:      ca.Caster.String(),
+		Target:      target,
+		NumHits:     ca.NumTargetsHit,
+		NumMisses:   ca.NumTargetsMissed,
+		CorpseOwner: corpseOwner,
+	}
+}
+
 func Cast(from time.Time, idx int32, ca *messages.Cast) *chronicleproto.Cast {
 	var target *string
 	if ca.Target != nil {
@@ -107,11 +142,14 @@ func Cast(from time.Time, idx int32, ca *messages.Cast) *chronicleproto.Cast {
 
 func Aura(from time.Time, idx int32, a *messages.Aura) *chronicleproto.Aura {
 	return &chronicleproto.Aura{
-		Meta:        EventMeta(from, idx, a),
-		Target:      a.Target.String(),
-		SpellName:   a.SpellName,
-		Amount:      a.Amount,
-		Application: Application(a.Application),
+		Meta:          EventMeta(from, idx, a),
+		Target:        a.Target.String(),
+		SpellName:     a.SpellName,
+		CurrentAmount: a.Amount,
+		Application:   Application(a.Application),
+		State:         AuraState(a.State),
+		SpellData:     SpellData(a.SpellData),
+		IsBuff:        a.IsBuff,
 	}
 }
 
@@ -139,6 +177,19 @@ func Application(app types.AuraApplication) chronicleproto.AuraApplication {
 		return chronicleproto.AuraApplication_ApplicationFades
 	default:
 		return chronicleproto.AuraApplication_ApplicationUnknown
+	}
+}
+
+func AuraState(app types.AuraState) chronicleproto.AuraState {
+	switch app {
+	case types.AuraStateModified:
+		return chronicleproto.AuraState_StateModified
+	case types.AuraStateRemoved:
+		return chronicleproto.AuraState_StateRemoved
+	case types.AuraStateAdded:
+		return chronicleproto.AuraState_StateAdded
+	default:
+		return chronicleproto.AuraState_StateUnknown
 	}
 }
 

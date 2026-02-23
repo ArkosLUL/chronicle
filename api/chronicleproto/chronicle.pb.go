@@ -195,6 +195,102 @@ func (AuraApplication) EnumDescriptor() ([]byte, []int) {
 	return file_chronicle_proto_rawDescGZIP(), []int{2}
 }
 
+type AuraState int32
+
+const (
+	AuraState_StateUnknown  AuraState = 0
+	AuraState_StateAdded    AuraState = 1
+	AuraState_StateRemoved  AuraState = 2
+	AuraState_StateModified AuraState = 3
+)
+
+// Enum value maps for AuraState.
+var (
+	AuraState_name = map[int32]string{
+		0: "StateUnknown",
+		1: "StateAdded",
+		2: "StateRemoved",
+		3: "StateModified",
+	}
+	AuraState_value = map[string]int32{
+		"StateUnknown":  0,
+		"StateAdded":    1,
+		"StateRemoved":  2,
+		"StateModified": 3,
+	}
+)
+
+func (x AuraState) Enum() *AuraState {
+	p := new(AuraState)
+	*p = x
+	return p
+}
+
+func (x AuraState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AuraState) Descriptor() protoreflect.EnumDescriptor {
+	return file_chronicle_proto_enumTypes[3].Descriptor()
+}
+
+func (AuraState) Type() protoreflect.EnumType {
+	return &file_chronicle_proto_enumTypes[3]
+}
+
+func (x AuraState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AuraState.Descriptor instead.
+func (AuraState) EnumDescriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{3}
+}
+
+type SpellData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpellData) Reset() {
+	*x = SpellData{}
+	mi := &file_chronicle_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpellData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpellData) ProtoMessage() {}
+
+func (x *SpellData) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpellData.ProtoReflect.Descriptor instead.
+func (*SpellData) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *SpellData) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
 type Tailer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Amount        *uint32                `protobuf:"varint,1,opt,name=amount,proto3,oneof" json:"amount,omitempty"`
@@ -205,7 +301,7 @@ type Tailer struct {
 
 func (x *Tailer) Reset() {
 	*x = Tailer{}
-	mi := &file_chronicle_proto_msgTypes[0]
+	mi := &file_chronicle_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -217,7 +313,7 @@ func (x *Tailer) String() string {
 func (*Tailer) ProtoMessage() {}
 
 func (x *Tailer) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[0]
+	mi := &file_chronicle_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -230,7 +326,7 @@ func (x *Tailer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tailer.ProtoReflect.Descriptor instead.
 func (*Tailer) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{0}
+	return file_chronicle_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Tailer) GetAmount() uint32 {
@@ -257,7 +353,7 @@ type ActivityEntry struct {
 
 func (x *ActivityEntry) Reset() {
 	*x = ActivityEntry{}
-	mi := &file_chronicle_proto_msgTypes[1]
+	mi := &file_chronicle_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -269,7 +365,7 @@ func (x *ActivityEntry) String() string {
 func (*ActivityEntry) ProtoMessage() {}
 
 func (x *ActivityEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[1]
+	mi := &file_chronicle_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -282,7 +378,7 @@ func (x *ActivityEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivityEntry.ProtoReflect.Descriptor instead.
 func (*ActivityEntry) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{1}
+	return file_chronicle_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ActivityEntry) GetGuid() string {
@@ -310,7 +406,7 @@ type EventMeta struct {
 
 func (x *EventMeta) Reset() {
 	*x = EventMeta{}
-	mi := &file_chronicle_proto_msgTypes[2]
+	mi := &file_chronicle_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -322,7 +418,7 @@ func (x *EventMeta) String() string {
 func (*EventMeta) ProtoMessage() {}
 
 func (x *EventMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[2]
+	mi := &file_chronicle_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -335,7 +431,7 @@ func (x *EventMeta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventMeta.ProtoReflect.Descriptor instead.
 func (*EventMeta) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{2}
+	return file_chronicle_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *EventMeta) GetIndex() int32 {
@@ -367,13 +463,14 @@ type Heal struct {
 	SourceName    string                 `protobuf:"bytes,5,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
 	Amount        int32                  `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
 	HitType       uint32                 `protobuf:"varint,7,opt,name=hitType,proto3" json:"hitType,omitempty"`
+	SpellData     *SpellData             `protobuf:"bytes,8,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Heal) Reset() {
 	*x = Heal{}
-	mi := &file_chronicle_proto_msgTypes[3]
+	mi := &file_chronicle_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -385,7 +482,7 @@ func (x *Heal) String() string {
 func (*Heal) ProtoMessage() {}
 
 func (x *Heal) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[3]
+	mi := &file_chronicle_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -398,7 +495,7 @@ func (x *Heal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heal.ProtoReflect.Descriptor instead.
 func (*Heal) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{3}
+	return file_chronicle_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Heal) GetMeta() *EventMeta {
@@ -443,24 +540,32 @@ func (x *Heal) GetHitType() uint32 {
 	return 0
 }
 
+func (x *Heal) GetSpellData() *SpellData {
+	if x != nil {
+		return x.SpellData
+	}
+	return nil
+}
+
 type Damage struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Meta   *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
 	Caster *string                `protobuf:"bytes,3,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
 	// sourceName is the spell or ability name (or environmental source)
-	SourceName    string    `protobuf:"bytes,4,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
-	Target        string    `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
-	HitType       uint32    `protobuf:"varint,6,opt,name=hitType,proto3" json:"hitType,omitempty"`
-	Amount        int32     `protobuf:"varint,7,opt,name=amount,proto3" json:"amount,omitempty"`
-	School        School    `protobuf:"varint,8,opt,name=school,proto3,enum=chronicleproto.School" json:"school,omitempty"`
-	Tailers       []*Tailer `protobuf:"bytes,9,rep,name=tailers,proto3" json:"tailers,omitempty"`
+	SourceName    string     `protobuf:"bytes,4,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
+	Target        string     `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
+	HitType       uint32     `protobuf:"varint,6,opt,name=hitType,proto3" json:"hitType,omitempty"`
+	Amount        int32      `protobuf:"varint,7,opt,name=amount,proto3" json:"amount,omitempty"`
+	School        School     `protobuf:"varint,8,opt,name=school,proto3,enum=chronicleproto.School" json:"school,omitempty"`
+	Tailers       []*Tailer  `protobuf:"bytes,9,rep,name=tailers,proto3" json:"tailers,omitempty"`
+	SpellData     *SpellData `protobuf:"bytes,10,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Damage) Reset() {
 	*x = Damage{}
-	mi := &file_chronicle_proto_msgTypes[4]
+	mi := &file_chronicle_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -472,7 +577,7 @@ func (x *Damage) String() string {
 func (*Damage) ProtoMessage() {}
 
 func (x *Damage) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[4]
+	mi := &file_chronicle_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -485,7 +590,7 @@ func (x *Damage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Damage.ProtoReflect.Descriptor instead.
 func (*Damage) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{4}
+	return file_chronicle_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Damage) GetMeta() *EventMeta {
@@ -544,6 +649,13 @@ func (x *Damage) GetTailers() []*Tailer {
 	return nil
 }
 
+func (x *Damage) GetSpellData() *SpellData {
+	if x != nil {
+		return x.SpellData
+	}
+	return nil
+}
+
 type ResourceChange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
@@ -553,13 +665,14 @@ type ResourceChange struct {
 	Caster        *string                `protobuf:"bytes,6,opt,name=caster,proto3,oneof" json:"caster,omitempty"`
 	SourceName    *string                `protobuf:"bytes,7,opt,name=sourceName,proto3,oneof" json:"sourceName,omitempty"`
 	Direction     string                 `protobuf:"bytes,8,opt,name=direction,proto3" json:"direction,omitempty"`
+	SpellData     *SpellData             `protobuf:"bytes,9,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ResourceChange) Reset() {
 	*x = ResourceChange{}
-	mi := &file_chronicle_proto_msgTypes[5]
+	mi := &file_chronicle_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -571,7 +684,7 @@ func (x *ResourceChange) String() string {
 func (*ResourceChange) ProtoMessage() {}
 
 func (x *ResourceChange) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[5]
+	mi := &file_chronicle_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -584,7 +697,7 @@ func (x *ResourceChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceChange.ProtoReflect.Descriptor instead.
 func (*ResourceChange) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{5}
+	return file_chronicle_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ResourceChange) GetMeta() *EventMeta {
@@ -636,19 +749,27 @@ func (x *ResourceChange) GetDirection() string {
 	return ""
 }
 
+func (x *ResourceChange) GetSpellData() *SpellData {
+	if x != nil {
+		return x.SpellData
+	}
+	return nil
+}
+
 type ExtraAttack struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
 	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	Amount        int32                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
 	SourceName    string                 `protobuf:"bytes,5,opt,name=sourceName,proto3" json:"sourceName,omitempty"`
+	SpellData     *SpellData             `protobuf:"bytes,6,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ExtraAttack) Reset() {
 	*x = ExtraAttack{}
-	mi := &file_chronicle_proto_msgTypes[6]
+	mi := &file_chronicle_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -660,7 +781,7 @@ func (x *ExtraAttack) String() string {
 func (*ExtraAttack) ProtoMessage() {}
 
 func (x *ExtraAttack) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[6]
+	mi := &file_chronicle_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -673,7 +794,7 @@ func (x *ExtraAttack) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtraAttack.ProtoReflect.Descriptor instead.
 func (*ExtraAttack) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{6}
+	return file_chronicle_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ExtraAttack) GetMeta() *EventMeta {
@@ -704,6 +825,13 @@ func (x *ExtraAttack) GetSourceName() string {
 	return ""
 }
 
+func (x *ExtraAttack) GetSpellData() *SpellData {
+	if x != nil {
+		return x.SpellData
+	}
+	return nil
+}
+
 type Slain struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
@@ -716,7 +844,7 @@ type Slain struct {
 
 func (x *Slain) Reset() {
 	*x = Slain{}
-	mi := &file_chronicle_proto_msgTypes[7]
+	mi := &file_chronicle_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -728,7 +856,7 @@ func (x *Slain) String() string {
 func (*Slain) ProtoMessage() {}
 
 func (x *Slain) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[7]
+	mi := &file_chronicle_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -741,7 +869,7 @@ func (x *Slain) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Slain.ProtoReflect.Descriptor instead.
 func (*Slain) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{7}
+	return file_chronicle_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Slain) GetMeta() *EventMeta {
@@ -783,7 +911,7 @@ type Spell struct {
 
 func (x *Spell) Reset() {
 	*x = Spell{}
-	mi := &file_chronicle_proto_msgTypes[8]
+	mi := &file_chronicle_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -795,7 +923,7 @@ func (x *Spell) String() string {
 func (*Spell) ProtoMessage() {}
 
 func (x *Spell) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[8]
+	mi := &file_chronicle_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -808,7 +936,7 @@ func (x *Spell) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Spell.ProtoReflect.Descriptor instead.
 func (*Spell) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{8}
+	return file_chronicle_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Spell) GetName() string {
@@ -845,7 +973,7 @@ type Cast struct {
 
 func (x *Cast) Reset() {
 	*x = Cast{}
-	mi := &file_chronicle_proto_msgTypes[9]
+	mi := &file_chronicle_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -857,7 +985,7 @@ func (x *Cast) String() string {
 func (*Cast) ProtoMessage() {}
 
 func (x *Cast) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[9]
+	mi := &file_chronicle_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -870,7 +998,7 @@ func (x *Cast) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Cast.ProtoReflect.Descriptor instead.
 func (*Cast) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{9}
+	return file_chronicle_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Cast) GetMeta() *EventMeta {
@@ -913,15 +1041,18 @@ type Aura struct {
 	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
 	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	SpellName     string                 `protobuf:"bytes,3,opt,name=spellName,proto3" json:"spellName,omitempty"`
-	Amount        int32                  `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	CurrentAmount int32                  `protobuf:"varint,4,opt,name=currentAmount,proto3" json:"currentAmount,omitempty"`
 	Application   AuraApplication        `protobuf:"varint,5,opt,name=application,proto3,enum=chronicleproto.AuraApplication" json:"application,omitempty"`
+	State         AuraState              `protobuf:"varint,6,opt,name=state,proto3,enum=chronicleproto.AuraState" json:"state,omitempty"`
+	SpellData     *SpellData             `protobuf:"bytes,7,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
+	IsBuff        bool                   `protobuf:"varint,8,opt,name=isBuff,proto3" json:"isBuff,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Aura) Reset() {
 	*x = Aura{}
-	mi := &file_chronicle_proto_msgTypes[10]
+	mi := &file_chronicle_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -933,7 +1064,7 @@ func (x *Aura) String() string {
 func (*Aura) ProtoMessage() {}
 
 func (x *Aura) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[10]
+	mi := &file_chronicle_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -946,7 +1077,7 @@ func (x *Aura) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Aura.ProtoReflect.Descriptor instead.
 func (*Aura) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{10}
+	return file_chronicle_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Aura) GetMeta() *EventMeta {
@@ -970,9 +1101,9 @@ func (x *Aura) GetSpellName() string {
 	return ""
 }
 
-func (x *Aura) GetAmount() int32 {
+func (x *Aura) GetCurrentAmount() int32 {
 	if x != nil {
-		return x.Amount
+		return x.CurrentAmount
 	}
 	return 0
 }
@@ -984,11 +1115,134 @@ func (x *Aura) GetApplication() AuraApplication {
 	return AuraApplication_ApplicationUnknown
 }
 
+func (x *Aura) GetState() AuraState {
+	if x != nil {
+		return x.State
+	}
+	return AuraState_StateUnknown
+}
+
+func (x *Aura) GetSpellData() *SpellData {
+	if x != nil {
+		return x.SpellData
+	}
+	return nil
+}
+
+func (x *Aura) GetIsBuff() bool {
+	if x != nil {
+		return x.IsBuff
+	}
+	return false
+}
+
+type SpellGo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	ItemID        *int32                 `protobuf:"varint,2,opt,name=itemID,proto3,oneof" json:"itemID,omitempty"`
+	SpellData     *SpellData             `protobuf:"bytes,3,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
+	Caster        string                 `protobuf:"bytes,4,opt,name=caster,proto3" json:"caster,omitempty"`
+	Target        *string                `protobuf:"bytes,5,opt,name=target,proto3,oneof" json:"target,omitempty"`
+	NumHits       int32                  `protobuf:"varint,6,opt,name=numHits,proto3" json:"numHits,omitempty"`
+	NumMisses     int32                  `protobuf:"varint,7,opt,name=numMisses,proto3" json:"numMisses,omitempty"`
+	CorpseOwner   *string                `protobuf:"bytes,8,opt,name=corpseOwner,proto3,oneof" json:"corpseOwner,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpellGo) Reset() {
+	*x = SpellGo{}
+	mi := &file_chronicle_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpellGo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpellGo) ProtoMessage() {}
+
+func (x *SpellGo) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpellGo.ProtoReflect.Descriptor instead.
+func (*SpellGo) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SpellGo) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *SpellGo) GetItemID() int32 {
+	if x != nil && x.ItemID != nil {
+		return *x.ItemID
+	}
+	return 0
+}
+
+func (x *SpellGo) GetSpellData() *SpellData {
+	if x != nil {
+		return x.SpellData
+	}
+	return nil
+}
+
+func (x *SpellGo) GetCaster() string {
+	if x != nil {
+		return x.Caster
+	}
+	return ""
+}
+
+func (x *SpellGo) GetTarget() string {
+	if x != nil && x.Target != nil {
+		return *x.Target
+	}
+	return ""
+}
+
+func (x *SpellGo) GetNumHits() int32 {
+	if x != nil {
+		return x.NumHits
+	}
+	return 0
+}
+
+func (x *SpellGo) GetNumMisses() int32 {
+	if x != nil {
+		return x.NumMisses
+	}
+	return 0
+}
+
+func (x *SpellGo) GetCorpseOwner() string {
+	if x != nil && x.CorpseOwner != nil {
+		return *x.CorpseOwner
+	}
+	return ""
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
 	"\n" +
-	"\x0fchronicle.proto\x12\x0echronicleproto\"J\n" +
+	"\x0fchronicle.proto\x12\x0echronicleproto\"\x1b\n" +
+	"\tSpellData\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\"J\n" +
 	"\x06Tailer\x12\x1b\n" +
 	"\x06amount\x18\x01 \x01(\rH\x00R\x06amount\x88\x01\x01\x12\x18\n" +
 	"\ahitType\x18\x02 \x01(\rR\ahitTypeB\t\n" +
@@ -999,7 +1253,7 @@ const file_chronicle_proto_rawDesc = "" +
 	"\tEventMeta\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x05R\x05index\x12 \n" +
 	"\voffsetMilli\x18\x02 \x01(\x03R\voffsetMilli\x129\n" +
-	"\bactivity\x18\x03 \x03(\v2\x1d.chronicleproto.ActivityEntryR\bactivity\"\xb7\x01\n" +
+	"\bactivity\x18\x03 \x03(\v2\x1d.chronicleproto.ActivityEntryR\bactivity\"\x83\x02\n" +
 	"\x04Heal\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06caster\x18\x03 \x01(\tR\x06caster\x12\x16\n" +
@@ -1008,7 +1262,10 @@ const file_chronicle_proto_rawDesc = "" +
 	"sourceName\x18\x05 \x01(\tR\n" +
 	"sourceName\x12\x16\n" +
 	"\x06amount\x18\x06 \x01(\x05R\x06amount\x12\x18\n" +
-	"\ahitType\x18\a \x01(\rR\ahitType\"\xab\x02\n" +
+	"\ahitType\x18\a \x01(\rR\ahitType\x12<\n" +
+	"\tspellData\x18\b \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01B\f\n" +
+	"\n" +
+	"_spellData\"\xf7\x02\n" +
 	"\x06Damage\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +
 	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01\x12\x1e\n" +
@@ -1019,8 +1276,12 @@ const file_chronicle_proto_rawDesc = "" +
 	"\ahitType\x18\x06 \x01(\rR\ahitType\x12\x16\n" +
 	"\x06amount\x18\a \x01(\x05R\x06amount\x12.\n" +
 	"\x06school\x18\b \x01(\x0e2\x16.chronicleproto.SchoolR\x06school\x120\n" +
-	"\atailers\x18\t \x03(\v2\x16.chronicleproto.TailerR\atailersB\t\n" +
-	"\a_caster\"\x8d\x02\n" +
+	"\atailers\x18\t \x03(\v2\x16.chronicleproto.TailerR\atailers\x12<\n" +
+	"\tspellData\x18\n" +
+	" \x01(\v2\x19.chronicleproto.SpellDataH\x01R\tspellData\x88\x01\x01B\t\n" +
+	"\a_casterB\f\n" +
+	"\n" +
+	"_spellData\"\xd9\x02\n" +
 	"\x0eResourceChange\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06target\x18\x03 \x01(\tR\x06target\x12\x16\n" +
@@ -1030,16 +1291,22 @@ const file_chronicle_proto_rawDesc = "" +
 	"\n" +
 	"sourceName\x18\a \x01(\tH\x01R\n" +
 	"sourceName\x88\x01\x01\x12\x1c\n" +
-	"\tdirection\x18\b \x01(\tR\tdirectionB\t\n" +
+	"\tdirection\x18\b \x01(\tR\tdirection\x12<\n" +
+	"\tspellData\x18\t \x01(\v2\x19.chronicleproto.SpellDataH\x02R\tspellData\x88\x01\x01B\t\n" +
 	"\a_casterB\r\n" +
-	"\v_sourceName\"\x8c\x01\n" +
+	"\v_sourceNameB\f\n" +
+	"\n" +
+	"_spellData\"\xd8\x01\n" +
 	"\vExtraAttack\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\x05R\x06amount\x12\x1e\n" +
 	"\n" +
 	"sourceName\x18\x05 \x01(\tR\n" +
-	"sourceName\"\xc5\x01\n" +
+	"sourceName\x12<\n" +
+	"\tspellData\x18\x06 \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01B\f\n" +
+	"\n" +
+	"_spellData\"\xc5\x01\n" +
 	"\x05Slain\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1b\n" +
@@ -1058,13 +1325,32 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06action\x18\x03 \x01(\x0e2\x1a.chronicleproto.CastActionR\x06action\x12\x1b\n" +
 	"\x06target\x18\x04 \x01(\tH\x00R\x06target\x88\x01\x01\x12+\n" +
 	"\x05spell\x18\x05 \x01(\v2\x15.chronicleproto.SpellR\x05spellB\t\n" +
-	"\a_target\"\xc6\x01\n" +
+	"\a_target\"\xe9\x02\n" +
 	"\x04Aura\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1c\n" +
-	"\tspellName\x18\x03 \x01(\tR\tspellName\x12\x16\n" +
-	"\x06amount\x18\x04 \x01(\x05R\x06amount\x12A\n" +
-	"\vapplication\x18\x05 \x01(\x0e2\x1f.chronicleproto.AuraApplicationR\vapplication*p\n" +
+	"\tspellName\x18\x03 \x01(\tR\tspellName\x12$\n" +
+	"\rcurrentAmount\x18\x04 \x01(\x05R\rcurrentAmount\x12A\n" +
+	"\vapplication\x18\x05 \x01(\x0e2\x1f.chronicleproto.AuraApplicationR\vapplication\x12/\n" +
+	"\x05state\x18\x06 \x01(\x0e2\x19.chronicleproto.AuraStateR\x05state\x12<\n" +
+	"\tspellData\x18\a \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01\x12\x16\n" +
+	"\x06isBuff\x18\b \x01(\bR\x06isBuffB\f\n" +
+	"\n" +
+	"_spellData\"\xdb\x02\n" +
+	"\aSpellGo\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +
+	"\x06itemID\x18\x02 \x01(\x05H\x00R\x06itemID\x88\x01\x01\x12<\n" +
+	"\tspellData\x18\x03 \x01(\v2\x19.chronicleproto.SpellDataH\x01R\tspellData\x88\x01\x01\x12\x16\n" +
+	"\x06caster\x18\x04 \x01(\tR\x06caster\x12\x1b\n" +
+	"\x06target\x18\x05 \x01(\tH\x02R\x06target\x88\x01\x01\x12\x18\n" +
+	"\anumHits\x18\x06 \x01(\x05R\anumHits\x12\x1c\n" +
+	"\tnumMisses\x18\a \x01(\x05R\tnumMisses\x12%\n" +
+	"\vcorpseOwner\x18\b \x01(\tH\x03R\vcorpseOwner\x88\x01\x01B\t\n" +
+	"\a_itemIDB\f\n" +
+	"\n" +
+	"_spellDataB\t\n" +
+	"\a_targetB\x0e\n" +
+	"\f_corpseOwner*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -1089,7 +1375,13 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x12ApplicationUnknown\x10\x00\x12\x14\n" +
 	"\x10ApplicationGains\x10\x01\x12\x14\n" +
 	"\x10ApplicationFades\x10\x02\x12\x16\n" +
-	"\x12ApplicationRemoved\x10\x03B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
+	"\x12ApplicationRemoved\x10\x03*R\n" +
+	"\tAuraState\x12\x10\n" +
+	"\fStateUnknown\x10\x00\x12\x0e\n" +
+	"\n" +
+	"StateAdded\x10\x01\x12\x10\n" +
+	"\fStateRemoved\x10\x02\x12\x11\n" +
+	"\rStateModified\x10\x03B/Z-github.com/Emyrk/chronicle/api/chronicleprotob\x06proto3"
 
 var (
 	file_chronicle_proto_rawDescOnce sync.Once
@@ -1103,44 +1395,55 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 	return file_chronicle_proto_rawDescData
 }
 
-var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),            // 0: chronicleproto.School
 	(CastAction)(0),        // 1: chronicleproto.CastAction
 	(AuraApplication)(0),   // 2: chronicleproto.AuraApplication
-	(*Tailer)(nil),         // 3: chronicleproto.Tailer
-	(*ActivityEntry)(nil),  // 4: chronicleproto.ActivityEntry
-	(*EventMeta)(nil),      // 5: chronicleproto.EventMeta
-	(*Heal)(nil),           // 6: chronicleproto.Heal
-	(*Damage)(nil),         // 7: chronicleproto.Damage
-	(*ResourceChange)(nil), // 8: chronicleproto.ResourceChange
-	(*ExtraAttack)(nil),    // 9: chronicleproto.ExtraAttack
-	(*Slain)(nil),          // 10: chronicleproto.Slain
-	(*Spell)(nil),          // 11: chronicleproto.Spell
-	(*Cast)(nil),           // 12: chronicleproto.Cast
-	(*Aura)(nil),           // 13: chronicleproto.Aura
+	(AuraState)(0),         // 3: chronicleproto.AuraState
+	(*SpellData)(nil),      // 4: chronicleproto.SpellData
+	(*Tailer)(nil),         // 5: chronicleproto.Tailer
+	(*ActivityEntry)(nil),  // 6: chronicleproto.ActivityEntry
+	(*EventMeta)(nil),      // 7: chronicleproto.EventMeta
+	(*Heal)(nil),           // 8: chronicleproto.Heal
+	(*Damage)(nil),         // 9: chronicleproto.Damage
+	(*ResourceChange)(nil), // 10: chronicleproto.ResourceChange
+	(*ExtraAttack)(nil),    // 11: chronicleproto.ExtraAttack
+	(*Slain)(nil),          // 12: chronicleproto.Slain
+	(*Spell)(nil),          // 13: chronicleproto.Spell
+	(*Cast)(nil),           // 14: chronicleproto.Cast
+	(*Aura)(nil),           // 15: chronicleproto.Aura
+	(*SpellGo)(nil),        // 16: chronicleproto.SpellGo
 }
 var file_chronicle_proto_depIdxs = []int32{
-	4,  // 0: chronicleproto.EventMeta.activity:type_name -> chronicleproto.ActivityEntry
-	5,  // 1: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
-	5,  // 2: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
-	0,  // 3: chronicleproto.Damage.school:type_name -> chronicleproto.School
-	3,  // 4: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	5,  // 5: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
-	5,  // 6: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
-	5,  // 7: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
-	7,  // 8: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
-	5,  // 9: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
-	1,  // 10: chronicleproto.Cast.action:type_name -> chronicleproto.CastAction
-	11, // 11: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
-	5,  // 12: chronicleproto.Aura.meta:type_name -> chronicleproto.EventMeta
-	2,  // 13: chronicleproto.Aura.application:type_name -> chronicleproto.AuraApplication
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 0: chronicleproto.EventMeta.activity:type_name -> chronicleproto.ActivityEntry
+	7,  // 1: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
+	4,  // 2: chronicleproto.Heal.spellData:type_name -> chronicleproto.SpellData
+	7,  // 3: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
+	0,  // 4: chronicleproto.Damage.school:type_name -> chronicleproto.School
+	5,  // 5: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
+	4,  // 6: chronicleproto.Damage.spellData:type_name -> chronicleproto.SpellData
+	7,  // 7: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
+	4,  // 8: chronicleproto.ResourceChange.spellData:type_name -> chronicleproto.SpellData
+	7,  // 9: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
+	4,  // 10: chronicleproto.ExtraAttack.spellData:type_name -> chronicleproto.SpellData
+	7,  // 11: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
+	9,  // 12: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
+	7,  // 13: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
+	1,  // 14: chronicleproto.Cast.action:type_name -> chronicleproto.CastAction
+	13, // 15: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
+	7,  // 16: chronicleproto.Aura.meta:type_name -> chronicleproto.EventMeta
+	2,  // 17: chronicleproto.Aura.application:type_name -> chronicleproto.AuraApplication
+	3,  // 18: chronicleproto.Aura.state:type_name -> chronicleproto.AuraState
+	4,  // 19: chronicleproto.Aura.spellData:type_name -> chronicleproto.SpellData
+	7,  // 20: chronicleproto.SpellGo.meta:type_name -> chronicleproto.EventMeta
+	4,  // 21: chronicleproto.SpellGo.spellData:type_name -> chronicleproto.SpellData
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -1148,19 +1451,23 @@ func file_chronicle_proto_init() {
 	if File_chronicle_proto != nil {
 		return
 	}
-	file_chronicle_proto_msgTypes[0].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[1].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[4].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[5].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[6].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[7].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[8].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[9].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[10].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[11].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   11,
+			NumEnums:      4,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

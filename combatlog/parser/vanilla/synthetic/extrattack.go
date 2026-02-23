@@ -33,10 +33,13 @@ func (s *extraAttack) ProcessMessage(msgs []messages.Message) []messages.Message
 	for _, msg := range msgs {
 		switch m := msg.(type) {
 		case *messages.SpellGo:
-			if extra, ok := spelldata.ExtraAttackSpells[m.SpellID]; ok {
-				spellData, err := s.WoWDB.Spell(m.SpellID)
+			if m.SpellData == nil {
+				continue
+			}
+			if extra, ok := spelldata.ExtraAttackSpells[m.SpellData.ID]; ok {
+				spellData, err := s.WoWDB.Spell(m.SpellData.ID)
 				if err != nil {
-					s.logger.Error("failed to fetch spell data for extra attack", "spellID", m.SpellID, "error", err)
+					s.logger.Error("failed to fetch spell data for extra attack", "spellID", m.SpellData.ID, "error", err)
 				}
 
 				add = append(add, &messages.ExtraAttack{

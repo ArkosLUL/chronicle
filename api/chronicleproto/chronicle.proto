@@ -31,6 +31,17 @@ enum AuraApplication {
   ApplicationRemoved = 3;
 }
 
+enum AuraState {
+  StateUnknown = 0;
+  StateAdded = 1;
+  StateRemoved = 2;
+  StateModified = 3;
+}
+
+message SpellData {
+  int32 id = 1;
+}
+
 message Tailer {
   optional uint32 amount = 1;
   uint32 hitType = 2;
@@ -54,6 +65,7 @@ message Heal {
   string sourceName = 5;
   int32 amount = 6;
   uint32 hitType = 7;
+  optional SpellData spellData = 8;
 }
 
 message Damage {
@@ -67,6 +79,7 @@ message Damage {
   int32 amount = 7;
   School school = 8;
   repeated Tailer tailers = 9;
+  optional SpellData spellData = 10;
 }
 
 message ResourceChange {
@@ -77,6 +90,7 @@ message ResourceChange {
   optional string caster = 6;
   optional string sourceName = 7;
   string direction = 8;
+  optional SpellData spellData = 9;
 }
 
 message ExtraAttack {
@@ -84,6 +98,7 @@ message ExtraAttack {
   string target = 2;
   int32 amount = 3;
   string sourceName = 5;
+  optional SpellData spellData = 6;
 }
 
 message Slain {
@@ -111,6 +126,20 @@ message Aura {
   EventMeta meta = 1;
   string target = 2;
   string spellName = 3;
-  int32 amount = 4;
+  int32 currentAmount = 4;
   AuraApplication application = 5;
+  AuraState state = 6;
+  optional SpellData spellData = 7;
+  bool isBuff = 8;
+}
+
+message SpellGo {
+  EventMeta meta = 1;
+  optional int32 itemID = 2;
+  optional SpellData spellData = 3;
+  string caster = 4;
+  optional string target = 5;
+  int32 numHits = 6;
+  int32 numMisses = 7;
+  optional string corpseOwner = 8;
 }

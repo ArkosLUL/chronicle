@@ -28,7 +28,7 @@ type HeroRaces string
 // ENUM(NotSet,Unknown,Male,Female)
 type HeroGender int
 
-// ENUM(Health,Mana,Rage,Happiness,Energy,Focus)
+// ENUM(Unknown,Health,Mana,Rage,Happiness,Energy,Focus)
 type Resource string
 
 // HitType represents different types of hits in combat
@@ -200,6 +200,9 @@ func ParseSchool(s string) (School, error) {
 		return NoneSchool, errors.New("invalid school")
 	}
 }
+
+// ENUM(Unknown,Added,Removed,Modified)
+type AuraState uint8
 
 // ENUM(Unknown,Gains,Fades,Removed)
 type AuraApplication string

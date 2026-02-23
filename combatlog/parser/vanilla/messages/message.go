@@ -248,6 +248,7 @@ type ResourceChange struct {
 	Resource  types.Resource
 	Caster    *guid.GUID
 	SpellName *string
+	SpellData *chrondbc.Spell
 	// 10/29 22:12:55.926  Naga (Kryaa) gains 35 Happiness from Kryaa 's Feed Pet Effect.
 	// 10/17 21:36:12.823  Sfantu 's Nosferatu loses 52 happiness.
 	Direction types.ChangeDirection
@@ -266,6 +267,7 @@ type Damage struct {
 	MessageBase
 	// SpellName is nil for things like environmental and melee damage
 	SpellName *string
+	SpellData *chrondbc.Spell
 	Caster    *guid.GUID
 	Target    guid.GUID
 	HitType   types.HitType
@@ -330,12 +332,31 @@ func (s Slain) Affects() []guid.GUID {
 }
 func (*Slain) isMessage() {}
 
+//type AuraCast struct {
+//	MessageBase
+//	Caster          guid.GUID
+//	Target          guid.GUID
+//	EffectID        chrondbc.SpellID
+//	EffectAuraName  string
+//	EffectAmplitude int32
+//	EffectMiscValue int32
+//	DurationMS      int32
+//	AuraCapStatus   int32
+//}
+
 type Aura struct {
 	MessageBase
-	Target      guid.GUID
-	SpellName   string
-	Amount      int32
+  // IsBuff is false if it is a debuff
+	IsBuff bool
+	Target guid.GUID
+	SpellName string
+	SpellData *chrondbc.Spell
+	// Amount is the current stacks
+	Amount int32
+	// Application
+	// Deprecated: Use State
 	Application types.AuraApplication
+	State       types.AuraState
 }
 
 func (a Aura) Affects() []guid.GUID { return []guid.GUID{a.Target} }
@@ -366,7 +387,6 @@ type SpellGo struct {
 	MessageBase
 	// Item is set if triggered by an item, otherwise nil.
 	ItemID           *int32
-	SpellID          chrondbc.SpellID
 	SpellData        *chrondbc.Spell
 	Caster           guid.GUID
 	Target           *guid.GUID
@@ -395,9 +415,9 @@ func (*SpellGo) isMessage() {}
 // white attacks are granted via some proc.
 type ExtraAttack struct {
 	MessageBase
-	Caster    guid.GUID
-	Amount    int32
-	Spell *chrondbc.Spell
+	Caster guid.GUID
+	Amount int32
+	Spell  *chrondbc.Spell
 	// FromSpellName is deprecated
 	FromSpellName string
 }

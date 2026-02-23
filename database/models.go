@@ -151,6 +151,7 @@ const (
 	LogInstanceEventTypeSlain          LogInstanceEventType = "slain"
 	LogInstanceEventTypeCast           LogInstanceEventType = "cast"
 	LogInstanceEventTypeAura           LogInstanceEventType = "aura"
+	LogInstanceEventTypeSpellGo        LogInstanceEventType = "spell_go"
 )
 
 func (e *LogInstanceEventType) Scan(src interface{}) error {
@@ -196,7 +197,8 @@ func (e LogInstanceEventType) Valid() bool {
 		LogInstanceEventTypeExtraAttack,
 		LogInstanceEventTypeSlain,
 		LogInstanceEventTypeCast,
-		LogInstanceEventTypeAura:
+		LogInstanceEventTypeAura,
+		LogInstanceEventTypeSpellGo:
 		return true
 	}
 	return false
@@ -211,6 +213,7 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 		LogInstanceEventTypeSlain,
 		LogInstanceEventTypeCast,
 		LogInstanceEventTypeAura,
+		LogInstanceEventTypeSpellGo,
 	}
 }
 

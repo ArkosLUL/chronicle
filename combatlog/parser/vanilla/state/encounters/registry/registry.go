@@ -44,6 +44,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.RegisterWithComment(wrap(instances.TempleOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
 	r.RegisterWithComment(wrap(instances.BlackwingLair), "**new** mobs registered, mechanics not implemented")
 	r.RegisterWithComment(wrap(instances.Naxxramas), "**new** mobs registered, mechanics not implemented")
+	r.RegisterWithComment(wrap(instances.Stratholme), "Only undead side, mechanics not implemented")
 
 	return r
 }

@@ -122,10 +122,55 @@ func (m *Matched) CastFlags() types.CastFlags {
 	})
 }
 
+func (m *Matched) SpellMissInfo() types.HitType {
+	switch SpellMissInfo(m.Int32()) {
+	case SPELL_MISS_NONE:
+		return types.HitTypeNone
+	case SPELL_MISS_MISS:
+		return types.HitTypeMiss
+	case SPELL_MISS_RESIST:
+		return types.HitTypeFullResist
+	case SPELL_MISS_DODGE:
+		return types.HitTypeDodge
+	case SPELL_MISS_PARRY:
+		return types.HitTypeParry
+	case SPELL_MISS_BLOCK:
+		return types.HitTypeFullBlock
+	case SPELL_MISS_EVADE:
+		return types.HitTypeEvade
+	case SPELL_MISS_IMMUNE:
+		return types.HitTypeImmune
+	case SPELL_MISS_IMMUNE2:
+		return types.HitTypeImmune
+	case SPELL_MISS_DEFLECT:
+		return types.HitTypeDeflect
+	case SPELL_MISS_ABSORB:
+		return types.HitTypeFullAbsorb
+	case SPELL_MISS_REFLECT:
+		return types.HitTypeReflect
+	default:
+		return types.HitTypeNone
+	}
+}
+
 func (m *Matched) Uint64() uint64 {
 	return parseMatch(m, func(s string) (uint64, error) {
 		return strconv.ParseUint(s, 10, 64)
 	})
+}
+
+func (m *Matched) Uint32() uint32 {
+	return parseMatch(m, func(s string) (uint32, error) {
+		u, err := strconv.ParseUint(s, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		return uint32(u), nil
+	})
+}
+
+func (m *Matched) AuraState() types.AuraState {
+	return types.AuraState(m.Uint32())
 }
 
 func (m *Matched) Int32() int32 {
@@ -164,6 +209,11 @@ func (m *Matched) String() string {
 	return m.pop()
 }
 
+func (m *Matched) School() types.School {
+	i := m.Int32()
+	return School(i)
+}
+
 func (m *Matched) HeroClass() types.HeroClasses {
 	return parseMatch(m, func(s string) (types.HeroClasses, error) {
 		return types.ParseHeroClasses(s)
@@ -186,6 +236,26 @@ func (m *Matched) HeroGender() types.HeroGender {
 	})
 }
 
+func (m *Matched) PowerType() types.Resource {
+	ty := m.Int32()
+	switch ty {
+	case 0:
+		return types.ResourceMana
+	case 1:
+		return types.ResourceRage
+	case 2:
+		return types.ResourceFocus
+	case 3:
+		return types.ResourceEnergy
+	case 4:
+		return types.ResourceHappiness
+	case -2:
+		return types.ResourceHealth
+	default:
+		return types.ResourceUnknown
+	}
+}
+
 func (m *Matched) CSV() []string {
 	str := m.pop()
 	if str == "" {
@@ -199,6 +269,10 @@ func (m *Matched) DBCSpellByID(db gamedb.SpellFetcher) *chrondbc.Spell {
 		id, err := strconv.ParseInt(s, 10, 32)
 		if err != nil {
 			return nil, err
+		}
+
+		if id <= 0 {
+			return nil, nil
 		}
 
 		return db.Spell(chrondbc.SpellID(int32(id)))

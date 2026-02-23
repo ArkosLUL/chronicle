@@ -60,6 +60,66 @@ func ParseAuraApplication(name string) (AuraApplication, error) {
 }
 
 const (
+	// AuraStateUnknown is a AuraState of type Unknown.
+	AuraStateUnknown AuraState = iota
+	// AuraStateAdded is a AuraState of type Added.
+	AuraStateAdded
+	// AuraStateRemoved is a AuraState of type Removed.
+	AuraStateRemoved
+	// AuraStateModified is a AuraState of type Modified.
+	AuraStateModified
+)
+
+var ErrInvalidAuraState = errors.New("not a valid AuraState")
+
+const _AuraStateName = "UnknownAddedRemovedModified"
+
+var _AuraStateMap = map[AuraState]string{
+	AuraStateUnknown:  _AuraStateName[0:7],
+	AuraStateAdded:    _AuraStateName[7:12],
+	AuraStateRemoved:  _AuraStateName[12:19],
+	AuraStateModified: _AuraStateName[19:27],
+}
+
+// String implements the Stringer interface.
+func (x AuraState) String() string {
+	if str, ok := _AuraStateMap[x]; ok {
+		return str
+	}
+	return fmt.Sprintf("AuraState(%d)", x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x AuraState) IsValid() bool {
+	_, ok := _AuraStateMap[x]
+	return ok
+}
+
+var _AuraStateValue = map[string]AuraState{
+	_AuraStateName[0:7]:                    AuraStateUnknown,
+	strings.ToLower(_AuraStateName[0:7]):   AuraStateUnknown,
+	_AuraStateName[7:12]:                   AuraStateAdded,
+	strings.ToLower(_AuraStateName[7:12]):  AuraStateAdded,
+	_AuraStateName[12:19]:                  AuraStateRemoved,
+	strings.ToLower(_AuraStateName[12:19]): AuraStateRemoved,
+	_AuraStateName[19:27]:                  AuraStateModified,
+	strings.ToLower(_AuraStateName[19:27]): AuraStateModified,
+}
+
+// ParseAuraState attempts to convert a string to a AuraState.
+func ParseAuraState(name string) (AuraState, error) {
+	if x, ok := _AuraStateValue[name]; ok {
+		return x, nil
+	}
+	// Case insensitive parse, do a separate lookup to prevent unnecessary cost of lowercasing a string if we don't need to.
+	if x, ok := _AuraStateValue[strings.ToLower(name)]; ok {
+		return x, nil
+	}
+	return AuraState(0), fmt.Errorf("%s is %w", name, ErrInvalidAuraState)
+}
+
+const (
 	// CastActionsCasts is a CastActions of type casts.
 	CastActionsCasts CastActions = "casts"
 	// CastActionsBeginsToCast is a CastActions of type begins to cast.
@@ -434,6 +494,8 @@ func ParseHeroRaces(name string) (HeroRaces, error) {
 }
 
 const (
+	// ResourceUnknown is a Resource of type Unknown.
+	ResourceUnknown Resource = "Unknown"
 	// ResourceHealth is a Resource of type Health.
 	ResourceHealth Resource = "Health"
 	// ResourceMana is a Resource of type Mana.
@@ -463,6 +525,8 @@ func (x Resource) IsValid() bool {
 }
 
 var _ResourceValue = map[string]Resource{
+	"Unknown":   ResourceUnknown,
+	"unknown":   ResourceUnknown,
 	"Health":    ResourceHealth,
 	"health":    ResourceHealth,
 	"Mana":      ResourceMana,

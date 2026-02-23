@@ -641,6 +641,16 @@ export function AdminPage() {
           <FileText className="h-4 w-4" />
           All Logs
         </Button>
+        <Link to="/admin/storage">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+          >
+            <HardDrive className="h-4 w-4" />
+            Storage Grants
+          </Button>
+        </Link>
       </div>
 
       {/* Content */}

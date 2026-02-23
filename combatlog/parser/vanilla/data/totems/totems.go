@@ -126,10 +126,20 @@ func init() {
 		variant{id: 5913, duration: 120 * time.Second},
 	)
 
-  register("Earthbind Totem",
-    modifierTotemicMastery,
-    variant{id: 5913, duration: 45 * time.Second},
-  )
+	register("Earthbind Totem",
+		modifierTotemicMastery,
+		variant{id: 5913, duration: 45 * time.Second},
+	)
+
+	register("Stoneclaw Totem",
+		modifierTotemicMastery,
+		variant{id: 3579, duration: 15 * time.Second},
+		variant{id: 3911, duration: 15 * time.Second},
+		variant{id: 3912, duration: 15 * time.Second},
+		variant{id: 3913, duration: 15 * time.Second},
+		variant{id: 7398, duration: 15 * time.Second},
+		variant{id: 7399, duration: 15 * time.Second},
+	)
 
 	// Comes from "Enamored Water Spirit" item
 	// https://database.turtle-wow.org/?item=20503

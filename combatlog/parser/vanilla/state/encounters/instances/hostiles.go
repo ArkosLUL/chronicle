@@ -227,12 +227,48 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		61200: "Phantom Guardsman",
 		61205: "Phantom Servant",
 		61193: "Shadowbane Ambusher",
+
+		// Rock of desolation
+		62019: "Warbringer Overseer",
+		62018: "Darkflame Imp",
+		59957: "Fragment of Rupturan",
+		59901: "Felheart",
+		59990: "Nether Infernal",
+		93335: "Nightmare Crawler",
+		62020: "Outcast Souleater",
+		59960: "Crumbling Exile",
+		62022: "Draenei Worshipper",
+		62021: "Draenei Darkbinder",
+		62016: "Doomguard Annihilator",
+		62015: "Dreadlord Doomseeker",
+		62017: "Infernal Destroyer",
+		62024: "Starving Draenei",
+		59978: "Draenei Netherwalker",
+		59958: "Living Fragment",
+		62025: "Draenei Waterseeker",
+		59980: "Draenei Truthseeker",
+		59959: "Living Stone",
+		93336: "Hellfire Doomguard",
+		59975: "Rift-Lost Draenei",
+		59977: "Draenei Riftwalker",
+		59976: "Draenei Riftstalker",
+		93338: "Hellfury Shard",
+		93334: "Demonic Eye",
+		93332: "Desolate Doomguard",
+		59979: "Shadow-Lost Draenei",
+		93337: "Hellfire Imp",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		61939: "Keeper Gnarlmoon",
 		61951: "Anomalus",
 		61958: "Echo of Medivh",
 		59967: "King",
+
+		// Rock of desolation
+		59981: "Sanv Tas'dal",
+		59991: "Kruul",
+		59961: "Rupturan the Broken",
+		93333: "Mephistroth",
 
 		// Lower
 		61221: "Brood Queen Araxxna",

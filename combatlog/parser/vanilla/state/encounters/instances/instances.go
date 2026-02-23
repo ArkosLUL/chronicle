@@ -13,7 +13,7 @@ var (
 		Hostiles: FromMap(WailingCavernsHostiles()),
 	}).New
 
-  RazorfenKraul = (&CommonFactory{
+	RazorfenKraul = (&CommonFactory{
 		Name:     "Razorfen Kraul",
 		ZoneName: ZoneNameMatcher("razorfen kraul"),
 		Hostiles: FromMap(RazorfenKraulHostiles()),
@@ -45,7 +45,7 @@ var (
 
 	TowerOfKarazhan = (&CommonFactory{
 		Name:     "Tower of Karazhan",
-		ZoneName: ZoneNameMatcher("tower of karazhan"),
+		ZoneName: ZoneNameMatcher("tower of karazhan", "the rock of desolation"),
 		Hostiles: FromMap(TowerOfKarazhanHostiles()),
 	}).New
 

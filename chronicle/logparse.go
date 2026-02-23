@@ -651,10 +651,11 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 			})
 			continue
 		}
+
 		w.units = append(w.units, database.InsertInstanceUnitsParams{
 			InstanceID: w.instanceID,
 			UnitGuid:   id,
-			Name:       unitname.ByEntry(entry),
+			Name:       unitname.ByGUID(id),
 			Entry:      int32(entry),
 		})
 	}

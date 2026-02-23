@@ -19,6 +19,9 @@ import type {
   Session as SessionGenerated,
   AuthorizationRequest as AuthorizationRequestGenerated,
   AuthorizationResponse as AuthorizationResponseGenerated,
+  UserStorageInfo as UserStorageInfoGenerated,
+  DataGrant as DataGrantGenerated,
+  UpsertDataGrantRequest as UpsertDataGrantRequestGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -40,6 +43,9 @@ export type AdminLog = AdminLogGenerated;
 export type Session = SessionGenerated;
 export type AuthorizationRequest = AuthorizationRequestGenerated;
 export type AuthorizationResponse = AuthorizationResponseGenerated;
+export type UserStorageInfo = UserStorageInfoGenerated;
+export type DataGrant = DataGrantGenerated;
+export type UpsertDataGrantRequest = UpsertDataGrantRequestGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -62,6 +68,20 @@ export function useSession(options?: Omit<UseQueryOptions<Session | null>, "quer
       return response.json() as Promise<Session>;
     },
     retry: false,
+    ...options,
+  });
+}
+
+export function useMyStorage(options?: Omit<UseQueryOptions<UserStorageInfo>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["my-storage"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/me/storage");
+      if (!response.ok) {
+        throw new Error("Failed to fetch storage info");
+      }
+      return response.json() as Promise<UserStorageInfo>;
+    },
     ...options,
   });
 }
@@ -373,24 +393,76 @@ export function useResyncUserRoles() {
   });
 }
 
-export function useSetUserDataLimit() {
+export function useUserGrants(userId: string, options?: Omit<UseQueryOptions<DataGrant[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["admin", "users", userId, "grants"],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/admin/users/${userId}/grants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch user grants");
+      }
+      return response.json() as Promise<DataGrant[]>;
+    },
+    ...options,
+  });
+}
+
+export function useUpsertUserGrant() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ userId, maxStorageBytes }: { userId: string; maxStorageBytes: number }) => {
-      const response = await fetch(`/api/v1/admin/users/${userId}/data-limit`, {
+    mutationFn: async ({ 
+      userId, 
+      source, 
+      storageBytes, 
+      description,
+      expiresAt,
+    }: { 
+      userId: string; 
+      source: string; 
+      storageBytes: number;
+      description?: string;
+      expiresAt?: string;
+    }) => {
+      const response = await fetch(`/api/v1/admin/users/${userId}/grants`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ max_storage_bytes: maxStorageBytes }),
+        body: JSON.stringify({ 
+          source,
+          storage_bytes: storageBytes,
+          description,
+          expires_at: expiresAt,
+        }),
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: "Failed to set data limit" }));
-        throw new Error(error.message || "Failed to set data limit");
+        const error = await response.json().catch(() => ({ message: "Failed to upsert grant" }));
+        throw new Error(error.message || "Failed to upsert grant");
       }
-      return response.json() as Promise<User>;
+      return response.json() as Promise<DataGrant>;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", variables.userId, "grants"] });
+    },
+  });
+}
+
+export function useDeleteUserGrant() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ userId, source }: { userId: string; source: string }) => {
+      const response = await fetch(`/api/v1/admin/users/${userId}/grants/${encodeURIComponent(source)}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to delete grant" }));
+        throw new Error(error.message || "Failed to delete grant");
+      }
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", variables.userId, "grants"] });
     },
   });
 }

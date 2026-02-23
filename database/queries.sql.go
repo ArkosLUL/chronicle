@@ -12,6 +12,95 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteDataGrant = `-- name: DeleteDataGrant :exec
+DELETE FROM data_grants
+WHERE user_id = $1 AND source = $2
+`
+
+type DeleteDataGrantParams struct {
+	UserID uuid.UUID `db:"user_id" json:"user_id"`
+	Source string    `db:"source" json:"source"`
+}
+
+func (q *sqlQuerier) DeleteDataGrant(ctx context.Context, arg DeleteDataGrantParams) error {
+	_, err := q.db.Exec(ctx, deleteDataGrant, arg.UserID, arg.Source)
+	return err
+}
+
+const getUserDataGrants = `-- name: GetUserDataGrants :many
+SELECT id, user_id, source, storage_bytes, description, created_at, expires_at FROM data_grants
+WHERE user_id = $1
+  AND (expires_at IS NULL OR expires_at > NOW())
+ORDER BY created_at ASC
+`
+
+func (q *sqlQuerier) GetUserDataGrants(ctx context.Context, userID uuid.UUID) ([]DataGrant, error) {
+	rows, err := q.db.Query(ctx, getUserDataGrants, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DataGrant
+	for rows.Next() {
+		var i DataGrant
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Source,
+			&i.StorageBytes,
+			&i.Description,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertDataGrant = `-- name: UpsertDataGrant :one
+INSERT INTO data_grants (user_id, source, storage_bytes, description, expires_at)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (user_id, source) DO UPDATE SET
+  storage_bytes = EXCLUDED.storage_bytes,
+  description = EXCLUDED.description,
+  expires_at = EXCLUDED.expires_at
+RETURNING id, user_id, source, storage_bytes, description, created_at, expires_at
+`
+
+type UpsertDataGrantParams struct {
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	Source       string             `db:"source" json:"source"`
+	StorageBytes int64              `db:"storage_bytes" json:"storage_bytes"`
+	Description  pgtype.Text        `db:"description" json:"description"`
+	ExpiresAt    pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+}
+
+func (q *sqlQuerier) UpsertDataGrant(ctx context.Context, arg UpsertDataGrantParams) (DataGrant, error) {
+	row := q.db.QueryRow(ctx, upsertDataGrant,
+		arg.UserID,
+		arg.Source,
+		arg.StorageBytes,
+		arg.Description,
+		arg.ExpiresAt,
+	)
+	var i DataGrant
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Source,
+		&i.StorageBytes,
+		&i.Description,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
 const instanceEvent = `-- name: InstanceEvent :one
 SELECT
   log_instance_events.instance_id, log_instance_events.type, log_instance_events.events
@@ -2202,30 +2291,6 @@ func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]ChronicleUser, error) 
 		return nil, err
 	}
 	return items, nil
-}
-
-const setUserStorageLimit = `-- name: SetUserStorageLimit :one
-UPDATE
-  data_limit
-SET
-  max_storage_bytes = $2,
-  updated_at = $3
-WHERE
-  user_id = $1
-RETURNING user_id, max_storage_bytes, updated_at
-`
-
-type SetUserStorageLimitParams struct {
-	UserID          uuid.UUID          `db:"user_id" json:"user_id"`
-	MaxStorageBytes int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
-	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
-func (q *sqlQuerier) SetUserStorageLimit(ctx context.Context, arg SetUserStorageLimitParams) (DataLimit, error) {
-	row := q.db.QueryRow(ctx, setUserStorageLimit, arg.UserID, arg.MaxStorageBytes, arg.UpdatedAt)
-	var i DataLimit
-	err := row.Scan(&i.UserID, &i.MaxStorageBytes, &i.UpdatedAt)
-	return i, err
 }
 
 const updateUserAuthSessionTokens = `-- name: UpdateUserAuthSessionTokens :one

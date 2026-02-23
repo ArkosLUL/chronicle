@@ -102,6 +102,7 @@ func (api *API) Routes() chi.Router {
 			)
 			r.Get("/whoami", api.WhoAmI)
 			r.Post("/authcheck", api.checkAuthorization)
+			r.Get("/me/storage", api.GetMyStorage)
 		})
 
 		// Admin routes - require admin or technical_admin role
@@ -112,7 +113,9 @@ func (api *API) Routes() chi.Router {
 			)
 			r.Get("/users", api.AdminListUsers)
 			r.Post("/users/{userID}/resync", api.AdminResyncUserRoles)
-			r.Put("/users/{userID}/data-limit", api.SetUserDataLimit)
+			r.Get("/users/{userID}/grants", api.GetUserGrants)
+			r.Put("/users/{userID}/grants", api.UpsertUserGrant)
+			r.Delete("/users/{userID}/grants/{source}", api.DeleteUserGrant)
 			r.Get("/logs", api.AdminListLogs)
 			r.Get("/instance-names", api.AdminListInstanceNames)
 

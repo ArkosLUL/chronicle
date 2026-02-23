@@ -30,6 +30,8 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	localTime := m.String()
 	utcTime := m.String()
 
+	// TODO: If ts is 0, set to utc time
+
 	var _ = player
 	var _, _, _, _, _, _ = addonVersion, superWoWVersion, namPowerVersion, xp3Version, localTime, utcTime
 

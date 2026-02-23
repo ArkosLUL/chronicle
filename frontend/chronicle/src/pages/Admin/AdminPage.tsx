@@ -5,7 +5,7 @@ import {
   useAdminLogs, 
   useAdminInstanceNames,
   useResyncUserRoles,
-  useSetUserDataLimit,
+  useUpsertUserGrant,
   useAuthorizationCheck,
   type User,
   type AdminLog,
@@ -205,7 +205,7 @@ function UserRow({ user, onResync, isSyncing, onEditLimit, isSavingLimit }: User
 
 function UsersSection({ users }: { users: readonly User[] }) {
   const resyncMutation = useResyncUserRoles();
-  const dataLimitMutation = useSetUserDataLimit();
+  const upsertGrantMutation = useUpsertUserGrant();
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [savingLimitId, setSavingLimitId] = useState<string | null>(null);
 
@@ -218,10 +218,16 @@ function UsersSection({ users }: { users: readonly User[] }) {
     }
   };
 
+  // Edit the "base" grant to change storage limit (simple approach)
   const handleEditLimit = async (userId: string, newMaxBytes: number) => {
     setSavingLimitId(userId);
     try {
-      await dataLimitMutation.mutateAsync({ userId, maxStorageBytes: newMaxBytes });
+      await upsertGrantMutation.mutateAsync({ 
+        userId, 
+        source: "base", 
+        storageBytes: newMaxBytes,
+        description: "Base storage allocation",
+      });
     } finally {
       setSavingLimitId(null);
     }
@@ -635,6 +641,16 @@ export function AdminPage() {
           <FileText className="h-4 w-4" />
           All Logs
         </Button>
+        <Link to="/admin/storage">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+          >
+            <HardDrive className="h-4 w-4" />
+            Storage Grants
+          </Button>
+        </Link>
       </div>
 
       {/* Content */}

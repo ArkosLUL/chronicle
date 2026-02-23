@@ -67,6 +67,15 @@ func testCaseWithDB[T messages.Message](t *testing.T, line string, expected T, w
 func TestParserMessages(t *testing.T) {
 	t.Parallel()
 
+	t.Run("Header", func(t *testing.T) {
+		t.Parallel()
+
+		testCase(t,
+			"1771870624417|HEADER|0x0000000000432A74|Nordanaar|Ragefire Chasm|0.5|1.5||1771083771|1.18.0|7234|Dec 19 2025|23.02.26 19:17:05|23.02.26 18:17:05|200",
+			&messages.Realm{},
+		)
+	})
+
 	t.Run("SwingMiss", func(t *testing.T) {
 		t.Parallel()
 

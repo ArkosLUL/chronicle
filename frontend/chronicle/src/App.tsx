@@ -15,11 +15,13 @@ import { RecentRaids } from "./pages/Recent/RecentRaids"
 import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
 import { AdminPage } from "./pages/Admin/AdminPage"
+import { AdminStoragePage } from "./pages/Admin/AdminStoragePage"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
 import { 
   AccountLayout, 
   ProfileSettings, 
+  StorageSettings,
   NotificationSettings, 
   PrivacySettings, 
   AppearanceSettings 
@@ -59,6 +61,7 @@ function App() {
         <Route path="/instances/:instanceId" element={<InstancePage />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/storage" element={<AdminStoragePage />} />
         <Route path="/wowdb/spell" element={<SpellPage />} />
         <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
         <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />
@@ -74,6 +77,7 @@ function App() {
         <Route path="/account" element={<AccountLayout />}>
           <Route index element={<Navigate to="/account/settings" replace />} />
           <Route path="settings" element={<ProfileSettings />} />
+          <Route path="storage" element={<StorageSettings />} />
           <Route path="notifications" element={<NotificationSettings />} />
           <Route path="privacy" element={<PrivacySettings />} />
           <Route path="appearance" element={<AppearanceSettings />} />

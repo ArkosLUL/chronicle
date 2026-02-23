@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -44,14 +43,14 @@ func (a *API) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(r.Context(), w, http.StatusOK, resp)
 }
 
-// SetUserDataLimit updates a user's storage limit.
-// @Summary Set user data limit
+// UpsertUserGrant creates or updates a storage grant for a user.
+// @Summary Upsert user storage grant
 // @Tags Admin
 // @Param userID path string true "User ID"
-// @Param request body chroniclesdk.SetUserDataLimitRequest true "New storage limit"
-// @Success 200 {object} chroniclesdk.User
-// @Router /api/v1/admin/users/{userID}/data-limit [put]
-func (a *API) SetUserDataLimit(w http.ResponseWriter, r *http.Request) {
+// @Param request body chroniclesdk.UpsertDataGrantRequest true "Grant details"
+// @Success 200 {object} chroniclesdk.DataGrant
+// @Router /api/v1/admin/users/{userID}/grants [put]
+func (a *API) UpsertUserGrant(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userIDStr := chi.URLParam(r, "userID")
 
@@ -73,35 +72,106 @@ func (a *API) SetUserDataLimit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req chroniclesdk.SetUserDataLimitRequest
+	var req chroniclesdk.UpsertDataGrantRequest
 	if !httpapi.Read(ctx, w, r, &req) {
 		return
 	}
 
-	_, err = a.Opts.Zed.SetUserStorageLimit(ctx, database.SetUserStorageLimitParams{
-		UserID:          userID,
-		MaxStorageBytes: req.MaxStorageBytes,
-		UpdatedAt:       pgtype.Timestamptz{Time: time.Now(), Valid: true},
+	if req.Source == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Source is required",
+		})
+		return
+	}
+
+	var expiresAt pgtype.Timestamptz
+	if req.ExpiresAt != nil {
+		expiresAt = pgtype.Timestamptz{Time: *req.ExpiresAt, Valid: true}
+	}
+
+	grant, err := a.Opts.Zed.UpsertDataGrant(ctx, database.UpsertDataGrantParams{
+		UserID:       userID,
+		Source:       req.Source,
+		StorageBytes: req.StorageBytes,
+		Description:  pgtype.Text{String: req.Description, Valid: req.Description != ""},
+		ExpiresAt:    expiresAt,
 	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	// Fetch updated user to return
-	user, err := a.Opts.Zed.GetUserByID(ctx, userID)
+	httpapi.Write(ctx, w, http.StatusOK, db2sdk.DataGrant(grant))
+}
+
+// DeleteUserGrant removes a storage grant from a user.
+// @Summary Delete user storage grant
+// @Tags Admin
+// @Param userID path string true "User ID"
+// @Param source path string true "Grant source"
+// @Success 204
+// @Router /api/v1/admin/users/{userID}/grants/{source} [delete]
+func (a *API) DeleteUserGrant(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userIDStr := chi.URLParam(r, "userID")
+	source := chi.URLParam(r, "source")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid user ID",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	actor, _ := authz.ActorFromContext(ctx)
+	b := policy.New()
+
+	ok, err := a.Zed.CheckOne(ctx, nil, b.GlobalChronicle().CanSet_user_data_limit_User(actor))
+	if err != nil || !ok {
+		httpapi.Forbidden(w, err)
+		return
+	}
+
+	err = a.Opts.Zed.DeleteDataGrant(ctx, database.DeleteDataGrantParams{
+		UserID: userID,
+		Source: source,
+	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	roles, err := a.Opts.Zed.UserChronicleRoles(ctx, userID)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetUserGrants returns all active grants for a user.
+// @Summary Get user storage grants
+// @Tags Admin
+// @Param userID path string true "User ID"
+// @Success 200 {array} chroniclesdk.DataGrant
+// @Router /api/v1/admin/users/{userID}/grants [get]
+func (a *API) GetUserGrants(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userIDStr := chi.URLParam(r, "userID")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid user ID",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	grants, err := a.Opts.Zed.GetUserDataGrants(ctx, userID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	httpapi.Write(ctx, w, http.StatusOK, db2sdk.User(user, roles))
+	httpapi.Write(ctx, w, http.StatusOK, db2sdk.DataGrants(grants))
 }
 
 // AdminResyncUserRoles re-syncs a user's primary roles from Discord.

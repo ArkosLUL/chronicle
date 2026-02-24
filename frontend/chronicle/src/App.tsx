@@ -19,6 +19,7 @@ import { AdminStoragePage } from "./pages/Admin/AdminStoragePage"
 import { AdminUsersPage } from "./pages/Admin/AdminUsersPage"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
+import { TechnicalDetailsPage, PeriodicSpellsPage } from "./pages/Technical"
 import { 
   AccountLayout, 
   ProfileSettings, 
@@ -68,6 +69,8 @@ function App() {
         <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
         <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />
         <Route path="/wowdb/spell-by-name/:name" element={<SpellByNamePage />} />
+        <Route path="/technical" element={<TechnicalDetailsPage />} />
+        <Route path="/technical/periodic-spells" element={<PeriodicSpellsPage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/disclaimer" element={<Disclaimer />} />

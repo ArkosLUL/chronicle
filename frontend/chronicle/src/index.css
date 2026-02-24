@@ -207,22 +207,21 @@
 /* Styled scrollbar utility class */
 .styled-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--muted-foreground) transparent;
+  scrollbar-color: oklch(0.4 0 0) transparent;
 }
 .styled-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 .styled-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .styled-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--muted-foreground);
-  border-radius: 4px;
-  opacity: 0.5;
+  background-color: oklch(0.4 0 0);
+  border-radius: 3px;
 }
 .styled-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--foreground);
+  background-color: oklch(0.5 0 0);
 }
 
 @layer base {

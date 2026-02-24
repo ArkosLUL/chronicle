@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/go-chi/chi/v5"
 
@@ -79,6 +80,12 @@ func (s *Service) Start(ctx context.Context) error {
 func (s *Service) setupRoutes() {
 	s.router.Get("/spell/{id}", s.handleGetSpell)
 	s.router.Get("/spell-by-name/{name}", s.handleGetSpellByName)
+	s.router.Get("/periodic-spells", s.handleGetPeriodicSpells)
+}
+
+type SpellResponse struct {
+	*chrondbc.Spell
+	DamageType chrondbc.SpellDamageType `json:"damage_type"`
 }
 
 func (s *Service) handleGetSpell(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +105,10 @@ func (s *Service) handleGetSpell(w http.ResponseWriter, r *http.Request) {
 	// Cache for 24 hours since these are static data that won't change for the most part.
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(spell)
+	_ = json.NewEncoder(w).Encode(SpellResponse{
+		Spell:      spell,
+		DamageType: spell.SpellDamageType(),
+	})
 }
 
 func (s *Service) handleGetSpellByName(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +146,29 @@ func (s *Service) handleGetSpellByName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Cache for 24 hours since these are static data that won't change for the most part.
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(spells)
+}
+
+// PeriodicSpellEntry is a minimal spell entry for listing periodic spells.
+type PeriodicSpellEntry struct {
+	ID        int32  `json:"id"`
+	Name      string `json:"name"`
+	HasDirect bool   `json:"has_direct"` // true if spell also has direct damage/healing
+}
+
+func (s *Service) handleGetPeriodicSpells(w http.ResponseWriter, r *http.Request) {
+	spells := make([]PeriodicSpellEntry, 0, len(dbcmem.PeriodicSpells))
+	for id, spell := range dbcmem.PeriodicSpells {
+		spells = append(spells, PeriodicSpellEntry{
+			ID:        id,
+			Name:      spell.Name,
+			HasDirect: spell.HasDirect,
+		})
+	}
+
+	// Cache for 24 hours since this is static data
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(spells)

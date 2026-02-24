@@ -416,6 +416,11 @@ func (p *Parser) spellMiss(ctx context.Context, ts time.Time, m *Matched) ([]mes
 }
 
 // 1771564201000|SPELL_DMG|0xF130002C3800949D|0x000000000001C7AC|22482|67|0,0,0|0|0|2,0,0,0
+
+// Moonfire hit and tick
+// 1771966668876|SPELL_DMG|0xF13000C55326FDD0|0x000000000003054A|9835|329|0,0,0|0|6|6,2,0,0
+// 1771966671851|SPELL_DMG|0xF13000C55326FDD0|0x000000000003054A|9835|170|0,0,0|0|6|6,2,0,3
+// 1771966674890|SPELL_DMG|0xF13000C55326FDD0|0x000000000003054A|9835|170|0,0,0|0|6|6,2,0,3
 func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	target := m.Guid()
 	caster := m.Guid()
@@ -430,10 +435,6 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	if hitInfo == 2 {
 		hit = types.HitTypeCrit
 	}
-	if spell.IsPeriodic() {
-		// TODO: Maybe overlap with hit?
-		hit = types.HitTypePeriodic
-	}
 
 	if err := m.Error(); err != nil {
 		return nil, err
@@ -445,6 +446,25 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 
 	if len(effects) != 4 {
 		return nil, fmt.Errorf("expected 4 effect values, got %d", len(effects))
+	}
+
+	dt := spell.SpellDamageType()
+	if dt.Has(chrondbc.SpellDamageDirect) && dt.Has(chrondbc.SpellDamagePeriodic) {
+		auraEffect := AuraEffect(effects[3])
+		switch auraEffect {
+		case SPELL_AURA_PERIODIC_HEAL,
+			SPELL_AURA_PERIODIC_DAMAGE,
+			SPELL_AURA_PERIODIC_ENERGIZE,
+			SPELL_AURA_PERIODIC_TRIGGER_SPELL,
+			SPELL_AURA_PERIODIC_LEECH,
+			SPELL_AURA_PERIODIC_HEALTH_FUNNEL,
+			SPELL_AURA_PERIODIC_MANA_FUNNEL,
+			SPELL_AURA_PERIODIC_MANA_LEECH,
+			SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
+			hit = types.HitTypePeriodic
+		}
+	} else if dt.Has(chrondbc.SpellDamagePeriodic) {
+		hit = types.HitTypePeriodic
 	}
 
 	var trailer types.Trailer

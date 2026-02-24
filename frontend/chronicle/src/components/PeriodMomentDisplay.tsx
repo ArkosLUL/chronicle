@@ -4,25 +4,20 @@ import type { PeriodMoment } from "@/api/typesGenerated";
 // SpellData has id (number) and name (i18n.Text which is map[locale]string)
 interface SpellDataValue {
   id: number;
-  name: Record<string, string>; // e.g. { "enUS": "Fireball" }
+  name: string; 
 }
 
 function isSpellData(value: unknown): value is SpellDataValue {
   if (typeof value !== "object" || value === null) return false;
   if (!("id" in value) || typeof (value as { id: unknown }).id !== "number") return false;
-  if (!("name" in value) || typeof (value as { name: unknown }).name !== "object") return false;
+  if (!("name" in value) || typeof (value as { name: unknown }).name !== "string") return false;
   return true;
-}
-
-function getSpellName(name: Record<string, string>): string {
-  // Try common locales in preference order
-  return name["enUS"] || name["enGB"] || Object.values(name)[0] || "";
 }
 
 function renderMessageValue(key: string, value: unknown): React.ReactNode {
   // Handle SpellData objects (key is "SpellData" with numeric id and localized name)
   if (key === "SpellData" && isSpellData(value)) {
-    const spellName = getSpellName(value.name);
+    const spellName = value.name;
     return (
       <Link
         to={`/wowdb/spell/${value.id}`}

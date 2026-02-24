@@ -194,11 +194,53 @@ func (s Spell) Affects(other Spell) bool {
 	return false
 }
 
-func (s Spell) IsPeriodic() bool {
-	for _, eff := range s.EffectAura {
-		if eff == AuraEffectPeriodicDamage || eff == AuraEffectPeriodicHeal {
-			return true
+type SpellDamageType bitmask.Bitmask32
+
+func (s SpellDamageType) Has(b SpellDamageType) bool {
+	return bitmask.Bitmask32(s).Has(bitmask.Bitmask32(b))
+}
+
+const (
+	SpellDamageUnknown         SpellDamageType = 0x00
+	SpellDamageDirect          SpellDamageType = 0x01
+	SpellDamagePeriodic        SpellDamageType = 0x02
+	SpellDamagePeriodicTrigger SpellDamageType = 0x04
+	// TODO: Trigger?
+)
+
+// SpellDamageType is chronicle's category for the spell. It's essentially an
+// analysis of the spell's effects to determine how it functions in combat, which
+// is useful for filtering and logic.
+func (s Spell) SpellDamageType() SpellDamageType {
+	var base SpellDamageType
+
+	for i, eff := range s.Effect {
+		switch eff {
+		case EffectSchoolDMG,
+			EffectPowerBurn,
+			EffectEnergize,
+			EffectHealthLeech,
+			EffectDamageFromMaxHealthPCT,
+			EffectHeal:
+			base |= SpellDamageDirect
+		case EffectApplyAura:
+			switch s.EffectAura[i] {
+			case AuraEffectPeriodicDamage,
+				AuraEffectPeriodicHeal,
+				AuraEffectPeriodicEnergize,
+				AuraEffectPeriodicLeech,
+				AuraEffectPeriodicHealthFunnel,
+				AuraEffectPeriodicManaLeech,
+				AuraEffectPeriodicDamagePercent,
+				AuraEffectPowerBurn:
+				base |= SpellDamagePeriodic
+			case AuraEffectPeriodicTriggerSpell:
+				// Spells like arcane missiles
+				base |= SpellDamagePeriodicTrigger
+			}
+		default:
 		}
 	}
-	return false
+
+	return base
 }

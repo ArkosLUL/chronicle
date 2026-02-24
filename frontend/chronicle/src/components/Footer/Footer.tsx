@@ -46,6 +46,11 @@ export function Footer() {
                   Supported Instances
                 </Link>
               </li>
+              <li>
+                <Link to="/technical" className="hover:text-foreground transition-colors">
+                  Technical Details
+                </Link>
+              </li>
             </ul>
           </div>
 

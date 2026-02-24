@@ -502,3 +502,63 @@ export function useSpellsByName(
   });
 }
 
+/** Result type for useSpellWithReferences */
+export interface SpellWithReferences {
+  spell: WoWSpell;
+  referencedSpells: Map<number, WoWSpell>;
+}
+
+/**
+ * Fetch a spell and any spells it references in its description (e.g., $3137s1).
+ * This allows full resolution of cross-spell template variables.
+ */
+export function useSpellWithReferences(
+  spellId: string,
+  options?: Omit<UseQueryOptions<SpellWithReferences>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["wowdb", "spell-with-refs", spellId],
+    queryFn: async () => {
+      // Dynamically import to avoid circular deps
+      const { extractReferencedSpellIds, getLocalizedText } = await import("./wowdb");
+      
+      // Fetch the main spell
+      const response = await fetch(`/api/v1/wowdb/spell/${spellId}`);
+      if (!response.ok) throw new Error("Spell not found");
+      const spell = await response.json() as WoWSpell;
+      
+      // Extract referenced spell IDs from description and aura_description
+      const description = getLocalizedText(spell.description, "0");
+      const auraDescription = getLocalizedText(spell.aura_description, "0");
+      const refIds = [
+        ...extractReferencedSpellIds(description),
+        ...extractReferencedSpellIds(auraDescription),
+      ];
+      
+      // Fetch all referenced spells in parallel
+      const referencedSpells = new Map<number, WoWSpell>();
+      if (refIds.length > 0) {
+        const uniqueIds = [...new Set(refIds)];
+        const refResponses = await Promise.all(
+          uniqueIds.map(id => 
+            fetch(`/api/v1/wowdb/spell/${id}`)
+              .then(r => r.ok ? r.json() as Promise<WoWSpell> : null)
+              .catch(() => null)
+          )
+        );
+        
+        uniqueIds.forEach((id, i) => {
+          if (refResponses[i]) {
+            referencedSpells.set(id, refResponses[i]);
+          }
+        });
+      }
+      
+      return { spell, referencedSpells };
+    },
+    staleTime: Infinity,
+    retry: false,
+    ...options,
+  });
+}
+

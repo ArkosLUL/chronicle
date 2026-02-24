@@ -386,6 +386,24 @@ function resolveVariable(spell: WoWSpell, variable: string): string {
 }
 
 /**
+ * Extract all referenced spell IDs from a template string.
+ * Matches patterns like $3137s1 (spell ID 3137, variable s1).
+ */
+export function extractReferencedSpellIds(template: string): number[] {
+  if (!template) return [];
+  
+  const ids = new Set<number>();
+  const regex = /\$(\d+)([a-zA-Z])(\d)?/g;
+  let match;
+  
+  while ((match = regex.exec(template)) !== null) {
+    ids.add(parseInt(match[1], 10));
+  }
+  
+  return Array.from(ids);
+}
+
+/**
  * Resolve all template variables in a spell description string.
  *
  * Supported variables:
@@ -399,16 +417,39 @@ function resolveVariable(spell: WoWSpell, variable: string): string {
  * - $h: Proc chance
  * - $x1, $x2, $x3: Chain targets
  * - $b1, $b2, $b3: Points per combo point
+ * - $NNNNsX: Cross-spell reference (e.g., $3137s1 = spell 3137's s1 value)
+ * 
+ * @param spell The spell being described
+ * @param template The template string with variables
+ * @param referencedSpells Optional map of spell ID -> WoWSpell for cross-spell references
  */
 export function resolveSpellDescription(
   spell: WoWSpell,
-  template: string
+  template: string,
+  referencedSpells?: Map<number, WoWSpell>
 ): string {
   if (!template) return "";
 
-  // Match all template variables: $letter or $letter+digit
-  // Also handles negative values like -$s1
-  return template.replace(/(-?)\$([a-zA-Z])(\d)?/g, (_match, negative, type, index) => {
+  // First pass: resolve cross-spell references like $3137s1
+  let result = template.replace(/(-?)\$(\d+)([a-zA-Z])(\d)?/g, (_match, negative, spellId, type, index) => {
+    const refSpell = referencedSpells?.get(parseInt(spellId, 10));
+    if (!refSpell) {
+      // Can't resolve without the referenced spell data - leave placeholder
+      return _match;
+    }
+    
+    const variable = `$${type}${index || ""}`;
+    const resolved = resolveVariable(refSpell, variable);
+    
+    if (negative === "-" && !isNaN(Number(resolved))) {
+      return String(-Math.abs(Number(resolved)));
+    }
+    
+    return resolved;
+  });
+
+  // Second pass: resolve local variables like $s1, $d
+  result = result.replace(/(-?)\$([a-zA-Z])(\d)?/g, (_match, negative, type, index) => {
     const variable = `$${type}${index || ""}`;
     const resolved = resolveVariable(spell, variable);
     
@@ -419,6 +460,8 @@ export function resolveSpellDescription(
     
     return resolved;
   });
+  
+  return result;
 }
 
 /**

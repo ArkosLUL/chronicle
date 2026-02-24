@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { useQueries } from "@tanstack/react-query";
 import type { WoWSpell, LocaleIndex } from "@/api/wowdb";
 import {
   getLocalizedText,
@@ -7,6 +9,7 @@ import {
   formatCooldown,
   formatDuration,
   resolveSpellDescription,
+  extractReferencedSpellIds,
   SCHOOL_COLORS,
 } from "@/api/wowdb";
 
@@ -22,17 +25,48 @@ interface SpellTooltipProps {
 export function SpellTooltip({ spell, locale = "0", hideDuration = false, hideEffects = false }: SpellTooltipProps) {
   const name = getLocalizedText(spell.name, locale);
   const rank = getLocalizedText(spell.subtext, locale);
-  const description = resolveSpellDescription(
-    spell,
-    getLocalizedText(spell.description, locale)
-  );
-  const auraDesc = resolveSpellDescription(
-    spell,
-    getLocalizedText(spell.aura_description, locale)
-  );
+  const descriptionTemplate = getLocalizedText(spell.description, locale);
+  const auraDescTemplate = getLocalizedText(spell.aura_description, locale);
   const iconUrl = getSpellIconUrl(spell.spell_icon);
   const cooldown = formatCooldown(spell.recovery_time);
   const schoolColor = SCHOOL_COLORS[spell.school.value] || "text-white";
+
+  // Extract referenced spell IDs from templates
+  const referencedIds = useMemo(() => {
+    const ids = [
+      ...extractReferencedSpellIds(descriptionTemplate),
+      ...extractReferencedSpellIds(auraDescTemplate),
+    ];
+    return [...new Set(ids)];
+  }, [descriptionTemplate, auraDescTemplate]);
+
+  // Fetch all referenced spells in parallel
+  const refQueries = useQueries({
+    queries: referencedIds.map((id) => ({
+      queryKey: ["wowdb", "spell", id.toString()],
+      queryFn: async () => {
+        const response = await fetch(`/api/v1/wowdb/spell/${id}`);
+        if (!response.ok) return null;
+        return response.json() as Promise<WoWSpell>;
+      },
+      staleTime: Infinity,
+      retry: false,
+    })),
+  });
+
+  // Build the referenced spells map
+  const referencedSpells = useMemo(() => {
+    const map = new Map<number, WoWSpell>();
+    referencedIds.forEach((id, i) => {
+      const data = refQueries[i]?.data;
+      if (data) map.set(id, data);
+    });
+    return map;
+  }, [referencedIds, refQueries]);
+
+  // Resolve descriptions with cross-spell references
+  const description = resolveSpellDescription(spell, descriptionTemplate, referencedSpells);
+  const auraDesc = resolveSpellDescription(spell, auraDescTemplate, referencedSpells);
 
   // Determine resource cost display
   const hasCost = spell.mana_cost > 0 || spell.mana_cost_pct > 0;

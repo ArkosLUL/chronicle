@@ -184,7 +184,7 @@ export function UploadView({
                   <h2 className="font-semibold">Combat Log</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Select your WoWCombatLog.txt file
+                  Select <code>/Imports/Chronicle_&lt;character_name&gt;.txt</code> file
                 </p>
                 <label className="block">
                   <input
@@ -325,74 +325,152 @@ export function UploadView({
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Info className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">Raid Log Uploading</h2>
+          <h2 className="font-semibold">
+            {useV2Upload ? "Raid Log Uploading (Version 2)" : "Raid Log Uploading"}
+          </h2>
         </div>
 
         <div className="space-y-6 text-sm">
-          <div>
-            <h3 className="font-medium mb-2">Requirements</h3>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>
-                <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
-                  SuperWoW Mod
-                </a>
-              </li>
-              <li>
-                <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
-                  ChronicleCompanion Addon
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-medium mb-2">On Raid Night</h3>
-            <div className="space-y-3 text-muted-foreground">
+          {useV2Upload ? (
+            <>
               <div>
-                <p className="mb-1">1. <strong className="text-foreground">Delete these files before raiding:</strong></p>
-                <ul className="list-none space-y-1 ml-4">
-                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
-                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                <h3 className="font-medium mb-2">Requirements</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>
+                    <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      SuperWoW Mod
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://gitea.com/avitasia/nampower" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      Nampower
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://codeberg.org/konaka/UnitXP_SP3" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      UnitXP3
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      ChronicleCompanion Addon
+                    </a>
+                  </li>
                 </ul>
               </div>
-              <p>2. <strong className="text-foreground">Launch WoW and do your raid.</strong></p>
+
+              <p className="text-muted-foreground">
+                <strong className="text-foreground">You can still use SuperWoWCombatLogger for Turtlogs compatibility</strong>
+              </p>
+
               <div>
-                <p className="mb-1">3. <strong className="text-foreground">Upload both files</strong> (required):</p>
-                <ul className="list-none space-y-1 ml-4">
-                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
-                  <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                <h3 className="font-medium mb-2">On Raid Night</h3>
+                <div className="space-y-3 text-muted-foreground">
+                  <p className="italic">Optional: Configure the addon with <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/chronicle config</code></p>
+                  <div>
+                    <p className="mb-1"><strong className="text-foreground">1. Prepare the logs</strong></p>
+                    <ul className="list-none ml-4">
+                      <li>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/chron delete</code> to delete any existing logs</li>
+                    </ul>
+                  </div>
+                  <p><strong className="text-foreground">2. Do your raid</strong></p>
+                  <div>
+                    <p><strong className="text-foreground">3. Save your logs</strong></p>
+                    <ul className="list-none ml-4">
+                      <li>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/chron save</code> to save the logs to disk</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <p className="mb-1"><strong className="text-foreground">4. Upload the file:</strong></p>
+                    <ul className="list-none ml-4">
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Imports/Chronicle_&lt;character_name&gt;.txt</code></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h3 className="font-medium mb-3">FAQ</h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium text-foreground">What is the ChronicleCompanion addon?</p>
+                    <p className="text-muted-foreground mt-1">
+                      ChronicleCompanion is a new combat logger written from the ground up specifically for Chronicle.
+                      It captures additional data not available in standard combat logs for more detailed analysis.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h3 className="font-medium mb-2">Requirements</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>
+                    <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      SuperWoW Mod
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      ChronicleCompanion Addon
+                    </a>
+                  </li>
                 </ul>
               </div>
-            </div>
-          </div>
 
-          <div className="border-t border-border pt-4">
-            <h3 className="font-medium mb-3">FAQ</h3>
-            <div className="space-y-4">
               <div>
-                <p className="font-medium text-foreground">Why delete my logs?</p>
-                <p className="text-muted-foreground mt-1">
-                  The WoW client writes to the logs but never deletes them, so they grow continuously. 
-                  Starting fresh gives the parser less data to process. Switching characters mid-session 
-                  can also confuse the parser.
-                </p>
+                <h3 className="font-medium mb-2">On Raid Night</h3>
+                <div className="space-y-3 text-muted-foreground">
+                  <div>
+                    <p className="mb-1">1. <strong className="text-foreground">Delete these files before raiding:</strong></p>
+                    <ul className="list-none space-y-1 ml-4">
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                    </ul>
+                  </div>
+                  <p>2. <strong className="text-foreground">Launch WoW and do your raid.</strong></p>
+                  <div>
+                    <p className="mb-1">3. <strong className="text-foreground">Upload both files</strong> (required):</p>
+                    <ul className="list-none space-y-1 ml-4">
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-foreground">What is the ChronicleCompanion addon?</p>
-                <p className="text-muted-foreground mt-1">
-                  It replaces and extends SuperWoWCombatLogger with additional logging information.
-                  Chronicle uses different log formats than TurtLogs, so we maintain our own addon.
-                </p>
+
+              <div className="border-t border-border pt-4">
+                <h3 className="font-medium mb-3">FAQ</h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium text-foreground">Why delete my logs?</p>
+                    <p className="text-muted-foreground mt-1">
+                      The WoW client writes to the logs but never deletes them, so they grow continuously. 
+                      Starting fresh gives the parser less data to process. Switching characters mid-session 
+                      can also confuse the parser.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">What is the ChronicleCompanion addon?</p>
+                    <p className="text-muted-foreground mt-1">
+                      It replaces and extends SuperWoWCombatLogger with additional logging information.
+                      Chronicle uses different log formats than TurtLogs, so we maintain our own addon.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Why disable logging on multibox characters?</p>
+                    <p className="text-muted-foreground mt-1">
+                      All WoW clients write to the same combat log file. When multiple characters log simultaneously, 
+                      they create conflicting states and overwrite each other's data, corrupting the log.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-foreground">Why disable logging on multibox characters?</p>
-                <p className="text-muted-foreground mt-1">
-                  All WoW clients write to the same combat log file. When multiple characters log simultaneously, 
-                  they create conflicting states and overwrite each other's data, corrupting the log.
-                </p>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </Card>
     </div>

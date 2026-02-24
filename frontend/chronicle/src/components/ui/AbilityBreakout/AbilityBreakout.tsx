@@ -490,7 +490,7 @@ export function AbilityTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="py-1 px-2 max-w-[220px] truncate"
+                  className="px-2 max-w-[220px] truncate"
                   title={ability.spellId ? undefined : (ability.subtitle ? `${ability.name} (${ability.subtitle})` : ability.name)}
                 >
                   <span className="inline-flex items-center gap-1">

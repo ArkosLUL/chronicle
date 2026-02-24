@@ -107,25 +107,36 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
         </div>
       </div>
 
-      {/* Cost and Range/Cast row */}
+      {/* Cost/Cast and Range/Cooldown rows */}
       <div className="mt-3 space-y-1">
-        {hasCost && (
-          <div className="flex justify-between text-white text-sm">
-            <span>{costDisplay}</span>
-            <span>{formatRange(spell.range)}</span>
-          </div>
+        {hasCost ? (
+          <>
+            {/* Row 1: Cost and Range */}
+            <div className="flex justify-between text-white text-sm">
+              <span>{costDisplay}</span>
+              <span>{formatRange(spell.range)}</span>
+            </div>
+            {/* Row 2: Cast time and cooldown */}
+            <div className="flex justify-between text-white text-sm">
+              <span>{formatCastTime(spell)}</span>
+              {cooldown && <span>{cooldown}</span>}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Row 1: Cast time and Range */}
+            <div className="flex justify-between text-white text-sm">
+              <span>{formatCastTime(spell)}</span>
+              <span>{formatRange(spell.range)}</span>
+            </div>
+            {/* Row 2: Cooldown only (if present) */}
+            {cooldown && (
+              <div className="flex justify-end text-white text-sm">
+                <span>{cooldown}</span>
+              </div>
+            )}
+          </>
         )}
-        {!hasCost && (
-          <div className="flex justify-end text-white text-sm">
-            <span>{formatRange(spell.range)}</span>
-          </div>
-        )}
-        
-        {/* Cast time and cooldown */}
-        <div className="flex justify-between text-white text-sm">
-          <span>{formatCastTime(spell)}</span>
-          {cooldown && <span>{cooldown}</span>}
-        </div>
       </div>
 
       {/* Duration if applicable (detailed view only) */}

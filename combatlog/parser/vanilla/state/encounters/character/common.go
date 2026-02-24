@@ -123,7 +123,7 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 		ownerConditions := hasOwner && c.IsActive() && ((data.Caster != nil && owner == *data.Caster) || owner == data.Target)
 
 		if isMe || ownerConditions {
-			if data.HitType.Has(types.HitTypePeriodic) {
+			if !data.RequiresActive() {
 				// Cannot start an activity, but will bump.
 				c.Bump("periodic damage", data)
 				return nil

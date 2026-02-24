@@ -279,6 +279,25 @@ type Damage struct {
 	EnvironmentType *types.EnvironmentType
 }
 
+// RequiresActive indicates this damage could only have been applied by an active
+// unit.
+func (d Damage) RequiresActive() bool {
+	if d.SpellData == nil {
+		return !d.HitType.Has(types.HitTypePeriodic)
+	}
+
+	if !d.HitType.Has(types.HitTypePeriodic) {
+		return true
+	}
+
+	if d.SpellData.Attrs.Has(chrondbc.AttrEx_ChannelTrackTarget) ||
+		d.SpellData.Attrs.Has(chrondbc.AttrEx_Channeled1) {
+		return true
+	}
+
+	return false
+}
+
 func (d Damage) SourceName() string {
 	if d.SpellName != nil {
 		return *d.SpellName
@@ -320,7 +339,7 @@ type Slain struct {
 
 	// Attribution is synthetic and not always present.
 	// It is the cause of the death
-	Attribution Message
+	Attribution Message `json:"-"`
 }
 
 func (s Slain) Affects() []guid.GUID {

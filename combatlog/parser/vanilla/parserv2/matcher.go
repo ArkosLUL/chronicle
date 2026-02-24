@@ -449,6 +449,7 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	}
 
 	dt := spell.SpellDamageType()
+
 	if dt.Has(chrondbc.SpellDamageDirect) && dt.Has(chrondbc.SpellDamagePeriodic) {
 		auraEffect := AuraEffect(effects[3])
 		switch auraEffect {
@@ -586,11 +587,12 @@ func (p *Parser) slain(_ context.Context, ts time.Time, m *Matched) ([]messages.
 		return nil, err
 	}
 
+	var dmg *messages.Damage // For unit tests, this is dumb
 	return set(&messages.Slain{
 		MessageBase: messages.Base(ts),
 		Victim:      id,
 		Killer:      nil,
-		Attribution: nil,
+		Attribution: dmg,
 	})
 }
 

@@ -174,6 +174,25 @@ export interface WoWSpell {
   min_faction_id: number;
   min_reputation: number;
   spell_visual_id: number[];
+
+  // Chronicle metadata
+  damage_type: number; // Bitmask: 0x01=Direct, 0x02=Periodic, 0x04=PeriodicTrigger
+}
+
+// SpellDamageType bitmask constants
+export const SpellDamageType = {
+  Unknown: 0x00,
+  Direct: 0x01,
+  Periodic: 0x02,
+  PeriodicTrigger: 0x04,
+} as const;
+
+export function getDamageTypeLabels(damageType: number): string[] {
+  const labels: string[] = [];
+  if (damageType & SpellDamageType.Direct) labels.push("Direct");
+  if (damageType & SpellDamageType.Periodic) labels.push("Periodic");
+  if (damageType & SpellDamageType.PeriodicTrigger) labels.push("Periodic Trigger");
+  return labels;
 }
 
 // === Locales ===

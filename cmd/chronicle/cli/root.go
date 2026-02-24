@@ -38,6 +38,7 @@ func RootCmd() *serpent.Command {
 		HitType(),
 		SchoolType(),
 		SpellInfo(),
+		Stringify(),
 	)
 
 	return cmd

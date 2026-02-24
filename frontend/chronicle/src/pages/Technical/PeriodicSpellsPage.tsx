@@ -111,7 +111,7 @@ export function PeriodicSpellsPage() {
               sortedSpells.map((spell) => (
                 <a
                   key={spell.id}
-                  href={`https://chronicleclassic.com/wowdb/spell/${spell.id}`}
+                  href={`/wowdb/spell/${spell.id}`}
                   className="flex items-center justify-between px-2 py-1.5 hover:bg-muted/50 transition-colors group"
                 >
                   <div className="flex items-center gap-2 min-w-0">

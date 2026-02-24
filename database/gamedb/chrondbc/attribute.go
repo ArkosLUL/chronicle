@@ -47,49 +47,51 @@ func SpellAttributesFromSpell(s *dbdefs.Ent_Spell) SpellAttributes {
 
 // Block 0: Attributes
 const (
-	Attr_ProcFailureBurnsCharge  Attribute = 1 << iota //  0
-	Attr_UsesRangedSlot                                //  1 All ranged abilites have this flag
-	Attr_OnNextSwing_NO_DAMAGE                         //  2 on next swing
-	Attr_DoNotLog_IMMUNE_MISSES                        //  3 not set in 3.0.3
-	Attr_IsAbility                                     //  4 Displays ability instead of spell clientside
-	Attr_IsTradeskill                                  //  5 trade spells, will be added by client to a sublist of profession spell
-	Attr_Passive                                       //  6 Passive spell
-	Attr_DoNotDisplay                                  //  7 Hidden in Spellbook, Aura Icon, Combat Log
-	Attr_DoNotLog                                      //  8
-	Attr_HeldItemOnly                                  //  9 Client automatically selects item from mainhand slot as a cast target
-	Attr_OnNextSwing                                   //  10 on next swing 2
-	Attr_WearerCastsProcTrigger                        //  11
-	Attr_DaytimeOnly                                   //  12 only useable at daytime, not set in 2.4.2
-	Attr_NightOnly                                     //  13 only useable at night, not set in 2.4.2
-	Attr_OnlyIndoors                                   //  14 only useable indoors, not set in 2.4.2
-	Attr_OnlyOutdoors                                  //  15 Only useable outdoors.
-	Attr_NotShapeshift                                 //  16 Not while shapeshifted
-	Attr_OnlyStealthed                                 //  17 Must be in stealth
-	Attr_DoNotSheath                                   //  18 client won't hide unit weapons in sheath on cast/channel TODO: Implement
-	Attr_ScalesWithCreatureLevel                       //  19 spelldamage depends on caster level
-	Attr_CancelsAutoAttackCombat                       //  20 Stop attack after use this spell (and not begin attack if use)
-	Attr_NoActiveDefense                               //  21 Cannot be dodged/parried/blocked
-	Attr_TrackTargetInCastPlayerOnly                   // 22 SetTrackingTarget
-	Attr_AllowCastWhileDead                            //  23 castable while dead
-	Attr_AllowWhileMounted                             //  24 castable while mounted
-	Attr_CooldownOnEvent                               //  25 Activate and start cooldown after aura fade or remove summoned creature or go
-	Attr_AuraIsDebuff                                  //  26
-	Attr_AllowWhileSitting                             //  27 castable while sitting
-	Attr_NotInCombatOnlyPeaceful                       //  28 Cannot be used in combat
-	Attr_NoImmunities                                  //  29 unaffected by invulnerability
-	Attr_HeartbeatResist                               //  30 Chance for spell effects to break early (heartbeat resist)
-	Attr_NoAuraCancel                                  //  31 positive aura can't be canceled
+	Attr_ProcFailureBurnsCharge      Attribute = 1 << iota //  0
+	Attr_UsesRangedSlot                                    //  1 All ranged abilites have this flag
+	Attr_OnNextSwing_NO_DAMAGE                             //  2 on next swing
+	Attr_DoNotLog_IMMUNE_MISSES                            //  3 not set in 3.0.3
+	Attr_IsAbility                                         //  4 Displays ability instead of spell clientside
+	Attr_IsTradeskill                                      //  5 trade spells, will be added by client to a sublist of profession spell
+	Attr_Passive                                           //  6 Passive spell
+	Attr_DoNotDisplay                                      //  7 Hidden in Spellbook, Aura Icon, Combat Log
+	Attr_DoNotLog                                          //  8
+	Attr_HeldItemOnly                                      //  9 Client automatically selects item from mainhand slot as a cast target
+	Attr_OnNextSwing                                       //  10 on next swing 2
+	Attr_WearerCastsProcTrigger                            //  11
+	Attr_DaytimeOnly                                       //  12 only useable at daytime, not set in 2.4.2
+	Attr_NightOnly                                         //  13 only useable at night, not set in 2.4.2
+	Attr_OnlyIndoors                                       //  14 only useable indoors, not set in 2.4.2
+	Attr_OnlyOutdoors                                      //  15 Only useable outdoors.
+	Attr_NotShapeshift                                     //  16 Not while shapeshifted
+	Attr_OnlyStealthed                                     //  17 Must be in stealth
+	Attr_DoNotSheath                                       //  18 client won't hide unit weapons in sheath on cast/channel TODO: Implement
+	Attr_ScalesWithCreatureLevel                           //  19 spelldamage depends on caster level
+	Attr_CancelsAutoAttackCombat                           //  20 Stop attack after use this spell (and not begin attack if use)
+	Attr_NoActiveDefense                                   //  21 Cannot be dodged/parried/blocked
+	Attr_TrackTargetInCastPlayerOnly                       // 22 SetTrackingTarget
+	Attr_AllowCastWhileDead                                //  23 castable while dead
+	Attr_AllowWhileMounted                                 //  24 castable while mounted
+	Attr_CooldownOnEvent                                   //  25 Activate and start cooldown after aura fade or remove summoned creature or go
+	Attr_AuraIsDebuff                                      //  26
+	Attr_AllowWhileSitting                                 //  27 castable while sitting
+	Attr_NotInCombatOnlyPeaceful                           //  28 Cannot be used in combat
+	Attr_NoImmunities                                      //  29 unaffected by invulnerability
+	Attr_HeartbeatResist                                   //  30 Chance for spell effects to break early (heartbeat resist)
+	Attr_NoAuraCancel                                      //  31 positive aura can't be canceled
 )
 
 // Block 1: AttributesEx
 const (
 	AttrEx_DismissPet                  Attribute = (1 << iota) | (1 << 32) //  0
 	AttrEx_DrainAllPower                                                   //  1 use all power (Only paladin Lay of Hands and Bunyanize)
-	AttrEx_Channeled1                                                      //  2 channeled 1
+	// AttrEx_Channeled1 is the classical channel
+  AttrEx_Channeled1                                                      //  2 channeled 1
 	AttrEx_CantBeRedirected                                                //  3
 	AttrEx_Unk4                                                            //  4
 	AttrEx_NotBreakStealth                                                 //  5 Not break stealth
-	AttrEx_Channeled2                                                      //  6 channeled 2
+	// AttrEx_Channeled2 is used for special interrupt like AoE channel
+  AttrEx_Channeled2                                                      //  6 channeled 2
 	AttrEx_CantBeReflected                                                 //  7
 	AttrEx_NotInCombatTarget                                               //  8 Spell req target not to be in combat state
 	AttrEx_FacingTarget                                                    //  9 TODO: CONFIRM!
@@ -97,24 +99,25 @@ const (
 	AttrEx_DontRefreshDurationOnRecast                                     //  11 Aura will not refresh its duration when recast
 	AttrEx_FailureBreaksStealth                                            //  12
 	AttrEx_ToggleFarsight                                                  //  13
-	AttrEx_ChannelTrackTarget                                              //  14
-	AttrEx_DispelAurasOnImmunity                                           //  15 remove auras on immunity
-	AttrEx_UnaffectedBySchoolImmune                                        //  16 unaffected by school immunity
-	AttrEx_UnautocastableByCharmed                                         //  17 TODO: Investigate more Chero version: SPELL_ATTR_EX_PLAYER_CANT_CAST_CHARMED, likely related to MC
-	AttrEx_PreventsAnim                                                    //  18
-	AttrEx_CantTargetSelf                                                  //  19 spells with area effect or friendly targets that exclude the caster
-	AttrEx_ReqTargetComboPoints                                            //  20 Req combo points on target
-	AttrEx_ThreatOnlyOnMiss                                                //  21
-	AttrEx_ReqComboPoints                                                  //  22 Use combo points (in 4.x not required combo point target selected)
-	AttrEx_Unk23                                                           //  23
-	AttrEx_Unk24                                                           //  24 Req fishing pole?? SPELL_ATTR_EX_FISHING
-	AttrEx_Unk25                                                           //  25 not set in 2.4.2
-	AttrEx_RequireAllTargets                                               //  26
-	AttrEx_RefundPower                                                     //  27 All these spells refund power on parry or deflect
-	AttrEx_DontDisplayInAuraBar                                            //  28
-	AttrEx_ChannelDisplaySpellName                                         //  29
-	AttrEx_EnableAtDodge                                                   //  30 overpower
-	AttrEx_Unk31                                                           //  31
+	// AttrEx_ChannelTrackTarget follows the target's position during the channel.
+	AttrEx_ChannelTrackTarget       //  14
+	AttrEx_DispelAurasOnImmunity    //  15 remove auras on immunity
+	AttrEx_UnaffectedBySchoolImmune //  16 unaffected by school immunity
+	AttrEx_UnautocastableByCharmed  //  17 TODO: Investigate more Chero version: SPELL_ATTR_EX_PLAYER_CANT_CAST_CHARMED, likely related to MC
+	AttrEx_PreventsAnim             //  18
+	AttrEx_CantTargetSelf           //  19 spells with area effect or friendly targets that exclude the caster
+	AttrEx_ReqTargetComboPoints     //  20 Req combo points on target
+	AttrEx_ThreatOnlyOnMiss         //  21
+	AttrEx_ReqComboPoints           //  22 Use combo points (in 4.x not required combo point target selected)
+	AttrEx_Unk23                    //  23
+	AttrEx_Unk24                    //  24 Req fishing pole?? SPELL_ATTR_EX_FISHING
+	AttrEx_Unk25                    //  25 not set in 2.4.2
+	AttrEx_RequireAllTargets        //  26
+	AttrEx_RefundPower              //  27 All these spells refund power on parry or deflect
+	AttrEx_DontDisplayInAuraBar     //  28
+	AttrEx_ChannelDisplaySpellName  //  29
+	AttrEx_EnableAtDodge            //  30 overpower
+	AttrEx_Unk31                    //  31
 )
 
 // Block 2: AttributesExB
@@ -224,5 +227,3 @@ const (
 	AttrEx4_Unk30                                                          //  30 - dispel effect 1
 	AttrEx4_Unk31                                                          //  31 - dispel effect 2
 )
-
-

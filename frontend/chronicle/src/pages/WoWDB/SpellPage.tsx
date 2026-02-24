@@ -5,6 +5,7 @@ import { useSpell } from "@/api/queries";
 import { SpellTooltip } from "./SpellTooltip";
 import { LocaleSelector } from "./LocaleSelector";
 import type { LocaleIndex } from "@/api/wowdb";
+import { getDamageTypeLabels, SpellDamageType } from "@/api/wowdb";
 
 export function SpellPage() {
   const { spellId } = useParams<{ spellId: string }>();
@@ -116,6 +117,27 @@ export function SpellPage() {
 
       {spell && (
         <div className="space-y-6">
+          {/* Damage Type Badges */}
+          {spell.damage_type !== SpellDamageType.Unknown && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Damage Type:</span>
+              {getDamageTypeLabels(spell.damage_type).map((label) => (
+                <span
+                  key={label}
+                  className={`text-xs px-2 py-0.5 rounded font-medium ${
+                    label === "Periodic"
+                      ? "bg-purple-500/20 text-purple-400"
+                      : label === "Direct"
+                      ? "bg-amber-500/20 text-amber-400"
+                      : "bg-blue-500/20 text-blue-400"
+                  }`}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* Tooltip Preview */}
           <div>
             <h2 className="text-sm font-medium text-muted-foreground mb-2">

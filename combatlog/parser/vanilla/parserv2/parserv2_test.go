@@ -11,13 +11,14 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/castv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/rs/zerolog"
 	slogzerolog "github.com/samber/slog-zerolog/v2"
 	"github.com/stretchr/testify/require"
@@ -40,10 +41,28 @@ func (m *mockSpellFetcher) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	return sp, nil
 }
 
+// testSpellDB creates a WoWDB from assets/Spell.dbc for testing.
+// Skips the test if the file doesn't exist (allows tests to run without it).
+func testSpellDB(t *testing.T) gamedb.SpellFetcher {
+	t.Helper()
+	dbcPath := "../../../../assets/Spell.dbc"
+	if _, err := os.Stat(dbcPath); os.IsNotExist(err) {
+		t.Skip("assets/Spell.dbc not found, skipping test requiring spell database")
+	}
+
+	ctx := context.Background()
+	db, err := gamedb.New(ctx, gamedb.Options{
+		SpellsDBCPath: dbcPath,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	return db
+}
+
 // testCase parses line and asserts result matches expected message
 func testCase[T messages.Message](t *testing.T, line string, expected T) {
 	t.Helper()
-	testCaseWithDB[T](t, line, expected, &mockSpellFetcher{})
+	testCaseWithDB[T](t, line, expected, testSpellDB(t))
 }
 
 // testCaseWithDB parses line with a SpellFetcher and asserts result matches expected
@@ -62,12 +81,33 @@ func testCaseWithDB[T messages.Message](t *testing.T, line string, expected T, w
 
 	got, ok := msgs[0].(T)
 	require.True(t, ok, "expected %T, got %T", expected, msgs[0])
-	require.EqualValues(t, expected, got)
+
+	// Compare with cmp.Diff, ignoring:
+	// - *chrondbc.Spell: spell data from DBC is large and not meaningful to compare
+	// - unexported fields in MessageBase (activity map used for debugging)
+	diff := cmp.Diff(expected, got,
+		cmpopts.IgnoreTypes(&chrondbc.Spell{}),
+		cmpopts.IgnoreUnexported(messages.MessageBase{}),
+	)
+	if diff != "" {
+		t.Errorf("message mismatch (-expected +got):\n%s", diff)
+	}
 }
 
 func TestParserMessages(t *testing.T) {
 	t.Parallel()
-	t.Skip("no wow db")
+
+	t.Run("Death", func(t *testing.T) {
+		t.Parallel()
+
+		testCase(t,
+			"1771959313535|DEATH|0xF130002D9900DE15",
+			&messages.Slain{
+				MessageBase: messages.Base(time.UnixMilli(1771959313535)),
+				Victim:      guid.GUID(0xF130002D9900DE15),
+				Attribution: (*messages.Damage)(nil),
+			})
+	})
 
 	t.Run("Header", func(t *testing.T) {
 		t.Parallel()
@@ -149,18 +189,21 @@ func TestParserMessages(t *testing.T) {
 
 	t.Run("Spell Go", func(t *testing.T) {
 		t.Parallel()
-		t.Skip("Spell db mock")
+
 		testCase(t,
 			"1771770885937|SPELL_GO|0|15237|0x000000000001C80A|0x0000000000000000|256|0|1",
-			&messages.Cast{
-				MessageBase: messages.Base(time.UnixMilli(1771563953000)),
-				CastV2: castv2.CastV2{
-					Caster: types.Unit{},
-					Action: "",
-					Target: nil,
-					Spell:  types.Spell{},
-				},
-			})
+			&messages.SpellGo{
+				MessageBase:      messages.Base(time.UnixMilli(1771770885937)),
+				ItemID:           nil, // 0 means no item
+				SpellData:        nil, // ignored in comparison
+				Caster:           guid.GUID(0x000000000001C80A),
+				Target:           nil, // 0x0000000000000000 means no target
+				Flags:            types.CastFlags(256),
+				NumTargetsHit:    0,
+				NumTargetsMissed: 1,
+				CorpseOwner:      nil,
+			},
+		)
 	})
 	// Add more test cases:
 	// t.Run("Heal", func(t *testing.T) {

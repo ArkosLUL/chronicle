@@ -213,42 +213,59 @@ func CreaturesCmd() *serpent.Command {
 				Value:       serpent.BoolOf(&dumpSpells),
 			},
 		},
-		Use:        "creatures <file> <file>",
-		Middleware: serpent.RequireNArgs(2),
+		Use:        "creatures <file> [file]",
+		Middleware: serpent.RequireRangeArgs(1, 2),
 		Handler: func(i *serpent.Invocation) error {
 			ctx := i.Context()
 			logger := getLogger(i)
 
-			files, err := openFileReaders(i.Args[0], i.Args[1])
+			files, err := openFileReaders(i.Args...)
 			if err != nil {
 				return err
 			}
 			defer func() { closeFiles(files...) }()
 
-			fileOne := &bytes.Buffer{}
-			sum, ri1, err := sorter.SortLogs(ctx, logger, files[0], fileOne)
-			if err != nil {
-				return fmt.Errorf("sorting logs: %w", err)
+			var p consumers.Advancer
+			if len(files) == 1 {
+				// v2 parser for single file
+				wowDB, err := gamedb.New(ctx, gamedb.Options{
+					SpellsDBCPath: "./assets/Spell.dbc",
+				})
+				if err != nil {
+					return fmt.Errorf("creating wowdb: %w", err)
+				}
+				p, err = parserv2.New(logger, files[0], wowDB)
+				if err != nil {
+					return fmt.Errorf("creating parser: %w", err)
+				}
+			} else {
+				// v1 parser with merging for two files
+				fileOne := &bytes.Buffer{}
+				sum, ri1, err := sorter.SortLogs(ctx, logger, files[0], fileOne)
+				if err != nil {
+					return fmt.Errorf("sorting logs: %w", err)
+				}
+
+				fileTwo := &bytes.Buffer{}
+				sum2, ri2, err := sorter.SortLogs(ctx, logger, files[1], fileTwo)
+				if err != nil {
+					return fmt.Errorf("sorting logs: %w", err)
+				}
+
+				ri := ri1
+				if ri == nil {
+					ri = ri2
+				}
+
+				m := vanilla.Merger(logger)
+				liner, scan, err := m.LineScanner(ctx, ri, logfile.New(&sum.IsRaw, fileOne), logfile.New(&sum2.IsRaw, fileTwo))
+				if err != nil {
+					return err
+				}
+
+				p = vanilla.NewFromScanner(logger, liner, scan, nil)
 			}
 
-			fileTwo := &bytes.Buffer{}
-			sum2, ri2, err := sorter.SortLogs(ctx, logger, files[1], fileTwo)
-			if err != nil {
-				return fmt.Errorf("sorting logs: %w", err)
-			}
-
-			ri := ri1
-			if ri == nil {
-				ri = ri2
-			}
-
-			m := vanilla.Merger(logger)
-			liner, scan, err := m.LineScanner(ctx, ri, logfile.New(&sum.IsRaw, fileOne), logfile.New(&sum2.IsRaw, fileTwo))
-			if err != nil {
-				return err
-			}
-
-			p := vanilla.NewFromScanner(logger, liner, scan, nil)
 			output := creatures.New(logger)
 			err = output.Consume(ctx, p)
 			if err != nil {

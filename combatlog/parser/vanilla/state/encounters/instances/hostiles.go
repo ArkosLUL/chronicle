@@ -847,3 +847,31 @@ func StratholmeHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func TheBlackMorassHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		65100: "Infinite Dragonspawn",
+		65101: "Infinite Riftguard",
+		65105: "Infinite Rift-Lord",
+		65110: "Darkwater Python",
+		65111: "Murkwater Crocolisk",
+		65103: "Infinite Whelp",
+		65102: "Infinite Riftweaver",
+		50106: "Time Anomaly",
+		61318: "Echo of Time",
+		61317: "Temporal Dust",
+		65118: "Echo of Kael'thas Sunstrider",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		65113: "Chronar",
+		61575: "Epidamu",
+		65125: "Antnormi",
+		65122: "Rotmaw",
+		65124: "Mossheart",
+		65116: "Time-Lord Epochronos",
+		61316: "Drifting Avatar of Sand",
+	})
+
+	return hostile
+}

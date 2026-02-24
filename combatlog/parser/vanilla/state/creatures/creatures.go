@@ -7,9 +7,9 @@ import (
 	"io"
 	"log/slog"
 
+	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/critters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/warlockdemon"
@@ -48,7 +48,7 @@ func New(logger *slog.Logger) *Creatures {
 	return s
 }
 
-func (s *Creatures) Consume(ctx context.Context, p *vanilla.Parser) error {
+func (s *Creatures) Consume(ctx context.Context, p consumers.Advancer) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()

@@ -13,9 +13,13 @@ import {
 interface SpellTooltipProps {
   spell: WoWSpell;
   locale?: LocaleIndex;
+  /** Hide the duration line (useful when duration is shown elsewhere) */
+  hideDuration?: boolean;
+  /** Hide the effect descriptions (useful when context already explains the effect) */
+  hideEffects?: boolean;
 }
 
-export function SpellTooltip({ spell, locale = "0" }: SpellTooltipProps) {
+export function SpellTooltip({ spell, locale = "0", hideDuration = false, hideEffects = false }: SpellTooltipProps) {
   const name = getLocalizedText(spell.name, locale);
   const rank = getLocalizedText(spell.subtext, locale);
   const description = resolveSpellDescription(
@@ -88,7 +92,7 @@ export function SpellTooltip({ spell, locale = "0" }: SpellTooltipProps) {
       </div>
 
       {/* Duration if applicable */}
-      {spell.duration.Duration > 0 && (
+      {!hideDuration && spell.duration.Duration > 0 && (
         <div className="text-white text-sm mt-1">
           Duration: {formatDuration(spell.duration)}
         </div>
@@ -102,7 +106,7 @@ export function SpellTooltip({ spell, locale = "0" }: SpellTooltipProps) {
       )}
 
       {/* Aura description (buff/debuff text) */}
-      {auraDesc && (
+      {!hideEffects && auraDesc && (
         <p className="text-green-400 mt-2 text-sm italic">{auraDesc}</p>
       )}
 

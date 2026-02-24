@@ -13,6 +13,7 @@ import { AuraSelector } from "./AuraSelector";
 import { UptimeTimeline, type DisplaySegment } from "./UptimeTimeline";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { SpellIdTooltip } from "@/components/ui/SpellIdTooltip";
 
 /**
  * Format uptime as percentage
@@ -45,6 +46,7 @@ interface TargetAuraRow {
   targetGuid: string;
   targetName: string;
   auraName: string;
+  spellId: number | null;
   applicationCount: number;
   totalUptimeMs: number;
   segments: DisplaySegment[];
@@ -159,6 +161,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
           targetGuid: guid,
           targetName: targetData.name,
           auraName,
+          spellId: auraData.spellId,
           applicationCount: targetData.applicationCount,
           totalUptimeMs: targetData.totalUptimeMs,
           segments: adjustedSegments,
@@ -263,7 +266,11 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
                           {row.targetName}
                         </td>
                         <td className="py-0.5 px-1 truncate max-w-[90px] text-muted-foreground">
-                          {row.auraName}
+                          <SpellIdTooltip 
+                            spellId={row.spellId} 
+                            name={row.auraName} 
+                            size={14}
+                          />
                         </td>
                         <td className="py-0.5 px-1 text-center font-mono text-2xs text-muted-foreground">
                           {row.applicationCount}

@@ -178,6 +178,7 @@ export interface AuraProcessorEvent extends EventMeta {
   type: "aura";
   target: string;  // The unit affected by the aura
   spellName: string;  // Name of the aura/buff/debuff
+  spellId: number | null;  // Spell ID from SpellData (if available)
   amount: number;  // Stack count (for Modified events, 0 means ended)
   application: AuraApplication;  // Deprecated: use state instead
   state: AuraState;  // Added, Removed, or Modified

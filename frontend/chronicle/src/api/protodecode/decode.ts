@@ -1891,6 +1891,7 @@ export interface ReusableAura {
   offsetMilli: number;
   target: string;
   spellName: string;
+  spellId: number | null;
   amount: number;
   application: AuraApplication;
   state: AuraState;
@@ -1919,8 +1920,10 @@ export class AuraDecoder {
     offsetMilli: 0,
     target: "",
     spellName: "",
+    spellId: null,
     amount: 0,
     application: AuraApplication.Unknown,
+    state: AuraState.Unknown,
     activity: [],
     activityCount: 0,
   };
@@ -1938,6 +1941,7 @@ export class AuraDecoder {
     msg.offsetMilli = 0;
     msg.target = "";
     msg.spellName = "";
+    msg.spellId = null;
     msg.amount = 0;
     msg.application = AuraApplication.Unknown;
     msg.state = AuraState.Unknown;
@@ -2009,6 +2013,26 @@ export class AuraDecoder {
         } else if (fieldNumber === 3) {
           msg.spellName = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
+        } else if (fieldNumber === 7) {
+          // SpellData - decode nested message (field 1: id, field 2: name)
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            
+            if (spellWire === 0 && spellField === 1) {
+              // Spell ID (varint)
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              msg.spellId = value;
+            } else if (spellWire === 2) {
+              // Spell name string - skip, we already have spellName from field 3
+              const { value: spellLen, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              offset += spellLen;
+            }
+          }
         } else {
           offset += len;
         }

@@ -31,6 +31,7 @@ export interface TargetUptimeData {
 
 /** Data for a single aura across all targets */
 export interface AuraData {
+  spellId: number | null;
   perTarget: Map<string, TargetUptimeData>;
 }
 
@@ -39,6 +40,7 @@ interface ActiveAura {
   targetGuid: string;
   targetName: string;
   spellName: string;
+  spellId: number | null;
   startOffsetMs: number;
   encounterId: string;
 }
@@ -76,16 +78,19 @@ function initTargetData(guid: string, name: string): TargetUptimeData {
 }
 
 /** Get or create aura data for a spell name */
-function getOrCreateAuraData(state: AuraUptimeResult, spellName: string): AuraData {
+function getOrCreateAuraData(state: AuraUptimeResult, spellName: string, spellId: number | null = null): AuraData {
   let auraData = state.byAura.get(spellName);
   if (!auraData) {
-    auraData = { perTarget: new Map() };
+    auraData = { spellId, perTarget: new Map() };
     state.byAura.set(spellName, auraData);
     // Track in both array and set
     if (!state.auraNameSet.has(spellName)) {
       state.auraNameSet.add(spellName);
       state.auraNames.push(spellName);
     }
+  } else if (auraData.spellId === null && spellId !== null) {
+    // Update spell ID if we didn't have one before
+    auraData.spellId = spellId;
   }
   return auraData;
 }
@@ -99,7 +104,7 @@ function finalizeActiveAura(
   const uptimeMs = endOffsetMs - active.startOffsetMs;
   if (uptimeMs <= 0) return;
   
-  const auraData = getOrCreateAuraData(state, active.spellName);
+  const auraData = getOrCreateAuraData(state, active.spellName, active.spellId);
   
   let targetData = auraData.perTarget.get(active.targetGuid);
   if (!targetData) {
@@ -219,6 +224,7 @@ function processAuraEvent(
       targetGuid: event.target,
       targetName,
       spellName: event.spellName,
+      spellId: event.spellId,
       startOffsetMs: event.offsetMilli,
       encounterId: encounterID,
     };

@@ -32,6 +32,9 @@ function getSchemaForType(type: StreamType): DescMessage {
       return AuraSchema;
     case "spell_go":
       return SpellGoSchema;
+    case "aura_cast":
+      // aura_cast uses the same schema structure - return null to skip for now
+      return null as unknown as DescMessage;
     default: {
       const _exhaustive: never = type;
       throw new Error(`Unknown stream type: ${_exhaustive}`);

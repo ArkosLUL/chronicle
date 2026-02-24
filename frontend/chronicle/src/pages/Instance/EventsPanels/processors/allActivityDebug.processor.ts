@@ -34,7 +34,7 @@ export interface RawDebugEvent {
   caster: string;
   casterName: string;
   sourceName: string;
-  target: string;
+  target: string | null;
   targetName: string;
   amount: number;
   resourceType?: ResourceType; // For resource_change events

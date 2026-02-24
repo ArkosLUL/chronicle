@@ -150,7 +150,7 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
       <span className="text-orange-400 w-24 shrink-0 truncate" title={event.caster}>{event.casterName || "-"}</span>
       <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>{event.sourceName}</span>
       <span className="text-muted-foreground shrink-0">→</span>
-      <span className="text-purple-400 w-24 shrink-0 truncate" title={event.target}>{event.targetName}</span>
+      <span className="text-purple-400 w-24 shrink-0 truncate" title={event.target ?? undefined}>{event.targetName}</span>
       {event.extra ? (
         <Tooltip>
           <TooltipTrigger asChild>{amountElement}</TooltipTrigger>

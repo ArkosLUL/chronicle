@@ -24,6 +24,8 @@ const FIXTURE_URLS: Record<StreamType, string> = {
   cast: castFixture,
   aura: auraFixture,
   extra_attack: extraAttackFixture,
+  aura_cast: "", // No fixture for aura_cast yet
+  spell_go: "", // No fixture for spell_go yet
 };
 
 // Use the real InstanceEventsContext so useInstanceEventsContext works

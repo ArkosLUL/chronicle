@@ -78,14 +78,14 @@ func (h HitType) String() string {
 }
 
 const (
-	HitTypeNone          HitType = 0x00000000
-	HitTypeOffHand       HitType = 0x00000001
-	HitTypeHit           HitType = 0x00000002
-	HitTypeCrit          HitType = 0x00000004
-	HitTypePartialResist HitType = 0x00000008
-	HitTypeFullResist    HitType = 0x00000010
-	HitTypeMiss          HitType = 0x00000020
-	HitTypePartialAbsorb HitType = 0x00000040
+	HitTypeNone          HitType = 0x00000000 // 0
+	HitTypeOffHand       HitType = 0x00000001 // 1
+	HitTypeHit           HitType = 0x00000002 // 2
+	HitTypeCrit          HitType = 0x00000004 // 4
+	HitTypePartialResist HitType = 0x00000008 // 8
+	HitTypeFullResist    HitType = 0x00000010 // 16
+	HitTypeMiss          HitType = 0x00000020 // 32
+	HitTypePartialAbsorb HitType = 0x00000040 // 64
 	HitTypeFullAbsorb    HitType = 0x00000080
 	HitTypeGlancing      HitType = 0x00000100
 	HitTypeCrushing      HitType = 0x00000200

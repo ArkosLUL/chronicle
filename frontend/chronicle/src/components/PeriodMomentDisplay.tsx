@@ -1,4 +1,45 @@
+import { Link } from "react-router-dom";
 import type { PeriodMoment } from "@/api/typesGenerated";
+
+// SpellData has id (number) and name (i18n.Text which is map[locale]string)
+interface SpellDataValue {
+  id: number;
+  name: Record<string, string>; // e.g. { "enUS": "Fireball" }
+}
+
+function isSpellData(value: unknown): value is SpellDataValue {
+  if (typeof value !== "object" || value === null) return false;
+  if (!("id" in value) || typeof (value as { id: unknown }).id !== "number") return false;
+  if (!("name" in value) || typeof (value as { name: unknown }).name !== "object") return false;
+  return true;
+}
+
+function getSpellName(name: Record<string, string>): string {
+  // Try common locales in preference order
+  return name["enUS"] || name["enGB"] || Object.values(name)[0] || "";
+}
+
+function renderMessageValue(key: string, value: unknown): React.ReactNode {
+  // Handle SpellData objects (key is "SpellData" with numeric id and localized name)
+  if (key === "SpellData" && isSpellData(value)) {
+    const spellName = getSpellName(value.name);
+    return (
+      <Link
+        to={`/wowdb/spell/${value.id}`}
+        className="text-(--tertiary) hover:underline"
+      >
+        {spellName || `Spell ${value.id}`}
+      </Link>
+    );
+  }
+
+  // Handle other objects (fallback to JSON)
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+}
 
 interface PeriodMomentDisplayProps {
   moment: PeriodMoment | undefined;
@@ -52,7 +93,7 @@ export function PeriodMomentDisplay({
           {Object.entries(moment.message).map(([key, value]) => (
             <div key={key} className="flex gap-2">
               <span className="text-muted-foreground">{key}:</span>
-              <span className="break-all">{String(value)}</span>
+              <span className="break-all">{renderMessageValue(key, value)}</span>
             </div>
           ))}
         </div>

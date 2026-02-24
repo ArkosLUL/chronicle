@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Layers } from "lucide-react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
@@ -8,6 +9,7 @@ import { useCachedValue } from "@/hooks/useCachedValue";
 import { useHealingDoneBreakout } from "./HealingDoneBreakout";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/Tooltip/tooltip";
 
 /**
  * View modes for healing display
@@ -112,6 +114,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
   const { sourceType = "players" } = props;
   const { result, context } = props;
   const [viewMode, setViewMode] = useState<HealingViewMode>("effective");
+  const [showRanks, setShowRanks] = useState(false);
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -135,6 +138,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
     loading: props.loading,
     processing: props.processing,
     viewMode,
+    showRanks,
   });
 
   // Once we have cached data, never show loading/processing states
@@ -174,27 +178,53 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
           )}
         </div>
         
-        {/* View mode toggle */}
-        <div 
-          className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5"
-          data-healing-view-toggle
-        >
-          {(["effective", "overheal", "total"] as HealingViewMode[]).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setViewMode(mode)}
-              className={cn(
-                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                viewMode === mode
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              data-healing-view-mode={mode}
-            >
-              {viewModeLabels[mode]}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Show ranks toggle */}
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setShowRanks(!showRanks)}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    showRanks
+                      ? "bg-[color:var(--tertiary)]/20 text-[color:var(--tertiary)] border border-[color:var(--tertiary)]/30"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Layers className="h-3 w-3" />
+                  Ranks
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px]">
+                <p className="text-xs">Show spells separated by rank in the ability breakdown (e.g., Flash Heal Rank 4 vs Rank 7)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* View mode toggle */}
+          <div 
+            className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5"
+            data-healing-view-toggle
+          >
+            {(["effective", "overheal", "total"] as HealingViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  viewMode === mode
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-healing-view-mode={mode}
+              >
+                {viewModeLabels[mode]}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       

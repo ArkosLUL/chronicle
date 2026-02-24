@@ -17,7 +17,7 @@
 
 import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
-import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
+import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "./abilityBreakout";
 import { isResourceChangeEvent, isDamageEvent } from "./events";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, isPetGuidFast, type GuidCache } from "./guidCache";
 
@@ -87,6 +87,10 @@ export type UnifiedHealingResult = {
   HealerByTarget: Map<string, Map<string, number>>;
   HealerByTargetOverheal: Map<string, Map<string, number>>;
   HealerByTargetTotal: Map<string, Map<string, number>>;
+  // Breakouts by spell ID (for "Show ranks" mode): healerID -> spellId -> data
+  HealerByAbilityBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
+  HealerByAbilityOverhealBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
+  HealerByAbilityTotalBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
   
   // === HealingTaken data (by target) ===
   EncounterHealingByTarget: Map<string, UnitHealingTaken>;
@@ -139,6 +143,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       HealerByTarget: new Map(),
       HealerByTargetOverheal: new Map(),
       HealerByTargetTotal: new Map(),
+      // HealingDone by spell ID (for "Show ranks" mode)
+      HealerByAbilityBySpellId: new Map(),
+      HealerByAbilityOverhealBySpellId: new Map(),
+      HealerByAbilityTotalBySpellId: new Map(),
       // HealingTaken
       EncounterHealingByTarget: new Map(),
       TargetByAbility: new Map(),
@@ -360,6 +368,19 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         }
         // Always track total (effective + overheal) - counts each event exactly once
         accumulateAbilityBreakout(state.HealerByAbilityTotal, healerID, abilityName, healAmount, hitType);
+
+        // Spell ID keyed breakdown (for "Show ranks" mode)
+        // Only available for actual heal events, not resource_change events
+        const spellId = !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
+        if (spellId != null) {
+          if (effectiveHeal > 0) {
+            accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, spellId, abilityName, effectiveHeal, hitType);
+          }
+          if (overheal > 0) {
+            accumulateAbilityBreakoutBySpellId(state.HealerByAbilityOverhealBySpellId, healerID, spellId, abilityName, overheal, hitType);
+          }
+          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityTotalBySpellId, healerID, spellId, abilityName, healAmount, hitType);
+        }
 
         // Healer target breakdown
         const healerTargets = state.HealerByTarget.get(healerID) || new Map();

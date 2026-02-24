@@ -417,6 +417,7 @@ export interface ReusableHeal {
   school: number; // Always 0 for heals, but kept for interface compat
   activity: ReusableActivityEntry[];
   activityCount: number;
+  spellId: number | null; // From SpellData field 8
 }
 
 /**
@@ -429,6 +430,7 @@ export interface ReusableHeal {
  *   5: sourceName (string)  <-- different from Damage!
  *   6: amount (int32)
  *   7: hitType (uint32)
+ *   8: spellData (SpellData) - nested: 1=id, 2=name
  */
 export class HealDecoder {
   // Use shared TextDecoder for better memory efficiency
@@ -447,6 +449,7 @@ export class HealDecoder {
     school: 0,
     activity: [],
     activityCount: 0,
+    spellId: null,
   };
   
   /**
@@ -467,6 +470,7 @@ export class HealDecoder {
     msg.amount = 0;
     msg.school = 0;
     msg.activityCount = 0;
+    msg.spellId = null;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -538,6 +542,23 @@ export class HealDecoder {
           // Heal field 5 = sourceName (different from Damage!)
           msg.sourceName = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
+        } else if (fieldNumber === 8) {
+          // SpellData - decode nested (1=id, 2=name)
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            if (spellWire === 0 && spellField === 1) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              msg.spellId = value;
+            } else if (spellWire === 2) {
+              // Skip name field (we use sourceName)
+              const { value: sLen, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead + sLen;
+            }
+          }
         } else {
           offset += len;
         }

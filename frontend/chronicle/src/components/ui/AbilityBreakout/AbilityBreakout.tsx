@@ -200,6 +200,8 @@ export interface AbilityData extends DamageAbilityBreakout{
   value: number
   /** Optional overheal value - displayed in a separate column with distinct styling */
   overheal?: number
+  /** Optional subtitle displayed in muted text after the name (e.g., spell rank) */
+  subtitle?: string
 }
 
 /**
@@ -482,10 +484,13 @@ export function AbilityTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="py-1 px-2 max-w-[150px] truncate"
-                  title={ability.name}
+                  className="py-1 px-2 max-w-[180px] truncate"
+                  title={ability.subtitle ? `${ability.name} (${ability.subtitle})` : ability.name}
                 >
                   {ability.name}
+                  {ability.subtitle && (
+                    <span className="ml-1 text-2xs text-muted-foreground/70">{ability.subtitle}</span>
+                  )}
                 </HoverCell>
                 {hasOverhealData && (() => {
                   const overhealVal = ability.overheal ?? 0;

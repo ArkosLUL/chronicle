@@ -63,6 +63,7 @@ export interface HealProcessorEvent extends EventMeta {
   hitType: number;
   amount: number;
   school: number;
+  spellId: number | null;
 }
 
 /**

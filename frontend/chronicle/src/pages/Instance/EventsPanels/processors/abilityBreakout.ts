@@ -128,3 +128,39 @@ export function accumulateAbilityBreakout(
   unitBreakout.set(abilityName, abilityBreakout);
   byAbilityMap.set(unitId, unitBreakout);
 }
+
+/**
+ * Ability breakout keyed by spell ID instead of name.
+ * Stores both the breakout data and the spell name for display.
+ */
+export interface SpellIdAbilityBreakout extends DamageAbilityBreakout {
+  /** The spell name to display (includes HoT suffix if applicable) */
+  spellName: string;
+}
+
+export function createEmptySpellIdAbilityBreakout(spellName: string): SpellIdAbilityBreakout {
+  return {
+    ...createEmptyAbilityBreakout(),
+    spellName,
+  };
+}
+
+/**
+ * Get or create a spell-ID-keyed ability breakout from a map, update it, and store it back.
+ */
+export function accumulateAbilityBreakoutBySpellId(
+  byAbilityMap: Map<string, Map<number, SpellIdAbilityBreakout>>,
+  unitId: string,
+  spellId: number,
+  spellName: string,
+  amount: number,
+  hitType: number,
+): void {
+  const unitBreakout = byAbilityMap.get(unitId) || new Map<number, SpellIdAbilityBreakout>();
+  const abilityBreakout = unitBreakout.get(spellId) || createEmptySpellIdAbilityBreakout(spellName);
+  
+  updateAbilityBreakout(abilityBreakout, amount, hitType, spellName);
+  
+  unitBreakout.set(spellId, abilityBreakout);
+  byAbilityMap.set(unitId, unitBreakout);
+}

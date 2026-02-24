@@ -1,8 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } from "@/components/ui/AbilityBreakout";
 import type { UnifiedHealingResult } from "../processors";
 import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingDoneContent";
+import type { WoWSpell } from "@/api/wowdb";
 
 /**
  * Resolve a unit name from context, formatting pets as "{Owner}'s Pet {PetName}".
@@ -105,6 +107,91 @@ function getAbilitiesForUnit(
 }
 
 /**
+ * Ability data with spell ID for rank lookups.
+ */
+interface AbilityDataWithSpellId extends AbilityData {
+  spellId: number;
+}
+
+/**
+ * Convert the ByAbilityBySpellId map for a specific unit into AbilityData[] for the breakout.
+ * Uses spell IDs as keys for "Show ranks" mode.
+ */
+function getAbilitiesBySpellIdForUnit(
+  result: UnifiedHealingResult,
+  unitId: string,
+  viewMode: HealingViewMode
+): AbilityDataWithSpellId[] {
+  // Choose which ability map to use based on view mode
+  const effectiveAbilities = result.HealerByAbilityBySpellId.get(unitId);
+  const overhealAbilities = result.HealerByAbilityOverhealBySpellId.get(unitId);
+  
+  if (viewMode === "overheal") {
+    // Only show overhealing
+    if (!overhealAbilities) return [];
+    const abilities: AbilityDataWithSpellId[] = [];
+    for (const [spellId, data] of overhealAbilities) {
+      abilities.push({
+        ...data,
+        name: data.spellName,
+        value: data.Total,
+        spellId,
+      });
+    }
+    return abilities.sort((a, b) => b.value - a.value);
+  }
+  
+  if (viewMode === "total") {
+    // Use the dedicated total map which counts each event exactly once
+    const totalAbilities = result.HealerByAbilityTotalBySpellId.get(unitId);
+    if (!totalAbilities) return [];
+    
+    const abilities: AbilityDataWithSpellId[] = [];
+    for (const [spellId, data] of totalAbilities) {
+      abilities.push({
+        ...data,
+        name: data.spellName,
+        value: data.Total,
+        spellId,
+      });
+    }
+    return abilities.sort((a, b) => b.value - a.value);
+  }
+  
+  // Default: effective - include overheal as separate column
+  if (!effectiveAbilities) return [];
+  const abilities: AbilityDataWithSpellId[] = [];
+  for (const [spellId, data] of effectiveAbilities) {
+    // Get overheal for this spell ID if it exists
+    const overhealData = overhealAbilities?.get(spellId);
+    abilities.push({
+      ...data,
+      name: data.spellName,
+      value: data.Total,
+      overheal: overhealData?.Total,
+      spellId,
+    });
+  }
+  
+  // Also add abilities that only have overheal (no effective healing)
+  if (overhealAbilities) {
+    for (const [spellId, data] of overhealAbilities) {
+      if (!effectiveAbilities?.has(spellId)) {
+        abilities.push({
+          ...data,
+          name: data.spellName,
+          value: 0,
+          overheal: data.Total,
+          spellId,
+        });
+      }
+    }
+  }
+  
+  return abilities.sort((a, b) => b.value - a.value);
+}
+
+/**
  * Get the total healing for a unit based on view mode.
  */
 function getTotalForUnit(
@@ -197,6 +284,29 @@ export interface UseHealingDoneBreakoutOptions {
   processing?: boolean;
   /** View mode for healing display */
   viewMode?: HealingViewMode;
+  /** When true, shows spells by rank (spell ID) instead of combined by name */
+  showRanks?: boolean;
+}
+
+/**
+ * Collect all unique spell IDs from the result for fetching spell data.
+ */
+function getAllSpellIds(result: UnifiedHealingResult | undefined): number[] {
+  if (!result) return [];
+  
+  const spellIds = new Set<number>();
+  
+  for (const healerMap of result.HealerByAbilityBySpellId.values()) {
+    for (const id of healerMap.keys()) spellIds.add(id);
+  }
+  for (const healerMap of result.HealerByAbilityOverhealBySpellId.values()) {
+    for (const id of healerMap.keys()) spellIds.add(id);
+  }
+  for (const healerMap of result.HealerByAbilityTotalBySpellId.values()) {
+    for (const id of healerMap.keys()) spellIds.add(id);
+  }
+  
+  return Array.from(spellIds);
 }
 
 /**
@@ -212,9 +322,42 @@ export function useHealingDoneBreakout({
   loading = false,
   processing = false,
   viewMode = "effective",
+  showRanks = false,
 }: UseHealingDoneBreakoutOptions) {
   // Track tab selection per player so it persists across reloads
   const [tabByPlayer, setTabByPlayer] = useState<Map<string, BreakoutTab>>(new Map());
+  
+  // Collect all spell IDs for fetching spell data when showRanks is enabled
+  const spellIds = useMemo(() => {
+    if (!showRanks) return [];
+    return getAllSpellIds(result);
+  }, [result, showRanks]);
+  
+  // Fetch spell data for all spell IDs (only when showRanks is true)
+  const spellQueries = useQueries({
+    queries: spellIds.map((id) => ({
+      queryKey: ["wowdb", "spell", id.toString()],
+      queryFn: async (): Promise<WoWSpell> => {
+        const response = await fetch(`/api/v1/wowdb/spell/${id}`);
+        if (!response.ok) throw new Error("Spell not found");
+        return response.json();
+      },
+      staleTime: Infinity, // DBC data never changes
+      retry: false,
+      enabled: showRanks,
+    })),
+  });
+  
+  // Build spell data lookup map
+  const spellDataMap = useMemo(() => {
+    const map = new Map<number, WoWSpell>();
+    spellQueries.forEach((query, index) => {
+      if (query.data) {
+        map.set(spellIds[index], query.data);
+      }
+    });
+    return map;
+  }, [spellQueries, spellIds]);
   
   const breakout = useCallback(
     (playerID: string, pinned: boolean) => {
@@ -236,7 +379,20 @@ export function useHealingDoneBreakout({
         );
       }
 
-      const abilities = getAbilitiesForUnit(result, playerID, viewMode);
+      // Choose data source based on showRanks
+      let abilities: AbilityData[];
+      if (showRanks) {
+        const abilitiesWithSpellId = getAbilitiesBySpellIdForUnit(result, playerID, viewMode);
+        // Add rank as subtitle from spell data
+        abilities = abilitiesWithSpellId.map((a) => {
+          const spellData = spellDataMap.get(a.spellId);
+          const rank = spellData?.subtext?.["0"]; // enUS locale (e.g., "Rank 7")
+          return { ...a, subtitle: rank || undefined };
+        });
+      } else {
+        abilities = getAbilitiesForUnit(result, playerID, viewMode);
+      }
+      
       const targets = getTargetsForUnit(result, playerID, context, viewMode);
       const totalValue = getTotalForUnit(result, playerID, viewMode);
 
@@ -280,7 +436,7 @@ export function useHealingDoneBreakout({
         />
       );
     },
-    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer, viewMode]
+    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer, viewMode, showRanks, spellDataMap]
   );
 
   return breakout;

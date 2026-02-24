@@ -1,7 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } from "@/components/ui/AbilityBreakout";
 import type { DamageDoneResult } from "./damageDone.processor";
 import type { PanelContext } from "../types";
+import type { WoWSpell } from "@/api/wowdb";
 
 /**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
@@ -25,6 +27,52 @@ function getAbilitiesForUnit(
   }
 
   return abilities.sort((a, b) => b.value - a.value);
+}
+
+/**
+ * Ability data with spell ID for rank lookups.
+ */
+interface AbilityDataWithSpellId extends AbilityData {
+  spellId: number;
+}
+
+/**
+ * Convert the ByAbilityBySpellId map for a specific unit into AbilityData[] for the breakout.
+ * Uses spell IDs as keys for "Show ranks" mode.
+ */
+function getAbilitiesBySpellIdForUnit(
+  result: DamageDoneResult,
+  unitId: string
+): AbilityDataWithSpellId[] {
+  const unitAbilities = result.ByAbilityBySpellId.get(unitId);
+  if (!unitAbilities) return [];
+
+  const abilities: AbilityDataWithSpellId[] = [];
+  for (const [spellId, data] of unitAbilities) {
+    abilities.push({
+      ...data,
+      name: data.spellName,
+      value: data.Total,
+      spellId,
+    });
+  }
+
+  return abilities.sort((a, b) => b.value - a.value);
+}
+
+/**
+ * Collect all unique spell IDs from the result for fetching spell data.
+ */
+function getAllSpellIds(result: DamageDoneResult | undefined): number[] {
+  if (!result) return [];
+  
+  const spellIds = new Set<number>();
+  
+  for (const unitMap of result.ByAbilityBySpellId.values()) {
+    for (const id of unitMap.keys()) spellIds.add(id);
+  }
+  
+  return Array.from(spellIds);
 }
 
 /**
@@ -87,6 +135,8 @@ export interface UseDamageDoneBreakoutOptions {
   durationMs?: number;
   loading?: boolean;
   processing?: boolean;
+  /** When true, shows spells by rank (spell ID) instead of combined by name */
+  showRanks?: boolean;
 }
 
 /**
@@ -101,9 +151,42 @@ export function useDamageDoneBreakout({
   durationMs,
   loading = false,
   processing = false,
+  showRanks = false,
 }: UseDamageDoneBreakoutOptions) {
   // Track tab selection per player so it persists across reloads
   const [tabByPlayer, setTabByPlayer] = useState<Map<string, BreakoutTab>>(new Map());
+  
+  // Collect all spell IDs for fetching spell data when showRanks is enabled
+  const spellIds = useMemo(() => {
+    if (!showRanks) return [];
+    return getAllSpellIds(result);
+  }, [result, showRanks]);
+  
+  // Fetch spell data for all spell IDs (only when showRanks is true)
+  const spellQueries = useQueries({
+    queries: spellIds.map((id) => ({
+      queryKey: ["wowdb", "spell", id.toString()],
+      queryFn: async (): Promise<WoWSpell> => {
+        const response = await fetch(`/api/v1/wowdb/spell/${id}`);
+        if (!response.ok) throw new Error("Spell not found");
+        return response.json();
+      },
+      staleTime: Infinity, // DBC data never changes
+      retry: false,
+      enabled: showRanks,
+    })),
+  });
+  
+  // Build spell data lookup map
+  const spellDataMap = useMemo(() => {
+    const map = new Map<number, WoWSpell>();
+    spellQueries.forEach((query, index) => {
+      if (query.data) {
+        map.set(spellIds[index], query.data);
+      }
+    });
+    return map;
+  }, [spellQueries, spellIds]);
   
   const breakout = useCallback(
     (playerID: string, pinned: boolean) => {
@@ -125,7 +208,25 @@ export function useDamageDoneBreakout({
         );
       }
 
-      const abilities = getAbilitiesForUnit(result, playerID);
+      // Choose data source based on showRanks
+      let abilities: AbilityData[];
+      if (showRanks) {
+        const abilitiesWithSpellId = getAbilitiesBySpellIdForUnit(result, playerID);
+        // Add spellId for icon/tooltip and rank as subtitle
+        abilities = abilitiesWithSpellId.map((a) => {
+          const spellData = spellDataMap.get(a.spellId);
+          const rank = spellData?.subtext?.["0"]; // enUS locale (e.g., "Rank 7")
+          return { 
+            ...a, 
+            key: `spell-${a.spellId}`,  // Unique key to force remount when toggling modes
+            spellId: a.spellId,  // Pass spellId for icon/tooltip
+            subtitle: rank || undefined,
+          };
+        });
+      } else {
+        abilities = getAbilitiesForUnit(result, playerID);
+      }
+      
       const targets = getTargetsForUnit(result, playerID, context);
       const totalValue = getTotalForUnit(result, playerID);
 
@@ -162,7 +263,7 @@ export function useDamageDoneBreakout({
         />
       );
     },
-    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer]
+    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer, showRanks, spellDataMap]
   );
 
   return breakout;

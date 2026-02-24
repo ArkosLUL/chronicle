@@ -7,6 +7,12 @@ import (
 	"github.com/Gophercraft/core/i18n"
 )
 
+// SpellRef is a minimal reference to a spell for JSON APIs
+type SpellRef struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
 type Spell struct {
 	// === Core Identification ===
 	ID                   SpellID   `json:"id"`               // Unique spell identifier

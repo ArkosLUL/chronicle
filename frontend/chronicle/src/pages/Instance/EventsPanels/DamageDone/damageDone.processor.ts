@@ -4,7 +4,7 @@
 
 import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
-import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
+import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 
 // Re-export the shared type for backwards compatibility
@@ -34,6 +34,8 @@ export type DamageDoneResult = {
   EncounterDamage: Map<string, UnitDamage>;
   // Value is unitID -> abilityID -> DamageAbilityBreakout
   ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
+  // Value is unitID -> spellId -> SpellIdAbilityBreakout (for "Show ranks" mode)
+  ByAbilityBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
   ByTarget: Map<string, Map<string, number>>;
   // GUID cache for performance (avoids repeated parsing)
   GuidCache: GuidCache;
@@ -54,6 +56,7 @@ export function createDamageDoneProcessor(
     createState: () => ({
       EncounterDamage: new Map<string, UnitDamage>(),
       ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
+      ByAbilityBySpellId: new Map<string, Map<number, SpellIdAbilityBreakout>>(),
       ByTarget: new Map<string, Map<string, number>>(),
       GuidCache: createGuidCache(),
     }),
@@ -161,6 +164,10 @@ export function createDamageDoneProcessor(
         }
 
         accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, event.amount, event.hitType);
+        // Only track by spell ID if we have one (not for melee/environmental damage)
+        if (event.spellId != null) {
+          accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageOwner, event.spellId, abilityName, event.amount, event.hitType);
+        }
 
         const existingTargetBreakout = state.ByTarget.get(damageOwner) || new Map<string, number>();
         existingTargetBreakout.set(event.target, (existingTargetBreakout.get(event.target) || 0) + event.amount);

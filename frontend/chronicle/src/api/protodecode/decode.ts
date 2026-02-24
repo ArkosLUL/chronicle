@@ -252,6 +252,7 @@ export interface ReusableDamage {
   tailerCount: number;  // Actual number of tailers (tailers array may have extra capacity)
   activity: ReusableActivityEntry[];
   activityCount: number;  // Actual number of activity entries
+  spellId: number | null; // From SpellData field 10
 }
 
 /**
@@ -277,6 +278,7 @@ export class DamageDecoder {
     tailerCount: 0,
     activity: [],
     activityCount: 0,
+    spellId: null,
   };
   
   /**
@@ -298,6 +300,7 @@ export class DamageDecoder {
     msg.school = 0;
     msg.tailerCount = 0;
     msg.activityCount = 0;
+    msg.spellId = null;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -392,6 +395,26 @@ export class DamageDecoder {
             }
           }
           msg.tailerCount++;
+        } else if (fieldNumber === 10) {
+          // SpellData - decode nested to get spell ID
+          // SpellData: 1=id (varint), 2=name (string)
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            
+            if (spellWire === 0 && spellField === 1) {
+              // id field (varint)
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              msg.spellId = value;
+            } else if (spellWire === 2) {
+              // string field (name) - skip it
+              const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+              offset += sLenBytes + sLen;
+            }
+          }
         } else {
           offset += len;
         }

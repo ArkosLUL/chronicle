@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
@@ -6,6 +6,9 @@ import type { DamageDoneResult, DamageSourceType } from "./damageDone.processor"
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDamageDoneBreakout } from "./DamageDoneBreakout";
 import { formatNumber } from "@/lib/format";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
+import { Layers } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Aggregate damage data across selected encounters.
@@ -84,6 +87,7 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { sourceType = "players" } = props;
   const { result, context } = props;
+  const [showRanks, setShowRanks] = useState(false);
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -105,6 +109,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
     durationMs: props.durationMs,
     loading: props.loading,
     processing: props.processing,
+    showRanks,
   });
 
   // Once we have cached data, never show loading/processing states
@@ -122,8 +127,34 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
 
   return (
     <GenericPanel {...effectiveProps}>
-      <div className="text-xs text-muted-foreground">
-        Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-xs text-muted-foreground">
+          Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+        </div>
+        
+        {/* Show ranks toggle */}
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setShowRanks(!showRanks)}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  showRanks
+                    ? "bg-[color:var(--tertiary)]/20 text-[color:var(--tertiary)] border border-[color:var(--tertiary)]/30"
+                    : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Layers className="h-3 w-3" />
+                Ranks
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[220px]">
+              <p className="text-xs">Show spells separated by rank in the ability breakdown (e.g., Frostbolt Rank 4 vs Rank 11)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <PlayerMetricChart 
         data={damageData} 

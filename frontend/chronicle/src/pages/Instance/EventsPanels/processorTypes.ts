@@ -50,6 +50,8 @@ export interface DamageProcessorEvent extends EventMeta {
   /** Additional damage entries (procs, enchants, etc.) */
   tailers: TailerEntry[];
   tailerCount: number;
+  /** Spell ID from SpellData (if available) */
+  spellId: number | null;
 }
 
 /**

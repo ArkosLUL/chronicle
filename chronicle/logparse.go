@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -34,6 +33,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/dbstatic"
+	"github.com/Emyrk/chronicle/database/jsontransform"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/slice"
@@ -679,7 +679,8 @@ func momentToDatabaseMoment(t *period.Moment) *database.PeriodMoment {
 		return nil
 	}
 	mt := reflect.TypeOf(t.Timestamp)
-	msgData, _ := json.Marshal(t.Timestamp)
+	// Use jsontransform to simplify nested types (e.g., Spell -> {id, name})
+	msgData, _ := jsontransform.MarshalForStorage(t.Timestamp)
 
 	return &database.PeriodMoment{
 		Timestamp:   t.Timestamp.Date(),

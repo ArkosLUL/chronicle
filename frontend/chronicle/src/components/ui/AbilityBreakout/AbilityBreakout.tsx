@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout, HitTypeStats } from '@/pages/Instance/EventsPanels/processors/abilityBreakout'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { SpellIdTooltip } from '@/components/ui/SpellIdTooltip'
 
 // ============================================================================
 // CSS Tooltip with Portal (escapes overflow containers)
@@ -202,6 +203,10 @@ export interface AbilityData extends DamageAbilityBreakout{
   overheal?: number
   /** Optional subtitle displayed in muted text after the name (e.g., spell rank) */
   subtitle?: string
+  /** Optional spell ID for showing spell icon and tooltip */
+  spellId?: number
+  /** Optional unique key for React (defaults to name if not provided) */
+  key?: string
 }
 
 /**
@@ -464,13 +469,14 @@ export function AbilityTable({
           {sorted.map((ability) => {
             const critPercent = ability.Hits > 0 ? (ability.Crits / (ability.Count)) * 100 : 0
             const valuePercent = totalValue > 0 ? (ability.value / totalValue) * 100 : 0
-            const rowId = ability.name
+            const abilityKey = ability.key ?? ability.name
+            const rowId = abilityKey
             const isSelected = selectedAbilities.has(ability.name)
             const isDimmed = hasSelection && !isSelected
             
             return (
               <tr 
-                key={ability.name} 
+                key={abilityKey} 
                 className={cn(
                   "border-b border-border/10 cursor-pointer transition-opacity",
                   isSelected && "bg-primary/10",
@@ -484,13 +490,24 @@ export function AbilityTable({
                   hover={hover}
                   setHover={setHover}
                   clearHover={clearHover}
-                  className="py-1 px-2 max-w-[180px] truncate"
-                  title={ability.subtitle ? `${ability.name} (${ability.subtitle})` : ability.name}
+                  className="py-1 px-2 max-w-[220px] truncate"
+                  title={ability.spellId ? undefined : (ability.subtitle ? `${ability.name} (${ability.subtitle})` : ability.name)}
                 >
-                  {ability.name}
-                  {ability.subtitle && (
-                    <span className="ml-1 text-2xs text-muted-foreground/70">{ability.subtitle}</span>
-                  )}
+                  <span className="inline-flex items-center gap-1">
+                    {ability.spellId ? (
+                      <SpellIdTooltip 
+                        spellId={ability.spellId} 
+                        name={ability.name} 
+                        size={14}
+                        className="inline-flex items-center gap-1"
+                      />
+                    ) : (
+                      ability.name
+                    )}
+                    {ability.subtitle && (
+                      <span className="text-2xs text-muted-foreground/70">{ability.subtitle}</span>
+                    )}
+                  </span>
                 </HoverCell>
                 {hasOverhealData && (() => {
                   const overhealVal = ability.overheal ?? 0;

@@ -383,11 +383,16 @@ export function useHealingDoneBreakout({
       let abilities: AbilityData[];
       if (showRanks) {
         const abilitiesWithSpellId = getAbilitiesBySpellIdForUnit(result, playerID, viewMode);
-        // Add rank as subtitle from spell data
+        // Add spellId for icon/tooltip and rank as subtitle
         abilities = abilitiesWithSpellId.map((a) => {
           const spellData = spellDataMap.get(a.spellId);
           const rank = spellData?.subtext?.["0"]; // enUS locale (e.g., "Rank 7")
-          return { ...a, subtitle: rank || undefined };
+          return { 
+            ...a, 
+            key: `spell-${a.spellId}`,  // Unique key to force remount when toggling modes
+            spellId: a.spellId,  // Pass spellId for icon/tooltip
+            subtitle: rank || undefined,
+          };
         });
       } else {
         abilities = getAbilitiesForUnit(result, playerID, viewMode);

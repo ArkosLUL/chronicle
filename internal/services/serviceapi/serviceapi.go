@@ -46,6 +46,7 @@ type Service struct {
 	httpAddress string
 	devAuth     bool
 	saffronURL  *url.URL
+	ocrURL      *url.URL
 	discordAuth chronauth.DiscordOAuth
 
 	app           *api.API
@@ -56,6 +57,7 @@ func New(broker *services.Services) *Service {
 	return &Service{
 		broker:     broker,
 		saffronURL: new(url.URL),
+		ocrURL:     new(url.URL),
 	}
 }
 
@@ -130,6 +132,10 @@ func (s *Service) Start(ctx context.Context) error {
 	if s.saffronURL.Scheme == "" {
 		saffronURL = nil
 	}
+	ocrURL := s.ocrURL
+	if s.ocrURL.Scheme == "" {
+		ocrURL = nil
+	}
 	wowdb := servicewowdb.WoWDB(s.broker)
 	handler, err := api.New(ctx, api.Options{
 		Logger:     logger,
@@ -140,6 +146,7 @@ func (s *Service) Start(ctx context.Context) error {
 		Registry:   reg,
 		Zed:        zed,
 		SaffronURL: saffronURL,
+		OCRURL:     ocrURL,
 		WoWDB:      wowdb,
 
 		AccessURL: au,
@@ -227,6 +234,15 @@ func (s *Service) Options() serpent.OptionSet {
 			Env:         "CHRONICLE_SAFFRON_URL",
 			Default:     "",
 			Value:       serpent.URLOf(s.saffronURL),
+		},
+		{
+			Name:        "Internal OCR URL",
+			Description: "Optional proxy to OCR server for YouTube sync processing.",
+			Required:    false,
+			Flag:        "ocr-url",
+			Env:         "CHRONICLE_OCR_URL",
+			Default:     "",
+			Value:       serpent.URLOf(s.ocrURL),
 		},
 	}
 }

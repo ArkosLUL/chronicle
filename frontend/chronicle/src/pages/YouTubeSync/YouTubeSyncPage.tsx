@@ -164,7 +164,7 @@ export function YouTubeSyncPage() {
   const [selectingRegion, setSelectingRegion] = useState(false)
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null)
 
-  const [ocrUrl, setOcrUrl] = useState("http://localhost:8730")
+  const [ocrUrl, setOcrUrl] = useState("/ocr")
   const [interval, setIntervalSec] = useState(60)
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(0)
@@ -516,6 +516,7 @@ export function YouTubeSyncPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ base64: base64Data, trim: "\n" }),
+      credentials: "include", // Include auth cookies when using proxied /ocr endpoint
     })
 
     if (!response.ok) {

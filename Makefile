@@ -25,10 +25,10 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 
 .PHONY: develop
 develop: frontend/chronicle/dist create-db
-	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev"
+	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --ocr-url="http://localhost:8730"
 
 develop-backend: create-db
-	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4
+	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730"
 
 .PHONY: build
 build: build-backend frontend/chronicle/dist

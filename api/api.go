@@ -32,6 +32,7 @@ type Options struct {
 	RiverQueue *riverqueue.Queues
 	Bot        *chroniclebot.Bot
 	SaffronURL *url.URL
+	OCRURL     *url.URL
 	WoWDB      http.Handler
 
 	Registry  *prometheus.Registry
@@ -239,6 +240,25 @@ func (api *API) Routes() chi.Router {
 		} else {
 			r.Mount("/saffron", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				_, _ = w.Write([]byte("Saffron URL not configured"))
+			}))
+		}
+	})
+
+	// OCR proxy - for YouTube sync OCR processing
+	r.Group(func(r chi.Router) {
+		r.Use(
+			api.Auth.AuthenticationMiddleware,
+			api.Auth.Authenticated(false),
+			httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_youtube_User),
+		)
+
+		if api.Opts.OCRURL != nil {
+			proxy := httputil.NewSingleHostReverseProxy(api.Opts.OCRURL)
+			r.Mount("/ocr", http.StripPrefix("/ocr", proxy))
+		} else {
+			r.Mount("/ocr", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = w.Write([]byte("OCR URL not configured"))
 			}))
 		}
 	})

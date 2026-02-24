@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/spellbook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/google/uuid"
 )
@@ -44,13 +45,15 @@ type Common struct {
 	realm           *realm.Info
 
 	// General summaries
-	Guild *guild.Tracker
+	Guild     *guild.Tracker
+	SpellBook *spellbook.Tracker
 }
 
 type FinalizedInstance struct {
 	Realm      *realm.Info
 	Encounters []Encounter
 	Guilds     *guild.Tracker
+	SpellBook  *spellbook.Tracker
 }
 
 func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
@@ -144,6 +147,7 @@ func (c *Common) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		Realm:      c.realm,
 		Encounters: encounters,
 		Guilds:     c.Guild,
+		SpellBook:  c.SpellBook,
 	}, nil
 }
 
@@ -246,6 +250,11 @@ func (c *Common) Process(m messages.Message) error {
 	err = c.Guild.Process(m)
 	if err != nil {
 		return fmt.Errorf("processing guild info: %w", err)
+	}
+
+	err = c.SpellBook.Process(m)
+	if err != nil {
+		return fmt.Errorf("processing spell info: %w", err)
 	}
 
 	return nil

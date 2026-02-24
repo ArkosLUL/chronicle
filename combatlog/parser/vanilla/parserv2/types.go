@@ -44,16 +44,17 @@ const (
 	VICTIMSTATE_DEFLECTS   VictimState = 8
 )
 
+//nolint:staticcheck
 func HitType(amount int32, components int32, info SwingHitInfo, state VictimState) types.HitType {
 	// TODO: Handle blocks, evades, immunities, deflections
 	var t types.HitType
 
 	base := types.HitTypeNone
-
-	if info.Has(HITINFO_RESIST) && components > 1 {
-		// The proc was resisted.
-		// TODO: Should we care?
-	}
+	//
+	//if info.Has(HITINFO_RESIST) && components > 1 {
+	//	// The proc was resisted.
+	//	// TODO: Should we care?
+	//}
 
 	switch {
 	case info.Has(HITINFO_CRITICALHIT):

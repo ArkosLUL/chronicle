@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -32,6 +32,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   slain: { icon: Skull, color: "text-gray-500", label: "Slain" },
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
   aura: { icon: Sparkles, color: "text-cyan-500", label: "Aura" },
+  spell_go: { icon: Crosshair, color: "text-amber-500", label: "Spell Go" },
 };
 
 interface StreamToggleProps {

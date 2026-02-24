@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -75,15 +75,15 @@ export interface AllActivityDebugState {
   eventsCaptured: number;
 }
 
-// This processor handles damage, heal, resource_change, cast, aura, and slain events
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent;
+// This processor handles damage, heal, resource_change, cast, aura, slain, and spell_go events
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent;
 
 // Default page size if no pagination specified
 const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "cast", "aura", "slain"],
+  streams: ["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -95,6 +95,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       slain: [],
       cast: [],
       aura: [],
+      spell_go: [],
     },
     streamCounts: {
       damage: 0,
@@ -104,6 +105,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       slain: 0,
       cast: 0,
       aura: 0,
+      spell_go: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
     totalProcessed: 0,
@@ -171,6 +173,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       } else if (streamType === "slain") {
         const slainEvent = event as SlainProcessorEvent;
         abilityName = slainEvent.attribution?.sourceName ?? "";
+      } else if (streamType === "spell_go") {
+        const spellGoEvent = event as SpellGoProcessorEvent;
+        abilityName = spellGoEvent.spell.name;
       } else {
         const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
         abilityName = regularEvent.sourceName;
@@ -251,13 +256,17 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
          eventCaster)
       : "";
     
-    // Get sourceName - cast events use spell.name, aura events use spellName, slain events use attribution
+    // Get sourceName - cast/spell_go events use spell.name, aura events use spellName, slain events use attribution
     let sourceName = "";
     let amount = 0;
     if (streamType === "cast") {
       const castEvent = event as CastProcessorEvent;
       sourceName = castEvent.spell.name;
       amount = 0; // Casts don't have an amount
+    } else if (streamType === "spell_go") {
+      const spellGoEvent = event as SpellGoProcessorEvent;
+      sourceName = spellGoEvent.spell.name;
+      amount = spellGoEvent.numHits + spellGoEvent.numMisses; // Total targets affected
     } else if (streamType === "aura") {
       const auraEvent = event as AuraProcessorEvent;
       sourceName = auraEvent.spellName;
@@ -336,6 +345,12 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       } else {
         rawEvent.extra = "died";
       }
+    } else if (streamType === "spell_go") {
+      const spellGoEvent = event as SpellGoProcessorEvent;
+      rawEvent.spellId = spellGoEvent.spell.id;
+      rawEvent.spellRank = spellGoEvent.spell.rank;
+      // Show hit/miss info in extra field
+      rawEvent.extra = `hits=${spellGoEvent.numHits} misses=${spellGoEvent.numMisses}`;
     }
     
     // Store in appropriate stream bucket

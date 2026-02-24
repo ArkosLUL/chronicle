@@ -184,10 +184,34 @@ export interface AuraProcessorEvent extends EventMeta {
 }
 
 /**
+ * Spell info for SpellGo events (similar to CastSpellInfo but separate type)
+ */
+export interface SpellGoSpellInfo {
+  name: string;
+  id: number;
+  rank: number | null;
+}
+
+/**
+ * SpellGo event from the "spell_go" stream.
+ * Fires when a spell completes (lands or misses on targets).
+ */
+export interface SpellGoProcessorEvent extends EventMeta {
+  type: "spell_go";
+  caster: string;  // The unit who cast the spell
+  target: string;  // Primary target (may be empty for AoE)
+  spell: SpellGoSpellInfo;  // Spell information
+  numHits: number;  // Number of targets hit
+  numMisses: number;  // Number of targets missed
+  itemId: number | null;  // Item ID if triggered by an item
+  corpseOwner: string | null;  // Corpse owner GUID for corpse-targeted spells
+}
+
+/**
  * Discriminated union of all event types.
  * Use event.type to narrow to a specific type.
  */
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent;
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

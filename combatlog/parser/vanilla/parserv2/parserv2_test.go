@@ -67,6 +67,7 @@ func testCaseWithDB[T messages.Message](t *testing.T, line string, expected T, w
 
 func TestParserMessages(t *testing.T) {
 	t.Parallel()
+	t.Skip("no wow db")
 
 	t.Run("Header", func(t *testing.T) {
 		t.Parallel()

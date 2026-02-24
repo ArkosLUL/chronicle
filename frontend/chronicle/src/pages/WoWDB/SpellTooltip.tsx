@@ -137,14 +137,14 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
 
       {/* Description */}
       {description && (
-        <p className="text-yellow-400 mt-3 text-sm whitespace-pre-wrap leading-relaxed">
+        <p className="text-yellow-400 mt-1 text-sm whitespace-pre-wrap leading-relaxed">
           {description}
         </p>
       )}
 
       {/* Aura description (buff/debuff text, detailed view only) */}
       {detailed && auraDesc && (
-        <p className="text-green-400 mt-2 text-sm italic">{auraDesc}</p>
+        <p className="text-green-400 mt-1 text-sm italic">{auraDesc}</p>
       )}
 
       {/* Dispel and mechanic info (detailed view only) */}

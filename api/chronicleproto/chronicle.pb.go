@@ -1146,6 +1146,7 @@ type SpellGo struct {
 	NumHits       int32                  `protobuf:"varint,6,opt,name=numHits,proto3" json:"numHits,omitempty"`
 	NumMisses     int32                  `protobuf:"varint,7,opt,name=numMisses,proto3" json:"numMisses,omitempty"`
 	CorpseOwner   *string                `protobuf:"bytes,8,opt,name=corpseOwner,proto3,oneof" json:"corpseOwner,omitempty"`
+	SpellName     *string                `protobuf:"bytes,9,opt,name=spellName,proto3,oneof" json:"spellName,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1232,6 +1233,13 @@ func (x *SpellGo) GetNumMisses() int32 {
 func (x *SpellGo) GetCorpseOwner() string {
 	if x != nil && x.CorpseOwner != nil {
 		return *x.CorpseOwner
+	}
+	return ""
+}
+
+func (x *SpellGo) GetSpellName() string {
+	if x != nil && x.SpellName != nil {
+		return *x.SpellName
 	}
 	return ""
 }
@@ -1336,7 +1344,7 @@ const file_chronicle_proto_rawDesc = "" +
 	"\tspellData\x18\a \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01\x12\x16\n" +
 	"\x06isBuff\x18\b \x01(\bR\x06isBuffB\f\n" +
 	"\n" +
-	"_spellData\"\xdb\x02\n" +
+	"_spellData\"\x8c\x03\n" +
 	"\aSpellGo\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +
 	"\x06itemID\x18\x02 \x01(\x05H\x00R\x06itemID\x88\x01\x01\x12<\n" +
@@ -1345,12 +1353,15 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06target\x18\x05 \x01(\tH\x02R\x06target\x88\x01\x01\x12\x18\n" +
 	"\anumHits\x18\x06 \x01(\x05R\anumHits\x12\x1c\n" +
 	"\tnumMisses\x18\a \x01(\x05R\tnumMisses\x12%\n" +
-	"\vcorpseOwner\x18\b \x01(\tH\x03R\vcorpseOwner\x88\x01\x01B\t\n" +
+	"\vcorpseOwner\x18\b \x01(\tH\x03R\vcorpseOwner\x88\x01\x01\x12!\n" +
+	"\tspellName\x18\t \x01(\tH\x04R\tspellName\x88\x01\x01B\t\n" +
 	"\a_itemIDB\f\n" +
 	"\n" +
 	"_spellDataB\t\n" +
 	"\a_targetB\x0e\n" +
-	"\f_corpseOwner*p\n" +
+	"\f_corpseOwnerB\f\n" +
+	"\n" +
+	"_spellName*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +

@@ -2178,6 +2178,7 @@ export interface ReusableSpellGo {
   numMisses: number;
   itemId: number | null;
   corpseOwner: string | null;
+  spellName: string | null;  // Direct spell name from proto field 9
   activity: ReusableActivityEntry[];
   activityCount: number;
 }
@@ -2217,6 +2218,7 @@ export class SpellGoDecoder {
     numMisses: 0,
     itemId: null,
     corpseOwner: null,
+    spellName: null,
     activity: [],
     activityCount: 0,
   };
@@ -2242,6 +2244,7 @@ export class SpellGoDecoder {
     msg.numMisses = 0;
     msg.itemId = null;
     msg.corpseOwner = null;
+    msg.spellName = null;
     msg.activityCount = 0;
     
     while (offset < end) {
@@ -2326,6 +2329,9 @@ export class SpellGoDecoder {
           offset += len;
         } else if (fieldNumber === 8) {
           msg.corpseOwner = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 9) {
+          msg.spellName = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else {
           offset += len;

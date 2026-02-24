@@ -155,6 +155,7 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.Slain.SetZero(e.first)
 	e.Casts.SetZero(e.first)
 	e.Aura.SetZero(e.first)
+	e.SpellGo.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

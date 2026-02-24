@@ -200,7 +200,8 @@ export interface SpellGoProcessorEvent extends EventMeta {
   type: "spell_go";
   caster: string;  // The unit who cast the spell
   target: string;  // Primary target (may be empty for AoE)
-  spell: SpellGoSpellInfo;  // Spell information
+  spell: SpellGoSpellInfo;  // Spell information from SpellData (may be empty)
+  spellName: string | null;  // Direct spell name from proto field (preferred)
   numHits: number;  // Number of targets hit
   numMisses: number;  // Number of targets missed
   itemId: number | null;  // Item ID if triggered by an item

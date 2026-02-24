@@ -338,6 +338,7 @@ function AllActivityContent({
     ...rawEventsByStream.cast,
     ...rawEventsByStream.aura,
     ...rawEventsByStream.slain,
+    ...rawEventsByStream.spell_go,
   ];
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order
@@ -357,7 +358,7 @@ function AllActivityContent({
       {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "cast", "aura", "slain"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}
@@ -550,7 +551,7 @@ interface AllActivityWrapperProps {
   useRelativeTime?: boolean;
 }
 
-const DEFAULT_ENABLED_STREAMS = new Set<StreamType>(["damage", "heal", "resource_change"]);
+const DEFAULT_ENABLED_STREAMS = new Set<StreamType>(["damage", "heal", "resource_change", "spell_go"]);
 
 function AllActivityWrapper({ context, useRelativeTime = false }: AllActivityWrapperProps) {
   const [currentPage, setCurrentPage] = useState(1);

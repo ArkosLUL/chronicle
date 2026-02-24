@@ -265,7 +265,8 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       amount = 0; // Casts don't have an amount
     } else if (streamType === "spell_go") {
       const spellGoEvent = event as SpellGoProcessorEvent;
-      sourceName = spellGoEvent.spell.name;
+      // Prefer spellName from proto field 9, fall back to spell.name from SpellData
+      sourceName = spellGoEvent.spellName || spellGoEvent.spell.name;
       amount = spellGoEvent.numHits + spellGoEvent.numMisses; // Total targets affected
     } else if (streamType === "aura") {
       const auraEvent = event as AuraProcessorEvent;

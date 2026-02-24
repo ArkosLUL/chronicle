@@ -114,6 +114,12 @@ func SpellGo(from time.Time, idx int32, ca *messages.SpellGo) *chronicleproto.Sp
 	if ca.CorpseOwner != nil {
 		corpseOwner = ptr.Ref(ca.CorpseOwner.String())
 	}
+
+	var name *string
+	if ca.SpellData != nil {
+		name = ptr.Ref(ca.SpellData.Name())
+	}
+
 	return &chronicleproto.SpellGo{
 		Meta:        EventMeta(from, idx, ca),
 		ItemID:      ca.ItemID,
@@ -123,6 +129,7 @@ func SpellGo(from time.Time, idx int32, ca *messages.SpellGo) *chronicleproto.Sp
 		NumHits:     ca.NumTargetsHit,
 		NumMisses:   ca.NumTargetsMissed,
 		CorpseOwner: corpseOwner,
+		SpellName:   name,
 	}
 }
 

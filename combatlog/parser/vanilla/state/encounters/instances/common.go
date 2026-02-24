@@ -182,6 +182,7 @@ func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb
 		events:        encounterevents.NewEvents(),
 		seen:          make(map[guid.GUID]struct{}),
 		Guild:         guild.New(),
+		SpellBook:     spellbook.New(),
 		verbose:       parseoptions.IsVerbose(ctx),
 	}
 

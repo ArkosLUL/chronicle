@@ -142,4 +142,5 @@ message SpellGo {
   int32 numHits = 6;
   int32 numMisses = 7;
   optional string corpseOwner = 8;
+  optional string spellName = 9;
 }

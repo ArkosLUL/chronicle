@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSpellWithReferences } from "@/api/queries";
+import { useSpell } from "@/api/queries";
 import { SpellIconWithTooltip } from "../SpellIconWithTooltip";
 
 interface SpellIdTooltipProps {
@@ -15,7 +15,8 @@ interface SpellIdTooltipProps {
 
 /**
  * Displays a spell name with an icon that shows a tooltip on hover.
- * Lazy-loads the spell data (including cross-spell references) only when hovered.
+ * Lazy-loads the spell data only when hovered to minimize API calls.
+ * Cross-spell references (like $3137s1) are resolved by SpellTooltip internally.
  * 
  * If spellId is null, renders just the name as plain text.
  */
@@ -28,8 +29,7 @@ export function SpellIdTooltip({
   const [hovered, setHovered] = useState(false);
   
   // Only fetch when hovered and we have a spell ID
-  // This also fetches any referenced spells for proper template resolution
-  const { data } = useSpellWithReferences(
+  const { data: spell } = useSpell(
     spellId?.toString() ?? "", 
     { enabled: hovered && spellId != null }
   );
@@ -44,14 +44,13 @@ export function SpellIdTooltip({
       className={className}
       onMouseEnter={() => setHovered(true)}
     >
-      {data?.spell ? (
+      {spell ? (
         <SpellIconWithTooltip 
-          spell={data.spell} 
+          spell={spell} 
           size={size} 
           showTooltip 
           hideDuration 
           hideEffects
-          referencedSpells={data.referencedSpells}
         >
           {name}
         </SpellIconWithTooltip>

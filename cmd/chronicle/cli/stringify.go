@@ -54,7 +54,7 @@ func Stringify() *serpent.Command {
 			for scanner.Scan() {
 				line := scanner.Text()
 				pretty := stringifyLine(line, wdb)
-				fmt.Fprintln(i.Stdout, pretty)
+				_, _ = fmt.Fprintln(i.Stdout, pretty)
 			}
 
 			return scanner.Err()

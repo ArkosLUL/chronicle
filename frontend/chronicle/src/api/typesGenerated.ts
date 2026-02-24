@@ -215,9 +215,9 @@ export interface JobStatus {
 }
 
 // From chroniclesdk/log.go
-export type KillType = "clean" | "partial" | "wipe";
+export type KillType = "clean" | "partial" | "reset" | "wipe";
 
-export const KillTypes: KillType[] = ["clean", "partial", "wipe"];
+export const KillTypes: KillType[] = ["clean", "partial", "reset", "wipe"];
 
 // From chroniclesdk/guild_page.go
 export interface ListGuildsResponse {

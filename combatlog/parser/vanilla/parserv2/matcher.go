@@ -439,6 +439,9 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
+	if spell == nil {
+		return nil, fmt.Errorf("spell not found in DBC")
+	}
 
 	if len(mitigated) != 3 {
 		return nil, fmt.Errorf("expected 3 mitigated values, got %d", len(mitigated))
@@ -490,14 +493,9 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		}
 	}
 
-	var name *string
-	if spell != nil {
-		name = ptr.Ref(spell.Name())
-	}
-
 	return set(&messages.Damage{
 		MessageBase:     messages.Base(ts),
-		SpellName:       name,
+		SpellName:       ptr.Ref(spell.Name()),
 		SpellData:       spell,
 		Caster:          ptr.Ref(caster),
 		Target:          target,

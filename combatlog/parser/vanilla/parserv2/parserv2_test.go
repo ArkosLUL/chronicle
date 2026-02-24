@@ -2,7 +2,6 @@ package parserv2
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -23,23 +22,6 @@ import (
 	slogzerolog "github.com/samber/slog-zerolog/v2"
 	"github.com/stretchr/testify/require"
 )
-
-// mockSpellFetcher implements gamedb.SpellFetcher for testing.
-// Populate Spells map with spell data needed for tests.
-type mockSpellFetcher struct {
-	Spells map[chrondbc.SpellID]*chrondbc.Spell
-}
-
-func (m *mockSpellFetcher) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
-	if m.Spells == nil {
-		return nil, fmt.Errorf("spell %d not found", id)
-	}
-	sp, ok := m.Spells[id]
-	if !ok {
-		return nil, fmt.Errorf("spell %d not found", id)
-	}
-	return sp, nil
-}
 
 // testSpellDB creates a WoWDB from assets/Spell.dbc for testing.
 // Skips the test if the file doesn't exist (allows tests to run without it).

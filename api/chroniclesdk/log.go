@@ -84,7 +84,8 @@ const (
 	// KillTypePartial means the boss was killed but adds remain alive.
 	KillTypePartial KillType = "partial"
 	// KillTypeWipe means the boss was not killed - raid wiped or reset.
-	KillTypeWipe KillType = "wipe"
+	KillTypeWipe  KillType = "wipe"
+	KillTypeReset KillType = "reset"
 )
 
 type WoWEncounter struct {

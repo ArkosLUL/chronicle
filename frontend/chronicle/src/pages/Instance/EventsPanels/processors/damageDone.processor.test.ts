@@ -39,6 +39,7 @@ describe('damageDoneProcessor', () => {
       tailerCount: 0,
       activity: [],
       activityCount: 0,
+      spellId: null,
       ...overrides,
     };
   }
@@ -172,6 +173,7 @@ describe('enemyDamageDoneProcessor', () => {
       tailerCount: 0,
       activity: [],
       activityCount: 0,
+      spellId: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -201,6 +203,7 @@ describe('enemyDamageDoneProcessor', () => {
       tailerCount: 0,
       activity: [],
       activityCount: 0,
+      spellId: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -246,6 +249,7 @@ describe('petDamageDoneProcessor', () => {
       tailerCount: 0,
       activity: [],
       activityCount: 0,
+      spellId: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -272,6 +276,7 @@ describe('petDamageDoneProcessor', () => {
       tailerCount: 0,
       activity: [],
       activityCount: 0,
+      spellId: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);

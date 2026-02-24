@@ -19,10 +19,8 @@ interface SpellIconWithTooltipProps {
   className?: string;
   /** Whether to show the tooltip. Defaults to true. */
   showTooltip?: boolean;
-  /** Hide the duration line in the tooltip */
-  hideDuration?: boolean;
-  /** Hide the effect descriptions in the tooltip */
-  hideEffects?: boolean;
+  /** Show detailed tooltip with duration and aura effects. Defaults to false. */
+  detailed?: boolean;
   /** Optional children to render alongside the icon (e.g., spell name). Both will trigger the tooltip. */
   children?: ReactNode;
 }
@@ -40,8 +38,7 @@ export function SpellIconWithTooltip({
   size = 24,
   className,
   showTooltip = true,
-  hideDuration = false,
-  hideEffects = false,
+  detailed = false,
   children,
 }: SpellIconWithTooltipProps) {
   const iconUrl = getSpellIconUrl(spell.spell_icon);
@@ -89,7 +86,7 @@ export function SpellIconWithTooltip({
           className="p-0 bg-transparent border-0"
           hideArrow
         >
-          <SpellTooltip spell={spell} locale={locale} hideDuration={hideDuration} hideEffects={hideEffects} />
+          <SpellTooltip spell={spell} locale={locale} detailed={detailed} />
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

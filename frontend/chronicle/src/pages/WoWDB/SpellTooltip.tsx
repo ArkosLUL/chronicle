@@ -16,20 +16,18 @@ import {
 interface SpellTooltipProps {
   spell: WoWSpell;
   locale?: LocaleIndex;
-  /** Hide the duration line (useful when duration is shown elsewhere) */
-  hideDuration?: boolean;
-  /** Hide the effect descriptions (useful when context already explains the effect) */
-  hideEffects?: boolean;
+  /** Show detailed view with duration and aura effects. Defaults to false (simple view). */
+  detailed?: boolean;
 }
 
-export function SpellTooltip({ spell, locale = "0", hideDuration = false, hideEffects = false }: SpellTooltipProps) {
+export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellTooltipProps) {
   const name = getLocalizedText(spell.name, locale);
   const rank = getLocalizedText(spell.subtext, locale);
   const descriptionTemplate = getLocalizedText(spell.description, locale);
   const auraDescTemplate = getLocalizedText(spell.aura_description, locale);
   const iconUrl = getSpellIconUrl(spell.spell_icon);
   const cooldown = formatCooldown(spell.recovery_time);
-  const schoolColor = SCHOOL_COLORS[spell.school.value] || "text-white";
+  const schoolColor = SCHOOL_COLORS[spell.school.string] || "text-white";
 
   // Extract referenced spell IDs from templates
   const referencedIds = useMemo(() => {
@@ -89,18 +87,23 @@ export function SpellTooltip({ spell, locale = "0", hideDuration = false, hideEf
         )}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
-            <h2 className={`font-bold text-lg leading-tight ${schoolColor}`}>
-              {name}
-            </h2>
-            {rank && (
-              <span className="text-gray-400 text-sm flex-shrink-0">{rank}</span>
-            )}
-          </div>
-          {spell.spell_level > 0 && (
-            <div className="text-gray-500 text-xs mt-0.5">
-              Level {spell.spell_level}
+            <div className="flex flex-col min-w-0">
+              <h2 className="font-bold text-lg leading-tight text-white">
+                {name}
+              </h2>
+              {spell.spell_level > 0 && (
+                <span className="text-gray-500 text-xs">
+                  Level {spell.spell_level}
+                </span>
+              )}
             </div>
-          )}
+            <div className="flex flex-col items-end flex-shrink-0">
+              {rank && (
+                <span className="text-gray-400 text-sm">{rank}</span>
+              )}
+              <span className={`text-xs ${schoolColor}`}>{spell.school.string}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -120,13 +123,13 @@ export function SpellTooltip({ spell, locale = "0", hideDuration = false, hideEf
         
         {/* Cast time and cooldown */}
         <div className="flex justify-between text-white text-sm">
-          <span>{formatCastTime(spell.casting_time)}</span>
+          <span>{formatCastTime(spell)}</span>
           {cooldown && <span>{cooldown}</span>}
         </div>
       </div>
 
-      {/* Duration if applicable */}
-      {!hideDuration && spell.duration.Duration > 0 && (
+      {/* Duration if applicable (detailed view only) */}
+      {detailed && spell.duration.Duration > 0 && (
         <div className="text-white text-sm mt-1">
           Duration: {formatDuration(spell.duration)}
         </div>
@@ -139,21 +142,22 @@ export function SpellTooltip({ spell, locale = "0", hideDuration = false, hideEf
         </p>
       )}
 
-      {/* Aura description (buff/debuff text) */}
-      {!hideEffects && auraDesc && (
+      {/* Aura description (buff/debuff text, detailed view only) */}
+      {detailed && auraDesc && (
         <p className="text-green-400 mt-2 text-sm italic">{auraDesc}</p>
       )}
 
-      {/* School and dispel type info */}
-      <div className="mt-3 pt-2 border-t border-gray-700 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
-        <span>School: <span className={schoolColor}>{spell.school.string}</span></span>
-        {spell.dispel_type.string !== "None" && (
-          <span>Dispel: {spell.dispel_type.string}</span>
-        )}
-        {spell.mechanic.string !== "None" && (
-          <span>Mechanic: {spell.mechanic.string}</span>
-        )}
-      </div>
+      {/* Dispel and mechanic info (detailed view only) */}
+      {detailed && (spell.dispel_type.string !== "None" || spell.mechanic.string !== "None") && (
+        <div className="mt-3 pt-2 border-t border-gray-700 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+          {spell.dispel_type.string !== "None" && (
+            <span>Dispel: {spell.dispel_type.string}</span>
+          )}
+          {spell.mechanic.string !== "None" && (
+            <span>Mechanic: {spell.mechanic.string}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

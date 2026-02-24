@@ -215,9 +215,23 @@ export function getSpellIconUrl(icon: SpellIcon): string {
   return `https://icons.chronicleclassic.com/${icon.TextureFilename.toLowerCase()}.webp`;
 }
 
-export function formatCastTime(castTime: SpellCastTime): string {
-  if (castTime.Base === 0) return "Instant";
-  return `${(castTime.Base / 1000).toFixed(1)} sec`;
+export function formatCastTime(spell: WoWSpell): string {
+  // Check if spell is channeled (attributes contain "Channeled")
+  const isChanneled = spell.attributes.string.toLowerCase().includes("channeled");
+  
+  if (isChanneled && spell.duration.Duration > 0) {
+    const secs = spell.duration.Duration / 1000;
+    if (secs >= 60) {
+      const mins = Math.floor(secs / 60);
+      const remainingSecs = secs % 60;
+      if (remainingSecs === 0) return `${mins} min channel`;
+      return `${mins} min ${remainingSecs} sec channel`;
+    }
+    return `${secs} sec channel`;
+  }
+  
+  if (spell.casting_time.Base === 0) return "Instant";
+  return `${(spell.casting_time.Base / 1000).toFixed(1)} sec cast`;
 }
 
 export function formatDuration(duration: SpellDuration): string {
@@ -239,15 +253,17 @@ export function formatCooldown(recoveryTimeNs: number): string | null {
   return `${secs} sec cooldown`;
 }
 
-// School colors for styling (by school value)
-export const SCHOOL_COLORS: Record<number, string> = {
-  0: "text-gray-400", // Physical
-  1: "text-yellow-300", // Holy
-  2: "text-orange-500", // Fire
-  3: "text-green-400", // Nature
-  4: "text-blue-400", // Frost
-  5: "text-purple-400", // Shadow
-  6: "text-pink-400", // Arcane
+// School colors for styling (by school name)
+// Uses CSS variables defined in index.css under @theme inline
+// Keyed by school string name since API numeric values vary
+export const SCHOOL_COLORS: Record<string, string> = {
+  Physical: "text-school-physical",
+  Holy: "text-school-holy",
+  Fire: "text-school-fire",
+  Nature: "text-school-nature",
+  Frost: "text-school-frost",
+  Shadow: "text-school-shadow",
+  Arcane: "text-school-arcane",
 };
 
 // === Spell Description Template Resolver ===

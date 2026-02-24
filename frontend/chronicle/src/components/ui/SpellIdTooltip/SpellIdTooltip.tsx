@@ -65,9 +65,7 @@ export function SpellIdTooltip({
         <SpellIconWithTooltip 
           spell={spell} 
           size={size} 
-          showTooltip 
-          hideDuration 
-          hideEffects
+          showTooltip
         >
           {name}
         </SpellIconWithTooltip>

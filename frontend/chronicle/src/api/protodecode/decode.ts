@@ -2152,16 +2152,335 @@ export class FastAuraCursor {
  */
 
 // ============================================================================
+// AuraCast Decoder - Decodes aura application events with timing info
+// ============================================================================
+
+/**
+ * Reusable SpellData object for AuraCast (id + name)
+ */
+export interface ReusableAuraCastSpell {
+  id: number;
+  name: string;
+}
+
+/**
+ * Reusable AuraCast message object
+ */
+export interface ReusableAuraCast {
+  type: "aura_cast";
+  index: number;
+  offsetMilli: number;
+  caster: string;
+  target: string | null;
+  spell: ReusableAuraCastSpell;
+  effect: number;
+  amplitude: number;
+  effectMiscValue: number;
+  durationMS: number;
+  capStatus: number;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
+}
+
+/**
+ * Zero-allocation AuraCast decoder.
+ * 
+ * AuraCast proto field numbers:
+ *   1: meta (EventMeta)
+ *   2: spell (SpellData) - nested: 1=id, 2=name
+ *   3: caster (string)
+ *   4: target (optional string)
+ *   5: effect (int32)
+ *   6: amplitude (int32)
+ *   7: effectMiscValue (int32)
+ *   8: durationMS (int32)
+ *   9: capStatus (int32)
+ */
+export class AuraCastDecoder {
+  private readonly textDecoder = sharedTextDecoder;
+  
+  /** Reusable spell object - mutated on each decode */
+  private readonly reusableSpell: ReusableAuraCastSpell = {
+    id: 0,
+    name: "",
+  };
+  
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableAuraCast = {
+    type: "aura_cast",
+    index: 0,
+    offsetMilli: 0,
+    caster: "",
+    target: null,
+    spell: this.reusableSpell,
+    effect: 0,
+    amplitude: 0,
+    effectMiscValue: 0,
+    durationMS: 0,
+    capStatus: 0,
+    activity: [],
+    activityCount: 0,
+  };
+  
+  /**
+   * Decode an AuraCast message into the reusable object.
+   * Returns the same `this.message` reference, mutated.
+   */
+  decode(data: Uint8Array, offset: number, length: number): ReusableAuraCast {
+    const end = offset + length;
+    const msg = this.message;
+    const spell = this.reusableSpell;
+    
+    // Reset fields
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.caster = "";
+    msg.target = null;
+    spell.id = 0;
+    spell.name = "";
+    msg.effect = 0;
+    msg.amplitude = 0;
+    msg.effectMiscValue = 0;
+    msg.durationMS = 0;
+    msg.capStatus = 0;
+    msg.activityCount = 0;
+    
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+      
+      if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        
+        if (fieldNumber === 1) {
+          // EventMeta - decode nested
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+            
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry - decode nested repeated message
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
+            }
+          }
+        } else if (fieldNumber === 2) {
+          // SpellData - decode nested (1=id, 2=name)
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            
+            if (spellWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 1) spell.id = value;
+            } else if (spellWire === 2) {
+              const { value: spellLen, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 2) {
+                spell.name = this.textDecoder.decode(data.subarray(offset, offset + spellLen));
+              }
+              offset += spellLen;
+            }
+          }
+        } else if (fieldNumber === 3) {
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else {
+          offset += len;
+        }
+      } else if (wireType === 0) {
+        // Varint
+        const { value, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        if (fieldNumber === 5) msg.effect = value;
+        else if (fieldNumber === 6) msg.amplitude = value;
+        else if (fieldNumber === 7) msg.effectMiscValue = value;
+        else if (fieldNumber === 8) msg.durationMS = value;
+        else if (fieldNumber === 9) msg.capStatus = value;
+      }
+    }
+    
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for AuraCast events with zero-allocation decoding.
+ */
+export class FastAuraCastCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new AuraCastDecoder();
+  private offset: number = 0;
+  
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+  
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+  
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+  
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+  
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+  
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+  
+  /**
+   * Read the next message, returning the reusable message object.
+   * Returns null if no more messages in current encounter.
+   * WARNING: The returned object is reused - copy data if needed!
+   */
+  next(): ReusableAuraCast | null {
+    if (!this.hasMoreInEncounter) return null;
+    
+    // Read length prefix
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+    
+    // Decode into reusable message
+    const msg = this.decoder.decode(this.data, msgStart, length);
+    
+    // Advance
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+    
+    return msg;
+  }
+  
+  /**
+   * Move to the next encounter.
+   */
+  nextEncounter(): boolean {
+    // Skip remaining messages in current encounter
+    while (this.hasMoreInEncounter) {
+      this.next();
+    }
+    return this._loadNextEncounterHeader();
+  }
+  
+  /**
+   * Skip to the next encounter without decoding events.
+   * Uses dataLength from header to jump directly by byte offset.
+   */
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+  
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    
+    const startOffset = this.offset;
+    
+    // Read encounterID
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+    
+    // Read timestamp
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER 
+      ? new Date(tsNumber) 
+      : new Date(NaN);
+    
+    // Read count
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+    
+    // Read dataLength
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+    
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+    
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+    
+    return true;
+  }
+}
+
+// ============================================================================
 // SpellGo Decoder - Decodes spell completion events with hit/miss info
 // ============================================================================
 
 /**
- * Reusable SpellGo spell data object
+ * Reusable SpellGo spell data object (from SpellData: id + name)
  */
 export interface ReusableSpellGoSpell {
-  name: string;
   id: number;
-  rank: number | null;
+  name: string;
 }
 
 /**
@@ -2173,12 +2492,11 @@ export interface ReusableSpellGo {
   offsetMilli: number;
   caster: string;
   target: string;
-  spell: ReusableSpellGoSpell;
+  spell: ReusableSpellGoSpell;  // SpellData: id + name
   numHits: number;
   numMisses: number;
   itemId: number | null;
   corpseOwner: string | null;
-  spellName: string | null;  // Direct spell name from proto field 9
   activity: ReusableActivityEntry[];
   activityCount: number;
 }
@@ -2201,9 +2519,8 @@ export class SpellGoDecoder {
   
   /** Reusable spell object - mutated on each decode */
   private readonly reusableSpell: ReusableSpellGoSpell = {
-    name: "",
     id: 0,
-    rank: null,
+    name: "",
   };
   
   /** Reusable message - mutated on each decode */
@@ -2218,7 +2535,6 @@ export class SpellGoDecoder {
     numMisses: 0,
     itemId: null,
     corpseOwner: null,
-    spellName: null,
     activity: [],
     activityCount: 0,
   };
@@ -2237,14 +2553,12 @@ export class SpellGoDecoder {
     msg.offsetMilli = 0;
     msg.caster = "";
     msg.target = "";
-    spell.name = "";
     spell.id = 0;
-    spell.rank = null;
+    spell.name = "";
     msg.numHits = 0;
     msg.numMisses = 0;
     msg.itemId = null;
     msg.corpseOwner = null;
-    msg.spellName = null;
     msg.activityCount = 0;
     
     while (offset < end) {
@@ -2300,7 +2614,7 @@ export class SpellGoDecoder {
             }
           }
         } else if (fieldNumber === 3) {
-          // SpellData - decode nested
+          // SpellData - decode nested (1=id, 2=name)
           const spellEnd = offset + len;
           while (offset < spellEnd) {
             const spellTag = data[offset++];
@@ -2310,12 +2624,11 @@ export class SpellGoDecoder {
             if (spellWire === 0) {
               const { value, bytesRead } = readVarintFast(data, offset);
               offset += bytesRead;
-              if (spellField === 2) spell.id = value;
-              else if (spellField === 3) spell.rank = value;
+              if (spellField === 1) spell.id = value;
             } else if (spellWire === 2) {
               const { value: spellLen, bytesRead } = readVarintFast(data, offset);
               offset += bytesRead;
-              if (spellField === 1) {
+              if (spellField === 2) {
                 spell.name = this.textDecoder.decode(data.subarray(offset, offset + spellLen));
               }
               offset += spellLen;
@@ -2329,9 +2642,6 @@ export class SpellGoDecoder {
           offset += len;
         } else if (fieldNumber === 8) {
           msg.corpseOwner = this.textDecoder.decode(data.subarray(offset, offset + len));
-          offset += len;
-        } else if (fieldNumber === 9) {
-          msg.spellName = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else {
           offset += len;

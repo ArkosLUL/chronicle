@@ -32,7 +32,8 @@ func SpellData(spell *chrondbc.Spell) *chronicleproto.SpellData {
 		return nil
 	}
 	return &chronicleproto.SpellData{
-		Id: int32(spell.ID),
+		Id:   int32(spell.ID),
+		Name: spell.Name(),
 	}
 }
 
@@ -115,11 +116,6 @@ func SpellGo(from time.Time, idx int32, ca *messages.SpellGo) *chronicleproto.Sp
 		corpseOwner = ptr.Ref(ca.CorpseOwner.String())
 	}
 
-	var name *string
-	if ca.SpellData != nil {
-		name = ptr.Ref(ca.SpellData.Name())
-	}
-
 	return &chronicleproto.SpellGo{
 		Meta:        EventMeta(from, idx, ca),
 		ItemID:      ca.ItemID,
@@ -129,7 +125,6 @@ func SpellGo(from time.Time, idx int32, ca *messages.SpellGo) *chronicleproto.Sp
 		NumHits:     ca.NumTargetsHit,
 		NumMisses:   ca.NumTargetsMissed,
 		CorpseOwner: corpseOwner,
-		SpellName:   name,
 	}
 }
 
@@ -157,6 +152,25 @@ func Aura(from time.Time, idx int32, a *messages.Aura) *chronicleproto.Aura {
 		State:         AuraState(a.State),
 		SpellData:     SpellData(a.SpellData),
 		IsBuff:        a.IsBuff,
+	}
+}
+
+func AuraCast(from time.Time, idx int32, a *messages.AuraCast) *chronicleproto.AuraCast {
+	var target *string
+	if a.Target != nil {
+		target = ptr.Ref(a.Target.String())
+	}
+
+	return &chronicleproto.AuraCast{
+		Meta:            EventMeta(from, idx, a),
+		Spell:           SpellData(a.Spell),
+		Caster:          a.Caster.String(),
+		Target:          target,
+		Effect:          int32(a.Effect),
+		Amplitude:       a.Amplitude,
+		EffectMiscValue: a.EffectMiscValue,
+		DurationMS:      a.DurationMS,
+		CapStatus:       a.AuraCapStatus,
 	}
 }
 

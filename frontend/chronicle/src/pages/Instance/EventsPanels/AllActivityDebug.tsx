@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -33,6 +33,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
   aura: { icon: Sparkles, color: "text-cyan-500", label: "Aura" },
   spell_go: { icon: Crosshair, color: "text-amber-500", label: "Spell Go" },
+  aura_cast: { icon: Timer, color: "text-teal-500", label: "Aura Cast" },
 };
 
 interface StreamToggleProps {
@@ -312,12 +313,12 @@ function AllActivityContent({
   const [useLocalTime, setUseLocalTime] = useState(false);
   
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,
@@ -339,6 +340,7 @@ function AllActivityContent({
     ...rawEventsByStream.aura,
     ...rawEventsByStream.slain,
     ...rawEventsByStream.spell_go,
+    ...rawEventsByStream.aura_cast,
   ];
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order
@@ -358,7 +360,7 @@ function AllActivityContent({
       {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go", "aura_cast"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

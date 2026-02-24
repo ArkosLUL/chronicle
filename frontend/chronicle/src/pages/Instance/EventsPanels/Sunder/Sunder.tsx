@@ -33,10 +33,8 @@ function formatTimeMs(ms: number): string {
  */
 function sortedWarriors(warriors: Record<string, WarriorSunderStats>): WarriorSunderStats[] {
   return Object.values(warriors).sort((a, b) => {
-    // Sort by total sunders descending
-    const totalA = a.effectiveSunders;
-    const totalB = b.effectiveSunders;
-    return totalB - totalA;
+    // Sort by effective sunders descending
+    return b.effectiveSunders - a.effectiveSunders;
   });
 }
 
@@ -120,12 +118,18 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
               <th className="text-right py-1.5 px-2 font-medium">
                 <span className="cursor-help" title="Counted towards the first 5 stacks on a target">Effective</span>
               </th>
+              <th className="text-right py-1.5 px-2 font-medium">
+                <span className="cursor-help" title="Sunders at 5 stacks (just refreshing duration)">Refresh</span>
+              </th>
+              <th className="text-right py-1.5 px-2 font-medium">
+                <span className="cursor-help" title="Missed/resisted sunders">Failed</span>
+              </th>
               <th className="text-right py-1.5 px-2 font-medium">Total</th>
             </tr>
           </thead>
           <tbody>
             {warriors.map((warrior) => {
-              const total = warrior.effectiveSunders + warrior.ineffectiveSunders;
+              const total = warrior.effectiveSunders + warrior.refreshSunders + warrior.failedSunders;
               return (
                 <tr
                   key={warrior.guid}
@@ -138,6 +142,12 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
                   </td>
                   <td className="py-1 px-2 text-right font-mono text-green-400">
                     {warrior.effectiveSunders}
+                  </td>
+                  <td className="py-1 px-2 text-right font-mono text-yellow-400">
+                    {warrior.refreshSunders}
+                  </td>
+                  <td className="py-1 px-2 text-right font-mono text-red-400">
+                    {warrior.failedSunders}
                   </td>
                   <td className="py-1 px-2 text-right font-mono">
                     {total}
@@ -293,7 +303,6 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
               <th className="text-right py-1 px-2 font-medium">Offset</th>
               <th className="text-left py-1 px-2 font-medium">Type</th>
               <th className="text-left py-1 px-2 font-medium">Details</th>
-              <th className="text-center py-1 px-2 font-medium">Matched</th>
             </tr>
           </thead>
           <tbody>
@@ -302,8 +311,9 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
                 key={index}
                 className={cn(
                   "border-b border-border/10",
-                  event.type === "cast" ? "bg-blue-500/5" : "bg-green-500/5",
-                  !event.matched && "opacity-50"
+                  event.type === "landed" && "bg-green-500/5",
+                  event.type === "refreshed" && "bg-yellow-500/5",
+                  event.type === "failed" && "bg-red-500/5 opacity-50"
                 )}
               >
                 <td className="py-0.5 px-2 text-right font-mono">
@@ -311,19 +321,17 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
                 </td>
                 <td className={cn(
                   "py-0.5 px-2",
-                  event.type === "cast" ? "text-blue-400" : "text-green-400"
+                  event.type === "landed" && "text-green-400",
+                  event.type === "refreshed" && "text-yellow-400",
+                  event.type === "failed" && "text-red-400"
                 )}>
                   {event.type}
                 </td>
                 <td className="py-0.5 px-2">
-                  {event.type === "cast" ? (
-                    <span className="text-[var(--class-warrior)]">{event.casterName}</span>
-                  ) : (
-                    <span>stack {event.stackCount}</span>
+                  <span className="text-[var(--class-warrior)]">{event.casterName}</span>
+                  {(event.type === "landed" || event.type === "refreshed") && event.stackCount && (
+                    <span className="text-muted-foreground ml-2">→ stack {event.stackCount}</span>
                   )}
-                </td>
-                <td className="py-0.5 px-2 text-center">
-                  {event.matched ? "✓" : "✗"}
                 </td>
               </tr>
             ))}

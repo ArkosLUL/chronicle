@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -75,15 +75,15 @@ export interface AllActivityDebugState {
   eventsCaptured: number;
 }
 
-// This processor handles damage, heal, resource_change, cast, aura, slain, and spell_go events
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent;
+// This processor handles damage, heal, resource_change, cast, aura, slain, spell_go, and aura_cast events
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent;
 
 // Default page size if no pagination specified
 const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go"],
+  streams: ["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go", "aura_cast"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -96,6 +96,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: [],
       aura: [],
       spell_go: [],
+      aura_cast: [],
     },
     streamCounts: {
       damage: 0,
@@ -106,6 +107,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: 0,
       aura: 0,
       spell_go: 0,
+      aura_cast: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
     totalProcessed: 0,
@@ -176,6 +178,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       } else if (streamType === "spell_go") {
         const spellGoEvent = event as SpellGoProcessorEvent;
         abilityName = spellGoEvent.spell.name;
+      } else if (streamType === "aura_cast") {
+        const auraCastEvent = event as AuraCastProcessorEvent;
+        abilityName = auraCastEvent.spell.name;
       } else {
         const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
         abilityName = regularEvent.sourceName;
@@ -265,8 +270,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       amount = 0; // Casts don't have an amount
     } else if (streamType === "spell_go") {
       const spellGoEvent = event as SpellGoProcessorEvent;
-      // Prefer spellName from proto field 9, fall back to spell.name from SpellData
-      sourceName = spellGoEvent.spellName || spellGoEvent.spell.name;
+      sourceName = spellGoEvent.spell.name;
       amount = spellGoEvent.numHits + spellGoEvent.numMisses; // Total targets affected
     } else if (streamType === "aura") {
       const auraEvent = event as AuraProcessorEvent;
@@ -276,6 +280,10 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       const slainEvent = event as SlainProcessorEvent;
       sourceName = slainEvent.attribution?.sourceName ?? "Slain";
       amount = slainEvent.attribution?.amount ?? 0;
+    } else if (streamType === "aura_cast") {
+      const auraCastEvent = event as AuraCastProcessorEvent;
+      sourceName = auraCastEvent.spell.name;
+      amount = auraCastEvent.durationMS; // Show duration as the "amount"
     } else {
       const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
       sourceName = regularEvent.sourceName;
@@ -335,9 +343,10 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     } else if (streamType === "aura") {
       const auraEvent = event as AuraProcessorEvent;
       rawEvent.auraApplication = auraEvent.application;
-      // Show aura application in extra field
-      const applicationNames = ["Unknown", "Gains", "Fades", "Removed"];
-      rawEvent.extra = applicationNames[auraEvent.application] || "Unknown";
+      // Show aura state in extra field (state is the preferred field)
+      const stateNames = ["Unknown", "Added", "Removed", "Modified"];
+      const stateName = stateNames[auraEvent.state] || "Unknown";
+      rawEvent.extra = `${stateName} (stacks=${auraEvent.amount})`;
     } else if (streamType === "slain") {
       const slainEvent = event as SlainProcessorEvent;
       // Show death info in extra field
@@ -349,9 +358,17 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     } else if (streamType === "spell_go") {
       const spellGoEvent = event as SpellGoProcessorEvent;
       rawEvent.spellId = spellGoEvent.spell.id;
-      rawEvent.spellRank = spellGoEvent.spell.rank;
       // Show hit/miss info in extra field
       rawEvent.extra = `hits=${spellGoEvent.numHits} misses=${spellGoEvent.numMisses}`;
+    } else if (streamType === "aura_cast") {
+      const auraCastEvent = event as AuraCastProcessorEvent;
+      rawEvent.spellId = auraCastEvent.spell.id;
+      // Show duration and tick amplitude in extra field
+      const durationSec = (auraCastEvent.durationMS / 1000).toFixed(1);
+      const ampSec = auraCastEvent.amplitude > 0 ? (auraCastEvent.amplitude / 1000).toFixed(1) : null;
+      rawEvent.extra = ampSec 
+        ? `dur=${durationSec}s tick=${ampSec}s` 
+        : `dur=${durationSec}s`;
     }
     
     // Store in appropriate stream bucket

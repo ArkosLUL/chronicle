@@ -97,15 +97,17 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 	case "MISS":
 		return p.spellMiss(ctx, ts, m)
 	case "BUFF_ADD", "BUFF_REM":
-		return p.aura(ctx, ts, true, m)
+		return p.aura(ctx, event, ts, true, m)
 	case "DEBUFF_ADD", "DEBUFF_REM":
-		return p.aura(ctx, ts, false, m)
+		return p.aura(ctx, event, ts, false, m)
 	case "BUFF_DURATION":
 		return p.auraUpdate(ctx, ts, false, m)
 	case "DEBUFF_DURATION":
 		return p.auraUpdate(ctx, ts, false, m)
 	case "ENERGIZE":
 		return p.energize(ctx, ts, m)
+	case "AURA_CAST":
+		return p.auraCast(ctx, ts, m)
 	}
 
 	return messages.Unparsed(ts, next), nil

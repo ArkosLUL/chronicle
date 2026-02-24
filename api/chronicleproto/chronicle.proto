@@ -40,6 +40,7 @@ enum AuraState {
 
 message SpellData {
   int32 id = 1;
+  string name = 2;
 }
 
 message Tailer {
@@ -133,6 +134,18 @@ message Aura {
   bool isBuff = 8;
 }
 
+message AuraCast {
+  EventMeta meta = 1;
+  SpellData spell = 2;
+  string caster = 3;
+  optional string target = 4;
+  int32 effect = 5;
+  int32 amplitude = 6;
+  int32 effectMiscValue = 7;
+  int32 durationMS = 8;
+  int32 capStatus = 9;
+}
+
 message SpellGo {
   EventMeta meta = 1;
   optional int32 itemID = 2;
@@ -142,5 +155,5 @@ message SpellGo {
   int32 numHits = 6;
   int32 numMisses = 7;
   optional string corpseOwner = 8;
-  optional string spellName = 9;
+  reserved 9; // was spellname
 }

@@ -169,10 +169,6 @@ func (m *Matched) Uint32() uint32 {
 	})
 }
 
-func (m *Matched) AuraState() types.AuraState {
-	return types.AuraState(m.Uint32())
-}
-
 func (m *Matched) Int32() int32 {
 	return int32(m.Int64())
 }

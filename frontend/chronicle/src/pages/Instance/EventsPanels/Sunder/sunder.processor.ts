@@ -2,28 +2,37 @@
  * Sunder Armor processor - Tracks Sunder Armor usage by Warriors.
  * 
  * Tracks:
- * - Effective vs ineffective sunders (effective = affliction within 500ms of cast)
+ * - Effective sunders (via AURA_CAST with effect=6, effectMiscValue=1, stacks < 5)
+ * - Refreshed sunders (AURA_CAST when already at 5 stacks - counts as ineffective)
+ * - Failed sunders (via SPELL_GO with numHits=0, numMisses=1)
+ * - Stack reset (via Aura StateRemoved for Sunder Armor)
  * - Time to 5 sunders on each target (from encounter start)
  * - Which warriors contributed to each target's first 5 sunders
  */
 
-import type { PanelProcessor, CastProcessorEvent, AuraProcessorEvent, ProcessorContext, AuraApplication } from "../processorTypes";
+import type { PanelProcessor, AuraCastProcessorEvent, SpellGoProcessorEvent, AuraProcessorEvent, ProcessorContext, AuraState } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
-/** Spell name to match for Sunder Armor */
+/** Sunder Armor spell IDs (ranks 1-5) */
+const SUNDER_SPELL_IDS = new Set([7386, 7405, 8380, 11596, 11597]);
+
+/** Sunder Armor spell name for aura removal detection */
 const SUNDER_ARMOR_SPELL_NAME = "Sunder Armor";
 
-/** Max time (ms) between cast and affliction for it to count as effective */
-const AFFLICTION_WINDOW_MS = 500;
+/** AURA_CAST effect value indicating sunder application */
+const AURA_EFFECT_SUNDER = 6;
+
+/** AURA_CAST effectMiscValue for sunder */
+const AURA_EFFECT_MISC_VALUE = 1;
+
+/** AuraState.Removed = 2 */
+const AURA_STATE_REMOVED: AuraState = 2;
 
 /** Max stacks of Sunder Armor */
 const MAX_SUNDER_STACKS = 5;
 
-/** AuraApplication.Gains = 1 */
-const AURA_GAINS: AuraApplication = 1;
-
-/** A pending sunder cast waiting for affliction confirmation */
-interface PendingSunder {
+/** Data for a sunder event (used for both effective and ineffective) */
+interface SunderEventData {
   timestampMs: number;
   casterGuid: string;
   casterName: string;
@@ -48,7 +57,8 @@ export interface WarriorSunderStats {
   guid: string;
   name: string;
   effectiveSunders: number;
-  ineffectiveSunders: number;
+  refreshSunders: number;
+  failedSunders: number;
   /** Record of targetGuid -> how many of the first 5 stacks this warrior contributed */
   contributionsToFirst5: Record<string, number>;
 }
@@ -58,13 +68,11 @@ export interface SunderDebugEvent {
   /** Offset from encounter start in ms */
   offsetMs: number;
   /** Type of event */
-  type: "cast" | "affliction";
-  /** Caster name (for cast events) */
+  type: "landed" | "refreshed" | "failed";
+  /** Caster name */
   casterName?: string;
-  /** Stack count (for affliction events) */
+  /** Stack count (for landed/refreshed events) */
   stackCount?: number;
-  /** Whether this was matched (cast matched to affliction) */
-  matched?: boolean;
 }
 
 /** Stats for a single target */
@@ -90,36 +98,25 @@ export interface SunderResult {
   targets: Record<string, TargetSunderStats>;
   /** All confirmed sunders for detailed view */
   confirmedSunders: ConfirmedSunder[];
-  /** Pending casts not yet matched (internal use) */
-  _pendingCasts: Record<string, PendingSunder[]>;
   /** Encounter start times for calculating time-to-5-stacks */
   _encounterStarts: Record<string, number>;
   /** Track current stack count per target */
   _targetStacks: Record<string, number>;
 }
 
-type SunderEvent = CastProcessorEvent | AuraProcessorEvent;
-
-/**
- * Generate a key for matching casts to afflictions.
- * We match by target GUID since multiple warriors can sunder the same target.
- */
-function pendingKey(targetGuid: string): string {
-  return targetGuid;
-}
+type SunderEvent = AuraCastProcessorEvent | SpellGoProcessorEvent | AuraProcessorEvent;
 
 /**
  * Sunder processor implementation.
  */
 export const sunderProcessor: PanelProcessor<SunderResult, SunderEvent> = {
   id: "sunder",
-  streams: ["cast", "aura"] as StreamType[],
+  streams: ["aura_cast", "spell_go", "aura"] as StreamType[],
   
   createState: (): SunderResult => ({
     warriors: {},
     targets: {},
     confirmedSunders: [],
-    _pendingCasts: {},
     _encounterStarts: {},
     _targetStacks: {},
   }),
@@ -143,36 +140,50 @@ export const sunderProcessor: PanelProcessor<SunderResult, SunderEvent> = {
     
     const timestampMs = encounterStartMs + event.offsetMilli;
     
-    if (streamType === "cast" && event.type === "cast") {
-      processCastEvent(state, event, timestampMs, encounterID, context);
+    if (streamType === "aura_cast" && event.type === "aura_cast") {
+      processAuraCastEvent(state, event, timestampMs, encounterID, context);
+    } else if (streamType === "spell_go" && event.type === "spell_go") {
+      processSpellGoEvent(state, event, timestampMs, encounterID, context);
     } else if (streamType === "aura" && event.type === "aura") {
-      processAuraEvent(state, event, timestampMs, encounterStartMs);
+      processAuraEvent(state, event);
     }
   },
 };
 
-function processCastEvent(
+/**
+ * Process AURA_CAST events - these indicate a sunder landed successfully.
+ * 
+ * A sunder lands when:
+ * - effect === 6
+ * - effectMiscValue === 1
+ * - spell ID is a sunder rank (7386, 7405, 8380, 11596, 11597)
+ * 
+ * If already at 5 stacks, it's a "refresh" (counts as ineffective).
+ */
+function processAuraCastEvent(
   state: SunderResult,
-  event: CastProcessorEvent,
+  event: AuraCastProcessorEvent,
   timestampMs: number,
   encounterId: string,
   context: ProcessorContext,
 ): void {
-  // Only process successful casts (action === 1 is "Casts")
-  if (event.action !== 1) return;
+  // Check for sunder landing conditions
+  if (event.effect !== AURA_EFFECT_SUNDER) return;
+  if (event.effectMiscValue !== AURA_EFFECT_MISC_VALUE) return;
+  if (!SUNDER_SPELL_IDS.has(event.spell.id)) return;
   
-  // Check if this is a Sunder Armor cast
-  if (event.spell.name !== SUNDER_ARMOR_SPELL_NAME) return;
+  // Must have a target
+  if (!event.target) return;
+  
+  // Only track player casters
+  const casterPlayer = context.players[event.caster];
+  if (!casterPlayer) return;
   
   // Filter by selected enemies (if any are selected)
   const { entitySelection } = context;
   if (entitySelection.enemyIds.size > 0 && !entitySelection.enemyIds.has(event.target)) {
     return;
   }
-  
-  // Only track player casters
-  const casterPlayer = context.players[event.caster];
-  if (!casterPlayer) return;
   
   const targetUnit = context.units?.[event.target];
   const casterName = casterPlayer.name;
@@ -182,7 +193,7 @@ function processCastEvent(
   const encounterStartMs = state._encounterStarts[encounterId] ?? timestampMs;
   const offsetMs = timestampMs - encounterStartMs;
   
-  // Ensure target exists for debug logging
+  // Ensure target exists
   if (!(event.target in state.targets)) {
     state.targets[event.target] = {
       guid: event.target,
@@ -195,212 +206,223 @@ function processCastEvent(
     };
   }
   
-  // Log cast event for debug
+  // Track stack count internally (AURA_CAST doesn't provide current stacks)
+  const currentStack = state._targetStacks[event.target] ?? 0;
+  
+  // Check if this is a refresh (already at 5 stacks)
+  if (currentStack >= MAX_SUNDER_STACKS) {
+    // Log refresh event for debug
+    state.targets[event.target].debugEvents.push({
+      offsetMs,
+      type: "refreshed",
+      casterName,
+      stackCount: MAX_SUNDER_STACKS,
+    });
+    
+    // Record as a refresh (ineffective)
+    recordRefreshSunder(state, {
+      timestampMs,
+      casterGuid: event.caster,
+      casterName,
+      targetGuid: event.target,
+      targetName,
+      encounterId,
+    });
+    return;
+  }
+  
+  const newStackCount = currentStack + 1;
+  
+  // Log landed event for debug
   state.targets[event.target].debugEvents.push({
     offsetMs,
-    type: "cast",
+    type: "landed",
     casterName,
-    matched: false, // Will be updated if matched
+    stackCount: newStackCount,
   });
   
-  const pending: PendingSunder = {
+  // Record the effective sunder
+  recordEffectiveSunder(state, {
     timestampMs,
     casterGuid: event.caster,
     casterName,
     targetGuid: event.target,
     targetName,
     encounterId,
-  };
-  
-  // Store pending cast keyed by target
-  const key = pendingKey(event.target);
-  if (!(key in state._pendingCasts)) {
-    state._pendingCasts[key] = [];
-  }
-  state._pendingCasts[key].push(pending);
+  }, newStackCount);
 }
 
+/**
+ * Process Aura events - reset stack count when Sunder Armor is removed.
+ */
 function processAuraEvent(
   state: SunderResult,
   event: AuraProcessorEvent,
-  timestampMs: number,
-  encounterStartMs: number,
 ): void {
-  // Only process "Gains" (afflicted by)
-  if (event.application !== AURA_GAINS) return;
-  
-  // Check if this is a Sunder Armor affliction
+  // Only process Sunder Armor removal
+  if (event.state !== AURA_STATE_REMOVED) return;
   if (event.spellName !== SUNDER_ARMOR_SPELL_NAME) return;
   
-  const stackCount = event.amount;
-  const targetGuid = event.target;
-  const key = pendingKey(targetGuid);
-  const offsetMs = timestampMs - encounterStartMs;
-  
-  // Log affliction event for debug (if target exists)
-  if (targetGuid in state.targets) {
-    state.targets[targetGuid].debugEvents.push({
-      offsetMs,
-      type: "affliction",
-      stackCount,
-      matched: false, // Will be updated if matched
-    });
-  }
-  
-  // Find matching pending cast within 500ms window
-  const pendingCasts = state._pendingCasts[key];
-  if (!pendingCasts || pendingCasts.length === 0) {
-    // No pending cast - this affliction doesn't count
-    return;
-  }
-  
-  // Find the OLDEST cast within the window (first warrior to cast gets credit)
-  let matchedCast: PendingSunder | null = null;
-  let matchedIndex = -1;
-  
-  for (let i = 0; i < pendingCasts.length; i++) {
-    const pending = pendingCasts[i];
-    const timeDiff = timestampMs - pending.timestampMs;
-    
-    if (timeDiff >= 0 && timeDiff <= AFFLICTION_WINDOW_MS) {
-      matchedCast = pending;
-      matchedIndex = i;
-      break;
-    }
-  }
-  
-  if (!matchedCast) {
-    // No matching cast within window
-    return;
-  }
-  
-  // Mark the matched cast and affliction as matched in debug events
-  if (targetGuid in state.targets) {
-    const debugEvents = state.targets[targetGuid].debugEvents;
-    // Mark last affliction as matched
-    if (debugEvents.length > 0 && debugEvents[debugEvents.length - 1].type === "affliction") {
-      debugEvents[debugEvents.length - 1].matched = true;
-    }
-    // Find and mark the matching cast event
-    const castOffsetMs = matchedCast.timestampMs - encounterStartMs;
-    for (let i = debugEvents.length - 1; i >= 0; i--) {
-      if (debugEvents[i].type === "cast" && 
-          debugEvents[i].offsetMs === castOffsetMs &&
-          debugEvents[i].casterName === matchedCast.casterName &&
-          !debugEvents[i].matched) {
-        debugEvents[i].matched = true;
-        break;
-      }
-    }
-  }
-  
-  // Remove the matched cast from pending
-  pendingCasts.splice(matchedIndex, 1);
-  
-  // Mark any older pending casts on this target as ineffective
-  // (they never got an affliction)
-  const expiredCasts = pendingCasts.filter(p => 
-    timestampMs - p.timestampMs > AFFLICTION_WINDOW_MS
-  );
-  
-  for (const expired of expiredCasts) {
-    recordIneffectiveSunder(state, expired);
-  }
-  
-  // Remove expired casts
-  state._pendingCasts[key] = pendingCasts.filter(p => 
-    timestampMs - p.timestampMs <= AFFLICTION_WINDOW_MS
-  );
-  
-  // Record the effective sunder
-  recordEffectiveSunder(state, matchedCast, stackCount);
+  // Reset stack count for this target
+  delete state._targetStacks[event.target];
 }
 
-function recordEffectiveSunder(
+/**
+ * Process SPELL_GO events - a sunder failed when:
+ * - spell ID is a sunder rank
+ * - numHits === 0 AND numMisses === 1
+ */
+function processSpellGoEvent(
   state: SunderResult,
-  cast: PendingSunder,
-  stackCount: number,
+  event: SpellGoProcessorEvent,
+  timestampMs: number,
+  encounterId: string,
+  context: ProcessorContext,
 ): void {
-  // Create confirmed sunder
-  const confirmed: ConfirmedSunder = {
-    ...cast,
-    stackCount,
-  };
-  state.confirmedSunders.push(confirmed);
+  // Check for sunder spell
+  if (!SUNDER_SPELL_IDS.has(event.spell.id)) return;
   
-  // Update warrior stats
-  let warrior = state.warriors[cast.casterGuid];
-  if (!warrior) {
-    warrior = {
-      guid: cast.casterGuid,
-      name: cast.casterName,
-      effectiveSunders: 0,
-      ineffectiveSunders: 0,
-      contributionsToFirst5: {},
-    };
-    state.warriors[cast.casterGuid] = warrior;
+  // Failed sunder: numHits=0, numMisses=1
+  if (event.numHits !== 0 || event.numMisses !== 1) return;
+  
+  // Only track player casters
+  const casterPlayer = context.players[event.caster];
+  if (!casterPlayer) return;
+  
+  // Filter by selected enemies (if any are selected)
+  const { entitySelection } = context;
+  if (entitySelection.enemyIds.size > 0 && event.target && !entitySelection.enemyIds.has(event.target)) {
+    return;
   }
-  warrior.effectiveSunders++;
   
-  // Update target stats
-  let target = state.targets[cast.targetGuid];
-  if (!target) {
-    target = {
-      guid: cast.targetGuid,
-      name: cast.targetName,
-      encounterId: cast.encounterId,
+  const targetGuid = event.target || "";
+  const targetUnit = context.units?.[targetGuid];
+  const casterName = casterPlayer.name;
+  const targetName = targetUnit?.name ?? targetGuid;
+  
+  // Calculate offset from encounter start for debug
+  const encounterStartMs = state._encounterStarts[encounterId] ?? timestampMs;
+  const offsetMs = timestampMs - encounterStartMs;
+  
+  // Ensure target exists (if we have a target)
+  if (targetGuid && !(targetGuid in state.targets)) {
+    state.targets[targetGuid] = {
+      guid: targetGuid,
+      name: targetName,
+      encounterId,
       timeToFiveStacksMs: null,
       first5Contributors: [],
       totalSunders: 0,
       debugEvents: [],
     };
-    state.targets[cast.targetGuid] = target;
+  }
+  
+  // Log failed event for debug
+  if (targetGuid) {
+    state.targets[targetGuid].debugEvents.push({
+      offsetMs,
+      type: "failed",
+      casterName,
+    });
+  }
+  
+  // Record the failed sunder
+  recordFailedSunder(state, {
+    timestampMs,
+    casterGuid: event.caster,
+    casterName,
+    targetGuid,
+    targetName,
+    encounterId,
+  });
+}
+
+function getOrCreateWarrior(state: SunderResult, guid: string, name: string): WarriorSunderStats {
+  let warrior = state.warriors[guid];
+  if (!warrior) {
+    warrior = {
+      guid,
+      name,
+      effectiveSunders: 0,
+      refreshSunders: 0,
+      failedSunders: 0,
+      contributionsToFirst5: {},
+    };
+    state.warriors[guid] = warrior;
+  }
+  return warrior;
+}
+
+function recordEffectiveSunder(
+  state: SunderResult,
+  data: SunderEventData,
+  stackCount: number,
+): void {
+  // Create confirmed sunder
+  const confirmed: ConfirmedSunder = {
+    ...data,
+    stackCount,
+  };
+  state.confirmedSunders.push(confirmed);
+  
+  // Update warrior stats
+  const warrior = getOrCreateWarrior(state, data.casterGuid, data.casterName);
+  warrior.effectiveSunders++;
+  
+  // Update target stats
+  let target = state.targets[data.targetGuid];
+  if (!target) {
+    target = {
+      guid: data.targetGuid,
+      name: data.targetName,
+      encounterId: data.encounterId,
+      timeToFiveStacksMs: null,
+      first5Contributors: [],
+      totalSunders: 0,
+      debugEvents: [],
+    };
+    state.targets[data.targetGuid] = target;
   }
   target.totalSunders++;
   
   // Track first 5 contributors
-  const currentStack = state._targetStacks[cast.targetGuid] ?? 0;
+  const currentStack = state._targetStacks[data.targetGuid] ?? 0;
   
-  // Only count if this is adding a new stack (stack went up)
-  if (stackCount > currentStack && currentStack < MAX_SUNDER_STACKS) {
-    state._targetStacks[cast.targetGuid] = stackCount;
+  // Update stack count (we already calculated stackCount = currentStack + 1)
+  state._targetStacks[data.targetGuid] = stackCount;
+  
+  // Only count contribution if we're still building toward 5 stacks
+  if (stackCount <= MAX_SUNDER_STACKS && currentStack < MAX_SUNDER_STACKS) {
+    target.first5Contributors.push({
+      guid: data.casterGuid,
+      name: data.casterName,
+      stackNumber: stackCount,
+    });
     
-    // Record contribution for each new stack
-    for (let s = currentStack + 1; s <= Math.min(stackCount, MAX_SUNDER_STACKS); s++) {
-      target.first5Contributors.push({
-        guid: cast.casterGuid,
-        name: cast.casterName,
-        stackNumber: s,
-      });
-      
-      // Update warrior's contribution count for this target
-      const currentContrib = warrior.contributionsToFirst5[cast.targetGuid] ?? 0;
-      warrior.contributionsToFirst5[cast.targetGuid] = currentContrib + 1;
-    }
+    // Update warrior's contribution count for this target
+    const currentContrib = warrior.contributionsToFirst5[data.targetGuid] ?? 0;
+    warrior.contributionsToFirst5[data.targetGuid] = currentContrib + 1;
     
     // Check if we just reached 5 stacks
     if (stackCount >= MAX_SUNDER_STACKS && target.timeToFiveStacksMs === null) {
-      const encounterStartMs = state._encounterStarts[cast.encounterId] ?? cast.timestampMs;
-      target.timeToFiveStacksMs = cast.timestampMs - encounterStartMs;
+      const encounterStartMs = state._encounterStarts[data.encounterId] ?? data.timestampMs;
+      target.timeToFiveStacksMs = data.timestampMs - encounterStartMs;
     }
   }
 }
 
-function recordIneffectiveSunder(
+function recordRefreshSunder(
   state: SunderResult,
-  cast: PendingSunder,
+  data: SunderEventData,
 ): void {
-  // Update warrior stats
-  let warrior = state.warriors[cast.casterGuid];
-  if (!warrior) {
-    warrior = {
-      guid: cast.casterGuid,
-      name: cast.casterName,
-      effectiveSunders: 0,
-      ineffectiveSunders: 0,
-      contributionsToFirst5: {},
-    };
-    state.warriors[cast.casterGuid] = warrior;
-  }
-  warrior.ineffectiveSunders++;
+  const warrior = getOrCreateWarrior(state, data.casterGuid, data.casterName);
+  warrior.refreshSunders++;
+}
+
+function recordFailedSunder(
+  state: SunderResult,
+  data: SunderEventData,
+): void {
+  const warrior = getOrCreateWarrior(state, data.casterGuid, data.casterName);
+  warrior.failedSunders++;
 }

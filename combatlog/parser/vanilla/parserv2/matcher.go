@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
@@ -81,6 +82,34 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	)
 }
 
+func (p *Parser) auraCast(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	spell := m.DBCSpellByID(p)
+	caster := m.Guid()
+	target := m.OptionalGuid()
+	effect := chrondbc.Effect(m.Int32())
+	m.skip() // aura name
+	amplitude := m.Int32()
+	effectMiscValue := m.Int32()
+	durationMS := m.Int32()
+	capStatus := m.Int32()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	return set(&messages.AuraCast{
+		MessageBase:     messages.Base(ts),
+		Spell:           spell,
+		Caster:          caster,
+		Target:          target,
+		Effect:          effect,
+		Amplitude:       amplitude,
+		EffectMiscValue: effectMiscValue,
+		DurationMS:      durationMS,
+		AuraCapStatus:   capStatus,
+	})
+}
+
 func (p *Parser) auraUpdate(ctx context.Context, ts time.Time, buff bool, m *Matched) ([]messages.Message, error) {
 	return messages.Skip(ts, "not yet implements"), nil
 }
@@ -122,14 +151,14 @@ func (p *Parser) energize(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	})
 }
 
-func (p *Parser) aura(ctx context.Context, ts time.Time, buff bool, m *Matched) ([]messages.Message, error) {
+func (p *Parser) aura(ctx context.Context, event string, ts time.Time, buff bool, m *Matched) ([]messages.Message, error) {
 	target := m.Guid()
 	m.skip() // buff slot
 	spell := m.DBCSpellByID(p.wowDB)
 	stack := m.Int32()
 	m.skip() // aura level
 	m.skip() // aura slot
-	state := m.AuraState()
+	stateNum := m.Int32()
 
 	if err := m.Error(); err != nil {
 		return nil, err
@@ -138,6 +167,21 @@ func (p *Parser) aura(ctx context.Context, ts time.Time, buff bool, m *Matched) 
 	spName := ""
 	if spell != nil {
 		spName = spell.Name()
+	}
+
+	var state = types.AuraStateUnknown
+	switch stateNum {
+	case 0:
+		state = types.AuraStateAdded
+	case 1:
+		state = types.AuraStateRemoved
+	case 2:
+		switch event {
+		case "BUFF_ADD", "DEBUFF_ADD":
+			state = types.AuraStateAdded
+		case "BUFF_REM", "DEBUFF_REM":
+			state = types.AuraStateRemoved
+		}
 	}
 
 	return set(&messages.Aura{

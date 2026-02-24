@@ -28,6 +28,10 @@ func NewGrobbulus(id guid.GUID, all *Characters) (Character, bool) {
 	return NewPermanentDeath(NewCommonCharacter(id, all)), true
 }
 
+func NewAnubRekhan(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(15956, 16573, 16698)(id, all)
+}
+
 // NewDiseasedMaggot is I think the blobs that crawl along the floor?
 //func NewDiseasedMaggot(id guid.GUID, all *Characters) (Character, bool) {
 //	if entry, ok := id.GetEntry(); !ok || entry != 16056 {

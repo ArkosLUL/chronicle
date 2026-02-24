@@ -5,7 +5,7 @@
  * It receives stream data and context, processes events, and returns results.
  */
 
-import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableCast, type ReusableAura, type ReusableSpellGo } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, FastAuraCastCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableCast, type ReusableAura, type ReusableSpellGo, type ReusableAuraCast } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
@@ -29,14 +29,14 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
 /**
  * Union of all reusable event types
  */
-type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo;
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast;
 
 /**
  * A cursor wrapper that supports peeking at the next event without consuming it.
  */
 interface PeekableCursor {
   streamType: StreamType;
-  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor;
   peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
 }
 
@@ -90,6 +90,8 @@ function createCursor(stream: WorkerRequest["streams"][0]): PeekableCursor {
     ? new FastAuraCursor(stream.data)
     : stream.type === "spell_go"
     ? new FastSpellGoCursor(stream.data)
+    : stream.type === "aura_cast"
+    ? new FastAuraCastCursor(stream.data)
     : new FastDamageCursor(stream.data);
   
   return {

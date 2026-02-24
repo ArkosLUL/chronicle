@@ -344,11 +344,31 @@ func (*Slain) isMessage() {}
 //	AuraCapStatus   int32
 //}
 
+type AuraCast struct {
+	MessageBase
+	Spell           *chrondbc.Spell
+	Caster          guid.GUID
+	Target          *guid.GUID
+	Effect          chrondbc.Effect
+	Amplitude       int32 // ms how often it ticks
+	EffectMiscValue int32
+	DurationMS      int32
+	AuraCapStatus   int32 // 1 for buffs full, 2 for debuffs full, 3 for both
+}
+
+func (a AuraCast) Affects() []guid.GUID {
+	if a.Target == nil {
+		return []guid.GUID{a.Caster}
+	}
+	return []guid.GUID{a.Caster, *a.Target}
+}
+func (*AuraCast) isMessage() {}
+
 type Aura struct {
 	MessageBase
-  // IsBuff is false if it is a debuff
-	IsBuff bool
-	Target guid.GUID
+	// IsBuff is false if it is a debuff
+	IsBuff    bool
+	Target    guid.GUID
 	SpellName string
 	SpellData *chrondbc.Spell
 	// Amount is the current stacks

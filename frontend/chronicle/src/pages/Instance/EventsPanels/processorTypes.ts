@@ -184,12 +184,11 @@ export interface AuraProcessorEvent extends EventMeta {
 }
 
 /**
- * Spell info for SpellGo events (similar to CastSpellInfo but separate type)
+ * Spell info for SpellGo events (SpellData: id + name)
  */
 export interface SpellGoSpellInfo {
-  name: string;
   id: number;
-  rank: number | null;
+  name: string;
 }
 
 /**
@@ -200,8 +199,7 @@ export interface SpellGoProcessorEvent extends EventMeta {
   type: "spell_go";
   caster: string;  // The unit who cast the spell
   target: string;  // Primary target (may be empty for AoE)
-  spell: SpellGoSpellInfo;  // Spell information from SpellData (may be empty)
-  spellName: string | null;  // Direct spell name from proto field (preferred)
+  spell: SpellGoSpellInfo;  // SpellData: id + name
   numHits: number;  // Number of targets hit
   numMisses: number;  // Number of targets missed
   itemId: number | null;  // Item ID if triggered by an item
@@ -209,10 +207,26 @@ export interface SpellGoProcessorEvent extends EventMeta {
 }
 
 /**
+ * AuraCast event from the "aura_cast" stream.
+ * Fires when an aura (buff/debuff) is applied with detailed timing information.
+ */
+export interface AuraCastProcessorEvent extends EventMeta {
+  type: "aura_cast";
+  caster: string;           // The unit who cast the aura
+  target: string | null;    // The target receiving the aura (optional)
+  spell: { id: number; name: string };  // SpellData: id + name
+  effect: number;           // Effect type
+  amplitude: number;        // Tick interval in ms (for periodic effects)
+  effectMiscValue: number;  // Effect-specific data
+  durationMS: number;       // Total duration in milliseconds
+  capStatus: number;        // 1=buffs full, 2=debuffs full, 3=both
+}
+
+/**
  * Discriminated union of all event types.
  * Use event.type to narrow to a specific type.
  */
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent;
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

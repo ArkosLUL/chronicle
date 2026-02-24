@@ -46,6 +46,7 @@ var characterFactories = []characterFactory{
 	NewKelThuzad,
 	NewGluth,
 	NewGrobbulus,
+	NewAnubRekhan,
 	//NewDiseasedMaggot,
 	// Kara 40
 	NewKruul,

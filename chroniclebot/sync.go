@@ -39,13 +39,13 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 	for _, roleID := range member.Roles {
 		switch roleID {
 		case "1468405974506410110": // Alpha tester
-
 			gChron.Upload_capable(usr)
 		case "1467892674743898297": // Owner
-
 			gChron.Technical_admin(usr)
 		case "1467890007854551120": // Admin
 			gChron.Admin(usr)
+		case "1475993966041239623": // Technical User
+			gChron.Technical_user(usr)
 		}
 	}
 

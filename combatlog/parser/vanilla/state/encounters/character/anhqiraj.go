@@ -12,5 +12,6 @@ func NewCthun(id guid.GUID, all *Characters) (Character, bool) {
 		15802, // Flesh Tentacle
 		15726, // Eye Tentacle
 		15334, // Giant Eye Tentacle
+		15725, // Claw Tentacle
 		bloodSeekerBat)(id, all)
 }

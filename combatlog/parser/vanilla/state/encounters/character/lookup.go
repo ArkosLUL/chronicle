@@ -56,6 +56,8 @@ var characterFactories = []characterFactory{
 	NewMephistroth,
 	NewSanvTasDal,
 	NewKeeperGnarlmoon,
+	// Emerald Sanctum
+	NewSolnius,
 }
 
 type Characters struct {

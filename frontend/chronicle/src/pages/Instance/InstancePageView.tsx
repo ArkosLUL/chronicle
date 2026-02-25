@@ -1469,6 +1469,7 @@ export function InstancePageView({
             <InstanceMenu
               layout={viewState.layout}
               onLayoutChange={setLayout}
+              instanceId={instance.id}
               logDetailUrl={logDetailUrl}
             />
           </div>

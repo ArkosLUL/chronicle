@@ -1,4 +1,5 @@
-import { Menu, LayoutGrid, Rows3, FileText } from "lucide-react";
+import { Menu, LayoutGrid, Rows3, FileText, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +17,20 @@ import type { LayoutType } from "@/hooks/useUrlState";
 interface InstanceMenuProps {
   layout: LayoutType;
   onLayoutChange: (layout: LayoutType) => void;
+  instanceId: string;
   logDetailUrl?: string;
 }
 
-export function InstanceMenu({ layout, onLayoutChange, logDetailUrl }: InstanceMenuProps) {
+export function InstanceMenu({ layout, onLayoutChange, instanceId, logDetailUrl }: InstanceMenuProps) {
+  const handleCopyInstanceId = async () => {
+    try {
+      await navigator.clipboard.writeText(instanceId);
+      toast.success("Copied instance ID", { description: instanceId });
+    } catch {
+      toast.error("Failed to copy instance ID");
+    }
+  };
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -41,7 +52,13 @@ export function InstanceMenu({ layout, onLayoutChange, logDetailUrl }: InstanceM
             Alternate (1+1 + 2×1)
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
-        
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleCopyInstanceId}>
+          <Copy className="h-4 w-4 mr-2" />
+          Copy Instance ID
+        </DropdownMenuItem>
+
         {logDetailUrl && (
           <>
             <DropdownMenuSeparator />

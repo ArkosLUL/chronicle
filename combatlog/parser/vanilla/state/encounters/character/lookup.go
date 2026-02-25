@@ -20,6 +20,8 @@ var characterFactories = []characterFactory{
 	// Deadmines
 	NewSneedShredder,
 	NewEdwinVanCleef,
+	// Dire Maul
+	NewImmolthar,
 	// Molten Core
 	NewCoreHoundCharacter,
 	NewMajordomoPartyCharacter,

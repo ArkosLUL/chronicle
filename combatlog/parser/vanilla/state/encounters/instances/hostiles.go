@@ -910,3 +910,31 @@ func DireMaulHostiles() map[uint32]Identity {
 	})
 	return hostile
 }
+
+func StormwindVaultHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		93106: "Hungry Vault Rat",
+		93105: "Shadow Creeper",
+		60604: "Wicked Skitterer",
+		60612: "Frigid Guardian",
+		60601: "Grellkin Sorcerer",
+		60599: "Soulless Husk",
+		60596: "Runic Construct",
+		60602: "Grellkin Scorcher",
+		60598: "Black Blood of the Demented",
+		10482: "Risen Lackey",
+		60597: "Maddened Vault Guard",
+		60603: "Manacrazed Grell",
+		80852: "Tham'Grarr",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		80853: "Aszosh Grimflame",
+		80850: "Black Bride",
+		80854: "Damian",
+		80851: "Volkan Cruelblade",
+		93107: "Arc'tiras",
+	})
+
+	return hostile
+}

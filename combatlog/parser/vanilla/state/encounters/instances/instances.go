@@ -115,9 +115,15 @@ var (
 		Hostiles: FromMap(TheBlackMorassHostiles()),
 	}).New
 
-  DireMaul = (&CommonFactory{
-    Name:     "Dire Maul",
-    ZoneName: ZoneNameMatcher("dire maul"),
-    Hostiles: FromMap(DireMaulHostiles()),
-  }).New
+	DireMaul = (&CommonFactory{
+		Name:     "Dire Maul",
+		ZoneName: ZoneNameMatcher("dire maul"),
+		Hostiles: FromMap(DireMaulHostiles()),
+	}).New
+
+	StormwindVault = (&CommonFactory{
+		Name:     "Stormwind Vault",
+		ZoneName: ZoneNameMatcher("stormwind vault"),
+		Hostiles: FromMap(StormwindVaultHostiles()),
+	}).New
 )

@@ -14,7 +14,7 @@
  */
 
 import type { PanelProcessor, ProcessorContext, AuraProcessorEvent, HealProcessorEvent, SlainProcessorEvent } from "../processorTypes";
-import { AuraApplication } from "../processorTypes";
+import { AuraState } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /** Judgement types */
@@ -205,7 +205,7 @@ function processAuraEvent(
   
   const key = activeKey(event.target, judgementType);
   
-  if (event.application === AuraApplication.Gains) {
+  if (event.state === AuraState.Added) {
     // If there's an existing active judgement of this type, finalize it first
     const existingActive = state.activeJudgements.get(key);
     if (existingActive) {
@@ -223,7 +223,7 @@ function processAuraEvent(
     };
     state.activeJudgements.set(key, active);
     
-  } else if (event.application === AuraApplication.Fades || event.application === AuraApplication.Removed) {
+  } else if (event.state === AuraState.Removed) {
     // Judgement faded - finalize uptime
     const active = state.activeJudgements.get(key);
     if (active) {

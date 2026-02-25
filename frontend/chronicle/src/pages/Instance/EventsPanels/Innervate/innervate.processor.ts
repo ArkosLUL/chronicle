@@ -5,7 +5,7 @@
  * Spell ID: 29166
  */
 
-import type { PanelProcessor, CastProcessorEvent, ProcessorContext } from "../processorTypes";
+import type { PanelProcessor, AuraCastProcessorEvent, ProcessorContext } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /** Innervate spell ID */
@@ -36,9 +36,9 @@ export interface InnervateResult {
 /**
  * Innervate processor implementation.
  */
-export const innervateProcessor: PanelProcessor<InnervateResult, CastProcessorEvent> = {
+export const innervateProcessor: PanelProcessor<InnervateResult, AuraCastProcessorEvent> = {
   id: "innervate",
-  streams: ["cast"] as StreamType[],
+  streams: ["aura_cast"] as StreamType[],
   
   createState: (): InnervateResult => ({
     casts: [],
@@ -46,22 +46,20 @@ export const innervateProcessor: PanelProcessor<InnervateResult, CastProcessorEv
   
   processEvent: (
     state: InnervateResult,
-    event: CastProcessorEvent,
+    event: AuraCastProcessorEvent,
     encounterID: string,
     firstTimestamp: Date,
     _streamType: StreamType,
     context: ProcessorContext,
   ): void => {
-    // Only process cast events for Innervate
-    if (event.type !== "cast") return;
+    // Only process aura_cast events for Innervate
+    if (event.type !== "aura_cast") return;
     if (event.spell.id !== INNERVATE_SPELL_ID) return;
-    // Only track successful casts (action === 1 is "Casts")
-    if (event.action !== 1) return;
     if (!context.selectedEncounterIds.has(encounterID)) return;
     
     // Get player names from context
     const casterPlayer = context.players[event.caster];
-    const targetPlayer = context.players[event.target];
+    const targetPlayer = event.target ? context.players[event.target] : null;
     
     // Use firstTimestamp.getTime() to get ms (number serializes through worker, Date doesn't)
     const timestampMs = firstTimestamp.getTime() + event.offsetMilli;
@@ -70,8 +68,8 @@ export const innervateProcessor: PanelProcessor<InnervateResult, CastProcessorEv
       timestampMs,
       casterGuid: event.caster,
       casterName: casterPlayer?.name ?? event.caster,
-      targetGuid: event.target,
-      targetName: targetPlayer?.name ?? event.target,
+      targetGuid: event.target ?? event.caster,  // Self-cast if no target
+      targetName: targetPlayer?.name ?? event.target ?? casterPlayer?.name ?? event.caster,
       encounterId: encounterID,
     });
   },

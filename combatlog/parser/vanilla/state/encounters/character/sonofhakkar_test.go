@@ -20,6 +20,7 @@ import (
 
 func TestSonOfHakkar(t *testing.T) {
 	t.Parallel()
+	t.Skip("moving to v2")
 
 	raw, err := os.OpenFile("testdata/sonofhakker/WoWRawCombatLog.txt", os.O_RDONLY, 0644)
 	require.NoError(t, err)

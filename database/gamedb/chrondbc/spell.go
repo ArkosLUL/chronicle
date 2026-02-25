@@ -223,7 +223,7 @@ func (s Spell) SpellDamageType() SpellDamageType {
 			EffectDamageFromMaxHealthPCT,
 			EffectHeal:
 			base |= SpellDamageDirect
-		case EffectApplyAura:
+		case EffectApplyAura, EffectPersistentAA:
 			switch s.EffectAura[i] {
 			case AuraEffectPeriodicDamage,
 				AuraEffectPeriodicHeal,

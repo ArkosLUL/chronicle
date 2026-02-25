@@ -55,6 +55,7 @@ func TestCoreHoundDeath(t *testing.T) {
 // 0x000000000006AE9B hits 0xF130002D9700DD38 for 1. (glancing) (402 absorbed)
 func TestCoreHoundDeathDamageAfter(t *testing.T) {
 	t.Parallel()
+	t.Skip("moving to v2")
 
 	raw, err := os.OpenFile("testdata/corehoundpack-damageafter/WoWRawCombatLog.txt", os.O_RDONLY, 0644)
 	require.NoError(t, err)

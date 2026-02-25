@@ -1,6 +1,11 @@
 package character
 
-import "github.com/Emyrk/chronicle/combatlog/parser/guid"
+import (
+	"time"
+
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+)
 
 func NewKelThuzad(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(
@@ -30,6 +35,98 @@ func NewGrobbulus(id guid.GUID, all *Characters) (Character, bool) {
 
 func NewAnubRekhan(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(15956, 16573, 16698)(id, all)
+}
+
+const (
+	thaddiusEntry = 15928
+	stalaggEntry  = 15929
+	feugenEntry   = 15930
+
+	thaddiusTransitionWindow = 20 * time.Second
+)
+
+type ThaddiusParty struct {
+	*Common
+	all *Characters
+
+	entry        uint32
+	pendingDeath *messages.Message
+}
+
+func NewThaddiusParty(id guid.GUID, all *Characters) (Character, bool) {
+	if !id.IsCreature() {
+		return nil, false
+	}
+
+	entry, ok := id.GetEntry()
+	if !ok {
+		return nil, false
+	}
+
+	switch entry {
+	case thaddiusEntry, stalaggEntry, feugenEntry:
+	default:
+		return nil, false
+	}
+
+	return &ThaddiusParty{
+		Common: NewCommonCharacter(id, all),
+		all:    all,
+		entry:  entry,
+	}, true
+}
+
+func (c *ThaddiusParty) Process(m messages.Message) error {
+	cur, ok := c.Activity.Current()
+	if ok {
+		cur.HandleTimeout(m.Date())
+	}
+
+	c.maybeFinalizePendingDeath(m)
+	return processCommonActivity(c, m)
+}
+
+func (c *ThaddiusParty) Died(reason string, m messages.Message) {
+	if c.isAdd() {
+		c.pendingDeath = &m
+		c.LastSlain = m
+		return
+	}
+	c.Common.Died(reason, m)
+}
+
+func (c *ThaddiusParty) isAdd() bool {
+	return c.entry == stalaggEntry || c.entry == feugenEntry
+}
+
+func (c *ThaddiusParty) thaddiusActive() bool {
+	for _, boss := range c.all.ByEntry[thaddiusEntry] {
+		if boss.IsActive() {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *ThaddiusParty) maybeFinalizePendingDeath(m messages.Message) {
+	if c.pendingDeath == nil {
+		return
+	}
+
+	if c.thaddiusActive() {
+		c.finalizePendingDeath("thaddius_phase_transition", m)
+		return
+	}
+
+	deathTime := (*c.pendingDeath).Date()
+	if m.Date().Sub(deathTime) >= thaddiusTransitionWindow {
+		c.finalizePendingDeath("thaddius_transition_timeout", m)
+	}
+}
+
+func (c *ThaddiusParty) finalizePendingDeath(reason string, m messages.Message) {
+	c.Common.Died(reason, m)
+	c.pendingDeath = nil
 }
 
 // NewDiseasedMaggot is I think the blobs that crawl along the floor?

@@ -40,6 +40,9 @@
 - Sunder casts, add dodge/parry/miss to the sunder `CASTv2` message if the dodge/parry/miss message comes right after
 - First action into encounter panel to see how long it took a player to do something
 
+Look into reflect damage:
+- https://chronicleclassic.com/instances/WGbcG8RUeoRk-8YZ
+- https://www.turtlogs.com/viewer/93232/base?history_state=13
 
 # Guild pages
 

@@ -104,7 +104,7 @@ var (
 	}).New
 
 	Stratholme = (&CommonFactory{
-		Name:     "stratholme",
+		Name:     "Stratholme",
 		ZoneName: ZoneNameMatcher("stratholme"),
 		Hostiles: FromMap(StratholmeHostiles()),
 	}).New

@@ -26,6 +26,7 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Gilneas City": { background: "/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3, abbrev: "Gilneas" },
   "World Bosses": { background: "/images/loadingscreens/LoadScreenRaid.webp", abbrev: "World" },
   // Dungeons
+  "Blackrock Spire": { background: "/images/loadingscreens/LoadScreenBlackrockSpire.webp", abbrev: "BRS" },
   "Upper Blackrock Spire": { background: "/images/loadingscreens/LoadScreenBlackrockSpire.webp", bossCount: 5, abbrev: "UBRS" },
   "Lower Blackrock Spire": { background: "/images/loadingscreens/LoadScreenBlackrockSpire.webp", abbrev: "LBRS" },
   "Deadmines": { background: "/images/loadingscreens/LoadScreenDeadmines.webp", bossCount: 8, abbrev: "DM" },

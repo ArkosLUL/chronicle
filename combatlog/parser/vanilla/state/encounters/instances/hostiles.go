@@ -69,7 +69,6 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		9817:  "Blackhand Dreadweaver",
 		10442: "Chromatic Whelp",
 		10318: "Blackhand Assassin",
-
 		10814: "Chromatic Elite Guard",
 		9818:  "Blackhand Summoner",
 		10680: "Summoned Blackhand Dreadweaver",
@@ -91,6 +90,7 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		10429: "Warchief Rend Blackhand",
 		10339: "Gyth", // Blackhand mount
 		10363: "General Drakkisath",
+		10264: "Solakar Flamewreath",
 	})
 
 	return hostile
@@ -787,6 +787,8 @@ func NaxxramasHostiles() map[uint32]Identity {
 		16028: "Patchwerk",
 		15931: "Grobbulus",
 		15932: "Gluth",
+		15930: "Thaddius", // "Feugen"
+		15929: "Thaddius", // "Stalagg"
 		15928: "Thaddius",
 		15956: "Anub'Rekhan",
 		15953: "Grand Widow Faerlina",

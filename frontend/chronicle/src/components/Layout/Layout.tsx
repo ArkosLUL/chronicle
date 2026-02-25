@@ -4,12 +4,14 @@ import { Footer } from "../Footer/Footer";
 import { Toaster } from "../ui/Sonner/Sonner";
 import { TooltipProvider } from "../ui/Tooltip/tooltip";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { EarlyAccessBanner } from "../EarlyAccessBanner";
 
 export function Layout() {
   usePageTracking();
 
   return (
     <TooltipProvider>
+      <EarlyAccessBanner />
       <NavBar />
       <main>
         <Outlet />

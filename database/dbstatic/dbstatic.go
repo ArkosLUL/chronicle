@@ -22,6 +22,10 @@ func RealmNordanaar() uuid.UUID {
 	return uuid.MustParse("bcf173a7-c94a-49fe-8930-27435d722fb7")
 }
 
+func RealmSouthSeas() uuid.UUID {
+	return uuid.MustParse("ad486d39-31dd-4eb6-a43d-7d469df4ffcf")
+}
+
 func RealmByName(name string) (uuid.UUID, bool) {
 	switch strings.ToLower(name) {
 	case "ambershire":
@@ -30,6 +34,8 @@ func RealmByName(name string) (uuid.UUID, bool) {
 		return RealmTelAbim(), true
 	case "nordanaar":
 		return RealmNordanaar(), true
+	case "south seas":
+		return RealmSouthSeas(), true
 	default:
 		return uuid.UUID{}, false
 	}

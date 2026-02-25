@@ -36,6 +36,23 @@
   75% { opacity: 0.4; transform: scaleX(1); }
 }
 
+/* Mobile encounter FAB pulsing ring effect */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.3818 0.0603 233.7748 / 0.7), 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  70% {
+    box-shadow: 0 0 0 28px oklch(0.3818 0.0603 233.7748 / 0), 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.3818 0.0603 233.7748 / 0), 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
 .magic-particles .particle {
   position: absolute;
   width: var(--size, 3px);

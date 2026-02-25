@@ -29,6 +29,31 @@ import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips
 import { InstanceMenu } from "./InstanceMenu";
 
 // ============================================================================
+// Encounter selector localStorage helpers (7-day expiry)
+// ============================================================================
+
+const ENCOUNTER_SELECTOR_SEEN_KEY = "encounter-selector-seen";
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function hasSeenEncounterSelector(): boolean {
+  try {
+    const stored = localStorage.getItem(ENCOUNTER_SELECTOR_SEEN_KEY);
+    if (!stored) return false;
+    const { expiresAt } = JSON.parse(stored);
+    return Date.now() < expiresAt;
+  } catch {
+    return false;
+  }
+}
+
+function markEncounterSelectorSeen(): void {
+  localStorage.setItem(
+    ENCOUNTER_SELECTOR_SEEN_KEY,
+    JSON.stringify({ expiresAt: Date.now() + SEVEN_DAYS_MS })
+  );
+}
+
+// ============================================================================
 // Formatting helpers
 // ============================================================================
 
@@ -1254,6 +1279,17 @@ export function InstancePageView({
   
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [hasSeenSelector, setHasSeenSelector] = useState(() => hasSeenEncounterSelector());
+  
+  // Handle encounter FAB click - mark as seen and toggle sidebar
+  const handleEncounterButtonClick = () => {
+    if (!hasSeenSelector) {
+      markEncounterSelectorSeen();
+      setHasSeenSelector(true);
+    }
+    setSidebarOpen(!sidebarOpen);
+  };
+
   
   // Close sidebar when switching to mobile view
   useEffect(() => {
@@ -1509,8 +1545,11 @@ export function InstancePageView({
         <Button
           variant="default"
           size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed bottom-8 left-8 z-50 h-14 w-14 rounded-full shadow-lg"
+          onClick={handleEncounterButtonClick}
+          className={cn(
+            "fixed bottom-8 left-8 z-50 h-14 w-14 rounded-full",
+            !hasSeenSelector && !sidebarOpen ? "animate-pulse-ring" : "shadow-lg"
+          )}
           title={sidebarOpen ? "Close encounters" : "Show encounters"}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}

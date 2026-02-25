@@ -114,4 +114,10 @@ var (
 		ZoneName: ZoneNameMatcher("the black morass"),
 		Hostiles: FromMap(TheBlackMorassHostiles()),
 	}).New
+
+  DireMaul = (&CommonFactory{
+    Name:     "Dire Maul",
+    ZoneName: ZoneNameMatcher("dire maul"),
+    Hostiles: FromMap(DireMaulHostiles()),
+  }).New
 )

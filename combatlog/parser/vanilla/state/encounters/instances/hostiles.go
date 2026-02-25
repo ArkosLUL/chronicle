@@ -875,3 +875,38 @@ func TheBlackMorassHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func DireMaulHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		// West
+		11483: "Mana Remnant",
+		11475: "Eldreth Phantasm",
+		11471: "Eldreth Apparition",
+		14400: "Arcane Feedback",
+		11469: "Eldreth Seether",
+		11476: "Skeletal Highborne",
+		11484: "Residual Monstrosity",
+		11466: "Highborne Summoner",
+		11459: "Ironbark Protector",
+		11473: "Eldreth Spectre",
+		14398: "Eldreth Darter",
+		14308: "Ferra",
+		14396: "Eye of Immol'thar",
+		11470: "Eldreth Sorcerer",
+		11489: "Tendris Warpwood",
+		14399: "Arcane Torrent",
+		11472: "Eldreth Spirit",
+		11477: "Rotting Highborne",
+		14370: "Cadaverous Worm",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		// West
+		11488: "Illyanna Ravenoak",
+		11487: "Magister Kalendris",
+		11496: "Immol'thar",
+		11486: "Prince Tortheldrin",
+	})
+	return hostile
+}

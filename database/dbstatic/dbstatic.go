@@ -9,6 +9,7 @@ import (
 func ServerTurtleWoW() uuid.UUID {
 	return uuid.MustParse("10ac9e23-ff74-43ed-83ad-96c123017097")
 }
+func ServerSATurtleWoW() uuid.UUID { return uuid.MustParse("eaa7e20e-ae86-4690-98e0-dde0b9f06cd0") }
 
 func RealmAmbershire() uuid.UUID {
 	return uuid.MustParse("851d2fd3-f9c5-4623-b714-924b59d916aa")

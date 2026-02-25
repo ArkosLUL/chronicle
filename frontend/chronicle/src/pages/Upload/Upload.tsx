@@ -83,23 +83,6 @@ export function UploadView({
         </AlertDescription>
       </Alert>
 
-      {/* Multiboxing Warning */}
-      <Alert className="border-blue-500/50 bg-blue-500/10 text-blue-200 [&>svg]:text-blue-500">
-        <Info className="h-4 w-4" />
-        <AlertTitle className="text-blue-200">Multiboxing?</AlertTitle>
-        <AlertDescription className="text-blue-200/80">
-          <p>
-            If you play multiple characters at the same time, only <b>one character</b> should have 
-            the <code className="bg-blue-500/20 px-1 rounded">ChronicleCompanion</code> and{" "}
-            <code className="bg-blue-500/20 px-1 rounded">SuperWoWLogger</code> addons enabled. 
-            Disable these addons on all other characters to avoid corrupted log data.
-          </p>
-          <p className="mt-2">
-            Run <code className="bg-blue-500/20 px-1 rounded">/script LoggingCombat(0)</code> on 
-            non-logging characters to ensure combat logging is off.
-          </p>
-        </AlertDescription>
-      </Alert>
 
       {/* Auth Check */}
       {!authLoading && !isAuthenticated ? (
@@ -166,11 +149,11 @@ export function UploadView({
           <div className="flex items-center gap-3">
             <Switch
               id="upload-version"
-              checked={useV2Upload}
-              onCheckedChange={onToggleV2Upload}
+              checked={!useV2Upload}
+              onCheckedChange={(checked) => onToggleV2Upload(!checked)}
             />
             <Label htmlFor="upload-version" className="cursor-pointer">
-              Upload V2 (single file)
+              Use legacy upload (two files)
             </Label>
           </div>
 
@@ -494,7 +477,7 @@ export function Upload() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<{ message: string; call_to_action?: string; detail?: string; link?: string; link_text?: string } | null>(null);
   const [success, setSuccess] = useState<{ message: string; logId: string } | null>(null);
-  const [useV2Upload, setUseV2Upload] = useState(false);
+  const [useV2Upload, setUseV2Upload] = useState(true);
 
   const handleToggleV2Upload = useCallback((checked: boolean) => {
     setUseV2Upload(checked);

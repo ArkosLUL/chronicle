@@ -176,7 +176,7 @@ CREATE VIEW chronicle_users AS
    FROM ((public.users u
      LEFT JOIN user_storage_limits sl ON ((sl.user_id = u.id)))
      LEFT JOIN ( SELECT log_file.owner,
-            sum(log_file.size_bytes) AS total_size_bytes
+            sum(COALESCE(log_file.compressed_size_bytes, log_file.size_bytes)) AS total_size_bytes
            FROM log_file
           WHERE (log_file.storage_deleted_at IS NULL)
           GROUP BY log_file.owner) lf ON ((lf.owner = u.id)));

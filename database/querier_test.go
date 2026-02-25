@@ -42,6 +42,60 @@ func TestDatabaseWorks(t *testing.T) {
 		require.Equal(t, "random", user.Username)
 	})
 
+	t.Run("Consumed storage uses compressed size when available", func(t *testing.T) {
+		t.Parallel()
+		ctx := testutil.Context(t, testutil.WaitShort)
+
+		userID := uuid.New()
+		_, err := db.InsertUser(ctx, database.InsertUserParams{
+			ID:       userID,
+			Username: "storage-user",
+			Email:    "storage-user@example.com",
+		})
+		require.NoError(t, err)
+
+		now := time.Now()
+		logGroupID := uuid.New()
+		_, err = db.InsertWoWLogGroup(ctx, database.InsertWoWLogGroupParams{
+			ID:        logGroupID,
+			Owner:     userID,
+			LogType:   database.LogTypeV1,
+			CreatedAt: database.Timestamptz(now),
+			UpdatedAt: database.Timestamptz(now),
+		})
+		require.NoError(t, err)
+
+		compressedSize := int64(400)
+		_, err = db.InsertLogFile(ctx, database.InsertLogFileParams{
+			ID:                  uuid.New(),
+			Owner:               userID,
+			Hash:                uuid.NewString(),
+			WowLogID:            logGroupID,
+			SizeBytes:           1000,
+			MimeType:            "text/plain",
+			CompressedSizeBytes: database.Int8(&compressedSize),
+			CreatedAt:           database.Timestamptz(now),
+			UpdatedAt:           database.Timestamptz(now),
+		})
+		require.NoError(t, err)
+
+		_, err = db.InsertLogFile(ctx, database.InsertLogFileParams{
+			ID:        uuid.New(),
+			Owner:     userID,
+			Hash:      uuid.NewString(),
+			WowLogID:  logGroupID,
+			SizeBytes: 200,
+			MimeType:  "text/plain",
+			CreatedAt: database.Timestamptz(now),
+			UpdatedAt: database.Timestamptz(now),
+		})
+		require.NoError(t, err)
+
+		user, err := db.GetUserByID(ctx, userID)
+		require.NoError(t, err)
+		require.Equal(t, int64(600), user.ConsumedStorageBytes)
+	})
+
 	t.Run("Basic pubsub", func(t *testing.T) {
 		t.Parallel()
 		ctx := testutil.Context(t, testutil.WaitShort)

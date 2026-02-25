@@ -178,8 +178,12 @@ export function YouTubeSyncPage() {
   const [chronicleUrl, setChronicleUrl] = useState(window.location.origin)
   const [instanceId, setInstanceId] = useState("")
   const [chronicleExporting, setChronicleExporting] = useState(false)
+  const localOffsetHours = (() => {
+    const offset = -new Date().getTimezoneOffset() / 60
+    return Number.isFinite(offset) ? offset : 0
+  })()
   // Time offset in hours to convert server_time to UTC (e.g., 1 means server is UTC+1)
-  const [timeOffsetHours, setTimeOffsetHours] = useState(0)
+  const [timeOffsetHours, setTimeOffsetHours] = useState(localOffsetHours)
 
   // Refs
   const playerRef = useRef<YTPlayer | null>(null)
@@ -1151,7 +1155,7 @@ export function YouTubeSyncPage() {
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Server timezone offset from UTC (e.g., 1 for CET).
-                        Your local offset: UTC{new Date().getTimezoneOffset() <= 0 ? "+" : ""}{-new Date().getTimezoneOffset() / 60}
+                        Your local offset: UTC{localOffsetHours >= 0 ? "+" : ""}{localOffsetHours}
                       </p>
                     </div>
                   </div>

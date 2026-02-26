@@ -125,6 +125,41 @@ func (api *API) WoWLogDeleteGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	httpapi.Write(ctx, w, http.StatusNoContent, nil)
 }
+
+func (api *API) WoWLogDeleteInstance(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logID := httpmw.LogID(ctx)
+	instanceID, err := uuid.Parse(chi.URLParam(r, "instance_id"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid instance ID",
+			Detail:  err.Error(),
+		})
+		return
+	}
+	actor, _ := authz.ActorFromContext(ctx)
+
+	ok, err := api.Zed.CheckOne(ctx, nil, policy.New().Raid_log(logID).CanDelete_User(actor))
+	if err != nil || !ok {
+		httpapi.Forbidden(w, err)
+		return
+	}
+
+	err = api.Chronicle.DeleteWoWLogInstance(ctx, logID, instanceID)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to delete instance",
+				Detail:  err.Error(),
+			},
+			Status: http.StatusInternalServerError,
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusNoContent, nil)
+}
+
 func (api *API) WoWLogFileDownload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	fileID, err := uuid.Parse(chi.URLParam(r, "fileID"))

@@ -181,6 +181,7 @@ func (api *API) Routes() chi.Router {
 						r.Group(func(r chi.Router) {
 							r.Post("/reparse", api.WoWLogReparse)
 							r.Delete("/delete-files", api.DeleteWoWLogFiles)
+							r.Delete("/instances/{instance_id}", api.WoWLogDeleteInstance)
 						})
 						r.Get("/", api.WoWLogGroup)
 						r.Get("/files/{fileID}/download", api.WoWLogFileDownload)

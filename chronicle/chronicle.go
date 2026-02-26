@@ -4,7 +4,9 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,6 +29,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -401,6 +404,29 @@ func (c *Chronicle) DeleteWoWLogGroupFiles(ctx context.Context, logID uuid.UUID)
 	})
 	if err != nil {
 		return fmt.Errorf("delete log group files: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Chronicle) DeleteWoWLogInstance(ctx context.Context, logID, instanceID uuid.UUID) error {
+	_, err := c.Zed.DeleteLogInstanceByIDAndGroup(ctx, database.DeleteLogInstanceByIDAndGroupParams{
+		ID:         instanceID,
+		LogGroupID: logID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return sql.ErrNoRows
+		}
+		return fmt.Errorf("delete log instance: %w", err)
+	}
+
+	err = c.Zed.PruneParsedInstanceFromLogOutput(ctx, database.PruneParsedInstanceFromLogOutputParams{
+		InstanceID: instanceID.String(),
+		LogGroupID: logID.String(),
+	})
+	if err != nil {
+		return fmt.Errorf("prune deleted instance from output: %w", err)
 	}
 
 	return nil

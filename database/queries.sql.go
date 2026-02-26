@@ -1458,6 +1458,28 @@ func (q *sqlQuerier) DeleteAllParsedLogsByGroupID(ctx context.Context, id uuid.U
 	return err
 }
 
+const deleteLogInstanceByIDAndGroup = `-- name: DeleteLogInstanceByIDAndGroup :one
+DELETE FROM
+  log_instances
+WHERE
+  id = $1
+  AND log_group_id = $2
+RETURNING
+  id
+`
+
+type DeleteLogInstanceByIDAndGroupParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
+}
+
+func (q *sqlQuerier) DeleteLogInstanceByIDAndGroup(ctx context.Context, arg DeleteLogInstanceByIDAndGroupParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, deleteLogInstanceByIDAndGroup, arg.ID, arg.LogGroupID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const encountersByInstanceID = `-- name: EncountersByInstanceID :many
 SELECT
   id, instance_id, name, remaining, boss, start_time, end_time, kill_type
@@ -2024,6 +2046,41 @@ func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRe
 		return nil, err
 	}
 	return items, nil
+}
+
+const pruneParsedInstanceFromLogOutput = `-- name: PruneParsedInstanceFromLogOutput :exec
+UPDATE
+  river_job
+SET
+  metadata = jsonb_set(
+    metadata,
+    '{output,instances}',
+    COALESCE(
+      (
+        SELECT
+          jsonb_agg(elem)
+        FROM
+          jsonb_array_elements(COALESCE(metadata -> 'output' -> 'instances', '[]'::jsonb)) AS elem
+        WHERE
+          elem ->> 'id' <> $1::text
+      ),
+      '[]'::jsonb
+    ),
+    true
+  )
+WHERE
+  args ->> 'log_group_id' = $2::text
+  AND kind = 'log-parse'
+`
+
+type PruneParsedInstanceFromLogOutputParams struct {
+	InstanceID string `db:"instance_id" json:"instance_id"`
+	LogGroupID string `db:"log_group_id" json:"log_group_id"`
+}
+
+func (q *sqlQuerier) PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error {
+	_, err := q.db.Exec(ctx, pruneParsedInstanceFromLogOutput, arg.InstanceID, arg.LogGroupID)
+	return err
 }
 
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one

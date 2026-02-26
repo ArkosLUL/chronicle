@@ -107,6 +107,11 @@ const defaultProps = {
   onDeleteFiles: () => console.log("Delete files clicked"),
   isDeletingFiles: false,
   canDeleteFiles: true,
+  canDownloadFiles: true,
+  canUploadYoutube: true,
+  canDeleteInstance: true,
+  onDeleteInstance: () => console.log("Delete instance clicked"),
+  isDeletingInstance: false,
   onRefresh: () => console.log("Refresh clicked"),
   isRefreshing: false,
 };

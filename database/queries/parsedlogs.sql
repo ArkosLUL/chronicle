@@ -5,6 +5,41 @@ WHERE
   id = $1
 ;
 
+-- name: DeleteLogInstanceByIDAndGroup :one
+DELETE FROM
+  log_instances
+WHERE
+  id = $1
+  AND log_group_id = $2
+RETURNING
+  id
+;
+
+-- name: PruneParsedInstanceFromLogOutput :exec
+UPDATE
+  river_job
+SET
+  metadata = jsonb_set(
+    metadata,
+    '{output,instances}',
+    COALESCE(
+      (
+        SELECT
+          jsonb_agg(elem)
+        FROM
+          jsonb_array_elements(COALESCE(metadata -> 'output' -> 'instances', '[]'::jsonb)) AS elem
+        WHERE
+          elem ->> 'id' <> sqlc.arg(instance_id)::text
+      ),
+      '[]'::jsonb
+    ),
+    true
+  )
+WHERE
+  args ->> 'log_group_id' = sqlc.arg(log_group_id)::text
+  AND kind = 'log-parse'
+;
+
 -- name: InsertParsedLogGroup :exec
 INSERT INTO
   parsed_log_group (id)

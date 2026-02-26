@@ -29,6 +29,16 @@ func (z *interceptor) DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	return z.Store.DeleteWoWLogGroup(ctx, id)
 }
 
+func (z *interceptor) DeleteLogInstanceByIDAndGroup(ctx context.Context, arg database.DeleteLogInstanceByIDAndGroupParams) (uuid.UUID, error) {
+	b := policy.New().Instance(arg.ID).Object()
+	f := rel.NewFilter(b.Typ, b.ID, "")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("delete authz relations: %w", err)
+	}
+	return z.Store.DeleteLogInstanceByIDAndGroup(ctx, arg)
+}
+
 func (z *interceptor) InsertEncounterCharacterFights(ctx context.Context, arg []database.InsertEncounterCharacterFightsParams) *database.InsertEncounterCharacterFightsBatchResults {
 	return z.Store.InsertEncounterCharacterFights(ctx, arg)
 }

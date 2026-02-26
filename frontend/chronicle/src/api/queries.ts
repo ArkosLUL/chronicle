@@ -204,6 +204,34 @@ export function useDeleteLogGroup() {
   });
 }
 
+export interface DeleteLogInstanceOptions {
+  logId: string;
+  instanceId: string;
+}
+
+export function useDeleteLogInstance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ logId, instanceId }: DeleteLogInstanceOptions) => {
+      const response = await fetch(`/api/v1/raidlogs/logs/${logId}/instances/${instanceId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to delete instance" }));
+        throw new Error(error.message || "Failed to delete instance");
+      }
+      return { logId, instanceId };
+    },
+    onSuccess: ({ logId, instanceId }) => {
+      queryClient.invalidateQueries({ queryKey: ["logGroup", logId] });
+      queryClient.invalidateQueries({ queryKey: ["logGroups"] });
+      queryClient.removeQueries({ queryKey: ["instance", instanceId] });
+      queryClient.removeQueries({ queryKey: ["instanceYoutube", instanceId] });
+    },
+  });
+}
+
 export interface ReparseLogGroupOptions {
   logId: string;
   /** Enable debug mode annotations in parsed output */

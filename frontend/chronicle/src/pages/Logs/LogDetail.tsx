@@ -42,6 +42,7 @@ import {
   useDeleteLogGroup, 
   useReparseLogGroup,
   useDeleteLogFiles,
+  useDeleteLogInstance,
   useAuthorizationCheck,
   useUploadInstanceYoutube,
   type WoWLogGroupState, 
@@ -330,9 +331,15 @@ function BossEncounterRow({ encounter }: { encounter: WoWEncounter }) {
 function InstanceCard({ 
   instance, 
   canUploadYoutube,
+  canDeleteInstance,
+  onDeleteInstance,
+  isDeletingInstance,
 }: { 
   instance: WoWSimpleParsedInstance;
   canUploadYoutube: boolean;
+  canDeleteInstance: boolean;
+  onDeleteInstance: (instanceId: string, instanceName: string) => void;
+  isDeletingInstance: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadInstanceYoutube();
@@ -400,6 +407,27 @@ function InstanceCard({
                 </Button>
               </>
             )}
+            {canDeleteInstance && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Delete parsed instance "${instance.name}"? This keeps the log group but removes this instance and its encounters.`
+                  );
+                  if (!confirmed) return;
+                  onDeleteInstance(instance.id, instance.name);
+                }}
+                disabled={isDeletingInstance}
+              >
+                {isDeletingInstance ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
             <Link to={instanceUrl}>
               <Button variant="outline" size="sm" className="h-7 text-xs">
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
@@ -463,9 +491,15 @@ function InstanceCard({
 function ParsedInstancesSection({ 
   log,
   canUploadYoutube,
+  canDeleteInstance,
+  onDeleteInstance,
+  isDeletingInstance,
 }: { 
   log: WoWLogGroupState;
   canUploadYoutube: boolean;
+  canDeleteInstance: boolean;
+  onDeleteInstance: (instanceId: string, instanceName: string) => void;
+  isDeletingInstance: boolean;
 }) {
   const parsedOutput = parseLogParseOutput(log.status.output, log.status.kind);
   
@@ -497,7 +531,14 @@ function ParsedInstancesSection({
       ) : (
         <div className="space-y-4">
           {instances.map((instance) => (
-            <InstanceCard key={instance.id} instance={instance} canUploadYoutube={canUploadYoutube} />
+            <InstanceCard
+              key={instance.id}
+              instance={instance}
+              canUploadYoutube={canUploadYoutube}
+              canDeleteInstance={canDeleteInstance}
+              onDeleteInstance={onDeleteInstance}
+              isDeletingInstance={isDeletingInstance}
+            />
           ))}
           
           {hasFailures && (
@@ -538,6 +579,9 @@ export interface LogDetailViewProps {
   canDeleteFiles: boolean;
   canDownloadFiles: boolean;
   canUploadYoutube: boolean;
+  canDeleteInstance: boolean;
+  onDeleteInstance: (instanceId: string, instanceName: string) => void;
+  isDeletingInstance: boolean;
   onRefresh: () => void;
   isRefreshing: boolean;
 }
@@ -560,6 +604,9 @@ export function LogDetailView({
   canDeleteFiles,
   canDownloadFiles,
   canUploadYoutube,
+  canDeleteInstance,
+  onDeleteInstance,
+  isDeletingInstance,
   onRefresh,
   isRefreshing,
 }: LogDetailViewProps) {
@@ -829,7 +876,13 @@ export function LogDetailView({
           </Card>
 
           {/* Parsed Instances Section - only shows for log-parse jobs with output */}
-          <ParsedInstancesSection log={log} canUploadYoutube={canUploadYoutube} />
+          <ParsedInstancesSection
+            log={log}
+            canUploadYoutube={canUploadYoutube}
+            canDeleteInstance={canDeleteInstance}
+            onDeleteInstance={onDeleteInstance}
+            isDeletingInstance={isDeletingInstance}
+          />
 
           {/* Files Card */}
           <Card className="p-6">
@@ -1070,11 +1123,13 @@ export function LogDetail() {
   const deleteLogGroup = useDeleteLogGroup();
   const reparseLogGroup = useReparseLogGroup();
   const deleteLogFiles = useDeleteLogFiles();
+  const deleteLogInstance = useDeleteLogInstance();
 
   // Check permissions
   const authzChecks = useMemo(() => ({
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
+    delete: `raid_log:${logId}#delete`,
     uploadYoutube: "chronicle:chronicle#upload_youtube",
     adminLogs: "chronicle:chronicle#admin_logs",
   }), [logId]);
@@ -1083,6 +1138,7 @@ export function LogDetail() {
   });
   const canReparse = authz?.reparse ?? false;
   const canDeleteFiles = authz?.deleteFiles ?? false;
+  const canDeleteInstance = authz?.delete ?? false;
   const canDownloadFiles = authz?.adminLogs ?? false;
   const canUploadYoutube = authz?.uploadYoutube ?? false;
 
@@ -1137,6 +1193,21 @@ export function LogDetail() {
     });
   };
 
+  const handleDeleteInstance = (instanceId: string, instanceName: string) => {
+    if (!logId) return;
+    deleteLogInstance.mutate({ logId, instanceId }, {
+      onSuccess: () => {
+        toast.success(`Deleted instance: ${instanceName}`);
+        refetch();
+      },
+      onError: (error) => {
+        toast.error("Failed to delete instance", {
+          description: error.message,
+        });
+      },
+    });
+  };
+
   const handleRefresh = () => {
     refetch();
   };
@@ -1160,6 +1231,9 @@ export function LogDetail() {
       canDeleteFiles={canDeleteFiles}
       canDownloadFiles={canDownloadFiles}
       canUploadYoutube={canUploadYoutube}
+      canDeleteInstance={canDeleteInstance}
+      onDeleteInstance={handleDeleteInstance}
+      isDeletingInstance={deleteLogInstance.isPending}
       onRefresh={handleRefresh}
       isRefreshing={isRefetching}
     />
@@ -1187,11 +1261,28 @@ export function LogDetailByHash() {
   const deleteLogGroup = useDeleteLogGroup();
   const reparseLogGroup = useReparseLogGroup();
   const deleteLogFiles = useDeleteLogFiles();
+  const deleteLogInstance = useDeleteLogInstance();
+
+  const handleDeleteInstance = (instanceId: string, instanceName: string) => {
+    if (!logId) return;
+    deleteLogInstance.mutate({ logId, instanceId }, {
+      onSuccess: () => {
+        toast.success(`Deleted instance: ${instanceName}`);
+        refetch();
+      },
+      onError: (error) => {
+        toast.error("Failed to delete instance", {
+          description: error.message,
+        });
+      },
+    });
+  };
 
   // Check permissions (only when we have the logId)
   const authzChecks = useMemo(() => ({
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
+    delete: `raid_log:${logId}#delete`,
     uploadYoutube: "chronicle:chronicle#upload_youtube",
     adminLogs: "chronicle:chronicle#admin_logs",
   }), [logId]);
@@ -1200,6 +1291,7 @@ export function LogDetailByHash() {
   });
   const canReparse = authz?.reparse ?? false;
   const canDeleteFiles = authz?.deleteFiles ?? false;
+  const canDeleteInstance = authz?.delete ?? false;
   const canDownloadFiles = authz?.adminLogs ?? false;
   const canUploadYoutube = authz?.uploadYoutube ?? false;
 
@@ -1277,6 +1369,9 @@ export function LogDetailByHash() {
       canDeleteFiles={canDeleteFiles}
       canDownloadFiles={canDownloadFiles}
       canUploadYoutube={canUploadYoutube}
+      canDeleteInstance={canDeleteInstance}
+      onDeleteInstance={handleDeleteInstance}
+      isDeletingInstance={deleteLogInstance.isPending}
       onRefresh={handleRefresh}
       isRefreshing={isRefetching}
     />

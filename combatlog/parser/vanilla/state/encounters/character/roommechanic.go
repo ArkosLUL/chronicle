@@ -111,6 +111,14 @@ func (c *RoomMechanic) Process(m messages.Message) error {
 	return nil
 }
 
+func (c *RoomMechanic) Start(reason string, m messages.Message) {
+	if c.entry != c.bossEntry && c.room != nil && c.room.boss != nil {
+		// Bump the boss too if they exist
+		c.room.boss.Bump(reason, m)
+	}
+	c.Common.Start(reason, m)
+}
+
 func (c *RoomMechanic) Bump(reason string, m messages.Message) {
 	if c.entry != c.bossEntry && c.room != nil && c.room.boss != nil {
 		// Bump the boss too if they exist

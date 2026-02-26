@@ -45,12 +45,12 @@ var characterFactories = []characterFactory{
 	// AQ 40
 	NewCthun,
 	// Naxx,
-	NewKelThuzadRoom,
 	NewGluth,
 	NewGrobbulus,
 	NewAnubRekhan,
 	NewThaddiusParty,
 	NewGothikRoom,
+	NewKelThuzadRoom,
 	//NewDiseasedMaggot,
 	// Kara 40
 	NewKruul,

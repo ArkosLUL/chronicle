@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -14,6 +15,10 @@ import (
 
 type Consumer interface {
 	Process(m messages.Message) error
+}
+
+type detailedTimingConsumer interface {
+	DetailedTimes() map[string]time.Duration
 }
 
 type Consumers struct {
@@ -32,7 +37,17 @@ func New(logger *slog.Logger, consumers ...Consumer) *Consumers {
 }
 
 func (c Consumers) Times() map[string]time.Duration {
-	return c.time
+	times := maps.Clone(c.time)
+	for _, consumer := range c.list {
+		detailedTimes, ok := consumer.(detailedTimingConsumer)
+		if !ok {
+			continue
+		}
+		for name, duration := range detailedTimes.DetailedTimes() {
+			times[name] += duration
+		}
+	}
+	return times
 }
 
 type Advancer interface {

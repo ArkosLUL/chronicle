@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
+	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -12,6 +14,30 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 )
+
+type detailedTimingInstance interface {
+	DetailedTimes() map[string]time.Duration
+}
+
+type timingAccumulator struct {
+	data map[string]time.Duration
+}
+
+func newTimingAccumulator(keys ...string) *timingAccumulator {
+	data := make(map[string]time.Duration, len(keys))
+	for _, key := range keys {
+		data[key] = 0
+	}
+	return &timingAccumulator{data: data}
+}
+
+func (t *timingAccumulator) Add(name string, duration time.Duration) {
+	t.data[name] += duration
+}
+
+func (t *timingAccumulator) Snapshot() map[string]time.Duration {
+	return maps.Clone(t.data)
+}
 
 type State struct {
 	logger *slog.Logger
@@ -27,6 +53,7 @@ type State struct {
 
 	reg     *registry.Registry
 	verbose bool
+	timings *timingAccumulator
 }
 
 func New(ctx context.Context, logger *slog.Logger) *State {
@@ -37,14 +64,26 @@ func New(ctx context.Context, logger *slog.Logger) *State {
 		reg:         registry.DefaultRegistry(logger),
 		Instances:   make([]instances.Instance, 0),
 		verbose:     parseoptions.IsVerbose(ctx),
+		timings: newTimingAccumulator(
+			"encounter_state.total",
+			"encounter_state.zone",
+			"encounter_state.instance_process",
+		),
 	}
 	return s
 }
 
 func (s *State) Process(m messages.Message) error {
+	totalStart := time.Now()
+	defer func() {
+		s.timings.Add("encounter_state.total", time.Since(totalStart))
+	}()
+
 	switch typed := m.(type) {
 	case *messages.Zone:
+		zoneStart := time.Now()
 		s.Zone(*typed)
+		s.timings.Add("encounter_state.zone", time.Since(zoneStart))
 	case *messages.Damage:
 		//s.Damage(typed)
 	case *messages.Cast:
@@ -57,14 +96,29 @@ func (s *State) Process(m messages.Message) error {
 		//s.Slain(typed)
 	}
 
-	// encounter processing would go here
 	if s.CurrentInstance != nil {
+		instanceStart := time.Now()
 		err := s.CurrentInstance.Process(m)
+		s.timings.Add("encounter_state.instance_process", time.Since(instanceStart))
 		if err != nil {
 			return fmt.Errorf("instance process: %w", err)
 		}
 	}
 	return nil
+}
+
+func (s *State) DetailedTimes() map[string]time.Duration {
+	times := s.timings.Snapshot()
+	for _, instance := range s.Instances {
+		detailedTimes, ok := instance.(detailedTimingInstance)
+		if !ok {
+			continue
+		}
+		for name, duration := range detailedTimes.DetailedTimes() {
+			times[name] += duration
+		}
+	}
+	return times
 }
 
 func (s *State) Combatant(c messages.Combatant) {

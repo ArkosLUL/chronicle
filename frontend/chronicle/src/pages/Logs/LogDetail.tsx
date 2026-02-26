@@ -280,7 +280,9 @@ function TimingSection({ report }: { report: LogParseReport }) {
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-2">Consumer Processing</h4>
               <div className="grid gap-2 text-sm">
-                {Object.entries(report.consumer_times).map(([name, duration]) => (
+                {Object.entries(report.consumer_times)
+                  .sort(([left], [right]) => left.localeCompare(right))
+                  .map(([name, duration]) => (
                   <div key={name} className="flex justify-between p-2 bg-muted/50 rounded">
                     <span className="font-mono text-xs">{name}</span>
                     <span className="font-mono">{formatMs(duration)}</span>

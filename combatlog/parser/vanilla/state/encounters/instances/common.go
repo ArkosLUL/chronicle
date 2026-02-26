@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
+	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -22,6 +24,26 @@ import (
 )
 
 var _ Instance = (*Common)(nil)
+
+type timingAccumulator struct {
+	data map[string]time.Duration
+}
+
+func newTimingAccumulator(keys ...string) *timingAccumulator {
+	data := make(map[string]time.Duration, len(keys))
+	for _, key := range keys {
+		data[key] = 0
+	}
+	return &timingAccumulator{data: data}
+}
+
+func (t *timingAccumulator) Add(name string, duration time.Duration) {
+	t.data[name] += duration
+}
+
+func (t *timingAccumulator) Snapshot() map[string]time.Duration {
+	return maps.Clone(t.data)
+}
 
 // Common is used for instances that have no custom mechanics beyond character
 // mechanics.
@@ -47,6 +69,7 @@ type Common struct {
 	// General summaries
 	Guild     *guild.Tracker
 	SpellBook *spellbook.Tracker
+	timings   *timingAccumulator
 }
 
 type FinalizedInstance struct {
@@ -184,6 +207,14 @@ func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb
 		Guild:         guild.New(),
 		SpellBook:     spellbook.New(),
 		verbose:       parseoptions.IsVerbose(ctx),
+		timings: newTimingAccumulator(
+			"encounter_state.characters_process",
+			"encounter_state.fight_detection",
+			"encounter_state.events_process",
+			"encounter_state.guild_process",
+			"encounter_state.spellbook_process",
+			"encounter_state.fight_finalize",
+		),
 	}
 
 	return c
@@ -199,6 +230,10 @@ func (c *Common) CharactersList() map[guid.GUID]character.Character {
 
 func (c *Common) Name() string {
 	return c.name
+}
+
+func (c *Common) DetailedTimes() map[string]time.Duration {
+	return c.timings.Snapshot()
 }
 
 func (c *Common) MatchesZone(z zone.Zone) bool {
@@ -225,13 +260,17 @@ func (c *Common) Process(m messages.Message) error {
 		}
 	}
 
+	charactersStart := time.Now()
 	actChange, err := c.Characters.Process(m)
+	c.timings.Add("encounter_state.characters_process", time.Since(charactersStart))
 	if err != nil {
 		return fmt.Errorf("processing characters: %w", err)
 	}
 
 	if actChange {
+		fightDetectionStart := time.Now()
 		err = c.FightDetectionHandler(m)
+		c.timings.Add("encounter_state.fight_detection", time.Since(fightDetectionStart))
 		if err != nil {
 			return fmt.Errorf("processing fight: %w", err)
 		}
@@ -245,18 +284,24 @@ func (c *Common) Process(m messages.Message) error {
 		}
 
 		// Inside a fight, record all events.
+		eventsStart := time.Now()
 		err = c.currentFight.Events.Process(m)
+		c.timings.Add("encounter_state.events_process", time.Since(eventsStart))
 		if err != nil {
 			return fmt.Errorf("processing encounter messages: %w", err)
 		}
 	}
 
+	guildStart := time.Now()
 	err = c.Guild.Process(m)
+	c.timings.Add("encounter_state.guild_process", time.Since(guildStart))
 	if err != nil {
 		return fmt.Errorf("processing guild info: %w", err)
 	}
 
+	spellbookStart := time.Now()
 	err = c.SpellBook.Process(m)
+	c.timings.Add("encounter_state.spellbook_process", time.Since(spellbookStart))
 	if err != nil {
 		return fmt.Errorf("processing spell info: %w", err)
 	}
@@ -353,7 +398,9 @@ func (c *Common) FightDetectionHandler(m messages.Message) error {
 	// Now handle the end time
 	if activeTotal == 0 {
 		c.currentFight.End = latestEnd
+		finalizeFightStart := time.Now()
 		err := c.finalizeFight()
+		c.timings.Add("encounter_state.fight_finalize", time.Since(finalizeFightStart))
 		if err != nil {
 			return fmt.Errorf("finalizing fight: %w", err)
 		}

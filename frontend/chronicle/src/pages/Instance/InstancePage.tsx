@@ -132,7 +132,7 @@ function InstancePageInner({
   rawEncounters,
 }: {
   instance: Instance;
-  selectedEncounterIds: string[];
+  selectedEncounterIds?: string[];
   onSelectEncounters: (ids: string[] | null) => void;
   youtubeData: { url: string; results: readonly import("@/api/typesGenerated").VideoTimestamp[] } | null | undefined;
   selectedEncounterTimes: { start: string | undefined; end: string | undefined };
@@ -311,7 +311,7 @@ export function InstancePage() {
       <InstanceEventsProvider instanceId={instance.id}>
         <InstancePageInner
           instance={instance}
-          selectedEncounterIds={selectedEncounterIds}
+          selectedEncounterIds={userSelectedEncounterIds ?? undefined}
           onSelectEncounters={setUserSelectedEncounterIds}
           youtubeData={youtubeData}
           selectedEncounterTimes={selectedEncounterTimes}

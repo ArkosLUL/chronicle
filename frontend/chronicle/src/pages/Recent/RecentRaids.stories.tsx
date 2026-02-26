@@ -17,11 +17,12 @@ function generateMockInstances(count: number, startIndex = 0): RecentInstance[] 
     { name: "Temple of Ahn'Qiraj", bossCount: 9, playerRange: [35, 40] },
     { name: "Naxxramas", bossCount: 15, playerRange: [35, 40] },
     { name: "World Bosses", bossCount: 4, playerRange: [30, 60] },
-    { name: "Stratholme", bossCount: 5, playerRange: [4, 5] },
-    { name: "Scholomance", bossCount: 6, playerRange: [4, 5] },
-    { name: "Upper Blackrock Spire", bossCount: 7, playerRange: [8, 10] },
-    { name: "Lower Blackrock Spire", bossCount: 6, playerRange: [8, 10] },
-    { name: "Dire Maul", bossCount: 5, playerRange: [4, 5] },
+    { name: "Stratholme", bossCount: 5, playerRange: [1, 5] },
+    { name: "Scholomance", bossCount: 6, playerRange: [1, 5] },
+    { name: "Black Morass", bossCount: 7, playerRange: [1, 5] },
+    // { name: "Blackrock Spire", bossCount: 7, playerRange: [8, 10] },
+    // { name: "Blackrock Spire", bossCount: 6, playerRange: [8, 10] },
+    { name: "Dire Maul", bossCount: 5, playerRange: [1, 5] },
   ];
 
   const uploaders = [

@@ -64,6 +64,10 @@ func (s *Service) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("create chronicle bot: %w", err)
 	}
+	if err := bot.RegisterCommands(chroniclebot.DefaultCommands(bot)); err != nil {
+		return fmt.Errorf("register discord commands: %w", err)
+	}
+
 	s.bot = bot
 
 	return nil

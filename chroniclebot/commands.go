@@ -57,6 +57,7 @@ func (b *Bot) RegisterCommands(commands []Command) error {
 		)
 	}
 
+	var _ = registeredCommands
 	// Store cleanup function to remove commands on shutdown
 	b.handlers = append(b.handlers, func() {
 		// Deleting the command breaks any multi instance support.

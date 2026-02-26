@@ -207,6 +207,9 @@ func (c *Common) MatchesZone(z zone.Zone) bool {
 
 func (c *Common) Process(m messages.Message) error {
 	switch msg := m.(type) {
+	case *messages.NewOwner:
+		// Can happen from example enslave demons
+		c.db.UpdateOwner(msg.Target, msg.NewOwner)
 	case *messages.Realm:
 		if c.realm != nil {
 			if c.realm.RealmName != msg.RealmName {

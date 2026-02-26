@@ -476,3 +476,14 @@ func TimedOut(ts time.Time) Message {
 
 func (t Timeout) Affects() []guid.GUID { return []guid.GUID{} }
 func (*Timeout) isMessage()            {}
+
+// NewOwner can be used to change the owner of a given unit.
+// Useful for enslave demon
+type NewOwner struct {
+	MessageBase
+	Target   guid.GUID
+	NewOwner guid.GUID
+}
+
+func (t NewOwner) Affects() []guid.GUID { return []guid.GUID{t.NewOwner, t.Target} }
+func (*NewOwner) isMessage()            {}

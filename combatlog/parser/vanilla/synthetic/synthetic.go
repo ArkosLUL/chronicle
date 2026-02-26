@@ -14,6 +14,7 @@ type Synthetic struct {
 	slain       *slainDetective
 	mitigation  *mitigator
 	extraAttack *extraAttack
+	demons      *enslaveDemon
 	wowDB       gamedb.SpellFetcher
 }
 
@@ -23,6 +24,7 @@ func New(logger *slog.Logger, wowDB gamedb.SpellFetcher) *Synthetic {
 		slain:       newSlainDetective(),
 		mitigation:  newMitigator(logger, wowDB),
 		extraAttack: newExtraAttack(logger, wowDB),
+		demons:      newEnslaveDemon(logger),
 		wowDB:       wowDB,
 	}
 }
@@ -33,6 +35,7 @@ func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message
 	}
 
 	msgs = s.extraAttack.ProcessMessage(msgs)
+	msgs = s.demons.ProcessMessages(msgs)
 
 	return msgs, nil
 }

@@ -19,6 +19,13 @@ func New() *Units {
 	}
 }
 
+func (us *Units) UpdateOwner(target guid.GUID, owner guid.GUID) {
+  if info, ok := us.Info[target]; ok {
+    info.Owner = &owner
+    us.Info[target] = info
+  }
+}
+
 func (us *Units) Get(gid guid.GUID) (unitinfo.Info, bool) {
 	u, ok := us.Info[gid]
 	return u, ok

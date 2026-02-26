@@ -50,6 +50,7 @@ var characterFactories = []characterFactory{
 	NewGrobbulus,
 	NewAnubRekhan,
 	NewThaddiusParty,
+	NewGothikRoom,
 	//NewDiseasedMaggot,
 	// Kara 40
 	NewKruul,
@@ -68,16 +69,31 @@ type Characters struct {
 	db      *unitdb.Units
 
 	// active is a quick lookup for active characters
-	active map[guid.GUID]struct{}
+	active      map[guid.GUID]struct{}
+	sharedState map[string]any
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {
 	return &Characters{
-		db:      db,
-		All:     NewOrdererCharacters(),
-		ByEntry: make(map[uint32][]Character),
-		active:  make(map[guid.GUID]struct{}),
+		db:          db,
+		All:         NewOrdererCharacters(),
+		ByEntry:     make(map[uint32][]Character),
+		active:      make(map[guid.GUID]struct{}),
+		sharedState: make(map[string]any),
 	}
+}
+
+func (c *Characters) Save(key string, value any) {
+	c.sharedState[key] = value
+}
+
+func (c *Characters) Load(key string) (any, bool) {
+	val, ok := c.sharedState[key]
+	return val, ok
+}
+
+func (c *Characters) Delete(key string) {
+	delete(c.sharedState, key)
 }
 
 func (c Characters) AddAll(ids ...guid.GUID) bool {

@@ -43,6 +43,15 @@ const (
 	feugenEntry   = 15930
 
 	thaddiusTransitionWindow = 20 * time.Second
+
+	gothikEntry              = 16060
+	unrelentingTraineeEntry  = 16124
+	unrelentingDeathknight   = 16125
+	unrelentingRiderEntry    = 16126
+	spectralTraineeEntry     = 16127
+	spectralDeathknightEntry = 16148
+	spectralHorseEntry       = 16149
+	spectralRiderEntry       = 16150
 )
 
 type ThaddiusParty struct {
@@ -142,20 +151,30 @@ func (c *ThaddiusParty) finalizePendingDeath(reason string, m messages.Message) 
 //	return &NeverActive{id: id}, true
 //}
 
-//type GothikTheHarvester struct {
-//	*Common
-//}
-//
-//func NewGothikTheHarvester(id guid.GUID, all *Characters) (Character, bool) {
-//	if !id.IsCreature() {
-//		return nil, false
-//	}
-//
-//	if entry, ok := id.GetEntry(); !ok || entry != 16060 {
-//		return nil, false
-//	}
-//
-//	return &CoreHound{
-//		Common: NewCommonCharacter(id, all),
-//	}, true
-//}
+func NewGothikRoom(id guid.GUID, all *Characters) (Character, bool) {
+	entry, ok := id.GetEntry()
+	if !ok {
+		return nil, false
+	}
+
+	if !isGothikEntry(entry) {
+		return nil, false
+	}
+	return NewRoomMechanic(id, gothikEntry, all)
+}
+
+func isGothikEntry(entry uint32) bool {
+	switch entry {
+	case gothikEntry,
+		unrelentingTraineeEntry,
+		unrelentingDeathknight,
+		unrelentingRiderEntry,
+		spectralTraineeEntry,
+		spectralDeathknightEntry,
+		spectralHorseEntry,
+		spectralRiderEntry:
+		return true
+	default:
+		return false
+	}
+}

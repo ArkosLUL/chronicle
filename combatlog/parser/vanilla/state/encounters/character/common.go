@@ -17,12 +17,19 @@ const (
 
 type Common struct {
 	*Base[*period.InactivityPeriod]
+	timeout time.Duration
 }
 
 func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
 	return &Common{
-		Base: NewBaseCharacter[*period.InactivityPeriod](id, all),
+		Base:    NewBaseCharacter[*period.InactivityPeriod](id, all),
+		timeout: InactivityTimeout,
 	}
+}
+
+func (c *Common) WithTimeout(timeout time.Duration) *Common {
+  c.timeout = timeout
+  return c
 }
 
 func (c *Common) Process(m messages.Message) error {
@@ -36,7 +43,7 @@ func (c *Common) Process(m messages.Message) error {
 }
 
 func (c *Common) Start(reason string, m messages.Message) {
-	c.Activity.Start(period.NewInactivityPeriod(c.ID(), InactivityTimeout), reason, m)
+	c.Activity.Start(period.NewInactivityPeriod(c.ID(), c.timeout), reason, m)
 }
 
 type characterBase interface {

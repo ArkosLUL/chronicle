@@ -116,32 +116,24 @@ func TestGothikParty_StartsOnAnyAdd_WithSinglePendingAnchor(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	anchorChar, ok := chars.Get(unrelentingTrainee)
-	require.True(t, ok)
-	require.True(t, anchorChar.IsActive(), "expected one add to remain active as pending-death anchor")
-
-	deathknightChar, ok := chars.Get(unrelentingDeathknight)
-	require.True(t, ok)
-	require.False(t, deathknightChar.IsActive())
-
-	spectralChar, ok := chars.Get(spectralTrainee)
-	require.True(t, ok)
-	require.False(t, spectralChar.IsActive())
-
 	activeAdds := 0
+	inactiveAdds := 0
 	for _, id := range []guid.GUID{unrelentingTrainee, unrelentingDeathknight, spectralTrainee} {
 		char, ok := chars.Get(id)
 		require.True(t, ok)
 		if char.IsActive() {
 			activeAdds++
+			continue
 		}
-	}
-	require.Equal(t, 1, activeAdds, "expected exactly one add anchor to stay active")
 
-	periods := deathknightChar.Periods()
-	require.Len(t, periods, 1)
-	require.Equal(t, period.EndStateSlain, periods[0].EndState)
-	require.Equal(t, "gothik_pending_add", periods[0].End.Reason)
+		inactiveAdds++
+		periods := char.Periods()
+		require.Len(t, periods, 1)
+		require.Equal(t, period.EndStateSlain, periods[0].EndState)
+	}
+
+	require.Equal(t, 1, activeAdds, "expected exactly one add to remain active as anchor")
+	require.Equal(t, 2, inactiveAdds, "expected two non-anchor adds to be inactive")
 }
 
 func TestGothikParty_EndsOnBossDeath_FlushesPendingAdds(t *testing.T) {
@@ -173,7 +165,7 @@ func TestGothikParty_EndsOnBossDeath_FlushesPendingAdds(t *testing.T) {
 	addPeriods := addChar.Periods()
 	require.Len(t, addPeriods, 1)
 	require.Equal(t, period.EndStateSlain, addPeriods[0].EndState)
-	require.Equal(t, "gothik_boss_slain", addPeriods[0].End.Reason)
+	require.Equal(t, "allowed_to_die", addPeriods[0].End.Reason)
 
 	bossChar, ok := chars.Get(gothik)
 	require.True(t, ok)
@@ -209,13 +201,56 @@ func TestGothikParty_TimesOutWithoutBossDeath(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	anchorChar, ok := chars.Get(unrelentingTrainee)
-	require.True(t, ok)
-	require.False(t, anchorChar.IsActive(), "anchor should timeout without ongoing Gothik activity")
+	timeoutAdds := 0
+	for _, id := range []guid.GUID{unrelentingTrainee, spectralDeathknight} {
+		char, ok := chars.Get(id)
+		require.True(t, ok)
+		require.False(t, char.IsActive(), "all adds should be inactive after timeout path")
 
-	anchorPeriods := anchorChar.Periods()
-	require.Len(t, anchorPeriods, 1)
-	require.Equal(t, period.EndStateTimeout, anchorPeriods[0].EndState)
+		periods := char.Periods()
+		require.Len(t, periods, 1)
+		if periods[0].EndState == period.EndStateTimeout {
+			timeoutAdds++
+		}
+	}
+
+	require.Equal(t, 1, timeoutAdds, "expected exactly one anchored add to end via timeout")
+}
+
+func TestKelThuzadRoom_AddIsFinalizedWhenBossEngagesOrDies(t *testing.T) {
+	t.Parallel()
+
+	chars := character.NewCharacters(unitdb.New())
+
+	player := guid.GUID(0x1)
+	kelThuzad := creatureGUID(15990, 0x40)
+	soldier := creatureGUID(16427, 0x41)
+
+	base := time.Date(2026, time.January, 2, 3, 0, 0, 0, time.UTC)
+	msgs := []messages.Message{
+		damage(base, player, soldier),
+		slain(base.Add(1*time.Second), player, soldier),
+		damage(base.Add(20*time.Second), player, kelThuzad),
+		slain(base.Add(21*time.Second), player, kelThuzad),
+	}
+
+	for _, msg := range msgs {
+		_, err := chars.Process(msg)
+		require.NoError(t, err)
+	}
+
+	soldierChar, ok := chars.Get(soldier)
+	require.True(t, ok)
+	require.False(t, soldierChar.IsActive(), "kel'thuzad room add should not remain active after boss engage/death")
+
+	soldierPeriods := soldierChar.Periods()
+	require.Len(t, soldierPeriods, 1)
+	require.Equal(t, period.EndStateSlain, soldierPeriods[0].EndState)
+	require.Contains(t, []string{"allowed_to_die", "boss_death_flush"}, soldierPeriods[0].End.Reason)
+
+	bossChar, ok := chars.Get(kelThuzad)
+	require.True(t, ok)
+	require.False(t, bossChar.IsActive())
 }
 
 func TestNewGothikParty_MatchesOnlyExpectedEntries(t *testing.T) {

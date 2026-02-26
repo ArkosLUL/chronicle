@@ -43,9 +43,18 @@ func (r *Room) StayActive(me guid.GUID) bool {
 	if len(r.Units) >= want {
 		return false
 	}
+
+	if r.boss != nil && r.boss.IsActive() {
+		// The boss is handling the activity, let the ad die.
+		return false
+	}
+
 	return true
 }
 
+// RoomMechanic keeps at least 1 anchor ad alive until the boss dies.
+// This allows room mechanics to have gaps.
+// Ads also bump the boss activity.
 type RoomMechanic struct {
 	*Common
 	all *Characters
@@ -153,7 +162,8 @@ func (c *RoomMechanic) processPendingDeath(m messages.Message, deadBoss bool) {
 
 	deathTime := (*c.pendingDeath).Date()
 	if m.Date().Sub(deathTime) >= time.Minute {
-		// No resurrection occurred within the window - finalize the death
+		// Intentionally make this a slain message, as they did die. So a timeout would
+		// be incorrect.
 		c.finalizeDeath("timeout_pending_death", m)
 		return
 	}

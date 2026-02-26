@@ -7,13 +7,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
-func NewKelThuzad(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(
-		15990, // Kel'Thuzad
-		16441, // Guardian of Icecrown
-	)(id, all)
-}
-
 func NewGluth(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(
 		15932, // Gluth
@@ -52,6 +45,12 @@ const (
 	spectralDeathknightEntry = 16148
 	spectralHorseEntry       = 16149
 	spectralRiderEntry       = 16150
+
+	kelThuzadEntry              = 15990
+	soldierOfTheFrozenWaste     = 16427
+	soulWeaver                  = 16429
+	unstoppableAbominationEntry = 16428
+	guardianOfIcecrownEntry     = 16441
 )
 
 type ThaddiusParty struct {
@@ -173,6 +172,45 @@ func isGothikEntry(entry uint32) bool {
 		spectralDeathknightEntry,
 		spectralHorseEntry,
 		spectralRiderEntry:
+		return true
+	default:
+		return false
+	}
+}
+
+func NewKelThuzadRoom(id guid.GUID, all *Characters) (Character, bool) {
+	entry, ok := id.GetEntry()
+	if !ok {
+		return nil, false
+	}
+
+	if !isKelThuzadEntry(entry) {
+		return nil, false
+	}
+
+	r, ok := NewRoomMechanic(id, kelThuzadEntry, all)
+	if !ok {
+		return nil, false
+	}
+
+	if entry == kelThuzadEntry {
+		return NewAdsGoWithBossCustomCharacter(
+			r,
+			all,
+			15990, // Kel'Thuzad
+			16441, // Guardian of Icecrown
+		), true
+	}
+
+	return r, true
+}
+
+func isKelThuzadEntry(entry uint32) bool {
+	switch entry {
+	case kelThuzadEntry,
+		soldierOfTheFrozenWaste,
+		soulWeaver,
+		unstoppableAbominationEntry:
 		return true
 	default:
 		return false

@@ -59,15 +59,16 @@ func (b *Bot) RegisterCommands(commands []Command) error {
 
 	// Store cleanup function to remove commands on shutdown
 	b.handlers = append(b.handlers, func() {
-		for _, cmd := range registeredCommands {
-			err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.config.GuildID, cmd.ID)
-			if err != nil {
-				b.logger.Error("failed to delete command",
-					slog.String("name", cmd.Name),
-					slog.String("error", err.Error()),
-				)
-			}
-		}
+		// Deleting the command breaks any multi instance support.
+		//for _, cmd := range registeredCommands {
+		//	err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.config.GuildID, cmd.ID)
+		//	if err != nil {
+		//		b.logger.Error("failed to delete command",
+		//			slog.String("name", cmd.Name),
+		//			slog.String("error", err.Error()),
+		//		)
+		//	}
+		//}
 	})
 
 	return nil

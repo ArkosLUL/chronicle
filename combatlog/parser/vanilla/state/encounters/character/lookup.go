@@ -42,6 +42,8 @@ var characterFactories = []characterFactory{
 	// Scholomance
 	NewJandiceBarov,
 	NewDiseasedGhoul,
+	// Stratholme
+	NewCryptScarab,
 	// AQ 40
 	NewCthun,
 	// Naxx,

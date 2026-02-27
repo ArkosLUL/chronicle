@@ -27,7 +27,7 @@ export function Home() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
             <Button asChild size="lg">
-              <Link to="/logs">View a Sample Guild</Link>
+              <Link to="/recent">View a Sample</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
               <Link to="/upload">How to Do This for Your Next Raid</Link>

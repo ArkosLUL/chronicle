@@ -14,7 +14,7 @@ definition chronicle {
   relation technical_user: user
   relation supporter: user
 
-  permission can_reparse   = technical_user
+  permission can_reparse  = technical_user
   permission administer   = admin + technical_admin
   permission administer_authz = technical_admin
   permission admin_logs   = administer

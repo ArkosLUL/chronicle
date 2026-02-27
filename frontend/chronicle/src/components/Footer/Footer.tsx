@@ -14,6 +14,11 @@ function DiscordIcon({ className }: { className?: string }) {
 }
 
 const DISCORD_URL = "https://discord.gg/gz97ABFVAj";
+const PATREON_URL = "https://www.patreon.com/cw/ChronicleClassic";
+const PATREON_ICON_URL =
+  "https://cdn.brandfetch.io/id5ZYO6A-6/theme/light/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1697549446035";
+const PATREON_TOOLTIP =
+  "Finantial contributions are greatly appreciated, but never required. Visit the patreon link to learn more!";
 
 export function Footer() {
   const gitTag = document
@@ -67,6 +72,23 @@ export function Footer() {
                 >
                   <DiscordIcon className="h-4 w-4" />
                   Discord
+                </a>
+              </li>
+              <li>
+                <a
+                  href={PATREON_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={PATREON_TOOLTIP}
+                  className="hover:text-foreground transition-colors inline-flex items-center gap-1"
+                >
+                  <img
+                    src={PATREON_ICON_URL}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                  />
+                  Patreon
                 </a>
               </li>
             </ul>

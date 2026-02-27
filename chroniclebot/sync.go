@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/storagegrants"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/google/uuid"
 )
@@ -46,6 +48,13 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 			gChron.Admin(usr)
 		case "1475993966041239623": // Technical User
 			gChron.Technical_user(usr)
+		case "1476428881677389865", // Booster
+			"1476558127552790812": // Supporter
+			gChron.Supporter(usr)
+			_, err := zed.UpsertDataGrant(ctx, storagegrants.SupportStorageGrant(userID))
+			if err != nil {
+				bot.logger.Error("upsert supporter storage grant", slog.String("error", err.Error()))
+			}
 		}
 	}
 

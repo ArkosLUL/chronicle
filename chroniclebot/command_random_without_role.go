@@ -135,7 +135,7 @@ func formatRandomWithoutRoleMessage(selected []*discordgo.Member, excludedRoleID
 	var sb strings.Builder
 	sb.WriteString("🎲 Random picks")
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("Members without <@&%s>:\n", excludedRoleID))
+	sb.WriteString(fmt.Sprintf("Members choosen:\n"))
 	for idx, member := range selected {
 		sb.WriteString(fmt.Sprintf("%d. <@%s>\n", idx+1, member.User.ID))
 	}

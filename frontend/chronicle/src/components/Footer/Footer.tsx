@@ -15,6 +15,9 @@ function DiscordIcon({ className }: { className?: string }) {
 
 const DISCORD_URL = "https://discord.gg/gz97ABFVAj";
 const PATREON_URL = "https://www.patreon.com/cw/ChronicleClassic";
+const BUY_ME_A_COFFEE_URL = "https://buymeacoffee.com/chronicleclassic";
+const BUY_ME_A_COFFEE_ICON_URL =
+  "https://cdn.brandfetch.io/idiZkYjDE2/w/192/h/192/theme/dark/logo.png?c=1bxid64Mup7aczewSAYMX&t=1708787601888";
 const PATREON_ICON_URL =
   "https://cdn.brandfetch.io/id5ZYO6A-6/theme/light/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1697549446035";
 const PATREON_TOOLTIP =
@@ -74,6 +77,9 @@ export function Footer() {
                   Discord
                 </a>
               </li>
+              <li className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+                Contribute Support
+              </li>
               <li>
                 <a
                   href={PATREON_URL}
@@ -89,6 +95,22 @@ export function Footer() {
                     className="h-4 w-4"
                   />
                   Patreon
+                </a>
+              </li>
+              <li>
+                <a
+                  href={BUY_ME_A_COFFEE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors inline-flex items-center gap-1"
+                >
+                  <img
+                    src={BUY_ME_A_COFFEE_ICON_URL}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                  />
+                  Buy Me a Coffee
                 </a>
               </li>
             </ul>

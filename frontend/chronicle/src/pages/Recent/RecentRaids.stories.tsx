@@ -35,6 +35,7 @@ function generateMockInstances(count: number, startIndex = 0): RecentInstance[] 
     { id: "851d2fd3-f9c5-4623-b714-924b59d916aa", name: "Ambershire" },
     { id: "f94d3103-1cd8-40e9-ad91-a2366de33354", name: "Tel'Abim" },
     { id: "bcf173a7-c94a-49fe-8930-27435d722fb7", name: "Nordanaar" },
+    { id: "ad486d39-31dd-4eb6-a43d-7d469df4ffcf", name: "South Seas" },
   ];
 
   const bossNames: Record<string, string[]> = {
@@ -91,6 +92,7 @@ function generateMockInstances(count: number, startIndex = 0): RecentInstance[] 
       boss_kills: bossKills,
       duration_ms: durationMs,
       encounters,
+      has_youtube_video: idx % 2 === 0,
     });
   }
 
@@ -101,9 +103,15 @@ function generateMockInstances(count: number, startIndex = 0): RecentInstance[] 
 const TOTAL_ITEMS = 200;
 const allMockInstances = generateMockInstances(TOTAL_ITEMS);
 
-function getMockPage(cursor: string | null, limit: number, instanceFilter?: string): RecentInstancesResponse {
+function getMockPage(
+  cursor: string | null,
+  limit: number,
+  instanceFilters: string[] = [],
+  hasVideo?: string | null,
+  realmID?: string | null,
+): RecentInstancesResponse {
   let startIdx = 0;
-  
+
   if (cursor) {
     try {
       const decoded = JSON.parse(atob(cursor));
@@ -114,16 +122,29 @@ function getMockPage(cursor: string | null, limit: number, instanceFilter?: stri
   }
 
   let filtered = allMockInstances;
-  
-  // Apply instance filter
-  if (instanceFilter) {
-    filtered = filtered.filter(i => i.name === instanceFilter);
+
+  // Apply instance filters (multi-select)
+  if (instanceFilters.length > 0) {
+    const selected = new Set(instanceFilters);
+    filtered = filtered.filter((instance) => selected.has(instance.name));
+  }
+
+  // Apply has video filter
+  if (hasVideo === "true") {
+    filtered = filtered.filter((instance) => instance.has_youtube_video);
+  } else if (hasVideo === "false") {
+    filtered = filtered.filter((instance) => !instance.has_youtube_video);
+  }
+
+  // Apply realm filter
+  if (realmID) {
+    filtered = filtered.filter((instance) => instance.realm_id === realmID);
   }
 
   const pageItems = filtered.slice(startIdx, startIdx + limit);
   const hasMore = startIdx + limit < filtered.length;
-  
-  const nextCursor = hasMore 
+
+  const nextCursor = hasMore
     ? btoa(JSON.stringify({ idx: startIdx + limit }))
     : undefined;
 
@@ -139,8 +160,8 @@ const meta: Meta<typeof RecentRaids> = {
   component: RecentRaids,
   tags: ["autodocs"],
   decorators: [
-    (Story) => (
-      <MemoryRouter>
+    (Story, context) => (
+      <MemoryRouter initialEntries={context.parameters.initialEntries ?? ["/recent"]}>
         <div className="min-h-screen bg-background">
           <Story />
         </div>
@@ -149,6 +170,26 @@ const meta: Meta<typeof RecentRaids> = {
   ],
   parameters: {
     layout: "fullscreen",
+    msw: {
+      handlers: [
+        http.get("/api/v1/raidlogs/supported", async () =>
+          HttpResponse.json({
+            "Molten Core": "",
+            "Blackwing Lair": "",
+            "Onyxia's Lair": "",
+            "Zul'Gurub": "",
+            "Ruins of Ahn'Qiraj": "",
+            "Temple of Ahn'Qiraj": "",
+            "Naxxramas": "",
+            "World Bosses": "",
+            "Stratholme": "",
+            "Scholomance": "",
+            "Black Morass": "",
+            "Dire Maul": "",
+          }),
+        ),
+      ],
+    },
   },
 };
 
@@ -167,11 +208,13 @@ export const Default: Story = {
           const url = new URL(request.url);
           const cursor = url.searchParams.get("cursor");
           const limit = parseInt(url.searchParams.get("limit") || "24");
-          const instance_name = url.searchParams.get("instance_name") || undefined;
-          
+          const instanceNames = url.searchParams.getAll("instance_name");
+          const hasVideo = url.searchParams.get("has_video");
+          const realmID = url.searchParams.get("realm_id");
+
           await delay(300); // Simulate network latency
-          
-          return HttpResponse.json(getMockPage(cursor, limit, instance_name));
+
+          return HttpResponse.json(getMockPage(cursor, limit, instanceNames, hasVideo, realmID));
         }),
       ],
     },
@@ -249,7 +292,32 @@ export const MoltenCoreOnly: Story = {
           await delay(300);
           
           // Force filter to MC
-          return HttpResponse.json(getMockPage(cursor, limit, { instance_name: "Molten Core" }));
+          return HttpResponse.json(getMockPage(cursor, limit, ["Molten Core"]));
+        }),
+      ],
+    },
+  },
+};
+
+/**
+ * Filtered view via URL params (category + multi-instance + video).
+ */
+export const FilteredByUrl: Story = {
+  parameters: {
+    initialEntries: ["/recent?cat=raid&inst=Molten%20Core,Blackwing%20Lair&vid=with"],
+    msw: {
+      handlers: [
+        http.get("/api/v1/raidlogs/recent", async ({ request }) => {
+          const url = new URL(request.url);
+          const cursor = url.searchParams.get("cursor");
+          const limit = parseInt(url.searchParams.get("limit") || "24");
+          const instanceNames = url.searchParams.getAll("instance_name");
+          const hasVideo = url.searchParams.get("has_video");
+          const realmID = url.searchParams.get("realm_id");
+
+          await delay(300);
+
+          return HttpResponse.json(getMockPage(cursor, limit, instanceNames, hasVideo, realmID));
         }),
       ],
     },

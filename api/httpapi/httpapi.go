@@ -54,7 +54,7 @@ func Write(_ context.Context, rw http.ResponseWriter, status int, response inter
 	}
 	_, err = rw.Write(buf.Bytes())
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		//http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }

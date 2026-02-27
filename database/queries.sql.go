@@ -1838,35 +1838,44 @@ JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
 LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE true
-    -- Filter by instance name
+    -- Filter by instance names
     AND CASE
-        WHEN $1 :: text != '' THEN
-            li.name = $1
+        WHEN cardinality($1 :: text[]) > 0 THEN
+            li.name = ANY($1 :: text[])
+        ELSE true
+    END
+    -- Filter by video presence
+    AND CASE
+        WHEN $2 :: text = 'true' THEN
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+        WHEN $2 :: text = 'false' THEN
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
         ELSE true
     END
     -- Filter by realm
     AND CASE
-        WHEN $2 :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
-            li.realm_id = $2
+        WHEN $3 :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.realm_id = $3
         ELSE true
     END
     -- Cursor pagination (uploaded_at, id) - pass '0001-01-01' to skip
     AND CASE
-        WHEN $3 :: timestamptz != '0001-01-01'::timestamptz THEN
-            (wlg.created_at < $3 
-             OR (wlg.created_at = $3 AND li.id < $4 :: uuid))
+        WHEN $4 :: timestamptz != '0001-01-01'::timestamptz THEN
+            (wlg.created_at < $4 
+             OR (wlg.created_at = $4 AND li.id < $5 :: uuid))
         ELSE true
     END
 ORDER BY wlg.created_at DESC, li.id DESC
-LIMIT $5
+LIMIT $6
 `
 
 type ListRecentInstancesParams struct {
-	InstanceName string             `db:"instance_name" json:"instance_name"`
-	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
-	CursorTime   pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
-	CursorID     uuid.UUID          `db:"cursor_id" json:"cursor_id"`
-	LimitCount   int32              `db:"limit_count" json:"limit_count"`
+	InstanceNames []string           `db:"instance_names" json:"instance_names"`
+	HasVideo      string             `db:"has_video" json:"has_video"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CursorTime    pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
+	CursorID      uuid.UUID          `db:"cursor_id" json:"cursor_id"`
+	LimitCount    int32              `db:"limit_count" json:"limit_count"`
 }
 
 type ListRecentInstancesRow struct {
@@ -1889,7 +1898,8 @@ type ListRecentInstancesRow struct {
 
 func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error) {
 	rows, err := q.db.Query(ctx, listRecentInstances,
-		arg.InstanceName,
+		arg.InstanceNames,
+		arg.HasVideo,
 		arg.RealmID,
 		arg.CursorTime,
 		arg.CursorID,
@@ -1955,36 +1965,45 @@ JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
 LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE lip.name ILIKE $1
-    -- Filter by instance name
+    -- Filter by instance names
     AND CASE
-        WHEN $2 :: text != '' THEN
-            li.name = $2
+        WHEN cardinality($2 :: text[]) > 0 THEN
+            li.name = ANY($2 :: text[])
+        ELSE true
+    END
+    -- Filter by video presence
+    AND CASE
+        WHEN $3 :: text = 'true' THEN
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+        WHEN $3 :: text = 'false' THEN
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
         ELSE true
     END
     -- Filter by realm
     AND CASE
-        WHEN $3 :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
-            li.realm_id = $3
+        WHEN $4 :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.realm_id = $4
         ELSE true
     END
     -- Cursor pagination
     AND CASE
-        WHEN $4 :: timestamptz != '0001-01-01'::timestamptz THEN
-            (wlg.created_at < $4 
-             OR (wlg.created_at = $4 AND li.id < $5 :: uuid))
+        WHEN $5 :: timestamptz != '0001-01-01'::timestamptz THEN
+            (wlg.created_at < $5 
+             OR (wlg.created_at = $5 AND li.id < $6 :: uuid))
         ELSE true
     END
 ORDER BY wlg.created_at DESC, li.id DESC
-LIMIT $6
+LIMIT $7
 `
 
 type ListRecentInstancesByPlayerParams struct {
-	PlayerName   string             `db:"player_name" json:"player_name"`
-	InstanceName string             `db:"instance_name" json:"instance_name"`
-	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
-	CursorTime   pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
-	CursorID     uuid.UUID          `db:"cursor_id" json:"cursor_id"`
-	LimitCount   int32              `db:"limit_count" json:"limit_count"`
+	PlayerName    string             `db:"player_name" json:"player_name"`
+	InstanceNames []string           `db:"instance_names" json:"instance_names"`
+	HasVideo      string             `db:"has_video" json:"has_video"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CursorTime    pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
+	CursorID      uuid.UUID          `db:"cursor_id" json:"cursor_id"`
+	LimitCount    int32              `db:"limit_count" json:"limit_count"`
 }
 
 type ListRecentInstancesByPlayerRow struct {
@@ -2008,7 +2027,8 @@ type ListRecentInstancesByPlayerRow struct {
 func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error) {
 	rows, err := q.db.Query(ctx, listRecentInstancesByPlayer,
 		arg.PlayerName,
-		arg.InstanceName,
+		arg.InstanceNames,
+		arg.HasVideo,
 		arg.RealmID,
 		arg.CursorTime,
 		arg.CursorID,

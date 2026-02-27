@@ -53,7 +53,8 @@ func decodeCursor(s string) (time.Time, uuid.UUID, error) {
 // @Produce json
 // @Param limit query int false "Max items (default 20, max 100)"
 // @Param cursor query string false "Pagination cursor"
-// @Param instance_name query string false "Filter by instance name (e.g., 'Molten Core')"
+// @Param instance_name query []string false "Filter by instance names (repeat param, e.g., instance_name=Molten+Core&instance_name=Onyxia's+Lair)"
+// @Param has_video query string false "Filter by video presence (true, false)"
 // @Param realm_id query string false "Filter by realm UUID"
 // @Param player_name query string false "Filter by player name (partial match)"
 // @Success 200 {object} chroniclesdk.RecentInstancesResponse
@@ -62,8 +63,10 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Parse query parameters
+	q := r.URL.Query()
+
 	limit := defaultRecentLimit
-	if l := r.URL.Query().Get("limit"); l != "" {
+	if l := q.Get("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
 			limit = parsed
 		}
@@ -72,7 +75,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		limit = maxRecentLimit
 	}
 
-	cursorTime, cursorID, err := decodeCursor(r.URL.Query().Get("cursor"))
+	cursorTime, cursorID, err := decodeCursor(q.Get("cursor"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
 			Message: "Invalid cursor",
@@ -81,11 +84,16 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	instanceName := r.URL.Query().Get("instance_name")
-	playerName := r.URL.Query().Get("player_name")
+	instanceNames := q["instance_name"]
+	hasVideo := q.Get("has_video")
+	if hasVideo != "true" && hasVideo != "false" {
+		hasVideo = ""
+	}
+
+	playerName := q.Get("player_name")
 
 	var realmID uuid.UUID
-	if rid := r.URL.Query().Get("realm_id"); rid != "" {
+	if rid := q.Get("realm_id"); rid != "" {
 		if parsed, err := uuid.Parse(rid); err == nil {
 			realmID = parsed
 		}
@@ -98,12 +106,13 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	if playerName != "" {
 		// Use the player search query
 		playerRows, err := api.Opts.Zed.ListRecentInstancesByPlayer(ctx, database.ListRecentInstancesByPlayerParams{
-			PlayerName:   "%" + playerName + "%",
-			InstanceName: instanceName,
-			RealmID:      realmID,
-			CursorTime:   pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
-			CursorID:     cursorID,
-			LimitCount:   fetchLimit,
+			PlayerName:    "%" + playerName + "%",
+			InstanceNames: instanceNames,
+			HasVideo:      hasVideo,
+			RealmID:       realmID,
+			CursorTime:    pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
+			CursorID:      cursorID,
+			LimitCount:    fetchLimit,
 		})
 		if err != nil {
 			httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
@@ -122,11 +131,12 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		rows, err = api.Opts.Zed.ListRecentInstances(ctx, database.ListRecentInstancesParams{
-			InstanceName: instanceName,
-			RealmID:      realmID,
-			CursorTime:   pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
-			CursorID:     cursorID,
-			LimitCount:   fetchLimit,
+			InstanceNames: instanceNames,
+			HasVideo:      hasVideo,
+			RealmID:       realmID,
+			CursorTime:    pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
+			CursorID:      cursorID,
+			LimitCount:    fetchLimit,
 		})
 		if err != nil {
 			httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{

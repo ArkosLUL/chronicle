@@ -163,10 +163,18 @@ JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
 LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE true
-    -- Filter by instance name
+    -- Filter by instance names
     AND CASE
-        WHEN @instance_name :: text != '' THEN
-            li.name = @instance_name
+        WHEN cardinality(@instance_names :: text[]) > 0 THEN
+            li.name = ANY(@instance_names :: text[])
+        ELSE true
+    END
+    -- Filter by video presence
+    AND CASE
+        WHEN @has_video :: text = 'true' THEN
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+        WHEN @has_video :: text = 'false' THEN
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
         ELSE true
     END
     -- Filter by realm
@@ -211,10 +219,18 @@ JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
 LEFT JOIN guilds g ON g.id = li.guild_id
 WHERE lip.name ILIKE @player_name
-    -- Filter by instance name
+    -- Filter by instance names
     AND CASE
-        WHEN @instance_name :: text != '' THEN
-            li.name = @instance_name
+        WHEN cardinality(@instance_names :: text[]) > 0 THEN
+            li.name = ANY(@instance_names :: text[])
+        ELSE true
+    END
+    -- Filter by video presence
+    AND CASE
+        WHEN @has_video :: text = 'true' THEN
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+        WHEN @has_video :: text = 'false' THEN
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
         ELSE true
     END
     -- Filter by realm

@@ -1,30 +1,33 @@
 // Shared instance configuration - maps instance names to loading screen images
 // Source of truth - also used in RaidCard.tsx
 
+export type InstanceCategory = "raid" | "dungeon" | "unknown";
+
 export interface InstanceConfig {
   background: string;
   bossCount?: number;
   abbrev?: string;  // Short name for mobile display
+  category?: Exclude<InstanceCategory, "unknown">;
 }
 
 export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   // 40-man Raids
-  "Molten Core": { background: "/images/loadingscreens/LoadScreenMoltenCore.webp", bossCount: 12, abbrev: "MC" },
-  "Blackwing Lair": { background: "/images/loadingscreens/LoadScreenBlackWingLair.webp", bossCount: 8, abbrev: "BWL" },
-  "Temple of Ahn'Qiraj": { background: "/images/loadingscreens/LoadScreenAhnQiraj40man.webp", bossCount: 9, abbrev: "AQ40" },
-  "Naxxramas": { background: "/images/loadingscreens/LoadScreenNaxxramas.webp", bossCount: 15, abbrev: "Naxx" },
-  "Emerald Sanctum": { background: "/images/loadingscreens/LoadScreenEmeraldSanctum.webp", bossCount: 2, abbrev: "ES" },
+  "Molten Core": { background: "/images/loadingscreens/LoadScreenMoltenCore.webp", bossCount: 12, abbrev: "MC", category: "raid" },
+  "Blackwing Lair": { background: "/images/loadingscreens/LoadScreenBlackWingLair.webp", bossCount: 8, abbrev: "BWL", category: "raid" },
+  "Temple of Ahn'Qiraj": { background: "/images/loadingscreens/LoadScreenAhnQiraj40man.webp", bossCount: 9, abbrev: "AQ40", category: "raid" },
+  "Naxxramas": { background: "/images/loadingscreens/LoadScreenNaxxramas.webp", bossCount: 15, abbrev: "Naxx", category: "raid" },
+  "Emerald Sanctum": { background: "/images/loadingscreens/LoadScreenEmeraldSanctum.webp", bossCount: 2, abbrev: "ES", category: "raid" },
   // 20-man Raids
-  "Zul'Gurub": { background: "/images/loadingscreens/LoadScreenZulGurub.webp", bossCount: 10, abbrev: "ZG" },
-  "Ruins of Ahn'Qiraj": { background: "/images/loadingscreens/LoadScreenAhnQiraj20man.webp", bossCount: 6, abbrev: "AQ20" },
+  "Zul'Gurub": { background: "/images/loadingscreens/LoadScreenZulGurub.webp", bossCount: 10, abbrev: "ZG", category: "raid" },
+  "Ruins of Ahn'Qiraj": { background: "/images/loadingscreens/LoadScreenAhnQiraj20man.webp", bossCount: 6, abbrev: "AQ20", category: "raid" },
   // Single Boss
-  "Onyxia's Lair": { background: "/images/loadingscreens/LoadScreenRaid.webp", bossCount: 1, abbrev: "Ony" },
+  "Onyxia's Lair": { background: "/images/loadingscreens/LoadScreenRaid.webp", bossCount: 1, abbrev: "Ony", category: "raid" },
   // Turtle WoW Custom
-  "Tower of Karazhan": { background: "/images/loadingscreens/LoadScreenKarazhan.webp", bossCount: 5, abbrev: "Kara" },
-  "Karazhan Crypts": { background: "/images/loadingscreens/LoadscreenKarazhanCrypt.webp", bossCount: 3, abbrev: "Crypt" },
-  "Hateforge Quarry": { background: "/images/loadingscreens/LoadScreenHateforge.webp", bossCount: 4, abbrev: "HQ" },
-  "Gilneas City": { background: "/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3, abbrev: "Gilneas" },
-  "World Bosses": { background: "/images/loadingscreens/LoadScreenRaid.webp", abbrev: "World" },
+  "Tower of Karazhan": { background: "/images/loadingscreens/LoadScreenKarazhan.webp", bossCount: 5, abbrev: "Kara", category: "raid" },
+  "Karazhan Crypts": { background: "/images/loadingscreens/LoadscreenKarazhanCrypt.webp", bossCount: 3, abbrev: "Crypt", category: "raid" },
+  "Hateforge Quarry": { background: "/images/loadingscreens/LoadScreenHateforge.webp", bossCount: 4, abbrev: "HQ", category: "raid" },
+  "Gilneas City": { background: "/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3, abbrev: "Gilneas", category: "raid" },
+  "World Bosses": { background: "/images/loadingscreens/LoadScreenRaid.webp", abbrev: "World", category: "raid" },
   // Dungeons
   "Black Morass": { background: "/images/loadingscreens/LoadScreenCavernsTime.webp", bossCount: 4, abbrev: "BM" },
   "Blackrock Spire": { background: "/images/loadingscreens/LoadScreenBlackrockSpire.webp", abbrev: "BRS" },
@@ -59,6 +62,15 @@ export const DEFAULT_BACKGROUND = "/images/loadingscreens/LoadScreenDungeon.webp
 
 export function getInstanceConfig(name: string): InstanceConfig | undefined {
   return INSTANCE_CONFIG[name];
+}
+
+export function getInstanceCategory(name: string): InstanceCategory {
+  const config = INSTANCE_CONFIG[name];
+  if (!config) {
+    return "unknown";
+  }
+
+  return config.category ?? "dungeon";
 }
 
 export function getInstanceBackground(name: string): string {

@@ -392,13 +392,16 @@ func (p *Parser) spellMiss(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	}
 
 	var name *string
-	if spell != nil {
-		name = ptr.Ref(spell.Name())
-	}
-
 	var school types.School
 	if spell != nil {
+		name = ptr.Ref(spell.Name())
 		school = spell.School.ToType()
+
+		dt := spell.SpellDamageType()
+		// If it can only be periodic, then add the periodic modifier as well.
+		if dt == chrondbc.SpellDamagePeriodic {
+			hit |= types.HitTypePeriodic
+		}
 	}
 
 	return set(&messages.Damage{
@@ -465,10 +468,10 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 			SPELL_AURA_PERIODIC_MANA_FUNNEL,
 			SPELL_AURA_PERIODIC_MANA_LEECH,
 			SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-			hit = types.HitTypePeriodic
+			hit |= types.HitTypePeriodic
 		}
 	} else if dt.Has(chrondbc.SpellDamagePeriodic) {
-		hit = types.HitTypePeriodic
+		hit |= types.HitTypePeriodic
 	}
 
 	var trailer types.Trailer

@@ -75,7 +75,7 @@ export function updateAbilityBreakout(
     updateHitTypeStats(breakout.CritStats, amount);
   } else if (hasHitType(hitType, HitTypeMiss)) {
     breakout.Misses += 1;
-  } else if (hasHitType(hitType, HitTypeHit) || hasHitType(hitType, HitTypePeriodic)) {
+  } else if (hasHitType(hitType, HitTypeHit)) {
     breakout.Hits += 1;
     // Track regular hit stats
     if (!breakout.HitStats) breakout.HitStats = createEmptyHitTypeStats();

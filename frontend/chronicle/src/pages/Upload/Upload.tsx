@@ -150,7 +150,7 @@ export function UploadView({
             <Switch
               id="upload-version"
               checked={!useV2Upload}
-              onCheckedChange={(checked) => onToggleV2Upload(!checked)}
+              onCheckedChange={(checked: boolean) => onToggleV2Upload(!checked)}
             />
             <Label htmlFor="upload-version" className="cursor-pointer">
               Use legacy upload (two files)

@@ -2,7 +2,7 @@
  * Shared ability breakout utilities for damage processors.
  */
 
-import { hasHitType, HitTypeCrit, HitTypeCrushing, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeGlancing, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypePeriodic, HitTypeReflect } from "@/lib/hittype/hittype";
+import { hasHitType, HitTypeCrit, HitTypeCrushing, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeGlancing, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypeReflect } from "@/lib/hittype/hittype";
 
 /** Stats for a specific hit type (min/max/total for avg calculation) */
 export interface HitTypeStats {

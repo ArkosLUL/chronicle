@@ -650,7 +650,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
                       <Switch 
                         size="sm" 
                         checked={syncEnabled} 
-                        onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
+                        onCheckedChange={(checked: boolean) => checked ? enableSync?.() : disableSync?.()} 
                       />
                     </label>
                   </TooltipTrigger>
@@ -746,7 +746,7 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
                   <Switch 
                     size="sm" 
                     checked={syncEnabled} 
-                    onCheckedChange={(checked) => checked ? enableSync?.() : disableSync?.()} 
+                    onCheckedChange={(checked: boolean) => checked ? enableSync?.() : disableSync?.()} 
                   />
                 </label>
               </TooltipTrigger>

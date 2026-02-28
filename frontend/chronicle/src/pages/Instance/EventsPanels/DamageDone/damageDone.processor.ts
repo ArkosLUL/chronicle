@@ -6,7 +6,7 @@ import type { AuraProcessorEvent, DamageProcessorEvent, PanelProcessor, Processo
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
-import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraProcessorState } from "../processors/auraProcessor";
+import { createAuraProcessorState, type AuraProcessorState } from "../processors/auraProcessor";
 
 // Re-export the shared type for backwards compatibility
 export type { DamageAbilityBreakout, HitTypeStats } from "../processors/abilityBreakout";
@@ -83,9 +83,9 @@ export function createDamageDoneProcessor(
       if (!event.caster) return;
 
       // Example of inline aura-aware logic hook (behavior unchanged for displayed metrics)
-      if (hasAura(state.AuraState, encounterID, event.target, { spellName: "Sunder Armor" })) {
-        state._damageEventsWithSunderArmor++;
-      }
+      // if (hasAura(state.AuraState, encounterID, event.target, { spellName: "Sunder Armor" })) {
+      //   state._damageEventsWithSunderArmor++;
+      // }
 
       const guidCache = state.GuidCache;
       

@@ -15,7 +15,7 @@ export const damageDoneExplainer: PanelExplainer = {
     "Select specific enemies in the Entity panel to see damage only to those targets",
     "Multi-select encounters (Ctrl/Cmd+click) to see combined totals",
     "You can open more than 1 breakout panel!",
-    "Click 'Bt Target' to see the damage breakdown by target instead of by ability",
+    "Click 'By Target' to see the damage breakdown by target instead of by ability",
   ],
 
   breakoutsOpen: 2, // Show both ability AND target breakouts

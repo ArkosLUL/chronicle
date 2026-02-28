@@ -28,8 +28,8 @@ func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
 }
 
 func (c *Common) WithTimeout(timeout time.Duration) *Common {
-  c.timeout = timeout
-  return c
+	c.timeout = timeout
+	return c
 }
 
 func (c *Common) Process(m messages.Message) error {
@@ -71,6 +71,8 @@ func isImmobilizeCC(spellName string) bool {
 // processCommonActivity handles the basics of activity processing for a character.
 func processCommonActivity(c characterBase, m messages.Message) error {
 	switch data := m.(type) {
+	case *messages.AuraCast:
+		// TODO: Aura cast because some polymorph debuffs do not appear?
 	case *messages.Cast:
 		if data.Target != nil && (*data.Target).Gid == c.ID() {
 			if data.Action == types.CastActionsCasts && isImmobilizeCC(data.Spell.Name) {

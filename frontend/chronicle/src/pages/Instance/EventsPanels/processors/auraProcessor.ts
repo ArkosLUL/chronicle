@@ -5,10 +5,10 @@ import { AuraState } from "../processorTypes";
  * Aura reference for lookup operations.
  * Spell ID is preferred when available, with spell name fallback.
  */
-export type AuraRef =
-  | { spellId: number }
-  | { spellName: string }
-  | { spellId?: number; spellName?: string };
+export interface AuraRef {
+  spellId?: number;
+  spellName?: string;
+}
 
 interface ActiveAura {
   spellId: number | null;

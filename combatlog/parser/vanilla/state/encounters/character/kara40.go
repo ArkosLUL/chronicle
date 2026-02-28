@@ -47,3 +47,11 @@ func NewKeeperGnarlmoon(id guid.GUID, all *Characters) (Character, bool) {
 		59999, // Blood Raven
 	)(id, all)
 }
+
+func NewAnomalus(id guid.GUID, all *Characters) (Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 61951 {
+		return nil, false
+	}
+
+	return NewPermanentDeath(NewCommonCharacter(id, all)), true
+}

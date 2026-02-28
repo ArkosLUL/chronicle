@@ -41,6 +41,7 @@ var SpellRanges = map[int32]SpellRange{
 	134: {ID: 134, RangeMin: 0, RangeMax: 80, Flags: 0, Name: "Tower 80"},
 	135: {ID: 135, RangeMin: 0, RangeMax: 100, Flags: 0, Name: "Tower 100"},
 	136: {ID: 136, RangeMin: 30, RangeMax: 80, Flags: 0, Name: "Artillery Range"},
+	15: {ID: 15, RangeMin: 0, RangeMax: 36, Flags: 0, Name: "Custom 36"},
 }
 
 // GetSpellRange returns the SpellRange for the given ID.

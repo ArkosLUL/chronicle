@@ -94,6 +94,10 @@ var SpellDurations = map[int32]SpellDuration{
 	549: {ID: 549, Duration: 3800, DurationPerLevel: 0, MaxDuration: 3800},
 	552: {ID: 552, Duration: 210000, DurationPerLevel: 0, MaxDuration: 210000},
 	553: {ID: 553, Duration: 6000, DurationPerLevel: 0, MaxDuration: 16000},
+	554: {ID: 554, Duration: 25000, DurationPerLevel: 0, MaxDuration: 25000},
+	555: {ID: 555, Duration: 40000, DurationPerLevel: 0, MaxDuration: 40000},
+	556: {ID: 556, Duration: 8000, DurationPerLevel: 0, MaxDuration: 28000},
+	557: {ID: 557, Duration: 4500, DurationPerLevel: 0, MaxDuration: 4500},
 }
 
 // GetSpellDuration returns the SpellDuration for the given ID.

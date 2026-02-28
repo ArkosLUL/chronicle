@@ -27,12 +27,12 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/gofrs/flock v0.13.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/gookit/color v1.6.0
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/sessions v1.1.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/lib/pq v1.10.9
 	github.com/markbates/goth v1.82.0
@@ -48,7 +48,6 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/samber/slog-zerolog/v2 v2.9.0
 	github.com/stretchr/testify v1.11.1
-	github.com/supabase-community/storage-go v0.8.1
 	github.com/xlab/treeprint v1.2.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.6.0
@@ -188,7 +187,6 @@ require (
 	github.com/golang/mock v1.7.0-rc.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/certificate-transparency-go v1.3.2 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.20.3 // indirect
 	github.com/google/ko v0.17.1 // indirect
 	github.com/google/pprof v0.0.0-20250820193118-f64d9cf942d6 // indirect
@@ -206,7 +204,6 @@ require (
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
@@ -343,6 +340,6 @@ tool (
 // which we use in the awsiamrds package.
 replace github.com/lib/pq => github.com/coder/pq v1.10.5-0.20250807075151-6ad9b0a25151
 
-replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260217042645-fddd00b2f688
+replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260228020554-a0e7784de9cb
 
 replace github.com/cybriq/gotiny => github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688

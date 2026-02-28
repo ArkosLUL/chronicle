@@ -5,9 +5,9 @@ package dbcmem
 // ExtraAttackSpells maps spell IDs to spell names for all spells
 // with the EffectAddExtraAttacks effect.
 var ExtraAttackSpells = map[int32]string{
-	677: "zzOLDHoly Flurry II",
-	1869: "zzOLDHoly Flurry III",
-	1870: "zzOLDHoly Flurry IV",
+	677: "Holy Flurry II",
+	1869: "Holy Flurry III",
+	1870: "Holy Flurry IV",
 	3391: "Thrash",
 	8233: "Windfury Weapon",
 	8236: "Windfury Weapon",
@@ -29,4 +29,8 @@ var ExtraAttackSpells = map[int32]string{
 	21919: "Thrash",
 	25175: "Triple Attack",
 	27035: "Sword Specialization (OLD)",
+	49369: "Rage of the Mountain",
+	51368: "Windfury Totem",
+	52634: "Hack and Slash",
+	52732: "Timeless Strike",
 }

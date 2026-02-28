@@ -2,35 +2,41 @@
 
 package dbcmem
 
-// ExtraAttackSpells maps spell IDs to spell names for all spells
+// ExtraAttackSpell stores metadata about a spell that grants extra attacks.
+type ExtraAttackSpell struct {
+	Name            string
+	NumExtraAttacks int32
+}
+
+// ExtraAttackSpells maps spell IDs to metadata for all spells
 // with the EffectAddExtraAttacks effect.
-var ExtraAttackSpells = map[int32]string{
-	677: "Holy Flurry II",
-	1869: "Holy Flurry III",
-	1870: "Holy Flurry IV",
-	3391: "Thrash",
-	8233: "Windfury Weapon",
-	8236: "Windfury Weapon",
-	8516: "Windfury Totem",
-	10484: "Windfury Weapon",
-	10608: "Windfury Totem",
-	10610: "Windfury Totem",
-	15494: "Fury of Forgewright",
-	15601: "Hand of Justice",
-	15642: "Ironfoe",
-	16361: "Windfury Weapon",
-	16459: "Sword Specialization",
-	16843: "Crimson Fury",
-	18797: "Flurry Axe",
-	18941: "Double Attack",
-	19105: "MHTest01 Effect",
-	19109: "MHTest02 Effect",
-	20178: "Reckoning",
-	21919: "Thrash",
-	25175: "Triple Attack",
-	27035: "Sword Specialization (OLD)",
-	49369: "Rage of the Mountain",
-	51368: "Windfury Totem",
-	52634: "Hack and Slash",
-	52732: "Timeless Strike",
+var ExtraAttackSpells = map[int32]ExtraAttackSpell{
+	677: {Name: "Holy Flurry II", NumExtraAttacks: 1},
+	1869: {Name: "Holy Flurry III", NumExtraAttacks: 2},
+	1870: {Name: "Holy Flurry IV", NumExtraAttacks: 2},
+	3391: {Name: "Thrash", NumExtraAttacks: 2},
+	8233: {Name: "Windfury Weapon", NumExtraAttacks: 2},
+	8236: {Name: "Windfury Weapon", NumExtraAttacks: 2},
+	8516: {Name: "Windfury Totem", NumExtraAttacks: 1},
+	10484: {Name: "Windfury Weapon", NumExtraAttacks: 2},
+	10608: {Name: "Windfury Totem", NumExtraAttacks: 1},
+	10610: {Name: "Windfury Totem", NumExtraAttacks: 1},
+	15494: {Name: "Fury of Forgewright", NumExtraAttacks: 2},
+	15601: {Name: "Hand of Justice", NumExtraAttacks: 1},
+	15642: {Name: "Ironfoe", NumExtraAttacks: 3},
+	16361: {Name: "Windfury Weapon", NumExtraAttacks: 2},
+	16459: {Name: "Sword Specialization", NumExtraAttacks: 1},
+	16843: {Name: "Crimson Fury", NumExtraAttacks: 3},
+	18797: {Name: "Flurry Axe", NumExtraAttacks: 1},
+	18941: {Name: "Double Attack", NumExtraAttacks: 1},
+	19105: {Name: "MHTest01 Effect", NumExtraAttacks: 2},
+	19109: {Name: "MHTest02 Effect", NumExtraAttacks: 2},
+	20178: {Name: "Reckoning", NumExtraAttacks: 1},
+	21919: {Name: "Thrash", NumExtraAttacks: 1},
+	25175: {Name: "Triple Attack", NumExtraAttacks: 2},
+	27035: {Name: "Sword Specialization (OLD)", NumExtraAttacks: 1},
+	49369: {Name: "Rage of the Mountain", NumExtraAttacks: 1},
+	51368: {Name: "Windfury Totem", NumExtraAttacks: 1},
+	52634: {Name: "Hack and Slash", NumExtraAttacks: 1},
+	52732: {Name: "Timeless Strike", NumExtraAttacks: 1},
 }

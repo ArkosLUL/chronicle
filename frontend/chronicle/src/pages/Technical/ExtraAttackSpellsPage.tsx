@@ -10,9 +10,9 @@ export function ExtraAttackSpellsPage() {
 
   const spells = useMemo(
     () =>
-      Object.entries(ExtraAttackSpells).map(([id, name]) => ({
+      Object.entries(ExtraAttackSpells).map(([id, spell]) => ({
         id: Number(id),
-        name,
+        ...spell,
       })),
     []
   );
@@ -87,6 +87,9 @@ export function ExtraAttackSpellsPage() {
                   size={16}
                   className="text-sm truncate"
                 />
+                <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                  +{spell.numExtraAttacks} atk
+                </span>
               </div>
               <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
             </a>

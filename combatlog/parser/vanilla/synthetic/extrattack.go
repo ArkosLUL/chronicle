@@ -45,9 +45,9 @@ func (s *extraAttack) ProcessMessage(msgs []messages.Message) []messages.Message
 				add = append(add, &messages.ExtraAttack{
 					MessageBase:   messages.Base(msg.Date()),
 					Caster:        m.Caster,
-					Amount:        1,
+					Amount:        extra.NumExtraAttacks,
 					Spell:         spellData,
-					FromSpellName: extra,
+					FromSpellName: extra.Name,
 				})
 			}
 		}

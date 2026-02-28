@@ -195,7 +195,7 @@ func NewKelThuzadRoom(id guid.GUID, all *Characters) (Character, bool) {
 
 	if entry == kelThuzadEntry {
 		return NewAdsGoWithBossCustomCharacter(
-			r,
+			NewPermanentDeath(r),
 			all,
 			15990, // Kel'Thuzad
 			16441, // Guardian of Icecrown

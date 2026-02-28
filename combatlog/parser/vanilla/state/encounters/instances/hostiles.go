@@ -159,7 +159,6 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		61956: "Lingering Astrologist",
 		59969: "Ghastly Horseman",
 		61942: "Manascale Dragon Guard",
-		61946: "Ley-Watcher Incantagos",
 		60062: "Lingering Doom",
 		61934: "Spectral Worker",
 		59988: "Manascale Whelp",
@@ -269,6 +268,7 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		59991: "Kruul",
 		59961: "Rupturan the Broken",
 		93333: "Mephistroth",
+		61946: "Ley-Watcher Incantagos",
 
 		// Lower
 		61221: "Brood Queen Araxxna",

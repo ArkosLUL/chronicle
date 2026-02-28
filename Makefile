@@ -82,6 +82,10 @@ gen/db: $(DB_GEN_FILES)
 .PHONY: gen/db
 
 
+.PHONY: gen/static
+gen/static:
+	go generate ./database/gamedb/chrondbc/dbcmem
+
 .PHONY: gen/go
 gen/go:
 	go generate ./...

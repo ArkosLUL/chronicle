@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileCode, Sparkles } from "lucide-react";
+import { ArrowLeft, FileCode, ShieldAlert, Sparkles, Swords } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 
 interface TechnicalLink {
@@ -10,6 +10,18 @@ interface TechnicalLink {
 }
 
 const TECHNICAL_LINKS: TechnicalLink[] = [
+  {
+    title: "Extra Attack Spells",
+    description: "Generated list of spells that grant extra attacks",
+    href: "/technical/extra-attack-spells",
+    icon: <Swords className="h-4 w-4" />,
+  },
+  {
+    title: "Vulnerability Spells",
+    description: "Generated list of spells that modify damage percent taken by school",
+    href: "/technical/vulnerability-spells",
+    icon: <ShieldAlert className="h-4 w-4" />,
+  },
   {
     title: "Periodic Spells",
     description: "List of all spells with periodic effects (DoTs, HoTs, channeled, etc.)",

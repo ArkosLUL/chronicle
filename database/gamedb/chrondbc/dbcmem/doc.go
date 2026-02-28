@@ -2,3 +2,4 @@
 package dbcmem
 
 //go:generate go run ../../../../scripts/dbcdata static -o .
+//go:generate go run ../../../../scripts/dbcdata derived-statics --go-dir=. --ts-dir=../../../../frontend/chronicle/src/constants/dbmem

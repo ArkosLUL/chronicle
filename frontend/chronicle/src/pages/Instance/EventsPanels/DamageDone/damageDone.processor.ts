@@ -2,10 +2,11 @@
  * Damage Done processor - aggregates damage by caster (pure TS, worker-safe)
  */
 
-import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
+import type { AuraProcessorEvent, DamageProcessorEvent, PanelProcessor, ProcessorContext, SlainProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
+import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraProcessorState } from "../processors/auraProcessor";
 
 // Re-export the shared type for backwards compatibility
 export type { DamageAbilityBreakout, HitTypeStats } from "../processors/abilityBreakout";
@@ -39,6 +40,10 @@ export type DamageDoneResult = {
   ByTarget: Map<string, Map<string, number>>;
   // GUID cache for performance (avoids repeated parsing)
   GuidCache: GuidCache;
+  // Aura state used for inline aura-aware decisions
+  AuraState: AuraProcessorState;
+  // Internal metric for tests/debugging - does not affect displayed aggregation
+  _damageEventsWithSunderArmor: number;
 }
 
 /**
@@ -46,12 +51,12 @@ export type DamageDoneResult = {
  */
 export function createDamageDoneProcessor(
   sourceType: DamageSourceType
-): PanelProcessor<DamageDoneResult, DamageProcessorEvent> {
+): PanelProcessor<DamageDoneResult, DamageProcessorEvent | AuraProcessorEvent | SlainProcessorEvent> {
   const id = sourceType === "players" ? "damage_done" : `damage_done_${sourceType}`;
   
   return {
     id,
-    streams: ["damage"],
+    streams: ["damage", "aura", "slain"],
 
     createState: () => ({
       EncounterDamage: new Map<string, UnitDamage>(),
@@ -59,18 +64,28 @@ export function createDamageDoneProcessor(
       ByAbilityBySpellId: new Map<string, Map<number, SpellIdAbilityBreakout>>(),
       ByTarget: new Map<string, Map<string, number>>(),
       GuidCache: createGuidCache(),
+      AuraState: createAuraProcessorState(),
+      _damageEventsWithSunderArmor: 0,
     }),
 
     processEvent: (
       state: DamageDoneResult,
-      event: DamageProcessorEvent,
+      event: DamageProcessorEvent | AuraProcessorEvent | SlainProcessorEvent,
       encounterID: string,
       _: Date,
       _streamType: string,
       context: ProcessorContext
     ) => {
-      // Only damage events reach here (enforced by type)
+      // applyAuraEvent(state.AuraState, encounterID, event);
+
+      // Only damage events reach here
+      if (event.type !== "damage") return;
       if (!event.caster) return;
+
+      // Example of inline aura-aware logic hook (behavior unchanged for displayed metrics)
+      if (hasAura(state.AuraState, encounterID, event.target, { spellName: "Sunder Armor" })) {
+        state._damageEventsWithSunderArmor++;
+      }
 
       const guidCache = state.GuidCache;
       
@@ -104,7 +119,7 @@ export function createDamageDoneProcessor(
 
       // Determine the entity to attribute damage to
       let damageOwner = event.caster;
-      if((sourceType === "players" || sourceType == "pets" || sourceType === "friendly_fire") && isPet) {
+      if ((sourceType === "players" || sourceType === "pets" || sourceType === "friendly_fire") && isPet) {
         damageOwner = casterInfo!.owner!;
       } 
 
@@ -112,13 +127,12 @@ export function createDamageDoneProcessor(
       let ownerName = damageOwner;
       let ownerClass = "UNKNOWN";
 
-
       if (sourceType === "players" || sourceType === "friendly_fire") {
         ownerName = context.players[damageOwner]?.name || ownerName;
         ownerClass = context.players[damageOwner]?.class || "UNKNOWN";
       } else if (sourceType === "pets") {
         // For pets, use the owner's name and the owner's class
-        ownerName = (casterInfo?.owner && context.players[casterInfo?.owner]?.name) || ownerName;
+        ownerName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || ownerName;
         ownerName += "'s Companions";
         ownerClass = context.players[casterInfo!.owner!]?.class || "UNKNOWN";
       } else {
@@ -146,7 +160,7 @@ export function createDamageDoneProcessor(
       state.EncounterDamage.set(encounterID, encounterDamage);
       
       // Breakouts
-      if(context.selectedEncounterIds.has(encounterID) &&
+      if (context.selectedEncounterIds.has(encounterID) &&
         (
           (sourceType === "enemies" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target))) ||
           ((sourceType === "players" || sourceType === "pets") && (context.entitySelection.enemyIds.size == 0 || context.entitySelection.enemyIds.has(event.target))) ||
@@ -154,11 +168,11 @@ export function createDamageDoneProcessor(
           (sourceType === "friendly_fire" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target)))
         )
       ) {
-        let abilityName = event.sourceName || "Auto Attack"
-        if((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
+        let abilityName = event.sourceName || "Auto Attack";
+        if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
           const petName = context.units?.[event.caster]?.name || event.caster.toString();
-          abilityName =  `${petName} (Pet)`
-        } 
+          abilityName = `${petName} (Pet)`;
+        }
         if (hasHitType(event.hitType, HitTypePeriodic)) {
           abilityName = abilityName + " (DoT)";
         }

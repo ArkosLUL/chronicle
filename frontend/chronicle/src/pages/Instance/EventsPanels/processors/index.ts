@@ -55,6 +55,7 @@ export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
 
 // Export shared utilities
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
+export { createAuraProcessorState, applyAuraEvent, applySlainEvent, hasAura, getAuraStacks, type AuraProcessorState, type AuraRef } from "./auraProcessor";
 
 export { isResourceChangeEvent, isHealingEvent, isDamageEvent } from "./events";
 

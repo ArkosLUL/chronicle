@@ -11,6 +11,7 @@
 import type { PanelProcessor, ProcessorContext, AuraProcessorEvent, SlainProcessorEvent } from "../processorTypes";
 import { AuraState } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
+import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraRef, type AuraProcessorState } from "../processors/auraProcessor";
 
 /** A segment of time when an aura was active */
 export interface UptimeSegment {
@@ -59,11 +60,20 @@ export interface AuraUptimeResult {
   maxOffsetByEncounter: Map<string, number>;
   /** Last encounter ID processed (for detecting transitions) */
   lastEncounterId: string | null;
+  /** Central aura tracker used for lifecycle transitions */
+  auraState: AuraProcessorState;
 }
 
 /** Create a composite key for active auras */
 function activeKey(targetGuid: string, spellName: string): string {
   return `${targetGuid}:${spellName}`;
+}
+
+function eventAuraRef(event: AuraProcessorEvent): AuraRef {
+  return {
+    spellId: event.spellId ?? undefined,
+    spellName: event.spellName,
+  };
 }
 
 /** Initialize target uptime data */
@@ -145,6 +155,30 @@ function finalizeAllActiveAuras(state: AuraUptimeResult): void {
   state.activeAuras.clear();
 }
 
+function startActiveAura(
+  state: AuraUptimeResult,
+  event: AuraProcessorEvent,
+  encounterID: string,
+  context: ProcessorContext,
+): void {
+  const key = activeKey(event.target, event.spellName);
+  const targetName = context.units?.[event.target]?.name ?? context.players[event.target]?.name ?? event.target;
+
+  state.activeAuras.set(key, {
+    targetGuid: event.target,
+    targetName,
+    spellName: event.spellName,
+    spellId: event.spellId,
+    startOffsetMs: event.offsetMilli,
+    encounterId: encounterID,
+  });
+
+  if (!state.auraNameSet.has(event.spellName)) {
+    state.auraNameSet.add(event.spellName);
+    state.auraNames.push(event.spellName);
+  }
+}
+
 type AuraUptimeEvent = AuraProcessorEvent | SlainProcessorEvent;
 
 /**
@@ -161,6 +195,7 @@ export const auraUptimeProcessor: PanelProcessor<AuraUptimeResult, AuraUptimeEve
     activeAuras: new Map(),
     maxOffsetByEncounter: new Map(),
     lastEncounterId: null,
+    auraState: createAuraProcessorState(),
   }),
   
   processEvent: (
@@ -188,7 +223,7 @@ export const auraUptimeProcessor: PanelProcessor<AuraUptimeResult, AuraUptimeEve
     if (event.type === "aura") {
       processAuraEvent(state, event, encounterID, context);
     } else if (event.type === "slain") {
-      processSlainEvent(state, event);
+      processSlainEvent(state, event, encounterID);
     }
   },
 };
@@ -199,48 +234,36 @@ function processAuraEvent(
   encounterID: string,
   context: ProcessorContext,
 ): void {
-  if(context.selectedEncounterIds.size !== 0 && !context.selectedEncounterIds.has(encounterID)) return;
-  if(context.entitySelection.playerIds.size !== 0 && !context.entitySelection.playerIds.has(event.target)) return;
-  if(context.entitySelection.enemyIds.size !== 0 && !context.entitySelection.enemyIds.has(event.target)) return;
+  if (context.selectedEncounterIds.size !== 0 && !context.selectedEncounterIds.has(encounterID)) return;
+  if (context.entitySelection.playerIds.size !== 0 && !context.entitySelection.playerIds.has(event.target)) return;
+  if (context.entitySelection.enemyIds.size !== 0 && !context.entitySelection.enemyIds.has(event.target)) return;
 
   const key = activeKey(event.target, event.spellName);
-  
-  // Handle aura state: Added, Removed, or Modified (based on stack count)
-  const isAuraGained = event.state === AuraState.Added || 
-    (event.state === AuraState.Modified && event.amount > 0);
-  const isAuraEnded = event.state === AuraState.Removed || 
-    (event.state === AuraState.Modified && event.amount === 0);
+  const auraRef = eventAuraRef(event);
+  const wasActive = hasAura(state.auraState, encounterID, event.target, auraRef);
 
-  if (isAuraGained) {
-    // If there's an existing active aura of this type, finalize it first
-    const existingActive = state.activeAuras.get(key);
-    if (existingActive) {
-      finalizeActiveAura(state, existingActive, event.offsetMilli);
+  applyAuraEvent(state.auraState, encounterID, event);
+
+  const isActive = hasAura(state.auraState, encounterID, event.target, auraRef);
+
+  if (wasActive && isActive && event.state === AuraState.Added) {
+    const existing = state.activeAuras.get(key);
+    if (existing) {
+      finalizeActiveAura(state, existing, event.offsetMilli);
     }
-    
-    // Start tracking the new active aura
-    const targetName = context.units?.[event.target]?.name ?? context.players[event.target]?.name ?? event.target;
-    const active: ActiveAura = {
-      targetGuid: event.target,
-      targetName,
-      spellName: event.spellName,
-      spellId: event.spellId,
-      startOffsetMs: event.offsetMilli,
-      encounterId: encounterID,
-    };
-    state.activeAuras.set(key, active);
-    
-    // Also add to auraNames immediately so dropdown populates
-    if (!state.auraNameSet.has(event.spellName)) {
-      state.auraNameSet.add(event.spellName);
-      state.auraNames.push(event.spellName);
-    }
-    
-  } else if (isAuraEnded) {
-    // Aura ended - finalize uptime
-    const active = state.activeAuras.get(key);
-    if (active) {
-      finalizeActiveAura(state, active, event.offsetMilli);
+    startActiveAura(state, event, encounterID, context);
+    return;
+  }
+
+  if (!wasActive && isActive) {
+    startActiveAura(state, event, encounterID, context);
+    return;
+  }
+
+  if (wasActive && !isActive) {
+    const existing = state.activeAuras.get(key);
+    if (existing) {
+      finalizeActiveAura(state, existing, event.offsetMilli);
       state.activeAuras.delete(key);
     }
   }
@@ -249,7 +272,9 @@ function processAuraEvent(
 function processSlainEvent(
   state: AuraUptimeResult,
   event: SlainProcessorEvent,
+  encounterID: string,
 ): void {
+  applyAuraEvent(state.auraState, encounterID, event);
   // When a target dies, finalize any active auras on it
   finalizeAurasOnTarget(state, event.target, event.offsetMilli);
 }

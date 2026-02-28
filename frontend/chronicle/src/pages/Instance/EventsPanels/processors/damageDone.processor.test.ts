@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createDamageDoneProcessor } from '../DamageDone/damageDone.processor';
-import type { DamageProcessorEvent, ProcessorContext } from '../processorTypes';
+import { AuraApplication, AuraState, type AuraProcessorEvent, type DamageProcessorEvent, type ProcessorContext, type SlainProcessorEvent } from '../processorTypes';
 
 describe('damageDoneProcessor', () => {
   const processor = createDamageDoneProcessor('players');
@@ -40,6 +40,37 @@ describe('damageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      ...overrides,
+    };
+  }
+
+  function createAuraEvent(overrides: Partial<AuraProcessorEvent> = {}): AuraProcessorEvent {
+    return {
+      type: 'aura',
+      index: 0,
+      offsetMilli: 0,
+      target: '0xF130000CE0000001',
+      spellName: 'Sunder Armor',
+      spellId: 7386,
+      amount: 1,
+      application: AuraApplication.Gains,
+      state: AuraState.Added,
+      activity: [],
+      activityCount: 0,
+      ...overrides,
+    };
+  }
+
+  function createSlainEvent(overrides: Partial<SlainProcessorEvent> = {}): SlainProcessorEvent {
+    return {
+      type: 'slain',
+      index: 0,
+      offsetMilli: 0,
+      target: '0xF130000CE0000001',
+      caster: '0x0000000000001234',
+      attribution: null,
+      activity: [],
+      activityCount: 0,
       ...overrides,
     };
   }
@@ -135,6 +166,30 @@ describe('damageDoneProcessor', () => {
 
     expect(state.EncounterDamage.size).toBe(0);
   });
+  it('tracks aura state inline and keeps aggregation behavior unchanged', () => {
+    const state = processor.createState();
+    const context = createContext();
+
+    processor.processEvent(state, createAuraEvent(), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createDamageEvent({ amount: 777 }), 'enc1', new Date(), 'damage', context);
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    const playerData = encDamage.get('0x0000000000001234')!;
+    expect(playerData.target.get('0xF130000CE0000001')).toBe(777);
+    expect(state._damageEventsWithSunderArmor).toBe(1);
+  });
+
+  it('clears tracked target auras on slain events', () => {
+    const state = processor.createState();
+    const context = createContext();
+
+    processor.processEvent(state, createAuraEvent(), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createSlainEvent(), 'enc1', new Date(), 'slain', context);
+    processor.processEvent(state, createDamageEvent({ amount: 300 }), 'enc1', new Date(), 'damage', context);
+
+    expect(state._damageEventsWithSunderArmor).toBe(0);
+  });
+
 });
 
 describe('enemyDamageDoneProcessor', () => {

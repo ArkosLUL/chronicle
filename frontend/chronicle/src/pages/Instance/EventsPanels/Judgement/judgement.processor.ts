@@ -16,6 +16,7 @@
 import type { PanelProcessor, ProcessorContext, AuraProcessorEvent, HealProcessorEvent, SlainProcessorEvent } from "../processorTypes";
 import { AuraState } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
+import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraProcessorState, type AuraRef } from "../processors/auraProcessor";
 
 /** Judgement types */
 export type JudgementType = "light" | "wisdom" | "crusader" | "justice" | "unknown";
@@ -79,11 +80,20 @@ export interface JudgementResult {
   maxOffsetByEncounter: Map<string, number>;
   /** Last encounter ID processed - used to detect encounter transitions */
   lastEncounterId: string | null;
+  /** Central aura tracker used for lifecycle transitions */
+  auraState: AuraProcessorState;
 }
 
 /** Create a composite key for active judgements */
 function activeKey(targetGuid: string, type: JudgementType): string {
   return `${targetGuid}:${type}`;
+}
+
+function eventAuraRef(event: AuraProcessorEvent): AuraRef {
+  return {
+    spellId: event.spellId ?? undefined,
+    spellName: event.spellName,
+  };
 }
 
 /** Parse judgement type from aura spell name */
@@ -155,6 +165,7 @@ export const judgementProcessor: PanelProcessor<JudgementResult, JudgementEvent>
     activeJudgements: new Map(),
     maxOffsetByEncounter: new Map(),
     lastEncounterId: null,
+    auraState: createAuraProcessorState(),
   }),
   
   processEvent: (
@@ -184,7 +195,7 @@ export const judgementProcessor: PanelProcessor<JudgementResult, JudgementEvent>
     } else if (event.type === "heal") {
       processHealEvent(state, event);
     } else if (event.type === "slain") {
-      processSlainEvent(state, event);
+      processSlainEvent(state, event, encounterID);
     }
   },
 };
@@ -202,17 +213,21 @@ function processAuraEvent(
   if (context.entitySelection.enemyIds.size > 0) {
     if (!context.entitySelection.enemyIds.has(event.target)) return;
   }
-  
+
   const key = activeKey(event.target, judgementType);
-  
-  if (event.state === AuraState.Added) {
-    // If there's an existing active judgement of this type, finalize it first
+  const auraRef = eventAuraRef(event);
+  const wasActive = hasAura(state.auraState, encounterID, event.target, auraRef);
+
+  applyAuraEvent(state.auraState, encounterID, event);
+
+  const isActive = hasAura(state.auraState, encounterID, event.target, auraRef);
+
+  if (wasActive && isActive && event.state === AuraState.Added) {
     const existingActive = state.activeJudgements.get(key);
     if (existingActive) {
       finalizeActiveJudgement(state, existingActive, event.offsetMilli);
     }
-    
-    // Start tracking the new active judgement
+
     const targetName = context.units?.[event.target]?.name ?? context.players[event.target]?.name ?? event.target;
     const active: ActiveJudgement = {
       type: judgementType,
@@ -222,9 +237,23 @@ function processAuraEvent(
       encounterId: encounterID,
     };
     state.activeJudgements.set(key, active);
-    
-  } else if (event.state === AuraState.Removed) {
-    // Judgement faded - finalize uptime
+    return;
+  }
+
+  if (!wasActive && isActive) {
+    const targetName = context.units?.[event.target]?.name ?? context.players[event.target]?.name ?? event.target;
+    const active: ActiveJudgement = {
+      type: judgementType,
+      targetGuid: event.target,
+      targetName,
+      startOffsetMs: event.offsetMilli,
+      encounterId: encounterID,
+    };
+    state.activeJudgements.set(key, active);
+    return;
+  }
+
+  if (wasActive && !isActive) {
     const active = state.activeJudgements.get(key);
     if (active) {
       finalizeActiveJudgement(state, active, event.offsetMilli);
@@ -289,7 +318,9 @@ function processHealEvent(
 function processSlainEvent(
   state: JudgementResult,
   event: SlainProcessorEvent,
+  encounterID: string,
 ): void {
+  applyAuraEvent(state.auraState, encounterID, event);
   // When a target dies, finalize any active judgements on it
   finalizeJudgementsOnTarget(state, event.target, event.offsetMilli);
 }

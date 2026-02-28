@@ -126,4 +126,10 @@ var (
 		ZoneName: ZoneNameMatcher("stormwind vault"),
 		Hostiles: FromMap(StormwindVaultHostiles()),
 	}).New
+
+	Stockades = (&CommonFactory{
+		Name:     "Stockade",
+		ZoneName: ZoneNameMatcher("the stockade"),
+		Hostiles: FromMap(StockadeHostiles()),
+	}).New
 )

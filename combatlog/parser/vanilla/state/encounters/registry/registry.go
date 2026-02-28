@@ -32,6 +32,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	r.RegisterWithComment(wrap(instances.Stratholme), "Only undead side, mechanics not implemented")
 	r.Register(wrap(instances.DireMaul))
 	r.Register(wrap(instances.StormwindVault))
+	r.Register(wrap(instances.Stockades))
 
 	r.RegisterWithComment(wrap(instances.BlackrockSpire), "Only upper spire is supported at the moment")
 

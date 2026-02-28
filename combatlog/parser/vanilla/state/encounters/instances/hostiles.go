@@ -940,3 +940,23 @@ func StormwindVaultHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func StockadeHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		1711: "Defias Convict",
+		1706: "Defias Prisoner",
+		1708: "Defias Inmate",
+		1707: "Defias Captive",
+		1715: "Defias Insurgent",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		1696: "Targorr the Dread",
+		1666: "Kam Deepfury",
+		1717: "Hamhock",
+		1716: "Bazil Thredd",
+		1663: "Dextren Ward",
+	})
+
+	return hostile
+}

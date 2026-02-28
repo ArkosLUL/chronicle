@@ -36,7 +36,7 @@ interface RaidCardProps {
 export function RaidCard({ instance }: RaidCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const uploadedAt = new Date(instance.uploaded_at);
+  const firstEncounterAt = new Date(instance.first_encounter_time);
   const backgroundImage = getInstanceBackground(instance.name);
   
   // Use static boss count if configured, otherwise fall back to API value
@@ -223,7 +223,7 @@ export function RaidCard({ instance }: RaidCardProps) {
 
           {/* Footer: Time and realm */}
           <div data-chromatic="ignore" className="pt-2 border-t border-white/20 flex items-center justify-between text-xs text-white/60">
-            <span>{formatRelativeTime(uploadedAt)}</span>
+            <span>{formatRelativeTime(firstEncounterAt)}</span>
             <span className="truncate ml-2">{instance.realm_name}</span>
           </div>
         </div>

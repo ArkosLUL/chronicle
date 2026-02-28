@@ -47,7 +47,7 @@ func decodeCursor(s string) (time.Time, uuid.UUID, error) {
 	return cursor.Time, cursor.ID, nil
 }
 
-// RecentInstances returns a paginated list of recently uploaded raid/dungeon instances.
+// RecentInstances returns a paginated list of recent raid/dungeon instances.
 // @Summary List recent raid/dungeon instances
 // @Tags raidlogs
 // @Produce json
@@ -161,18 +161,19 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	instances := make([]chroniclesdk.RecentInstance, 0, len(rows))
 	for _, row := range rows {
 		inst := chroniclesdk.RecentInstance{
-			ID:              row.ID,
-			Slug:            row.Slug.String,
-			Name:            row.Name,
-			RealmID:         row.RealmID,
-			RealmName:       row.RealmName,
-			UploaderID:      row.UploaderID,
-			UploaderName:    row.UploaderName,
-			UploadedAt:      row.UploadedAt.Time,
-			PlayerCount:     row.PlayerCount,
-			BossCount:       row.BossCount,
-			BossKills:       row.BossKills,
-			HasYoutubeVideo: row.HasYoutubeVideo,
+			ID:                 row.ID,
+			Slug:               row.Slug.String,
+			Name:               row.Name,
+			RealmID:            row.RealmID,
+			RealmName:          row.RealmName,
+			UploaderID:         row.UploaderID,
+			UploaderName:       row.UploaderName,
+			UploadedAt:         row.UploadedAt.Time,
+			FirstEncounterTime: row.FirstEncounterTime.Time,
+			PlayerCount:        row.PlayerCount,
+			BossCount:          row.BossCount,
+			BossKills:          row.BossKills,
+			HasYoutubeVideo:    row.HasYoutubeVideo,
 		}
 		if row.DurationMs != 0 {
 			d := row.DurationMs
@@ -205,7 +206,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	var nextCursor string
 	if hasMore && len(rows) > 0 {
 		lastRow := rows[len(rows)-1]
-		nextCursor = encodeCursor(lastRow.UploadedAt.Time, lastRow.ID)
+		nextCursor = encodeCursor(lastRow.FirstEncounterTime.Time, lastRow.ID)
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.RecentInstancesResponse{

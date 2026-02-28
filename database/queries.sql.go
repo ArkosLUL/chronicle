@@ -1823,6 +1823,10 @@ SELECT
     wlg.owner as uploader_id,
     u.username as uploader_name,
     wlg.created_at as uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) as first_encounter_time,
     (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
@@ -1858,14 +1862,14 @@ WHERE true
             li.realm_id = $3
         ELSE true
     END
-    -- Cursor pagination (uploaded_at, id) - pass '0001-01-01' to skip
+    -- Cursor pagination (first_encounter_time, id) - pass '0001-01-01' to skip
     AND CASE
         WHEN $4 :: timestamptz != '0001-01-01'::timestamptz THEN
-            (wlg.created_at < $4 
-             OR (wlg.created_at = $4 AND li.id < $5 :: uuid))
+            (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) < $4 
+             OR (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) = $4 AND li.id < $5 :: uuid))
         ELSE true
     END
-ORDER BY wlg.created_at DESC, li.id DESC
+ORDER BY first_encounter_time DESC, li.id DESC
 LIMIT $6
 `
 
@@ -1879,21 +1883,22 @@ type ListRecentInstancesParams struct {
 }
 
 type ListRecentInstancesRow struct {
-	ID              uuid.UUID          `db:"id" json:"id"`
-	Slug            pgtype.Text        `db:"slug" json:"slug"`
-	Name            string             `db:"name" json:"name"`
-	RealmID         uuid.UUID          `db:"realm_id" json:"realm_id"`
-	RealmName       string             `db:"realm_name" json:"realm_name"`
-	UploaderID      uuid.UUID          `db:"uploader_id" json:"uploader_id"`
-	UploaderName    string             `db:"uploader_name" json:"uploader_name"`
-	UploadedAt      pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
-	PlayerCount     int64              `db:"player_count" json:"player_count"`
-	BossCount       int64              `db:"boss_count" json:"boss_count"`
-	BossKills       int64              `db:"boss_kills" json:"boss_kills"`
-	DurationMs      float64            `db:"duration_ms" json:"duration_ms"`
-	GuildID         uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	GuildName       pgtype.Text        `db:"guild_name" json:"guild_name"`
-	HasYoutubeVideo bool               `db:"has_youtube_video" json:"has_youtube_video"`
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	Slug               pgtype.Text        `db:"slug" json:"slug"`
+	Name               string             `db:"name" json:"name"`
+	RealmID            uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName          string             `db:"realm_name" json:"realm_name"`
+	UploaderID         uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName       string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt         pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	FirstEncounterTime pgtype.Timestamptz `db:"first_encounter_time" json:"first_encounter_time"`
+	PlayerCount        int64              `db:"player_count" json:"player_count"`
+	BossCount          int64              `db:"boss_count" json:"boss_count"`
+	BossKills          int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs         float64            `db:"duration_ms" json:"duration_ms"`
+	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
+	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
 }
 
 func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error) {
@@ -1921,6 +1926,7 @@ func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInst
 			&i.UploaderID,
 			&i.UploaderName,
 			&i.UploadedAt,
+			&i.FirstEncounterTime,
 			&i.PlayerCount,
 			&i.BossCount,
 			&i.BossKills,
@@ -1940,7 +1946,10 @@ func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInst
 }
 
 const listRecentInstancesByPlayer = `-- name: ListRecentInstancesByPlayer :many
-SELECT DISTINCT ON (wlg.created_at, li.id)
+SELECT DISTINCT ON (
+        COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at),
+        li.id
+    )
     li.id,
     li.hashed_slug as slug,
     li.name,
@@ -1949,6 +1958,10 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     wlg.owner as uploader_id,
     u.username as uploader_name,
     wlg.created_at as uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) as first_encounter_time,
     (SELECT COUNT(*) FROM log_instance_players lip2 WHERE lip2.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
@@ -1988,11 +2001,11 @@ WHERE lip.name ILIKE $1
     -- Cursor pagination
     AND CASE
         WHEN $5 :: timestamptz != '0001-01-01'::timestamptz THEN
-            (wlg.created_at < $5 
-             OR (wlg.created_at = $5 AND li.id < $6 :: uuid))
+            (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) < $5 
+             OR (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) = $5 AND li.id < $6 :: uuid))
         ELSE true
     END
-ORDER BY wlg.created_at DESC, li.id DESC
+ORDER BY COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) DESC, li.id DESC
 LIMIT $7
 `
 
@@ -2007,21 +2020,22 @@ type ListRecentInstancesByPlayerParams struct {
 }
 
 type ListRecentInstancesByPlayerRow struct {
-	ID              uuid.UUID          `db:"id" json:"id"`
-	Slug            pgtype.Text        `db:"slug" json:"slug"`
-	Name            string             `db:"name" json:"name"`
-	RealmID         uuid.UUID          `db:"realm_id" json:"realm_id"`
-	RealmName       string             `db:"realm_name" json:"realm_name"`
-	UploaderID      uuid.UUID          `db:"uploader_id" json:"uploader_id"`
-	UploaderName    string             `db:"uploader_name" json:"uploader_name"`
-	UploadedAt      pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
-	PlayerCount     int64              `db:"player_count" json:"player_count"`
-	BossCount       int64              `db:"boss_count" json:"boss_count"`
-	BossKills       int64              `db:"boss_kills" json:"boss_kills"`
-	DurationMs      float64            `db:"duration_ms" json:"duration_ms"`
-	GuildID         uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	GuildName       pgtype.Text        `db:"guild_name" json:"guild_name"`
-	HasYoutubeVideo bool               `db:"has_youtube_video" json:"has_youtube_video"`
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	Slug               pgtype.Text        `db:"slug" json:"slug"`
+	Name               string             `db:"name" json:"name"`
+	RealmID            uuid.UUID          `db:"realm_id" json:"realm_id"`
+	RealmName          string             `db:"realm_name" json:"realm_name"`
+	UploaderID         uuid.UUID          `db:"uploader_id" json:"uploader_id"`
+	UploaderName       string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt         pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	FirstEncounterTime pgtype.Timestamptz `db:"first_encounter_time" json:"first_encounter_time"`
+	PlayerCount        int64              `db:"player_count" json:"player_count"`
+	BossCount          int64              `db:"boss_count" json:"boss_count"`
+	BossKills          int64              `db:"boss_kills" json:"boss_kills"`
+	DurationMs         float64            `db:"duration_ms" json:"duration_ms"`
+	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
+	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
 }
 
 func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error) {
@@ -2050,6 +2064,7 @@ func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRe
 			&i.UploaderID,
 			&i.UploaderName,
 			&i.UploadedAt,
+			&i.FirstEncounterTime,
 			&i.PlayerCount,
 			&i.BossCount,
 			&i.BossKills,

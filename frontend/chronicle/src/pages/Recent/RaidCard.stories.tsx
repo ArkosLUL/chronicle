@@ -17,6 +17,7 @@ const baseInstance: RecentInstance = {
   guild_id: "guild-1234",
   guild_name: "Turtle Raiders",
   uploaded_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+  first_encounter_time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   player_count: 40,
   boss_count: 10,
   boss_kills: 10,
@@ -240,6 +241,7 @@ export const JustUploaded: Story = {
     instance: {
       ...baseInstance,
       uploaded_at: new Date(Date.now() - 30 * 1000).toISOString(), // 30 seconds ago
+      first_encounter_time: new Date(Date.now() - 30 * 1000).toISOString(),
     },
   },
 };
@@ -252,6 +254,7 @@ export const WeekOld: Story = {
     instance: {
       ...baseInstance,
       uploaded_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      first_encounter_time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     },
   },
 };

@@ -277,7 +277,7 @@ export interface RecentEncounter {
 
 // From chroniclesdk/log.go
 /**
- * RecentInstance represents a recently uploaded raid or dungeon instance.
+ * RecentInstance represents a recent raid or dungeon instance.
  */
 export interface RecentInstance {
     readonly id: string;
@@ -288,6 +288,7 @@ export interface RecentInstance {
     readonly uploader_id: string;
     readonly uploader_name: string;
     readonly uploaded_at: string;
+    readonly first_encounter_time: string;
     readonly player_count: number;
     readonly boss_count: number;
     readonly boss_kills: number;

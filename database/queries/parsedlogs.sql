@@ -148,6 +148,10 @@ SELECT
     wlg.owner as uploader_id,
     u.username as uploader_name,
     wlg.created_at as uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) as first_encounter_time,
     (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
@@ -183,18 +187,21 @@ WHERE true
             li.realm_id = @realm_id
         ELSE true
     END
-    -- Cursor pagination (uploaded_at, id) - pass '0001-01-01' to skip
+    -- Cursor pagination (first_encounter_time, id) - pass '0001-01-01' to skip
     AND CASE
         WHEN @cursor_time :: timestamptz != '0001-01-01'::timestamptz THEN
-            (wlg.created_at < @cursor_time 
-             OR (wlg.created_at = @cursor_time AND li.id < @cursor_id :: uuid))
+            (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) < @cursor_time 
+             OR (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) = @cursor_time AND li.id < @cursor_id :: uuid))
         ELSE true
     END
-ORDER BY wlg.created_at DESC, li.id DESC
+ORDER BY first_encounter_time DESC, li.id DESC
 LIMIT @limit_count;
 
 -- name: ListRecentInstancesByPlayer :many
-SELECT DISTINCT ON (wlg.created_at, li.id)
+SELECT DISTINCT ON (
+        COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at),
+        li.id
+    )
     li.id,
     li.hashed_slug as slug,
     li.name,
@@ -203,6 +210,10 @@ SELECT DISTINCT ON (wlg.created_at, li.id)
     wlg.owner as uploader_id,
     u.username as uploader_name,
     wlg.created_at as uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) as first_encounter_time,
     (SELECT COUNT(*) FROM log_instance_players lip2 WHERE lip2.instance_id = li.id) as player_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
     (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
@@ -242,11 +253,11 @@ WHERE lip.name ILIKE @player_name
     -- Cursor pagination
     AND CASE
         WHEN @cursor_time :: timestamptz != '0001-01-01'::timestamptz THEN
-            (wlg.created_at < @cursor_time 
-             OR (wlg.created_at = @cursor_time AND li.id < @cursor_id :: uuid))
+            (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) < @cursor_time 
+             OR (COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) = @cursor_time AND li.id < @cursor_id :: uuid))
         ELSE true
     END
-ORDER BY wlg.created_at DESC, li.id DESC
+ORDER BY COALESCE((SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id), wlg.created_at) DESC, li.id DESC
 LIMIT @limit_count;
 
 -- name: GetEncounterSummariesByInstanceID :many

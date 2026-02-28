@@ -87,6 +87,7 @@ function generateMockInstances(count: number, startIndex = 0): RecentInstance[] 
       uploader_id: `user-${idx}`,
       uploader_name: uploader,
       uploaded_at: uploadedAt.toISOString(),
+      first_encounter_time: uploadedAt.toISOString(),
       player_count: playerCount,
       boss_count: instanceType.bossCount,
       boss_kills: bossKills,

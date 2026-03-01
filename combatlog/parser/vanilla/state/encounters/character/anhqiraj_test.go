@@ -59,7 +59,7 @@ func TestCthun_EyePendingDeathTimesOutWithoutBody(t *testing.T) {
 	msgs := []messages.Message{
 		cthunDamage(base, player, eye),
 		cthunSlain(base.Add(1*time.Second), player, eye),
-		cthunDamage(base.Add(25*time.Second), player, dummyTarget),
+		cthunDamage(base.Add(35*time.Second), player, dummyTarget),
 	}
 
 	for _, msg := range msgs {

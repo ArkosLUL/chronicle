@@ -564,7 +564,6 @@ func TempleOfAhnQirajHostiles() map[uint32]Identity {
 		15236: "Vekniss Wasp",
 		15277: "Anubisath Defender",
 		15538: "Anubisath Swarmguard",
-		15589: "Eye of C'Thun",
 		15317: "Qiraji Scorpion",
 		15235: "Vekniss Stinger",
 		15312: "Obsidian Nullifier",
@@ -585,12 +584,14 @@ func TempleOfAhnQirajHostiles() map[uint32]Identity {
 	})
 	LoadBosses(hostile, map[uint32]string{
 		15517: "Ouro",
-		15727: "C'Thun",
 		15510: "Fankriss the Unyielding",
 		15516: "Battleguard Sartura",
 		15299: "Viscidus",
 		15509: "Princess Huhuran",
 		15263: "The Prophet Skeram",
+
+		15727: "C'Thun",
+		15589: "C'Thun", // "Eye of C'Thun",
 
 		// Twin emps
 		15275: "Twin Emperors", // "Emperor Vek'nilash",

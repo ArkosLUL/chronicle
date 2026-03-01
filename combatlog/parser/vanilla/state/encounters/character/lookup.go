@@ -30,6 +30,7 @@ var characterFactories = []characterFactory{
 	NewSmoldarisBasaltharCharacter,
 	NewSorcererThaneCharacter,
 	NewRagnarosCharacter,
+	NewGolemaggCharacter,
 	// Onyxia
 	NewOnyxiaCharacter,
 	// Zul'Gurub

@@ -258,10 +258,13 @@ export function createDamageDoneProcessor(
       // Vulnerability decomposition (bonus + base). Defaults to no bonus.
       let baseAmount = event.amount;
       let bonusAmount = 0;
-      if (selectedVulnerability && selectedVulnerability.percentAffect > 0) {
+      let schoolMatchesSelectedVulnerability = true;
+
+      if (selectedVulnerability) {
         const schoolBitmask = normalizeDamageSchoolToBitmask(event.school);
-        const schoolMatches = (schoolBitmask & selectedVulnerability.schoolBitmask) !== 0;
-        if (schoolMatches) {
+        schoolMatchesSelectedVulnerability = (schoolBitmask & selectedVulnerability.schoolBitmask) !== 0;
+
+        if (selectedVulnerability.percentAffect > 0 && schoolMatchesSelectedVulnerability) {
           const activeMultiplier = getActiveVulnerabilityMultiplier(
             state.AuraState,
             encounterID,
@@ -275,6 +278,11 @@ export function createDamageDoneProcessor(
           }
         }
       }
+
+      const schoolMaskOnly = vulnerabilityMode &&
+        (context.panelContext as { schoolMask?: boolean } | null)?.schoolMask === true;
+      const includeInVulnerabilityTotals =
+        !schoolMaskOnly || selectedVulnerability == null || schoolMatchesSelectedVulnerability;
 
       if (!state.EncounterDamage.has(encounterID)) {
         state.EncounterDamage.set(encounterID, new Map<string, DamageDoneData>());
@@ -295,8 +303,10 @@ export function createDamageDoneProcessor(
       state.EncounterDamage.set(encounterID, encounterDamage);
 
       // Vulnerability encounter totals (used by Vulnerability Effect panel)
-      accumulateEncounterTargetValue(state.EncounterVulnerabilityBonus, encounterID, damageOwner, event.target, bonusAmount);
-      accumulateEncounterTargetValue(state.EncounterVulnerabilityBase, encounterID, damageOwner, event.target, baseAmount);
+      if (includeInVulnerabilityTotals) {
+        accumulateEncounterTargetValue(state.EncounterVulnerabilityBonus, encounterID, damageOwner, event.target, bonusAmount);
+        accumulateEncounterTargetValue(state.EncounterVulnerabilityBase, encounterID, damageOwner, event.target, baseAmount);
+      }
 
       // Breakouts
       if (context.selectedEncounterIds.has(encounterID) &&
@@ -325,30 +335,32 @@ export function createDamageDoneProcessor(
         accumulateOwnerTargetValue(state.ByTarget, damageOwner, event.target, event.amount);
 
         // Vulnerability breakouts
-        accumulateAbilityBreakout(state.VulnerabilityByAbilityBonus, damageOwner, abilityName, bonusAmount, event.hitType);
-        accumulateAbilityBreakout(state.VulnerabilityByAbilityBase, damageOwner, abilityName, baseAmount, event.hitType);
+        if (includeInVulnerabilityTotals) {
+          accumulateAbilityBreakout(state.VulnerabilityByAbilityBonus, damageOwner, abilityName, bonusAmount, event.hitType);
+          accumulateAbilityBreakout(state.VulnerabilityByAbilityBase, damageOwner, abilityName, baseAmount, event.hitType);
 
-        if (event.spellId != null) {
-          accumulateAbilityBreakoutBySpellId(
-            state.VulnerabilityByAbilityBySpellIdBonus,
-            damageOwner,
-            event.spellId,
-            abilityName,
-            bonusAmount,
-            event.hitType,
-          );
-          accumulateAbilityBreakoutBySpellId(
-            state.VulnerabilityByAbilityBySpellIdBase,
-            damageOwner,
-            event.spellId,
-            abilityName,
-            baseAmount,
-            event.hitType,
-          );
+          if (event.spellId != null) {
+            accumulateAbilityBreakoutBySpellId(
+              state.VulnerabilityByAbilityBySpellIdBonus,
+              damageOwner,
+              event.spellId,
+              abilityName,
+              bonusAmount,
+              event.hitType,
+            );
+            accumulateAbilityBreakoutBySpellId(
+              state.VulnerabilityByAbilityBySpellIdBase,
+              damageOwner,
+              event.spellId,
+              abilityName,
+              baseAmount,
+              event.hitType,
+            );
+          }
+
+          accumulateOwnerTargetValue(state.VulnerabilityByTargetBonus, damageOwner, event.target, bonusAmount);
+          accumulateOwnerTargetValue(state.VulnerabilityByTargetBase, damageOwner, event.target, baseAmount);
         }
-
-        accumulateOwnerTargetValue(state.VulnerabilityByTargetBonus, damageOwner, event.target, bonusAmount);
-        accumulateOwnerTargetValue(state.VulnerabilityByTargetBase, damageOwner, event.target, baseAmount);
       }
     },
   };

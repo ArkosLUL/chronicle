@@ -43,6 +43,13 @@ func (c *CoreHound) Process(m messages.Message) error {
 			if t.Amount != nil && *t.Amount > 0 && t.HitType.Has(types.HitTypePartialAbsorb) {
 				return nil
 			}
+
+			if data.Caster != nil && data.Caster.IsObject() {
+				// Hunter traps apparently can do damage through the Corehound's dead body, but they are resisted. Ignore those as well.
+				if t.Amount != nil && *t.Amount > 0 && t.HitType.Has(types.HitTypePartialResist) {
+					return nil
+				}
+			}
 		}
 	}
 

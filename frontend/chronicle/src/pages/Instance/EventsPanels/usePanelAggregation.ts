@@ -22,6 +22,7 @@ export interface UsePanelAggregationOptions<TResult> {
   panel: PanelDefinition<TResult, any>;
   context: PanelContext;
   panelOption?: string | null;
+  panelContext?: Record<string, unknown> | null;
   enabled?: boolean;
 }
 
@@ -34,11 +35,43 @@ export interface UsePanelAggregationResult<TResult> {
   processingTimeMs: number | null;
 }
 
+function stableSerializeContextValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "null";
+  }
+
+  if (typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableSerializeContextValue(entry)).join(",")}]`;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+
+  return `{${entries.map(([key, entry]) => `${JSON.stringify(key)}:${stableSerializeContextValue(entry)}`).join(",")}}`;
+}
+
+function serializePanelContextForKey(panelContext: Record<string, unknown> | null): string {
+  if (!panelContext) {
+    return "";
+  }
+
+  return stableSerializeContextValue(panelContext);
+}
+
 /**
  * Convert PanelContext to serializable ProcessorContext for the worker.
  * Arrays are used for Sets since they can't be serialized through postMessage.
  */
-function toSerializableContext(ctx: PanelContext, panelOption: string | null): SerializableProcessorContext {
+function toSerializableContext(
+  ctx: PanelContext,
+  panelOption: string | null,
+  panelContext: Record<string, unknown> | null,
+): SerializableProcessorContext {
   // Extract only the fields needed by processors
   const players: SerializableProcessorContext["players"] = {};
   if (ctx.instance.players) {
@@ -72,6 +105,7 @@ function toSerializableContext(ctx: PanelContext, panelOption: string | null): S
     },
     pagination: ctx.pagination,
     panelOption,
+    panelContext,
   };
 }
 
@@ -132,7 +166,13 @@ function deserializeResult<TResult>(result: unknown): TResult {
 export function usePanelAggregation<TResult>(
   options: UsePanelAggregationOptions<TResult>
 ): UsePanelAggregationResult<TResult> {
-  const { panel, context: panelContext, panelOption = null, enabled = true } = options;
+  const {
+    panel,
+    context: panelContext,
+    panelOption = null,
+    panelContext: panelContextData = null,
+    enabled = true,
+  } = options;
   const eventsContext = useInstanceEventsContext();
   const syncMode = useSyncModeContextOptional();
   // Extract stable function ref to avoid re-triggering effects
@@ -181,8 +221,16 @@ export function usePanelAggregation<TResult>(
     const encounterIds = panelContext.selectedEncounterIds.slice().sort().join(",");
     const playerIds = Array.from(panelContext.entitySelection.playerIds).sort().join(",");
     const enemyIds = Array.from(panelContext.entitySelection.enemyIds).sort().join(",");
-    return `${panelContext.instance.id}|${encounterIds}|${playerIds}|${enemyIds}|${panelOption ?? ""}`;
-  }, [panelContext.instance.id, panelContext.selectedEncounterIds, panelContext.entitySelection.playerIds, panelContext.entitySelection.enemyIds, panelOption]);
+    const panelContextSerialized = serializePanelContextForKey(panelContextData);
+    return `${panelContext.instance.id}|${encounterIds}|${playerIds}|${enemyIds}|${panelOption ?? ""}|${panelContextSerialized}`;
+  }, [
+    panelContext.instance.id,
+    panelContext.selectedEncounterIds,
+    panelContext.entitySelection.playerIds,
+    panelContext.entitySelection.enemyIds,
+    panelOption,
+    panelContextData,
+  ]);
   
   // Check if we're in sync mode
   const isSyncMode = syncMode?.enabled ?? false;
@@ -264,7 +312,7 @@ export function usePanelAggregation<TResult>(
       const workerRequest: WorkerRequest = {
         requestId,
         panelId: panel.id,
-        context: toSerializableContext(panelContext, panelOption),
+        context: toSerializableContext(panelContext, panelOption, panelContextData),
         streams: fetchedStreams,
       };
       
@@ -293,7 +341,7 @@ export function usePanelAggregation<TResult>(
       setLoading(false);
       setProcessing(false);
     }
-  }, [eventsContext.fetchStream, panel, panelContext, panelOption]);
+  }, [eventsContext.fetchStream, panel, panelContext, panelOption, panelContextData]);
   
   // Main thread incremental processing (sync mode)
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
@@ -325,7 +373,7 @@ export function usePanelAggregation<TResult>(
       const response = await processIncrementally<TResult>({
         panelId: panel.id,
         streams,
-        context: toSerializableContext(panelContext, panelOption),
+        context: toSerializableContext(panelContext, panelOption, panelContextData),
         stopAtTimestamp: stopAt,
         previousState: incrementalStateRef.current,
         onProgress: (_state, count) => {
@@ -387,7 +435,7 @@ export function usePanelAggregation<TResult>(
       setLoading(false);
       setProcessing(false);
     }
-  }, [eventsContext.fetchStream, panel, panelContext, panelOption]);
+  }, [eventsContext.fetchStream, panel, panelContext, panelOption, panelContextData]);
   
   // Track previous sync mode to detect transitions
   const prevSyncModeRef = useRef(isSyncMode);

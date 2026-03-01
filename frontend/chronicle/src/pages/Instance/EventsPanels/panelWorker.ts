@@ -24,6 +24,7 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
     },
     pagination: ctx.pagination,
     panelOption: ctx.panelOption,
+    panelContext: ctx.panelContext,
   };
 }
 

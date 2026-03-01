@@ -390,6 +390,48 @@ describe('vulnerabilityEffectProcessor', () => {
     expect(base).toBe(1000);
   });
 
+  it('filters out unmatched schools when schoolMask panel context is enabled', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        schoolMask: true,
+      },
+    });
+
+    processor.processEvent(state, createSpellVulnerabilityAuraEvent(), 'enc1', new Date(), 'aura', context);
+    // Physical school does not match Spell Vulnerability's school bitmask.
+    processor.processEvent(state, createDamageEvent({ amount: 1000, school: 2 }), 'enc1', new Date(), 'damage', context);
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    expect(bonus).toBe(0);
+    expect(base).toBe(0);
+  });
+
+  it('keeps matched schools when schoolMask panel context is enabled', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        schoolMask: true,
+      },
+    });
+
+    processor.processEvent(state, createSpellVulnerabilityAuraEvent(), 'enc1', new Date(), 'aura', context);
+    // Fire school matches Spell Vulnerability's school bitmask.
+    processor.processEvent(state, createDamageEvent({ amount: 1100, school: 4 }), 'enc1', new Date(), 'damage', context);
+
+    const percentAffect = VulnerabilitySpells[spellVulnerabilityId].percentAffect;
+    const expectedBase = 1100 / (1 + percentAffect / 100);
+    const expectedBonus = 1100 - expectedBase;
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    expect(base).toBeCloseTo(expectedBase);
+    expect(bonus).toBeCloseTo(expectedBonus);
+  });
+
   it('does not apply bonus when aura is not active', () => {
     const state = processor.createState();
     const context = createContext();

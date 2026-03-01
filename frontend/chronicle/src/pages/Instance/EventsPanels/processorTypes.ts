@@ -305,6 +305,9 @@ export interface SerializableProcessorContext {
 
   /** Panel-specific option (e.g., selected vulnerability spell ID) */
   panelOption?: string | null;
+
+  /** Optional panel-specific context payload for processor configuration. */
+  panelContext?: Record<string, unknown> | null;
 }
 
 /**
@@ -328,6 +331,9 @@ export interface ProcessorContext {
 
   /** Panel-specific option (e.g., selected vulnerability spell ID) */
   panelOption?: string | null;
+
+  /** Optional panel-specific context payload for processor configuration. */
+  panelContext?: Record<string, unknown> | null;
 }
 
 /**

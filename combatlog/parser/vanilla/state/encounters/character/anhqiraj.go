@@ -1,17 +1,153 @@
 package character
 
-import "github.com/Emyrk/chronicle/combatlog/parser/guid"
+import (
+	"time"
 
-const (
-	cthun = 15727
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
+const (
+	cthunBodyEntry = 15727
+	cthunEyeEntry  = 15589
+
+	giantClawTentacleEntry = 15728
+	fleshTentacleEntry     = 15802
+	eyeTentacleEntry       = 15726
+	giantEyeTentacleEntry  = 15334
+	clawTentacleEntry      = 15725
+
+	cthunSharedStateKey = "cthun_shared_state"
+
+	cthunTransitionWindow = 30 * time.Second
+)
+
+type CthunParty struct {
+	*Common
+	all *Characters
+
+	entry        uint32
+	pendingDeath *messages.Message
+	eyeDone      bool
+}
+
 func NewCthun(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(cthun,
-		15728, // Giant Claw Tentacle
-		15802, // Flesh Tentacle
-		15726, // Eye Tentacle
-		15334, // Giant Eye Tentacle
-		15725, // Claw Tentacle
-		bloodSeekerBat)(id, all)
+	if !id.IsCreature() {
+		return nil, false
+	}
+
+	entry, ok := id.GetEntry()
+	if !ok {
+		return nil, false
+	}
+
+	if entry != cthunBodyEntry && entry != cthunEyeEntry {
+		return nil, false
+	}
+
+	c := &CthunParty{
+		Common: NewCommonCharacter(id, all),
+		all:    all,
+		entry:  entry,
+	}
+
+	if entry == cthunBodyEntry {
+		c := NewAdsGoWithBossCustomCharacter(c,
+			all,
+			cthunBodyEntry,
+			giantClawTentacleEntry,
+			fleshTentacleEntry,
+			eyeTentacleEntry,
+			giantEyeTentacleEntry,
+			clawTentacleEntry,
+		)
+		return c, true
+	}
+
+	all.Save(cthunSharedStateKey, c)
+	return c, true
+}
+
+func (c *CthunParty) Process(m messages.Message) error {
+	cur, ok := c.Activity.Current()
+	if ok {
+		cur.HandleTimeout(m.Date())
+	}
+
+	err := processCommonActivity(c, m)
+	if err != nil {
+		return err
+	}
+
+	c.maybeFinalizePendingDeath(m)
+
+	if c.entry == cthunBodyEntry && c.IsActive() {
+		err = c.ProcessEyePending(m)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *CthunParty) ProcessEyePending(m messages.Message) error {
+	if c.eyeDone {
+		return nil
+	}
+
+	eye, ok := c.all.Load(cthunSharedStateKey)
+	if !ok {
+		return nil
+	}
+
+	eyeCthun, ok := eye.(*CthunParty)
+	if !ok {
+		return nil
+	}
+
+	eyeCthun.maybeFinalizePendingDeath(m)
+	c.all.Delete(cthunSharedStateKey)
+	c.eyeDone = true
+	return nil
+}
+
+func (c *CthunParty) Died(reason string, m messages.Message) {
+	if c.entry == cthunEyeEntry {
+		c.pendingDeath = &m
+		c.LastSlain = m
+		return
+	}
+
+	c.Common.Died(reason, m)
+}
+
+func (c *CthunParty) maybeFinalizePendingDeath(m messages.Message) {
+	if c.pendingDeath == nil {
+		return
+	}
+
+	if c.bodyActive() {
+		c.finalizePendingDeath("cthun_phase_transition", m)
+		return
+	}
+
+	deathTime := (*c.pendingDeath).Date()
+	if m.Date().Sub(deathTime) >= cthunTransitionWindow {
+		c.finalizePendingDeath("cthun_transition_timeout", m)
+	}
+}
+
+func (c *CthunParty) bodyActive() bool {
+	for _, body := range c.all.ByEntry[cthunBodyEntry] {
+		if body.IsActive() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *CthunParty) finalizePendingDeath(reason string, m messages.Message) {
+	c.Common.Died(reason, m)
+	c.pendingDeath = nil
 }

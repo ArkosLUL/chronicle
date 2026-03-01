@@ -2,6 +2,7 @@
  * EventsPanel - Container component for event aggregation panels
  */
 
+import { useEffect, useState } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { HelpCircle, Construction } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
@@ -126,6 +127,14 @@ export function EventsPanel({
     false
   );
   
+  // Panel-scoped context for processor/render options (e.g., vulnerability school mask).
+  const [panelContext, setPanelContext] = useState<Record<string, unknown> | null>(null);
+
+  // Reset panel context when panel type changes to avoid leaking options across panel types.
+  useEffect(() => {
+    setPanelContext(null);
+  }, [panelType]);
+
   // Only show explainer button on desktop, if hints are enabled, and if panel has an explainer
   const showExplainerButton = showHints && !isMobile && hasExplainer(panelType) && onExplainerClick;
 
@@ -141,6 +150,7 @@ export function EventsPanel({
     panel,
     context,
     panelOption,
+    panelContext,
     enabled: !panel.selfManagesAggregation,
   });
   
@@ -219,6 +229,8 @@ export function EventsPanel({
           context,
           panelOption,
           setPanelOption: onPanelOptionChange,
+          panelContext,
+          setPanelContext,
         })}
       </Card>
     </BreakoutHoverProvider>

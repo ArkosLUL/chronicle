@@ -156,6 +156,12 @@ export interface PanelRenderProps<TResult> {
   
   /** Callback to update the panel option in URL */
   setPanelOption?: (option: string | null) => void;
+
+  /** Optional panel-specific context payload for processor configuration. */
+  panelContext?: Record<string, unknown> | null;
+
+  /** Callback to update panel-specific context payload. */
+  setPanelContext?: (context: Record<string, unknown> | null) => void;
 }
 
 /**

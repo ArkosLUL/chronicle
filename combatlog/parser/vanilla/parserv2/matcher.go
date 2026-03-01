@@ -244,8 +244,11 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	// Unsure why, but when it does that name will be propagated up. In some cases,
 	// if we know it is not a player, and it has an entry ID, we can fix the name
 	// here. Maintaining a list of seen "unknowns" hopefully does not get that large.
-	if name == "Unknown" && !id.IsPlayer() && unitname.ByGUID(id) != "" {
-		name = unitname.ByGUID(id)
+	if (name == "Unknown" || name == "") && !id.IsPlayer() {
+		knownName := unitname.ByGUID(id)
+		if knownName != "" {
+			name = knownName
+		}
 	}
 
 	return set(&messages.Unit{

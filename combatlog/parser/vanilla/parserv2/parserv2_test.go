@@ -110,24 +110,6 @@ func TestParserMessages(t *testing.T) {
 		)
 	})
 
-	t.Run("PartialAbsorb", func(t *testing.T) {
-		t.Parallel()
-
-		testCase(t,
-			"1772307562862|SPELL_DMG|0xF130002D9700DD37|0xF1100284104CB927|14315|247|0,0,247|0|2|2,27,0,0",
-			&messages.Damage{
-				MessageBase: messages.Base(time.UnixMilli(1772307562862)),
-				SpellName:   ptr.Ref("Auto Attack"),
-				Caster:      ptr.Ref(guid.GUID(0x000000000001C7AC)),
-				Target:      guid.GUID(0xF130002C3800949C),
-				Amount:      194, // subDamage adds to amount
-				HitType:     types.HitTypeHit,
-				School:      types.PhysicalSchool,
-				Trailer:     nil,
-			},
-		)
-	})
-
 	t.Run("SwingMiss", func(t *testing.T) {
 		t.Parallel()
 

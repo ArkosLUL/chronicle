@@ -320,7 +320,7 @@ function EncounterSidebar({
     <div 
       data-help-encounter-sidebar
       className={cn(
-        "w-64 shrink-0 border-r pr-4 overflow-y-auto styled-scrollbar",
+        "pt-1 w-64 shrink-0 border-r pr-4 overflow-y-auto styled-scrollbar",
         // Desktop: sticky sidebar that scrolls independently
         !isMobile && "sticky top-4 max-h-[calc(100vh-2rem)]",
         // Mobile: fixed overlay with background
@@ -436,7 +436,7 @@ function EncounterSidebar({
                 className={cn(
                   "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150 cursor-pointer",
                   isSelected
-                    ? "bg-primary/90 text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
+                    ? "bg-primary-darker text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
                     : "hover:bg-accent/50 hover:translate-x-0.5",
                   isWipe && !isSelected && "opacity-60",
                   !encounter.boss && !isSelected && "text-muted-foreground"
@@ -494,7 +494,7 @@ function EncounterSidebar({
               className={cn(
                 "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-all duration-150 cursor-pointer",
                 isSelected
-                  ? "bg-primary/90 text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
+                  ? "bg-primary-darker text-primary-foreground border-l-3 border-l-primary-foreground/70 shadow-sm"
                   : "hover:bg-accent/50 hover:translate-x-0.5",
                 isWipe && !isSelected && "opacity-60"
               )}
@@ -580,7 +580,7 @@ function EncounterSidebar({
                             className={cn(
                               "w-full flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-all duration-150 cursor-pointer",
                               isSelected
-                                ? "bg-primary/90 text-primary-foreground border-l-2 border-l-primary-foreground/70"
+                                ? "bg-primary-darker text-primary-foreground border-l-2 border-l-primary-foreground/70"
                                 : "hover:bg-accent/50 hover:translate-x-0.5 opacity-60"
                             )}
                           >

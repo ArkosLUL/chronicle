@@ -557,7 +557,7 @@ describe('enemyDamageDoneProcessor', () => {
 describe('petDamageDoneProcessor', () => {
   const processor = createDamageDoneProcessor('pets');
 
-  function createContext(): ProcessorContext {
+  function createContext(overrides: Partial<ProcessorContext> = {}): ProcessorContext {
     return {
       players: {
         '0x0000000000001234': { name: 'TestPlayer', class: 'HUNTER' },
@@ -571,19 +571,18 @@ describe('petDamageDoneProcessor', () => {
         enemyIds: new Set(),
         playerIds: new Set(),
       },
+      ...overrides,
     };
   }
 
-  it('tracks pet damage separately', () => {
-    const state = processor.createState();
-    const context = createContext();
-    const event: DamageProcessorEvent = {
+  function createPetDamageEvent(overrides: Partial<DamageProcessorEvent> = {}): DamageProcessorEvent {
+    return {
       type: 'damage',
       index: 0,
       offsetMilli: 0,
-      caster: '0xF140000CE0000002', // pet
+      caster: '0xF140000CE0000002',
       sourceName: 'Bite',
-      target: '0xF130000CE0000001', // enemy
+      target: '0xF130000CE0000001',
       hitType: 0,
       amount: 500,
       school: 1,
@@ -592,13 +591,81 @@ describe('petDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      ...overrides,
     };
+  }
 
-    processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
+  it('groups pet damage under owner by default', () => {
+    const state = processor.createState();
+    const context = createContext();
+
+    processor.processEvent(state, createPetDamageEvent(), 'enc1', new Date(), 'damage', context);
 
     const encDamage = state.EncounterDamage.get('enc1')!;
-    // Pet damage attributed to owner
     expect(encDamage.has('0x0000000000001234')).toBe(true);
+    expect(encDamage.has('0xF140000CE0000002')).toBe(false);
+
+    const ownerData = encDamage.get('0x0000000000001234')!;
+    expect(ownerData.playerName).toBe("TestPlayer's Companions");
+    expect(ownerData.className).toBe('HUNTER');
+  });
+
+  it('groups pet damage by pet when groupPetsSeparately is enabled', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        groupPetsSeparately: true,
+      },
+    });
+
+    processor.processEvent(state, createPetDamageEvent(), 'enc1', new Date(), 'damage', context);
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.has('0xF140000CE0000002')).toBe(true);
+    expect(encDamage.has('0x0000000000001234')).toBe(false);
+
+    const petData = encDamage.get('0xF140000CE0000002')!;
+    expect(petData.playerName).toBe('Wolf (TestPlayer)');
+    expect(petData.className).toBe('HUNTER');
+  });
+
+  it('creates a unique row per pet when groupPetsSeparately is enabled', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        groupPetsSeparately: true,
+      },
+      units: {
+        '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
+        '0xF140000CE0000002': { name: 'Wolf', owner: '0x0000000000001234', entry: 99 },
+        '0xF140000CE0000003': { name: 'Cat', owner: '0x0000000000001234', entry: 100 },
+      },
+    });
+
+    processor.processEvent(state, createPetDamageEvent({ amount: 500 }), 'enc1', new Date(), 'damage', context);
+    processor.processEvent(
+      state,
+      createPetDamageEvent({
+        caster: '0xF140000CE0000003',
+        sourceName: 'Claw',
+        amount: 300,
+      }),
+      'enc1',
+      new Date(),
+      'damage',
+      context,
+    );
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.size).toBe(2);
+    expect(encDamage.has('0xF140000CE0000002')).toBe(true);
+    expect(encDamage.has('0xF140000CE0000003')).toBe(true);
+    expect(encDamage.has('0x0000000000001234')).toBe(false);
+
+    expect(encDamage.get('0xF140000CE0000002')?.playerName).toBe('Wolf (TestPlayer)');
+    expect(encDamage.get('0xF140000CE0000003')?.playerName).toBe('Cat (TestPlayer)');
+    expect(encDamage.get('0xF140000CE0000002')?.target.get('0xF130000CE0000001')).toBe(500);
+    expect(encDamage.get('0xF140000CE0000003')?.target.get('0xF130000CE0000001')).toBe(300);
   });
 
   it('ignores direct player damage', () => {

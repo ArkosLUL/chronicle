@@ -84,15 +84,42 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
   sourceType?: DamageSourceType;
 }
 
+interface PetDamagePanelContext {
+  groupPetsSeparately?: boolean;
+}
+
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { sourceType = "players" } = props;
-  const { result, context } = props;
+  const { result, context, panelContext, setPanelContext } = props;
   const [showRanks, setShowRanks] = useState(false);
+
+  const petPanelContext = sourceType === "pets"
+    ? (panelContext as PetDamagePanelContext | null)
+    : null;
+  const groupPetsSeparately = petPanelContext?.groupPetsSeparately === true;
+
+  const setPetGrouping = (groupByPet: boolean) => {
+    if (!setPanelContext) return;
+
+    const nextContext: PetDamagePanelContext = { ...(petPanelContext ?? {}) };
+    if (groupByPet) {
+      nextContext.groupPetsSeparately = true;
+    } else {
+      delete nextContext.groupPetsSeparately;
+    }
+
+    if (Object.keys(nextContext).length === 0) {
+      setPanelContext(null);
+      return;
+    }
+
+    setPanelContext(nextContext as Record<string, unknown>);
+  };
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     (r) => r.EncounterDamage.size > 0,
-    [sourceType]
+    [sourceType, groupPetsSeparately]
   );
 
   const damageData = useMemo(() => {
@@ -132,29 +159,60 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
           Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
         </div>
         
-        {/* Show ranks toggle */}
-        <TooltipProvider>
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
+        <div className="flex items-center gap-2">
+          {/* Show ranks toggle */}
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setShowRanks(!showRanks)}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    showRanks
+                      ? "bg-[color:var(--tertiary)]/20 text-[color:var(--tertiary)] border border-[color:var(--tertiary)]/30"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Layers className="h-3 w-3" />
+                  Ranks
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px]">
+                <p className="text-xs">Show spells separated by rank in the ability breakdown (e.g., Frostbolt Rank 4 vs Rank 11)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {sourceType === "pets" && (
+            <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
               <button
                 type="button"
-                onClick={() => setShowRanks(!showRanks)}
+                onClick={() => setPetGrouping(false)}
                 className={cn(
-                  "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                  showRanks
-                    ? "bg-[color:var(--tertiary)]/20 text-[color:var(--tertiary)] border border-[color:var(--tertiary)]/30"
-                    : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  !groupPetsSeparately
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Layers className="h-3 w-3" />
-                Ranks
+                By Owner
               </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[220px]">
-              <p className="text-xs">Show spells separated by rank in the ability breakdown (e.g., Frostbolt Rank 4 vs Rank 11)</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+              <button
+                type="button"
+                onClick={() => setPetGrouping(true)}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  groupPetsSeparately
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                By Pet
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <PlayerMetricChart 
         data={damageData} 

@@ -20,6 +20,7 @@ const meta: Meta<typeof Button> = {
         "secondary",
         "ghost",
         "link",
+        "button-bright",
       ],
     },
     size: {
@@ -106,6 +107,16 @@ export const Destructive: Story = {
 export const Link: Story = {
   args: {
     variant: "link",
+  },
+};
+
+/**
+ * Use the `button-bright` button for actions that should keep the original
+ * bright primary color treatment.
+ */
+export const ButtonBright: Story = {
+  args: {
+    variant: "button-bright",
   },
 };
 

@@ -256,9 +256,14 @@ export function createDamageDoneProcessor(
       if (sourceType === "pets" && isFriendlyFire) return;
       if (sourceType === "friendly_fire" && !isFriendlyFire) return;
 
+      const groupPetsSeparately = sourceType === "pets" &&
+        (context.panelContext as { groupPetsSeparately?: boolean } | null)?.groupPetsSeparately === true;
+
       // Determine the entity to attribute damage to
       let damageOwner = event.caster;
-      if ((sourceType === "players" || sourceType === "pets" || sourceType === "friendly_fire") && isPet) {
+      if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
+        damageOwner = casterInfo!.owner!;
+      } else if (sourceType === "pets" && isPet && !groupPetsSeparately) {
         damageOwner = casterInfo!.owner!;
       }
 
@@ -270,10 +275,20 @@ export function createDamageDoneProcessor(
         ownerName = context.players[damageOwner]?.name || ownerName;
         ownerClass = context.players[damageOwner]?.class || "UNKNOWN";
       } else if (sourceType === "pets") {
-        // For pets, use the owner's name and the owner's class
-        ownerName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || ownerName;
-        ownerName += "'s Companions";
-        ownerClass = context.players[casterInfo!.owner!]?.class || "UNKNOWN";
+        if (groupPetsSeparately) {
+          const petName = casterInfo?.name || ownerName;
+          const ownerDisplayName =
+            (casterInfo?.owner && context.players[casterInfo.owner]?.name) ||
+            casterInfo?.owner ||
+            "Unknown Owner";
+          ownerName = `${petName} (${ownerDisplayName})`;
+          ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
+        } else {
+          // Default pet mode groups damage by owner
+          ownerName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || ownerName;
+          ownerName += "'s Companions";
+          ownerClass = context.players[casterInfo!.owner!]?.class || "UNKNOWN";
+        }
       } else {
         // For enemies, use the unit's name
         ownerName = casterInfo?.name || ownerName;

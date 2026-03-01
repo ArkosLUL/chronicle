@@ -43,6 +43,12 @@ func pickRandomMembers[T any](in []T, count int, rnd *rand.Rand) []T {
 	rnd.Shuffle(len(out), func(i, j int) {
 		out[i], out[j] = out[j], out[i]
 	})
+	rnd.Shuffle(len(out), func(i, j int) {
+		out[i], out[j] = out[j], out[i]
+	})
+	rnd.Shuffle(len(out), func(i, j int) {
+		out[i], out[j] = out[j], out[i]
+	})
 
 	if count > len(out) {
 		count = len(out)

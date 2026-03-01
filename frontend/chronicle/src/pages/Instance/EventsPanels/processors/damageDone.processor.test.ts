@@ -201,6 +201,7 @@ describe('vulnerabilityEffectProcessor', () => {
   });
 
   const spellVulnerabilityId = 23605;
+  const giftOfArthasId = 11374;
   const curseOfElementsRank1Id = 1490;
   const curseOfElementsRank3Id = 11722;
   const curseOfShadowRank1Id = 17862;
@@ -276,7 +277,7 @@ describe('vulnerabilityEffectProcessor', () => {
     processor.processEvent(state, createSpellVulnerabilityAuraEvent(), 'enc1', new Date(), 'aura', context);
     processor.processEvent(state, createDamageEvent({ amount: 1100, school: 4 }), 'enc1', new Date(), 'damage', context);
 
-    const percentAffect = VulnerabilitySpells[spellVulnerabilityId].percentAffect;
+    const percentAffect = VulnerabilitySpells[spellVulnerabilityId].percentAffect!;
     const expectedBase = 1100 / (1 + percentAffect / 100);
     const expectedBonus = 1100 - expectedBase;
 
@@ -295,7 +296,7 @@ describe('vulnerabilityEffectProcessor', () => {
     // Fire school in chronicleproto.School enum = 4.
     processor.processEvent(state, createDamageEvent({ amount: 1060, school: 4 }), 'enc1', new Date(), 'damage', context);
 
-    const percentAffect = VulnerabilitySpells[curseOfElementsRank1Id].percentAffect;
+    const percentAffect = VulnerabilitySpells[curseOfElementsRank1Id].percentAffect!;
     const expectedBase = 1060 / (1 + percentAffect / 100);
     const expectedBonus = 1060 - expectedBase;
 
@@ -313,7 +314,7 @@ describe('vulnerabilityEffectProcessor', () => {
     processor.processEvent(state, createVulnerabilityAuraEvent(curseOfElementsRank3Id), 'enc1', new Date(), 'aura', context);
     processor.processEvent(state, createDamageEvent({ amount: 1100, school: 4 }), 'enc1', new Date(), 'damage', context);
 
-    const percentAffect = VulnerabilitySpells[curseOfElementsRank3Id].percentAffect;
+    const percentAffect = VulnerabilitySpells[curseOfElementsRank3Id].percentAffect!;
     const expectedBase = 1100 / (1 + percentAffect / 100);
     const expectedBonus = 1100 - expectedBase;
 
@@ -332,7 +333,7 @@ describe('vulnerabilityEffectProcessor', () => {
     // Shadow school in chronicleproto.School enum = 7.
     processor.processEvent(state, createDamageEvent({ amount: 1080, school: 7 }), 'enc1', new Date(), 'damage', context);
 
-    const percentAffect = VulnerabilitySpells[curseOfShadowRank1Id].percentAffect;
+    const percentAffect = VulnerabilitySpells[curseOfShadowRank1Id].percentAffect!;
     const expectedBase = 1080 / (1 + percentAffect / 100);
     const expectedBonus = 1080 - expectedBase;
 
@@ -350,7 +351,7 @@ describe('vulnerabilityEffectProcessor', () => {
     processor.processEvent(state, createVulnerabilityAuraEvent(curseOfShadowRank2Id), 'enc1', new Date(), 'aura', context);
     processor.processEvent(state, createDamageEvent({ amount: 1100, school: 7 }), 'enc1', new Date(), 'damage', context);
 
-    const percentAffect = VulnerabilitySpells[curseOfShadowRank2Id].percentAffect;
+    const percentAffect = VulnerabilitySpells[curseOfShadowRank2Id].percentAffect!;
     const expectedBase = 1100 / (1 + percentAffect / 100);
     const expectedBonus = 1100 - expectedBase;
 
@@ -360,6 +361,38 @@ describe('vulnerabilityEffectProcessor', () => {
     expect(base).toBeCloseTo(expectedBase);
     expect(bonus).toBeCloseTo(expectedBonus);
   });
+  it('applies flat bonus for Gift of Arthas when aura is active and school matches', () => {
+    const state = processor.createState();
+    const context = createContext({ panelOption: giftOfArthasId.toString() });
+
+    processor.processEvent(state, createVulnerabilityAuraEvent(giftOfArthasId), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createDamageEvent({ amount: 1000, school: 2 }), 'enc1', new Date(), 'damage', context);
+
+    const flatAffect = VulnerabilitySpells[giftOfArthasId].flatAffect!;
+    const expectedBase = 1000 - flatAffect;
+    const expectedBonus = flatAffect;
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    expect(base).toBeCloseTo(expectedBase);
+    expect(bonus).toBeCloseTo(expectedBonus);
+  });
+
+  it('does not apply Gift of Arthas flat bonus when school does not match', () => {
+    const state = processor.createState();
+    const context = createContext({ panelOption: giftOfArthasId.toString() });
+
+    processor.processEvent(state, createVulnerabilityAuraEvent(giftOfArthasId), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createDamageEvent({ amount: 1000, school: 4 }), 'enc1', new Date(), 'damage', context);
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    expect(bonus).toBe(0);
+    expect(base).toBe(1000);
+  });
+
   it('does not track aura state or bonus when vulnerability is not selected', () => {
     const state = processor.createState();
     const context = createContext({ panelOption: null });
@@ -421,7 +454,7 @@ describe('vulnerabilityEffectProcessor', () => {
     // Fire school matches Spell Vulnerability's school bitmask.
     processor.processEvent(state, createDamageEvent({ amount: 1100, school: 4 }), 'enc1', new Date(), 'damage', context);
 
-    const percentAffect = VulnerabilitySpells[spellVulnerabilityId].percentAffect;
+    const percentAffect = VulnerabilitySpells[spellVulnerabilityId].percentAffect!;
     const expectedBase = 1100 / (1 + percentAffect / 100);
     const expectedBonus = 1100 - expectedBase;
 

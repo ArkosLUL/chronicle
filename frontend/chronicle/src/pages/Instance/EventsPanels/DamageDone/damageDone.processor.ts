@@ -143,6 +143,31 @@ function getActiveVulnerabilityMultiplier(
   return bestMultiplier;
 }
 
+function getActiveVulnerabilityFlatAffect(
+  auraState: AuraProcessorState,
+  encounterID: string,
+  targetID: string,
+  auraSpellIds: number[],
+  flatAffectBySpellId: Record<number, number>,
+): number | null {
+  let bestFlatAffect: number | null = null;
+
+  for (const auraSpellId of auraSpellIds) {
+    if (!hasAura(auraState, encounterID, targetID, { spellId: auraSpellId })) {
+      continue;
+    }
+
+    const flatAffect = flatAffectBySpellId[auraSpellId];
+    if (flatAffect == null) continue;
+
+    if (bestFlatAffect == null || Math.abs(flatAffect) > Math.abs(bestFlatAffect)) {
+      bestFlatAffect = flatAffect;
+    }
+  }
+
+  return bestFlatAffect;
+}
+
 /**
  * Create a damage done processor for a specific entity source type.
  */
@@ -264,7 +289,7 @@ export function createDamageDoneProcessor(
         const schoolBitmask = normalizeDamageSchoolToBitmask(event.school);
         schoolMatchesSelectedVulnerability = (schoolBitmask & selectedVulnerability.schoolBitmask) !== 0;
 
-        if (selectedVulnerability.percentAffect > 0 && schoolMatchesSelectedVulnerability) {
+        if (schoolMatchesSelectedVulnerability) {
           const activeMultiplier = getActiveVulnerabilityMultiplier(
             state.AuraState,
             encounterID,
@@ -272,8 +297,27 @@ export function createDamageDoneProcessor(
             selectedVulnerability.auraSpellIds,
             selectedVulnerability.multiplierBySpellId,
           );
-          if (activeMultiplier != null) {
-            baseAmount = event.amount / activeMultiplier;
+          const activeFlatAffect = getActiveVulnerabilityFlatAffect(
+            state.AuraState,
+            encounterID,
+            event.target,
+            selectedVulnerability.auraSpellIds,
+            selectedVulnerability.flatAffectBySpellId,
+          );
+
+          if (activeMultiplier != null || activeFlatAffect != null) {
+            let adjustedAmount = event.amount;
+
+            // Flat modifiers are represented as a per-hit amount in logs.
+            if (activeFlatAffect != null) {
+              adjustedAmount = Math.max(0, adjustedAmount - activeFlatAffect);
+            }
+
+            if (activeMultiplier != null) {
+              adjustedAmount = adjustedAmount / activeMultiplier;
+            }
+
+            baseAmount = adjustedAmount;
             bonusAmount = event.amount - baseAmount;
           }
         }

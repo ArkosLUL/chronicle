@@ -592,6 +592,7 @@ export interface WoWLogGroupState extends WoWLogGroup {
 
 // From chroniclesdk/log.go
 export interface WoWParsedInstance extends WoWInstance {
+    readonly realm_name?: string;
     readonly encounters: readonly WoWEncounterWithHostiles[];
     readonly units: Record<string, InstanceUnit>;
     readonly players: Record<string, InstancePlayer>;

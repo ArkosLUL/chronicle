@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
@@ -44,6 +45,7 @@ type State struct {
 
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone     *zoner.Location
+	CurrentRealm    *realm.Info
 	CurrentInstance instances.Instance
 	Instances       []instances.Instance
 
@@ -80,6 +82,8 @@ func (s *State) Process(m messages.Message) error {
 	}()
 
 	switch typed := m.(type) {
+	case *messages.Realm:
+		s.CurrentRealm = &typed.Info
 	case *messages.Zone:
 		zoneStart := time.Now()
 		s.Zone(*typed)
@@ -149,11 +153,14 @@ func (s *State) Zone(z messages.Zone) {
 	if !matched {
 		s.CurrentInstance = s.reg.GetInstance(s.verbose, z.Zone, s.Units)
 		if s.CurrentInstance != nil {
+			// Set any initial realm state that we have
+			s.CurrentInstance.SetRealm(s.CurrentRealm)
 			s.logger.Info("Matched new instance",
 				slog.String("name", s.CurrentInstance.Name()),
 			)
 			s.Instances = append(s.Instances, s.CurrentInstance)
 		}
+
 	}
 
 	s.logger.Info(fmt.Sprintf("Zone changed to %q (instance %d)", z.Name, z.InstanceID),

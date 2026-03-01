@@ -764,6 +764,7 @@ type LogInstancesGuild struct {
 	Name           string             `db:"name" json:"name"`
 	HashedSlug     pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
 	GuildID        uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	RealmName      string             `db:"realm_name" json:"realm_name"`
 	GuildName      pgtype.Text        `db:"guild_name" json:"guild_name"`
 	GuildRealmID   uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`
 	GuildCreatedAt pgtype.Timestamptz `db:"guild_created_at" json:"guild_created_at"`

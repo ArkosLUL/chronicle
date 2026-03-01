@@ -128,6 +128,7 @@ func WowDecoratedInstance(instance database.LogInstancesGuild,
 ) chroniclesdk.WoWParsedInstance {
 	return chroniclesdk.WoWParsedInstance{
 		WoWInstance: WoWInstance(instance),
+		RealmName:   instance.RealmName,
 		Encounters:  WoWEncountersWithHostiles(encounters, fights),
 		Units: maps.MapFromSlice(units, func(u database.LogInstanceUnit) guid.GUID { return u.UnitGuid }, func(u database.LogInstanceUnit) chroniclesdk.InstanceUnit {
 			return chroniclesdk.InstanceUnit{

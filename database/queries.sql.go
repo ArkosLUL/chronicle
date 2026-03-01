@@ -1691,7 +1691,7 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -1708,6 +1708,7 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 		&i.Name,
 		&i.HashedSlug,
 		&i.GuildID,
+		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
 		&i.GuildCreatedAt,
@@ -1717,7 +1718,7 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 
 const instanceBySlug = `-- name: InstanceBySlug :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -1734,6 +1735,7 @@ func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text)
 		&i.Name,
 		&i.HashedSlug,
 		&i.GuildID,
+		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
 		&i.GuildCreatedAt,

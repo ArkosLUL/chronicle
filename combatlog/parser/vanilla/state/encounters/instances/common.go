@@ -220,6 +220,10 @@ func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb
 	return c
 }
 
+func (c *Common) SetRealm(r *realm.Info) {
+	c.realm = r
+}
+
 func (c *Common) Zone() zone.Zone {
 	return c.CurrentZone
 }

@@ -62,6 +62,7 @@ function transformToInstance(
   apiInstance: {
     id: string;
     name: string;
+    realm_name?: string;
     guild?: { name: string };
     encounters: readonly WoWEncounterWithHostiles[];
     players: Record<string, InstancePlayer>;
@@ -109,6 +110,7 @@ function transformToInstance(
   return {
     id: apiInstance.id,
     name: apiInstance.name,
+    realm: apiInstance.realm_name,
     guild: apiInstance.guild,
     startTime,
     endTime,

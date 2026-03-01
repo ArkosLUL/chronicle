@@ -299,18 +299,26 @@ CREATE TABLE log_instances (
 
 COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
 
+CREATE TABLE wow_server_realms (
+    id uuid NOT NULL,
+    server_id uuid NOT NULL,
+    name text NOT NULL
+);
+
 CREATE VIEW log_instances_guild AS
- SELECT log_instances.id,
-    log_instances.realm_id,
-    log_instances.log_group_id,
-    log_instances.name,
-    log_instances.hashed_slug,
-    log_instances.guild_id,
-    guilds.name AS guild_name,
-    guilds.realm_id AS guild_realm_id,
-    guilds.created_at AS guild_created_at
-   FROM (public.log_instances
-     LEFT JOIN guilds ON ((log_instances.guild_id = guilds.id)));
+ SELECT li.id,
+    li.realm_id,
+    li.log_group_id,
+    li.name,
+    li.hashed_slug,
+    li.guild_id,
+    COALESCE(wsr.name, 'Unknown'::text) AS realm_name,
+    g.name AS guild_name,
+    g.realm_id AS guild_realm_id,
+    g.created_at AS guild_created_at
+   FROM ((public.log_instances li
+     LEFT JOIN wow_server_realms wsr ON ((wsr.id = li.realm_id)))
+     LEFT JOIN guilds g ON ((li.guild_id = g.id)));
 
 CREATE TABLE parsed_log_group (
     id uuid NOT NULL
@@ -429,12 +437,6 @@ CREATE TABLE wow_log_groups (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     log_type log_type DEFAULT 'v1'::log_type NOT NULL
-);
-
-CREATE TABLE wow_server_realms (
-    id uuid NOT NULL,
-    server_id uuid NOT NULL,
-    name text NOT NULL
 );
 
 CREATE TABLE wow_servers (

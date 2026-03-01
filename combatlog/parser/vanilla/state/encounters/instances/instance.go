@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
@@ -37,6 +38,9 @@ type Instance interface {
 	IdentifyUnit(id guid.GUID) Identity
 	// Zone returns the zone of this instance
 	Zone() zone.Zone
+
+	// SetRealm is used to populate some initial state if we have it
+	SetRealm(r *realm.Info)
 
 	// Fights returns all completed fights plus any current fight in progress.
 	// This is populated live during message processing.

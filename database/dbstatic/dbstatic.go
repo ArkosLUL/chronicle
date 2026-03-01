@@ -10,6 +10,9 @@ func ServerTurtleWoW() uuid.UUID {
 	return uuid.MustParse("10ac9e23-ff74-43ed-83ad-96c123017097")
 }
 func ServerSATurtleWoW() uuid.UUID { return uuid.MustParse("eaa7e20e-ae86-4690-98e0-dde0b9f06cd0") }
+func ServerUnknown() uuid.UUID {
+	return uuid.MustParse("89b9a047-71c7-4f0d-96a0-247308a81f90")
+}
 
 func RealmAmbershire() uuid.UUID {
 	return uuid.MustParse("851d2fd3-f9c5-4623-b714-924b59d916aa")
@@ -27,6 +30,10 @@ func RealmSouthSeas() uuid.UUID {
 	return uuid.MustParse("ad486d39-31dd-4eb6-a43d-7d469df4ffcf")
 }
 
+func RealmUnknown() uuid.UUID {
+	return uuid.MustParse("6fb8310-9464-4cf1-a143-aba34f1c3037")
+}
+
 func RealmByName(name string) (uuid.UUID, bool) {
 	switch strings.ToLower(name) {
 	case "ambershire":
@@ -38,6 +45,6 @@ func RealmByName(name string) (uuid.UUID, bool) {
 	case "south seas":
 		return RealmSouthSeas(), true
 	default:
-		return uuid.UUID{}, false
+		return RealmUnknown(), false
 	}
 }

@@ -177,6 +177,7 @@ type InstancePlayer struct {
 
 type WoWParsedInstance struct {
 	WoWInstance
+	RealmName  string                        `json:"realm_name,omitempty"`
 	Encounters []WoWEncounterWithHostiles    `json:"encounters"`
 	Units      map[GUIDString]InstanceUnit   `json:"units"`
 	Players    map[GUIDString]InstancePlayer `json:"players"`

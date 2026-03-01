@@ -34,14 +34,14 @@ function createSlainEvent(overrides: Partial<SlainProcessorEvent> = {}): SlainPr
 }
 
 describe("auraProcessor", () => {
-  it("tracks Added aura and defaults stacks to 1 when amount is 0", () => {
+  it("treats amount 0 as inactive even when state is Added", () => {
     const state = createAuraProcessorState();
     const event = createAuraEvent({ amount: 0, state: AuraState.Added });
 
     applyAuraEvent(state, "enc1", event);
 
-    expect(hasAura(state, "enc1", "target-1", { spellId: 7386 })).toBe(true);
-    expect(getAuraStacks(state, "enc1", "target-1", { spellId: 7386 })).toBe(1);
+    expect(hasAura(state, "enc1", "target-1", { spellId: 7386 })).toBe(false);
+    expect(getAuraStacks(state, "enc1", "target-1", { spellId: 7386 })).toBe(0);
   });
 
   it("updates stacks on Modified > 0", () => {
@@ -62,11 +62,21 @@ describe("auraProcessor", () => {
     expect(hasAura(state, "enc1", "target-1", { spellId: 7386 })).toBe(false);
   });
 
-  it("removes aura on Removed state", () => {
+  it("treats Removed with positive amount as still active", () => {
     const state = createAuraProcessorState();
 
-    applyAuraEvent(state, "enc1", createAuraEvent({ state: AuraState.Added }));
-    applyAuraEvent(state, "enc1", createAuraEvent({ state: AuraState.Removed }));
+    applyAuraEvent(state, "enc1", createAuraEvent({ state: AuraState.Added, amount: 2 }));
+    applyAuraEvent(state, "enc1", createAuraEvent({ state: AuraState.Removed, amount: 1 }));
+
+    expect(hasAura(state, "enc1", "target-1", { spellId: 7386 })).toBe(true);
+    expect(getAuraStacks(state, "enc1", "target-1", { spellId: 7386 })).toBe(1);
+  });
+
+  it("removes aura on Removed state when amount is 0", () => {
+    const state = createAuraProcessorState();
+
+    applyAuraEvent(state, "enc1", createAuraEvent({ state: AuraState.Added, amount: 1 }));
+    applyAuraEvent(state, "enc1", createAuraEvent({ state: AuraState.Removed, amount: 0 }));
 
     expect(hasAura(state, "enc1", "target-1", { spellId: 7386 })).toBe(false);
   });

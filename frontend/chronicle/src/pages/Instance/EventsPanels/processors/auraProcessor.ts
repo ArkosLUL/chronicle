@@ -138,17 +138,21 @@ function applyAuraStateEvent(
   const targetAuras = getOrCreateTargetAuras(state, encounterID, event.target);
   const normalizedSpellName = normalizeSpellName(event.spellName);
 
-  if (event.state === AuraState.Removed || (event.state === AuraState.Modified && event.amount === 0)) {
+  if (event.amount <= 0) {
     removeMatchingAuras(targetAuras, { spellId: event.spellId ?? undefined, spellName: event.spellName });
     cleanupEmptyMaps(state, encounterID, event.target);
     return;
   }
 
-  if (event.state !== AuraState.Added && event.state !== AuraState.Modified) {
+  if (
+    event.state !== AuraState.Added &&
+    event.state !== AuraState.Removed &&
+    event.state !== AuraState.Modified
+  ) {
     return;
   }
 
-  const stacks = event.amount > 0 ? event.amount : 1;
+  const stacks = event.amount;
 
   targetAuras.set(key, {
     spellId: event.spellId,

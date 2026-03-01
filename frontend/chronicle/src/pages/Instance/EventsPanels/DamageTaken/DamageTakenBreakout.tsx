@@ -156,6 +156,7 @@ export function useDamageTakenBreakout({
           targets={displaySources}
           totalValue={displayTotal}
           valueLabel={displayLabel}
+          debugGuid={unitID}
           pinned={pinned}
           activeTab={activeTab}
           onTabChange={setActiveTab}

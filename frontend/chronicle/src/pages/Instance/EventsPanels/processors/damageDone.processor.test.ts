@@ -610,11 +610,11 @@ describe('petDamageDoneProcessor', () => {
     expect(ownerData.className).toBe('HUNTER');
   });
 
-  it('groups pet damage by pet when groupPetsSeparately is enabled', () => {
+  it('groups pet damage by pet when petGrouping is set to pet', () => {
     const state = processor.createState();
     const context = createContext({
       panelContext: {
-        groupPetsSeparately: true,
+        petGrouping: 'pet',
       },
     });
 
@@ -629,11 +629,11 @@ describe('petDamageDoneProcessor', () => {
     expect(petData.className).toBe('HUNTER');
   });
 
-  it('creates a unique row per pet when groupPetsSeparately is enabled', () => {
+  it('creates a unique row per pet when petGrouping is set to pet', () => {
     const state = processor.createState();
     const context = createContext({
       panelContext: {
-        groupPetsSeparately: true,
+        petGrouping: 'pet',
       },
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
@@ -666,6 +666,102 @@ describe('petDamageDoneProcessor', () => {
     expect(encDamage.get('0xF140000CE0000003')?.playerName).toBe('Cat (TestPlayer)');
     expect(encDamage.get('0xF140000CE0000002')?.target.get('0xF130000CE0000001')).toBe(500);
     expect(encDamage.get('0xF140000CE0000003')?.target.get('0xF130000CE0000001')).toBe(300);
+  });
+
+  it('groups pets with the same name for the same owner when petGrouping is set to pet_name', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        petGrouping: 'pet_name',
+      },
+      units: {
+        '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
+        '0xF140000CE0000002': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },
+        '0xF140000CE0000004': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },
+      },
+    });
+
+    processor.processEvent(
+      state,
+      createPetDamageEvent({
+        caster: '0xF140000CE0000002',
+        amount: 500,
+      }),
+      'enc1',
+      new Date(),
+      'damage',
+      context,
+    );
+    processor.processEvent(
+      state,
+      createPetDamageEvent({
+        caster: '0xF140000CE0000004',
+        amount: 300,
+      }),
+      'enc1',
+      new Date(),
+      'damage',
+      context,
+    );
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.size).toBe(1);
+    expect(encDamage.has('pet_name:infernal:0x0000000000001234')).toBe(true);
+
+    const infernalData = encDamage.get('pet_name:infernal:0x0000000000001234')!;
+    expect(infernalData.playerName).toBe('Infernal (TestPlayer)');
+    expect(infernalData.target.get('0xF130000CE0000001')).toBe(800);
+  });
+
+  it('keeps same pet names separate per owner when petGrouping is set to pet_name', () => {
+    const state = processor.createState();
+    const context = createContext({
+      players: {
+        '0x0000000000001234': { name: 'TestPlayer', class: 'HUNTER' },
+        '0x0000000000009999': { name: 'OtherPlayer', class: 'WARLOCK' },
+      },
+      panelContext: {
+        petGrouping: 'pet_name',
+      },
+      units: {
+        '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
+        '0xF140000CE0000002': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },
+        '0xF140000CE0000003': { name: 'Infernal', owner: '0x0000000000009999', entry: 89 },
+      },
+    });
+
+    processor.processEvent(
+      state,
+      createPetDamageEvent({
+        caster: '0xF140000CE0000002',
+        amount: 500,
+      }),
+      'enc1',
+      new Date(),
+      'damage',
+      context,
+    );
+    processor.processEvent(
+      state,
+      createPetDamageEvent({
+        caster: '0xF140000CE0000003',
+        amount: 300,
+      }),
+      'enc1',
+      new Date(),
+      'damage',
+      context,
+    );
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.size).toBe(2);
+
+    const ownerOne = encDamage.get('pet_name:infernal:0x0000000000001234')!;
+    const ownerTwo = encDamage.get('pet_name:infernal:0x0000000000009999')!;
+    expect(ownerOne.playerName).toBe('Infernal (TestPlayer)');
+    expect(ownerTwo.playerName).toBe('Infernal (OtherPlayer)');
+    expect(ownerOne.target.get('0xF130000CE0000001')).toBe(500);
+    expect(ownerTwo.target.get('0xF130000CE0000001')).toBe(300);
   });
 
   it('ignores direct player damage', () => {

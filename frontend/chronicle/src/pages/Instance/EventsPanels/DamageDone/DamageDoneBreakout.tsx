@@ -257,6 +257,7 @@ export function useDamageDoneBreakout({
           targets={displayTargets}
           totalValue={displayTotal}
           valueLabel={displayLabel}
+          debugGuid={playerID}
           pinned={pinned}
           activeTab={activeTab}
           onTabChange={setActiveTab}

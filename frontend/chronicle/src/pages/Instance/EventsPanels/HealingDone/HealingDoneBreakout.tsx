@@ -432,6 +432,7 @@ export function useHealingDoneBreakout({
           targets={displayTargets}
           totalValue={displayTotal}
           valueLabel={displayLabel}
+          debugGuid={playerID}
           pinned={pinned}
           activeTab={activeTab}
           onTabChange={setActiveTab}

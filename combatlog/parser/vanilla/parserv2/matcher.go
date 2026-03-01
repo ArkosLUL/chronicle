@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
@@ -237,6 +238,14 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 
 	if err := m.Error(); err != nil {
 		return nil, err
+	}
+
+	// This feels a bit jank, but the WoW `UnitName` function can return "Unknown".
+	// Unsure why, but when it does that name will be propagated up. In some cases,
+	// if we know it is not a player, and it has an entry ID, we can fix the name
+	// here. Maintaining a list of seen "unknowns" hopefully does not get that large.
+	if name == "Unknown" && !id.IsPlayer() && unitname.ByGUID(id) != "" {
+		name = unitname.ByGUID(id)
 	}
 
 	return set(&messages.Unit{

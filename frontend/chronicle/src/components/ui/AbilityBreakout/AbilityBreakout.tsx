@@ -862,6 +862,8 @@ export interface AbilityBreakoutProps {
   totalValue: number
   /** Label for the value column (e.g., "Damage", "Healing", "DPS", "HPS") */
   valueLabel?: string
+  /** Entity GUID for optional debug display */
+  debugGuid?: string
   /** Whether this is a pinned breakout (for potential styling differences) */
   pinned?: boolean
   /** Controlled active tab (optional - defaults to internal state) */
@@ -897,7 +899,7 @@ export function AbilityBreakout({
   targets,
   totalValue,
   valueLabel = 'Value',
-  pinned: _pinned = false,
+  debugGuid,
   activeTab: controlledTab,
   onTabChange,
   targetTabLabel = 'By Target',
@@ -911,6 +913,11 @@ export function AbilityBreakout({
   // Use controlled or uncontrolled tab state
   const activeTab = controlledTab ?? internalTab
   const setActiveTab = onTabChange ?? setInternalTab
+
+  const isDebugMode = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('debug') === 'true'
+  }, [])
   
   const hasTargets = targets && targets.length > 0
   
@@ -919,9 +926,16 @@ export function AbilityBreakout({
   const inactiveTabClass = "text-muted-foreground hover:text-foreground"
 
   const totalDisplay = (
-    <span className="text-2xs ml-auto pr-1.5 text-muted-foreground">
-      Total: <span className="font-medium font-mono text-foreground">{formatValue(totalValue)}</span>
-    </span>
+    <div className="text-2xs ml-auto pr-1.5 text-muted-foreground flex items-center gap-2 min-w-0">
+      {isDebugMode && debugGuid && (
+        <span className="font-mono truncate" title={debugGuid}>
+          GUID: {debugGuid}
+        </span>
+      )}
+      <span>
+        Total: <span className="font-medium font-mono text-foreground">{formatValue(totalValue)}</span>
+      </span>
+    </div>
   )
 
   // If no targets, just show the ability table without tabs

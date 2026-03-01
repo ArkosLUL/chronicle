@@ -256,15 +256,26 @@ export function createDamageDoneProcessor(
       if (sourceType === "pets" && isFriendlyFire) return;
       if (sourceType === "friendly_fire" && !isFriendlyFire) return;
 
-      const groupPetsSeparately = sourceType === "pets" &&
-        (context.panelContext as { groupPetsSeparately?: boolean } | null)?.groupPetsSeparately === true;
+      const petPanelContext = context.panelContext as {
+        petGrouping?: "owner" | "pet" | "pet_name";
+        groupPetsSeparately?: boolean;
+      } | null;
+      const petGrouping = sourceType === "pets"
+        ? (petPanelContext?.petGrouping ?? (petPanelContext?.groupPetsSeparately === true ? "pet" : "owner"))
+        : "owner";
+      const groupPetsSeparately = petGrouping === "pet";
+      const groupPetsByName = petGrouping === "pet_name";
 
       // Determine the entity to attribute damage to
       let damageOwner = event.caster;
       if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
         damageOwner = casterInfo!.owner!;
-      } else if (sourceType === "pets" && isPet && !groupPetsSeparately) {
+      } else if (sourceType === "pets" && isPet && !groupPetsSeparately && !groupPetsByName) {
         damageOwner = casterInfo!.owner!;
+      } else if (sourceType === "pets" && isPet && groupPetsByName) {
+        const petName = (casterInfo?.name || event.caster).toLowerCase();
+        const ownerKey = casterInfo?.owner || "unknown_owner";
+        damageOwner = `pet_name:${petName}:${ownerKey}`;
       }
 
       // By default, use the raw GUID as name
@@ -276,6 +287,14 @@ export function createDamageDoneProcessor(
         ownerClass = context.players[damageOwner]?.class || "UNKNOWN";
       } else if (sourceType === "pets") {
         if (groupPetsSeparately) {
+          const petName = casterInfo?.name || ownerName;
+          const ownerDisplayName =
+            (casterInfo?.owner && context.players[casterInfo.owner]?.name) ||
+            casterInfo?.owner ||
+            "Unknown Owner";
+          ownerName = `${petName} (${ownerDisplayName})`;
+          ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
+        } else if (groupPetsByName) {
           const petName = casterInfo?.name || ownerName;
           const ownerDisplayName =
             (casterInfo?.owner && context.players[casterInfo.owner]?.name) ||

@@ -84,7 +84,11 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
   sourceType?: DamageSourceType;
 }
 
+type PetDamageGrouping = "owner" | "pet" | "pet_name";
+
 interface PetDamagePanelContext {
+  petGrouping?: PetDamageGrouping;
+  // Legacy compatibility with previously shipped boolean context
   groupPetsSeparately?: boolean;
 }
 
@@ -96,22 +100,21 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const petPanelContext = sourceType === "pets"
     ? (panelContext as PetDamagePanelContext | null)
     : null;
-  const groupPetsSeparately = petPanelContext?.groupPetsSeparately === true;
+  const petGrouping: PetDamageGrouping =
+    petPanelContext?.petGrouping ??
+    (petPanelContext?.groupPetsSeparately === true ? "pet" : "owner");
 
-  const setPetGrouping = (groupByPet: boolean) => {
+  const setPetGrouping = (grouping: PetDamageGrouping) => {
     if (!setPanelContext) return;
 
-    const nextContext: PetDamagePanelContext = { ...(petPanelContext ?? {}) };
-    if (groupByPet) {
-      nextContext.groupPetsSeparately = true;
-    } else {
-      delete nextContext.groupPetsSeparately;
-    }
-
-    if (Object.keys(nextContext).length === 0) {
+    if (grouping === "owner") {
       setPanelContext(null);
       return;
     }
+
+    const nextContext: PetDamagePanelContext = { ...(petPanelContext ?? {}) };
+    nextContext.petGrouping = grouping;
+    delete nextContext.groupPetsSeparately;
 
     setPanelContext(nextContext as Record<string, unknown>);
   };
@@ -119,7 +122,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     (r) => r.EncounterDamage.size > 0,
-    [sourceType, groupPetsSeparately]
+    [sourceType, petGrouping]
   );
 
   const damageData = useMemo(() => {
@@ -188,10 +191,10 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
             <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
               <button
                 type="button"
-                onClick={() => setPetGrouping(false)}
+                onClick={() => setPetGrouping("owner")}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                  !groupPetsSeparately
+                  petGrouping === "owner"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
@@ -200,15 +203,27 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
               </button>
               <button
                 type="button"
-                onClick={() => setPetGrouping(true)}
+                onClick={() => setPetGrouping("pet")}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                  groupPetsSeparately
+                  petGrouping === "pet"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 By Pet
+              </button>
+              <button
+                type="button"
+                onClick={() => setPetGrouping("pet_name")}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  petGrouping === "pet_name"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                By Pet Name
               </button>
             </div>
           )}

@@ -110,6 +110,25 @@ func TestParserMessages(t *testing.T) {
 		)
 	})
 
+	t.Run("Hemorrhage", func(t *testing.T) {
+		t.Parallel()
+
+		testCaseWithDB(t,
+			"1772303384280|AURA_CAST|16511|0x0000000000060A11|0xF130003E76015AED|6|87|0|1|15000|2",
+			&messages.AuraCast{
+				MessageBase:     messages.Base(time.UnixMilli(1772303384280)),
+				Caster:          0x0000000000060A11,
+				Target:          ptr.Ref(guid.GUID(0xF130003E76015AED)),
+				Effect:          chrondbc.EffectApplyAura,
+				Amplitude:       0,
+				EffectMiscValue: 1,
+				DurationMS:      15000,
+				AuraCapStatus:   2,
+			},
+			testSpellDB(t),
+		)
+	})
+
 	t.Run("SwingMiss", func(t *testing.T) {
 		t.Parallel()
 
@@ -196,4 +215,11 @@ func TestParserMessages(t *testing.T) {
 	// 		wowDB,
 	// 	)
 	// })
+}
+
+func must[T any](t T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

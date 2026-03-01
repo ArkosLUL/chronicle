@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import type { DamageAbilityBreakout, HitTypeStats } from '@/pages/Instance/EventsPanels/processors/abilityBreakout'
 import { useBreakoutHover, getCellHighlight, type BreakoutHoverState } from './BreakoutHoverContext'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { SpellIdTooltip } from '@/components/ui/SpellIdTooltip'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 // ============================================================================
 // CSS Tooltip with Portal (escapes overflow containers)
@@ -220,6 +221,34 @@ export interface TargetData {
   critCount: number
   /** Optional overheal value - displayed in a separate column with distinct styling */
   overheal?: number
+}
+
+function groupTargetsByName(targets: TargetData[]): TargetData[] {
+  const grouped = new Map<string, TargetData>()
+
+  for (const target of targets) {
+    const key = target.targetName
+    const existing = grouped.get(key)
+
+    if (!existing) {
+      grouped.set(key, {
+        ...target,
+        // In grouped mode, name is the identity shown to users
+        targetId: key,
+      })
+      continue
+    }
+
+    existing.value += target.value
+    existing.hitCount += target.hitCount
+    existing.critCount += target.critCount
+
+    if (target.overheal !== undefined) {
+      existing.overheal = (existing.overheal ?? 0) + target.overheal
+    }
+  }
+
+  return Array.from(grouped.values())
 }
 
 // ============================================================================
@@ -697,6 +726,8 @@ export interface TargetTableProps {
   showOverheal?: boolean
   /** Label for the stacked secondary column */
   stackedLabel?: string
+  /** Group duplicate target names into a single row */
+  groupByName?: boolean
 }
 
 /**
@@ -708,15 +739,21 @@ export function TargetTable({
   valueLabel = 'Value',
   showOverheal = false,
   stackedLabel = 'Overheal',
+  groupByName = false,
 }: TargetTableProps) {
   const { hover, setHover, clearHover } = useBreakoutHover()
+
+  const displayTargets = useMemo(
+    () => (groupByName ? groupTargetsByName(targets) : targets),
+    [groupByName, targets]
+  )
   
-  if (!targets || targets.length === 0) {
+  if (!displayTargets || displayTargets.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No target breakdown available</p>
   }
 
   // Sort by value descending
-  const sorted = [...targets].sort((a, b) => b.value - a.value)
+  const sorted = [...displayTargets].sort((a, b) => b.value - a.value)
   
   // Check if any target has overheal data
   const hasOverhealData = showOverheal && sorted.some(t => t.overheal !== undefined && t.overheal > 0)
@@ -817,6 +854,8 @@ export function TargetTable({
 
 export type BreakoutTab = 'ability' | 'target'
 
+const GROUP_TARGETS_STORAGE_KEY = 'breakout-group-targets'
+
 export interface AbilityBreakoutProps {
   abilities: AbilityData[]
   targets?: TargetData[]
@@ -867,7 +906,8 @@ export function AbilityBreakout({
   stackedLabel = 'Overheal',
 }: AbilityBreakoutProps) {
   const [internalTab, setInternalTab] = useState<BreakoutTab>('ability')
-  
+  const [groupTargets, setGroupTargets] = useLocalStorage<boolean>(GROUP_TARGETS_STORAGE_KEY, false)
+
   // Use controlled or uncontrolled tab state
   const activeTab = controlledTab ?? internalTab
   const setActiveTab = onTabChange ?? setInternalTab
@@ -919,6 +959,21 @@ export function AbilityBreakout({
         >
           {targetTabLabel}
         </button>
+        {activeTab === 'target' && (
+          <CssTooltip content="Combine targets with the same name">
+            <button
+              className={cn(
+                "ml-1 mb-0.5 mt-0.5 px-1.5 py-0.5 rounded text-2xs border transition-colors",
+                groupTargets
+                  ? "bg-primary/15 text-primary border-primary/40"
+                  : "text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+              )}
+              onClick={() => setGroupTargets((prev) => !prev)}
+            >
+              Group
+            </button>
+          </CssTooltip>
+        )}
         {totalDisplay}
       </div>
       {activeTab === 'ability' ? (
@@ -937,6 +992,7 @@ export function AbilityBreakout({
           valueLabel={valueLabel}
           showOverheal={showOverheal}
           stackedLabel={stackedLabel}
+          groupByName={groupTargets}
         />
       )}
     </div>

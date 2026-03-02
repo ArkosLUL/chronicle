@@ -2,6 +2,16 @@ package character
 
 import "github.com/Emyrk/chronicle/combatlog/parser/guid"
 
+// NewDemonicEye is for a mechanic on Mephistroth. This eye goes after a player.
+// Players cannot interact with it.
+func NewDemonicEye(id guid.GUID, _ *Characters) (Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 93334 {
+		return nil, false
+	}
+
+	return NeverActive{id: id}, true
+}
+
 func NewKruul(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(59991, 59990)(id, all)
 }

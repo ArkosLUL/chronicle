@@ -59,6 +59,7 @@ var characterFactories = []characterFactory{
 	NewKruul,
 	NewKing,
 	NewMephistroth,
+	NewDemonicEye,
 	NewSanvTasDal,
 	NewKeeperGnarlmoon,
 	NewAnomalus,

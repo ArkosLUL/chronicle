@@ -16,6 +16,7 @@ export type { DamageAbilityBreakout, HitTypeStats } from "../processors/abilityB
  * Entity source types for damage aggregation
  */
 export type DamageSourceType = "players" | "enemies" | "pets" | "friendly_fire";
+export type EnemyDamageGrouping = "guid" | "name";
 
 /**
  * Player metric data for damage done aggregation.
@@ -266,6 +267,11 @@ export function createDamageDoneProcessor(
       const groupPetsSeparately = petGrouping === "pet";
       const groupPetsByName = petGrouping === "pet_name";
 
+      const enemyPanelContext = sourceType === "enemies"
+        ? (context.panelContext as { enemyGrouping?: EnemyDamageGrouping } | null)
+        : null;
+      const enemyGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
+
       // Determine the entity to attribute damage to
       let damageOwner = event.caster;
       if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
@@ -276,6 +282,11 @@ export function createDamageDoneProcessor(
         const petName = (casterInfo?.name || event.caster).toLowerCase();
         const ownerKey = casterInfo?.owner || "unknown_owner";
         damageOwner = `pet_name:${petName}:${ownerKey}`;
+      } else if (sourceType === "enemies" && enemyGrouping === "name") {
+        const enemyName = casterInfo?.name?.trim();
+        if (enemyName) {
+          damageOwner = `enemy_name:${enemyName.toLowerCase()}`;
+        }
       }
 
       // By default, use the raw GUID as name

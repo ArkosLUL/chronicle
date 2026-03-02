@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { DamageDoneResult, DamageSourceType } from "./damageDone.processor";
+import type { DamageDoneResult, DamageSourceType, EnemyDamageGrouping } from "./damageDone.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDamageDoneBreakout } from "./DamageDoneBreakout";
 import { formatNumber } from "@/lib/format";
@@ -22,6 +22,7 @@ function aggregateForEncounters(
   result: DamageDoneResult,
   selectedEncounterIds: string[],
   selected: EntitySelection,
+  disableSubjectSelection = false,
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
   
@@ -34,7 +35,7 @@ function aggregateForEncounters(
 
 
   const filterByTarget = targets.size > 0;
-  const hasSubjectSelection = subjects.size > 0;
+  const hasSubjectSelection = !disableSubjectSelection && subjects.size > 0;
   
   for (const encounterId of selectedEncounterIds) {
     const encounterDamage = result.EncounterDamage.get(encounterId);
@@ -92,6 +93,10 @@ interface PetDamagePanelContext {
   groupPetsSeparately?: boolean;
 }
 
+interface EnemyDamagePanelContext {
+  enemyGrouping?: EnemyDamageGrouping;
+}
+
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { sourceType = "players" } = props;
   const { result, context, panelContext, setPanelContext } = props;
@@ -118,17 +123,40 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
 
     setPanelContext(nextContext as Record<string, unknown>);
   };
-  
+
+  const enemyPanelContext = sourceType === "enemies"
+    ? (panelContext as EnemyDamagePanelContext | null)
+    : null;
+  const enemyGrouping: EnemyDamageGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
+
+  const setEnemyGrouping = (grouping: EnemyDamageGrouping) => {
+    if (!setPanelContext) return;
+
+    if (grouping === "guid") {
+      setPanelContext(null);
+      return;
+    }
+
+    setPanelContext({ enemyGrouping: grouping });
+  };
+
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     (r) => r.EncounterDamage.size > 0,
-    [sourceType, petGrouping]
+    [sourceType, petGrouping, enemyGrouping]
   );
 
   const damageData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(sourceType, cachedResult, context.selectedEncounterIds, context.entitySelection);
-  }, [sourceType, cachedResult, context.selectedEncounterIds, context.entitySelection]);
+    const disableSubjectSelection = sourceType === "enemies" && enemyGrouping === "name";
+    return aggregateForEncounters(
+      sourceType,
+      cachedResult,
+      context.selectedEncounterIds,
+      context.entitySelection,
+      disableSubjectSelection,
+    );
+  }, [sourceType, cachedResult, context.selectedEncounterIds, context.entitySelection, enemyGrouping]);
 
   // Create breakout function for tooltips
   const breakout = useDamageDoneBreakout({
@@ -186,6 +214,35 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {sourceType === "enemies" && (
+            <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
+              <button
+                type="button"
+                onClick={() => setEnemyGrouping("guid")}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  enemyGrouping === "guid"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                By Unit
+              </button>
+              <button
+                type="button"
+                onClick={() => setEnemyGrouping("name")}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  enemyGrouping === "name"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                By Name
+              </button>
+            </div>
+          )}
 
           {sourceType === "pets" && (
             <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">

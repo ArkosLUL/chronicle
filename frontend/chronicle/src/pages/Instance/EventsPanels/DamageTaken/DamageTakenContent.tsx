@@ -2,11 +2,11 @@ import { useMemo } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { DamageTakenResult, DamageTargetType } from "./damageTaken.processor";
+import type { DamageTakenResult, DamageTargetType, EnemyDamageTakenGrouping } from "./damageTaken.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDamageTakenBreakout } from "./DamageTakenBreakout";
 import { formatNumber } from "@/lib/format";
-
+import { cn } from "@/lib/utils";
 /**
  * Aggregate damage taken data across selected encounters.
  * Merges per-encounter data into a single map by unit.
@@ -19,6 +19,7 @@ function aggregateForEncounters(
   selectedEncounterIds: string[],
   selected: EntitySelection,
   targetType: DamageTargetType,
+  disableUnitSelection = false,
 ): PlayerMetricChartData[] {
   const aggregated = new Map<string, PlayerMetricChartData>();
   
@@ -26,9 +27,9 @@ function aggregateForEncounters(
     ? selected.enemyIds.size > 0 
     : selected.playerIds.size > 0;
   
-  const hasUnitSelection = targetType === "players"
+  const hasUnitSelection = !disableUnitSelection && (targetType === "players"
     ? selected.playerIds.size > 0
-    : selected.enemyIds.size > 0;
+    : selected.enemyIds.size > 0);
   
   for (const encounterId of selectedEncounterIds) {
     const encounterDamage = result.EncounterDamage.get(encounterId);
@@ -80,20 +81,47 @@ interface DamageTakenContentProps extends PanelRenderProps<DamageTakenResult> {
   targetType?: DamageTargetType;
 }
 
+interface EnemyDamageTakenPanelContext {
+  enemyGrouping?: EnemyDamageTakenGrouping;
+}
+
 export const DamageTakenContent = (props: DamageTakenContentProps) => {
   const { targetType = "players" } = props;
-  const { result, context } = props;
-  
+  const { result, context, panelContext, setPanelContext } = props;
+
+  const enemyPanelContext = targetType === "enemies"
+    ? (panelContext as EnemyDamageTakenPanelContext | null)
+    : null;
+  const enemyGrouping: EnemyDamageTakenGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
+
+  const setEnemyGrouping = (grouping: EnemyDamageTakenGrouping) => {
+    if (!setPanelContext) return;
+
+    if (grouping === "guid") {
+      setPanelContext(null);
+      return;
+    }
+
+    setPanelContext({ enemyGrouping: grouping });
+  };
+
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     (r) => r.EncounterDamage.size > 0,
-    [targetType]
+    [targetType, enemyGrouping]
   );
 
   const damageData = useMemo(() => {
     if (!cachedResult) return [];
-    return aggregateForEncounters(cachedResult, context.selectedEncounterIds, context.entitySelection, targetType);
-  }, [cachedResult, context.selectedEncounterIds, context.entitySelection, targetType]);
+    const disableUnitSelection = targetType === "enemies" && enemyGrouping === "name";
+    return aggregateForEncounters(
+      cachedResult,
+      context.selectedEncounterIds,
+      context.entitySelection,
+      targetType,
+      disableUnitSelection,
+    );
+  }, [cachedResult, context.selectedEncounterIds, context.entitySelection, targetType, enemyGrouping]);
 
   // Create breakout function for tooltips
   const breakout = useDamageTakenBreakout({
@@ -122,8 +150,39 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
 
   return (
     <GenericPanel {...effectiveProps}>
-      <div className="text-xs text-muted-foreground">
-        Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-xs text-muted-foreground">
+          Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
+        </div>
+
+        {targetType === "enemies" && (
+          <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
+            <button
+              type="button"
+              onClick={() => setEnemyGrouping("guid")}
+              className={cn(
+                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                enemyGrouping === "guid"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              By Unit
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnemyGrouping("name")}
+              className={cn(
+                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                enemyGrouping === "name"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              By Name
+            </button>
+          </div>
+        )}
       </div>
       <PlayerMetricChart 
         data={damageData} 

@@ -16,6 +16,7 @@ export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
  * Entity target types for damage taken aggregation
  */
 export type DamageTargetType = "players" | "enemies";
+export type EnemyDamageTakenGrouping = "guid" | "name";
 
 /**
  * Unit metric data for damage taken aggregation.
@@ -85,8 +86,19 @@ export function createDamageTakenProcessor(
       if (targetType === "players" && !isPlayer) return;
       if (targetType === "enemies" && !isEnemy) return;
 
+      const enemyPanelContext = targetType === "enemies"
+        ? (context.panelContext as { enemyGrouping?: EnemyDamageTakenGrouping } | null)
+        : null;
+      const enemyGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
+
       // The unit receiving damage
-      const damageReceiver = event.target;
+      let damageReceiver = event.target;
+      if (targetType === "enemies" && enemyGrouping === "name") {
+        const enemyName = targetInfo?.name?.trim();
+        if (enemyName) {
+          damageReceiver = `enemy_name:${enemyName.toLowerCase()}`;
+        }
+      }
 
       // By default, use the raw GUID as name
       let receiverName = damageReceiver;

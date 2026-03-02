@@ -482,7 +482,7 @@ describe('vulnerabilityEffectProcessor', () => {
 describe('enemyDamageDoneProcessor', () => {
   const processor = createDamageDoneProcessor('enemies');
 
-  function createContext(): ProcessorContext {
+  function createContext(overrides: Partial<ProcessorContext> = {}): ProcessorContext {
     return {
       players: {
         '0x0000000000001234': { name: 'TestPlayer', class: 'WARRIOR' },
@@ -495,6 +495,7 @@ describe('enemyDamageDoneProcessor', () => {
         enemyIds: new Set(),
         playerIds: new Set(),
       },
+      ...overrides,
     };
   }
 
@@ -526,6 +527,140 @@ describe('enemyDamageDoneProcessor', () => {
     const enemyData = encDamage.get('0xF130000CE0000001')!;
     expect(enemyData.playerName).toBe('Boss');
     expect(enemyData.className).toBe('ENEMY');
+  });
+
+  it('groups enemies by unit GUID by default', () => {
+    const state = processor.createState();
+    const context = createContext({
+      units: {
+        '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
+        '0xF130000CE0000002': { name: 'Boss', owner: null, entry: 12345 },
+      },
+    });
+
+    processor.processEvent(state, {
+      type: 'damage',
+      index: 0,
+      offsetMilli: 0,
+      caster: '0xF130000CE0000001',
+      sourceName: 'Cleave',
+      target: '0x0000000000001234',
+      hitType: 0,
+      amount: 1200,
+      school: 1,
+      tailers: [],
+      tailerCount: 0,
+      activity: [],
+      activityCount: 0,
+      spellId: null,
+    }, 'enc1', new Date(), 'damage', context);
+
+    processor.processEvent(state, {
+      type: 'damage',
+      index: 1,
+      offsetMilli: 100,
+      caster: '0xF130000CE0000002',
+      sourceName: 'Cleave',
+      target: '0x0000000000001234',
+      hitType: 0,
+      amount: 800,
+      school: 1,
+      tailers: [],
+      tailerCount: 0,
+      activity: [],
+      activityCount: 0,
+      spellId: null,
+    }, 'enc1', new Date(), 'damage', context);
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.size).toBe(2);
+    expect(encDamage.get('0xF130000CE0000001')?.target.get('0x0000000000001234')).toBe(1200);
+    expect(encDamage.get('0xF130000CE0000002')?.target.get('0x0000000000001234')).toBe(800);
+  });
+
+  it('groups enemies by name when enemyGrouping is name', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        enemyGrouping: 'name',
+      },
+      units: {
+        '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
+        '0xF130000CE0000002': { name: 'Boss', owner: null, entry: 12345 },
+      },
+    });
+
+    processor.processEvent(state, {
+      type: 'damage',
+      index: 0,
+      offsetMilli: 0,
+      caster: '0xF130000CE0000001',
+      sourceName: 'Cleave',
+      target: '0x0000000000001234',
+      hitType: 0,
+      amount: 1200,
+      school: 1,
+      tailers: [],
+      tailerCount: 0,
+      activity: [],
+      activityCount: 0,
+      spellId: null,
+    }, 'enc1', new Date(), 'damage', context);
+
+    processor.processEvent(state, {
+      type: 'damage',
+      index: 1,
+      offsetMilli: 100,
+      caster: '0xF130000CE0000002',
+      sourceName: 'Cleave',
+      target: '0x0000000000001234',
+      hitType: 0,
+      amount: 800,
+      school: 1,
+      tailers: [],
+      tailerCount: 0,
+      activity: [],
+      activityCount: 0,
+      spellId: null,
+    }, 'enc1', new Date(), 'damage', context);
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.size).toBe(1);
+
+    const groupedEnemy = encDamage.get('enemy_name:boss');
+    expect(groupedEnemy?.playerName).toBe('Boss');
+    expect(groupedEnemy?.target.get('0x0000000000001234')).toBe(2000);
+  });
+
+  it('falls back to GUID grouping when enemy name is missing in name mode', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelContext: {
+        enemyGrouping: 'name',
+      },
+      units: {},
+    });
+
+    processor.processEvent(state, {
+      type: 'damage',
+      index: 0,
+      offsetMilli: 0,
+      caster: '0xF130000CE0000001',
+      sourceName: 'Cleave',
+      target: '0x0000000000001234',
+      hitType: 0,
+      amount: 700,
+      school: 1,
+      tailers: [],
+      tailerCount: 0,
+      activity: [],
+      activityCount: 0,
+      spellId: null,
+    }, 'enc1', new Date(), 'damage', context);
+
+    const encDamage = state.EncounterDamage.get('enc1')!;
+    expect(encDamage.has('enemy_name:0xf130000ce0000001')).toBe(false);
+    expect(encDamage.has('0xF130000CE0000001')).toBe(true);
   });
 
   it('ignores player damage', () => {

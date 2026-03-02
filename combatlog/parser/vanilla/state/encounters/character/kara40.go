@@ -6,6 +6,12 @@ func NewKruul(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(59991, 59990)(id, all)
 }
 
+func NewRupturanTheBroken(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(59961,
+		59901, // Felheart
+	)(id, all)
+}
+
 func NewMephistroth(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(93333,
 		93335, // Nightmare Crawler
@@ -14,6 +20,12 @@ func NewMephistroth(id guid.GUID, all *Characters) (Character, bool) {
 		93338, // Hellfury Shard
 		93332, // Desolate Doomguard
 		93334, // Demonic Eye
+	)(id, all)
+}
+
+func NewEchoOfMedivh(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(61958,
+		59995, // Unstoppable Infernal
 	)(id, all)
 }
 
@@ -43,7 +55,7 @@ func NewSanvTasDal(id guid.GUID, all *Characters) (Character, bool) {
 }
 
 func NewKeeperGnarlmoon(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(59978,
+	return NewAdsGoWithBoss(61939,
 		59999, // Blood Raven
 	)(id, all)
 }

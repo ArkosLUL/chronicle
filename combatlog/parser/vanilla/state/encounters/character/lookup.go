@@ -62,6 +62,8 @@ var characterFactories = []characterFactory{
 	NewSanvTasDal,
 	NewKeeperGnarlmoon,
 	NewAnomalus,
+	NewEchoOfMedivh,
+	NewRupturanTheBroken,
 	// Emerald Sanctum
 	NewSolnius,
 }

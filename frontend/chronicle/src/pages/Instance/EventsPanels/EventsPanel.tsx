@@ -2,7 +2,7 @@
  * EventsPanel - Container component for event aggregation panels
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { HelpCircle, Construction } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
@@ -14,6 +14,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { cn } from "@/lib/utils";
 import { usePanelAggregation } from "./usePanelAggregation";
 import { usePanelTiming } from "./PanelTimingContext";
+import { useSyncModeContextOptional } from "../SyncModeContext";
 import type { PanelDefinition, PanelContext } from "./types";
 import { PanelSelector } from "./PanelSelector";
 import { hasExplainer } from "./explainers";
@@ -159,6 +160,17 @@ export function EventsPanel({
   const isDone = panel.selfManagesAggregation || processingTimeMs !== null;
   usePanelTiming(`panel-${panelIndex}`, isDone);
 
+  const syncMode = useSyncModeContextOptional();
+  const effectiveDurationMs = useMemo(() => {
+    if (syncMode?.enabled && syncMode.currentTimestamp && syncMode.encounterBounds) {
+      const elapsedMs =
+        syncMode.currentTimestamp.getTime() - syncMode.encounterBounds.start.getTime();
+      return Math.max(elapsedMs, 1);
+    }
+
+    return durationMs;
+  }, [syncMode?.enabled, syncMode?.currentTimestamp, syncMode?.encounterBounds, durationMs]);
+
   return (
     <BreakoutHoverProvider>
       <Card className={cn("p-4 gap-2 mb-3", panel.underConstruction && "border-yellow-500/50")}>
@@ -220,7 +232,7 @@ export function EventsPanel({
           result,
           totalEvents,
           processingTimeMs,
-          durationMs,
+          durationMs: effectiveDurationMs,
           perSecond: checkboxChecked,
           checkboxChecked,
           loading,

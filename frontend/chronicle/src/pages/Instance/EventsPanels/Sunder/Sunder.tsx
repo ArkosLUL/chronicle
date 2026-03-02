@@ -5,7 +5,7 @@
  * Log view: Shows detailed breakdown of targets and time-to-5-stacks
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Sword } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { sunderProcessor, type SunderResult, type WarriorSunderStats, type TargetSunderStats } from "./sunder.processor";
@@ -74,15 +74,8 @@ export function createSunderPanel(): PanelDefinition<SunderResult, any> {
 function SunderContent(props: PanelRenderProps<SunderResult>) {
   const { result, checkboxChecked: showTargets } = props;
   
-  const warriors = useMemo(() => {
-    if (!result) return [];
-    return sortedWarriors(result.warriors);
-  }, [result]);
-  
-  const targets = useMemo(() => {
-    if (!result) return [];
-    return sortedTargets(result.targets);
-  }, [result]);
+  const warriors = result ? sortedWarriors(result.warriors) : [];
+  const targets = result ? sortedTargets(result.targets) : [];
   
   const hasData = warriors.length > 0;
   

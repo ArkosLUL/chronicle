@@ -6,14 +6,16 @@
  * Processing yields to the UI every N events to keep the page responsive.
  */
 
-import { 
-  FastDamageCursor, 
-  FastHealCursor, 
-  FastResourceChangeCursor, 
-  FastExtraAttackCursor, 
-  FastSlainCursor, 
-  FastCastCursor, 
+import {
+  FastDamageCursor,
+  FastHealCursor,
+  FastResourceChangeCursor,
+  FastExtraAttackCursor,
+  FastSlainCursor,
+  FastCastCursor,
   FastAuraCursor,
+  FastSpellGoCursor,
+  FastAuraCastCursor,
   type ReusableDamage,
   type ReusableHeal,
   type ReusableResourceChange,
@@ -21,6 +23,8 @@ import {
   type ReusableSlain,
   type ReusableCast,
   type ReusableAura,
+  type ReusableSpellGo,
+  type ReusableAuraCast,
 } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { 
@@ -33,14 +37,14 @@ import type { StreamType, CachedStream } from "@/hooks/instanceEvents";
 /**
  * Union of all reusable event types
  */
-type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura;
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast;
 
 /**
  * A cursor wrapper that supports peeking at the next event without consuming it.
  */
 interface PeekableCursor {
   streamType: StreamType;
-  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor;
   peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
 }
 
@@ -122,7 +126,9 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
  * Create a cursor for a stream type.
  */
 function createCursor(type: StreamType, data: Uint8Array): PeekableCursor {
-  const cursor = type === "heal" 
+  const cursor = type === "damage"
+    ? new FastDamageCursor(data)
+    : type === "heal"
     ? new FastHealCursor(data)
     : type === "resource_change"
     ? new FastResourceChangeCursor(data)
@@ -134,8 +140,16 @@ function createCursor(type: StreamType, data: Uint8Array): PeekableCursor {
     ? new FastCastCursor(data)
     : type === "aura"
     ? new FastAuraCursor(data)
-    : new FastDamageCursor(data);
-  
+    : type === "spell_go"
+    ? new FastSpellGoCursor(data)
+    : type === "aura_cast"
+    ? new FastAuraCastCursor(data)
+    : null;
+
+  if (!cursor) {
+    throw new Error(`Unsupported stream type in sync mode: ${type}`);
+  }
+
   return {
     streamType: type,
     cursor,

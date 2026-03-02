@@ -19,7 +19,7 @@ const (
 
 	cthunSharedStateKey = "cthun_shared_state"
 
-	cthunTransitionWindow = 30 * time.Second
+	cthunTransitionWindow = 60 * time.Second
 )
 
 type CthunParty struct {

@@ -370,7 +370,7 @@ type AuraCast struct {
 	Target          *guid.GUID
 	Effect          chrondbc.Effect
 	Amplitude       int32 // ms how often it ticks
-	EffectMiscValue int32
+	EffectMiscValue chrondbc.AuraEffect
 	DurationMS      int32
 	AuraCapStatus   int32 // 1 for buffs full, 2 for debuffs full, 3 for both
 }

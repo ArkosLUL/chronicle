@@ -90,7 +90,7 @@ func (p *Parser) auraCast(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	effect := chrondbc.Effect(m.Int32())
 	m.skip() // aura name
 	amplitude := m.Int32()
-	effectMiscValue := m.Int32()
+	effectMiscValue := chrondbc.AuraEffect(m.Int32())
 	durationMS := m.Int32()
 	capStatus := m.Int32()
 

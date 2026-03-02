@@ -11,13 +11,11 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "../ui/NavigationMenu/navigation-menu";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/DropdownMenu/DropdownMenu";
 
 type NavItem = {
   title: string;
@@ -51,7 +49,7 @@ export function NavBar() {
 
   const loginUrl = `/login?from=${encodeURIComponent(location.pathname + location.search)}`;
 
-  // Reusable menu item renderer for both mobile and desktop
+  // Reusable menu item renderer for mobile menu
   const renderMenuItem = (item: NavItem, closeMobile?: () => void) => {
     const className = "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2";
     if ("href" in item) {
@@ -145,41 +143,37 @@ export function NavBar() {
           Recent Raids
         </Link>
         {isLoading ? null : isAuthenticated ? (
-          <NavigationMenu className="justify-end">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Account</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-4">
-                    <li>
-                      {accountMenuItems.map((item) => (
-                        <NavigationMenuLink key={item.title} asChild>
-                          {"href" in item ? (
-                            item.external ? (
-                              <a href={item.href} className="flex-row items-center gap-2">
-                                <item.icon />
-                                {item.title}
-                              </a>
-                            ) : (
-                              <Link to={item.href} className="flex-row items-center gap-2">
-                                <item.icon />
-                                {item.title}
-                              </Link>
-                            )
-                          ) : (
-                            <button onClick={item.onClick} className="flex-row items-center gap-2 w-full">
-                              <item.icon />
-                              {item.title}
-                            </button>
-                          )}
-                        </NavigationMenuLink>
-                      ))}
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 px-4 text-sm font-medium">
+                Account
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              {accountMenuItems.map((item) =>
+                "href" in item ? (
+                  <DropdownMenuItem key={item.title} asChild>
+                    {item.external ? (
+                      <a href={item.href} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {item.title}
+                      </a>
+                    ) : (
+                      <Link to={item.href} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {item.title}
+                      </Link>
+                    )}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem key={item.title} onSelect={item.onClick} className="flex items-center gap-2">
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </DropdownMenuItem>
+                )
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <Link to={loginUrl}>
             <Button>Sign In</Button>

@@ -182,15 +182,16 @@ function formatMinAvgMax(stats: HitTypeStats | undefined): React.ReactNode {
   const avg = Math.round(stats.total / stats.count)
   const min = stats.min === Infinity ? 0 : stats.min
   const max = stats.max === -Infinity ? 0 : stats.max
-  return <>
-    <span className="whitespace-nowrap">
-      <span className="text-muted-foreground/60">{min}</span>
+
+  return (
+    <span className="whitespace-nowrap font-mono tabular-nums">
+      <span className="text-muted-foreground/60 inline-block text-right min-w-[5ch]">{min}</span>
       <span className="text-muted-foreground/40 mx-0.5">/</span>
-      <span className="font-semibold">{avg}</span>
+      <span className="font-semibold inline-block text-right min-w-[5ch]">{avg}</span>
       <span className="text-muted-foreground/40 mx-0.5">/</span>
-      <span className="text-muted-foreground/60">{max}</span>
+      <span className="text-muted-foreground/60 inline-block text-right min-w-[5ch]">{max}</span>
     </span>
-  </>
+  )
 }
 
 /**
@@ -700,7 +701,7 @@ export function AbilityTable({
               {isExpanded && viewMode === 'minmax' && visibleMinMaxColumns.map(col => {
                 const stats = mergedTotals[col.statsKey] as HitTypeStats | undefined
                 return (
-                  <td key={col.statsKey} className="text-right py-1.5 px-1 font-mono text-2xs">
+                  <td key={col.statsKey} className="text-right py-1.5 px-1 font-mono text-xs">
                     {formatMinAvgMax(stats)}
                   </td>
                 )

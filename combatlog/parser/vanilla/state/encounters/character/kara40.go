@@ -34,9 +34,13 @@ func NewMephistroth(id guid.GUID, all *Characters) (Character, bool) {
 }
 
 func NewEchoOfMedivh(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(61958,
+	c, ok := NewAdsGoWithBoss(61958,
 		59995, // Unstoppable Infernal
 	)(id, all)
+	if !ok {
+		return nil, false
+	}
+	return NewPermanentDeath(c), true
 }
 
 func NewKing(id guid.GUID, all *Characters) (Character, bool) {

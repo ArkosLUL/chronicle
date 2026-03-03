@@ -45,8 +45,12 @@ func NewCthun(id guid.GUID, all *Characters) (Character, bool) {
 		return nil, false
 	}
 
+	timeout := InactivityTimeout
+	if entry == cthunEyeEntry {
+		timeout = cthunTransitionWindow + (time.Second * 5)
+	}
 	c := &CthunParty{
-		Common: NewCommonCharacter(id, all),
+		Common: NewCommonCharacter(id, all).WithTimeout(timeout),
 		all:    all,
 		entry:  entry,
 	}

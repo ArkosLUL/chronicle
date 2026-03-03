@@ -278,7 +278,7 @@ export function InstancePage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="w-full px-4 py-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -291,7 +291,7 @@ export function InstancePage() {
 
   if (instanceError || !instance) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="w-full px-4 py-6">
         <Link
           to="/logs"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"

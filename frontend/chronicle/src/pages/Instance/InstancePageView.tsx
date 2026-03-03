@@ -1418,9 +1418,9 @@ export function InstancePageView({
 
   return (
     <div className={cn(
-      "container mx-auto py-6",
+      "w-full py-6",
       // Mobile: minimal padding, full width
-      isMobile ? "px-2" : "px-4 max-w-7xl"
+      isMobile ? "px-2" : "px-4"
     )}>
       {/* Header */}
       <div className="mb-6">

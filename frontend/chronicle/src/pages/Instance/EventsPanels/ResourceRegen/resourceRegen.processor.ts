@@ -141,12 +141,15 @@ export const resourceRegenProcessor: PanelProcessor<ResourceRegenResult, Resourc
     }
     const resourceData = playerResources.get(resourceType)!;
 
+    // Rage values are encoded in tenths in combat logs, so normalize to player-visible units.
+    const normalizedAmount = resourceType === "Rage" ? event.amount / 10 : event.amount;
+
     // Update totals based on direction
     const isGain = event.direction === "Gain";
     if (isGain) {
-      resourceData.totalGained += event.amount;
+      resourceData.totalGained += normalizedAmount;
     } else {
-      resourceData.totalLost += event.amount;
+      resourceData.totalLost += normalizedAmount;
     }
 
     // Update ability breakdown
@@ -162,10 +165,10 @@ export const resourceRegenProcessor: PanelProcessor<ResourceRegenResult, Resourc
     }
     const abilityData = resourceData.byAbility.get(abilityName)!;
     if (isGain) {
-      abilityData.gained += event.amount;
+      abilityData.gained += normalizedAmount;
       abilityData.gainCount += 1;
     } else {
-      abilityData.lost += event.amount;
+      abilityData.lost += normalizedAmount;
       abilityData.lossCount += 1;
     }
 
@@ -175,7 +178,7 @@ export const resourceRegenProcessor: PanelProcessor<ResourceRegenResult, Resourc
     if (isGain) {
       resourceData.bySource.set(
         sourceName,
-        (resourceData.bySource.get(sourceName) || 0) + event.amount
+        (resourceData.bySource.get(sourceName) || 0) + normalizedAmount
       );
     }
   },

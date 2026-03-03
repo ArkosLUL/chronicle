@@ -5,10 +5,16 @@
  * Log view: Shows detailed breakdown of targets and time-to-5-stacks
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Sword } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
-import { sunderProcessor, type SunderResult, type WarriorSunderStats, type TargetSunderStats } from "./sunder.processor";
+import {
+  sunderProcessor,
+  type SunderDebugEvent,
+  type SunderResult,
+  type WarriorSunderStats,
+  type TargetSunderStats,
+} from "./sunder.processor";
 import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { cn } from "@/lib/utils";
@@ -264,7 +270,7 @@ interface DebugBreakoutProps {
 
 function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
   // Sort events by offset
-  const sortedEvents = useMemo(() => {
+  const sortedEvents = useMemo<SunderDebugEvent[]>(() => {
     return [...target.debugEvents].sort((a, b) => a.offsetMs - b.offsetMs);
   }, [target.debugEvents]);
   
@@ -299,7 +305,7 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
             </tr>
           </thead>
           <tbody>
-            {sortedEvents.map((event, index) => (
+            {sortedEvents.map((event: SunderDebugEvent, index: number) => (
               <tr
                 key={index}
                 className={cn(

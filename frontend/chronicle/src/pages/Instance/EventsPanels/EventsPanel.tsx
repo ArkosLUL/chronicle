@@ -117,7 +117,7 @@ export function EventsPanel({
 }: EventsPanelProps) {
   const isMobile = useIsMobile();
   const panel = PANELS[panelType];
-  
+
   // Determine checkbox label first (needed for storage key)
   const checkboxLabel = panel.checkboxLabel || "Per second";
   const showCheckbox = panel.supportsPerSecond || panel.checkboxLabel;
@@ -173,7 +173,12 @@ export function EventsPanel({
 
   return (
     <BreakoutHoverProvider>
-      <Card className={cn("p-4 gap-2 mb-3", panel.underConstruction && "border-yellow-500/50")}>
+      <Card
+        className={cn(
+          "p-4 gap-2 h-full mb-0 flex flex-col",
+          panel.underConstruction && "border-yellow-500/50",
+        )}
+      >
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-medium flex items-center gap-2">
             <PanelSelector value={panelType} onChange={onPanelTypeChange} />
@@ -228,22 +233,24 @@ export function EventsPanel({
         </div>
 
         {/* Render the panel content */}
-        {panel.render({
-          result,
-          totalEvents,
-          processingTimeMs,
-          durationMs: effectiveDurationMs,
-          perSecond: checkboxChecked,
-          checkboxChecked,
-          loading,
-          processing,
-          error,
-          context,
-          panelOption,
-          setPanelOption: onPanelOptionChange,
-          panelContext,
-          setPanelContext,
-        })}
+        <div className="flex-1 min-h-0">
+          {panel.render({
+            result,
+            totalEvents,
+            processingTimeMs,
+            durationMs: effectiveDurationMs,
+            perSecond: checkboxChecked,
+            checkboxChecked,
+            loading,
+            processing,
+            error,
+            context,
+            panelOption,
+            setPanelOption: onPanelOptionChange,
+            panelContext,
+            setPanelContext,
+          })}
+        </div>
       </Card>
     </BreakoutHoverProvider>
   );

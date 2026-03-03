@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useInstanceViewState, type PanelType, type LayoutType } from "@/hooks/useUrlState";
+import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
+import type { GridEditorItem } from "@/components/layout/GridLayoutEditor";
 import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
 import { Card } from "@/components/ui/Card/Card";
@@ -21,12 +22,18 @@ import { Tooltip, TooltipTrigger, TooltipContent, HintTooltip } from "@/componen
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
 import { EventsPanel, type EventsPanelType, type PanelContext, type EntitySelection } from "./EventsPanels";
+import { PANELS } from "./EventsPanels/EventsPanel";
 import { PanelTimingProvider, PanelTimingDisplay, PanelTimingResetter } from "./EventsPanels/PanelTimingContext";
 import { PanelExplainerView } from "./PanelExplainer";
 import { RandomTip } from "@/components/RandomTip";
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+import {
+  DEFAULT_INSTANCE_LAYOUT_ITEMS,
+  ALTERNATE_INSTANCE_LAYOUT_ITEMS,
+  DEFAULT_INSTANCE_PANEL_TYPES,
+} from "./viewDefaults";
 
 // ============================================================================
 // Encounter selector localStorage helpers (7-day expiry)
@@ -625,6 +632,64 @@ function EncounterSidebar({
   );
 }
 
+const PANEL_ROW_HEIGHT_PX = 96;
+const GRID_COLS = 12;
+
+function orderLayoutItems(items: GridEditorItem[]): GridEditorItem[] {
+  return [...items].sort((a, b) => a.y - b.y || a.x - b.x || a.id.localeCompare(b.id));
+}
+
+function normalizeLayoutItems(items: GridEditorItem[]): GridEditorItem[] {
+  const normalized = items.map((item) => {
+    const w = Math.max(4, Math.min(item.w, GRID_COLS));
+    const h = Math.max(4, item.h);
+    const x = Math.max(0, Math.min(item.x, GRID_COLS - w));
+    const y = Math.max(0, item.y);
+    return {
+      ...item,
+      x,
+      y,
+      w,
+      h,
+      minW: item.minW ?? 4,
+      minH: item.minH ?? 4,
+      maxW: item.maxW ?? GRID_COLS,
+      maxH: item.maxH ?? 20,
+    };
+  });
+
+  // simple collision resolution: push items down until free
+  const occupied = new Set<string>();
+  const out: GridEditorItem[] = [];
+
+  for (const item of orderLayoutItems(normalized)) {
+    let y = item.y;
+    while (true) {
+      let overlaps = false;
+      for (let dx = 0; dx < item.w && !overlaps; dx++) {
+        for (let dy = 0; dy < item.h; dy++) {
+          if (occupied.has(`${item.x + dx}:${y + dy}`)) {
+            overlaps = true;
+            break;
+          }
+        }
+      }
+      if (!overlaps) break;
+      y += 1;
+    }
+
+    for (let dx = 0; dx < item.w; dx++) {
+      for (let dy = 0; dy < item.h; dy++) {
+        occupied.add(`${item.x + dx}:${y + dy}`);
+      }
+    }
+
+    out.push({ ...item, y });
+  }
+
+  return orderLayoutItems(out);
+}
+
 // ============================================================================
 // EncounterDetail component
 // ============================================================================
@@ -634,11 +699,11 @@ interface EncounterDetailProps {
   encounters: Encounter[];
   players: Record<string, InstancePlayer>;
   entitySelection: EntitySelection;
-  panelTypes: [PanelType, PanelType, PanelType, PanelType, PanelType, PanelType];
-  panelOptions: [string | null, string | null, string | null, string | null, string | null, string | null];
-  onPanelTypeChange: (index: 0 | 1 | 2 | 3 | 4 | 5, type: PanelType) => void;
-  onPanelOptionChange: (index: 0 | 1 | 2 | 3 | 4 | 5, option: string | null) => void;
-  layout: LayoutType;
+  layoutItems: GridEditorItem[];
+  panelTypesById: Record<string, EventsPanelType>;
+  panelOptionsById: Record<string, string | null>;
+  onPanelTypeChange: (itemID: string, type: EventsPanelType) => void;
+  onPanelOptionChange: (itemID: string, option: string | null) => void;
   onToggleEnemy: (enemyId: string) => void;
   onSelectEnemies: (enemyIds: string[]) => void;
   onTogglePlayer: (playerId: string) => void;
@@ -651,16 +716,16 @@ interface EncounterDetailProps {
   showHints: boolean;
 }
 
-function EncounterDetail({ 
+function EncounterDetail({
   instance,
   encounters,
   players,
   entitySelection,
-  panelTypes,
-  panelOptions,
+  layoutItems,
+  panelTypesById,
+  panelOptionsById,
   onPanelTypeChange,
   onPanelOptionChange,
-  layout,
   onToggleEnemy,
   onSelectEnemies,
   onTogglePlayer,
@@ -672,26 +737,7 @@ function EncounterDetail({
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
-  
-  // Panel types from props (managed by parent via URL state)
-  // Note: PanelType and EventsPanelType are identical unions, cast for compatibility
-  const [eventsPanel1Type, eventsPanel2Type, eventsPanel3Type, eventsPanel4Type, eventsPanel5Type, eventsPanel6Type] = panelTypes;
-  const setEventsPanel1Type = (type: EventsPanelType) => onPanelTypeChange(0, type as PanelType);
-  const setEventsPanel2Type = (type: EventsPanelType) => onPanelTypeChange(1, type as PanelType);
-  const setEventsPanel3Type = (type: EventsPanelType) => onPanelTypeChange(2, type as PanelType);
-  const setEventsPanel4Type = (type: EventsPanelType) => onPanelTypeChange(3, type as PanelType);
-  const setEventsPanel5Type = (type: EventsPanelType) => onPanelTypeChange(4, type as PanelType);
-  const setEventsPanel6Type = (type: EventsPanelType) => onPanelTypeChange(5, type as PanelType);
-  
-  // Panel options (managed by parent via URL state)
-  const [panelOption1, panelOption2, panelOption3, panelOption4, panelOption5, panelOption6] = panelOptions;
-  const setPanelOption1 = (opt: string | null) => onPanelOptionChange(0, opt);
-  const setPanelOption2 = (opt: string | null) => onPanelOptionChange(1, opt);
-  const setPanelOption3 = (opt: string | null) => onPanelOptionChange(2, opt);
-  const setPanelOption4 = (opt: string | null) => onPanelOptionChange(3, opt);
-  const setPanelOption5 = (opt: string | null) => onPanelOptionChange(4, opt);
-  const setPanelOption6 = (opt: string | null) => onPanelOptionChange(5, opt);
-  
+
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
   const [isEntityPanelOpen, setIsEntityPanelOpen] = useState(false);
@@ -1023,128 +1069,43 @@ function EncounterDetail({
         </Collapsible>
       </Tabs>
       {/* Events Panels */}
-      <PanelTimingProvider panelCount={layout === "alternate" ? 4 : 5}>
+      <PanelTimingProvider panelCount={layoutItems.length}>
         <PanelTimingResetter encounters={encounters} />
-        
-        {layout === "standard" ? (
-          /* Standard layout: 2×2 grid + 1 full-width panel */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <EventsPanel
-              panelType={eventsPanel1Type}
-              onPanelTypeChange={setEventsPanel1Type}
-              durationMs={totalDurationMs}
-              context={panelContext}
-              panelIndex={0}
-              onExplainerClick={onExplainerClick}
-              showHints={showHints}
-              panelOption={panelOption1}
-              onPanelOptionChange={setPanelOption1}
-            />
-            <EventsPanel
-              panelType={eventsPanel2Type}
-              onPanelTypeChange={setEventsPanel2Type}
-              durationMs={totalDurationMs}
-              context={panelContext}
-              panelIndex={1}
-              onExplainerClick={onExplainerClick}
-              showHints={showHints}
-              panelOption={panelOption2}
-              onPanelOptionChange={setPanelOption2}
-            />
-            <EventsPanel
-              panelType={eventsPanel3Type}
-              onPanelTypeChange={setEventsPanel3Type}
-              durationMs={totalDurationMs}
-              context={panelContext}
-              panelIndex={2}
-              onExplainerClick={onExplainerClick}
-              showHints={showHints}
-              panelOption={panelOption3}
-              onPanelOptionChange={setPanelOption3}
-            />
-            <EventsPanel
-              panelType={eventsPanel4Type}
-              onPanelTypeChange={setEventsPanel4Type}
-              durationMs={totalDurationMs}
-              context={panelContext}
-              panelIndex={3}
-              onExplainerClick={onExplainerClick}
-              showHints={showHints}
-              panelOption={panelOption4}
-              onPanelOptionChange={setPanelOption4}
-            />
-            {/* 5th panel spans full width */}
-            <div className="lg:col-span-2">
-              <EventsPanel
-                panelType={eventsPanel5Type}
-                onPanelTypeChange={setEventsPanel5Type}
-                durationMs={totalDurationMs}
-                context={panelContext}
-                panelIndex={4}
-                onExplainerClick={onExplainerClick}
-                showHints={showHints}
-                panelOption={panelOption5}
-                onPanelOptionChange={setPanelOption5}
-              />
-            </div>
-          </div>
-        ) : (
-          /* Alternate layout: 1+1 (top) + 2 full-width panels */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {/* Top row: 2 small panels */}
-            <EventsPanel
-              panelType={eventsPanel1Type}
-              onPanelTypeChange={setEventsPanel1Type}
-              durationMs={totalDurationMs}
-              context={panelContext}
-              panelIndex={0}
-              onExplainerClick={onExplainerClick}
-              showHints={showHints}
-              panelOption={panelOption1}
-              onPanelOptionChange={setPanelOption1}
-            />
-            <EventsPanel
-              panelType={eventsPanel2Type}
-              onPanelTypeChange={setEventsPanel2Type}
-              durationMs={totalDurationMs}
-              context={panelContext}
-              panelIndex={1}
-              onExplainerClick={onExplainerClick}
-              showHints={showHints}
-              panelOption={panelOption2}
-              onPanelOptionChange={setPanelOption2}
-            />
-            {/* Middle row: full-width panel (typically AllActivity) */}
-            <div className="lg:col-span-2">
-              <EventsPanel
-                panelType={eventsPanel5Type}
-                onPanelTypeChange={setEventsPanel5Type}
-                durationMs={totalDurationMs}
-                context={panelContext}
-                panelIndex={2}
-                onExplainerClick={onExplainerClick}
-                showHints={showHints}
-                panelOption={panelOption5}
-                onPanelOptionChange={setPanelOption5}
-              />
-            </div>
-            {/* Bottom row: full-width panel (Periods) */}
-            <div className="lg:col-span-2">
-              <EventsPanel
-                panelType={eventsPanel6Type}
-                onPanelTypeChange={setEventsPanel6Type}
-                durationMs={totalDurationMs}
-                context={panelContext}
-                panelIndex={3}
-                onExplainerClick={onExplainerClick}
-                showHints={showHints}
-                panelOption={panelOption6}
-                onPanelOptionChange={setPanelOption6}
-              />
-            </div>
-          </div>
-        )}
-        
+
+        <div
+          className="grid gap-3"
+          style={{
+            gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
+            gridAutoRows: `${PANEL_ROW_HEIGHT_PX}px`,
+          }}
+        >
+          {layoutItems.map((item, index) => {
+            const panelType = panelTypesById[item.id] ?? "empty";
+            return (
+              <div
+                key={item.id}
+                className="min-h-0"
+                style={{
+                  gridColumn: `${item.x + 1} / span ${item.w}`,
+                  gridRow: `${item.y + 1} / span ${item.h}`,
+                }}
+              >
+                <EventsPanel
+                  panelType={panelType}
+                  onPanelTypeChange={(nextType) => onPanelTypeChange(item.id, nextType)}
+                  durationMs={totalDurationMs}
+                  context={panelContext}
+                  panelIndex={index}
+                  onExplainerClick={onExplainerClick}
+                  showHints={showHints}
+                  panelOption={panelOptionsById[item.id] ?? null}
+                  onPanelOptionChange={(nextOption) => onPanelOptionChange(item.id, nextOption)}
+                />
+              </div>
+            );
+          })}
+        </div>
+
         <div className="mt-4 flex justify-end">
           <PanelTimingDisplay />
         </div>
@@ -1224,14 +1185,35 @@ export function InstancePageView({
     [instance.encounters]
   );
   
+  const standardOrderedLayoutItems = useMemo(
+    () => orderLayoutItems(normalizeLayoutItems(DEFAULT_INSTANCE_LAYOUT_ITEMS)),
+    [],
+  );
+
+  const alternateOrderedLayoutItems = useMemo(
+    () => orderLayoutItems(normalizeLayoutItems(ALTERNATE_INSTANCE_LAYOUT_ITEMS)),
+    [],
+  );
+
+  const defaultOrderedPanels = useMemo<PanelType[]>(
+    () =>
+      standardOrderedLayoutItems.map(
+        (item) => (DEFAULT_INSTANCE_PANEL_TYPES[item.id] ?? "empty") as PanelType,
+      ),
+    [standardOrderedLayoutItems],
+  );
+
+  const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(null);
+
   // URL-persisted view state (base64 encoded single param)
-  const { 
-    state: viewState, 
-    setEncounters: setUrlEncounterIds, 
-    setEnemies: setUrlEnemyIds, 
-    setPlayers: setUrlPlayerIds, 
+  const {
+    state: viewState,
+    setEncounters: setUrlEncounterIds,
+    setEnemies: setUrlEnemyIds,
+    setPlayers: setUrlPlayerIds,
     setPanelType,
     setPanelOption,
+    setPanels,
     setLayout,
     clearEntitySelection,
   } = useInstanceViewState({
@@ -1239,10 +1221,38 @@ export function InstancePageView({
     enemies: allMergedEnemies,
     players: instance.players ?? {},
     defaults: {
-      encounterIds: instance.encounters.map(e => e.id),
-      panels: ['damage_done', 'healing_done', 'damage_taken', 'enemy_damage_done', 'all_activity', 'periods'],
+      encounterIds: instance.encounters.map((e) => e.id),
+      panels: defaultOrderedPanels,
     },
   });
+
+  const baseOrderedLayoutItems = viewState.layout === "alternate"
+    ? alternateOrderedLayoutItems
+    : standardOrderedLayoutItems;
+
+  const activeLayoutItems = useMemo(
+    () => importedLayoutItems ?? baseOrderedLayoutItems,
+    [importedLayoutItems, baseOrderedLayoutItems],
+  );
+
+  const panelTypesByID = useMemo<Record<string, EventsPanelType>>(() => {
+    const next: Record<string, EventsPanelType> = {};
+    activeLayoutItems.forEach((item, index) => {
+      const urlType = viewState.panels[index];
+      const defaultType = (DEFAULT_INSTANCE_PANEL_TYPES[item.id] ?? "empty") as EventsPanelType;
+      const resolved = (urlType ?? defaultType) as EventsPanelType;
+      next[item.id] = resolved in PANELS ? resolved : "empty";
+    });
+    return next;
+  }, [activeLayoutItems, viewState.panels]);
+
+  const panelOptionsByID = useMemo<Record<string, string | null>>(() => {
+    const next: Record<string, string | null> = {};
+    activeLayoutItems.forEach((item, index) => {
+      next[item.id] = viewState.panelOptions[index] ?? null;
+    });
+    return next;
+  }, [activeLayoutItems, viewState.panelOptions]);
   
   // Use URL state if present, otherwise default to all encounters
   const internalSelectedIds = useMemo(() => {
@@ -1375,6 +1385,59 @@ export function InstancePageView({
     }
   };
 
+  const handlePanelTypeChangeByID = useCallback((itemID: string, type: EventsPanelType) => {
+    const idx = activeLayoutItems.findIndex((item) => item.id === itemID);
+    if (idx === -1) return;
+    setPanelType(idx, type as PanelType);
+  }, [activeLayoutItems, setPanelType]);
+
+  const handlePanelOptionChangeByID = useCallback((itemID: string, option: string | null) => {
+    const idx = activeLayoutItems.findIndex((item) => item.id === itemID);
+    if (idx === -1) return;
+    setPanelOption(idx, option);
+  }, [activeLayoutItems, setPanelOption]);
+
+  const handleImportLayout = useCallback(() => {
+    const raw = window.prompt("Paste exported layout JSON");
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        version?: number;
+        items?: GridEditorItem[];
+        panelTypesById?: Record<string, EventsPanelType>;
+      };
+
+      if (parsed.version !== 1) {
+        throw new Error("Unsupported layout version");
+      }
+      if (!Array.isArray(parsed.items) || parsed.items.length === 0) {
+        throw new Error("Missing items");
+      }
+      if (!parsed.panelTypesById || typeof parsed.panelTypesById !== "object") {
+        throw new Error("Missing panelTypesById");
+      }
+
+      const normalizedItems = normalizeLayoutItems(parsed.items);
+      const importedTypes: Record<string, EventsPanelType> = {};
+      normalizedItems.forEach((item) => {
+        const candidate = parsed.panelTypesById?.[item.id] ?? "empty";
+        importedTypes[item.id] = candidate in PANELS ? candidate : "empty";
+      });
+
+      const orderedItems = orderLayoutItems(normalizedItems);
+      const orderedPanels = orderedItems.map((item) => (importedTypes[item.id] ?? "empty") as PanelType);
+      setPanels(orderedPanels, orderedPanels.map(() => null));
+
+      setImportedLayoutItems(orderedItems);
+
+      toast.success("Imported layout", { description: `Applied ${orderedItems.length} panel${orderedItems.length === 1 ? "" : "s"}` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid layout JSON";
+      toast.error("Import failed", { description: message });
+    }
+  }, [setPanels]);
+
   const selectedEncounters = instance.encounters.filter((e) => selectedIds.includes(e.id));
   const trashGroups = groupTrashEncounters(instance.encounters);
 
@@ -1469,6 +1532,7 @@ export function InstancePageView({
             <InstanceMenu
               layout={viewState.layout}
               onLayoutChange={setLayout}
+              onImportLayout={handleImportLayout}
               instanceId={instance.id}
               logDetailUrl={logDetailUrl}
             />
@@ -1515,16 +1579,16 @@ export function InstancePageView({
         )}
         
         {selectedEncounters.length > 0 ? (
-          <EncounterDetail 
+          <EncounterDetail
             instance={instance}
             encounters={selectedEncounters}
             players={instance.players ?? {}}
             entitySelection={entitySelection}
-            panelTypes={viewState.panels}
-            panelOptions={viewState.panelOptions}
-            onPanelTypeChange={setPanelType}
-            onPanelOptionChange={setPanelOption}
-            layout={viewState.layout}
+            layoutItems={activeLayoutItems}
+            panelTypesById={panelTypesByID}
+            panelOptionsById={panelOptionsByID}
+            onPanelTypeChange={handlePanelTypeChangeByID}
+            onPanelOptionChange={handlePanelOptionChangeByID}
             onToggleEnemy={toggleEnemySelection}
             onSelectEnemies={selectEnemies}
             onTogglePlayer={togglePlayerSelection}

@@ -118,7 +118,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterHealingByHealer.size > 0,
+    (r) => !!r && r.EncounterHealingByHealer instanceof Map && r.EncounterHealingByHealer.size > 0,
     [sourceType]
   );
 

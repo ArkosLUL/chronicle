@@ -85,6 +85,14 @@ interface EnemyDamageTakenPanelContext {
   enemyGrouping?: EnemyDamageTakenGrouping;
 }
 
+export function hasDamageTakenEncounterData(result: unknown): result is DamageTakenResult {
+  return !!result &&
+    typeof result === "object" &&
+    "EncounterDamage" in result &&
+    (result as { EncounterDamage?: unknown }).EncounterDamage instanceof Map &&
+    (result as { EncounterDamage: Map<unknown, unknown> }).EncounterDamage.size > 0;
+}
+
 export const DamageTakenContent = (props: DamageTakenContentProps) => {
   const { targetType = "players" } = props;
   const { result, context, panelContext, setPanelContext } = props;
@@ -107,7 +115,7 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterDamage.size > 0,
+    hasDamageTakenEncounterData,
     [targetType, enemyGrouping]
   );
 

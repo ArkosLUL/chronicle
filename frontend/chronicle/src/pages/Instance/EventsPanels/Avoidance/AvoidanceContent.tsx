@@ -86,7 +86,7 @@ export const AvoidanceContent = (props: AvoidanceContentProps) => {
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterAvoidance.size > 0,
+    (r) => !!r && r.EncounterAvoidance instanceof Map && r.EncounterAvoidance.size > 0,
     []
   );
 

@@ -56,7 +56,7 @@ export const ExtraAttacksContent = (props: ExtraAttacksContentProps) => {
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.EncounterExtraAttacks.size > 0,
+    (r) => !!r && r.EncounterExtraAttacks instanceof Map && r.EncounterExtraAttacks.size > 0,
     []
   );
 

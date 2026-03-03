@@ -357,7 +357,7 @@ export const ResourceRegenContent = (props: ResourceRegenContentProps) => {
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.encounterData.size > 0,
+    (r) => !!r && r.encounterData instanceof Map && r.encounterData.size > 0,
     []
   );
 

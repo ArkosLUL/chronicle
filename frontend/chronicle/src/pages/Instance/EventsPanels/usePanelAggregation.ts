@@ -163,6 +163,19 @@ function deserializeResult<TResult>(result: unknown): TResult {
   return deepDeserialize(result) as TResult;
 }
 
+interface AggregationState<TResult> {
+  panelId: string;
+  result: TResult;
+}
+
+export function resolveAggregationResultForPanel<TResult>(
+  aggregationState: AggregationState<TResult>,
+  panelId: string,
+  createState: () => TResult,
+): TResult {
+  return aggregationState.panelId === panelId ? aggregationState.result : createState();
+}
+
 export function usePanelAggregation<TResult>(
   options: UsePanelAggregationOptions<TResult>
 ): UsePanelAggregationResult<TResult> {
@@ -186,7 +199,10 @@ export function usePanelAggregation<TResult>(
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [result, setResult] = useState<TResult>(() => panel.createState());
+  const [aggregationState, setAggregationState] = useState<AggregationState<TResult>>(() => ({
+    panelId: panel.id,
+    result: panel.createState(),
+  }));
   const [totalEvents, setTotalEvents] = useState(0);
   const [processingTimeMs, setProcessingTimeMs] = useState<number | null>(null);
   
@@ -198,14 +214,14 @@ export function usePanelAggregation<TResult>(
   // Track previous timestamp to detect backward seeks
   const prevTimestampRef = useRef<Date | null>(null);
   
-  // Track panel id in state to detect changes during render
-  // This is the React-approved pattern for "adjusting state when a prop changes"
-  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const [prevPanelId, setPrevPanelId] = useState(panel.id);
-  if (prevPanelId !== panel.id) {
-    setPrevPanelId(panel.id);
-    setResult(panel.createState());
+  // Track panel id in state to detect changes during render.
+  // Keep panel id + result in one state object so a panel switch never renders
+  // with a stale result shape from the previous panel.
+  if (aggregationState.panelId !== panel.id) {
+    setAggregationState({ panelId: panel.id, result: panel.createState() });
   }
+
+  const result = resolveAggregationResultForPanel(aggregationState, panel.id, panel.createState);
   
   // Reset incremental state when panel changes (in effect to avoid ref access during render)
   useEffect(() => {
@@ -330,7 +346,9 @@ export function usePanelAggregation<TResult>(
       }
       
       const deserializedResult = deserializeResult<TResult>(response.result);
-      setResult(deserializedResult);
+      setAggregationState((prev) =>
+        prev.panelId === panel.id ? { ...prev, result: deserializedResult } : prev,
+      );
       setTotalEvents(response.totalEvents);
       setProcessingTimeMs(response.processingTimeMs);
       setProcessing(false);
@@ -424,7 +442,9 @@ export function usePanelAggregation<TResult>(
       // Track that we processed this timestamp to avoid redundant work
       lastProcessedTimestampRef.current = stopAt?.getTime() ?? null;
       
-      setResult(response.result);
+      setAggregationState((prev) =>
+        prev.panelId === panel.id ? { ...prev, result: response.result } : prev,
+      );
       setTotalEvents(response.processedCount);
       setProcessingTimeMs(response.processingTimeMs);
       setProcessing(false);

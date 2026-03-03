@@ -38,6 +38,8 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 		return errors.New("must be in the discord server to use chronicle")
 	}
 
+	// User is in the discord
+	gChron.Chronicle_guild_member(usr)
 	for _, roleID := range member.Roles {
 		switch roleID {
 		case "1468405974506410110": // Alpha tester

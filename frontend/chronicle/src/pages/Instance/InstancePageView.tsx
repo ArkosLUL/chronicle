@@ -714,6 +714,7 @@ interface EncounterDetailProps {
   onExplainerClick: (panelType: EventsPanelType) => void;
   /** Whether to show helpful hints (tooltips, help icons) */
   showHints: boolean;
+  isMobile: boolean;
 }
 
 function EncounterDetail({
@@ -734,6 +735,7 @@ function EncounterDetail({
   onSelectEncounters,
   onExplainerClick,
   showHints,
+  isMobile,
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
@@ -1073,9 +1075,8 @@ function EncounterDetail({
         <PanelTimingResetter encounters={encounters} />
 
         <div
-          className="grid gap-3"
+          className="grid gap-3 grid-cols-1 sm:grid-cols-12"
           style={{
-            gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
             gridAutoRows: `${PANEL_ROW_HEIGHT_PX}px`,
           }}
         >
@@ -1086,8 +1087,8 @@ function EncounterDetail({
                 key={item.id}
                 className="min-h-0"
                 style={{
-                  gridColumn: `${item.x + 1} / span ${item.w}`,
-                  gridRow: `${item.y + 1} / span ${item.h}`,
+                  gridColumn: isMobile ? "1 / -1" : `${item.x + 1} / span ${item.w}`,
+                  gridRow: isMobile ? `auto / span ${item.h}` : `${item.y + 1} / span ${item.h}`,
                 }}
               >
                 <EventsPanel
@@ -1597,6 +1598,7 @@ export function InstancePageView({
             onSelectEncounters={setInternalSelectedIds}
             onExplainerClick={handleExplainerClick}
             showHints={showHints}
+            isMobile={isMobile}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">

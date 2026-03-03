@@ -55,6 +55,7 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Gnomeregan": { background: "/images/loadingscreens/LoadScreenGnomeregan.webp", abbrev: "Gnomer" },
   "Ragefire Chasm": { background: "/images/loadingscreens/LoadScreenRagefireChasm.webp", bossCount: 4, abbrev: "RFC" },
   "Stormwind Stockade": { background: "/images/loadingscreens/LoadScreenStormwindStockade.webp", abbrev: "Stocks" },
+  "Stockade": { background: "/images/loadingscreens/LoadScreenStormwindStockade.webp", abbrev: "Stocks" },
   "Caverns of Time": { background: "/images/loadingscreens/LoadScreenCavernsTime.webp", abbrev: "CoT" },
 };
 

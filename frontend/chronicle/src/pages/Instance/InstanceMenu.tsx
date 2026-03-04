@@ -22,7 +22,13 @@ interface InstanceMenuProps {
   logDetailUrl?: string;
 }
 
-export function InstanceMenu({ layout, onLayoutChange, onImportLayout, instanceId, logDetailUrl }: InstanceMenuProps) {
+export function InstanceMenu({
+  layout,
+  onLayoutChange,
+  onImportLayout,
+  instanceId,
+  logDetailUrl,
+}: InstanceMenuProps) {
   const handleCopyInstanceId = async () => {
     try {
       await navigator.clipboard.writeText(instanceId);

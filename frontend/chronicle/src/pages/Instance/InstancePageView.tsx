@@ -757,15 +757,27 @@ function EncounterDetail({
     return Math.max(...endTimes) - Math.min(...startTimes);
   }, [encounters]);
   
+  const selectedEncounterIDs = useMemo(() => encounters.map((e) => e.id), [encounters]);
+
   // Build PanelContext for EventsPanels
-  const panelContext: PanelContext = {
-    instance,
-    selectedEncounterIds: encounters.map(e => e.id),
-    entitySelection,
-    onSelectEncounters,
-    onTogglePlayer,
-    onTogglePlayers,
-  };
+  const panelContext: PanelContext = useMemo(
+    () => ({
+      instance,
+      selectedEncounterIds: selectedEncounterIDs,
+      entitySelection,
+      onSelectEncounters,
+      onTogglePlayer,
+      onTogglePlayers,
+    }),
+    [
+      instance,
+      selectedEncounterIDs,
+      entitySelection,
+      onSelectEncounters,
+      onTogglePlayer,
+      onTogglePlayers,
+    ],
+  );
   
   // Helper to check if an enemy is selected
   const isEnemySelected = (id: string) => entitySelection.enemyIds.has(id);
@@ -1206,6 +1218,19 @@ export function InstancePageView({
 
   const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(null);
 
+  const defaultEncounterIDs = useMemo(
+    () => instance.encounters.map((e) => e.id),
+    [instance.encounters],
+  );
+
+  const viewStateDefaults = useMemo(
+    () => ({
+      encounterIds: defaultEncounterIDs,
+      panels: defaultOrderedPanels,
+    }),
+    [defaultEncounterIDs, defaultOrderedPanels],
+  );
+
   // URL-persisted view state (base64 encoded single param)
   const {
     state: viewState,
@@ -1221,10 +1246,7 @@ export function InstancePageView({
     encounters: instance.encounters,
     enemies: allMergedEnemies,
     players: instance.players ?? {},
-    defaults: {
-      encounterIds: instance.encounters.map((e) => e.id),
-      panels: defaultOrderedPanels,
-    },
+    defaults: viewStateDefaults,
   });
 
   const baseOrderedLayoutItems = viewState.layout === "alternate"
@@ -1315,8 +1337,8 @@ export function InstancePageView({
   }), [viewState.enemies, viewState.players]);
   
   // Toggle enemy selection
-  const toggleEnemySelection = (enemyId: string) => {
-    setUrlEnemyIds(prev => {
+  const toggleEnemySelection = useCallback((enemyId: string) => {
+    setUrlEnemyIds((prev) => {
       const next = new Set(prev);
       if (next.has(enemyId)) {
         next.delete(enemyId);
@@ -1325,16 +1347,16 @@ export function InstancePageView({
       }
       return next;
     });
-  };
+  }, [setUrlEnemyIds]);
   
   // Select multiple enemies at once (replaces current selection)
-  const selectEnemies = (enemyIds: string[]) => {
+  const selectEnemies = useCallback((enemyIds: string[]) => {
     setUrlEnemyIds(new Set(enemyIds));
-  };
+  }, [setUrlEnemyIds]);
   
   // Toggle player selection
-  const togglePlayerSelection = (playerId: string) => {
-    setUrlPlayerIds(prev => {
+  const togglePlayerSelection = useCallback((playerId: string) => {
+    setUrlPlayerIds((prev) => {
       const next = new Set(prev);
       if (next.has(playerId)) {
         next.delete(playerId);
@@ -1343,13 +1365,13 @@ export function InstancePageView({
       }
       return next;
     });
-  };
+  }, [setUrlPlayerIds]);
   
   // Toggle multiple players at once (if any are selected, deselect all; otherwise select all)
-  const togglePlayersSelection = (playerIds: string[]) => {
-    setUrlPlayerIds(prev => {
+  const togglePlayersSelection = useCallback((playerIds: string[]) => {
+    setUrlPlayerIds((prev) => {
       const next = new Set(prev);
-      const anySelected = playerIds.some(id => next.has(id));
+      const anySelected = playerIds.some((id) => next.has(id));
       if (anySelected) {
         // Deselect all
         for (const id of playerIds) {
@@ -1363,7 +1385,7 @@ export function InstancePageView({
       }
       return next;
     });
-  };
+  }, [setUrlPlayerIds]);
 
   // Use internalSelectedIds which already prioritizes URL state over props
   const selectedIds = internalSelectedIds;

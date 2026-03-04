@@ -69,6 +69,38 @@ func (z *interceptor) InsertWoWLogGroup(ctx context.Context, arg database.Insert
 	return z.Store.InsertWoWLogGroup(ctx, arg)
 }
 
+func (z *interceptor) CreateUserPanelLayout(ctx context.Context, arg database.CreateUserPanelLayoutParams) (database.UserPanelLayout, error) {
+	if arg.ID == uuid.Nil {
+		arg.ID = uuid.New()
+	}
+
+	if !arg.UserID.Valid {
+		return database.UserPanelLayout{}, fmt.Errorf("create layout missing user id")
+	}
+
+	b := policy.New()
+	b.Layout(arg.ID).
+		Owner(b.User(arg.UserID.UUID)).
+		Chronicle(b.GlobalChronicle())
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.UserPanelLayout{}, err
+	}
+
+	return z.Store.CreateUserPanelLayout(ctx, arg)
+}
+
+func (z *interceptor) DeleteUserPanelLayoutByID(ctx context.Context, id uuid.UUID) (int64, error) {
+	obj := policy.New().Layout(id).Object()
+	f := rel.NewFilter(obj.Typ, obj.ID, "")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return 0, fmt.Errorf("delete authz relations: %w", err)
+	}
+	return z.Store.DeleteUserPanelLayoutByID(ctx, id)
+}
+
 func (z *interceptor) DeleteGuildMember(ctx context.Context, arg database.DeleteGuildMemberParams) error {
 	// Delete all authz relations for the user in the guild, then delete the guild member
 	g := policy.New().Guild(arg.GuildID).Object()

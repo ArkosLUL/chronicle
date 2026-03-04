@@ -1,10 +1,24 @@
-import { useMemo, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2 } from "lucide-react";
+import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useInstance, useMyStorage } from "@/api/queries";
-import type { DataGrant, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles } from "@/api/typesGenerated";
+import {
+  useInstance,
+  useMyStorage,
+  useSession,
+  useUserPanelLayouts,
+  useCreatePanelLayout,
+  useDeletePanelLayout,
+  useUpdatePanelLayout,
+  useSharedLayout,
+  useTrackLayout,
+  useUntrackLayout,
+  useLogGroups,
+  type UserPanelLayout,
+  type RequestError,
+} from "@/api/queries";
+import type { CreateUserPanelLayoutRequest, DataGrant, InstancePlayer, InstanceUnit, WoWEncounterWithHostiles } from "@/api/typesGenerated";
 import { GridLayoutEditor, type GridEditorItem } from "@/components/layout/GridLayoutEditor";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +28,49 @@ import { PANELS } from "@/pages/Instance/EventsPanels/EventsPanel";
 import type { PanelContext } from "@/pages/Instance/EventsPanels/types";
 import type { Instance } from "@/pages/Instance/InstancePage";
 import { PanelTimingProvider } from "@/pages/Instance/EventsPanels/PanelTimingContext";
-import { DEFAULT_INSTANCE_LAYOUT_ITEMS, DEFAULT_INSTANCE_PANEL_TYPES } from "@/pages/Instance/viewDefaults";
+import {
+  DEFAULT_INSTANCE_LAYOUT_ITEMS,
+  ALTERNATE_INSTANCE_LAYOUT_ITEMS,
+  DEFAULT_INSTANCE_PANEL_TYPES,
+} from "@/pages/Instance/viewDefaults";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
+import { getSpellIconUrl } from "@/api/wowdb";
+import type { WoWSpell } from "@/api/wowdb";
+import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
+
+const LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY = "layout-lab.instance-reference";
+
+function getStoredLayoutLabInstanceReference(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY) ?? "";
+}
+
+function setStoredLayoutLabInstanceReference(value: string) {
+  if (typeof window === "undefined") return;
+  if (!value) {
+    window.localStorage.removeItem(LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY);
+    return;
+  }
+  window.localStorage.setItem(LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY, value);
+}
+
+const ICON_PAGE_SIZE = 24;
+const MAX_PANELS = 8;
+const LAYOUT_TITLE_PATTERN = /^[A-Za-z0-9_\-\s]+$/;
+
+function showRequestErrorToast(fallbackMessage: string, error: unknown) {
+  const requestError = error as RequestError;
+  const message = requestError?.message || fallbackMessage;
+  const detail = requestError?.detail;
+
+  toast.error(message, {
+    description: detail ? (
+      <span className="mt-1 block font-mono text-xs whitespace-pre-wrap break-all">
+        {detail}
+      </span>
+    ) : undefined,
+  });
+}
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -51,6 +107,7 @@ const tabs: Tab[] = [
   { path: "/account/notifications", label: "Notifications", icon: Bell },
   { path: "/account/privacy", label: "Privacy", icon: Shield },
   { path: "/account/appearance", label: "Appearance", icon: Palette },
+  { path: "/account/layout-book", label: "Layout Book", icon: BookOpenText },
   { path: "/account/layout-lab", label: "Layout Lab", icon: LayoutTemplate },
 ];
 
@@ -125,6 +182,342 @@ export function AppearanceSettings() {
   );
 }
 
+function buildLayoutSpellTooltip(layout: {
+  title: string;
+  description: string;
+  icon: string;
+}): WoWSpell {
+  return {
+    id: 0,
+    name: { "0": layout.title },
+    subtext: { "0": "" },
+    description: {
+      "0": layout.description || "No description",
+    },
+    aura_description: { "0": "" },
+    spell_icon: { ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" },
+    active_icon: { ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" },
+    spell_level: 0,
+    base_level: 0,
+    max_level: 0,
+    category: { ID: 0, Flags: 0, UsesPerWeek: 0, Name: "", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0 },
+    school: { value: 0, string: "" },
+    spell_class_set: { value: 0, string: "General" },
+    spell_class_mask: 0,
+    power_type: { value: 0, string: "Mana" },
+    mana_cost: 0,
+    mana_cost_pct: 0,
+    mana_cost_per_level: 0,
+    mana_per_second: 0,
+    reagent: [],
+    reagent_count: [],
+    casting_time: { ID: 0, Base: 0, PerLevel: 0, Minimum: 0 },
+    range: { ID: 0, RangeMin: 0, RangeMax: 0, Flags: 0, Name: "Self" },
+    duration: { ID: 0, Duration: 0, DurationPerLevel: 0, MaxDuration: 0 },
+    recovery_time: 0,
+    start_recovery_time: 0,
+    start_recovery_category: 0,
+    category_recovery_time: 0,
+    mechanic: { value: 0, string: "None" },
+    dispel_type: { value: 0, string: "None" },
+    prevention_type: { value: 0, string: "None" },
+    defense_type: { value: 0, string: "None" },
+    caster_aura_state: { value: 0, string: "None" },
+    target_aura_state: { value: 0, string: "None" },
+    interrupt_flags: { mask: 0, string: "" },
+    aura_interrupt_flags: { mask: 0, string: "" },
+    effect: [],
+    effect_aura: [],
+    effect_base_points: [],
+    effect_die_sides: [],
+    effect_base_dice: [],
+    effect_dice_per_level: [],
+    effect_real_points_per_level: [],
+    effect_aura_period: [],
+    effect_amplitude: [],
+    effect_chain_amplitude: [],
+    effect_chain_targets: [],
+    effect_trigger_spell: [],
+    effect_item_type: [],
+    effect_misc_value: [],
+    effect_mechanic: [],
+    effect_points_per_combo: [],
+    effect_radius: [],
+    implicit_target_a: [],
+    implicit_target_b: [],
+    proc_chance: 0,
+    proc_charges: 0,
+    proc_type_mask: { mask: 0, string: "" },
+    proc_flags: { mask: 0, string: "" },
+    targets: { mask: 0, string: "" },
+    max_targets: 0,
+    max_target_level: 0,
+    target_creature_type: { mask: 0, string: "" },
+    attributes: { blocks: [], string: "" },
+    equipped_item_class: { value: 0, string: "None" },
+    equipped_item_subclass: 0,
+    equipped_item_inv_types: { mask: 0, string: "" },
+    speed: 0,
+    spell_priority: 0,
+    stance_bar_order: 0,
+    cumulative_aura: 0,
+    modal_next_spell: 0,
+    requires_spell_focus: { ID: 0, Name: "" },
+    totems_id: 0,
+    totem: [],
+    cast_ui: 0,
+    required_aura_vision: 0,
+    min_faction_id: 0,
+    min_reputation: 0,
+    spell_visual_id: [],
+    damage_type: 0,
+  };
+}
+
+export function LayoutBookSettings() {
+  const navigate = useNavigate();
+  const { data: session } = useSession();
+  const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
+  const createLayout = useCreatePanelLayout();
+  const deleteLayout = useDeletePanelLayout();
+  const untrackLayout = useUntrackLayout();
+
+  const layouts = layoutsResponse?.layouts ?? [];
+  const [name, setName] = useState("");
+  const [layoutType, setLayoutType] = useState<"standard" | "alternate">("standard");
+
+  const handleCreate = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast.error("Layout name required");
+      return;
+    }
+    if (!LAYOUT_TITLE_PATTERN.test(trimmed)) {
+      toast.error("Title can only contain letters, numbers, spaces, hyphens, and underscores");
+      return;
+    }
+
+    const items = layoutType === "alternate" ? ALTERNATE_INSTANCE_LAYOUT_ITEMS : DEFAULT_INSTANCE_LAYOUT_ITEMS;
+    const orderedItems = [...items].sort((a, b) => (a.y - b.y) || (a.x - b.x) || a.id.localeCompare(b.id));
+    const panelTypesById = buildPanelTypesById(orderedItems, orderedItems.map((item) => DEFAULT_INSTANCE_PANEL_TYPES[item.id] ?? "empty"));
+
+    try {
+      await createLayout.mutateAsync({
+        title: trimmed,
+        icon: "INV_Misc_Book_09",
+        description: "",
+        payload: JSON.parse(serializeLayoutLab(orderedItems, panelTypesById)),
+      } as CreateUserPanelLayoutRequest);
+      setName("");
+      toast.success("Layout created", { description: trimmed });
+    } catch (error) {
+      showRequestErrorToast("Failed to create layout", error);
+    }
+  };
+
+  const handleClone = async (layout: UserPanelLayout) => {
+    try {
+      await createLayout.mutateAsync({
+        title: `Copy of ${layout.title}`,
+        icon: layout.icon || "INV_Misc_Book_09",
+        description: layout.description || "",
+        payload: layout.payload,
+      } as CreateUserPanelLayoutRequest);
+      toast.success("Layout cloned", { description: layout.title });
+    } catch (error) {
+      showRequestErrorToast("Failed to clone layout", error);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold">Layout Book</h2>
+        <p className="text-muted-foreground">Manage and edit your saved layouts.</p>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-3">
+        <h3 className="font-medium flex items-center gap-2"><Save className="h-4 w-4" />Create layout</h3>
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder="Layout name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="min-w-[240px] max-w-sm"
+          />
+          <select
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            value={layoutType}
+            onChange={(event) => setLayoutType(event.target.value as "standard" | "alternate")}
+          >
+            <option value="standard">Standard</option>
+            <option value="alternate">Alternate</option>
+          </select>
+          <Button onClick={() => void handleCreate()} disabled={createLayout.isPending}>Create</Button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border">
+        <div className="p-4 border-b">
+          <h3 className="font-medium">Saved layouts ({layouts.length})</h3>
+        </div>
+        <div className="p-4">
+          {layouts.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No saved layouts yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {layouts.map((layout) => {
+              const tooltipLayout = {
+                title: layout.title,
+                description: layout.description,
+                icon: layout.icon,
+              };
+
+              return (
+                <div key={layout.id} className={`rounded-md border p-3 sm:p-4 ${layout.is_tracked ? "bg-secondary/15" : "bg-primary/10"}`}>
+                  <div className="group inline-flex items-start gap-3 text-left rounded-md px-1.5 py-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0">
+                          <div className="h-12 w-12 rounded-sm border-2 border-amber-900/70 bg-amber-950/40 shadow-inner overflow-hidden">
+                            <img
+                              src={getSpellIconUrl(buildLayoutSpellTooltip(tooltipLayout).spell_icon)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="p-0 bg-transparent border-0" hideArrow>
+                        <SpellTooltip spell={buildLayoutSpellTooltip(tooltipLayout)} />
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <div className="min-w-0">
+                      <div className="text-lg leading-none font-medium text-amber-100 tracking-tight [text-shadow:0_1px_0_rgba(0,0,0,0.65)]">
+                        {layout.title}
+                      </div>
+                      {layout.description ? (
+                        <div className="mt-1 text-sm text-zinc-100/90">{layout.description.slice(0, 120)}{layout.description.length > 120 ? "…" : ""}</div>
+                      ) : null}
+                      {!layout.is_tracked ? (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          <div>Created by You</div>
+                          {layout.tracker_count > 0 ? <div>Tracked by {layout.tracker_count} other users</div> : null}
+                        </div>
+                      ) : null}
+                      {layout.is_tracked ? (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          <div>Created by {layout.owner_username ?? "Unknown user"}</div>
+                          <div>Tracked by {Math.max(0, layout.tracker_count - 1)} other users</div>
+                        </div>
+                      ) : null}
+                      <div className="mt-2 flex items-center gap-1.5">
+                        {layout.is_tracked ? (
+                          <>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="h-7"
+                              title="Untrack layout"
+                              onClick={async () => {
+                                try {
+                                  await untrackLayout.mutateAsync(layout.id);
+                                  toast.success("Layout untracked", { description: layout.title });
+                                } catch (error) {
+                                  showRequestErrorToast("Failed to untrack layout", error);
+                                }
+                              }}
+                              disabled={untrackLayout.isPending}
+                            >
+                              Untrack
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="View layout"
+                              onClick={() => {
+                                navigate(`/account/layout-lab?shared=${layout.id}`);
+                              }}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="Delete layout"
+                              onClick={async () => {
+                                const trackerWarning = layout.tracker_count > 0
+                                  ? `\n\n${layout.tracker_count} user${layout.tracker_count === 1 ? " is" : "s are"} tracking this layout. You will no longer be able to push updates to them.`
+                                  : "";
+                                const confirmed = window.confirm(`Delete layout "${layout.title}"? This cannot be undone.${trackerWarning}`);
+                                if (!confirmed) return;
+                                try {
+                                  await deleteLayout.mutateAsync(layout.id);
+                                  toast.success("Layout deleted", { description: layout.title });
+                                } catch (error) {
+                                  showRequestErrorToast("Failed to delete layout", error);
+                                }
+                              }}
+                            >
+                              <Trash className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="Edit layout"
+                              onClick={() => {
+                                navigate(`/account/layout-lab?layoutId=${layout.id}`);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Clone layout"
+                          onClick={() => void handleClone(layout)}
+                          disabled={createLayout.isPending}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Share layout"
+                          onClick={async () => {
+                            const shareURL = `${window.location.origin}/account/layout-lab?shared=${layout.id}`;
+                            await navigator.clipboard.writeText(shareURL);
+                            toast.success("Share link copied", { description: layout.title });
+                          }}
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface LayoutLabExportV1 {
   version: 1;
   items: GridEditorItem[];
@@ -153,6 +546,34 @@ function parseLayoutLab(raw: string): LayoutLabExportV1 {
     items: parsed.items,
     panelTypesById: parsed.panelTypesById as Record<string, EventsPanelType>,
   };
+}
+
+function parsePanelLayout(layout: UserPanelLayout): LayoutLabExportV1 {
+  const fallbackItems = DEFAULT_INSTANCE_LAYOUT_ITEMS;
+  const fallbackPanelTypes = DEFAULT_INSTANCE_PANEL_TYPES;
+
+  try {
+    const parsed = parseLayoutLab(JSON.stringify(layout.payload ?? {}));
+    return parsed;
+  } catch {
+    return {
+      version: 1,
+      items: fallbackItems,
+      panelTypesById: fallbackPanelTypes,
+    };
+  }
+}
+
+function parseSimpleParsedInstances(output: unknown): { id: string; name: string; encounters?: { start_time: string }[] }[] {
+  if (!output || typeof output !== "object") return [];
+  const maybeInstances = (output as { instances?: unknown }).instances;
+  if (!Array.isArray(maybeInstances)) return [];
+
+  return maybeInstances.filter((inst): inst is { id: string; name: string; encounters?: { start_time: string }[] } => {
+    if (!inst || typeof inst !== "object") return false;
+    const row = inst as { id?: unknown; name?: unknown; encounters?: unknown };
+    return typeof row.id === "string" && typeof row.name === "string" && (!row.encounters || Array.isArray(row.encounters));
+  });
 }
 
 function normalizeInstanceReference(value: string): string {
@@ -264,13 +685,67 @@ function LivePanelTile({
   );
 }
 
+function buildPanelTypesById(items: GridEditorItem[], panels: EventsPanelType[]): Record<string, EventsPanelType> {
+  const next: Record<string, EventsPanelType> = {};
+  items.forEach((item, idx) => {
+    const type = panels[idx] ?? "empty";
+    next[item.id] = type in PANELS ? type : "empty";
+  });
+  return next;
+}
+
 export function LayoutLabSettings() {
+  const [searchParams] = useSearchParams();
+  const editingLayoutID = searchParams.get("layoutId");
+  const sharedLayoutID = searchParams.get("shared");
+  const isSharedMode = !!sharedLayoutID;
+  const { data: session } = useSession();
+  const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
+  const { data: sharedLayout } = useSharedLayout(sharedLayoutID ?? "", { enabled: isSharedMode });
+  const updateLayout = useUpdatePanelLayout();
+  const createLayout = useCreatePanelLayout();
+  const trackLayout = useTrackLayout();
+  const untrackLayout = useUntrackLayout();
+
+  const editingLayout = useMemo(
+    () => layoutsResponse?.layouts.find((layout) => layout.id === editingLayoutID) ?? null,
+    [layoutsResponse?.layouts, editingLayoutID],
+  );
+  const activeLayout = isSharedMode ? sharedLayout ?? null : editingLayout;
+  const readOnly = isSharedMode;
+  const isActiveLayoutOwnedByCurrentUser = activeLayout?.owner_id === session?.user_id;
+  const activeLayoutOtherTrackerCount = Math.max(0, (activeLayout?.tracker_count ?? 0) - (activeLayout?.is_tracked ? 1 : 0));
+
+
+  const [metaTitle, setMetaTitle] = useState("Layout");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [iconSearch, setIconSearch] = useState("");
+  const [iconPage, setIconPage] = useState(0);
+  const [metaIcon, setMetaIcon] = useState("INV_Misc_Book_09");
+  const [iconOptions, setIconOptions] = useState<string[]>([]);
+
   const [items, setItems] = useState<GridEditorItem[]>(DEFAULT_INSTANCE_LAYOUT_ITEMS);
   const [panelTypesById, setPanelTypesById] = useState<Record<string, EventsPanelType>>(DEFAULT_INSTANCE_PANEL_TYPES);
-  const [instanceReferenceInput, setInstanceReferenceInput] = useState("");
-  const [instanceReference, setInstanceReference] = useState("");
+  const [instanceReferenceInput, setInstanceReferenceInput] = useState<string>(() => getStoredLayoutLabInstanceReference());
+  const [instanceReference, setInstanceReference] = useState<string>(() => normalizeInstanceReference(getStoredLayoutLabInstanceReference()));
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
+
+  const filteredIcons = useMemo(() => {
+    const source = iconOptions.length > 0 ? iconOptions : [metaIcon];
+    const q = iconSearch.trim().toLowerCase();
+    if (!q) return source;
+    return source.filter((icon) => icon.toLowerCase().includes(q));
+  }, [iconOptions, metaIcon, iconSearch]);
+
+  const iconPageCount = Math.max(1, Math.ceil(filteredIcons.length / ICON_PAGE_SIZE));
+
+  const currentIconPage = Math.min(iconPage, iconPageCount - 1);
+
+  const pagedIcons = useMemo(() => {
+    const start = currentIconPage * ICON_PAGE_SIZE;
+    return filteredIcons.slice(start, start + ICON_PAGE_SIZE);
+  }, [filteredIcons, currentIconPage]);
 
   const normalizedReference = useMemo(
     () => normalizeInstanceReference(instanceReferenceInput),
@@ -278,6 +753,44 @@ export function LayoutLabSettings() {
   );
 
   const instanceId = useMemo(() => extractInstanceId(instanceReference), [instanceReference]);
+
+  const { data: logGroups } = useLogGroups();
+
+  const recentRaidReferences = useMemo(() => {
+    if (!logGroups) return [] as { id: string; name: string; startTime: Date | null; reference: string }[];
+
+    const allInstances = logGroups.flatMap((log) => {
+      return parseSimpleParsedInstances(log.processing_output).map((inst) => {
+        const firstEncounter = inst.encounters?.[0];
+        const startTime = firstEncounter?.start_time ? new Date(firstEncounter.start_time) : null;
+        return {
+          id: inst.id,
+          name: inst.name,
+          startTime,
+          reference: `${window.location.origin}/instances/${inst.id}`,
+        };
+      });
+    });
+
+    const unique = new Map<string, { id: string; name: string; startTime: Date | null; reference: string }>();
+    for (const inst of allInstances) {
+      const existing = unique.get(inst.id);
+      if (!existing) {
+        unique.set(inst.id, inst);
+        continue;
+      }
+
+      const existingTime = existing.startTime?.getTime() ?? 0;
+      const nextTime = inst.startTime?.getTime() ?? 0;
+      if (nextTime > existingTime) {
+        unique.set(inst.id, inst);
+      }
+    }
+
+    return Array.from(unique.values())
+      .sort((a, b) => (b.startTime?.getTime() ?? 0) - (a.startTime?.getTime() ?? 0))
+      .slice(0, 6);
+  }, [logGroups]);
 
   const { data: apiInstance, isLoading, error } = useInstance(instanceId ?? "", {
     enabled: !!instanceId,
@@ -318,7 +831,99 @@ export function LayoutLabSettings() {
     };
   }, [instance, selectedEncounterIds]);
 
+  useEffect(() => {
+    void fetch("https://icons.chronicleclassic.com/icon-list.json")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("failed"))))
+      .then((data: unknown) => {
+        if (Array.isArray(data)) {
+          setIconOptions(data.filter((v): v is string => typeof v === "string"));
+          return;
+        }
+        if (data && typeof data === "object" && "names" in data) {
+          const names = (data as { names?: unknown }).names;
+          if (Array.isArray(names)) {
+            setIconOptions(names.filter((v): v is string => typeof v === "string"));
+            return;
+          }
+        }
+        setIconOptions([]);
+      })
+      .catch(() => setIconOptions([]));
+  }, []);
+
+  useEffect(() => {
+    if (!activeLayout) return;
+    const parsed = parsePanelLayout(activeLayout);
+    queueMicrotask(() => {
+      setItems(parsed.items);
+      setPanelTypesById(parsed.panelTypesById);
+      setMetaTitle(activeLayout.title);
+      setMetaDescription(activeLayout.description ?? "");
+      setMetaIcon(activeLayout.icon || "INV_Misc_Book_09");
+    });
+  }, [activeLayout]);
+
+  const handleSave = async () => {
+    if (!editingLayout) {
+      toast.error("Open a layout from Layout Book to edit.");
+      return;
+    }
+
+    const trimmedTitle = metaTitle.trim();
+    if (trimmedTitle && !LAYOUT_TITLE_PATTERN.test(trimmedTitle)) {
+      toast.error("Title can only contain letters, numbers, spaces, hyphens, and underscores");
+      return;
+    }
+
+    try {
+      await updateLayout.mutateAsync({
+        layoutID: editingLayout.id,
+        title: trimmedTitle || editingLayout.title,
+        description: metaDescription,
+        icon: metaIcon,
+        payload: JSON.parse(serializeLayoutLab(items, panelTypesById)),
+      } as never);
+      toast.success("Layout saved", { description: trimmedTitle || editingLayout.title });
+    } catch (error) {
+      showRequestErrorToast("Failed to save layout", error);
+    }
+  };
+
+  const handleTrack = async () => {
+    if (!activeLayout) return;
+
+    try {
+      if (activeLayout.is_tracked) {
+        await untrackLayout.mutateAsync(activeLayout.id);
+        toast.success("Layout untracked", { description: activeLayout.title });
+      } else {
+        await trackLayout.mutateAsync(activeLayout.id);
+        toast.success("Layout tracked", { description: activeLayout.title });
+      }
+    } catch (error) {
+      showRequestErrorToast(activeLayout.is_tracked ? "Failed to untrack layout" : "Failed to track layout", error);
+    }
+  };
+
+  const handleSaveCopy = async () => {
+    if (!activeLayout) return;
+
+    try {
+      await createLayout.mutateAsync({
+        title: `Copy of ${activeLayout.title}`,
+        icon: activeLayout.icon || "INV_Misc_Book_09",
+        description: activeLayout.description || "",
+        payload: activeLayout.payload,
+      } as CreateUserPanelLayoutRequest);
+      toast.success("Layout copied", { description: activeLayout.title });
+    } catch (error) {
+      showRequestErrorToast("Failed to save a copy", error);
+    }
+  };
+
+
   const handlePanelTypeChange = (itemId: string, nextType: EventsPanelType) => {
+    if (readOnly) return;
     setPanelTypesById((prev) => ({ ...prev, [itemId]: nextType }));
     setItems((prev) =>
       prev.map((item) =>
@@ -333,6 +938,7 @@ export function LayoutLabSettings() {
   };
 
   const handleRemovePanel = (itemId: string) => {
+    if (readOnly) return;
     setItems((prev) => prev.filter((item) => item.id !== itemId));
     setPanelTypesById((prev) => {
       const next = { ...prev };
@@ -342,6 +948,8 @@ export function LayoutLabSettings() {
   };
 
   const handleAddPanel = () => {
+    if (readOnly) return;
+    if (items.length >= MAX_PANELS) return;
     const nextIndex = items.reduce((max, item) => {
       const match = item.id.match(/^panel-(\d+)$/);
       const n = match ? Number(match[1]) : 0;
@@ -375,6 +983,7 @@ export function LayoutLabSettings() {
   };
 
   const handleImport = () => {
+    if (readOnly) return;
     try {
       const parsed = parseLayoutLab(importText);
       setItems(parsed.items);
@@ -384,6 +993,28 @@ export function LayoutLabSettings() {
       setImportError(error instanceof Error ? error.message : "Invalid layout JSON");
     }
   };
+
+  if (!editingLayoutID && !sharedLayoutID) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Layout Lab</h2>
+        <p className="text-muted-foreground">
+          Select a layout from your <Link to="/account/layout-book" className="text-primary underline">Layout Book</Link> to begin editing.
+        </p>
+      </div>
+    );
+  }
+
+  if (!activeLayout) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Layout Lab</h2>
+        <p className="text-muted-foreground">
+          Layout not found. Go to <Link to="/account/layout-book" className="text-primary underline">Layout Book</Link> and select a layout.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -396,73 +1027,276 @@ export function LayoutLabSettings() {
       </div>
 
       <div className="rounded-lg border p-4 space-y-3">
-        <label htmlFor="instance-reference" className="text-sm font-medium">
-          Reference instance URL or ID
-        </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            id="instance-reference"
-            className="min-w-[280px] flex-1"
-            placeholder="https://chronicleclassic.com/instances/abc123 or abc123"
-            value={instanceReferenceInput}
-            onChange={(event) => setInstanceReferenceInput(event.target.value)}
-          />
-          <Button
-            type="button"
-            onClick={() => setInstanceReference(normalizedReference)}
-            disabled={!normalizedReference}
-          >
-            Apply reference
-          </Button>
-          <Button type="button" variant="outline" onClick={handleAddPanel} className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            Add panel
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setItems(DEFAULT_INSTANCE_LAYOUT_ITEMS);
-              setPanelTypesById(DEFAULT_INSTANCE_PANEL_TYPES);
-            }}
-          >
-            Reset layout
-          </Button>
-          <Button type="button" variant="outline" onClick={handleExport} className="gap-1.5">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+        <h3 className="text-sm font-medium">Metadata</h3>
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground">Title</label>
+          <div className="flex items-center gap-2">
+            <img
+              src={getSpellIconUrl({ ID: 1, TextureFilename: metaIcon || "INV_Misc_Book_09" })}
+              alt=""
+              className="h-8 w-8 rounded border border-border"
+            />
+            <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="Layout title" disabled={readOnly} />
+          </div>
+          {metaTitle && !LAYOUT_TITLE_PATTERN.test(metaTitle) ? (
+            <p className="text-xs text-destructive">Title can only contain letters, numbers, spaces, hyphens, and underscores</p>
+          ) : null}
         </div>
 
-        <details className="rounded-md border border-border/70 bg-muted/20">
-          <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium hover:bg-muted/40">
-            <span className="inline-flex items-center gap-1.5">
-              <Upload className="h-4 w-4" />
-              Import layout JSON
-            </span>
-          </summary>
-          <div className="space-y-2 border-t border-border/70 p-3">
+        <div className="grid gap-3 lg:grid-cols-2 items-start">
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Description</label>
             <textarea
-              id="layout-import"
-              className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
-              placeholder='{"version":1,"items":[],"panelTypesById":{}}'
-              value={importText}
-              onChange={(event) => setImportText(event.target.value)}
+              className="min-h-[223px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
+              placeholder="Describe what this layout is for"
+              disabled={readOnly}
+              maxLength={500}
             />
-            <div className="flex items-center gap-2">
-              <Button type="button" onClick={handleImport} className="gap-1.5">
-                <Upload className="h-4 w-4" />
-                Import
-              </Button>
-              {importError && <span className="text-sm text-destructive">{importError}</span>}
+            {!readOnly ? <div className="text-right text-xs text-muted-foreground">{metaDescription.length}/500</div> : null}
+
+            {readOnly && !isActiveLayoutOwnedByCurrentUser ? (
+              <div className="text-xs text-muted-foreground">
+                <div>Created by {activeLayout.owner_username ?? "Unknown user"}</div>
+                <div>Tracked by {activeLayoutOtherTrackerCount} other users</div>
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-2 pt-1">
+              {readOnly ? (
+                <>
+                  <Button
+                    type="button"
+                    variant={activeLayout.is_tracked ? "destructive" : "default"}
+                    onClick={() => void handleTrack()}
+                    className="gap-1.5"
+                    disabled={trackLayout.isPending || untrackLayout.isPending}
+                  >
+                    {activeLayout.is_tracked ? "Untrack" : "Track"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => void handleSaveCopy()} className="gap-1.5" disabled={createLayout.isPending}>
+                    <Copy className="h-4 w-4" />
+                    Save a Copy
+                  </Button>
+                  <span className="text-xs text-muted-foreground">Viewing shared layout</span>
+                </>
+              ) : (
+                <>
+                  <Button type="button" onClick={() => void handleSave()} className="gap-1.5" disabled={updateLayout.isPending}>
+                    <Save className="h-4 w-4" />
+                    Save
+                  </Button>
+                  <span className="text-xs text-muted-foreground">Editing: {activeLayout.title}</span>
+                </>
+              )}
             </div>
           </div>
-        </details>
+
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Icon</label>
+            <div className="space-y-2 rounded-md border border-border/70 p-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={iconSearch}
+                  onChange={(e) => {
+                    setIconSearch(e.target.value);
+                    setIconPage(0);
+                  }}
+                  placeholder="Search icons (e.g. INV_Misc_Book_09)"
+                  className="min-w-[260px] flex-1"
+                  disabled={readOnly}
+                />
+                <div className="text-xs text-muted-foreground">
+                  {filteredIcons.length} icons • Page {currentIconPage + 1}/{iconPageCount}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5">
+                {pagedIcons.map((icon) => (
+                  <button
+                    key={icon}
+                    type="button"
+                    title={icon}
+                    onClick={() => setMetaIcon(icon)}
+                    disabled={readOnly}
+                    className={`h-9 w-9 rounded border p-0.5 ${metaIcon === icon ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"}`}
+                  >
+                    <img src={getSpellIconUrl({ ID: 1, TextureFilename: icon })} alt="" className="h-full w-full rounded object-cover" />
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIconPage(Math.max(0, currentIconPage - 1))}
+                  disabled={currentIconPage === 0 || readOnly}
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                </Button>
+                <span className="text-xs text-muted-foreground">Selected: {metaIcon}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIconPage(Math.min(iconPageCount - 1, currentIconPage + 1))}
+                  disabled={currentIconPage >= iconPageCount - 1 || readOnly}
+                  className="gap-1"
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="rounded-lg border p-3">
+      <div className="rounded-lg border p-3 space-y-3">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {!instanceId ? (
+              <>
+                <Input
+                  id="instance-reference"
+                  className="min-w-[280px] flex-1"
+                  placeholder="Reference instance URL or ID"
+                  value={instanceReferenceInput}
+                  onChange={(event) => setInstanceReferenceInput(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setInstanceReference(normalizedReference);
+                    setStoredLayoutLabInstanceReference(instanceReferenceInput.trim());
+                  }}
+                  disabled={!normalizedReference}
+                >
+                  Apply reference
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-sm text-muted-foreground">Using reference: {instanceId}</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setInstanceReference("");
+                    setInstanceReferenceInput(instanceReference);
+                  }}
+                >
+                  Change reference
+                </Button>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2">
+            {!readOnly ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddPanel}
+                  className="gap-1.5"
+                  disabled={readOnly || items.length >= MAX_PANELS}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add panel
+                </Button>
+                <span className="text-xs text-muted-foreground">Panels: {items.length} / {MAX_PANELS}</span>
+              </div>
+            ) : <div />}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleExport}
+                className="gap-1.5"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+              {!readOnly ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    if (!activeLayout) return;
+                    if (!window.confirm("Reset layout to the last saved state? This will discard unsaved changes in Layout Lab.")) {
+                      return;
+                    }
+                    const parsed = parsePanelLayout(activeLayout);
+                    setItems(parsed.items);
+                    setPanelTypesById(parsed.panelTypesById);
+                  }}
+                >
+                  Reset layout
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        {!readOnly ? (
+          <details className="rounded-md border border-border/70 bg-muted/20">
+            <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium hover:bg-muted/40">
+              <span className="inline-flex items-center gap-1.5">
+                <Upload className="h-4 w-4" />
+                Import layout JSON
+              </span>
+            </summary>
+            <div className="space-y-2 border-t border-border/70 p-3">
+              <textarea
+                id="layout-import"
+                className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
+                placeholder='{"version":1,"items":[],"panelTypesById":{}}'
+                value={importText}
+                onChange={(event) => setImportText(event.target.value)}
+              />
+              <div className="flex items-center gap-2">
+                <Button type="button" onClick={handleImport} className="gap-1.5">
+                  <Upload className="h-4 w-4" />
+                  Import
+                </Button>
+                {importError && <span className="text-sm text-destructive">{importError}</span>}
+              </div>
+            </div>
+          </details>
+        ) : null}
+
         {!instanceId ? (
-          <div className="p-6 text-sm text-muted-foreground">Add an instance URL above to load live panel data.</div>
+          <div className="space-y-4 p-6 text-sm text-muted-foreground">
+            <div>Add an instance URL above to load live panel data. Or click a recent raid below to use that.</div>
+            {recentRaidReferences.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/80">Recent raids</div>
+                <div className="flex flex-wrap gap-2">
+                  {recentRaidReferences.map((raid) => (
+                    <Button
+                      key={raid.id}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setInstanceReferenceInput(raid.reference);
+                        setInstanceReference(raid.reference);
+                        setStoredLayoutLabInstanceReference(raid.reference);
+                      }}
+                    >
+                      {raid.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
         ) : isLoading ? (
           <div className="p-6 text-sm text-muted-foreground">Loading instance data…</div>
         ) : error || !instance || !context ? (
@@ -476,6 +1310,7 @@ export function LayoutLabSettings() {
                 items={items}
                 onItemsChange={setItems}
                 showItemHeader={false}
+                editable={!readOnly}
                 renderItem={(item) => {
                   const panelType = panelTypesById[item.id] ?? "damage_done";
                   return (
@@ -488,22 +1323,26 @@ export function LayoutLabSettings() {
                         onPanelTypeChange={(next) => handlePanelTypeChange(item.id, next)}
                       />
 
-                      <div className="pointer-events-none absolute inset-0 z-20 rounded-md bg-background/35 opacity-0 transition-opacity group-hover:opacity-100" />
-                      <div className="pointer-events-none absolute right-2 top-2 z-30 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="pointer-events-auto h-8 px-2"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            handleRemovePanel(item.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {!readOnly ? (
+                        <>
+                          <div className="pointer-events-none absolute inset-0 z-20 rounded-md bg-background/35 opacity-0 transition-opacity group-hover:opacity-100" />
+                          <div className="pointer-events-none absolute right-2 top-2 z-30 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="pointer-events-auto h-8 px-2"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleRemovePanel(item.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </>
+                      ) : null}
                     </div>
                   );
                 }}

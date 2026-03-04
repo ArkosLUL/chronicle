@@ -76,6 +76,14 @@ export interface CreateTabRequest {
     readonly slug: string;
 }
 
+// From chroniclesdk/panel_layout.go
+export interface CreateUserPanelLayoutRequest {
+    readonly title: string;
+    readonly icon: string;
+    readonly description: string;
+    readonly payload: Record<string, string>;
+}
+
 // From chroniclesdk/user.go
 /**
  * DataGrant represents a storage grant given to a user from various sources
@@ -223,6 +231,11 @@ export const KillTypes: KillType[] = ["clean", "partial", "reset", "wipe"];
 export interface ListGuildsResponse {
     readonly guilds: readonly GuildInfo[];
     readonly total: number;
+}
+
+// From chroniclesdk/panel_layout.go
+export interface ListUserPanelLayoutsResponse {
+    readonly layouts: readonly UserPanelLayout[];
 }
 
 // From chroniclesdk/log.go
@@ -390,6 +403,14 @@ export interface Session {
     readonly preferences: Preferences;
 }
 
+// From chroniclesdk/panel_layout.go
+/**
+ * TrackLayoutRequest identifies a layout to track.
+ */
+export interface TrackLayoutRequest {
+    readonly layout_id: string;
+}
+
 // From chroniclesdk/guild_page.go
 export interface UpdateGuildPageRequest {
     readonly theme: GuildPageTheme;
@@ -399,6 +420,14 @@ export interface UpdateGuildPageRequest {
 export interface UpdateTabRequest {
     readonly label: string;
     readonly panels: readonly GuildPagePanel[];
+}
+
+// From chroniclesdk/panel_layout.go
+export interface UpdateUserPanelLayoutRequest {
+    readonly title?: string;
+    readonly icon?: string;
+    readonly description?: string;
+    readonly payload?: (Record<string, string>);
 }
 
 // From chroniclesdk/user.go
@@ -423,6 +452,22 @@ export interface User {
     readonly max_storage_bytes: number;
     readonly max_storage_bytes_updated: string;
     readonly consumed_storage_bytes: number;
+}
+
+// From chroniclesdk/panel_layout.go
+export interface UserPanelLayout {
+    readonly id: string;
+    readonly title: string;
+    readonly icon: string;
+    readonly description: string;
+    readonly payload: Record<string, string>;
+    readonly version: number;
+    readonly owner_id: string | null;
+    readonly owner_username: string | null;
+    readonly is_tracked: boolean;
+    readonly tracker_count: number;
+    readonly created_at: string;
+    readonly updated_at: string;
 }
 
 // From chroniclesdk/user.go

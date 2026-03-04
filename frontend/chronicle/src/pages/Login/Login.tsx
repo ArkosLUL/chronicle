@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert"
@@ -7,11 +7,15 @@ import { MagicLogo } from "@/components/MagicLogo"
 import { useAuthProviders } from "@/api/queries"
 import { useAuth } from "@/hooks/useAuth"
 
+const DISCORD_URL = "https://discord.gg/gz97ABFVAj"
+
 export function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { data: providers = [], isLoading: providersLoading, isError: providersError, error: providersErrorMsg } = useAuthProviders()
   const loading = (authLoading || providersLoading) && !providersError
+  const authError = searchParams.get("error")
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -36,7 +40,7 @@ export function Login() {
       }
     }
     redirectUri = redirectUri || "/"
-    window.location.href = `/auth/${providerName}?from=${encodeURIComponent(redirectUri)}`
+    window.location.assign(`/auth/${providerName}?from=${encodeURIComponent(redirectUri)}`)
   }
 
   return (
@@ -51,6 +55,17 @@ export function Login() {
         </div>
 
         <Card className="p-8">
+          {authError === "not_in_discord" && (
+            <Alert className="mb-4">
+              <AlertTitle>Join Discord first</AlertTitle>
+              <AlertDescription>
+                You need to join our Discord server before signing in. {" "}
+                <a href={DISCORD_URL} target="_blank" rel="noreferrer" className="underline">
+                  Join Discord
+                </a>
+              </AlertDescription>
+            </Alert>
+          )}
           {(loading) ? (
             <div className="text-center text-muted-foreground">
               Loading authentication providers...

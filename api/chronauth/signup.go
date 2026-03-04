@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Emyrk/chronicle/chroniclebot"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
@@ -110,6 +111,10 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 		return nil
 	}, nil)
 	if err != nil {
+		if errors.Is(err, chroniclebot.ErrMustJoinDiscordServer) {
+			http.Redirect(w, r, "/login?error=not_in_discord", http.StatusTemporaryRedirect)
+			return session, false
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return session, false
 	}

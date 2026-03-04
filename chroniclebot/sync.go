@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var ErrMustJoinDiscordServer = errors.New("must be in the discord server to use chronicle")
+
 func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorizer, discordID string, userID uuid.UUID) (retErr error) {
 	b := policy.New()
 	gChron := b.GlobalChronicle()
@@ -35,7 +37,7 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 
 	if member == nil {
 		// DELETE ALL PERMS
-		return errors.New("must be in the discord server to use chronicle")
+		return ErrMustJoinDiscordServer
 	}
 
 	// User is in the discord

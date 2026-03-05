@@ -4,6 +4,7 @@ SELECT
   upl.user_id,
   upl.title,
   upl.title_normalized,
+  upl.code,
   upl.icon,
   upl.description,
   upl.payload,
@@ -29,6 +30,7 @@ SELECT
   upl.user_id,
   upl.title,
   upl.title_normalized,
+  upl.code,
   upl.icon,
   upl.description,
   upl.payload,
@@ -55,6 +57,7 @@ SELECT
   upl.user_id,
   upl.title,
   upl.title_normalized,
+  upl.code,
   upl.icon,
   upl.description,
   upl.payload,
@@ -72,6 +75,30 @@ LEFT JOIN (
 ) tc ON tc.layout_id = upl.id
 WHERE upl.id = $1;
 
+-- name: GetPanelLayoutByCode :one
+SELECT
+  upl.id,
+  upl.user_id,
+  upl.title,
+  upl.title_normalized,
+  upl.code,
+  upl.icon,
+  upl.description,
+  upl.payload,
+  upl.version,
+  upl.created_at,
+  upl.updated_at,
+  owner.username AS owner_username,
+  COALESCE(tc.cnt, 0)::bigint AS tracker_count
+FROM user_panel_layouts upl
+LEFT JOIN users owner ON owner.id = upl.user_id
+LEFT JOIN (
+  SELECT layout_id, COUNT(*) AS cnt
+  FROM user_tracked_layouts
+  GROUP BY layout_id
+) tc ON tc.layout_id = upl.id
+WHERE upl.code = $1;
+
 -- name: CountUserPanelLayoutsTotal :one
 SELECT
   (SELECT COUNT(*) FROM user_panel_layouts upl WHERE upl.user_id = $1) +
@@ -83,12 +110,18 @@ INSERT INTO user_panel_layouts (
   id,
   user_id,
   title,
+  code,
   icon,
   description,
   payload
 )
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
+
+-- name: SetPanelLayoutCode :execrows
+UPDATE user_panel_layouts
+SET code = $1
+WHERE id = $2;
 
 -- name: UpdateUserPanelLayoutByID :one
 UPDATE user_panel_layouts

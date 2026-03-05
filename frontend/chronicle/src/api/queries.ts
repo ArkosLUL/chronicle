@@ -165,6 +165,24 @@ export function useSharedLayout(
     ...options,
   });
 }
+export function useSharedLayoutByCode(
+  code: string,
+  options?: Omit<UseQueryOptions<UserPanelLayout>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["shared-panel-layout-code", code],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/panel-layout/code/${encodeURIComponent(code)}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch shared layout");
+      }
+      return response.json() as Promise<UserPanelLayout>;
+    },
+    enabled: !!code,
+    ...options,
+  });
+}
+
 
 
 export async function fetchSharedView(code: string): Promise<SharedViewResponse> {

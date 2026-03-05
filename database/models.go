@@ -903,6 +903,7 @@ type UserPanelLayout struct {
 	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	Version         int32              `db:"version" json:"version"`
+	Code            pgtype.Text        `db:"code" json:"code"`
 }
 
 type UserStorageLimit struct {

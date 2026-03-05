@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone, Menu, X } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   useDeletePanelLayout,
   useUpdatePanelLayout,
   useSharedLayout,
+  useSharedLayoutByCode,
   useTrackLayout,
   useUntrackLayout,
   useUpdateLayoutDefaults,
@@ -606,7 +607,11 @@ export function LayoutBookSettings() {
                           className="h-7 w-7 transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-500/25 hover:text-sky-100 hover:shadow-[0_0_0_1px_rgba(56,189,248,0.35)]"
                           title="Share layout"
                           onClick={async () => {
-                            const shareURL = `${window.location.origin}/account/layout-lab?shared=${layout.id}`;
+                            const useShortHost = window.location.hostname !== "localhost";
+                            console.log(layout.code)
+                            const shareURL = layout.code && useShortHost
+                              ? `https://chrn.link/l/${layout.code}`
+                              : `${window.location.origin}/account/layout-lab?shared=${layout.id}`;
                             await navigator.clipboard.writeText(shareURL);
                             toast.success("Share link copied", { description: layout.title });
                           }}
@@ -768,11 +773,13 @@ export function LayoutLabSettings() {
   const [searchParams] = useSearchParams();
   const editingLayoutID = searchParams.get("layoutId");
   const sharedLayoutID = searchParams.get("shared");
-  const isSharedMode = !!sharedLayoutID;
+  const sharedLayoutCode = searchParams.get("shared_code");
+  const isSharedMode = !!sharedLayoutID || !!sharedLayoutCode;
   const isMobile = useIsMobile();
   const { data: session } = useSession();
   const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
-  const { data: sharedLayout } = useSharedLayout(sharedLayoutID ?? "", { enabled: isSharedMode });
+  const { data: sharedLayoutByID } = useSharedLayout(sharedLayoutID ?? "", { enabled: !!sharedLayoutID });
+  const { data: sharedLayoutByCode } = useSharedLayoutByCode(sharedLayoutCode ?? "", { enabled: !!sharedLayoutCode });
   const updateLayout = useUpdatePanelLayout();
   const createLayout = useCreatePanelLayout();
   const trackLayout = useTrackLayout();
@@ -782,7 +789,8 @@ export function LayoutLabSettings() {
     () => layoutsResponse?.layouts.find((layout) => layout.id === editingLayoutID) ?? null,
     [layoutsResponse?.layouts, editingLayoutID],
   );
-  const activeLayout = isSharedMode ? sharedLayout ?? null : editingLayout;
+  const sharedLayout = sharedLayoutByID ?? sharedLayoutByCode ?? null;
+  const activeLayout = isSharedMode ? sharedLayout : editingLayout;
   const readOnly = isSharedMode;
   const isActiveLayoutOwnedByCurrentUser = activeLayout?.owner_id === session?.user_id;
   const activeLayoutOtherTrackerCount = Math.max(0, (activeLayout?.tracker_count ?? 0) - (activeLayout?.is_tracked ? 1 : 0));

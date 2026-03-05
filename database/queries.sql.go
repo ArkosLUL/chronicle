@@ -2420,18 +2420,20 @@ INSERT INTO user_panel_layouts (
   id,
   user_id,
   title,
+  code,
   icon,
   description,
   payload
 )
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, user_id, title, title_normalized, icon, description, payload, created_at, updated_at, version
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, user_id, title, title_normalized, icon, description, payload, created_at, updated_at, version, code
 `
 
 type CreateUserPanelLayoutParams struct {
 	ID          uuid.UUID     `db:"id" json:"id"`
 	UserID      uuid.NullUUID `db:"user_id" json:"user_id"`
 	Title       string        `db:"title" json:"title"`
+	Code        pgtype.Text   `db:"code" json:"code"`
 	Icon        string        `db:"icon" json:"icon"`
 	Description string        `db:"description" json:"description"`
 	Payload     []byte        `db:"payload" json:"payload"`
@@ -2442,6 +2444,7 @@ func (q *sqlQuerier) CreateUserPanelLayout(ctx context.Context, arg CreateUserPa
 		arg.ID,
 		arg.UserID,
 		arg.Title,
+		arg.Code,
 		arg.Icon,
 		arg.Description,
 		arg.Payload,
@@ -2458,6 +2461,7 @@ func (q *sqlQuerier) CreateUserPanelLayout(ctx context.Context, arg CreateUserPa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.Code,
 	)
 	return i, err
 }
@@ -2476,12 +2480,75 @@ func (q *sqlQuerier) DeleteUserPanelLayoutByID(ctx context.Context, id uuid.UUID
 	return result.RowsAffected(), nil
 }
 
+const getPanelLayoutByCode = `-- name: GetPanelLayoutByCode :one
+SELECT
+  upl.id,
+  upl.user_id,
+  upl.title,
+  upl.title_normalized,
+  upl.code,
+  upl.icon,
+  upl.description,
+  upl.payload,
+  upl.version,
+  upl.created_at,
+  upl.updated_at,
+  owner.username AS owner_username,
+  COALESCE(tc.cnt, 0)::bigint AS tracker_count
+FROM user_panel_layouts upl
+LEFT JOIN users owner ON owner.id = upl.user_id
+LEFT JOIN (
+  SELECT layout_id, COUNT(*) AS cnt
+  FROM user_tracked_layouts
+  GROUP BY layout_id
+) tc ON tc.layout_id = upl.id
+WHERE upl.code = $1
+`
+
+type GetPanelLayoutByCodeRow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	UserID          uuid.NullUUID      `db:"user_id" json:"user_id"`
+	Title           string             `db:"title" json:"title"`
+	TitleNormalized pgtype.Text        `db:"title_normalized" json:"title_normalized"`
+	Code            pgtype.Text        `db:"code" json:"code"`
+	Icon            string             `db:"icon" json:"icon"`
+	Description     string             `db:"description" json:"description"`
+	Payload         []byte             `db:"payload" json:"payload"`
+	Version         int32              `db:"version" json:"version"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	OwnerUsername   pgtype.Text        `db:"owner_username" json:"owner_username"`
+	TrackerCount    int64              `db:"tracker_count" json:"tracker_count"`
+}
+
+func (q *sqlQuerier) GetPanelLayoutByCode(ctx context.Context, code pgtype.Text) (GetPanelLayoutByCodeRow, error) {
+	row := q.db.QueryRow(ctx, getPanelLayoutByCode, code)
+	var i GetPanelLayoutByCodeRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Title,
+		&i.TitleNormalized,
+		&i.Code,
+		&i.Icon,
+		&i.Description,
+		&i.Payload,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.OwnerUsername,
+		&i.TrackerCount,
+	)
+	return i, err
+}
+
 const getPanelLayoutByID = `-- name: GetPanelLayoutByID :one
 SELECT
   upl.id,
   upl.user_id,
   upl.title,
   upl.title_normalized,
+  upl.code,
   upl.icon,
   upl.description,
   upl.payload,
@@ -2505,6 +2572,7 @@ type GetPanelLayoutByIDRow struct {
 	UserID          uuid.NullUUID      `db:"user_id" json:"user_id"`
 	Title           string             `db:"title" json:"title"`
 	TitleNormalized pgtype.Text        `db:"title_normalized" json:"title_normalized"`
+	Code            pgtype.Text        `db:"code" json:"code"`
 	Icon            string             `db:"icon" json:"icon"`
 	Description     string             `db:"description" json:"description"`
 	Payload         []byte             `db:"payload" json:"payload"`
@@ -2523,6 +2591,7 @@ func (q *sqlQuerier) GetPanelLayoutByID(ctx context.Context, id uuid.UUID) (GetP
 		&i.UserID,
 		&i.Title,
 		&i.TitleNormalized,
+		&i.Code,
 		&i.Icon,
 		&i.Description,
 		&i.Payload,
@@ -2559,6 +2628,7 @@ SELECT
   upl.user_id,
   upl.title,
   upl.title_normalized,
+  upl.code,
   upl.icon,
   upl.description,
   upl.payload,
@@ -2584,6 +2654,7 @@ SELECT
   upl.user_id,
   upl.title,
   upl.title_normalized,
+  upl.code,
   upl.icon,
   upl.description,
   upl.payload,
@@ -2610,6 +2681,7 @@ type ListUserPanelLayoutsRow struct {
 	UserID          uuid.NullUUID      `db:"user_id" json:"user_id"`
 	Title           string             `db:"title" json:"title"`
 	TitleNormalized pgtype.Text        `db:"title_normalized" json:"title_normalized"`
+	Code            pgtype.Text        `db:"code" json:"code"`
 	Icon            string             `db:"icon" json:"icon"`
 	Description     string             `db:"description" json:"description"`
 	Payload         []byte             `db:"payload" json:"payload"`
@@ -2635,6 +2707,7 @@ func (q *sqlQuerier) ListUserPanelLayouts(ctx context.Context, userID uuid.NullU
 			&i.UserID,
 			&i.Title,
 			&i.TitleNormalized,
+			&i.Code,
 			&i.Icon,
 			&i.Description,
 			&i.Payload,
@@ -2653,6 +2726,25 @@ func (q *sqlQuerier) ListUserPanelLayouts(ctx context.Context, userID uuid.NullU
 		return nil, err
 	}
 	return items, nil
+}
+
+const setPanelLayoutCode = `-- name: SetPanelLayoutCode :execrows
+UPDATE user_panel_layouts
+SET code = $1
+WHERE id = $2
+`
+
+type SetPanelLayoutCodeParams struct {
+	Code pgtype.Text `db:"code" json:"code"`
+	ID   uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setPanelLayoutCode, arg.Code, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const trackUserPanelLayout = `-- name: TrackUserPanelLayout :one
@@ -2707,7 +2799,7 @@ SET
   version = version + 1,
   updated_at = now()
 WHERE id = $5
-RETURNING id, user_id, title, title_normalized, icon, description, payload, created_at, updated_at, version
+RETURNING id, user_id, title, title_normalized, icon, description, payload, created_at, updated_at, version, code
 `
 
 type UpdateUserPanelLayoutByIDParams struct {
@@ -2738,6 +2830,7 @@ func (q *sqlQuerier) UpdateUserPanelLayoutByID(ctx context.Context, arg UpdateUs
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.Code,
 	)
 	return i, err
 }

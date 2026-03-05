@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -14,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/api/shortcode"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/authzed/gochugaru/rel"
@@ -21,23 +21,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 )
-
-const base62Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
-func randomBase62(length int) (string, error) {
-	if length <= 0 {
-		return "", nil
-	}
-	buf := make([]byte, length)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	out := make([]byte, length)
-	for i := range buf {
-		out[i] = base62Alphabet[int(buf[i])%len(base62Alphabet)]
-	}
-	return string(out), nil
-}
 
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
@@ -106,7 +89,7 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 	codeLength := api.getShareCodeLength(ctx, actor.Object())
 	var row database.SharedView
 	for i := 0; i < 10; i++ {
-		code, genErr := randomBase62(codeLength)
+		code, genErr := shortcode.RandomBase62(codeLength)
 		if genErr != nil {
 			httpapi.InternalServerError(w, genErr)
 			return
@@ -179,6 +162,10 @@ func (api *API) shortLinkRedirectMiddleware(next http.Handler) http.Handler {
 
 		if host == "chrn.link" && r.Method == http.MethodGet {
 			path := strings.TrimPrefix(r.URL.Path, "/")
+			if code, ok := strings.CutPrefix(path, "l/"); ok && code != "" && !strings.Contains(code, "/") {
+				http.Redirect(w, r, "https://chronicleclassic.com/account/layout-lab?shared_code="+code, http.StatusFound)
+				return
+			}
 			if path != "" && !strings.Contains(path, "/") {
 				http.Redirect(w, r, "https://chronicleclassic.com/s/"+path, http.StatusFound)
 				return
@@ -186,6 +173,14 @@ func (api *API) shortLinkRedirectMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func LayoutShareURL(r *http.Request, code string) string {
+	host := r.Host
+	if strings.HasPrefix(host, "localhost") {
+		return "http://" + host + "/account/layout-lab?shared_code=" + code
+	}
+	return "https://chrn.link/l/" + code
 }
 
 func ShareURL(r *http.Request, code string) string {

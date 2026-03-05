@@ -13,6 +13,7 @@ type UserPanelLayout struct {
 	Icon          string          `json:"icon"`
 	Description   string          `json:"description"`
 	Payload       json.RawMessage `json:"payload"`
+	Code          *string         `json:"code"`
 	Version       int32           `json:"version"`
 	OwnerID       *uuid.UUID      `json:"owner_id"`
 	OwnerUsername *string         `json:"owner_username"`

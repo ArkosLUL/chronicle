@@ -494,6 +494,7 @@ CREATE TABLE user_panel_layouts (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     version integer DEFAULT 1 NOT NULL,
+    code text,
     CONSTRAINT user_panel_layouts_payload_size_chk CHECK ((octet_length((payload)::text) <= 10240)),
     CONSTRAINT user_panel_layouts_title_format_chk CHECK ((title ~ '^[A-Za-z0-9_\-\s]+$'::text))
 );
@@ -614,6 +615,9 @@ ALTER TABLE ONLY user_auth_session
     ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY user_panel_layouts
+    ADD CONSTRAINT user_panel_layouts_code_key UNIQUE (code);
+
+ALTER TABLE ONLY user_panel_layouts
     ADD CONSTRAINT user_panel_layouts_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY user_tracked_layouts
@@ -649,6 +653,8 @@ CREATE INDEX idx_guild_page_tabs_page ON guild_page_tabs USING btree (page_id);
 CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
 
 CREATE INDEX idx_shared_views_instance_hash ON shared_views USING btree (instance_id, hash);
+
+CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code);
 
 CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 

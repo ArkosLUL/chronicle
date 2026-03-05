@@ -13,11 +13,14 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/api/shortcode"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -45,6 +48,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Get("/action-bar", h.GetActionBarSlots)
 	r.Put("/action-bar", h.UpdateActionBarSlots)
 	r.Get("/shared/{layoutID}", h.GetSharedLayout)
+	r.Get("/code/{code}", h.GetSharedLayoutByCode)
 	r.Route("/{userID}", func(r chi.Router) {
 		r.Use(httpmw.UserIDMiddleware(h.zed))
 		r.Get("/", h.ListUserPanelLayouts)
@@ -100,6 +104,25 @@ func toOwnerIDPtr(userID uuid.NullUUID) *uuid.UUID {
 	}
 	id := userID.UUID
 	return &id
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
+func getShareCodeLength(ctx context.Context, zed *authz.Authz, actor rel.Object) int {
+	ok, err := zed.CheckOne(ctx, nil, rel.Relationship{
+		ResourceType:     "chronicle",
+		ResourceID:       "chronicle",
+		ResourceRelation: "shorter_urls",
+		SubjectType:      actor.Typ,
+		SubjectID:        actor.ID,
+	})
+	if err != nil || !ok {
+		return 8
+	}
+	return 6
 }
 
 func toStringPtr(value pgtype.Text) *string {
@@ -239,6 +262,7 @@ func panelLayoutToSDK(row database.UserPanelLayout) chroniclesdk.UserPanelLayout
 		Icon:         row.Icon,
 		Description:  row.Description,
 		Payload:      json.RawMessage(row.Payload),
+		Code:         toStringPtr(row.Code),
 		Version:      row.Version,
 		OwnerID:      toOwnerIDPtr(row.UserID),
 		IsTracked:    false,
@@ -255,6 +279,7 @@ func panelLayoutListRowToSDK(row database.ListUserPanelLayoutsRow) chroniclesdk.
 		Icon:          row.Icon,
 		Description:   row.Description,
 		Payload:       json.RawMessage(row.Payload),
+		Code:          toStringPtr(row.Code),
 		Version:       row.Version,
 		OwnerID:       toOwnerIDPtr(row.UserID),
 		OwnerUsername: toStringPtr(row.OwnerUsername),
@@ -272,6 +297,7 @@ func panelLayoutWithTrackerToSDK(row database.GetPanelLayoutByIDRow) chroniclesd
 		Icon:          row.Icon,
 		Description:   row.Description,
 		Payload:       json.RawMessage(row.Payload),
+		Code:          toStringPtr(row.Code),
 		Version:       row.Version,
 		OwnerID:       toOwnerIDPtr(row.UserID),
 		OwnerUsername: toStringPtr(row.OwnerUsername),
@@ -600,18 +626,70 @@ func (h *Handler) GetSharedLayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	isTracked, err := h.zed.IsLayoutTrackedByUser(ctx, database.IsLayoutTrackedByUserParams{
-		UserID:   claims.Subject,
-		LayoutID: layoutID,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
+	isTracked := false
+	if claims, ok := chronauth.AuthenticatedClaims(ctx); ok && claims != nil {
+		tracked, err := h.zed.IsLayoutTrackedByUser(ctx, database.IsLayoutTrackedByUserParams{
+			UserID:   claims.Subject,
+			LayoutID: layoutID,
+		})
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		isTracked = tracked
 	}
 
 	resp := panelLayoutWithTrackerToSDK(layout)
 	resp.IsTracked = isTracked
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+func (h *Handler) GetSharedLayoutByCode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	code := chi.URLParam(r, "code")
+	if code == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "code is required"})
+		return
+	}
+
+	layout, err := h.zed.GetPanelLayoutByCode(ctx, pgtype.Text{String: code, Valid: true})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "layout not found"})
+			return
+		}
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	isTracked := false
+	if claims, ok := chronauth.AuthenticatedClaims(ctx); ok && claims != nil {
+		tracked, err := h.zed.IsLayoutTrackedByUser(ctx, database.IsLayoutTrackedByUserParams{
+			UserID:   claims.Subject,
+			LayoutID: layout.ID,
+		})
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		isTracked = tracked
+	}
+
+	resp := chroniclesdk.UserPanelLayout{
+		ID:            layout.ID,
+		Title:         layout.Title,
+		Icon:          layout.Icon,
+		Description:   layout.Description,
+		Payload:       json.RawMessage(layout.Payload),
+		Code:          toStringPtr(layout.Code),
+		Version:       layout.Version,
+		OwnerID:       toOwnerIDPtr(layout.UserID),
+		OwnerUsername: toStringPtr(layout.OwnerUsername),
+		IsTracked:     isTracked,
+		TrackerCount:  layout.TrackerCount,
+		CreatedAt:     layout.CreatedAt.Time,
+		UpdatedAt:     layout.UpdatedAt.Time,
+	}
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
@@ -720,6 +798,7 @@ func (h *Handler) CreateUserPanelLayout(w http.ResponseWriter, r *http.Request) 
 	layout, err := h.zed.CreateUserPanelLayout(ctx, database.CreateUserPanelLayoutParams{
 		UserID:      toNullUUID(claims.Subject),
 		Title:       req.Title,
+		Code:        pgtype.Text{},
 		Icon:        icon,
 		Description: req.Description,
 		Payload:     payload,
@@ -733,7 +812,32 @@ func (h *Handler) CreateUserPanelLayout(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	httpapi.Write(ctx, w, http.StatusCreated, panelLayoutToSDK(layout))
+	codeLength := getShareCodeLength(ctx, h.zed, actor.Object())
+	for i := 0; i < 10; i++ {
+		code, genErr := shortcode.RandomBase62(codeLength)
+		if genErr != nil {
+			httpapi.InternalServerError(w, genErr)
+			return
+		}
+		affected, setErr := h.zed.SetPanelLayoutCode(ctx, database.SetPanelLayoutCodeParams{
+			Code: pgtype.Text{String: code, Valid: true},
+			ID:   layout.ID,
+		})
+		if setErr == nil && affected == 1 {
+			layout.Code = pgtype.Text{String: code, Valid: true}
+			httpapi.Write(ctx, w, http.StatusCreated, panelLayoutToSDK(layout))
+			return
+		}
+		if setErr != nil && isUniqueViolation(setErr) {
+			continue
+		}
+		if setErr != nil {
+			httpapi.InternalServerError(w, setErr)
+			return
+		}
+	}
+
+	httpapi.InternalServerError(w, errors.New("unable to generate unique layout code"))
 }
 
 func (h *Handler) UpdateUserPanelLayoutByID(w http.ResponseWriter, r *http.Request) {

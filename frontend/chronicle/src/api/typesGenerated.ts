@@ -533,6 +533,7 @@ export interface UserPanelLayout {
     readonly icon: string;
     readonly description: string;
     readonly payload: Record<string, string>;
+    readonly code: string | null;
     readonly version: number;
     readonly owner_id: string | null;
     readonly owner_username: string | null;

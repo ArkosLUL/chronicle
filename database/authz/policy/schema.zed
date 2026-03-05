@@ -25,6 +25,7 @@ definition chronicle {
   permission admin_queues = technical_admin
   permission upload_youtube = administer + technical_user + supporter
   permission set_user_data_limit = technical_admin
+  permission shorter_urls = supporter + admin
 
 
   permission upload_log = upload_capable + administer + supporter + chronicle_guild_member

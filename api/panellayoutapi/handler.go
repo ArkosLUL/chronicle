@@ -17,7 +17,6 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
-	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -33,31 +32,37 @@ const (
 )
 
 type Handler struct {
-	zed *authz.Authz
+	zed  *authz.Authz
+	auth *chronauth.Service
 }
 
-func New(zed *authz.Authz) *Handler {
-	return &Handler{zed: zed}
+func New(zed *authz.Authz, auth *chronauth.Service) *Handler {
+	return &Handler{zed: zed, auth: auth}
 }
 
 func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
-	r.Get("/defaults", h.GetLayoutDefaults)
-	r.Put("/defaults", h.UpdateLayoutDefaults)
-	r.Get("/instance-defaults", h.GetInstanceDefaults)
-	r.Get("/action-bar", h.GetActionBarSlots)
-	r.Put("/action-bar", h.UpdateActionBarSlots)
+
 	r.Get("/shared/{layoutID}", h.GetSharedLayout)
 	r.Get("/code/{code}", h.GetSharedLayoutByCode)
-	r.Route("/{userID}", func(r chi.Router) {
-		r.Use(httpmw.UserIDMiddleware(h.zed))
-		r.Get("/", h.ListUserPanelLayouts)
+
+	r.Group(func(r chi.Router) {
+		r.Use(h.auth.Authenticated(false))
+		r.Get("/defaults", h.GetLayoutDefaults)
+		r.Put("/defaults", h.UpdateLayoutDefaults)
+		r.Get("/instance-defaults", h.GetInstanceDefaults)
+		r.Get("/action-bar", h.GetActionBarSlots)
+		r.Put("/action-bar", h.UpdateActionBarSlots)
+		r.Route("/{userID}", func(r chi.Router) {
+			r.Use(httpmw.UserIDMiddleware(h.zed))
+			r.Get("/", h.ListUserPanelLayouts)
+		})
+		r.Post("/track", h.TrackLayout)
+		r.Delete("/track/{layoutID}", h.UntrackLayout)
+		r.Post("/", h.CreateUserPanelLayout)
+		r.Put("/{layoutID}", h.UpdateUserPanelLayoutByID)
+		r.Delete("/{layoutID}", h.DeleteUserPanelLayoutByID)
 	})
-	r.Post("/track", h.TrackLayout)
-	r.Delete("/track/{layoutID}", h.UntrackLayout)
-	r.Post("/", h.CreateUserPanelLayout)
-	r.Put("/{layoutID}", h.UpdateUserPanelLayoutByID)
-	r.Delete("/{layoutID}", h.DeleteUserPanelLayoutByID)
 	return r
 }
 
@@ -111,16 +116,15 @@ func isUniqueViolation(err error) bool {
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
-func getShareCodeLength(ctx context.Context, zed *authz.Authz, actor rel.Object) int {
-	ok, err := zed.CheckOne(ctx, nil, rel.Relationship{
-		ResourceType:     "chronicle",
-		ResourceID:       "chronicle",
-		ResourceRelation: "shorter_urls",
-		SubjectType:      actor.Typ,
-		SubjectID:        actor.ID,
-	})
+func GetShareCodeLength(ctx context.Context, zed *authz.Authz) int {
+	l := 8
+	usr, ok := authz.ActorFromContext(ctx)
+	if !ok {
+		return l
+	}
+	ok, err := zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanShorter_urls_User(usr))
 	if err != nil || !ok {
-		return 8
+		return l
 	}
 	return 6
 }
@@ -812,7 +816,7 @@ func (h *Handler) CreateUserPanelLayout(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	codeLength := getShareCodeLength(ctx, h.zed, actor.Object())
+	codeLength := GetShareCodeLength(ctx, h.zed)
 	for i := 0; i < 10; i++ {
 		code, genErr := shortcode.RandomBase62(codeLength)
 		if genErr != nil {

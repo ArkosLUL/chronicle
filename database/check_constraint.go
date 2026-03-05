@@ -13,6 +13,7 @@ const (
 	CheckQueueLength                    CheckConstraint = "queue_length"                        // river_job
 	CheckLineLength                     CheckConstraint = "line_length"                         // river_migration
 	CheckVersionGte1                    CheckConstraint = "version_gte_1"                       // river_migration
+	CheckSharedViewsPayloadMax10Kb      CheckConstraint = "shared_views_payload_max_10kb"       // shared_views
 	CheckUserPanelLayoutsPayloadSizeChk CheckConstraint = "user_panel_layouts_payload_size_chk" // user_panel_layouts
 	CheckUserPanelLayoutsTitleFormatChk CheckConstraint = "user_panel_layouts_title_format_chk" // user_panel_layouts
 )

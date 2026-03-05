@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -13,10 +12,9 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/api/panellayoutapi"
 	"github.com/Emyrk/chronicle/api/shortcode"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/database/authz"
-	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -27,20 +25,6 @@ func isUniqueViolation(err error) bool {
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
-func (api *API) getShareCodeLength(ctx context.Context, actor rel.Object) int {
-	ok, err := api.Zed.CheckOne(ctx, nil, rel.Relationship{
-		ResourceType:     "chronicle",
-		ResourceID:       "chronicle",
-		ResourceRelation: "shorter_urls",
-		SubjectType:      actor.Typ,
-		SubjectID:        actor.ID,
-	})
-	if err != nil || !ok {
-		return 8
-	}
-	return 6
-}
-
 func sharedViewHash(instanceID uuid.UUID, payload json.RawMessage) string {
 	sum := sha256.Sum256(append(append([]byte(instanceID.String()), 0), payload...))
 	return hex.EncodeToString(sum[:])
@@ -49,7 +33,6 @@ func sharedViewHash(instanceID uuid.UUID, payload json.RawMessage) string {
 func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uc := chronauth.MustAuthenticatedClaims(ctx)
-	actor, _ := authz.ActorFromContext(ctx)
 
 	var req chroniclesdk.CreateShareRequest
 	if !httpapi.Read(ctx, w, r, &req) {
@@ -86,7 +69,7 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	codeLength := api.getShareCodeLength(ctx, actor.Object())
+	codeLength := panellayoutapi.GetShareCodeLength(ctx, api.Zed)
 	var row database.SharedView
 	for i := 0; i < 10; i++ {
 		code, genErr := shortcode.RandomBase62(codeLength)

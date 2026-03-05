@@ -109,9 +109,9 @@ func (api *API) Routes() chi.Router {
 			r.Get("/whoami", api.WhoAmI)
 			r.Post("/authcheck", api.checkAuthorization)
 			r.Get("/me/storage", api.GetMyStorage)
-			r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed).Routes())
 			r.Post("/share", api.CreateShare)
 		})
+		r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
 		r.Get("/share/{code}", api.GetShare)
 
 		// Admin routes - require admin or technical_admin role

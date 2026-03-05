@@ -777,9 +777,18 @@ export function LayoutLabSettings() {
   const isSharedMode = !!sharedLayoutID || !!sharedLayoutCode;
   const isMobile = useIsMobile();
   const { data: session } = useSession();
+  const isLoggedIn = !!session?.user_id;
   const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
-  const { data: sharedLayoutByID } = useSharedLayout(sharedLayoutID ?? "", { enabled: !!sharedLayoutID });
-  const { data: sharedLayoutByCode } = useSharedLayoutByCode(sharedLayoutCode ?? "", { enabled: !!sharedLayoutCode });
+  const {
+    data: sharedLayoutByID,
+    isLoading: isSharedLayoutByIDLoading,
+    error: sharedLayoutByIDError,
+  } = useSharedLayout(sharedLayoutID ?? "", { enabled: !!sharedLayoutID });
+  const {
+    data: sharedLayoutByCode,
+    isLoading: isSharedLayoutByCodeLoading,
+    error: sharedLayoutByCodeError,
+  } = useSharedLayoutByCode(sharedLayoutCode ?? "", { enabled: !!sharedLayoutCode });
   const updateLayout = useUpdatePanelLayout();
   const createLayout = useCreatePanelLayout();
   const trackLayout = useTrackLayout();
@@ -1092,6 +1101,15 @@ export function LayoutLabSettings() {
     }
   };
 
+  if (!session?.user_id && !isSharedMode) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Layout Lab</h2>
+        <p className="text-muted-foreground">You must be logged in to view this</p>
+      </div>
+    );
+  }
+
   if (!editingLayoutID && !sharedLayoutID && !sharedLayoutCode) {
     return (
       <div className="space-y-4">
@@ -1099,6 +1117,27 @@ export function LayoutLabSettings() {
         <p className="text-muted-foreground">
           Select a layout from your <Link to="/account/layout-book" className="text-primary underline">Layout Book</Link> to begin editing.
         </p>
+      </div>
+    );
+  }
+
+  const isSharedLayoutLoading = isSharedLayoutByIDLoading || isSharedLayoutByCodeLoading;
+  const sharedLayoutError = sharedLayoutByIDError ?? sharedLayoutByCodeError;
+
+  if (isSharedMode && isSharedLayoutLoading) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Layout Lab</h2>
+        <p className="text-muted-foreground">Loading shared layout…</p>
+      </div>
+    );
+  }
+
+  if (isSharedMode && !activeLayout && sharedLayoutError) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Layout Lab</h2>
+        <p className="text-muted-foreground">This shared layout link is invalid or no longer available.</p>
       </div>
     );
   }
@@ -1169,23 +1208,38 @@ export function LayoutLabSettings() {
                     variant={activeLayout.is_tracked ? "destructive" : "default"}
                     onClick={() => void handleTrack()}
                     className="gap-1.5"
-                    disabled={trackLayout.isPending || untrackLayout.isPending}
+                    disabled={trackLayout.isPending || untrackLayout.isPending || !isLoggedIn}
                   >
                     {activeLayout.is_tracked ? "Remove from Book" : "Save to Book"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => void handleSaveCopy()} className="gap-1.5" disabled={createLayout.isPending}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleSaveCopy()}
+                    className="gap-1.5"
+                    disabled={createLayout.isPending || !isLoggedIn}
+                  >
                     <Copy className="h-4 w-4" />
                     Save a Copy
                   </Button>
-                  <span className="text-xs text-muted-foreground">Viewing shared layout</span>
+                  <span className="text-xs text-muted-foreground">
+                    {!isLoggedIn ? "Must be logged in to save" : "Viewing shared layout"}
+                  </span>
                 </>
               ) : (
                 <>
-                  <Button type="button" onClick={() => void handleSave()} className="gap-1.5" disabled={updateLayout.isPending}>
+                  <Button
+                    type="button"
+                    onClick={() => void handleSave()}
+                    className="gap-1.5"
+                    disabled={updateLayout.isPending || !isLoggedIn}
+                  >
                     <Save className="h-4 w-4" />
                     Save
                   </Button>
-                  <span className="text-xs text-muted-foreground">Editing: {activeLayout.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {!isLoggedIn ? "Must be logged in to save" : `Editing: ${activeLayout.title}`}
+                  </span>
                 </>
               )}
             </div>

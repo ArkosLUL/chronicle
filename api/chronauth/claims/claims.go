@@ -28,5 +28,5 @@ type Claims struct {
 	Refreshable bool             `json:"refreshable,omitempty"`
 	// Version is the Chronicle version that issued this JWT.
 	// Used to reject old tokens when auth changes require re-login.
-	Version string `json:"ver,omitempty"`
+	Version *string `json:"ver,omitempty"`
 }

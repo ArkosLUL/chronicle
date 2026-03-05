@@ -1092,7 +1092,7 @@ export function LayoutLabSettings() {
     }
   };
 
-  if (!editingLayoutID && !sharedLayoutID) {
+  if (!editingLayoutID && !sharedLayoutID && !sharedLayoutCode) {
     return (
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Layout Lab</h2>

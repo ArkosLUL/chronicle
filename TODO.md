@@ -59,3 +59,4 @@ References
 # UI State
 
 The entire UI state should be json serializable and stored in local storage.
+Add back recent memory but instead of auto loading have a button to "return to last visit" or something.

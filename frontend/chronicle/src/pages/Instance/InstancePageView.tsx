@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, type MouseEvent } fr
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useSession, useCreateShare, fetchSharedView, type UserPanelLayout } from "@/api/queries";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2 } from "lucide-react";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
@@ -21,6 +21,12 @@ import {
 } from "@/components/ui/Collapsible/Collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipTrigger, TooltipContent, HintTooltip } from "@/components/ui/Tooltip/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu/DropdownMenu";
 import { cn } from "@/lib/utils";
 import type { Instance, Encounter, EnemyUnit } from "./InstancePage";
 import { EventsPanel, type EventsPanelType, type PanelContext, type EntitySelection } from "./EventsPanels";
@@ -750,6 +756,7 @@ interface SharedViewPayload {
   version: number;
   instanceId?: string;
   instance_id?: string;
+  layoutId?: string;
   layout?: {
     items?: GridEditorItem[];
     panelTypesById?: Record<string, EventsPanelType>;
@@ -1348,6 +1355,10 @@ export function InstancePageView({
     return parsePanelLayout(layout);
   }, [instanceDefaults?.default_desktop_layout, instanceDefaults?.default_mobile_layout, isMobile]);
 
+  const defaultLayoutId = isMobile
+    ? instanceDefaults?.default_mobile_layout?.id ?? null
+    : instanceDefaults?.default_desktop_layout?.id ?? null;
+
   const standardOrderedLayoutItems = useMemo(
     () => orderLayoutItems(normalizeLayoutItems(cachedDefaultLayout?.items ?? DEFAULT_INSTANCE_LAYOUT_ITEMS)),
     [cachedDefaultLayout?.items],
@@ -1382,6 +1393,8 @@ export function InstancePageView({
       return payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.importedLayoutItems ?? null);
     },
   );
+
+  const [activeLayoutId, setActiveLayoutId] = useState<string | null>(defaultLayoutId);
 
   const createDefaultViewState = useCallback((): LocalInstanceViewState => ({
     encounters: defaultEncounterIDs,
@@ -1479,8 +1492,10 @@ export function InstancePageView({
     const cached = instanceViewCache[instance.id];
     setViewState(hydrateCachedViewState(cached));
     const payloadItems = cached?.view.sharedPayload?.layout?.items ?? cached?.view.sharedPayload?.items;
-    setImportedLayoutItems(payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.view.importedLayoutItems ?? null));
-  }, [hydrateCachedViewState, instance.id, instanceViewCache]);
+    const nextImportedLayoutItems = payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.view.importedLayoutItems ?? null);
+    setImportedLayoutItems(nextImportedLayoutItems);
+    setActiveLayoutId(nextImportedLayoutItems ? null : defaultLayoutId);
+  }, [defaultLayoutId, hydrateCachedViewState, instance.id, instanceViewCache]);
 
   useEffect(() => {
     // Skip local restore toast when this page load is from shared URL import,
@@ -1633,10 +1648,17 @@ export function InstancePageView({
     setViewState((prev) => ({ ...prev, layout }));
   }, []);
 
+  useEffect(() => {
+    if (importedLayoutItems === null) {
+      setActiveLayoutId(defaultLayoutId);
+    }
+  }, [defaultLayoutId, importedLayoutItems]);
+
   const resetView = useCallback(() => {
     setViewState(createDefaultViewState());
     setImportedLayoutItems(null);
-  }, [createDefaultViewState]);
+    setActiveLayoutId(defaultLayoutId);
+  }, [createDefaultViewState, defaultLayoutId]);
 
   const clearEntitySelection = useCallback(() => {
     setViewState((prev) => ({ ...prev, enemies: new Set(), players: new Set() }));
@@ -1794,6 +1816,7 @@ export function InstancePageView({
       markEncounterSelectorSeen();
       setHasSeenSelector(true);
     }
+    setActionBarOpen(false);
     setSidebarOpen(!sidebarOpen);
   };
 
@@ -1972,6 +1995,7 @@ export function InstancePageView({
       enemies: enemyIDs,
       players: playerIDs,
     }));
+    setActiveLayoutId(typeof payload.layoutId === "string" ? payload.layoutId : null);
     setImportedLayoutItems(orderedItems);
   }, [allMergedEnemies, instance.encounters, instance.id, instance.players, setViewState]);
 
@@ -2012,6 +2036,7 @@ export function InstancePageView({
       });
       setPanels(orderedPanels, orderedOptions);
 
+      setActiveLayoutId(null);
       setImportedLayoutItems(orderedItems);
 
       toast.success("Imported layout", { description: `Applied ${orderedItems.length} panel${orderedItems.length === 1 ? "" : "s"}` });
@@ -2024,6 +2049,7 @@ export function InstancePageView({
   const buildSharedViewPayload = useCallback((): SharedViewPayload => ({
       version: 2,
       instanceId: instance.id,
+      layoutId: activeLayoutId ?? undefined,
       layout: {
         items: activeLayoutItems,
         panelTypesById: panelTypesByID,
@@ -2045,7 +2071,7 @@ export function InstancePageView({
           Object.entries(panelOptionsByID).filter(([, value]) => value !== null),
         ),
       },
-    }), [activeLayoutItems, allMergedEnemies, instance.encounters, instance.id, instance.players, panelOptionsByID, panelTypesByID, viewState.encounters, viewState.enemies, viewState.players]);
+    }), [activeLayoutId, activeLayoutItems, allMergedEnemies, instance.encounters, instance.id, instance.players, panelOptionsByID, panelTypesByID, viewState.encounters, viewState.enemies, viewState.players]);
 
   const copyStateToClipboard = useCallback(async () => {
     try {
@@ -2106,6 +2132,22 @@ export function InstancePageView({
     }
   }, [buildSharedViewPayload, createShare, instance.id]);
 
+  const handleShareWithoutLayout = useCallback(async () => {
+    const url = `${window.location.origin}/instances/${instance.id}`;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied", { description: url });
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  }, [instance.id]);
+
+
+  const castResetToDefault = useCallback(() => {
+    resetView();
+    toast.success("Cast layout", { description: "Reset to Default" });
+  }, [resetView]);
 
   const castLayout = useCallback((layout: UserPanelLayout) => {
     try {
@@ -2124,6 +2166,7 @@ export function InstancePageView({
         return typeof option === "string" ? option : null;
       });
       setPanels(orderedPanels, orderedOptions);
+      setActiveLayoutId(layout.id);
       setImportedLayoutItems(orderedItems);
       toast.success("Cast layout", { description: layout.title });
     } catch {
@@ -2264,25 +2307,42 @@ export function InstancePageView({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span onContextMenu={handleShareButtonContextMenu}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    disabled={!isLoggedIn}
-                    onClick={() => {
-                      void handleShareView();
-                    }}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {!isLoggedIn && <TooltipContent>You must be logged in to share</TooltipContent>}
-            </Tooltip>
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <span onContextMenu={handleShareButtonContextMenu}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={!isLoggedIn}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share
+                      </Button>
+                    </span>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                {!isLoggedIn && <TooltipContent>You must be logged in to share</TooltipContent>}
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    void handleShareView();
+                  }}
+                >
+                  Share with layout
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    void handleShareWithoutLayout();
+                  }}
+                >
+                  Share without layout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {youtubeButton}
             {shareContextMenu && (
               <div
@@ -2353,28 +2413,42 @@ export function InstancePageView({
               onResetView={resetView}
               instanceId={instance.id}
               logDetailUrl={logDetailUrl}
+              layoutLabUrl={activeLayoutId ? `/account/layout-lab?layoutId=${activeLayoutId}` : undefined}
             />
           </div>
         </div>
       </div>
 
       {actionBarOpen && (
-        <div className="fixed bottom-5 left-1/2 z-[80] w-[calc(100vw-1rem)] -translate-x-1/2 px-2 sm:w-auto sm:px-0">
-          <div className="relative inline-flex max-w-full">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute -right-2 -top-2 z-[81] h-7 w-7 rounded-full border border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
-              onClick={() => setActionBarOpen(false)}
-              aria-label="Dismiss action bar"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <InstanceActionBar
-              slots={actionBarSlots}
-              layouts={instanceDefaults?.action_bar_layouts ?? []}
-              onCast={castLayout}
-            />
+        <div className="fixed bottom-5 left-0 right-0 z-[80] flex justify-center px-2 sm:left-1/2 sm:right-auto sm:w-auto sm:-translate-x-1/2 sm:px-0">
+          <div className="inline-flex max-w-full flex-col items-center gap-2">
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={castResetToDefault}
+                className="rounded-full bg-secondary px-4 py-1.5 text-sm font-semibold text-secondary-foreground shadow hover:bg-secondary/90 transition-colors"
+              >
+                Reset to Default
+              </button>
+            )}
+            <div className="relative inline-flex max-w-full">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute -right-2 -top-2 z-[81] h-7 w-7 rounded-full border border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                onClick={() => setActionBarOpen(false)}
+                aria-label="Dismiss action bar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <InstanceActionBar
+                slots={actionBarSlots}
+                layouts={instanceDefaults?.action_bar_layouts ?? []}
+                onCast={castLayout}
+                onResetToDefault={castResetToDefault}
+                mobileKeypad={isMobile}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -2458,6 +2532,23 @@ export function InstancePageView({
           title={sidebarOpen ? "Close encounters" : "Show encounters"}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}
+        </Button>,
+        document.body
+      )}
+
+      {/* Mobile: spellbook FAB to toggle action bar */}
+      {isMobile && createPortal(
+        <Button
+          variant="default"
+          size="icon"
+          onClick={() => {
+            setActionBarOpen((prev) => !prev);
+            setSidebarOpen(false);
+          }}
+          className="fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full shadow-lg"
+          title={actionBarOpen ? "Close action bar" : "Open action bar"}
+        >
+          {actionBarOpen ? <X className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
         </Button>,
         document.body
       )}

@@ -16,18 +16,53 @@ import {
 } from "@/components/ui/DropdownMenu/DropdownMenu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
+import { RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface InstanceActionBarProps {
   slots: LayoutActionBarSlots;
   layouts: readonly UserPanelLayout[];
   onAssign?: (key: LayoutActionBarKey, layoutID: string | null) => void;
   onCast?: (layout: UserPanelLayout) => void;
+  onResetToDefault?: () => void;
+  mobileKeypad?: boolean;
 }
 
-export function InstanceActionBar({ slots, layouts, onAssign, onCast }: InstanceActionBarProps) {
+type MobileActionBarCell = LayoutActionBarKey | "reset" | null;
+
+const MOBILE_KEYPAD_KEYS: MobileActionBarCell[] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", null, "reset"];
+
+export function InstanceActionBar({ slots, layouts, onAssign, onCast, onResetToDefault, mobileKeypad = false }: InstanceActionBarProps) {
+  const orderedKeys = mobileKeypad ? MOBILE_KEYPAD_KEYS : LAYOUT_ACTION_BAR_KEYS;
+
   return (
-    <div className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-zinc-700/70 bg-zinc-950/80 p-1.5">
-      {LAYOUT_ACTION_BAR_KEYS.map((key) => {
+    <div
+      className={cn(
+        "rounded-lg border border-zinc-700/70 bg-zinc-950/80 p-1.5",
+        mobileKeypad ? "grid grid-cols-3 gap-2 p-2" : "inline-flex max-w-full items-center gap-1 overflow-x-auto",
+      )}
+    >
+      {orderedKeys.map((key, idx) => {
+        if (key === null) {
+          return <div key={`empty-${idx}`} className="h-14 w-14" aria-hidden="true" />;
+        }
+
+        if (key === "reset") {
+          return (
+            <button
+              key="reset"
+              type="button"
+              onClick={onResetToDefault}
+              disabled={!onResetToDefault}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm border-2 border-secondary/70 bg-secondary text-secondary-foreground shadow-inner transition-colors hover:bg-secondary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary disabled:cursor-not-allowed disabled:opacity-50"
+              title="Reset to default"
+              aria-label="Reset to default"
+            >
+              <RotateCcw className="h-5 w-5" />
+            </button>
+          );
+        }
+
         const layoutID = slots[key];
         const layout = layoutID ? layouts.find((candidate) => candidate.id === layoutID) ?? null : null;
 
@@ -37,6 +72,7 @@ export function InstanceActionBar({ slots, layouts, onAssign, onCast }: Instance
             hotkey={key}
             layout={layout}
             layouts={layouts}
+            isLarge={mobileKeypad}
             onAssign={onAssign ? (layoutID) => onAssign(key, layoutID) : undefined}
             onCast={onCast}
           />
@@ -52,12 +88,14 @@ function ActionBarSlot({
   layouts,
   onAssign,
   onCast,
+  isLarge = false,
 }: {
   hotkey: LayoutActionBarKey;
   layout: UserPanelLayout | null;
   layouts: readonly UserPanelLayout[];
   onAssign?: (layoutID: string | null) => void;
   onCast?: (layout: UserPanelLayout) => void;
+  isLarge?: boolean;
 }) {
   const button = (
     <button
@@ -72,7 +110,10 @@ function ActionBarSlot({
         event.preventDefault();
         onAssign(null);
       }}
-      className="relative h-11 w-11 shrink-0 overflow-hidden rounded-sm border-2 border-zinc-700/80 bg-zinc-900/70 shadow-inner transition-colors hover:border-zinc-500/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+      className={cn(
+        "relative shrink-0 overflow-hidden rounded-sm border-2 border-zinc-700/80 bg-zinc-900/70 shadow-inner transition-colors hover:border-zinc-500/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400",
+        isLarge ? "h-14 w-14" : "h-11 w-11",
+      )}
     >
       {layout ? (
         <img
@@ -82,7 +123,10 @@ function ActionBarSlot({
           loading="lazy"
         />
       ) : null}
-      <span className="absolute right-0.5 top-0 text-[10px] font-bold leading-none text-zinc-200/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+      <span className={cn(
+        "absolute right-0.5 top-0 font-bold leading-none text-zinc-200/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]",
+        isLarge ? "text-xs" : "text-[10px]",
+      )}>
         {hotkey}
       </span>
     </button>

@@ -1,4 +1,4 @@
-import { Menu, FileText, Copy, Upload, RotateCcw } from "lucide-react";
+import { Menu, FileText, Copy, Upload, RotateCcw, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface InstanceMenuProps {
   onResetView?: () => void;
   instanceId: string;
   logDetailUrl?: string;
+  layoutLabUrl?: string;
 }
 
 export function InstanceMenu({
@@ -22,6 +23,7 @@ export function InstanceMenu({
   onResetView,
   instanceId,
   logDetailUrl,
+  layoutLabUrl,
 }: InstanceMenuProps) {
   const handleCopyInstanceId = async () => {
     try {
@@ -60,6 +62,15 @@ export function InstanceMenu({
           </DropdownMenuItem>
         )}
 
+
+        {layoutLabUrl && (
+          <DropdownMenuItem asChild>
+            <a href={layoutLabUrl} target="_blank" rel="noopener noreferrer">
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              View layout
+            </a>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleCopyInstanceId}>
           <Copy className="h-4 w-4 mr-2" />

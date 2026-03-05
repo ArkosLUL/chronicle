@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone } from "lucide-react";
+import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   useInstance,
@@ -24,6 +24,7 @@ import { GridLayoutEditor, type GridEditorItem } from "@/components/layout/GridL
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { EventsPanel, type EventsPanelType } from "@/pages/Instance/EventsPanels";
 import { PANELS } from "@/pages/Instance/EventsPanels/EventsPanel";
 import type { PanelContext } from "@/pages/Instance/EventsPanels/types";
@@ -114,32 +115,84 @@ const tabs: Tab[] = [
 
 export function AccountLayout() {
   const location = useLocation();
+  const isMobile = useIsMobile();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const renderNavLinks = (closeOnNavigate: boolean) => (
+    <ul className="space-y-1">
+      {tabs.map((tab) => (
+        <li key={tab.path}>
+          <Link
+            to={tab.path}
+            onClick={closeOnNavigate ? () => setMobileSidebarOpen(false) : undefined}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              location.pathname === tab.path
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="relative min-h-[calc(100vh-8rem)]">
+        {mobileSidebarOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Close settings menu"
+          />
+        ) : null}
+
+        <nav
+          className={`fixed left-0 top-0 z-50 h-full w-72 border-r bg-background p-4 shadow-xl transition-transform duration-200 ${
+            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Settings</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileSidebarOpen(false)}
+              aria-label="Collapse settings menu"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          {renderNavLinks(true)}
+        </nav>
+
+        <main className="p-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="mb-4 gap-2"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <Menu className="h-4 w-4" />
+            Open settings menu
+          </Button>
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)]">
-      {/* Sidebar */}
       <nav className="w-64 border-r p-4">
         <h1 className="text-lg font-semibold mb-4">Settings</h1>
-        <ul className="space-y-1">
-          {tabs.map((tab) => (
-            <li key={tab.path}>
-              <Link
-                to={tab.path}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                  location.pathname === tab.path
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {renderNavLinks(false)}
       </nav>
 
-      {/* Content */}
       <main className="flex-1 p-8">
         <Outlet />
       </main>
@@ -777,6 +830,7 @@ export function LayoutLabSettings() {
   const editingLayoutID = searchParams.get("layoutId");
   const sharedLayoutID = searchParams.get("shared");
   const isSharedMode = !!sharedLayoutID;
+  const isMobile = useIsMobile();
   const { data: session } = useSession();
   const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
   const { data: sharedLayout } = useSharedLayout(sharedLayoutID ?? "", { enabled: isSharedMode });
@@ -1233,6 +1287,11 @@ export function LayoutLabSettings() {
         </div>
       </div>
 
+      {isMobile ? (
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">Layout Labs is only available on desktop.</p>
+        </div>
+      ) : (
       <div className="rounded-lg border p-3 space-y-3">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -1429,6 +1488,7 @@ export function LayoutLabSettings() {
           </InstanceEventsProvider>
         )}
       </div>
+      )}
     </div>
   );
 }

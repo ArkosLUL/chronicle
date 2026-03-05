@@ -26,4 +26,7 @@ type Claims struct {
 	Provider    string           `json:"provider,omitempty"`
 	OAuthExpire *jwt.NumericDate `json:"oexp,omitempty"`
 	Refreshable bool             `json:"refreshable,omitempty"`
+	// Version is the Chronicle version that issued this JWT.
+	// Used to reject old tokens when auth changes require re-login.
+	Version string `json:"ver,omitempty"`
 }

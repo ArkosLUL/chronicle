@@ -5,16 +5,41 @@ import (
 	"crypto"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/api/chronauth/claims"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/version"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"golang.org/x/mod/semver"
 )
+
+// MinimumVersion is the minimum Chronicle version required for valid JWTs.
+// Tokens issued by older versions are rejected, forcing re-authentication.
+const MinimumVersion = "0.0.260"
+
+func validateVersion(ver string) error {
+	// Empty or unknown means local/dev build — always accept.
+	if ver == "" || ver == "unknown" {
+		return nil
+	}
+	if semver.Compare(normalizeVersion(ver), normalizeVersion(MinimumVersion)) < 0 {
+		return fmt.Errorf("token version %s is below minimum %s: re-login required", ver, MinimumVersion)
+	}
+	return nil
+}
+
+func normalizeVersion(v string) string {
+	if !strings.HasPrefix(v, "v") {
+		return "v" + v
+	}
+	return v
+}
 
 type SessionOptions struct {
 	SecretPEM []byte
@@ -94,6 +119,10 @@ func (a *Sessions) ValidateSession(payload string) (claims.Claims, error) {
 		return claims.Claims{}, fmt.Errorf("validate claims: %w", err)
 	}
 
+	if err := validateVersion(userClaims.Version); err != nil {
+		return claims.Claims{}, err
+	}
+
 	// TODO: Validate oauth expirartion
 
 	//userID, err := uuid.Parse(claims.Subject)
@@ -124,6 +153,7 @@ func (a *Sessions) CreateSession(ctx context.Context, provider string, session d
 		Provider:    provider,
 		OAuthExpire: jwt.NewNumericDate(session.ExpiresAt.Time),
 		Refreshable: session.RefreshToken != "",
+		Version:     version.GitTag,
 	}
 	payload, err := jwt.Signed(a.Signer).Claims(c).Serialize()
 	if err != nil {

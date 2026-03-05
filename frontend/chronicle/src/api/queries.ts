@@ -26,6 +26,7 @@ import type {
   CreateUserPanelLayoutRequest as CreateUserPanelLayoutRequestGenerated,
   UpdateUserPanelLayoutRequest as UpdateUserPanelLayoutRequestGenerated,
   UserPanelLayout as UserPanelLayoutGenerated,
+  ActionBarSlotsResponse as ActionBarSlotsResponseGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -54,6 +55,7 @@ export type ListUserPanelLayoutsResponse = ListUserPanelLayoutsResponseGenerated
 export type CreateUserPanelLayoutRequest = CreateUserPanelLayoutRequestGenerated;
 export type UpdateUserPanelLayoutRequest = UpdateUserPanelLayoutRequestGenerated;
 export type UserPanelLayout = UserPanelLayoutGenerated;
+export type ActionBarSlotsResponse = ActionBarSlotsResponseGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -293,6 +295,31 @@ export function useUpdateLayoutDefaults() {
       }
 
       return response.json() as Promise<LayoutDefaultsResponse>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });
+    },
+  });
+}
+
+export function useUpdateActionBarSlots() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: ActionBarSlotsResponse) => {
+      const response = await fetch("/api/v1/panel-layout/action-bar", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to update action bar", error);
+      }
+
+      return response.json() as Promise<ActionBarSlotsResponse>;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });

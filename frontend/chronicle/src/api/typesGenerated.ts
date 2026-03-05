@@ -2,6 +2,20 @@
 
 import type { GUID } from "@/lib/guid/guid";
 
+// From chroniclesdk/panel_layout.go
+export interface ActionBarSlotsResponse {
+    readonly slot_1: string | null;
+    readonly slot_2: string | null;
+    readonly slot_3: string | null;
+    readonly slot_4: string | null;
+    readonly slot_5: string | null;
+    readonly slot_6: string | null;
+    readonly slot_7: string | null;
+    readonly slot_8: string | null;
+    readonly slot_9: string | null;
+    readonly slot_0: string | null;
+}
+
 // From chroniclesdk/log.go
 export interface ActivityPeriod {
     readonly start?: PeriodMoment;
@@ -244,6 +258,7 @@ export interface ListUserPanelLayoutsResponse {
     readonly layouts: readonly UserPanelLayout[];
     readonly default_desktop_layout_id: string | null;
     readonly default_mobile_layout_id: string | null;
+    readonly action_bar_slots: ActionBarSlotsResponse | null;
 }
 
 // From chroniclesdk/log.go
@@ -417,6 +432,20 @@ export interface Session {
  */
 export interface TrackLayoutRequest {
     readonly layout_id: string;
+}
+
+// From chroniclesdk/panel_layout.go
+export interface UpdateActionBarSlotsRequest {
+    readonly slot_1: string | null;
+    readonly slot_2: string | null;
+    readonly slot_3: string | null;
+    readonly slot_4: string | null;
+    readonly slot_5: string | null;
+    readonly slot_6: string | null;
+    readonly slot_7: string | null;
+    readonly slot_8: string | null;
+    readonly slot_9: string | null;
+    readonly slot_0: string | null;
 }
 
 // From chroniclesdk/guild_page.go

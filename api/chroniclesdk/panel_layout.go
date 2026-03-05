@@ -51,8 +51,24 @@ type UpdateLayoutDefaultsRequest struct {
 	DefaultMobileLayoutID  *uuid.UUID `json:"default_mobile_layout_id,omitempty"`
 }
 
+type ActionBarSlotsResponse struct {
+	Slot1 *uuid.UUID `json:"slot_1"`
+	Slot2 *uuid.UUID `json:"slot_2"`
+	Slot3 *uuid.UUID `json:"slot_3"`
+	Slot4 *uuid.UUID `json:"slot_4"`
+	Slot5 *uuid.UUID `json:"slot_5"`
+	Slot6 *uuid.UUID `json:"slot_6"`
+	Slot7 *uuid.UUID `json:"slot_7"`
+	Slot8 *uuid.UUID `json:"slot_8"`
+	Slot9 *uuid.UUID `json:"slot_9"`
+	Slot0 *uuid.UUID `json:"slot_0"`
+}
+
+type UpdateActionBarSlotsRequest = ActionBarSlotsResponse
+
 type ListUserPanelLayoutsResponse struct {
-	Layouts                []UserPanelLayout `json:"layouts"`
-	DefaultDesktopLayoutID *uuid.UUID        `json:"default_desktop_layout_id"`
-	DefaultMobileLayoutID  *uuid.UUID        `json:"default_mobile_layout_id"`
+	Layouts                []UserPanelLayout       `json:"layouts"`
+	DefaultDesktopLayoutID *uuid.UUID              `json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  *uuid.UUID              `json:"default_mobile_layout_id"`
+	ActionBarSlots         *ActionBarSlotsResponse `json:"action_bar_slots"`
 }

@@ -2120,6 +2120,150 @@ func (q *sqlQuerier) PruneParsedInstanceFromLogOutput(ctx context.Context, arg P
 	return err
 }
 
+const getUserActionBarSlots = `-- name: GetUserActionBarSlots :one
+SELECT
+  slot_1,
+  slot_2,
+  slot_3,
+  slot_4,
+  slot_5,
+  slot_6,
+  slot_7,
+  slot_8,
+  slot_9,
+  slot_0
+FROM user_action_bar_slots
+WHERE user_id = $1
+`
+
+type GetUserActionBarSlotsRow struct {
+	Slot1 uuid.NullUUID `db:"slot_1" json:"slot_1"`
+	Slot2 uuid.NullUUID `db:"slot_2" json:"slot_2"`
+	Slot3 uuid.NullUUID `db:"slot_3" json:"slot_3"`
+	Slot4 uuid.NullUUID `db:"slot_4" json:"slot_4"`
+	Slot5 uuid.NullUUID `db:"slot_5" json:"slot_5"`
+	Slot6 uuid.NullUUID `db:"slot_6" json:"slot_6"`
+	Slot7 uuid.NullUUID `db:"slot_7" json:"slot_7"`
+	Slot8 uuid.NullUUID `db:"slot_8" json:"slot_8"`
+	Slot9 uuid.NullUUID `db:"slot_9" json:"slot_9"`
+	Slot0 uuid.NullUUID `db:"slot_0" json:"slot_0"`
+}
+
+func (q *sqlQuerier) GetUserActionBarSlots(ctx context.Context, userID uuid.UUID) (GetUserActionBarSlotsRow, error) {
+	row := q.db.QueryRow(ctx, getUserActionBarSlots, userID)
+	var i GetUserActionBarSlotsRow
+	err := row.Scan(
+		&i.Slot1,
+		&i.Slot2,
+		&i.Slot3,
+		&i.Slot4,
+		&i.Slot5,
+		&i.Slot6,
+		&i.Slot7,
+		&i.Slot8,
+		&i.Slot9,
+		&i.Slot0,
+	)
+	return i, err
+}
+
+const upsertUserActionBarSlots = `-- name: UpsertUserActionBarSlots :one
+INSERT INTO user_action_bar_slots (
+  user_id,
+  slot_1,
+  slot_2,
+  slot_3,
+  slot_4,
+  slot_5,
+  slot_6,
+  slot_7,
+  slot_8,
+  slot_9,
+  slot_0
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+ON CONFLICT (user_id) DO UPDATE
+SET
+  slot_1 = EXCLUDED.slot_1,
+  slot_2 = EXCLUDED.slot_2,
+  slot_3 = EXCLUDED.slot_3,
+  slot_4 = EXCLUDED.slot_4,
+  slot_5 = EXCLUDED.slot_5,
+  slot_6 = EXCLUDED.slot_6,
+  slot_7 = EXCLUDED.slot_7,
+  slot_8 = EXCLUDED.slot_8,
+  slot_9 = EXCLUDED.slot_9,
+  slot_0 = EXCLUDED.slot_0
+RETURNING
+  slot_1,
+  slot_2,
+  slot_3,
+  slot_4,
+  slot_5,
+  slot_6,
+  slot_7,
+  slot_8,
+  slot_9,
+  slot_0
+`
+
+type UpsertUserActionBarSlotsParams struct {
+	UserID uuid.UUID     `db:"user_id" json:"user_id"`
+	Slot1  uuid.NullUUID `db:"slot_1" json:"slot_1"`
+	Slot2  uuid.NullUUID `db:"slot_2" json:"slot_2"`
+	Slot3  uuid.NullUUID `db:"slot_3" json:"slot_3"`
+	Slot4  uuid.NullUUID `db:"slot_4" json:"slot_4"`
+	Slot5  uuid.NullUUID `db:"slot_5" json:"slot_5"`
+	Slot6  uuid.NullUUID `db:"slot_6" json:"slot_6"`
+	Slot7  uuid.NullUUID `db:"slot_7" json:"slot_7"`
+	Slot8  uuid.NullUUID `db:"slot_8" json:"slot_8"`
+	Slot9  uuid.NullUUID `db:"slot_9" json:"slot_9"`
+	Slot0  uuid.NullUUID `db:"slot_0" json:"slot_0"`
+}
+
+type UpsertUserActionBarSlotsRow struct {
+	Slot1 uuid.NullUUID `db:"slot_1" json:"slot_1"`
+	Slot2 uuid.NullUUID `db:"slot_2" json:"slot_2"`
+	Slot3 uuid.NullUUID `db:"slot_3" json:"slot_3"`
+	Slot4 uuid.NullUUID `db:"slot_4" json:"slot_4"`
+	Slot5 uuid.NullUUID `db:"slot_5" json:"slot_5"`
+	Slot6 uuid.NullUUID `db:"slot_6" json:"slot_6"`
+	Slot7 uuid.NullUUID `db:"slot_7" json:"slot_7"`
+	Slot8 uuid.NullUUID `db:"slot_8" json:"slot_8"`
+	Slot9 uuid.NullUUID `db:"slot_9" json:"slot_9"`
+	Slot0 uuid.NullUUID `db:"slot_0" json:"slot_0"`
+}
+
+func (q *sqlQuerier) UpsertUserActionBarSlots(ctx context.Context, arg UpsertUserActionBarSlotsParams) (UpsertUserActionBarSlotsRow, error) {
+	row := q.db.QueryRow(ctx, upsertUserActionBarSlots,
+		arg.UserID,
+		arg.Slot1,
+		arg.Slot2,
+		arg.Slot3,
+		arg.Slot4,
+		arg.Slot5,
+		arg.Slot6,
+		arg.Slot7,
+		arg.Slot8,
+		arg.Slot9,
+		arg.Slot0,
+	)
+	var i UpsertUserActionBarSlotsRow
+	err := row.Scan(
+		&i.Slot1,
+		&i.Slot2,
+		&i.Slot3,
+		&i.Slot4,
+		&i.Slot5,
+		&i.Slot6,
+		&i.Slot7,
+		&i.Slot8,
+		&i.Slot9,
+		&i.Slot0,
+	)
+	return i, err
+}
+
 const getUserPanelLayoutDefaults = `-- name: GetUserPanelLayoutDefaults :one
 SELECT
   default_desktop_layout_id,

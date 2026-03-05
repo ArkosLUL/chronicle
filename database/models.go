@@ -846,6 +846,20 @@ type User struct {
 	DefaultMobileLayoutID  uuid.NullUUID      `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
 }
 
+type UserActionBarSlot struct {
+	UserID uuid.UUID     `db:"user_id" json:"user_id"`
+	Slot1  uuid.NullUUID `db:"slot_1" json:"slot_1"`
+	Slot2  uuid.NullUUID `db:"slot_2" json:"slot_2"`
+	Slot3  uuid.NullUUID `db:"slot_3" json:"slot_3"`
+	Slot4  uuid.NullUUID `db:"slot_4" json:"slot_4"`
+	Slot5  uuid.NullUUID `db:"slot_5" json:"slot_5"`
+	Slot6  uuid.NullUUID `db:"slot_6" json:"slot_6"`
+	Slot7  uuid.NullUUID `db:"slot_7" json:"slot_7"`
+	Slot8  uuid.NullUUID `db:"slot_8" json:"slot_8"`
+	Slot9  uuid.NullUUID `db:"slot_9" json:"slot_9"`
+	Slot0  uuid.NullUUID `db:"slot_0" json:"slot_0"`
+}
+
 type UserAuthLink struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	LinkedID  string             `db:"linked_id" json:"linked_id"`

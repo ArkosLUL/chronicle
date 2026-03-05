@@ -15,7 +15,9 @@ import {
   useTrackLayout,
   useUntrackLayout,
   useUpdateLayoutDefaults,
+  useUpdateActionBarSlots,
   useLogGroups,
+  type ActionBarSlotsResponse,
   type UserPanelLayout,
   type RequestError,
 } from "@/api/queries";
@@ -35,9 +37,11 @@ import {
   ALTERNATE_INSTANCE_LAYOUT_ITEMS,
   DEFAULT_INSTANCE_PANEL_TYPES,
 } from "@/pages/Instance/viewDefaults";
+import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceActionBar";
+import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarKey, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
+import { buildLayoutSpellTooltip } from "@/features/layoutBook/buildLayoutSpellTooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { getSpellIconUrl } from "@/api/wowdb";
-import type { WoWSpell } from "@/api/wowdb";
 import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
 
 const LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY = "layout-lab.instance-reference";
@@ -59,6 +63,40 @@ function setStoredLayoutLabInstanceReference(value: string) {
 const ICON_PAGE_SIZE = 24;
 const MAX_PANELS = 8;
 const LAYOUT_TITLE_PATTERN = /^[A-Za-z0-9_\-\s]+$/;
+
+function createEmptyActionBarSlots(): LayoutActionBarSlots {
+  return Object.fromEntries(LAYOUT_ACTION_BAR_KEYS.map((key) => [key, null])) as LayoutActionBarSlots;
+}
+
+function fromActionBarResponse(slots: ActionBarSlotsResponse | null | undefined): LayoutActionBarSlots {
+  return {
+    "1": slots?.slot_1 ?? null,
+    "2": slots?.slot_2 ?? null,
+    "3": slots?.slot_3 ?? null,
+    "4": slots?.slot_4 ?? null,
+    "5": slots?.slot_5 ?? null,
+    "6": slots?.slot_6 ?? null,
+    "7": slots?.slot_7 ?? null,
+    "8": slots?.slot_8 ?? null,
+    "9": slots?.slot_9 ?? null,
+    "0": slots?.slot_0 ?? null,
+  };
+}
+
+function toActionBarResponse(slots: LayoutActionBarSlots): ActionBarSlotsResponse {
+  return {
+    slot_1: slots["1"],
+    slot_2: slots["2"],
+    slot_3: slots["3"],
+    slot_4: slots["4"],
+    slot_5: slots["5"],
+    slot_6: slots["6"],
+    slot_7: slots["7"],
+    slot_8: slots["8"],
+    slot_9: slots["9"],
+    slot_0: slots["0"],
+  };
+}
 
 function showRequestErrorToast(fallbackMessage: string, error: unknown) {
   const requestError = error as RequestError;
@@ -236,98 +274,6 @@ export function AppearanceSettings() {
   );
 }
 
-function buildLayoutSpellTooltip(layout: {
-  title: string;
-  description: string;
-  icon: string;
-}): WoWSpell {
-  return {
-    id: 0,
-    name: { "0": layout.title },
-    subtext: { "0": "" },
-    description: {
-      "0": layout.description || "No description",
-    },
-    aura_description: { "0": "" },
-    spell_icon: { ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" },
-    active_icon: { ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" },
-    spell_level: 0,
-    base_level: 0,
-    max_level: 0,
-    category: { ID: 0, Flags: 0, UsesPerWeek: 0, Name: "", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0 },
-    school: { value: 0, string: "" },
-    spell_class_set: { value: 0, string: "General" },
-    spell_class_mask: 0,
-    power_type: { value: 0, string: "Mana" },
-    mana_cost: 0,
-    mana_cost_pct: 0,
-    mana_cost_per_level: 0,
-    mana_per_second: 0,
-    reagent: [],
-    reagent_count: [],
-    casting_time: { ID: 0, Base: 0, PerLevel: 0, Minimum: 0 },
-    range: { ID: 0, RangeMin: 0, RangeMax: 0, Flags: 0, Name: "Self" },
-    duration: { ID: 0, Duration: 0, DurationPerLevel: 0, MaxDuration: 0 },
-    recovery_time: 0,
-    start_recovery_time: 0,
-    start_recovery_category: 0,
-    category_recovery_time: 0,
-    mechanic: { value: 0, string: "None" },
-    dispel_type: { value: 0, string: "None" },
-    prevention_type: { value: 0, string: "None" },
-    defense_type: { value: 0, string: "None" },
-    caster_aura_state: { value: 0, string: "None" },
-    target_aura_state: { value: 0, string: "None" },
-    interrupt_flags: { mask: 0, string: "" },
-    aura_interrupt_flags: { mask: 0, string: "" },
-    effect: [],
-    effect_aura: [],
-    effect_base_points: [],
-    effect_die_sides: [],
-    effect_base_dice: [],
-    effect_dice_per_level: [],
-    effect_real_points_per_level: [],
-    effect_aura_period: [],
-    effect_amplitude: [],
-    effect_chain_amplitude: [],
-    effect_chain_targets: [],
-    effect_trigger_spell: [],
-    effect_item_type: [],
-    effect_misc_value: [],
-    effect_mechanic: [],
-    effect_points_per_combo: [],
-    effect_radius: [],
-    implicit_target_a: [],
-    implicit_target_b: [],
-    proc_chance: 0,
-    proc_charges: 0,
-    proc_type_mask: { mask: 0, string: "" },
-    proc_flags: { mask: 0, string: "" },
-    targets: { mask: 0, string: "" },
-    max_targets: 0,
-    max_target_level: 0,
-    target_creature_type: { mask: 0, string: "" },
-    attributes: { blocks: [], string: "" },
-    equipped_item_class: { value: 0, string: "None" },
-    equipped_item_subclass: 0,
-    equipped_item_inv_types: { mask: 0, string: "" },
-    speed: 0,
-    spell_priority: 0,
-    stance_bar_order: 0,
-    cumulative_aura: 0,
-    modal_next_spell: 0,
-    requires_spell_focus: { ID: 0, Name: "" },
-    totems_id: 0,
-    totem: [],
-    cast_ui: 0,
-    required_aura_vision: 0,
-    min_faction_id: 0,
-    min_reputation: 0,
-    spell_visual_id: [],
-    damage_type: 0,
-  };
-}
-
 export function LayoutBookSettings() {
   const navigate = useNavigate();
   const { data: session } = useSession();
@@ -336,12 +282,18 @@ export function LayoutBookSettings() {
   const deleteLayout = useDeletePanelLayout();
   const untrackLayout = useUntrackLayout();
   const updateLayoutDefaults = useUpdateLayoutDefaults();
+  const updateActionBarSlots = useUpdateActionBarSlots();
 
   const layouts = layoutsResponse?.layouts ?? [];
   const defaultDesktopLayoutID = layoutsResponse?.default_desktop_layout_id;
   const defaultMobileLayoutID = layoutsResponse?.default_mobile_layout_id;
   const [name, setName] = useState("");
+  const [actionBarSlots, setActionBarSlots] = useState<LayoutActionBarSlots>(createEmptyActionBarSlots);
   const [layoutType, setLayoutType] = useState<"standard" | "alternate">("standard");
+
+  useEffect(() => {
+    setActionBarSlots(fromActionBarResponse(layoutsResponse?.action_bar_slots));
+  }, [layoutsResponse?.action_bar_slots]);
 
   const handleCreate = async () => {
     const trimmed = name.trim();
@@ -415,6 +367,29 @@ export function LayoutBookSettings() {
       <div>
         <h2 className="text-xl font-semibold">Layout Book</h2>
         <p className="text-muted-foreground">Manage and edit your saved layouts.</p>
+      </div>
+
+      <div className="sticky top-3 z-20 space-y-3 rounded-lg border border-zinc-700/70 bg-background/95 p-4 shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/85">
+        <h3 className="font-medium flex items-center gap-2">
+          <LayoutTemplate className="h-4 w-4" />
+          Instance Action Bar
+        </h3>
+        <p className="text-sm text-muted-foreground">Assign layouts to hotkey slots (1-0). Click a slot to assign a layout. Middle click to empty a slot.</p>
+        <InstanceActionBar
+          slots={actionBarSlots}
+          layouts={layouts}
+          onAssign={(key: LayoutActionBarKey, layoutID: string | null) => {
+            const nextSlots = {
+              ...actionBarSlots,
+              [key]: layoutID,
+            };
+            setActionBarSlots(nextSlots);
+            void updateActionBarSlots.mutateAsync(toActionBarResponse(nextSlots)).catch((error) => {
+              setActionBarSlots(actionBarSlots);
+              showRequestErrorToast("Failed to update action bar slot", error);
+            });
+          }}
+        />
       </div>
 
       <div className="rounded-lg border p-4 space-y-3">

@@ -45,6 +45,7 @@ type sqlcQuerier interface {
 	GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (LogInstanceYoutubeTimestamped, error)
 	GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error)
 	GetPanelLayoutByID(ctx context.Context, id uuid.UUID) (GetPanelLayoutByIDRow, error)
+	GetUserActionBarSlots(ctx context.Context, userID uuid.UUID) (GetUserActionBarSlotsRow, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserAuthLinkByUserID(ctx context.Context, userID uuid.UUID) (UserAuthLink, error)
 	GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (UserAuthSession, error)
@@ -101,6 +102,7 @@ type sqlcQuerier interface {
 	UpsertDataGrant(ctx context.Context, arg UpsertDataGrantParams) (DataGrant, error)
 	UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error)
 	UpsertGuildPage(ctx context.Context, arg UpsertGuildPageParams) (GuildPage, error)
+	UpsertUserActionBarSlots(ctx context.Context, arg UpsertUserActionBarSlotsParams) (UpsertUserActionBarSlotsRow, error)
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

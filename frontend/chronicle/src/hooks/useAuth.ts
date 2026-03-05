@@ -1,4 +1,5 @@
 import { useWhoami } from "@/api/queries";
+import { clearInstanceDefaultsCache } from "@/hooks/useInstanceDefaultsCache";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useAuth() {
@@ -7,6 +8,7 @@ export function useAuth() {
 
   const logout = async () => {
     await fetch("/auth/logout");
+    clearInstanceDefaultsCache();
     window.location.reload();
     // Queries should be invalid from a reload
     queryClient.invalidateQueries();

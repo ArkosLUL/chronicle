@@ -72,3 +72,11 @@ type ListUserPanelLayoutsResponse struct {
 	DefaultMobileLayoutID  *uuid.UUID              `json:"default_mobile_layout_id"`
 	ActionBarSlots         *ActionBarSlotsResponse `json:"action_bar_slots"`
 }
+
+// InstanceDefaultsResponse provides everything needed by the instance page in one request.
+type InstanceDefaultsResponse struct {
+	DefaultDesktopLayout *UserPanelLayout        `json:"default_desktop_layout"`
+	DefaultMobileLayout  *UserPanelLayout        `json:"default_mobile_layout"`
+	ActionBarSlots       *ActionBarSlotsResponse `json:"action_bar_slots"`
+	ActionBarLayouts     []UserPanelLayout       `json:"action_bar_layouts"`
+}

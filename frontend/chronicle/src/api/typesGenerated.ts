@@ -196,6 +196,17 @@ export interface GuildPanelPosition {
     readonly h: number;
 }
 
+// From chroniclesdk/panel_layout.go
+/**
+ * InstanceDefaultsResponse provides everything needed by the instance page in one request.
+ */
+export interface InstanceDefaultsResponse {
+    readonly default_desktop_layout: UserPanelLayout | null;
+    readonly default_mobile_layout: UserPanelLayout | null;
+    readonly action_bar_slots: ActionBarSlotsResponse | null;
+    readonly action_bar_layouts: readonly UserPanelLayout[];
+}
+
 // From chroniclesdk/log.go
 export interface InstancePlayer {
     readonly name: string;

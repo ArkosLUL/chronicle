@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useInstanceDefaultsCache } from "@/hooks/useInstanceDefaultsCache";
 import { EventsPanel, type EventsPanelType } from "@/pages/Instance/EventsPanels";
 import { PANELS } from "@/pages/Instance/EventsPanels/EventsPanel";
 import type { PanelContext } from "@/pages/Instance/EventsPanels/types";
@@ -40,6 +41,7 @@ import {
 import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceActionBar";
 import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarKey, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
 import { buildLayoutSpellTooltip } from "@/features/layoutBook/buildLayoutSpellTooltip";
+import { parseLayoutLab, parsePanelLayout, serializeLayoutLab } from "@/features/layoutBook/parseLayout";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { getSpellIconUrl } from "@/api/wowdb";
 import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
@@ -277,6 +279,7 @@ export function AppearanceSettings() {
 export function LayoutBookSettings() {
   const navigate = useNavigate();
   const { data: session } = useSession();
+  useInstanceDefaultsCache(!!session?.user_id);
   const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
   const createLayout = useCreatePanelLayout();
   const deleteLayout = useDeletePanelLayout();
@@ -624,51 +627,6 @@ export function LayoutBookSettings() {
   );
 }
 
-interface LayoutLabExportV1 {
-  version: 1;
-  items: GridEditorItem[];
-  panelTypesById: Record<string, EventsPanelType>;
-}
-
-function serializeLayoutLab(items: GridEditorItem[], panelTypesById: Record<string, EventsPanelType>): string {
-  const payload: LayoutLabExportV1 = {
-    version: 1,
-    items,
-    panelTypesById,
-  };
-  return JSON.stringify(payload, null, 2);
-}
-
-function parseLayoutLab(raw: string): LayoutLabExportV1 {
-  const parsed = JSON.parse(raw) as Partial<LayoutLabExportV1>;
-  if (parsed.version !== 1) {
-    throw new Error("Unsupported layout version");
-  }
-  if (!Array.isArray(parsed.items) || !parsed.panelTypesById || typeof parsed.panelTypesById !== "object") {
-    throw new Error("Invalid layout payload");
-  }
-  return {
-    version: 1,
-    items: parsed.items,
-    panelTypesById: parsed.panelTypesById as Record<string, EventsPanelType>,
-  };
-}
-
-function parsePanelLayout(layout: UserPanelLayout): LayoutLabExportV1 {
-  const fallbackItems = DEFAULT_INSTANCE_LAYOUT_ITEMS;
-  const fallbackPanelTypes = DEFAULT_INSTANCE_PANEL_TYPES;
-
-  try {
-    const parsed = parseLayoutLab(JSON.stringify(layout.payload ?? {}));
-    return parsed;
-  } catch {
-    return {
-      version: 1,
-      items: fallbackItems,
-      panelTypesById: fallbackPanelTypes,
-    };
-  }
-}
 
 function parseSimpleParsedInstances(output: unknown): { id: string; name: string; encounters?: { start_time: string }[] }[] {
   if (!output || typeof output !== "object") return [];

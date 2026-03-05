@@ -20,10 +20,11 @@ import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
 interface InstanceActionBarProps {
   slots: LayoutActionBarSlots;
   layouts: readonly UserPanelLayout[];
-  onAssign: (key: LayoutActionBarKey, layoutID: string | null) => void;
+  onAssign?: (key: LayoutActionBarKey, layoutID: string | null) => void;
+  onCast?: (layout: UserPanelLayout) => void;
 }
 
-export function InstanceActionBar({ slots, layouts, onAssign }: InstanceActionBarProps) {
+export function InstanceActionBar({ slots, layouts, onAssign, onCast }: InstanceActionBarProps) {
   return (
     <div className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-zinc-700/70 bg-zinc-950/80 p-1.5">
       {LAYOUT_ACTION_BAR_KEYS.map((key) => {
@@ -36,7 +37,8 @@ export function InstanceActionBar({ slots, layouts, onAssign }: InstanceActionBa
             hotkey={key}
             layout={layout}
             layouts={layouts}
-            onAssign={(layoutID) => onAssign(key, layoutID)}
+            onAssign={onAssign ? (layoutID) => onAssign(key, layoutID) : undefined}
+            onCast={onCast}
           />
         );
       })}
@@ -49,39 +51,63 @@ function ActionBarSlot({
   layout,
   layouts,
   onAssign,
+  onCast,
 }: {
   hotkey: LayoutActionBarKey;
   layout: UserPanelLayout | null;
   layouts: readonly UserPanelLayout[];
-  onAssign: (layoutID: string | null) => void;
+  onAssign?: (layoutID: string | null) => void;
+  onCast?: (layout: UserPanelLayout) => void;
 }) {
+  const button = (
+    <button
+      type="button"
+      onClick={() => {
+        if (layout && onCast) {
+          onCast(layout);
+        }
+      }}
+      onAuxClick={(event) => {
+        if (event.button !== 1 || !onAssign) return;
+        event.preventDefault();
+        onAssign(null);
+      }}
+      className="relative h-11 w-11 shrink-0 overflow-hidden rounded-sm border-2 border-zinc-700/80 bg-zinc-900/70 shadow-inner transition-colors hover:border-zinc-500/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+    >
+      {layout ? (
+        <img
+          src={getSpellIconUrl({ ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" })}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      ) : null}
+      <span className="absolute right-0.5 top-0 text-[10px] font-bold leading-none text-zinc-200/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+        {hotkey}
+      </span>
+    </button>
+  );
+
+  if (!onAssign) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className={layout ? "border-0 bg-transparent p-0" : "text-xs"}
+          hideArrow={!!layout}
+        >
+          {layout ? <SpellTooltip spell={buildLayoutSpellTooltip(layout)} /> : `Slot ${hotkey} (empty)`}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <DropdownMenu>
       <Tooltip>
         <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              onAuxClick={(event) => {
-                if (event.button !== 1) return;
-                event.preventDefault();
-                onAssign(null);
-              }}
-              className="relative h-11 w-11 shrink-0 overflow-hidden rounded-sm border-2 border-zinc-700/80 bg-zinc-900/70 shadow-inner transition-colors hover:border-zinc-500/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
-            >
-              {layout ? (
-                <img
-                  src={getSpellIconUrl({ ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" })}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              ) : null}
-              <span className="absolute right-0.5 top-0 text-[10px] font-bold leading-none text-zinc-200/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
-                {hotkey}
-              </span>
-            </button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent
           side="top"

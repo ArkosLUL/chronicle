@@ -27,6 +27,7 @@ import type {
   UpdateUserPanelLayoutRequest as UpdateUserPanelLayoutRequestGenerated,
   UserPanelLayout as UserPanelLayoutGenerated,
   ActionBarSlotsResponse as ActionBarSlotsResponseGenerated,
+  InstanceDefaultsResponse as InstanceDefaultsResponseGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -56,6 +57,7 @@ export type CreateUserPanelLayoutRequest = CreateUserPanelLayoutRequestGenerated
 export type UpdateUserPanelLayoutRequest = UpdateUserPanelLayoutRequestGenerated;
 export type UserPanelLayout = UserPanelLayoutGenerated;
 export type ActionBarSlotsResponse = ActionBarSlotsResponseGenerated;
+export type InstanceDefaultsResponse = InstanceDefaultsResponseGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -118,6 +120,24 @@ export function useUserPanelLayouts(
       return response.json() as Promise<ListUserPanelLayoutsResponse>;
     },
     enabled: !!userID,
+    ...options,
+  });
+}
+
+export function useInstanceDefaults(
+  options?: Omit<UseQueryOptions<InstanceDefaultsResponse>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["instance-defaults"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/panel-layout/instance-defaults", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch instance defaults");
+      }
+      return response.json() as Promise<InstanceDefaultsResponse>;
+    },
     ...options,
   });
 }
@@ -211,6 +231,7 @@ export function useCreatePanelLayout() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });
+      queryClient.invalidateQueries({ queryKey: ["instance-defaults"] });
     },
   });
 }
@@ -240,6 +261,7 @@ export function useUpdatePanelLayout() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });
+      queryClient.invalidateQueries({ queryKey: ["instance-defaults"] });
     },
   });
 }
@@ -263,6 +285,7 @@ export function useDeletePanelLayout() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });
+      queryClient.invalidateQueries({ queryKey: ["instance-defaults"] });
     },
   });
 }
@@ -298,6 +321,7 @@ export function useUpdateLayoutDefaults() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });
+      queryClient.invalidateQueries({ queryKey: ["instance-defaults"] });
     },
   });
 }

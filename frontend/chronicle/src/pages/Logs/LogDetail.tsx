@@ -348,10 +348,6 @@ function InstanceCard({
   
   const bossFights = instance.encounters.filter(e => e.boss);
   const trashFights = instance.encounters.filter(e => !e.boss);
-  const bossKills = bossFights.filter(e => e.kill_type !== "wipe").length;
-  const bossWipes = bossFights.filter(e => e.kill_type === "wipe").length;
-  const trashKills = trashFights.filter(e => e.kill_type !== "wipe").length;
-  const trashWipes = trashFights.filter(e => e.kill_type === "wipe").length;
   
   // Stub URL for now - will be replaced with actual route
   const instanceUrl = `/instances/${instance.slug || instance.id}`;
@@ -449,11 +445,6 @@ function InstanceCard({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Boss Fights
             </span>
-            {bossFights.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                ({bossKills} kill{bossKills !== 1 ? "s" : ""}, {bossWipes} wipe{bossWipes !== 1 ? "s" : ""})
-              </span>
-            )}
           </div>
           {bossFights.length > 0 ? (
             <div className="space-y-0.5">
@@ -473,9 +464,6 @@ function InstanceCard({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Trash
             </span>
-              <span className="text-xs text-muted-foreground ml-1">
-                ({trashKills} kill{trashKills !== 1 ? "s" : ""}, {trashWipes} wipe{trashWipes !== 1 ? "s" : ""})
-              </span>
           </div>
           {trashFights.length > 0 ? (
             <div className="px-2 py-1.5 bg-muted/30 rounded text-sm">

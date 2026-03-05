@@ -1633,6 +1633,11 @@ export function InstancePageView({
     setViewState((prev) => ({ ...prev, layout }));
   }, []);
 
+  const resetView = useCallback(() => {
+    setViewState(createDefaultViewState());
+    setImportedLayoutItems(null);
+  }, [createDefaultViewState]);
+
   const clearEntitySelection = useCallback(() => {
     setViewState((prev) => ({ ...prev, enemies: new Set(), players: new Set() }));
   }, []);
@@ -2345,6 +2350,7 @@ export function InstancePageView({
             {/* Hamburger menu with layout options + view log */}
             <InstanceMenu
               onImportLayout={handleImportLayout}
+              onResetView={resetView}
               instanceId={instance.id}
               logDetailUrl={logDetailUrl}
             />

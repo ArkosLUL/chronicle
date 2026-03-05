@@ -1,4 +1,4 @@
-import { Menu, FileText, Copy, Upload } from "lucide-react";
+import { Menu, FileText, Copy, Upload, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/DropdownMenu/DropdownMenu";
 interface InstanceMenuProps {
   onImportLayout?: () => void;
+  onResetView?: () => void;
   instanceId: string;
   logDetailUrl?: string;
 }
 
 export function InstanceMenu({
   onImportLayout,
+  onResetView,
   instanceId,
   logDetailUrl,
 }: InstanceMenuProps) {
@@ -39,6 +41,16 @@ export function InstanceMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {onResetView && (
+          <>
+            <DropdownMenuItem onClick={onResetView}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset View
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         {/* Layout section */}
         <DropdownMenuLabel className="text-xs text-muted-foreground">Actions</DropdownMenuLabel>
         {onImportLayout && (

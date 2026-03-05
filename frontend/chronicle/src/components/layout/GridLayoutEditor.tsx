@@ -78,7 +78,7 @@ export function GridLayoutEditor({
     [items, cols]
   );
 
-  const handleLayoutChange = (newLayout: readonly LayoutItem[]) => {
+  const commitLayout = (newLayout: readonly LayoutItem[]) => {
     const byId = new Map(newLayout.map((entry) => [entry.i, entry]));
     const next = items.map((item) => {
       const entry = byId.get(item.id);
@@ -100,6 +100,7 @@ export function GridLayoutEditor({
         className="layout"
         layout={layout}
         width={containerWidth}
+        containerPadding={[0, 0]}
         gridConfig={{
           cols,
           rowHeight,
@@ -111,7 +112,8 @@ export function GridLayoutEditor({
         resizeConfig={{
           enabled: editable,
         }}
-        onLayoutChange={handleLayoutChange}
+        onDragStop={(newLayout) => commitLayout(newLayout)}
+        onResizeStop={(newLayout) => commitLayout(newLayout)}
       >
         {items.map((item) => (
           <div
@@ -121,16 +123,16 @@ export function GridLayoutEditor({
             {showItemHeader ? (
               <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
                 {editable && (
-                  <div className="grid-layout-editor-handle cursor-move text-muted-foreground hover:text-foreground">
-                    <GripVertical className="h-4 w-4" />
+                  <div className="grid-layout-editor-handle flex h-7 w-7 items-center justify-center rounded-md border border-border/70 bg-background/80 cursor-move text-muted-foreground shadow-sm transition-colors hover:text-foreground hover:bg-background">
+                    <GripVertical className="h-5 w-5" />
                   </div>
                 )}
                 <span className="text-sm font-medium">{item.title}</span>
               </div>
             ) : (
               editable && (
-                <div className="grid-layout-editor-handle absolute left-2 top-2 z-20 cursor-move rounded bg-background/85 p-1 text-muted-foreground shadow-sm hover:text-foreground">
-                  <GripVertical className="h-4 w-4" />
+                <div className="grid-layout-editor-handle absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center cursor-move rounded-md border border-border/70 bg-background/90 text-muted-foreground shadow-md transition-colors hover:text-foreground hover:bg-background">
+                  <GripVertical className="h-5 w-5" />
                 </div>
               )
             )}

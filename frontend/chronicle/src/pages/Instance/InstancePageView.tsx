@@ -86,59 +86,6 @@ type LocalInstanceViewState = {
   layout: LayoutType;
 };
 
-type CachedInstanceView = {
-  view: {
-    encounters: string[];
-    enemies: string[];
-    players: string[];
-    panels: PanelType[];
-    panelOptions: Array<string | null>;
-    layout: LayoutType;
-    importedLayoutItems?: GridEditorItem[] | null;
-    sharedPayload?: SharedViewPayload;
-  };
-  lastViewedAt: number;
-};
-
-type InstanceViewCache = Record<string, CachedInstanceView>;
-
-
-function arraysEqual<T>(a: T[], b: T[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
-}
-
-
-function layoutItemsEqual(a: GridEditorItem[] | null | undefined, b: GridEditorItem[] | null | undefined): boolean {
-  const left = a ?? null;
-  const right = b ?? null;
-  if (left === right) return true;
-  if (!left || !right) return false;
-  if (left.length !== right.length) return false;
-  return left.every((item, idx) => {
-    const other = right[idx];
-    return item.id === other.id
-      && item.title === other.title
-      && item.x === other.x
-      && item.y === other.y
-      && item.w === other.w
-      && item.h === other.h
-      && item.minW === other.minW;
-  });
-}
-function setsEqual(a: Set<string>, b: string[]): boolean {
-  return a.size === b.length && b.every((id) => a.has(id));
-}
-const EMPTY_INSTANCE_VIEW_CACHE: InstanceViewCache = {};
-const INSTANCE_VIEW_CACHE_KEY = "instanceViewCache:v1";
-const MAX_RECENT_INSTANCE_VIEWS = 10;
-
-function pruneInstanceViewCache(cache: InstanceViewCache): InstanceViewCache {
-  return Object.fromEntries(
-    Object.entries(cache)
-      .sort((a, b) => b[1].lastViewedAt - a[1].lastViewedAt)
-      .slice(0, MAX_RECENT_INSTANCE_VIEWS),
-  );
-}
 const LEGACY_PANEL_CODE_TO_TYPE: Record<string, PanelType> = {
   dd: "damage_done",
   ve: "vulnerability_effect",
@@ -1384,15 +1331,7 @@ export function InstancePageView({
     [instance.encounters],
   );
 
-  const [instanceViewCache, setInstanceViewCache] = useLocalStorage<InstanceViewCache>(INSTANCE_VIEW_CACHE_KEY, EMPTY_INSTANCE_VIEW_CACHE);
-
-  const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(
-    () => {
-      const cached = instanceViewCache[instance.id]?.view;
-      const payloadItems = cached?.sharedPayload?.layout?.items ?? cached?.sharedPayload?.items;
-      return payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.importedLayoutItems ?? null);
-    },
-  );
+  const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(null);
 
   const [activeLayoutId, setActiveLayoutId] = useState<string | null>(defaultLayoutId);
 
@@ -1405,82 +1344,11 @@ export function InstancePageView({
     layout: "standard",
   }), [defaultEncounterIDs, defaultOrderedPanels]);
 
-  const hydrateCachedViewState = useCallback((cached: CachedInstanceView | undefined): LocalInstanceViewState => {
-    if (!cached) {
-      return createDefaultViewState();
-    }
-
-    if (cached.view.sharedPayload) {
-      const payload = cached.view.sharedPayload;
-      const layoutItems = payload.layout?.items ?? payload.items ?? [];
-      const panelTypesById = payload.layout?.panelTypesById ?? payload.panelTypesById ?? {};
-      const normalizedItems = normalizeLayoutItems(layoutItems);
-      const orderedItems = orderLayoutItems(normalizedItems);
-      const orderedPanels = orderedItems.map((item) => {
-        const candidate = panelTypesById[item.id] ?? "empty";
-        return (candidate in PANELS ? candidate : "empty") as PanelType;
-      });
-      const orderedOptions = orderedItems.map((item) => {
-        const raw = payload.view?.panelOptions?.[item.id];
-        return typeof raw === "string" ? raw : null;
-      });
-      const encounters = (() => {
-        const enc = payload.view?.encounters;
-        if (enc === "all" || !enc) return instance.encounters.map((e) => e.id);
-        if (enc === "bosses") return instance.encounters.filter((e) => e.boss).map((e) => e.id);
-        if (enc === "trash") return instance.encounters.filter((e) => !e.boss).map((e) => e.id);
-        const ids = enc.split("-")
-          .map((v) => Number.parseInt(v, 10))
-          .filter((v) => !Number.isNaN(v))
-          .map((idx) => instance.encounters[idx]?.id)
-          .filter((id): id is string => Boolean(id));
-        return ids.length > 0 ? ids : instance.encounters.map((e) => e.id);
-      })();
-      const enemies = new Set(
-        (payload.view?.enemies ?? [])
-          .map((idx) => allMergedEnemies[idx]?.id)
-          .filter((id): id is string => Boolean(id)),
-      );
-      const playerKeys = Object.keys(instance.players ?? {}).sort();
-      const players = new Set(
-        (payload.view?.players ?? [])
-          .map((idx) => playerKeys[idx])
-          .filter((id): id is string => Boolean(id)),
-      );
-
-      return {
-        encounters,
-        enemies,
-        players,
-        panels: orderedPanels,
-        panelOptions: orderedOptions,
-        layout: "standard",
-      };
-    }
-
-    const defaults = createDefaultViewState();
-    const panels = cached.view.panels
-      .map((panel) => (panel in PANELS ? panel : "empty") as PanelType);
-    const panelCount = Math.max(defaults.panels.length, panels.length);
-
-    return {
-      encounters: cached.view.encounters.filter((id) => instance.encounters.some((enc) => enc.id === id)),
-      enemies: new Set(cached.view.enemies.filter((id) => allMergedEnemies.some((enemy) => enemy.id === id))),
-      players: new Set(cached.view.players.filter((id) => Boolean(instance.players?.[id]))),
-      panels: panelCount > 0
-        ? Array.from({ length: panelCount }, (_, i) => panels[i] ?? defaults.panels[i] ?? "empty")
-        : defaults.panels,
-      panelOptions: Array.from({ length: panelCount }, (_, i) => cached.view.panelOptions[i] ?? null),
-      layout: cached.view.layout === "alternate" ? "alternate" : "standard",
-    };
-  }, [allMergedEnemies, createDefaultViewState, instance.encounters, instance.players]);
-
   const [viewState, setViewState] = useState<LocalInstanceViewState>(() =>
-    hydrateCachedViewState(instanceViewCache[instance.id]),
+    createDefaultViewState(),
   );
 
-  const lastLocalRestoreToastInstanceRef = useRef<string | null>(null);
-  const initialImportCodeRef = useRef(searchParams.get("import"));
+
   const previousInstanceIDRef = useRef(instance.id);
 
   useEffect(() => {
@@ -1489,110 +1357,10 @@ export function InstancePageView({
     }
 
     previousInstanceIDRef.current = instance.id;
-    const cached = instanceViewCache[instance.id];
-    setViewState(hydrateCachedViewState(cached));
-    const payloadItems = cached?.view.sharedPayload?.layout?.items ?? cached?.view.sharedPayload?.items;
-    const nextImportedLayoutItems = payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.view.importedLayoutItems ?? null);
-    setImportedLayoutItems(nextImportedLayoutItems);
-    setActiveLayoutId(nextImportedLayoutItems ? null : defaultLayoutId);
-  }, [defaultLayoutId, hydrateCachedViewState, instance.id, instanceViewCache]);
-
-  useEffect(() => {
-    // Skip local restore toast when this page load is from shared URL import,
-    // or if we've already toasted for this instance.
-    if (initialImportCodeRef.current || lastLocalRestoreToastInstanceRef.current === instance.id) {
-      return;
-    }
-
-    const cached = instanceViewCache[instance.id];
-    if (cached) {
-      toast.success("I remembered where you left off!");
-      lastLocalRestoreToastInstanceRef.current = instance.id;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only on mount/instance change
-  }, [instance.id]);
-
-  useEffect(() => {
-    setInstanceViewCache((prev) => {
-      const existing = prev[instance.id];
-      const currentLayoutItems = importedLayoutItems
-        ?? (viewState.layout === "alternate" ? alternateOrderedLayoutItems : standardOrderedLayoutItems);
-      const panelTypesById = Object.fromEntries(
-        currentLayoutItems.map((item, index) => [item.id, (viewState.panels[index] ?? "empty") as EventsPanelType]),
-      );
-      const panelOptionsById = Object.fromEntries(
-        currentLayoutItems
-          .map((item, index) => [item.id, viewState.panelOptions[index] ?? null] as const)
-          .filter(([, value]) => value !== null),
-      );
-      const sharedPayload: SharedViewPayload = {
-        version: 2,
-        instanceId: instance.id,
-        layout: {
-          items: currentLayoutItems,
-          panelTypesById,
-        },
-        view: {
-          encounters: viewState.encounters.length > 0
-            ? viewState.encounters
-              .map((id) => instance.encounters.findIndex((enc) => enc.id === id))
-              .filter((idx) => idx >= 0)
-              .join("-")
-            : "all",
-          enemies: Array.from(viewState.enemies)
-            .map((id) => allMergedEnemies.findIndex((enemy) => enemy.id === id))
-            .filter((idx) => idx >= 0),
-          players: Array.from(viewState.players)
-            .map((id) => Object.keys(instance.players ?? {}).sort().indexOf(id))
-            .filter((idx) => idx >= 0),
-          panelOptions: panelOptionsById,
-        },
-      };
-
-      const nextView = {
-        encounters: viewState.encounters,
-        enemies: Array.from(viewState.enemies),
-        players: Array.from(viewState.players),
-        panels: viewState.panels,
-        panelOptions: viewState.panelOptions,
-        layout: viewState.layout,
-        importedLayoutItems,
-        sharedPayload,
-      };
-
-      const unchanged = existing
-        && arraysEqual(existing.view.encounters, nextView.encounters)
-        && setsEqual(viewState.enemies, existing.view.enemies)
-        && setsEqual(viewState.players, existing.view.players)
-        && arraysEqual(existing.view.panels, nextView.panels)
-        && arraysEqual(existing.view.panelOptions, nextView.panelOptions)
-        && existing.view.layout === nextView.layout
-        && layoutItemsEqual(existing.view.importedLayoutItems, nextView.importedLayoutItems);
-
-      if (unchanged) {
-        return prev;
-      }
-
-      const next = {
-        ...prev,
-        [instance.id]: {
-          view: nextView,
-          lastViewedAt: Date.now(),
-        },
-      };
-      return pruneInstanceViewCache(next);
-    });
-  }, [
-    allMergedEnemies,
-    alternateOrderedLayoutItems,
-    importedLayoutItems,
-    instance.encounters,
-    instance.id,
-    instance.players,
-    setInstanceViewCache,
-    standardOrderedLayoutItems,
-    viewState,
-  ]);
+    setViewState(createDefaultViewState());
+    setImportedLayoutItems(null);
+    setActiveLayoutId(defaultLayoutId);
+  }, [createDefaultViewState, defaultLayoutId, instance.id]);
 
   const setEncounters = useCallback((ids: string[]) => {
     setViewState((prev) => ({ ...prev, encounters: ids }));
@@ -2227,8 +1995,7 @@ export function InstancePageView({
           return next;
         });
         applySharedViewPayload(payload);
-        toast.success("Loaded view from shared url");
-        lastLocalRestoreToastInstanceRef.current = instance.id;
+        toast.success("Loaded view from shared url, refreshing the page will reset to your default layout.");
       } catch {
         if (cancelled) return;
         toast.error("Failed to import shared view");

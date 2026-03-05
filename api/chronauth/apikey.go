@@ -34,7 +34,7 @@ func validateVersion(ver *string) error {
 		return nil
 	}
 	if semver.Compare(normalizeVersion(*ver), normalizeVersion(MinimumVersion)) < 0 {
-		return fmt.Errorf("token version %s is below minimum %s: re-login required", ver, MinimumVersion)
+		return fmt.Errorf("token version %s is below minimum %s: re-login required", *ver, MinimumVersion)
 	}
 	return nil
 }

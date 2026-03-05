@@ -105,10 +105,6 @@ func (obj *ObjChronicle) PermissionAdmin_queues() string {
 	return "admin_queues"
 }
 
-func (obj *ObjChronicle) PermissionUpload_youtube() string {
-	return "upload_youtube"
-}
-
 func (obj *ObjChronicle) PermissionSet_user_data_limit() string {
 	return "set_user_data_limit"
 }
@@ -370,21 +366,6 @@ func (obj *ObjChronicle) CanAdmin_queues_User(sub *ObjUser) rel.Relationship {
 	}
 }
 
-// CanUpload_youtube_User checks if the subject has upload_youtube permission
-// // Object: chronicle:<id>
-// Schema: permission upload_youtube = administer + technical_user + supporter
-func (obj *ObjChronicle) CanUpload_youtube_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "upload_youtube",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
 // CanSet_user_data_limit_User checks if the subject has set_user_data_limit permission
 // // Object: chronicle:<id>
 // Schema: permission set_user_data_limit = technical_admin
@@ -512,7 +493,7 @@ func (obj *ObjGuild) Create() *GuildRelates {
 	return &GuildRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:50
+// Chronicle schema.zed:48
 // Relationship: guild:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjGuild) Chronicle(subs ...*ObjChronicle) *ObjGuild {
@@ -530,7 +511,7 @@ func (r *GuildRelates) Chronicle(subs ...*ObjChronicle) *GuildRelates {
 	return r
 }
 
-// Leader schema.zed:52
+// Leader schema.zed:50
 // Relationship: guild:<id>#leader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Leader() etc.
 func (obj *ObjGuild) Leader(subs ...*ObjUser) *ObjGuild {
@@ -548,7 +529,7 @@ func (r *GuildRelates) Leader(subs ...*ObjUser) *GuildRelates {
 	return r
 }
 
-// Member schema.zed:53
+// Member schema.zed:51
 // Relationship: guild:<id>#member@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Member() etc.
 func (obj *ObjGuild) Member(subs ...*ObjUser) *ObjGuild {
@@ -694,6 +675,10 @@ func (obj *ObjInstance) PermissionView() string {
 	return "view"
 }
 
+func (obj *ObjInstance) PermissionUpload_youtube() string {
+	return "upload_youtube"
+}
+
 type InstanceRelates struct {
 	obj *ObjInstance
 	rel Relationship
@@ -711,7 +696,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:74
+// Raid_log schema.zed:73
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -729,7 +714,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:75
+// PublicWildcard schema.zed:74
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -756,6 +741,21 @@ func (obj *ObjInstance) CanView_Raid_log(sub *ObjRaid_log) rel.Relationship {
 		ResourceType:     r.ObjectType,
 		ResourceID:       r.ObjectId,
 		ResourceRelation: "view",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanUpload_youtube_Raid_log checks if the subject has upload_youtube permission
+// // Object: instance:<id>
+// Schema: permission upload_youtube = raid_log->upload_youtube
+func (obj *ObjInstance) CanUpload_youtube_Raid_log(sub *ObjRaid_log) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_youtube",
 		SubjectType:      s.Obj.ObjectType,
 		SubjectID:        s.Obj.ObjectId,
 		SubjectRelation:  s.OptionalRelation,
@@ -821,7 +821,7 @@ func (obj *ObjLayout) Create() *LayoutRelates {
 	return &LayoutRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:36
+// Chronicle schema.zed:34
 // Relationship: layout:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjLayout) Chronicle(subs ...*ObjChronicle) *ObjLayout {
@@ -839,7 +839,7 @@ func (r *LayoutRelates) Chronicle(subs ...*ObjChronicle) *LayoutRelates {
 	return r
 }
 
-// Owner schema.zed:37
+// Owner schema.zed:35
 // Relationship: layout:<id>#owner@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Owner() etc.
 func (obj *ObjLayout) Owner(subs ...*ObjUser) *ObjLayout {
@@ -963,6 +963,10 @@ func (obj *ObjRaid_log) PermissionDelete_files() string {
 	return "delete_files"
 }
 
+func (obj *ObjRaid_log) PermissionUpload_youtube() string {
+	return "upload_youtube"
+}
+
 func (obj *ObjRaid_log) PermissionDelete() string {
 	return "delete"
 }
@@ -984,7 +988,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:61
+// Chronicle schema.zed:59
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1002,7 +1006,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:62
+// Uploader schema.zed:60
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {
@@ -1108,6 +1112,36 @@ func (obj *ObjRaid_log) CanDelete_files_User(sub *ObjUser) rel.Relationship {
 	}
 }
 
+// CanUpload_youtube_Chronicle checks if the subject has upload_youtube permission
+// // Object: raid_log:<id>
+// Schema: permission upload_youtube = uploader + chronicle->admin_logs
+func (obj *ObjRaid_log) CanUpload_youtube_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_youtube",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanUpload_youtube_User checks if the subject has upload_youtube permission
+// // Object: raid_log:<id>
+// Schema: permission upload_youtube = uploader + chronicle->admin_logs
+func (obj *ObjRaid_log) CanUpload_youtube_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_youtube",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
 // CanDelete_Chronicle checks if the subject has delete permission
 // // Object: raid_log:<id>
 func (obj *ObjRaid_log) CanDelete_Chronicle(sub *ObjChronicle) rel.Relationship {
@@ -1187,7 +1221,7 @@ func (obj *ObjRiver_queue) Create() *River_queueRelates {
 	return &River_queueRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:44
+// Chronicle schema.zed:42
 // Relationship: river_queue:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRiver_queue) Chronicle(subs ...*ObjChronicle) *ObjRiver_queue {

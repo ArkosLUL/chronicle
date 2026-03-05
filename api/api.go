@@ -210,7 +210,6 @@ func (api *API) Routes() chi.Router {
 							r.Group(func(r chi.Router) {
 								r.Use(
 									api.Auth.Authenticated(false),
-									httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_youtube_User),
 								)
 								r.Post("/youtube", api.PostInstanceYoutube)
 							})
@@ -258,7 +257,6 @@ func (api *API) Routes() chi.Router {
 		r.Use(
 			api.Auth.AuthenticationMiddleware,
 			api.Auth.Authenticated(false),
-			httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_youtube_User),
 		)
 
 		if api.Opts.OCRURL != nil {

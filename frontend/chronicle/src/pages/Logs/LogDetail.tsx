@@ -1120,7 +1120,7 @@ export function LogDetail() {
     reparse: `raid_log:${logId}#reparse`,
     deleteFiles: `raid_log:${logId}#delete_files`,
     delete: `raid_log:${logId}#delete`,
-    uploadYoutube: "chronicle:chronicle#upload_youtube",
+    uploadYoutube: `raid_log:${logId}#upload_youtube`,
     adminLogs: "chronicle:chronicle#admin_logs",
   }), [logId]);
   const { data: authz } = useAuthorizationCheck(authzChecks, {

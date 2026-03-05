@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -10,7 +11,10 @@ import (
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/internal/slice"
+	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -114,7 +118,29 @@ func (api *API) PostInstanceYoutube(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := db.InsertStampedYoutubeVideo(ctx, database.InsertStampedYoutubeVideoParams{
+	b := policy.New()
+	act, ok := authz.ActorFromContext(ctx)
+	if !ok {
+		httpapi.Forbidden(w, errors.New("no actor in context"))
+		return
+	}
+	actSub := act.Object()
+
+	instObj := b.Instance(inst.ID).Object()
+	ok, err := api.Zed.CheckOne(ctx, nil, rel.Relationship{
+		ResourceType:     instObj.Typ,
+		ResourceID:       instObj.ID,
+		ResourceRelation: "upload_youtube",
+		SubjectType:      actSub.Typ,
+		SubjectID:        actSub.ID,
+		SubjectRelation:  "",
+	})
+	if err != nil || !ok {
+		httpapi.Forbidden(w, err)
+		return
+	}
+
+	err = db.InsertStampedYoutubeVideo(ctx, database.InsertStampedYoutubeVideoParams{
 		LogInstanceID: inst.ID,
 		CreatedAt:     database.Timestamptz(time.Now()),
 		ExportedAt:    database.Timestamptz(req.ExportedAt),

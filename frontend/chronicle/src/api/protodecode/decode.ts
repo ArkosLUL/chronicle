@@ -2246,6 +2246,7 @@ export interface ReusableAuraCast {
   effectMiscValue: number;
   durationMS: number;
   capStatus: number;
+  effectAuraName: number;
   activity: ReusableActivityEntry[];
   activityCount: number;
 }
@@ -2263,6 +2264,7 @@ export interface ReusableAuraCast {
  *   7: effectMiscValue (int32)
  *   8: durationMS (int32)
  *   9: capStatus (int32)
+ *  10: effectAuraName (int32)
  */
 export class AuraCastDecoder {
   private readonly textDecoder = sharedTextDecoder;
@@ -2286,6 +2288,7 @@ export class AuraCastDecoder {
     effectMiscValue: 0,
     durationMS: 0,
     capStatus: 0,
+    effectAuraName: 0,
     activity: [],
     activityCount: 0,
   };
@@ -2311,6 +2314,7 @@ export class AuraCastDecoder {
     msg.effectMiscValue = 0;
     msg.durationMS = 0;
     msg.capStatus = 0;
+    msg.effectAuraName = 0;
     msg.activityCount = 0;
     
     while (offset < end) {
@@ -2404,6 +2408,7 @@ export class AuraCastDecoder {
         else if (fieldNumber === 7) msg.effectMiscValue = value;
         else if (fieldNumber === 8) msg.durationMS = value;
         else if (fieldNumber === 9) msg.capStatus = value;
+        else if (fieldNumber === 10) msg.effectAuraName = value;
       }
     }
     

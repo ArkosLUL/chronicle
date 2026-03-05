@@ -1155,6 +1155,7 @@ type AuraCast struct {
 	EffectMiscValue int32                  `protobuf:"varint,7,opt,name=effectMiscValue,proto3" json:"effectMiscValue,omitempty"`
 	DurationMS      int32                  `protobuf:"varint,8,opt,name=durationMS,proto3" json:"durationMS,omitempty"`
 	CapStatus       int32                  `protobuf:"varint,9,opt,name=capStatus,proto3" json:"capStatus,omitempty"`
+	EffectAuraName  int32                  `protobuf:"varint,10,opt,name=effectAuraName,proto3" json:"effectAuraName,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1248,6 +1249,13 @@ func (x *AuraCast) GetDurationMS() int32 {
 func (x *AuraCast) GetCapStatus() int32 {
 	if x != nil {
 		return x.CapStatus
+	}
+	return 0
+}
+
+func (x *AuraCast) GetEffectAuraName() int32 {
+	if x != nil {
+		return x.EffectAuraName
 	}
 	return 0
 }
@@ -1453,7 +1461,7 @@ const file_chronicle_proto_rawDesc = "" +
 	"\tspellData\x18\a \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01\x12\x16\n" +
 	"\x06isBuff\x18\b \x01(\bR\x06isBuffB\f\n" +
 	"\n" +
-	"_spellData\"\xc8\x02\n" +
+	"_spellData\"\xf0\x02\n" +
 	"\bAuraCast\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12/\n" +
 	"\x05spell\x18\x02 \x01(\v2\x19.chronicleproto.SpellDataR\x05spell\x12\x16\n" +
@@ -1465,7 +1473,9 @@ const file_chronicle_proto_rawDesc = "" +
 	"\n" +
 	"durationMS\x18\b \x01(\x05R\n" +
 	"durationMS\x12\x1c\n" +
-	"\tcapStatus\x18\t \x01(\x05R\tcapStatusB\t\n" +
+	"\tcapStatus\x18\t \x01(\x05R\tcapStatus\x12&\n" +
+	"\x0eeffectAuraName\x18\n" +
+	" \x01(\x05R\x0eeffectAuraNameB\t\n" +
 	"\a_target\"\xe1\x02\n" +
 	"\aSpellGo\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +

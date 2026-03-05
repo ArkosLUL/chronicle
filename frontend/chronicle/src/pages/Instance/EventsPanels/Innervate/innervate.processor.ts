@@ -56,8 +56,9 @@ export const innervateProcessor: PanelProcessor<InnervateResult, AuraCastProcess
     if (event.type !== "aura_cast") return;
     if (event.spell.id !== INNERVATE_SPELL_ID) return;
     if (!context.selectedEncounterIds.has(encounterID)) return;
+    console.log(event)
     // 2 effects are applied, just listen to 1 of them
-    if (event.effect !== 110) return; 
+    if (event.effectAuraName !== 110) return; 
     
     // Get player names from context
     const casterPlayer = context.players[event.caster];

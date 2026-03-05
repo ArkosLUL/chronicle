@@ -88,9 +88,9 @@ func (p *Parser) auraCast(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	caster := m.Guid()
 	target := m.OptionalGuid()
 	effect := chrondbc.Effect(m.Int32())
-	m.skip() // aura name
+	auraName := chrondbc.AuraEffect(m.Int32())
 	amplitude := m.Int32()
-	effectMiscValue := chrondbc.AuraEffect(m.Int32())
+	effectMiscValue := m.Int32()
 	durationMS := m.Int32()
 	capStatus := m.Int32()
 
@@ -105,9 +105,10 @@ func (p *Parser) auraCast(ctx context.Context, ts time.Time, m *Matched) ([]mess
 		Target:          target,
 		Effect:          effect,
 		Amplitude:       amplitude,
-		EffectMiscValue: effectMiscValue,
+		EffectAuraName:  auraName,
 		DurationMS:      durationMS,
 		AuraCapStatus:   capStatus,
+		EffectMiscValue: effectMiscValue,
 	})
 }
 

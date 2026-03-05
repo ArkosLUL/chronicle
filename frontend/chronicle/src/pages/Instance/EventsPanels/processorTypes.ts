@@ -224,6 +224,7 @@ export interface AuraCastProcessorEvent extends EventMeta {
   effectMiscValue: number;  // Effect-specific data
   durationMS: number;       // Total duration in milliseconds
   capStatus: number;        // 1=buffs full, 2=debuffs full, 3=both
+  effectAuraName: number;   // Aura name/type enum value
 }
 
 /**

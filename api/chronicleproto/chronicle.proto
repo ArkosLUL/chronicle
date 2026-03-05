@@ -144,6 +144,7 @@ message AuraCast {
   int32 effectMiscValue = 7;
   int32 durationMS = 8;
   int32 capStatus = 9;
+  int32 effectAuraName = 10;
 }
 
 message SpellGo {

@@ -168,9 +168,10 @@ func AuraCast(from time.Time, idx int32, a *messages.AuraCast) *chronicleproto.A
 		Target:          target,
 		Effect:          int32(a.Effect),
 		Amplitude:       a.Amplitude,
-		EffectMiscValue: int32(a.EffectMiscValue),
+		EffectAuraName:  int32(a.EffectAuraName),
 		DurationMS:      a.DurationMS,
 		CapStatus:       a.AuraCapStatus,
+		EffectMiscValue: a.EffectMiscValue,
 	}
 }
 

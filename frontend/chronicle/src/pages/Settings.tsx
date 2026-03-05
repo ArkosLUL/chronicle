@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye } from "lucide-react";
+import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   useInstance,
@@ -14,6 +14,7 @@ import {
   useSharedLayout,
   useTrackLayout,
   useUntrackLayout,
+  useUpdateLayoutDefaults,
   useLogGroups,
   type UserPanelLayout,
   type RequestError,
@@ -281,8 +282,11 @@ export function LayoutBookSettings() {
   const createLayout = useCreatePanelLayout();
   const deleteLayout = useDeletePanelLayout();
   const untrackLayout = useUntrackLayout();
+  const updateLayoutDefaults = useUpdateLayoutDefaults();
 
   const layouts = layoutsResponse?.layouts ?? [];
+  const defaultDesktopLayoutID = layoutsResponse?.default_desktop_layout_id;
+  const defaultMobileLayoutID = layoutsResponse?.default_mobile_layout_id;
   const [name, setName] = useState("");
   const [layoutType, setLayoutType] = useState<"standard" | "alternate">("standard");
 
@@ -329,6 +333,30 @@ export function LayoutBookSettings() {
     }
   };
 
+  const handleToggleDefault = async (
+    device: "desktop" | "mobile",
+    layout: UserPanelLayout,
+    isCurrentlyDefault: boolean,
+  ) => {
+    try {
+      await updateLayoutDefaults.mutateAsync(
+        device === "desktop"
+          ? { default_desktop_layout_id: isCurrentlyDefault ? null : layout.id }
+          : { default_mobile_layout_id: isCurrentlyDefault ? null : layout.id },
+      );
+
+      const actionLabel = isCurrentlyDefault ? "cleared" : "updated";
+      toast.success(`${device === "desktop" ? "Desktop" : "Mobile"} default ${actionLabel}`, {
+        description: layout.title,
+      });
+    } catch (error) {
+      showRequestErrorToast(
+        `Failed to ${isCurrentlyDefault ? "clear" : "set"} ${device} default`,
+        error,
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -367,15 +395,17 @@ export function LayoutBookSettings() {
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {layouts.map((layout) => {
-              const tooltipLayout = {
-                title: layout.title,
-                description: layout.description,
-                icon: layout.icon,
-              };
+                const tooltipLayout = {
+                  title: layout.title,
+                  description: layout.description,
+                  icon: layout.icon,
+                };
+                const isDesktopDefault = layout.id === defaultDesktopLayoutID;
+                const isMobileDefault = layout.id === defaultMobileLayoutID;
 
-              return (
+                return (
                 <div key={layout.id} className={`rounded-md border p-3 sm:p-4 ${layout.is_tracked ? "bg-secondary/15" : "bg-primary/10"}`}>
-                  <div className="group inline-flex items-start gap-3 text-left rounded-md px-1.5 py-1">
+                  <div className="group flex w-full items-start gap-3 text-left rounded-md px-1.5 py-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button type="button" className="shrink-0">
@@ -394,10 +424,58 @@ export function LayoutBookSettings() {
                       </TooltipContent>
                     </Tooltip>
 
-                    <div className="min-w-0">
-                      <div className="text-lg leading-none font-medium text-amber-100 tracking-tight [text-shadow:0_1px_0_rgba(0,0,0,0.65)]">
-                        {layout.title}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-lg leading-none font-medium text-amber-100 tracking-tight [text-shadow:0_1px_0_rgba(0,0,0,0.65)]">
+                          {layout.title}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={`h-8 w-8 border-2 transition-all ${
+                              isDesktopDefault
+                                ? "border-blue-400 bg-blue-500 text-white shadow-[0_0_0_1px_rgba(96,165,250,0.55)] hover:brightness-110"
+                                : "border-blue-400/70 bg-blue-500/15 text-blue-100 hover:border-blue-300 hover:bg-blue-500/30 hover:shadow-[0_0_0_1px_rgba(96,165,250,0.35)]"
+                            }`}
+                            title={isDesktopDefault ? "Clear desktop default" : "Set desktop default"}
+                            onClick={() => void handleToggleDefault("desktop", layout, isDesktopDefault)}
+                            disabled={updateLayoutDefaults.isPending}
+                          >
+                            <Monitor className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={`h-8 w-8 border-2 transition-all ${
+                              isMobileDefault
+                                ? "border-green-400 bg-green-500 text-white shadow-[0_0_0_1px_rgba(74,222,128,0.55)] hover:brightness-110"
+                                : "border-green-400/70 bg-green-500/15 text-green-100 hover:border-green-300 hover:bg-green-500/30 hover:shadow-[0_0_0_1px_rgba(74,222,128,0.35)]"
+                            }`}
+                            title={isMobileDefault ? "Clear mobile default" : "Set mobile default"}
+                            onClick={() => void handleToggleDefault("mobile", layout, isMobileDefault)}
+                            disabled={updateLayoutDefaults.isPending}
+                          >
+                            <Smartphone className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
+                      {(isDesktopDefault || isMobileDefault) ? (
+                        <div className="-mt-1 flex flex-wrap items-center gap-1">
+                          {isDesktopDefault ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
+                              <Monitor className="h-3 w-3" />
+                              Desktop default
+                            </span>
+                          ) : null}
+                          {isMobileDefault ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300">
+                              <Smartphone className="h-3 w-3" />
+                              Mobile default
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {layout.description ? (
                         <div className="mt-1 text-sm text-zinc-100/90">{layout.description.slice(0, 120)}{layout.description.length > 120 ? "…" : ""}</div>
                       ) : null}
@@ -436,7 +514,7 @@ export function LayoutBookSettings() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 border-cyan-400/60 bg-cyan-500/10 text-cyan-100 transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.35)]"
                               title="View layout"
                               onClick={() => {
                                 navigate(`/account/layout-lab?shared=${layout.id}`);
@@ -450,7 +528,7 @@ export function LayoutBookSettings() {
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 transition-transform hover:animate-[delete-shake_220ms_ease-in-out]"
                               title="Delete layout"
                               onClick={async () => {
                                 const trackerWarning = layout.tracker_count > 0
@@ -471,7 +549,7 @@ export function LayoutBookSettings() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-500/25 hover:text-amber-100 hover:shadow-[0_0_0_1px_rgba(251,191,36,0.35)]"
                               title="Edit layout"
                               onClick={() => {
                                 navigate(`/account/layout-lab?layoutId=${layout.id}`);
@@ -484,7 +562,7 @@ export function LayoutBookSettings() {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-7 w-7 border-violet-400/60 bg-violet-500/10 text-violet-100 transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-500/30 hover:shadow-[0_0_0_1px_rgba(192,132,252,0.35)]"
                           title="Clone layout"
                           onClick={() => void handleClone(layout)}
                           disabled={createLayout.isPending}
@@ -494,7 +572,7 @@ export function LayoutBookSettings() {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-7 w-7 transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-500/25 hover:text-sky-100 hover:shadow-[0_0_0_1px_rgba(56,189,248,0.35)]"
                           title="Share layout"
                           onClick={async () => {
                             const shareURL = `${window.location.origin}/account/layout-lab?shared=${layout.id}`;

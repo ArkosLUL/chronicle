@@ -837,11 +837,13 @@ type RiverQueue struct {
 }
 
 type User struct {
-	ID        uuid.UUID          `db:"id" json:"id"`
-	Username  string             `db:"username" json:"username"`
-	Email     string             `db:"email" json:"email"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID                     uuid.UUID          `db:"id" json:"id"`
+	Username               string             `db:"username" json:"username"`
+	Email                  string             `db:"email" json:"email"`
+	CreatedAt              pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	DefaultDesktopLayoutID uuid.NullUUID      `db:"default_desktop_layout_id" json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  uuid.NullUUID      `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
 }
 
 type UserAuthLink struct {

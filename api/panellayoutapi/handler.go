@@ -39,11 +39,13 @@ func New(zed *authz.Authz) *Handler {
 
 func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
+	r.Get("/defaults", h.GetLayoutDefaults)
+	r.Put("/defaults", h.UpdateLayoutDefaults)
+	r.Get("/shared/{layoutID}", h.GetSharedLayout)
 	r.Route("/{userID}", func(r chi.Router) {
 		r.Use(httpmw.UserIDMiddleware(h.zed))
 		r.Get("/", h.ListUserPanelLayouts)
 	})
-	r.Get("/shared/{layoutID}", h.GetSharedLayout)
 	r.Post("/track", h.TrackLayout)
 	r.Delete("/track/{layoutID}", h.UntrackLayout)
 	r.Post("/", h.CreateUserPanelLayout)
@@ -107,6 +109,74 @@ func toStringPtr(value pgtype.Text) *string {
 
 func toNullUUID(id uuid.UUID) uuid.NullUUID {
 	return uuid.NullUUID{UUID: id, Valid: true}
+}
+
+func toNullUUIDPtr(id *uuid.UUID) uuid.NullUUID {
+	if id == nil {
+		return uuid.NullUUID{}
+	}
+	return uuid.NullUUID{UUID: *id, Valid: true}
+}
+
+func nullUUIDToPtr(id uuid.NullUUID) *uuid.UUID {
+	if !id.Valid {
+		return nil
+	}
+	value := id.UUID
+	return &value
+}
+
+func layoutDefaultsToSDK(desktopID uuid.NullUUID, mobileID uuid.NullUUID) chroniclesdk.LayoutDefaultsResponse {
+	return chroniclesdk.LayoutDefaultsResponse{
+		DefaultDesktopLayoutID: nullUUIDToPtr(desktopID),
+		DefaultMobileLayoutID:  nullUUIDToPtr(mobileID),
+	}
+}
+
+func parseOptionalLayoutID(raw json.RawMessage) (present bool, value *uuid.UUID, err error) {
+	if len(raw) == 0 {
+		return false, nil, nil
+	}
+
+	if string(raw) == "null" {
+		return true, nil, nil
+	}
+
+	var rawID string
+	if err := json.Unmarshal(raw, &rawID); err != nil {
+		return true, nil, fmt.Errorf("must be a UUID string or null")
+	}
+
+	parsed, err := uuid.Parse(rawID)
+	if err != nil {
+		return true, nil, fmt.Errorf("must be a valid UUID")
+	}
+
+	return true, &parsed, nil
+}
+
+func (h *Handler) canUseLayoutAsDefault(ctx context.Context, userID uuid.UUID, layoutID uuid.UUID) (bool, error) {
+	layout, err := h.zed.GetPanelLayoutByID(ctx, layoutID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if layout.UserID.Valid && layout.UserID.UUID == userID {
+		return true, nil
+	}
+
+	tracked, err := h.zed.IsLayoutTrackedByUser(ctx, database.IsLayoutTrackedByUserParams{
+		UserID:   userID,
+		LayoutID: layoutID,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return tracked, nil
 }
 
 func panelLayoutToSDK(row database.UserPanelLayout) chroniclesdk.UserPanelLayout {
@@ -186,6 +256,97 @@ func (h *Handler) ensureUserLayoutLimitNotReached(ctx context.Context, w http.Re
 	return true
 }
 
+func (h *Handler) GetLayoutDefaults(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	defaults, err := h.zed.GetUserPanelLayoutDefaults(ctx, claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, layoutDefaultsToSDK(defaults.DefaultDesktopLayoutID, defaults.DefaultMobileLayoutID))
+}
+
+func (h *Handler) UpdateLayoutDefaults(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	var rawReq struct {
+		DefaultDesktopLayoutID json.RawMessage `json:"default_desktop_layout_id"`
+		DefaultMobileLayoutID  json.RawMessage `json:"default_mobile_layout_id"`
+	}
+	if !httpapi.Read(ctx, w, r, &rawReq) {
+		return
+	}
+
+	desktopPresent, desktopID, err := parseOptionalLayoutID(rawReq.DefaultDesktopLayoutID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_desktop_layout_id " + err.Error()})
+		return
+	}
+	mobilePresent, mobileID, err := parseOptionalLayoutID(rawReq.DefaultMobileLayoutID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_mobile_layout_id " + err.Error()})
+		return
+	}
+	if !desktopPresent && !mobilePresent {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "at least one default layout field must be provided"})
+		return
+	}
+
+	if desktopID != nil {
+		allowed, err := h.canUseLayoutAsDefault(ctx, claims.Subject, *desktopID)
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		if !allowed {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_desktop_layout_id must reference a layout you own or track"})
+			return
+		}
+	}
+	if mobileID != nil {
+		allowed, err := h.canUseLayoutAsDefault(ctx, claims.Subject, *mobileID)
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		if !allowed {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_mobile_layout_id must reference a layout you own or track"})
+			return
+		}
+	}
+
+	current, err := h.zed.GetUserPanelLayoutDefaults(ctx, claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	nextDesktop := current.DefaultDesktopLayoutID
+	nextMobile := current.DefaultMobileLayoutID
+	if desktopPresent {
+		nextDesktop = toNullUUIDPtr(desktopID)
+	}
+	if mobilePresent {
+		nextMobile = toNullUUIDPtr(mobileID)
+	}
+
+	updated, err := h.zed.UpdateUserPanelLayoutDefaults(ctx, database.UpdateUserPanelLayoutDefaultsParams{
+		ID:                     claims.Subject,
+		DefaultDesktopLayoutID: nextDesktop,
+		DefaultMobileLayoutID:  nextMobile,
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, layoutDefaultsToSDK(updated.DefaultDesktopLayoutID, updated.DefaultMobileLayoutID))
+}
+
 func (h *Handler) ListUserPanelLayouts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	targetUser := httpmw.User(ctx)
@@ -196,12 +357,22 @@ func (h *Handler) ListUserPanelLayouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defaults, err := h.zed.GetUserPanelLayoutDefaults(ctx, targetUser.ID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
 	resp := make([]chroniclesdk.UserPanelLayout, 0, len(layouts))
 	for _, layout := range layouts {
 		resp = append(resp, panelLayoutListRowToSDK(layout))
 	}
 
-	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.ListUserPanelLayoutsResponse{Layouts: resp})
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.ListUserPanelLayoutsResponse{
+		Layouts:                resp,
+		DefaultDesktopLayoutID: nullUUIDToPtr(defaults.DefaultDesktopLayoutID),
+		DefaultMobileLayoutID:  nullUUIDToPtr(defaults.DefaultMobileLayoutID),
+	})
 }
 
 func (h *Handler) GetSharedLayout(w http.ResponseWriter, r *http.Request) {

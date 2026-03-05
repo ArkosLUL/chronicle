@@ -36,6 +36,25 @@
   75% { opacity: 0.4; transform: scaleX(1); }
 }
 
+/* Brief shake animation for destructive icon actions */
+@keyframes delete-shake {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-1px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(1px) rotate(4deg);
+  }
+  75% {
+    transform: translateX(-1px) rotate(-3deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
 /* Mobile encounter FAB pulsing ring effect */
 @keyframes pulse-ring {
   0% {

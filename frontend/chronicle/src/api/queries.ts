@@ -265,6 +265,41 @@ export function useDeletePanelLayout() {
   });
 }
 
+export interface UpdateLayoutDefaultsRequest {
+  default_desktop_layout_id?: string | null;
+  default_mobile_layout_id?: string | null;
+}
+
+export interface LayoutDefaultsResponse {
+  default_desktop_layout_id: string | null;
+  default_mobile_layout_id: string | null;
+}
+
+export function useUpdateLayoutDefaults() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: UpdateLayoutDefaultsRequest) => {
+      const response = await fetch("/api/v1/panel-layout/defaults", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to update layout defaults", error);
+      }
+
+      return response.json() as Promise<LayoutDefaultsResponse>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-panel-layouts"] });
+    },
+  });
+}
+
 export function useMyStorage(options?: Omit<UseQueryOptions<UserStorageInfo>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["my-storage"],

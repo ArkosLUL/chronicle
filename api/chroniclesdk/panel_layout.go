@@ -41,6 +41,18 @@ type UpdateUserPanelLayoutRequest struct {
 	Payload     *json.RawMessage `json:"payload,omitempty"`
 }
 
+type LayoutDefaultsResponse struct {
+	DefaultDesktopLayoutID *uuid.UUID `json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  *uuid.UUID `json:"default_mobile_layout_id"`
+}
+
+type UpdateLayoutDefaultsRequest struct {
+	DefaultDesktopLayoutID *uuid.UUID `json:"default_desktop_layout_id,omitempty"`
+	DefaultMobileLayoutID  *uuid.UUID `json:"default_mobile_layout_id,omitempty"`
+}
+
 type ListUserPanelLayoutsResponse struct {
-	Layouts []UserPanelLayout `json:"layouts"`
+	Layouts                []UserPanelLayout `json:"layouts"`
+	DefaultDesktopLayoutID *uuid.UUID        `json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  *uuid.UUID        `json:"default_mobile_layout_id"`
 }

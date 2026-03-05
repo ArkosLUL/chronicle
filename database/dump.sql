@@ -186,7 +186,9 @@ CREATE TABLE users (
     username text NOT NULL,
     email text NOT NULL,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    default_desktop_layout_id uuid,
+    default_mobile_layout_id uuid
 );
 
 CREATE VIEW chronicle_users AS
@@ -714,6 +716,12 @@ ALTER TABLE ONLY user_tracked_layouts
 
 ALTER TABLE ONLY user_tracked_layouts
     ADD CONSTRAINT user_tracked_layouts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_default_desktop_layout_id_fkey FOREIGN KEY (default_desktop_layout_id) REFERENCES user_panel_layouts(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_default_mobile_layout_id_fkey FOREIGN KEY (default_mobile_layout_id) REFERENCES user_panel_layouts(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);

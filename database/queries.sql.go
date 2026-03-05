@@ -2120,6 +2120,55 @@ func (q *sqlQuerier) PruneParsedInstanceFromLogOutput(ctx context.Context, arg P
 	return err
 }
 
+const getUserPanelLayoutDefaults = `-- name: GetUserPanelLayoutDefaults :one
+SELECT
+  default_desktop_layout_id,
+  default_mobile_layout_id
+FROM users
+WHERE id = $1
+`
+
+type GetUserPanelLayoutDefaultsRow struct {
+	DefaultDesktopLayoutID uuid.NullUUID `db:"default_desktop_layout_id" json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  uuid.NullUUID `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
+}
+
+func (q *sqlQuerier) GetUserPanelLayoutDefaults(ctx context.Context, id uuid.UUID) (GetUserPanelLayoutDefaultsRow, error) {
+	row := q.db.QueryRow(ctx, getUserPanelLayoutDefaults, id)
+	var i GetUserPanelLayoutDefaultsRow
+	err := row.Scan(&i.DefaultDesktopLayoutID, &i.DefaultMobileLayoutID)
+	return i, err
+}
+
+const updateUserPanelLayoutDefaults = `-- name: UpdateUserPanelLayoutDefaults :one
+UPDATE users
+SET
+  default_desktop_layout_id = $2,
+  default_mobile_layout_id = $3
+WHERE id = $1
+RETURNING
+  default_desktop_layout_id,
+  default_mobile_layout_id
+`
+
+type UpdateUserPanelLayoutDefaultsParams struct {
+	ID                     uuid.UUID     `db:"id" json:"id"`
+	DefaultDesktopLayoutID uuid.NullUUID `db:"default_desktop_layout_id" json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  uuid.NullUUID `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
+}
+
+type UpdateUserPanelLayoutDefaultsRow struct {
+	DefaultDesktopLayoutID uuid.NullUUID `db:"default_desktop_layout_id" json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  uuid.NullUUID `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
+}
+
+func (q *sqlQuerier) UpdateUserPanelLayoutDefaults(ctx context.Context, arg UpdateUserPanelLayoutDefaultsParams) (UpdateUserPanelLayoutDefaultsRow, error) {
+	row := q.db.QueryRow(ctx, updateUserPanelLayoutDefaults, arg.ID, arg.DefaultDesktopLayoutID, arg.DefaultMobileLayoutID)
+	var i UpdateUserPanelLayoutDefaultsRow
+	err := row.Scan(&i.DefaultDesktopLayoutID, &i.DefaultMobileLayoutID)
+	return i, err
+}
+
 const countUserPanelLayoutsTotal = `-- name: CountUserPanelLayoutsTotal :one
 SELECT
   (SELECT COUNT(*) FROM user_panel_layouts upl WHERE upl.user_id = $1) +
@@ -2572,7 +2621,7 @@ INSERT INTO
   users(id, username, email, created_at, updated_at)
 VALUES
   ($1, $2, $3, $4, $5)
-RETURNING id, username, email, created_at, updated_at
+RETURNING id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id
 `
 
 type InsertUserParams struct {
@@ -2598,6 +2647,8 @@ func (q *sqlQuerier) InsertUser(ctx context.Context, arg InsertUserParams) (User
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DefaultDesktopLayoutID,
+		&i.DefaultMobileLayoutID,
 	)
 	return i, err
 }

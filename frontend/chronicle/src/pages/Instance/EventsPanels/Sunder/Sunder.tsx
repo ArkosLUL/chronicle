@@ -5,7 +5,7 @@
  * Log view: Shows detailed breakdown of targets and time-to-5-stacks
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { Sword } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import {
@@ -78,13 +78,41 @@ export function createSunderPanel(): PanelDefinition<SunderResult, any> {
 }
 
 function SunderContent(props: PanelRenderProps<SunderResult>) {
-  const { result, checkboxChecked: showTargets } = props;
-  
+  const { result, checkboxChecked: showTargets, panelOption, setPanelOption } = props;
+
+  const selectedTargetGuid = useMemo(() => {
+    if (!panelOption) {
+      return null;
+    }
+    const targetToken = panelOption
+      .split(",")
+      .map((token) => token.trim())
+      .find((token) => token.startsWith("target:"));
+
+    return targetToken ? targetToken.slice("target:".length) : null;
+  }, [panelOption]);
+
+  const updateSelectedTargetGuid = useCallback((guid: string | null) => {
+    if (!setPanelOption) {
+      return;
+    }
+
+    const tokens: string[] = [];
+    if (showTargets) {
+      tokens.push("cb");
+    }
+    if (guid) {
+      tokens.push(`target:${guid}`);
+    }
+
+    setPanelOption(tokens.length > 0 ? tokens.join(",") : null);
+  }, [setPanelOption, showTargets]);
+
   const warriors = result ? sortedWarriors(result.warriors) : [];
   const targets = result ? sortedTargets(result.targets) : [];
-  
+
   const hasData = warriors.length > 0;
-  
+
   return (
     <GenericPanel {...props}>
       {!hasData ? (
@@ -93,7 +121,11 @@ function SunderContent(props: PanelRenderProps<SunderResult>) {
         </div>
       ) : showTargets ? (
         /* Targets view - shows time to 5 stacks and contributors */
-        <TargetsView targets={targets} />
+        <TargetsView
+          targets={targets}
+          selectedTargetGuid={selectedTargetGuid}
+          onSelectTargetGuid={updateSelectedTargetGuid}
+        />
       ) : (
         /* Summary view - shows warrior effectiveness */
         <WarriorsView warriors={warriors} />
@@ -163,10 +195,11 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
 
 interface TargetsViewProps {
   targets: TargetSunderStats[];
+  selectedTargetGuid: string | null;
+  onSelectTargetGuid: (guid: string | null) => void;
 }
 
-function TargetsView({ targets }: TargetsViewProps) {
-  const [selectedTargetGuid, setSelectedTargetGuid] = useState<string | null>(null);
+function TargetsView({ targets, selectedTargetGuid, onSelectTargetGuid }: TargetsViewProps) {
   
   // Filter to only targets that reached 5 stacks
   const targetsWithFive = targets.filter(t => t.timeToFiveStacksMs !== null);
@@ -183,7 +216,7 @@ function TargetsView({ targets }: TargetsViewProps) {
         {selectedTarget && (
           <button 
             type="button"
-            onClick={() => setSelectedTargetGuid(null)}
+            onClick={() => onSelectTargetGuid(null)}
             className="ml-2 text-blue-400 hover:text-blue-300 cursor-pointer"
           >
             [clear selection]
@@ -192,7 +225,7 @@ function TargetsView({ targets }: TargetsViewProps) {
       </div>
       
       {selectedTarget ? (
-        <DebugBreakout target={selectedTarget} onClose={() => setSelectedTargetGuid(null)} />
+        <DebugBreakout target={selectedTarget} onClose={() => onSelectTargetGuid(null)} />
       ) : (
         <>
           <ScrollArea className="max-h-panel">
@@ -209,7 +242,7 @@ function TargetsView({ targets }: TargetsViewProps) {
                   <tr
                     key={target.guid}
                     className="border-b border-border/10 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => setSelectedTargetGuid(target.guid)}
+                    onClick={() => onSelectTargetGuid(target.guid)}
                     data-sunder-target-row={index === 0 ? true : undefined}
                   >
                     <td className="py-1 px-2 font-medium text-orange-400 whitespace-nowrap">
@@ -239,7 +272,7 @@ function TargetsView({ targets }: TargetsViewProps) {
                   <div key={target.guid} className="py-0.5">
                     <button
                       type="button"
-                      onClick={() => setSelectedTargetGuid(target.guid)}
+                      onClick={() => onSelectTargetGuid(target.guid)}
                       className="text-orange-400/70 hover:text-orange-400 cursor-pointer"
                     >
                       {target.name}

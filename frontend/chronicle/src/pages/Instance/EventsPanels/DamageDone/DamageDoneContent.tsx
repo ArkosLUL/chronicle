@@ -87,41 +87,22 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
 
 type PetDamageGrouping = "owner" | "pet" | "pet_name";
 
-interface PetDamagePanelContext {
-  petGrouping?: PetDamageGrouping;
-  // Legacy compatibility with previously shipped boolean context
-  groupPetsSeparately?: boolean;
-}
-
 interface EnemyDamagePanelContext {
   enemyGrouping?: EnemyDamageGrouping;
 }
 
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { sourceType = "players" } = props;
-  const { result, context, panelContext, setPanelContext } = props;
+  const { result, context, panelContext, setPanelContext, panelOption, setPanelOption } = props;
   const [showRanks, setShowRanks] = useState(false);
 
-  const petPanelContext = sourceType === "pets"
-    ? (panelContext as PetDamagePanelContext | null)
-    : null;
-  const petGrouping: PetDamageGrouping =
-    petPanelContext?.petGrouping ??
-    (petPanelContext?.groupPetsSeparately === true ? "pet" : "owner");
+  const petGrouping: PetDamageGrouping = sourceType === "pets" && panelOption
+    ? (panelOption === "pet" || panelOption === "pet_name" ? panelOption : "owner")
+    : "owner";
 
   const setPetGrouping = (grouping: PetDamageGrouping) => {
-    if (!setPanelContext) return;
-
-    if (grouping === "owner") {
-      setPanelContext(null);
-      return;
-    }
-
-    const nextContext: PetDamagePanelContext = { ...(petPanelContext ?? {}) };
-    nextContext.petGrouping = grouping;
-    delete nextContext.groupPetsSeparately;
-
-    setPanelContext(nextContext as Record<string, unknown>);
+    if (!setPanelOption) return;
+    setPanelOption(grouping === "owner" ? null : grouping);
   };
 
   const enemyPanelContext = sourceType === "enemies"

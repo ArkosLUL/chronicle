@@ -1333,8 +1333,9 @@ export function InstancePageView({
 
   const isMobile = useIsMobile();
   const { data: session } = useSession();
+  const isLoggedIn = !!session?.user_id;
   const createShare = useCreateShare();
-  const instanceDefaults = useInstanceDefaultsCache(!!session?.user_id);
+  const instanceDefaults = useInstanceDefaultsCache(isLoggedIn);
 
   const cachedDefaultLayout = useMemo(() => {
     const layout = isMobile
@@ -1978,6 +1979,7 @@ export function InstancePageView({
         version?: number;
         items?: GridEditorItem[];
         panelTypesById?: Record<string, EventsPanelType>;
+        panelOptionsById?: Record<string, string>;
       };
 
       if (parsed.version !== 1) {
@@ -1999,7 +2001,11 @@ export function InstancePageView({
 
       const orderedItems = orderLayoutItems(normalizedItems);
       const orderedPanels = orderedItems.map((item) => (importedTypes[item.id] ?? "empty") as PanelType);
-      setPanels(orderedPanels, orderedPanels.map(() => null));
+      const orderedOptions = orderedItems.map((item) => {
+        const option = parsed.panelOptionsById?.[item.id];
+        return typeof option === "string" ? option : null;
+      });
+      setPanels(orderedPanels, orderedOptions);
 
       setImportedLayoutItems(orderedItems);
 
@@ -2062,7 +2068,7 @@ export function InstancePageView({
     }
   }, [applySharedViewPayload]);
 
-  const handleShareButtonContextMenu = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+  const handleShareButtonContextMenu = useCallback((event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
     setShareContextMenu({ x: event.clientX, y: event.clientY });
@@ -2108,7 +2114,11 @@ export function InstancePageView({
 
       const orderedItems = orderLayoutItems(normalizedItems);
       const orderedPanels = orderedItems.map((item) => (castTypes[item.id] ?? "empty") as PanelType);
-      setPanels(orderedPanels, orderedPanels.map(() => null));
+      const orderedOptions = orderedItems.map((item) => {
+        const option = parsed.panelOptionsById?.[item.id];
+        return typeof option === "string" ? option : null;
+      });
+      setPanels(orderedPanels, orderedOptions);
       setImportedLayoutItems(orderedItems);
       toast.success("Cast layout", { description: layout.title });
     } catch {
@@ -2249,18 +2259,25 @@ export function InstancePageView({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => {
-                void handleShareView();
-              }}
-              onContextMenu={handleShareButtonContextMenu}
-            >
-              <Share2 className="h-4 w-4" />
-              Share
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span onContextMenu={handleShareButtonContextMenu}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={!isLoggedIn}
+                    onClick={() => {
+                      void handleShareView();
+                    }}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!isLoggedIn && <TooltipContent>You must be logged in to share</TooltipContent>}
+            </Tooltip>
             {youtubeButton}
             {shareContextMenu && (
               <div
@@ -2269,7 +2286,8 @@ export function InstancePageView({
               >
                 <button
                   type="button"
-                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  disabled={!isLoggedIn}
+                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
                   onClick={() => {
                     setShareContextMenu(null);
                     void handleShareView();
@@ -2295,7 +2313,7 @@ export function InstancePageView({
                     void copyStateToClipboard();
                   }}
                 >
-                  Copy state to clipboard
+                  Copy to clipboard
                 </button>
               </div>
             )}

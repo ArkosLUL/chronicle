@@ -89,6 +89,21 @@ function getToggleStorageKey(panelType: string): string {
   return `panel-toggle:${panelType}`;
 }
 
+function parsePanelOptionTokens(option: string | null | undefined): string[] {
+  if (!option) return [];
+  return option
+    .split(",")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
+function buildPanelOptionFromTokens(tokens: string[]): string | null {
+  if (tokens.length === 0) {
+    return null;
+  }
+  return tokens.join(",");
+}
+
 export interface EventsPanelProps {
   panelType: EventsPanelType;
   onPanelTypeChange: (type: EventsPanelType) => void;
@@ -123,12 +138,37 @@ export function EventsPanel({
   // Determine checkbox label first (needed for storage key)
   const checkboxLabel = panel.checkboxLabel || "Per second";
   const showCheckbox = panel.supportsPerSecond || panel.checkboxLabel;
-  
-  // Persist toggle state to localStorage per panel type
-  const [checkboxChecked, setCheckboxChecked] = useLocalStorage(
+  const perSecondToggle = Boolean(panel.supportsPerSecond);
+
+  // "Per second" toggles stay local-only by design.
+  const [perSecondChecked, setPerSecondChecked] = useLocalStorage(
     getToggleStorageKey(panelType),
-    false
+    false,
   );
+
+  // Custom checkbox panels (e.g. Sunder "Show targets") serialize checkbox state in panelOption.
+  const customToggleTokens = useMemo(() => parsePanelOptionTokens(panelOption), [panelOption]);
+  const checkboxChecked = perSecondToggle
+    ? perSecondChecked
+    : customToggleTokens.includes("cb");
+
+  const setCheckboxChecked = useCallback((checked: boolean) => {
+    if (perSecondToggle) {
+      setPerSecondChecked(checked);
+      return;
+    }
+
+    if (!onPanelOptionChange) {
+      return;
+    }
+
+    const nextTokens = customToggleTokens.filter((token) => token !== "cb");
+    if (checked) {
+      nextTokens.unshift("cb");
+    }
+
+    onPanelOptionChange(buildPanelOptionFromTokens(nextTokens));
+  }, [customToggleTokens, onPanelOptionChange, perSecondToggle, setPerSecondChecked]);
   
   // Panel-scoped context for processor/render options (e.g., vulnerability school mask).
   const [panelContext, setPanelContext] = useState<Record<string, unknown> | null>(null);

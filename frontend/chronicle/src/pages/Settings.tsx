@@ -727,15 +727,19 @@ function transformToInstance(
 function LivePanelTile({
   item,
   panelType,
+  panelOption,
   context,
   durationMs,
   onPanelTypeChange,
+  onPanelOptionChange,
 }: {
   item: GridEditorItem;
   panelType: EventsPanelType;
+  panelOption: string | null;
   context: PanelContext;
   durationMs: number;
   onPanelTypeChange: (next: EventsPanelType) => void;
+  onPanelOptionChange: (option: string | null) => void;
 }) {
   return (
     <EventsPanel
@@ -743,6 +747,8 @@ function LivePanelTile({
       onPanelTypeChange={onPanelTypeChange}
       durationMs={durationMs}
       context={context}
+      panelOption={panelOption}
+      onPanelOptionChange={onPanelOptionChange}
       panelIndex={Number(item.id.replace("panel-", "")) - 1}
       showHints={false}
     />
@@ -791,6 +797,7 @@ export function LayoutLabSettings() {
 
   const [items, setItems] = useState<GridEditorItem[]>(DEFAULT_INSTANCE_LAYOUT_ITEMS);
   const [panelTypesById, setPanelTypesById] = useState<Record<string, EventsPanelType>>(DEFAULT_INSTANCE_PANEL_TYPES);
+  const [panelOptionsById, setPanelOptionsById] = useState<Record<string, string | null>>({});
   const [instanceReferenceInput, setInstanceReferenceInput] = useState<string>(() => getStoredLayoutLabInstanceReference());
   const [instanceReference, setInstanceReference] = useState<string>(() => normalizeInstanceReference(getStoredLayoutLabInstanceReference()));
   const [importText, setImportText] = useState("");
@@ -922,6 +929,9 @@ export function LayoutLabSettings() {
     queueMicrotask(() => {
       setItems(parsed.items);
       setPanelTypesById(parsed.panelTypesById);
+      setPanelOptionsById(Object.fromEntries(
+        Object.entries(parsed.panelOptionsById ?? {}).map(([itemId, value]) => [itemId, value ?? null]),
+      ));
       setMetaTitle(activeLayout.title);
       setMetaDescription(activeLayout.description ?? "");
       setMetaIcon(activeLayout.icon || "INV_Misc_Book_09");
@@ -946,7 +956,7 @@ export function LayoutLabSettings() {
         title: trimmedTitle || editingLayout.title,
         description: metaDescription,
         icon: metaIcon,
-        payload: JSON.parse(serializeLayoutLab(items, panelTypesById)),
+        payload: JSON.parse(serializeLayoutLab(items, panelTypesById, panelOptionsById)),
       } as never);
       toast.success("Layout saved", { description: trimmedTitle || editingLayout.title });
     } catch (error) {
@@ -990,6 +1000,7 @@ export function LayoutLabSettings() {
   const handlePanelTypeChange = (itemId: string, nextType: EventsPanelType) => {
     if (readOnly) return;
     setPanelTypesById((prev) => ({ ...prev, [itemId]: nextType }));
+    setPanelOptionsById((prev) => ({ ...prev, [itemId]: null }));
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
@@ -1006,6 +1017,11 @@ export function LayoutLabSettings() {
     if (readOnly) return;
     setItems((prev) => prev.filter((item) => item.id !== itemId));
     setPanelTypesById((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setPanelOptionsById((prev) => {
       const next = { ...prev };
       delete next[itemId];
       return next;
@@ -1039,10 +1055,16 @@ export function LayoutLabSettings() {
       },
     ]);
     setPanelTypesById((prev) => ({ ...prev, [newId]: newType }));
+    setPanelOptionsById((prev) => ({ ...prev, [newId]: null }));
+  };
+
+  const handlePanelOptionChange = (itemId: string, option: string | null) => {
+    if (readOnly) return;
+    setPanelOptionsById((prev) => ({ ...prev, [itemId]: option }));
   };
 
   const handleExport = async () => {
-    const serialized = serializeLayoutLab(items, panelTypesById);
+    const serialized = serializeLayoutLab(items, panelTypesById, panelOptionsById);
     await navigator.clipboard.writeText(serialized);
     toast.success("Layout copied to clipboard");
   };
@@ -1053,6 +1075,9 @@ export function LayoutLabSettings() {
       const parsed = parseLayoutLab(importText);
       setItems(parsed.items);
       setPanelTypesById(parsed.panelTypesById);
+      setPanelOptionsById(Object.fromEntries(
+        Object.entries(parsed.panelOptionsById ?? {}).map(([itemId, value]) => [itemId, value ?? null]),
+      ));
       setImportError(null);
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Invalid layout JSON");
@@ -1305,6 +1330,9 @@ export function LayoutLabSettings() {
                     const parsed = parsePanelLayout(activeLayout);
                     setItems(parsed.items);
                     setPanelTypesById(parsed.panelTypesById);
+                    setPanelOptionsById(Object.fromEntries(
+                      Object.entries(parsed.panelOptionsById ?? {}).map(([itemId, value]) => [itemId, value ?? null]),
+                    ));
                   }}
                 >
                   Reset layout
@@ -1388,9 +1416,11 @@ export function LayoutLabSettings() {
                       <LivePanelTile
                         item={item}
                         panelType={panelType}
+                        panelOption={panelOptionsById[item.id] ?? null}
                         context={context}
                         durationMs={durationMs}
                         onPanelTypeChange={(next) => handlePanelTypeChange(item.id, next)}
+                        onPanelOptionChange={(option) => handlePanelOptionChange(item.id, option)}
                       />
 
                       {!readOnly ? (

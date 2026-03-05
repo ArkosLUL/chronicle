@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Layers } from "lucide-react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
@@ -112,9 +112,31 @@ interface HealingDoneContentProps extends PanelRenderProps<UnifiedHealingResult>
 
 export const HealingDoneContent = (props: HealingDoneContentProps) => {
   const { sourceType = "players" } = props;
-  const { result, context } = props;
-  const [viewMode, setViewMode] = useState<HealingViewMode>("effective");
-  const [showRanks, setShowRanks] = useState(false);
+  const { result, context, panelOption, setPanelOption } = props;
+
+  const { viewMode, showRanks } = useMemo(() => {
+    const tokens = (panelOption ?? "").split(",").map((token) => token.trim()).filter(Boolean);
+    const modeToken = tokens.find((token): token is HealingViewMode => (
+      token === "effective" || token === "overheal" || token === "total"
+    ));
+
+    return {
+      viewMode: modeToken ?? "effective",
+      showRanks: tokens.includes("ranks"),
+    };
+  }, [panelOption]);
+
+  const updatePanelOption = (nextMode: HealingViewMode, nextShowRanks: boolean) => {
+    const tokens: string[] = [];
+    if (nextMode !== "effective") {
+      tokens.push(nextMode);
+    }
+    if (nextShowRanks) {
+      tokens.push("ranks");
+    }
+
+    setPanelOption?.(tokens.length > 0 ? tokens.join(",") : null);
+  };
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -185,7 +207,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => setShowRanks(!showRanks)}
+                  onClick={() => updatePanelOption(viewMode, !showRanks)}
                   className={cn(
                     "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
                     showRanks
@@ -212,7 +234,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
               <button
                 key={mode}
                 type="button"
-                onClick={() => setViewMode(mode)}
+                onClick={() => updatePanelOption(mode, showRanks)}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
                   viewMode === mode

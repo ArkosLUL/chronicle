@@ -4,7 +4,7 @@
  * Shows judgement uptime per target with benefit tracking
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Scale } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps, PanelContext } from "../types";
 import {
@@ -252,6 +252,8 @@ function JudgementContent(props: PanelRenderProps<JudgementResult>) {
           unitActiveTimeMap={unitActiveTimeMap} 
           jolBenefit={result?.jolBenefit}
           jolOverheal={jolOverheal}
+          panelOption={props.panelOption}
+          setPanelOption={props.setPanelOption}
         />
       )}
     </GenericPanel>
@@ -263,12 +265,32 @@ interface TargetsViewProps {
   unitActiveTimeMap: Map<string, number>;
   jolBenefit?: { totalHealing: number; byPlayer: Map<string, number> };
   jolOverheal: number;
+  panelOption?: string | null;
+  setPanelOption?: (option: string | null) => void;
 }
 
-function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal }: TargetsViewProps) {
-  const [selectedTargetGuid, setSelectedTargetGuid] = useState<string | null>(null);
+function TargetsView({ targets, unitActiveTimeMap, jolBenefit, jolOverheal, panelOption, setPanelOption }: TargetsViewProps) {
+  const selectedTargetGuid = useMemo(() => {
+    if (!panelOption) {
+      return null;
+    }
+    const targetToken = panelOption
+      .split(",")
+      .map((token) => token.trim())
+      .find((token) => token.startsWith("target:"));
+
+    return targetToken ? targetToken.slice("target:".length) : null;
+  }, [panelOption]);
   const [sortColumn, setSortColumn] = useState<SortColumn>("light");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const setSelectedTargetGuid = useCallback((guid: string | null) => {
+    if (!setPanelOption) {
+      return;
+    }
+
+    setPanelOption(guid ? `target:${guid}` : null);
+  }, [setPanelOption]);
 
   const selectedTarget = selectedTargetGuid
     ? targets.find((t) => t.guid === selectedTargetGuid)

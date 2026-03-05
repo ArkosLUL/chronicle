@@ -257,12 +257,10 @@ export function createDamageDoneProcessor(
       if (sourceType === "pets" && isFriendlyFire) return;
       if (sourceType === "friendly_fire" && !isFriendlyFire) return;
 
-      const petPanelContext = context.panelContext as {
-        petGrouping?: "owner" | "pet" | "pet_name";
-        groupPetsSeparately?: boolean;
-      } | null;
       const petGrouping = sourceType === "pets"
-        ? (petPanelContext?.petGrouping ?? (petPanelContext?.groupPetsSeparately === true ? "pet" : "owner"))
+        ? (context.panelOption === "pet" || context.panelOption === "pet_name"
+            ? context.panelOption
+            : "owner")
         : "owner";
       const groupPetsSeparately = petGrouping === "pet";
       const groupPetsByName = petGrouping === "pet_name";

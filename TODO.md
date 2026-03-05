@@ -58,5 +58,9 @@ References
 
 # UI State
 
-The entire UI state should be json serializable and stored in local storage.
-Add back recent memory but instead of auto loading have a button to "return to last visit" or something.
+- The entire UI state should be json serializable and stored in local storage.
+- Add back recent memory but instead of auto loading have a button to "return to last visit" or something.
+
+# Custom panels
+
+A step to custom panels is to add the ability to write any filter to a given panel. Ability name, targets, school, etc. It would flip the panel to see the back, where you can tweak these things.

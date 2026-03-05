@@ -39,11 +39,16 @@ func New(zed *authz.Authz) *Handler {
 
 func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
+	r.Get("/defaults", h.GetLayoutDefaults)
+	r.Put("/defaults", h.UpdateLayoutDefaults)
+	r.Get("/instance-defaults", h.GetInstanceDefaults)
+	r.Get("/action-bar", h.GetActionBarSlots)
+	r.Put("/action-bar", h.UpdateActionBarSlots)
+	r.Get("/shared/{layoutID}", h.GetSharedLayout)
 	r.Route("/{userID}", func(r chi.Router) {
 		r.Use(httpmw.UserIDMiddleware(h.zed))
 		r.Get("/", h.ListUserPanelLayouts)
 	})
-	r.Get("/shared/{layoutID}", h.GetSharedLayout)
 	r.Post("/track", h.TrackLayout)
 	r.Delete("/track/{layoutID}", h.UntrackLayout)
 	r.Post("/", h.CreateUserPanelLayout)
@@ -107,6 +112,124 @@ func toStringPtr(value pgtype.Text) *string {
 
 func toNullUUID(id uuid.UUID) uuid.NullUUID {
 	return uuid.NullUUID{UUID: id, Valid: true}
+}
+
+func toNullUUIDPtr(id *uuid.UUID) uuid.NullUUID {
+	if id == nil {
+		return uuid.NullUUID{}
+	}
+	return uuid.NullUUID{UUID: *id, Valid: true}
+}
+
+func nullUUIDToPtr(id uuid.NullUUID) *uuid.UUID {
+	if !id.Valid {
+		return nil
+	}
+	value := id.UUID
+	return &value
+}
+
+func layoutDefaultsToSDK(desktopID uuid.NullUUID, mobileID uuid.NullUUID) chroniclesdk.LayoutDefaultsResponse {
+	return chroniclesdk.LayoutDefaultsResponse{
+		DefaultDesktopLayoutID: nullUUIDToPtr(desktopID),
+		DefaultMobileLayoutID:  nullUUIDToPtr(mobileID),
+	}
+}
+
+func actionBarSlotsRowToSDK(row database.GetUserActionBarSlotsRow) chroniclesdk.ActionBarSlotsResponse {
+	return chroniclesdk.ActionBarSlotsResponse{
+		Slot1: nullUUIDToPtr(row.Slot1),
+		Slot2: nullUUIDToPtr(row.Slot2),
+		Slot3: nullUUIDToPtr(row.Slot3),
+		Slot4: nullUUIDToPtr(row.Slot4),
+		Slot5: nullUUIDToPtr(row.Slot5),
+		Slot6: nullUUIDToPtr(row.Slot6),
+		Slot7: nullUUIDToPtr(row.Slot7),
+		Slot8: nullUUIDToPtr(row.Slot8),
+		Slot9: nullUUIDToPtr(row.Slot9),
+		Slot0: nullUUIDToPtr(row.Slot0),
+	}
+}
+
+func actionBarSlotsUpsertRowToSDK(row database.UpsertUserActionBarSlotsRow) chroniclesdk.ActionBarSlotsResponse {
+	return chroniclesdk.ActionBarSlotsResponse{
+		Slot1: nullUUIDToPtr(row.Slot1),
+		Slot2: nullUUIDToPtr(row.Slot2),
+		Slot3: nullUUIDToPtr(row.Slot3),
+		Slot4: nullUUIDToPtr(row.Slot4),
+		Slot5: nullUUIDToPtr(row.Slot5),
+		Slot6: nullUUIDToPtr(row.Slot6),
+		Slot7: nullUUIDToPtr(row.Slot7),
+		Slot8: nullUUIDToPtr(row.Slot8),
+		Slot9: nullUUIDToPtr(row.Slot9),
+		Slot0: nullUUIDToPtr(row.Slot0),
+	}
+}
+
+func emptyActionBarSlotsSDK() chroniclesdk.ActionBarSlotsResponse {
+	return chroniclesdk.ActionBarSlotsResponse{}
+}
+
+func actionBarSlotsRequestToParams(userID uuid.UUID, req chroniclesdk.UpdateActionBarSlotsRequest) database.UpsertUserActionBarSlotsParams {
+	return database.UpsertUserActionBarSlotsParams{
+		UserID: userID,
+		Slot1:  toNullUUIDPtr(req.Slot1),
+		Slot2:  toNullUUIDPtr(req.Slot2),
+		Slot3:  toNullUUIDPtr(req.Slot3),
+		Slot4:  toNullUUIDPtr(req.Slot4),
+		Slot5:  toNullUUIDPtr(req.Slot5),
+		Slot6:  toNullUUIDPtr(req.Slot6),
+		Slot7:  toNullUUIDPtr(req.Slot7),
+		Slot8:  toNullUUIDPtr(req.Slot8),
+		Slot9:  toNullUUIDPtr(req.Slot9),
+		Slot0:  toNullUUIDPtr(req.Slot0),
+	}
+}
+
+func parseOptionalLayoutID(raw json.RawMessage) (present bool, value *uuid.UUID, err error) {
+	if len(raw) == 0 {
+		return false, nil, nil
+	}
+
+	if string(raw) == "null" {
+		return true, nil, nil
+	}
+
+	var rawID string
+	if err := json.Unmarshal(raw, &rawID); err != nil {
+		return true, nil, fmt.Errorf("must be a UUID string or null")
+	}
+
+	parsed, err := uuid.Parse(rawID)
+	if err != nil {
+		return true, nil, fmt.Errorf("must be a valid UUID")
+	}
+
+	return true, &parsed, nil
+}
+
+func (h *Handler) canUseLayoutAsDefault(ctx context.Context, userID uuid.UUID, layoutID uuid.UUID) (bool, error) {
+	layout, err := h.zed.GetPanelLayoutByID(ctx, layoutID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if layout.UserID.Valid && layout.UserID.UUID == userID {
+		return true, nil
+	}
+
+	tracked, err := h.zed.IsLayoutTrackedByUser(ctx, database.IsLayoutTrackedByUserParams{
+		UserID:   userID,
+		LayoutID: layoutID,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return tracked, nil
 }
 
 func panelLayoutToSDK(row database.UserPanelLayout) chroniclesdk.UserPanelLayout {
@@ -186,6 +309,234 @@ func (h *Handler) ensureUserLayoutLimitNotReached(ctx context.Context, w http.Re
 	return true
 }
 
+func actionBarSlotIDs(slots chroniclesdk.ActionBarSlotsResponse) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, 10)
+	for _, slot := range []*uuid.UUID{slots.Slot1, slots.Slot2, slots.Slot3, slots.Slot4, slots.Slot5, slots.Slot6, slots.Slot7, slots.Slot8, slots.Slot9, slots.Slot0} {
+		if slot != nil {
+			ids = append(ids, *slot)
+		}
+	}
+	return ids
+}
+
+func (h *Handler) GetLayoutDefaults(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	defaults, err := h.zed.GetUserPanelLayoutDefaults(ctx, claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, layoutDefaultsToSDK(defaults.DefaultDesktopLayoutID, defaults.DefaultMobileLayoutID))
+}
+
+func (h *Handler) GetInstanceDefaults(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	defaults, err := h.zed.GetUserPanelLayoutDefaults(ctx, claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	actionBarSlots, err := h.zed.GetUserActionBarSlots(ctx, claims.Subject)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	actionBarResp := emptyActionBarSlotsSDK()
+	if !errors.Is(err, sql.ErrNoRows) {
+		actionBarResp = actionBarSlotsRowToSDK(actionBarSlots)
+	}
+
+	layoutIDs := map[uuid.UUID]struct{}{}
+	if defaults.DefaultDesktopLayoutID.Valid {
+		layoutIDs[defaults.DefaultDesktopLayoutID.UUID] = struct{}{}
+	}
+	if defaults.DefaultMobileLayoutID.Valid {
+		layoutIDs[defaults.DefaultMobileLayoutID.UUID] = struct{}{}
+	}
+	for _, id := range actionBarSlotIDs(actionBarResp) {
+		layoutIDs[id] = struct{}{}
+	}
+
+	layoutsByID := make(map[uuid.UUID]chroniclesdk.UserPanelLayout, len(layoutIDs))
+	for layoutID := range layoutIDs {
+		layout, fetchErr := h.zed.GetPanelLayoutByID(ctx, layoutID)
+		if fetchErr != nil {
+			if errors.Is(fetchErr, sql.ErrNoRows) {
+				continue
+			}
+			httpapi.InternalServerError(w, fetchErr)
+			return
+		}
+
+		sdkLayout := panelLayoutWithTrackerToSDK(layout)
+		layoutsByID[layoutID] = sdkLayout
+	}
+
+	resp := chroniclesdk.InstanceDefaultsResponse{
+		ActionBarSlots:   &actionBarResp,
+		ActionBarLayouts: make([]chroniclesdk.UserPanelLayout, 0, len(actionBarSlotIDs(actionBarResp))),
+	}
+
+	if defaults.DefaultDesktopLayoutID.Valid {
+		if layout, ok := layoutsByID[defaults.DefaultDesktopLayoutID.UUID]; ok {
+			layoutCopy := layout
+			resp.DefaultDesktopLayout = &layoutCopy
+		}
+	}
+	if defaults.DefaultMobileLayoutID.Valid {
+		if layout, ok := layoutsByID[defaults.DefaultMobileLayoutID.UUID]; ok {
+			layoutCopy := layout
+			resp.DefaultMobileLayout = &layoutCopy
+		}
+	}
+
+	seenActionBarLayouts := map[uuid.UUID]struct{}{}
+	for _, id := range actionBarSlotIDs(actionBarResp) {
+		if _, seen := seenActionBarLayouts[id]; seen {
+			continue
+		}
+		layout, ok := layoutsByID[id]
+		if !ok {
+			continue
+		}
+		resp.ActionBarLayouts = append(resp.ActionBarLayouts, layout)
+		seenActionBarLayouts[id] = struct{}{}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+func (h *Handler) UpdateLayoutDefaults(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	var rawReq struct {
+		DefaultDesktopLayoutID json.RawMessage `json:"default_desktop_layout_id"`
+		DefaultMobileLayoutID  json.RawMessage `json:"default_mobile_layout_id"`
+	}
+	if !httpapi.Read(ctx, w, r, &rawReq) {
+		return
+	}
+
+	desktopPresent, desktopID, err := parseOptionalLayoutID(rawReq.DefaultDesktopLayoutID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_desktop_layout_id " + err.Error()})
+		return
+	}
+	mobilePresent, mobileID, err := parseOptionalLayoutID(rawReq.DefaultMobileLayoutID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_mobile_layout_id " + err.Error()})
+		return
+	}
+	if !desktopPresent && !mobilePresent {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "at least one default layout field must be provided"})
+		return
+	}
+
+	if desktopID != nil {
+		allowed, err := h.canUseLayoutAsDefault(ctx, claims.Subject, *desktopID)
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		if !allowed {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_desktop_layout_id must reference a layout you own or track"})
+			return
+		}
+	}
+	if mobileID != nil {
+		allowed, err := h.canUseLayoutAsDefault(ctx, claims.Subject, *mobileID)
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+		if !allowed {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "default_mobile_layout_id must reference a layout you own or track"})
+			return
+		}
+	}
+
+	current, err := h.zed.GetUserPanelLayoutDefaults(ctx, claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	nextDesktop := current.DefaultDesktopLayoutID
+	nextMobile := current.DefaultMobileLayoutID
+	if desktopPresent {
+		nextDesktop = toNullUUIDPtr(desktopID)
+	}
+	if mobilePresent {
+		nextMobile = toNullUUIDPtr(mobileID)
+	}
+
+	updated, err := h.zed.UpdateUserPanelLayoutDefaults(ctx, database.UpdateUserPanelLayoutDefaultsParams{
+		ID:                     claims.Subject,
+		DefaultDesktopLayoutID: nextDesktop,
+		DefaultMobileLayoutID:  nextMobile,
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, layoutDefaultsToSDK(updated.DefaultDesktopLayoutID, updated.DefaultMobileLayoutID))
+}
+
+func (h *Handler) GetActionBarSlots(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	slots, err := h.zed.GetUserActionBarSlots(ctx, claims.Subject)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			empty := emptyActionBarSlotsSDK()
+			httpapi.Write(ctx, w, http.StatusOK, empty)
+			return
+		}
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, actionBarSlotsRowToSDK(slots))
+}
+
+func (h *Handler) UpdateActionBarSlots(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := chronauth.MustAuthenticatedClaims(ctx)
+
+	actor, ok := authz.ActorFromContext(ctx)
+	if !ok {
+		httpapi.Forbidden(w, nil)
+		return
+	}
+	if ok, err := h.zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanCreate_layout_User(actor)); !ok || err != nil {
+		httpapi.Forbidden(w, nil)
+		return
+	}
+
+	var req chroniclesdk.UpdateActionBarSlotsRequest
+	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	updated, err := h.zed.UpsertUserActionBarSlots(ctx, actionBarSlotsRequestToParams(claims.Subject, req))
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, actionBarSlotsUpsertRowToSDK(updated))
+}
+
 func (h *Handler) ListUserPanelLayouts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	targetUser := httpmw.User(ctx)
@@ -196,12 +547,38 @@ func (h *Handler) ListUserPanelLayouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defaults, err := h.zed.GetUserPanelLayoutDefaults(ctx, targetUser.ID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	actionBarSlots, err := h.zed.GetUserActionBarSlots(ctx, targetUser.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	var actionBarResp *chroniclesdk.ActionBarSlotsResponse
+	if errors.Is(err, sql.ErrNoRows) {
+		empty := emptyActionBarSlotsSDK()
+		actionBarResp = &empty
+	} else {
+		mapped := actionBarSlotsRowToSDK(actionBarSlots)
+		actionBarResp = &mapped
+	}
+
 	resp := make([]chroniclesdk.UserPanelLayout, 0, len(layouts))
 	for _, layout := range layouts {
 		resp = append(resp, panelLayoutListRowToSDK(layout))
 	}
 
-	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.ListUserPanelLayoutsResponse{Layouts: resp})
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.ListUserPanelLayoutsResponse{
+		Layouts:                resp,
+		DefaultDesktopLayoutID: nullUUIDToPtr(defaults.DefaultDesktopLayoutID),
+		DefaultMobileLayoutID:  nullUUIDToPtr(defaults.DefaultMobileLayoutID),
+		ActionBarSlots:         actionBarResp,
+	})
 }
 
 func (h *Handler) GetSharedLayout(w http.ResponseWriter, r *http.Request) {

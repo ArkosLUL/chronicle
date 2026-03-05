@@ -2,6 +2,20 @@
 
 import type { GUID } from "@/lib/guid/guid";
 
+// From chroniclesdk/panel_layout.go
+export interface ActionBarSlotsResponse {
+    readonly slot_1: string | null;
+    readonly slot_2: string | null;
+    readonly slot_3: string | null;
+    readonly slot_4: string | null;
+    readonly slot_5: string | null;
+    readonly slot_6: string | null;
+    readonly slot_7: string | null;
+    readonly slot_8: string | null;
+    readonly slot_9: string | null;
+    readonly slot_0: string | null;
+}
+
 // From chroniclesdk/log.go
 export interface ActivityPeriod {
     readonly start?: PeriodMoment;
@@ -182,6 +196,17 @@ export interface GuildPanelPosition {
     readonly h: number;
 }
 
+// From chroniclesdk/panel_layout.go
+/**
+ * InstanceDefaultsResponse provides everything needed by the instance page in one request.
+ */
+export interface InstanceDefaultsResponse {
+    readonly default_desktop_layout: UserPanelLayout | null;
+    readonly default_mobile_layout: UserPanelLayout | null;
+    readonly action_bar_slots: ActionBarSlotsResponse | null;
+    readonly action_bar_layouts: readonly UserPanelLayout[];
+}
+
 // From chroniclesdk/log.go
 export interface InstancePlayer {
     readonly name: string;
@@ -227,6 +252,12 @@ export type KillType = "clean" | "partial" | "reset" | "wipe";
 
 export const KillTypes: KillType[] = ["clean", "partial", "reset", "wipe"];
 
+// From chroniclesdk/panel_layout.go
+export interface LayoutDefaultsResponse {
+    readonly default_desktop_layout_id: string | null;
+    readonly default_mobile_layout_id: string | null;
+}
+
 // From chroniclesdk/guild_page.go
 export interface ListGuildsResponse {
     readonly guilds: readonly GuildInfo[];
@@ -236,6 +267,9 @@ export interface ListGuildsResponse {
 // From chroniclesdk/panel_layout.go
 export interface ListUserPanelLayoutsResponse {
     readonly layouts: readonly UserPanelLayout[];
+    readonly default_desktop_layout_id: string | null;
+    readonly default_mobile_layout_id: string | null;
+    readonly action_bar_slots: ActionBarSlotsResponse | null;
 }
 
 // From chroniclesdk/log.go
@@ -411,9 +445,29 @@ export interface TrackLayoutRequest {
     readonly layout_id: string;
 }
 
+// From chroniclesdk/panel_layout.go
+export interface UpdateActionBarSlotsRequest {
+    readonly slot_1: string | null;
+    readonly slot_2: string | null;
+    readonly slot_3: string | null;
+    readonly slot_4: string | null;
+    readonly slot_5: string | null;
+    readonly slot_6: string | null;
+    readonly slot_7: string | null;
+    readonly slot_8: string | null;
+    readonly slot_9: string | null;
+    readonly slot_0: string | null;
+}
+
 // From chroniclesdk/guild_page.go
 export interface UpdateGuildPageRequest {
     readonly theme: GuildPageTheme;
+}
+
+// From chroniclesdk/panel_layout.go
+export interface UpdateLayoutDefaultsRequest {
+    readonly default_desktop_layout_id?: string;
+    readonly default_mobile_layout_id?: string;
 }
 
 // From chroniclesdk/guild_page.go

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye } from "lucide-react";
+import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   useInstance,
@@ -14,7 +14,10 @@ import {
   useSharedLayout,
   useTrackLayout,
   useUntrackLayout,
+  useUpdateLayoutDefaults,
+  useUpdateActionBarSlots,
   useLogGroups,
+  type ActionBarSlotsResponse,
   type UserPanelLayout,
   type RequestError,
 } from "@/api/queries";
@@ -23,6 +26,8 @@ import { GridLayoutEditor, type GridEditorItem } from "@/components/layout/GridL
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { useInstanceDefaultsCache } from "@/hooks/useInstanceDefaultsCache";
 import { EventsPanel, type EventsPanelType } from "@/pages/Instance/EventsPanels";
 import { PANELS } from "@/pages/Instance/EventsPanels/EventsPanel";
 import type { PanelContext } from "@/pages/Instance/EventsPanels/types";
@@ -33,9 +38,12 @@ import {
   ALTERNATE_INSTANCE_LAYOUT_ITEMS,
   DEFAULT_INSTANCE_PANEL_TYPES,
 } from "@/pages/Instance/viewDefaults";
+import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceActionBar";
+import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarKey, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
+import { buildLayoutSpellTooltip } from "@/features/layoutBook/buildLayoutSpellTooltip";
+import { parseLayoutLab, parsePanelLayout, serializeLayoutLab } from "@/features/layoutBook/parseLayout";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { getSpellIconUrl } from "@/api/wowdb";
-import type { WoWSpell } from "@/api/wowdb";
 import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
 
 const LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY = "layout-lab.instance-reference";
@@ -57,6 +65,40 @@ function setStoredLayoutLabInstanceReference(value: string) {
 const ICON_PAGE_SIZE = 24;
 const MAX_PANELS = 8;
 const LAYOUT_TITLE_PATTERN = /^[A-Za-z0-9_\-\s]+$/;
+
+function createEmptyActionBarSlots(): LayoutActionBarSlots {
+  return Object.fromEntries(LAYOUT_ACTION_BAR_KEYS.map((key) => [key, null])) as LayoutActionBarSlots;
+}
+
+function fromActionBarResponse(slots: ActionBarSlotsResponse | null | undefined): LayoutActionBarSlots {
+  return {
+    "1": slots?.slot_1 ?? null,
+    "2": slots?.slot_2 ?? null,
+    "3": slots?.slot_3 ?? null,
+    "4": slots?.slot_4 ?? null,
+    "5": slots?.slot_5 ?? null,
+    "6": slots?.slot_6 ?? null,
+    "7": slots?.slot_7 ?? null,
+    "8": slots?.slot_8 ?? null,
+    "9": slots?.slot_9 ?? null,
+    "0": slots?.slot_0 ?? null,
+  };
+}
+
+function toActionBarResponse(slots: LayoutActionBarSlots): ActionBarSlotsResponse {
+  return {
+    slot_1: slots["1"],
+    slot_2: slots["2"],
+    slot_3: slots["3"],
+    slot_4: slots["4"],
+    slot_5: slots["5"],
+    slot_6: slots["6"],
+    slot_7: slots["7"],
+    slot_8: slots["8"],
+    slot_9: slots["9"],
+    slot_0: slots["0"],
+  };
+}
 
 function showRequestErrorToast(fallbackMessage: string, error: unknown) {
   const requestError = error as RequestError;
@@ -113,32 +155,84 @@ const tabs: Tab[] = [
 
 export function AccountLayout() {
   const location = useLocation();
+  const isMobile = useIsMobile();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const renderNavLinks = (closeOnNavigate: boolean) => (
+    <ul className="space-y-1">
+      {tabs.map((tab) => (
+        <li key={tab.path}>
+          <Link
+            to={tab.path}
+            onClick={closeOnNavigate ? () => setMobileSidebarOpen(false) : undefined}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              location.pathname === tab.path
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="relative min-h-[calc(100vh-8rem)]">
+        {mobileSidebarOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Close settings menu"
+          />
+        ) : null}
+
+        <nav
+          className={`fixed left-0 top-0 z-50 h-full w-72 border-r bg-background p-4 shadow-xl transition-transform duration-200 ${
+            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Settings</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileSidebarOpen(false)}
+              aria-label="Collapse settings menu"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          {renderNavLinks(true)}
+        </nav>
+
+        <main className="p-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="mb-4 gap-2"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <Menu className="h-4 w-4" />
+            Open settings menu
+          </Button>
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)]">
-      {/* Sidebar */}
       <nav className="w-64 border-r p-4">
         <h1 className="text-lg font-semibold mb-4">Settings</h1>
-        <ul className="space-y-1">
-          {tabs.map((tab) => (
-            <li key={tab.path}>
-              <Link
-                to={tab.path}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                  location.pathname === tab.path
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {renderNavLinks(false)}
       </nav>
 
-      {/* Content */}
       <main className="flex-1 p-8">
         <Outlet />
       </main>
@@ -182,109 +276,27 @@ export function AppearanceSettings() {
   );
 }
 
-function buildLayoutSpellTooltip(layout: {
-  title: string;
-  description: string;
-  icon: string;
-}): WoWSpell {
-  return {
-    id: 0,
-    name: { "0": layout.title },
-    subtext: { "0": "" },
-    description: {
-      "0": layout.description || "No description",
-    },
-    aura_description: { "0": "" },
-    spell_icon: { ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" },
-    active_icon: { ID: 1, TextureFilename: layout.icon || "INV_Misc_Book_09" },
-    spell_level: 0,
-    base_level: 0,
-    max_level: 0,
-    category: { ID: 0, Flags: 0, UsesPerWeek: 0, Name: "", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0 },
-    school: { value: 0, string: "" },
-    spell_class_set: { value: 0, string: "General" },
-    spell_class_mask: 0,
-    power_type: { value: 0, string: "Mana" },
-    mana_cost: 0,
-    mana_cost_pct: 0,
-    mana_cost_per_level: 0,
-    mana_per_second: 0,
-    reagent: [],
-    reagent_count: [],
-    casting_time: { ID: 0, Base: 0, PerLevel: 0, Minimum: 0 },
-    range: { ID: 0, RangeMin: 0, RangeMax: 0, Flags: 0, Name: "Self" },
-    duration: { ID: 0, Duration: 0, DurationPerLevel: 0, MaxDuration: 0 },
-    recovery_time: 0,
-    start_recovery_time: 0,
-    start_recovery_category: 0,
-    category_recovery_time: 0,
-    mechanic: { value: 0, string: "None" },
-    dispel_type: { value: 0, string: "None" },
-    prevention_type: { value: 0, string: "None" },
-    defense_type: { value: 0, string: "None" },
-    caster_aura_state: { value: 0, string: "None" },
-    target_aura_state: { value: 0, string: "None" },
-    interrupt_flags: { mask: 0, string: "" },
-    aura_interrupt_flags: { mask: 0, string: "" },
-    effect: [],
-    effect_aura: [],
-    effect_base_points: [],
-    effect_die_sides: [],
-    effect_base_dice: [],
-    effect_dice_per_level: [],
-    effect_real_points_per_level: [],
-    effect_aura_period: [],
-    effect_amplitude: [],
-    effect_chain_amplitude: [],
-    effect_chain_targets: [],
-    effect_trigger_spell: [],
-    effect_item_type: [],
-    effect_misc_value: [],
-    effect_mechanic: [],
-    effect_points_per_combo: [],
-    effect_radius: [],
-    implicit_target_a: [],
-    implicit_target_b: [],
-    proc_chance: 0,
-    proc_charges: 0,
-    proc_type_mask: { mask: 0, string: "" },
-    proc_flags: { mask: 0, string: "" },
-    targets: { mask: 0, string: "" },
-    max_targets: 0,
-    max_target_level: 0,
-    target_creature_type: { mask: 0, string: "" },
-    attributes: { blocks: [], string: "" },
-    equipped_item_class: { value: 0, string: "None" },
-    equipped_item_subclass: 0,
-    equipped_item_inv_types: { mask: 0, string: "" },
-    speed: 0,
-    spell_priority: 0,
-    stance_bar_order: 0,
-    cumulative_aura: 0,
-    modal_next_spell: 0,
-    requires_spell_focus: { ID: 0, Name: "" },
-    totems_id: 0,
-    totem: [],
-    cast_ui: 0,
-    required_aura_vision: 0,
-    min_faction_id: 0,
-    min_reputation: 0,
-    spell_visual_id: [],
-    damage_type: 0,
-  };
-}
-
 export function LayoutBookSettings() {
   const navigate = useNavigate();
   const { data: session } = useSession();
+  useInstanceDefaultsCache(!!session?.user_id);
   const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
   const createLayout = useCreatePanelLayout();
   const deleteLayout = useDeletePanelLayout();
   const untrackLayout = useUntrackLayout();
+  const updateLayoutDefaults = useUpdateLayoutDefaults();
+  const updateActionBarSlots = useUpdateActionBarSlots();
 
   const layouts = layoutsResponse?.layouts ?? [];
+  const defaultDesktopLayoutID = layoutsResponse?.default_desktop_layout_id;
+  const defaultMobileLayoutID = layoutsResponse?.default_mobile_layout_id;
   const [name, setName] = useState("");
+  const [actionBarSlots, setActionBarSlots] = useState<LayoutActionBarSlots>(createEmptyActionBarSlots);
   const [layoutType, setLayoutType] = useState<"standard" | "alternate">("standard");
+
+  useEffect(() => {
+    setActionBarSlots(fromActionBarResponse(layoutsResponse?.action_bar_slots));
+  }, [layoutsResponse?.action_bar_slots]);
 
   const handleCreate = async () => {
     const trimmed = name.trim();
@@ -329,11 +341,58 @@ export function LayoutBookSettings() {
     }
   };
 
+  const handleToggleDefault = async (
+    device: "desktop" | "mobile",
+    layout: UserPanelLayout,
+    isCurrentlyDefault: boolean,
+  ) => {
+    try {
+      await updateLayoutDefaults.mutateAsync(
+        device === "desktop"
+          ? { default_desktop_layout_id: isCurrentlyDefault ? null : layout.id }
+          : { default_mobile_layout_id: isCurrentlyDefault ? null : layout.id },
+      );
+
+      const actionLabel = isCurrentlyDefault ? "cleared" : "updated";
+      toast.success(`${device === "desktop" ? "Desktop" : "Mobile"} default ${actionLabel}`, {
+        description: layout.title,
+      });
+    } catch (error) {
+      showRequestErrorToast(
+        `Failed to ${isCurrentlyDefault ? "clear" : "set"} ${device} default`,
+        error,
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Layout Book</h2>
         <p className="text-muted-foreground">Manage and edit your saved layouts.</p>
+      </div>
+
+      <div className="sticky top-3 z-20 space-y-3 rounded-lg border border-zinc-700/70 bg-background/95 p-4 shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/85">
+        <h3 className="font-medium flex items-center gap-2">
+          <LayoutTemplate className="h-4 w-4" />
+          Instance Action Bar
+        </h3>
+        <p className="text-sm text-muted-foreground">Assign layouts to hotkey slots (1-0). Click a slot to assign a layout. Middle click to empty a slot.</p>
+        <InstanceActionBar
+          slots={actionBarSlots}
+          layouts={layouts}
+          onAssign={(key: LayoutActionBarKey, layoutID: string | null) => {
+            const nextSlots = {
+              ...actionBarSlots,
+              [key]: layoutID,
+            };
+            setActionBarSlots(nextSlots);
+            void updateActionBarSlots.mutateAsync(toActionBarResponse(nextSlots)).catch((error) => {
+              setActionBarSlots(actionBarSlots);
+              showRequestErrorToast("Failed to update action bar slot", error);
+            });
+          }}
+        />
       </div>
 
       <div className="rounded-lg border p-4 space-y-3">
@@ -367,15 +426,17 @@ export function LayoutBookSettings() {
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {layouts.map((layout) => {
-              const tooltipLayout = {
-                title: layout.title,
-                description: layout.description,
-                icon: layout.icon,
-              };
+                const tooltipLayout = {
+                  title: layout.title,
+                  description: layout.description,
+                  icon: layout.icon,
+                };
+                const isDesktopDefault = layout.id === defaultDesktopLayoutID;
+                const isMobileDefault = layout.id === defaultMobileLayoutID;
 
-              return (
+                return (
                 <div key={layout.id} className={`rounded-md border p-3 sm:p-4 ${layout.is_tracked ? "bg-secondary/15" : "bg-primary/10"}`}>
-                  <div className="group inline-flex items-start gap-3 text-left rounded-md px-1.5 py-1">
+                  <div className="group flex w-full items-start gap-3 text-left rounded-md px-1.5 py-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button type="button" className="shrink-0">
@@ -394,10 +455,58 @@ export function LayoutBookSettings() {
                       </TooltipContent>
                     </Tooltip>
 
-                    <div className="min-w-0">
-                      <div className="text-lg leading-none font-medium text-amber-100 tracking-tight [text-shadow:0_1px_0_rgba(0,0,0,0.65)]">
-                        {layout.title}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-lg leading-none font-medium text-amber-100 tracking-tight [text-shadow:0_1px_0_rgba(0,0,0,0.65)]">
+                          {layout.title}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={`h-8 w-8 border-2 transition-all ${
+                              isDesktopDefault
+                                ? "border-blue-400 bg-blue-500 text-white shadow-[0_0_0_1px_rgba(96,165,250,0.55)] hover:brightness-110"
+                                : "border-blue-400/70 bg-blue-500/15 text-blue-100 hover:border-blue-300 hover:bg-blue-500/30 hover:shadow-[0_0_0_1px_rgba(96,165,250,0.35)]"
+                            }`}
+                            title={isDesktopDefault ? "Clear desktop default" : "Set desktop default"}
+                            onClick={() => void handleToggleDefault("desktop", layout, isDesktopDefault)}
+                            disabled={updateLayoutDefaults.isPending}
+                          >
+                            <Monitor className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={`h-8 w-8 border-2 transition-all ${
+                              isMobileDefault
+                                ? "border-green-400 bg-green-500 text-white shadow-[0_0_0_1px_rgba(74,222,128,0.55)] hover:brightness-110"
+                                : "border-green-400/70 bg-green-500/15 text-green-100 hover:border-green-300 hover:bg-green-500/30 hover:shadow-[0_0_0_1px_rgba(74,222,128,0.35)]"
+                            }`}
+                            title={isMobileDefault ? "Clear mobile default" : "Set mobile default"}
+                            onClick={() => void handleToggleDefault("mobile", layout, isMobileDefault)}
+                            disabled={updateLayoutDefaults.isPending}
+                          >
+                            <Smartphone className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
+                      {(isDesktopDefault || isMobileDefault) ? (
+                        <div className="-mt-1 flex flex-wrap items-center gap-1">
+                          {isDesktopDefault ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
+                              <Monitor className="h-3 w-3" />
+                              Desktop default
+                            </span>
+                          ) : null}
+                          {isMobileDefault ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300">
+                              <Smartphone className="h-3 w-3" />
+                              Mobile default
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {layout.description ? (
                         <div className="mt-1 text-sm text-zinc-100/90">{layout.description.slice(0, 120)}{layout.description.length > 120 ? "…" : ""}</div>
                       ) : null}
@@ -436,7 +545,7 @@ export function LayoutBookSettings() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 border-cyan-400/60 bg-cyan-500/10 text-cyan-100 transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-500/30 hover:shadow-[0_0_0_1px_rgba(34,211,238,0.35)]"
                               title="View layout"
                               onClick={() => {
                                 navigate(`/account/layout-lab?shared=${layout.id}`);
@@ -450,7 +559,7 @@ export function LayoutBookSettings() {
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 transition-transform hover:animate-[delete-shake_220ms_ease-in-out]"
                               title="Delete layout"
                               onClick={async () => {
                                 const trackerWarning = layout.tracker_count > 0
@@ -471,7 +580,7 @@ export function LayoutBookSettings() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-500/25 hover:text-amber-100 hover:shadow-[0_0_0_1px_rgba(251,191,36,0.35)]"
                               title="Edit layout"
                               onClick={() => {
                                 navigate(`/account/layout-lab?layoutId=${layout.id}`);
@@ -484,7 +593,7 @@ export function LayoutBookSettings() {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-7 w-7 border-violet-400/60 bg-violet-500/10 text-violet-100 transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-500/30 hover:shadow-[0_0_0_1px_rgba(192,132,252,0.35)]"
                           title="Clone layout"
                           onClick={() => void handleClone(layout)}
                           disabled={createLayout.isPending}
@@ -494,7 +603,7 @@ export function LayoutBookSettings() {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-7 w-7 transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-500/25 hover:text-sky-100 hover:shadow-[0_0_0_1px_rgba(56,189,248,0.35)]"
                           title="Share layout"
                           onClick={async () => {
                             const shareURL = `${window.location.origin}/account/layout-lab?shared=${layout.id}`;
@@ -518,51 +627,6 @@ export function LayoutBookSettings() {
   );
 }
 
-interface LayoutLabExportV1 {
-  version: 1;
-  items: GridEditorItem[];
-  panelTypesById: Record<string, EventsPanelType>;
-}
-
-function serializeLayoutLab(items: GridEditorItem[], panelTypesById: Record<string, EventsPanelType>): string {
-  const payload: LayoutLabExportV1 = {
-    version: 1,
-    items,
-    panelTypesById,
-  };
-  return JSON.stringify(payload, null, 2);
-}
-
-function parseLayoutLab(raw: string): LayoutLabExportV1 {
-  const parsed = JSON.parse(raw) as Partial<LayoutLabExportV1>;
-  if (parsed.version !== 1) {
-    throw new Error("Unsupported layout version");
-  }
-  if (!Array.isArray(parsed.items) || !parsed.panelTypesById || typeof parsed.panelTypesById !== "object") {
-    throw new Error("Invalid layout payload");
-  }
-  return {
-    version: 1,
-    items: parsed.items,
-    panelTypesById: parsed.panelTypesById as Record<string, EventsPanelType>,
-  };
-}
-
-function parsePanelLayout(layout: UserPanelLayout): LayoutLabExportV1 {
-  const fallbackItems = DEFAULT_INSTANCE_LAYOUT_ITEMS;
-  const fallbackPanelTypes = DEFAULT_INSTANCE_PANEL_TYPES;
-
-  try {
-    const parsed = parseLayoutLab(JSON.stringify(layout.payload ?? {}));
-    return parsed;
-  } catch {
-    return {
-      version: 1,
-      items: fallbackItems,
-      panelTypesById: fallbackPanelTypes,
-    };
-  }
-}
 
 function parseSimpleParsedInstances(output: unknown): { id: string; name: string; encounters?: { start_time: string }[] }[] {
   if (!output || typeof output !== "object") return [];
@@ -699,6 +763,7 @@ export function LayoutLabSettings() {
   const editingLayoutID = searchParams.get("layoutId");
   const sharedLayoutID = searchParams.get("shared");
   const isSharedMode = !!sharedLayoutID;
+  const isMobile = useIsMobile();
   const { data: session } = useSession();
   const { data: layoutsResponse } = useUserPanelLayouts(session?.user_id ?? "");
   const { data: sharedLayout } = useSharedLayout(sharedLayoutID ?? "", { enabled: isSharedMode });
@@ -1155,6 +1220,11 @@ export function LayoutLabSettings() {
         </div>
       </div>
 
+      {isMobile ? (
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">Layout Labs is only available on desktop.</p>
+        </div>
+      ) : (
       <div className="rounded-lg border p-3 space-y-3">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -1351,6 +1421,7 @@ export function LayoutLabSettings() {
           </InstanceEventsProvider>
         )}
       </div>
+      )}
     </div>
   );
 }

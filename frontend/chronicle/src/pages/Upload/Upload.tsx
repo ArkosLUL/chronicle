@@ -563,7 +563,9 @@ export function Upload() {
             } else {
               setError({
                 message: data.message || "Upload failed",
-                call_to_action: data.call_to_action,
+                call_to_action:
+                  data.call_to_action ||
+                  "Try relogging in-game, then upload the logs again.",
                 detail: data.detail,
                 link: data.link,
                 link_text: data.link_text,
@@ -577,7 +579,10 @@ export function Upload() {
                   "Ask for the alpha role in Discord to get upload access.",
               });
             } else {
-              setError({ message: "Upload failed" });
+              setError({
+                message: "Upload failed",
+                call_to_action: "Try relogging in-game, then upload the logs again.",
+              });
             }
           }
         }
@@ -585,7 +590,10 @@ export function Upload() {
 
       xhr.addEventListener("error", () => {
         setUploading(false);
-        setError({ message: "Upload failed - network error" });
+        setError({
+          message: "Upload failed - network error",
+          call_to_action: "Check your connection, then try relogging and uploading again.",
+        });
       });
 
       // Use different endpoint based on upload version

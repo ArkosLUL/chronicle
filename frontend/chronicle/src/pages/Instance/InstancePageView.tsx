@@ -1,14 +1,16 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { useSession, type UserPanelLayout } from "@/api/queries";
 import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useInstanceViewState, type LayoutType, type PanelType } from "@/hooks/useUrlState";
+import { useInstanceDefaultsCache } from "@/hooks/useInstanceDefaultsCache";
+import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
 import type { GridEditorItem } from "@/components/layout/GridLayoutEditor";
-import type { ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
+import type { ActionBarSlotsResponse, ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -26,9 +28,12 @@ import { PANELS } from "./EventsPanels/EventsPanel";
 import { PanelTimingProvider, PanelTimingDisplay, PanelTimingResetter } from "./EventsPanels/PanelTimingContext";
 import { PanelExplainerView } from "./PanelExplainer";
 import { RandomTip } from "@/components/RandomTip";
+import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceActionBar";
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
+import { parsePanelLayout } from "@/features/layoutBook/parseLayout";
 import {
   DEFAULT_INSTANCE_LAYOUT_ITEMS,
   ALTERNATE_INSTANCE_LAYOUT_ITEMS,
@@ -58,6 +63,12 @@ function markEncounterSelectorSeen(): void {
     ENCOUNTER_SELECTOR_SEEN_KEY,
     JSON.stringify({ expiresAt: Date.now() + SEVEN_DAYS_MS })
   );
+}
+
+function toLayoutActionBarSlots(slots: ActionBarSlotsResponse | null | undefined): LayoutActionBarSlots {
+  return Object.fromEntries(
+    LAYOUT_ACTION_BAR_KEYS.map((key) => [key, slots?.[`slot_${key}`] ?? null]),
+  ) as LayoutActionBarSlots;
 }
 
 // ============================================================================
@@ -1197,10 +1208,25 @@ export function InstancePageView({
     () => mergeEnemiesByGuid(instance.encounters),
     [instance.encounters]
   );
-  
+
+  const isMobile = useIsMobile();
+  const { data: session } = useSession();
+  const instanceDefaults = useInstanceDefaultsCache(!!session?.user_id);
+
+  const cachedDefaultLayout = useMemo(() => {
+    const layout = isMobile
+      ? instanceDefaults?.default_mobile_layout
+      : instanceDefaults?.default_desktop_layout;
+    if (!layout) {
+      return null;
+    }
+
+    return parsePanelLayout(layout);
+  }, [instanceDefaults?.default_desktop_layout, instanceDefaults?.default_mobile_layout, isMobile]);
+
   const standardOrderedLayoutItems = useMemo(
-    () => orderLayoutItems(normalizeLayoutItems(DEFAULT_INSTANCE_LAYOUT_ITEMS)),
-    [],
+    () => orderLayoutItems(normalizeLayoutItems(cachedDefaultLayout?.items ?? DEFAULT_INSTANCE_LAYOUT_ITEMS)),
+    [cachedDefaultLayout?.items],
   );
 
   const alternateOrderedLayoutItems = useMemo(
@@ -1208,12 +1234,14 @@ export function InstancePageView({
     [],
   );
 
+  const defaultPanelTypesByID = cachedDefaultLayout?.panelTypesById ?? DEFAULT_INSTANCE_PANEL_TYPES;
+
   const defaultOrderedPanels = useMemo<PanelType[]>(
     () =>
       standardOrderedLayoutItems.map(
-        (item) => (DEFAULT_INSTANCE_PANEL_TYPES[item.id] ?? "empty") as PanelType,
+        (item) => (defaultPanelTypesByID[item.id] ?? "empty") as PanelType,
       ),
-    [standardOrderedLayoutItems],
+    [defaultPanelTypesByID, standardOrderedLayoutItems],
   );
 
   const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(null);
@@ -1262,12 +1290,12 @@ export function InstancePageView({
     const next: Record<string, EventsPanelType> = {};
     activeLayoutItems.forEach((item, index) => {
       const urlType = viewState.panels[index];
-      const defaultType = (DEFAULT_INSTANCE_PANEL_TYPES[item.id] ?? "empty") as EventsPanelType;
+      const defaultType = (defaultPanelTypesByID[item.id] ?? "empty") as EventsPanelType;
       const resolved = (urlType ?? defaultType) as EventsPanelType;
       next[item.id] = resolved in PANELS ? resolved : "empty";
     });
     return next;
-  }, [activeLayoutItems, viewState.panels]);
+  }, [activeLayoutItems, defaultPanelTypesByID, viewState.panels]);
 
   const panelOptionsByID = useMemo<Record<string, string | null>>(() => {
     const next: Record<string, string | null> = {};
@@ -1310,9 +1338,9 @@ export function InstancePageView({
     }
   }, [_selectedEncounterIds, internalSelectedIds, setUrlEncounterIds]);
   
-  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [hasSeenSelector, setHasSeenSelector] = useState(() => hasSeenEncounterSelector());
+  const [actionBarOpen, setActionBarOpen] = useState(false);
   
   // Handle encounter FAB click - mark as seen and toggle sidebar
   const handleEncounterButtonClick = () => {
@@ -1331,6 +1359,17 @@ export function InstancePageView({
     }
   }, [isMobile]);
   
+  const actionBarSlots = useMemo(
+    () => toLayoutActionBarSlots(instanceDefaults?.action_bar_slots),
+    [instanceDefaults?.action_bar_slots],
+  );
+
+
+  const actionBarLayoutsByID = useMemo(
+    () => new Map((instanceDefaults?.action_bar_layouts ?? []).map((layout) => [layout.id, layout])),
+    [instanceDefaults?.action_bar_layouts],
+  );
+
   const entitySelection = useMemo<EntitySelection>(() => ({
     enemyIds: viewState.enemies,
     playerIds: viewState.players,
@@ -1475,6 +1514,62 @@ export function InstancePageView({
     }
   }, [setPanels]);
 
+  const castLayout = useCallback((layout: UserPanelLayout) => {
+    try {
+      const parsed = parsePanelLayout(layout);
+      const normalizedItems = normalizeLayoutItems(parsed.items);
+      const castTypes: Record<string, EventsPanelType> = {};
+      normalizedItems.forEach((item) => {
+        const candidate = parsed.panelTypesById?.[item.id] ?? "empty";
+        castTypes[item.id] = candidate in PANELS ? candidate : "empty";
+      });
+
+      const orderedItems = orderLayoutItems(normalizedItems);
+      const orderedPanels = orderedItems.map((item) => (castTypes[item.id] ?? "empty") as PanelType);
+      setPanels(orderedPanels, orderedPanels.map(() => null));
+      setImportedLayoutItems(orderedItems);
+      toast.success("Cast layout", { description: layout.title });
+    } catch {
+      toast.error("Failed to cast layout", { description: "Layout payload is invalid." });
+    }
+  }, [setPanels]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) {
+        return;
+      }
+
+      if (event.key < "0" || event.key > "9") {
+        return;
+      }
+
+      setActionBarOpen(true);
+      const layoutID = actionBarSlots[event.key as keyof LayoutActionBarSlots];
+      if (!layoutID) {
+        return;
+      }
+
+      const layout = actionBarLayoutsByID.get(layoutID);
+      if (!layout) {
+        return;
+      }
+
+      event.preventDefault();
+      castLayout(layout);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [actionBarLayoutsByID, actionBarSlots, castLayout]);
+
   const selectedEncounters = instance.encounters.filter((e) => selectedIds.includes(e.id));
   const trashGroups = groupTrashEncounters(instance.encounters);
 
@@ -1576,6 +1671,27 @@ export function InstancePageView({
           </div>
         </div>
       </div>
+
+      {actionBarOpen && (
+        <div className="fixed bottom-5 left-1/2 z-[80] w-[calc(100vw-1rem)] -translate-x-1/2 px-2 sm:w-auto sm:px-0">
+          <div className="relative inline-flex max-w-full">
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute -right-2 -top-2 z-[81] h-7 w-7 rounded-full border border-zinc-600 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+              onClick={() => setActionBarOpen(false)}
+              aria-label="Dismiss action bar"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <InstanceActionBar
+              slots={actionBarSlots}
+              layouts={instanceDefaults?.action_bar_layouts ?? []}
+              onCast={castLayout}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main content: sidebar + detail */}
       <div className="flex gap-6 relative">

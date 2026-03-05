@@ -120,7 +120,7 @@ CREATE FUNCTION insert_default_data_grant() RETURNS trigger
     AS $$
 BEGIN
   INSERT INTO data_grants (user_id, source, storage_bytes, description)
-  VALUES (NEW.id, 'base', 500000000, 'Default storage allocation');
+  VALUES (NEW.id, 'base', 150000000, 'Default storage allocation');
   RETURN NEW;
 END;
 $$;
@@ -186,7 +186,9 @@ CREATE TABLE users (
     username text NOT NULL,
     email text NOT NULL,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    default_desktop_layout_id uuid,
+    default_mobile_layout_id uuid
 );
 
 CREATE VIEW chronicle_users AS
@@ -434,6 +436,20 @@ CREATE TABLE river_queue (
     updated_at timestamp with time zone NOT NULL
 );
 
+CREATE TABLE user_action_bar_slots (
+    user_id uuid NOT NULL,
+    slot_1 uuid,
+    slot_2 uuid,
+    slot_3 uuid,
+    slot_4 uuid,
+    slot_5 uuid,
+    slot_6 uuid,
+    slot_7 uuid,
+    slot_8 uuid,
+    slot_9 uuid,
+    slot_0 uuid
+);
+
 CREATE TABLE user_auth_links (
     id uuid NOT NULL,
     linked_id text NOT NULL,
@@ -568,6 +584,9 @@ ALTER TABLE ONLY river_migration
 ALTER TABLE ONLY river_queue
     ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
 
+ALTER TABLE ONLY user_action_bar_slots
+    ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);
+
 ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 
@@ -697,6 +716,9 @@ ALTER TABLE ONLY parsed_log_group
 ALTER TABLE ONLY river_client_queue
     ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY user_action_bar_slots
+    ADD CONSTRAINT user_action_bar_slots_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
@@ -714,6 +736,12 @@ ALTER TABLE ONLY user_tracked_layouts
 
 ALTER TABLE ONLY user_tracked_layouts
     ADD CONSTRAINT user_tracked_layouts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_default_desktop_layout_id_fkey FOREIGN KEY (default_desktop_layout_id) REFERENCES user_panel_layouts(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_default_mobile_layout_id_fkey FOREIGN KEY (default_mobile_layout_id) REFERENCES user_panel_layouts(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);

@@ -24,7 +24,7 @@ func TestValidateVersion(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateVersion(tc.version)
+			err := validateVersion(&tc.version)
 			if tc.wantErr && err == nil {
 				t.Fatalf("validateVersion(%q) expected error, got nil", tc.version)
 			}

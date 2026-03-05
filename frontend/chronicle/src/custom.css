@@ -17,3 +17,47 @@
   --class-foreground: oklch(0.9219 0 0);
   --class-muted-foreground: oklch(0.3010 0 0);
 }
+
+/* Make grid layout resize handles obviously draggable */
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+  opacity: 0.6;
+  width: 24px;
+  height: 24px;
+}
+
+.react-grid-item:hover > .react-resizable-handle.react-resizable-handle-se {
+  opacity: 1;
+}
+
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se::after {
+  width: 10px;
+  height: 10px;
+  right: 4px;
+  bottom: 4px;
+  border-right: 3px solid rgba(255, 255, 255, 0.5);
+  border-bottom: 3px solid rgba(255, 255, 255, 0.5);
+}
+
+.react-grid-item:hover > .react-resizable-handle.react-resizable-handle-se::after {
+  border-right-color: rgba(255, 255, 255, 0.8);
+  border-bottom-color: rgba(255, 255, 255, 0.8);
+}
+
+.grid-layout-editor-pulse-resize > .react-resizable-handle.react-resizable-handle-se::after {
+  animation: grid-layout-resize-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes grid-layout-resize-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    border-right-color: rgba(255, 255, 255, 0.7);
+    border-bottom-color: rgba(255, 255, 255, 0.7);
+  }
+
+  50% {
+    transform: scale(1.35);
+    border-right-color: rgba(255, 255, 255, 1);
+    border-bottom-color: rgba(255, 255, 255, 1);
+  }
+}

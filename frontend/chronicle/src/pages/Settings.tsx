@@ -48,6 +48,7 @@ import { getSpellIconUrl } from "@/api/wowdb";
 import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
 
 const LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY = "layout-lab.instance-reference";
+const LAYOUT_LAB_RESIZE_HINT_DISMISSED_STORAGE_KEY = "layout-lab.resize-hint-dismissed";
 
 function getStoredLayoutLabInstanceReference(): string {
   if (typeof window === "undefined") return "";
@@ -63,6 +64,16 @@ function setStoredLayoutLabInstanceReference(value: string) {
   window.localStorage.setItem(LAYOUT_LAB_INSTANCE_REFERENCE_STORAGE_KEY, value);
 }
 
+
+function getStoredLayoutLabResizeHintDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(LAYOUT_LAB_RESIZE_HINT_DISMISSED_STORAGE_KEY) === "1";
+}
+
+function setStoredLayoutLabResizeHintDismissed() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LAYOUT_LAB_RESIZE_HINT_DISMISSED_STORAGE_KEY, "1");
+}
 const ICON_PAGE_SIZE = 24;
 const MAX_PANELS = 8;
 const LAYOUT_TITLE_PATTERN = /^[A-Za-z0-9_\-\s]+$/;
@@ -817,6 +828,7 @@ export function LayoutLabSettings() {
   const [panelOptionsById, setPanelOptionsById] = useState<Record<string, string | null>>({});
   const [instanceReferenceInput, setInstanceReferenceInput] = useState<string>(() => getStoredLayoutLabInstanceReference());
   const [instanceReference, setInstanceReference] = useState<string>(() => normalizeInstanceReference(getStoredLayoutLabInstanceReference()));
+  const [hasDismissedResizeHint, setHasDismissedResizeHint] = useState<boolean>(() => getStoredLayoutLabResizeHintDismissed());
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
 
@@ -1078,6 +1090,12 @@ export function LayoutLabSettings() {
   const handlePanelOptionChange = (itemId: string, option: string | null) => {
     if (readOnly) return;
     setPanelOptionsById((prev) => ({ ...prev, [itemId]: option }));
+  };
+
+  const handleResizeStop = () => {
+    if (hasDismissedResizeHint) return;
+    setHasDismissedResizeHint(true);
+    setStoredLayoutLabResizeHintDismissed();
   };
 
   const handleExport = async () => {
@@ -1471,6 +1489,8 @@ export function LayoutLabSettings() {
                 onItemsChange={setItems}
                 showItemHeader={false}
                 editable={!readOnly}
+                pulseFirstResizeHandle={!readOnly && !hasDismissedResizeHint}
+                onResizeStop={handleResizeStop}
                 renderItem={(item) => {
                   const panelType = panelTypesById[item.id] ?? "damage_done";
                   return (

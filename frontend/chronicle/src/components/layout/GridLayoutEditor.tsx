@@ -26,6 +26,8 @@ interface GridLayoutEditorProps {
   rowHeight?: number;
   className?: string;
   showItemHeader?: boolean;
+  pulseFirstResizeHandle?: boolean;
+  onResizeStop?: () => void;
 }
 
 function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
@@ -58,6 +60,8 @@ export function GridLayoutEditor({
   rowHeight = 110,
   className,
   showItemHeader = true,
+  pulseFirstResizeHandle = false,
+  onResizeStop,
 }: GridLayoutEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const containerWidth = useContainerWidth(containerRef);
@@ -113,12 +117,18 @@ export function GridLayoutEditor({
           enabled: editable,
         }}
         onDragStop={(newLayout) => commitLayout(newLayout)}
-        onResizeStop={(newLayout) => commitLayout(newLayout)}
+        onResizeStop={(newLayout) => {
+          commitLayout(newLayout);
+          onResizeStop?.();
+        }}
       >
-        {items.map((item) => (
+        {items.map((item, index) => (
           <div
             key={item.id}
-            className="bg-card border border-border rounded-lg overflow-hidden shadow-sm relative"
+            className={cn(
+              "bg-card border border-border rounded-lg overflow-hidden shadow-sm relative",
+              pulseFirstResizeHandle && index === 0 && "grid-layout-editor-pulse-resize",
+            )}
           >
             {showItemHeader ? (
               <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">

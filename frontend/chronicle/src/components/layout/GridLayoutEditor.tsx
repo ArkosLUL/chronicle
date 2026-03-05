@@ -100,10 +100,10 @@ export function GridLayoutEditor({
         className="layout"
         layout={layout}
         width={containerWidth}
-        containerPadding={[0, 0]}
         gridConfig={{
           cols,
           rowHeight,
+          containerPadding: [0, 0],
         }}
         dragConfig={{
           handle: ".grid-layout-editor-handle",

@@ -2536,8 +2536,8 @@ export function InstancePageView({
         document.body
       )}
 
-      {/* Mobile: spellbook FAB to toggle action bar */}
-      {isMobile && createPortal(
+      {/* Mobile: spellbook FAB to toggle action bar (logged-in users only) */}
+      {isMobile && isLoggedIn && createPortal(
         <Button
           variant="default"
           size="icon"

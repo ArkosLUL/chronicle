@@ -2120,6 +2120,94 @@ func (q *sqlQuerier) PruneParsedInstanceFromLogOutput(ctx context.Context, arg P
 	return err
 }
 
+const createSharedView = `-- name: CreateSharedView :one
+INSERT INTO shared_views (
+  code,
+  hash,
+  instance_id,
+  payload,
+  created_by
+)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, code, hash, instance_id, payload, created_by, created_at
+`
+
+type CreateSharedViewParams struct {
+	Code       string        `db:"code" json:"code"`
+	Hash       string        `db:"hash" json:"hash"`
+	InstanceID uuid.UUID     `db:"instance_id" json:"instance_id"`
+	Payload    []byte        `db:"payload" json:"payload"`
+	CreatedBy  uuid.NullUUID `db:"created_by" json:"created_by"`
+}
+
+func (q *sqlQuerier) CreateSharedView(ctx context.Context, arg CreateSharedViewParams) (SharedView, error) {
+	row := q.db.QueryRow(ctx, createSharedView,
+		arg.Code,
+		arg.Hash,
+		arg.InstanceID,
+		arg.Payload,
+		arg.CreatedBy,
+	)
+	var i SharedView
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Hash,
+		&i.InstanceID,
+		&i.Payload,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getSharedViewByCode = `-- name: GetSharedViewByCode :one
+SELECT id, code, hash, instance_id, payload, created_by, created_at
+FROM shared_views
+WHERE code = $1
+`
+
+func (q *sqlQuerier) GetSharedViewByCode(ctx context.Context, code string) (SharedView, error) {
+	row := q.db.QueryRow(ctx, getSharedViewByCode, code)
+	var i SharedView
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Hash,
+		&i.InstanceID,
+		&i.Payload,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getSharedViewByInstanceAndHash = `-- name: GetSharedViewByInstanceAndHash :one
+SELECT id, code, hash, instance_id, payload, created_by, created_at
+FROM shared_views
+WHERE instance_id = $1 AND hash = $2
+`
+
+type GetSharedViewByInstanceAndHashParams struct {
+	InstanceID uuid.UUID `db:"instance_id" json:"instance_id"`
+	Hash       string    `db:"hash" json:"hash"`
+}
+
+func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg GetSharedViewByInstanceAndHashParams) (SharedView, error) {
+	row := q.db.QueryRow(ctx, getSharedViewByInstanceAndHash, arg.InstanceID, arg.Hash)
+	var i SharedView
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Hash,
+		&i.InstanceID,
+		&i.Payload,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUserActionBarSlots = `-- name: GetUserActionBarSlots :one
 SELECT
   slot_1,

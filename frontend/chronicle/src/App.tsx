@@ -11,6 +11,7 @@ import { Upload } from "./pages/Upload/Upload"
 import { LogsList } from "./pages/Logs/LogsList"
 import { LogDetail, LogDetailByHash } from "./pages/Logs/LogDetail"
 import { InstancePage } from "./pages/Instance/InstancePage"
+import { SharedViewRedirect } from "./pages/SharedViewRedirect"
 import { RecentRaids } from "./pages/Recent/RecentRaids"
 import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
@@ -68,6 +69,7 @@ function App() {
         <Route path="/logs/:logId" element={<LogDetail />} />
         <Route path="/logs/file/:fileHash" element={<LogDetailByHash />} />
         <Route path="/instances/:instanceId" element={<InstancePage />} />
+        <Route path="/s/:code" element={<SharedViewRedirect />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />

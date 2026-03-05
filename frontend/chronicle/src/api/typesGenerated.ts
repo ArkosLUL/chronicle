@@ -84,6 +84,18 @@ export interface ChronicleEncounterEvents {
     readonly start_time: string;
 }
 
+// From chroniclesdk/share.go
+export interface CreateShareRequest {
+    readonly instance_id: string;
+    readonly payload: Record<string, string>;
+}
+
+// From chroniclesdk/share.go
+export interface CreateShareResponse {
+    readonly code: string;
+    readonly url: string;
+}
+
 // From chroniclesdk/guild_page.go
 export interface CreateTabRequest {
     readonly label: string;
@@ -435,6 +447,12 @@ export interface Session {
     readonly max_storage_bytes: number;
     readonly consumed_storage_bytes: number;
     readonly preferences: Preferences;
+}
+
+// From chroniclesdk/share.go
+export interface SharedViewResponse {
+    readonly instance_id: string;
+    readonly payload: Record<string, string>;
 }
 
 // From chroniclesdk/panel_layout.go

@@ -749,6 +749,7 @@ export interface InstanceViewStateConfig {
  */
 export function useInstanceViewState(config: InstanceViewStateConfig): {
   state: InstanceViewState;
+  setViewState: (next: InstanceViewState | ((prev: InstanceViewState) => InstanceViewState)) => void;
   setEncounters: (ids: string[] | ((prev: string[]) => string[])) => void;
   setEnemies: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   setPlayers: (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
@@ -959,6 +960,11 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
     }, { replace: true });
   }, [setSearchParams, serializeState, isDefaultState]);
 
+  const setViewState = useCallback((next: InstanceViewState | ((prev: InstanceViewState) => InstanceViewState)) => {
+    const resolved = typeof next === 'function' ? next(state) : next;
+    updateUrl(resolved);
+  }, [state, updateUrl]);
+
   // Individual setters
   const setEncounters = useCallback((value: string[] | ((prev: string[]) => string[])) => {
     const newEncounters = typeof value === 'function' ? value(state.encounters) : value;
@@ -1011,5 +1017,5 @@ export function useInstanceViewState(config: InstanceViewStateConfig): {
     updateUrl({ ...state, enemies: new Set(), players: new Set() });
   }, [state, updateUrl]);
 
-  return { state, setEncounters, setEnemies, setPlayers, setPanelType, setPanelOption, setPanels, setLayout, clearEntitySelection };
+  return { state, setViewState, setEncounters, setEnemies, setPlayers, setPanelType, setPanelOption, setPanels, setLayout, clearEntitySelection };
 }

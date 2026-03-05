@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 const LOCAL_STORAGE_EVENT = "local-storage-change";
 
@@ -19,12 +19,18 @@ export function useLocalStorage<T>(
   key: string,
   defaultValue: T
 ): [T, (value: T | ((prev: T) => T)) => void] {
+  const defaultValueRef = useRef(defaultValue);
+
+  useEffect(() => {
+    defaultValueRef.current = defaultValue;
+  }, [defaultValue]);
+
   const [value, setValue] = useState<T>(() => readStoredValue(key, defaultValue));
 
   // Re-read from localStorage when key changes and when other hook instances update this key.
   useEffect(() => {
     const syncFromStorage = () => {
-      setValue(readStoredValue(key, defaultValue));
+      setValue(readStoredValue(key, defaultValueRef.current));
     };
 
     syncFromStorage();
@@ -51,11 +57,11 @@ export function useLocalStorage<T>(
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener(LOCAL_STORAGE_EVENT, handleCustomStorageEvent);
     };
-  }, [key, defaultValue]);
+  }, [key]);
 
   const setStoredValue = useCallback(
     (newValue: T | ((prev: T) => T)) => {
-      const current = readStoredValue(key, defaultValue);
+      const current = readStoredValue(key, defaultValueRef.current);
       const resolved =
         newValue instanceof Function ? newValue(current) : newValue;
 
@@ -72,7 +78,7 @@ export function useLocalStorage<T>(
         // Ignore storage errors (quota exceeded, etc.)
       }
     },
-    [key, defaultValue]
+    [key]
   );
 
   return [value, setStoredValue];

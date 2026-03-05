@@ -31,6 +31,9 @@ const (
 	UniqueRiverLeaderPkey                           UniqueConstraint = "river_leader_pkey"                               // ALTER TABLE ONLY river_leader ADD CONSTRAINT river_leader_pkey PRIMARY KEY (name);
 	UniqueRiverMigrationPkey1                       UniqueConstraint = "river_migration_pkey1"                           // ALTER TABLE ONLY river_migration ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
 	UniqueRiverQueuePkey                            UniqueConstraint = "river_queue_pkey"                                // ALTER TABLE ONLY river_queue ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
+	UniqueSharedViewsCodeKey                        UniqueConstraint = "shared_views_code_key"                           // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_code_key UNIQUE (code);
+	UniqueSharedViewsPkey                           UniqueConstraint = "shared_views_pkey"                               // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_pkey PRIMARY KEY (id);
+	UniqueUserActionBarSlotsPkey                    UniqueConstraint = "user_action_bar_slots_pkey"                      // ALTER TABLE ONLY user_action_bar_slots ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);
 	UniqueUserAuthLinksPkey                         UniqueConstraint = "user_auth_links_pkey"                            // ALTER TABLE ONLY user_auth_links ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 	UniqueUserAuthSessionPkey                       UniqueConstraint = "user_auth_session_pkey"                          // ALTER TABLE ONLY user_auth_session ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);
 	UniqueUserPanelLayoutsPkey                      UniqueConstraint = "user_panel_layouts_pkey"                         // ALTER TABLE ONLY user_panel_layouts ADD CONSTRAINT user_panel_layouts_pkey PRIMARY KEY (id);

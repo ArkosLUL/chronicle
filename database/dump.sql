@@ -436,6 +436,17 @@ CREATE TABLE river_queue (
     updated_at timestamp with time zone NOT NULL
 );
 
+CREATE TABLE shared_views (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code text NOT NULL,
+    hash text NOT NULL,
+    instance_id uuid NOT NULL,
+    payload jsonb NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT shared_views_payload_max_10kb CHECK ((octet_length((payload)::text) <= 10240))
+);
+
 CREATE TABLE user_action_bar_slots (
     user_id uuid NOT NULL,
     slot_1 uuid,
@@ -584,6 +595,15 @@ ALTER TABLE ONLY river_migration
 ALTER TABLE ONLY river_queue
     ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
 
+ALTER TABLE ONLY shared_views
+    ADD CONSTRAINT shared_views_code_key UNIQUE (code);
+
+ALTER TABLE ONLY shared_views
+    ADD CONSTRAINT shared_views_instance_hash_unique UNIQUE (instance_id, hash);
+
+ALTER TABLE ONLY shared_views
+    ADD CONSTRAINT shared_views_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);
 
@@ -625,6 +645,10 @@ CREATE INDEX idx_guild_members_user ON guild_members USING btree (user_id);
 CREATE INDEX idx_guild_page_panels_tab ON guild_page_panels USING btree (tab_id);
 
 CREATE INDEX idx_guild_page_tabs_page ON guild_page_tabs USING btree (page_id);
+
+CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
+
+CREATE INDEX idx_shared_views_instance_hash ON shared_views USING btree (instance_id, hash);
 
 CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 
@@ -715,6 +739,12 @@ ALTER TABLE ONLY parsed_log_group
 
 ALTER TABLE ONLY river_client_queue
     ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY shared_views
+    ADD CONSTRAINT shared_views_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY shared_views
+    ADD CONSTRAINT shared_views_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

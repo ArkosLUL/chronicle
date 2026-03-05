@@ -93,6 +93,7 @@ func (api *API) Routes() chi.Router {
 		Cors(api.Opts.AccessURL),
 		httpmw.NoWWW(),
 		httpmw.PrometheusMW(api.Opts.Registry),
+		api.shortLinkRedirectMiddleware,
 	)
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -109,7 +110,9 @@ func (api *API) Routes() chi.Router {
 			r.Post("/authcheck", api.checkAuthorization)
 			r.Get("/me/storage", api.GetMyStorage)
 			r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed).Routes())
+			r.Post("/share", api.CreateShare)
 		})
+		r.Get("/share/{code}", api.GetShare)
 
 		// Admin routes - require admin or technical_admin role
 		r.Route("/admin", func(r chi.Router) {

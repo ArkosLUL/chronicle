@@ -1,14 +1,14 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
-import { useSession, type UserPanelLayout } from "@/api/queries";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy } from "lucide-react";
+import { useSession, useCreateShare, fetchSharedView, type UserPanelLayout } from "@/api/queries";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useInstanceDefaultsCache } from "@/hooks/useInstanceDefaultsCache";
-import { useInstanceViewState, type PanelType } from "@/hooks/useUrlState";
+import { type LayoutType, type PanelType } from "@/hooks/useUrlState";
 import type { GridEditorItem } from "@/components/layout/GridLayoutEditor";
 import type { ActionBarSlotsResponse, ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
@@ -71,6 +71,108 @@ function toLayoutActionBarSlots(slots: ActionBarSlotsResponse | null | undefined
   ) as LayoutActionBarSlots;
 }
 
+type LocalInstanceViewState = {
+  encounters: string[];
+  enemies: Set<string>;
+  players: Set<string>;
+  panels: PanelType[];
+  panelOptions: Array<string | null>;
+  layout: LayoutType;
+};
+
+type CachedInstanceView = {
+  view: {
+    encounters: string[];
+    enemies: string[];
+    players: string[];
+    panels: PanelType[];
+    panelOptions: Array<string | null>;
+    layout: LayoutType;
+    importedLayoutItems?: GridEditorItem[] | null;
+    sharedPayload?: SharedViewPayload;
+  };
+  lastViewedAt: number;
+};
+
+type InstanceViewCache = Record<string, CachedInstanceView>;
+
+
+function arraysEqual<T>(a: T[], b: T[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
+
+function layoutItemsEqual(a: GridEditorItem[] | null | undefined, b: GridEditorItem[] | null | undefined): boolean {
+  const left = a ?? null;
+  const right = b ?? null;
+  if (left === right) return true;
+  if (!left || !right) return false;
+  if (left.length !== right.length) return false;
+  return left.every((item, idx) => {
+    const other = right[idx];
+    return item.id === other.id
+      && item.title === other.title
+      && item.x === other.x
+      && item.y === other.y
+      && item.w === other.w
+      && item.h === other.h
+      && item.minW === other.minW;
+  });
+}
+function setsEqual(a: Set<string>, b: string[]): boolean {
+  return a.size === b.length && b.every((id) => a.has(id));
+}
+const EMPTY_INSTANCE_VIEW_CACHE: InstanceViewCache = {};
+const INSTANCE_VIEW_CACHE_KEY = "instanceViewCache:v1";
+const MAX_RECENT_INSTANCE_VIEWS = 10;
+
+function pruneInstanceViewCache(cache: InstanceViewCache): InstanceViewCache {
+  return Object.fromEntries(
+    Object.entries(cache)
+      .sort((a, b) => b[1].lastViewedAt - a[1].lastViewedAt)
+      .slice(0, MAX_RECENT_INSTANCE_VIEWS),
+  );
+}
+const LEGACY_PANEL_CODE_TO_TYPE: Record<string, PanelType> = {
+  dd: "damage_done",
+  ve: "vulnerability_effect",
+  edd: "enemy_damage_done",
+  pdd: "pet_damage_done",
+  ff: "damage_done_friendly_fire",
+  dt: "damage_taken",
+  edt: "enemy_damage_taken",
+  hd: "healing_done",
+  ht: "healing_taken",
+  xa: "extra_attacks",
+  d: "deaths",
+  dl: "death_log",
+  mit: "mitigation",
+  rr: "resource_regen",
+  r: "roles",
+  aa: "all_activity",
+  e: "empty",
+  inn: "innervate",
+  sun: "sunder",
+  jdg: "judgement",
+  au: "aura_uptime",
+  met: "metrics",
+  per: "periods",
+};
+
+function parseLegacyPanelCode(encoded: string): { code: string; option: string | null } {
+  const bracketIdx = encoded.indexOf("[");
+  if (bracketIdx === -1) {
+    return { code: encoded, option: null };
+  }
+
+  const code = encoded.slice(0, bracketIdx);
+  const closeBracket = encoded.indexOf("]", bracketIdx);
+  const option = closeBracket > bracketIdx
+    ? encoded.slice(bracketIdx + 1, closeBracket)
+    : encoded.slice(bracketIdx + 1);
+
+  return { code, option: option || null };
+}
 // ============================================================================
 // Formatting helpers
 // ============================================================================
@@ -643,6 +745,26 @@ function EncounterSidebar({
   );
 }
 
+
+interface SharedViewPayload {
+  version: number;
+  instanceId?: string;
+  instance_id?: string;
+  layout?: {
+    items?: GridEditorItem[];
+    panelTypesById?: Record<string, EventsPanelType>;
+  };
+  // Legacy v1 compatibility (flattened fields)
+  items?: GridEditorItem[];
+  panelTypesById?: Record<string, EventsPanelType>;
+  view?: {
+    encounters: string;
+    enemies?: number[];
+    players?: number[];
+    panelOptions?: Record<string, unknown>;
+  };
+}
+
 const PANEL_ROW_HEIGHT_PX = 96;
 const GRID_COLS = 12;
 
@@ -1211,6 +1333,7 @@ export function InstancePageView({
 
   const isMobile = useIsMobile();
   const { data: session } = useSession();
+  const createShare = useCreateShare();
   const instanceDefaults = useInstanceDefaultsCache(!!session?.user_id);
 
   const cachedDefaultLayout = useMemo(() => {
@@ -1244,38 +1367,354 @@ export function InstancePageView({
     [defaultPanelTypesByID, standardOrderedLayoutItems],
   );
 
-  const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(null);
-
   const defaultEncounterIDs = useMemo(
     () => instance.encounters.map((e) => e.id),
     [instance.encounters],
   );
 
-  const viewStateDefaults = useMemo(
-    () => ({
-      encounterIds: defaultEncounterIDs,
-      panels: defaultOrderedPanels,
-    }),
-    [defaultEncounterIDs, defaultOrderedPanels],
+  const [instanceViewCache, setInstanceViewCache] = useLocalStorage<InstanceViewCache>(INSTANCE_VIEW_CACHE_KEY, EMPTY_INSTANCE_VIEW_CACHE);
+
+  const [importedLayoutItems, setImportedLayoutItems] = useState<GridEditorItem[] | null>(
+    () => {
+      const cached = instanceViewCache[instance.id]?.view;
+      const payloadItems = cached?.sharedPayload?.layout?.items ?? cached?.sharedPayload?.items;
+      return payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.importedLayoutItems ?? null);
+    },
   );
 
-  // URL-persisted view state (base64 encoded single param)
-  const {
-    state: viewState,
-    setEncounters: setUrlEncounterIds,
-    setEnemies: setUrlEnemyIds,
-    setPlayers: setUrlPlayerIds,
-    setPanelType,
-    setPanelOption,
-    setPanels,
-    setLayout,
-    clearEntitySelection,
-  } = useInstanceViewState({
-    encounters: instance.encounters,
-    enemies: allMergedEnemies,
-    players: instance.players ?? {},
-    defaults: viewStateDefaults,
-  });
+  const createDefaultViewState = useCallback((): LocalInstanceViewState => ({
+    encounters: defaultEncounterIDs,
+    enemies: new Set<string>(),
+    players: new Set<string>(),
+    panels: defaultOrderedPanels,
+    panelOptions: defaultOrderedPanels.map(() => null),
+    layout: "standard",
+  }), [defaultEncounterIDs, defaultOrderedPanels]);
+
+  const hydrateCachedViewState = useCallback((cached: CachedInstanceView | undefined): LocalInstanceViewState => {
+    if (!cached) {
+      return createDefaultViewState();
+    }
+
+    if (cached.view.sharedPayload) {
+      const payload = cached.view.sharedPayload;
+      const layoutItems = payload.layout?.items ?? payload.items ?? [];
+      const panelTypesById = payload.layout?.panelTypesById ?? payload.panelTypesById ?? {};
+      const normalizedItems = normalizeLayoutItems(layoutItems);
+      const orderedItems = orderLayoutItems(normalizedItems);
+      const orderedPanels = orderedItems.map((item) => {
+        const candidate = panelTypesById[item.id] ?? "empty";
+        return (candidate in PANELS ? candidate : "empty") as PanelType;
+      });
+      const orderedOptions = orderedItems.map((item) => {
+        const raw = payload.view?.panelOptions?.[item.id];
+        return typeof raw === "string" ? raw : null;
+      });
+      const encounters = (() => {
+        const enc = payload.view?.encounters;
+        if (enc === "all" || !enc) return instance.encounters.map((e) => e.id);
+        if (enc === "bosses") return instance.encounters.filter((e) => e.boss).map((e) => e.id);
+        if (enc === "trash") return instance.encounters.filter((e) => !e.boss).map((e) => e.id);
+        const ids = enc.split("-")
+          .map((v) => Number.parseInt(v, 10))
+          .filter((v) => !Number.isNaN(v))
+          .map((idx) => instance.encounters[idx]?.id)
+          .filter((id): id is string => Boolean(id));
+        return ids.length > 0 ? ids : instance.encounters.map((e) => e.id);
+      })();
+      const enemies = new Set(
+        (payload.view?.enemies ?? [])
+          .map((idx) => allMergedEnemies[idx]?.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      const playerKeys = Object.keys(instance.players ?? {}).sort();
+      const players = new Set(
+        (payload.view?.players ?? [])
+          .map((idx) => playerKeys[idx])
+          .filter((id): id is string => Boolean(id)),
+      );
+
+      return {
+        encounters,
+        enemies,
+        players,
+        panels: orderedPanels,
+        panelOptions: orderedOptions,
+        layout: "standard",
+      };
+    }
+
+    const defaults = createDefaultViewState();
+    const panels = cached.view.panels
+      .map((panel) => (panel in PANELS ? panel : "empty") as PanelType);
+    const panelCount = Math.max(defaults.panels.length, panels.length);
+
+    return {
+      encounters: cached.view.encounters.filter((id) => instance.encounters.some((enc) => enc.id === id)),
+      enemies: new Set(cached.view.enemies.filter((id) => allMergedEnemies.some((enemy) => enemy.id === id))),
+      players: new Set(cached.view.players.filter((id) => Boolean(instance.players?.[id]))),
+      panels: panelCount > 0
+        ? Array.from({ length: panelCount }, (_, i) => panels[i] ?? defaults.panels[i] ?? "empty")
+        : defaults.panels,
+      panelOptions: Array.from({ length: panelCount }, (_, i) => cached.view.panelOptions[i] ?? null),
+      layout: cached.view.layout === "alternate" ? "alternate" : "standard",
+    };
+  }, [allMergedEnemies, createDefaultViewState, instance.encounters, instance.players]);
+
+  const [viewState, setViewState] = useState<LocalInstanceViewState>(() =>
+    hydrateCachedViewState(instanceViewCache[instance.id]),
+  );
+
+  const lastLocalRestoreToastInstanceRef = useRef<string | null>(null);
+  const initialImportCodeRef = useRef(searchParams.get("import"));
+  const previousInstanceIDRef = useRef(instance.id);
+
+  useEffect(() => {
+    if (previousInstanceIDRef.current === instance.id) {
+      return;
+    }
+
+    previousInstanceIDRef.current = instance.id;
+    const cached = instanceViewCache[instance.id];
+    setViewState(hydrateCachedViewState(cached));
+    const payloadItems = cached?.view.sharedPayload?.layout?.items ?? cached?.view.sharedPayload?.items;
+    setImportedLayoutItems(payloadItems ? orderLayoutItems(normalizeLayoutItems(payloadItems)) : (cached?.view.importedLayoutItems ?? null));
+  }, [hydrateCachedViewState, instance.id, instanceViewCache]);
+
+  useEffect(() => {
+    // Skip local restore toast when this page load is from shared URL import,
+    // or if we've already toasted for this instance.
+    if (initialImportCodeRef.current || lastLocalRestoreToastInstanceRef.current === instance.id) {
+      return;
+    }
+
+    const cached = instanceViewCache[instance.id];
+    if (cached) {
+      toast.success("I remembered where you left off!");
+      lastLocalRestoreToastInstanceRef.current = instance.id;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only on mount/instance change
+  }, [instance.id]);
+
+  useEffect(() => {
+    setInstanceViewCache((prev) => {
+      const existing = prev[instance.id];
+      const currentLayoutItems = importedLayoutItems
+        ?? (viewState.layout === "alternate" ? alternateOrderedLayoutItems : standardOrderedLayoutItems);
+      const panelTypesById = Object.fromEntries(
+        currentLayoutItems.map((item, index) => [item.id, (viewState.panels[index] ?? "empty") as EventsPanelType]),
+      );
+      const panelOptionsById = Object.fromEntries(
+        currentLayoutItems
+          .map((item, index) => [item.id, viewState.panelOptions[index] ?? null] as const)
+          .filter(([, value]) => value !== null),
+      );
+      const sharedPayload: SharedViewPayload = {
+        version: 2,
+        instanceId: instance.id,
+        layout: {
+          items: currentLayoutItems,
+          panelTypesById,
+        },
+        view: {
+          encounters: viewState.encounters.length > 0
+            ? viewState.encounters
+              .map((id) => instance.encounters.findIndex((enc) => enc.id === id))
+              .filter((idx) => idx >= 0)
+              .join("-")
+            : "all",
+          enemies: Array.from(viewState.enemies)
+            .map((id) => allMergedEnemies.findIndex((enemy) => enemy.id === id))
+            .filter((idx) => idx >= 0),
+          players: Array.from(viewState.players)
+            .map((id) => Object.keys(instance.players ?? {}).sort().indexOf(id))
+            .filter((idx) => idx >= 0),
+          panelOptions: panelOptionsById,
+        },
+      };
+
+      const nextView = {
+        encounters: viewState.encounters,
+        enemies: Array.from(viewState.enemies),
+        players: Array.from(viewState.players),
+        panels: viewState.panels,
+        panelOptions: viewState.panelOptions,
+        layout: viewState.layout,
+        importedLayoutItems,
+        sharedPayload,
+      };
+
+      const unchanged = existing
+        && arraysEqual(existing.view.encounters, nextView.encounters)
+        && setsEqual(viewState.enemies, existing.view.enemies)
+        && setsEqual(viewState.players, existing.view.players)
+        && arraysEqual(existing.view.panels, nextView.panels)
+        && arraysEqual(existing.view.panelOptions, nextView.panelOptions)
+        && existing.view.layout === nextView.layout
+        && layoutItemsEqual(existing.view.importedLayoutItems, nextView.importedLayoutItems);
+
+      if (unchanged) {
+        return prev;
+      }
+
+      const next = {
+        ...prev,
+        [instance.id]: {
+          view: nextView,
+          lastViewedAt: Date.now(),
+        },
+      };
+      return pruneInstanceViewCache(next);
+    });
+  }, [
+    allMergedEnemies,
+    alternateOrderedLayoutItems,
+    importedLayoutItems,
+    instance.encounters,
+    instance.id,
+    instance.players,
+    setInstanceViewCache,
+    standardOrderedLayoutItems,
+    viewState,
+  ]);
+
+  const setEncounters = useCallback((ids: string[]) => {
+    setViewState((prev) => ({ ...prev, encounters: ids }));
+  }, []);
+
+  const setEnemies = useCallback((ids: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    setViewState((prev) => ({
+      ...prev,
+      enemies: typeof ids === "function" ? ids(prev.enemies) : ids,
+    }));
+  }, []);
+
+  const setPlayers = useCallback((ids: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    setViewState((prev) => ({
+      ...prev,
+      players: typeof ids === "function" ? ids(prev.players) : ids,
+    }));
+  }, []);
+
+  const setPanelType = useCallback((index: number, type: PanelType) => {
+    setViewState((prev) => {
+      const panels = [...prev.panels];
+      const panelOptions = [...prev.panelOptions];
+      while (panels.length <= index) {
+        panels.push("empty");
+        panelOptions.push(null);
+      }
+      panels[index] = type;
+      panelOptions[index] = null;
+      return { ...prev, panels, panelOptions };
+    });
+  }, []);
+
+  const setPanelOption = useCallback((index: number, option: string | null) => {
+    setViewState((prev) => {
+      const panelOptions = [...prev.panelOptions];
+      while (panelOptions.length <= index) {
+        panelOptions.push(null);
+      }
+      panelOptions[index] = option;
+      return { ...prev, panelOptions };
+    });
+  }, []);
+
+  const setPanels = useCallback((panels: PanelType[], panelOptions?: Array<string | null>) => {
+    const nextOptions = panelOptions
+      ? [...panelOptions, ...Array(Math.max(0, panels.length - panelOptions.length)).fill(null)]
+      : panels.map(() => null);
+    setViewState((prev) => ({ ...prev, panels: [...panels], panelOptions: nextOptions.slice(0, panels.length) }));
+  }, []);
+
+  const setLayout = useCallback((layout: LayoutType) => {
+    setViewState((prev) => ({ ...prev, layout }));
+  }, []);
+
+  const clearEntitySelection = useCallback(() => {
+    setViewState((prev) => ({ ...prev, enemies: new Set(), players: new Set() }));
+  }, []);
+
+  const hasMigratedLegacyUrlStateRef = useRef(false);
+
+  useEffect(() => {
+    if (hasMigratedLegacyUrlStateRef.current) {
+      return;
+    }
+
+    const legacyView = searchParams.get("v");
+    const legacyLayout = searchParams.get("l");
+
+    if (!legacyView && !legacyLayout) {
+      hasMigratedLegacyUrlStateRef.current = true;
+      return;
+    }
+
+    if (legacyView) {
+      const [encPart, enemyPart, playerPart, panelPart] = legacyView.split(".");
+
+      const parsedEncounters = (() => {
+        if (encPart === "all" || !encPart) return defaultEncounterIDs;
+        if (encPart === "bosses") return instance.encounters.filter((enc) => enc.boss).map((enc) => enc.id);
+        if (encPart === "trash") return instance.encounters.filter((enc) => !enc.boss).map((enc) => enc.id);
+        const ids = encPart
+          .split("-")
+          .map((v) => Number.parseInt(v, 10))
+          .filter((v) => !Number.isNaN(v))
+          .map((idx) => instance.encounters[idx]?.id)
+          .filter((id): id is string => Boolean(id));
+        return ids.length > 0 ? ids : defaultEncounterIDs;
+      })();
+
+      const parsedEnemies = new Set(
+        (enemyPart || "")
+          .split("-")
+          .map((v) => Number.parseInt(v, 10))
+          .filter((v) => !Number.isNaN(v))
+          .map((idx) => allMergedEnemies[idx]?.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+
+      const sortedPlayerIDs = Object.keys(instance.players ?? {}).sort();
+      const parsedPlayers = new Set(
+        (playerPart || "")
+          .split("-")
+          .map((v) => Number.parseInt(v, 10))
+          .filter((v) => !Number.isNaN(v))
+          .map((idx) => sortedPlayerIDs[idx])
+          .filter((id): id is string => Boolean(id)),
+      );
+
+      const panelParts = (panelPart || "").split("-").filter(Boolean).map(parseLegacyPanelCode);
+      const parsedPanels: PanelType[] = Array.from({ length: Math.max(panelParts.length, defaultOrderedPanels.length) }, (_, i) => {
+        const code = panelParts[i]?.code;
+        return (code && LEGACY_PANEL_CODE_TO_TYPE[code]) ?? defaultOrderedPanels[i] ?? "empty";
+      });
+      const parsedPanelOptions = Array.from({ length: parsedPanels.length }, (_, i) => panelParts[i]?.option ?? null);
+
+      setViewState((prev) => ({
+        ...prev,
+        encounters: parsedEncounters,
+        enemies: parsedEnemies,
+        players: parsedPlayers,
+        panels: parsedPanels,
+        panelOptions: parsedPanelOptions,
+      }));
+    }
+
+    if (legacyLayout) {
+      setLayout(legacyLayout === "a" ? "alternate" : "standard");
+    }
+
+    hasMigratedLegacyUrlStateRef.current = true;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("v");
+      next.delete("l");
+      return next;
+    });
+  }, [allMergedEnemies, defaultEncounterIDs, defaultOrderedPanels, instance.encounters, instance.players, searchParams, setLayout, setSearchParams]);
 
   const baseOrderedLayoutItems = viewState.layout === "alternate"
     ? alternateOrderedLayoutItems
@@ -1319,9 +1758,9 @@ export function InstancePageView({
   }, [viewState.encounters, instance.encounters]);
   
   const setInternalSelectedIds = useCallback((ids: string[]) => {
-    setUrlEncounterIds(ids);
+    setEncounters(ids);
     onSelectEncounters?.(ids);
-  }, [setUrlEncounterIds, onSelectEncounters]);
+  }, [onSelectEncounters, setEncounters]);
   
   // URL state is the source of truth on initial load.
   // Only sync when parent passes an explicit external selection (e.g. YouTube overlay).
@@ -1334,12 +1773,13 @@ export function InstancePageView({
     const isDifferent = propsIds.length !== internalSelectedIds.length || 
       propsIds.some(id => !internalSelectedIds.includes(id));
     if (isDifferent) {
-      setUrlEncounterIds(propsIds);
+      setEncounters(propsIds);
     }
-  }, [_selectedEncounterIds, internalSelectedIds, setUrlEncounterIds]);
+  }, [_selectedEncounterIds, internalSelectedIds, setEncounters]);
   
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [hasSeenSelector, setHasSeenSelector] = useState(() => hasSeenEncounterSelector());
+  const [shareContextMenu, setShareContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [actionBarOpen, setActionBarOpen] = useState(false);
   
   // Handle encounter FAB click - mark as seen and toggle sidebar
@@ -1377,7 +1817,7 @@ export function InstancePageView({
   
   // Toggle enemy selection
   const toggleEnemySelection = useCallback((enemyId: string) => {
-    setUrlEnemyIds((prev) => {
+    setEnemies((prev) => {
       const next = new Set(prev);
       if (next.has(enemyId)) {
         next.delete(enemyId);
@@ -1386,16 +1826,16 @@ export function InstancePageView({
       }
       return next;
     });
-  }, [setUrlEnemyIds]);
+  }, [setEnemies]);
   
   // Select multiple enemies at once (replaces current selection)
   const selectEnemies = useCallback((enemyIds: string[]) => {
-    setUrlEnemyIds(new Set(enemyIds));
-  }, [setUrlEnemyIds]);
+    setEnemies(new Set(enemyIds));
+  }, [setEnemies]);
   
   // Toggle player selection
   const togglePlayerSelection = useCallback((playerId: string) => {
-    setUrlPlayerIds((prev) => {
+    setPlayers((prev) => {
       const next = new Set(prev);
       if (next.has(playerId)) {
         next.delete(playerId);
@@ -1404,11 +1844,11 @@ export function InstancePageView({
       }
       return next;
     });
-  }, [setUrlPlayerIds]);
+  }, [setPlayers]);
   
   // Toggle multiple players at once (if any are selected, deselect all; otherwise select all)
   const togglePlayersSelection = useCallback((playerIds: string[]) => {
-    setUrlPlayerIds((prev) => {
+    setPlayers((prev) => {
       const next = new Set(prev);
       const anySelected = playerIds.some((id) => next.has(id));
       if (anySelected) {
@@ -1424,7 +1864,7 @@ export function InstancePageView({
       }
       return next;
     });
-  }, [setUrlPlayerIds]);
+  }, [setPlayers]);
 
   // Use internalSelectedIds which already prioritizes URL state over props
   const selectedIds = internalSelectedIds;
@@ -1459,19 +1899,75 @@ export function InstancePageView({
     setPanelOption(idx, option);
   }, [activeLayoutItems, setPanelOption]);
 
-  const handleLayoutChange = useCallback((layout: LayoutType) => {
-    setLayout(layout);
-
-    if (importedLayoutItems) {
-      return;
+  const applySharedViewPayload = useCallback((payload: SharedViewPayload) => {
+    const payloadInstanceID = payload.instanceId ?? payload.instance_id;
+    if (payloadInstanceID !== instance.id) {
+      throw new Error("Shared view belongs to a different instance");
     }
 
-    const targetItems = layout === "alternate" ? alternateOrderedLayoutItems : standardOrderedLayoutItems;
-    const baselinePanels = targetItems.map(
-      (item) => (DEFAULT_INSTANCE_PANEL_TYPES[item.id] ?? "empty") as PanelType,
+    const layoutItems = payload.layout?.items ?? payload.items ?? [];
+    const panelTypesById = payload.layout?.panelTypesById ?? payload.panelTypesById ?? {};
+
+    const normalizedItems = normalizeLayoutItems(layoutItems);
+    if (normalizedItems.length === 0) {
+      throw new Error("Shared view is missing layout items");
+    }
+
+    const importedTypes: Record<string, EventsPanelType> = {};
+    normalizedItems.forEach((item) => {
+      const candidate = panelTypesById[item.id] ?? "empty";
+      importedTypes[item.id] = candidate in PANELS ? candidate : "empty";
+    });
+
+    const orderedItems = orderLayoutItems(normalizedItems);
+    const orderedPanels = orderedItems.map((item) => (importedTypes[item.id] ?? "empty") as PanelType);
+    const orderedOptions = orderedItems.map((item) => {
+      const raw = payload.view?.panelOptions?.[item.id];
+      return typeof raw === "string" ? raw : null;
+    });
+
+    const encounterIds = (() => {
+      const enc = payload.view?.encounters;
+      if (enc === "all" || !enc) {
+        return instance.encounters.map((e) => e.id);
+      }
+      if (enc === "bosses") {
+        return instance.encounters.filter((e) => e.boss).map((e) => e.id);
+      }
+      if (enc === "trash") {
+        return instance.encounters.filter((e) => !e.boss).map((e) => e.id);
+      }
+      return enc
+        .split("-")
+        .map((v) => Number.parseInt(v, 10))
+        .filter((v) => !Number.isNaN(v))
+        .map((idx) => instance.encounters[idx]?.id)
+        .filter((id): id is string => Boolean(id));
+    })();
+
+    const enemyIDs = new Set(
+      (payload.view?.enemies ?? [])
+        .map((idx) => allMergedEnemies[idx]?.id)
+        .filter((id): id is string => Boolean(id)),
     );
-    setPanels(baselinePanels, baselinePanels.map(() => null));
-  }, [alternateOrderedLayoutItems, importedLayoutItems, setLayout, setPanels, standardOrderedLayoutItems]);
+
+    const playerKeys = Object.keys(instance.players ?? {}).sort();
+    const playerIDs = new Set(
+      (payload.view?.players ?? [])
+        .map((idx) => playerKeys[idx])
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    setViewState((prev) => ({
+      ...prev,
+      panels: orderedPanels,
+      panelOptions: orderedOptions,
+      encounters: encounterIds.length > 0 ? encounterIds : instance.encounters.map((e) => e.id),
+      enemies: enemyIDs,
+      players: playerIDs,
+    }));
+    setImportedLayoutItems(orderedItems);
+  }, [allMergedEnemies, instance.encounters, instance.id, instance.players, setViewState]);
 
   const handleImportLayout = useCallback(() => {
     const raw = window.prompt("Paste exported layout JSON");
@@ -1513,6 +2009,92 @@ export function InstancePageView({
       toast.error("Import failed", { description: message });
     }
   }, [setPanels]);
+
+  const buildSharedViewPayload = useCallback((): SharedViewPayload => ({
+      version: 2,
+      instanceId: instance.id,
+      layout: {
+        items: activeLayoutItems,
+        panelTypesById: panelTypesByID,
+      },
+      view: {
+        encounters: viewState.encounters.length > 0
+          ? viewState.encounters
+            .map((id) => instance.encounters.findIndex((enc) => enc.id === id))
+            .filter((idx) => idx >= 0)
+            .join("-")
+          : "all",
+        enemies: Array.from(viewState.enemies)
+          .map((id) => allMergedEnemies.findIndex((enemy) => enemy.id === id))
+          .filter((idx) => idx >= 0),
+        players: Array.from(viewState.players)
+          .map((id) => Object.keys(instance.players ?? {}).sort().indexOf(id))
+          .filter((idx) => idx >= 0),
+        panelOptions: Object.fromEntries(
+          Object.entries(panelOptionsByID).filter(([, value]) => value !== null),
+        ),
+      },
+    }), [activeLayoutItems, allMergedEnemies, instance.encounters, instance.id, instance.players, panelOptionsByID, panelTypesByID, viewState.encounters, viewState.enemies, viewState.players]);
+
+  const copyStateToClipboard = useCallback(async () => {
+    try {
+      const payload = buildSharedViewPayload();
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      toast.success("State JSON copied");
+    } catch {
+      toast.error("Failed to copy state JSON");
+    }
+  }, [buildSharedViewPayload]);
+
+  const importStateFromJSON = useCallback(() => {
+    const raw = window.prompt("Paste shared state JSON");
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as SharedViewPayload;
+      applySharedViewPayload(parsed);
+      toast.success("State imported from JSON");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid state JSON";
+      toast.error("Import failed", { description: message });
+    }
+  }, [applySharedViewPayload]);
+
+  const handleShareButtonContextMenu = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setShareContextMenu({ x: event.clientX, y: event.clientY });
+  }, []);
+
+  useEffect(() => {
+    if (!shareContextMenu) return;
+
+    const close = () => setShareContextMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("keydown", close);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", close);
+    };
+  }, [shareContextMenu]);
+
+  const handleShareView = useCallback(async () => {
+    const payload: SharedViewPayload = buildSharedViewPayload();
+
+    try {
+      const result = await createShare.mutateAsync({
+        instance_id: instance.id,
+        payload: payload as unknown as Record<string, string>,
+      });
+      await navigator.clipboard.writeText(result.url);
+      toast.success("Share link copied", { description: result.url });
+    } catch {
+      toast.error("Failed to create share link");
+    }
+  }, [buildSharedViewPayload, createShare, instance.id]);
+
 
   const castLayout = useCallback((layout: UserPanelLayout) => {
     try {
@@ -1570,7 +2152,40 @@ export function InstancePageView({
     };
   }, [actionBarLayoutsByID, actionBarSlots, castLayout]);
 
-  const selectedEncounters = instance.encounters.filter((e) => selectedIds.includes(e.id));
+
+  useEffect(() => {
+    const importCode = searchParams.get("import");
+    if (!importCode) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const shared = await fetchSharedView(importCode);
+        if (cancelled) return;
+        const payload = shared.payload as unknown as SharedViewPayload;
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("import");
+          return next;
+        });
+        applySharedViewPayload(payload);
+        toast.success("Loaded view from shared url");
+        lastLocalRestoreToastInstanceRef.current = instance.id;
+      } catch {
+        if (cancelled) return;
+        toast.error("Failed to import shared view");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applySharedViewPayload, instance.id, searchParams, setSearchParams]);
+
+  const selectedEncounters = useMemo(
+    () => instance.encounters.filter((e) => selectedIds.includes(e.id)),
+    [instance.encounters, selectedIds],
+  );
   const trashGroups = groupTrashEncounters(instance.encounters);
 
   const totalDuration = instance.endTime
@@ -1634,7 +2249,56 @@ export function InstancePageView({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                void handleShareView();
+              }}
+              onContextMenu={handleShareButtonContextMenu}
+            >
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
             {youtubeButton}
+            {shareContextMenu && (
+              <div
+                className="fixed z-[120] min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                style={{ left: shareContextMenu.x, top: shareContextMenu.y }}
+              >
+                <button
+                  type="button"
+                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => {
+                    setShareContextMenu(null);
+                    void handleShareView();
+                  }}
+                >
+                  Share
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => {
+                    setShareContextMenu(null);
+                    importStateFromJSON();
+                  }}
+                >
+                  Import from JSON
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => {
+                    setShareContextMenu(null);
+                    void copyStateToClipboard();
+                  }}
+                >
+                  Copy state to clipboard
+                </button>
+              </div>
+            )}
             {showHints && !isMobile && (
               <>
                 <div className="relative">
@@ -1662,8 +2326,6 @@ export function InstancePageView({
             )}
             {/* Hamburger menu with layout options + view log */}
             <InstanceMenu
-              layout={viewState.layout}
-              onLayoutChange={handleLayoutChange}
               onImportLayout={handleImportLayout}
               instanceId={instance.id}
               logDetailUrl={logDetailUrl}

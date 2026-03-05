@@ -28,6 +28,9 @@ import type {
   UserPanelLayout as UserPanelLayoutGenerated,
   ActionBarSlotsResponse as ActionBarSlotsResponseGenerated,
   InstanceDefaultsResponse as InstanceDefaultsResponseGenerated,
+  CreateShareRequest as CreateShareRequestGenerated,
+  CreateShareResponse as CreateShareResponseGenerated,
+  SharedViewResponse as SharedViewResponseGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -58,6 +61,9 @@ export type UpdateUserPanelLayoutRequest = UpdateUserPanelLayoutRequestGenerated
 export type UserPanelLayout = UserPanelLayoutGenerated;
 export type ActionBarSlotsResponse = ActionBarSlotsResponseGenerated;
 export type InstanceDefaultsResponse = InstanceDefaultsResponseGenerated;
+export type CreateShareRequest = CreateShareRequestGenerated;
+export type CreateShareResponse = CreateShareResponseGenerated;
+export type SharedViewResponse = SharedViewResponseGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -157,6 +163,35 @@ export function useSharedLayout(
     },
     enabled: !!layoutID,
     ...options,
+  });
+}
+
+
+export async function fetchSharedView(code: string): Promise<SharedViewResponse> {
+  const response = await fetch(`/api/v1/share/${encodeURIComponent(code)}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch shared view");
+  }
+  return response.json() as Promise<SharedViewResponse>;
+}
+
+export function useCreateShare() {
+  return useMutation({
+    mutationFn: async (request: CreateShareRequest) => {
+      const response = await fetch("/api/v1/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to create share link", error);
+      }
+
+      return response.json() as Promise<CreateShareResponse>;
+    },
   });
 }
 

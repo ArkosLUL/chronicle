@@ -1,4 +1,4 @@
-import { Menu, LayoutGrid, Rows3, FileText, Copy, Upload } from "lucide-react";
+import { Menu, FileText, Copy, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,22 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
 } from "@/components/ui/DropdownMenu/DropdownMenu";
-import type { LayoutType } from "@/hooks/useUrlState";
-
 interface InstanceMenuProps {
-  layout: LayoutType;
-  onLayoutChange: (layout: LayoutType) => void;
   onImportLayout?: () => void;
   instanceId: string;
   logDetailUrl?: string;
 }
 
 export function InstanceMenu({
-  layout,
-  onLayoutChange,
   onImportLayout,
   instanceId,
   logDetailUrl,
@@ -48,18 +40,7 @@ export function InstanceMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {/* Layout section */}
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Layout</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={layout} onValueChange={(v) => onLayoutChange(v as LayoutType)}>
-          <DropdownMenuRadioItem value="standard">
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Standard (2×2 + 1)
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="alternate">
-            <Rows3 className="h-4 w-4 mr-2" />
-            Alternate (1+1 + 2×1)
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-
+        <DropdownMenuLabel className="text-xs text-muted-foreground">Actions</DropdownMenuLabel>
         {onImportLayout && (
           <DropdownMenuItem onClick={onImportLayout}>
             <Upload className="h-4 w-4 mr-2" />

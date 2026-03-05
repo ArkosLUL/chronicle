@@ -514,13 +514,13 @@ export function LayoutBookSettings() {
                       {!layout.is_tracked ? (
                         <div className="mt-1 text-xs text-muted-foreground">
                           <div>Created by You</div>
-                          {layout.tracker_count > 0 ? <div>Tracked by {layout.tracker_count} other users</div> : null}
+                          {layout.tracker_count > 0 ? <div>Saved by {layout.tracker_count} other users</div> : null}
                         </div>
                       ) : null}
                       {layout.is_tracked ? (
                         <div className="mt-1 text-xs text-muted-foreground">
                           <div>Created by {layout.owner_username ?? "Unknown user"}</div>
-                          <div>Tracked by {Math.max(0, layout.tracker_count - 1)} other users</div>
+                          <div>Saved by {Math.max(0, layout.tracker_count - 1)} other users</div>
                         </div>
                       ) : null}
                       <div className="mt-2 flex items-center gap-1.5">
@@ -1157,7 +1157,7 @@ export function LayoutLabSettings() {
             {readOnly && !isActiveLayoutOwnedByCurrentUser ? (
               <div className="text-xs text-muted-foreground">
                 <div>Created by {activeLayout.owner_username ?? "Unknown user"}</div>
-                <div>Tracked by {activeLayoutOtherTrackerCount} other users</div>
+                <div>Saved by {activeLayoutOtherTrackerCount} other users</div>
               </div>
             ) : null}
 
@@ -1171,7 +1171,7 @@ export function LayoutLabSettings() {
                     className="gap-1.5"
                     disabled={trackLayout.isPending || untrackLayout.isPending}
                   >
-                    {activeLayout.is_tracked ? "Untrack" : "Track"}
+                    {activeLayout.is_tracked ? "Remove from Book" : "Save to Book"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => void handleSaveCopy()} className="gap-1.5" disabled={createLayout.isPending}>
                     <Copy className="h-4 w-4" />

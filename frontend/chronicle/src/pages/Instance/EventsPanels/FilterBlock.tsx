@@ -282,23 +282,65 @@ function SegmentedToggle({ options, values, onToggle, multiSelect = true }: {
   );
 }
 
-function AbilityIdEditor({ filter, onChange }: { filter: PanelFilter; onChange: (next: PanelFilter) => void }) {
-  const raw = toInputValue(filter.value).trim();
-  const spellId = raw ? parseInt(raw, 10) : NaN;
+function AbilityIdChip({ id, onRemove }: { id: string; onRemove: () => void }) {
+  const spellId = parseInt(id, 10);
   const { data: spell } = useSpell(
     isNaN(spellId) ? "" : spellId.toString(),
     { enabled: !isNaN(spellId) && spellId > 0 },
   );
 
   return (
-    <div className="flex items-center gap-1.5">
-      {spell && <SpellIconWithTooltip spell={spell} size={20} />}
-      <Input
-        className="h-7 text-xs w-24"
+    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-xs font-medium">
+      {spell ? <SpellIconWithTooltip spell={spell} size={16}>{id}</SpellIconWithTooltip> : id}
+      <button type="button" onClick={onRemove} className="hover:text-red-400 ml-0.5 leading-none">×</button>
+    </span>
+  );
+}
+
+function AbilityIdEditor({ filter, onChange }: { filter: PanelFilter; onChange: (next: PanelFilter) => void }) {
+  const arrayValues = toArrayValue(filter.value);
+  const [input, setInput] = useState("");
+
+  const addEntry = useCallback((raw: string) => {
+    const entry = raw.trim();
+    if (!entry || arrayValues.includes(entry)) return;
+    const num = parseInt(entry, 10);
+    if (isNaN(num) || num <= 0) return;
+    onChange({ ...filter, value: [...arrayValues, entry] });
+    setInput("");
+  }, [arrayValues, filter, onChange]);
+
+  const removeEntry = useCallback((entry: string) => {
+    onChange({ ...filter, value: arrayValues.filter((v) => v !== entry) });
+  }, [arrayValues, filter, onChange]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addEntry(input);
+    }
+    if (e.key === "Backspace" && input === "" && arrayValues.length > 0) {
+      removeEntry(arrayValues[arrayValues.length - 1]);
+    }
+  }, [input, arrayValues, addEntry, removeEntry]);
+
+  const handleBlur = useCallback(() => {
+    if (input.trim()) addEntry(input);
+  }, [input, addEntry]);
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 px-1 py-0.5 rounded border border-input bg-background/60 min-h-[28px] flex-1 min-w-[100px]">
+      {arrayValues.map((entry) => (
+        <AbilityIdChip key={entry} id={entry} onRemove={() => removeEntry(entry)} />
+      ))}
+      <input
+        className="flex-1 min-w-[60px] bg-transparent text-xs outline-none placeholder:text-muted-foreground py-0.5"
         type="number"
-        value={toInputValue(filter.value)}
-        onChange={(e) => onChange({ ...filter, value: e.target.value })}
-        placeholder="Spell ID"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder={arrayValues.length === 0 ? "spell ID, press Enter" : "add more…"}
       />
     </div>
   );

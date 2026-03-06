@@ -274,6 +274,13 @@ const FILTER_COMPILERS: Record<PanelFilterType, FilterCompiler> = {
   ability_name: (value) => {
     const names = toValues(value).map((n) => n.toLowerCase());
     if (names.length === 0) return () => true;
+    if (names.length === 1) {
+      const single = names[0];
+      return (event) => {
+        const name = (getEventAbilityName(event) ?? "").toLowerCase();
+        return name.includes(single);
+      };
+    }
     return (event) => {
       const name = (getEventAbilityName(event) ?? "").toLowerCase();
       return names.some((n) => name.includes(n));
@@ -281,11 +288,19 @@ const FILTER_COMPILERS: Record<PanelFilterType, FilterCompiler> = {
   },
 
   ability_id: (value) => {
-    const ids = new Set(toValues(value).map(Number).filter(Number.isFinite));
-    if (ids.size === 0) return () => true;
+    const ids = toValues(value).map(Number).filter(Number.isFinite);
+    if (ids.length === 0) return () => true;
+    if (ids.length === 1) {
+      const single = ids[0];
+      return (event) => {
+        const spellId = getEventAbilityId(event);
+        return spellId !== null && spellId === single;
+      };
+    }
+    const set = new Set(ids);
     return (event) => {
       const spellId = getEventAbilityId(event);
-      return spellId !== null && ids.has(spellId);
+      return spellId !== null && set.has(spellId);
     };
   },
 

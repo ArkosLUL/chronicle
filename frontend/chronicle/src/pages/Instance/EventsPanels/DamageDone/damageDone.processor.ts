@@ -235,27 +235,9 @@ export function createDamageDoneProcessor(
       // For pet check: owner must exist and be a player
       const isPet = !isPlayer && casterInfo?.owner &&
         (isPlayerGuidFast(casterInfo.owner) || getCachedGuid(guidCache, casterInfo.owner).isPlayer());
-      const isEnemy = !isPlayer && !isPet;
-
-      // Check if target is a player or player pet (for friendly fire detection)
-      const targetIsPlayer = isPlayerGuidFast(event.target) || getCachedGuid(guidCache, event.target).isPlayer();
-      const targetInfo = context.units?.[event.target];
-      const targetIsPet = !targetIsPlayer && targetInfo?.owner &&
-        (isPlayerGuidFast(targetInfo.owner) || getCachedGuid(guidCache, targetInfo.owner).isPlayer());
-      const isFriendlyFire = targetIsPlayer || targetIsPet;
-
-      // Filter by source type
-      // Pet damage counts for players too!
-      if (sourceType === "players" && (!isPlayer && !isPet)) return;
-      if (sourceType === "pets" && !isPet) return;
-      if (sourceType === "enemies" && !isEnemy) return;
-      if (sourceType === "friendly_fire" && (!isPlayer && !isPet)) return;
-
-      // For players/pets source, exclude friendly fire (damage to players/pets)
-      // For friendly_fire source, only include friendly fire
-      if (sourceType === "players" && isFriendlyFire) return;
-      if (sourceType === "pets" && isFriendlyFire) return;
-      if (sourceType === "friendly_fire" && !isFriendlyFire) return;
+      // Source type and friendly-fire filtering is handled by fixedFilters
+      // (see DamageDone.tsx). isPlayer/isPet/casterInfo are still used for
+      // damage attribution / grouping logic below.
 
       const petGrouping = sourceType === "pets"
         ? (context.panelOption === "pet" || context.panelOption === "pet_name"
@@ -395,15 +377,8 @@ export function createDamageDoneProcessor(
         accumulateEncounterTargetValue(state.EncounterVulnerabilityBase, encounterID, damageOwner, event.target, baseAmount);
       }
 
-      // Breakouts
-      if (context.selectedEncounterIds.has(encounterID) &&
-        (
-          (sourceType === "enemies" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target))) ||
-          ((sourceType === "players" || sourceType === "pets") && (context.entitySelection.enemyIds.size == 0 || context.entitySelection.enemyIds.has(event.target))) ||
-          // Friendly fire: filter by player selection (target is always a player/pet)
-          (sourceType === "friendly_fire" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target)))
-        )
-      ) {
+      // Breakouts (target entity filtering now handled by defaultFilters)
+      if (context.selectedEncounterIds.has(encounterID)) {
         let abilityName = event.sourceName || "Auto Attack";
         if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
           const petName = context.units?.[event.caster]?.name || event.caster.toString();

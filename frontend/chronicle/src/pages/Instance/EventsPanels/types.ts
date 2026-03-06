@@ -7,6 +7,7 @@ import type { StreamType } from "@/hooks/instanceEvents";
 import type { Instance } from "../InstancePage";
 import type { ProcessorContext, ProcessorEvent, ProcessorPagination } from "./processorTypes";
 import type { ReusableDamage } from "@/api/protodecode/decode";
+import type { PanelFilter } from "./processors/filters";
 
 /**
  * Selection state for filtering entities
@@ -93,6 +94,16 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
   
   /** If true, shows a warning indicator that this panel is experimental */
   underConstruction?: boolean;
+
+  /** Whether this panel supports the filter-builder UI on the card back. */
+  supportsFiltering?: boolean;
+
+  /** Fixed filters that are always active and cannot be edited by the user. */
+  fixedFilters?: PanelFilter[];
+
+  /** Default filters pre-populated in the user filter list. Editable and removable.
+   *  Reset restores these instead of clearing to empty. */
+  defaultFilters?: PanelFilter[];
   
   /**
    * Create the initial state for aggregation
@@ -163,6 +174,8 @@ export interface PanelRenderProps<TResult> {
   /** Optional panel-specific context payload for processor configuration. */
   panelContext?: Record<string, unknown> | null;
 
+  /** Bumps whenever panelContext changes; useful for local cache invalidation. */
+  panelContextVersion?: string | number;
 
   /** Stable panel slot index in the current layout (0-based). */
   panelIndex?: number;

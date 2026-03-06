@@ -8,6 +8,7 @@
 import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, FastAuraCastCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableCast, type ReusableAura, type ReusableSpellGo, type ReusableAuraCast } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
+import { compileFilters } from "./processors/filters";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -25,6 +26,7 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
     pagination: ctx.pagination,
     panelOption: ctx.panelOption,
     panelContext: ctx.panelContext,
+    filters: ctx.filters,
   };
 }
 
@@ -121,6 +123,9 @@ function processStreams<TResult>(
   
   // Convert to ProcessorContext with Sets for fast lookups
   const context = deserializeContext(serializableContext);
+
+  // Compile filters once before the event loop (hot-path optimization)
+  const filterPredicate = compileFilters(context.filters ?? [], context);
   
   // Create peekable cursors for all streams
   const cursors = streams.map(createCursor);
@@ -164,6 +169,10 @@ function processStreams<TResult>(
       
       // Process the event with the lowest index
       totalEvents++;
+      if (!filterPredicate(minPeeked.event)) {
+        consumePeeked(minCursor);
+        continue;
+      }
       processor.processEvent(
         state, 
         minPeeked.event, 

@@ -4,6 +4,7 @@
 
 import { Heart } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
+import type { PanelFilter } from "../processors/filters";
 import { unifiedHealingProcessor, type UnifiedHealingResult } from "../processors";
 import { HealingDoneContent } from "./HealingDoneContent";
 
@@ -32,13 +33,27 @@ export function createHealingDonePanel(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): PanelDefinition<UnifiedHealingResult, any> {
   const config = HEALING_SOURCE_CONFIGS[sourceType];
-  
+  const heal = ["heal"] as string[];
+
+  // Fixed: only healing from player casters (matches processor's isCasterPlayer check)
+  const fixedFilters: PanelFilter[] = [
+    { type: "source_type" as const, value: ["player"], applyTo: heal },
+  ];
+
+  // Default: narrow to healing targeted at selected players
+  const defaultFilters: PanelFilter[] = [
+    { type: "target_type" as const, value: "selected_players", applyTo: heal },
+  ];
+
   return {
     ...unifiedHealingProcessor,
     id: "healing_done", // Override processor id to match registry key
     label: config.label,
     icon: config.icon,
     supportsPerSecond: true,
+    supportsFiltering: true,
+    fixedFilters,
+    defaultFilters,
     
     render: (props: PanelRenderProps<UnifiedHealingResult>) => {
       return <HealingDoneContent {...props} sourceType={sourceType} />;

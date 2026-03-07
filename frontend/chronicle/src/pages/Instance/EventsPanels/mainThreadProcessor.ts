@@ -301,6 +301,9 @@ export async function processIncrementally<TResult>(
     filterPredicate = compileFilters(context.filters ?? [], context);
   }
 
+  // Attach compiled filter to context for processors that manage their own filtering
+  context.compiledFilter = filterPredicate;
+
   _filterCache.set(panelId, {
     filtersRef: rawFilters,
     contextKey,
@@ -519,7 +522,7 @@ export async function processIncrementally<TResult>(
       }
       
       // Apply filters (mirrors panelWorker.ts)
-      if (!filterPredicate(minPeeked.event)) {
+      if (!processor.processAllEvents && !filterPredicate(minPeeked.event)) {
         consumePeeked(minCursor);
         continue;
       }

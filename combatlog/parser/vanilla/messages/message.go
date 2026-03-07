@@ -327,6 +327,7 @@ type Heal struct {
 	SpellData *chrondbc.Spell
 	Amount    int32
 	HitType   types.HitType
+	School    types.School
 }
 
 func (h Heal) Affects() []guid.GUID { return []guid.GUID{h.Caster, h.Target} }

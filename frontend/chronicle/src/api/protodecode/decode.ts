@@ -437,7 +437,7 @@ export interface ReusableHeal {
   target: string;
   hitType: number;
   amount: number;
-  school: number; // Always 0 for heals, but kept for interface compat
+  school: number;
   activity: ReusableActivityEntry[];
   activityCount: number;
   spellId: number | null; // From SpellData field 8
@@ -454,6 +454,7 @@ export interface ReusableHeal {
  *   6: amount (int32)
  *   7: hitType (uint32)
  *   8: spellData (SpellData) - nested: 1=id, 2=name
+ *   9: school (School enum, varint)
  */
 export class HealDecoder {
   // Use shared TextDecoder for better memory efficiency
@@ -507,6 +508,7 @@ export class HealDecoder {
         
         if (fieldNumber === 6) msg.amount = value;
         else if (fieldNumber === 7) msg.hitType = value;
+        else if (fieldNumber === 9) msg.school = value;
       } else if (wireType === 2) {
         // Length-delimited
         const { value: len, bytesRead } = readVarintFast(data, offset);

@@ -127,6 +127,9 @@ function processStreams<TResult>(
   // Compile filters once before the event loop (hot-path optimization)
   const filterPredicate = compileFilters(context.filters ?? [], context);
   
+  // Attach compiled filter to context for processors that manage their own filtering
+  context.compiledFilter = filterPredicate;
+  
   // Create peekable cursors for all streams
   const cursors = streams.map(createCursor);
   
@@ -169,7 +172,7 @@ function processStreams<TResult>(
       
       // Process the event with the lowest index
       totalEvents++;
-      if (!filterPredicate(minPeeked.event)) {
+      if (!processor.processAllEvents && !filterPredicate(minPeeked.event)) {
         consumePeeked(minCursor);
         continue;
       }

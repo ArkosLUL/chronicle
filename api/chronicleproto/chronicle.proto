@@ -67,6 +67,7 @@ message Heal {
   int32 amount = 6;
   uint32 hitType = 7;
   optional SpellData spellData = 8;
+  School school = 9;
 }
 
 message Damage {

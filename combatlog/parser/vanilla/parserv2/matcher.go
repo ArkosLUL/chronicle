@@ -379,8 +379,10 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 	}
 
 	var name string
+	var school types.School
 	if spell != nil {
 		name = spell.Name()
+		school = spell.School.ToType()
 	}
 
 	return set(&messages.Heal{
@@ -391,6 +393,7 @@ func (p *Parser) heal(ctx context.Context, ts time.Time, m *Matched) ([]messages
 		SpellData:   spell,
 		Amount:      amount,
 		HitType:     hit,
+		School:      school,
 	})
 }
 

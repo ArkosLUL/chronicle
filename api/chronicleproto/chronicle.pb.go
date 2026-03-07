@@ -472,6 +472,7 @@ type Heal struct {
 	Amount        int32                  `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
 	HitType       uint32                 `protobuf:"varint,7,opt,name=hitType,proto3" json:"hitType,omitempty"`
 	SpellData     *SpellData             `protobuf:"bytes,8,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
+	School        School                 `protobuf:"varint,9,opt,name=school,proto3,enum=chronicleproto.School" json:"school,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -553,6 +554,13 @@ func (x *Heal) GetSpellData() *SpellData {
 		return x.SpellData
 	}
 	return nil
+}
+
+func (x *Heal) GetSchool() School {
+	if x != nil {
+		return x.School
+	}
+	return School_Unknown
 }
 
 type Damage struct {
@@ -1378,7 +1386,7 @@ const file_chronicle_proto_rawDesc = "" +
 	"\tEventMeta\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x05R\x05index\x12 \n" +
 	"\voffsetMilli\x18\x02 \x01(\x03R\voffsetMilli\x129\n" +
-	"\bactivity\x18\x03 \x03(\v2\x1d.chronicleproto.ActivityEntryR\bactivity\"\x83\x02\n" +
+	"\bactivity\x18\x03 \x03(\v2\x1d.chronicleproto.ActivityEntryR\bactivity\"\xb3\x02\n" +
 	"\x04Heal\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x16\n" +
 	"\x06caster\x18\x03 \x01(\tR\x06caster\x12\x16\n" +
@@ -1388,7 +1396,8 @@ const file_chronicle_proto_rawDesc = "" +
 	"sourceName\x12\x16\n" +
 	"\x06amount\x18\x06 \x01(\x05R\x06amount\x12\x18\n" +
 	"\ahitType\x18\a \x01(\rR\ahitType\x12<\n" +
-	"\tspellData\x18\b \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01B\f\n" +
+	"\tspellData\x18\b \x01(\v2\x19.chronicleproto.SpellDataH\x00R\tspellData\x88\x01\x01\x12.\n" +
+	"\x06school\x18\t \x01(\x0e2\x16.chronicleproto.SchoolR\x06schoolB\f\n" +
 	"\n" +
 	"_spellData\"\xf7\x02\n" +
 	"\x06Damage\x12-\n" +
@@ -1562,32 +1571,33 @@ var file_chronicle_proto_depIdxs = []int32{
 	6,  // 0: chronicleproto.EventMeta.activity:type_name -> chronicleproto.ActivityEntry
 	7,  // 1: chronicleproto.Heal.meta:type_name -> chronicleproto.EventMeta
 	4,  // 2: chronicleproto.Heal.spellData:type_name -> chronicleproto.SpellData
-	7,  // 3: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
-	0,  // 4: chronicleproto.Damage.school:type_name -> chronicleproto.School
-	5,  // 5: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
-	4,  // 6: chronicleproto.Damage.spellData:type_name -> chronicleproto.SpellData
-	7,  // 7: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
-	4,  // 8: chronicleproto.ResourceChange.spellData:type_name -> chronicleproto.SpellData
-	7,  // 9: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
-	4,  // 10: chronicleproto.ExtraAttack.spellData:type_name -> chronicleproto.SpellData
-	7,  // 11: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
-	9,  // 12: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
-	7,  // 13: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
-	1,  // 14: chronicleproto.Cast.action:type_name -> chronicleproto.CastAction
-	13, // 15: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
-	7,  // 16: chronicleproto.Aura.meta:type_name -> chronicleproto.EventMeta
-	2,  // 17: chronicleproto.Aura.application:type_name -> chronicleproto.AuraApplication
-	3,  // 18: chronicleproto.Aura.state:type_name -> chronicleproto.AuraState
-	4,  // 19: chronicleproto.Aura.spellData:type_name -> chronicleproto.SpellData
-	7,  // 20: chronicleproto.AuraCast.meta:type_name -> chronicleproto.EventMeta
-	4,  // 21: chronicleproto.AuraCast.spell:type_name -> chronicleproto.SpellData
-	7,  // 22: chronicleproto.SpellGo.meta:type_name -> chronicleproto.EventMeta
-	4,  // 23: chronicleproto.SpellGo.spellData:type_name -> chronicleproto.SpellData
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	0,  // 3: chronicleproto.Heal.school:type_name -> chronicleproto.School
+	7,  // 4: chronicleproto.Damage.meta:type_name -> chronicleproto.EventMeta
+	0,  // 5: chronicleproto.Damage.school:type_name -> chronicleproto.School
+	5,  // 6: chronicleproto.Damage.tailers:type_name -> chronicleproto.Tailer
+	4,  // 7: chronicleproto.Damage.spellData:type_name -> chronicleproto.SpellData
+	7,  // 8: chronicleproto.ResourceChange.meta:type_name -> chronicleproto.EventMeta
+	4,  // 9: chronicleproto.ResourceChange.spellData:type_name -> chronicleproto.SpellData
+	7,  // 10: chronicleproto.ExtraAttack.meta:type_name -> chronicleproto.EventMeta
+	4,  // 11: chronicleproto.ExtraAttack.spellData:type_name -> chronicleproto.SpellData
+	7,  // 12: chronicleproto.Slain.meta:type_name -> chronicleproto.EventMeta
+	9,  // 13: chronicleproto.Slain.attribution:type_name -> chronicleproto.Damage
+	7,  // 14: chronicleproto.Cast.meta:type_name -> chronicleproto.EventMeta
+	1,  // 15: chronicleproto.Cast.action:type_name -> chronicleproto.CastAction
+	13, // 16: chronicleproto.Cast.spell:type_name -> chronicleproto.Spell
+	7,  // 17: chronicleproto.Aura.meta:type_name -> chronicleproto.EventMeta
+	2,  // 18: chronicleproto.Aura.application:type_name -> chronicleproto.AuraApplication
+	3,  // 19: chronicleproto.Aura.state:type_name -> chronicleproto.AuraState
+	4,  // 20: chronicleproto.Aura.spellData:type_name -> chronicleproto.SpellData
+	7,  // 21: chronicleproto.AuraCast.meta:type_name -> chronicleproto.EventMeta
+	4,  // 22: chronicleproto.AuraCast.spell:type_name -> chronicleproto.SpellData
+	7,  // 23: chronicleproto.SpellGo.meta:type_name -> chronicleproto.EventMeta
+	4,  // 24: chronicleproto.SpellGo.spellData:type_name -> chronicleproto.SpellData
+	25, // [25:25] is the sub-list for method output_type
+	25, // [25:25] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }

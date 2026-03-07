@@ -133,6 +133,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
   return {
     id: "healing",
     streams: ["damage", "heal", "resource_change"],
+    processAllEvents: true, // Deficit tracking needs ALL events; filter applied inside for aggregation only
 
     createState: () => ({
       // HealingDone
@@ -245,6 +246,9 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         overheal = healAmount;
       }
 
+      // Filter check: deficit tracking above always runs, but only aggregate events that pass the filter
+      if (context.compiledFilter && !context.compiledFilter(event)) return;
+
       // Get player info
       const healerName = context.players[healerID]?.name || healerID;
       const healerClass = context.players[healerID]?.class || "UNKNOWN";
@@ -352,82 +356,68 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         abilityName = abilityName + " (HoT)";
       }
 
-      // Filter for healer breakouts: only show healing to selected players (or all if none selected)
-      // "Other" targets are always included in breakouts
-      const includeInHealerBreakout = isOtherTarget || 
-        context.entitySelection.playerIds.size === 0 || 
-        context.entitySelection.playerIds.has(targetID);
-      
-      if (includeInHealerBreakout) {
-        // Healer ability breakdown
+      // --- Healer breakouts (ability + target breakdown) ---
+      // Healer ability breakdown
+      if (effectiveHeal > 0) {
+        accumulateAbilityBreakout(state.HealerByAbility, healerID, abilityName, effectiveHeal, hitType);
+      }
+      if (overheal > 0) {
+        accumulateAbilityBreakout(state.HealerByAbilityOverheal, healerID, abilityName, overheal, hitType);
+      }
+      // Always track total (effective + overheal) - counts each event exactly once
+      accumulateAbilityBreakout(state.HealerByAbilityTotal, healerID, abilityName, healAmount, hitType);
+
+      // Spell ID keyed breakdown (for "Show ranks" mode)
+      // Only available for actual heal events, not resource_change events
+      const spellId = !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
+      if (spellId != null) {
         if (effectiveHeal > 0) {
-          accumulateAbilityBreakout(state.HealerByAbility, healerID, abilityName, effectiveHeal, hitType);
+          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, spellId, abilityName, effectiveHeal, hitType);
         }
         if (overheal > 0) {
-          accumulateAbilityBreakout(state.HealerByAbilityOverheal, healerID, abilityName, overheal, hitType);
+          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityOverhealBySpellId, healerID, spellId, abilityName, overheal, hitType);
         }
-        // Always track total (effective + overheal) - counts each event exactly once
-        accumulateAbilityBreakout(state.HealerByAbilityTotal, healerID, abilityName, healAmount, hitType);
-
-        // Spell ID keyed breakdown (for "Show ranks" mode)
-        // Only available for actual heal events, not resource_change events
-        const spellId = !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
-        if (spellId != null) {
-          if (effectiveHeal > 0) {
-            accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, spellId, abilityName, effectiveHeal, hitType);
-          }
-          if (overheal > 0) {
-            accumulateAbilityBreakoutBySpellId(state.HealerByAbilityOverhealBySpellId, healerID, spellId, abilityName, overheal, hitType);
-          }
-          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityTotalBySpellId, healerID, spellId, abilityName, healAmount, hitType);
-        }
-
-        // Healer target breakdown
-        const healerTargets = state.HealerByTarget.get(healerID) || new Map();
-        healerTargets.set(aggregateTargetID, (healerTargets.get(aggregateTargetID) || 0) + effectiveHeal);
-        state.HealerByTarget.set(healerID, healerTargets);
-        
-        const healerTargetsOverheal = state.HealerByTargetOverheal.get(healerID) || new Map();
-        healerTargetsOverheal.set(aggregateTargetID, (healerTargetsOverheal.get(aggregateTargetID) || 0) + overheal);
-        state.HealerByTargetOverheal.set(healerID, healerTargetsOverheal);
-        
-        // Total target breakdown
-        const healerTargetsTotal = state.HealerByTargetTotal.get(healerID) || new Map();
-        healerTargetsTotal.set(aggregateTargetID, (healerTargetsTotal.get(aggregateTargetID) || 0) + healAmount);
-        state.HealerByTargetTotal.set(healerID, healerTargetsTotal);
+        accumulateAbilityBreakoutBySpellId(state.HealerByAbilityTotalBySpellId, healerID, spellId, abilityName, healAmount, hitType);
       }
 
-      // Filter for target breakouts: only show healing received by selected players (or all if none selected)
-      // "Other" targets are always included in breakouts
-      const includeInTargetBreakout = isOtherTarget ||
-        context.entitySelection.playerIds.size === 0 || 
-        context.entitySelection.playerIds.has(targetID);
+      // Healer target breakdown
+      const healerTargets = state.HealerByTarget.get(healerID) || new Map();
+      healerTargets.set(aggregateTargetID, (healerTargets.get(aggregateTargetID) || 0) + effectiveHeal);
+      state.HealerByTarget.set(healerID, healerTargets);
       
-      if (includeInTargetBreakout) {
-        // Target ability breakdown
-        if (effectiveHeal > 0) {
-          accumulateAbilityBreakout(state.TargetByAbility, aggregateTargetID, abilityName, effectiveHeal, hitType);
-        }
-        if (overheal > 0) {
-          accumulateAbilityBreakout(state.TargetByAbilityOverheal, aggregateTargetID, abilityName, overheal, hitType);
-        }
-        // Always track total (effective + overheal) - counts each event exactly once
-        accumulateAbilityBreakout(state.TargetByAbilityTotal, aggregateTargetID, abilityName, healAmount, hitType);
+      const healerTargetsOverheal = state.HealerByTargetOverheal.get(healerID) || new Map();
+      healerTargetsOverheal.set(aggregateTargetID, (healerTargetsOverheal.get(aggregateTargetID) || 0) + overheal);
+      state.HealerByTargetOverheal.set(healerID, healerTargetsOverheal);
+      
+      // Total target breakdown
+      const healerTargetsTotal = state.HealerByTargetTotal.get(healerID) || new Map();
+      healerTargetsTotal.set(aggregateTargetID, (healerTargetsTotal.get(aggregateTargetID) || 0) + healAmount);
+      state.HealerByTargetTotal.set(healerID, healerTargetsTotal);
 
-        // Target source breakdown
-        const targetSources = state.TargetBySource.get(aggregateTargetID) || new Map();
-        targetSources.set(healerID, (targetSources.get(healerID) || 0) + effectiveHeal);
-        state.TargetBySource.set(aggregateTargetID, targetSources);
-        
-        const targetSourcesOverheal = state.TargetBySourceOverheal.get(aggregateTargetID) || new Map();
-        targetSourcesOverheal.set(healerID, (targetSourcesOverheal.get(healerID) || 0) + overheal);
-        state.TargetBySourceOverheal.set(aggregateTargetID, targetSourcesOverheal);
-        
-        // Total source breakdown
-        const targetSourcesTotal = state.TargetBySourceTotal.get(aggregateTargetID) || new Map();
-        targetSourcesTotal.set(healerID, (targetSourcesTotal.get(healerID) || 0) + healAmount);
-        state.TargetBySourceTotal.set(aggregateTargetID, targetSourcesTotal);
+      // --- Target breakouts (ability + source breakdown) ---
+      // Target ability breakdown
+      if (effectiveHeal > 0) {
+        accumulateAbilityBreakout(state.TargetByAbility, aggregateTargetID, abilityName, effectiveHeal, hitType);
       }
+      if (overheal > 0) {
+        accumulateAbilityBreakout(state.TargetByAbilityOverheal, aggregateTargetID, abilityName, overheal, hitType);
+      }
+      // Always track total (effective + overheal) - counts each event exactly once
+      accumulateAbilityBreakout(state.TargetByAbilityTotal, aggregateTargetID, abilityName, healAmount, hitType);
+
+      // Target source breakdown
+      const targetSources = state.TargetBySource.get(aggregateTargetID) || new Map();
+      targetSources.set(healerID, (targetSources.get(healerID) || 0) + effectiveHeal);
+      state.TargetBySource.set(aggregateTargetID, targetSources);
+      
+      const targetSourcesOverheal = state.TargetBySourceOverheal.get(aggregateTargetID) || new Map();
+      targetSourcesOverheal.set(healerID, (targetSourcesOverheal.get(healerID) || 0) + overheal);
+      state.TargetBySourceOverheal.set(aggregateTargetID, targetSourcesOverheal);
+      
+      // Total source breakdown
+      const targetSourcesTotal = state.TargetBySourceTotal.get(aggregateTargetID) || new Map();
+      targetSourcesTotal.set(healerID, (targetSourcesTotal.get(healerID) || 0) + healAmount);
+      state.TargetBySourceTotal.set(aggregateTargetID, targetSourcesTotal);
     },
   };
 }

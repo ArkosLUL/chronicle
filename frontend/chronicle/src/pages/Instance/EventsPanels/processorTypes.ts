@@ -342,6 +342,13 @@ export interface ProcessorContext {
 
   /** Optional event filters evaluated before processor.processEvent. */
   filters?: PanelFilter[];
+
+  /**
+   * Compiled filter predicate from panel filters.
+   * Set when processAllEvents is true so the processor can apply filtering selectively.
+   * Returns true if the event passes the filter.
+   */
+  compiledFilter?: (event: ProcessorEvent) => boolean;
 }
 
 /**
@@ -363,6 +370,13 @@ export interface PanelProcessor<TResult, TEvent extends ProcessorEvent = Process
    */
   createState: () => TResult;
   
+  /**
+   * If true, the worker skips pre-filtering and passes ALL events to processEvent.
+   * The compiled filter predicate is attached to context.compiledFilter so the
+   * processor can apply it selectively (e.g., for aggregation but not deficit tracking).
+   */
+  processAllEvents?: boolean;
+
   /**
    * Process a single event and update the state.
    */

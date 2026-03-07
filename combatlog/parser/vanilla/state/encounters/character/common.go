@@ -73,6 +73,21 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 	switch data := m.(type) {
 	case *messages.AuraCast:
 		// TODO: Aura cast because some polymorph debuffs do not appear?
+		if data.Target == nil || c.ID() != *data.Target {
+			return nil
+		}
+
+		if data.Spell != nil {
+			switch data.Spell.ID {
+			// Faerie Fire, this is kinda jank.
+			// TODO: Apply to all debuffs of a certain type.
+			case 770, 778, 1069, 2887, 2888, // Mana
+				16855, 17387, 17388, 17389, // Bear
+				16857, 17390, 17391, 17392: // Feral
+				c.Start(fmt.Sprintf("debuff_%s", data.Spell.Name()), m)
+			}
+		}
+
 	case *messages.Cast:
 		if data.Target != nil && (*data.Target).Gid == c.ID() {
 			if data.Action == types.CastActionsCasts && isImmobilizeCC(data.Spell.Name) {

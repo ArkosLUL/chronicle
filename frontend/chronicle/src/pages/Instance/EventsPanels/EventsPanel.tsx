@@ -277,6 +277,8 @@ export interface EventsPanelProps {
   context: PanelContext;
   /** Unique index for timing tracking (0-3 for 4 panels) */
   panelIndex: number;
+  /** Stable layout item ID (e.g. "panel-1") */
+  panelId?: string;
   /** Callback when user clicks the explainer button (? icon) */
   onExplainerClick?: (panelType: EventsPanelType) => void;
   /** Whether to show helpful hints (explainer button). Defaults to true. */
@@ -299,6 +301,7 @@ export function EventsPanel({
   durationMs,
   context,
   panelIndex,
+  panelId,
   onExplainerClick,
   showHints = true,
   panelOption,
@@ -382,9 +385,12 @@ export function EventsPanel({
   // -- ChartDataRegistry: register/unregister for cross-panel comparison ------
   const { register: chartRegister, unregister: chartUnregister } = useChartDataActions();
 
+  const effectivePanelId = panelId ?? `panel-${panelIndex}`;
+
   const registerChartData = useCallback(
     (data: PlayerMetricChartData[]) => {
       chartRegister({
+        panelId: effectivePanelId,
         panelIndex,
         panelType: panelType as EventsPanelType,
         label: customTitle || panel.label,
@@ -392,15 +398,15 @@ export function EventsPanel({
         data,
       });
     },
-    [chartRegister, panelIndex, panelType, customTitle, panel.label, borderColor],
+    [chartRegister, effectivePanelId, panelIndex, panelType, customTitle, panel.label, borderColor],
   );
 
   // Unregister when panel unmounts or panel type changes
   useEffect(() => {
     return () => {
-      chartUnregister(panelIndex);
+      chartUnregister(effectivePanelId);
     };
-  }, [chartUnregister, panelIndex, panelType]);
+  }, [chartUnregister, effectivePanelId, panelType]);
 
   const setPanelContextWithKey = useCallback((nextContext: Record<string, unknown> | null) => {
     setPanelContext(nextContext);
@@ -646,6 +652,7 @@ export function EventsPanel({
                 panelContextVersion: `${panelContextVersion}|${aggregationContextKey}`,
                 setPanelContext: setPanelContextWithKey,
                 panelIndex,
+                panelId: effectivePanelId,
                 registerChartData,
               })}
             </div>

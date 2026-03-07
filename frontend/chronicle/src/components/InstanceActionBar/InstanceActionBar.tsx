@@ -138,7 +138,7 @@ function ActionBarSlot({
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent
           side="top"
-          className={layout ? "border-0 bg-transparent p-0" : "text-xs"}
+          className={cn("z-[10000]", layout ? "border-0 bg-transparent p-0" : "text-xs")}
           hideArrow={!!layout}
         >
           {layout ? <SpellTooltip spell={buildLayoutSpellTooltip(layout)} /> : `Slot ${hotkey} (empty)`}
@@ -155,7 +155,7 @@ function ActionBarSlot({
         </TooltipTrigger>
         <TooltipContent
           side="top"
-          className={layout ? "border-0 bg-transparent p-0" : "text-xs"}
+          className={cn("z-[10000]", layout ? "border-0 bg-transparent p-0" : "text-xs")}
           hideArrow={!!layout}
         >
           {layout ? <SpellTooltip spell={buildLayoutSpellTooltip(layout)} /> : `Slot ${hotkey} (empty)`}

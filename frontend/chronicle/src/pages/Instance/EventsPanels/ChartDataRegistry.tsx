@@ -13,6 +13,9 @@ import type { PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/Pl
 import type { EventsPanelType } from "./EventsPanel";
 
 export interface ChartDataEntry {
+  /** Stable layout item ID (e.g. "panel-1"). Used as the map key. */
+  panelId: string;
+  /** Positional index in the current layout (0-based). Kept for display labels. */
   panelIndex: number;
   panelType: EventsPanelType;
   label: string;
@@ -22,34 +25,34 @@ export interface ChartDataEntry {
 
 interface ChartDataActions {
   register: (entry: ChartDataEntry) => void;
-  unregister: (panelIndex: number) => void;
+  unregister: (panelId: string) => void;
 }
 
 // Write context — stable value, consumed by every panel.
 const ChartDataActionsContext = createContext<ChartDataActions | null>(null);
 // Read context — changes when entries change, only consumed by ComparisonContent.
-const ChartDataEntriesContext = createContext<Map<number, ChartDataEntry>>(new Map());
+const ChartDataEntriesContext = createContext<Map<string, ChartDataEntry>>(new Map());
 
 export function ChartDataRegistryProvider({ children }: { children: ReactNode }) {
-  const [entries, setEntries] = useState<Map<number, ChartDataEntry>>(() => new Map());
+  const [entries, setEntries] = useState<Map<string, ChartDataEntry>>(() => new Map());
 
   const register = useCallback((entry: ChartDataEntry) => {
     setEntries((prev) => {
-      const existing = prev.get(entry.panelIndex);
+      const existing = prev.get(entry.panelId);
       if (existing && existing.data === entry.data && existing.borderColor === entry.borderColor && existing.label === entry.label) {
         return prev;
       }
       const next = new Map(prev);
-      next.set(entry.panelIndex, entry);
+      next.set(entry.panelId, entry);
       return next;
     });
   }, []);
 
-  const unregister = useCallback((panelIndex: number) => {
+  const unregister = useCallback((panelId: string) => {
     setEntries((prev) => {
-      if (!prev.has(panelIndex)) return prev;
+      if (!prev.has(panelId)) return prev;
       const next = new Map(prev);
-      next.delete(panelIndex);
+      next.delete(panelId);
       return next;
     });
   }, []);
@@ -86,6 +89,6 @@ export function useChartDataActions(): ChartDataActions {
  * Only use this in components that need to read other panels' data (ComparisonContent).
  */
 // eslint-disable-next-line react-refresh/only-export-components
-export function useChartDataEntries(): Map<number, ChartDataEntry> {
+export function useChartDataEntries(): Map<string, ChartDataEntry> {
   return useContext(ChartDataEntriesContext);
 }

@@ -774,6 +774,7 @@ function LivePanelTile({
       panelOption={panelOption}
       onPanelOptionChange={onPanelOptionChange}
       panelIndex={Number(item.id.replace("panel-", "")) - 1}
+      panelId={item.id}
       showHints={false}
       seedFilters={seedFilters}
       seedFiltersVersion={seedFiltersVersion}

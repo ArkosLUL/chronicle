@@ -1206,6 +1206,7 @@ function EncounterDetail({
                   durationMs={totalDurationMs}
                   context={panelContext}
                   panelIndex={index}
+                  panelId={item.id}
                   onExplainerClick={onExplainerClick}
                   showHints={showHints}
                   panelOption={panelOptionsById[item.id] ?? null}

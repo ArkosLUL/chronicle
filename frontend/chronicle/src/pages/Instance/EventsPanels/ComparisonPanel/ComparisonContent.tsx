@@ -15,33 +15,33 @@ import { ComparisonChart, type ComparisonSource } from "./ComparisonChart";
 
 type ComparisonContentProps = PanelRenderProps<ComparisonResult>;
 
-/** Parse panelOption "0,2,3" → number[] */
-function parseSelectedIndices(option: string | null | undefined): number[] {
+/** Parse panelOption "panel-1,panel-2" → string[] (filtering out metadata tokens like bc:, t:, cb) */
+function parseSelectedIds(option: string | null | undefined): string[] {
   if (!option) return [];
   return option
     .split(",")
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n));
+    .map((s) => s.trim())
+    .filter((s) => s.startsWith("panel-"));
 }
 
-function serializeIndices(indices: number[]): string | null {
-  return indices.length > 0 ? indices.join(",") : null;
+function serializeIds(ids: string[]): string | null {
+  return ids.length > 0 ? ids.join(",") : null;
 }
 
 export function ComparisonContent(props: ComparisonContentProps) {
-  const { panelOption, setPanelOption, panelIndex, checkboxChecked } = props;
+  const { panelOption, setPanelOption, panelId, checkboxChecked } = props;
   const entries = useChartDataEntries();
 
-  const selectedIndices = useMemo(
-    () => parseSelectedIndices(panelOption),
+  const selectedIds = useMemo(
+    () => parseSelectedIds(panelOption),
     [panelOption],
   );
 
   // Build sources from registry entries
   const sources: ComparisonSource[] = useMemo(() => {
     const result: ComparisonSource[] = [];
-    for (const idx of selectedIndices) {
-      const entry = entries.get(idx);
+    for (const id of selectedIds) {
+      const entry = entries.get(id);
       if (entry) {
         result.push({
           label: entry.label,
@@ -51,41 +51,41 @@ export function ComparisonContent(props: ComparisonContentProps) {
       }
     }
     return result;
-  }, [selectedIndices, entries]);
+  }, [selectedIds, entries]);
 
-  const togglePanel = (idx: number) => {
+  const togglePanel = (id: string) => {
     if (!setPanelOption) return;
-    const current = new Set(selectedIndices);
-    if (current.has(idx)) {
-      current.delete(idx);
+    const current = new Set(selectedIds);
+    if (current.has(id)) {
+      current.delete(id);
     } else {
-      current.add(idx);
+      current.add(id);
     }
-    setPanelOption(serializeIndices([...current]));
+    setPanelOption(serializeIds([...current]));
   };
 
-  const removePanel = (idx: number) => {
+  const removePanel = (id: string) => {
     if (!setPanelOption) return;
-    setPanelOption(serializeIndices(selectedIndices.filter((i) => i !== idx)));
+    setPanelOption(serializeIds(selectedIds.filter((i) => i !== id)));
   };
 
-  // Available panels: those in the registry excluding our own panelIndex
+  // Available panels: those in the registry excluding our own panelId
   const availablePanels = useMemo(() => {
     const result: ChartDataEntry[] = [];
     for (const [, entry] of entries) {
-      if (entry.panelIndex !== panelIndex) {
+      if (entry.panelId !== panelId) {
         result.push(entry);
       }
     }
     return result.sort((a, b) => a.panelIndex - b.panelIndex);
-  }, [entries, panelIndex]);
+  }, [entries, panelId]);
 
   if (sources.length < 2) {
     return (
       <div className="flex flex-col h-full gap-2">
         <PanelPicker
           availablePanels={availablePanels}
-          selectedIndices={selectedIndices}
+          selectedIds={selectedIds}
           onToggle={togglePanel}
         />
         <div className="flex-1 flex flex-col items-center justify-center text-center text-sm text-muted-foreground gap-2 px-4">
@@ -105,12 +105,12 @@ export function ComparisonContent(props: ComparisonContentProps) {
     <div className="flex flex-col h-full gap-1">
       {/* Selected panels chips + add button */}
       <div className="flex items-center gap-1 flex-wrap">
-        {selectedIndices.map((idx) => {
-          const entry = entries.get(idx);
+        {selectedIds.map((id) => {
+          const entry = entries.get(id);
           if (!entry) return null;
           return (
             <span
-              key={idx}
+              key={id}
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-muted/60"
               style={{ borderLeft: `3px solid ${entry.borderColor || "#888"}` }}
             >
@@ -118,7 +118,7 @@ export function ComparisonContent(props: ComparisonContentProps) {
               <button
                 type="button"
                 className="hover:text-destructive cursor-pointer"
-                onClick={() => removePanel(idx)}
+                onClick={() => removePanel(id)}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -127,7 +127,7 @@ export function ComparisonContent(props: ComparisonContentProps) {
         })}
         <PanelPicker
           availablePanels={availablePanels}
-          selectedIndices={selectedIndices}
+          selectedIds={selectedIds}
           onToggle={togglePanel}
           compact
         />
@@ -147,13 +147,13 @@ export function ComparisonContent(props: ComparisonContentProps) {
 
 function PanelPicker({
   availablePanels,
-  selectedIndices,
+  selectedIds,
   onToggle,
   compact,
 }: {
   availablePanels: ChartDataEntry[];
-  selectedIndices: number[];
-  onToggle: (idx: number) => void;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
   compact?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -170,7 +170,7 @@ function PanelPicker({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const selectedSet = useMemo(() => new Set(selectedIndices), [selectedIndices]);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -197,12 +197,12 @@ function PanelPicker({
               </div>
             ) : (
               availablePanels.map((entry) => {
-                const selected = selectedSet.has(entry.panelIndex);
+                const selected = selectedSet.has(entry.panelId);
                 return (
                   <button
-                    key={entry.panelIndex}
+                    key={entry.panelId}
                     type="button"
-                    onClick={() => onToggle(entry.panelIndex)}
+                    onClick={() => onToggle(entry.panelId)}
                     className={cn(
                       "w-full text-left px-2 py-1.5 text-sm rounded-sm flex items-center gap-2",
                       "hover:bg-accent hover:text-accent-foreground cursor-pointer",

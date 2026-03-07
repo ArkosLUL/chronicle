@@ -179,6 +179,8 @@ export interface PanelRenderProps<TResult> {
 
   /** Stable panel slot index in the current layout (0-based). */
   panelIndex?: number;
+  /** Stable layout item ID (e.g. "panel-1"). */
+  panelId?: string;
   /** Callback to update panel-specific context payload. */
   setPanelContext?: (context: Record<string, unknown> | null) => void;
 

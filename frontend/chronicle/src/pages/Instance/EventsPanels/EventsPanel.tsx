@@ -209,11 +209,15 @@ function FilterSummaryCard({ filters }: { filters: PanelFilter[] }) {
 function FilterContextMenu({
   position,
   onReset,
+  onEdit,
   onClose,
+  hasCustomFilters,
 }: {
   position: { x: number; y: number };
   onReset: () => void;
+  onEdit: () => void;
   onClose: () => void;
+  hasCustomFilters: boolean;
 }) {
   useEffect(() => {
     const handler = () => onClose();
@@ -236,10 +240,18 @@ function FilterContextMenu({
     >
       <button
         className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-        onClick={onReset}
+        onClick={onEdit}
       >
-        Reset filters
+        Edit filters
       </button>
+      {hasCustomFilters && (
+        <button
+          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+          onClick={onReset}
+        >
+          Reset filters
+        </button>
+      )}
     </div>,
     document.body,
   );
@@ -438,7 +450,9 @@ export function EventsPanel({
     const defaults = panel.defaultFilters ?? [];
     applyFilters(defaults);
     setPendingFilters(null);
-  }, [applyFilters, panel.defaultFilters]);
+    setBorderColor(null);
+    setCustomTitle(null);
+  }, [applyFilters, panel.defaultFilters, setBorderColor, setCustomTitle]);
 
   const flipCard = useCallback(() => {
     setFlipped((prev) => {
@@ -560,31 +574,33 @@ export function EventsPanel({
                 ) : (
                   <PanelSelector value={panelType} onChange={onPanelTypeChange} />
                 )}
-                {hasCustomFilters && (
-                  <>
-                    <HintTooltip>
-                      <TooltipTrigger asChild>
-                        <span
-                          className="text-emerald-500 cursor-pointer"
-                          onClick={(e) => {
-                            setFilterContextMenu({ x: e.clientX, y: e.clientY });
-                          }}
-                        >
-                          <Filter className="h-3.5 w-3.5" />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" hideArrow className="p-3 bg-card text-card-foreground border border-border">
-                        <FilterSummaryCard filters={customFilters ?? []} />
-                      </TooltipContent>
-                    </HintTooltip>
-                    {filterContextMenu && (
-                      <FilterContextMenu
-                        position={filterContextMenu}
-                        onReset={() => { resetFilters(); setFilterContextMenu(null); }}
-                        onClose={() => setFilterContextMenu(null)}
-                      />
+                <HintTooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className={hasCustomFilters ? "text-emerald-500 cursor-pointer" : "text-muted-foreground cursor-pointer"}
+                      onClick={(e) => {
+                        setFilterContextMenu({ x: e.clientX, y: e.clientY });
+                      }}
+                    >
+                      <Filter className="h-3.5 w-3.5" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" hideArrow className="p-3 bg-card text-card-foreground border border-border">
+                    {hasCustomFilters ? (
+                      <FilterSummaryCard filters={customFilters ?? []} />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No custom filters</span>
                     )}
-                  </>
+                  </TooltipContent>
+                </HintTooltip>
+                {filterContextMenu && (
+                  <FilterContextMenu
+                    position={filterContextMenu}
+                    onReset={() => { resetFilters(); setFilterContextMenu(null); }}
+                    onEdit={() => { flipCard(); setFilterContextMenu(null); }}
+                    onClose={() => setFilterContextMenu(null)}
+                    hasCustomFilters={hasCustomFilters}
+                  />
                 )}
                 {showExplainerButton && (
                   <HintTooltip>

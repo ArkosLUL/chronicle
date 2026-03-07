@@ -1721,6 +1721,17 @@ export function InstancePageView({
     const idx = activeLayoutItems.findIndex((item) => item.id === itemID);
     if (idx === -1) return;
     setPanelType(idx, type as PanelType);
+    // Clear stale filters / set defaults for the new panel type.
+    const newPanel = PANELS[type as keyof typeof PANELS];
+    const defaults = newPanel?.defaultFilters;
+    setPanelFiltersByID((prev) => {
+      if (defaults && defaults.length > 0) {
+        return { ...prev, [itemID]: defaults };
+      }
+      if (!(itemID in prev)) return prev;
+      const { [itemID]: _, ...rest } = prev;
+      return rest;
+    });
   }, [activeLayoutItems, setPanelType]);
 
   const handlePanelOptionChangeByID = useCallback((itemID: string, option: string | null) => {

@@ -477,7 +477,10 @@ export function EventsPanel({
     setPanelContextVersion((version) => version + 1);
     setFlipped(false);
     setPendingFilters(null);
-    onFiltersChange?.(defaults ?? []);
+    // NOTE: We intentionally do NOT call onFiltersChange here. The parent owns
+    // panelFiltersByID and sets default filters itself when the panel type changes.
+    // Calling onFiltersChange from this effect would clobber saved filters that
+    // the parent loaded from a layout book / shared view.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on panelType change
   }, [panelType]);
 

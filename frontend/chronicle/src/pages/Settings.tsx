@@ -1048,7 +1048,16 @@ export function LayoutLabSettings() {
     if (readOnly) return;
     setPanelTypesById((prev) => ({ ...prev, [itemId]: nextType }));
     setPanelOptionsById((prev) => ({ ...prev, [itemId]: null }));
-    setPanelFiltersById((prev) => { const { [itemId]: _, ...rest } = prev; return rest; });
+    // Set the new panel type's default filters (or clear stale ones).
+    const newPanel = PANELS[nextType as keyof typeof PANELS];
+    const defaults = newPanel?.defaultFilters;
+    setPanelFiltersById((prev) => {
+      if (defaults && defaults.length > 0) {
+        return { ...prev, [itemId]: defaults };
+      }
+      const { [itemId]: _, ...rest } = prev;
+      return rest;
+    });
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId

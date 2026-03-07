@@ -5,6 +5,7 @@ description: |
   (damage, heal, resource_change, slain, cast, aura, extra_attack) into displayable metrics.
   Key architecture: processors are worker-safe pure TypeScript (NO React), panels are React wrappers.
   Processing runs in a Web Worker pool to keep UI responsive.
+  Includes Focus feature: right-click player rows to drill into per-ability breakdown (URL-persisted).
 ---
 
 # Events Panels
@@ -15,6 +16,7 @@ Use this skill when:
 - Adding a new panel to display combat log metrics
 - Modifying existing panel aggregation logic
 - Adding new stream types or event processing
+- Adding or modifying the Focus feature (right-click → ability breakdown)
 - Debugging panel performance issues
 
 ## Architecture Overview
@@ -314,6 +316,107 @@ accumulateAbilityBreakout(state.ByAbility, entityId, abilityName, amount, hitTyp
 | Aggregated results | React state | Until context/panel changes |
 
 Multiple panels requesting the same stream type share cached data.
+
+## Focus Feature (Right-Click → Ability Breakdown)
+
+Panels that show per-player bar charts (via `PlayerMetricChart`) support a **Focus** feature: right-clicking a player row opens a context menu with a "Focus" option that replaces the per-player view with a per-ability bar chart for the focused player.
+
+### Currently Supported Panels
+- **DamageDone** (`DamageDoneContent.tsx`) — uses `result.ByAbility`
+- **HealingDone** (`HealingDoneContent.tsx`) — uses `result.HealerByAbility` / `HealerByAbilityOverheal` / `HealerByAbilityTotal`
+- **HealingTaken** (`HealingTakenContent.tsx`) — uses `result.TargetByAbility` / `TargetByAbilityOverheal` / `TargetByAbilityTotal`
+
+### How It Works
+
+1. **`PlayerMetricChart`** has an `onRowContextMenu` prop that fires on right-click with `(playerId, event)`
+2. **`RowContextMenu`** (`components/ui/PlayerMetricChart/RowContextMenu.tsx`) renders a portal-based context menu
+3. **Focus state** is persisted in `panelOption` (URL) as a `f:<playerId>` token, comma-separated with other tokens
+4. **Focused view** maps `ByAbility` entries to `PlayerMetricChartData[]` and renders them through the same `PlayerMetricChart`
+5. **Focused breakout** shows hit-type detail (hits/crits/misses/min/max) when clicking an ability bar
+6. **`registerChartData`** registers the active view's data (focused abilities or normal players) for cross-panel comparison
+
+### URL Encoding (`panelOption`)
+
+Focus is encoded as `f:<playerId>` alongside other panel-specific tokens:
+
+```
+dd[f:0xABC123]                    — damage panel focused on player
+pdd[pet,f:0xABC123]               — pet panel with grouping + focus
+hd[overheal,ranks,f:0xABC123]     — healing done: overheal mode + ranks + focus
+ht[f:0xABC123]                    — healing taken focused on player
+```
+
+### Adding Focus to a New Panel
+
+If your panel renders a `PlayerMetricChart` with per-player data and has a `ByAbility`-style map in its processor result, add Focus by following the pattern in `DamageDoneContent.tsx`:
+
+```typescript
+// 1. Parse focus from panelOption
+const focusedPlayerId = useMemo(() => {
+  if (!panelOption) return null;
+  const token = panelOption.split(",").find(t => t.startsWith("f:"));
+  return token ? token.slice(2) : null;
+}, [panelOption]);
+
+// 2. Serialize focus back (preserve other tokens)
+const setFocusedPlayerId = useCallback((id: string | null) => {
+  // Combine with existing tokens (viewMode, ranks, grouping, etc.)
+  setPanelOption?.(serializeWithFocus(existingTokens, id));
+}, [setPanelOption, ...]);
+
+// 3. Build focused ability data as PlayerMetricChartData[]
+const focusedAbilityData = useMemo(() => {
+  if (!focusedPlayerId || !result) return null;
+  const abilities = result.ByAbility.get(focusedPlayerId);
+  if (!abilities) return null;
+  const barClassName = focusedPlayer?.className ?? "foreground";
+  return [...abilities.entries()]
+    .map(([name, stats]) => ({
+      playerID: name, playerName: name,
+      className: barClassName, specialization: "",
+      value: stats.Total,
+    }))
+    .sort((a, b) => b.value - a.value);
+}, [focusedPlayerId, result, focusedPlayer?.className]);
+
+// 4. Build focused breakout (single ability → hit-type detail)
+const focusedBreakout = useCallback((abilityName: string, pinned: boolean) => {
+  // Extract single ability from ByAbility, render AbilityBreakout
+}, [...]);
+
+// 5. Register active data for comparison table
+useEffect(() => {
+  registerChartData?.(focusedAbilityData ?? normalData);
+}, [registerChartData, focusedAbilityData, normalData]);
+
+// 6. Update total to reflect active view
+const activeData = focusedAbilityData ?? normalData;
+const total = activeData.reduce((sum, d) => sum + d.value, 0);
+
+// 7. Conditional rendering
+{focusedPlayerId && focusedAbilityData ? (
+  <PlayerMetricChart data={focusedAbilityData} breakout={focusedBreakout} ... />
+) : (
+  <PlayerMetricChart data={normalData} breakout={breakout}
+    onRowContextMenu={handleRowContextMenu} ... />
+)}
+```
+
+Key components to import:
+- `RowContextMenu` from `@/components/ui/PlayerMetricChart/RowContextMenu`
+- `AbilityBreakout`, `type AbilityData` from `@/components/ui/AbilityBreakout`
+- `ChevronLeft` from `lucide-react` (for back button)
+
+### Interaction Behavior
+
+| Action | Normal View | Focused View |
+|--------|-------------|--------------|
+| Left-click row | Breakout tooltip (ability list) | Breakout tooltip (hit-type stats) |
+| Right-click row | Context menu → "Focus" | No context menu |
+| Back / ESC | n/a | Returns to normal view |
+| Total display | Sum of all players | Sum of focused player's abilities |
+| Comparison table | Matches by player ID | Matches by ability name |
+| Per-second toggle | Per player | Per ability |
 
 ## Anti-Patterns
 

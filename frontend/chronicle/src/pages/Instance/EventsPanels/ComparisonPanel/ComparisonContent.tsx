@@ -5,9 +5,10 @@
  * from the ChartDataRegistry, and renders a ComparisonChart.
  */
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useCallback, useState, useRef, useEffect } from "react";
 import { BarChart3, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/Switch/Switch";
 import type { PanelRenderProps } from "../types";
 import type { ComparisonResult } from "./comparison.processor";
 import { useChartDataEntries, type ChartDataEntry } from "../ChartDataRegistry";
@@ -15,7 +16,7 @@ import { ComparisonChart, type ComparisonSource } from "./ComparisonChart";
 
 type ComparisonContentProps = PanelRenderProps<ComparisonResult>;
 
-/** Parse panelOption "panel-1,panel-2" → string[] (filtering out metadata tokens like bc:, t:, cb) */
+/** Parse panelOption "panel-1,panel-2,mo" → panel IDs only */
 function parseSelectedIds(option: string | null | undefined): string[] {
   if (!option) return [];
   return option
@@ -24,18 +25,29 @@ function parseSelectedIds(option: string | null | undefined): string[] {
     .filter((s) => s.startsWith("panel-"));
 }
 
-function serializeIds(ids: string[]): string | null {
-  return ids.length > 0 ? ids.join(",") : null;
+/** Check whether the "mo" (matched-only) token is present in panelOption */
+function hasMatchedOnlyToken(option: string | null | undefined): boolean {
+  if (!option) return false;
+  return option.split(",").some((s) => s.trim() === "mo");
+}
+
+/** Rebuild panelOption from panel IDs + matched-only flag */
+function serializeOption(ids: string[], matchedOnly: boolean): string | null {
+  const tokens = [...ids];
+  if (matchedOnly) tokens.push("mo");
+  return tokens.length > 0 ? tokens.join(",") : null;
 }
 
 export function ComparisonContent(props: ComparisonContentProps) {
-  const { panelOption, setPanelOption, panelId, checkboxChecked } = props;
+  const { panelOption, setPanelOption, panelId } = props;
   const entries = useChartDataEntries();
 
   const selectedIds = useMemo(
     () => parseSelectedIds(panelOption),
     [panelOption],
   );
+
+  const matchedOnly = useMemo(() => hasMatchedOnlyToken(panelOption), [panelOption]);
 
   // Build sources from registry entries
   const sources: ComparisonSource[] = useMemo(() => {
@@ -53,7 +65,7 @@ export function ComparisonContent(props: ComparisonContentProps) {
     return result;
   }, [selectedIds, entries]);
 
-  const togglePanel = (id: string) => {
+  const togglePanel = useCallback((id: string) => {
     if (!setPanelOption) return;
     const current = new Set(selectedIds);
     if (current.has(id)) {
@@ -61,13 +73,18 @@ export function ComparisonContent(props: ComparisonContentProps) {
     } else {
       current.add(id);
     }
-    setPanelOption(serializeIds([...current]));
-  };
+    setPanelOption(serializeOption([...current], matchedOnly));
+  }, [setPanelOption, selectedIds, matchedOnly]);
 
-  const removePanel = (id: string) => {
+  const removePanel = useCallback((id: string) => {
     if (!setPanelOption) return;
-    setPanelOption(serializeIds(selectedIds.filter((i) => i !== id)));
-  };
+    setPanelOption(serializeOption(selectedIds.filter((i) => i !== id), matchedOnly));
+  }, [setPanelOption, selectedIds, matchedOnly]);
+
+  const toggleMatchedOnly = useCallback(() => {
+    if (!setPanelOption) return;
+    setPanelOption(serializeOption(selectedIds, !matchedOnly));
+  }, [setPanelOption, selectedIds, matchedOnly]);
 
   // Available panels: those in the registry excluding our own panelId
   const availablePanels = useMemo(() => {
@@ -103,7 +120,7 @@ export function ComparisonContent(props: ComparisonContentProps) {
 
   return (
     <div className="flex flex-col h-full gap-1">
-      {/* Selected panels chips + add button */}
+      {/* Selected panels chips + matched-only toggle + add button */}
       <div className="flex items-center gap-1 flex-wrap">
         {selectedIds.map((id) => {
           const entry = entries.get(id);
@@ -131,11 +148,17 @@ export function ComparisonContent(props: ComparisonContentProps) {
           onToggle={togglePanel}
           compact
         />
+        {/* Spacer pushes the toggle to the right */}
+        <span className="flex-1" />
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer shrink-0">
+          Matched only
+          <Switch size="sm" checked={matchedOnly} onCheckedChange={toggleMatchedOnly} />
+        </label>
       </div>
 
       {/* Chart */}
       <div className="flex-1 min-h-0">
-        <ComparisonChart sources={sources} matchedOnly={checkboxChecked} />
+        <ComparisonChart sources={sources} matchedOnly={matchedOnly} perSecond={props.perSecond} durationMs={props.durationMs} />
       </div>
     </div>
   );

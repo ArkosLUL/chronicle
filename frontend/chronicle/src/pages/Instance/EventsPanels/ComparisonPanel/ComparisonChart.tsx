@@ -46,6 +46,8 @@ export interface ComparisonSource {
 export interface ComparisonChartProps {
   sources: ComparisonSource[];
   matchedOnly?: boolean;
+  perSecond?: boolean;
+  durationMs?: number;
 }
 
 interface PlayerRow {
@@ -58,7 +60,7 @@ interface PlayerRow {
   total: number;
 }
 
-export function ComparisonChart({ sources, matchedOnly }: ComparisonChartProps) {
+export function ComparisonChart({ sources, matchedOnly, perSecond, durationMs }: ComparisonChartProps) {
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
   const handleTogglePin = useCallback((id: string) => {
     setPinnedIds((prev) => {
@@ -105,13 +107,24 @@ export function ComparisonChart({ sources, matchedOnly }: ComparisonChartProps) 
     }
     built.sort((a, b) => b.total - a.total);
 
+    // Apply per-second conversion when enabled
+    const durationSecs = perSecond && durationMs ? durationMs / 1000 : 0;
+    if (durationSecs > 0) {
+      for (const row of built) {
+        for (let i = 0; i < row.values.length; i++) {
+          row.values[i] /= durationSecs;
+        }
+        row.total /= durationSecs;
+      }
+    }
+
     const sTotals = sources.map((_, si) =>
       built.reduce((sum, r) => sum + r.values[si], 0),
     );
     const gTotal = sTotals.reduce((a, b) => a + b, 0);
 
     return { rows: built, sourceTotals: sTotals, grandTotal: gTotal, sourceColors: colors };
-  }, [sources, matchedOnly]);
+  }, [sources, matchedOnly, perSecond, durationMs]);
 
   if (rows.length === 0) {
     return (

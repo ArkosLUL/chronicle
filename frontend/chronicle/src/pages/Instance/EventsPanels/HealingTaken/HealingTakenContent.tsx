@@ -197,17 +197,21 @@ export const HealingTakenContent = (props: HealingTakenContentProps) => {
       const abilityData = abilities.get(abilityName);
       if (!abilityData) return null;
 
+      const perSec = props.perSecond && props.durationMs;
+      const rawTotal = abilityData.Total;
+      const displayTotal = perSec ? (rawTotal / props.durationMs) * 1000 : rawTotal;
+
       const singleAbility: AbilityData[] = [{
         ...abilityData,
         name: abilityName,
-        value: abilityData.Total,
+        value: displayTotal,
       }];
 
       return (
         <AbilityBreakout
           abilities={singleAbility}
           targets={[]}
-          totalValue={abilityData.Total}
+          totalValue={displayTotal}
           valueLabel={props.perSecond ? "HPS" : viewMode === "overheal" ? "Overheal" : "Healing"}
           debugGuid={focusedPlayerId}
           pinned={pinned}
@@ -216,7 +220,7 @@ export const HealingTakenContent = (props: HealingTakenContentProps) => {
         />
       );
     },
-    [focusedPlayerId, cachedResult, viewMode, props.perSecond],
+    [focusedPlayerId, cachedResult, viewMode, props.perSecond, props.durationMs],
   );
 
   // Register chart data for cross-panel comparison (registers active view's data)

@@ -234,17 +234,21 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
       const abilityData = abilities.get(abilityName);
       if (!abilityData) return null;
 
+      const perSec = props.perSecond && props.durationMs;
+      const rawTotal = abilityData.Total;
+      const displayTotal = perSec ? (rawTotal / props.durationMs) * 1000 : rawTotal;
+
       const singleAbility: AbilityData[] = [{
         ...abilityData,
         name: abilityName,
-        value: abilityData.Total,
+        value: displayTotal,
       }];
 
       return (
         <AbilityBreakout
           abilities={singleAbility}
           targets={[]}
-          totalValue={abilityData.Total}
+          totalValue={displayTotal}
           valueLabel={props.perSecond ? "DPS" : "Damage"}
           debugGuid={focusedPlayerId}
           pinned={pinned}
@@ -253,7 +257,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
         />
       );
     },
-    [focusedPlayerId, cachedResult, props.perSecond],
+    [focusedPlayerId, cachedResult, props.perSecond, props.durationMs],
   );
 
   // Register chart data for cross-panel comparison (registers active view's data)

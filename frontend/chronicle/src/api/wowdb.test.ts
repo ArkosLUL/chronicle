@@ -124,6 +124,21 @@ describe("resolveSpellDescription", () => {
   });
 });
 
+describe("gender variable ($g)", () => {
+  it("resolves $ghimself:herself; to male form", () => {
+    // Use any spell from the test data as a base
+    const spell = Object.values(spells)[0];
+    const result = resolveSpellDescription(spell, "Damages $ghimself:herself; for $ghis:her; sins.");
+    expect(result).toBe("Damages himself for his sins.");
+  });
+
+  it("is case-insensitive", () => {
+    const spell = Object.values(spells)[0];
+    const result = resolveSpellDescription(spell, "$Ghim:her;");
+    expect(result).toBe("him");
+  });
+});
+
 describe("extractReferencedSpellIds", () => {
   it("extracts cross-spell references", () => {
     expect(extractReferencedSpellIds("$3137s1 and $1234d")).toEqual([

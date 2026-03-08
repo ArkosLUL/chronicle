@@ -515,6 +515,7 @@ function evaluateArithmetic(expr: string): number | null {
  * - $/N;VAR: Divide variable by N (e.g., $/10;s1 = s1 value / 10)
  * - ${expr}: Inline arithmetic (e.g., ${3*3} = 9)
  * - $lsingular:plural;: Pluralization (uses preceding number, 1 = singular)
+ * - $gmale:female;: Gender-conditional text (defaults to male form)
  * 
  * @param spell The spell being described
  * @param template The template string with variables
@@ -600,6 +601,13 @@ export function resolveSpellDescription(
       return parseInt(numMatch[1]) === 1 ? singular : plural;
     }
     return plural; // default to plural if no number found
+  });
+
+  // Fifth pass: gender — $gmale:female;
+  // WoW uses this for gendered pronouns. Default to male form since
+  // we don't have the caster's gender at tooltip time.
+  result = result.replace(/\$g([^:]+):([^;]+);/gi, (_match, male, _female) => {
+    return male;
   });
   
   return result;

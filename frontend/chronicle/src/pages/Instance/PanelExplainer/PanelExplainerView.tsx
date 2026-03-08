@@ -146,7 +146,7 @@ export function PanelExplainerView({
         </Card>
 
         {/* Live Panel */}
-        <div className="relative">
+        <div className="relative h-[500px]">
           {/* Highlight overlay for walkthrough */}
           {walkthroughStarted && !showCompletion && currentWalkthroughStep?.highlightSelector && (
             <ExplainerHighlight 

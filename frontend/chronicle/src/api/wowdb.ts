@@ -218,7 +218,7 @@ export type LocaleIndex = (typeof LOCALES)[number]["index"];
 
 export function getEnglishText(text: I18nText | undefined): string {
   if (!text) return "";
-  return text["0"] || Object.values(text)[0] || "";
+  return text["0"] || "";
 }
 
 export function getLocalizedText(
@@ -226,7 +226,7 @@ export function getLocalizedText(
   locale: LocaleIndex
 ): string {
   if (!text) return "";
-  return text[locale] || text["0"] || Object.values(text)[0] || "";
+  return text[locale] || text["0"] || "";
 }
 
 export function getSpellIconUrl(icon: SpellIcon): string {

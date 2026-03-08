@@ -26,6 +26,7 @@ function createDamageEvent(overrides: Partial<DamageProcessorEvent> = {}): Damag
     offsetMilli: 0,
     activity: [],
     activityCount: 0,
+    spellAttackOutcome: null,
     caster: "0x0000000000000001",
     sourceName: "Fireball",
     target: "0xF130000000000001",

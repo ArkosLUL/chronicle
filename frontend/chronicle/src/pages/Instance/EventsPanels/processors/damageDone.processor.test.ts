@@ -54,6 +54,7 @@ describe('damageDoneProcessor', () => {
       target: '0xF130000CE0000001',
       spellName: 'Sunder Armor',
       spellId: 7386,
+      spellAttackOutcome: null,
       amount: 1,
       application: AuraApplication.Gains,
       state: AuraState.Added,
@@ -243,6 +244,7 @@ describe('vulnerabilityEffectProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: 133,
+      spellAttackOutcome: null,
       ...overrides,
     };
   }
@@ -255,6 +257,7 @@ describe('vulnerabilityEffectProcessor', () => {
       target: '0xF130000CE0000001',
       spellName: 'Spell Vulnerability',
       spellId: spellVulnerabilityId,
+      spellAttackOutcome: null,
       amount: 1,
       application: AuraApplication.Gains,
       state: AuraState.Added,

@@ -57,6 +57,17 @@ const expectedDescriptions: Record<string, string> = {
 
   "11712": "Curses the target with agony, causing 780 Shadow damage over 24 sec.  This damage is dealt slowly at first, and builds up as the Curse reaches its full duration.  Only one Curse per Warlock can be active on any one target.",
   "11712_aura": "780 Shadow damage over 24 sec.",
+
+  // Fire Breath: ${$m1*3} inline arithmetic, $m1=3 so ${3*3}=9, $d=2 sec
+  "46269": "Targets in a cone in front of the caster take 9 Fire damage over 2 sec.",
+  "46269_aura": "Dealing 3 fire damage per second.",
+
+  // Searing Blast: $d1 indexed duration
+  "16454": "Blasts a target for 60 Fire damage and increases damage done to target by Fire damage by 10 for 30 sec.",
+
+  // Aftershock: $t unindexed tick interval
+  "51839": "Deals 225 damage after 4.",
+  "51839_aura": "225 Nature damage periodically.",
 };
 
 /**

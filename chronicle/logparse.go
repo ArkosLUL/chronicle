@@ -317,6 +317,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		instFinalizeDuration := time.Since(finalizeStart)
 		totalFinalizeDuration += instFinalizeDuration
 
+		if len(finalized.Encounters) == 0 {
+			// Skip instances with no encounters
+			continue
+		}
+
 		instReport := chroniclesdk.InstanceReport{
 			Name:             inst.Name(),
 			FinalizeDuration: chroniclesdk.DurationFrom(instFinalizeDuration),
@@ -413,6 +418,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
+
 				dbencounter, err := tx.InsertEncounter(ctx, database.InsertEncounterParams{
 					ID:         enc.Combat.EncounterID,
 					InstanceID: dbinstance.ID,

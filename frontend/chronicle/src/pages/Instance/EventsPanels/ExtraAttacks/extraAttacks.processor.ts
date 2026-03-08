@@ -6,7 +6,7 @@
  */
 
 import type { ExtraAttackProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
-import { isPlayerGuidFast } from "../processors/guidCache";
+import { resolveEntity, extractGroupingFromPanelOption, extractPetModeFromPanelOption } from "../processors/resolveEntity";
 
 /**
  * Data for a single extra attack ability
@@ -62,25 +62,12 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
       // event.target is the player who gained extra attacks
       if (!event.target) return;
 
-      const casterInfo = context.units?.[event.target];
-      // By default, use the raw GUID as name
-      let ownerID = event.target;
-      let ownerName = casterInfo?.name || ownerID;
-      let ownerClass = "UNKNOWN";      
-
-      if(isPlayerGuidFast(ownerID)){ 
-        ownerClass = context.players[ownerID]?.class || "UNKNOWN";
-        ownerName = context.players[ownerID]?.name || ownerName || ownerID;
-      } else if(casterInfo?.owner) {
-        // Groups pets by name
-        const parentName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || "Unknown";
-        ownerName = `${casterInfo.name || ownerID} (${parentName}'s Pet)`;
-        ownerID = ownerName
-        // Pets use the owner class
-        ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
-      } else {
-        ownerClass = "ENEMY";
-      }
+      const grouping = extractGroupingFromPanelOption(context.panelOption);
+      const pets = extractPetModeFromPanelOption(context.panelOption);
+      const entity = resolveEntity(event.target, context, grouping, pets);
+      const ownerID = entity.id;
+      const ownerName = entity.name;
+      const ownerClass = entity.class;
 
       // const playerClass = context.players[playerID]?.class || "UNKNOWN";
       const abilityName = event.sourceName || "Unknown";

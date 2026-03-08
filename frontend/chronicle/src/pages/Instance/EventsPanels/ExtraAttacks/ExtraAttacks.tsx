@@ -8,6 +8,7 @@ import { Zap } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { extraAttacksProcessor, type ExtraAttacksResult } from "./extraAttacks.processor";
 import { ExtraAttacksContent } from "./ExtraAttacksContent";
+import { ENTITY_GROUPING_OPTIONS, PET_MODE_OPTIONS } from "../processors/resolveEntity";
 
 /**
  * Create the ExtraAttacks panel definition.
@@ -20,6 +21,8 @@ export function createExtraAttacksPanel(): PanelDefinition<ExtraAttacksResult, a
     icon: <Zap className="h-4 w-4" />,
     supportsPerSecond: true,
     supportsFiltering: true,
+    groupingOptions: ENTITY_GROUPING_OPTIONS,
+    petOptions: PET_MODE_OPTIONS,
     defaultFilters: [
       { type: "target_type" as const, value: ["player"], applyTo: ["extra_attack"] },
     ],

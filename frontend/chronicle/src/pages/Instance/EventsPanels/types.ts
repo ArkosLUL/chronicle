@@ -8,6 +8,7 @@ import type { Instance } from "../InstancePage";
 import type { ProcessorContext, ProcessorEvent, ProcessorPagination } from "./processorTypes";
 import type { ReusableDamage } from "@/api/protodecode/decode";
 import type { PanelFilter } from "./processors/filters";
+import type { GroupingOption } from "./processors/resolveEntity";
 
 /**
  * Selection state for filtering entities
@@ -104,6 +105,14 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
   /** Default filters pre-populated in the user filter list. Editable and removable.
    *  Reset restores these instead of clearing to empty. */
   defaultFilters?: PanelFilter[];
+
+  /** Available grouping options for this panel. Shown on the card back.
+   *  The first option is the default. Stored as a `g:<value>` token in panelOption. */
+  groupingOptions?: GroupingOption[];
+
+  /** Available pet handling options. Shown on the card back.
+   *  The first option is the default. Stored as a `p:<value>` token in panelOption. */
+  petOptions?: GroupingOption[];
   
   /**
    * Create the initial state for aggregation

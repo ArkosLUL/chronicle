@@ -271,14 +271,28 @@ function extractCustomTitleFromTokens(tokens: string[]): string | null {
   return token ? token.slice(2) : null;
 }
 
+function extractGroupingFromTokens(tokens: string[]): string | null {
+  const token = tokens.find((t) => t.startsWith("g:"));
+  return token ? token.slice(2) : null;
+}
+
+function extractPetModeFromTokens(tokens: string[]): string | null {
+  const token = tokens.find((t) => t.startsWith("p:"));
+  return token ? token.slice(2) : null;
+}
+
 function buildTokensWithMeta(
   baseTokens: string[],
   borderColor: string | null,
   customTitle: string | null,
+  grouping: string | null,
+  petMode: string | null,
 ): string[] {
-  const filtered = baseTokens.filter((t) => !t.startsWith("bc:") && !t.startsWith("t:"));
+  const filtered = baseTokens.filter((t) => !t.startsWith("bc:") && !t.startsWith("t:") && !t.startsWith("g:") && !t.startsWith("p:"));
   if (borderColor) filtered.push(`bc:${borderColor}`);
   if (customTitle) filtered.push(`t:${customTitle}`);
+  if (grouping) filtered.push(`g:${grouping}`);
+  if (petMode) filtered.push(`p:${petMode}`);
   return filtered;
 }
 
@@ -378,21 +392,35 @@ export function EventsPanel({
   const hasCustomFilters = filteringSupported && customFilters !== null &&
     JSON.stringify(customFilters) !== JSON.stringify(panel.defaultFilters ?? []);
 
-  // Border color and custom title derived from panelOption tokens
+  // Border color, custom title, grouping, and pet mode derived from panelOption tokens
   const borderColor = useMemo(() => extractBorderColorFromTokens(customToggleTokens), [customToggleTokens]);
   const customTitle = useMemo(() => extractCustomTitleFromTokens(customToggleTokens), [customToggleTokens]);
+  const grouping = useMemo(() => extractGroupingFromTokens(customToggleTokens), [customToggleTokens]);
+  const petMode = useMemo(() => extractPetModeFromTokens(customToggleTokens), [customToggleTokens]);
 
   const setBorderColor = useCallback((color: string | null) => {
     if (!onPanelOptionChange) return;
-    const tokens = buildTokensWithMeta(customToggleTokens, color, customTitle);
+    const tokens = buildTokensWithMeta(customToggleTokens, color, customTitle, grouping, petMode);
     onPanelOptionChange(buildPanelOptionFromTokens(tokens));
-  }, [customToggleTokens, customTitle, onPanelOptionChange]);
+  }, [customToggleTokens, customTitle, grouping, petMode, onPanelOptionChange]);
 
   const setCustomTitle = useCallback((title: string | null) => {
     if (!onPanelOptionChange) return;
-    const tokens = buildTokensWithMeta(customToggleTokens, borderColor, title);
+    const tokens = buildTokensWithMeta(customToggleTokens, borderColor, title, grouping, petMode);
     onPanelOptionChange(buildPanelOptionFromTokens(tokens));
-  }, [customToggleTokens, borderColor, onPanelOptionChange]);
+  }, [customToggleTokens, borderColor, grouping, petMode, onPanelOptionChange]);
+
+  const setGrouping = useCallback((g: string | null) => {
+    if (!onPanelOptionChange) return;
+    const tokens = buildTokensWithMeta(customToggleTokens, borderColor, customTitle, g, petMode);
+    onPanelOptionChange(buildPanelOptionFromTokens(tokens));
+  }, [customToggleTokens, borderColor, customTitle, petMode, onPanelOptionChange]);
+
+  const setPetMode = useCallback((p: string | null) => {
+    if (!onPanelOptionChange) return;
+    const tokens = buildTokensWithMeta(customToggleTokens, borderColor, customTitle, grouping, p);
+    onPanelOptionChange(buildPanelOptionFromTokens(tokens));
+  }, [customToggleTokens, borderColor, customTitle, grouping, onPanelOptionChange]);
 
   // -- ChartDataRegistry: register/unregister for cross-panel comparison ------
   const { register: chartRegister, unregister: chartUnregister } = useChartDataActions();
@@ -688,6 +716,12 @@ export function EventsPanel({
             onBorderColorChange={onPanelOptionChange ? setBorderColor : undefined}
             customTitle={customTitle}
             onCustomTitleChange={onPanelOptionChange ? setCustomTitle : undefined}
+            groupingOptions={panel.groupingOptions}
+            grouping={grouping}
+            onGroupingChange={onPanelOptionChange ? setGrouping : undefined}
+            petOptions={panel.petOptions}
+            petMode={petMode}
+            onPetModeChange={onPanelOptionChange ? setPetMode : undefined}
           />
         )}
       />

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { FilterBlock } from "./FilterBlock";
 import type { PanelFilter } from "./processors/filters";
+import type { GroupingOption } from "./processors/resolveEntity";
 
 /** Preset border colors available in the color picker. `null` = no border / default. */
 const PRESET_COLORS: Array<string | null> = [
@@ -40,6 +41,18 @@ export interface PanelFilterEditorProps {
   customTitle?: string | null;
   /** Callback when custom title changes. */
   onCustomTitleChange?: (title: string | null) => void;
+  /** Available grouping options for this panel. */
+  groupingOptions?: GroupingOption[];
+  /** Currently selected grouping value. */
+  grouping?: string | null;
+  /** Callback when grouping changes. */
+  onGroupingChange?: (grouping: string | null) => void;
+  /** Available pet handling options for this panel. */
+  petOptions?: GroupingOption[];
+  /** Currently selected pet mode value. */
+  petMode?: string | null;
+  /** Callback when pet mode changes. */
+  onPetModeChange?: (petMode: string | null) => void;
 }
 
 const DEFAULT_FILTER: PanelFilter = {
@@ -81,6 +94,12 @@ export function PanelFilterEditor({
   onBorderColorChange,
   customTitle,
   onCustomTitleChange,
+  groupingOptions,
+  grouping,
+  onGroupingChange,
+  petOptions,
+  petMode,
+  onPetModeChange,
 }: PanelFilterEditorProps) {
   const groups = useMemo(() => buildGroups(filters), [filters]);
 
@@ -161,10 +180,63 @@ export function PanelFilterEditor({
         </div>
       )}
 
+      {/* Grouping selector */}
+      {groupingOptions && groupingOptions.length > 1 && onGroupingChange && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground shrink-0">Group:</span>
+          <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5 flex-wrap">
+            {groupingOptions.map((opt) => {
+              const isDefault = opt.value === groupingOptions[0].value;
+              const isActive = grouping ? grouping === opt.value : isDefault;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onGroupingChange(isDefault ? null : opt.value)}
+                  className={cn(
+                    "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    isActive
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Pet mode selector */}
+      {petOptions && petOptions.length > 1 && onPetModeChange && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground shrink-0">Pets:</span>
+          <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5 flex-wrap">
+            {petOptions.map((opt) => {
+              const isDefault = opt.value === petOptions[0].value;
+              const isActive = petMode ? petMode === opt.value : isDefault;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onPetModeChange(isDefault ? null : opt.value)}
+                  className={cn(
+                    "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    isActive
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {filteringSupported && <>
-      <p className="text-xs text-muted-foreground">
-        Filters in the same group are OR'd. Groups are AND'd together. Click the connector to toggle.
-      </p>
       <div className="flex-1 min-h-0 overflow-auto styled-scrollbar space-y-2">
         {/* Fixed/locked filters */}
         {fixedFilters.length > 0 && (

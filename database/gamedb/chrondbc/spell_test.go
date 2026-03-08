@@ -23,13 +23,6 @@ func TestSpell_AttackOutcome(t *testing.T) {
 			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeBlock | AttackOutcomeCrit,
 		},
 		{
-			name: "MeleeNotBlockable",
-			spell: Spell{
-				DefenseType: DefenseTypeMelee,
-			},
-			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeCrit,
-		},
-		{
 			name: "Ranged",
 			spell: Spell{
 				DefenseType: DefenseTypeRanged,

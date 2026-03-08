@@ -7,9 +7,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle, MousePointerClick, Users, LayoutGrid, Lightbulb, Eye, MousePointer2, ChevronRight } from "lucide-react";
+import { HelpCircle, MousePointerClick, Users, LayoutGrid, Lightbulb, Eye, MousePointer2, ChevronRight, Keyboard, MousePointer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card/Card";
 import { cn } from "@/lib/utils";
 
 // -----------------------------------------------------------------------------
@@ -28,6 +29,66 @@ interface FeatureCategory {
   icon: React.ReactNode;
   items: FeatureItem[];
 }
+
+// -----------------------------------------------------------------------------
+// Mini Metric Bar Component (visual indicator for metric bar actions)
+// -----------------------------------------------------------------------------
+
+function MiniMetricBar({ color = "#4ade80" }: { color?: string }) {
+  return (
+    <div className="relative h-4 w-16 rounded-sm overflow-hidden bg-muted/50 border border-border/30">
+      {/* Gradient bar fill */}
+      <div
+        className="absolute inset-y-0 left-0 w-[70%]"
+        style={{
+          background: `linear-gradient(to right, oklch(0 0 0 / 0.3), oklch(0 0 0 / 0.15)), ${color}`,
+          opacity: 0.85,
+        }}
+      />
+      {/* Mini text placeholder */}
+      <div className="absolute inset-y-0 left-1 flex items-center">
+        <div className="h-1.5 w-6 rounded-full bg-white/60" />
+      </div>
+      {/* Mini value placeholder */}
+      <div className="absolute inset-y-0 right-1 flex items-center">
+        <div className="h-1.5 w-3 rounded-full bg-white/40" />
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Keybinds Configuration
+// -----------------------------------------------------------------------------
+
+interface KeybindItem {
+  keys: string[];
+  action: string;
+  icon: React.ReactNode;
+}
+
+const KEYBINDS: KeybindItem[] = [
+  {
+    keys: ["Shift", "Click"],
+    action: "Edit panel options",
+    icon: <MousePointer className="h-4 w-4" />,
+  },
+  {
+    keys: ["Click"],
+    action: "Open breakout panel",
+    icon: <MiniMetricBar color="#4ade80" />,
+  },
+  {
+    keys: ["Ctrl", "Click"],
+    action: "More actions menu",
+    icon: <MiniMetricBar color="#60a5fa" />,
+  },
+  {
+    keys: ["0", "-", "9"],
+    action: "Select layout presets",
+    icon: <Keyboard className="h-4 w-4" />,
+  },
+];
 
 const FEATURE_MAP: FeatureCategory[] = [
   {
@@ -104,11 +165,64 @@ const FEATURE_MAP: FeatureCategory[] = [
         id: "shareable-url",
         label: "Shareable URLs",
         selector: "", // No element to highlight
-        description: "Copy the URL to share your exact view (encounters, panels, filters) with others.",
+        description: "Use the share button to share your exact view (encounters, panels, filters) with others.",
       },
     ],
   },
 ];
+
+// -----------------------------------------------------------------------------
+// Keybinds Card Component
+// -----------------------------------------------------------------------------
+
+function KeybindsCard({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  
+  return createPortal(
+    <div className="fixed inset-0 z-[99] flex items-center justify-center pointer-events-none">
+      <Card className="pointer-events-auto w-[420px] shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200 bg-card/95 backdrop-blur-sm border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Keyboard className="h-5 w-5 text-primary" />
+            Keyboard Shortcuts
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {KEYBINDS.map((keybind, index) => (
+            <div
+              key={index}
+              className="flex items-center py-2 border-b border-border/30 last:border-0"
+            >
+              {/* Icon column - fixed width */}
+              <div className="w-[72px] shrink-0 flex items-center justify-center text-muted-foreground">
+                {keybind.icon}
+              </div>
+              {/* Action text column - flexible, takes remaining space */}
+              <div className="flex-1 min-w-0 text-sm text-muted-foreground">
+                {keybind.action}
+              </div>
+              {/* Keys column - fixed width, right-aligned */}
+              <div className="w-[100px] shrink-0 flex items-center justify-end gap-1">
+                {keybind.keys.map((key, keyIndex) => (
+                  <kbd
+                    key={keyIndex}
+                    className="px-2 py-1 text-xs font-medium bg-muted rounded border border-border/50 text-foreground"
+                  >
+                    {key}
+                  </kbd>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground pt-2 text-center">
+            Hover items in the sidebar to highlight them on the page
+          </p>
+        </CardContent>
+      </Card>
+    </div>,
+    document.body
+  );
+}
 
 // -----------------------------------------------------------------------------
 // Spotlight Component
@@ -317,6 +431,9 @@ export function InstanceHelpSheet({ open: controlledOpen, onOpenChange }: Instan
           </div>
         </SheetContent>
       </Sheet>
+      
+      {/* Keybinds card (hidden when hovering an item) */}
+      <KeybindsCard visible={isOpen && !hoveredItem} />
       
       {/* Spotlight overlay (rendered outside sheet to avoid z-index issues) */}
       {isOpen && (

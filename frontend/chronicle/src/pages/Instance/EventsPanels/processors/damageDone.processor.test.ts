@@ -126,10 +126,10 @@ describe('damageDoneProcessor', () => {
     expect(abilityBreakout.get('Heroic Strike')!.Total).toBe(1000);
   });
 
-  it('ignores non-player damage for players processor', () => {
+  it('records damage regardless of source type (filtering done by fixedFilters)', () => {
     const state = processor.createState();
     const context = createContext();
-    // Enemy attacking player
+    // Enemy attacking player - processor records it, fixedFilters handles exclusion
     const event = createDamageEvent({
       caster: '0xF130000CE0000001', // enemy
       target: '0x0000000000001234', // player
@@ -137,8 +137,9 @@ describe('damageDoneProcessor', () => {
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
 
-    // Should not record enemy damage in players processor
-    expect(state.EncounterDamage.get('enc1')?.size ?? 0).toBe(0);
+    // Processor records all damage; source type filtering is done by fixedFilters in DamageDone.tsx
+    expect(state.EncounterDamage.get('enc1')?.size).toBe(1);
+    expect(state.EncounterDamage.get('enc1')?.has('0xF130000CE0000001')).toBe(true);
   });
 
   it('attributes pet damage to owner', () => {
@@ -663,7 +664,7 @@ describe('enemyDamageDoneProcessor', () => {
     expect(encDamage.has('0xF130000CE0000001')).toBe(true);
   });
 
-  it('ignores player damage', () => {
+  it('records player damage (filtering done by fixedFilters)', () => {
     const state = processor.createState();
     const context = createContext();
     const event: DamageProcessorEvent = {
@@ -685,7 +686,8 @@ describe('enemyDamageDoneProcessor', () => {
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
 
-    expect(state.EncounterDamage.get('enc1')?.size ?? 0).toBe(0);
+    // Processor records all damage; source type filtering is done by fixedFilters
+    expect(state.EncounterDamage.get('enc1')?.size).toBe(1);
   });
 });
 
@@ -748,9 +750,7 @@ describe('petDamageDoneProcessor', () => {
   it('groups pet damage by pet when petGrouping is set to pet', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        petGrouping: 'pet',
-      },
+      panelOption: 'pet',
     });
 
     processor.processEvent(state, createPetDamageEvent(), 'enc1', new Date(), 'damage', context);
@@ -767,9 +767,7 @@ describe('petDamageDoneProcessor', () => {
   it('creates a unique row per pet when petGrouping is set to pet', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        petGrouping: 'pet',
-      },
+      panelOption: 'pet',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF140000CE0000002': { name: 'Wolf', owner: '0x0000000000001234', entry: 99 },
@@ -806,9 +804,7 @@ describe('petDamageDoneProcessor', () => {
   it('groups pets with the same name for the same owner when petGrouping is set to pet_name', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        petGrouping: 'pet_name',
-      },
+      panelOption: 'pet_name',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF140000CE0000002': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },
@@ -855,9 +851,7 @@ describe('petDamageDoneProcessor', () => {
         '0x0000000000001234': { name: 'TestPlayer', class: 'HUNTER' },
         '0x0000000000009999': { name: 'OtherPlayer', class: 'WARLOCK' },
       },
-      panelContext: {
-        petGrouping: 'pet_name',
-      },
+      panelOption: 'pet_name',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF140000CE0000002': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },
@@ -899,7 +893,7 @@ describe('petDamageDoneProcessor', () => {
     expect(ownerTwo.target.get('0xF130000CE0000001')).toBe(300);
   });
 
-  it('ignores direct player damage', () => {
+  it('records direct player damage (filtering done by fixedFilters)', () => {
     const state = processor.createState();
     const context = createContext();
     const event: DamageProcessorEvent = {
@@ -921,7 +915,7 @@ describe('petDamageDoneProcessor', () => {
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
 
-    // Direct player damage should not appear in pet processor
-    expect(state.EncounterDamage.get('enc1')?.size ?? 0).toBe(0);
+    // Processor records all damage; source type filtering is done by fixedFilters
+    expect(state.EncounterDamage.get('enc1')?.size).toBe(1);
   });
 });

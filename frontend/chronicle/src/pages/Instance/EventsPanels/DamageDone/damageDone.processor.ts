@@ -297,7 +297,7 @@ export function createDamageDoneProcessor(
           // Default pet mode groups damage by owner
           ownerName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || ownerName;
           ownerName += "'s Companions";
-          ownerClass = context.players[casterInfo!.owner!]?.class || "UNKNOWN";
+          ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
         }
       } else {
         // For enemies, use the unit's name

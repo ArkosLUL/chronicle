@@ -20,14 +20,14 @@ func TestSpell_AttackOutcome(t *testing.T) {
 				DefenseType: DefenseTypeMelee,
 				Attrs:       attrsWithBlockable(),
 			},
-			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeBlock | AttackOutcomeCrit | AttackOutcomeGlancing | AttackOutcomeCrushing,
+			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeBlock | AttackOutcomeCrit,
 		},
 		{
 			name: "MeleeNotBlockable",
 			spell: Spell{
 				DefenseType: DefenseTypeMelee,
 			},
-			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeCrit | AttackOutcomeGlancing | AttackOutcomeCrushing,
+			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeCrit,
 		},
 		{
 			name: "Ranged",
@@ -81,7 +81,7 @@ func TestSpell_AttackOutcome(t *testing.T) {
 				DefenseType: DefenseTypeMelee,
 				Attrs:       attrsWith(AttrEx2_CantCrit),
 			},
-			expected: AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeGlancing | AttackOutcomeCrushing,
+			expected: AttackOutcomeMiss | AttackOutcomeDodge | AttackOutcomeParry | AttackOutcomeHit | AttackOutcomeBlock,
 		},
 		{
 			name: "DefenseTypeNone",

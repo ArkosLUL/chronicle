@@ -269,3 +269,14 @@ SELECT
 FROM log_instance_encounters lie
 WHERE lie.instance_id = $1
 ORDER BY lie.start_time ASC;
+
+-- name: GetEncounterSummariesByInstanceIDs :many
+SELECT
+    lie.instance_id,
+    lie.id,
+    lie.name,
+    lie.boss,
+    lie.kill_type
+FROM log_instance_encounters lie
+WHERE lie.instance_id = ANY(@instance_ids :: uuid[])
+ORDER BY lie.instance_id, lie.start_time ASC;

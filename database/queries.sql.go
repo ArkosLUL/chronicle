@@ -1561,6 +1561,52 @@ func (q *sqlQuerier) GetEncounterSummariesByInstanceID(ctx context.Context, inst
 	return items, nil
 }
 
+const getEncounterSummariesByInstanceIDs = `-- name: GetEncounterSummariesByInstanceIDs :many
+SELECT
+    lie.instance_id,
+    lie.id,
+    lie.name,
+    lie.boss,
+    lie.kill_type
+FROM log_instance_encounters lie
+WHERE lie.instance_id = ANY($1 :: uuid[])
+ORDER BY lie.instance_id, lie.start_time ASC
+`
+
+type GetEncounterSummariesByInstanceIDsRow struct {
+	InstanceID uuid.UUID `db:"instance_id" json:"instance_id"`
+	ID         uuid.UUID `db:"id" json:"id"`
+	Name       string    `db:"name" json:"name"`
+	Boss       bool      `db:"boss" json:"boss"`
+	KillType   KillType  `db:"kill_type" json:"kill_type"`
+}
+
+func (q *sqlQuerier) GetEncounterSummariesByInstanceIDs(ctx context.Context, instanceIds []uuid.UUID) ([]GetEncounterSummariesByInstanceIDsRow, error) {
+	rows, err := q.db.Query(ctx, getEncounterSummariesByInstanceIDs, instanceIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEncounterSummariesByInstanceIDsRow
+	for rows.Next() {
+		var i GetEncounterSummariesByInstanceIDsRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.ID,
+			&i.Name,
+			&i.Boss,
+			&i.KillType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getInstanceEncounterCharacterFights = `-- name: GetInstanceEncounterCharacterFights :many
 SELECT
   encounter_id, id, periods, boss

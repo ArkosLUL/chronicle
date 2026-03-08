@@ -96,17 +96,22 @@ func demo() *serpent.Command {
 				return fmt.Errorf("open wow client: %w", err)
 			}
 
-			spdb, err := wc.SpellAuraNames()
+			spdb, err := wc.Spells()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			_ = spdb.Range(func(cursor *dbdefs.Ent_SpellAuraNames) bool {
-				fmt.Println(cursor.EnumID, cursor.Name_lang.String())
-				return true
-			})
+			//_ = spdb.Range(func(cursor *dbdefs.Ent_SpellAuraNames) bool {
+			//	fmt.Println(cursor.EnumID, cursor.Name_lang.String())
+			//	return true
+			//})
 
-			fmt.Println(spdb.Len())
+			spell, err := spdb.ID(44095)
+			if err != nil {
+				return fmt.Errorf("spell not found")
+			}
+			d, _ := json.Marshal(spell)
+			fmt.Println(string(d))
 			//c := make(map[int]int)
 			//err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
 			//	c[len(cursor.Reagent)]++

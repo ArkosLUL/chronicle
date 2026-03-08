@@ -165,6 +165,26 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		rows = rows[:limit]
 	}
 
+	// Batch fetch all encounter summaries in a single query
+	instanceIDs := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		instanceIDs[i] = row.ID
+	}
+
+	encountersByInstance := make(map[uuid.UUID][]chroniclesdk.RecentEncounter)
+	if len(instanceIDs) > 0 {
+		allEncounters, err := api.Opts.Zed.GetEncounterSummariesByInstanceIDs(ctx, instanceIDs)
+		if err == nil {
+			for _, enc := range allEncounters {
+				encountersByInstance[enc.InstanceID] = append(encountersByInstance[enc.InstanceID], chroniclesdk.RecentEncounter{
+					Name:     enc.Name,
+					Boss:     enc.Boss,
+					KillType: chroniclesdk.KillType(enc.KillType),
+				})
+			}
+		}
+	}
+
 	// Build response
 	instances := make([]chroniclesdk.RecentInstance, 0, len(rows))
 	for _, row := range rows {
@@ -182,6 +202,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 			BossCount:          row.BossCount,
 			BossKills:          row.BossKills,
 			HasYoutubeVideo:    row.HasYoutubeVideo,
+			Encounters:         encountersByInstance[row.ID],
 		}
 		if row.DurationMs != 0 {
 			d := row.DurationMs
@@ -192,19 +213,6 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		}
 		if row.GuildName.Valid {
 			inst.GuildName = &row.GuildName.String
-		}
-
-		// Fetch encounter summaries for this instance
-		encounters, err := api.Opts.Zed.GetEncounterSummariesByInstanceID(ctx, row.ID)
-		if err == nil {
-			inst.Encounters = make([]chroniclesdk.RecentEncounter, 0, len(encounters))
-			for _, enc := range encounters {
-				inst.Encounters = append(inst.Encounters, chroniclesdk.RecentEncounter{
-					Name:     enc.Name,
-					Boss:     enc.Boss,
-					KillType: chroniclesdk.KillType(enc.KillType),
-				})
-			}
 		}
 
 		instances = append(instances, inst)

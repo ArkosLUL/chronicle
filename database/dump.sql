@@ -650,6 +650,14 @@ CREATE INDEX idx_guild_page_panels_tab ON guild_page_panels USING btree (tab_id)
 
 CREATE INDEX idx_guild_page_tabs_page ON guild_page_tabs USING btree (page_id);
 
+CREATE INDEX idx_log_instance_encounters_instance_id ON log_instance_encounters USING btree (instance_id);
+
+CREATE INDEX idx_log_instance_players_instance_id ON log_instance_players USING btree (instance_id);
+
+CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_group_id);
+
+CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
+
 CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
 
 CREATE INDEX idx_shared_views_instance_hash ON shared_views USING btree (instance_id, hash);

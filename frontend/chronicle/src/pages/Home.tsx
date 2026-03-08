@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Users, Shield, User, Upload, Eye, Share2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Home() {
+  const { isAuthenticated } = useAuth();
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -27,10 +29,10 @@ export function Home() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
             <Button asChild size="lg">
-              <Link to="/recent">View a Sample</Link>
+              <Link to={isAuthenticated ? "/logs" : "/recent"}>{isAuthenticated ? "View Your Logs" : "View a Sample"}</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <Link to="/upload">How to Do This for Your Next Raid</Link>
+              <Link to="/upload">{isAuthenticated ? "Upload a Log" : "How to Do This for Your Next Raid"}</Link>
             </Button>
           </div>
           
@@ -171,7 +173,7 @@ export function Home() {
       <section className="py-16 md:py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <Button asChild size="lg">
-            <Link to="/recent">Browse Chronicle</Link>
+            <Link to={isAuthenticated ? "/logs" : "/recent"}>{isAuthenticated ? "View Your Logs" : "Browse Chronicle"}</Link>
           </Button>
           <p className="mt-4 text-muted-foreground">
             Look through real guild pages before uploading anything.

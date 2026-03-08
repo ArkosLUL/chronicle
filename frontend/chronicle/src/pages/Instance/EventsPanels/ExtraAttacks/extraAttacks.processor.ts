@@ -62,22 +62,27 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
       // event.target is the player who gained extra attacks
       if (!event.target) return;
 
-      // Fast path: only track player extra attacks
-      if (!isPlayerGuidFast(event.target)) return;
+      const casterInfo = context.units?.[event.target];
+      // By default, use the raw GUID as name
+      let ownerID = event.target;
+      let ownerName = casterInfo?.name || ownerID;
+      let ownerClass = "UNKNOWN";      
 
-      const playerID = event.target;
-      const playerName = context.players[playerID]?.name || playerID
-      // if(isPlayerPet){
-      //   const unitInfo = context.units?.[playerID];
-      //   if(unitInfo && unitInfo.owner){
-      //     const ownerInfo = context.players[unitInfo.owner];
-      //     if(ownerInfo){
-      //       playerName = `${unitInfo.name} (${ownerInfo.name}'s Pet)`;
-      //     }
-      //   }
-      // }
+      if(isPlayerGuidFast(ownerID)){ 
+        ownerClass = context.players[ownerID]?.class || "UNKNOWN";
+        ownerName = context.players[ownerID]?.name || ownerName || ownerID;
+      } else if(casterInfo?.owner) {
+        // Groups pets by name
+        const parentName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || "Unknown";
+        ownerName = `${casterInfo.name || ownerID} (${parentName}'s Pet)`;
+        ownerID = ownerName
+        // Pets use the owner class
+        ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
+      } else {
+        ownerClass = "ENEMY";
+      }
 
-      const playerClass = context.players[playerID]?.class || "UNKNOWN";
+      // const playerClass = context.players[playerID]?.class || "UNKNOWN";
       const abilityName = event.sourceName || "Unknown";
       const attackCount = event.amount || 1;  // How many extra attacks this proc granted
 
@@ -87,10 +92,10 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
       }
 
       const encounterData = state.EncounterExtraAttacks.get(encounterID)!;
-      const existing = encounterData.get(playerID) || {
-        playerID,
-        playerName,
-        className: playerClass,
+      const existing = encounterData.get(ownerID) || {
+        playerID: ownerID,
+        playerName: ownerName,
+        className: ownerClass,
         totalProcs: 0,
         totalAttacks: 0,
         abilities: new Map<string, ExtraAttackAbility>(),
@@ -106,14 +111,14 @@ export function createExtraAttacksProcessor(): PanelProcessor<ExtraAttacksResult
       abilityData.totalAttacks += attackCount;
       existing.abilities.set(abilityName, abilityData);
 
-      encounterData.set(playerID, existing);
+      encounterData.set(ownerID, existing);
 
       // Breakouts for selected encounters
       if (context.selectedEncounterIds.has(encounterID)) {
         // By ability - track total attacks
-        const abilityBreakout = state.ByAbility.get(playerID) || new Map<string, number>();
+        const abilityBreakout = state.ByAbility.get(ownerID) || new Map<string, number>();
         abilityBreakout.set(abilityName, (abilityBreakout.get(abilityName) || 0) + attackCount);
-        state.ByAbility.set(playerID, abilityBreakout);
+        state.ByAbility.set(ownerID, abilityBreakout);
       }
     },
   };

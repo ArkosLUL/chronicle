@@ -103,7 +103,7 @@ func demo() *serpent.Command {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
+			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
 				sp := chrondbc.SpellFromDB(cursor)
 				if sp.Attrs.Has(chrondbc.AttrEx3_BlockableSpell) && !sp.AttackOutcome().Has(chrondbc.AttackOutcomeBlock) {
 					fmt.Println(sp.Name_lang.String(), sp.ID, "is blockable")

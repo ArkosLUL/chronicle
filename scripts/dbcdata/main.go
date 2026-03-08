@@ -29,6 +29,7 @@ func rootCmd() *serpent.Command {
 	cmd.AddSubcommands(
 		cli.StaticPopulateCmd(),
 		cli.DerivedStaticsCmd(),
+		cli.SpellTestDataCmd(),
 		demo(),
 		jsonDump(),
 	)

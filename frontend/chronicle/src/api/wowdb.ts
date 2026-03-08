@@ -411,8 +411,11 @@ function resolveVariable(spell: WoWSpell, variable: string): string {
     case "$c": // Caster (runtime)
       return "the caster";
 
-    case "$l": // Level (runtime)
-      return String(spell.spell_level || 0);
+    // Note: $l is NOT "level" — it's handled as pluralization ($lsingular:plural;)
+    // in resolveSpellDescription() as a post-pass. If we get here, return
+    // the original variable so the pluralization regex can pick it up.
+    case "$l":
+      return variable;
 
     default:
       // Return the original variable if we can't resolve it
@@ -453,6 +456,9 @@ export function extractReferencedSpellIds(template: string): number[] {
  * - $x1, $x2, $x3: Chain targets
  * - $b1, $b2, $b3: Points per combo point
  * - $NNNNsX: Cross-spell reference (e.g., $3137s1 = spell 3137's s1 value)
+ * - $*N;VAR: Multiply variable by N (e.g., $*8;s1 = s1 value * 8)
+ * - $/N;VAR: Divide variable by N (e.g., $/10;s1 = s1 value / 10)
+ * - $lsingular:plural;: Pluralization (uses preceding number, 1 = singular)
  * 
  * @param spell The spell being described
  * @param template The template string with variables
@@ -465,8 +471,32 @@ export function resolveSpellDescription(
 ): string {
   if (!template) return "";
 
+  let result = template;
+
+  // Pre-pass: arithmetic — $*N;VAR (multiply) and $/N;VAR (divide)
+  // Must run before variable resolution so the inner variable gets resolved
+  result = result.replace(/\$\*(\d+);([a-zA-Z])(\d)?/g, (_match, multiplier, type, index) => {
+    const variable = `$${type}${index || ""}`;
+    const resolved = resolveVariable(spell, variable);
+    const num = Number(resolved);
+    if (!isNaN(num)) {
+      return String(Math.round(num * parseInt(multiplier)));
+    }
+    return _match;
+  });
+  result = result.replace(/\$\/(\d+);([a-zA-Z])(\d)?/g, (_match, divisor, type, index) => {
+    const variable = `$${type}${index || ""}`;
+    const resolved = resolveVariable(spell, variable);
+    const num = Number(resolved);
+    const div = parseInt(divisor);
+    if (!isNaN(num) && div !== 0) {
+      return String(Math.round(num / div));
+    }
+    return _match;
+  });
+
   // First pass: resolve cross-spell references like $3137s1
-  let result = template.replace(/(-?)\$(\d+)([a-zA-Z])(\d)?/g, (_match, negative, spellId, type, index) => {
+  result = result.replace(/(-?)\$(\d+)([a-zA-Z])(\d)?/g, (_match, negative, spellId, type, index) => {
     const refSpell = referencedSpells?.get(parseInt(spellId, 10));
     if (!refSpell) {
       // Can't resolve without the referenced spell data - leave placeholder
@@ -494,6 +524,19 @@ export function resolveSpellDescription(
     }
     
     return resolved;
+  });
+
+  // Third pass: pluralization — $lsingular:plural;
+  // WoW's $l uses the most recent resolved number to pick singular vs plural.
+  // E.g., "1 extra $lattack:attacks;" → "1 extra attack"
+  result = result.replace(/\$l([^:]+):([^;]+);/g, (_match, singular, plural, offset) => {
+    // Look backwards from $l for the most recent number
+    const before = result.substring(0, offset);
+    const numMatch = before.match(/(\d+)[^\d]*$/);
+    if (numMatch) {
+      return parseInt(numMatch[1]) === 1 ? singular : plural;
+    }
+    return plural; // default to plural if no number found
   });
   
   return result;

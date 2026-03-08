@@ -374,6 +374,12 @@ func ZulGurubHostiles() map[uint32]Identity {
 		11380: "Jin'do the Hexxer",
 		15114: "Gahz'ranka",
 		14834: "Hakkar",
+
+		// Edge of Madness
+		15083: "Hazza'rah",
+		15084: "Renataki",
+		15085: "Wushoolay",
+		15082: "Gri'lek",
 	})
 	return hostile
 }
@@ -659,6 +665,9 @@ func ScholomanceHostiles() map[uint32]Identity {
 		10502: "Lady Illucia Barov",
 		10503: "Jandice Barov",
 		10504: "Lord Alexei Barov",
+
+		// Paladin mount boss
+		14516: "Death Knight Darkreaver",
 	})
 	return hostile
 }

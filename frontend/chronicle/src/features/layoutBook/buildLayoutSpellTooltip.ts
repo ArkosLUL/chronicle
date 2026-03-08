@@ -89,5 +89,6 @@ export function buildLayoutSpellTooltip(layout: {
     min_reputation: 0,
     spell_visual_id: [],
     damage_type: 0,
+    attack_outcome: 0,
   };
 }

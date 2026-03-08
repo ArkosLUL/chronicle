@@ -41,6 +41,7 @@ describe('damageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
       ...overrides,
     };
   }
@@ -518,6 +519,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -554,6 +556,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     }, 'enc1', new Date(), 'damage', context);
 
     processor.processEvent(state, {
@@ -571,6 +574,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     }, 'enc1', new Date(), 'damage', context);
 
     const encDamage = state.EncounterDamage.get('enc1')!;
@@ -606,6 +610,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     }, 'enc1', new Date(), 'damage', context);
 
     processor.processEvent(state, {
@@ -623,6 +628,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     }, 'enc1', new Date(), 'damage', context);
 
     const encDamage = state.EncounterDamage.get('enc1')!;
@@ -657,6 +663,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     }, 'enc1', new Date(), 'damage', context);
 
     const encDamage = state.EncounterDamage.get('enc1')!;
@@ -682,6 +689,7 @@ describe('enemyDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);
@@ -728,6 +736,7 @@ describe('petDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
       ...overrides,
     };
   }
@@ -911,6 +920,7 @@ describe('petDamageDoneProcessor', () => {
       activity: [],
       activityCount: 0,
       spellId: null,
+      spellAttackOutcome: null,
     };
 
     processor.processEvent(state, event, 'enc1', new Date(), 'damage', context);

@@ -59,6 +59,9 @@ func DerivedStaticsCmd() *serpent.Command {
 			if err := generateDerivedExtraAttacks(wc, goDir, tsDir); err != nil {
 				return fmt.Errorf("generate extra attack spells: %w", err)
 			}
+			if err := generateDerivedDurationModifiers(wc, goDir, tsDir); err != nil {
+				return fmt.Errorf("generate duration modifiers: %w", err)
+			}
 
 			return nil
 		},
@@ -99,3 +102,22 @@ func generateDerivedExtraAttacks(wc *dbcdb.WoWClient, goDir, tsDir string) error
 
 	return writeTemplate(filepath.Join(tsDir, "ExtraAttack.ts"), extraAttacksTSTemplate, entries)
 }
+
+func generateDerivedDurationModifiers(wc *dbcdb.WoWClient, goDir, tsDir string) error {
+	data, err := collectDurationModifiers(wc)
+	if err != nil {
+		return err
+	}
+
+	if err := writeTemplate(filepath.Join(goDir, "durationmodifiers.go"), durationModifiersGoTemplate, data); err != nil {
+		return err
+	}
+
+	affected, err := collectAffectedSpells(wc, data.Entries)
+	if err != nil {
+		return err
+	}
+
+	return writeTemplate(filepath.Join(tsDir, "DurationModifiers.ts"), durationModifiersTSTemplate, affected)
+}
+

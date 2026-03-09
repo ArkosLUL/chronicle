@@ -6,6 +6,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/auras"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -78,6 +79,9 @@ type Characters struct {
 	// active is a quick lookup for active characters
 	active      map[guid.GUID]struct{}
 	sharedState map[string]any
+
+	// auras keeps track of auras on all characters.
+	auras *auras.Tracking
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {

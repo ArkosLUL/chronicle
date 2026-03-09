@@ -1,76 +1,65 @@
 package auras
 
 import (
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-)
+	"time"
 
-// AurasPersistDeath contains spell names that persist through death.
-// Add entries manually as needed.
-var AurasPersistDeath = map[string]struct{}{}
+	lru "github.com/hashicorp/golang-lru/v2"
+
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+)
 
 // AuraState holds the current stack count for an aura.
 type AuraState struct {
+	Buff   bool
 	Stacks int32
+	// Beyond this time, the aura can no longer exist
+	MaxExistsUntil time.Time
 }
 
 // Tracking maintains active auras per unit.
 type Tracking struct {
-	// units maps GUID -> spell name -> aura state
-	units map[guid.GUID]map[string]*AuraState
+	// units maps GUID -> spell -> aura state
+	units        map[guid.GUID]map[chrondbc.SpellID]*AuraState
+	maxDurations *lru.Cache[chrondbc.SpellID, time.Duration]
 }
 
-func New() *Tracking {
+func New() (*Tracking, error) {
+	mlru, err := lru.New[chrondbc.SpellID, time.Duration](300)
+	if err != nil {
+		return nil, err
+	}
 	return &Tracking{
-		units: make(map[guid.GUID]map[string]*AuraState),
-	}
+		units:        make(map[guid.GUID]map[chrondbc.SpellID]*AuraState),
+		maxDurations: mlru,
+	}, nil
 }
 
-// Get returns the current aura state for a unit's spell, or nil if not active.
-func (t *Tracking) Get(unit guid.GUID, spellName string) *AuraState {
-	if spells, ok := t.units[unit]; ok {
-		return spells[spellName]
-	}
-	return nil
-}
-
-// GetAll returns all active auras for a unit.
-func (t *Tracking) GetAll(unit guid.GUID) map[string]*AuraState {
-	return t.units[unit]
-}
 func (t *Tracking) Process(m messages.Message) error {
 	switch msg := m.(type) {
 	case *messages.Aura:
-		t.processAura(*msg)
-	case *messages.Slain:
-		t.processSlain(*msg)
+		if msg.SpellData == nil {
+			return nil
+		}
+
+		if _, ok := t.units[msg.Target]; !ok {
+			t.units[msg.Target] = make(map[chrondbc.SpellID]*AuraState)
+		}
+
+		state, exists := t.units[msg.Target][msg.SpellData.ID]
+		if !exists {
+			state = &AuraState{}
+			t.units[msg.Target][msg.SpellData.ID] = state
+		}
+
+		state.Stacks = msg.Amount
+		state.Buff = msg.IsBuff
+
+		// Calculate the maximum time the aura can exist based on any possible modifiers.
+		dur := chrondbc.MaxAuraDuration(msg.SpellData)
+		state.MaxExistsUntil = m.Date().Add(dur)
 	}
+
 	return nil
-}
-func (t *Tracking) processAura(a messages.Aura) {
-	switch a.Application {
-	case types.AuraApplicationGains:
-		// Ensure unit map exists
-		if t.units[a.Target] == nil {
-			t.units[a.Target] = make(map[string]*AuraState)
-		}
-		t.units[a.Target][a.SpellName] = &AuraState{Stacks: a.Amount}
-	case types.AuraApplicationFades, types.AuraApplicationRemoved:
-		if spells, ok := t.units[a.Target]; ok {
-			delete(spells, a.SpellName)
-		}
-	}
-}
-func (t *Tracking) processSlain(s messages.Slain) {
-	spells, ok := t.units[s.Victim]
-	if !ok {
-		return
-	}
-	// Remove all auras that don't persist death
-	for spellName := range spells {
-		if _, persists := AurasPersistDeath[spellName]; !persists {
-			delete(spells, spellName)
-		}
-	}
 }

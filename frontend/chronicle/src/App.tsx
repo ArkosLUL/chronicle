@@ -25,6 +25,7 @@ import {
   PeriodicSpellsPage,
   ExtraAttackSpellsPage,
   VulnerabilitySpellsPage,
+  AuraDurationModifiersPage,
 } from "./pages/Technical"
 import {
   AccountLayout,
@@ -82,6 +83,7 @@ function App() {
         <Route path="/technical/extra-attack-spells" element={<ExtraAttackSpellsPage />} />
         <Route path="/technical/vulnerability-spells" element={<VulnerabilitySpellsPage />} />
         <Route path="/technical/periodic-spells" element={<PeriodicSpellsPage />} />
+        <Route path="/technical/aura-duration-modifiers" element={<AuraDurationModifiersPage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/disclaimer" element={<Disclaimer />} />

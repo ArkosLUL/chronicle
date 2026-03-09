@@ -367,6 +367,7 @@ func (c *Common) FightDetectionHandler(m messages.Message) error {
 			if c.currentFight.Start == nil {
 				c.currentFight.Start = pd.Start
 			} else if c.currentFight.Start.Timestamp.Date().After(pd.Start.Timestamp.Date()) {
+        // Setting the fight to the earlier period
 				c.currentFight.Start = pd.Start
 			}
 		}

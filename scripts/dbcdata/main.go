@@ -105,11 +105,21 @@ func demo() *serpent.Command {
 
 			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
 				sp := chrondbc.SpellFromDB(cursor)
-				if sp.Attrs.Has(chrondbc.AttrEx3_BlockableSpell) && !sp.AttackOutcome().Has(chrondbc.AttackOutcomeBlock) {
-					fmt.Println(sp.Name_lang.String(), sp.ID, "is blockable")
+				if sp.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {
+					fmt.Println(sp.Name_lang.String(), sp.ID, "is death persistent")
 				}
+				//for _, eff := range sp.EffectAura {
+				//	if eff == chrondbc.AuraEffectMechanicDurationMod || eff == chrondbc.AuraEffectModAuraDurationByDispel {
+				//		fmt.Println(sp.Name_lang.String(), sp.ID, "has a duration mod dispel mechanic")
+				//	}
+				//}
+
+				//if sp.Attrs.Has(chrondbc.AttrEx3_BlockableSpell) && !sp.AttackOutcome().Has(chrondbc.AttackOutcomeBlock) {
+				//	fmt.Println(sp.Name_lang.String(), sp.ID, "is blockable")
+				//}
 				return true
 			})
+			//fmt.Println(masks)
 
 			//_ = spdb.Range(func(cursor *dbdefs.Ent_SpellAuraNames) bool {
 			//	fmt.Println(cursor.EnumID, cursor.Name_lang.String())

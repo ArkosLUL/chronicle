@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileCode, ShieldAlert, Sparkles, Swords } from "lucide-react";
+import { ArrowLeft, Clock, FileCode, ShieldAlert, Sparkles, Swords } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 
 interface TechnicalLink {
@@ -27,6 +27,12 @@ const TECHNICAL_LINKS: TechnicalLink[] = [
     description: "List of all spells with periodic effects (DoTs, HoTs, channeled, etc.)",
     href: "/technical/periodic-spells",
     icon: <Sparkles className="h-4 w-4" />,
+  },
+  {
+    title: "Aura Duration Modifiers",
+    description: "Spells whose duration can be modified by passive talents, with all applicable modifiers",
+    href: "/technical/aura-duration-modifiers",
+    icon: <Clock className="h-4 w-4" />,
   },
 ];
 

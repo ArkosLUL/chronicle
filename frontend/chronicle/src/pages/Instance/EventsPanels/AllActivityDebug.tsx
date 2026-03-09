@@ -435,7 +435,7 @@ function AllActivityContent({
       {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "cast", "aura", "slain", "spell_go", "aura_cast"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

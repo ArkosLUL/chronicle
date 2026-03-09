@@ -1,6 +1,7 @@
 package chrondbc
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/internal/bitmask"
@@ -271,6 +272,10 @@ const (
 
 // AttackOutcome returns a bitmask of hit table outcomes possible for this spell.
 func (s Spell) AttackOutcome() AttackOutcome {
+	if s.Attrs.Has(Attr_Passive) {
+		return AttackOutcomeNone
+	}
+
 	if s.ID == SpellIDAutoAttack {
 		return AttackOutcomeMiss | AttackOutcomeDodge | AttackOutcomeParry |
 			AttackOutcomeHit |
@@ -311,3 +316,16 @@ func (s Spell) AttackOutcome() AttackOutcome {
 
 	return result
 }
+// IsDeprecated returns true if the spell is not usable in-game.
+// This detects spells explicitly marked as deprecated or using naming
+// conventions for removed/test content.
+//
+// Note: Attr_DoNotDisplay is NOT used because passive talents (which are
+// valid in-game spells) always have that flag set.
+func (s Spell) IsDeprecated() bool {
+	name := s.Name()
+	return strings.Contains(name, "[Deprecated]") ||
+		strings.HasPrefix(name, "zzOLD") ||
+		strings.HasPrefix(name, "Test ")
+}
+

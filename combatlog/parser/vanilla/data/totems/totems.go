@@ -40,6 +40,7 @@ const (
 	modifierTotemicMastery = 0.2
 
 	staticEarthfurySetBump = time.Second * 15
+	improvedFireTotems     = time.Second
 )
 
 func init() {
@@ -59,11 +60,11 @@ func init() {
 	// Fire nova totem can be faster based on "Improved Fire Totem".
 	// We should watch for the damage log to kill it.
 	register("Fire Nova Totem", 0,
-		variant{id: 5879, duration: 5 * time.Second},
-		variant{id: 6110, duration: 5 * time.Second},
-		variant{id: 6111, duration: 5 * time.Second},
-		variant{id: 7844, duration: 5 * time.Second},
-		variant{id: 7845, duration: 5 * time.Second},
+		variant{id: 5879, duration: 5 * time.Second, staticBump: improvedFireTotems},
+		variant{id: 6110, duration: 5 * time.Second, staticBump: improvedFireTotems},
+		variant{id: 6111, duration: 5 * time.Second, staticBump: improvedFireTotems},
+		variant{id: 7844, duration: 5 * time.Second, staticBump: improvedFireTotems},
+		variant{id: 7845, duration: 5 * time.Second, staticBump: improvedFireTotems},
 	)
 
 	register("Healing Stream Totem", 0,

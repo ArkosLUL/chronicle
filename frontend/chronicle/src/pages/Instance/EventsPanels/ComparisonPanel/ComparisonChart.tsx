@@ -402,12 +402,12 @@ function PlayerBreakoutContent({
       <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <img
-            src={`/icons/spec_${row.className.toLowerCase()}_${row.specialization.toLowerCase().replace(/\s+/g, "")}.png`}
+            src={`/c/icons/spec_${row.className.toLowerCase()}_${row.specialization.toLowerCase().replace(/\s+/g, "")}.png`}
             alt={row.specialization}
             style={{ width: 16, height: 16, borderRadius: 2 }}
             onError={(e) => {
               const target = e.currentTarget;
-              target.src = `/icons/class_${row.className.toLowerCase()}.png`;
+              target.src = `/c/icons/class_${row.className.toLowerCase()}.png`;
             }}
           />
           <span style={{ fontWeight: 500, fontSize: "13px" }}>{row.playerName}</span>
@@ -754,7 +754,7 @@ function ComparisonRow({
       >
         {/* Spec icon */}
         <img
-          src={`/icons/spec_${row.className.toLowerCase()}_${row.specialization.toLowerCase().replace(/\s+/g, "")}.png`}
+          src={`/c/icons/spec_${row.className.toLowerCase()}_${row.specialization.toLowerCase().replace(/\s+/g, "")}.png`}
           alt={row.specialization}
           style={{
             width: 20,
@@ -764,11 +764,11 @@ function ComparisonRow({
           }}
           onError={(e) => {
             const target = e.currentTarget;
-            const classIcon = `/icons/class_${row.className.toLowerCase()}.png`;
-            const unknownIcon = "/icons/class_unknown.png";
+            const classIcon = `/c/icons/class_${row.className.toLowerCase()}.png`;
+            const unknownIcon = "/c/icons/class_unknown.png";
             if (target.src.endsWith(unknownIcon)) {
               target.style.display = "none";
-            } else if (target.src.includes("/icons/class_")) {
+            } else if (target.src.includes("/c/icons/class_")) {
               target.src = unknownIcon;
             } else {
               target.src = classIcon;

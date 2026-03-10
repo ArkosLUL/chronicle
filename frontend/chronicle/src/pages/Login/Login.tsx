@@ -48,7 +48,7 @@ export function Login() {
       <div className="w-full max-w-md space-y-8 px-4">
         <div className="text-center">
           <MagicLogo
-            src="/chronicle/ChronicleLogoCenter.svg"
+            src="/c/chronicle/ChronicleLogoCenter.svg"
             alt="Chronicle Logo"
             className="mx-auto h-80 w-80"
           />

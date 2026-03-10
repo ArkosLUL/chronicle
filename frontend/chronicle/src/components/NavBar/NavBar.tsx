@@ -130,7 +130,7 @@ export function NavBar() {
 
       {/* Center: Logo */}
       <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
-        <img src="/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+        <img src="/c/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
       </Link>
 
       {/* Right: Desktop navigation (hidden on mobile) */}

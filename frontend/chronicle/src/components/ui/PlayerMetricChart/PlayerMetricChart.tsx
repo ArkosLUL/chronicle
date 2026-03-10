@@ -525,7 +525,8 @@ export function PlayerMetricRow({
 
         {/* Icon */}
         <img
-          src={`/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
+          // src={`/c/icons/spec_${player.className.toLowerCase()}_${player.specialization.toLowerCase().replace(/\s+/g, '')}.png`}
+          src={`/c/icons/class_${player.className.toLowerCase()}.png`}
           alt={player.specialization}
           style={{
             width: '20px',
@@ -536,12 +537,12 @@ export function PlayerMetricRow({
           onError={(e) => {
             // Fallback to class icon if spec icon not found, then to unknown
             const target = e.currentTarget;
-            const classIcon = `/icons/class_${player.className.toLowerCase()}.png`;
-            const unknownIcon = '/icons/class_unknown.png';
+            const classIcon = `/c/icons/class_${player.className.toLowerCase()}.png`;
+            const unknownIcon = '/c/icons/class_unknown.png';
             if (target.src.endsWith(unknownIcon)) {
               // Already at fallback, hide the image
               target.style.display = 'none';
-            } else if (target.src.includes('/icons/class_')) {
+            } else if (target.src.includes('/c/icons/class_')) {
               // Class icon failed, try unknown
               target.src = unknownIcon;
             } else {

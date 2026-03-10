@@ -10,7 +10,7 @@ export function Home() {
       {/* Hero Section */}
       <section 
         className="relative py-20 md:py-32 px-6 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/herobackground.avif')" }}
+        style={{ backgroundImage: "url('/c/images/herobackground.avif')" }}
       >
         {/* Overlay for text readability */}
         <div className="absolute inset-0 bg-background/80" />

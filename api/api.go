@@ -22,6 +22,7 @@ import (
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	context2 "github.com/gorilla/context"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -94,6 +95,10 @@ func (api *API) Routes() chi.Router {
 		httpmw.ContentSecurityPolicy(),
 		httpmw.NoWWW(),
 		httpmw.PrometheusMW(api.Opts.Registry),
+		middleware.Compress(5,
+			"text/html", "text/css", "application/javascript", "text/javascript",
+			"application/json",
+		),
 		api.shortLinkRedirectMiddleware,
 	)
 

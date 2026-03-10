@@ -97,7 +97,7 @@ func (api *API) Routes() chi.Router {
 		httpmw.PrometheusMW(api.Opts.Registry),
 		middleware.Compress(5,
 			"text/html", "text/css", "application/javascript", "text/javascript",
-			"application/json",
+			"application/json", "text/javascript",
 		),
 		api.shortLinkRedirectMiddleware,
 	)

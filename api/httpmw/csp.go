@@ -12,7 +12,7 @@ func ContentSecurityPolicy() func(next http.Handler) http.Handler {
 		"script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://tweakcn.com",
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 		"font-src 'self' https://fonts.gstatic.com",
-		"img-src 'self' data: blob: https://cdn.brandfetch.io",
+		"img-src 'self' data: blob: https://cdn.brandfetch.io https://icons.chronicleclassic.com",
 		"connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
 		"worker-src 'self' blob:",
 		"frame-ancestors 'none'",

@@ -24,7 +24,7 @@ type handler struct {
 
 func Handler(siteFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.FS(siteFS)))
+	mux.Handle("/", etagMiddleware(http.FileServer(http.FS(siteFS))))
 
 	tmpls, err := findAndParseHTMLFiles(siteFS)
 	if err != nil {

@@ -42,6 +42,7 @@ export function createHealingTakenPanel(
 
   // Default: narrow to healing from selected healers
   const defaultFilters: PanelFilter[] = [
+     { type: "time_range" as const, value: "controller", applyTo:heal},
     { type: "source_type" as const, value: "selected_players", applyTo: heal },
   ];
 

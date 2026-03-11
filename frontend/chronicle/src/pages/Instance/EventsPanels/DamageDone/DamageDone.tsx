@@ -98,6 +98,7 @@ export function createDamageDonePanel(
     }
   })();
 
+  // { type: "time_range" as const, value: "controller", applyTo:[]}
   return {
     ...config.processor,
     label: config.label,
@@ -105,7 +106,7 @@ export function createDamageDonePanel(
     supportsPerSecond: true,
     supportsFiltering: true,
     fixedFilters,
-    defaultFilters,
+    defaultFilters: [{ type: "time_range" as const, value: "controller", applyTo:["damage"]}, ...defaultFilters],
     render: (props: PanelRenderProps<DamageDoneState>) => {
       return <DamageDoneContent {...props} sourceType={sourceType} />;
     },

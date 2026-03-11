@@ -785,6 +785,7 @@ export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
   selfManagesAggregation: true,
   checkboxLabel: "Encounter offset",
   supportsFiltering: true,
+  defaultFilters: [{ type: "time_range" as const, value: "controller" }],
   
   render: (props: PanelRenderProps<AllActivityState>) => (
     <AllActivityRender {...props} />

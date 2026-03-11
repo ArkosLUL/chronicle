@@ -24,6 +24,7 @@ export function createExtraAttacksPanel(): PanelDefinition<ExtraAttacksResult, a
     groupingOptions: ENTITY_GROUPING_OPTIONS,
     petOptions: PET_MODE_OPTIONS,
     defaultFilters: [
+      { type: "time_range" as const, value: "controller" },
       { type: "target_type" as const, value: ["player"], applyTo: ["extra_attack"] },
     ],
     

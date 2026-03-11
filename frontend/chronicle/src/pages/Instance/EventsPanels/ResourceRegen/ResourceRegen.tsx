@@ -20,6 +20,9 @@ export function createResourceRegenPanel(): PanelDefinition<ResourceRegenResult,
     icon: <Droplets className="h-4 w-4" />,
     supportsPerSecond: true,
     supportsFiltering: true,
+    defaultFilters: [
+      { type: "time_range" as const, value: "controller" },
+    ],
     
     render: (props: PanelRenderProps<ResourceRegenResult>) => {
       return <ResourceRegenContent {...props} />;

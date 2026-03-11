@@ -19,6 +19,9 @@ export function createDeathLogPanel(): PanelDefinition<DeathsResult, any> {
     label: "Death Log",
     icon: <ScrollText className="h-4 w-4" />,
     checkboxLabel: "Encounter offset",
+    defaultFilters: [
+      { type: "time_range" as const, value: "controller", applyTo: ["slain"] },
+    ],
 
     render: (props: PanelRenderProps<DeathsResult>) => {
       return <DeathLogContent {...props} />;

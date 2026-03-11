@@ -81,6 +81,7 @@ const APPLY_TO_OPTIONS = [
 const TYPES_WITH_APPLY_TO = new Set<PanelFilterType>([
   "source_type", "target_type",
   "ability_name", "ability_id", "ability_school", "ability_hittype",
+  "time_range",
 ]);
 
 export interface FilterBlockProps {

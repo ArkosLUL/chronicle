@@ -68,7 +68,7 @@ export function createDamageTakenPanel(
     supportsPerSecond: true,
     supportsFiltering: true,
     fixedFilters,
-    defaultFilters,
+    defaultFilters: [{ type: "time_range" as const, value: "controller", applyTo:["damage"]}, ...defaultFilters],
     render: (props: PanelRenderProps<DamageTakenResult>) => {
       return <DamageTakenContent {...props} targetType={targetType} />;
     },

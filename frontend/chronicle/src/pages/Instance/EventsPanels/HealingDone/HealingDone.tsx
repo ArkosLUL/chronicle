@@ -42,6 +42,7 @@ export function createHealingDonePanel(
 
   // Default: narrow to healing targeted at selected players
   const defaultFilters: PanelFilter[] = [
+    { type: "time_range" as const, value: "controller", applyTo:heal},
     { type: "target_type" as const, value: "selected_players", applyTo: heal },
   ];
 

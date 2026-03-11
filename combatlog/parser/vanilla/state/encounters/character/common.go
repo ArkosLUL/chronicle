@@ -72,19 +72,6 @@ func isImmobilizeCC(spellName string) bool {
 // processCommonActivity handles the basics of activity processing for a character.
 func processCommonActivity(c characterBase, m messages.Message) error {
 	switch data := m.(type) {
-	case *messages.AuraCast:
-		// TODO: Aura cast because some polymorph debuffs do not appear?
-		if data.Target == nil || c.ID() != *data.Target {
-			return nil
-		}
-
-		if data.Spell != nil {
-			if data.Spell.SpellDamageType().Has(chrondbc.SpellDamageActiveDebuff) {
-				// Faerie fire, sunder armor, etc.
-				c.Start(fmt.Sprintf("debuff_%s", data.Spell.Name()), m)
-			}
-		}
-
 	case *messages.Cast:
 		if data.Target != nil && (*data.Target).Gid == c.ID() {
 			if data.Action == types.CastActionsCasts && isImmobilizeCC(data.Spell.Name) {
@@ -96,8 +83,8 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			return nil
 		}
 
-		applied := data.Application == types.AuraApplicationGains && data.Amount == 1
-		removed := data.Application == types.AuraApplicationFades && data.Amount == 0
+		applied := data.Amount > 0
+		removed := data.Amount == 0
 
 		if isImmobilizeCC(data.SpellName) {
 			if applied {
@@ -109,6 +96,13 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 				if ok {
 					cur.EnterResetGracePeriod("cc removed", m)
 				}
+			}
+		}
+
+		if data.SpellData != nil && applied {
+			if data.SpellData.SpellDamageType().Has(chrondbc.SpellDamageActiveDebuff) {
+				// Faerie fire, sunder armor, etc.
+				c.Start(fmt.Sprintf("debuff_%s", data.SpellData.Name()), m)
 			}
 		}
 	case *messages.Slain:

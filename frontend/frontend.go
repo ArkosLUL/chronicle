@@ -52,8 +52,12 @@ func Handler(siteFS fs.FS, ogResolver OGResolver) http.Handler {
 	}
 }
 
-// instancePathRe matches /instances/<id-or-slug> with optional trailing slash.
-var instancePathRe = regexp.MustCompile(`^/instances/([^/]+)/?$`)
+var (
+	// instancePathRe matches /instances/<id-or-slug> with optional trailing slash.
+	instancePathRe = regexp.MustCompile(`^/instances/([^/]+)/?$`)
+	// sharePathRe matches /s/<code> with optional trailing slash.
+	sharePathRe = regexp.MustCompile(`^/s/([^/]+)/?$`)
+)
 
 func (h *handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// reqFile is the static file requested
@@ -67,8 +71,14 @@ func (h *handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	// Enrich OG meta tags for instance pages.
 	if h.ogResolver != nil {
+		var ogKey string
 		if m := instancePathRe.FindStringSubmatch(req.URL.Path); m != nil {
-			if og := h.ogResolver(m[1]); og != nil {
+			ogKey = m[1]
+		} else if m := sharePathRe.FindStringSubmatch(req.URL.Path); m != nil {
+			ogKey = "share:" + m[1]
+		}
+		if ogKey != "" {
+			if og := h.ogResolver(ogKey); og != nil {
 				state.OGTitle = og.Title
 				state.OGDescription = og.Description
 				state.OGURL = og.URL

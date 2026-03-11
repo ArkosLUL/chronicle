@@ -28,16 +28,17 @@ import (
 )
 
 type Options struct {
-	Logger     *slog.Logger
-	Storage    storage.ObjectStorage
-	Zed        *authz.Authz
-	Chronicle  *chronicle.Chronicle
-	RiverQueue *riverqueue.Queues
-	Bot        *chroniclebot.Bot
-	SaffronURL *url.URL
-	OCRURL     *url.URL
-	WoWDB      http.Handler
-	Assets     http.Handler
+	Logger           *slog.Logger
+	Storage          storage.ObjectStorage
+	Zed              *authz.Authz
+	Chronicle        *chronicle.Chronicle
+	RiverQueue       *riverqueue.Queues
+	Bot              *chroniclebot.Bot
+	SaffronURL       *url.URL
+	OCRURL           *url.URL
+	WoWDB            http.Handler
+	Assets           http.Handler
+	InternalGameData http.Handler
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -229,6 +230,17 @@ func (api *API) Routes() chi.Router {
 				})
 			})
 		})
+
+		if api.Opts.InternalGameData != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(
+					api.Auth.Authenticated(false),
+					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanInternal_game_data_User),
+				)
+				r.Mount("/internal/gamedata", api.Opts.InternalGameData)
+			})
+		}
+
 		r.NotFound(http.NotFound)
 	})
 

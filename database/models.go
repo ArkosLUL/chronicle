@@ -354,79 +354,6 @@ func AllRiverJobStateValues() []RiverJobState {
 	}
 }
 
-type SpellSchool string
-
-const (
-	SpellSchoolPhysical SpellSchool = "physical"
-	SpellSchoolFire     SpellSchool = "fire"
-	SpellSchoolFrost    SpellSchool = "frost"
-	SpellSchoolShadow   SpellSchool = "shadow"
-	SpellSchoolArcane   SpellSchool = "arcane"
-	SpellSchoolHoly     SpellSchool = "holy"
-	SpellSchoolNature   SpellSchool = "nature"
-)
-
-func (e *SpellSchool) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = SpellSchool(s)
-	case string:
-		*e = SpellSchool(s)
-	default:
-		return fmt.Errorf("unsupported scan type for SpellSchool: %T", src)
-	}
-	return nil
-}
-
-type NullSpellSchool struct {
-	SpellSchool SpellSchool `json:"spell_school"`
-	Valid       bool        `json:"valid"` // Valid is true if SpellSchool is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullSpellSchool) Scan(value interface{}) error {
-	if value == nil {
-		ns.SpellSchool, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.SpellSchool.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullSpellSchool) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.SpellSchool), nil
-}
-
-func (e SpellSchool) Valid() bool {
-	switch e {
-	case SpellSchoolPhysical,
-		SpellSchoolFire,
-		SpellSchoolFrost,
-		SpellSchoolShadow,
-		SpellSchoolArcane,
-		SpellSchoolHoly,
-		SpellSchoolNature:
-		return true
-	}
-	return false
-}
-
-func AllSpellSchoolValues() []SpellSchool {
-	return []SpellSchool{
-		SpellSchoolPhysical,
-		SpellSchoolFire,
-		SpellSchoolFrost,
-		SpellSchoolShadow,
-		SpellSchoolArcane,
-		SpellSchoolHoly,
-		SpellSchoolNature,
-	}
-}
-
 type WowPlayableClass string
 
 const (
@@ -622,6 +549,81 @@ type DataGrant struct {
 	Description  pgtype.Text        `db:"description" json:"description"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	ExpiresAt    pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+}
+
+type DbcItemDisplayInfo struct {
+	ID                         int32  `db:"id" json:"id"`
+	ModelName                  []byte `db:"model_name" json:"model_name"`
+	ModelTexture               []byte `db:"model_texture" json:"model_texture"`
+	GeosetGroup                []byte `db:"geoset_group" json:"geoset_group"`
+	Flags                      int32  `db:"flags" json:"flags"`
+	SpellVisualID              int32  `db:"spell_visual_id" json:"spell_visual_id"`
+	HelmetGeosetVis            []byte `db:"helmet_geoset_vis" json:"helmet_geoset_vis"`
+	Texture                    []byte `db:"texture" json:"texture"`
+	ItemVisual                 int32  `db:"item_visual" json:"item_visual"`
+	ParticleColorID            int32  `db:"particle_color_id" json:"particle_color_id"`
+	AttachmentGeosetGroup      []byte `db:"attachment_geoset_group" json:"attachment_geoset_group"`
+	ItemRangedDisplayInfoID    int32  `db:"item_ranged_display_info_id" json:"item_ranged_display_info_id"`
+	ModelMaterialResourcesID   []byte `db:"model_material_resources_id" json:"model_material_resources_id"`
+	ModelResourcesID           []byte `db:"model_resources_id" json:"model_resources_id"`
+	ModelType1                 int32  `db:"model_type_1" json:"model_type_1"`
+	OverrideSwooshSoundKitID   int32  `db:"override_swoosh_sound_kit_id" json:"override_swoosh_sound_kit_id"`
+	SheatheTransformMatrixID   int32  `db:"sheathe_transform_matrix_id" json:"sheathe_transform_matrix_id"`
+	SheathedSpellVisualKitID   int32  `db:"sheathed_spell_visual_kit_id" json:"sheathed_spell_visual_kit_id"`
+	StateSpellVisualKitID      int32  `db:"state_spell_visual_kit_id" json:"state_spell_visual_kit_id"`
+	UnsheathedSpellVisualKitID int32  `db:"unsheathed_spell_visual_kit_id" json:"unsheathed_spell_visual_kit_id"`
+	InventoryIcon              []byte `db:"inventory_icon" json:"inventory_icon"`
+	GroupSoundIndex            int32  `db:"group_sound_index" json:"group_sound_index"`
+	GroundModel                string `db:"ground_model" json:"ground_model"`
+	ItemSize                   int32  `db:"item_size" json:"item_size"`
+	HelmetGeosetVisID          []byte `db:"helmet_geoset_vis_id" json:"helmet_geoset_vis_id"`
+}
+
+type DbcItemRandomProperty struct {
+	ID           int32  `db:"id" json:"id"`
+	Name         string `db:"name" json:"name"`
+	NameLang     string `db:"name_lang" json:"name_lang"`
+	Enchantment1 int32  `db:"enchantment_1" json:"enchantment_1"`
+	Enchantment2 int32  `db:"enchantment_2" json:"enchantment_2"`
+	Enchantment3 int32  `db:"enchantment_3" json:"enchantment_3"`
+	Enchantment4 int32  `db:"enchantment_4" json:"enchantment_4"`
+	Enchantment5 int32  `db:"enchantment_5" json:"enchantment_5"`
+}
+
+type DbcItemSet struct {
+	ID                int32  `db:"id" json:"id"`
+	NameLang          string `db:"name_lang" json:"name_lang"`
+	RequiredSkill     int32  `db:"required_skill" json:"required_skill"`
+	RequiredSkillRank int32  `db:"required_skill_rank" json:"required_skill_rank"`
+}
+
+type DbcItemSetBonu struct {
+	SetID     int32 `db:"set_id" json:"set_id"`
+	Threshold int32 `db:"threshold" json:"threshold"`
+	SpellID   int32 `db:"spell_id" json:"spell_id"`
+}
+
+type DbcSpellItemEnchantment struct {
+	ID                int32  `db:"id" json:"id"`
+	Charges           int32  `db:"charges" json:"charges"`
+	Effect1           int32  `db:"effect_1" json:"effect_1"`
+	Effect2           int32  `db:"effect_2" json:"effect_2"`
+	Effect3           int32  `db:"effect_3" json:"effect_3"`
+	EffectPointsMin1  int32  `db:"effect_points_min_1" json:"effect_points_min_1"`
+	EffectPointsMin2  int32  `db:"effect_points_min_2" json:"effect_points_min_2"`
+	EffectPointsMin3  int32  `db:"effect_points_min_3" json:"effect_points_min_3"`
+	EffectArg1        int32  `db:"effect_arg_1" json:"effect_arg_1"`
+	EffectArg2        int32  `db:"effect_arg_2" json:"effect_arg_2"`
+	EffectArg3        int32  `db:"effect_arg_3" json:"effect_arg_3"`
+	NameLang          string `db:"name_lang" json:"name_lang"`
+	ItemVisual        int32  `db:"item_visual" json:"item_visual"`
+	Flags             int32  `db:"flags" json:"flags"`
+	SrcItemID         int32  `db:"src_item_id" json:"src_item_id"`
+	ConditionID       int32  `db:"condition_id" json:"condition_id"`
+	RequiredSkillID   int32  `db:"required_skill_id" json:"required_skill_id"`
+	RequiredSkillRank int32  `db:"required_skill_rank" json:"required_skill_rank"`
+	MinLevel          int32  `db:"min_level" json:"min_level"`
+	MaxLevel          int32  `db:"max_level" json:"max_level"`
 }
 
 type Guild struct {
@@ -925,6 +927,231 @@ type WoWLogGroup struct {
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	LogType   LogType            `db:"log_type" json:"log_type"`
+}
+
+type WorldCreatureSpawn struct {
+	Guid int32 `db:"guid" json:"guid"`
+	ID   int32 `db:"id" json:"id"`
+	Id2  int32 `db:"id2" json:"id2"`
+	Id3  int32 `db:"id3" json:"id3"`
+	Id4  int32 `db:"id4" json:"id4"`
+	Map  int32 `db:"map" json:"map"`
+}
+
+type WorldCreatureTemplate struct {
+	Entry              int32       `db:"entry" json:"entry"`
+	DisplayId1         int32       `db:"display_id1" json:"display_id1"`
+	DisplayId2         int32       `db:"display_id2" json:"display_id2"`
+	DisplayId3         int32       `db:"display_id3" json:"display_id3"`
+	DisplayId4         int32       `db:"display_id4" json:"display_id4"`
+	MountDisplayID     int32       `db:"mount_display_id" json:"mount_display_id"`
+	Name               string      `db:"name" json:"name"`
+	Subname            pgtype.Text `db:"subname" json:"subname"`
+	LevelMin           int32       `db:"level_min" json:"level_min"`
+	LevelMax           int32       `db:"level_max" json:"level_max"`
+	HealthMin          int32       `db:"health_min" json:"health_min"`
+	HealthMax          int32       `db:"health_max" json:"health_max"`
+	ManaMin            int32       `db:"mana_min" json:"mana_min"`
+	ManaMax            int32       `db:"mana_max" json:"mana_max"`
+	Armor              int32       `db:"armor" json:"armor"`
+	DmgMin             int32       `db:"dmg_min" json:"dmg_min"`
+	DmgMax             int32       `db:"dmg_max" json:"dmg_max"`
+	DmgSchool          int32       `db:"dmg_school" json:"dmg_school"`
+	AttackPower        int32       `db:"attack_power" json:"attack_power"`
+	DmgMultiplier      float64     `db:"dmg_multiplier" json:"dmg_multiplier"`
+	BaseAttackTime     int32       `db:"base_attack_time" json:"base_attack_time"`
+	RangedAttackTime   int32       `db:"ranged_attack_time" json:"ranged_attack_time"`
+	UnitClass          int32       `db:"unit_class" json:"unit_class"`
+	UnitFlags          int32       `db:"unit_flags" json:"unit_flags"`
+	RangedDmgMin       float64     `db:"ranged_dmg_min" json:"ranged_dmg_min"`
+	RangedDmgMax       float64     `db:"ranged_dmg_max" json:"ranged_dmg_max"`
+	HolyRes            int32       `db:"holy_res" json:"holy_res"`
+	FireRes            int32       `db:"fire_res" json:"fire_res"`
+	NatureRes          int32       `db:"nature_res" json:"nature_res"`
+	FrostRes           int32       `db:"frost_res" json:"frost_res"`
+	ShadowRes          int32       `db:"shadow_res" json:"shadow_res"`
+	ArcaneRes          int32       `db:"arcane_res" json:"arcane_res"`
+	MechanicImmuneMask int64       `db:"mechanic_immune_mask" json:"mechanic_immune_mask"`
+	SchoolImmuneMask   int32       `db:"school_immune_mask" json:"school_immune_mask"`
+	ImmunityFlags      int32       `db:"immunity_flags" json:"immunity_flags"`
+}
+
+type WorldDisplayInfo struct {
+	ID   int32  `db:"id" json:"id"`
+	Icon string `db:"icon" json:"icon"`
+}
+
+type WorldItemEnchantment struct {
+	Entry  int32   `db:"entry" json:"entry"`
+	Ench   int32   `db:"ench" json:"ench"`
+	Chance float64 `db:"chance" json:"chance"`
+}
+
+type WorldItemTemplate struct {
+	Entry                     int32       `db:"entry" json:"entry"`
+	Class                     int32       `db:"class" json:"class"`
+	Subclass                  int32       `db:"subclass" json:"subclass"`
+	Name                      string      `db:"name" json:"name"`
+	Description               string      `db:"description" json:"description"`
+	DisplayID                 int32       `db:"display_id" json:"display_id"`
+	Quality                   int32       `db:"quality" json:"quality"`
+	Flags                     int32       `db:"flags" json:"flags"`
+	BuyCount                  int32       `db:"buy_count" json:"buy_count"`
+	BuyPrice                  int32       `db:"buy_price" json:"buy_price"`
+	SellPrice                 int32       `db:"sell_price" json:"sell_price"`
+	InventoryType             int32       `db:"inventory_type" json:"inventory_type"`
+	AllowableClass            int32       `db:"allowable_class" json:"allowable_class"`
+	AllowableRace             int32       `db:"allowable_race" json:"allowable_race"`
+	ItemLevel                 int32       `db:"item_level" json:"item_level"`
+	RequiredLevel             int32       `db:"required_level" json:"required_level"`
+	RequiredSkill             int32       `db:"required_skill" json:"required_skill"`
+	RequiredSkillRank         int32       `db:"required_skill_rank" json:"required_skill_rank"`
+	RequiredSpell             int32       `db:"required_spell" json:"required_spell"`
+	RequiredHonorRank         int32       `db:"required_honor_rank" json:"required_honor_rank"`
+	RequiredCityRank          int32       `db:"required_city_rank" json:"required_city_rank"`
+	RequiredReputationFaction int32       `db:"required_reputation_faction" json:"required_reputation_faction"`
+	RequiredReputationRank    int32       `db:"required_reputation_rank" json:"required_reputation_rank"`
+	MaxCount                  int32       `db:"max_count" json:"max_count"`
+	Stackable                 int32       `db:"stackable" json:"stackable"`
+	ContainerSlots            int32       `db:"container_slots" json:"container_slots"`
+	StatType1                 int32       `db:"stat_type1" json:"stat_type1"`
+	StatValue1                int32       `db:"stat_value1" json:"stat_value1"`
+	StatType2                 int32       `db:"stat_type2" json:"stat_type2"`
+	StatValue2                int32       `db:"stat_value2" json:"stat_value2"`
+	StatType3                 int32       `db:"stat_type3" json:"stat_type3"`
+	StatValue3                int32       `db:"stat_value3" json:"stat_value3"`
+	StatType4                 int32       `db:"stat_type4" json:"stat_type4"`
+	StatValue4                int32       `db:"stat_value4" json:"stat_value4"`
+	StatType5                 int32       `db:"stat_type5" json:"stat_type5"`
+	StatValue5                int32       `db:"stat_value5" json:"stat_value5"`
+	StatType6                 int32       `db:"stat_type6" json:"stat_type6"`
+	StatValue6                int32       `db:"stat_value6" json:"stat_value6"`
+	StatType7                 int32       `db:"stat_type7" json:"stat_type7"`
+	StatValue7                int32       `db:"stat_value7" json:"stat_value7"`
+	StatType8                 int32       `db:"stat_type8" json:"stat_type8"`
+	StatValue8                int32       `db:"stat_value8" json:"stat_value8"`
+	StatType9                 int32       `db:"stat_type9" json:"stat_type9"`
+	StatValue9                int32       `db:"stat_value9" json:"stat_value9"`
+	StatType10                int32       `db:"stat_type10" json:"stat_type10"`
+	StatValue10               int32       `db:"stat_value10" json:"stat_value10"`
+	Delay                     int32       `db:"delay" json:"delay"`
+	RangeMod                  float64     `db:"range_mod" json:"range_mod"`
+	AmmoType                  int32       `db:"ammo_type" json:"ammo_type"`
+	DmgMin1                   float64     `db:"dmg_min1" json:"dmg_min1"`
+	DmgMax1                   float64     `db:"dmg_max1" json:"dmg_max1"`
+	DmgType1                  int32       `db:"dmg_type1" json:"dmg_type1"`
+	DmgMin2                   float64     `db:"dmg_min2" json:"dmg_min2"`
+	DmgMax2                   float64     `db:"dmg_max2" json:"dmg_max2"`
+	DmgType2                  int32       `db:"dmg_type2" json:"dmg_type2"`
+	DmgMin3                   float64     `db:"dmg_min3" json:"dmg_min3"`
+	DmgMax3                   float64     `db:"dmg_max3" json:"dmg_max3"`
+	DmgType3                  int32       `db:"dmg_type3" json:"dmg_type3"`
+	DmgMin4                   float64     `db:"dmg_min4" json:"dmg_min4"`
+	DmgMax4                   float64     `db:"dmg_max4" json:"dmg_max4"`
+	DmgType4                  int32       `db:"dmg_type4" json:"dmg_type4"`
+	DmgMin5                   float64     `db:"dmg_min5" json:"dmg_min5"`
+	DmgMax5                   float64     `db:"dmg_max5" json:"dmg_max5"`
+	DmgType5                  int32       `db:"dmg_type5" json:"dmg_type5"`
+	Block                     int32       `db:"block" json:"block"`
+	Armor                     int32       `db:"armor" json:"armor"`
+	HolyRes                   int32       `db:"holy_res" json:"holy_res"`
+	FireRes                   int32       `db:"fire_res" json:"fire_res"`
+	NatureRes                 int32       `db:"nature_res" json:"nature_res"`
+	FrostRes                  int32       `db:"frost_res" json:"frost_res"`
+	ShadowRes                 int32       `db:"shadow_res" json:"shadow_res"`
+	ArcaneRes                 int32       `db:"arcane_res" json:"arcane_res"`
+	Spellid1                  int32       `db:"spellid_1" json:"spellid_1"`
+	Spelltrigger1             int32       `db:"spelltrigger_1" json:"spelltrigger_1"`
+	Spellcharges1             int32       `db:"spellcharges_1" json:"spellcharges_1"`
+	Spellppmrate1             float64     `db:"spellppmrate_1" json:"spellppmrate_1"`
+	Spellcooldown1            int32       `db:"spellcooldown_1" json:"spellcooldown_1"`
+	Spellcategory1            int32       `db:"spellcategory_1" json:"spellcategory_1"`
+	Spellcategorycooldown1    int32       `db:"spellcategorycooldown_1" json:"spellcategorycooldown_1"`
+	Spellid2                  int32       `db:"spellid_2" json:"spellid_2"`
+	Spelltrigger2             int32       `db:"spelltrigger_2" json:"spelltrigger_2"`
+	Spellcharges2             int32       `db:"spellcharges_2" json:"spellcharges_2"`
+	Spellppmrate2             float64     `db:"spellppmrate_2" json:"spellppmrate_2"`
+	Spellcooldown2            int32       `db:"spellcooldown_2" json:"spellcooldown_2"`
+	Spellcategory2            int32       `db:"spellcategory_2" json:"spellcategory_2"`
+	Spellcategorycooldown2    int32       `db:"spellcategorycooldown_2" json:"spellcategorycooldown_2"`
+	Spellid3                  int32       `db:"spellid_3" json:"spellid_3"`
+	Spelltrigger3             int32       `db:"spelltrigger_3" json:"spelltrigger_3"`
+	Spellcharges3             int32       `db:"spellcharges_3" json:"spellcharges_3"`
+	Spellppmrate3             float64     `db:"spellppmrate_3" json:"spellppmrate_3"`
+	Spellcooldown3            int32       `db:"spellcooldown_3" json:"spellcooldown_3"`
+	Spellcategory3            int32       `db:"spellcategory_3" json:"spellcategory_3"`
+	Spellcategorycooldown3    int32       `db:"spellcategorycooldown_3" json:"spellcategorycooldown_3"`
+	Spellid4                  int32       `db:"spellid_4" json:"spellid_4"`
+	Spelltrigger4             int32       `db:"spelltrigger_4" json:"spelltrigger_4"`
+	Spellcharges4             int32       `db:"spellcharges_4" json:"spellcharges_4"`
+	Spellppmrate4             float64     `db:"spellppmrate_4" json:"spellppmrate_4"`
+	Spellcooldown4            int32       `db:"spellcooldown_4" json:"spellcooldown_4"`
+	Spellcategory4            int32       `db:"spellcategory_4" json:"spellcategory_4"`
+	Spellcategorycooldown4    int32       `db:"spellcategorycooldown_4" json:"spellcategorycooldown_4"`
+	Spellid5                  int32       `db:"spellid_5" json:"spellid_5"`
+	Spelltrigger5             int32       `db:"spelltrigger_5" json:"spelltrigger_5"`
+	Spellcharges5             int32       `db:"spellcharges_5" json:"spellcharges_5"`
+	Spellppmrate5             float64     `db:"spellppmrate_5" json:"spellppmrate_5"`
+	Spellcooldown5            int32       `db:"spellcooldown_5" json:"spellcooldown_5"`
+	Spellcategory5            int32       `db:"spellcategory_5" json:"spellcategory_5"`
+	Spellcategorycooldown5    int32       `db:"spellcategorycooldown_5" json:"spellcategorycooldown_5"`
+	Bonding                   int32       `db:"bonding" json:"bonding"`
+	PageText                  int32       `db:"page_text" json:"page_text"`
+	PageLanguage              int32       `db:"page_language" json:"page_language"`
+	PageMaterial              int32       `db:"page_material" json:"page_material"`
+	StartQuest                int32       `db:"start_quest" json:"start_quest"`
+	LockID                    int32       `db:"lock_id" json:"lock_id"`
+	Material                  int32       `db:"material" json:"material"`
+	Sheath                    int32       `db:"sheath" json:"sheath"`
+	RandomProperty            int32       `db:"random_property" json:"random_property"`
+	SetID                     int32       `db:"set_id" json:"set_id"`
+	MaxDurability             int32       `db:"max_durability" json:"max_durability"`
+	AreaBound                 int32       `db:"area_bound" json:"area_bound"`
+	MapBound                  int32       `db:"map_bound" json:"map_bound"`
+	Duration                  int32       `db:"duration" json:"duration"`
+	BagFamily                 int32       `db:"bag_family" json:"bag_family"`
+	DisenchantID              int32       `db:"disenchant_id" json:"disenchant_id"`
+	FoodType                  int32       `db:"food_type" json:"food_type"`
+	MinMoneyLoot              int32       `db:"min_money_loot" json:"min_money_loot"`
+	MaxMoneyLoot              int32       `db:"max_money_loot" json:"max_money_loot"`
+	WrappedGift               int32       `db:"wrapped_gift" json:"wrapped_gift"`
+	ExtraFlags                int32       `db:"extra_flags" json:"extra_flags"`
+	OtherTeamEntry            int32       `db:"other_team_entry" json:"other_team_entry"`
+	ScriptName                pgtype.Text `db:"script_name" json:"script_name"`
+	Patch                     pgtype.Text `db:"patch" json:"patch"`
+}
+
+type WorldSpellArea struct {
+	Spell            int32 `db:"spell" json:"spell"`
+	Area             int32 `db:"area" json:"area"`
+	QuestStart       int32 `db:"quest_start" json:"quest_start"`
+	QuestStartActive int32 `db:"quest_start_active" json:"quest_start_active"`
+	QuestEnd         int32 `db:"quest_end" json:"quest_end"`
+	AuraSpell        int32 `db:"aura_spell" json:"aura_spell"`
+	Racemask         int32 `db:"racemask" json:"racemask"`
+	Gender           int32 `db:"gender" json:"gender"`
+	Autocast         int32 `db:"autocast" json:"autocast"`
+}
+
+type WorldSpellChain struct {
+	SpellID    int32 `db:"spell_id" json:"spell_id"`
+	PrevSpell  int32 `db:"prev_spell" json:"prev_spell"`
+	FirstSpell int32 `db:"first_spell" json:"first_spell"`
+	Rank       int32 `db:"rank" json:"rank"`
+	ReqSpell   int32 `db:"req_spell" json:"req_spell"`
+}
+
+type WorldSpellGroup struct {
+	GroupID      int32 `db:"group_id" json:"group_id"`
+	GroupSpellID int32 `db:"group_spell_id" json:"group_spell_id"`
+	SpellID      int32 `db:"spell_id" json:"spell_id"`
+}
+
+type WorldSpellThreat struct {
+	Entry      int32   `db:"entry" json:"entry"`
+	Threat     int32   `db:"threat" json:"threat"`
+	Multiplier float64 `db:"multiplier" json:"multiplier"`
+	ApBonus    float64 `db:"ap_bonus" json:"ap_bonus"`
 }
 
 type WowServer struct {

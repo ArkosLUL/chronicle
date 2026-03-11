@@ -8,6 +8,10 @@ type UniqueConstraint string
 const (
 	UniqueDataGrantsPkey                            UniqueConstraint = "data_grants_pkey"                                // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_pkey PRIMARY KEY (id);
 	UniqueDataGrantsUserIDSourceKey                 UniqueConstraint = "data_grants_user_id_source_key"                  // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
+	UniqueDbcItemRandomPropertiesPkey               UniqueConstraint = "dbc_item_random_properties_pkey"                 // ALTER TABLE ONLY dbc_item_random_properties ADD CONSTRAINT dbc_item_random_properties_pkey PRIMARY KEY (id);
+	UniqueDbcItemSetBonusPkey                       UniqueConstraint = "dbc_item_set_bonus_pkey"                         // ALTER TABLE ONLY dbc_item_set_bonus ADD CONSTRAINT dbc_item_set_bonus_pkey PRIMARY KEY (set_id, threshold, spell_id);
+	UniqueDbcItemSetPkey                            UniqueConstraint = "dbc_item_set_pkey"                               // ALTER TABLE ONLY dbc_item_set ADD CONSTRAINT dbc_item_set_pkey PRIMARY KEY (id);
+	UniqueDbcSpellItemEnchantmentPkey               UniqueConstraint = "dbc_spell_item_enchantment_pkey"                 // ALTER TABLE ONLY dbc_spell_item_enchantment ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (id);
 	UniqueGuildMembersGuildIDUserIDKey              UniqueConstraint = "guild_members_guild_id_user_id_key"              // ALTER TABLE ONLY guild_members ADD CONSTRAINT guild_members_guild_id_user_id_key UNIQUE (guild_id, user_id);
 	UniqueGuildMembersPkey                          UniqueConstraint = "guild_members_pkey"                              // ALTER TABLE ONLY guild_members ADD CONSTRAINT guild_members_pkey PRIMARY KEY (id);
 	UniqueGuildPagePanelsPkey                       UniqueConstraint = "guild_page_panels_pkey"                          // ALTER TABLE ONLY guild_page_panels ADD CONSTRAINT guild_page_panels_pkey PRIMARY KEY (id);
@@ -42,6 +46,15 @@ const (
 	UniqueUserTrackedLayoutsPkey                    UniqueConstraint = "user_tracked_layouts_pkey"                       // ALTER TABLE ONLY user_tracked_layouts ADD CONSTRAINT user_tracked_layouts_pkey PRIMARY KEY (id);
 	UniqueUserTrackedLayoutsUnique                  UniqueConstraint = "user_tracked_layouts_unique"                     // ALTER TABLE ONLY user_tracked_layouts ADD CONSTRAINT user_tracked_layouts_unique UNIQUE (user_id, layout_id);
 	UniqueUsersPkey                                 UniqueConstraint = "users_pkey"                                      // ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+	UniqueWorldCreatureSpawnPkey                    UniqueConstraint = "world_creature_spawn_pkey"                       // ALTER TABLE ONLY world_creature_spawn ADD CONSTRAINT world_creature_spawn_pkey PRIMARY KEY (guid);
+	UniqueWorldCreatureTemplatePkey                 UniqueConstraint = "world_creature_template_pkey"                    // ALTER TABLE ONLY world_creature_template ADD CONSTRAINT world_creature_template_pkey PRIMARY KEY (entry);
+	UniqueWorldDisplayInfoPkey                      UniqueConstraint = "world_display_info_pkey"                         // ALTER TABLE ONLY world_display_info ADD CONSTRAINT world_display_info_pkey PRIMARY KEY (id);
+	UniqueWorldItemEnchantmentPkey                  UniqueConstraint = "world_item_enchantment_pkey"                     // ALTER TABLE ONLY world_item_enchantment ADD CONSTRAINT world_item_enchantment_pkey PRIMARY KEY (entry, ench);
+	UniqueWorldItemTemplatePkey                     UniqueConstraint = "world_item_template_pkey"                        // ALTER TABLE ONLY world_item_template ADD CONSTRAINT world_item_template_pkey PRIMARY KEY (entry);
+	UniqueWorldSpellAreaPkey                        UniqueConstraint = "world_spell_area_pkey"                           // ALTER TABLE ONLY world_spell_area ADD CONSTRAINT world_spell_area_pkey PRIMARY KEY (spell, area);
+	UniqueWorldSpellChainPkey                       UniqueConstraint = "world_spell_chain_pkey"                          // ALTER TABLE ONLY world_spell_chain ADD CONSTRAINT world_spell_chain_pkey PRIMARY KEY (spell_id);
+	UniqueWorldSpellGroupPkey                       UniqueConstraint = "world_spell_group_pkey"                          // ALTER TABLE ONLY world_spell_group ADD CONSTRAINT world_spell_group_pkey PRIMARY KEY (group_id, spell_id);
+	UniqueWorldSpellThreatPkey                      UniqueConstraint = "world_spell_threat_pkey"                         // ALTER TABLE ONLY world_spell_threat ADD CONSTRAINT world_spell_threat_pkey PRIMARY KEY (entry);
 	UniqueWowLogGroupsPkey                          UniqueConstraint = "wow_log_groups_pkey"                             // ALTER TABLE ONLY wow_log_groups ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
 	UniqueWowServerRealmsPkey                       UniqueConstraint = "wow_server_realms_pkey"                          // ALTER TABLE ONLY wow_server_realms ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
 	UniqueWowServersPkey                            UniqueConstraint = "wow_servers_pkey"                                // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);

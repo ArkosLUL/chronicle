@@ -6424,7 +6424,7 @@
     {
       "id": 491,
       "name": "Khadgar's Unlocking",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 543,
@@ -6464,7 +6464,7 @@
     {
       "id": 857,
       "name": "Khadgar's Unlocking",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 865,
@@ -6974,12 +6974,12 @@
     {
       "id": 10165,
       "name": "Khadgar's Unlocking",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10166,
       "name": "Khadgar's Unlocking",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10169,
@@ -15640,7 +15640,7 @@
     {
       "id": 1842,
       "name": "Disarm Trap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1856,
@@ -15665,7 +15665,7 @@
     {
       "id": 2070,
       "name": "Sap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 2094,
@@ -15775,7 +15775,7 @@
     {
       "id": 6770,
       "name": "Sap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6774,
@@ -16015,7 +16015,7 @@
     {
       "id": 11297,
       "name": "Sap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11299,

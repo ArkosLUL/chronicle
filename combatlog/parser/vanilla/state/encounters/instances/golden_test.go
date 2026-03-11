@@ -1,12 +1,14 @@
 package instances_test
 
 import (
+	"compress/gzip"
 	"context"
 	"flag"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -16,21 +18,28 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/stretchr/testify/require"
 )
 
 var updateGolden = flag.Bool("update", false, "Update golden files")
 
-// goldenFixtures reference existing committed testdata via relative path.
-// Each fixture has a WoWCombatLog.txt (metadata) and WoWRawCombatLog.txt (combat events with GUIDs).
-var goldenFixtures = []struct {
+type goldenFixture struct {
 	name string
-	dir  string // directory containing WoWCombatLog.txt and WoWRawCombatLog.txt
-}{
-	{"scholotutor", "../character/testdata/scholotutor"},
+
+	// v1: directory containing WoWCombatLog.txt and WoWRawCombatLog.txt
+	v1Dir string
+	// v2: single gzipped combat log in pipe-delimited format
+	v2File string
+}
+
+var goldenFixtures = []goldenFixture{
+	{name: "scholotutor", v1Dir: "../character/testdata/scholotutor"},
+	{name: "emeraldsanctum", v2File: "testdata/emeraldsanctum/combatlog-4cee0c7f-7a88-422d-9a01-615dbfc17ebd.txt.gz"},
 }
 
 func TestGoldenEncounters(t *testing.T) {
@@ -40,7 +49,7 @@ func TestGoldenEncounters(t *testing.T) {
 		t.Run(fx.name, func(t *testing.T) {
 			t.Parallel()
 
-			output := parseAndSerialize(t, fx.dir)
+			output := parseFixture(t, fx)
 			goldenPath := fmt.Sprintf("testdata/%s.golden", fx.name)
 
 			if *updateGolden {
@@ -59,25 +68,23 @@ func TestGoldenEncounters(t *testing.T) {
 	}
 }
 
-func parseAndSerialize(t *testing.T, dir string) string {
+// advancer is satisfied by both v1 (*vanilla.Parser) and v2 (*parserv2.Parser).
+type advancer interface {
+	consumers.Advancer
+}
+
+func parseFixture(t *testing.T, fx goldenFixture) string {
 	t.Helper()
 
 	ctx := context.Background()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	rawFile, err := os.Open(dir + "/WoWRawCombatLog.txt")
-	require.NoError(t, err)
-	defer rawFile.Close()
-
-	logFile, err := os.Open(dir + "/WoWCombatLog.txt")
-	require.NoError(t, err)
-	defer logFile.Close()
-
-	m := merge.NewMerger(logger)
-	liner, scans, err := m.LineScanner(ctx, nil, logfile.New(nil, rawFile), logfile.New(nil, logFile))
-	require.NoError(t, err)
-
-	p := vanilla.NewFromScanner(logger, liner, scans, nil)
+	var p advancer
+	if fx.v2File != "" {
+		p = openV2Parser(t, logger, fx.v2File)
+	} else {
+		p = openV1Parser(t, ctx, logger, fx.v1Dir)
+	}
 
 	state := encounters.New(ctx, logger)
 	c := consumers.New(logger, state)
@@ -90,6 +97,55 @@ func parseAndSerialize(t *testing.T, dir string) string {
 		serializeInstance(&out, inst.Name(), finalized, state.Units)
 	}
 	return out.String()
+}
+
+// openV1Parser opens a v1 dual-file fixture (WoWRawCombatLog.txt + WoWCombatLog.txt).
+func openV1Parser(t *testing.T, ctx context.Context, logger *slog.Logger, dir string) *vanilla.Parser {
+	t.Helper()
+
+	rawFile, err := os.Open(dir + "/WoWRawCombatLog.txt")
+	require.NoError(t, err)
+	t.Cleanup(func() { rawFile.Close() })
+
+	logFile, err := os.Open(dir + "/WoWCombatLog.txt")
+	require.NoError(t, err)
+	t.Cleanup(func() { logFile.Close() })
+
+	m := merge.NewMerger(logger)
+	liner, scans, err := m.LineScanner(ctx, nil, logfile.New(nil, rawFile), logfile.New(nil, logFile))
+	require.NoError(t, err)
+
+	return vanilla.NewFromScanner(logger, liner, scans, nil)
+}
+
+// openV2Parser opens a v2 gzipped combat log fixture. Requires assets/Spell.dbc.
+func openV2Parser(t *testing.T, logger *slog.Logger, path string) *parserv2.Parser {
+	t.Helper()
+
+	// The v2 parser requires a spell database.
+	dbcPath := filepath.Join("..", "..", "..", "..", "..", "..", "assets", "Spell.dbc")
+	if _, err := os.Stat(dbcPath); os.IsNotExist(err) {
+		t.Skipf("assets/Spell.dbc not found at %s, skipping v2 fixture", dbcPath)
+	}
+	db, err := gamedb.New(context.Background(), gamedb.Options{SpellsDBCPath: dbcPath})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	f, err := os.Open(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	var reader io.Reader = f
+	if strings.HasSuffix(path, ".gz") {
+		gz, err := gzip.NewReader(f)
+		require.NoError(t, err)
+		t.Cleanup(func() { gz.Close() })
+		reader = gz
+	}
+
+	p, err := parserv2.New(logger, reader, db)
+	require.NoError(t, err)
+	return p
 }
 
 func serializeInstance(w *strings.Builder, name string, fi *instances.FinalizedInstance, units *unitdb.Units) {

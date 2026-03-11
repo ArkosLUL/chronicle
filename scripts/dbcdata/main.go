@@ -109,12 +109,12 @@ func demo() *serpent.Command {
 				//	fmt.Println(sp.Name_lang.String(), sp.ID, "is death persistent")
 				//}
 
-				for i, eff := range sp.EffectAura {
+				for i, eff := range sp.Effect {
 					var _ = i
 					//if eff == chrondbc.EffectDistract {
 					//	fmt.Println(sp.Name_lang.String(), sp.ID, "has a distract effect")
 					//}
-					if eff == chrondbc.AuraEffectModDetectRange {
+					if eff == chrondbc.EffectOpenLock {
 						fmt.Println(sp.Name_lang.String(), sp.ID)
 						break
 					}

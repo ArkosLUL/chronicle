@@ -222,8 +222,16 @@ const (
 func (s Spell) SpellDamageType() SpellDamageType {
 	var base SpellDamageType
 
+	switch s.ID {
+	case 2070, 6770, 11297:
+		// Sap is a special case. Unsure how to deduce from spell attributes right now.
+		return SpellDamageNoEngageCombat
+	}
+
 	for i, eff := range s.Effect {
 		switch eff {
+		case EffectOpenLock:
+			base |= SpellDamageNoEngageCombat
 		case EffectDistract:
 			base |= SpellDamageNoEngageCombat
 		case EffectSchoolDMG,

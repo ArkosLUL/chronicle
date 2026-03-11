@@ -226,7 +226,8 @@ func (s Spell) SpellDamageType() SpellDamageType {
 			EffectEnergize,
 			EffectHealthLeech,
 			EffectDamageFromMaxHealthPCT,
-			EffectHeal:
+			EffectHeal,
+			EffectWeaponDamage:
 			base |= SpellDamageDirect
 		case EffectApplyAura, EffectPersistentAA:
 			switch s.EffectAura[i] {
@@ -316,6 +317,7 @@ func (s Spell) AttackOutcome() AttackOutcome {
 
 	return result
 }
+
 // IsDeprecated returns true if the spell is not usable in-game.
 // This detects spells explicitly marked as deprecated or using naming
 // conventions for removed/test content.
@@ -328,4 +330,3 @@ func (s Spell) IsDeprecated() bool {
 		strings.HasPrefix(name, "zzOLD") ||
 		strings.HasPrefix(name, "Test ")
 }
-

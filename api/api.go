@@ -37,6 +37,7 @@ type Options struct {
 	SaffronURL *url.URL
 	OCRURL     *url.URL
 	WoWDB      http.Handler
+	Assets     http.Handler
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -140,6 +141,9 @@ func (api *API) Routes() chi.Router {
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
 		if api.Opts.WoWDB != nil {
 			r.Mount("/wowdb", api.Opts.WoWDB)
+		}
+		if api.Opts.Assets != nil {
+			r.Mount("/assets", api.Opts.Assets)
 		}
 		// Guild routes
 		r.Route("/guilds", func(r chi.Router) {

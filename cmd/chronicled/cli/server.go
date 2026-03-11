@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
+	"github.com/Emyrk/chronicle/internal/services/serviceassets"
 	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 	"github.com/Emyrk/chronicle/internal/version"
 
@@ -36,6 +37,7 @@ func ServerCmd() *serpent.Command {
 		serviceriver.New(srvs),
 		serviceauthz.New(srvs),
 		servicewowdb.New(srvs),
+		serviceassets.New(srvs),
 		servicechronicle.New(srvs),
 		servicebot.New(srvs),
 		serviceapi.New(srvs),

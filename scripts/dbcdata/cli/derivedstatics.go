@@ -5,12 +5,14 @@ import (
 	"path/filepath"
 
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
+
 	"github.com/coder/serpent"
 )
 
 func DerivedStaticsCmd() *serpent.Command {
 	var goDir string
 	var tsDir string
+	var assetsDir string
 	var dbcPath string
 
 	return &serpent.Command{
@@ -28,6 +30,12 @@ func DerivedStaticsCmd() *serpent.Command {
 				Description: "Output directory for generated TypeScript files.",
 				Flag:        "ts-dir",
 				Value:       serpent.StringOf(&tsDir),
+			},
+			{
+				Name:        "assets-dir",
+				Description: "Output directory for generated JSON asset files.",
+				Flag:        "assets-dir",
+				Value:       serpent.StringOf(&assetsDir),
 			},
 			{
 				Name:        "dbc",
@@ -61,6 +69,9 @@ func DerivedStaticsCmd() *serpent.Command {
 			}
 			if err := generateDerivedDurationModifiers(wc, goDir, tsDir); err != nil {
 				return fmt.Errorf("generate duration modifiers: %w", err)
+			}
+			if err := generateClassSpells(wc, assetsDir); err != nil {
+				return fmt.Errorf("generate class spells: %w", err)
 			}
 
 			return nil
@@ -103,6 +114,15 @@ func generateDerivedExtraAttacks(wc *dbcdb.WoWClient, goDir, tsDir string) error
 	return writeTemplate(filepath.Join(tsDir, "ExtraAttack.ts"), extraAttacksTSTemplate, entries)
 }
 
+func generateClassSpells(wc *dbcdb.WoWClient, assetsDir string) error {
+	data, err := collectSpellsByClass(wc)
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(filepath.Join(assetsDir, "class-spells.json"), data)
+}
+
 func generateDerivedDurationModifiers(wc *dbcdb.WoWClient, goDir, tsDir string) error {
 	data, err := collectDurationModifiers(wc)
 	if err != nil {
@@ -120,4 +140,3 @@ func generateDerivedDurationModifiers(wc *dbcdb.WoWClient, goDir, tsDir string) 
 
 	return writeTemplate(filepath.Join(tsDir, "DurationModifiers.ts"), durationModifiersTSTemplate, affected)
 }
-

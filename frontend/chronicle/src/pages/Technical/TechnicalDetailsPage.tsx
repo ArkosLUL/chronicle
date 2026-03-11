@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Clock, FileCode, ShieldAlert, Sparkles, Swords } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, FileCode, ShieldAlert, Sparkles, Swords } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 
 interface TechnicalLink {
@@ -33,6 +33,12 @@ const TECHNICAL_LINKS: TechnicalLink[] = [
     description: "Spells whose duration can be modified by passive talents, with all applicable modifiers",
     href: "/technical/aura-duration-modifiers",
     icon: <Clock className="h-4 w-4" />,
+  },
+  {
+    title: "Class Spells",
+    description: "All spells grouped by player class (SpellClassSet from DBC)",
+    href: "/technical/class-spells",
+    icon: <BookOpen className="h-4 w-4" />,
   },
 ];
 

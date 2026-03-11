@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/serviceassets"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
@@ -77,6 +78,7 @@ func (s *Service) DependsOn() []string {
 		serviceprometheus.OnPrometheus(),
 		serviceauthz.OnAuthz(),
 		servicewowdb.OnWoWDB(),
+		serviceassets.OnAssets(),
 	}
 }
 
@@ -137,6 +139,7 @@ func (s *Service) Start(ctx context.Context) error {
 		ocrURL = nil
 	}
 	wowdb := servicewowdb.WoWDB(s.broker)
+	assets := serviceassets.Assets(s.broker)
 	handler, err := api.New(ctx, api.Options{
 		Logger:     logger,
 		Storage:    st,
@@ -148,6 +151,7 @@ func (s *Service) Start(ctx context.Context) error {
 		SaffronURL: saffronURL,
 		OCRURL:     ocrURL,
 		WoWDB:      wowdb,
+		Assets:     assets,
 
 		AccessURL: au,
 		DevOAuth:  s.devAuth,

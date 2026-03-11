@@ -13,4 +13,5 @@ const (
 	ServiceAPI        = "api"
 	ServiceAuthz      = "authz"
 	ServiceWoWDB      = "wow-db"
+	ServiceAssets     = "assets"
 )

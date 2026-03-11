@@ -91,6 +91,12 @@ var (
 		Hostiles: FromMap(TempleOfAhnQirajHostiles()),
 	}).New
 
+	RuinsOfAhnQiraj = (&CommonFactory{
+		Name:     "Ruins of Ahn'Qiraj",
+		ZoneName: ZoneNameMatcher("ruins of ahn'qiraj"),
+		Hostiles: FromMap(RuinsOfAhnQirajHostiles()),
+	}).New
+
 	BlackwingLair = (&CommonFactory{
 		Name:     "Blackwing Lair",
 		ZoneName: ZoneNameMatcher("blackwing lair"),

@@ -41,6 +41,7 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 
 	// 20 man
 	r.Register(wrap(instances.ZulGurub))
+	r.RegisterWithComment(wrap(instances.RuinsOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
 
 	// 40 man
 	r.Register(wrap(instances.MoltenCore))

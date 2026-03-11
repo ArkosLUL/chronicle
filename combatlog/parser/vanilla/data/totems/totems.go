@@ -142,6 +142,19 @@ func init() {
 		variant{id: 7399, duration: 15 * time.Second},
 	)
 
+	register("Poison Cleaning Totem",
+		modifierTotemicMastery,
+		variant{id: 5923, duration: 120 * time.Second},
+	)
+
+	register("Flametongue Totem",
+		modifierTotemicMastery,
+		variant{id: 5950, duration: 120 * time.Second},
+		variant{id: 6012, duration: 120 * time.Second},
+		variant{id: 7423, duration: 120 * time.Second},
+		variant{id: 10557, duration: 120 * time.Second},
+	)
+
 	// Comes from "Enamored Water Spirit" item
 	// https://database.turtle-wow.org/?item=20503
 	register("Ancient Mana Spring Totem", 0,

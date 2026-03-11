@@ -612,6 +612,52 @@ func TempleOfAhnQirajHostiles() map[uint32]Identity {
 	return hostile
 }
 
+// AQ20
+func RuinsOfAhnQirajHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		15387: "Qiraji Warrior",
+		15390: "Captain Xurrem",
+		15338: "Obsidian Destroyer",
+		15343: "Qiraji Swarmguard",
+		15168: "Vile Scarab",
+		15389: "Captain Drenn",
+		15538: "Anubisath Swarmguard",
+		15327: "Hive'Zara Stinger",
+		15344: "Swarmguard Needler",
+		15391: "Captain Qeez",
+		15386: "Major Yeggeth",
+		15514: "Buru Egg",
+		15473: "Kaldorei Elite",
+		15388: "Major Pakkon",
+		15521: "Hive'Zara Hatchling",
+		15555: "Hive'Zara Larva",
+		15546: "Hive'Zara Swarmer",
+		15471: "Lieutenant General Andorov",
+		15392: "Captain Tuubid",
+		15385: "Colonel Zerran",
+		15335: "Flesh Hunter",
+		15537: "Anubisath Warrior",
+		15323: "Hive'Zara Sandstalker",
+		15333: "Silicate Feeder",
+		15428: "Sand Vortex",
+		15324: "Qiraji Gladiator",
+		15325: "Hive'Zara Wasp",
+		15355: "Anubisath Guardian",
+		15320: "Hive'Zara Soldier",
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		15348: "Kurinnaxx",
+		15341: "General Rajaxx",
+		15339: "Ossirian the Unscarred",
+		15370: "Buru the Gorger",
+		15340: "Moam",
+		15369: "Ayamiss the Hunter",
+	})
+	return hostile
+}
+
 func ScholomanceHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 

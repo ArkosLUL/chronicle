@@ -17,6 +17,8 @@ type ClassSpellsData = Record<string, ClassSpell[]>;
 const SPELL_DAMAGE_DIRECT = 0x01;
 const SPELL_DAMAGE_PERIODIC = 0x02;
 const SPELL_DAMAGE_PERIODIC_TRIGGER = 0x04;
+const SPELL_DAMAGE_ACTIVE_DEBUFF = 0x08;
+const SPELL_DAMAGE_NO_ENGAGE_COMBAT = 0x10;
 
 function spellDamageTypeBadges(dt: number) {
   const badges: { label: string; className: string }[] = [];
@@ -28,6 +30,12 @@ function spellDamageTypeBadges(dt: number) {
   }
   if (dt & SPELL_DAMAGE_PERIODIC) {
     badges.push({ label: "Periodic", className: "bg-purple-500/15 text-purple-400" });
+  }
+  if (dt & SPELL_DAMAGE_ACTIVE_DEBUFF) {
+    badges.push({ label: "ActiveDebuff", className: "bg-red-500/15 text-red-400" });
+  }
+  if (dt & SPELL_DAMAGE_NO_ENGAGE_COMBAT) {
+    badges.push({ label: "NoEngageCombat", className: "bg-gray-500/15 text-gray-400" });
   }
   if (dt & SPELL_DAMAGE_PERIODIC_TRIGGER) {
     badges.push({ label: "PeriodicTrigger", className: "bg-blue-500/15 text-blue-400" });
@@ -144,6 +152,8 @@ export function ClassSpellsPage() {
           <option value={String(SPELL_DAMAGE_DIRECT)}>Direct</option>
           <option value={String(SPELL_DAMAGE_PERIODIC)}>Periodic</option>
           <option value={String(SPELL_DAMAGE_PERIODIC_TRIGGER)}>PeriodicTrigger</option>
+          <option value={String(SPELL_DAMAGE_ACTIVE_DEBUFF)}>ActiveDebuff</option>
+          <option value={String(SPELL_DAMAGE_NO_ENGAGE_COMBAT)}>NoEngageCombat</option>
         </select>
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

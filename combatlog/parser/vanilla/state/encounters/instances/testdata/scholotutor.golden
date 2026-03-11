@@ -1,0 +1,49 @@
+Instance: Scholomance
+Realm: Nordanaar
+Encounters: 1
+---
+[0] TRASH "Necrofiend" (kill=reset, boss=false)
+  Start: 17:33:37.286 End: 17:35:06.687
+  Hostiles (20):
+    Scholomance Adept (0xF1300028E500BE86) periods=1 endState=slain
+      [0] 17:33:56.063 -> 17:34:35.851 (slain)
+    Scholomance Adept (0xF1300028E500BE90) periods=1 endState=timeout
+      [0] 17:33:56.573 -> 17:34:56.573 (timeout)
+    Scholomance Adept (0xF1300028E500BE91) periods=1 endState=timeout
+      [0] 17:33:57.037 -> 17:34:57.037 (timeout)
+    Scholomance Adept (0xF1300028E500BE93) periods=1 endState=slain
+      [0] 17:33:44.102 -> 17:34:31.214 (slain)
+    Scholomance Adept (0xF1300028E500BF44) periods=1 endState=slain
+      [0] 17:34:49.818 -> 17:35:06.687 (slain)
+    Scholomance Adept (0xF1300028E50164BA) periods=1 endState=slain
+      [0] 17:33:55.982 -> 17:34:42.743 (slain)
+    Scholomance Adept (0xF1300028E50164EC) periods=1 endState=slain
+      [0] 17:33:46.717 -> 17:33:56.523 (slain)
+    Scholomance Necromancer (0xF1300028ED00BE88) periods=1 endState=timeout
+      [0] 17:33:56.439 -> 17:34:56.439 (timeout)
+    Scholomance Necromancer (0xF1300028ED00BE92) periods=1 endState=timeout
+      [0] 17:33:56.956 -> 17:34:56.956 (timeout)
+    Scholomance Necromancer (0xF1300028ED00BF41) periods=1 endState=slain
+      [0] 17:33:56.063 -> 17:34:15.905 (slain)
+    Scholomance Necromancer (0xF1300028ED0164BB) periods=1 endState=slain
+      [0] 17:33:39.588 -> 17:33:49.079 (slain)
+    Scholomance Necromancer (0xF1300028ED0164BD) periods=1 endState=slain
+      [0] 17:34:43.419 -> 17:35:02.405 (slain)
+    Risen Lackey (0xF1300028F200BF42) periods=1 endState=slain
+      [0] 17:34:45.526 -> 17:35:00.700 (slain)
+    Risen Protector (0xF1300028F700BE8C) periods=1 endState=timeout
+      [0] 17:33:57.110 -> 17:34:57.110 (timeout)
+    Risen Protector (0xF1300028F70164C4) periods=1 endState=slain
+      [0] 17:33:56.386 -> 17:34:31.764 (slain)
+    Spectral Tutor (0xF13000290200BE8F) periods=1 endState=slain
+      [0] 17:34:43.419 -> 17:34:52.160 (slain)
+    Spectral Tutor (0xF13000290200BF3F) periods=1 endState=slain
+      [0] 17:33:37.286 -> 17:34:04.546 (slain)
+    Spectral Tutor (0xF13000290200BF40) periods=1 endState=timeout
+      [0] 17:33:57.110 -> 17:34:57.110 (timeout)
+    Plagued Hatchling (0xF1300029B600BF26) periods=1 endState=timeout
+      [0] 17:33:57.289 -> 17:34:57.289 (timeout)
+    Necrofiend (0xF130002D1F0164BF) periods=1 endState=slain
+      [0] 17:33:56.209 -> 17:34:28.331 (slain)
+  PlayerDeaths: 0
+  Remaining: 0xF1300028E500BE90, 0xF1300028E500BE91, 0xF1300028ED00BE88, 0xF1300028ED00BE92, 0xF1300028F700BE8C, 0xF13000290200BF40, 0xF1300029B600BF26

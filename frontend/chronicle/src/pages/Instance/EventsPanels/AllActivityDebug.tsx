@@ -629,9 +629,10 @@ interface AllActivityWrapperProps {
   useRelativeTime?: boolean;
   panelOption?: string | null;
   setPanelOption?: (option: string | null) => void;
+  panelContext?: Record<string, unknown> | null;
 }
 
-function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, panelOption, setPanelOption }: AllActivityWrapperProps) {
+function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, panelOption, setPanelOption, panelContext: panelContextData }: AllActivityWrapperProps) {
   // Parse initial state from saved panelOption (mount-only)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initial = useMemo(() => parseAllActivityTokens(panelOption), []);
@@ -695,6 +696,7 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
     panel: allActivityProcessor as PanelDefinition<AllActivityState>,
     context: paginatedContext,
     panelIndex,
+    panelContext: panelContextData,
   });
   
   const handlePageChange = useCallback((page: number) => {
@@ -769,6 +771,7 @@ function AllActivityRender(props: PanelRenderProps<AllActivityState>) {
       useRelativeTime={props.checkboxChecked}
       panelOption={props.panelOption}
       setPanelOption={props.setPanelOption}
+      panelContext={props.panelContext}
     />
   );
 }
@@ -781,6 +784,7 @@ export const AllActivityPanel: PanelDefinition<AllActivityState, any> = {
   // This panel manages its own aggregation to support pagination
   selfManagesAggregation: true,
   checkboxLabel: "Encounter offset",
+  supportsFiltering: true,
   
   render: (props: PanelRenderProps<AllActivityState>) => (
     <AllActivityRender {...props} />

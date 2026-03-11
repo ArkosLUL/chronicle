@@ -129,6 +129,10 @@ export function SpellPage() {
                       ? "bg-purple-500/20 text-purple-400"
                       : label === "Direct"
                       ? "bg-amber-500/20 text-amber-400"
+                      : label === "Active Debuff"
+                      ? "bg-red-500/20 text-red-400"
+                      : label === "No Engage Combat"
+                      ? "bg-gray-500/20 text-gray-400"
                       : "bg-blue-500/20 text-blue-400"
                   }`}
                 >

@@ -9,6 +9,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 const (
@@ -78,12 +79,8 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 		}
 
 		if data.Spell != nil {
-			switch data.Spell.ID {
-			// Faerie Fire, this is kinda jank.
-			// TODO: Apply to all debuffs of a certain type.
-			case 770, 778, 1069, 2887, 2888, // Mana
-				16855, 17387, 17388, 17389, // Bear
-				16857, 17390, 17391, 17392: // Feral
+			if data.Spell.SpellDamageType().Has(chrondbc.SpellDamageActiveDebuff) {
+				// Faerie fire, sunder armor, etc.
 				c.Start(fmt.Sprintf("debuff_%s", data.Spell.Name()), m)
 			}
 		}

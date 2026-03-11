@@ -305,7 +305,7 @@
     {
       "id": 770,
       "name": "Faerie Fire",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 774,
@@ -320,7 +320,7 @@
     {
       "id": 778,
       "name": "Faerie Fire",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 779,
@@ -435,7 +435,7 @@
     {
       "id": 2908,
       "name": "Soothe Animal",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 2912,
@@ -755,7 +755,7 @@
     {
       "id": 8955,
       "name": "Soothe Animal",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8972,
@@ -825,7 +825,7 @@
     {
       "id": 9749,
       "name": "Faerie Fire",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 9750,
@@ -1035,7 +1035,7 @@
     {
       "id": 9901,
       "name": "Soothe Animal",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 9904,
@@ -1045,7 +1045,7 @@
     {
       "id": 9907,
       "name": "Faerie Fire",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 9908,
@@ -1225,12 +1225,12 @@
     {
       "id": 16855,
       "name": "Faerie Fire (Bear)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 16857,
       "name": "Faerie Fire (Feral)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 16858,
@@ -1795,32 +1795,32 @@
     {
       "id": 17387,
       "name": "Faerie Fire (Bear)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17388,
       "name": "Faerie Fire (Bear)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17389,
       "name": "Faerie Fire (Bear)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17390,
       "name": "Faerie Fire (Feral)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17391,
       "name": "Faerie Fire (Feral)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17392,
       "name": "Faerie Fire (Feral)",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17401,
@@ -12488,7 +12488,7 @@
     {
       "id": 453,
       "name": "Mind Soothe",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 527,
@@ -12843,7 +12843,7 @@
     {
       "id": 8192,
       "name": "Mind Soothe",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 9035,
@@ -13073,7 +13073,7 @@
     {
       "id": 10953,
       "name": "Mind Soothe",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10955,
@@ -15555,7 +15555,7 @@
     {
       "id": 1725,
       "name": "Distract",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1752,
@@ -15840,17 +15840,17 @@
     {
       "id": 8647,
       "name": "Expose Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 8649,
       "name": "Expose Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 8650,
       "name": "Expose Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 8676,
@@ -15920,12 +15920,12 @@
     {
       "id": 11197,
       "name": "Expose Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11198,
       "name": "Expose Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11201,
@@ -16740,7 +16740,7 @@
     {
       "id": 15054,
       "name": "Distract Test",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15055,
@@ -20412,7 +20412,7 @@
     {
       "id": 45529,
       "name": "Calm Elements",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45536,
@@ -22170,7 +22170,7 @@
     {
       "id": 704,
       "name": "Curse of Recklessness",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 705,
@@ -22280,7 +22280,7 @@
     {
       "id": 1490,
       "name": "Curse of the Elements",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 1714,
@@ -22495,12 +22495,12 @@
     {
       "id": 7658,
       "name": "Curse of Recklessness",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 7659,
       "name": "Curse of Recklessness",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 7799,
@@ -22750,7 +22750,7 @@
     {
       "id": 11717,
       "name": "Curse of Recklessness",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11719,
@@ -22760,12 +22760,12 @@
     {
       "id": 11721,
       "name": "Curse of the Elements",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11722,
       "name": "Curse of the Elements",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11725,
@@ -23135,7 +23135,7 @@
     {
       "id": 17862,
       "name": "Curse of Shadow",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17864,
@@ -23245,7 +23245,7 @@
     {
       "id": 17937,
       "name": "Curse of Shadow",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 17941,
@@ -25065,12 +25065,12 @@
     {
       "id": 57637,
       "name": "Wallowing Curse",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 57638,
       "name": "Shadowclaw Curse",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 57640,
@@ -25327,7 +25327,7 @@
     {
       "id": 7386,
       "name": "Sunder Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 7390,
@@ -25352,7 +25352,7 @@
     {
       "id": 7405,
       "name": "Sunder Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 7887,
@@ -25382,7 +25382,7 @@
     {
       "id": 8380,
       "name": "Sunder Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 8820,
@@ -25507,12 +25507,12 @@
     {
       "id": 11596,
       "name": "Sunder Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11597,
       "name": "Sunder Armor",
-      "spellDamageType": 0
+      "spellDamageType": 8
     },
     {
       "id": 11600,

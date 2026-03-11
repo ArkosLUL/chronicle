@@ -286,6 +286,10 @@ func (d Damage) RequiresActive() bool {
 		return !d.HitType.Has(types.HitTypePeriodic)
 	}
 
+	if d.SpellData.SpellDamageType().Has(chrondbc.SpellDamageNoEngageCombat) {
+		return false
+	}
+
 	if !d.HitType.Has(types.HitTypePeriodic) {
 		return true
 	}

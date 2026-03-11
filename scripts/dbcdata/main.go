@@ -105,9 +105,21 @@ func demo() *serpent.Command {
 
 			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
 				sp := chrondbc.SpellFromDB(cursor)
-				if sp.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {
-					fmt.Println(sp.Name_lang.String(), sp.ID, "is death persistent")
+				//if sp.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {
+				//	fmt.Println(sp.Name_lang.String(), sp.ID, "is death persistent")
+				//}
+
+				for i, eff := range sp.EffectAura {
+					var _ = i
+					//if eff == chrondbc.EffectDistract {
+					//	fmt.Println(sp.Name_lang.String(), sp.ID, "has a distract effect")
+					//}
+					if eff == chrondbc.AuraEffectModDetectRange {
+						fmt.Println(sp.Name_lang.String(), sp.ID)
+						break
+					}
 				}
+
 				//for _, eff := range sp.EffectAura {
 				//	if eff == chrondbc.AuraEffectMechanicDurationMod || eff == chrondbc.AuraEffectModAuraDurationByDispel {
 				//		fmt.Println(sp.Name_lang.String(), sp.ID, "has a duration mod dispel mechanic")

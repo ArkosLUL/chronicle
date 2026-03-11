@@ -210,6 +210,9 @@ const (
 	SpellDamageDirect          SpellDamageType = 0x01
 	SpellDamagePeriodic        SpellDamageType = 0x02
 	SpellDamagePeriodicTrigger SpellDamageType = 0x04
+	SpellDamageActiveDebuff    SpellDamageType = 0x08
+	// SpellDamageNoEngageCombat means the spell cannot trigger combat. It should be mutually exclusive with some other types.
+	SpellDamageNoEngageCombat SpellDamageType = 0x10
 	// TODO: Trigger?
 )
 
@@ -221,6 +224,8 @@ func (s Spell) SpellDamageType() SpellDamageType {
 
 	for i, eff := range s.Effect {
 		switch eff {
+		case EffectDistract:
+			base |= SpellDamageNoEngageCombat
 		case EffectSchoolDMG,
 			EffectPowerBurn,
 			EffectEnergize,
@@ -240,11 +245,26 @@ func (s Spell) SpellDamageType() SpellDamageType {
 				AuraEffectPeriodicDamagePercent,
 				AuraEffectPowerBurn:
 				base |= SpellDamagePeriodic
+			case AuraEffectModDetectRange:
+				base |= SpellDamageNoEngageCombat
 			case AuraEffectPeriodicTriggerSpell:
 				// Spells like arcane missiles
 				base |= SpellDamagePeriodicTrigger
+			case AuraEffectModResistance:
+				if s.ImplicitTargetA[i] == ImplicitTargetUnitTargetEnemy ||
+					s.ImplicitTargetB[i] == ImplicitTargetUnitTargetEnemy {
+					base |= SpellDamageActiveDebuff
+				}
 			}
 		default:
+		}
+	}
+
+	if base.Has(SpellDamageNoEngageCombat) {
+		for _, noHave := range []SpellDamageType{SpellDamageDirect, SpellDamagePeriodic, SpellDamagePeriodicTrigger, SpellDamageActiveDebuff} {
+			if base.Has(noHave) {
+				base &= ^(SpellDamageNoEngageCombat)
+			}
 		}
 	}
 

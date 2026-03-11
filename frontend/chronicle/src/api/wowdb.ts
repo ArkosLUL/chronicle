@@ -186,6 +186,8 @@ export const SpellDamageType = {
   Direct: 0x01,
   Periodic: 0x02,
   PeriodicTrigger: 0x04,
+  ActiveDebuff: 0x08,
+  NoEngageCombat: 0x10,
 } as const;
 
 export function getDamageTypeLabels(damageType: number): string[] {
@@ -193,6 +195,8 @@ export function getDamageTypeLabels(damageType: number): string[] {
   if (damageType & SpellDamageType.Direct) labels.push("Direct");
   if (damageType & SpellDamageType.Periodic) labels.push("Periodic");
   if (damageType & SpellDamageType.PeriodicTrigger) labels.push("Periodic Trigger");
+  if (damageType & SpellDamageType.ActiveDebuff) labels.push("Active Debuff");
+  if (damageType & SpellDamageType.NoEngageCombat) labels.push("No Engage Combat");
   return labels;
 }
 

@@ -107,3 +107,76 @@ func attrsWith(attrs ...Attribute) SpellAttributes {
 func attrsWithBlockable() SpellAttributes {
 	return attrsWith(AttrEx3_BlockableSpell)
 }
+
+func TestSpell_SpellDamageNoEngageCombat_MutuallyExclusive(t *testing.T) {
+	t.Parallel()
+
+	otherBits := []SpellDamageType{
+		SpellDamageDirect,
+		SpellDamagePeriodic,
+		SpellDamagePeriodicTrigger,
+		SpellDamageActiveDebuff,
+	}
+
+	tests := []struct {
+		name  string
+		spell Spell
+	}{
+		{
+			name: "DistractOnly",
+			spell: Spell{
+				Effect: [3]Effect{EffectDistract},
+			},
+		},
+		{
+			name: "DistractAndDirectDamage",
+			spell: Spell{
+				Effect: [3]Effect{EffectDistract, EffectSchoolDMG},
+			},
+		},
+		{
+			name: "DistractAndPeriodic",
+			spell: Spell{
+				Effect:     [3]Effect{EffectDistract, EffectApplyAura},
+				EffectAura: [3]AuraEffect{0, AuraEffectPeriodicDamage},
+			},
+		},
+		{
+			name: "DistractAndPeriodicTrigger",
+			spell: Spell{
+				Effect:     [3]Effect{EffectDistract, EffectApplyAura},
+				EffectAura: [3]AuraEffect{0, AuraEffectPeriodicTriggerSpell},
+			},
+		},
+		{
+			name: "DistractAndActiveDebuff",
+			spell: Spell{
+				Effect:          [3]Effect{EffectDistract, EffectApplyAura},
+				EffectAura:      [3]AuraEffect{0, AuraEffectModResistance},
+				ImplicitTargetA: [3]ImplicitTarget{0, ImplicitTargetUnitTargetEnemy},
+			},
+		},
+		{
+			name: "ModDetectRangeOnly",
+			spell: Spell{
+				Effect:     [3]Effect{EffectApplyAura},
+				EffectAura: [3]AuraEffect{AuraEffectModDetectRange},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := tc.spell.SpellDamageType()
+
+			if result.Has(SpellDamageNoEngageCombat) {
+				for _, bit := range otherBits {
+					assert.False(t, result.Has(bit),
+						"SpellDamageNoEngageCombat must be mutually exclusive with %#x", bit)
+				}
+			}
+		})
+	}
+}
+

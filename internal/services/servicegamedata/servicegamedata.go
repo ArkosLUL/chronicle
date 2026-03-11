@@ -55,6 +55,7 @@ func (s *Service) Start(_ context.Context) error {
 
 func (s *Service) setupRoutes() {
 	s.router.Get("/tooltip/item/{item_id}", s.handleItemTooltip)
+	s.router.Get("/display/item/{item_id}", s.handleItemDisplay)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -31,33 +31,51 @@ func (api *API) InstanceOGResolver(instanceIDOrSlug string) *frontend.OGData {
 	players, _ := db.InstancePlayersByInstanceID(ctx, inst.ID)
 
 	bossKills := 0
-	var totalDuration time.Duration
+	var startDate time.Time
+	var endDate time.Time
+	var combatDuration time.Duration
 	for _, e := range encounters {
 		if e.Boss && (e.KillType == database.KillTypeClean || e.KillType == database.KillTypePartial) {
 			bossKills++
 		}
 		if e.StartTime.Valid && e.EndTime.Valid {
-			totalDuration += e.EndTime.Time.Sub(e.StartTime.Time)
+			combatDuration += e.EndTime.Time.Sub(e.StartTime.Time)
+		}
+		if e.StartTime.Valid && (startDate.IsZero() || e.StartTime.Time.Before(startDate)) {
+			startDate = e.StartTime.Time
+		}
+		if e.EndTime.Valid && (endDate.IsZero() || e.EndTime.Time.After(endDate)) {
+			endDate = e.EndTime.Time
 		}
 	}
 
-	title := fmt.Sprintf("Chronicle - %s", inst.Name)
+	dur := endDate.Sub(startDate)
+	hours := int(dur.Hours())
+	minutes := int(dur.Minutes()) % 60
 
-	var parts []string
-	if inst.GuildName.Valid && inst.GuildName.String != "" {
-		parts = append(parts, inst.GuildName.String)
+	var title strings.Builder
+	if inst.GuildName.String != "" {
+		title.WriteString(fmt.Sprintf("%s — ", inst.GuildName.String))
 	}
-	parts = append(parts,
-		fmt.Sprintf("%d bosses killed", bossKills),
-		fmt.Sprintf("%d players", len(players)),
-		formatDuration(totalDuration),
-	)
-	desc := strings.Join(parts, " · ")
+	title.WriteString(inst.Name)
+	title.WriteString(" on [" + inst.RealmName + "]")
+
+	var desc strings.Builder
+	sep := " · "
+	desc.WriteString(startDate.Format("Jan 2, 2006"))
+	desc.WriteString(sep)
+
+	desc.WriteString(fmt.Sprintf("%dh %dm", hours, minutes))
+	desc.WriteString(sep)
+
+	desc.WriteString(fmt.Sprintf("%d players", len(players)))
+	desc.WriteString("\n")
+	desc.WriteString("Raid performance and contribution analysis tool by Chronicle.")
 
 	return &frontend.OGData{
-		Title:       title,
-		Description: desc,
-		URL:         fmt.Sprintf("https://chronicle.gg/instances/%s", instanceIDOrSlug),
+		Title:       title.String(),
+		Description: desc.String(),
+		URL:         fmt.Sprintf("https://chronicleclassic.com/instances/%s", instanceIDOrSlug),
 	}
 }
 

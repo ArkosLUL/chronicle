@@ -15,6 +15,7 @@ func ContentSecurityPolicy() func(next http.Handler) http.Handler {
 		"img-src 'self' data: blob: https://cdn.brandfetch.io https://icons.chronicleclassic.com",
 		"connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
 		"worker-src 'self' blob:",
+		"frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
 		"frame-ancestors 'none'",
 	}, "; ")
 

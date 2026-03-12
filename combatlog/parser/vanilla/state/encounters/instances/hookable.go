@@ -178,15 +178,15 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 
 	activeTotal := 0
 	var latestEnd *period.Moment
-	for _, char := range h.Characters.All.Map() {
+	err := h.Characters.All.ForEach(func(char character.Character) error {
 		if info := h.IdentifyUnit(char.ID()); !info.Hostile {
 			// Only consider hostile characters for fights
-			continue
+			return nil
 		}
 
 		pd, ok := char.CurrentPeriod()
 		if !ok {
-			continue
+			return nil
 		}
 
 		if pd.IsActive() {
@@ -200,7 +200,7 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 			// If the character is no longer active, check if they were part of the fight
 			if _, inFight := h.currentFight.ActiveHostiles[char.ID()]; !inFight {
 				// If the character is not part of the fight, then skip
-				continue
+				return nil
 			}
 
 			// If the latestEnd is not yet set, we still are trying to find it.
@@ -208,6 +208,10 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 				latestEnd = pd.End
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("iterating characters for fight detection: %w", err)
 	}
 
 	if activeTotal == 0 && h.currentFight.active() {

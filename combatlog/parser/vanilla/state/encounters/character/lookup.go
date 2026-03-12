@@ -2,10 +2,12 @@ package character
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character/characterset"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -80,7 +82,7 @@ type SetHook interface {
 }
 
 type Characters struct {
-	All *OrdererCharacters
+	All *characterset.Set[Character]
 	// ByEntry only works on creatures
 	ByEntry map[uint32][]Character
 	db      *unitdb.Units
@@ -97,13 +99,14 @@ type Characters struct {
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {
-	return &Characters{
+	ch := &Characters{
 		db:          db,
-		All:         NewOrdererCharacters(),
+		All:         characterset.New[Character](),
 		ByEntry:     make(map[uint32][]Character),
-		active:      make(map[guid.GUID]struct{}),
 		sharedState: make(map[string]any),
 	}
+
+	return ch
 }
 
 func (c *Characters) RegisterHook(hook SetHook) {
@@ -132,7 +135,7 @@ func (c Characters) GetInfo(id guid.GUID) (unitinfo.Info, bool) {
 	return c.db.Get(id)
 }
 
-func (c Characters) Add(id guid.GUID) (_ Character, newChar bool) {
+func (c Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool) {
 	char, exists := c.All.Get(id)
 	if !exists {
 		newChar = true
@@ -148,15 +151,16 @@ func (c Characters) Add(id guid.GUID) (_ Character, newChar bool) {
 			char = NewCommonCharacter(id, &c)
 		}
 
-		c.All.Add(char)
 		if id.IsAnyCreature() {
 			if entry, ok := id.GetEntry(); ok {
 				c.ByEntry[entry] = append(c.ByEntry[entry], char)
 			}
 		}
+		c.All.Add(char, now)
 	}
 
-	c.trackActive(char)
+	// Always touch the character
+	c.All.Touch(char.ID(), now)
 	return char, newChar
 }
 
@@ -169,7 +173,7 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 	activityChange := c.processNewCharacters(m)
 
 	var changed []Character
-	err := c.All.ForEach(func(char Character) error {
+	err := c.All.ForEachAwake(m.Date(), func(char Character) error {
 		before := char.IsActive()
 
 		// TODO: Dead characters that will never return should be removed from processing?
@@ -179,9 +183,10 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 			return fmt.Errorf("processing character %s: %w", char.ID().String(), err)
 		}
 
-		c.trackActive(char)
 		if before != char.IsActive() {
 			changed = append(changed, char)
+			// Touch each time the character changes activity status.
+			c.All.Touch(char.ID(), m.Date())
 		}
 		return nil
 	})
@@ -204,7 +209,7 @@ func (c Characters) processNewCharacters(m messages.Message) bool {
 	var created []Character
 	// Add all affected characters to the instance's character list
 	for _, id := range m.Affects() {
-		if char, changed := c.Add(id); changed {
+		if char, changed := c.Add(id, m.Date()); changed {
 			created = append(created, char)
 		}
 	}
@@ -215,16 +220,4 @@ func (c Characters) processNewCharacters(m messages.Message) bool {
 	}
 
 	return len(created) > 0
-}
-
-func (c Characters) trackActive(char Character) {
-	if char.IsActive() {
-		c.active[char.ID()] = struct{}{}
-	} else {
-		delete(c.active, char.ID())
-	}
-}
-
-func (c Characters) ActiveCharactersCount() int {
-	return len(c.active)
 }

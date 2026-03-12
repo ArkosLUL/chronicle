@@ -70,8 +70,9 @@ const SOURCE_TYPE_KEYS: Set<string> = new Set(SOURCE_TYPE_ALL_OPTIONS.map((o) =>
 const APPLY_TO_OPTIONS = [
   { label: "Damage", value: "damage" },
   { label: "Heal", value: "heal" },
-  { label: "Cast", value: "cast" },
+  { label: "Spell Go", value: "spell_go" },
   { label: "Aura", value: "aura" },
+  { label: "Aura Cast", value: "aura_cast" },
   { label: "Slain", value: "slain" },
   { label: "Resource", value: "resource_change" },
   { label: "Extra Attack", value: "extra_attack" },

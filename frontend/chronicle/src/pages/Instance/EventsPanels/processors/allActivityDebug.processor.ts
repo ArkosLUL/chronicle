@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent, ExtraAttackProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -76,14 +76,14 @@ export interface AllActivityDebugState {
 }
 
 // This processor handles damage, heal, resource_change, cast, aura, slain, spell_go, and aura_cast events
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent;
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | ExtraAttackProcessorEvent;
 
 // Default page size if no pagination specified
 const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast"],
+  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast", "extra_attack"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -181,6 +181,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       } else if (streamType === "aura_cast") {
         const auraCastEvent = event as AuraCastProcessorEvent;
         abilityName = auraCastEvent.spell.name;
+      } else if (streamType === "extra_attack") {
+        const extraEvent = event as ExtraAttackProcessorEvent;
+        abilityName = extraEvent.sourceName;
       } else {
         const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
         abilityName = regularEvent.sourceName;
@@ -284,6 +287,10 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       const auraCastEvent = event as AuraCastProcessorEvent;
       sourceName = auraCastEvent.spell.name;
       amount = auraCastEvent.durationMS; // Show duration as the "amount"
+    } else if (streamType === "extra_attack") {
+      const extraEvent = event as ExtraAttackProcessorEvent;
+      sourceName = extraEvent.sourceName;
+      amount = extraEvent.amount;
     } else {
       const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
       sourceName = regularEvent.sourceName;
@@ -369,6 +376,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       rawEvent.extra = ampSec 
         ? `dur=${durationSec}s tick=${ampSec}s` 
         : `dur=${durationSec}s`;
+    } else if (streamType === "extra_attack") {
+      const extraEvent = event as ExtraAttackProcessorEvent;
+      rawEvent.extra = `extra attacks=${extraEvent.amount}`;
     }
     
     // Store in appropriate stream bucket

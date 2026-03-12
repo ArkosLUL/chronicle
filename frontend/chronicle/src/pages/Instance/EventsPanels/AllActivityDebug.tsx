@@ -416,6 +416,7 @@ function AllActivityContent({
     ...rawEventsByStream.slain,
     ...rawEventsByStream.spell_go,
     ...rawEventsByStream.aura_cast,
+    ...rawEventsByStream.extra_attack,
   ];
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order
@@ -435,7 +436,7 @@ function AllActivityContent({
       {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "extra_attack", "aura", "slain", "spell_go", "aura_cast"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

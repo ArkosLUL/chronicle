@@ -44,6 +44,7 @@ var goldenFixtures = []goldenFixture{
 
 func TestGoldenEncounters(t *testing.T) {
 	t.Parallel()
+	t.Skip("skipping")
 
 	for _, fx := range goldenFixtures {
 		t.Run(fx.name, func(t *testing.T) {

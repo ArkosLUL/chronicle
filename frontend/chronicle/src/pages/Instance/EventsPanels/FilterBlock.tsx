@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSpell } from "@/api/queries";
@@ -109,67 +110,33 @@ function toArrayValue(value: string | string[]): string[] {
       .filter(Boolean);
 }
 
-/** Combined dropdown for entity type editors — shows Identity + Type groups with section headers in one dropdown. */
+/** Combined dropdown for entity type editors — native <select> with <optgroup> to avoid overflow clipping. */
 function CompactGroupedDropdown({ groups, values, onToggle }: {
   groups: { label: string; options: readonly { label: string; value: string }[] }[];
   values: string[];
   onToggle: (value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const allOptions = groups.flatMap((g) => g.options);
-  const selectedLabels = allOptions.filter((o) => values.includes(o.value)).map((o) => o.label);
-  const summary = selectedLabels.length === 0
-    ? "Select…"
-    : selectedLabels.length <= 2
-      ? selectedLabels.join(", ")
-      : `${selectedLabels.length} selected`;
+  const currentValue = allOptions.find((o) => values.includes(o.value))?.value ?? "";
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        className="h-7 rounded-md border border-input bg-background text-foreground px-1.5 text-xs flex items-center gap-1 min-w-0"
-        onClick={() => setOpen((v) => !v)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-      >
-        <span className="truncate max-w-[160px]">{summary}</span>
-        <span className="text-[8px]">▼</span>
-      </button>
-      {open && (
-        <div className="absolute z-50 top-full mt-0.5 left-0 min-w-[160px] rounded-md border border-input bg-background shadow-lg py-1 max-h-[200px] overflow-auto styled-scrollbar">
-          {groups.map((group) => (
-            <div key={group.label}>
-              <div className="px-2 pt-1.5 pb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                {group.label}
-              </div>
-              {group.options.map((opt) => {
-                const selected = values.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={`w-full text-left px-2 py-1 text-xs flex items-center gap-1.5 hover:bg-muted/60 ${
-                      selected ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      onToggle(opt.value);
-                    }}
-                  >
-                    <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center text-[10px] ${
-                      selected ? "bg-primary border-primary text-white" : "border-input"
-                    }`}>
-                      {selected && "✓"}
-                    </span>
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
+    <select
+      className="h-7 rounded-md border border-input bg-background text-foreground px-1.5 text-xs min-w-0"
+      value={currentValue}
+      onChange={(e) => {
+        const val = e.target.value;
+        if (val) onToggle(val);
+      }}
+    >
+      <option value="">Select…</option>
+      {groups.map((group) => (
+        <optgroup key={group.label} label={group.label}>
+          {group.options.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
-        </div>
-      )}
-    </div>
+        </optgroup>
+      ))}
+    </select>
   );
 }
 
@@ -181,14 +148,6 @@ function CompactDropdownToggle({ options, values, onToggle, multiSelect = true }
   onToggle: (value: string) => void;
   multiSelect?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const selectedLabels = options.filter((o) => values.includes(o.value)).map((o) => o.label);
-  const summary = selectedLabels.length === 0
-    ? "None"
-    : selectedLabels.length <= 2
-      ? selectedLabels.join(", ")
-      : `${selectedLabels.length} selected`;
-
   if (!multiSelect) {
     return (
       <select
@@ -207,9 +166,22 @@ function CompactDropdownToggle({ options, values, onToggle, multiSelect = true }
     );
   }
 
+  // Multi-select: custom checkbox dropdown rendered via portal to escape overflow clipping
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const selectedLabels = options.filter((o) => values.includes(o.value)).map((o) => o.label);
+  const summary = selectedLabels.length === 0
+    ? "None"
+    : selectedLabels.length <= 2
+      ? selectedLabels.join(", ")
+      : `${selectedLabels.length} selected`;
+
+  const rect = open && buttonRef.current ? buttonRef.current.getBoundingClientRect() : null;
+
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         className="h-7 rounded-md border border-input bg-background text-foreground px-1.5 text-xs flex items-center gap-1 min-w-0"
         onClick={() => setOpen((v) => !v)}
@@ -218,8 +190,11 @@ function CompactDropdownToggle({ options, values, onToggle, multiSelect = true }
         <span className="truncate max-w-[120px]">{summary}</span>
         <span className="text-[8px]">▼</span>
       </button>
-      {open && (
-        <div className="absolute z-50 top-full mt-0.5 left-0 min-w-[140px] rounded-md border border-input bg-background shadow-lg py-1 max-h-[200px] overflow-auto styled-scrollbar">
+      {open && rect && createPortal(
+        <div
+          className="fixed z-[9999] min-w-[140px] rounded-md border border-input bg-background shadow-lg py-1 max-h-[200px] overflow-auto styled-scrollbar"
+          style={{ top: rect.bottom + 2, left: rect.left }}
+        >
           {options.map((opt) => {
             const selected = values.includes(opt.value);
             return (
@@ -243,7 +218,8 @@ function CompactDropdownToggle({ options, values, onToggle, multiSelect = true }
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

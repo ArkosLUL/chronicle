@@ -280,4 +280,59 @@ describe("time_range filter", () => {
     expect(evaluateFilters(filters, createDamageEvent({ globalOffsetMilli: 1000 }), createContext())).toBe(true);
   });
 });
+describe("event_value filter", () => {
+  it("filters > operator", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: ">:1000" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 1500 }), createContext())).toBe(true);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 1000 }), createContext())).toBe(false);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 500 }), createContext())).toBe(false);
+  });
+
+  it("filters >= operator", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: ">=:1000" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 1000 }), createContext())).toBe(true);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 999 }), createContext())).toBe(false);
+  });
+
+  it("filters < operator", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: "<:100" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 50 }), createContext())).toBe(true);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 100 }), createContext())).toBe(false);
+  });
+
+  it("filters <= operator", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: "<=:100" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 100 }), createContext())).toBe(true);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 101 }), createContext())).toBe(false);
+  });
+
+  it("filters = operator", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: "=:0" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 0 }), createContext())).toBe(true);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 1 }), createContext())).toBe(false);
+  });
+
+  it("filters != operator", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: "!=:0" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 0 }), createContext())).toBe(false);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 500 }), createContext())).toBe(true);
+  });
+
+  it("supports negation", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: ">:1000", negate: true }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 1500 }), createContext())).toBe(false);
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 500 }), createContext())).toBe(true);
+  });
+
+  it("empty value passes all events", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: "" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 999 }), createContext())).toBe(true);
+  });
+
+  it("invalid value passes all events", () => {
+    const filters: PanelFilter[] = [{ type: "event_value", value: ">:abc" }];
+    expect(evaluateFilters(filters, createDamageEvent({ amount: 999 }), createContext())).toBe(true);
+  });
+});
+
 

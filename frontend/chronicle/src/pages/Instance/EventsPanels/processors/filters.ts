@@ -14,7 +14,8 @@ export type PanelFilterType =
   | "ability_hittype"
   | "source_type"
   | "target_type"
-  | "time_range";
+  | "time_range"
+  | "event_value";
 
 export interface PanelFilter {
   type: PanelFilterType;
@@ -359,6 +360,29 @@ const FILTER_COMPILERS: Record<PanelFilterType, FilterCompiler> = {
     if (hasStart)
       return (event) => (event.globalOffsetMilli ?? event.offsetMilli) >= startMs;
     return (event) => (event.globalOffsetMilli ?? event.offsetMilli) <= endMs!;
+  },
+
+  event_value: (value) => {
+    const raw = typeof value === "string" ? value : (value[0] ?? "");
+    const match = raw.match(/^([><=!]+):(.+)$/);
+    if (!match) return () => true;
+    const op = match[1];
+    const num = Number(match[2]);
+    if (!Number.isFinite(num)) return () => true;
+
+    const cmp: (a: number) => boolean =
+      op === ">"  ? (a) => a > num :
+      op === ">=" ? (a) => a >= num :
+      op === "<"  ? (a) => a < num :
+      op === "<=" ? (a) => a <= num :
+      op === "="  ? (a) => a === num :
+      op === "!=" ? (a) => a !== num :
+      () => true;
+
+    return (event) => {
+      const amount = "amount" in event && typeof event.amount === "number" ? event.amount : null;
+      return amount !== null && cmp(amount);
+    };
   },
 };
 

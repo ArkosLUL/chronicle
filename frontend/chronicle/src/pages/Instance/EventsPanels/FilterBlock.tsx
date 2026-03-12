@@ -14,6 +14,7 @@ const FILTER_TYPES: { value: PanelFilterType; label: string }[] = [
   { value: "source_type", label: "Source" },
   { value: "target_type", label: "Target" },
   { value: "time_range", label: "Time Range" },
+  { value: "event_value", label: "Event Value" },
 ];
 
 import { SPELL_SCHOOLS, SCHOOL_BG_COLORS } from "@/components/SpellSchoolBadge";
@@ -83,6 +84,7 @@ const TYPES_WITH_APPLY_TO = new Set<PanelFilterType>([
   "source_type", "target_type",
   "ability_name", "ability_id", "ability_school", "ability_hittype",
   "time_range",
+  "event_value",
 ]);
 
 export interface FilterBlockProps {
@@ -634,6 +636,47 @@ function TimeRangeEditor({ filter, onChange }: { filter: PanelFilter; onChange: 
   );
 }
 
+const EVENT_VALUE_OPERATORS = [
+  { value: ">", label: ">" },
+  { value: ">=", label: "≥" },
+  { value: "<", label: "<" },
+  { value: "<=", label: "≤" },
+  { value: "=", label: "=" },
+  { value: "!=", label: "≠" },
+] as const;
+
+function EventValueEditor({ filter, onChange }: { filter: PanelFilter; onChange: (next: PanelFilter) => void }) {
+  const raw = typeof filter.value === "string" ? filter.value : "";
+  const match = raw.match(/^([><=!]+):(.*)$/);
+  const currentOp = match?.[1] ?? ">";
+  const currentNum = match?.[2] ?? "";
+
+  const update = (op: string, num: string) => {
+    onChange({ ...filter, value: `${op}:${num}` });
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <select
+        className="h-7 text-xs rounded border border-input bg-background/60 px-1"
+        value={currentOp}
+        onChange={(e) => update(e.target.value, currentNum)}
+      >
+        {EVENT_VALUE_OPERATORS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <Input
+        type="number"
+        className="h-7 text-xs w-24"
+        value={currentNum}
+        onChange={(e) => update(currentOp, e.target.value)}
+        placeholder="amount"
+      />
+    </div>
+  );
+}
+
 function ValueEditor({ filter, onChange }: { filter: PanelFilter; onChange: (next: PanelFilter) => void }) {
   const arrayValues = toArrayValue(filter.value);
 
@@ -658,6 +701,8 @@ function ValueEditor({ filter, onChange }: { filter: PanelFilter; onChange: (nex
       return <AbilityNameEditor filter={filter} onChange={onChange} />;
     case "time_range":
       return <TimeRangeEditor filter={filter} onChange={onChange} />;
+    case "event_value":
+      return <EventValueEditor filter={filter} onChange={onChange} />;
     default:
       return (
         <Input

@@ -16,10 +16,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 )
 
-type detailedTimingInstance interface {
-	DetailedTimes() map[string]time.Duration
-}
-
 type timingAccumulator struct {
 	data map[string]time.Duration
 }
@@ -46,8 +42,8 @@ type State struct {
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone     *zoner.Location
 	CurrentRealm    *realm.Info
-	CurrentInstance instances.Instance
-	Instances       []instances.Instance
+	CurrentInstance *instances.Hookable
+	Instances       []*instances.Hookable
 
 	// Units holds information about all units seen so far.
 	// Friendly/Foe/Relationships, etc.
@@ -64,7 +60,7 @@ func New(ctx context.Context, logger *slog.Logger) *State {
 		Units:       unitdb.New(),
 		CurrentZone: zoner.NewLocation(),
 		reg:         registry.DefaultRegistry(logger),
-		Instances:   make([]instances.Instance, 0),
+		Instances:   make([]*instances.Hookable, 0),
 		verbose:     parseoptions.IsVerbose(ctx),
 		timings: newTimingAccumulator(
 			"encounter_state.total",
@@ -114,11 +110,7 @@ func (s *State) Process(m messages.Message) error {
 func (s *State) DetailedTimes() map[string]time.Duration {
 	times := s.timings.Snapshot()
 	for _, instance := range s.Instances {
-		detailedTimes, ok := instance.(detailedTimingInstance)
-		if !ok {
-			continue
-		}
-		for name, duration := range detailedTimes.DetailedTimes() {
+		for name, duration := range instance.DetailedTimes() {
 			times[name] += duration
 		}
 	}

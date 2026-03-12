@@ -19,7 +19,7 @@ type Identity struct {
 }
 
 // Instance represents a dungeon or raid instance
-type Instance interface {
+type DepreceatedInstance interface {
 	// Name returns the instance name (e.g., "Scarlet Monastery Cathedral")
 	Name() string
 

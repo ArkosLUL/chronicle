@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -14,7 +15,9 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/internal/timings"
 	"github.com/google/uuid"
@@ -28,21 +31,6 @@ const (
 	timingsHooks                      = "hooks"
 )
 
-type InstanceHook interface {
-	ProcessMessage(active bool, encounterID uuid.UUID, m messages.Message) error
-
-	// Finalize is called when the instance is finalized. Nothing more should happen after this.
-	Finalize(ctx context.Context) error
-
-	// TODO:
-	//FightStarted(fight *OngoingFight, m messages.Message)
-	//FightEnded(fight Fight)
-	//CharacterActive(id guid.GUID, c character.Character, m messages.Message)
-	//CharacterInactive(id guid.GUID, c character.Character, m messages.Message)
-}
-
-var _ Instance = (*Hookable)(nil)
-
 type Hookable struct {
 	name          string
 	timings       *timings.Accumulator
@@ -54,18 +42,25 @@ type Hookable struct {
 	CurrentZone zone.Zone
 	*Identifier
 	verbose bool
-	realm   *realm.Info    // mostly static
-	hooks   []InstanceHook // TODO: unroll?
+	realm   *realm.Info         // mostly static
+	hooks   []instancehook.Hook // TODO: unroll?
 
 	// Live tracking data
 	Characters      *character.Characters
 	currentFight    *ongoingFight
 	events          *encounterevents.Events
 	completedFights []Fight
+	// TODO: REMOVE SEEN
+	seen map[guid.GUID]struct{}
+
+	// finalized references
+	g *guild.Tracker
 }
 
 func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
 	characters := character.NewCharacters(db)
+	g := guild.New()
+
 	c := &Hookable{
 		name:          f.Name,
 		zoneNameMatch: f.ZoneName,
@@ -75,21 +70,20 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		Characters:    characters,
 		Identifier:    f.Hostiles(),
 		events:        encounterevents.NewEvents(),
-		hooks:         make([]InstanceHook, 0),
-
-		//events:        encounterevents.NewEvents(),
-		//seen:          make(map[guid.GUID]struct{}),
-		//Guild:         guild.New(),
-		//SpellBook:     spellbook.New(),
+		g:             g,
+		hooks: []instancehook.Hook{
+			g,
+		},
 		verbose:         parseoptions.IsVerbose(ctx),
 		timings:         timings.New(),
 		completedFights: make([]Fight, 0),
+		seen:            make(map[guid.GUID]struct{}),
 	}
 
 	return c
 }
 
-func (h *Hookable) AddHook(hook InstanceHook) {
+func (h *Hookable) AddHook(hook instancehook.Hook) {
 	h.hooks = append(h.hooks, hook)
 }
 func (h *Hookable) Name() string           { return h.name }
@@ -101,6 +95,9 @@ func (h *Hookable) MatchesZone(z zone.Zone) bool { return h.zoneNameMatch(z.Name
 
 func (h *Hookable) Process(m messages.Message) (finalError error) {
 	switch msg := m.(type) {
+	case *messages.NewOwner:
+		// Can happen from example enslave demons
+		h.units.UpdateOwner(msg.Target, msg.NewOwner)
 	case *messages.Realm:
 		if h.realm != nil {
 			if h.realm.RealmName != msg.RealmName {
@@ -108,7 +105,10 @@ func (h *Hookable) Process(m messages.Message) (finalError error) {
 			}
 		}
 		h.SetRealm(&msg.Info)
-		return nil
+	default:
+		for _, id := range m.Affects() {
+			h.seen[id] = struct{}{}
+		}
 	}
 
 	actChange, err := timings.Do2(h.timings, timingsProcessCharacters, func() (bool, error) {
@@ -143,7 +143,11 @@ func (h *Hookable) Process(m messages.Message) (finalError error) {
 	if len(h.hooks) > 0 {
 		err = timings.Do1(h.timings, timingsHooks, func() error {
 			for _, hook := range h.hooks {
-				err = hook.ProcessMessage(h.currentFight.active(), h.currentFight.EncounterID, m)
+				var eid uuid.UUID
+				if h.currentFight != nil {
+					eid = h.currentFight.EncounterID
+				}
+				err = hook.ProcessMessage(h.currentFight.active(), eid, m)
 				if err != nil {
 					return fmt.Errorf("hook: %w", err)
 				}
@@ -206,7 +210,7 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 		}
 	}
 
-	if activeTotal == 0 {
+	if activeTotal == 0 && h.currentFight.active() {
 		return func() error {
 			return timings.Do1(h.timings, timingsFinalizeFight, func() error {
 				h.currentFight.End = latestEnd
@@ -256,13 +260,13 @@ func (h *Hookable) finalizeFight() error {
 }
 
 func (h *Hookable) Fights() []Fight {
-	//TODO implement me
-	panic("implement me")
+	fights := make([]Fight, len(h.completedFights))
+	copy(fights, h.completedFights)
+	return fights
 }
 
 func (h *Hookable) Events() *encounterevents.Events {
-	//TODO implement me
-	panic("implement me")
+	return h.events
 }
 
 func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
@@ -353,16 +357,26 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		})
 	}
 
+	for _, hook := range h.hooks {
+		err := hook.Finalize(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("finalizing hook: %w", err)
+		}
+	}
+
 	return &FinalizedInstance{
 		Realm:      h.realm,
 		Encounters: encounters,
 		// TODO: Break off guild and spellbook
-		//Guilds:     c.Guild,
+		Guilds: h.g,
 		//SpellBook:  c.SpellBook,
 	}, nil
 }
 
 func (h *Hookable) Seen() map[guid.GUID]struct{} {
-	//TODO implement me
-	panic("implement me")
+	return h.seen
+}
+
+func (c *Hookable) DetailedTimes() map[string]time.Duration {
+	return c.timings.Snapshot()
 }

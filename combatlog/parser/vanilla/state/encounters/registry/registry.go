@@ -12,7 +12,7 @@ import (
 )
 
 // InstanceFactory creates a new instance
-type InstanceFactory func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) instances.Instance
+type InstanceFactory func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable
 
 // DefaultRegistry returns a registry with all known instances
 func DefaultRegistry(logger *slog.Logger) *Registry {
@@ -93,7 +93,7 @@ func (r *Registry) Register(factory InstanceFactory) {
 }
 
 // GetInstance returns an instance for the given zone, or nil if none match
-func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) instances.Instance {
+func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
 	for name, factory := range r.factories {
 		// Create a temporary instance to check if it matches
 		inst := factory(parseoptions.WithVerbose(context.Background(), verbose), r.logger, db, z)
@@ -126,8 +126,8 @@ func (r *Registry) AllInstancesWithComments() map[string]string {
 	return all
 }
 
-func wrap[i instances.Instance](do func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) i) InstanceFactory {
-	return func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) instances.Instance {
+func wrap(do func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable) InstanceFactory {
+	return func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable {
 		return do(ctx, logger, db, z)
 	}
 }

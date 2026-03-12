@@ -347,30 +347,13 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// Time DB insert
 		dbInsertStart := time.Now()
 		err = db.InTx(func(tx *authz.AuthzTX) error {
-			guildIDs := make(map[string]uuid.UUID)
-			mostGuildPlayers := 0
-			var guildWithMostPlayers *database.Guild
-			for name, players := range finalized.Guilds.Guilds {
-				insertedGuild, err := tx.UpsertGuild(ctx, database.UpsertGuildParams{
-					RealmID:   realmID,
-					Name:      name,
-					CreatedAt: database.Timestamptz(time.Now()),
-				})
-				if err != nil {
-					return fmt.Errorf("upsert guild: %w", err)
-				}
-				guildIDs[name] = insertedGuild.ID
-				if len(players) > mostGuildPlayers {
-					mostGuildPlayers = len(players)
-					guildWithMostPlayers = &insertedGuild
-				}
+			guild, err := finalized.Guilds.Insert(ctx, realmID, tx)
+			if err != nil {
+				return fmt.Errorf("insert guild: %w", err)
 			}
-
 			var guildID uuid.UUID
-			if mostGuildPlayers > len(finalized.Guilds.Participant)/2 && guildWithMostPlayers != nil {
-				guildID = guildWithMostPlayers.ID
-			} else {
-				guildWithMostPlayers = nil
+			if guild != nil {
+				guildID = guild.ID
 			}
 
 			insertInstanceParams := database.InsertInstanceParams{
@@ -389,7 +372,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 
 			// Handling colliding slugs
-			_, err := tx.InstanceBySlug(ctx, insertInstanceParams.HashedSlug)
+			_, err = tx.InstanceBySlug(ctx, insertInstanceParams.HashedSlug)
 			if err == nil {
 				insertInstanceParams.HashedSlug = pgtype.Text{Valid: false}
 			}
@@ -469,7 +452,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{
-				WoWInstance: db2sdk.WoWInstanceWithGuild(dbinstance, guildWithMostPlayers),
+				WoWInstance: db2sdk.WoWInstanceWithGuild(dbinstance, guild),
 				Encounters:  sdkEncounters,
 			})
 

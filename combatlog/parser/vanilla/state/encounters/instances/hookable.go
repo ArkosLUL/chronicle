@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/internal/timings"
 	"github.com/google/uuid"
@@ -50,16 +51,18 @@ type Hookable struct {
 	currentFight    *ongoingFight
 	events          *encounterevents.Events
 	completedFights []Fight
-	// TODO: REMOVE SEEN
-	seen map[guid.GUID]struct{}
 
 	// finalized references
 	g *guild.Tracker
+	p *participants.Tracker
 }
 
 func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
-	characters := character.NewCharacters(db)
+	p := participants.New()
 	g := guild.New()
+
+	characters := character.NewCharacters(db)
+	characters.RegisterHook(p)
 
 	c := &Hookable{
 		name:          f.Name,
@@ -71,13 +74,13 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		Identifier:    f.Hostiles(),
 		events:        encounterevents.NewEvents(),
 		g:             g,
+		p:             p,
 		hooks: []instancehook.Hook{
 			g,
 		},
 		verbose:         parseoptions.IsVerbose(ctx),
 		timings:         timings.New(),
 		completedFights: make([]Fight, 0),
-		seen:            make(map[guid.GUID]struct{}),
 	}
 
 	return c
@@ -106,9 +109,6 @@ func (h *Hookable) Process(m messages.Message) (finalError error) {
 		}
 		h.SetRealm(&msg.Info)
 	default:
-		for _, id := range m.Affects() {
-			h.seen[id] = struct{}{}
-		}
 	}
 
 	actChange, err := timings.Do2(h.timings, timingsProcessCharacters, func() (bool, error) {
@@ -368,13 +368,11 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		Realm:      h.realm,
 		Encounters: encounters,
 		// TODO: Break off guild and spellbook
-		Guilds: h.g,
+		Guilds:       h.g,
+		Participants: h.p,
+
 		//SpellBook:  c.SpellBook,
 	}, nil
-}
-
-func (h *Hookable) Seen() map[guid.GUID]struct{} {
-	return h.seen
 }
 
 func (c *Hookable) DetailedTimes() map[string]time.Duration {

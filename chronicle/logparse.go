@@ -388,7 +388,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return fmt.Errorf("insert events: %w", err)
 			}
 
-			for id := range inst.Seen() {
+			for id := range finalized.Participants.Active {
 				builder.seen(id)
 			}
 			for id := range finalized.Guilds.Participant {

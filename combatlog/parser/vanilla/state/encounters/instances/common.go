@@ -7,13 +7,15 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 type FinalizedInstance struct {
-	Realm      *realm.Info
-	Encounters []Encounter
-	Guilds     *guild.Tracker
+	Realm        *realm.Info
+	Encounters   []Encounter
+	Guilds       *guild.Tracker
+	Participants *participants.Tracker
 }
 
 func ZoneNameMatcher(names ...string) func(z string) bool {

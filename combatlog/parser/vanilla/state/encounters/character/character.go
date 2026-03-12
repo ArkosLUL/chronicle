@@ -19,6 +19,10 @@ const (
 	ReasonOwnerSlain = "owner_slain"
 )
 
+type Hook interface {
+
+}
+
 // TODO: Slim the interface for external use
 type Character interface {
 	ID() guid.GUID

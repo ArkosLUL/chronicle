@@ -7,7 +7,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 )
 
@@ -32,12 +31,12 @@ type Instance interface {
 
 	// CharactersList returns the list of characters in this instance and their
 	// associated activity and additional data.
-	CharactersList() map[guid.GUID]character.Character
+	//CharactersList() map[guid.GUID]character.Character
 	// IdentifyUnit returns any hard coded identity information for the given GUID in the
 	// instance.
 	IdentifyUnit(id guid.GUID) Identity
 	// Zone returns the zone of this instance
-	Zone() zone.Zone
+	//Zone() zone.Zone
 
 	// SetRealm is used to populate some initial state if we have it
 	SetRealm(r *realm.Info)

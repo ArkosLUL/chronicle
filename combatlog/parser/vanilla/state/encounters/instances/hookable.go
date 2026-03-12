@@ -1,0 +1,368 @@
+package instances
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+
+	"github.com/Emyrk/chronicle/combatlog/parseoptions"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/internal/timings"
+	"github.com/google/uuid"
+)
+
+const (
+	timingsProcessCharacters          = "process_characters"
+	timingsProcessFightDetection      = "process_fight_detection"
+	timingsProcessOngoingFightProcess = "ongoing_fight_process_events"
+	timingsFinalizeFight              = "finalize_fight"
+	timingsHooks                      = "hooks"
+)
+
+type InstanceHook interface {
+	ProcessMessage(active bool, encounterID uuid.UUID, m messages.Message) error
+
+	// Finalize is called when the instance is finalized. Nothing more should happen after this.
+	Finalize(ctx context.Context) error
+
+	// TODO:
+	//FightStarted(fight *OngoingFight, m messages.Message)
+	//FightEnded(fight Fight)
+	//CharacterActive(id guid.GUID, c character.Character, m messages.Message)
+	//CharacterInactive(id guid.GUID, c character.Character, m messages.Message)
+}
+
+var _ Instance = (*Hookable)(nil)
+
+type Hookable struct {
+	name          string
+	timings       *timings.Accumulator
+	zoneNameMatch func(z string) bool
+	logger        *slog.Logger
+	units         *unitdb.Units
+
+	// Static
+	CurrentZone zone.Zone
+	*Identifier
+	verbose bool
+	realm   *realm.Info    // mostly static
+	hooks   []InstanceHook // TODO: unroll?
+
+	// Live tracking data
+	Characters      *character.Characters
+	currentFight    *ongoingFight
+	events          *encounterevents.Events
+	completedFights []Fight
+}
+
+func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
+	characters := character.NewCharacters(db)
+	c := &Hookable{
+		name:          f.Name,
+		zoneNameMatch: f.ZoneName,
+		logger:        logger,
+		units:         db,
+		CurrentZone:   z,
+		Characters:    characters,
+		Identifier:    f.Hostiles(),
+		events:        encounterevents.NewEvents(),
+		hooks:         make([]InstanceHook, 0),
+
+		//events:        encounterevents.NewEvents(),
+		//seen:          make(map[guid.GUID]struct{}),
+		//Guild:         guild.New(),
+		//SpellBook:     spellbook.New(),
+		verbose:         parseoptions.IsVerbose(ctx),
+		timings:         timings.New(),
+		completedFights: make([]Fight, 0),
+	}
+
+	return c
+}
+
+func (h *Hookable) AddHook(hook InstanceHook) {
+	h.hooks = append(h.hooks, hook)
+}
+func (h *Hookable) Name() string           { return h.name }
+func (h *Hookable) SetRealm(r *realm.Info) { h.realm = r }
+
+// MatchesZone
+// TODO: Should we care about the instance ID here?
+func (h *Hookable) MatchesZone(z zone.Zone) bool { return h.zoneNameMatch(z.Name) }
+
+func (h *Hookable) Process(m messages.Message) (finalError error) {
+	switch msg := m.(type) {
+	case *messages.Realm:
+		if h.realm != nil {
+			if h.realm.RealmName != msg.RealmName {
+				return parseerrors.AsFatalError(fmt.Errorf("realm name changed from %q to %q during instance", h.realm.RealmName, msg.RealmName))
+			}
+		}
+		h.SetRealm(&msg.Info)
+		return nil
+	}
+
+	actChange, err := timings.Do2(h.timings, timingsProcessCharacters, func() (bool, error) {
+		return h.Characters.Process(m)
+	})
+	if err != nil {
+		return fmt.Errorf("process characters: %w", err)
+	}
+
+	if actChange {
+		// Only need to update the fight detection if there is a change in character activity.
+		callback, err := timings.Do2(h.timings, timingsProcessFightDetection, func() (func() error, error) {
+			return h.FightDetectionHandler(m)
+		})
+		if err != nil {
+			return fmt.Errorf("fight detection: %w", err)
+		}
+
+		// callback is used to finish the fight. This should happen after all hooks
+		// have processed the message, but before the next message is processed.
+		if callback != nil {
+			defer func() {
+				finalError = callback()
+			}()
+		}
+	}
+
+	err = timings.Do1(h.timings, timingsProcessOngoingFightProcess, func() error {
+		return h.currentFight.Process(m)
+	})
+
+	if len(h.hooks) > 0 {
+		err = timings.Do1(h.timings, timingsHooks, func() error {
+			for _, hook := range h.hooks {
+				err = hook.ProcessMessage(h.currentFight.active(), h.currentFight.EncounterID, m)
+				if err != nil {
+					return fmt.Errorf("hook: %w", err)
+				}
+			}
+			return nil
+		})
+	}
+
+	return nil
+}
+
+// FightDetectionHandler manages the life of "currentFight".
+// Updates live fight state based on character activity changes.
+// Call this after Characters.Process returns true (activity changed).
+func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, error) {
+	if h.currentFight == nil {
+		// this is the only place a new fight should be instantiated.
+		// The ongoingFight struct can handle itself. Make sure it exists.
+		h.currentFight = &ongoingFight{
+			EncounterID:    uuid.New(),
+			ActiveHostiles: make(map[guid.GUID]struct{}),
+			Events:         encounterevents.New(h.verbose),
+			PlayerDeaths:   nil,
+			Start:          nil,
+			End:            nil,
+		}
+	}
+
+	activeTotal := 0
+	var latestEnd *period.Moment
+	for _, char := range h.Characters.All.Map() {
+		if info := h.IdentifyUnit(char.ID()); !info.Hostile {
+			// Only consider hostile characters for fights
+			continue
+		}
+
+		pd, ok := char.CurrentPeriod()
+		if !ok {
+			continue
+		}
+
+		if pd.IsActive() {
+			// If the character is active, update the fight start time if needed.
+			activeTotal++
+			h.currentFight.ActiveHostiles[char.ID()] = struct{}{}
+			h.currentFight.Begin(pd.Start)
+		}
+
+		if !pd.IsActive() {
+			// If the character is no longer active, check if they were part of the fight
+			if _, inFight := h.currentFight.ActiveHostiles[char.ID()]; !inFight {
+				// If the character is not part of the fight, then skip
+				continue
+			}
+
+			// If the latestEnd is not yet set, we still are trying to find it.
+			if latestEnd == nil || latestEnd.Timestamp.Date().Before(pd.End.Timestamp.Date()) {
+				latestEnd = pd.End
+			}
+		}
+	}
+
+	if activeTotal == 0 {
+		return func() error {
+			return timings.Do1(h.timings, timingsFinalizeFight, func() error {
+				h.currentFight.End = latestEnd
+				return h.finalizeFight()
+			})
+		}, nil
+	}
+
+	return nil, nil
+}
+
+func (h *Hookable) finalizeFight() error {
+	fight := Fight{
+		Hostiles:     map[guid.GUID]CharacterFight{},
+		Start:        h.currentFight.Start.Timestamp.Date(),
+		End:          h.currentFight.End.Timestamp.Date(),
+		EncounterID:  h.currentFight.EncounterID,
+		PlayerDeaths: h.currentFight.PlayerDeaths,
+	}
+
+	for id := range h.currentFight.ActiveHostiles {
+		char, ok := h.Characters.Get(id)
+		if !ok {
+			return fmt.Errorf("could not find character for hostile %s", id)
+		}
+
+		during, err := period.PeriodsDuring(char.Periods(), fight.Start, fight.End)
+		if err != nil {
+			return fmt.Errorf("getting periods during fight for character %s: %w", id, err)
+		}
+
+		fight.Hostiles[id] = CharacterFight{
+			ID:       id,
+			Activity: during,
+		}
+	}
+
+	err := h.currentFight.Events.Finalize(h.events, fight.EncounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing encounter messages: %w", err)
+	}
+
+	// End the fight
+	h.currentFight = nil
+	h.completedFights = append(h.completedFights, fight)
+	return nil
+}
+
+func (h *Hookable) Fights() []Fight {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Hookable) Events() *encounterevents.Events {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
+	// TODO: What about any ongoing fight? Do we finalize it? Do we discard it? Do we error?
+	//if false && c.currentFight != nil {
+	//  // TODO: We need to end any ongoing fight with what timestamp?
+	//  // Finalize any current fight that hasn't been completed yet
+	//  err := c.finalizeFight()
+	//  if err != nil {
+	//    return nil, fmt.Errorf("finalizing ongoing fight: %w", err)
+	//  }
+	//}
+
+	encounters := make([]Encounter, 0, len(h.completedFights))
+	for _, fight := range h.completedFights {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		encounterName := ""
+		encounterType := types.EncounterTypeTRASH
+		isBossFight := false
+		// TODO: Fix to boss count, as there can be 2 bosses
+		aBossRemains := false
+		for hid, hostile := range fight.Hostiles {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			if hid != hostile.ID {
+				panic("inconsistent hostile ID mapping")
+			}
+
+			id := h.IdentifyUnit(hostile.ID)
+			if !id.Hostile {
+				continue
+			}
+			if id.Boss {
+				isBossFight = true
+				// Check if this boss was slain
+				lastPeriod := hostile.Activity[len(hostile.Activity)-1]
+				aBossRemains = aBossRemains || lastPeriod.EndState != period.EndStateSlain
+			}
+
+			// Always take the encounter name if set
+			if id.EncounterName != "" {
+				encounterName = id.EncounterName
+				encounterType = types.EncounterTypeBOSS
+			}
+
+			if encounterName == "" {
+				info, hasInfo := h.units.Get(hostile.ID)
+				if hasInfo {
+					encounterName = info.Name
+				}
+			}
+		}
+
+		rr := fight.EndStates()
+
+		// Determine kill type based on remaining enemies and boss status
+		var killType KillType
+		if len(rr.Timeouts) == 0 {
+			killType = KillTypeClean
+			if rr.Slain == 0 && rr.Reset > 0 {
+				killType = KillTypeReset
+				if isBossFight && !aBossRemains {
+					killType = KillTypePartial
+				}
+			}
+		} else if isBossFight && !aBossRemains {
+			// No bosses remain, but it was a boss fight.
+			// An add probably lived
+			killType = KillTypePartial
+		} else {
+			if len(fight.PlayerDeaths) == 0 {
+				killType = KillTypeReset
+			} else {
+				killType = KillTypeWipe
+			}
+		}
+
+		encounters = append(encounters, Encounter{
+			Name:      encounterName,
+			Type:      encounterType,
+			Combat:    fight,
+			KillType:  killType,
+			Remaining: rr.Timeouts,
+			Boss:      isBossFight,
+		})
+	}
+
+	return &FinalizedInstance{
+		Realm:      h.realm,
+		Encounters: encounters,
+		// TODO: Break off guild and spellbook
+		//Guilds:     c.Guild,
+		//SpellBook:  c.SpellBook,
+	}, nil
+}
+
+func (h *Hookable) Seen() map[guid.GUID]struct{} {
+	//TODO implement me
+	panic("implement me")
+}

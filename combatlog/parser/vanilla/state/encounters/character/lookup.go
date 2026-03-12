@@ -69,6 +69,16 @@ var characterFactories = []characterFactory{
 	NewSolnius,
 }
 
+type SetHook interface {
+	// ActivityChange is invoked every time a character's activity status changes.
+	// This happens AFTER the message is processed by the character.
+	ActivityChange(m messages.Message, chars ...Character)
+	// CharacterAdded is invoked when a new character is added to the Characters
+	// list. This happens BEFORE any messages are processed for the character, so it
+	// may not have any state yet.
+	CharacterAdded(m messages.Message, chars ...Character)
+}
+
 type Characters struct {
 	All *OrdererCharacters
 	// ByEntry only works on creatures
@@ -81,6 +91,9 @@ type Characters struct {
 
 	// auras keeps track of auras on all characters.
 	//auras *auras.Tracking
+
+	// TODO: unroll hooks?
+	hooks []SetHook
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {
@@ -91,6 +104,10 @@ func NewCharacters(db *unitdb.Units) *Characters {
 		active:      make(map[guid.GUID]struct{}),
 		sharedState: make(map[string]any),
 	}
+}
+
+func (c *Characters) RegisterHook(hook SetHook) {
+	c.hooks = append(c.hooks, hook)
 }
 
 func (c *Characters) Save(key string, value any) {
@@ -104,16 +121,6 @@ func (c *Characters) Load(key string) (any, bool) {
 
 func (c *Characters) Delete(key string) {
 	delete(c.sharedState, key)
-}
-
-func (c Characters) AddAll(ids ...guid.GUID) bool {
-	change := false
-	for _, id := range ids {
-		if _, changed := c.Add(id); changed {
-			change = true
-		}
-	}
-	return change
 }
 
 func (c Characters) Get(id guid.GUID) (Character, bool) {
@@ -159,9 +166,9 @@ func (c Characters) Add(id guid.GUID) (_ Character, newChar bool) {
 // Idk how feasible that is though. Maybe the original processor can handle this
 // for general types.
 func (c Characters) Process(m messages.Message) (bool, error) {
-	// Add all affected characters to the instance's character list
-	activityChange := c.AddAll(m.Affects()...)
+	activityChange := c.processNewCharacters(m)
 
+	var changed []Character
 	err := c.All.ForEach(func(char Character) error {
 		before := char.IsActive()
 
@@ -174,15 +181,40 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 
 		c.trackActive(char)
 		if before != char.IsActive() {
-			activityChange = true
+			changed = append(changed, char)
 		}
 		return nil
 	})
+
+	// Final boolean value
+	activityChange = activityChange || len(changed) > 0
 	if err != nil {
 		return activityChange, err
 	}
 
+	for _, hook := range c.hooks {
+		hook.ActivityChange(m, changed...)
+	}
+
 	return activityChange, nil
+}
+
+// processNewCharacters adds any missing characters to the full character list.
+func (c Characters) processNewCharacters(m messages.Message) bool {
+	var created []Character
+	// Add all affected characters to the instance's character list
+	for _, id := range m.Affects() {
+		if char, changed := c.Add(id); changed {
+			created = append(created, char)
+		}
+	}
+	if len(created) > 0 {
+		for _, hook := range c.hooks {
+			hook.CharacterAdded(m, created...)
+		}
+	}
+
+	return len(created) > 0
 }
 
 func (c Characters) trackActive(char Character) {

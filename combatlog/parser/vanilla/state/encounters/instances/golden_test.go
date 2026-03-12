@@ -105,11 +105,11 @@ func openV1Parser(t *testing.T, ctx context.Context, logger *slog.Logger, dir st
 
 	rawFile, err := os.Open(dir + "/WoWRawCombatLog.txt")
 	require.NoError(t, err)
-	t.Cleanup(func() { rawFile.Close() })
+	t.Cleanup(func() { _ = rawFile.Close() })
 
 	logFile, err := os.Open(dir + "/WoWCombatLog.txt")
 	require.NoError(t, err)
-	t.Cleanup(func() { logFile.Close() })
+	t.Cleanup(func() { _ = logFile.Close() })
 
 	m := merge.NewMerger(logger)
 	liner, scans, err := m.LineScanner(ctx, nil, logfile.New(nil, rawFile), logfile.New(nil, logFile))
@@ -133,13 +133,13 @@ func openV2Parser(t *testing.T, logger *slog.Logger, path string) *parserv2.Pars
 
 	f, err := os.Open(path)
 	require.NoError(t, err)
-	t.Cleanup(func() { f.Close() })
+	t.Cleanup(func() { _ = f.Close() })
 
 	var reader io.Reader = f
 	if strings.HasSuffix(path, ".gz") {
 		gz, err := gzip.NewReader(f)
 		require.NoError(t, err)
-		t.Cleanup(func() { gz.Close() })
+		t.Cleanup(func() { _ = gz.Close() })
 		reader = gz
 	}
 

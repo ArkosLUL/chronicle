@@ -87,8 +87,6 @@ type Characters struct {
 	ByEntry map[uint32][]Character
 	db      *unitdb.Units
 
-	// active is a quick lookup for active characters
-	active      map[guid.GUID]struct{}
 	sharedState map[string]any
 
 	// auras keeps track of auras on all characters.

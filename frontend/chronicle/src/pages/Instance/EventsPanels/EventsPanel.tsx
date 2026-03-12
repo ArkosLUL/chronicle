@@ -126,6 +126,7 @@ const FILTER_TYPE_LABELS: Record<PanelFilterType, string> = {
   enemies: "Enemies",
   time_range: "Time Range",
   event_value: "Event Value",
+  event_type: "Event Type",
 };
 
 function buildFilterGroups(filters: PanelFilter[]): PanelFilter[][] {

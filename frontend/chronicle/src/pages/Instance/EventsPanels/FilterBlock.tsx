@@ -15,6 +15,7 @@ const FILTER_TYPES: { value: PanelFilterType; label: string }[] = [
   { value: "target_type", label: "Target" },
   { value: "time_range", label: "Time Range" },
   { value: "event_value", label: "Event Value" },
+  { value: "event_type", label: "Event Type" },
 ];
 
 import { SPELL_SCHOOLS, SCHOOL_BG_COLORS } from "@/components/SpellSchoolBadge";
@@ -703,6 +704,8 @@ function ValueEditor({ filter, onChange }: { filter: PanelFilter; onChange: (nex
       return <TimeRangeEditor filter={filter} onChange={onChange} />;
     case "event_value":
       return <EventValueEditor filter={filter} onChange={onChange} />;
+    case "event_type":
+      return <SegmentedToggle options={APPLY_TO_OPTIONS} values={arrayValues} onToggle={toggleValue} />;
     default:
       return (
         <Input

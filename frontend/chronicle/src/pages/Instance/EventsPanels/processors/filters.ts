@@ -15,7 +15,8 @@ export type PanelFilterType =
   | "source_type"
   | "target_type"
   | "time_range"
-  | "event_value";
+  | "event_value"
+  | "event_type";
 
 export interface PanelFilter {
   type: PanelFilterType;
@@ -360,6 +361,17 @@ const FILTER_COMPILERS: Record<PanelFilterType, FilterCompiler> = {
     if (hasStart)
       return (event) => (event.globalOffsetMilli ?? event.offsetMilli) >= startMs;
     return (event) => (event.globalOffsetMilli ?? event.offsetMilli) <= endMs!;
+  },
+
+  event_type: (value) => {
+    const types = toValues(value);
+    if (types.length === 0) return () => true;
+    if (types.length === 1) {
+      const single = types[0];
+      return (event) => event.type === single;
+    }
+    const typeSet = new Set(types);
+    return (event) => typeSet.has(event.type);
   },
 
   event_value: (value) => {

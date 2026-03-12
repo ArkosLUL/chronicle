@@ -335,4 +335,32 @@ describe("event_value filter", () => {
   });
 });
 
+describe("event_type filter", () => {
+  it("matches matching event type", () => {
+    const filters: PanelFilter[] = [{ type: "event_type", value: ["damage"] }];
+    expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(true);
+  });
+
+  it("rejects non-matching event type", () => {
+    const filters: PanelFilter[] = [{ type: "event_type", value: ["heal"] }];
+    expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(false);
+  });
+
+  it("matches any of multiple types", () => {
+    const filters: PanelFilter[] = [{ type: "event_type", value: ["heal", "damage"] }];
+    expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(true);
+  });
+
+  it("negated excludes matching types", () => {
+    const filters: PanelFilter[] = [{ type: "event_type", value: ["damage"], negate: true }];
+    expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(false);
+  });
+
+  it("empty value passes all events", () => {
+    const filters: PanelFilter[] = [{ type: "event_type", value: [] }];
+    expect(evaluateFilters(filters, createDamageEvent(), createContext())).toBe(true);
+  });
+});
+
+
 

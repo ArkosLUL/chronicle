@@ -41,6 +41,8 @@ const CLASS_COLORS: Record<string, string> = {
   Warlock: "text-class-warlock",
   Paladin: "text-class-paladin",
   Shaman: "text-class-shaman",
+  Enemy: "text-class-enemy",
+  Creature: "text-class-creature",
 };
 
 const RANK_STYLES = {

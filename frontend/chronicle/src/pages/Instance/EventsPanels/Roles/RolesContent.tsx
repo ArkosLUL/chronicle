@@ -35,7 +35,8 @@ const CLASS_COLORS: Record<string, string> = {
   WARLOCK: 'var(--color-class-warlock)',
   DRUID: 'var(--color-class-druid)',
   UNKNOWN: 'var(--color-class-unknown)',
-  ENEMY: '#FF4444',
+  ENEMY: 'var(--color-class-enemy)',
+  CREATURE: 'var(--color-class-creature)',
 };
 
 interface RoleGroupProps {

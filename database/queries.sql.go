@@ -3566,27 +3566,50 @@ func (q *sqlQuerier) GetItemTemplateByEntry(ctx context.Context, entry int32) (W
 }
 
 const getItemTemplateMetadataBatch = `-- name: GetItemTemplateMetadataBatch :many
+WITH by_id AS (
+  SELECT wit.entry, wit.name, wit.quality, wit.display_id
+  FROM world_item_template wit
+  WHERE wit.entry = ANY($1::int[])
+),
+by_name AS (
+  SELECT wit.entry, wit.name, wit.quality, wit.display_id
+  FROM world_item_template wit
+  WHERE wit.name = ANY($2::text[])
+    AND wit.entry != ALL($1::int[])
+    AND (SELECT COUNT(*) FROM world_item_template t2 WHERE t2.name = wit.name) = 1
+),
+combined AS (
+  SELECT entry, name, quality, display_id FROM by_id UNION ALL SELECT entry, name, quality, display_id FROM by_name
+)
 SELECT
-  wit.entry,
-  wit.name,
-  wit.quality,
+  c.entry,
+  c.name,
+  c.quality,
+  c.entry,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
-FROM
-  world_item_template wit
-  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
-  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
-WHERE wit.entry = ANY($1::int[])
+FROM combined c
+  LEFT JOIN world_display_info wdi ON wdi.id = c.display_id
+  LEFT JOIN dbc_item_display_info dbi ON c.display_id = dbi.id
 `
+
+type GetItemTemplateMetadataBatchParams struct {
+	ItemIds   []int32  `db:"item_ids" json:"item_ids"`
+	ItemNames []string `db:"item_names" json:"item_names"`
+}
 
 type GetItemTemplateMetadataBatchRow struct {
 	Entry   int32  `db:"entry" json:"entry"`
 	Name    string `db:"name" json:"name"`
 	Quality int32  `db:"quality" json:"quality"`
+	Entry_2 int32  `db:"entry_2" json:"entry_2"`
 	Icon    string `db:"icon" json:"icon"`
 }
 
-func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, itemIds []int32) ([]GetItemTemplateMetadataBatchRow, error) {
-	rows, err := q.db.Query(ctx, getItemTemplateMetadataBatch, itemIds)
+// Looks up items by ID. For items not found by ID (e.g. transmog IDs),
+// falls back to name lookup but only if the name is unique in the table.
+// Pass paired arrays where item_ids[i] corresponds to item_names[i].
+func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, arg GetItemTemplateMetadataBatchParams) ([]GetItemTemplateMetadataBatchRow, error) {
+	rows, err := q.db.Query(ctx, getItemTemplateMetadataBatch, arg.ItemIds, arg.ItemNames)
 	if err != nil {
 		return nil, err
 	}
@@ -3598,6 +3621,7 @@ func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, itemIds [
 			&i.Entry,
 			&i.Name,
 			&i.Quality,
+			&i.Entry_2,
 			&i.Icon,
 		); err != nil {
 			return nil, err

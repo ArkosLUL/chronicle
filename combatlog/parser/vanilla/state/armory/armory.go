@@ -58,14 +58,17 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 		}
 	}
 
-	// Collect unique item IDs for batch metadata fetch
+	// Collect unique item IDs and names for batch metadata fetch.
+	// Names are used as fallback for transmog IDs that don't exist in the item table.
 	itemIDSet := make(map[int32]struct{})
 	itemIDList := make([]int32, 0)
+	itemNameList := make([]string, 0)
 	for _, player := range g.Players {
 		for _, item := range player.GearSetups {
 			if item.ItemID > 0 {
 				if _, exists := itemIDSet[int32(item.ItemID)]; !exists {
 					itemIDList = append(itemIDList, int32(item.ItemID))
+					itemNameList = append(itemNameList, item.Name)
 				}
 				itemIDSet[int32(item.ItemID)] = struct{}{}
 			}
@@ -73,13 +76,18 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 	}
 
 	itemMeta := make(map[int32]database.GetItemTemplateMetadataBatchRow)
+	itemMetaByName := make(map[string]database.GetItemTemplateMetadataBatchRow)
 	if len(itemIDSet) > 0 {
-		rows, err := tx.GetItemTemplateMetadataBatch(ctx, itemIDList)
+		rows, err := tx.GetItemTemplateMetadataBatch(ctx, database.GetItemTemplateMetadataBatchParams{
+			ItemIds:   itemIDList,
+			ItemNames: itemNameList,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("get item metadata: %w", err)
 		}
 		for _, row := range rows {
 			itemMeta[row.Entry] = row
+			itemMetaByName[row.Name] = row
 		}
 	}
 
@@ -101,7 +109,13 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 			if meta, ok := itemMeta[int32(item.ItemID)]; ok {
 				dbGear[i].ItemName = meta.Name
 				dbGear[i].ItemQuality = meta.Quality
-					dbGear[i].ItemIcon = meta.Icon
+				dbGear[i].ItemIcon = meta.Icon
+				dbGear[i].ItemID = meta.Entry
+			} else if meta, ok := itemMetaByName[item.Name]; ok {
+				dbGear[i].ItemName = meta.Name
+				dbGear[i].ItemQuality = meta.Quality
+				dbGear[i].ItemIcon = meta.Icon
+				dbGear[i].ItemID = meta.Entry
 			}
 		}
 
@@ -148,16 +162,18 @@ func (g *Tracker) Finalize(ctx context.Context) error {
 }
 
 func (g *Tracker) ProcessMessage(active bool, encounterID uuid.UUID, msg messages.Message) error {
-	if !active {
-		return nil
-	}
-
 	switch ty := msg.(type) {
 	case *messages.Damage:
+		if !active {
+			return nil
+		}
 		if ty.Caster != nil && (*ty.Caster).IsPlayer() {
 			g.Participant[*ty.Caster] = struct{}{}
 		}
 	case *messages.Heal:
+		if !active {
+			return nil
+		}
 		if ty.Caster.IsPlayer() {
 			g.Participant[ty.Caster] = struct{}{}
 		}

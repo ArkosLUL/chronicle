@@ -23,13 +23,30 @@ SELECT * FROM dbc_item_set_bonus WHERE set_id = $1 ORDER BY threshold;
 SELECT entry, name, inventory_type FROM world_item_template WHERE set_id = $1 ORDER BY inventory_type;
 
 -- name: GetItemTemplateMetadataBatch :many
+-- Looks up items by ID. For items not found by ID (e.g. transmog IDs),
+-- falls back to name lookup but only if the name is unique in the table.
+-- Pass paired arrays where item_ids[i] corresponds to item_names[i].
+WITH by_id AS (
+  SELECT wit.entry, wit.name, wit.quality, wit.display_id
+  FROM world_item_template wit
+  WHERE wit.entry = ANY(@item_ids::int[])
+),
+by_name AS (
+  SELECT wit.entry, wit.name, wit.quality, wit.display_id
+  FROM world_item_template wit
+  WHERE wit.name = ANY(@item_names::text[])
+    AND wit.entry != ALL(@item_ids::int[])
+    AND (SELECT COUNT(*) FROM world_item_template t2 WHERE t2.name = wit.name) = 1
+),
+combined AS (
+  SELECT * FROM by_id UNION ALL SELECT * FROM by_name
+)
 SELECT
-  wit.entry,
-  wit.name,
-  wit.quality,
+  c.entry,
+  c.name,
+  c.quality,
+  c.entry,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
-FROM
-  world_item_template wit
-  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
-  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
-WHERE wit.entry = ANY(@item_ids::int[]);
+FROM combined c
+  LEFT JOIN world_display_info wdi ON wdi.id = c.display_id
+  LEFT JOIN dbc_item_display_info dbi ON c.display_id = dbi.id;

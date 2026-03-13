@@ -52,7 +52,10 @@ type sqlcQuerier interface {
 	GetItemSetBonuses(ctx context.Context, setID int32) ([]DbcItemSetBonu, error)
 	GetItemSetByID(ctx context.Context, id int32) (DbcItemSet, error)
 	GetItemTemplateByEntry(ctx context.Context, entry int32) (WorldItemTemplate, error)
-	GetItemTemplateMetadataBatch(ctx context.Context, itemIds []int32) ([]GetItemTemplateMetadataBatchRow, error)
+	// Looks up items by ID. For items not found by ID (e.g. transmog IDs),
+	// falls back to name lookup but only if the name is unique in the table.
+	// Pass paired arrays where item_ids[i] corresponds to item_names[i].
+	GetItemTemplateMetadataBatch(ctx context.Context, arg GetItemTemplateMetadataBatchParams) ([]GetItemTemplateMetadataBatchRow, error)
 	GetItemTemplatesBySetID(ctx context.Context, setID int32) ([]GetItemTemplatesBySetIDRow, error)
 	GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error)
 	GetPanelLayoutByCode(ctx context.Context, code pgtype.Text) (GetPanelLayoutByCodeRow, error)

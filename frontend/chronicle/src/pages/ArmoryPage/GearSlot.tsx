@@ -66,7 +66,10 @@ export function GearSlot({ slotDef, item, side = "right" }: GearSlotProps) {
         {displayName}
       </span>
       {enchantText && (
-        <span className="text-2xs leading-tight max-w-28 text-quality-uncommon line-clamp-2">
+          <span className={cn(
+            "text-2xs leading-tight max-w-28 text-quality-uncommon line-clamp-2",
+            side === "left" && "text-right",
+          )}>
           {enchantText}
         </span>
       )}

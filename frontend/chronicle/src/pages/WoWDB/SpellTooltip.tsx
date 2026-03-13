@@ -73,7 +73,7 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
     : `${spell.mana_cost} ${spell.power_type.string}`;
 
   return (
-    <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-4 max-w-md shadow-lg">
+    <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-4 max-w-md shadow-lg font-wow">
       {/* Header with icon */}
       <div className="flex gap-3 items-start">
         {iconUrl && (
@@ -88,7 +88,7 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="flex flex-col min-w-0">
-              <h2 className="font-bold text-lg leading-tight text-white">
+              <h2 className="font-medium text-lg leading-tight text-white">
                 {name}
               </h2>
               {spell.spell_level > 0 && (

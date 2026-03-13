@@ -1,4 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap");
+
+@font-face {
+  font-family: "Friz Quadrata";
+  src: url("/c/fonts/FrizQuadrata-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Friz Quadrata";
+  src: url("/c/fonts/FrizQuadrata-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 @import url("./custom.css");
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -188,6 +204,7 @@
   --font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
   --font-mono: Roboto Mono, ui-monospace, monospace;
   --font-serif: Libre Baskerville, ui-serif, serif;
+  --font-wow: "Friz Quadrata", ui-serif, serif;
   --radius: 0.2rem;
   --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
   --tracking-tight: calc(var(--tracking-normal) - 0.025em);
@@ -254,6 +271,7 @@
   --font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
   --font-serif: Libre Baskerville, ui-serif, serif;
   --font-mono: Roboto Mono, ui-monospace, monospace;
+  --font-wow: "Friz Quadrata", ui-serif, serif;
   --shadow-color: oklch(0 0 0);
   --shadow-opacity: 0.1;
   --shadow-blur: 3px;

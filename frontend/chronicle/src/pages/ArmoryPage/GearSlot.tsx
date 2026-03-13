@@ -19,9 +19,11 @@ interface GearSlotProps {
   item: PlayerGear;
   /** Which side the name label appears on. */
   side?: GearSlotSide;
+  /** Set of all equipped item IDs (for set piece highlighting in tooltips). */
+  equippedItemIds?: ReadonlySet<number>;
 }
 
-export function GearSlot({ slotDef, item, side = "right" }: GearSlotProps) {
+export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: GearSlotProps) {
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const isMobile = useIsMobile();
@@ -129,13 +131,13 @@ export function GearSlot({ slotDef, item, side = "right" }: GearSlotProps) {
                 >
                   ✕
                 </button>
-                <ItemTooltip item={tooltipData.data!} />
+                <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} />
               </div>
             </div>
           ) : (
             /* Desktop: centered fixed tooltip */
             <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-              <ItemTooltip item={tooltipData.data!} />
+              <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} />
             </div>
           )}
         </>

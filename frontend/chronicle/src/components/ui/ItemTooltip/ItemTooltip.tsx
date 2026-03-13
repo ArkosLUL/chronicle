@@ -97,6 +97,8 @@ interface ItemTooltipProps {
   /** When true, spell names link to /wowdb/spell/{id} */
   includeReferenceLinks?: boolean;
   showItemLevel?: boolean;
+  /** Set of item entry IDs the player has equipped (for set piece highlighting). */
+  equippedItemIds?: ReadonlySet<number>;
 }
 
 /**
@@ -104,7 +106,7 @@ interface ItemTooltipProps {
  * Renders a full item tooltip with stats, damage, set bonuses, etc.
  * Designed to match the in-game tooltip appearance.
  */
-export function ItemTooltip({ item, className, includeReferenceLinks = false, showItemLevel = false }: ItemTooltipProps) {
+export function ItemTooltip({ item, className, includeReferenceLinks = false, showItemLevel = false, equippedItemIds }: ItemTooltipProps) {
   const qualityColor = QUALITY_COLORS[item.quality] ?? "text-white";
   const iconUrl = getItemIconUrl(item.icon);
   const slotText = INVENTORY_TYPE_TEXT[item.inventory_type] ?? "";
@@ -122,7 +124,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
 
   return (
     <div className={cn(
-      "bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-3 min-w-56 max-w-xs shadow-lg text-xs leading-snug font-sans",
+      "bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-3 min-w-56 max-w-xs shadow-lg text-xs leading-snug font-wow",
       className
     )}>
       {/* Header: icon + name */}
@@ -137,7 +139,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
           />
         )}
         <div className="flex-1 min-w-0">
-          <h2 className={cn("font-bold text-sm leading-tight", qualityColor)}>
+          <h2 className={cn("font-medium text-sm leading-tight", qualityColor)}>
             {displayName}
           </h2>
           {showItemLevel && item.item_level > 0 && (
@@ -196,7 +198,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
 
         {/* Resistances */}
         {item.resistances?.map((res, i) => (
-          <div key={i} className="text-[#1eff00]">
+          <div key={i} className="text-white">
             +{res.value} {SCHOOL_TEXT[res.school] ?? "Unknown"} Resistance
           </div>
         ))}
@@ -232,7 +234,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
         )}
 
         {/* Item Set */}
-        {item.set && <ItemSetSection set={item.set} includeReferenceLinks={includeReferenceLinks} />}
+        {item.set && <ItemSetSection set={item.set} includeReferenceLinks={includeReferenceLinks} equippedItemIds={equippedItemIds} />}
       </div>
     </div>
   );
@@ -317,29 +319,36 @@ function SpellLine({ spell, includeReferenceLinks }: { spell: ItemSpell; include
   );
 }
 
-function ItemSetSection({ set, includeReferenceLinks }: { set: NonNullable<ItemTooltipData["set"]>; includeReferenceLinks: boolean }) {
+function ItemSetSection({ set, includeReferenceLinks, equippedItemIds }: { set: NonNullable<ItemTooltipData["set"]>; includeReferenceLinks: boolean; equippedItemIds?: ReadonlySet<number> }) {
+  const equippedCount = equippedItemIds
+    ? set.items.filter((p) => equippedItemIds.has(p.entry)).length
+    : 0;
+
   return (
     <div className="mt-2 pt-2 border-t border-[#4a4a6a]">
-      <div className="text-yellow-400 font-bold">{set.name} (0/{set.items.length})</div>
-      {set.items.map((piece) => (
-        <div key={piece.entry} className="text-gray-400 ml-2">
-          {includeReferenceLinks ? (
-            <Link
-              to={`/wowdb/item?id=${piece.entry}`}
-              className="hover:text-gray-300"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {piece.name}
-            </Link>
-          ) : (
-            piece.name
-          )}
-        </div>
-      ))}
+      <div className="text-yellow-400 font-medium">{set.name} ({equippedCount}/{set.items.length})</div>
+      {set.items.map((piece) => {
+        const isEquipped = equippedItemIds?.has(piece.entry) ?? false;
+        return (
+          <div key={piece.entry} className={cn("ml-2", isEquipped ? "text-[#ff9]" : "text-gray-500")}>
+            {includeReferenceLinks ? (
+              <Link
+                to={`/wowdb/item?id=${piece.entry}`}
+                className={isEquipped ? "hover:text-white" : "hover:text-gray-400"}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {piece.name}
+              </Link>
+            ) : (
+              piece.name
+            )}
+          </div>
+        );
+      })}
       {set.bonuses.length > 0 && (
         <div className="mt-1 space-y-0.5">
           {set.bonuses.map((bonus, i) => (
-            <SetBonusLine key={i} threshold={bonus.threshold} spellId={bonus.spell_id} includeReferenceLinks={includeReferenceLinks} />
+            <SetBonusLine key={i} threshold={bonus.threshold} spellId={bonus.spell_id} includeReferenceLinks={includeReferenceLinks} active={bonus.threshold <= equippedCount} />
           ))}
         </div>
       )}
@@ -347,11 +356,11 @@ function ItemSetSection({ set, includeReferenceLinks }: { set: NonNullable<ItemT
   );
 }
 
-function SetBonusLine({ threshold, spellId, includeReferenceLinks }: { threshold: number; spellId: number; includeReferenceLinks: boolean }) {
+function SetBonusLine({ threshold, spellId, includeReferenceLinks, active = false }: { threshold: number; spellId: number; includeReferenceLinks: boolean; active?: boolean }) {
   const text = useResolvedSpellText(spellId);
 
   return (
-    <div className="text-gray-400">
+    <div className={active ? "text-[#1eff00]" : "text-gray-500"}>
       ({threshold}) Set:{" "}
       {includeReferenceLinks ? (
         <Link

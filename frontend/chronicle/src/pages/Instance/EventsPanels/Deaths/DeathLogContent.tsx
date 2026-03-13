@@ -253,7 +253,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                     <td className="py-1 px-2">
                       <span
                         className="font-medium"
-                        style={{ color: `var(--class-${death.className.toLowerCase()})` }}
+                        style={{ color: `var(--color-class-${death.className.toLowerCase()})` }}
                       >
                         {death.playerName}
                       </span>

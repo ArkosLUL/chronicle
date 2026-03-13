@@ -201,7 +201,7 @@ export function AuraUptimeContent(props: PanelRenderProps<AuraUptimeResult>) {
     const players = context.instance.players;
     if (!players) return undefined;
     const playerClass = players[guid]?.class;
-    return playerClass ? `var(--class-${playerClass.toLowerCase()})` : undefined;
+    return playerClass ? `var(--color-class-${playerClass.toLowerCase()})` : undefined;
   };
   
   const handleAuraChange = (aura: string | null) => {

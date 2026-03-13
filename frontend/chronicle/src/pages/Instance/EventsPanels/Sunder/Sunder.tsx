@@ -167,7 +167,7 @@ function WarriorsView({ warriors }: WarriorsViewProps) {
                   className="border-b border-border/10 hover:bg-muted/50"
                 >
                   <td className="py-1 px-2">
-                    <span className="font-medium text-[var(--class-warrior)]">
+                    <span className="font-medium text-[var(--color-class-warrior)]">
                       {warrior.name}
                     </span>
                   </td>
@@ -362,7 +362,7 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
                   {event.type}
                 </td>
                 <td className="py-0.5 px-2">
-                  <span className="text-[var(--class-warrior)]">{event.casterName}</span>
+                  <span className="text-[var(--color-class-warrior)]">{event.casterName}</span>
                   {(event.type === "landed" || event.type === "refreshed") && event.stackCount && (
                     <span className="text-muted-foreground ml-2">→ stack {event.stackCount}</span>
                   )}
@@ -396,7 +396,7 @@ function ContributorsList({ contributors }: ContributorsListProps) {
   return (
     <span className="flex flex-wrap gap-x-1 gap-y-0.5">
       {grouped.map((g, i) => (
-        <span key={i} className="text-[var(--class-warrior)]">
+        <span key={i} className="text-[var(--color-class-warrior)]">
           {g.name}
           {g.count > 1 && <span className="text-muted-foreground">×{g.count}</span>}
           {i < grouped.length - 1 && <span className="text-muted-foreground">,</span>}

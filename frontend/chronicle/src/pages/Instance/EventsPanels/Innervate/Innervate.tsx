@@ -163,7 +163,7 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
                         </button>
                       </td>
                       <td className="py-1 px-2">
-                        <span className="font-medium text-[var(--class-druid)]">
+                        <span className="font-medium text-[var(--color-class-druid)]">
                           {cast.casterName}
                         </span>
                       </td>
@@ -191,7 +191,7 @@ function InnervateContent(props: PanelRenderProps<InnervateResult>) {
           </div>
           {casterSummaries.map((caster) => (
             <div key={caster.name} className="flex items-start gap-2 text-sm">
-              <span className="font-medium text-[var(--class-druid)] min-w-[80px]">{caster.name}</span>
+              <span className="font-medium text-[var(--color-class-druid)] min-w-[80px]">{caster.name}</span>
               <span className="text-muted-foreground">→</span>
               <div className="flex flex-wrap gap-x-3 gap-y-1">
                 {caster.selfCount > 0 && (

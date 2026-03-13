@@ -1116,7 +1116,7 @@ function EncounterDetail({
                               <TooltipTrigger asChild>
                                 <span 
                                   className="text-2xs font-medium cursor-pointer hover:underline"
-                                  style={{ color: `var(--class-${className.toLowerCase()})` }}
+                                  style={{ color: `var(--color-class-${className.toLowerCase()})` }}
                                   onClick={() => onTogglePlayers(classPlayers.map(p => p.guid))}
                                 >
                                   {className.slice(0, 3)}:
@@ -1129,7 +1129,7 @@ function EncounterDetail({
                           ) : (
                             <span 
                               className="text-2xs font-medium cursor-pointer hover:underline"
-                              style={{ color: `var(--class-${className.toLowerCase()})` }}
+                              style={{ color: `var(--color-class-${className.toLowerCase()})` }}
                               onClick={() => onTogglePlayers(classPlayers.map(p => p.guid))}
                               title={`Toggle all ${className.toLowerCase()}s`}
                             >
@@ -1152,11 +1152,11 @@ function EncounterDetail({
                                   >
                                     <span
                                       className="w-2 h-2 rounded-full flex-shrink-0"
-                                      style={{ backgroundColor: `var(--class-${player.class.toLowerCase()})` }}
+                                      style={{ backgroundColor: `var(--color-class-${player.class.toLowerCase()})` }}
                                     />
                                     <span
                                       className="font-medium"
-                                      style={{ color: `var(--class-${player.class.toLowerCase()})` }}
+                                      style={{ color: `var(--color-class-${player.class.toLowerCase()})` }}
                                     >
                                       {player.name}
                                     </span>

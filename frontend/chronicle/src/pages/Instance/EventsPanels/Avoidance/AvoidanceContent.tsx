@@ -145,7 +145,7 @@ export const AvoidanceContent = (props: AvoidanceContentProps) => {
                   <div className="flex items-center gap-1.5">
                     <span 
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: `var(--class-${d.className.toLowerCase()})` }}
+                      style={{ backgroundColor: `var(--color-class-${d.className.toLowerCase()})` }}
                     />
                     <span className="truncate">{d.playerName}</span>
                   </div>

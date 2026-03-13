@@ -140,7 +140,7 @@ export function ComparisonChart({ sources, matchedOnly, perSecond, durationMs }:
         {/* Legend */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", padding: "0 12px 4px" }}>
           {sources.map((s, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--class-muted-foreground)" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--color-class-muted-foreground)" }}>
               <span
                 style={{
                   display: "inline-block",
@@ -302,14 +302,14 @@ function BreakoutTable({
   // Fixed-width column styles to prevent layout shift on hover-rebase.
   // Sized for: value up to -999.9M, share up to 100.0%, abs diff up to -999.9M, rel diff up to -9999.9%
   const COL_VALUE: CSSProperties = { textAlign: "right", fontFamily: "var(--font-mono)", paddingRight: 8, minWidth: 58 };
-  const COL_SHARE: CSSProperties = { textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--class-muted-foreground)", minWidth: 52 };
+  const COL_SHARE: CSSProperties = { textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--color-class-muted-foreground)", minWidth: 52 };
   const diffCol = (diff: number): CSSProperties => ({
     textAlign: "right",
     fontFamily: "var(--font-mono)",
     fontSize: "11px",
     paddingLeft: 8,
     minWidth: 62,
-    color: diff > 0 ? "oklch(0.65 0.15 145)" : diff < 0 ? "oklch(0.65 0.15 25)" : "var(--class-muted-foreground)",
+    color: diff > 0 ? "oklch(0.65 0.15 145)" : diff < 0 ? "oklch(0.65 0.15 25)" : "var(--color-class-muted-foreground)",
   });
 
   return (
@@ -605,7 +605,7 @@ function TotalRow({
         position: "relative",
         borderRadius: "var(--radius)",
         overflow: "hidden",
-        color: "var(--class-foreground)",
+        color: "var(--color-class-foreground)",
         cursor: "pointer",
       }}
     >
@@ -733,7 +733,7 @@ function ComparisonRow({
         position: "relative",
         borderRadius: "var(--radius)",
         overflow: "hidden",
-        color: "var(--class-foreground)",
+        color: "var(--color-class-foreground)",
         cursor: "pointer",
       }}
     >
@@ -808,7 +808,7 @@ function ComparisonRow({
             textAlign: "right",
             fontSize: "12px",
             fontWeight: 500,
-            color: "var(--class-muted-foreground)",
+            color: "var(--color-class-muted-foreground)",
             fontFamily: "var(--font-mono)",
           }}
         >

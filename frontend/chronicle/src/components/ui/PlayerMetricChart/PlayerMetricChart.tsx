@@ -130,7 +130,7 @@ export function PlayerMetricChart({
     return sorted.map((item, index) => ({
       ...item,
       rank: index + 1,
-      color: `var(--class-${item.className.toLowerCase()})`,
+      color: `var(--color-class-${item.className.toLowerCase()})`,
     }))
   }, [computedData])
 
@@ -427,7 +427,7 @@ export function PlayerMetricRow({
         position: 'relative',
         borderRadius: 'var(--radius)',
         overflow: 'hidden',
-        color: 'var(--class-foreground)',//'oklch(0.985 0 0)',
+        color: 'var(--color-class-foreground)',//'oklch(0.985 0 0)',
         opacity: isDimmed ? 0.35 : 1,
         transition: 'opacity 0.2s ease',
         cursor: hasBreakout ? 'pointer' : 'default',
@@ -576,7 +576,7 @@ export function PlayerMetricRow({
             width: '50px',
             textAlign: 'right',
             fontWeight: 500,
-            color: 'var(--class-muted-foreground)',
+            color: 'var(--color-class-muted-foreground)',
             fontFamily: 'var(--font-mono)',
           }}
         >
@@ -685,7 +685,7 @@ function formatValue(type: ChartType, player: PlayerMetricChartData, suffix?: st
       //   >
       //   {player.value.toFixed(1)}/s &nbsp;
       //   <span
-      //   style={{color: 'var(--class-muted-foreground)', fontSize: '0.8em'}}>
+      //   style={{color: 'var(--color-class-muted-foreground)', fontSize: '0.8em'}}>
       //   {`(+${player.stackedValue?.toFixed(1) ?? 0}/s)`}
       //   </span>
       // </span>

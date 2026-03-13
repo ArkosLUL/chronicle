@@ -155,8 +155,11 @@ func (t Video) Value() (driver.Value, error) {
 type PlayerOutfit [19]PlayerGear
 
 type PlayerGear struct {
-	ItemID    int32
-	EnchantID *int32
+	ItemID      int32  `json:"item_id"`
+	EnchantID   *int32 `json:"enchant_id,omitempty"`
+	ItemName    string `json:"item_name,omitempty"`
+	ItemQuality int32  `json:"item_quality,omitempty"`
+	ItemIcon    string `json:"item_icon,omitempty"`
 	// TODO: transmog
 }
 

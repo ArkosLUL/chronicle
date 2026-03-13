@@ -280,9 +280,6 @@ CREATE TABLE dbc_spell_item_enchantment (
     max_level integer DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE game_player_outfit (
-);
-
 CREATE TABLE game_players (
     id wow_guid NOT NULL,
     realm_id uuid NOT NULL,
@@ -999,6 +996,8 @@ ALTER TABLE ONLY wow_servers
 
 CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 
+CREATE INDEX game_players_player_and_realm ON game_players USING btree (name, realm_id);
+
 CREATE INDEX idx_data_grants_user_id ON data_grants USING btree (user_id);
 
 CREATE INDEX idx_guild_members_guild ON guild_members USING btree (guild_id);
@@ -1063,7 +1062,7 @@ ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY game_players
-    ADD CONSTRAINT game_players_updated_from_instance_fkey FOREIGN KEY (updated_from_instance) REFERENCES log_instances(id) ON DELETE SET NULL;
+    ADD CONSTRAINT game_players_updated_from_instance_fkey FOREIGN KEY (updated_from_instance) REFERENCES log_instances(id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE ONLY guild_members
     ADD CONSTRAINT guild_members_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;

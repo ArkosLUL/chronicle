@@ -3539,6 +3539,49 @@ func (q *sqlQuerier) GetItemTemplateByEntry(ctx context.Context, entry int32) (W
 	return i, err
 }
 
+const getItemTemplateMetadataBatch = `-- name: GetItemTemplateMetadataBatch :many
+SELECT
+  wit.entry,
+  wit.name,
+  wit.quality,
+  wdi.icon
+FROM world_item_template wit
+LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+WHERE wit.entry = ANY($1::int[])
+`
+
+type GetItemTemplateMetadataBatchRow struct {
+	Entry   int32       `db:"entry" json:"entry"`
+	Name    string      `db:"name" json:"name"`
+	Quality int32       `db:"quality" json:"quality"`
+	Icon    pgtype.Text `db:"icon" json:"icon"`
+}
+
+func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, itemIds []int32) ([]GetItemTemplateMetadataBatchRow, error) {
+	rows, err := q.db.Query(ctx, getItemTemplateMetadataBatch, itemIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetItemTemplateMetadataBatchRow
+	for rows.Next() {
+		var i GetItemTemplateMetadataBatchRow
+		if err := rows.Scan(
+			&i.Entry,
+			&i.Name,
+			&i.Quality,
+			&i.Icon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getItemTemplatesBySetID = `-- name: GetItemTemplatesBySetID :many
 SELECT entry, name, inventory_type FROM world_item_template WHERE set_id = $1 ORDER BY inventory_type
 `

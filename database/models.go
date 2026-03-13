@@ -704,9 +704,6 @@ type GamePlayer struct {
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
 }
 
-type GamePlayerOutfit struct {
-}
-
 type Guild struct {
 	ID        uuid.UUID          `db:"id" json:"id"`
 	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`

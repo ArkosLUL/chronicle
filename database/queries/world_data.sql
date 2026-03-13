@@ -21,3 +21,13 @@ SELECT * FROM dbc_item_set_bonus WHERE set_id = $1 ORDER BY threshold;
 
 -- name: GetItemTemplatesBySetID :many
 SELECT entry, name, inventory_type FROM world_item_template WHERE set_id = $1 ORDER BY inventory_type;
+
+-- name: GetItemTemplateMetadataBatch :many
+SELECT
+  wit.entry,
+  wit.name,
+  wit.quality,
+  wdi.icon
+FROM world_item_template wit
+LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+WHERE wit.entry = ANY(@item_ids::int[]);

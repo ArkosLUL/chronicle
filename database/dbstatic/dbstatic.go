@@ -31,7 +31,7 @@ func RealmSouthSeas() uuid.UUID {
 }
 
 func RealmUnknown() uuid.UUID {
-	return uuid.MustParse("6fb8310-9464-4cf1-a143-aba34f1c3037")
+	return uuid.MustParse("f6fb8310-9464-4cf1-a143-aba34f1c3037")
 }
 
 func RealmByName(name string) (uuid.UUID, bool) {

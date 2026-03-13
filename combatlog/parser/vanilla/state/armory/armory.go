@@ -57,6 +57,31 @@ func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid
 		}
 	}
 
+	// Collect unique item IDs for batch metadata fetch
+	itemIDSet := make(map[int32]struct{})
+	itemIDList := make([]int32, 0)
+	for _, player := range g.Players {
+		for _, item := range player.GearSetups {
+			if item.ItemID > 0 {
+				if _, exists := itemIDSet[int32(item.ItemID)]; !exists {
+					itemIDList = append(itemIDList, int32(item.ItemID))
+				}
+				itemIDSet[int32(item.ItemID)] = struct{}{}
+			}
+		}
+	}
+
+	itemMeta := make(map[int32]database.GetItemTemplateMetadataBatchRow)
+	if len(itemIDSet) > 0 {
+		rows, err := tx.GetItemTemplateMetadataBatch(ctx, itemIDList)
+		if err != nil {
+			return nil, fmt.Errorf("get item metadata: %w", err)
+		}
+		for _, row := range rows {
+			itemMeta[row.Entry] = row
+		}
+	}
+
 	inserts := make([]database.UpsertPlayersParams, 0, len(g.Players))
 	for _, player := range g.Players {
 		guildID := uuid.Nil
@@ -71,6 +96,13 @@ func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid
 			}
 			if item.EnchantID != nil {
 				dbGear[i].EnchantID = ptr.Ref(int32(*item.EnchantID))
+			}
+			if meta, ok := itemMeta[int32(item.ItemID)]; ok {
+				dbGear[i].ItemName = meta.Name
+				dbGear[i].ItemQuality = meta.Quality
+				if meta.Icon.Valid {
+					dbGear[i].ItemIcon = meta.Icon.String
+				}
 			}
 		}
 
@@ -90,7 +122,7 @@ func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid
 				UUID:  instanceID,
 				Valid: instanceID != uuid.Nil,
 			},
-			UpdatedAt: database.Timestamptz(time.Now()),
+			UpdatedAt: database.Timestamptz(player.Seen),
 		})
 	}
 

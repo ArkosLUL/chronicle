@@ -366,6 +366,7 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 	return chroniclesdk.ArmoryPlayer{
 		ID:        row.ID,
 		RealmID:   row.RealmID,
+		RealmName: row.RealmName,
 		Name:      row.Name,
 		Class:     HeroClass(row.Class).String(),
 		Race:      HeroRace(row.Race).String(),

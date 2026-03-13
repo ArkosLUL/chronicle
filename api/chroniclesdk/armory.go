@@ -8,6 +8,7 @@ import (
 
 type ArmoryPlayer struct {
 	ID        GUIDString   `json:"id"`
+	RealmName string       `json:"realm_name"`
 	RealmID   uuid.UUID    `json:"realm_id"`
 	Name      string       `json:"name"`
 	Class     string       `json:"class"`

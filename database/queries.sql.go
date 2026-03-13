@@ -15,10 +15,12 @@ import (
 const getGamePlayerByGUID = `-- name: GetGamePlayerByGUID :one
 SELECT
   gp.id, gp.realm_id, gp.created_at, gp.guild_id, gp.name, gp.class, gp.gender, gp.race, gp.gear, gp.updated_at, gp.updated_from_instance,
+  COALESCE(wow_server_realms.name, 'Unknown') as realm_name,
   g.name as guild_name
 FROM
   game_players gp
 LEFT JOIN guilds g ON g.id = gp.guild_id
+LEFT JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
 WHERE
   gp.realm_id = $1
   AND (gp.id = $2::wow_guid OR lower(gp.name) = lower($3))
@@ -42,6 +44,7 @@ type GetGamePlayerByGUIDRow struct {
 	Gear                PlayerOutfit       `db:"gear" json:"gear"`
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
+	RealmName           string             `db:"realm_name" json:"realm_name"`
 	GuildName           pgtype.Text        `db:"guild_name" json:"guild_name"`
 }
 
@@ -60,6 +63,7 @@ func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerB
 		&i.Gear,
 		&i.UpdatedAt,
 		&i.UpdatedFromInstance,
+		&i.RealmName,
 		&i.GuildName,
 	)
 	return i, err

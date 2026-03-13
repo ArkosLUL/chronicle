@@ -251,6 +251,36 @@ export interface ItemDamage {
     readonly school: number;
 }
 
+// From chroniclesdk/item_display.go
+/**
+ * ItemDisplayData contains the data needed to render a 3D model of an item.
+ * It combines item identity from world_item_template with model/texture
+ * references from ItemDisplayInfo.dbc.
+ */
+export interface ItemDisplayData {
+    readonly entry: number;
+    readonly name: string;
+    readonly quality: number;
+    readonly item_class: number;
+    readonly item_subclass: number;
+    readonly inventory_type: number;
+    readonly sheath: number;
+    readonly display_id: number;
+    /**
+     * From ItemDisplayInfo DBC
+     */
+    readonly model_name: readonly string[]; // M2 model files (typically 2: left/right hand)
+    readonly model_texture: readonly string[]; // Texture files for models (typically 2)
+    readonly geoset_group: readonly number[]; // Geoset group indices (typically 3)
+    readonly texture: readonly string[]; // Body region textures (8: arm_upper, arm_lower, hand, torso_upper, torso_lower, leg_upper, leg_lower, foot)
+    readonly inventory_icon: readonly string[]; // Icon filenames (2: normal, grey)
+    readonly helmet_geoset_vis: readonly number[]; // Helmet visibility flags (typically 2)
+    readonly geoset_vis_id: readonly number[]; // Helmet geoset vis IDs (typically 2)
+    readonly ground_model: string; // Ground/dropped model path
+    readonly item_visual: number; // Visual effect ID
+    readonly flags: number; // Display flags
+}
+
 // From chroniclesdk/tooltip.go
 export interface ItemResistance {
     readonly school: number;

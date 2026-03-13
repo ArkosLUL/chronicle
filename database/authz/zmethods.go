@@ -34,7 +34,6 @@ func (z *Authz) Write(ctx context.Context, txn rel.Txn) (writtenAtRevision strin
 	}
 
 	z.zedToken.Store(&token)
-
 	return token, nil
 }
 

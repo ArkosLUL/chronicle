@@ -23,6 +23,71 @@ func New() *SchemaBuilder {
 	}
 }
 
+type ObjArmory_player struct {
+	src Object
+}
+
+func (b *SchemaBuilder) Armory_player(id fmt.Stringer) *ObjArmory_player {
+	return &ObjArmory_player{
+		src: b.Object(&v1.ObjectReference{
+			ObjectType: "armory_player",
+			ObjectId:   id.String(),
+		}, ""),
+	}
+}
+
+// Object returns the underlying ObjectReference for use in SpiceDB API calls.
+func (obj *ObjArmory_player) Object() rel.Object {
+	return obj.src.Object()
+}
+
+// AsSubject returns this object as a SubjectReference for use in checks.
+func (obj *ObjArmory_player) AsSubject() *v1.SubjectReference {
+	return &v1.SubjectReference{
+		Object:           obj.src.Obj,
+		OptionalRelation: obj.src.OptionalRelation,
+	}
+}
+
+func (obj *ObjArmory_player) RelationChronicle() string {
+	return "chronicle"
+}
+
+type Armory_playerRelates struct {
+	obj *ObjArmory_player
+	rel Relationship
+}
+
+func (obj *ObjArmory_player) Touch() *Armory_playerRelates {
+	return &Armory_playerRelates{obj: obj, rel: obj.src.Touch()}
+}
+
+func (obj *ObjArmory_player) Delete() *Armory_playerRelates {
+	return &Armory_playerRelates{obj: obj, rel: obj.src.Delete()}
+}
+
+func (obj *ObjArmory_player) Create() *Armory_playerRelates {
+	return &Armory_playerRelates{obj: obj, rel: obj.src.Create()}
+}
+
+// Chronicle schema.zed:60
+// Relationship: armory_player:<id>#chronicle@chronicle:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
+func (obj *ObjArmory_player) Chronicle(subs ...*ObjChronicle) *ObjArmory_player {
+	for _, sub := range subs {
+		obj.src.Touch().Add("chronicle", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Chronicle on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Armory_playerRelates) Chronicle(subs ...*ObjChronicle) *Armory_playerRelates {
+	for _, sub := range subs {
+		r.rel.Add("chronicle", sub.src.Obj, "")
+	}
+	return r
+}
+
 type ObjChronicle struct {
 	src Object
 }
@@ -715,7 +780,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:74
+// Raid_log schema.zed:78
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -733,7 +798,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:75
+// PublicWildcard schema.zed:79
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -1007,7 +1072,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:60
+// Chronicle schema.zed:64
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1025,7 +1090,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:61
+// Uploader schema.zed:65
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {

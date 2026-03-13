@@ -142,3 +142,18 @@ func (z *interceptor) UpsertGuild(ctx context.Context, arg database.UpsertGuildP
 	}
 	return g, nil
 }
+
+func (z *interceptor) UpsertPlayers(ctx context.Context, args []database.UpsertPlayersParams) *database.UpsertPlayersBatchResults {
+	b := policy.New()
+	g := b.GlobalChronicle()
+	for _, arg := range args {
+		b.Armory_player(arg.ID).Chronicle(g)
+	}
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.FailedUpsertPlayersBatchResults()
+	}
+
+	return z.Store.UpsertPlayers(ctx, args)
+}

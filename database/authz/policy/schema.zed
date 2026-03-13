@@ -56,6 +56,10 @@ definition guild {
   permission add_member = leader + chronicle->admin_guilds
 }
 
+definition armory_player {
+  relation chronicle: chronicle
+}
+
 definition raid_log {
   relation chronicle: chronicle
   relation uploader: user

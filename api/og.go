@@ -162,7 +162,7 @@ func (api *API) armoryOG(realm, player string) *frontend.OGData {
 	var desc strings.Builder
 	guild := ""
 	if p.GuildName.String != "" {
-		guild = fmt.Sprintf(" ❮%s❯", p.GuildName.String)
+		guild = fmt.Sprintf(" <%s>", p.GuildName.String)
 	}
 	desc.WriteString(fmt.Sprintf("%s (%s)%s — %d %s %s",
 		p.Name, p.RealmName, guild,

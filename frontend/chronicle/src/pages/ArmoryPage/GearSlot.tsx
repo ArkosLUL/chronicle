@@ -109,7 +109,7 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
         )}
       </div>
 
-      {nameLabel}
+      {!isMobile && nameLabel}
 
       {/* Tooltip — centered overlay on mobile, fixed center on desktop */}
       {showTooltip && (
@@ -136,7 +136,7 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
             </div>
           ) : (
             /* Desktop: centered fixed tooltip */
-            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="fixed inset-0 z-50 flex items-center justify-center -translate-y-[15%] pointer-events-none">
               <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} />
             </div>
           )}

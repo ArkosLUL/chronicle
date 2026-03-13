@@ -111,7 +111,7 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 				dbGear[i].ItemQuality = meta.Quality
 				dbGear[i].ItemIcon = meta.Icon
 				dbGear[i].ItemID = meta.Entry
-			} else if meta, ok := itemMetaByName[item.Name]; ok {
+			} else if meta, ok := itemMetaByName[item.Name]; ok && meta.Name != "" {
 				dbGear[i].ItemName = meta.Name
 				dbGear[i].ItemQuality = meta.Quality
 				dbGear[i].ItemIcon = meta.Icon

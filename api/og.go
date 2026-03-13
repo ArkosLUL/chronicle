@@ -3,39 +3,77 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/dbstatic"
 	"github.com/Emyrk/chronicle/frontend"
 )
 
-// InstanceOGResolver returns Open Graph metadata for an instance page.
-// The key is either an instance ID/slug, or "share:<code>" for shared view links.
-func (api *API) InstanceOGResolver(key string) *frontend.OGData {
+// OGRoutes returns the Open Graph route definitions for the frontend handler.
+func (api *API) OGRoutes() []frontend.OGRoute {
+	return []frontend.OGRoute{
+		{
+			Pattern: "/instances/{idOrSlug}",
+			Resolve: func(r *http.Request) *frontend.OGData {
+				return api.instanceOG(chi.URLParam(r, "idOrSlug"))
+			},
+		},
+		{
+			Pattern: "/s/{code}",
+			Resolve: func(r *http.Request) *frontend.OGData {
+				return api.shareOG(chi.URLParam(r, "code"))
+			},
+		},
+		{
+			Pattern: "/armory/{realm}/{player}",
+			Resolve: func(r *http.Request) *frontend.OGData {
+				return api.armoryOG(chi.URLParam(r, "realm"), chi.URLParam(r, "player"))
+			},
+		},
+	}
+}
+
+func (api *API) instanceOG(idOrSlug string) *frontend.OGData {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	inst, err := resolveInstance(ctx, api.Opts.Zed, idOrSlug)
+	if err != nil {
+		return nil
+	}
+
+	return api.buildInstanceOG(ctx, inst)
+}
+
+func (api *API) shareOG(code string) *frontend.OGData {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	db := api.Opts.Zed
-
-	var inst database.LogInstancesGuild
-	var err error
-	if code, ok := strings.CutPrefix(key, "share:"); ok {
-		shared, sErr := db.GetSharedViewByCode(ctx, code)
-		if sErr != nil {
-			return nil
-		}
-		inst, err = db.Instance(ctx, shared.InstanceID)
-	} else {
-		inst, err = resolveInstance(ctx, db, key)
-	}
+	shared, err := db.GetSharedViewByCode(ctx, code)
 	if err != nil {
 		return nil
 	}
+
+	inst, err := db.Instance(ctx, shared.InstanceID)
+	if err != nil {
+		return nil
+	}
+
+	return api.buildInstanceOG(ctx, inst)
+}
+
+func (api *API) buildInstanceOG(ctx context.Context, inst database.LogInstancesGuild) *frontend.OGData {
+	db := api.Opts.Zed
 
 	encounters, _ := db.EncountersByInstanceID(ctx, inst.ID)
 	players, _ := db.InstancePlayersByInstanceID(ctx, inst.ID)
@@ -86,6 +124,55 @@ func (api *API) InstanceOGResolver(key string) *frontend.OGData {
 		Title:       title.String(),
 		Description: desc.String(),
 		URL:         fmt.Sprintf("https://chronicleclassic.com/instances/%s", inst.ID.String()),
+	}
+}
+
+func (api *API) armoryOG(realm, player string) *frontend.OGData {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	db := api.Opts.Zed
+
+	realmID, err := uuid.Parse(realm)
+	if err != nil {
+		var ok bool
+		realmID, ok = dbstatic.RealmByName(realm)
+		if !ok {
+			return nil
+		}
+	}
+
+	var identifier guid.GUID
+	if g, parseErr := guid.FromString(player); parseErr == nil {
+		identifier = g
+	}
+
+	p, err := db.GetGamePlayerByGUID(ctx, database.GetGamePlayerByGUIDParams{
+		RealmID:    realmID,
+		Identifier: identifier,
+		Name:       player,
+	})
+	if err != nil {
+		return nil
+	}
+
+	var title strings.Builder
+	title.WriteString(fmt.Sprintf("%s — Character", p.Name))
+
+	var desc strings.Builder
+	guild := ""
+	if p.GuildName.String != "" {
+		guild = fmt.Sprintf(" ❮%s❯", p.GuildName.String)
+	}
+	desc.WriteString(fmt.Sprintf("%s (%s)%s — %d %s %s",
+		p.Name, p.RealmName, guild,
+		60, p.Race, p.Class,
+	))
+
+	return &frontend.OGData{
+		Title:       title.String(),
+		Description: desc.String(),
+		URL:         fmt.Sprintf("https://chronicleclassic.com/armory/%s/%s", realm, p.ID),
 	}
 }
 

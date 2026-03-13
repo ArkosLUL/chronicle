@@ -374,6 +374,7 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 		Class:     HeroClass(row.Class).String(),
 		Race:      HeroRace(row.Race).String(),
 		Gender:    HeroGender(row.Gender).String(),
+		Level:     int32(row.Level),
 		GuildID:   guildID,
 		GuildName: row.GuildName.String,
 		Gear:               gear,

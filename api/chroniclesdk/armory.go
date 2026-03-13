@@ -14,6 +14,7 @@ type ArmoryPlayer struct {
 	Class     string       `json:"class"`
 	Race      string       `json:"race"`
 	Gender    string       `json:"gender"`
+	Level     int32        `json:"level"`
 	GuildID   *uuid.UUID   `json:"guild_id,omitempty"`
 	GuildName string       `json:"guild_name,omitempty"`
 	Gear               PlayerOutfit `json:"gear"`

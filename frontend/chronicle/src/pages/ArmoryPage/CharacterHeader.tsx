@@ -65,7 +65,7 @@ export function CharacterHeader({ player }: CharacterHeaderProps) {
 
       {/* Race, class, realm */}
       <p className="text-xs text-zinc-500">
-        {raceLabel} {classLabel} · {player.realm_name}
+        {player.level > 0 && <>Level {player.level} </>}{raceLabel} {classLabel} · {player.realm_name}
       </p>
 
       {/* Last updated */}

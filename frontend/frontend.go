@@ -2,16 +2,18 @@ package frontend
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template" // html/template escapes some nonces
 	"time"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/Emyrk/chronicle/internal/version"
 	"golang.org/x/xerrors"
@@ -24,18 +26,25 @@ type OGData struct {
 	URL         string
 }
 
-// OGResolver resolves Open Graph metadata for a given instance ID or slug.
-// Returns nil if the instance is not found or on error.
-type OGResolver func(instanceIDOrSlug string) *OGData
+// OGRoute registers a chi route pattern that resolves Open Graph metadata.
+// The handler receives the matched chi context and returns OGData or nil.
+type OGRoute struct {
+	Pattern string
+	Resolve func(r *http.Request) *OGData
+}
+
+type ogResult struct {
+	data *OGData
+}
 
 type handler struct {
 	fs            fs.FS
 	mux           *http.ServeMux
 	htmlTemplates *template.Template
-	ogResolver    OGResolver
+	ogRouter      chi.Router
 }
 
-func Handler(siteFS fs.FS, ogResolver OGResolver) http.Handler {
+func Handler(siteFS fs.FS, ogRoutes []OGRoute) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", etagMiddleware(http.FileServer(http.FS(siteFS))))
 
@@ -44,20 +53,47 @@ func Handler(siteFS fs.FS, ogResolver OGResolver) http.Handler {
 		panic(fmt.Sprintf("Failed to parse html files: %v", err))
 	}
 
+	// Build a chi router used solely for OG metadata resolution.
+	// Each route's Resolve function is called when the path matches,
+	// with chi URL params available via chi.URLParam(r, ...).
+	ogRouter := chi.NewRouter()
+	for _, route := range ogRoutes {
+		resolve := route.Resolve
+		ogRouter.Get(route.Pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			result := r.Context().Value(ogResultKey{}).(*ogResult)
+			result.data = resolve(r)
+		}))
+	}
+
 	return &handler{
 		fs:            siteFS,
 		mux:           mux,
 		htmlTemplates: tmpls,
-		ogResolver:    ogResolver,
+		ogRouter:      ogRouter,
 	}
 }
 
-var (
-	// instancePathRe matches /instances/<id-or-slug> with optional trailing slash.
-	instancePathRe = regexp.MustCompile(`^/instances/([^/]+)/?$`)
-	// sharePathRe matches /s/<code> with optional trailing slash.
-	sharePathRe = regexp.MustCompile(`^/s/([^/]+)/?$`)
-)
+type ogResultKey struct{}
+// discardResponseWriter is an http.ResponseWriter that discards all output.
+type discardResponseWriter struct{}
+
+func (discardResponseWriter) Header() http.Header        { return http.Header{} }
+func (discardResponseWriter) Write(b []byte) (int, error) { return len(b), nil }
+func (discardResponseWriter) WriteHeader(int)             {}
+
+
+// resolveOG uses the chi OG router to match the request path and resolve
+// Open Graph metadata. Returns nil if no route matches or the resolver
+// returns nil.
+func (h *handler) resolveOG(req *http.Request) *OGData {
+	result := &ogResult{}
+	ctx := context.WithValue(req.Context(), ogResultKey{}, result)
+	// Create a throwaway request for the OG router so it doesn't
+	// interfere with the real request's chi context.
+	ogReq := req.Clone(ctx)
+	h.ogRouter.ServeHTTP(discardResponseWriter{}, ogReq)
+	return result.data
+}
 
 func (h *handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// reqFile is the static file requested
@@ -69,21 +105,11 @@ func (h *handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		BuildTime: version.BuildTime,
 	}
 
-	// Enrich OG meta tags for instance pages.
-	if h.ogResolver != nil {
-		var ogKey string
-		if m := instancePathRe.FindStringSubmatch(req.URL.Path); m != nil {
-			ogKey = m[1]
-		} else if m := sharePathRe.FindStringSubmatch(req.URL.Path); m != nil {
-			ogKey = "share:" + m[1]
-		}
-		if ogKey != "" {
-			if og := h.ogResolver(ogKey); og != nil {
-				state.OGTitle = og.Title
-				state.OGDescription = og.Description
-				state.OGURL = og.URL
-			}
-		}
+	// Enrich OG meta tags for matching pages.
+	if og := h.resolveOG(req); og != nil {
+		state.OGTitle = og.Title
+		state.OGDescription = og.Description
+		state.OGURL = og.URL
 	}
 
 	if h.serveHTML(resp, req, reqFile, state) {

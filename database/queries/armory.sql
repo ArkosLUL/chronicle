@@ -14,12 +14,12 @@ INSERT INTO
   game_players (
     id, realm_id, name, guild_id,
     class, gender, race,
-    gear,
+    gear, level,
     updated_from_instance,
     updated_at
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (id, realm_id) DO UPDATE
   SET name = EXCLUDED.name,
       guild_id = EXCLUDED.guild_id,
@@ -27,6 +27,7 @@ ON CONFLICT (id, realm_id) DO UPDATE
       race = EXCLUDED.race,
       gender = EXCLUDED.gender,
       gear = EXCLUDED.gear,
+      level = EXCLUDED.level,
       updated_from_instance = EXCLUDED.updated_from_instance,
 
       updated_at = EXCLUDED.updated_at

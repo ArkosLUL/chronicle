@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/internal/ptr"
@@ -32,7 +33,7 @@ func New() *Tracker {
 	}
 }
 
-func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid.UUID, tx *authz.AuthzTX) (*database.Guild, error) {
+func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid.UUID, realmID uuid.UUID, tx *authz.AuthzTX) (*database.Guild, error) {
 	guildIDs := make(map[string]uuid.UUID)
 	mostGuildPlayers := 0
 	var guildWithMostPlayers *database.Guild
@@ -106,6 +107,12 @@ func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid
 			}
 		}
 
+		var level int16
+		info, ok := udb.Get(player.Guid)
+		if ok {
+			level = int16(info.Level)
+		}
+
 		inserts = append(inserts, database.UpsertPlayersParams{
 			ID:      player.Guid,
 			RealmID: realmID,
@@ -118,6 +125,7 @@ func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid
 			Gender: db2sdk.HeroGenderToDB(player.Gender),
 			Race:   db2sdk.HeroRaceToDB(player.Race),
 			Gear:   dbGear,
+			Level:  level,
 			UpdatedFromInstance: uuid.NullUUID{
 				UUID:  instanceID,
 				Valid: instanceID != uuid.Nil,

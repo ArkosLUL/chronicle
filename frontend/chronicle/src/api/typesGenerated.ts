@@ -62,6 +62,7 @@ export interface ArmoryPlayer {
     readonly class: string;
     readonly race: string;
     readonly gender: string;
+    readonly level: number;
     readonly guild_id?: string;
     readonly guild_name?: string;
     readonly gear: PlayerOutfit;

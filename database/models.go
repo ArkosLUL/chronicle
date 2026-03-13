@@ -702,6 +702,7 @@ type GamePlayer struct {
 	Gear                PlayerOutfit       `db:"gear" json:"gear"`
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
+	Level               int16              `db:"level" json:"level"`
 }
 
 type Guild struct {

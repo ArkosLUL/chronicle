@@ -254,12 +254,12 @@ INSERT INTO
   game_players (
     id, realm_id, name, guild_id,
     class, gender, race,
-    gear,
+    gear, level,
     updated_from_instance,
     updated_at
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (id, realm_id) DO UPDATE
   SET name = EXCLUDED.name,
       guild_id = EXCLUDED.guild_id,
@@ -267,6 +267,7 @@ ON CONFLICT (id, realm_id) DO UPDATE
       race = EXCLUDED.race,
       gender = EXCLUDED.gender,
       gear = EXCLUDED.gear,
+      level = EXCLUDED.level,
       updated_from_instance = EXCLUDED.updated_from_instance,
 
       updated_at = EXCLUDED.updated_at
@@ -289,6 +290,7 @@ type UpsertPlayersParams struct {
 	Gender              WowPlayableGender  `db:"gender" json:"gender"`
 	Race                WowPlayableRace    `db:"race" json:"race"`
 	Gear                PlayerOutfit       `db:"gear" json:"gear"`
+	Level               int16              `db:"level" json:"level"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -305,6 +307,7 @@ func (q *sqlQuerier) UpsertPlayers(ctx context.Context, arg []UpsertPlayersParam
 			a.Gender,
 			a.Race,
 			a.Gear,
+			a.Level,
 			a.UpdatedFromInstance,
 			a.UpdatedAt,
 		}

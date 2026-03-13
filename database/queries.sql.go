@@ -14,7 +14,7 @@ import (
 
 const getGamePlayerByGUID = `-- name: GetGamePlayerByGUID :one
 SELECT
-  gp.id, gp.realm_id, gp.created_at, gp.guild_id, gp.name, gp.class, gp.gender, gp.race, gp.gear, gp.updated_at, gp.updated_from_instance,
+  gp.id, gp.realm_id, gp.created_at, gp.guild_id, gp.name, gp.class, gp.gender, gp.race, gp.gear, gp.updated_at, gp.updated_from_instance, gp.level,
   COALESCE(wow_server_realms.name, 'Unknown') as realm_name,
   g.name as guild_name
 FROM
@@ -44,6 +44,7 @@ type GetGamePlayerByGUIDRow struct {
 	Gear                PlayerOutfit       `db:"gear" json:"gear"`
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
+	Level               int16              `db:"level" json:"level"`
 	RealmName           string             `db:"realm_name" json:"realm_name"`
 	GuildName           pgtype.Text        `db:"guild_name" json:"guild_name"`
 }
@@ -63,6 +64,7 @@ func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerB
 		&i.Gear,
 		&i.UpdatedAt,
 		&i.UpdatedFromInstance,
+		&i.Level,
 		&i.RealmName,
 		&i.GuildName,
 	)

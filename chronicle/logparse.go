@@ -347,7 +347,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// Time DB insert
 		dbInsertStart := time.Now()
 		err = db.InTx(func(tx *authz.AuthzTX) error {
-			guild, err := finalized.Guilds.Insert(ctx, instanceID, realmID, tx)
+			guild, err := finalized.Guilds.Insert(ctx,encountersState.Units, instanceID, realmID, tx)
 			if err != nil {
 				return fmt.Errorf("insert guild: %w", err)
 			}

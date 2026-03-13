@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -164,9 +165,24 @@ func (api *API) armoryOG(realm, player string) *frontend.OGData {
 	if p.GuildName.String != "" {
 		guild = fmt.Sprintf(" <%s>", p.GuildName.String)
 	}
+
+	race := string(db2sdk.HeroRace(p.Race))
+	switch p.Race {
+	case database.WowPlayableRaceScourge:
+		race = "Undead"
+	case database.WowPlayableRaceBloodElf:
+		race = "Blood Elf"
+	case database.WowPlayableRaceNightElf:
+		race = "Night Elf"
+	}
+
+	class := string(db2sdk.HeroClass(p.Class))
+	class = strings.ToLower(class)
+	class = strings.ToUpper(string(class[0])) + class[1:]
+
 	desc.WriteString(fmt.Sprintf("%s (%s)%s — %d %s %s",
 		p.Name, p.RealmName, guild,
-		60, p.Race, p.Class,
+		60, race, class,
 	))
 
 	return &frontend.OGData{

@@ -75,11 +75,13 @@ function parseAllActivityTokens(option: string | null | undefined) {
   let abilityFilter = "";
   let sourceFilter = "";
   let targetFilter = "";
+  let useLocalTime = false;
   for (const t of tokens) {
     if (t.startsWith("s:"))       streams = decodeStreams(t.slice(2));
     else if (t.startsWith("af:")) abilityFilter = decodeFilterValue(t.slice(3));
     else if (t.startsWith("sf:")) sourceFilter = decodeFilterValue(t.slice(3));
     else if (t.startsWith("tf:")) targetFilter = decodeFilterValue(t.slice(3));
+    else if (t === "tz:l")        useLocalTime = true;
     // other tokens (cb, bc:, t:) are ignored — managed by EventsPanel
   }
   return {
@@ -87,6 +89,7 @@ function parseAllActivityTokens(option: string | null | undefined) {
     abilityFilter,
     sourceFilter,
     targetFilter,
+    useLocalTime,
   };
 }
 
@@ -96,16 +99,19 @@ function buildAllActivityTokens(
   abilityFilter: string,
   sourceFilter: string,
   targetFilter: string,
+  useLocalTime: boolean = false,
 ): string | null {
   // Preserve tokens we don't own (cb, bc:, t:, etc.)
   const preserved = (existing ?? "").split(",").map((t) => t.trim())
     .filter((t) => t && !t.startsWith("s:") && !t.startsWith("af:")
-                     && !t.startsWith("sf:") && !t.startsWith("tf:"));
+                     && !t.startsWith("sf:") && !t.startsWith("tf:")
+                     && !t.startsWith("tz:"));
   const streamCode = encodeStreams(streams);
   if (streamCode !== DEFAULT_STREAM_CODE) preserved.push(`s:${streamCode}`);
   if (abilityFilter.trim()) preserved.push(`af:${encodeFilterValue(abilityFilter.trim())}`);
   if (sourceFilter.trim())  preserved.push(`sf:${encodeFilterValue(sourceFilter.trim())}`);
   if (targetFilter.trim())  preserved.push(`tf:${encodeFilterValue(targetFilter.trim())}`);
+  if (useLocalTime) preserved.push("tz:l");
   return preserved.length > 0 ? preserved.join(",") : null;
 }
 
@@ -144,18 +150,20 @@ function StreamToggle({ streamType, enabled, count, onToggle }: StreamToggleProp
 function formatTimestamp(absoluteMilli: number, useLocalTime: boolean = false): string {
   const eventTime = new Date(absoluteMilli);
   if (useLocalTime) {
+    const ms = eventTime.getMilliseconds().toString().padStart(3, "0");
     return eventTime.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
       hour12: false,
-    });
+    }) + `.${ms}`;
   }
   // UTC format
   const hours = eventTime.getUTCHours().toString().padStart(2, "0");
   const minutes = eventTime.getUTCMinutes().toString().padStart(2, "0");
   const seconds = eventTime.getUTCSeconds().toString().padStart(2, "0");
-  return `${hours}:${minutes}:${seconds}`;
+  const ms = eventTime.getUTCMilliseconds().toString().padStart(3, "0");
+  return `${hours}:${minutes}:${seconds}.${ms}`;
 }
 
 function formatRelativeTime(offsetMilli: number): string {
@@ -221,7 +229,7 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
     <div className="flex items-center gap-2 text-xs font-mono py-0.5 border-b border-border/30 hover:bg-muted/30">
       <span className="text-muted-foreground w-6 text-right shrink-0">{index}</span>
       <Icon className={cn("h-3 w-3 shrink-0", config.color)} />
-      <span className="text-muted-foreground w-20 shrink-0">{timeStr}</span>
+      <span className="text-muted-foreground w-22 shrink-0">{timeStr}</span>
       <span className="text-orange-400 w-24 shrink-0 truncate" title={event.caster}>{event.casterName || "-"}</span>
       <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>{event.sourceName}</span>
       <span className="text-muted-foreground shrink-0">→</span>
@@ -363,6 +371,8 @@ interface AllActivityContentProps {
   targetFilter: string;
   onTargetFilterChange: (filter: string) => void;
   useRelativeTime?: boolean;
+  useLocalTime?: boolean;
+  onToggleLocalTime?: () => void;
 }
 
 function AllActivityContent({
@@ -383,9 +393,9 @@ function AllActivityContent({
   targetFilter,
   onTargetFilterChange,
   useRelativeTime = false,
+  useLocalTime = false,
+  onToggleLocalTime,
 }: AllActivityContentProps) {
-  // Local time toggle state (UTC by default)
-  const [useLocalTime, setUseLocalTime] = useState(false);
   
   // Default state during loading
   const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [] };
@@ -557,8 +567,8 @@ function AllActivityContent({
             <span className="w-3 shrink-0"></span>
             <button
               type="button"
-              onClick={() => setUseLocalTime((prev) => !prev)}
-              className="w-20 shrink-0 text-left hover:text-foreground transition-colors cursor-pointer"
+              onClick={() => onToggleLocalTime?.()}
+              className="w-24 shrink-0 text-left hover:text-foreground transition-colors cursor-pointer"
               title={useLocalTime ? "Click to show UTC time" : "Click to show local time"}
             >
               Time {useRelativeTime ? "" : useLocalTime ? "(local)" : "(UTC)"}
@@ -643,6 +653,7 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
   const [abilityFilter, setAbilityFilter] = useState(initial.abilityFilter);
   const [sourceFilter, setSourceFilter] = useState(initial.sourceFilter);
   const [targetFilter, setTargetFilter] = useState(initial.targetFilter);
+  const [useLocalTime, setUseLocalTime] = useState(initial.useLocalTime);
 
   // Sync state changes back to panelOption for persistence in shared layouts/links.
   // Uses a ref for panelOption to avoid feedback loops (state change → setPanelOption →
@@ -656,11 +667,11 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
     if (!syncRef.current) { syncRef.current = true; return; }
     const timer = setTimeout(() => {
       setPanelOptionRef.current?.(buildAllActivityTokens(
-        panelOptionRef.current, enabledStreams, abilityFilter, sourceFilter, targetFilter,
+        panelOptionRef.current, enabledStreams, abilityFilter, sourceFilter, targetFilter, useLocalTime,
       ));
     }, 300);
     return () => clearTimeout(timer);
-  }, [enabledStreams, abilityFilter, sourceFilter, targetFilter]);
+  }, [enabledStreams, abilityFilter, sourceFilter, targetFilter, useLocalTime]);
   
   // Track previous encounter key to reset page when encounters change
   // Using the React-approved pattern for "adjusting state when a prop changes"
@@ -755,6 +766,8 @@ function AllActivityWrapper({ context, panelIndex, useRelativeTime = false, pane
       targetFilter={targetFilter}
       onTargetFilterChange={handleTargetFilterChange}
       useRelativeTime={useRelativeTime}
+      useLocalTime={useLocalTime}
+      onToggleLocalTime={() => setUseLocalTime((prev) => !prev)}
     />
   );
 }

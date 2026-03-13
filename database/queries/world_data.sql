@@ -27,7 +27,9 @@ SELECT
   wit.entry,
   wit.name,
   wit.quality,
-  wdi.icon
-FROM world_item_template wit
-LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+FROM
+  world_item_template wit
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
 WHERE wit.entry = ANY(@item_ids::int[]);

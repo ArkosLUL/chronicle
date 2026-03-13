@@ -8,8 +8,11 @@ interface CharacterHeaderProps {
 
 function getRaceIconUrl(race: string, gender: string): string {
   const name = race === "Scourge" ? "forsaken" : race.toLowerCase().replace(" ", "");
-  const suffix = gender === "Female" ? "_02" : "";
-  return `https://icons.chronicleclassic.com/race_${name}${suffix}.webp`;
+  if (gender == "Female") {
+    return `https://icons.chronicleclassic.com/inv_misc_head_${name}_02.webp`;
+  }
+
+  return `https://icons.chronicleclassic.com/race_${name}.webp`;
 }
 
 function getClassIconUrl(cls: string): string {

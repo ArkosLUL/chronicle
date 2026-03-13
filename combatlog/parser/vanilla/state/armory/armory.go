@@ -101,9 +101,7 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 			if meta, ok := itemMeta[int32(item.ItemID)]; ok {
 				dbGear[i].ItemName = meta.Name
 				dbGear[i].ItemQuality = meta.Quality
-				if meta.Icon.Valid {
-					dbGear[i].ItemIcon = meta.Icon.String
-				}
+					dbGear[i].ItemIcon = meta.Icon
 			}
 		}
 

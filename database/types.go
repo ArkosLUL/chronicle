@@ -159,7 +159,7 @@ type PlayerGear struct {
 	EnchantID   *int32 `json:"enchant_id,omitempty"`
 	ItemName    string `json:"item_name,omitempty"`
 	ItemQuality int32  `json:"item_quality,omitempty"`
-	ItemIcon    string `json:"item_icon,omitempty"`
+	ItemIcon    string `json:"item_icon,omitzero"`
 	// TODO: transmog
 }
 

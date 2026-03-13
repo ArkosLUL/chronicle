@@ -3570,17 +3570,19 @@ SELECT
   wit.entry,
   wit.name,
   wit.quality,
-  wdi.icon
-FROM world_item_template wit
-LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+FROM
+  world_item_template wit
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
 WHERE wit.entry = ANY($1::int[])
 `
 
 type GetItemTemplateMetadataBatchRow struct {
-	Entry   int32       `db:"entry" json:"entry"`
-	Name    string      `db:"name" json:"name"`
-	Quality int32       `db:"quality" json:"quality"`
-	Icon    pgtype.Text `db:"icon" json:"icon"`
+	Entry   int32  `db:"entry" json:"entry"`
+	Name    string `db:"name" json:"name"`
+	Quality int32  `db:"quality" json:"quality"`
+	Icon    string `db:"icon" json:"icon"`
 }
 
 func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, itemIds []int32) ([]GetItemTemplateMetadataBatchRow, error) {

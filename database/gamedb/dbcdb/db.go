@@ -411,4 +411,3 @@ func (w *WoWClient) ItemSet() (Table[dbdefs.Ent_ItemSet], error) {
 
 	return WrapTable[dbdefs.Ent_ItemSet](table), nil
 }
-

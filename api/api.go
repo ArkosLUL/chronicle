@@ -180,6 +180,9 @@ func (api *API) Routes() chi.Router {
 
 		// Public guild page route
 		r.Get("/g/{guildID}", api.GetPublicGuildPage)
+		// Public armory route
+		r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)
+
 
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {

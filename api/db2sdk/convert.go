@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/maps"
 	"github.com/Emyrk/chronicle/internal/slice"
+	"github.com/google/uuid"
 	"github.com/riverqueue/river/rivertype"
 )
 
@@ -344,4 +345,34 @@ func DataGrant(g database.DataGrant) chroniclesdk.DataGrant {
 
 func DataGrants(gs []database.DataGrant) []chroniclesdk.DataGrant {
 	return slice.List(gs, DataGrant)
+}
+func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer {
+	var guildID *uuid.UUID
+	if row.GuildID.Valid {
+		guildID = &row.GuildID.UUID
+	}
+
+	var gear chroniclesdk.PlayerOutfit
+	for i, g := range row.Gear {
+		gear[i] = chroniclesdk.PlayerGear{
+			ItemID:      g.ItemID,
+			EnchantID:   g.EnchantID,
+			ItemName:    g.ItemName,
+			ItemQuality: g.ItemQuality,
+			ItemIcon:    g.ItemIcon,
+		}
+	}
+
+	return chroniclesdk.ArmoryPlayer{
+		ID:        row.ID,
+		RealmID:   row.RealmID,
+		Name:      row.Name,
+		Class:     HeroClass(row.Class).String(),
+		Race:      HeroRace(row.Race).String(),
+		Gender:    HeroGender(row.Gender).String(),
+		GuildID:   guildID,
+		GuildName: row.GuildName.String,
+		Gear:      gear,
+		UpdatedAt: row.UpdatedAt.Time,
+	}
 }

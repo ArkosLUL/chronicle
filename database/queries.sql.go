@@ -14,21 +14,40 @@ import (
 
 const getGamePlayerByGUID = `-- name: GetGamePlayerByGUID :one
 SELECT
-  id, realm_id, created_at, guild_id, name, class, gender, race, gear, updated_at, updated_from_instance
+  gp.id, gp.realm_id, gp.created_at, gp.guild_id, gp.name, gp.class, gp.gender, gp.race, gp.gear, gp.updated_at, gp.updated_from_instance,
+  g.name as guild_name
 FROM
-  game_players
+  game_players gp
+LEFT JOIN guilds g ON g.id = gp.guild_id
 WHERE
-  id = $1 AND realm_id = $2
+  gp.realm_id = $1
+  AND (gp.id = $2::wow_guid OR lower(gp.name) = lower($3))
 `
 
 type GetGamePlayerByGUIDParams struct {
-	ID      guid.GUID `db:"id" json:"id"`
-	RealmID uuid.UUID `db:"realm_id" json:"realm_id"`
+	RealmID    uuid.UUID `db:"realm_id" json:"realm_id"`
+	Identifier guid.GUID `db:"identifier" json:"identifier"`
+	Name       string    `db:"name" json:"name"`
 }
 
-func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerByGUIDParams) (GamePlayer, error) {
-	row := q.db.QueryRow(ctx, getGamePlayerByGUID, arg.ID, arg.RealmID)
-	var i GamePlayer
+type GetGamePlayerByGUIDRow struct {
+	ID                  guid.GUID          `db:"id" json:"id"`
+	RealmID             uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	GuildID             uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Name                string             `db:"name" json:"name"`
+	Class               WowPlayableClass   `db:"class" json:"class"`
+	Gender              WowPlayableGender  `db:"gender" json:"gender"`
+	Race                WowPlayableRace    `db:"race" json:"race"`
+	Gear                PlayerOutfit       `db:"gear" json:"gear"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
+	GuildName           pgtype.Text        `db:"guild_name" json:"guild_name"`
+}
+
+func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerByGUIDParams) (GetGamePlayerByGUIDRow, error) {
+	row := q.db.QueryRow(ctx, getGamePlayerByGUID, arg.RealmID, arg.Identifier, arg.Name)
+	var i GetGamePlayerByGUIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.RealmID,
@@ -41,6 +60,7 @@ func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerB
 		&i.Gear,
 		&i.UpdatedAt,
 		&i.UpdatedFromInstance,
+		&i.GuildName,
 	)
 	return i, err
 }

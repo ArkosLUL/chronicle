@@ -37,9 +37,12 @@ WHERE
 
 -- name: GetGamePlayerByGUID :one
 SELECT
-  *
+  gp.*,
+  g.name as guild_name
 FROM
-  game_players
+  game_players gp
+LEFT JOIN guilds g ON g.id = gp.guild_id
 WHERE
-  id = $1 AND realm_id = $2
+  gp.realm_id = @realm_id
+  AND (gp.id = @identifier::wow_guid OR lower(gp.name) = lower(@name))
 ;

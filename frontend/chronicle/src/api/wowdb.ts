@@ -279,10 +279,10 @@ export function formatCastTime(spell: WoWSpell): string {
       if (remainingSecs === 0) return `${mins} min channel`;
       return `${mins} min ${remainingSecs} sec channel`;
     }
-    return `${secs} sec channel`;
+    return `Channeled`;
   }
   
-  if (spell.casting_time.Base === 0) return "Instant";
+  if (spell.casting_time.Base === 0) return "Instant Cast";
   return `${(spell.casting_time.Base / 1000).toFixed(1)} sec cast`;
 }
 

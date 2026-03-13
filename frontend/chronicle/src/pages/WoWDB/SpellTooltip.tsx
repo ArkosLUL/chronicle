@@ -73,22 +73,22 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
     : `${spell.mana_cost} ${spell.power_type.string}`;
 
   return (
-    <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-4 max-w-md shadow-lg font-wow">
+    <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg px-3 py-3 max-w-md shadow-lg font-wow">
       {/* Header with icon */}
-      <div className="flex gap-3 items-start">
+      <div className="flex gap-2.5 items-start">
         {iconUrl && (
           <img
             src={iconUrl}
             alt=""
-            width={44}
-            height={44}
+            width={36}
+            height={36}
             className="rounded border-2 border-yellow-600/60 flex-shrink-0"
           />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="flex flex-col min-w-0">
-              <h2 className="font-medium text-lg leading-tight text-white">
+              <h2 className="font-medium text-base leading-tight text-white">
                 {name}
               </h2>
               {spell.spell_level > 0 && (
@@ -99,7 +99,7 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
               {rank && (
-                <span className="text-gray-400 text-sm">{rank}</span>
+                <span className="text-gray-400 text-[0.9375rem]">{rank}</span>
               )}
               <SpellSchoolText school={spell.school.string} className="text-xs" />
             </div>
@@ -107,17 +107,18 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
         </div>
       </div>
 
+      <div className="mt-1"></div>
       {/* Cost/Cast and Range/Cooldown rows */}
-      <div className="mt-3 space-y-1">
+      <div className="mt-0 space-y-0">
         {hasCost ? (
           <>
             {/* Row 1: Cost and Range */}
-            <div className="flex justify-between text-white text-sm">
+            <div className="flex justify-between text-white text-[0.9375rem]">
               <span>{costDisplay}</span>
               <span>{formatRange(spell.range)}</span>
             </div>
             {/* Row 2: Cast time and cooldown */}
-            <div className="flex justify-between text-white text-sm">
+            <div className="flex justify-between text-white text-[0.9375rem]">
               <span>{formatCastTime(spell)}</span>
               {cooldown && <span>{cooldown}</span>}
             </div>
@@ -125,13 +126,13 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
         ) : (
           <>
             {/* Row 1: Cast time and Range */}
-            <div className="flex justify-between text-white text-sm">
+            <div className="flex justify-between text-white text-[0.9375rem]">
               <span>{formatCastTime(spell)}</span>
               <span>{formatRange(spell.range)}</span>
             </div>
             {/* Row 2: Cooldown only (if present) */}
             {cooldown && (
-              <div className="flex justify-end text-white text-sm">
+              <div className="flex justify-end text-white text-[0.9375rem]">
                 <span>{cooldown}</span>
               </div>
             )}
@@ -141,26 +142,26 @@ export function SpellTooltip({ spell, locale = "0", detailed = false }: SpellToo
 
       {/* Duration if applicable (detailed view only) */}
       {detailed && spell.duration.Duration > 0 && (
-        <div className="text-white text-sm mt-1">
+        <div className="text-white text-[0.9375rem] mt-0">
           Duration: {formatDuration(spell.duration)}
         </div>
       )}
 
       {/* Description */}
       {description && (
-        <p className="text-yellow-400 mt-1 text-sm whitespace-pre-wrap leading-relaxed">
+        <p className="text-yellow-400 mt-0 text-[0.9375rem] whitespace-pre-wrap leading-snug">
           {description}
         </p>
       )}
 
       {/* Aura description (buff/debuff text, detailed view only) */}
       {detailed && auraDesc && (
-        <p className="text-green-400 mt-1 text-sm italic">{auraDesc}</p>
+        <p className="text-green-400 mt-0 text-[0.9375rem] italic">{auraDesc}</p>
       )}
 
       {/* Dispel and mechanic info (detailed view only) */}
       {detailed && (spell.dispel_type.string !== "None" || spell.mechanic.string !== "None") && (
-        <div className="mt-3 pt-2 border-t border-gray-700 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+        <div className="mt-0 pt-1 border-t border-gray-700 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
           {spell.dispel_type.string !== "None" && (
             <span>Dispel: {spell.dispel_type.string}</span>
           )}

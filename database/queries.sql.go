@@ -12,6 +12,67 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getGamePlayerByGUID = `-- name: GetGamePlayerByGUID :one
+SELECT
+  id, realm_id, created_at, guild_id, name, class, gender, race, gear, updated_at, updated_from_instance
+FROM
+  game_players
+WHERE
+  id = $1 AND realm_id = $2
+`
+
+type GetGamePlayerByGUIDParams struct {
+	ID      guid.GUID `db:"id" json:"id"`
+	RealmID uuid.UUID `db:"realm_id" json:"realm_id"`
+}
+
+func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerByGUIDParams) (GamePlayer, error) {
+	row := q.db.QueryRow(ctx, getGamePlayerByGUID, arg.ID, arg.RealmID)
+	var i GamePlayer
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.CreatedAt,
+		&i.GuildID,
+		&i.Name,
+		&i.Class,
+		&i.Gender,
+		&i.Race,
+		&i.Gear,
+		&i.UpdatedAt,
+		&i.UpdatedFromInstance,
+	)
+	return i, err
+}
+
+const upsertGuild = `-- name: UpsertGuild :one
+INSERT INTO
+  guilds (realm_id, name, created_at)
+VALUES
+  ($1, $2, $3)
+ON CONFLICT (realm_id, name) DO UPDATE
+  SET realm_id = EXCLUDED.realm_id  -- no-op, just to return the row
+RETURNING id, realm_id, name, created_at
+`
+
+type UpsertGuildParams struct {
+	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name      string             `db:"name" json:"name"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *sqlQuerier) UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error) {
+	row := q.db.QueryRow(ctx, upsertGuild, arg.RealmID, arg.Name, arg.CreatedAt)
+	var i Guild
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.Name,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const deleteDataGrant = `-- name: DeleteDataGrant :exec
 DELETE FROM data_grants
 WHERE user_id = $1 AND source = $2
@@ -1414,34 +1475,6 @@ func (q *sqlQuerier) UpsertGuildPage(ctx context.Context, arg UpsertGuildPagePar
 		&i.Theme,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const upsertGuild = `-- name: UpsertGuild :one
-INSERT INTO
-  guilds (realm_id, name, created_at)
-VALUES
-  ($1, $2, $3)
-ON CONFLICT (realm_id, name) DO UPDATE
-  SET realm_id = EXCLUDED.realm_id  -- no-op, just to return the row
-RETURNING id, realm_id, name, created_at
-`
-
-type UpsertGuildParams struct {
-	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`
-	Name      string             `db:"name" json:"name"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-}
-
-func (q *sqlQuerier) UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error) {
-	row := q.db.QueryRow(ctx, upsertGuild, arg.RealmID, arg.Name, arg.CreatedAt)
-	var i Guild
-	err := row.Scan(
-		&i.ID,
-		&i.RealmID,
-		&i.Name,
-		&i.CreatedAt,
 	)
 	return i, err
 }

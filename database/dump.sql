@@ -66,6 +66,13 @@ CREATE TYPE wow_playable_class AS ENUM (
     'UNKNOWN'
 );
 
+CREATE TYPE wow_playable_gender AS ENUM (
+    'NotSet',
+    'Unknown',
+    'Male',
+    'Female'
+);
+
 CREATE TYPE wow_playable_race AS ENUM (
     'Scourge',
     'Orc',
@@ -271,6 +278,23 @@ CREATE TABLE dbc_spell_item_enchantment (
     required_skill_rank integer DEFAULT 0 NOT NULL,
     min_level integer DEFAULT 0 NOT NULL,
     max_level integer DEFAULT 0 NOT NULL
+);
+
+CREATE TABLE game_player_outfit (
+);
+
+CREATE TABLE game_players (
+    id wow_guid NOT NULL,
+    realm_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    guild_id uuid,
+    name text NOT NULL,
+    class wow_playable_class NOT NULL,
+    gender wow_playable_gender NOT NULL,
+    race wow_playable_race NOT NULL,
+    gear jsonb DEFAULT '[]'::jsonb NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_from_instance uuid
 );
 
 CREATE TABLE guild_members (
@@ -832,6 +856,9 @@ ALTER TABLE ONLY dbc_item_set
 ALTER TABLE ONLY dbc_spell_item_enchantment
     ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY game_players
+    ADD CONSTRAINT game_players_pkey PRIMARY KEY (id, realm_id);
+
 ALTER TABLE ONLY guild_members
     ADD CONSTRAINT guild_members_guild_id_user_id_key UNIQUE (guild_id, user_id);
 
@@ -1028,6 +1055,15 @@ CREATE TRIGGER trigger_insert_default_data_grant AFTER INSERT ON users FOR EACH 
 
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY game_players
+    ADD CONSTRAINT game_players_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY game_players
+    ADD CONSTRAINT game_players_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY game_players
+    ADD CONSTRAINT game_players_updated_from_instance_fkey FOREIGN KEY (updated_from_instance) REFERENCES log_instances(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY guild_members
     ADD CONSTRAINT guild_members_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;

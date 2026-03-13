@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -244,6 +245,92 @@ func (b *InsertLogInstanceEventsBatchResults) Exec(f func(int, error)) {
 }
 
 func (b *InsertLogInstanceEventsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertPlayers = `-- name: UpsertPlayers :batchexec
+INSERT INTO
+  game_players (
+    id, realm_id, name, guild_id,
+    class, gender, race,
+    gear,
+    updated_from_instance,
+    updated_at
+  )
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+ON CONFLICT (id, realm_id) DO UPDATE
+  SET name = EXCLUDED.name,
+      guild_id = EXCLUDED.guild_id,
+      class = EXCLUDED.class,
+      race = EXCLUDED.race,
+      gender = EXCLUDED.gender,
+      gear = EXCLUDED.gear,
+      updated_from_instance = EXCLUDED.updated_from_instance,
+
+      updated_at = EXCLUDED.updated_at
+WHERE
+  EXCLUDED.updated_at > game_players.updated_at
+`
+
+type UpsertPlayersBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertPlayersParams struct {
+	ID                  guid.GUID          `db:"id" json:"id"`
+	RealmID             uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name                string             `db:"name" json:"name"`
+	GuildID             uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Class               WowPlayableClass   `db:"class" json:"class"`
+	Gender              WowPlayableGender  `db:"gender" json:"gender"`
+	Race                WowPlayableRace    `db:"race" json:"race"`
+	Gear                PlayerOutfit       `db:"gear" json:"gear"`
+	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.ID,
+			a.RealmID,
+			a.Name,
+			a.GuildID,
+			a.Class,
+			a.Gender,
+			a.Race,
+			a.Gear,
+			a.UpdatedFromInstance,
+			a.UpdatedAt,
+		}
+		batch.Queue(upsertPlayers, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertPlayersBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertPlayersBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertPlayersBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

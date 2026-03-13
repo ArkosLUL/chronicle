@@ -37,6 +37,7 @@ type sqlcQuerier interface {
 	GetFileByHash(ctx context.Context, hash string) (LogFile, error)
 	// Full page fetch with all tabs and panels
 	GetFullGuildPage(ctx context.Context, guildID uuid.UUID) (GetFullGuildPageRow, error)
+	GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerByGUIDParams) (GamePlayer, error)
 	GetGuildByID(ctx context.Context, id uuid.UUID) (GetGuildByIDRow, error)
 	// Guild Members
 	GetGuildMember(ctx context.Context, arg GetGuildMemberParams) (GuildMember, error)
@@ -116,6 +117,7 @@ type sqlcQuerier interface {
 	UpsertDataGrant(ctx context.Context, arg UpsertDataGrantParams) (DataGrant, error)
 	UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Guild, error)
 	UpsertGuildPage(ctx context.Context, arg UpsertGuildPageParams) (GuildPage, error)
+	UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults
 	UpsertUserActionBarSlots(ctx context.Context, arg UpsertUserActionBarSlotsParams) (UpsertUserActionBarSlotsRow, error)
 }
 

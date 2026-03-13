@@ -1,3 +1,5 @@
+BEGIN;
+
 -- Extracted from ItemDisplayInfo.dbc at import time.
 -- Full item display metadata used by tooltips (icon) and 3D model rendering.
 CREATE TABLE dbc_item_display_info (
@@ -37,3 +39,6 @@ CREATE TABLE dbc_item_display_info (
     -- Helmet geoset visibility IDs (typically 2)
     helmet_geoset_vis_id JSONB NOT NULL DEFAULT '[]'
 );
+
+
+COMMIT;

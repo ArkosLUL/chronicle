@@ -445,6 +445,70 @@ func AllWowPlayableClassValues() []WowPlayableClass {
 	}
 }
 
+type WowPlayableGender string
+
+const (
+	WowPlayableGenderNotSet  WowPlayableGender = "NotSet"
+	WowPlayableGenderUnknown WowPlayableGender = "Unknown"
+	WowPlayableGenderMale    WowPlayableGender = "Male"
+	WowPlayableGenderFemale  WowPlayableGender = "Female"
+)
+
+func (e *WowPlayableGender) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = WowPlayableGender(s)
+	case string:
+		*e = WowPlayableGender(s)
+	default:
+		return fmt.Errorf("unsupported scan type for WowPlayableGender: %T", src)
+	}
+	return nil
+}
+
+type NullWowPlayableGender struct {
+	WowPlayableGender WowPlayableGender `json:"wow_playable_gender"`
+	Valid             bool              `json:"valid"` // Valid is true if WowPlayableGender is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullWowPlayableGender) Scan(value interface{}) error {
+	if value == nil {
+		ns.WowPlayableGender, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.WowPlayableGender.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullWowPlayableGender) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.WowPlayableGender), nil
+}
+
+func (e WowPlayableGender) Valid() bool {
+	switch e {
+	case WowPlayableGenderNotSet,
+		WowPlayableGenderUnknown,
+		WowPlayableGenderMale,
+		WowPlayableGenderFemale:
+		return true
+	}
+	return false
+}
+
+func AllWowPlayableGenderValues() []WowPlayableGender {
+	return []WowPlayableGender{
+		WowPlayableGenderNotSet,
+		WowPlayableGenderUnknown,
+		WowPlayableGenderMale,
+		WowPlayableGenderFemale,
+	}
+}
+
 type WowPlayableRace string
 
 const (
@@ -624,6 +688,23 @@ type DbcSpellItemEnchantment struct {
 	RequiredSkillRank int32  `db:"required_skill_rank" json:"required_skill_rank"`
 	MinLevel          int32  `db:"min_level" json:"min_level"`
 	MaxLevel          int32  `db:"max_level" json:"max_level"`
+}
+
+type GamePlayer struct {
+	ID                  guid.GUID          `db:"id" json:"id"`
+	RealmID             uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	GuildID             uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Name                string             `db:"name" json:"name"`
+	Class               WowPlayableClass   `db:"class" json:"class"`
+	Gender              WowPlayableGender  `db:"gender" json:"gender"`
+	Race                WowPlayableRace    `db:"race" json:"race"`
+	Gear                PlayerOutfit       `db:"gear" json:"gear"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
+}
+
+type GamePlayerOutfit struct {
 }
 
 type Guild struct {

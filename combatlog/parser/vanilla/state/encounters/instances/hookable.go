@@ -13,11 +13,11 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/internal/timings"
@@ -53,13 +53,13 @@ type Hookable struct {
 	completedFights []Fight
 
 	// finalized references
-	g *guild.Tracker
+	g *armory.Tracker
 	p *participants.Tracker
 }
 
 func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
 	p := participants.New()
-	g := guild.New()
+	g := armory.New()
 
 	characters := character.NewCharacters(db)
 	characters.RegisterHook(p)

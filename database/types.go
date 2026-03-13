@@ -151,3 +151,28 @@ func (t *Video) Scan(src interface{}) error {
 func (t Video) Value() (driver.Value, error) {
 	return json.Marshal(t)
 }
+
+type PlayerOutfit [19]PlayerGear
+
+type PlayerGear struct {
+	ItemID    int32
+	EnchantID *int32
+	// TODO: transmog
+}
+
+func (g *PlayerOutfit) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(v), &g)
+	case []byte:
+		return json.Unmarshal(v, &g)
+	case json.RawMessage:
+		return json.Unmarshal(v, &g)
+	}
+
+	return xerrors.Errorf("unexpected type %T", src)
+}
+
+func (g PlayerOutfit) Value() (driver.Value, error) {
+	return json.Marshal(g)
+}

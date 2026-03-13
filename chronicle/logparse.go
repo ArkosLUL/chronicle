@@ -38,6 +38,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
@@ -335,8 +336,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 		instReport.EncounterCount = len(finalized.Encounters)
 
-		// TODO: Remove this crutch
-		var realmID = dbstatic.RealmAmbershire()
+		var realmID = dbstatic.RealmUnknown()
 		if finalized.Realm != nil {
 			foundRealm, ok := dbstatic.RealmByName(finalized.Realm.RealmName)
 			if ok {
@@ -347,7 +347,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// Time DB insert
 		dbInsertStart := time.Now()
 		err = db.InTx(func(tx *authz.AuthzTX) error {
-			guild, err := finalized.Guilds.Insert(ctx, realmID, tx)
+			guild, err := finalized.Guilds.Insert(ctx, instanceID, realmID, tx)
 			if err != nil {
 				return fmt.Errorf("insert guild: %w", err)
 			}
@@ -457,7 +457,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			})
 
 			return nil
-		}, nil)
+		}, &pgx.TxOptions{
+			DeferrableMode: pgx.Deferrable,
+		})
 		instDBDuration := time.Since(dbInsertStart)
 		totalDBInsertDuration += instDBDuration
 		instReport.DBInsertDuration = chroniclesdk.DurationFrom(instDBDuration)

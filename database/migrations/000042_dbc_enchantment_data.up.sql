@@ -1,3 +1,5 @@
+BEGIN;
+
 -- Extracted from ItemRandomProperties.dbc at import time.
 -- Maps random property ID to suffix name ("of the Owl") and enchantment IDs.
 -- Used by item tooltips to resolve random enchantment suffixes.
@@ -56,3 +58,5 @@ CREATE TABLE dbc_spell_item_enchantment (
     min_level INTEGER NOT NULL DEFAULT 0,
     max_level INTEGER NOT NULL DEFAULT 0
 );
+
+COMMIT;

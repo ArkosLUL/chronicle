@@ -45,3 +45,6 @@ sql:
           - column: "log_instance_youtube_timestamped.payload"
             go_type:
               type: "[]VideoTimestamp"
+          - column: "game_players.gear"
+            go_type:
+              type: "PlayerOutfit"

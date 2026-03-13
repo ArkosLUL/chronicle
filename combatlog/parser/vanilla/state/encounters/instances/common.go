@@ -6,7 +6,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/guild"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
@@ -14,7 +14,7 @@ import (
 type FinalizedInstance struct {
 	Realm        *realm.Info
 	Encounters   []Encounter
-	Guilds       *guild.Tracker
+	Guilds       *armory.Tracker
 	Participants *participants.Tracker
 }
 

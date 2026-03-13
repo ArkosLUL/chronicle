@@ -1,6 +1,7 @@
 package db2sdk
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -140,10 +141,82 @@ func WowDecoratedInstance(instance database.LogInstancesGuild,
 		Players: maps.MapFromSlice(players, func(u database.LogInstancePlayer) guid.GUID { return u.UnitGuid }, func(u database.LogInstancePlayer) chroniclesdk.InstancePlayer {
 			return chroniclesdk.InstancePlayer{
 				Name:  u.Name,
-				Class: types.HeroClasses(u.Class),
-				Race:  types.HeroRaces(u.Race),
+				Class: HeroClass(u.Class),
+				Race:  HeroRace(u.Race),
 			}
 		}),
+	}
+}
+
+func init() {
+	for _, class := range database.AllWowPlayableClassValues() {
+		dbClassLookup[strings.ToLower(string(class))] = class
+	}
+
+	for _, race := range database.AllWowPlayableRaceValues() {
+		dbRaceLookup[strings.ToLower(string(race))] = race
+	}
+}
+
+var dbClassLookup = make(map[string]database.WowPlayableClass)
+var dbRaceLookup = make(map[string]database.WowPlayableRace)
+
+func HeroClass(class database.WowPlayableClass) types.HeroClasses {
+	cl, err := types.ParseHeroClasses(string(class))
+	if err != nil {
+		return types.HeroClassesUNKNOWN
+	}
+	return cl
+}
+
+func HeroClassToDB(class types.HeroClasses) database.WowPlayableClass {
+	f, ok := dbClassLookup[strings.ToLower(class.String())]
+	if !ok {
+		return database.WowPlayableClassUNKNOWN
+	}
+	return f
+}
+
+func HeroRace(race database.WowPlayableRace) types.HeroRaces {
+	r, err := types.ParseHeroRaces(string(race))
+	if err != nil {
+		return types.HeroRacesUnknown
+	}
+	return r
+}
+
+func HeroRaceToDB(race types.HeroRaces) database.WowPlayableRace {
+	f, ok := dbRaceLookup[strings.ToLower(race.String())]
+	if !ok {
+		return database.WowPlayableRaceUnknown
+	}
+	return f
+}
+
+func HeroGender(gender database.WowPlayableGender) types.HeroGender {
+	switch gender {
+	case database.WowPlayableGenderMale:
+		return types.HeroGenderMale
+	case database.WowPlayableGenderFemale:
+		return types.HeroGenderFemale
+	case database.WowPlayableGenderNotSet:
+		return types.HeroGenderNotSet
+	default:
+		return types.HeroGenderUnknown
+	}
+}
+
+func HeroGenderToDB(gender types.HeroGender) database.WowPlayableGender {
+	switch gender {
+	case types.HeroGenderNotSet:
+		return database.WowPlayableGenderNotSet
+	case types.HeroGenderMale:
+		return database.WowPlayableGenderMale
+	case types.HeroGenderFemale:
+		return database.WowPlayableGenderFemale
+	default:
+		return database.WowPlayableGenderUnknown
+
 	}
 }
 

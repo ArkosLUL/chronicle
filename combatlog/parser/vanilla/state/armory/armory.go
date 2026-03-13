@@ -86,7 +86,7 @@ func (g *Tracker) Insert(ctx context.Context, instanceID uuid.UUID, realmID uuid
 	for _, player := range g.Players {
 		guildID := uuid.Nil
 		if player.Guild != nil {
-			guildID, _ = guildIDs[player.Guild.Name]
+			guildID = guildIDs[player.Guild.Name]
 		}
 
 		var dbGear database.PlayerOutfit

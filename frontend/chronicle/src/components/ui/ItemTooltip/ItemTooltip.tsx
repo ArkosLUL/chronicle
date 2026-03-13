@@ -205,17 +205,17 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
 
         {/* Enchantment (green text) */}
         {item.enchantment && (
-          <div className="text-[#1eff00]">{item.enchantment}</div>
+          <div className="text-quality-uncommon">{item.enchantment}</div>
         )}
 
         {/* Random enchantment effects (green text) */}
         {item.random_enchantments?.map((line, i) => (
-          <div key={i} className="text-[#1eff00]">{line}</div>
+          <div key={i} className="text-quality-uncommon">{line}</div>
         ))}
 
         {/* Random enchantment placeholder (no random_property param given) */}
         {item.has_random_property && (
-          <div className="text-[#1eff00]">&lt;Random enchantment&gt;</div>
+          <div className="text-quality-uncommon">&lt;Random enchantment&gt;</div>
         )}
 
         {/* Required level */}
@@ -230,7 +230,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
 
         {/* Description / flavor text */}
         {item.description && (
-          <div className="text-yellow-400 italic mt-1">"{item.description}"</div>
+          <div className="text-item-flavor-text mt-1">"{item.description}"</div>
         )}
 
         {/* Item Set */}
@@ -298,7 +298,7 @@ function SpellLine({ spell, includeReferenceLinks }: { spell: ItemSpell; include
 
   if (includeReferenceLinks) {
     return (
-      <div className="text-[#1eff00]">
+      <div className="text-quality-uncommon">
         {trigger}{" "}
         <Link
           to={`/wowdb/spell/${spell.spell_id}`}
@@ -313,7 +313,7 @@ function SpellLine({ spell, includeReferenceLinks }: { spell: ItemSpell; include
   }
 
   return (
-    <div className="text-[#1eff00]">
+    <div className="text-quality-uncommon">
       {trigger} {text}{charges}
     </div>
   );
@@ -330,7 +330,7 @@ function ItemSetSection({ set, includeReferenceLinks, equippedItemIds }: { set: 
       {set.items.map((piece) => {
         const isEquipped = equippedItemIds?.has(piece.entry) ?? false;
         return (
-          <div key={piece.entry} className={cn("ml-2", isEquipped ? "text-[#ff9]" : "text-gray-500")}>
+          <div key={piece.entry} className={cn("ml-2", isEquipped ? "text-item-set-active" : "text-gray-500")}>
             {includeReferenceLinks ? (
               <Link
                 to={`/wowdb/item?id=${piece.entry}`}
@@ -360,7 +360,7 @@ function SetBonusLine({ threshold, spellId, includeReferenceLinks, active = fals
   const text = useResolvedSpellText(spellId);
 
   return (
-    <div className={active ? "text-[#1eff00]" : "text-gray-500"}>
+    <div className={active ? "text-quality-uncommon" : "text-gray-500"}>
       ({threshold}) Set:{" "}
       {includeReferenceLinks ? (
         <Link

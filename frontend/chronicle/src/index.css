@@ -153,6 +153,11 @@
   --color-quality-epic: #a335ee;
   --color-quality-legendary: #ff8000;
   --color-quality-artifact: #e6cc80;
+
+
+  /* WoW Misc Colors */
+  --color-item-set-active: #ff9;
+  --color-item-flavor-text: #ffd200;
 }
 
 @theme inline {

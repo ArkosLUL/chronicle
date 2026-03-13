@@ -160,22 +160,24 @@ func ParseGear(gear []string) []GearItem {
 	gearItems := make([]GearItem, 0, len(gear))
 	for _, arg := range gear {
 		if arg == "nil" {
+			gearItems = append(gearItems, GearItem{}) // Append empty GearItem for "nil" slots
 			continue
 		}
 
 		itemArgs := strings.Split(arg, ":")
 		if len(itemArgs) < 2 {
+			gearItems = append(gearItems, GearItem{}) // Append empty GearItem for "nil" slots
 			continue
 		}
 
 		itemID, err := strconv.Atoi(itemArgs[0])
 		if err != nil {
-			// TODO: LOG
+			gearItems = append(gearItems, GearItem{}) // Append empty GearItem for "nil" slots
 			continue
 		}
 		enchantID, err := strconv.Atoi(itemArgs[1])
 		if err != nil {
-			// TODO: LOG
+			gearItems = append(gearItems, GearItem{}) // Append empty GearItem for "nil" slots
 			continue
 		}
 
@@ -195,7 +197,6 @@ func ParseGear(gear []string) []GearItem {
 	return gearItems
 }
 
-
 type Talents struct {
 	// Summary is the total number of points spent in each tree
 	Summary [3]uint8
@@ -207,7 +208,7 @@ type Talents struct {
 // ParseTalents parses the talent string into a Talents struct
 // 215303100000000000}055051000050122231}00000000000000000000
 func ParseTalents(input string) (*Talents, error) {
-	if input == "nil" || input == ""{
+	if input == "nil" || input == "" {
 		return nil, nil
 	}
 

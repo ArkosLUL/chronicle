@@ -66,5 +66,6 @@ func (s *Service) handleItemDisplay(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Cache-Control", "public, max-age=259200")
 	httpapi.Write(ctx, w, http.StatusOK, result)
 }

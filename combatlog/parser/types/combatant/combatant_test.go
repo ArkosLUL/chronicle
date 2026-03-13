@@ -1,12 +1,14 @@
 package combatant_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -91,6 +93,35 @@ func TestParseCombatant(t *testing.T) {
 			require.Equal(t, c.exp, player)
 		})
 	}
+}
+
+func TestParseGear(t *testing.T) {
+	t.Parallel()
+
+	gear := `16813:0:0:0&19885:440:0:0&16816:0:0:0&60058:0:0:0&61250:0:0:0&16817:0:0:0&61256:0:0:0&61297:1843:0:0&16819:0:0:0&16812:1843:0:0&13178:440:0:0&18403:440:0:0&61451:0:0:0&13968:0:0:0&19085:0:0:0&18608:2505:0:0&&61286:0:0:0&5976:0:0:0`
+	got := combatant.ParseGear(strings.Split(gear, "&"))
+	require.Equal(t, []combatant.GearItem{
+
+		{ItemID: 16813, EnchantID: nil},
+		{ItemID: 19885, EnchantID: ptr.Ref(440)},
+		{ItemID: 16816, EnchantID: nil},
+		{ItemID: 60058, EnchantID: nil},
+		{ItemID: 61250, EnchantID: nil},
+		{ItemID: 16817, EnchantID: nil},
+		{ItemID: 61256, EnchantID: nil},
+		{ItemID: 61297, EnchantID: ptr.Ref(1843)},
+		{ItemID: 16819, EnchantID: nil},
+		{ItemID: 16812, EnchantID: ptr.Ref(1843)},
+		{ItemID: 13178, EnchantID: ptr.Ref(440)},
+		{ItemID: 18403, EnchantID: ptr.Ref(440)},
+		{ItemID: 61451, EnchantID: nil},
+		{ItemID: 13968, EnchantID: nil},
+		{ItemID: 19085, EnchantID: nil},
+		{ItemID: 18608, EnchantID: ptr.Ref(2505)},
+		{ItemID: 0, EnchantID: nil},
+		{ItemID: 61286, EnchantID: nil},
+		{ItemID: 5976, EnchantID: nil},
+	}, got)
 }
 
 func must[T any](t T, err error) T {

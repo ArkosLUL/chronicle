@@ -13,13 +13,13 @@ import { cn } from "@/lib/utils";
 
 // WoW item quality colors
 const QUALITY_COLORS: Record<number, string> = {
-  0: "text-[#9d9d9d]", // Poor (gray)
-  1: "text-[#ffffff]", // Common (white)
-  2: "text-[#1eff00]", // Uncommon (green)
-  3: "text-[#0070dd]", // Rare (blue)
-  4: "text-[#a335ee]", // Epic (purple)
-  5: "text-[#ff8000]", // Legendary (orange)
-  6: "text-[#e6cc80]", // Artifact (light gold)
+  0: "text-quality-poor",
+  1: "text-quality-common",
+  2: "text-quality-uncommon",
+  3: "text-quality-rare",
+  4: "text-quality-epic",
+  5: "text-quality-legendary",
+  6: "text-quality-artifact",
 };
 
 const BONDING_TEXT: Record<number, string> = {
@@ -122,7 +122,7 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
 
   return (
     <div className={cn(
-      "bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-3 max-w-xs shadow-lg text-xs leading-snug font-sans",
+      "bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg p-3 min-w-56 max-w-xs shadow-lg text-xs leading-snug font-sans",
       className
     )}>
       {/* Header: icon + name */}

@@ -180,8 +180,8 @@ func (api *API) armoryOG(realm, player string) *frontend.OGData {
 	class = strings.ToLower(class)
 	class = strings.ToUpper(string(class[0])) + class[1:]
 
-	desc.WriteString(fmt.Sprintf("%s (%s)%s — %d %s %s",
-		p.Name, p.RealmName, guild,
+	desc.WriteString(fmt.Sprintf("%s%s (%s) — %d %s %s",
+		p.Name, guild, p.RealmName,
 		60, race, class,
 	))
 

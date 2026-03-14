@@ -138,4 +138,10 @@ var (
 		ZoneName: ZoneNameMatcher("the stockade"),
 		Hostiles: FromMap(StockadeHostiles()),
 	}).New
+
+	SunkenTemple = (&CommonFactory{
+		Name:     "Sunken Temple",
+		ZoneName: ZoneNameMatcher("the temple of atal'hakkar"),
+		Hostiles: FromMap(SunkenTempleHostiles()),
+	}).New
 )

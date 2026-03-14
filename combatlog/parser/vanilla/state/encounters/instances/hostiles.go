@@ -1016,3 +1016,47 @@ func StockadeHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func SunkenTempleHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		8317: "Atal'ai Deathwalker's Spirit",
+		5717: "Mijan",
+		5280: "Nightmare Wyrmkin",
+		5277: "Nightmare Scalebane",
+		5714: "Loro",
+		5713: "Gasher",
+		5226: "Murk Worm",
+		5228: "Saturated Ooze",
+		8510: "Unknown",
+		5270: "Atal'ai Corpse Eater",
+		8384: "Deep Lurker",
+		8319: "Nightmare Whelp",
+		5273: "Atal'ai High Priest",
+		5269: "Atal'ai Priest",
+		5716: "Zul'Lor",
+		5267: "Unliving Atal'ai",
+		8257: "Oozeling",
+		5256: "Atal'ai Warrior",
+		5720: "Weaver",
+		5712: "Zolo",
+		5271: "Atal'ai Deathwalker",
+		5259: "Atal'ai Witch Doctor",
+		8311: "Slime Maggot",
+		5263: "Mummified Atal'ai",
+		5715: "Hukku",
+		8318: "Atal'ai Slave",
+		5283: "Nightmare Wanderer",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		5708: "Spawn of Hakkar",
+		5710: "Jammal'an the Prophet",
+		5711: "Ogom the Wretched",
+		5721: "Dreamscythe",
+		5719: "Morphaz",
+		5722: "Hazzas",
+		5709: "Shade of Eranikus",
+	})
+
+	return hostile
+}

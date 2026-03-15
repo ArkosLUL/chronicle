@@ -89,6 +89,8 @@ interface DragState {
   active: boolean;
 }
 
+const CHART_MARGIN = { top: 10, right: 20, bottom: 36, left: 50 } as const;
+
 function TimelineContent({ result, durationMs, panelContext: pc, panelOption, setPanelContext }: PanelRenderProps<TimelineResult>) {
   const timeRange = useTimeRangeContextOptional();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -142,6 +144,14 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
 
     return series;
   }, [result, totalBins, activeSeriesIds]);
+  const legendData = useMemo(() => {
+    return data.map((s) => ({
+      id: s.id,
+      label: result.seriesMeta.get(String(s.id))?.name ?? String(s.id),
+      color: s.color ?? "#888",
+    }));
+  }, [data, result.seriesMeta]);
+
 
   // Pixel → ms conversion helpers using the chart's inner width
   const pxToMs = useCallback(
@@ -157,7 +167,7 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
     // Only primary button
     if (e.button !== 0) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = e.clientX - rect.left - CHART_MARGIN.left;
     setDrag({ startX: x, currentX: x, active: true });
   }, []);
 
@@ -248,7 +258,7 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
       <ResponsiveLine
         data={data}
         colors={(d) => (d as ColoredSeries).color ?? "#888"}
-        margin={{ top: 10, right: 20, bottom: 36, left: 50 }}
+        margin={CHART_MARGIN}
         xScale={{ type: "linear", min: 0, max: totalSec }}
         yScale={{ type: "linear", min: 0, stacked: false }}
         axisBottom={{
@@ -299,6 +309,7 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
             symbolSize: 8,
             symbolShape: "circle",
             translateX: 10,
+            data: legendData,
           },
         ]}
       />
@@ -316,10 +327,10 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
       <div
         className="absolute inset-0"
         style={{
-          marginTop: 10,
-          marginBottom: 36,
-          marginLeft: 50,
-          marginRight: 20,
+          marginTop: CHART_MARGIN.top,
+          marginBottom: CHART_MARGIN.bottom,
+          marginLeft: CHART_MARGIN.left,
+          marginRight: CHART_MARGIN.right,
           cursor: drag?.active ? "col-resize" : undefined,
           pointerEvents: drag?.active ? "auto" : "none",
         }}

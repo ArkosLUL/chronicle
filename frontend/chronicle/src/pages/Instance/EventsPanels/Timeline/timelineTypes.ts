@@ -61,7 +61,7 @@ export function createDefaultSeries(index: number = 0): TimelineSeriesConfig {
     stream: "damage",
     aggregation: "sum",
     color: SERIES_COLORS[index % SERIES_COLORS.length],
-    filters: [],
+    filters: FALLBACK_SERIES_CONFIG[0].filters, // default filters from fallback config
   };
 }
 
@@ -73,8 +73,12 @@ export function getDefaultSettings(): TimelineSettings {
  * Stable fallback series used when no panelContext config exists.
  * Must match FALLBACK_SERIES in timeline.processor.ts (id: "s0").
  */
-const FALLBACK_SERIES_CONFIG: TimelineSeriesConfig[] = [
-  { id: "s0", name: "Damage", stream: "damage", aggregation: "sum", color: SERIES_COLORS[0], filters: [] },
+export const FALLBACK_SERIES_CONFIG: TimelineSeriesConfig[] = [
+  { id: "s0", name: "Damage", stream: "damage", aggregation: "sum", color: SERIES_COLORS[0], filters: [
+    { type: "source_type", value: "player" },
+    { type: "source_type", value: "pet", combinator: "or" },
+    { type: "target_type", value: "selected_enemies", combinator: "and" },
+  ] },
 ];
 
 /** Extract series configs from panelContext, falling back to one default series. */

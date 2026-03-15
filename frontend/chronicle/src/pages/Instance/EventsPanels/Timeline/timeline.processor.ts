@@ -9,7 +9,7 @@
 import type { PanelProcessor, ProcessorEvent, ProcessorContext } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { AggregationType, TimelineSeriesConfig } from "./timelineTypes";
-import { DEFAULT_BIN_MS } from "./timelineTypes";
+import { DEFAULT_BIN_MS, FALLBACK_SERIES_CONFIG } from "./timelineTypes";
 import { compileFilters, type FilterPredicate } from "../processors/filters";
 
 export interface TimelineSeriesMeta {
@@ -31,19 +31,10 @@ export interface TimelineResult {
   _filterCache: Map<string, FilterPredicate>;
 }
 
-/** Default series config when panelContext has none. */
-const FALLBACK_SERIES: TimelineSeriesConfig[] = [
-  { id: "s0", name: "Damage", stream: "damage", aggregation: "sum", color: "#C79C6E", filters: [
-    { type: "source_type", value: "player" },
-    { type: "source_type", value: "pet", combinator: "or" },
-    { type: "target_type", value: "enemy", combinator: "and" },
-  ] },
-];
-
 function getConfigs(context: ProcessorContext): TimelineSeriesConfig[] {
   const raw = context.panelContext?.timelineSeries;
   if (Array.isArray(raw) && raw.length > 0) return raw as TimelineSeriesConfig[];
-  return FALLBACK_SERIES;
+  return FALLBACK_SERIES_CONFIG;
 }
 
 function getBinMs(context: ProcessorContext): number {

@@ -44,6 +44,7 @@ import { createAuraUptimePanel } from "./AuraUptime/AuraUptime";
 import { createMetricsPanel } from "./Metrics/Metrics";
 import { PeriodsPanel } from "./PeriodsPanel/PeriodsPanel";
 import { createComparisonPanel } from "./ComparisonPanel/ComparisonPanel";
+import { createTimelinePanel } from "./Timeline/Timeline";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -84,6 +85,8 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   periods: PeriodsPanel,
   // Cross-panel comparison
   comparison: createComparisonPanel(),
+  // Charts
+  timeline: createTimelinePanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;
@@ -500,26 +503,29 @@ export function EventsPanel({
   const flipCard = useCallback(() => {
     setFlipped((prev) => {
       if (prev) {
-        // Flipping back — apply buffered filters
-        if (pendingFilters !== null) {
+        // Flipping back — apply buffered filters (only for standard panels;
+        // panels with renderCardBack manage their own panelContext updates)
+        if (!panel.renderCardBack && pendingFilters !== null) {
           applyFilters(pendingFilters);
           setPendingFilters(null);
         }
       } else {
         // Flipping open — seed buffer with current filters
-        setPendingFilters(userFilters);
+        if (!panel.renderCardBack) {
+          setPendingFilters(userFilters);
+        }
       }
       return !prev;
     });
-  }, [pendingFilters, applyFilters, userFilters]);
+  }, [pendingFilters, applyFilters, userFilters, panel.renderCardBack]);
 
   const closeFilterEditor = useCallback(() => {
-    if (pendingFilters !== null) {
+    if (!panel.renderCardBack && pendingFilters !== null) {
       applyFilters(pendingFilters);
       setPendingFilters(null);
     }
     setFlipped(false);
-  }, [pendingFilters, applyFilters]);
+  }, [pendingFilters, applyFilters, panel.renderCardBack]);
 
   const onPanelMouseDown = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (event.shiftKey && event.button === 0 && !isSyncActive) {
@@ -535,7 +541,9 @@ export function EventsPanel({
     if (defaults && defaults.length > 0) {
       setPanelContext({ filters: defaults });
     } else {
-      setPanelContext(null);
+      // Allow panels with hydrateContext to restore their own context from panelOption
+      const hydrated = panel.hydrateContext && panelOption ? panel.hydrateContext(panelOption) : null;
+      setPanelContext(hydrated);
     }
     setPanelContextVersion((version) => version + 1);
     setFlipped(false);
@@ -717,7 +725,22 @@ export function EventsPanel({
             </div>
           </>
         )}
-        back={(
+        back={panel.renderCardBack
+          ? panel.renderCardBack({
+              panelContext,
+              setPanelContext: setPanelContextWithKey,
+              onClose: closeFilterEditor,
+              onReset: resetFilters,
+              panelLabel: panel.label,
+              panelIcon: panel.icon,
+              borderColor,
+              onBorderColorChange: onPanelOptionChange ? setBorderColor : undefined,
+              customTitle,
+              onCustomTitleChange: onPanelOptionChange ? setCustomTitle : undefined,
+              panelOption,
+              setPanelOption: onPanelOptionChange ?? undefined,
+            })
+          : (
           <PanelFilterEditor
             panelLabel={panel.label}
             panelIcon={panel.icon}

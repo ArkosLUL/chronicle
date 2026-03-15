@@ -639,6 +639,8 @@ const PANEL_CODES: Record<PanelType, string> = {
   periods: 'per',
   // Cross-panel comparison
   comparison: 'cmp',
+  // Charts
+  timeline: 'tl',
 };
 
 // ============================================================================

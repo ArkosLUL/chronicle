@@ -236,6 +236,9 @@ function serializeResult(result: unknown): unknown {
   if (result !== null && typeof result === "object") {
     const serialized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(result)) {
+      // Skip _-prefixed keys — these are transient worker-only fields (e.g.
+      // compiled filter caches) that contain non-cloneable values like functions.
+      if (key.startsWith("_")) continue;
       serialized[key] = serializeResult(value);
     }
     return serialized;

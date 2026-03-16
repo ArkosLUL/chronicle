@@ -141,6 +141,41 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
    * - Cache result when `props.loading` becomes true for static data
    */
   render: (props: PanelRenderProps<TResult>) => React.ReactNode;
+
+  /**
+   * Optional custom card-back renderer. When defined, replaces the default
+   * PanelFilterEditor on the back of the panel card.
+   */
+  renderCardBack?: (props: CardBackProps) => React.ReactNode;
+
+  /**
+   * Optional hook to hydrate panelContext from a persisted panelOption string.
+   * Called during the panelType-change effect, AFTER the default context reset.
+   * Panels that persist complex config in panelOption (e.g. Timeline series)
+   * should implement this to avoid the race between child useEffect hydration
+   * and the parent panelType effect that resets context to null.
+   */
+  hydrateContext?: (panelOption: string) => Record<string, unknown> | null;
+}
+
+/**
+ * Props passed to a custom card-back renderer.
+ */
+export interface CardBackProps {
+  panelContext: Record<string, unknown> | null;
+  setPanelContext: (ctx: Record<string, unknown> | null) => void;
+  onClose: () => void;
+  onReset: () => void;
+  panelLabel?: string;
+  panelIcon?: React.ReactNode;
+  borderColor?: string | null;
+  onBorderColorChange?: (color: string | null) => void;
+  customTitle?: string | null;
+  onCustomTitleChange?: (title: string | null) => void;
+  /** Persisted panel option string (survives saves / shared layouts). */
+  panelOption?: string | null;
+  /** Callback to persist panel option. */
+  setPanelOption?: (option: string | null) => void;
 }
 
 export interface PanelRenderProps<TResult> {

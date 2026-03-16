@@ -177,7 +177,7 @@ export function TimelineFilterEditor({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold flex items-center gap-1.5">
           {panelIcon}
-          {panelLabel ?? "Timeline"}
+          {panelLabel ?? "Line Chart"}
         </h4>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={handleReset}>Reset</Button>
@@ -307,7 +307,7 @@ function SettingsTab({
           <span className="text-xs text-muted-foreground shrink-0">Title:</span>
           <input
             className="flex-1 bg-transparent border-b border-zinc-700 text-sm px-1 py-0.5 focus:outline-none focus:border-zinc-500"
-            placeholder="Timeline"
+            placeholder="Line Chart"
             value={customTitle ?? ""}
             onChange={(e) => onCustomTitleChange(e.target.value || null)}
           />

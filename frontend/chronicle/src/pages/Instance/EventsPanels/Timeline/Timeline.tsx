@@ -28,7 +28,7 @@ import { useTimeRangeContextOptional } from "../../TimeRangeContext";
 export function createTimelinePanel(): PanelDefinition<TimelineResult> {
   return {
     ...timelineProcessor,
-    label: "Timeline",
+    label: "Line Chart",
     icon: <TrendingUp className="h-4 w-4" />,
     supportsPerSecond: false,
     supportsFiltering: false, // filters are per-series on card back

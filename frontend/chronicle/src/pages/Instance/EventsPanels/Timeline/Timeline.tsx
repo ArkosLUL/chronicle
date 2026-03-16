@@ -32,6 +32,7 @@ export function createTimelinePanel(): PanelDefinition<TimelineResult> {
     icon: <TrendingUp className="h-4 w-4" />,
     supportsPerSecond: false,
     supportsFiltering: false, // filters are per-series on card back
+    underConstruction: true,
 
     hydrateContext: (panelOption: string) => hydrateFromPanelOption(panelOption),
     renderCardBack: (props) => <TimelineFilterEditor {...props} />,

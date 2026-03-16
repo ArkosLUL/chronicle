@@ -3,7 +3,7 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Leaf, Scale, Search, Sword, Toolbox, TrendingUp, User } from "lucide-react";
+import { ChevronDown, ChevronRight, Leaf, Scale, Search, Sword, Toolbox, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { PANELS, type EventsPanelType } from "./EventsPanel";

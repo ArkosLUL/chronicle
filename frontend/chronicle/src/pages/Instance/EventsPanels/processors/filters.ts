@@ -228,14 +228,24 @@ function compileEntityTypeFilter(
     const guid = (event as unknown as Record<string, unknown>)[field];
     if (typeof guid !== "string" || !guid) return false;
 
-    // Selected players: match if guid is in playerIds (pass all if none selected)
+    // Selected players: match if guid is in playerIds, or any player if none selected
     if (wantSelectedPlayers) {
-      if (playerIds.size === 0 || playerIds.has(guid)) return true;
+      if (playerIds.size > 0) {
+        if (playerIds.has(guid)) return true;
+      } else {
+        const isPlayer = isPlayerGuid(guid) || getCachedGuid(guidCache, guid).isPlayer();
+        if (isPlayer) return true;
+      }
     }
 
-    // Selected enemies: match if guid is in enemyIds (pass all if none selected)
+    // Selected enemies: match if guid is in enemyIds, or any non-player entity if none selected
     if (wantSelectedEnemies) {
-      if (enemyIds.size === 0 || enemyIds.has(guid)) return true;
+      if (enemyIds.size > 0) {
+        if (enemyIds.has(guid)) return true;
+      } else {
+        const isPlayer = isPlayerGuid(guid) || getCachedGuid(guidCache, guid).isPlayer();
+        if (!isPlayer) return true;
+      }
     }
 
     // Custom GUID match

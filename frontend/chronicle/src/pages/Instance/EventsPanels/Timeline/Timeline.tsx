@@ -71,7 +71,7 @@ function TimelineSliceTooltip({ slice, seriesMeta }: SliceTooltipProps<ColoredSe
             />
             <span className="text-zinc-300 truncate max-w-[100px]">{String(displayName)}</span>
             <span className="ml-auto text-zinc-100 font-medium tabular-nums">
-              {formatValue(point.data.y as number)}
+              {formatValue(point.data.y as number)}{seriesMeta.get(String(point.seriesId))?.aggregation === "per_second" ? "/s" : ""}
             </span>
           </div>
         );

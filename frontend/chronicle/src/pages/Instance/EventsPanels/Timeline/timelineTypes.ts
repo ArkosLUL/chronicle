@@ -49,14 +49,16 @@ export const SERIES_COLORS = [
   "#06b6d4", // cyan
 ];
 
-let _nextId = 1;
-export function nextSeriesId(): string {
-  return `s${_nextId++}`;
-}
-
-export function createDefaultSeries(index: number = 0): TimelineSeriesConfig {
+export function createDefaultSeries(
+  existingConfigs: TimelineSeriesConfig[],
+  index: number = 0,
+): TimelineSeriesConfig {
+  const maxNum = Math.max(
+    0,
+    ...existingConfigs.map((c) => parseInt(c.id.slice(1), 10)).filter((n) => !isNaN(n)),
+  );
   return {
-    id: nextSeriesId(),
+    id: `s${maxNum + 1}`,
     name: "Damage",
     stream: "damage",
     aggregation: "sum",

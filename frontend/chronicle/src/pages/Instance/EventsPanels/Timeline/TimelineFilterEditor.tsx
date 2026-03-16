@@ -145,7 +145,7 @@ export function TimelineFilterEditor({
   );
 
   const addSeries = useCallback(() => {
-    const newSeries = createDefaultSeries(seriesConfigs.length);
+    const newSeries = createDefaultSeries(seriesConfigs, seriesConfigs.length);
     const updated = [...seriesConfigs, newSeries];
     updateContext(updated);
     setActiveTab(updated.length - 1);

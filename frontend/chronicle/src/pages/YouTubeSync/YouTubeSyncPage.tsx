@@ -169,6 +169,7 @@ export function YouTubeSyncPage() {
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(0)
 
+  const [syncMethod, setSyncMethod] = useState<"ocr" | "manual">("ocr")
   const [syncRunning, setSyncRunning] = useState(false)
   const [syncProgress, setSyncProgress] = useState(0)
   const [statusText, setStatusText] = useState("")
@@ -196,6 +197,11 @@ export function YouTubeSyncPage() {
   const regionImageDataRef = useRef<ImageData | null>(null)
   const syncAbortedRef = useRef(false)
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  // Manual sync state
+  const [manualPrompt, setManualPrompt] = useState<{ videoTime: number; videoTimeFormatted: string } | null>(null)
+  const [manualTimeInput, setManualTimeInput] = useState("")
+  const manualResolveRef = useRef<((value: string | null) => void) | null>(null)
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -610,6 +616,93 @@ export function YouTubeSyncPage() {
 
   const stopSync = () => {
     syncAbortedRef.current = true
+    manualResolveRef.current?.(null)
+    manualResolveRef.current = null
+  }
+
+  const waitForManualInput = (): Promise<string | null> => {
+    return new Promise((resolve) => {
+      manualResolveRef.current = resolve
+      setManualTimeInput("")
+    })
+  }
+
+  const submitManualTime = () => {
+    manualResolveRef.current?.(manualTimeInput || null)
+    manualResolveRef.current = null
+  }
+
+  const skipManualTime = () => {
+    manualResolveRef.current?.(null)
+    manualResolveRef.current = null
+  }
+
+  const runManualSync = async () => {
+    if (!playerRef.current || !playerReadyRef.current) {
+      alert("Load a video first")
+      return
+    }
+
+    const videoDuration = playerRef.current.getDuration()
+    const effectiveEnd = endTime > 0 ? endTime : videoDuration
+
+    setSyncRunning(true)
+    syncAbortedRef.current = false
+    setResults([])
+    setLastResult(null)
+    setSyncProgress(0)
+    playerRef.current.pauseVideo()
+
+    const totalSteps = Math.ceil((effectiveEnd - startTime) / interval)
+    let step = 0
+
+    for (let time = startTime; time < effectiveEnd && !syncAbortedRef.current; time += interval) {
+      step++
+      setSyncProgress(step / totalSteps)
+      setStatusText(`Step ${step}/${totalSteps} — waiting for input...`)
+
+      playerRef.current.seekTo(time, true)
+      await sleep(1000)
+      const actualTime = playerRef.current.getCurrentTime()
+
+      setManualPrompt({ videoTime: actualTime, videoTimeFormatted: formatTime(actualTime) })
+      const userInput = await waitForManualInput()
+      setManualPrompt(null)
+
+      if (syncAbortedRef.current) break
+
+      const result: SyncResult = {
+        videoTime: actualTime,
+        videoTimeFormatted: formatTime(actualTime),
+        imageDataUrl: null,
+        serverTime: null,
+        rawOCR: userInput,
+        confidence: 0,
+        status: "pending",
+        error: null,
+      }
+
+      if (userInput) {
+        const parsed = parseServerTime(userInput)
+        if (parsed.success) {
+          result.serverTime = parsed.time
+          result.confidence = 1.0
+          result.status = "success"
+        } else {
+          result.status = "error"
+          result.error = "Could not parse time"
+        }
+      } else {
+        result.status = "error"
+        result.error = "Skipped"
+      }
+
+      setResults((prev) => [...prev, result])
+      setLastResult(result)
+    }
+
+    setSyncRunning(false)
+    setStatusText(syncAbortedRef.current ? "Sync aborted" : `Done! ${step} frames processed.`)
   }
 
   // Export
@@ -873,7 +966,7 @@ export function YouTubeSyncPage() {
       {/* Scrollable Content */}
       <div className="pt-[540px] px-5 pb-5 max-w-5xl mx-auto space-y-5">
         {/* Capture Section */}
-        {captureActive && (
+        {captureActive && syncMethod === "ocr" && (
           <Card>
             <CardHeader>
               <CardTitle>📷 Capture Region</CardTitle>
@@ -945,7 +1038,29 @@ export function YouTubeSyncPage() {
             <CardTitle>⚡ Sync Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex gap-4 items-center mb-4">
+              <Label>Method</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={syncMethod === "ocr" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSyncMethod("ocr")}
+                  disabled={syncRunning}
+                >
+                  OCR (Automatic)
+                </Button>
+                <Button
+                  variant={syncMethod === "manual" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSyncMethod("manual")}
+                  disabled={syncRunning}
+                >
+                  Manual
+                </Button>
+              </div>
+            </div>
             <div className="flex gap-4 items-end flex-wrap">
+              {syncMethod === "ocr" && (
               <div>
                 <Label>OCR Service URL</Label>
                 <Input
@@ -955,6 +1070,7 @@ export function YouTubeSyncPage() {
                   className="w-[200px]"
                 />
               </div>
+              )}
               <div>
                 <Label>Interval (sec)</Label>
                 <Input
@@ -983,7 +1099,10 @@ export function YouTubeSyncPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={runSync} disabled={!captureActive || syncRunning}>
+                <Button
+                  onClick={syncMethod === "manual" ? runManualSync : runSync}
+                  disabled={syncMethod === "ocr" ? (!captureActive || syncRunning) : (!videoLoaded || syncRunning)}
+                >
                   Start Sync
                 </Button>
                 <Button variant="destructive" onClick={stopSync} disabled={!syncRunning}>
@@ -1001,6 +1120,28 @@ export function YouTubeSyncPage() {
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">{statusText}</p>
+              </div>
+            )}
+
+            {manualPrompt && (
+              <div className="bg-muted rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium">
+                  Video at <span className="font-mono text-primary">{manualPrompt.videoTimeFormatted}</span> —
+                  enter the server time you see:
+                </p>
+                <div className="flex gap-2 items-end">
+                  <Input
+                    type="text"
+                    placeholder="HH:MM:SS"
+                    value={manualTimeInput}
+                    onChange={(e) => setManualTimeInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && submitManualTime()}
+                    className="w-[160px] font-mono"
+                    autoFocus
+                  />
+                  <Button onClick={submitManualTime}>Submit</Button>
+                  <Button variant="ghost" onClick={skipManualTime}>Skip</Button>
+                </div>
               </div>
             )}
 

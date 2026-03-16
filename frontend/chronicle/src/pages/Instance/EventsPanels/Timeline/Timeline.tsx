@@ -139,10 +139,10 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
       // Apply aggregation (runs on raw sums, instant — no reprocessing)
       const displayBins = applyAggregation(rawBins, result.binMs, meta.aggregation);
 
-      const points = [];
+      const points = [{ x: 0, y: 0 }]; // No data at t=0
       for (let b = 0; b < totalBins; b++) {
         const val = b < displayBins.length ? displayBins[b] : 0;
-        points.push({ x: (b * result.binMs) / 1000, y: val });
+        points.push({ x: ((b + 1) * result.binMs) / 1000, y: val });
       }
       series.push({ id: seriesId, data: points, color: meta.color });
     }

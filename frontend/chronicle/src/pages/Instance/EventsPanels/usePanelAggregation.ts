@@ -210,12 +210,6 @@ export function usePanelAggregation<TResult>(
 
   const result = resolveAggregationResultForPanel(aggregationState, panel.id, panel.createState);
   
-  // Reset incremental state when panel changes (in effect to avoid ref access during render)
-  useEffect(() => {
-    incrementalStateRef.current = null;
-    prevTimestampRef.current = null;
-  }, [panel.id]);
-  
   // Create stable key for streams (panels define which streams they need)
   const streamsKey = panel.streams.slice().sort().join(",");
   
@@ -233,6 +227,12 @@ export function usePanelAggregation<TResult>(
     panelOption,
     panelContextKeyData,
   ]);
+  
+  // Reset incremental state when panel or context changes (encounter switch, entity selection, etc.)
+  useEffect(() => {
+    incrementalStateRef.current = null;
+    prevTimestampRef.current = null;
+  }, [panel.id, panelContextKey]);
   
   // Stable merged filter array — reference equality lets mainThreadProcessor skip recompilation
   // during sync mode ticks where only the timestamp changes.

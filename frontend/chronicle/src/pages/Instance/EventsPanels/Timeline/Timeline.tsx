@@ -79,21 +79,26 @@ function TimelineSliceTooltip({ slice, seriesMeta }: SliceTooltipProps<ColoredSe
   );
 }
 
-// ── Drag selection overlay (rendered as a nivo custom layer) ─────────────────
+// ── Drag selection (uses Nivo's xScale for pixel-perfect alignment) ──────────
 
 interface DragState {
-  /** X pixel of drag start relative to chart inner area */
-  startX: number;
-  /** Current X pixel */
-  currentX: number;
+  /** Start of selection in seconds (snapped to 1s) */
+  startSec: number;
+  /** Current drag position in seconds (snapped to 1s) */
+  currentSec: number;
   active: boolean;
 }
+
+/** D3 linear scale with invert (Nivo wraps d3-scale under the hood). */
+type D3ScaleLinear = ((v: number) => number) & { invert: (px: number) => number };
 
 const CHART_MARGIN = { top: 10, right: 20, bottom: 36, left: 50 } as const;
 
 function TimelineContent({ result, durationMs, panelContext: pc, panelOption, setPanelContext }: PanelRenderProps<TimelineResult>) {
   const timeRange = useTimeRangeContextOptional();
   const containerRef = useRef<HTMLDivElement>(null);
+  // Capture Nivo's xScale so mouse handlers can convert pixels ↔ data values.
+  const xScaleRef = useRef<D3ScaleLinear | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
 
   // Hydrate panelContext from saved panelOption on first render
@@ -153,32 +158,32 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
   }, [data, result.seriesMeta]);
 
 
-  // Pixel → ms conversion helpers using the chart's inner width
-  const pxToMs = useCallback(
-    (px: number, innerWidth: number) => {
-      if (innerWidth <= 0 || totalBins <= 0) return 0;
-      const totalMs = totalBins * result.binMs;
-      return Math.max(0, Math.min(totalMs, (px / innerWidth) * totalMs));
-    },
-    [totalBins, result.binMs],
-  );
+  // Convert a mouse clientX to snapped seconds using Nivo's own xScale.
+  const clientXToSec = useCallback((clientX: number, containerRect: DOMRect) => {
+    const scale = xScaleRef.current;
+    if (!scale?.invert) return 0;
+    const px = clientX - containerRect.left - CHART_MARGIN.left;
+    const rawSec = scale.invert(px);
+    return Math.max(0, Math.round(rawSec)); // snap to nearest 1s
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only primary button
     if (e.button !== 0) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left - CHART_MARGIN.left;
-    setDrag({ startX: x, currentX: x, active: true });
-  }, []);
+    const sec = clientXToSec(e.clientX, rect);
+    setDrag({ startSec: sec, currentSec: sec, active: true });
+  }, [clientXToSec]);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!drag?.active) return;
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-      setDrag((prev) => (prev ? { ...prev, currentX: x } : null));
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const sec = clientXToSec(e.clientX, rect);
+      setDrag((prev) => (prev ? { ...prev, currentSec: sec } : null));
     },
-    [drag?.active],
+    [drag?.active, clientXToSec],
   );
 
   const handleMouseUp = useCallback(
@@ -187,52 +192,81 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
         setDrag(null);
         return;
       }
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const innerWidth = rect.width;
-      const startMs = pxToMs(Math.min(drag.startX, drag.currentX), innerWidth);
-      const endMs = pxToMs(Math.max(drag.startX, drag.currentX), innerWidth);
+      const container = containerRef.current;
+      if (!container) { setDrag(null); return; }
+      const rect = container.getBoundingClientRect();
+      const endSec = clientXToSec(e.clientX, rect);
 
-      // Only set range if drag is at least 5px wide
-      if (Math.abs(drag.currentX - drag.startX) > 5) {
-        timeRange.setRange(Math.round(startMs), Math.round(endMs));
+      const lo = Math.min(drag.startSec, endSec);
+      const hi = Math.max(drag.startSec, endSec);
+
+      if (hi > lo) {
+        timeRange.setRange(lo * 1000, hi * 1000);
       }
       setDrag(null);
     },
-    [drag, timeRange, pxToMs],
+    [drag, timeRange, clientXToSec],
   );
 
   const handleDoubleClick = useCallback(() => {
     timeRange?.reset();
   }, [timeRange]);
 
-  // Custom nivo layer to render the current time range highlight
+  // Combined Nivo SVG layer: captures xScale + renders highlight & drag rect.
   const trEnabled = timeRange?.enabled ?? false;
   const trStart = timeRange?.startOffsetMs ?? null;
   const trEnd = timeRange?.endOffsetMs ?? null;
-  const totalChartMs = totalBins * result.binMs;
+  const dragStartSec = drag?.startSec ?? 0;
+  const dragCurrentSec = drag?.currentSec ?? 0;
+  const dragActive = drag?.active ?? false;
 
-  const highlightLayer = useCallback(
-    ({ innerWidth, innerHeight }: LineCustomSvgLayerProps<ColoredSeries>) => {
-      if (!trEnabled || trStart == null || trEnd == null || totalChartMs <= 0) {
-        return null;
+  const overlayLayer = useCallback(
+    ({ innerHeight, xScale }: LineCustomSvgLayerProps<ColoredSeries>) => {
+      // Capture the scale so mouse handlers can use xScale.invert()
+      xScaleRef.current = xScale as unknown as D3ScaleLinear;
+
+      const scale = xScale as unknown as D3ScaleLinear;
+      const elements: React.ReactNode[] = [];
+
+      // Saved time-range highlight
+      if (trEnabled && trStart != null && trEnd != null) {
+        const x1 = scale(trStart / 1000);
+        const x2 = scale(trEnd / 1000);
+        elements.push(
+          <rect
+            key="highlight"
+            x={Math.min(x1, x2)}
+            y={0}
+            width={Math.abs(x2 - x1)}
+            height={innerHeight}
+            fill="rgba(59, 130, 246, 0.15)"
+            stroke="rgba(59, 130, 246, 0.5)"
+            strokeWidth={1}
+          />,
+        );
       }
 
-      const x1 = (trStart / totalChartMs) * innerWidth;
-      const x2 = (trEnd / totalChartMs) * innerWidth;
+      // Ephemeral drag selection rectangle
+      if (dragActive && dragStartSec !== dragCurrentSec) {
+        const x1 = scale(Math.min(dragStartSec, dragCurrentSec));
+        const x2 = scale(Math.max(dragStartSec, dragCurrentSec));
+        elements.push(
+          <rect
+            key="drag"
+            x={x1}
+            y={0}
+            width={x2 - x1}
+            height={innerHeight}
+            fill="rgba(59, 130, 246, 0.2)"
+            stroke="rgba(59, 130, 246, 0.5)"
+            strokeWidth={1}
+          />,
+        );
+      }
 
-      return (
-        <rect
-          x={Math.min(x1, x2)}
-          y={0}
-          width={Math.abs(x2 - x1)}
-          height={innerHeight}
-          fill="rgba(59, 130, 246, 0.15)"
-          stroke="rgba(59, 130, 246, 0.5)"
-          strokeWidth={1}
-        />
-      );
+      return elements.length > 0 ? <>{elements}</> : null;
     },
-    [trEnabled, trStart, trEnd, totalChartMs],
+    [trEnabled, trStart, trEnd, dragActive, dragStartSec, dragCurrentSec],
   );
 
   if (data.length === 0) {
@@ -243,16 +277,15 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
     );
   }
 
-  // Compute the drag selection rect for the overlay
-  const dragLeft = drag?.active ? Math.min(drag.startX, drag.currentX) : 0;
-  const dragWidth = drag?.active ? Math.abs(drag.currentX - drag.startX) : 0;
-
   return (
     <div
       className="relative w-full"
       style={{ height: 300, cursor: "crosshair" }}
       ref={containerRef}
       onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onDoubleClick={handleDoubleClick}
     >
       <ResponsiveLine
@@ -286,14 +319,14 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
           },
           crosshair: { line: { stroke: "#71717a" } },
         }}
-        enableCrosshair={true}
-        enableSlices="x"
+        enableCrosshair={!drag?.active}
+        enableSlices={drag?.active ? false : "x"}
         sliceTooltip={(props) => <TimelineSliceTooltip {...props} seriesMeta={result.seriesMeta} />}
         layers={[
           "grid",
           "markers",
           "axes",
-          highlightLayer,
+          overlayLayer,
           "lines",
           "crosshair",
           "slices",
@@ -316,39 +349,14 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
 
       {/* Hint when time range is active */}
       {trEnabled && (
-        <div className="absolute top-1 left-14 text-[10px] text-zinc-500 pointer-events-none select-none">
-          Double-click to reset selection
-        </div>
+        <button
+          type="button"
+          onClick={() => timeRange?.reset()}
+          className="absolute top-1 left-14 text-[10px] text-zinc-500 hover:text-zinc-300 cursor-pointer select-none transition-colors"
+        >
+          Reset Selection
+        </button>
       )}
-
-      {/* Transparent overlay for drag-to-select.
-          pointer-events: none when idle so nivo slice tooltips work.
-          Becomes active on mousedown (captured on the container). */}
-      <div
-        className="absolute inset-0"
-        style={{
-          marginTop: CHART_MARGIN.top,
-          marginBottom: CHART_MARGIN.bottom,
-          marginLeft: CHART_MARGIN.left,
-          marginRight: CHART_MARGIN.right,
-          cursor: drag?.active ? "col-resize" : undefined,
-          pointerEvents: drag?.active ? "auto" : "none",
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {/* Drag selection rectangle */}
-        {drag?.active && dragWidth > 2 && (
-          <div
-            className="absolute top-0 bottom-0 bg-blue-500/20 border border-blue-500/50 pointer-events-none"
-            style={{
-              left: dragLeft,
-              width: dragWidth,
-            }}
-          />
-        )}
-      </div>
     </div>
   );
 }

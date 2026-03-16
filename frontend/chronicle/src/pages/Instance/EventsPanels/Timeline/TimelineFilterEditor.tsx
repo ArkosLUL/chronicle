@@ -26,7 +26,8 @@ import {
   serializeTimelineConfig,
   hydrateFromPanelOption,
 } from "./timelineTypes";
-import { AGGREGATIONS } from "./aggregations";
+import { AGGREGATIONS, type AggregationDef } from "./aggregations";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 
 /** Preset border colors (mirrors PanelFilterEditor). */
 const PRESET_BORDER_COLORS: Array<string | null> = [
@@ -57,8 +58,8 @@ const BIN_PRESETS = [
 ];
 
 /** Aggregation options from the registry. */
-const AGG_OPTIONS = (Object.entries(AGGREGATIONS) as [AggregationType, { label: string }][]).map(
-  ([value, { label }]) => ({ value, label }),
+const AGG_OPTIONS = (Object.entries(AGGREGATIONS) as [AggregationType, AggregationDef][]).map(
+  ([value, { label, description }]) => ({ value, label, description }),
 );
 
 const DEFAULT_FILTER: PanelFilter = { type: "ability_name", value: "" };
@@ -394,19 +395,25 @@ function SeriesTab({
         <span className="text-xs text-muted-foreground shrink-0">Agg:</span>
         <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5 flex-wrap">
           {AGG_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onUpdate({ aggregation: opt.value })}
-              className={cn(
-                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                config.aggregation === opt.value
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {opt.label}
-            </button>
+            <Tooltip key={opt.value}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => onUpdate({ aggregation: opt.value })}
+                  className={cn(
+                    "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    config.aggregation === opt.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={4}>
+                {opt.description}
+              </TooltipContent>
+            </Tooltip>
           ))}
         </div>
       </div>

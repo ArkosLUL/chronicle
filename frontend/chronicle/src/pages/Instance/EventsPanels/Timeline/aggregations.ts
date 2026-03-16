@@ -14,6 +14,7 @@ export type AggregationFn = (raw: number[], binMs: number) => number[];
 
 export interface AggregationDef {
   label: string;
+  description: string;
   fn: AggregationFn;
 }
 
@@ -33,14 +34,17 @@ function rollingAvg(bins: number[], window: number): number[] {
 export const AGGREGATIONS: Record<AggregationType, AggregationDef> = {
   sum: {
     label: "Sum",
+    description: "Total value in each time window",
     fn: (raw) => raw,
   },
   rolling_avg: {
     label: "Rolling Avg (5s)",
+    description: "Smoothed average over a 5-second sliding window",
     fn: (raw, binMs) => rollingAvg(raw, Math.max(1, Math.round(5000 / binMs))),
   },
   per_second: {
     label: "Per Second",
+    description: "Value normalized to a per-second rate",
     fn: (raw, binMs) => {
       const factor = 1000 / binMs;
       return raw.map((v) => v * factor);
@@ -48,6 +52,7 @@ export const AGGREGATIONS: Record<AggregationType, AggregationDef> = {
   },
   cumulative: {
     label: "Cumulative",
+    description: "Running total over the encounter",
     fn: (raw) => {
       let acc = 0;
       return raw.map((v) => (acc += v));

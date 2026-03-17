@@ -34,6 +34,8 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   aura: { icon: Sparkles, color: "text-cyan-500", label: "Aura" },
   spell_go: { icon: Crosshair, color: "text-amber-500", label: "Spell Go" },
   aura_cast: { icon: Timer, color: "text-teal-500", label: "Aura Cast" },
+  spell_start: { icon: Crosshair, color: "text-lime-500", label: "Spell Start" },
+  spell_fail: { icon: Crosshair, color: "text-red-400", label: "Spell Fail" },
 };
 // --- Panel option encode/decode helpers for state persistence ---
 
@@ -41,7 +43,7 @@ const DEFAULT_ENABLED_STREAMS = new Set<StreamType>(["damage", "heal", "resource
 
 const STREAM_CODES: Record<StreamType, string> = {
   damage: "d", heal: "h", resource_change: "r", cast: "c",
-  aura: "a", slain: "x", spell_go: "g", aura_cast: "u",
+  aura: "a", slain: "x", spell_go: "g", aura_cast: "u", spell_start: "ss", spell_fail: "sf",
   extra_attack: "e",
 };
 const CODE_TO_STREAM = Object.fromEntries(
@@ -398,12 +400,12 @@ function AllActivityContent({
 }: AllActivityContentProps) {
   
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,
@@ -446,7 +448,7 @@ function AllActivityContent({
       {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "extra_attack", "aura", "slain", "spell_go", "aura_cast"] as StreamType[]).map((stream) => (
+        {(["damage", "heal", "resource_change", "extra_attack", "aura", "slain", "spell_go", "aura_cast", "spell_start", "spell_fail"] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

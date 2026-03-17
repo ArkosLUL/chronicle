@@ -30,6 +30,10 @@ const REALM_OPTIONS = [
   { id: "f94d3103-1cd8-40e9-ad91-a2366de33354", name: "Tel Abim" },
   { id: "bcf173a7-c94a-49fe-8930-27435d722fb7", name: "Nordanaar" },
   { id: "ad486d39-31dd-4eb6-a43d-7d469df4ffcf", name: "South Seas" },
+  { id: "c240e1e4-9d2b-46f7-b23c-6b55a37b4710", name: "Gehennas" },
+  { id: "885cd224-aa71-4592-81e2-98fe138ca650", name: "Ravenstorm" },
+  { id: "0f9825e5-8a88-4bfb-80f6-26b472c7a1aa", name: "Karazhan" },
+  { id: "5f786828-1c60-4360-8b0f-14b7b494be3a", name: "Blood Ring" },
 ] as const;
 
 function parseCategoryFilter(value: string): CategoryFilter {

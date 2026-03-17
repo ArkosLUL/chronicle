@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "./InstanceEventsContext";
 import { createStreamCursor, FastDamageCursor, type StreamCursor } from "@/api/protodecode/decode";
-import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema, CastSchema, AuraSchema, SpellGoSchema } from "@/api/proto/chronicle_pb";
+import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema, CastSchema, AuraSchema, SpellGoSchema, SpellStartSchema, SpellFailSchema } from "@/api/proto/chronicle_pb";
 import type { DescMessage } from "@bufbuild/protobuf";
 import type {
   StreamType,
@@ -32,6 +32,10 @@ function getSchemaForType(type: StreamType): DescMessage {
       return AuraSchema;
     case "spell_go":
       return SpellGoSchema;
+    case "spell_start":
+      return SpellStartSchema;
+    case "spell_fail":
+      return SpellFailSchema;
     case "aura_cast":
       // aura_cast uses the same schema structure - return null to skip for now
       return null as unknown as DescMessage;

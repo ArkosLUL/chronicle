@@ -427,6 +427,40 @@ type Create struct {
 func (c Create) Affects() []guid.GUID { return []guid.GUID{c.Caster} }
 func (*Create) isMessage()            {}
 
+type SpellFail struct {
+	MessageBase
+	SpellData      *chrondbc.Spell
+	Caster         guid.GUID
+	FailedByServer bool
+}
+
+func (c SpellFail) Affects() []guid.GUID {
+	return []guid.GUID{c.Caster}
+}
+func (*SpellFail) isMessage() {}
+
+type SpellStart struct {
+	MessageBase
+	ItemID          *int32
+	SpellData       *chrondbc.Spell
+	Caster          guid.GUID
+	Target          *guid.GUID
+	Flags           types.CastFlags
+	CastTime        time.Duration
+	ChannelDuration time.Duration
+	SpellType       int32
+}
+
+func (c SpellStart) Affects() []guid.GUID {
+	ids := []guid.GUID{c.Caster}
+	if c.Target != nil {
+		ids = append(ids, *c.Target)
+	}
+
+	return ids
+}
+func (*SpellStart) isMessage() {}
+
 // SpellGo is fired when a spell goes off.
 type SpellGo struct {
 	MessageBase

@@ -130,6 +130,34 @@ func SpellGo(from time.Time, idx int32, ca *messages.SpellGo) *chronicleproto.Sp
 	}
 }
 
+func SpellStart(from time.Time, idx int32, ca *messages.SpellStart) *chronicleproto.SpellStart {
+	var target *string
+	if ca.Target != nil {
+		target = ptr.Ref(ca.Target.String())
+	}
+
+	return &chronicleproto.SpellStart{
+		Meta:             EventMeta(from, idx, ca),
+		ItemID:           ca.ItemID,
+		SpellData:        SpellData(ca.SpellData),
+		Caster:           ca.Caster.String(),
+		Target:           target,
+		CastFlags:        int32(ca.Flags),
+		CastTimeMilli:    int32(ca.CastTime.Milliseconds()),
+		ChannelTimeMilli: int32(ca.ChannelDuration.Milliseconds()),
+		SpellType:        ca.SpellType,
+	}
+}
+
+func SpellFail(from time.Time, idx int32, ca *messages.SpellFail) *chronicleproto.SpellFail {
+	return &chronicleproto.SpellFail{
+		Meta:          EventMeta(from, idx, ca),
+		Caster:        ca.Caster.String(),
+		SpellData:     SpellData(ca.SpellData),
+		FailedBySever: ca.FailedByServer,
+	}
+}
+
 func Cast(from time.Time, idx int32, ca *messages.Cast) *chronicleproto.Cast {
 	var target *string
 	if ca.Target != nil {

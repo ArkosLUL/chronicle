@@ -30,6 +30,10 @@ const (
 	WoWEventTypeSpellGo WoWEventType = "spell_go"
 	// WoWEventTypeAuraCast is a WoWEventType of type aura_cast.
 	WoWEventTypeAuraCast WoWEventType = "aura_cast"
+	// WoWEventTypeSpellStart is a WoWEventType of type spell_start.
+	WoWEventTypeSpellStart WoWEventType = "spell_start"
+	// WoWEventTypeSpellFail is a WoWEventType of type spell_fail.
+	WoWEventTypeSpellFail WoWEventType = "spell_fail"
 )
 
 var ErrInvalidWoWEventType = errors.New("not a valid WoWEventType")
@@ -46,6 +50,8 @@ func WoWEventTypeValues() []WoWEventType {
 		WoWEventTypeAura,
 		WoWEventTypeSpellGo,
 		WoWEventTypeAuraCast,
+		WoWEventTypeSpellStart,
+		WoWEventTypeSpellFail,
 	}
 }
 
@@ -71,6 +77,8 @@ var _WoWEventTypeValue = map[string]WoWEventType{
 	"aura":            WoWEventTypeAura,
 	"spell_go":        WoWEventTypeSpellGo,
 	"aura_cast":       WoWEventTypeAuraCast,
+	"spell_start":     WoWEventTypeSpellStart,
+	"spell_fail":      WoWEventTypeSpellFail,
 }
 
 // ParseWoWEventType attempts to convert a string to a WoWEventType.

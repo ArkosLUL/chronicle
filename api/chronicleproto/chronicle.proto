@@ -160,3 +160,22 @@ message SpellGo {
   optional string corpseOwner = 8;
   reserved 9; // was spellname
 }
+
+message SpellStart {
+  EventMeta meta = 1;
+  optional int32 itemID = 2;
+  optional SpellData spellData = 3;
+  string caster = 4;
+  optional string target = 5;
+  int32 castFlags = 6;
+  int32 castTimeMilli = 7;
+  int32 channelTimeMilli = 8;
+  int32 spellType = 9;
+}
+
+message SpellFail {
+  EventMeta meta = 1;
+  string caster = 2;
+  optional SpellData spellData = 3;
+  bool failedBySever = 4;
+}

@@ -242,10 +242,37 @@ export interface AuraCastProcessorEvent extends EventMeta {
 }
 
 /**
+ * SpellStart event from the "spell_start" stream.
+ * Fires when a spell cast begins.
+ */
+export interface SpellStartProcessorEvent extends EventMeta {
+  type: "spell_start";
+  caster: string;           // The unit who is casting
+  target: string;           // Primary target (may be empty)
+  spell: { id: number; name: string };  // SpellData: id + name
+  itemId: number | null;    // Item ID if triggered by an item
+  castFlags: number;        // Cast flags
+  castTimeMilli: number;    // Cast time in milliseconds
+  channelTimeMilli: number; // Channel duration in milliseconds
+  spellType: number;        // Spell type identifier
+}
+
+/**
  * Discriminated union of all event types.
  * Use event.type to narrow to a specific type.
  */
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent;
+/**
+ * SpellFail event from the "spell_fail" stream.
+ * Fires when a spell cast fails.
+ */
+export interface SpellFailProcessorEvent extends EventMeta {
+  type: "spell_fail";
+  caster: string;           // The unit whose cast failed
+  spell: { id: number; name: string };  // SpellData: id + name
+  failedByServer: boolean;  // Whether the failure was server-side
+}
+
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

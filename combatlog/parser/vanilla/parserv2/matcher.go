@@ -597,6 +597,56 @@ func (p *Parser) spellGo(_ context.Context, ts time.Time, m *Matched) ([]message
 	})
 }
 
+func (p *Parser) spellStart(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	itemID := m.Int32() // 0 if no item triggered it
+	spellData := m.DBCSpellByID(p)
+	caster := m.Guid()
+	target := m.OptionalGuid() // 0x0000000000000000 if no target
+	castFlags := m.CastFlags()
+	castTime := m.Int32()        // In millis
+	channelDuration := m.Int32() // In millis, 0 if not a channel
+	spellType := m.Int32()       // 0 = normal, 1 = channel, 2 = auto repeating
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	var item *int32
+	if itemID != 0 {
+		item = ptr.Ref(itemID)
+	}
+
+	return set(&messages.SpellStart{
+		MessageBase:     messages.Base(ts),
+		ItemID:          item,
+		SpellData:       spellData,
+		Caster:          caster,
+		Target:          target,
+		Flags:           castFlags,
+		CastTime:        time.Duration(castTime) * time.Millisecond,
+		ChannelDuration: time.Duration(channelDuration) * time.Millisecond,
+		SpellType:       spellType,
+	})
+}
+
+func (p *Parser) spellFail(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	if !strings.HasPrefix(strings.TrimSpace(m.peek()), "0x") {
+		// Client failure, ignoring for now.
+		return []messages.Message{}, nil
+	}
+
+	caster := m.Guid()
+	spell := m.DBCSpellByID(p.wowDB)
+	// TODO: Check the last flag
+
+	return set(&messages.SpellFail{
+		MessageBase:    messages.Base(ts),
+		SpellData:      spell,
+		Caster:         caster,
+		FailedByServer: true,
+	})
+}
+
 func (p *Parser) slain(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	id := m.Guid()
 

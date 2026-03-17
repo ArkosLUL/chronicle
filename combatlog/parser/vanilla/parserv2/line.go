@@ -93,7 +93,7 @@ func (m *Matched) Guid() guid.GUID {
 
 func (m *Matched) OptionalGuid() *guid.GUID {
 	return parseMatch(m, func(s string) (*guid.GUID, error) {
-		if s == "" || s == "nil" {
+		if s == "" || s == "nil" || s == "0x0000000000000000" {
 			return nil, nil
 		}
 		id, err := guid.FromString(s)

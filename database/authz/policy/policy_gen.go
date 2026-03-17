@@ -467,7 +467,7 @@ func (obj *ObjChronicle) CanShorter_urls_User(sub *ObjUser) rel.Relationship {
 
 // CanInternal_game_data_User checks if the subject has internal_game_data permission
 // // Object: chronicle:<id>
-// Schema: permission internal_game_data = technical_admin
+// Schema: permission internal_game_data = technical_admin + administer + supporter
 func (obj *ObjChronicle) CanInternal_game_data_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{

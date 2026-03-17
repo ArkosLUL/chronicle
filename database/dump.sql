@@ -26,7 +26,9 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'cast',
     'aura',
     'spell_go',
-    'aura_cast'
+    'aura_cast',
+    'spell_start',
+    'spell_fail'
 );
 
 CREATE TYPE log_type AS ENUM (

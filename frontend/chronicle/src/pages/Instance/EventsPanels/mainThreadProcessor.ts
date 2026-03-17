@@ -16,6 +16,8 @@ import {
   FastAuraCursor,
   FastSpellGoCursor,
   FastAuraCastCursor,
+  FastSpellStartCursor,
+  FastSpellFailCursor,
   type ReusableDamage,
   type ReusableHeal,
   type ReusableResourceChange,
@@ -25,6 +27,8 @@ import {
   type ReusableAura,
   type ReusableSpellGo,
   type ReusableAuraCast,
+  type ReusableSpellStart,
+  type ReusableSpellFail,
 } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import { compileFilters, type FilterPredicate, type PanelFilter } from "./processors/filters";
@@ -50,14 +54,14 @@ const _filterCache = new Map<string, {
 /**
  * Union of all reusable event types
  */
-type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast;
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail;
 
 /**
  * A cursor wrapper that supports peeking at the next event without consuming it.
  */
 interface PeekableCursor {
   streamType: StreamType;
-  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor;
   peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
 }
 
@@ -162,6 +166,10 @@ function createCursor(type: StreamType, data: Uint8Array): PeekableCursor {
     ? new FastSpellGoCursor(data)
     : type === "aura_cast"
     ? new FastAuraCastCursor(data)
+    : type === "spell_start"
+    ? new FastSpellStartCursor(data)
+    : type === "spell_fail"
+    ? new FastSpellFailCursor(data)
     : null;
 
   if (!cursor) {

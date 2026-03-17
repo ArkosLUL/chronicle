@@ -92,7 +92,10 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.slain(ctx, ts, m)
 	case "SPELL_GO":
 		return p.spellGo(ctx, ts, m)
-  case "SPELL_START": return p.spellStart(ctx, ts, m)
+	case "SPELL_START":
+		return p.spellStart(ctx, ts, m)
+	case "SPELL_FAIL":
+		return p.spellFail(ctx, ts, m)
 	case "SPELL_DMG":
 		return p.spell_dmg(ctx, ts, m)
 	case "MISS":

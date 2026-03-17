@@ -637,13 +637,20 @@ func (p *Parser) spellFail(_ context.Context, ts time.Time, m *Matched) ([]messa
 
 	caster := m.Guid()
 	spell := m.DBCSpellByID(p.wowDB)
-	// TODO: Check the last flag
+	serverSide := true
+	if m.Remain() > 0 {
+		serverSide = m.Bool()
+	}
+
+	if !serverSide {
+		return []messages.Message{}, nil
+	}
 
 	return set(&messages.SpellFail{
 		MessageBase:    messages.Base(ts),
 		SpellData:      spell,
 		Caster:         caster,
-		FailedByServer: true,
+		FailedByServer: serverSide,
 	})
 }
 

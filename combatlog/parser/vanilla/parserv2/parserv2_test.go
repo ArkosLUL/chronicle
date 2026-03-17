@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -59,8 +60,14 @@ func testCaseWithDB[T messages.Message](t *testing.T, line string, expected T, w
 	require.NoError(t, err)
 	msgs, err := p.Advance(ctx)
 	require.NoError(t, err)
-	require.Len(t, msgs, 1, "expected single message, got %d", len(msgs))
 
+	x := reflect.ValueOf(expected)
+	if x.IsZero() || x.IsNil() {
+		require.Len(t, msgs, 0, "expected no message, got %d", len(msgs))
+		return
+	}
+
+	require.Len(t, msgs, 1, "expected single message, got %d", len(msgs))
 	got, ok := msgs[0].(T)
 	require.True(t, ok, "expected %T, got %T", expected, msgs[0])
 
@@ -221,6 +228,39 @@ func TestParserMessages(t *testing.T) {
 				NumTargetsMissed: 1,
 				CorpseOwner:      nil,
 			},
+		)
+	})
+
+	t.Run("Spell Fail", func(t *testing.T) {
+		t.Parallel()
+
+		testCase(t,
+			"1771770885937|SPELL_FAIL|0x000000000001C80A|15237",
+			&messages.SpellFail{
+				MessageBase:    messages.Base(time.UnixMilli(1771770885937)),
+				SpellData:      nil, // ignored in comparison
+				Caster:         guid.GUID(0x000000000001C80A),
+				FailedByServer: true,
+			},
+		)
+
+		testCase(t,
+			"1771770885937|SPELL_FAIL|0x000000000001C80A|15237|true",
+			&messages.SpellFail{
+				MessageBase:    messages.Base(time.UnixMilli(1771770885937)),
+				SpellData:      nil, // ignored in comparison
+				Caster:         guid.GUID(0x000000000001C80A),
+				FailedByServer: true,
+			},
+		)
+
+		testCase[*messages.SpellFail](t,
+			"1771770885937|SPELL_FAIL|0x000000000001C80A|15237|false",
+			nil,
+		)
+		testCase[*messages.SpellFail](t,
+			"1771770885937|SPELL_FAIL|15237|false|35",
+			nil,
 		)
 	})
 	// Add more test cases:

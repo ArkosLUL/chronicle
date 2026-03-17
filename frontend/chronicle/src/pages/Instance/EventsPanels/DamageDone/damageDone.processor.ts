@@ -334,7 +334,8 @@ export function createDamageDoneProcessor(
             let adjustedAmount = event.amount;
 
             // Flat modifiers are represented as a per-hit amount in logs.
-            if (activeFlatAffect != null) {
+            // DoT ticks are not "hits" and should not receive flat bonuses (e.g. Gift of Arthas).
+            if (activeFlatAffect != null && !hasHitType(event.hitType, HitTypePeriodic)) {
               adjustedAmount = Math.max(0, adjustedAmount - activeFlatAffect);
             }
 
@@ -350,8 +351,15 @@ export function createDamageDoneProcessor(
 
       const schoolMaskOnly = vulnerabilityMode &&
         (context.panelContext as { schoolMask?: boolean } | null)?.schoolMask === true;
+      // When schoolMaskOnly is active, only include events that can actually be affected
+      // by the selected vulnerability. Periodic (DoT) ticks are excluded for flat-only
+      // vulnerabilities (e.g. Gift of Arthas) since flat bonuses don't apply to DoTs.
+      const isPeriodic = hasHitType(event.hitType, HitTypePeriodic);
+      const flatOnlyVulnerability = selectedVulnerability != null &&
+        selectedVulnerability.percentAffect == null && selectedVulnerability.flatAffect != null;
       const includeInVulnerabilityTotals =
-        !schoolMaskOnly || selectedVulnerability == null || schoolMatchesSelectedVulnerability;
+        !schoolMaskOnly || selectedVulnerability == null ||
+        (schoolMatchesSelectedVulnerability && !(flatOnlyVulnerability && isPeriodic));
 
       if (!state.EncounterDamage.has(encounterID)) {
         state.EncounterDamage.set(encounterID, new Map<string, DamageDoneData>());

@@ -398,6 +398,21 @@ describe('vulnerabilityEffectProcessor', () => {
     expect(base).toBe(1000);
   });
 
+  it('does not apply Gift of Arthas flat bonus to DoT ticks', () => {
+    const state = processor.createState();
+    const context = createContext({ panelOption: giftOfArthasId.toString() });
+
+    processor.processEvent(state, createVulnerabilityAuraEvent(giftOfArthasId), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createDamageEvent({ amount: 100, school: 2, hitType: 0x00200000 }), 'enc1', new Date(), 'damage', context);
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    // Flat bonus should NOT apply to DoT ticks
+    expect(bonus).toBe(0);
+    expect(base).toBe(100);
+  });
+
   it('does not track aura state or bonus when vulnerability is not selected', () => {
     const state = processor.createState();
     const context = createContext({ panelOption: null });
@@ -468,6 +483,27 @@ describe('vulnerabilityEffectProcessor', () => {
 
     expect(base).toBeCloseTo(expectedBase);
     expect(bonus).toBeCloseTo(expectedBonus);
+  });
+
+  it('excludes DoT ticks from vulnerability totals when schoolMask is enabled for flat-only vulnerability', () => {
+    const state = processor.createState();
+    const context = createContext({
+      panelOption: giftOfArthasId.toString(),
+      panelContext: {
+        schoolMask: true,
+      },
+    });
+
+    processor.processEvent(state, createVulnerabilityAuraEvent(giftOfArthasId), 'enc1', new Date(), 'aura', context);
+    // Physical DoT tick — school matches but flat bonus doesn't apply to DoTs
+    processor.processEvent(state, createDamageEvent({ amount: 100, school: 2, hitType: 0x00200000 }), 'enc1', new Date(), 'damage', context);
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    // DoT ticks should be excluded entirely from vulnerability totals for flat-only vulns
+    expect(bonus).toBe(0);
+    expect(base).toBe(0);
   });
 
   it('does not apply bonus when aura is not active', () => {

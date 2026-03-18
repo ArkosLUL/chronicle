@@ -60,7 +60,7 @@ export type { JudgementResult, TargetJudgementStats, JudgementApplication, Judge
 export type { AuraUptimeResult, AuraData, TargetUptimeData, UptimeSegment } from "../AuraUptime/auraUptime.processor";
 export type { TimelineResult, TimelineSeriesMeta } from "../Timeline/timeline.processor";
 export type { TimelineSeriesConfig, AggregationType, TimelineSettings } from "../Timeline/timelineTypes";
-export type { RotationsResult, CastEntry } from "../Rotations/rotations.processor";
+export type { RotationsResult, CastEntry, AuraSegment } from "../Rotations/rotations.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";

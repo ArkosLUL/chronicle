@@ -12,7 +12,7 @@ import type { PanelDefinition, PanelRenderProps } from "../types";
 import type { PanelFilter } from "../processors/filters";
 import { useSpell } from "@/api/queries";
 import { SpellIconWithTooltip } from "@/components/ui/SpellIconWithTooltip";
-import { rotationsProcessor, type RotationsResult, type CastEntry, AUTO_ATTACK_SPELL_ID } from "./rotations.processor";
+import { rotationsProcessor, type RotationsResult, type CastEntry, type AuraSegment, AUTO_ATTACK_SPELL_ID } from "./rotations.processor";
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -188,6 +188,35 @@ interface RowData {
   label: string;
   className: string;
   casts: CastEntry[];
+  /** Aura segments for this row's spell (focus view only) */
+  auraSegments?: AuraSegment[];
+  /** Aura uptime % (focus view only, 0-100) */
+  uptimePct?: number;
+}
+
+/** Panel option format: "f:GUID;h:1,2,3" — focus GUID and hidden spell IDs */
+interface PanelOptionState {
+  focusGuid: string | null;
+  hiddenSpellIds: Set<number>;
+}
+
+function parsePanelOption(option: string | null | undefined): PanelOptionState {
+  const state: PanelOptionState = { focusGuid: null, hiddenSpellIds: new Set() };
+  if (!option) return state;
+  const focusMatch = option.match(/f:([^;]+)/);
+  if (focusMatch) state.focusGuid = focusMatch[1];
+  const hiddenMatch = option.match(/h:([\d,-]+)/);
+  if (hiddenMatch) {
+    state.hiddenSpellIds = new Set(hiddenMatch[1].split(",").map(Number).filter((n) => !isNaN(n)));
+  }
+  return state;
+}
+
+function serializePanelOption(state: PanelOptionState): string | null {
+  const parts: string[] = [];
+  if (state.focusGuid) parts.push(`f:${state.focusGuid}`);
+  if (state.hiddenSpellIds.size > 0) parts.push(`h:${Array.from(state.hiddenSpellIds).join(",")}`);
+  return parts.length > 0 ? parts.join(";") : null;
 }
 
 function RotationsContent({
@@ -195,25 +224,46 @@ function RotationsContent({
   durationMs,
   context,
   processing,
+  panelOption,
+  setPanelOption,
 }: PanelRenderProps<RotationsResult>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pixelsPerSecond, setPixelsPerSecond] = useState(DEFAULT_PPS);
-  const [hiddenSpellIds, setHiddenSpellIds] = useState<Set<number>>(new Set());
+
+  // Parse panel option state (focus + hidden spells)
+  const optionState = useMemo(() => parsePanelOption(panelOption), [panelOption]);
+  const hiddenSpellIds = optionState.hiddenSpellIds;
+
+  const updateOption = useCallback((updater: (prev: PanelOptionState) => PanelOptionState) => {
+    const current = parsePanelOption(panelOption);
+    setPanelOption?.(serializePanelOption(updater(current)));
+  }, [panelOption, setPanelOption]);
 
   const hideSpell = useCallback((spellId: number) => {
-    setHiddenSpellIds((prev) => new Set(prev).add(spellId));
-  }, []);
+    updateOption((prev) => ({
+      ...prev,
+      hiddenSpellIds: new Set(prev.hiddenSpellIds).add(spellId),
+    }));
+  }, [updateOption]);
 
   const unhideSpell = useCallback((spellId: number) => {
-    setHiddenSpellIds((prev) => {
-      const next = new Set(prev);
+    updateOption((prev) => {
+      const next = new Set(prev.hiddenSpellIds);
       next.delete(spellId);
-      return next;
+      return { ...prev, hiddenSpellIds: next };
     });
-  }, []);
+  }, [updateOption]);
 
-  // Determine if we're in focus mode (single entity selected)
-  const isFocused =
+  const focusEntity = useCallback((guid: string) => {
+    updateOption((prev) => ({
+      ...prev,
+      focusGuid: prev.focusGuid === guid ? null : guid,
+    }));
+  }, [updateOption]);
+
+  // Panel-local focus: use panelOption focus GUID, fall back to global entitySelection
+  const focusGuid = optionState.focusGuid;
+  const isFocused = focusGuid != null || 
     context.entitySelection.playerIds.size === 1 ||
     context.entitySelection.enemyIds.size === 1;
 
@@ -221,14 +271,18 @@ function RotationsContent({
   const rows: RowData[] = useMemo(() => {
     if (isFocused) {
       // Focus mode: group by spell ability
-      // Get the single focused entity's casts
+      // Panel-local focus takes priority over global entitySelection
       const focusedId =
+        focusGuid ||
         [...context.entitySelection.playerIds][0] ||
         [...context.entitySelection.enemyIds][0];
       const casts = focusedId ? result.castsByEntity.get(focusedId) : undefined;
       if (!casts || casts.length === 0) return [];
 
-      // Group by spellId
+      // Get aura segments for this entity
+      const entityAuras = focusedId ? result.aurasByEntity.get(focusedId) : undefined;
+
+      // Group casts by spellId
       const bySpell = new Map<number, CastEntry[]>();
       for (const c of casts) {
         let list = bySpell.get(c.spellId);
@@ -239,15 +293,52 @@ function RotationsContent({
         list.push(c);
       }
 
-      // Sort by total cast count descending
-      return Array.from(bySpell.entries())
-        .sort((a, b) => b[1].length - a[1].length)
-        .map(([spellId, spellCasts]) => ({
-          key: `spell-${spellId}`,
-          label: result.spellNames.get(spellId) || `Spell ${spellId}`,
-          className: "",
-          casts: spellCasts,
-        }));
+      // Group aura segments by spellId
+      const aurasBySpell = new Map<number, AuraSegment[]>();
+      if (entityAuras) {
+        for (const seg of entityAuras) {
+          let list = aurasBySpell.get(seg.spellId);
+          if (!list) {
+            list = [];
+            aurasBySpell.set(seg.spellId, list);
+          }
+          list.push(seg);
+        }
+      }
+
+      // Merge: include spells that have casts OR aura segments
+      const allSpellIds = new Set([...bySpell.keys(), ...aurasBySpell.keys()]);
+
+      return Array.from(allSpellIds)
+        .map((spellId) => {
+          const spellCasts = bySpell.get(spellId) || [];
+          const segments = aurasBySpell.get(spellId);
+          // Compute uptime % if there are aura segments
+          let uptimePct: number | undefined;
+          if (segments && segments.length > 0 && durationMs > 0) {
+            let totalUp = 0;
+            for (const s of segments) {
+              const end = Math.min(s.endMilli ?? durationMs, durationMs);
+              totalUp += end - s.startMilli;
+            }
+            uptimePct = Math.min(100, (totalUp / durationMs) * 100);
+          }
+          return {
+            key: `spell-${spellId}`,
+            label: result.spellNames.get(spellId) || `Spell ${spellId}`,
+            className: "",
+            casts: spellCasts,
+            auraSegments: segments,
+            uptimePct,
+          };
+        })
+        .sort((a, b) => {
+          // Rows with casts first (by count desc), then aura-only rows by uptime desc
+          if (a.casts.length > 0 && b.casts.length === 0) return -1;
+          if (a.casts.length === 0 && b.casts.length > 0) return 1;
+          if (a.casts.length > 0 && b.casts.length > 0) return b.casts.length - a.casts.length;
+          return (b.uptimePct ?? 0) - (a.uptimePct ?? 0);
+        });
     } else {
       // Default mode: one row per entity, grouped by class then sorted by cast count
       return Array.from(result.castsByEntity.entries())
@@ -265,7 +356,7 @@ function RotationsContent({
           return b.casts.length - a.casts.length;
         });
     }
-  }, [result, isFocused, context]);
+  }, [result, isFocused, focusGuid, context, durationMs]);
 
   // Filter out hidden spells from each row's casts
   const filteredRows = useMemo(() => {
@@ -392,6 +483,24 @@ function RotationsContent({
           Shift+Scroll to pan
         </span>
 
+        {/* Focused entity indicator */}
+        {focusGuid && (() => {
+          const player = context.instance.players?.[focusGuid];
+          const unit = context.instance.units?.[focusGuid];
+          const name = player?.name || unit?.name || focusGuid.slice(-6);
+          const cls = player?.class?.toUpperCase() || "UNKNOWN";
+          return (
+            <button
+              onClick={() => focusEntity(focusGuid)}
+              className="ml-2 flex items-center gap-1 rounded bg-zinc-800 px-1.5 py-0.5 hover:bg-zinc-700 text-[10px]"
+              title="Click to unfocus"
+            >
+              <span style={{ color: CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN }}>{name}</span>
+              <span className="text-zinc-500">✕</span>
+            </button>
+          );
+        })()}
+
         {/* Hidden spells */}
         {hiddenSpells.length > 0 && (
           <div className="ml-auto flex items-center gap-1">
@@ -427,15 +536,21 @@ function RotationsContent({
               >
                 {!isFocused ? (
                   <span
-                    className="truncate font-medium"
+                    className="truncate font-medium cursor-pointer hover:underline"
                     style={{ color: CLASS_COLORS[row.className] || CLASS_COLORS.UNKNOWN }}
+                    onClick={() => focusEntity(row.key)}
                   >
                     {row.label}
                   </span>
                 ) : (
                   <div className="flex items-center gap-1 truncate">
-                    <FocusRowIcon spellId={row.casts[0]?.spellId ?? 0} />
+                    <FocusRowIcon spellId={row.casts[0]?.spellId ?? (row.auraSegments?.[0]?.spellId ?? 0)} />
                     <span className="truncate">{row.label}</span>
+                    {row.uptimePct != null && (
+                      <span className="ml-auto flex-shrink-0 text-[9px] text-emerald-500/70 font-mono">
+                        {Math.round(row.uptimePct)}%
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -487,6 +602,25 @@ function RotationsContent({
                   className="relative border-b border-zinc-800/50"
                   style={{ height: ROW_HEIGHT }}
                 >
+
+                  {/* Aura duration bars (focus view) */}
+                  {isFocused && row.auraSegments?.map((seg, i) => {
+                    const startPx = (seg.startMilli / 1000) * pixelsPerSecond;
+                    const endMs = Math.min(seg.endMilli ?? durationMs, durationMs);
+                    const widthPx = Math.max(1, ((endMs - seg.startMilli) / 1000) * pixelsPerSecond);
+                    return (
+                      <div
+                        key={`aura-${i}`}
+                        className="absolute rounded-sm bg-emerald-500/20 border border-emerald-500/10"
+                        style={{
+                          left: startPx,
+                          width: widthPx,
+                          top: 2,
+                          bottom: 2,
+                        }}
+                      />
+                    );
+                  })}
 
                   {/* Cast icons */}
                   {row.casts.map((cast, i) => {

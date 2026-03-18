@@ -83,6 +83,9 @@ export interface PanelDefinition<TResult, TEvent extends ProcessorEvent = Proces
   
   /** Whether this panel supports per-second display mode (shows checkbox when true) */
   supportsPerSecond?: boolean;
+
+  /** If true, this panel is hidden from the panel selector unless ?debug=true */
+  hidden?: boolean;
   
   /** Custom label for the checkbox (defaults to "Per second" when supportsPerSecond is true) */
   checkboxLabel?: string;

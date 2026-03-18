@@ -2,7 +2,8 @@
  * PanelSelector - Dropdown with submenus and fuzzy search for panel selection
  */
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, Leaf, Scale, Search, Sword, Toolbox, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
@@ -180,6 +181,7 @@ interface CategoryNodeProps {
   onToggle: (path: string) => void;
   selectedValue: EventsPanelType;
   onSelect: (value: EventsPanelType) => void;
+  isPanelVisible: (key: EventsPanelType) => boolean;
 }
 
 /** Recursive component for rendering category tree with nested subcategories */
@@ -190,6 +192,7 @@ function CategoryNode({
   onToggle,
   selectedValue,
   onSelect,
+  isPanelVisible,
 }: CategoryNodeProps) {
   const isExpanded = expandedPaths.has(path);
   const hasChildren = (category.items && category.items.length > 0) || 
@@ -229,11 +232,12 @@ function CategoryNode({
               onToggle={onToggle}
               selectedValue={selectedValue}
               onSelect={onSelect}
+              isPanelVisible={isPanelVisible}
             />
           ))}
           
           {/* Render direct items */}
-          {category.items?.map((panelKey) => {
+          {category.items?.filter(isPanelVisible).map((panelKey) => {
             const item = getPanelOption(panelKey);
             return (
               <button
@@ -264,6 +268,12 @@ export interface PanelSelectorProps {
 }
 
 export function PanelSelector({ value, onChange, className }: PanelSelectorProps) {
+  const [searchParams] = useSearchParams();
+  const isDebug = searchParams.get("debug") === "true";
+  const isPanelVisible = useCallback(
+    (key: EventsPanelType) => !PANELS[key].hidden || isDebug,
+    [isDebug],
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   // Track expanded categories by their path (e.g., "Class" or "Class/Druid")
@@ -327,6 +337,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
     for (const category of PANEL_CATEGORIES) {
       const allItems = getAllCategoryItems(category);
       for (const { panelKey, categoryPath } of allItems) {
+        if (!isPanelVisible(panelKey)) continue;
         const option = getPanelOption(panelKey);
         const { match, score } = fuzzyMatch(searchQuery, option.label);
         if (match) {
@@ -337,7 +348,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
 
     // Sort by score descending
     return results.sort((a, b) => b.score - a.score);
-  }, [searchQuery]);
+  }, [searchQuery, isPanelVisible]);
 
   const handleSelect = (panelValue: EventsPanelType) => {
     onChange(panelValue);
@@ -427,6 +438,7 @@ export function PanelSelector({ value, onChange, className }: PanelSelectorProps
                     onToggle={toggleExpanded}
                     selectedValue={value}
                     onSelect={handleSelect}
+                    isPanelVisible={isPanelVisible}
                   />
                 ))
               )}

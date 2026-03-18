@@ -669,6 +669,7 @@ export function createRotationsPanel(): PanelDefinition<RotationsResult> {
     label: "Rotations",
     icon: <RotateCcw className="h-4 w-4" />,
     supportsPerSecond: false,
+    hidden: true,
     supportsFiltering: true,
     defaultFilters: [
       { type: "source_type" as PanelFilter["type"], value: ["player"] },

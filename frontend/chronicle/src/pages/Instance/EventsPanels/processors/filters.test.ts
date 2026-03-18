@@ -188,6 +188,35 @@ describe("evaluateFilters", () => {
       expect(evaluateFilters(filters, createDamageEvent({ caster: FRIENDLY_PET_GUID }), ctxWithUnits())).toBe(true);
       expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_PET_GUID }), ctxWithUnits())).toBe(false);
     });
+    it("selected_players matches pets owned by selected players", () => {
+      const filters: PanelFilter[] = [{ type: "source_type", value: ["selected_players"] }];
+      // Player matches
+      expect(evaluateFilters(filters, createDamageEvent({ caster: PLAYER_GUID }), ctxWithUnits())).toBe(true);
+      // Pet owned by selected player matches
+      expect(evaluateFilters(filters, createDamageEvent({ caster: FRIENDLY_PET_GUID }), ctxWithUnits())).toBe(true);
+      // Enemy pet does not match
+      expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_PET_GUID }), ctxWithUnits())).toBe(false);
+      // Boss does not match
+      expect(evaluateFilters(filters, createDamageEvent({ caster: "0xF130000000000001" }), ctxWithUnits())).toBe(false);
+    });
+
+    it("selected_players with no selection matches player-owned pets", () => {
+      const filters: PanelFilter[] = [{ type: "source_type", value: ["selected_players"] }];
+      const ctx = createContext({
+        units: {
+          [FRIENDLY_PET_GUID]: { name: "Wolf", owner: PLAYER_GUID, entry: 100 },
+          [ENEMY_PET_GUID]: { name: "Imp", owner: ENEMY_OWNER_GUID, entry: 200 },
+        },
+        entitySelection: { playerIds: new Set(), enemyIds: new Set() },
+      });
+      // Player matches
+      expect(evaluateFilters(filters, createDamageEvent({ caster: PLAYER_GUID }), ctx)).toBe(true);
+      // Friendly pet (player-owned) matches
+      expect(evaluateFilters(filters, createDamageEvent({ caster: FRIENDLY_PET_GUID }), ctx)).toBe(true);
+      // Enemy pet (non-player-owned) does not match
+      expect(evaluateFilters(filters, createDamageEvent({ caster: ENEMY_PET_GUID }), ctx)).toBe(false);
+    });
+
   });
 
   it("matches ability_hittype using bitmask", () => {

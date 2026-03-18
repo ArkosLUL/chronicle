@@ -97,14 +97,17 @@ func demo() *serpent.Command {
 				return fmt.Errorf("open wow client: %w", err)
 			}
 
-			spdb, err := wc.SpellItemEnchantment()
+			spdb, err := wc.Spells()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)
 			}
 
-			_ = spdb.Range(func(cursor *dbdefs.Ent_SpellItemEnchantment) bool {
-				d, _ := json.Marshal(cursor)
-				fmt.Println(string(d))
+			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
+				if cursor.ID == 12328 {
+					d, _ := json.Marshal(cursor)
+					fmt.Println(string(d))
+				}
+
 				//sp := chrondbc.SpellFromDB(cursor)
 				////if sp.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {
 				////	fmt.Println(sp.Name_lang.String(), sp.ID, "is death persistent")

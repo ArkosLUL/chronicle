@@ -641,6 +641,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   comparison: 'cmp',
   // Charts
   timeline: 'tl',
+  rotations: 'rot',
 };
 
 // ============================================================================

@@ -77,7 +77,7 @@ export function getDefaultSettings(): TimelineSettings {
  */
 export const FALLBACK_SERIES_CONFIG: TimelineSeriesConfig[] = [
   { id: "s0", name: "Damage", stream: "damage", aggregation: "sum", color: SERIES_COLORS[0], filters: [
-    { type: "source_type", value: "player" },
+    { type: "source_type", value: "selected_players" },
     { type: "source_type", value: "pet", combinator: "or" },
     { type: "target_type", value: "selected_enemies", combinator: "and" },
   ] },

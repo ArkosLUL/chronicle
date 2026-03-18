@@ -102,3 +102,4 @@ importdata
 *.pprof
 
 research/.other
+research/core

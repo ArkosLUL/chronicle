@@ -20,6 +20,7 @@ import { metricsProcessor } from "../Metrics/metrics.processor";
 import { auraUptimeProcessor } from "../AuraUptime/auraUptime.processor";
 import { comparisonProcessor } from "../ComparisonPanel/comparison.processor";
 import { timelineProcessor } from "../Timeline/timeline.processor";
+import { rotationsProcessor } from "../Rotations/rotations.processor";
 
 // Export individual processors
 export { damageDoneProcessor, vulnerabilityEffectProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -39,6 +40,7 @@ export { metricsProcessor } from "../Metrics/metrics.processor";
 export { auraUptimeProcessor } from "../AuraUptime/auraUptime.processor";
 export { comparisonProcessor } from "../ComparisonPanel/comparison.processor";
 export { timelineProcessor } from "../Timeline/timeline.processor";
+export { rotationsProcessor } from "../Rotations/rotations.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType, EnemyDamageGrouping } from "../DamageDone/damageDone.processor";
@@ -58,6 +60,7 @@ export type { JudgementResult, TargetJudgementStats, JudgementApplication, Judge
 export type { AuraUptimeResult, AuraData, TargetUptimeData, UptimeSegment } from "../AuraUptime/auraUptime.processor";
 export type { TimelineResult, TimelineSeriesMeta } from "../Timeline/timeline.processor";
 export type { TimelineSeriesConfig, AggregationType, TimelineSettings } from "../Timeline/timelineTypes";
+export type { RotationsResult, CastEntry } from "../Rotations/rotations.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
@@ -106,4 +109,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   comparison: comparisonProcessor,
   // Charts
   timeline: timelineProcessor,
+  // Rotations
+  rotations: rotationsProcessor,
 };

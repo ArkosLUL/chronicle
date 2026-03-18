@@ -51,6 +51,7 @@ import { createMetricsPanel } from "./Metrics/Metrics";
 import { PeriodsPanel } from "./PeriodsPanel/PeriodsPanel";
 import { createComparisonPanel } from "./ComparisonPanel/ComparisonPanel";
 import { createTimelinePanel } from "./Timeline/Timeline";
+import { createRotationsPanel } from "./Rotations/Rotations";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -93,6 +94,8 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   comparison: createComparisonPanel(),
   // Charts
   timeline: createTimelinePanel(),
+  // Rotations
+  rotations: createRotationsPanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;

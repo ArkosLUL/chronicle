@@ -126,10 +126,10 @@ func SpellFromDB(def *dbdefs.Ent_Spell) *Spell {
 
 		// === Timing ===
 		CastingTimeIndex:      CastingTimeID(def.CastingTimeIndex),
-		RecoveryTime:          time.Duration(def.RecoveryTime) * time.Millisecond,
+		RecoveryTime:          time.Duration(def.RecoveryTime),
 		StartRecoveryCategory: def.StartRecoveryCategory,
-		StartRecoveryTime:     time.Duration(def.StartRecoveryTime) * time.Millisecond,
-		CategoryRecoveryTime:  time.Duration(def.CategoryRecoveryTime) * time.Millisecond,
+		StartRecoveryTime:     time.Duration(def.StartRecoveryTime),
+		CategoryRecoveryTime:  time.Duration(def.CategoryRecoveryTime),
 		RangeIndex:            RangeID(def.RangeIndex),
 		DurationIndex:         DurationID(def.DurationIndex),
 

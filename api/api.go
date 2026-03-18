@@ -235,10 +235,6 @@ func (api *API) Routes() chi.Router {
 
 		if api.Opts.InternalGameData != nil {
 			r.Group(func(r chi.Router) {
-				r.Use(
-					api.Auth.Authenticated(false),
-					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanInternal_game_data_User),
-				)
 				r.Mount("/internal/gamedata", api.Opts.InternalGameData)
 			})
 		}

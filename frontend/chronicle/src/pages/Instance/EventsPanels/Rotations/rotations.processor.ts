@@ -71,7 +71,7 @@ function getOrCreateSegs(state: RotationsResult, targetGuid: string): AuraSegmen
   return segs;
 }
 
-type RotationsEvent = SpellGoProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | DamageProcessorEvent | AuraCastProcessorEvent | AuraProcessorEvent;
+export type RotationsEvent = SpellGoProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | DamageProcessorEvent | AuraCastProcessorEvent | AuraProcessorEvent;
 
 export const rotationsProcessor: PanelProcessor<RotationsResult, RotationsEvent> = {
   id: "rotations",

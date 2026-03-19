@@ -12,7 +12,7 @@ import type { PanelDefinition, PanelRenderProps } from "../types";
 import type { PanelFilter } from "../processors/filters";
 import { useSpell } from "@/api/queries";
 import { SpellIconWithTooltip } from "@/components/ui/SpellIconWithTooltip";
-import { rotationsProcessor, type RotationsResult, type CastEntry, type AuraSegment, AUTO_ATTACK_SPELL_ID } from "./rotations.processor";
+import { rotationsProcessor, type RotationsResult, type RotationsEvent, type CastEntry, type AuraSegment, AUTO_ATTACK_SPELL_ID } from "./rotations.processor";
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -663,7 +663,7 @@ function getMaxOffset(castsByEntity: Map<string, CastEntry[]>): number {
 
 // ── Panel definition ──────────────────────────────────────────
 
-export function createRotationsPanel(): PanelDefinition<RotationsResult> {
+export function createRotationsPanel(): PanelDefinition<RotationsResult, RotationsEvent> {
   return {
     ...rotationsProcessor,
     label: "Rotations",

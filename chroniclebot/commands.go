@@ -40,9 +40,8 @@ func (b *Bot) RegisterCommands(commands []Command) error {
 	})
 
 	// Register commands with Discord
-	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
 	for _, cmd := range commands {
-		registered, err := b.session.ApplicationCommandCreate(
+		_, err := b.session.ApplicationCommandCreate(
 			b.session.State.User.ID,
 			b.config.GuildID, // Empty string = global
 			cmd.Definition,
@@ -50,27 +49,39 @@ func (b *Bot) RegisterCommands(commands []Command) error {
 		if err != nil {
 			return fmt.Errorf("register command %s: %w", cmd.Definition.Name, err)
 		}
-		registeredCommands = append(registeredCommands, registered)
 		b.logger.Info("registered command",
 			slog.String("name", cmd.Definition.Name),
 			slog.String("guild_id", b.config.GuildID),
 		)
 	}
 
-	var _ = registeredCommands
-	// Store cleanup function to remove commands on shutdown
-	b.handlers = append(b.handlers, func() {
-		// Deleting the command breaks any multi instance support.
-		//for _, cmd := range registeredCommands {
-		//	err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.config.GuildID, cmd.ID)
-		//	if err != nil {
-		//		b.logger.Error("failed to delete command",
-		//			slog.String("name", cmd.Name),
-		//			slog.String("error", err.Error()),
-		//		)
-		//	}
-		//}
-	})
+	// Clean up stale commands that are registered with Discord but no
+	// longer present in our command set.
+	registeredNames := make(map[string]bool, len(commands))
+	for _, cmd := range commands {
+		registeredNames[cmd.Definition.Name] = true
+	}
+	existing, err := b.session.ApplicationCommands(b.session.State.User.ID, b.config.GuildID)
+	if err != nil {
+		b.logger.Warn("failed to list existing commands for cleanup",
+			slog.String("error", err.Error()),
+		)
+	} else {
+		for _, cmd := range existing {
+			if !registeredNames[cmd.Name] {
+				if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.config.GuildID, cmd.ID); err != nil {
+					b.logger.Error("failed to delete stale command",
+						slog.String("name", cmd.Name),
+						slog.String("error", err.Error()),
+					)
+				} else {
+					b.logger.Info("deleted stale command",
+						slog.String("name", cmd.Name),
+					)
+				}
+			}
+		}
+	}
 
 	return nil
 }

@@ -72,5 +72,6 @@ func (w *WorkerSyncDiscordUser) Work(ctx context.Context, job *river.Job[ArgsSyn
 		slog.String("user_id", link.UserID.String()),
 		slog.String("action", job.Args.Action),
 	)
+
 	return nil
 }

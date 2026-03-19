@@ -11,6 +11,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/storagegrants"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/google/uuid"
+	"github.com/riverqueue/river"
 )
 
 var ErrMustJoinDiscordServer = errors.New("must be in the discord server to use chronicle")
@@ -66,5 +67,8 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 		return fmt.Errorf("zed.Write: %w", err)
 	}
 
+	_ = river.RecordOutput(ctx, map[string]any{
+		"username": member.User.Username,
+	})
 	return nil
 }

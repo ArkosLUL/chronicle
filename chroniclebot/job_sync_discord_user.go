@@ -15,7 +15,8 @@ const KindDiscordSyncUser = "discord-sync-user"
 
 type ArgsSyncDiscordUser struct {
 	DiscordID string `json:"discord_id"`
-	Action    string `json:"action"` // "add", "update", "remove"
+	// UniqueString is used to dedupe-events
+	UniqueString string `json:"unique_string"`
 }
 
 func (a ArgsSyncDiscordUser) Kind() string { return KindDiscordSyncUser }
@@ -57,7 +58,7 @@ func (w *WorkerSyncDiscordUser) Work(ctx context.Context, job *river.Job[ArgsSyn
 	if err != nil {
 		b.logger.Debug("sync job: user not found in db",
 			slog.String("discord_id", job.Args.DiscordID),
-			slog.String("action", job.Args.Action),
+			slog.String("unique", job.Args.UniqueString),
 		)
 		return nil // not an error — user just isn't in our system
 	}
@@ -70,7 +71,7 @@ func (w *WorkerSyncDiscordUser) Work(ctx context.Context, job *river.Job[ArgsSyn
 	b.logger.Info("synced discord user",
 		slog.String("discord_id", job.Args.DiscordID),
 		slog.String("user_id", link.UserID.String()),
-		slog.String("action", job.Args.Action),
+		slog.String("action", job.Args.UniqueString),
 	)
 
 	return nil

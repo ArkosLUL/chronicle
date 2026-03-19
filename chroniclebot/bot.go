@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/Emyrk/chronicle/database"
@@ -154,7 +155,9 @@ func (b *Bot) onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMember
 	if m.GuildID != b.ChronicleGuildID() {
 		return
 	}
-	b.enqueueSyncJob(m.User.ID, "update")
+
+	// New role combinations get new unique strings
+	b.enqueueSyncJob(m.User.ID, strings.Join(m.Roles, ",")+"update")
 }
 
 // onGuildMemberRemove is called when a member leaves or is kicked from a guild.
@@ -165,23 +168,21 @@ func (b *Bot) onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMember
 	b.enqueueSyncJob(m.User.ID, "remove")
 }
 
-func (b *Bot) enqueueSyncJob(discordID, action string) {
+func (b *Bot) enqueueSyncJob(discordID, uniqueString string) {
 	if b.queue == nil {
 		b.logger.Warn("no river queue configured, skipping sync job",
 			slog.String("discord_id", discordID),
-			slog.String("action", action),
 		)
 		return
 	}
 
 	_, err := b.queue.Insert(context.Background(), ArgsSyncDiscordUser{
-		DiscordID: discordID,
-		Action:    action,
+		DiscordID:    discordID,
+		UniqueString: uniqueString,
 	}, nil)
 	if err != nil {
 		b.logger.Error("failed to enqueue discord sync job",
 			slog.String("discord_id", discordID),
-			slog.String("action", action),
 			slog.String("error", err.Error()),
 		)
 	}

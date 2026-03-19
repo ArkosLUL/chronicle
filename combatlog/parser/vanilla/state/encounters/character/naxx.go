@@ -30,6 +30,10 @@ func NewAnubRekhan(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(15956, 16573, 16698)(id, all)
 }
 
+func NewHeiganTheUnclean(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(15936, 16236, 16056)(id, all)
+}
+
 const (
 	thaddiusEntry = 15928
 	stalaggEntry  = 15929

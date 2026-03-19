@@ -56,6 +56,7 @@ var characterFactories = []characterFactory{
 	NewThaddiusParty,
 	NewGothikRoom,
 	NewKelThuzadRoom,
+	NewHeiganTheUnclean,
 	//NewDiseasedMaggot,
 	// Kara 40
 	NewKruul,

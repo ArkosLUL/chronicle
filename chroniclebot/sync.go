@@ -29,14 +29,13 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 	}
 
 	// Add back roles based on their current discord roles
-
 	member, err := bot.GetGuildMember(bot.ChronicleGuildID(), discordID)
 	if err != nil {
 		return err
 	}
 
 	if member == nil {
-		// DELETE ALL PERMS
+		// All perms are deleted
 		return ErrMustJoinDiscordServer
 	}
 

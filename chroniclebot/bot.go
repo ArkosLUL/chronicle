@@ -10,6 +10,8 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/bwmarrin/discordgo"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 )
 
 // Config holds the configuration for the Discord bot.
@@ -30,6 +32,7 @@ type Bot struct {
 
 	mu       sync.RWMutex
 	handlers []func()
+	queue    JobInserter
 
 	roles []*discordgo.Role
 }
@@ -81,6 +84,17 @@ func (b *Bot) ChronicleGuildID() string {
 	return b.config.GuildID
 }
 
+// JobInserter is the interface for inserting River jobs.
+// Satisfied by *riverqueue.Queues (via river.Client).
+type JobInserter interface {
+	Insert(ctx context.Context, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
+}
+
+// SetQueue configures the River queue for async job processing.
+func (b *Bot) SetQueue(queue JobInserter) {
+	b.queue = queue
+}
+
 // Open connects to Discord and starts the bot.
 func (b *Bot) Open(ctx context.Context) error {
 	// Set intents - adjust based on what your bot needs
@@ -129,53 +143,18 @@ func (b *Bot) onReady(s *discordgo.Session, r *discordgo.Ready) {
 
 // onGuildMemberAdd is called when a new member joins a guild.
 func (b *Bot) onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
-	b.logger.Debug("member joined guild",
-		slog.String("guild_id", m.GuildID),
-		slog.String("user_id", m.User.ID),
-		slog.String("username", m.User.Username),
-	)
+	if m.GuildID != b.ChronicleGuildID() {
+		return
+	}
+	b.enqueueSyncJob(m.User.ID, "add")
 }
 
 // onGuildMemberUpdate is called when a member's roles, nickname, etc. change.
 func (b *Bot) onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
-	b.logger.Info("onGuildMemberUpdate fired",
-		slog.String("guild_id", m.GuildID),
-		slog.String("user_id", m.User.ID),
-		slog.String("chronicle_guild", b.ChronicleGuildID()),
-	)
-
-	// Only care about our guild
 	if m.GuildID != b.ChronicleGuildID() {
 		return
 	}
-
-	b.logger.Info("member updated",
-		slog.String("guild_id", m.GuildID),
-		slog.String("user_id", m.User.ID),
-		slog.String("username", m.User.Username),
-		slog.Any("roles", m.Roles),
-	)
-
-	// Look up the user by Discord ID
-	link, err := b.config.DB.GetUserAuthByLinkedID(context.Background(), database.GetUserAuthByLinkedIDParams{
-		LinkedID: m.User.ID,
-		Provider: "discord",
-	})
-	if err != nil {
-		b.logger.Debug("member update: user not found in db",
-			slog.String("discord_id", m.User.ID),
-		)
-		return
-	}
-
-	// Sync their roles
-	err = b.SyncDiscordUser(context.Background(), b.config.Zed, m.User.ID, link.UserID)
-	if err != nil {
-		b.logger.Error("failed to sync user roles",
-			slog.String("user_id", link.UserID.String()),
-			slog.Any("error", err),
-		)
-	}
+	b.enqueueSyncJob(m.User.ID, "update")
 }
 
 // onGuildMemberRemove is called when a member leaves or is kicked from a guild.
@@ -183,28 +162,27 @@ func (b *Bot) onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMember
 	if m.GuildID != b.ChronicleGuildID() {
 		return
 	}
+	b.enqueueSyncJob(m.User.ID, "remove")
+}
 
-	b.logger.Debug("member left guild",
-		slog.String("guild_id", m.GuildID),
-		slog.String("user_id", m.User.ID),
-		slog.String("username", m.User.Username),
-	)
-
-	// Look up the user by Discord ID
-	link, err := b.config.DB.GetUserAuthByLinkedID(context.Background(), database.GetUserAuthByLinkedIDParams{
-		LinkedID: m.User.ID,
-		Provider: "discord",
-	})
-	if err != nil {
-		return // User not in our system, nothing to do
+func (b *Bot) enqueueSyncJob(discordID, action string) {
+	if b.queue == nil {
+		b.logger.Warn("no river queue configured, skipping sync job",
+			slog.String("discord_id", discordID),
+			slog.String("action", action),
+		)
+		return
 	}
 
-	// SyncDiscordUser will clear roles when member is nil (not in guild)
-	err = b.SyncDiscordUser(context.Background(), b.config.Zed, m.User.ID, link.UserID)
+	_, err := b.queue.Insert(context.Background(), ArgsSyncDiscordUser{
+		DiscordID: discordID,
+		Action:    action,
+	}, nil)
 	if err != nil {
-		b.logger.Error("failed to revoke roles on member leave",
-			slog.String("user_id", link.UserID.String()),
-			slog.Any("error", err),
+		b.logger.Error("failed to enqueue discord sync job",
+			slog.String("discord_id", discordID),
+			slog.String("action", action),
+			slog.String("error", err.Error()),
 		)
 	}
 }

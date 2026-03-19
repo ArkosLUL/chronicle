@@ -6,6 +6,7 @@ import (
 
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
@@ -47,6 +48,7 @@ func (s *Service) DependsOn() []string {
 		servicelogger.OnLogger(),
 		servicepgxpool.OnPGXPool(),
 		servicechronicle.OnChronicle(),
+		servicebot.OnDiscordBot(),
 	}
 }
 
@@ -65,12 +67,18 @@ func (s *Service) Start(ctx context.Context) error {
 		return fmt.Errorf("creating river queues: %w", err)
 	}
 
+	bot := servicebot.DiscordBot(s.broker)
+
 	q.AddQueue(riverqueue.QueueLogParsing, river.QueueConfig{
 		MaxWorkers: int(s.logParsingWorkers),
+	})
+	q.AddQueue(riverqueue.QueueDiscordSync, river.QueueConfig{
+		MaxWorkers: 2,
 	})
 
 	riverqueue.AddWorker(q, chron.NewWorkerLogParse())
 	riverqueue.AddWorker(q, chron.NewWorkerReLogParse())
+	riverqueue.AddWorker(q, bot.NewWorkerSyncDiscordUser())
 
 	err = q.Start(ctx)
 	if err != nil {
@@ -79,6 +87,7 @@ func (s *Service) Start(ctx context.Context) error {
 
 	s.Queues = q
 	chron.SetQueue(s.Queues)
+	bot.SetQueue(s.Queues)
 	return nil
 }
 

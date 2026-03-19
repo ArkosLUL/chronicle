@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/chronicle/riverqueue/riverconst"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,15 +18,14 @@ import (
 	"riverqueue.com/riverui"
 )
 
+// Re-export constants from riverconst for backward compatibility.
 const (
-	QueueLogParsing = "log-parsing"
-)
-
-const (
-	PriorityHighest = 1
-	PriorityHigh    = 2
-	PriorityDefault = 3
-	PriorityLow     = 4
+	QueueLogParsing  = riverconst.QueueLogParsing
+	QueueDiscordSync = riverconst.QueueDiscordSync
+	PriorityHighest  = riverconst.PriorityHighest
+	PriorityHigh     = riverconst.PriorityHigh
+	PriorityDefault  = riverconst.PriorityDefault
+	PriorityLow      = riverconst.PriorityLow
 )
 
 type Options struct {

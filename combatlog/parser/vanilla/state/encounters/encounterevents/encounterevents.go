@@ -20,13 +20,14 @@ type EncounterEvents struct {
 	ResourceChange *Builder[*messages.ResourceChange, *chronicleproto.ResourceChange]
 	ExtraAttack    *Builder[*messages.ExtraAttack, *chronicleproto.ExtraAttack]
 	Slain          *Builder[*messages.Slain, *chronicleproto.Slain]
-	Casts          *Builder[*messages.Cast, *chronicleproto.Cast]
-	Aura           *Builder[*messages.Aura, *chronicleproto.Aura]
-	AuraCast       *Builder[*messages.AuraCast, *chronicleproto.AuraCast]
-	SpellGo        *Builder[*messages.SpellGo, *chronicleproto.SpellGo]
-	SpellStart     *Builder[*messages.SpellStart, *chronicleproto.SpellStart]
-	SpellFail      *Builder[*messages.SpellFail, *chronicleproto.SpellFail]
-	cnter          int32
+	// Casts is deprecated to SpellStart/SpellGo/SpellFail, but we still want to support it for older logs.
+	Casts      *Builder[*messages.Cast, *chronicleproto.Cast]
+	Aura       *Builder[*messages.Aura, *chronicleproto.Aura]
+	AuraCast   *Builder[*messages.AuraCast, *chronicleproto.AuraCast]
+	SpellGo    *Builder[*messages.SpellGo, *chronicleproto.SpellGo]
+	SpellStart *Builder[*messages.SpellStart, *chronicleproto.SpellStart]
+	SpellFail  *Builder[*messages.SpellFail, *chronicleproto.SpellFail]
+	cnter      int32
 }
 
 func New(verbose bool) *EncounterEventsInProgress {

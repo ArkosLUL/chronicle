@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
@@ -22,11 +23,16 @@ type Options struct {
 	SpellsDBCPath string
 }
 
+type SpellEntry struct {
+	Spell *chrondbc.Spell
+	Error error
+}
+
 type WoWDB struct {
 	ctx        context.Context
 	spellFiles *os.File
 	spells     *chrondbc.SpellsDBC
-	spellLRU   *lru.Cache[chrondbc.SpellID, *chrondbc.Spell]
+	spellLRU   *lru.Cache[chrondbc.SpellID, SpellEntry]
 
 	// spellNames is a READONLY map
 	spellNames atomic.Pointer[map[string][]int32]
@@ -46,7 +52,7 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 
 	// Responses are already cached by the client browser, so not sure how useful
 	// this really is.
-	c, err := lru.New[chrondbc.SpellID, *chrondbc.Spell](2000)
+	c, err := lru.New[chrondbc.SpellID, SpellEntry](2000)
 	if err != nil {
 		return nil, fmt.Errorf("lru: %w", err)
 	}
@@ -114,14 +120,17 @@ func (w *WoWDB) RangeSpells(f func(*chrondbc.Spell) bool) error {
 
 func (w *WoWDB) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	if sp, ok := w.spellLRU.Get(id); ok {
-		return sp, nil
+		return sp.Spell, sp.Error
 	}
 	sp, err := w.spells.ID(int(id))
 	if err != nil {
+		if strings.Contains(err.Error(), "couldn't find record matching ID") {
+			w.spellLRU.Add(id, SpellEntry{Spell: sp, Error: err})
+		}
 		return nil, err
 	}
 
-	w.spellLRU.Add(id, sp)
+	w.spellLRU.Add(id, SpellEntry{Spell: sp, Error: err})
 	return sp, nil
 }
 

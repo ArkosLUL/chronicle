@@ -747,6 +747,15 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		14025: "Corrupted Green Whelp",
 		14023: "Corrupted Green Whelp",
 		14302: "Chromatic Drakonid",
+
+		51233: "Blackwing Alchemist",
+		50142: "Blackwing Marksman",
+		52153: "Death Talon Scorcher",
+		65151: "Shadowflame Spark",
+		14262: "Green Drakonid",
+		14265: "Black Drakonid",
+
+		14668: "Corrupted Infernal",
 	})
 
 	LoadBosses(hostile, map[uint32]string{
@@ -758,6 +767,7 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		14020: "Chromaggus",
 		13020: "Vaelastrasz the Corrupt",
 		14601: "Ebonroc",
+		65148: "Ezzel Darkbrewer",
 	})
 	return hostile
 }

@@ -226,6 +226,8 @@ func (s Spell) SpellDamageType() SpellDamageType {
 	case 2070, 6770, 11297:
 		// Sap is a special case. Unsure how to deduce from spell attributes right now.
 		return SpellDamageNoEngageCombat
+	case 36736: // TODO: Alchemist's Fire from BWL new boss
+		return SpellDamageNoEngageCombat
 	}
 
 	for i, eff := range s.Effect {

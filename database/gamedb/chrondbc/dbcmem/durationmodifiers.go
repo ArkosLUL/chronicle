@@ -39,9 +39,9 @@ var DurationModifiers = map[int32]DurationModifier{
 	14165: {SpellID: 14165, Name: "Improved Blade Tactics", Percent: 15, Flat: 0, Deprecated: false},
 	14166: {SpellID: 14166, Name: "Improved Blade Tactics", Percent: 30, Flat: 0, Deprecated: false},
 	14167: {SpellID: 14167, Name: "Improved Blade Tactics", Percent: 45, Flat: 0, Deprecated: false},
-	14174: {SpellID: 14174, Name: "Taste for Blood", Percent: 0, Flat: 2000, Deprecated: false},
-	14175: {SpellID: 14175, Name: "Taste for Blood", Percent: 0, Flat: 4000, Deprecated: false},
-	14176: {SpellID: 14176, Name: "Taste for Blood", Percent: 0, Flat: 6000, Deprecated: false},
+	14174: {SpellID: 14174, Name: "Taste for Blood", Percent: 0, Flat: 4000, Deprecated: false},
+	14175: {SpellID: 14175, Name: "Taste for Blood", Percent: 0, Flat: 6000, Deprecated: false},
+	14176: {SpellID: 14176, Name: "[Deprecated] Taste for Blood", Percent: 0, Flat: 6000, Deprecated: true},
 	15275: {SpellID: 15275, Name: "Improved Shadow Word: Pain", Percent: 0, Flat: 3000, Deprecated: false},
 	15317: {SpellID: 15317, Name: "Improved Shadow Word: Pain", Percent: 0, Flat: 6000, Deprecated: false},
 	16085: {SpellID: 16085, Name: "Improved Flame Shock", Percent: 0, Flat: 3000, Deprecated: false},
@@ -105,6 +105,8 @@ var DurationModifiers = map[int32]DurationModifier{
 	51015: {SpellID: 51015, Name: "Faster Bleeds 5 (Warrior)", Percent: -5, Flat: 0, Deprecated: false},
 	51058: {SpellID: 51058, Name: "Eye of Dormant Corruption Warlock", Percent: 0, Flat: 3000, Deprecated: false},
 	51059: {SpellID: 51059, Name: "Eye of Dormant Corruption Priest", Percent: 0, Flat: 3000, Deprecated: false},
+	51484: {SpellID: 51484, Name: "Empowered Recovery", Percent: 0, Flat: 3000, Deprecated: false},
+	51485: {SpellID: 51485, Name: "Empowered Recovery", Percent: 0, Flat: 3000, Deprecated: false},
 	51581: {SpellID: 51581, Name: "Trap Mastery", Percent: 30, Flat: 0, Deprecated: false},
 	51614: {SpellID: 51614, Name: "Improved Pummel", Percent: 0, Flat: 1000, Deprecated: false},
 	51615: {SpellID: 51615, Name: "Improved Pummel", Percent: 0, Flat: 2000, Deprecated: false},
@@ -121,6 +123,7 @@ var DurationModifiers = map[int32]DurationModifier{
 	52555: {SpellID: 52555, Name: "Rapid Deterioration", Percent: -6, Flat: 0, Deprecated: false},
 	52556: {SpellID: 52556, Name: "Rapid Deterioration", Percent: -6, Flat: 0, Deprecated: false},
 	52601: {SpellID: 52601, Name: "Nemesis Corruption and Siphon Life", Percent: 0, Flat: 3000, Deprecated: false},
+	52889: {SpellID: 52889, Name: "Improved Holy Fire", Percent: -50, Flat: 0, Deprecated: false},
 }
 
 // DurationModifiersByClassBit provides a reverse lookup from target spell
@@ -157,9 +160,10 @@ var DurationModifiersByClassBit = map[int32]map[uint64][]int32{
 	},
 	6: {
 		0x4: {51776},
-		0x40: {26171},
+		0x40: {26171, 51484, 51485},
 		0x8000: {15275, 15317, 51059},
 		0x10000: {23044},
+		0x100000: {52889},
 		0x800000: {51772},
 	},
 	7: {

@@ -2898,11 +2898,6 @@
       "spellDamageType": 0
     },
     {
-      "id": 51432,
-      "name": "Astral Boon",
-      "spellDamageType": 0
-    },
-    {
       "id": 51433,
       "name": "Balance of All Things",
       "spellDamageType": 0
@@ -2919,12 +2914,12 @@
     },
     {
       "id": 51436,
-      "name": "Balance of All Things",
+      "name": "[Deprecated] Balance of All Things",
       "spellDamageType": 0
     },
     {
       "id": 51437,
-      "name": "Balance of All Things",
+      "name": "[Deprecated] Balance of All Things",
       "spellDamageType": 0
     },
     {
@@ -2985,31 +2980,36 @@
     {
       "id": 51671,
       "name": "Natural Boon",
-      "spellDamageType": 0
+      "spellDamageType": 1
     },
     {
       "id": 51672,
-      "name": "Balance of All Things (Moonfire)",
+      "name": "[Deprecated] Balance of All Things",
       "spellDamageType": 0
     },
     {
       "id": 51673,
-      "name": "Balance of All Things (Moonfire)",
+      "name": "[Deprecated] Balance of All Things",
       "spellDamageType": 0
     },
     {
       "id": 51674,
-      "name": "Balance of All Things (Moonfire)",
+      "name": "[Deprecated] Balance of All Things",
       "spellDamageType": 0
     },
     {
       "id": 51675,
-      "name": "Balance of All Things (Moonfire)",
+      "name": "[Deprecated] Balance of All Things",
       "spellDamageType": 0
     },
     {
       "id": 51676,
-      "name": "Balance of All Things (Moonfire)",
+      "name": "[Deprecated] Balance of All Things",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51871,
+      "name": "Shapeshift Mana Reduction",
       "spellDamageType": 0
     },
     {
@@ -3300,6 +3300,41 @@
     {
       "id": 52736,
       "name": "Carnage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52757,
+      "name": "Acid Bolt",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52845,
+      "name": "Idol of Equilibrium",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52868,
+      "name": "Idol of Brambleskin",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52869,
+      "name": "Brambleskin",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52870,
+      "name": "Brambletorn Muscle",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52924,
+      "name": "Equilibrium",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52925,
+      "name": "Equilibrium",
       "spellDamageType": 0
     },
     {
@@ -4476,12 +4511,12 @@
     },
     {
       "id": 19491,
-      "name": "Improved Scorpid Sting",
+      "name": "[Deprecated] Improved Scorpid Sting",
       "spellDamageType": 0
     },
     {
       "id": 19493,
-      "name": "Improved Scorpid Sting",
+      "name": "[Deprecated] Improved Scorpid Sting",
       "spellDamageType": 0
     },
     {
@@ -4606,7 +4641,7 @@
     },
     {
       "id": 19574,
-      "name": "[Deprecated] Bestial Wrath",
+      "name": "Bestial Wrath",
       "spellDamageType": 0
     },
     {
@@ -4946,12 +4981,12 @@
     },
     {
       "id": 20905,
-      "name": "Trueshot Aura",
+      "name": "[Deprecated] Trueshot Aura",
       "spellDamageType": 0
     },
     {
       "id": 20906,
-      "name": "Trueshot Aura",
+      "name": "[Deprecated] Trueshot Aura",
       "spellDamageType": 0
     },
     {
@@ -5051,7 +5086,7 @@
     },
     {
       "id": 23158,
-      "name": "Concussive Shot Cooldown Reduction",
+      "name": "Concussive Shot \u0026 Wing Clip Cooldown Reduction",
       "spellDamageType": 0
     },
     {
@@ -5186,12 +5221,12 @@
     },
     {
       "id": 24286,
-      "name": "Surefooted",
+      "name": "[Deprecated] Surefooted",
       "spellDamageType": 0
     },
     {
       "id": 24287,
-      "name": "Surefooted",
+      "name": "[Deprecated] Surefooted",
       "spellDamageType": 0
     },
     {
@@ -5241,17 +5276,17 @@
     },
     {
       "id": 24395,
-      "name": "Bestial Wrath",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 0
     },
     {
       "id": 24396,
-      "name": "Bestial Wrath",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 0
     },
     {
       "id": 24397,
-      "name": "Bestial Wrath",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 0
     },
     {
@@ -5481,7 +5516,7 @@
     },
     {
       "id": 26592,
-      "name": "Bestial Wrath",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 0
     },
     {
@@ -5595,6 +5630,21 @@
       "spellDamageType": 0
     },
     {
+      "id": 30966,
+      "name": "Snap Trap Effect",
+      "spellDamageType": 1
+    },
+    {
+      "id": 30967,
+      "name": "Snap Trap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 33459,
+      "name": "Serpent Sting",
+      "spellDamageType": 2
+    },
+    {
       "id": 36523,
       "name": "Bubble Barrier",
       "spellDamageType": 0
@@ -5665,6 +5715,36 @@
       "spellDamageType": 3
     },
     {
+      "id": 36542,
+      "name": "Death Roll",
+      "spellDamageType": 1
+    },
+    {
+      "id": 36543,
+      "name": "Death Roll",
+      "spellDamageType": 1
+    },
+    {
+      "id": 36544,
+      "name": "Death Roll",
+      "spellDamageType": 1
+    },
+    {
+      "id": 36545,
+      "name": "Death Roll",
+      "spellDamageType": 1
+    },
+    {
+      "id": 36546,
+      "name": "Death Roll",
+      "spellDamageType": 1
+    },
+    {
+      "id": 36547,
+      "name": "Death Roll",
+      "spellDamageType": 1
+    },
+    {
       "id": 36548,
       "name": "Death Roll",
       "spellDamageType": 4
@@ -5700,6 +5780,21 @@
       "spellDamageType": 0
     },
     {
+      "id": 37094,
+      "name": "Blackmouth Fishing Trap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 37095,
+      "name": "Firefin Fishing Trap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 37096,
+      "name": "Stonescale Fishing Trap",
+      "spellDamageType": 0
+    },
+    {
       "id": 41827,
       "name": "Kill Command",
       "spellDamageType": 0
@@ -5707,7 +5802,7 @@
     {
       "id": 41828,
       "name": "Kill Command",
-      "spellDamageType": 0
+      "spellDamageType": 1
     },
     {
       "id": 44001,
@@ -5781,7 +5876,7 @@
     },
     {
       "id": 45651,
-      "name": "Aspect of the Fox",
+      "name": "Aspect of the Viper",
       "spellDamageType": 0
     },
     {
@@ -6011,7 +6106,7 @@
     },
     {
       "id": 46321,
-      "name": "Baited Shot",
+      "name": "[Deprecated] Baited Shot",
       "spellDamageType": 0
     },
     {
@@ -6041,6 +6136,11 @@
     },
     {
       "id": 48050,
+      "name": "Lacerate",
+      "spellDamageType": 2
+    },
+    {
+      "id": 49041,
       "name": "Lacerate",
       "spellDamageType": 2
     },
@@ -6131,12 +6231,12 @@
     },
     {
       "id": 51515,
-      "name": "Improved Steady Shot",
+      "name": "Improved Marksmanship",
       "spellDamageType": 0
     },
     {
       "id": 51516,
-      "name": "Improved Steady Shot",
+      "name": "Improved Marksmanship",
       "spellDamageType": 0
     },
     {
@@ -6352,6 +6452,91 @@
     {
       "id": 52685,
       "name": "Pet Focus Regen Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52859,
+      "name": "Timbermaw Shoot",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52891,
+      "name": "Alone Against the World",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52892,
+      "name": "Alone Against the World",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52920,
+      "name": "Lock and Load",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52921,
+      "name": "Lock and Load",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52994,
+      "name": "Scent of Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52995,
+      "name": "Scent of Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52996,
+      "name": "Scent of Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52997,
+      "name": "Scent of Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58102,
+      "name": "Kodiak's Collar Passive",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58108,
+      "name": "Experimental Ammunition",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58109,
+      "name": "Explosive Ammunition",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58110,
+      "name": "Poisonous Ammunition",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58111,
+      "name": "Enchanted Ammunition",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58112,
+      "name": "Explosive Ammunition",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58113,
+      "name": "Poisonous Ammunition",
+      "spellDamageType": 8
+    },
+    {
+      "id": 58114,
+      "name": "Enchanted Ammunition",
       "spellDamageType": 0
     }
   ],
@@ -7438,12 +7623,12 @@
     },
     {
       "id": 12343,
-      "name": "Improved Fire Blast",
+      "name": "[Deprecated] Improved Fire Blast",
       "spellDamageType": 0
     },
     {
       "id": 12344,
-      "name": "Improved Fire Blast",
+      "name": "[Deprecated] Improved Fire Blast",
       "spellDamageType": 0
     },
     {
@@ -7948,21 +8133,6 @@
     },
     {
       "id": 13033,
-      "name": "Ice Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 13034,
-      "name": "Ice Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 13035,
-      "name": "Ice Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 13036,
       "name": "Ice Barrier",
       "spellDamageType": 0
     },
@@ -9197,6 +9367,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 36740,
+      "name": "Supercooled Body",
+      "spellDamageType": 4
+    },
+    {
       "id": 45400,
       "name": "Frostfire Bolt",
       "spellDamageType": 3
@@ -9223,7 +9398,7 @@
     },
     {
       "id": 45406,
-      "name": "Brilliance Aura",
+      "name": "[Deprecated] Brilliance Aura",
       "spellDamageType": 0
     },
     {
@@ -9233,7 +9408,7 @@
     },
     {
       "id": 45408,
-      "name": "Brilliance Aura",
+      "name": "[Deprecated] Brilliance Aura",
       "spellDamageType": 0
     },
     {
@@ -9275,6 +9450,11 @@
       "id": 48009,
       "name": "Nature Mana Reduction 10",
       "spellDamageType": 0
+    },
+    {
+      "id": 48312,
+      "name": "Melted Chains",
+      "spellDamageType": 1
     },
     {
       "id": 49000,
@@ -9730,6 +9910,16 @@
       "id": 52734,
       "name": "Mirror Magic",
       "spellDamageType": 1
+    },
+    {
+      "id": 52914,
+      "name": "Icy Veins",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52923,
+      "name": "Polymorph: Draenei Homunculus",
+      "spellDamageType": 0
     },
     {
       "id": 57561,
@@ -11744,6 +11934,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 36730,
+      "name": "Blackwind Aura",
+      "spellDamageType": 0
+    },
+    {
       "id": 41822,
       "name": "Virtuous Smite",
       "spellDamageType": 1
@@ -11934,11 +12129,6 @@
       "spellDamageType": 0
     },
     {
-      "id": 51301,
-      "name": "Mending Light",
-      "spellDamageType": 1
-    },
-    {
       "id": 51302,
       "name": "Hand of Reckoning",
       "spellDamageType": 0
@@ -12090,27 +12280,27 @@
     },
     {
       "id": 51336,
-      "name": "Righteous Strikes",
+      "name": "Zealous Defense",
       "spellDamageType": 0
     },
     {
       "id": 51337,
-      "name": "Righteous Strikes",
+      "name": "Zealous Defense",
       "spellDamageType": 0
     },
     {
       "id": 51338,
-      "name": "Righteous Strikes",
+      "name": "Zealous Defense",
       "spellDamageType": 0
     },
     {
       "id": 51339,
-      "name": "Righteous Strikes",
+      "name": "Zealous Defense",
       "spellDamageType": 0
     },
     {
       "id": 51340,
-      "name": "Righteous Strikes",
+      "name": "Zealous Defense",
       "spellDamageType": 0
     },
     {
@@ -12299,18 +12489,13 @@
       "spellDamageType": 0
     },
     {
-      "id": 51755,
-      "name": "Mending Light",
-      "spellDamageType": 1
-    },
-    {
       "id": 51756,
-      "name": "Mending Light",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 1
     },
     {
       "id": 51757,
-      "name": "Mending Light",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 1
     },
     {
@@ -12340,17 +12525,17 @@
     },
     {
       "id": 51812,
-      "name": "Protective Light",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 0
     },
     {
       "id": 51818,
-      "name": "Crusader Strike Damage Bonus",
+      "name": "Improved Judgement Righteous Command 1",
       "spellDamageType": 0
     },
     {
       "id": 51819,
-      "name": "Holy Strike Damage Bonus",
+      "name": "Improved Judgement Righteous Command 2",
       "spellDamageType": 0
     },
     {
@@ -12394,23 +12579,18 @@
       "spellDamageType": 0
     },
     {
-      "id": 51871,
-      "name": "Mending Light",
-      "spellDamageType": 1
-    },
-    {
       "id": 51872,
-      "name": "Mending Light",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 1
     },
     {
       "id": 51873,
-      "name": "Mending Light",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 1
     },
     {
       "id": 51874,
-      "name": "Mending Light",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 1
     },
     {
@@ -12472,6 +12652,36 @@
       "id": 52698,
       "name": "T2.5 Set Bonus - Hammer of Wrath",
       "spellDamageType": 0
+    },
+    {
+      "id": 52846,
+      "name": "Libram of Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52899,
+      "name": "Hallowed Ground",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52900,
+      "name": "Libram of Hallowed Ground",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52916,
+      "name": "Radiant Dawn",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52936,
+      "name": "Searing Radiance Passive",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52937,
+      "name": "Searing Radiance",
+      "spellDamageType": 1
     }
   ],
   "Priest": [
@@ -12782,8 +12992,8 @@
     },
     {
       "id": 7001,
-      "name": "Lightwell Renew",
-      "spellDamageType": 2
+      "name": "Splendor of Light",
+      "spellDamageType": 1
     },
     {
       "id": 7128,
@@ -13947,7 +14157,7 @@
     },
     {
       "id": 17325,
-      "name": "Shadow Reach",
+      "name": "[Deprecated] Shadow Reach",
       "spellDamageType": 0
     },
     {
@@ -14432,7 +14642,7 @@
     },
     {
       "id": 23043,
-      "name": "Mind Blast Cast Pushback Reduction",
+      "name": "Priest Pushback Reduction",
       "spellDamageType": 0
     },
     {
@@ -14792,22 +15002,22 @@
     },
     {
       "id": 27870,
-      "name": "Lightwell",
+      "name": "[Deprecated] Lightwell",
       "spellDamageType": 0
     },
     {
       "id": 27871,
-      "name": "Lightwell",
+      "name": "[Deprecated] Lightwell",
       "spellDamageType": 0
     },
     {
       "id": 27873,
-      "name": "Lightwell Renew",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 2
     },
     {
       "id": 27874,
-      "name": "Lightwell Renew",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 2
     },
     {
@@ -15222,12 +15432,12 @@
     },
     {
       "id": 51458,
-      "name": "Lightwell",
+      "name": "[Deprecated] Lightwell",
       "spellDamageType": 0
     },
     {
       "id": 51459,
-      "name": "Lightwell Renew",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 2
     },
     {
@@ -15276,6 +15486,16 @@
       "spellDamageType": 0
     },
     {
+      "id": 51472,
+      "name": "Enlightened",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51473,
+      "name": "Enlightened",
+      "spellDamageType": 0
+    },
+    {
       "id": 51475,
       "name": "Enlighten Dummy",
       "spellDamageType": 0
@@ -15317,12 +15537,12 @@
     },
     {
       "id": 51484,
-      "name": "Swift Recovery",
+      "name": "Empowered Recovery",
       "spellDamageType": 0
     },
     {
       "id": 51485,
-      "name": "Swift Recovery",
+      "name": "Empowered Recovery",
       "spellDamageType": 0
     },
     {
@@ -15407,17 +15627,17 @@
     },
     {
       "id": 51796,
-      "name": "Chastise Cooldown Reduction",
+      "name": "Oracle's Insight Passive",
       "spellDamageType": 0
     },
     {
       "id": 51797,
-      "name": "Lightwell Damage Reduction",
+      "name": "Spiritual Elevation Passive",
       "spellDamageType": 0
     },
     {
       "id": 51798,
-      "name": "Lightwell Healing Increase",
+      "name": "Improved Lightwell",
       "spellDamageType": 0
     },
     {
@@ -15501,6 +15721,196 @@
       "spellDamageType": 0
     },
     {
+      "id": 52880,
+      "name": "Improved Inner Fire",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52881,
+      "name": "Holy and Discipline Cost Reduction",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52882,
+      "name": "Castigation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52883,
+      "name": "Castigation",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52884,
+      "name": "Light Speed",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52885,
+      "name": "Light Speed",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52886,
+      "name": "Flickering Light",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52887,
+      "name": "Flickering Light",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52888,
+      "name": "Improved Enlightened",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52889,
+      "name": "Improved Holy Fire",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52895,
+      "name": "Qiraji Deterioration",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52896,
+      "name": "Qiraji Deterioration",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52897,
+      "name": "Uncoiled Shadows",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52898,
+      "name": "Uncoiled Shadows",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52926,
+      "name": "Spiritwalk",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52938,
+      "name": "Blessed Wildfire - Holy Fire",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52939,
+      "name": "Blessed Wildfire",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52940,
+      "name": "Blessed Wildfire - Chastise",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52941,
+      "name": "Blessed Wildfire - Power Word: Shield",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52942,
+      "name": "Book of Prayer",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52943,
+      "name": "Book of Prayer",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52944,
+      "name": "Book of Prayer",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52949,
+      "name": "Light of An'she",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52951,
+      "name": "Light of An'she",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52953,
+      "name": "Light of An'she",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52955,
+      "name": "Light of An'she",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52957,
+      "name": "Light of An'she",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52959,
+      "name": "Light of An'she",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52961,
+      "name": "Holy Attenuation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52962,
+      "name": "Ascendance",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52963,
+      "name": "Ascendance",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52964,
+      "name": "Apotheosis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52966,
+      "name": "Oracle's Insight",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52977,
+      "name": "Light Infusion Passive",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52978,
+      "name": "Light Infusion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52979,
+      "name": "Blessed Light",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52980,
+      "name": "Burning Zeal",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52981,
+      "name": "Burning Zeal Passive",
+      "spellDamageType": 0
+    },
+    {
       "id": 57636,
       "name": "Vampiric Leech",
       "spellDamageType": 2
@@ -15528,6 +15938,11 @@
     {
       "id": 58017,
       "name": "Enslave Mind",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58136,
+      "name": "Shadow Weaving",
       "spellDamageType": 0
     }
   ],
@@ -16624,7 +17039,7 @@
     },
     {
       "id": 14176,
-      "name": "Taste for Blood",
+      "name": "[Deprecated] Taste for Blood",
       "spellDamageType": 0
     },
     {
@@ -17243,6 +17658,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 49011,
+      "name": "Mixologist's Stone",
+      "spellDamageType": 0
+    },
+    {
       "id": 51014,
       "name": "Faster Bleeds 5 (Rogue)",
       "spellDamageType": 0
@@ -17419,7 +17839,7 @@
     },
     {
       "id": 52530,
-      "name": "Taste for Blood",
+      "name": "[Deprecated] REUSE ME",
       "spellDamageType": 0
     },
     {
@@ -17590,6 +18010,21 @@
     {
       "id": 52717,
       "name": "Noxious Assault",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58174,
+      "name": "Toxic Surge Passive",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58175,
+      "name": "Toxic Surge",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58232,
+      "name": "Cacophony of Knowledge",
       "spellDamageType": 1
     }
   ],
@@ -20225,6 +20660,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 33457,
+      "name": "Lightning Bolt",
+      "spellDamageType": 1
+    },
+    {
       "id": 36916,
       "name": "Molten Blast",
       "spellDamageType": 1
@@ -20253,6 +20693,11 @@
       "id": 36921,
       "name": "Molten Blast",
       "spellDamageType": 1
+    },
+    {
+      "id": 37075,
+      "name": "Totem of Corruption",
+      "spellDamageType": 0
     },
     {
       "id": 41111,
@@ -20545,6 +20990,11 @@
       "spellDamageType": 1
     },
     {
+      "id": 49030,
+      "name": "Rampaging Earth",
+      "spellDamageType": 0
+    },
+    {
       "id": 51063,
       "name": "Tremor Passive",
       "spellDamageType": 0
@@ -20670,33 +21120,18 @@
       "spellDamageType": 0
     },
     {
-      "id": 51388,
-      "name": "Elemental Flurry",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51389,
-      "name": "Elemental Flurry",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51390,
-      "name": "Elemental Flurry",
-      "spellDamageType": 0
-    },
-    {
       "id": 51391,
-      "name": "Elemental Flurry Passive",
+      "name": "[Deprecated] Elemental Flurry Passive",
       "spellDamageType": 0
     },
     {
       "id": 51392,
-      "name": "Elemental Flurry Passive",
+      "name": "[Deprecated] Elemental Flurry Passive",
       "spellDamageType": 0
     },
     {
       "id": 51393,
-      "name": "Elemental Flurry Passive",
+      "name": "[Deprecated] Elemental Flurry Passive",
       "spellDamageType": 0
     },
     {
@@ -20716,7 +21151,7 @@
     },
     {
       "id": 51489,
-      "name": "Earthquake",
+      "name": "Earthquake Aftershock",
       "spellDamageType": 1
     },
     {
@@ -21075,6 +21510,76 @@
       "spellDamageType": 0
     },
     {
+      "id": 52834,
+      "name": "Totem of Calm Cascades",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52847,
+      "name": "Totem of the Stonewall",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52848,
+      "name": "Stonewall",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52871,
+      "name": "Totem of Thundercall",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52872,
+      "name": "Thundercall",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52878,
+      "name": "Earthquake",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52879,
+      "name": "Totem of Distant Tremors",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52893,
+      "name": "Earthwall",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52967,
+      "name": "Rushing Winds",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52968,
+      "name": "Rushing Winds",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52969,
+      "name": "Rushing Winds",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52970,
+      "name": "Enkindled Flames",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52971,
+      "name": "Enkindled Flames",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52972,
+      "name": "Enkindled Flames",
+      "spellDamageType": 0
+    },
+    {
       "id": 56556,
       "name": "Elemental Fury",
       "spellDamageType": 0
@@ -21092,6 +21597,71 @@
     {
       "id": 56559,
       "name": "Improved Searing Totem",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58238,
+      "name": "Call of Earth",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58239,
+      "name": "Call of Earth",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58240,
+      "name": "Ancient Rites (Cooldown)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58241,
+      "name": "Ancient Rites (Totemic Slam)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58242,
+      "name": "Ancient Rites (Feral Spirit)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58243,
+      "name": "Ancient Rites (Hex)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58244,
+      "name": "Ancient Rites",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58245,
+      "name": "Ancient Rites",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58246,
+      "name": "Ancient Rites",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58247,
+      "name": "Ancient Rites",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58248,
+      "name": "Elemental Weapons (Frostbrand)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58249,
+      "name": "Elemental Weapons (Frostbrand)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58250,
+      "name": "Elemental Weapons (Frostbrand)",
       "spellDamageType": 0
     }
   ],
@@ -21999,6 +22569,21 @@
       "spellDamageType": 0
     },
     {
+      "id": 33431,
+      "name": "Well Fed",
+      "spellDamageType": 0
+    },
+    {
+      "id": 33433,
+      "name": "Well Fed",
+      "spellDamageType": 2
+    },
+    {
+      "id": 33435,
+      "name": "Increased Stamina",
+      "spellDamageType": 0
+    },
+    {
       "id": 36928,
       "name": "Concoction of the Emerald Mongoose",
       "spellDamageType": 0
@@ -22034,6 +22619,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 49010,
+      "name": "Elixir of Mind's Reach",
+      "spellDamageType": 0
+    },
+    {
       "id": 49370,
       "name": "Fluidity Potion",
       "spellDamageType": 0
@@ -22051,6 +22641,36 @@
     {
       "id": 51267,
       "name": "Zandalari Vigil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52783,
+      "name": "Sapta of Harmony",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52784,
+      "name": "Sapta of Communion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52785,
+      "name": "Sapta of Tranquility",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52786,
+      "name": "Sapta of Kinship",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52787,
+      "name": "Sapta of Resilience",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52792,
+      "name": "Blackroot Brew",
       "spellDamageType": 0
     },
     {
@@ -23604,12 +24224,12 @@
     },
     {
       "id": 18692,
-      "name": "Improved Healthstone",
+      "name": "[Deprecated] REUSE",
       "spellDamageType": 0
     },
     {
       "id": 18693,
-      "name": "Improved Healthstone",
+      "name": "[Deprecated] REUSE",
       "spellDamageType": 0
     },
     {
@@ -24164,7 +24784,7 @@
     },
     {
       "id": 23046,
-      "name": "Searing Pain Cast Pushback Reduction",
+      "name": "Warlock Cast Pushback Reduction",
       "spellDamageType": 0
     },
     {
@@ -24503,6 +25123,11 @@
       "spellDamageType": 1
     },
     {
+      "id": 37084,
+      "name": "Pool of Nightmares",
+      "spellDamageType": 1
+    },
+    {
       "id": 45566,
       "name": "Summon Champion",
       "spellDamageType": 0
@@ -24534,12 +25159,12 @@
     },
     {
       "id": 45902,
-      "name": "Master Conjuror",
+      "name": "[Deprecated] REUSE",
       "spellDamageType": 0
     },
     {
       "id": 45903,
-      "name": "Master Conjuror",
+      "name": "[Deprecated] REUSE",
       "spellDamageType": 0
     },
     {
@@ -24904,7 +25529,7 @@
     },
     {
       "id": 52606,
-      "name": "Curse of Agony Instant Tick",
+      "name": "Curse of Agony Bonus Damage",
       "spellDamageType": 0
     },
     {
@@ -25034,7 +25659,7 @@
     },
     {
       "id": 52738,
-      "name": "Sinister Pursuit",
+      "name": "[Deprecated] REUSE",
       "spellDamageType": 0
     },
     {
@@ -25044,7 +25669,7 @@
     },
     {
       "id": 52740,
-      "name": "Sinister Pursuit",
+      "name": "[Deprecated] REUSE",
       "spellDamageType": 0
     },
     {
@@ -25055,6 +25680,11 @@
     {
       "id": 52752,
       "name": "Create Voidstone",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52965,
+      "name": "Unleashed Potential",
       "spellDamageType": 0
     },
     {
@@ -25085,6 +25715,11 @@
     {
       "id": 57731,
       "name": "Demonic Swiftness",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58101,
+      "name": "Kodiak's Collar Passive",
       "spellDamageType": 0
     }
   ],
@@ -26477,7 +27112,7 @@
     {
       "id": 23418,
       "name": "Siphon Blessing",
-      "spellDamageType": 4
+      "spellDamageType": 0
     },
     {
       "id": 23424,
@@ -26940,6 +27575,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 33463,
+      "name": "Surge",
+      "spellDamageType": 1
+    },
+    {
       "id": 41361,
       "name": "Reduced Ability Costs",
       "spellDamageType": 0
@@ -27261,17 +27901,17 @@
     },
     {
       "id": 51616,
-      "name": "Improved Whirlwind",
+      "name": "Ravager",
       "spellDamageType": 0
     },
     {
       "id": 51617,
-      "name": "Improved Whirlwind",
+      "name": "Ravager",
       "spellDamageType": 0
     },
     {
       "id": 51618,
-      "name": "Improved Whirlwind",
+      "name": "Ravager",
       "spellDamageType": 0
     },
     {
@@ -27376,7 +28016,7 @@
     },
     {
       "id": 51898,
-      "name": "Missed Strike",
+      "name": "Effective Strike",
       "spellDamageType": 1
     },
     {
@@ -27461,7 +28101,7 @@
     },
     {
       "id": 53207,
-      "name": "Rend Critical Refresh",
+      "name": "Warrior Crit Damage Bonus",
       "spellDamageType": 0
     },
     {

@@ -70,6 +70,30 @@ export interface ArmoryPlayer {
     readonly updated_from_instance?: string;
 }
 
+// From chroniclesdk/armory.go
+export interface ArmorySearchResponse {
+    readonly players: readonly ArmorySearchResult[];
+    readonly count: number;
+}
+
+// From chroniclesdk/armory.go
+/**
+ * ArmorySearchResult is a lightweight player result without gear data.
+ */
+export interface ArmorySearchResult {
+    readonly id: string;
+    readonly realm_name: string;
+    readonly realm_id: string;
+    readonly name: string;
+    readonly class: string;
+    readonly race: string;
+    readonly gender: string;
+    readonly level: number;
+    readonly guild_id?: string;
+    readonly guild_name?: string;
+    readonly updated_at: string;
+}
+
 // From chroniclesdk/authz.go
 /**
  * AuthorizationRequest is a request to check multiple authorizations at once.
@@ -813,9 +837,9 @@ export type WoWEnvironmentType = "fall" | "lava";
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["fall", "lava"];
 
 // From chroniclesdk/constants.go
-export type WoWEventType = "aura" | "aura_cast" | "cast" | "damage" | "extra_attack" | "heal" | "resource_change" | "slain" | "spell_go" | "spell_start";
+export type WoWEventType = "aura" | "aura_cast" | "cast" | "damage" | "extra_attack" | "heal" | "resource_change" | "slain" | "spell_fail" | "spell_go" | "spell_start";
 
-export const WoWEventTypes: WoWEventType[] = ["aura", "aura_cast", "cast", "damage", "extra_attack", "heal", "resource_change", "slain", "spell_go", "spell_start"];
+export const WoWEventTypes: WoWEventType[] = ["aura", "aura_cast", "cast", "damage", "extra_attack", "heal", "resource_change", "slain", "spell_fail", "spell_go", "spell_start"];
 
 // From types/constants.go
 export type WoWHeroClasses = "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";

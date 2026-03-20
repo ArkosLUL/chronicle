@@ -66,6 +66,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   172: {
@@ -566,9 +568,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -860,6 +862,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   6075: {
@@ -870,6 +874,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   6076: {
@@ -880,6 +886,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   6077: {
@@ -890,6 +898,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   6078: {
@@ -900,6 +910,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   6136: {
@@ -1480,9 +1492,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -1493,9 +1505,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -2166,6 +2178,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   10928: {
@@ -2176,6 +2190,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   10929: {
@@ -2186,6 +2202,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   11273: {
@@ -2195,9 +2213,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -2208,9 +2226,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -2221,9 +2239,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -2825,9 +2843,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 16000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -2838,10 +2856,20 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 28000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
+    ],
+  },
+  14914: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
     ],
   },
   15062: {
@@ -2863,6 +2891,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   15244: {
@@ -2877,6 +2907,76 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 12570, name: "Permafrost", percent: 0, flat: 2500, deprecated: false },
       { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
       { spellId: 12573, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+    ],
+  },
+  15261: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  15262: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  15263: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  15264: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  15265: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  15266: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  15267: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 10000,
+    maxDurationMs: 10000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
     ],
   },
   15286: {
@@ -2906,9 +3006,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 16000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -3064,6 +3164,36 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 12573, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
     ],
   },
+  17140: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 8000,
+    maxDurationMs: 8000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  17141: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 8000,
+    maxDurationMs: 8000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  17142: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 8000,
+    maxDurationMs: 8000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
   17165: {
     name: "Mind Flay",
     spellClassSet: 6,
@@ -3156,6 +3286,26 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 12570, name: "Permafrost", percent: 0, flat: 2500, deprecated: false },
       { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
       { spellId: 12573, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+    ],
+  },
+  18165: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 8000,
+    maxDurationMs: 8000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  18167: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
     ],
   },
   18328: {
@@ -3802,6 +3952,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   22128: {
@@ -4108,6 +4260,16 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
     ],
   },
+  23860: {
+    name: "Holy Fire",
+    spellClassSet: 6,
+    baseDurationMs: 8000,
+    maxDurationMs: 8000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
   23953: {
     name: "Mind Flay",
     spellClassSet: 6,
@@ -4305,6 +4467,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   25345: {
@@ -4672,6 +4836,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   27610: {
@@ -4953,6 +5119,27 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 51013, name: "Faster Bleeds 5 (Druid)", percent: -5, flat: 0, deprecated: false },
     ],
   },
+  33459: {
+    name: "Serpent Sting",
+    spellClassSet: 9,
+    baseDurationMs: 15000,
+    maxDurationMs: 15000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
+    ],
+  },
+  37075: {
+    name: "Totem of Corruption",
+    spellClassSet: 11,
+    baseDurationMs: 60000,
+    maxDurationMs: 60000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
+      { spellId: 16544, name: "Improved Fire Totems", percent: 0, flat: -2000, deprecated: false },
+    ],
+  },
   45409: {
     name: "Crusader Strike",
     spellClassSet: 10,
@@ -5084,6 +5271,46 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 51864, name: "Improved Flame Shock", percent: 0, flat: 6000, deprecated: false },
     ],
   },
+  46236: {
+    name: "Sun's Embrace",
+    spellClassSet: 6,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  46237: {
+    name: "Sun's Embrace",
+    spellClassSet: 6,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  46238: {
+    name: "Sun's Embrace",
+    spellClassSet: 6,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
+  46239: {
+    name: "Sun's Embrace",
+    spellClassSet: 6,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
+    ],
+  },
   51005: {
     name: "Emenating Frost",
     spellClassSet: 3,
@@ -5116,6 +5343,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51484, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 51485, name: "Empowered Recovery", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   51175: {
@@ -5205,9 +5434,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
@@ -5218,23 +5447,55 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 22000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
       { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
     ],
   },
   52530: {
-    name: "Taste for Blood",
+    name: "[Deprecated] REUSE ME",
     spellClassSet: 8,
     baseDurationMs: 16000,
     maxDurationMs: 22000,
+    deprecated: true,
+    modifiers: [
+      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 14176, name: "[Deprecated] Taste for Blood", percent: 0, flat: 6000, deprecated: true },
+      { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
+    ],
+  },
+  52896: {
+    name: "Qiraji Deterioration",
+    spellClassSet: 6,
+    baseDurationMs: 60000,
+    maxDurationMs: 80000,
     deprecated: false,
     modifiers: [
-      { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14175, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14176, name: "Taste for Blood", percent: 0, flat: 6000, deprecated: false },
-      { spellId: 51014, name: "Faster Bleeds 5 (Rogue)", percent: -5, flat: 0, deprecated: false },
+      { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
+    ],
+  },
+  52923: {
+    name: "Polymorph: Draenei Homunculus",
+    spellClassSet: 3,
+    baseDurationMs: 50000,
+    maxDurationMs: 65000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
+    ],
+  },
+  52980: {
+    name: "Burning Zeal",
+    spellClassSet: 6,
+    baseDurationMs: 18000,
+    maxDurationMs: 27000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 15317, name: "Improved Shadow Word: Pain", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 51059, name: "Eye of Dormant Corruption Priest", percent: 0, flat: 3000, deprecated: false },
     ],
   },
   57561: {

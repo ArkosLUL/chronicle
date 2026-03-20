@@ -34,4 +34,5 @@ export const ExtraAttackSpells: Record<number, ExtraAttackSpell> = {
   51368: { name: "Windfury Totem", numExtraAttacks: 1 },
   52634: { name: "Hack and Slash", numExtraAttacks: 1 },
   52732: { name: "Timeless Strike", numExtraAttacks: 1 },
+  58123: { name: "Maddened Strikes", numExtraAttacks: 1 },
 };

@@ -39,4 +39,5 @@ var ExtraAttackSpells = map[int32]ExtraAttackSpell{
 	51368: {Name: "Windfury Totem", NumExtraAttacks: 1},
 	52634: {Name: "Hack and Slash", NumExtraAttacks: 1},
 	52732: {Name: "Timeless Strike", NumExtraAttacks: 1},
+	58123: {Name: "Maddened Strikes", NumExtraAttacks: 1},
 }

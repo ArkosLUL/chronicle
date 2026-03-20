@@ -31,6 +31,7 @@ import type {
   CreateShareRequest as CreateShareRequestGenerated,
   CreateShareResponse as CreateShareResponseGenerated,
   SharedViewResponse as SharedViewResponseGenerated,
+  ArmorySearchResponse as ArmorySearchResponseGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -64,6 +65,7 @@ export type InstanceDefaultsResponse = InstanceDefaultsResponseGenerated;
 export type CreateShareRequest = CreateShareRequestGenerated;
 export type CreateShareResponse = CreateShareResponseGenerated;
 export type SharedViewResponse = SharedViewResponseGenerated;
+export type ArmorySearchResponse = ArmorySearchResponseGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -858,6 +860,30 @@ export function useSpellsByName(
     },
     staleTime: Infinity, // DBC data never changes
     retry: false, // Don't retry on 404
+    ...options,
+  });
+}
+
+export function useArmorySearch(
+  params: { q: string; class?: string; realm?: string; guild?: string },
+  options?: Omit<UseQueryOptions<ArmorySearchResponse>, "queryKey" | "queryFn">
+) {
+  return useQuery({
+    queryKey: ["armory-search", params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("q", params.q);
+      if (params.class) searchParams.set("class", params.class);
+      if (params.realm) searchParams.set("realm", params.realm);
+      if (params.guild) searchParams.set("guild", params.guild);
+      const response = await fetch(`/api/v1/armory/search?${searchParams}`);
+      if (!response.ok) {
+        throw buildAPIError("Search failed", await response.json());
+      }
+      return response.json() as Promise<ArmorySearchResponse>;
+    },
+    enabled: params.q.length >= 2,
+    staleTime: 30_000,
     ...options,
   });
 }

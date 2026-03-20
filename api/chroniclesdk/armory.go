@@ -32,3 +32,23 @@ type PlayerGear struct {
 	ItemQuality int32  `json:"item_quality,omitempty"`
 	ItemIcon    string `json:"item_icon,omitempty"`
 }
+
+// ArmorySearchResult is a lightweight player result without gear data.
+type ArmorySearchResult struct {
+	ID        GUIDString `json:"id"`
+	RealmName string     `json:"realm_name"`
+	RealmID   uuid.UUID  `json:"realm_id"`
+	Name      string     `json:"name"`
+	Class     string     `json:"class"`
+	Race      string     `json:"race"`
+	Gender    string     `json:"gender"`
+	Level     int32      `json:"level"`
+	GuildID   *uuid.UUID `json:"guild_id,omitempty"`
+	GuildName string     `json:"guild_name,omitempty"`
+	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+type ArmorySearchResponse struct {
+	Players []ArmorySearchResult `json:"players"`
+	Count   int                  `json:"count"`
+}

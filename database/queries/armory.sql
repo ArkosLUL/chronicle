@@ -49,3 +49,41 @@ WHERE
   gp.realm_id = @realm_id
   AND (gp.id = @identifier::wow_guid OR lower(gp.name) = lower(@name))
 ;
+
+
+-- name: SearchGamePlayers :many
+SELECT
+  gp.id,
+  gp.realm_id,
+  gp.name,
+  gp.class,
+  gp.race,
+  gp.gender,
+  gp.level,
+  gp.guild_id,
+  gp.updated_at,
+  COALESCE(wow_server_realms.name, 'Unknown') as realm_name,
+  COALESCE(g.name, '') as guild_name
+FROM
+  game_players gp
+LEFT JOIN guilds g ON g.id = gp.guild_id
+LEFT JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
+WHERE
+  gp.name ILIKE @search_term || '%'
+  AND CASE
+    WHEN @filter_class::text != '' THEN gp.class::text = @filter_class
+    ELSE true
+  END
+  AND CASE
+    WHEN @filter_realm::uuid != '00000000-0000-0000-0000-000000000000' THEN gp.realm_id = @filter_realm
+    ELSE true
+  END
+  AND CASE
+    WHEN @filter_guild::text != '' THEN g.name ILIKE '%' || @filter_guild || '%'
+    ELSE true
+  END
+ORDER BY
+  gp.level DESC, gp.updated_at DESC
+LIMIT @result_limit
+OFFSET @result_offset
+;

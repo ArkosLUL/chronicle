@@ -2,9 +2,11 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -55,4 +57,76 @@ func (api *API) GetArmoryPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, db2sdk.ArmoryPlayer(player))
+}
+
+func (api *API) SearchArmoryPlayers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	query := r.URL.Query()
+
+	searchTerm := query.Get("q")
+	if len(searchTerm) < 2 {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Search term must be at least 2 characters",
+		})
+		return
+	}
+
+	filterClass := query.Get("class")
+	filterGuild := query.Get("guild")
+
+	var filterRealm uuid.UUID
+	if realmStr := query.Get("realm"); realmStr != "" {
+		var err error
+		filterRealm, err = uuid.Parse(realmStr)
+		if err != nil {
+			var ok bool
+			filterRealm, ok = dbstatic.RealmByName(realmStr)
+			if !ok {
+				httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+					Message: "Invalid realm",
+				})
+				return
+			}
+		}
+	}
+
+	limit := int32(50)
+	if l := query.Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = int32(parsed)
+		}
+		if limit > 100 {
+			limit = 100
+		}
+	}
+
+	offset := int32(0)
+	if o := query.Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = int32(parsed)
+		}
+	}
+
+	rows, err := api.Opts.Zed.SearchGamePlayers(ctx, database.SearchGamePlayersParams{
+		SearchTerm:   pgtype.Text{String: searchTerm, Valid: true},
+		FilterClass:  filterClass,
+		FilterRealm:  filterRealm,
+		FilterGuild:  filterGuild,
+		ResultLimit:  limit,
+		ResultOffset: offset,
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	results := make([]chroniclesdk.ArmorySearchResult, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, db2sdk.ArmorySearchResult(row))
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.ArmorySearchResponse{
+		Players: results,
+		Count:   len(results),
+	})
 }

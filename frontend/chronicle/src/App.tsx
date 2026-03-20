@@ -41,6 +41,7 @@ import {
 } from "./pages/Settings"
 import { GuildPage, GuildPageEditor } from "./pages/GuildPage"
 import { ArmoryPage } from "./pages/ArmoryPage"
+import { ArmorySearchPage } from "./pages/ArmorySearch"
 import { Layout } from "./components/Layout/Layout"
 
 // Backend-handled paths that should bypass React Router
@@ -74,6 +75,7 @@ function App() {
         <Route path="/logs/file/:fileHash" element={<LogDetailByHash />} />
         <Route path="/instances/:instanceId" element={<InstancePage />} />
         <Route path="/s/:code" element={<SharedViewRedirect />} />
+        <Route path="/armory" element={<ArmorySearchPage />} />
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminPage />} />

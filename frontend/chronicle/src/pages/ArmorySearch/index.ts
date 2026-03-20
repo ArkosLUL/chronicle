@@ -1,0 +1,1 @@
+export { ArmorySearchPage } from "./ArmorySearchPage";

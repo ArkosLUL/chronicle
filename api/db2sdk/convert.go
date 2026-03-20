@@ -382,3 +382,24 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 		UpdatedFromInstance: instanceID,
 	}
 }
+
+func ArmorySearchResult(row database.SearchGamePlayersRow) chroniclesdk.ArmorySearchResult {
+	var guildID *uuid.UUID
+	if row.GuildID.Valid {
+		guildID = &row.GuildID.UUID
+	}
+
+	return chroniclesdk.ArmorySearchResult{
+		ID:        row.ID,
+		RealmName: row.RealmName,
+		RealmID:   row.RealmID,
+		Name:      row.Name,
+		Class:     HeroClass(row.Class).String(),
+		Race:      HeroRace(row.Race).String(),
+		Gender:    HeroGender(row.Gender).String(),
+		Level:     int32(row.Level),
+		GuildID:   guildID,
+		GuildName: row.GuildName,
+		UpdatedAt: row.UpdatedAt.Time,
+	}
+}

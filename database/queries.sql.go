@@ -71,6 +71,105 @@ func (q *sqlQuerier) GetGamePlayerByGUID(ctx context.Context, arg GetGamePlayerB
 	return i, err
 }
 
+const searchGamePlayers = `-- name: SearchGamePlayers :many
+SELECT
+  gp.id,
+  gp.realm_id,
+  gp.name,
+  gp.class,
+  gp.race,
+  gp.gender,
+  gp.level,
+  gp.guild_id,
+  gp.updated_at,
+  COALESCE(wow_server_realms.name, 'Unknown') as realm_name,
+  COALESCE(g.name, '') as guild_name
+FROM
+  game_players gp
+LEFT JOIN guilds g ON g.id = gp.guild_id
+LEFT JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
+WHERE
+  gp.name ILIKE $1 || '%'
+  AND CASE
+    WHEN $2::text != '' THEN gp.class::text = $2
+    ELSE true
+  END
+  AND CASE
+    WHEN $3::uuid != '00000000-0000-0000-0000-000000000000' THEN gp.realm_id = $3
+    ELSE true
+  END
+  AND CASE
+    WHEN $4::text != '' THEN g.name ILIKE '%' || $4 || '%'
+    ELSE true
+  END
+ORDER BY
+  gp.level DESC, gp.updated_at DESC
+LIMIT $6
+OFFSET $5
+`
+
+type SearchGamePlayersParams struct {
+	SearchTerm   pgtype.Text `db:"search_term" json:"search_term"`
+	FilterClass  string      `db:"filter_class" json:"filter_class"`
+	FilterRealm  uuid.UUID   `db:"filter_realm" json:"filter_realm"`
+	FilterGuild  string      `db:"filter_guild" json:"filter_guild"`
+	ResultOffset int32       `db:"result_offset" json:"result_offset"`
+	ResultLimit  int32       `db:"result_limit" json:"result_limit"`
+}
+
+type SearchGamePlayersRow struct {
+	ID        guid.GUID          `db:"id" json:"id"`
+	RealmID   uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name      string             `db:"name" json:"name"`
+	Class     WowPlayableClass   `db:"class" json:"class"`
+	Race      WowPlayableRace    `db:"race" json:"race"`
+	Gender    WowPlayableGender  `db:"gender" json:"gender"`
+	Level     int16              `db:"level" json:"level"`
+	GuildID   uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RealmName string             `db:"realm_name" json:"realm_name"`
+	GuildName string             `db:"guild_name" json:"guild_name"`
+}
+
+func (q *sqlQuerier) SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error) {
+	rows, err := q.db.Query(ctx, searchGamePlayers,
+		arg.SearchTerm,
+		arg.FilterClass,
+		arg.FilterRealm,
+		arg.FilterGuild,
+		arg.ResultOffset,
+		arg.ResultLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchGamePlayersRow
+	for rows.Next() {
+		var i SearchGamePlayersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RealmID,
+			&i.Name,
+			&i.Class,
+			&i.Race,
+			&i.Gender,
+			&i.Level,
+			&i.GuildID,
+			&i.UpdatedAt,
+			&i.RealmName,
+			&i.GuildName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertGuild = `-- name: UpsertGuild :one
 INSERT INTO
   guilds (realm_id, name, created_at)

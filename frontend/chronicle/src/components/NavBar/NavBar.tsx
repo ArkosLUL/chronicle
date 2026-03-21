@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu } from "lucide-react";
+import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu, Swords } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck } from "@/api/queries";
@@ -104,14 +104,14 @@ export function NavBar() {
                 <Castle className="h-4 w-4" />
                 Recent Raids
               </Link>
-              {/* <Link
+              <Link
                 to="/armory"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
                 <Swords className="h-4 w-4" />
                 Armory
-              </Link> */}
+              </Link>
               {isAuthenticated && (
                 <>
                   <div className="border-t my-2" />
@@ -150,13 +150,13 @@ export function NavBar() {
           <Castle className="h-4 w-4" />
           Recent Raids
         </Link>
-        {/* <Link
+        <Link
           to="/armory"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <Swords className="h-4 w-4" />
           Armory
-        </Link> */}
+        </Link>
         {isLoading ? null : isAuthenticated ? (
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>

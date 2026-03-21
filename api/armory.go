@@ -90,13 +90,13 @@ func (api *API) SearchArmoryPlayers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	limit := int32(50)
+	limit := int32(25)
 	if l := query.Get("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
 			limit = int32(parsed)
 		}
-		if limit > 100 {
-			limit = 100
+		if limit > 50 {
+			limit = 50
 		}
 	}
 

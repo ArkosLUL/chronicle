@@ -285,9 +285,16 @@ func OnyxiaHostiles() map[uint32]Identity {
 	LoadAdds(hostile, map[uint32]string{
 		12129: "Onyxian Warder",
 		11262: "Onyxian Whelp",
+
+		50143: "Cindarion",
+		49016: "Onyxian Inciter",
+		40068: "Onyxian Warder",
+		49017: "Onyxian Flamespawn",
+		50144: "Onyxian Hatcher",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		10184: "Onyxia",
+		49018: "Broodcommander Axelus",
 	})
 
 	return hostile

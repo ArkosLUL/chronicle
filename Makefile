@@ -136,3 +136,8 @@ test-postgres-docker:
 		echo "$$(date) - waiting for database to start"; \
 		sleep 0.5; \
 	done
+
+.PHONY: docs
+docs:
+	cd docs && pnpm dev
+

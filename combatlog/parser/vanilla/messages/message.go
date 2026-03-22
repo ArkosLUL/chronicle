@@ -39,6 +39,11 @@ type Message interface {
 	Activity() map[guid.GUID]ActivityEventType
 	AddActivity(guid.GUID, ActivityEventType)
 	ResetActivity()
+
+	// Marks add custom behavior to messages.
+
+	MarksExist() bool
+	MarkHas(markType MarkType) (string, bool)
 }
 
 type MessageBase struct {
@@ -47,6 +52,7 @@ type MessageBase struct {
 
 	// activity is used for debugging
 	activity map[guid.GUID]ActivityEventType
+	*marks
 }
 
 func WithSynthetic() func(*MessageBase) {
@@ -59,6 +65,7 @@ func Base(ts time.Time, opts ...func(m *MessageBase)) MessageBase {
 	b := MessageBase{
 		Timestamp: ts,
 		activity:  nil,
+		marks:     &marks{},
 	}
 	for _, opt := range opts {
 		opt(&b)

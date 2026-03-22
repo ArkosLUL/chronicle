@@ -71,6 +71,16 @@ func isImmobilizeCC(spellName string) bool {
 
 // processCommonActivity handles the basics of activity processing for a character.
 func processCommonActivity(c characterBase, m messages.Message) error {
+	if m.MarksExist() {
+		if reason, ok := m.MarkHas(messages.MarkTypeStart); ok {
+			c.Start(reason, m)
+		}
+		if reason, ok := m.MarkHas(messages.MarkTypeBump); ok {
+			c.Bump(reason, m)
+		}
+		// Let the regular logic apply.
+	}
+
 	switch data := m.(type) {
 	case *messages.Cast:
 		if data.Target != nil && (*data.Target).Gid == c.ID() {

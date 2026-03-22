@@ -22,6 +22,10 @@ export default defineConfig({
 					autogenerate: { directory: 'encounters' },
 				},
 				{
+					label: 'Instances',
+					autogenerate: { directory: 'instances' },
+				},
+				{
 					label: 'Architecture',
 					autogenerate: { directory: 'architecture' },
 				},

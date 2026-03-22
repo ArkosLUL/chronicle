@@ -288,6 +288,7 @@ func (p *Parser) ParseContent(lctx *logfile.Context, ts time.Time, content strin
 	}
 
 	return set(&messages.UnparsedLine{
+		// v2 uses marks
 		MessageBase: messages.Base(ts),
 		Content:     content,
 	}), nil

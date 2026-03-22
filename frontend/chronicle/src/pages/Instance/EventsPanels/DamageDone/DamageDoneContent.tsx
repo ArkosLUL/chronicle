@@ -119,17 +119,21 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
     setPanelOption(updatePanelOptionToken(panelOption, FOCUS_PREFIX, id));
   }, [setPanelOption, panelOption]);
 
-  const setPetGrouping = (pg: "owner" | "pet" | "pet_name") => {
+  const setPetGrouping = (pg: "owner" | "pet" | "pet_name", base?: string | null) => {
     if (!setPanelOption) return;
     // Map display values back to standard p: token values
     const tokenValue = pg === "pet" ? "individual" : pg === "pet_name" ? "name" : null;
-    setPanelOption(updatePanelOptionToken(panelOption, "p:", tokenValue));
+    const updated = updatePanelOptionToken(base !== undefined ? base : panelOption, "p:", tokenValue);
+    setPanelOption(updated);
   };
 
-  const setEnemyGrouping = (eg: "default" | "merged" | "name") => {
+  /** Update both grouping and pet mode in a single setPanelOption call. */
+  const setGroupingAndPets = (eg: "default" | "merged" | "name", pg: "owner" | "pet" | "pet_name") => {
     if (!setPanelOption) return;
-    // When selecting the panel's default grouping, clear the token
-    setPanelOption(updatePanelOptionToken(panelOption, "g:", eg === groupingDefault ? null : eg));
+    const gValue = eg === groupingDefault ? null : eg;
+    const pValue = pg === "pet" ? "individual" : pg === "pet_name" ? "name" : null;
+    const withG = updatePanelOptionToken(panelOption, "g:", gValue);
+    setPanelOption(updatePanelOptionToken(withG, "p:", pValue));
   };
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
@@ -299,7 +303,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
             <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
               <button
                 type="button"
-                onClick={() => setEnemyGrouping("merged")}
+                onClick={() => setGroupingAndPets("merged", "owner")}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
                   enemyGrouping === "merged"
@@ -307,11 +311,11 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Merged
+                Owners
               </button>
               <button
                 type="button"
-                onClick={() => setEnemyGrouping("default")}
+                onClick={() => setGroupingAndPets("default", "pet")}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
                   enemyGrouping === "default"
@@ -323,7 +327,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
               </button>
               <button
                 type="button"
-                onClick={() => setEnemyGrouping("name")}
+                onClick={() => setGroupingAndPets("name", "pet_name")}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
                   enemyGrouping === "name"

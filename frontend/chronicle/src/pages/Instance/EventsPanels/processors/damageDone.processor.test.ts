@@ -625,9 +625,7 @@ describe('enemyDamageDoneProcessor', () => {
   it('groups enemies by name when enemyGrouping is name', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        enemyGrouping: 'name',
-      },
+      panelOption: 'g:name',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF130000CE0000002': { name: 'Boss', owner: null, entry: 12345 },
@@ -681,9 +679,7 @@ describe('enemyDamageDoneProcessor', () => {
   it('falls back to GUID grouping when enemy name is missing in name mode', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        enemyGrouping: 'name',
-      },
+      panelOption: 'g:name',
       units: {},
     });
 
@@ -798,7 +794,7 @@ describe('petDamageDoneProcessor', () => {
   it('groups pet damage by pet when petGrouping is set to pet', () => {
     const state = processor.createState();
     const context = createContext({
-      panelOption: 'pet',
+      panelOption: 'p:individual',
     });
 
     processor.processEvent(state, createPetDamageEvent(), 'enc1', new Date(), 'damage', context);
@@ -815,7 +811,7 @@ describe('petDamageDoneProcessor', () => {
   it('creates a unique row per pet when petGrouping is set to pet', () => {
     const state = processor.createState();
     const context = createContext({
-      panelOption: 'pet',
+      panelOption: 'p:individual',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF140000CE0000002': { name: 'Wolf', owner: '0x0000000000001234', entry: 99 },
@@ -852,7 +848,7 @@ describe('petDamageDoneProcessor', () => {
   it('groups pets with the same name for the same owner when petGrouping is set to pet_name', () => {
     const state = processor.createState();
     const context = createContext({
-      panelOption: 'pet_name',
+      panelOption: 'p:name',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF140000CE0000002': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },
@@ -899,7 +895,7 @@ describe('petDamageDoneProcessor', () => {
         '0x0000000000001234': { name: 'TestPlayer', class: 'HUNTER' },
         '0x0000000000009999': { name: 'OtherPlayer', class: 'WARLOCK' },
       },
-      panelOption: 'pet_name',
+      panelOption: 'p:name',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF140000CE0000002': { name: 'Infernal', owner: '0x0000000000001234', entry: 89 },

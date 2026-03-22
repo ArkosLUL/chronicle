@@ -9,6 +9,7 @@ import type { ProcessorContext, ProcessorEvent, ProcessorPagination } from "./pr
 import type { ReusableDamage } from "@/api/protodecode/decode";
 import type { PanelFilter } from "./processors/filters";
 import type { GroupingOption } from "./processors/resolveEntity";
+export type { GroupingOption };
 
 /**
  * Selection state for filtering entities

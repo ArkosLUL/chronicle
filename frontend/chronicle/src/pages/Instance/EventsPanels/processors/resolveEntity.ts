@@ -118,7 +118,8 @@ export function resolveEntity(
 
   // Enemy / unknown
   const enemyName = unit?.name || guid;
-  if (grouping === "name") {
+  // Only group by name when we have a real name (not just a GUID fallback)
+  if (grouping === "name" && unit?.name?.trim()) {
     return {
       id: `enemy_name:${enemyName.toLowerCase()}`,
       name: enemyName,

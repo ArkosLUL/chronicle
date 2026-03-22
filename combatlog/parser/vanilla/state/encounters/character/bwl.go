@@ -34,6 +34,7 @@ func NewShadowflameSpark(id guid.GUID, all *Characters) (Character, bool) {
 		return nil, false
 	}
 
+	all.db.UpdateUnitName(id, "Shadowflame Spark")
 	return &shadowflameSpark{Common: NewCommonCharacter(id, all), all: all}, true
 }
 

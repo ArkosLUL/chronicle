@@ -4,7 +4,8 @@ import { RowContextMenu } from "@/components/ui/PlayerMetricChart/RowContextMenu
 import { AbilityBreakout, type AbilityData } from "@/components/ui/AbilityBreakout";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { DamageDoneResult, DamageSourceType, EnemyDamageGrouping } from "./damageDone.processor";
+import type { DamageDoneResult, DamageSourceType } from "./damageDone.processor";
+import { extractGroupingFromPanelOption, extractPetModeFromPanelOption } from "../processors/resolveEntity";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDamageDoneBreakout } from "./DamageDoneBreakout";
 import { formatNumber } from "@/lib/format";
@@ -14,8 +15,8 @@ import { cn } from "@/lib/utils";
 
 // ── Panel option encoding ──
 // panelOption is a comma-separated string of tokens stored in the URL.
-// Tokens: pet grouping ("pet" | "pet_name") and focus ("f:<playerId>").
-// Examples: null, "pet", "f:0xABC123", "pet_name,f:0xABC123"
+// Standard tokens: g:<grouping>, p:<petMode>, f:<playerId>, bc:<color>, t:<title>
+// Examples: null, "g:name", "p:individual,f:0xABC123"
 
 const FOCUS_PREFIX = "f:";
 
@@ -25,21 +26,14 @@ function parseFocusFromOption(option: string | null | undefined): string | null 
   return token ? token.slice(FOCUS_PREFIX.length) : null;
 }
 
-function parsePetGroupingFromOption(option: string | null | undefined): PetDamageGrouping {
-  if (!option) return "owner";
-  const tokens = option.split(",");
-  if (tokens.includes("pet_name")) return "pet_name";
-  if (tokens.includes("pet")) return "pet";
-  return "owner";
-}
-
-function serializePanelOption(
-  petGrouping: PetDamageGrouping | null,
-  focusId: string | null,
+/** Update a single token prefix in panelOption, preserving all other tokens. */
+function updatePanelOptionToken(
+  current: string | null | undefined,
+  prefix: string,
+  value: string | null,
 ): string | null {
-  const tokens: string[] = [];
-  if (petGrouping && petGrouping !== "owner") tokens.push(petGrouping);
-  if (focusId) tokens.push(`${FOCUS_PREFIX}${focusId}`);
+  const tokens = current ? current.split(",").filter(t => !t.startsWith(prefix)) : [];
+  if (value) tokens.push(`${prefix}${value}`);
   return tokens.length > 0 ? tokens.join(",") : null;
 }
 
@@ -105,54 +99,43 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
   sourceType?: DamageSourceType;
 }
 
-type PetDamageGrouping = "owner" | "pet" | "pet_name";
-
-interface EnemyDamagePanelContext {
-  enemyGrouping?: EnemyDamageGrouping;
-}
-
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { sourceType = "players" } = props;
-  const { result, context, panelContext, setPanelContext, panelOption, setPanelOption } = props;
+  const { result, context, panelOption, setPanelOption } = props;
   const [showRanks, setShowRanks] = useState(false);
 
-  // Derive focus and pet grouping from the URL-persisted panelOption
+  // Derive focus, grouping, and pet mode from the URL-persisted panelOption tokens
   const focusedPlayerId = useMemo(() => parseFocusFromOption(panelOption), [panelOption]);
-  const petGrouping: PetDamageGrouping = sourceType === "pets"
-    ? parsePetGroupingFromOption(panelOption)
-    : "owner";
+  const groupingDefault = sourceType === "pets" ? "default" : "merged";
+  const grouping = extractGroupingFromPanelOption(panelOption, groupingDefault);
+  const petMode = extractPetModeFromPanelOption(panelOption);
+
+  // Map standard token values to display-level names used in this component
+  const enemyGrouping = grouping;
+  const petGrouping = petMode === "individual" ? "pet" : petMode === "name" ? "pet_name" : "owner";
 
   const setFocusedPlayerId = useCallback((id: string | null) => {
     if (!setPanelOption) return;
-    const pet = sourceType === "pets" ? petGrouping : null;
-    setPanelOption(serializePanelOption(pet, id));
-  }, [setPanelOption, sourceType, petGrouping]);
+    setPanelOption(updatePanelOptionToken(panelOption, FOCUS_PREFIX, id));
+  }, [setPanelOption, panelOption]);
 
-  const setPetGrouping = (grouping: PetDamageGrouping) => {
+  const setPetGrouping = (pg: "owner" | "pet" | "pet_name") => {
     if (!setPanelOption) return;
-    setPanelOption(serializePanelOption(grouping, focusedPlayerId));
+    // Map display values back to standard p: token values
+    const tokenValue = pg === "pet" ? "individual" : pg === "pet_name" ? "name" : null;
+    setPanelOption(updatePanelOptionToken(panelOption, "p:", tokenValue));
   };
 
-  const enemyPanelContext = sourceType === "enemies"
-    ? (panelContext as EnemyDamagePanelContext | null)
-    : null;
-  const enemyGrouping: EnemyDamageGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
-
-  const setEnemyGrouping = (grouping: EnemyDamageGrouping) => {
-    if (!setPanelContext) return;
-
-    if (grouping === "guid") {
-      setPanelContext(null);
-      return;
-    }
-
-    setPanelContext({ enemyGrouping: grouping });
+  const setEnemyGrouping = (eg: "default" | "merged" | "name") => {
+    if (!setPanelOption) return;
+    // When selecting the panel's default grouping, clear the token
+    setPanelOption(updatePanelOptionToken(panelOption, "g:", eg === groupingDefault ? null : eg));
   };
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     (r) => !!r && r.EncounterDamage instanceof Map && r.EncounterDamage.size > 0,
-    [sourceType, petGrouping, enemyGrouping, props.panelContextVersion]
+    [sourceType, petGrouping, enemyGrouping]
   );
 
   const damageData = useMemo(() => {
@@ -316,10 +299,22 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
             <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
               <button
                 type="button"
-                onClick={() => setEnemyGrouping("guid")}
+                onClick={() => setEnemyGrouping("merged")}
                 className={cn(
                   "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                  enemyGrouping === "guid"
+                  enemyGrouping === "merged"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Merged
+              </button>
+              <button
+                type="button"
+                onClick={() => setEnemyGrouping("default")}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  enemyGrouping === "default"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}

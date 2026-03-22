@@ -5,7 +5,7 @@
  */
 
 import { Swords, Skull, PawPrint, Flame } from "lucide-react";
-import type { PanelDefinition, PanelRenderProps } from "../types";
+import type { GroupingOption, PanelDefinition, PanelRenderProps } from "../types";
 import type { PanelFilter } from "../processors/filters";
 import {
   damageDoneProcessor,
@@ -16,6 +16,24 @@ import {
 } from "../processors";
 import { DamageDoneContent } from "./DamageDoneContent";
 import type { DamageSourceType } from "./damageDone.processor";
+
+const GROUPING_OPTIONS: GroupingOption[] = [
+  { value: "merged", label: "By Unit (Merged)" },
+  { value: "default", label: "By Unit" },
+  { value: "name", label: "By Name" },
+];
+
+const PET_PANEL_GROUPING_OPTIONS: GroupingOption[] = [
+  { value: "default", label: "By Unit" },
+  { value: "merged", label: "By Unit (Merged)" },
+  { value: "name", label: "By Name" },
+];
+
+const PET_GROUPING_OPTIONS: GroupingOption[] = [
+  { value: "owner", label: "By Owner" },
+  { value: "individual", label: "By Pet" },
+  { value: "name", label: "By Pet Name" },
+];
 
 // Re-export for convenience
 export type { DamageSourceType } from "./damageDone.processor";
@@ -107,6 +125,8 @@ export function createDamageDonePanel(
     supportsFiltering: true,
     fixedFilters,
     defaultFilters: [{ type: "time_range" as const, value: "controller", applyTo:["damage"]}, ...defaultFilters],
+    groupingOptions: sourceType === "pets" ? PET_PANEL_GROUPING_OPTIONS : GROUPING_OPTIONS,
+    petOptions: PET_GROUPING_OPTIONS,
     render: (props: PanelRenderProps<DamageDoneState>) => {
       return <DamageDoneContent {...props} sourceType={sourceType} />;
     },

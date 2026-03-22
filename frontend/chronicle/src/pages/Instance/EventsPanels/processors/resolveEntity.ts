@@ -28,7 +28,7 @@ export interface GroupingOption {
 }
 
 /** How to bucket entities into rows. */
-export type EntityGrouping = "default" | "class" | "name";
+export type EntityGrouping = "default" | "class" | "name" | "merged";
 
 /** How to handle pet entities. */
 export type PetMode = "owner" | "individual" | "name";
@@ -74,25 +74,33 @@ export function resolveEntity(
   // Pet (has an owner)
   const unit = context.units?.[guid];
   if (unit?.owner) {
-    const ownerName = context.players[unit.owner]?.name || "Unknown";
-    const ownerClass = context.players[unit.owner]?.class || "UNKNOWN";
+    const ownerName = context.players[unit.owner]?.name
+      || context.units?.[unit.owner]?.name
+      || "Unknown";
+    const ownerIsPlayer = !!context.players[unit.owner];
+    const ownerClass = ownerIsPlayer
+      ? (context.players[unit.owner]?.class || "UNKNOWN")
+      : "ENEMY";
     const petName = unit.name || guid;
 
-    if (pets === "individual") {
-      return {
-        id: guid,
-        name: `${petName} (${ownerName})`,
-        class: ownerClass,
-      };
+    // "merged" grouping forces pets into their owner regardless of pet mode
+    if (grouping !== "merged") {
+      if (pets === "individual") {
+        return {
+          id: guid,
+          name: `${petName} (${ownerName})`,
+          class: ownerClass,
+        };
+      }
+      if (pets === "name") {
+        return {
+          id: `pet_name:${petName.toLowerCase()}:${unit.owner}`,
+          name: `${petName} (${ownerName})`,
+          class: ownerClass,
+        };
+      }
     }
-    if (pets === "name") {
-      return {
-        id: `pet_name:${petName.toLowerCase()}:${unit.owner}`,
-        name: `${petName} (${ownerName})`,
-        class: ownerClass,
-      };
-    }
-    // pets === "owner" — group under owner
+    // pets === "owner" or grouping === "merged" — group under owner
     // If grouping is "class", bucket under the owner's class instead
     if (grouping === "class") {
       return {
@@ -157,10 +165,13 @@ export const PET_MODE_OPTIONS: GroupingOption[] = [
  * Extract the entity grouping value from a panelOption string.
  * Looks for a "g:<value>" token.
  */
-export function extractGroupingFromPanelOption(panelOption: string | null | undefined): EntityGrouping {
-  if (!panelOption) return "default";
+export function extractGroupingFromPanelOption(
+  panelOption: string | null | undefined,
+  fallback: EntityGrouping = "default",
+): EntityGrouping {
+  if (!panelOption) return fallback;
   const token = panelOption.split(",").find((t) => t.startsWith("g:"));
-  return (token ? token.slice(2) : "default") as EntityGrouping;
+  return (token ? token.slice(2) : fallback) as EntityGrouping;
 }
 
 /**

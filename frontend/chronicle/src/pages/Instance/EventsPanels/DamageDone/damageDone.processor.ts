@@ -5,7 +5,8 @@
 import type { AuraProcessorEvent, DamageProcessorEvent, PanelProcessor, ProcessorContext, SlainProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
-import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
+import { createGuidCache, type GuidCache } from "../processors/guidCache";
+import { extractGroupingFromPanelOption, extractPetModeFromPanelOption, resolveEntity } from "../processors/resolveEntity";
 import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraProcessorState } from "../processors/auraProcessor";
 import { resolveSelectedVulnerability } from "../VulnerabilityEffect/vulnerabilityConfig";
 
@@ -16,7 +17,6 @@ export type { DamageAbilityBreakout, HitTypeStats } from "../processors/abilityB
  * Entity source types for damage aggregation
  */
 export type DamageSourceType = "players" | "enemies" | "pets" | "friendly_fire";
-export type EnemyDamageGrouping = "guid" | "name";
 
 /**
  * Player metric data for damage done aggregation.
@@ -227,82 +227,23 @@ export function createDamageDoneProcessor(
       //   state._damageEventsWithSunderArmor++;
       // }
 
-      const guidCache = state.GuidCache;
-
-      // Use fast player check first, fall back to cached GUID parsing
-      const isPlayer = isPlayerGuidFast(event.caster) || getCachedGuid(guidCache, event.caster).isPlayer();
-      const casterInfo = context.units?.[event.caster];
-      // For pet check: owner must exist and be a player
-      const isPet = !isPlayer && casterInfo?.owner &&
-        (isPlayerGuidFast(casterInfo.owner) || getCachedGuid(guidCache, casterInfo.owner).isPlayer());
       // Source type and friendly-fire filtering is handled by fixedFilters
-      // (see DamageDone.tsx). isPlayer/isPet/casterInfo are still used for
-      // damage attribution / grouping logic below.
+      // (see DamageDone.tsx). Entity resolution is handled by resolveEntity.
 
-      const petGrouping = sourceType === "pets"
-        ? (context.panelOption === "pet" || context.panelOption === "pet_name"
-            ? context.panelOption
-            : "owner")
-        : "owner";
-      const groupPetsSeparately = petGrouping === "pet";
-      const groupPetsByName = petGrouping === "pet_name";
+      const groupingDefault = sourceType === "pets" ? "default" : "merged";
+      const grouping = extractGroupingFromPanelOption(context.panelOption, groupingDefault);
+      const petMode = extractPetModeFromPanelOption(context.panelOption);
 
-      const enemyPanelContext = sourceType === "enemies"
-        ? (context.panelContext as { enemyGrouping?: EnemyDamageGrouping } | null)
-        : null;
-      const enemyGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
+      const entity = resolveEntity(event.caster, context, grouping, petMode);
+      const damageOwner = entity.id;
+      let ownerName = entity.name;
+      const ownerClass = entity.class;
 
-      // Determine the entity to attribute damage to
-      let damageOwner = event.caster;
-      if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
-        damageOwner = casterInfo!.owner!;
-      } else if (sourceType === "pets" && isPet && !groupPetsSeparately && !groupPetsByName) {
-        damageOwner = casterInfo!.owner!;
-      } else if (sourceType === "pets" && isPet && groupPetsByName) {
-        const petName = (casterInfo?.name || event.caster).toLowerCase();
-        const ownerKey = casterInfo?.owner || "unknown_owner";
-        damageOwner = `pet_name:${petName}:${ownerKey}`;
-      } else if (sourceType === "enemies" && enemyGrouping === "name") {
-        const enemyName = casterInfo?.name?.trim();
-        if (enemyName) {
-          damageOwner = `enemy_name:${enemyName.toLowerCase()}`;
-        }
-      }
-
-      // By default, use the raw GUID as name
-      let ownerName = damageOwner;
-      let ownerClass = "UNKNOWN";
-
-      if (sourceType === "players" || sourceType === "friendly_fire") {
+      // When pet damage merges into a player-owner row, use the player's own
+      // name instead of "OwnerName's Companions".
+      const ownerIsPlayer = !!context.players[damageOwner];
+      if (ownerIsPlayer && damageOwner !== event.caster) {
         ownerName = context.players[damageOwner]?.name || ownerName;
-        ownerClass = context.players[damageOwner]?.class || "UNKNOWN";
-      } else if (sourceType === "pets") {
-        if (groupPetsSeparately) {
-          const petName = casterInfo?.name || ownerName;
-          const ownerDisplayName =
-            (casterInfo?.owner && context.players[casterInfo.owner]?.name) ||
-            casterInfo?.owner ||
-            "Unknown Owner";
-          ownerName = `${petName} (${ownerDisplayName})`;
-          ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
-        } else if (groupPetsByName) {
-          const petName = casterInfo?.name || ownerName;
-          const ownerDisplayName =
-            (casterInfo?.owner && context.players[casterInfo.owner]?.name) ||
-            casterInfo?.owner ||
-            "Unknown Owner";
-          ownerName = `${petName} (${ownerDisplayName})`;
-          ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
-        } else {
-          // Default pet mode groups damage by owner
-          ownerName = (casterInfo?.owner && context.players[casterInfo.owner]?.name) || ownerName;
-          ownerName += "'s Companions";
-          ownerClass = (casterInfo?.owner && context.players[casterInfo.owner]?.class) || "UNKNOWN";
-        }
-      } else {
-        // For enemies, use the unit's name
-        ownerName = casterInfo?.name || ownerName;
-        ownerClass = "ENEMY";
       }
 
       // Vulnerability decomposition (bonus + base). Defaults to no bonus.
@@ -388,7 +329,9 @@ export function createDamageDoneProcessor(
       // Breakouts (target entity filtering now handled by defaultFilters)
       if (context.selectedEncounterIds.has(encounterID)) {
         let abilityName = event.sourceName || "Auto Attack";
-        if ((sourceType === "players" || sourceType === "friendly_fire") && isPet) {
+        // When pet damage is merged into the owner row, label abilities as "<PetName> (Pet)"
+        const casterHasOwner = !!context.units?.[event.caster]?.owner;
+        if (casterHasOwner && (grouping === "merged")) {
           const petName = context.units?.[event.caster]?.name || event.caster.toString();
           abilityName = `${petName} (Pet)`;
         }

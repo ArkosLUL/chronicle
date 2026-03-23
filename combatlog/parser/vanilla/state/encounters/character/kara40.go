@@ -43,6 +43,16 @@ func NewEchoOfMedivh(id guid.GUID, all *Characters) (Character, bool) {
 	return NewPermanentDeath(c), true
 }
 
+func NewIncantagos(id guid.GUID, all *Characters) (Character, bool) {
+	c, ok := NewAdsGoWithBoss(61946,
+		59955, // Manascale Whelp
+	)(id, all)
+	if !ok {
+		return nil, false
+	}
+	return NewPermanentDeath(c), true
+}
+
 func NewKing(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(59967,
 		59972, // Pawn

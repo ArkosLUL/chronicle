@@ -1,0 +1,44 @@
+{
+  "target_dummy_0_armor": {
+    "name": "Target Dummy (0 Armor)",
+    "level": 63,
+    "armor": 0,
+    "resistances": [0, 0, 0, 0, 0, 0],
+    "creature_type": 10
+  },
+  "target_dummy": {
+    "name": "Target Dummy",
+    "level": 63,
+    "armor": 3731,
+    "resistances": [0, 0, 0, 0, 0, 0],
+    "creature_type": 10
+  },
+  "patchwerk": {
+    "name": "Patchwerk",
+    "level": 63,
+    "armor": 3731,
+    "resistances": [0, 0, 0, 0, 0, 0],
+    "creature_type": 6
+  },
+  "ragnaros": {
+    "name": "Ragnaros",
+    "level": 63,
+    "armor": 3731,
+    "resistances": [0, 0, 0, 0, 0, 0],
+    "creature_type": 4
+  },
+  "nefarian": {
+    "name": "Nefarian",
+    "level": 63,
+    "armor": 3731,
+    "resistances": [0, 0, 0, 0, 0, 0],
+    "creature_type": 2
+  },
+  "cthun": {
+    "name": "C'Thun",
+    "level": 63,
+    "armor": 3731,
+    "resistances": [0, 0, 0, 0, 0, 0],
+    "creature_type": 10
+  }
+}

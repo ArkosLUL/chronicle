@@ -36,6 +36,7 @@ func NewMephistroth(id guid.GUID, all *Characters) (Character, bool) {
 func NewEchoOfMedivh(id guid.GUID, all *Characters) (Character, bool) {
 	c, ok := NewAdsGoWithBoss(61958,
 		59995, // Unstoppable Infernal
+		60062, // Lingering Doom
 	)(id, all)
 	if !ok {
 		return nil, false

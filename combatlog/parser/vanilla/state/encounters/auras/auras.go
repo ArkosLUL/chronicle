@@ -26,7 +26,7 @@ type Tracking struct {
 }
 
 func New() (*Tracking, error) {
-	mlru, err := lru.New[chrondbc.SpellID, time.Duration](300)
+	mlru, err := lru.New[chrondbc.SpellID, time.Duration](200)
 	if err != nil {
 		return nil, err
 	}

@@ -52,7 +52,8 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 
 	// Responses are already cached by the client browser, so not sure how useful
 	// this really is.
-	c, err := lru.New[chrondbc.SpellID, SpellEntry](2000)
+	// Kara40 has ~800 unique spells.
+	c, err := lru.New[chrondbc.SpellID, SpellEntry](1000)
 	if err != nil {
 		return nil, fmt.Errorf("lru: %w", err)
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 // Creatures consumes parsed combat logs and builds a list of all creatures seen
@@ -28,6 +29,7 @@ type Creatures struct {
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone  zone.Zone
 	ZonedUnits   map[string]map[uint32]string
+	ZoneSpells   map[string]map[chrondbc.SpellID]int
 	UnknownUnits map[string]map[uint32]int
 	UnitSpells   map[uint32]map[string]struct{}
 
@@ -42,6 +44,7 @@ func New(logger *slog.Logger) *Creatures {
 		Units:        unitdb.New(),
 		CurrentZone:  zone.Zone{},
 		UnknownUnits: make(map[string]map[uint32]int),
+		ZoneSpells:   make(map[string]map[chrondbc.SpellID]int),
 		ZonedUnits:   map[string]map[uint32]string{},
 		UnitSpells:   make(map[uint32]map[string]struct{}),
 	}
@@ -75,7 +78,15 @@ func (s *Creatures) Consume(ctx context.Context, p consumers.Advancer) error {
 	}
 }
 
-func (s *Creatures) UnitCastedSpell(id guid.GUID, spell string) {
+func (s *Creatures) UnitCastedSpell(id guid.GUID, spell *chrondbc.Spell) {
+	if spell == nil {
+		return
+	}
+	if s.ZoneSpells[s.CurrentZone.Name] == nil {
+		s.ZoneSpells[s.CurrentZone.Name] = make(map[chrondbc.SpellID]int)
+	}
+	s.ZoneSpells[s.CurrentZone.Name][spell.ID]++
+
 	entry, ok := id.GetEntry()
 	if !ok {
 		return
@@ -83,7 +94,7 @@ func (s *Creatures) UnitCastedSpell(id guid.GUID, spell string) {
 	if s.UnitSpells[entry] == nil {
 		s.UnitSpells[entry] = make(map[string]struct{})
 	}
-	s.UnitSpells[entry][spell] = struct{}{}
+	s.UnitSpells[entry][spell.Name()] = struct{}{}
 }
 
 func (s *Creatures) Process(m messages.Message) error {
@@ -96,12 +107,16 @@ func (s *Creatures) Process(m messages.Message) error {
 		s.Unit(*typed)
 	case *messages.UnitDied:
 		s.UnitDied(*typed)
+	case *messages.SpellGo:
+		s.UnitCastedSpell(typed.Caster, typed.SpellData)
+	case *messages.SpellStart:
+		s.UnitCastedSpell(typed.Caster, typed.SpellData)
 	case *messages.Cast:
 		// Track which spells are cast by which units, so we can later use this to help identify unknown units by their spell casts.
-		s.UnitCastedSpell(typed.Caster.Gid, typed.Spell.Name)
+		//s.UnitCastedSpell(typed.Caster.Gid, typed.Spell)
 	case *messages.Damage:
-		if typed.Caster != nil && typed.SpellName != nil {
-			s.UnitCastedSpell(*typed.Caster, *typed.SpellName)
+		if typed.Caster != nil && typed.SpellData != nil {
+			s.UnitCastedSpell(*typed.Caster, typed.SpellData)
 		}
 	}
 

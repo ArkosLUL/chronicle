@@ -274,7 +274,7 @@ func CreaturesCmd() *serpent.Command {
 
 			for z, units := range output.ZonedUnits {
 				zoneSpells := make(map[string]struct{})
-				fmt.Println("Zone:", z)
+				fmt.Printf("Zone: %s with %d spells\n", z, len(output.ZoneSpells[z]))
 				for id, name := range units {
 					fmt.Printf("  %d: %q,\n", id, name)
 					if dumpSpells {

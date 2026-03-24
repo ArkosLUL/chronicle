@@ -171,7 +171,7 @@ export function UploadView({
                   <h2 className="font-semibold">Combat Log</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Select <code>/Imports/Chronicle_&lt;character_name&gt;.txt</code> file
+                  Select <code>/CustomData/Chronicle_&lt;character_name&gt;.txt</code> file
                 </p>
                 <label className="block">
                   <input
@@ -371,7 +371,7 @@ export function UploadView({
                   <div>
                     <p className="mb-1"><strong className="text-foreground">4. Upload the file:</strong></p>
                     <ul className="list-none ml-4">
-                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Imports/Chronicle_&lt;character_name&gt;.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/CustomData/Chronicle_&lt;character_name&gt;.txt</code></li>
                     </ul>
                   </div>
                 </div>

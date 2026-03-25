@@ -32,6 +32,12 @@ import type {
   CreateShareResponse as CreateShareResponseGenerated,
   SharedViewResponse as SharedViewResponseGenerated,
   ArmorySearchResponse as ArmorySearchResponseGenerated,
+  GuildPageConfig as GuildPageConfigGenerated,
+  GuildPageTab as GuildPageTabGenerated,
+  GuildPagePanel as GuildPagePanelGenerated,
+  UpdateTabRequest as UpdateTabRequestGenerated,
+  CreateTabRequest as CreateTabRequestGenerated,
+  UpdateGuildPageRequest as UpdateGuildPageRequestGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -66,6 +72,12 @@ export type CreateShareRequest = CreateShareRequestGenerated;
 export type CreateShareResponse = CreateShareResponseGenerated;
 export type SharedViewResponse = SharedViewResponseGenerated;
 export type ArmorySearchResponse = ArmorySearchResponseGenerated;
+export type GuildPageConfig = GuildPageConfigGenerated;
+export type GuildPageTab = GuildPageTabGenerated;
+export type GuildPagePanel = GuildPagePanelGenerated;
+export type UpdateTabRequest = UpdateTabRequestGenerated;
+export type CreateTabRequest = CreateTabRequestGenerated;
+export type UpdateGuildPageRequest = UpdateGuildPageRequestGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -885,6 +897,87 @@ export function useArmorySearch(
     enabled: params.q.length >= 2,
     staleTime: 30_000,
     ...options,
+  });
+}
+
+// --- Guild Pages ---
+
+export function useGuildPage(guildId: string | undefined) {
+  return useQuery({
+    queryKey: ["guild-page", guildId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/page`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch guild page", error);
+      }
+      return response.json() as Promise<GuildPageConfig>;
+    },
+    enabled: !!guildId,
+  });
+}
+
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
+
+export function useSaveGuildPage(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tabs: readonly GuildPageTab[]) => {
+      // Ensure the page exists first (upsert with empty theme)
+      const hasNewTabs = tabs.some((t) => t.id === NIL_UUID || t.id.startsWith("tab-"));
+      if (hasNewTabs) {
+        const upsertResp = await fetch(`/api/v1/guilds/${guildId}/page`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ theme: {} } satisfies UpdateGuildPageRequest),
+          credentials: "include",
+        });
+        if (!upsertResp.ok) {
+          const error = await upsertResp.json().catch(() => null);
+          throw buildAPIError("Failed to create guild page", error);
+        }
+      }
+
+      // Save each tab
+      await Promise.all(
+        tabs.map(async (tab) => {
+          let tabId = tab.id;
+
+          // Create tab if it doesn't exist in the DB yet
+          if (tabId === NIL_UUID || tabId.startsWith("tab-")) {
+            const createResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ label: tab.label, slug: tab.slug } satisfies CreateTabRequest),
+              credentials: "include",
+            });
+            if (!createResp.ok) {
+              const error = await createResp.json().catch(() => null);
+              throw buildAPIError("Failed to create tab", error);
+            }
+            const created = await createResp.json() as GuildPageTab;
+            tabId = created.id;
+          }
+
+          // Update tab with panels
+          const updateResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/${tabId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ label: tab.label, panels: tab.panels } satisfies UpdateTabRequest),
+            credentials: "include",
+          });
+          if (!updateResp.ok) {
+            const error = await updateResp.json().catch(() => null);
+            throw buildAPIError("Failed to update tab", error);
+          }
+        })
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-page", guildId] });
+    },
   });
 }
 

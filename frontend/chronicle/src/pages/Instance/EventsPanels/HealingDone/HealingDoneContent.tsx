@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Layers } from "lucide-react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
-import { RowContextMenu } from "@/components/ui/PlayerMetricChart/RowContextMenu";
+import { RowContextMenu, getArmoryUrl } from "@/components/ui/PlayerMetricChart/RowContextMenu";
 import { AbilityBreakout, type AbilityData } from "@/components/ui/AbilityBreakout";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
@@ -406,6 +406,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
           playerName={contextMenu.playerName}
           onFocus={() => setFocusedPlayerId(contextMenu.playerId)}
           onClose={() => setContextMenu(null)}
+          armoryUrl={getArmoryUrl(props.context.instance, contextMenu.playerId)}
         />
       )}
     </GenericPanel>

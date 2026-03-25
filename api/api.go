@@ -150,7 +150,10 @@ func (api *API) Routes() chi.Router {
 		r.Route("/guilds", func(r chi.Router) {
 			r.Get("/", api.ListGuilds)
 			r.Route("/{guildID}", func(r chi.Router) {
-				r.Use(httpmw.GuildIDMiddleware(api.Zed))
+				r.Use(
+					httpmw.GuildIDMiddleware(api.Zed),
+					api.Auth.Authenticated(true),
+				)
 				r.Get("/", api.GetGuild)
 				r.Get("/page", api.GetGuildPage)
 

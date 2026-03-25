@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import type { GuildPageConfig, DeviceVisibility } from "@/api/typesGenerated";
+import type { DeviceVisibility } from "@/api/typesGenerated";
+import { useGuildPage } from "@/api/queries";
 import { GuildPageCanvas, TabBar } from "./components";
 import { ArrowLeft, Pencil, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -14,111 +14,12 @@ function isVisibleOnDevice(visibility: DeviceVisibility | undefined, isMobile: b
   return true;
 }
 
-// Fake data for development - will be replaced with API call
-const FAKE_GUILD_PAGE: GuildPageConfig = {
-  id: "fake-page-id",
-  guild_id: "fake-guild-id",
-  guild: {
-    id: "fake-guild-id",
-    name: "The Eternal Flame",
-    realm_id: "fake-realm-id",
-    realm_name: "Turtle WoW",
-    has_page: true,
-    can_edit: true,
-  },
-  theme: {
-    primary_color: "#f59e0b",
-  },
-  tabs: [
-    {
-      id: "tab-1",
-      label: "Overview",
-      slug: "overview",
-      sort_order: 0,
-      visibility: "all",
-      panels: [
-        {
-          id: "panel-1",
-          panel_type: "stats",
-          config: { showTotalKills: true, showRaidTime: true, showMembers: true },
-          position: { x: 0, y: 0, w: 6, h: 2 },
-          visibility: "all",
-        },
-        {
-          id: "panel-2",
-          panel_type: "leaderboard",
-          config: { metric: "dps", limit: 5 },
-          position: { x: 6, y: 0, w: 6, h: 3 },
-          visibility: "desktop", // Example: hide complex leaderboard on mobile
-        },
-        {
-          id: "panel-3",
-          panel_type: "recent_raids",
-          config: { limit: 5, showDate: true },
-          position: { x: 0, y: 2, w: 6, h: 3 },
-          visibility: "all",
-        },
-      ],
-    },
-    {
-      id: "tab-2",
-      label: "Progress",
-      slug: "progress",
-      sort_order: 1,
-      visibility: "all",
-      panels: [
-        {
-          id: "panel-4",
-          panel_type: "progress",
-          config: { instance: "mc" },
-          position: { x: 0, y: 0, w: 12, h: 2 },
-          visibility: "all",
-        },
-        {
-          id: "panel-5",
-          panel_type: "progress",
-          config: { instance: "bwl" },
-          position: { x: 0, y: 2, w: 12, h: 2 },
-          visibility: "all",
-        },
-      ],
-    },
-    {
-      id: "tab-3",
-      label: "Roster",
-      slug: "roster",
-      sort_order: 2,
-      visibility: "desktop", // Example: roster only on desktop
-      panels: [
-        {
-          id: "panel-6",
-          panel_type: "roster",
-          config: { showClass: true, showRole: true },
-          position: { x: 0, y: 0, w: 12, h: 4 },
-          visibility: "all",
-        },
-      ],
-    },
-  ],
-};
-
-async function fetchGuildPage(guildId: string): Promise<GuildPageConfig> {
-  // For now, return fake data
-  // TODO: Replace with actual API call when connected
-  void guildId; // Will be used when API is connected
-  return FAKE_GUILD_PAGE;
-}
-
 export function GuildPage() {
   const { guildId, tabSlug } = useParams<{ guildId: string; tabSlug?: string }>();
   const [activeTab, setActiveTab] = useState<string>(tabSlug || "overview");
   const isMobile = useIsMobile();
 
-  const { data: pageConfig, isLoading, error } = useQuery({
-    queryKey: ["guild-page", guildId],
-    queryFn: () => fetchGuildPage(guildId!),
-    enabled: !!guildId,
-  });
+  const { data: pageConfig, isLoading, error } = useGuildPage(guildId);
 
   // Filter tabs and panels based on device visibility
   const visibleTabs = useMemo(() => {

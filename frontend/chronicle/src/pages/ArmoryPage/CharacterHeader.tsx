@@ -2,6 +2,17 @@ import { Link } from "react-router-dom";
 import type { ArmoryPlayer } from "@/api/typesGenerated";
 import { getClassColorVar } from "./types";
 
+export function formatClassLabel(cls: string): string {
+  return cls.charAt(0) + cls.slice(1).toLowerCase();
+}
+
+export function formatRaceLabel(race: string): string {
+  if (race === "NightElf") return "Night Elf";
+  if (race === "BloodElf") return "Blood Elf";
+  if (race === "Scourge") return "Undead";
+  return race;
+}
+
 interface CharacterHeaderProps {
   player: ArmoryPlayer;
 }
@@ -27,8 +38,8 @@ export function CharacterHeader({ player }: CharacterHeaderProps) {
     day: "numeric",
   });
 
-  const classLabel = player.class.charAt(0) + player.class.slice(1).toLowerCase();
-  const raceLabel = player.race === "NightElf" ? "Night Elf" : player.race === "BloodElf" ? "Blood Elf" : player.race === "Scourge" ? "Undead" : player.race;
+  const classLabel = formatClassLabel(player.class);
+  const raceLabel = formatRaceLabel(player.race);
 
   return (
     <div className="flex flex-col items-center gap-1">

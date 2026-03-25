@@ -1,60 +1,12 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import type { GuildPageConfig, GuildPagePanel, GuildPageTab, DeviceVisibility } from "@/api/typesGenerated";
+import type { GuildPagePanel, GuildPageTab, DeviceVisibility } from "@/api/typesGenerated";
+import { useGuildPage, useSaveGuildPage } from "@/api/queries";
 import { GuildPageCanvas, TabBar, AddPanelDrawer, PanelConfigModal } from "./components";
 import { getPanelDefinition } from "./panels/registry";
 import { ArrowLeft, Eye, Save, Monitor } from "lucide-react";
 import type { LayoutItem } from "react-grid-layout";
 import { useIsMobile } from "@/hooks/useIsMobile";
-
-// Same fake data as GuildPage for now
-const FAKE_GUILD_PAGE: GuildPageConfig = {
-  id: "fake-page-id",
-  guild_id: "fake-guild-id",
-  guild: {
-    id: "fake-guild-id",
-    name: "The Eternal Flame",
-    realm_id: "fake-realm-id",
-    realm_name: "Turtle WoW",
-    has_page: true,
-    can_edit: true,
-  },
-  theme: {
-    primary_color: "#f59e0b",
-  },
-  tabs: [
-    {
-      id: "tab-1",
-      label: "Overview",
-      slug: "overview",
-      sort_order: 0,
-      visibility: "all",
-      panels: [
-        {
-          id: "panel-1",
-          panel_type: "stats",
-          config: { showTotalKills: true, showRaidTime: true, showMembers: true },
-          position: { x: 0, y: 0, w: 6, h: 2 },
-          visibility: "all",
-        },
-        {
-          id: "panel-2",
-          panel_type: "leaderboard",
-          config: { metric: "dps", limit: 5 },
-          position: { x: 6, y: 0, w: 6, h: 3 },
-          visibility: "desktop",
-        },
-      ],
-    },
-  ],
-};
-
-async function fetchGuildPage(guildId: string): Promise<GuildPageConfig> {
-  // TODO: Replace with actual API call when connected
-  void guildId; // Will be used when API is connected
-  return FAKE_GUILD_PAGE;
-}
 
 export function GuildPageEditor() {
   const { guildId } = useParams<{ guildId: string }>();
@@ -66,11 +18,8 @@ export function GuildPageEditor() {
   const [configPanel, setConfigPanel] = useState<GuildPagePanel | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const { data: pageConfig, isLoading } = useQuery({
-    queryKey: ["guild-page-edit", guildId],
-    queryFn: () => fetchGuildPage(guildId!),
-    enabled: !!guildId,
-  });
+  const { data: pageConfig, isLoading } = useGuildPage(guildId);
+  const saveGuildPage = useSaveGuildPage(guildId);
 
   // Initialize tabs from fetched data
   useState(() => {
@@ -223,11 +172,13 @@ export function GuildPageEditor() {
   }, [pageConfig?.tabs]);
 
   const handleSave = async () => {
-    // TODO: Implement save via API
-    console.log("Saving tabs:", displayTabs);
-    setHasChanges(false);
-    // In real implementation:
-    // await updateGuildPage(guildId, { tabs: displayTabs });
+    try {
+      const tabsToSave = tabs.length > 0 ? tabs : (pageConfig?.tabs ?? []);
+      await saveGuildPage.mutateAsync(tabsToSave);
+      setHasChanges(false);
+    } catch (err) {
+      console.error("Failed to save guild page:", err);
+    }
   };
 
   if (isLoading) {
@@ -280,7 +231,7 @@ export function GuildPageEditor() {
             </Link>
             <button
               onClick={handleSave}
-              disabled={!hasChanges}
+              disabled={!hasChanges || saveGuildPage.isPending}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Save className="h-4 w-4" />
@@ -311,7 +262,7 @@ export function GuildPageEditor() {
 
             {currentTab && (
               <GuildPageCanvas
-                guild={pageConfig?.guild || FAKE_GUILD_PAGE.guild}
+                guild={pageConfig!.guild}
                 panels={[...currentTab.panels]}
                 isEditing={true}
                 onLayoutChange={handleLayoutChange}

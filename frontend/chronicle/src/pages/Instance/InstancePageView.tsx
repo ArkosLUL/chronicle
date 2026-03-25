@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useSession, useCreateShare, fetchSharedView, type UserPanelLayout } from "@/api/queries";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2, BookOpen } from "lucide-react";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2, BookOpen, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
@@ -40,6 +40,7 @@ import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceAction
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/CharacterHeader";
 import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
 import { parsePanelLayout } from "@/features/layoutBook/parseLayout";
 import {
@@ -1139,7 +1140,7 @@ function EncounterDetail({
                           {classPlayers.map((player) => {
                             const isSelected = isPlayerSelected(player.guid);
                             return (
-                              <Tooltip key={player.guid}>
+                              <HintTooltip key={player.guid}>
                                 <TooltipTrigger asChild>
                                   <button
                                     onClick={() => onTogglePlayer(player.guid)}
@@ -1162,10 +1163,37 @@ function EncounterDetail({
                                     </span>
                                   </button>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <span className="font-mono text-xs">{player.guid}</span>
+                                <TooltipContent side="bottom" hideArrow className="p-3 bg-card text-card-foreground border">
+                                  <div className="space-y-2 max-w-xs">
+                                    <div className="font-medium border-b border-border pb-1 flex items-center gap-2">
+                                      <span
+                                        className="w-2 h-2 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: `var(--color-class-${player.class.toLowerCase()})` }}
+                                      />
+                                      <span style={{ color: `var(--color-class-${player.class.toLowerCase()})` }}>
+                                        {player.name}
+                                      </span>
+                                      <span className="text-muted-foreground text-xs font-normal">
+                                        {formatRaceLabel(player.race)} {formatClassLabel(player.class)}
+                                      </span>
+                                    </div>
+                                    {instance.realm && (
+                                      <Link
+                                        to={`/armory/${encodeURIComponent(instance.realm)}/${encodeURIComponent(player.name)}`}
+                                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        View Armory
+                                      </Link>
+                                    )}
+                                    <details className="text-xs text-muted-foreground">
+                                      <summary className="cursor-pointer hover:text-foreground">Debug</summary>
+                                      <div className="font-mono mt-1">{player.guid}</div>
+                                    </details>
+                                  </div>
                                 </TooltipContent>
-                              </Tooltip>
+                              </HintTooltip>
                             );
                           })}
                         </div>

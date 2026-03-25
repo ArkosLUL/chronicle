@@ -17,6 +17,37 @@ import (
 	"github.com/google/uuid"
 )
 
+// defaultGuildPageConfig returns a starter page config when no page exists in the DB yet.
+func defaultGuildPageConfig(guild chroniclesdk.GuildInfo) chroniclesdk.GuildPageConfig {
+	return chroniclesdk.GuildPageConfig{
+		GuildID: guild.ID,
+		Guild:   guild,
+		Theme:   chroniclesdk.GuildPageTheme{},
+		Tabs: []chroniclesdk.GuildPageTab{
+			{
+				ID:        uuid.Nil,
+				Label:     "Overview",
+				Slug:      "overview",
+				SortOrder: 0,
+				Panels: []chroniclesdk.GuildPagePanel{
+					{
+						ID:        uuid.Nil,
+						PanelType: "stats",
+						Config:    map[string]any{"showTotalKills": true, "showRaidTime": true, "showMembers": true},
+						Position:  chroniclesdk.GuildPanelPosition{X: 0, Y: 0, W: 6, H: 2},
+					},
+					{
+						ID:        uuid.Nil,
+						PanelType: "recent_raids",
+						Config:    map[string]any{"limit": 5, "showDate": true},
+						Position:  chroniclesdk.GuildPanelPosition{X: 6, Y: 0, W: 6, H: 3},
+					},
+				},
+			},
+		},
+	}
+}
+
 // ListGuilds returns a list of guilds with their page status
 func (api *API) ListGuilds(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -108,23 +139,34 @@ func (api *API) GetGuildPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	guild := httpmw.Guild(ctx)
 
+	canEdit := false
+	// Check if user can edit
+	// TODO: This should be an auth check call
+	actor, ok := authz.ActorFromContext(ctx)
+	if ok {
+		check, err := api.Zed.CheckOne(ctx, nil, policy.New().Guild(guild.ID).CanAdmin_guild_User(actor))
+		canEdit = err == nil && check
+	}
+
+	guildInfo := chroniclesdk.GuildInfo{
+		ID:        guild.ID,
+		Name:      guild.Name,
+		RealmID:   guild.RealmID,
+		RealmName: guild.RealmName,
+		HasPage:   true,
+		CanEdit:   canEdit,
+	}
+
 	page, err := api.Opts.Zed.GetFullGuildPage(ctx, guild.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
-				Message: "Guild page not found",
-			})
+			// Return a default page when none exists yet
+			httpapi.Write(ctx, w, http.StatusOK, defaultGuildPageConfig(guildInfo))
 			return
 		}
 		httpapi.InternalServerError(w, err)
 		return
 	}
-
-	// Check if user can edit
-	// TODO: This should be an auth check call
-	actor, _ := authz.ActorFromContext(ctx)
-	ok, err := api.Zed.CheckOne(ctx, nil, policy.New().Guild(guild.ID).CanAdmin_guild_User(actor))
-	canEdit := ok && err == nil
 
 	// Load tabs and panels
 	tabs, err := api.Opts.Zed.ListGuildPageTabs(ctx, page.ID)
@@ -176,16 +218,9 @@ func (api *API) GetGuildPage(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.GuildPageConfig{
 		ID:      page.ID,
 		GuildID: page.GuildID,
-		Guild: chroniclesdk.GuildInfo{
-			ID:        page.GuildID,
-			Name:      page.GuildName,
-			RealmID:   page.RealmID,
-			RealmName: page.RealmName,
-			HasPage:   true,
-			CanEdit:   canEdit,
-		},
-		Theme: theme,
-		Tabs:  sdkTabs,
+		Guild:   guildInfo,
+		Theme:   theme,
+		Tabs:    sdkTabs,
 	})
 }
 

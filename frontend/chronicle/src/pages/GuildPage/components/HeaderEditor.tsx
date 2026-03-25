@@ -2,7 +2,29 @@ import type { GuildPageTheme, GuildTag, SocialPlatform } from "@/api/typesGenera
 import { GuildTags, SocialPlatforms } from "@/api/typesGenerated";
 import { SOCIAL_PLATFORM_META } from "./GuildPageHeader";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+const ALLOWED_IMAGE_HOSTS = [
+  "cdn.brandfetch.io",
+  "icons.chronicleclassic.com",
+  "cdn.discordapp.com",
+  "i.imgur.com",
+  "avatars.githubusercontent.com",
+];
+
+function validateLogoUrl(url: string): string | null {
+  if (!url) return null;
+  if (!url.startsWith("https://")) return "Must use HTTPS";
+  try {
+    const parsed = new URL(url);
+    if (!ALLOWED_IMAGE_HOSTS.includes(parsed.hostname)) {
+      return `Domain not allowed. Use: ${ALLOWED_IMAGE_HOSTS.join(", ")}`;
+    }
+  } catch {
+    return "Invalid URL";
+  }
+  return null;
+}
 
 interface HeaderEditorProps {
   theme: GuildPageTheme;
@@ -11,6 +33,7 @@ interface HeaderEditorProps {
 
 export function HeaderEditor({ theme, onChange }: HeaderEditorProps) {
   const [expanded, setExpanded] = useState(false);
+  const logoError = useMemo(() => validateLogoUrl(theme.logo_url ?? ""), [theme.logo_url]);
 
   const tags = theme.tags ?? [];
   const socials: Partial<Record<SocialPlatform, string>> = theme.socials ?? {};
@@ -51,9 +74,13 @@ export function HeaderEditor({ theme, onChange }: HeaderEditorProps) {
               value={theme.logo_url ?? ""}
               onChange={(e) => onChange({ ...theme, logo_url: e.target.value })}
               placeholder="https://example.com/logo.png"
-              className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+              className={`w-full px-3 py-2 rounded-md border bg-background text-sm ${logoError ? "border-destructive" : "border-input"}`}
             />
-            <p className="text-xs text-muted-foreground">Must be HTTPS. Leave empty for default.</p>
+            {logoError ? (
+              <p className="text-xs text-destructive">{logoError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Must be HTTPS. Leave empty for default.</p>
+            )}
           </div>
 
           {/* Description */}

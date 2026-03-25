@@ -215,6 +215,12 @@ export interface GuildPageConfig {
 }
 
 // From chroniclesdk/guild_page.go
+export interface GuildPageOptionsResponse {
+    readonly allowed_tags: readonly GuildTag[];
+    readonly social_platforms: readonly SocialPlatform[];
+}
+
+// From chroniclesdk/guild_page.go
 export interface GuildPagePanel {
     readonly id: string;
     readonly panel_type: string;
@@ -239,6 +245,10 @@ export interface GuildPageTheme {
     readonly primary_color?: string;
     readonly banner_url?: string;
     readonly background_url?: string;
+    readonly logo_url?: string;
+    readonly description?: string;
+    readonly tags?: readonly GuildTag[];
+    readonly socials?: Record<SocialPlatform, string>; // platform key -> URL
 }
 
 // From chroniclesdk/guild_page.go
@@ -248,6 +258,11 @@ export interface GuildPanelPosition {
     readonly w: number;
     readonly h: number;
 }
+
+// From chroniclesdk/constants.go
+export type GuildTag = "Casual" | "Chinese" | "Dungeons" | "English" | "French" | "German" | "Hardcore" | "Korean" | "Leveling" | "Portuguese" | "PvP" | "Questing" | "RP" | "Raiding" | "Russian" | "Social" | "Spanish" | "Taiwanese";
+
+export const GuildTags: GuildTag[] = ["Casual", "Chinese", "Dungeons", "English", "French", "German", "Hardcore", "Korean", "Leveling", "Portuguese", "PvP", "Questing", "RP", "Raiding", "Russian", "Social", "Spanish", "Taiwanese"];
 
 // From chroniclesdk/panel_layout.go
 /**
@@ -470,6 +485,12 @@ export interface LogUploadResponse {
     readonly log_id: string;
     readonly file_ids: readonly string[];
 }
+
+// From chroniclesdk/guild_page.go
+export const MaxDescriptionLength = 500;
+
+// From chroniclesdk/guild_page.go
+export const MaxTags = 10;
 
 // From chroniclesdk/log.go
 export interface PeriodMoment {
@@ -703,6 +724,11 @@ export interface SimItemSpell {
     readonly cooldown_ms?: number;
     readonly category_cooldown_ms?: number;
 }
+
+// From chroniclesdk/constants.go
+export type SocialPlatform = "discord" | "twitch" | "twitter" | "website" | "youtube";
+
+export const SocialPlatforms: SocialPlatform[] = ["discord", "twitch", "twitter", "website", "youtube"];
 
 // From chroniclesdk/panel_layout.go
 /**

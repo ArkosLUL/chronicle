@@ -33,6 +33,7 @@ import type {
   SharedViewResponse as SharedViewResponseGenerated,
   ArmorySearchResponse as ArmorySearchResponseGenerated,
   GuildPageConfig as GuildPageConfigGenerated,
+  GuildPageTheme as GuildPageThemeGenerated,
   GuildPageTab as GuildPageTabGenerated,
   GuildPagePanel as GuildPagePanelGenerated,
   UpdateTabRequest as UpdateTabRequestGenerated,
@@ -78,6 +79,7 @@ export type GuildPagePanel = GuildPagePanelGenerated;
 export type UpdateTabRequest = UpdateTabRequestGenerated;
 export type CreateTabRequest = CreateTabRequestGenerated;
 export type UpdateGuildPageRequest = UpdateGuildPageRequestGenerated;
+export type GuildPageTheme = GuildPageThemeGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -920,23 +922,27 @@ export function useGuildPage(guildId: string | undefined) {
 }
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUUID(id: string): boolean {
+  return UUID_RE.test(id);
+}
 
 export function useSaveGuildPage(guildId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (tabs: readonly GuildPageTab[]) => {
-      // Ensure the page exists first (upsert with empty theme)
+    mutationFn: async ({ tabs, theme }: { tabs: readonly GuildPageTab[]; theme?: GuildPageTheme }) => {
+      // Upsert page with theme (always if theme provided, or if new tabs need page to exist)
       const hasNewTabs = tabs.some((t) => t.id === NIL_UUID || t.id.startsWith("tab-"));
-      if (hasNewTabs) {
+      if (theme || hasNewTabs) {
         const upsertResp = await fetch(`/api/v1/guilds/${guildId}/page`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ theme: {} } satisfies UpdateGuildPageRequest),
+          body: JSON.stringify({ theme: theme ?? {} } satisfies UpdateGuildPageRequest),
           credentials: "include",
         });
         if (!upsertResp.ok) {
           const error = await upsertResp.json().catch(() => null);
-          throw buildAPIError("Failed to create guild page", error);
+          throw buildAPIError("Failed to save guild page", error);
         }
       }
 
@@ -961,11 +967,18 @@ export function useSaveGuildPage(guildId: string | undefined) {
             tabId = created.id;
           }
 
-          // Update tab with panels
+          // Update tab with panels — normalize IDs for backend (must be valid UUIDs)
+          const cleanPanels = (tab.panels ?? []).map((p) => ({
+            id: isValidUUID(p.id) ? p.id : NIL_UUID,
+            panel_type: p.panel_type,
+            config: p.config ?? {},
+            position: p.position ?? { x: 0, y: 0, w: 6, h: 2 },
+            visibility: p.visibility ?? "all",
+          }));
           const updateResp = await fetch(`/api/v1/guilds/${guildId}/page/tabs/${tabId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ label: tab.label, panels: tab.panels } satisfies UpdateTabRequest),
+            body: JSON.stringify({ label: tab.label, panels: cleanPanels }),
             credentials: "include",
           });
           if (!updateResp.ok) {

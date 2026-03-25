@@ -3,3 +3,9 @@ package chroniclesdk
 
 // ENUM(damage,heal,resource_change,extra_attack,slain,cast,aura,spell_go,aura_cast,spell_start,spell_fail)
 type WoWEventType string
+
+// ENUM(Raiding,Dungeons,PvP,Hardcore,Casual,Leveling,Social,RP,Questing,English,German,Spanish,French,Korean,Portuguese,Russian,Chinese,Taiwanese)
+type GuildTag string
+
+// ENUM(discord,youtube,twitch,twitter,website)
+type SocialPlatform string

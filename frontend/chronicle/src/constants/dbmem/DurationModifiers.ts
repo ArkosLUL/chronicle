@@ -62,7 +62,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -858,7 +858,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -870,7 +870,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -882,7 +882,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -894,7 +894,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -906,7 +906,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2174,7 +2174,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2186,7 +2186,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2198,7 +2198,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2887,7 +2887,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Crystal Restore",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -3948,7 +3948,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Greater Heal",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -4463,7 +4463,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -4832,7 +4832,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -5339,7 +5339,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Loop of Infused Renewal: Renew",
     spellClassSet: 6,
     baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    maxDurationMs: 21000,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },

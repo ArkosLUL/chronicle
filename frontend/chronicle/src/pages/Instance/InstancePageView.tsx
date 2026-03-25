@@ -2182,7 +2182,7 @@ export function InstancePageView({
             <h1 className="text-2xl font-bold">{instance.name}</h1>
             <p className="text-muted-foreground text-sm">
               {instance.guild && (
-                <span className="text-amber-500">&lt;{instance.guild.name}&gt;</span>
+                <Link to={`/g/${instance.guild.id}`} className="text-amber-500 hover:underline">&lt;{instance.guild.name}&gt;</Link>
               )}
               {instance.guild && instance.realm && " • "}
               {instance.realm && `${instance.realm}`}

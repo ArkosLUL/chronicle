@@ -187,6 +187,12 @@ WHERE true
             li.realm_id = @realm_id
         ELSE true
     END
+    -- Filter by guild
+    AND CASE
+        WHEN @guild_id :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.guild_id = @guild_id
+        ELSE true
+    END
     -- Cursor pagination (first_encounter_time, id) - pass '0001-01-01' to skip
     AND CASE
         WHEN @cursor_time :: timestamptz != '0001-01-01'::timestamptz THEN
@@ -196,6 +202,74 @@ WHERE true
     END
 ORDER BY first_encounter_time DESC, li.id DESC
 LIMIT @limit_count;
+
+-- name: ListInstancesByTimeRange :many
+SELECT 
+    li.id,
+    li.hashed_slug as slug,
+    li.name,
+    li.realm_id,
+    wsr.name as realm_name,
+    wlg.owner as uploader_id,
+    u.username as uploader_name,
+    wlg.created_at as uploaded_at,
+    COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) as first_encounter_time,
+    (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true) as boss_count,
+    (SELECT COUNT(*) FROM log_instance_encounters lie WHERE lie.instance_id = li.id AND lie.boss = true AND lie.kill_type IN ('clean', 'partial')) as boss_kills,
+    COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000 
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
+    g.id as guild_id,
+    g.name as guild_name,
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guilds g ON g.id = li.guild_id
+WHERE true
+    -- Time range filter (required)
+    AND COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) >= @start_time :: timestamptz
+    AND COALESCE(
+        (SELECT MIN(lie.start_time) FROM log_instance_encounters lie WHERE lie.instance_id = li.id),
+        wlg.created_at
+    ) < @end_time :: timestamptz
+    -- Filter by instance names
+    AND CASE
+        WHEN cardinality(@instance_names :: text[]) > 0 THEN
+            li.name = ANY(@instance_names :: text[])
+        ELSE true
+    END
+    -- Filter by video presence
+    AND CASE
+        WHEN @has_video :: text = 'true' THEN
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+        WHEN @has_video :: text = 'false' THEN
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+        ELSE true
+    END
+    -- Filter by realm
+    AND CASE
+        WHEN @realm_id :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.realm_id = @realm_id
+        ELSE true
+    END
+    -- Filter by guild
+    AND CASE
+        WHEN @guild_id :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.guild_id = @guild_id
+        ELSE true
+    END
+ORDER BY first_encounter_time ASC, li.id ASC
+LIMIT CASE WHEN @limit_count :: int > 0 THEN @limit_count ELSE NULL END
+OFFSET @offset_count;
 
 -- name: ListRecentInstancesByPlayer :many
 SELECT DISTINCT ON (
@@ -248,6 +322,12 @@ WHERE lip.name ILIKE @player_name
     AND CASE
         WHEN @realm_id :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
             li.realm_id = @realm_id
+        ELSE true
+    END
+    -- Filter by guild
+    AND CASE
+        WHEN @guild_id :: uuid != '00000000-0000-0000-0000-000000000000'::uuid THEN
+            li.guild_id = @guild_id
         ELSE true
     END
     -- Cursor pagination

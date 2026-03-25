@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -16,6 +18,63 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
+
+// validateTheme validates all theme fields server-side.
+func validateTheme(theme chroniclesdk.GuildPageTheme) error {
+	// Description length
+	if len(theme.Description) > chroniclesdk.MaxDescriptionLength {
+		return fmt.Errorf("description exceeds %d characters", chroniclesdk.MaxDescriptionLength)
+	}
+
+	// Tags — must be valid enum values, max count
+	if len(theme.Tags) > chroniclesdk.MaxTags {
+		return fmt.Errorf("maximum %d tags allowed", chroniclesdk.MaxTags)
+	}
+	for _, t := range theme.Tags {
+		if !t.IsValid() {
+			return fmt.Errorf("invalid tag: %q", t)
+		}
+	}
+
+	// Socials — keys must be valid enum values, values must have valid URL prefixes
+	for platform, url := range theme.Socials {
+		if !platform.IsValid() {
+			return fmt.Errorf("unknown social platform: %q", platform)
+		}
+		if url == "" {
+			continue // empty = removed
+		}
+		prefixes, ok := chroniclesdk.SocialURLPrefixes[platform]
+		if !ok {
+			continue
+		}
+		valid := false
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(url, prefix) {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return fmt.Errorf("invalid URL for %s: must start with one of %v", platform, prefixes)
+		}
+	}
+
+	// Logo URL must be HTTPS if set
+	if theme.LogoURL != "" && !strings.HasPrefix(theme.LogoURL, "https://") {
+		return fmt.Errorf("logo URL must use HTTPS")
+	}
+
+	return nil
+}
+
+// GuildPageOptions returns the allowed tags and social platforms for guild pages.
+func (api *API) GuildPageOptions(w http.ResponseWriter, r *http.Request) {
+	httpapi.Write(r.Context(), w, http.StatusOK, chroniclesdk.GuildPageOptionsResponse{
+		AllowedTags:     chroniclesdk.GuildTagValues(),
+		SocialPlatforms: chroniclesdk.SocialPlatformValues(),
+	})
+}
 
 // defaultGuildPageConfig returns a starter page config when no page exists in the DB yet.
 func defaultGuildPageConfig(guild chroniclesdk.GuildInfo) chroniclesdk.GuildPageConfig {
@@ -32,15 +91,19 @@ func defaultGuildPageConfig(guild chroniclesdk.GuildInfo) chroniclesdk.GuildPage
 				Panels: []chroniclesdk.GuildPagePanel{
 					{
 						ID:        uuid.Nil,
-						PanelType: "stats",
-						Config:    map[string]any{"showTotalKills": true, "showRaidTime": true, "showMembers": true},
-						Position:  chroniclesdk.GuildPanelPosition{X: 0, Y: 0, W: 6, H: 2},
-					},
-					{
-						ID:        uuid.Nil,
-						PanelType: "recent_raids",
-						Config:    map[string]any{"limit": 5, "showDate": true},
-						Position:  chroniclesdk.GuildPanelPosition{X: 6, Y: 0, W: 6, H: 3},
+						PanelType: "calendar",
+						Config: map[string]any{
+							"_style": map[string]any{
+								"background":      "transparent",
+								"backgroundColor": "rgba(0, 0, 0, 0.5)",
+								"panelName":       "",
+								"showHeader":      false,
+							},
+							"category": "raid",
+							"hasVideo": "all",
+						},
+						Position:   chroniclesdk.GuildPanelPosition{X: 0, Y: 0, W: 12, H: 6},
+						Visibility: "",
 					},
 				},
 			},
@@ -237,6 +300,14 @@ func (api *API) UpsertGuildPage(w http.ResponseWriter, r *http.Request) {
 
 	var req chroniclesdk.UpdateGuildPageRequest
 	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	if err := validateTheme(req.Theme); err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid theme configuration",
+			Detail:  err.Error(),
+		})
 		return
 	}
 

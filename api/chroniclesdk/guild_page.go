@@ -31,9 +31,25 @@ type GuildPageConfig struct {
 }
 
 type GuildPageTheme struct {
-	PrimaryColor  string `json:"primary_color,omitempty"`
-	BannerURL     string `json:"banner_url,omitempty"`
-	BackgroundURL string `json:"background_url,omitempty"`
+	PrimaryColor  string            `json:"primary_color,omitempty"`
+	BannerURL     string            `json:"banner_url,omitempty"`
+	BackgroundURL string            `json:"background_url,omitempty"`
+	LogoURL       string            `json:"logo_url,omitempty"`
+	Description   string            `json:"description,omitempty"`
+	Tags          []GuildTag               `json:"tags,omitempty"`
+	Socials       map[SocialPlatform]string `json:"socials,omitempty"` // platform key -> URL
+}
+
+const MaxDescriptionLength = 500
+const MaxTags = 10
+
+// SocialURLPrefixes maps each platform to its valid URL prefixes.
+var SocialURLPrefixes = map[SocialPlatform][]string{
+	SocialPlatformDiscord: {"https://discord.gg/", "https://discord.com/"},
+	SocialPlatformYoutube: {"https://youtube.com/", "https://www.youtube.com/"},
+	SocialPlatformTwitch:  {"https://twitch.tv/", "https://www.twitch.tv/"},
+	SocialPlatformTwitter: {"https://twitter.com/", "https://x.com/"},
+	SocialPlatformWebsite: {"https://", "http://"},
 }
 
 // DeviceVisibility controls which devices can see a tab or panel
@@ -99,4 +115,9 @@ type ListGuildsResponse struct {
 
 type AddGuildMemberRequest struct {
 	UserID uuid.UUID `json:"user_id"`
+}
+
+type GuildPageOptionsResponse struct {
+	AllowedTags     []GuildTag       `json:"allowed_tags"`
+	SocialPlatforms []SocialPlatform `json:"social_platforms"`
 }

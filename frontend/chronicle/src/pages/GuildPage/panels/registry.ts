@@ -5,6 +5,7 @@ import { ProgressPanel } from "./Progress";
 import { StatsPanel } from "./Stats";
 import { MarkdownPanel } from "./Markdown";
 import { LeaderboardPanel } from "./Leaderboard";
+import { CalendarPanel } from "./Calendar";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPanelDefinition = GuildPanelDefinition<any>;
@@ -17,6 +18,7 @@ export const PANEL_REGISTRY: Record<string, AnyPanelDefinition> = {
   stats: StatsPanel,
   markdown: MarkdownPanel,
   leaderboard: LeaderboardPanel,
+  calendar: CalendarPanel,
 };
 
 export type PanelType = keyof typeof PANEL_REGISTRY;

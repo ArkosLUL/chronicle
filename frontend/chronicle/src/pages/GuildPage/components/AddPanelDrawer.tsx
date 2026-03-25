@@ -9,26 +9,22 @@ export function AddPanelDrawer({ onAddPanel }: AddPanelDrawerProps) {
   const panelTypes = getAllPanelTypes();
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        Add Panel
-      </h3>
-      <div className="grid gap-2">
-        {panelTypes.map(({ type, definition }) => (
-          <button
-            key={type}
-            onClick={() => onAddPanel(type)}
-            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-muted/50 transition-colors text-left"
-          >
-            <div className="text-muted-foreground">{definition.icon}</div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">{definition.label}</div>
-              <div className="text-xs text-muted-foreground">{definition.description}</div>
-            </div>
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">
+        Add:
+      </span>
+      {panelTypes.map(({ type, definition }) => (
+        <button
+          key={type}
+          onClick={() => onAddPanel(type)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border hover:border-primary hover:bg-muted/50 transition-colors text-sm"
+          title={definition.description}
+        >
+          <span className="text-muted-foreground">{definition.icon}</span>
+          <span className="font-medium">{definition.label}</span>
+          <Plus className="h-3 w-3 text-muted-foreground" />
+        </button>
+      ))}
     </div>
   );
 }

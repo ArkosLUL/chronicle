@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import type { GuildPagePanel, GuildPageTab, DeviceVisibility } from "@/api/typesGenerated";
+import type { GuildPagePanel, GuildPageTab, GuildPageTheme, DeviceVisibility } from "@/api/typesGenerated";
 import { useGuildPage, useSaveGuildPage } from "@/api/queries";
-import { GuildPageCanvas, TabBar, AddPanelDrawer, PanelConfigModal } from "./components";
+import { GuildPageCanvas, TabBar, AddPanelDrawer, PanelConfigModal, HeaderEditor } from "./components";
 import { getPanelDefinition } from "./panels/registry";
-import { ArrowLeft, Eye, Save, Monitor } from "lucide-react";
+import { ArrowLeft, Eye, Save, Monitor, PanelLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { LayoutItem } from "react-grid-layout";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -17,6 +18,8 @@ export function GuildPageEditor() {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [configPanel, setConfigPanel] = useState<GuildPagePanel | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [themeOverride, setThemeOverride] = useState<GuildPageTheme | null>(null);
 
   const { data: pageConfig, isLoading } = useGuildPage(guildId);
   const saveGuildPage = useSaveGuildPage(guildId);
@@ -171,10 +174,18 @@ export function GuildPageEditor() {
     setHasChanges(true);
   }, [pageConfig?.tabs]);
 
+  const handleThemeChange = useCallback((theme: GuildPageTheme) => {
+    setThemeOverride(theme);
+    setHasChanges(true);
+  }, []);
+
+  const currentTheme = themeOverride ?? pageConfig?.theme ?? {};
+
   const handleSave = async () => {
     try {
       const tabsToSave = tabs.length > 0 ? tabs : (pageConfig?.tabs ?? []);
-      await saveGuildPage.mutateAsync(tabsToSave);
+      await saveGuildPage.mutateAsync({ tabs: tabsToSave, theme: themeOverride ?? undefined });
+      setThemeOverride(null);
       setHasChanges(false);
     } catch (err) {
       console.error("Failed to save guild page:", err);
@@ -206,7 +217,7 @@ export function GuildPageEditor() {
 
       {/* Top Bar */}
       <div className="sticky top-0 z-40 bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="px-4 py-3 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-4">
             <Link
               to={`/g/${guildId}`}
@@ -241,25 +252,45 @@ export function GuildPageEditor() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sidebar - full width on mobile, left side on desktop */}
-          <div className="lg:col-span-3 space-y-6 order-2 lg:order-1">
-            <AddPanelDrawer onAddPanel={handleAddPanel} />
-          </div>
+      <div className="px-4 py-6">
+        <div className="mb-4">
+          <HeaderEditor theme={currentTheme} onChange={handleThemeChange} />
+        </div>
 
-          {/* Main Content - full width on mobile */}
-          <div className="lg:col-span-9 order-1 lg:order-2">
-            <TabBar
-              tabs={[...displayTabs]}
-              activeTab={activeTab}
-              isEditing={true}
-              onTabChange={setActiveTab}
-              onTabAdd={handleAddTab}
-              onTabDelete={handleDeleteTab}
-              onTabVisibilityChange={handleTabVisibilityChange}
-            />
+        <div className="mb-4">
+          <AddPanelDrawer onAddPanel={handleAddPanel} />
+        </div>
 
+        {/* Sidebar + Content */}
+        <div className="flex gap-6 relative">
+          <TabBar
+            tabs={[...displayTabs]}
+            activeTab={activeTab}
+            isEditing={true}
+            isMobile={isMobile}
+            sidebarOpen={sidebarOpen}
+            onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+            onTabChange={setActiveTab}
+            onTabAdd={handleAddTab}
+            onTabDelete={handleDeleteTab}
+            onTabVisibilityChange={handleTabVisibilityChange}
+          />
+
+          {/* Desktop: inline toggle when sidebar closed */}
+          {!sidebarOpen && !isMobile && (
+            <div className="shrink-0 border-r border-border pr-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+                title="Show sidebar"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
             {currentTab && (
               <GuildPageCanvas
                 guild={pageConfig!.guild}

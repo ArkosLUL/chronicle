@@ -136,10 +136,12 @@ export function NavBar() {
       {/* Left spacer for desktop to balance layout */}
       <div className="hidden md:block w-10" />
 
-      {/* Center: Logo */}
-      <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
-        <img src="/c/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
-      </Link>
+      {/* Center: Logo (hidden on guild pages) */}
+      {!location.pathname.startsWith("/g/") && (
+        <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
+          <img src="/c/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+        </Link>
+      )}
 
       {/* Right: Desktop navigation (hidden on mobile) */}
       <div className="hidden md:flex items-center gap-6">

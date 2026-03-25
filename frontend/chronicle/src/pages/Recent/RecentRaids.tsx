@@ -63,7 +63,6 @@ export function RecentRaids() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   const { data: supportedInstances } = useSupportedInstances();
 
@@ -130,18 +129,19 @@ export function RecentRaids() {
 
   const hasVideoParam = videoFilter === "with" ? "true" : "";
 
-  const fetchInstances = useCallback(async (cursor?: string | null) => {
+  const PAGE_SIZE = 24;
+
+  const fetchInstances = useCallback(async (offset?: number) => {
     if (hasConflictingFilters) {
       setLoading(false);
       setLoadingMore(false);
       setError(null);
       setInstances([]);
       setHasMore(false);
-      setNextCursor(null);
       return;
     }
 
-    const isInitial = !cursor;
+    const isInitial = !offset;
     if (isInitial) {
       setLoading(true);
     } else {
@@ -151,9 +151,9 @@ export function RecentRaids() {
 
     try {
       const params = new URLSearchParams();
-      params.set("limit", "24");
-      if (cursor) {
-        params.set("cursor", cursor);
+      params.set("limit", String(PAGE_SIZE));
+      if (offset) {
+        params.set("offset", String(offset));
       }
 
       for (const name of effectiveInstanceNames) {
@@ -181,8 +181,7 @@ export function RecentRaids() {
         setInstances((prev) => [...prev, ...data.instances]);
       }
 
-      setHasMore(data.has_more);
-      setNextCursor(data.next_cursor ?? null);
+      setHasMore(data.instances.length >= PAGE_SIZE);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load recent raids");
     } finally {
@@ -209,7 +208,6 @@ export function RecentRaids() {
     }
 
     setHasMore(false);
-    setNextCursor(null);
     fetchInstances();
   }, [
     category,
@@ -227,14 +225,14 @@ export function RecentRaids() {
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!hasMore || loadingMore || hasConflictingFilters) {
+    if (!hasMore || loadingMore || hasConflictingFilters || instances.length === 0) {
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && nextCursor) {
-          fetchInstances(nextCursor);
+        if (entries[0].isIntersecting) {
+          fetchInstances(instances.length);
         }
       },
       { threshold: 0.1 },
@@ -245,7 +243,7 @@ export function RecentRaids() {
     }
 
     return () => observer.disconnect();
-  }, [fetchInstances, hasConflictingFilters, hasMore, loadingMore, nextCursor]);
+  }, [fetchInstances, hasConflictingFilters, hasMore, instances.length, loadingMore]);
 
   const toggleInstance = useCallback((name: string) => {
     setSelectedInstances((prev) => {

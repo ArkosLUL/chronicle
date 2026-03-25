@@ -148,6 +148,7 @@ func (api *API) Routes() chi.Router {
 		}
 		// Guild routes
 		r.Route("/guilds", func(r chi.Router) {
+			r.Get("/config", api.GuildPageOptions)
 			r.Get("/", api.ListGuilds)
 			r.Route("/{guildID}", func(r chi.Router) {
 				r.Use(
@@ -191,6 +192,7 @@ func (api *API) Routes() chi.Router {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Get("/supported", api.SupportedInstances)
 				r.Get("/recent", api.RecentInstances)
+				r.Get("/range", api.InstancesByTimeRange)
 				r.Route("/logs", func(r chi.Router) {
 					r.Use(
 						api.Auth.Authenticated(false),

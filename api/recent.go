@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,55 +12,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const (
-	defaultRecentLimit = 20
-	maxRecentLimit     = 100
-)
 
-// paginationCursor encodes the pagination state.
-type paginationCursor struct {
-	Time time.Time `json:"t"`
-	ID   uuid.UUID `json:"i"`
-}
 
-func encodeCursor(t time.Time, id uuid.UUID) string {
-	cursor := paginationCursor{Time: t, ID: id}
-	data, _ := json.Marshal(cursor)
-	return base64.URLEncoding.EncodeToString(data)
-}
-
-func decodeCursor(s string) (time.Time, uuid.UUID, error) {
-	if s == "" {
-		// Default values that will be ignored by the query's CASE WHEN
-		return time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC), uuid.Nil, nil
-	}
-	data, err := base64.URLEncoding.DecodeString(s)
-	if err != nil {
-		return time.Time{}, uuid.Nil, err
-	}
-	var cursor paginationCursor
-	if err := json.Unmarshal(data, &cursor); err != nil {
-		return time.Time{}, uuid.Nil, err
-	}
-	return cursor.Time, cursor.ID, nil
-}
-
-// RecentInstances returns a paginated list of recent raid/dungeon instances.
-// @Summary List recent raid/dungeon instances
+// RecentInstances returns instances from the last 2 weeks.
+// It delegates to InstancesByTimeRange with a preset time window.
+// @Summary List recent raid/dungeon instances (last 2 weeks)
 // @Tags raidlogs
 // @Produce json
-// @Param limit query int false "Max items (default 20, max 100)"
-// @Param cursor query string false "Pagination cursor"
-// @Param instance_name query []string false "Filter by instance names (repeat param, e.g., instance_name=Molten+Core&instance_name=Onyxia's+Lair)"
+// @Param instance_name query []string false "Filter by instance names"
 // @Param has_video query string false "Filter by video presence (true, false)"
 // @Param realm_id query string false "Filter by realm UUID"
-// @Param player_name query string false "Filter by player name (partial match)"
+// @Param guild_id query string false "Filter by guild UUID"
 // @Success 200 {object} chroniclesdk.RecentInstancesResponse
 // @Router /api/v1/raidlogs/recent [get]
 func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	if q.Get("start") == "" {
+		q.Set("start", time.Now().AddDate(0, 0, -14).UTC().Format(time.RFC3339))
+	}
+	if q.Get("end") == "" {
+		q.Set("end", time.Now().UTC().Format(time.RFC3339))
+	}
+	r.URL.RawQuery = q.Encode()
+	api.InstancesByTimeRange(w, r)
+}
+// InstancesByTimeRange returns instances within a given time range.
+// @Summary List instances within a time range
+// @Tags raidlogs
+// @Produce json
+// @Param start query string true "Start time (RFC3339)"
+// @Param end query string true "End time (RFC3339)"
+// @Param instance_name query []string false "Filter by instance names"
+// @Param has_video query string false "Filter by video presence (true, false)"
+// @Param realm_id query string false "Filter by realm UUID"
+// @Param guild_id query string false "Filter by guild UUID"
+// @Param limit query int false "Max items (0 = no limit)"
+// @Param offset query int false "Number of items to skip (default 0)"
+// @Success 200 {object} chroniclesdk.RecentInstancesResponse
+// @Router /api/v1/raidlogs/range [get]
+func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cacheKey := r.URL.RawQuery
+	cacheKey := "range:" + r.URL.RawQuery
 	if api.recentCache != nil {
 		if cached, ok := api.recentCache.Get(cacheKey); ok {
 			httpapi.Write(ctx, w, http.StatusOK, cached)
@@ -70,24 +61,22 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Parse query parameters
 	q := r.URL.Query()
 
-	limit := defaultRecentLimit
-	if l := q.Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
-			limit = parsed
-		}
-	}
-	if limit > maxRecentLimit {
-		limit = maxRecentLimit
-	}
-
-	cursorTime, cursorID, err := decodeCursor(q.Get("cursor"))
+	startTime, err := time.Parse(time.RFC3339, q.Get("start"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Invalid cursor",
-			Detail:  err.Error(),
+			Message: "Invalid or missing 'start' parameter",
+			Detail:  "Expected RFC3339 format, e.g. 2025-01-01T00:00:00Z",
+		})
+		return
+	}
+
+	endTime, err := time.Parse(time.RFC3339, q.Get("end"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid or missing 'end' parameter",
+			Detail:  "Expected RFC3339 format, e.g. 2025-02-01T00:00:00Z",
 		})
 		return
 	}
@@ -98,8 +87,6 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		hasVideo = ""
 	}
 
-	playerName := q.Get("player_name")
-
 	var realmID uuid.UUID
 	if rid := q.Get("realm_id"); rid != "" {
 		if parsed, err := uuid.Parse(rid); err == nil {
@@ -107,65 +94,50 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Fetch limit+1 to detect if there are more results
-	fetchLimit := int32(limit + 1)
-
-	var rows []database.ListRecentInstancesRow
-	if playerName != "" {
-		// Use the player search query
-		playerRows, err := api.Opts.Zed.ListRecentInstancesByPlayer(ctx, database.ListRecentInstancesByPlayerParams{
-			PlayerName:    "%" + playerName + "%",
-			InstanceNames: instanceNames,
-			HasVideo:      hasVideo,
-			RealmID:       realmID,
-			CursorTime:    pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
-			CursorID:      cursorID,
-			LimitCount:    fetchLimit,
-		})
-		if err != nil {
-			httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
-				Response: chroniclesdk.Response{
-					Message: "Failed to fetch recent instances",
-					Detail:  err.Error(),
-				},
-				Status:  http.StatusInternalServerError,
-				Wrapped: err,
-			})
-			return
-		}
-		// Convert to the common row type
-		for _, pr := range playerRows {
-			rows = append(rows, database.ListRecentInstancesRow(pr))
-		}
-	} else {
-		rows, err = api.Opts.Zed.ListRecentInstances(ctx, database.ListRecentInstancesParams{
-			InstanceNames: instanceNames,
-			HasVideo:      hasVideo,
-			RealmID:       realmID,
-			CursorTime:    pgtype.Timestamptz{Time: cursorTime, Valid: !cursorTime.IsZero()},
-			CursorID:      cursorID,
-			LimitCount:    fetchLimit,
-		})
-		if err != nil {
-			httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
-				Response: chroniclesdk.Response{
-					Message: "Failed to fetch recent instances",
-					Detail:  err.Error(),
-				},
-				Status:  http.StatusInternalServerError,
-				Wrapped: err,
-			})
-			return
+	var guildID uuid.UUID
+	if gid := q.Get("guild_id"); gid != "" {
+		if parsed, err := uuid.Parse(gid); err == nil {
+			guildID = parsed
 		}
 	}
 
-	// Determine if there are more results
-	hasMore := len(rows) > limit
-	if hasMore {
-		rows = rows[:limit]
+	var limitCount int32
+	if l := q.Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limitCount = int32(parsed)
+		}
 	}
 
-	// Batch fetch all encounter summaries in a single query
+	var offsetCount int32
+	if o := q.Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed > 0 {
+			offsetCount = int32(parsed)
+		}
+	}
+
+	rows, err := api.Opts.Zed.ListInstancesByTimeRange(ctx, database.ListInstancesByTimeRangeParams{
+		StartTime:     pgtype.Timestamptz{Time: startTime, Valid: true},
+		EndTime:       pgtype.Timestamptz{Time: endTime, Valid: true},
+		InstanceNames: instanceNames,
+		HasVideo:      hasVideo,
+		RealmID:       realmID,
+		GuildID:       guildID,
+		LimitCount:    limitCount,
+		OffsetCount:   offsetCount,
+	})
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch instances",
+				Detail:  err.Error(),
+			},
+			Status:  http.StatusInternalServerError,
+			Wrapped: err,
+		})
+		return
+	}
+
+	// Batch fetch encounter summaries
 	instanceIDs := make([]uuid.UUID, len(rows))
 	for i, row := range rows {
 		instanceIDs[i] = row.ID
@@ -185,7 +157,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Build response
+	// Build response (reuse RecentInstancesResponse, no pagination needed)
 	instances := make([]chroniclesdk.RecentInstance, 0, len(rows))
 	for _, row := range rows {
 		inst := chroniclesdk.RecentInstance{
@@ -214,21 +186,12 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		if row.GuildName.Valid {
 			inst.GuildName = &row.GuildName.String
 		}
-
 		instances = append(instances, inst)
 	}
 
-	// Build next cursor
-	var nextCursor string
-	if hasMore && len(rows) > 0 {
-		lastRow := rows[len(rows)-1]
-		nextCursor = encodeCursor(lastRow.FirstEncounterTime.Time, lastRow.ID)
-	}
-
 	response := chroniclesdk.RecentInstancesResponse{
-		Instances:  instances,
-		NextCursor: nextCursor,
-		HasMore:    hasMore,
+		Instances: instances,
+		HasMore:   false,
 	}
 	if api.recentCache != nil {
 		api.recentCache.Set(cacheKey, response)
@@ -236,3 +199,4 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, response)
 }
+

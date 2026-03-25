@@ -12,6 +12,192 @@ import (
 )
 
 const (
+	// GuildTagRaiding is a GuildTag of type Raiding.
+	GuildTagRaiding GuildTag = "Raiding"
+	// GuildTagDungeons is a GuildTag of type Dungeons.
+	GuildTagDungeons GuildTag = "Dungeons"
+	// GuildTagPvP is a GuildTag of type PvP.
+	GuildTagPvP GuildTag = "PvP"
+	// GuildTagHardcore is a GuildTag of type Hardcore.
+	GuildTagHardcore GuildTag = "Hardcore"
+	// GuildTagCasual is a GuildTag of type Casual.
+	GuildTagCasual GuildTag = "Casual"
+	// GuildTagLeveling is a GuildTag of type Leveling.
+	GuildTagLeveling GuildTag = "Leveling"
+	// GuildTagSocial is a GuildTag of type Social.
+	GuildTagSocial GuildTag = "Social"
+	// GuildTagRP is a GuildTag of type RP.
+	GuildTagRP GuildTag = "RP"
+	// GuildTagQuesting is a GuildTag of type Questing.
+	GuildTagQuesting GuildTag = "Questing"
+	// GuildTagEnglish is a GuildTag of type English.
+	GuildTagEnglish GuildTag = "English"
+	// GuildTagGerman is a GuildTag of type German.
+	GuildTagGerman GuildTag = "German"
+	// GuildTagSpanish is a GuildTag of type Spanish.
+	GuildTagSpanish GuildTag = "Spanish"
+	// GuildTagFrench is a GuildTag of type French.
+	GuildTagFrench GuildTag = "French"
+	// GuildTagKorean is a GuildTag of type Korean.
+	GuildTagKorean GuildTag = "Korean"
+	// GuildTagPortuguese is a GuildTag of type Portuguese.
+	GuildTagPortuguese GuildTag = "Portuguese"
+	// GuildTagRussian is a GuildTag of type Russian.
+	GuildTagRussian GuildTag = "Russian"
+	// GuildTagChinese is a GuildTag of type Chinese.
+	GuildTagChinese GuildTag = "Chinese"
+	// GuildTagTaiwanese is a GuildTag of type Taiwanese.
+	GuildTagTaiwanese GuildTag = "Taiwanese"
+)
+
+var ErrInvalidGuildTag = errors.New("not a valid GuildTag")
+
+// GuildTagValues returns a list of the values for GuildTag
+func GuildTagValues() []GuildTag {
+	return []GuildTag{
+		GuildTagRaiding,
+		GuildTagDungeons,
+		GuildTagPvP,
+		GuildTagHardcore,
+		GuildTagCasual,
+		GuildTagLeveling,
+		GuildTagSocial,
+		GuildTagRP,
+		GuildTagQuesting,
+		GuildTagEnglish,
+		GuildTagGerman,
+		GuildTagSpanish,
+		GuildTagFrench,
+		GuildTagKorean,
+		GuildTagPortuguese,
+		GuildTagRussian,
+		GuildTagChinese,
+		GuildTagTaiwanese,
+	}
+}
+
+// String implements the Stringer interface.
+func (x GuildTag) String() string {
+	return string(x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x GuildTag) IsValid() bool {
+	_, err := ParseGuildTag(string(x))
+	return err == nil
+}
+
+var _GuildTagValue = map[string]GuildTag{
+	"Raiding":    GuildTagRaiding,
+	"raiding":    GuildTagRaiding,
+	"Dungeons":   GuildTagDungeons,
+	"dungeons":   GuildTagDungeons,
+	"PvP":        GuildTagPvP,
+	"pvp":        GuildTagPvP,
+	"Hardcore":   GuildTagHardcore,
+	"hardcore":   GuildTagHardcore,
+	"Casual":     GuildTagCasual,
+	"casual":     GuildTagCasual,
+	"Leveling":   GuildTagLeveling,
+	"leveling":   GuildTagLeveling,
+	"Social":     GuildTagSocial,
+	"social":     GuildTagSocial,
+	"RP":         GuildTagRP,
+	"rp":         GuildTagRP,
+	"Questing":   GuildTagQuesting,
+	"questing":   GuildTagQuesting,
+	"English":    GuildTagEnglish,
+	"english":    GuildTagEnglish,
+	"German":     GuildTagGerman,
+	"german":     GuildTagGerman,
+	"Spanish":    GuildTagSpanish,
+	"spanish":    GuildTagSpanish,
+	"French":     GuildTagFrench,
+	"french":     GuildTagFrench,
+	"Korean":     GuildTagKorean,
+	"korean":     GuildTagKorean,
+	"Portuguese": GuildTagPortuguese,
+	"portuguese": GuildTagPortuguese,
+	"Russian":    GuildTagRussian,
+	"russian":    GuildTagRussian,
+	"Chinese":    GuildTagChinese,
+	"chinese":    GuildTagChinese,
+	"Taiwanese":  GuildTagTaiwanese,
+	"taiwanese":  GuildTagTaiwanese,
+}
+
+// ParseGuildTag attempts to convert a string to a GuildTag.
+func ParseGuildTag(name string) (GuildTag, error) {
+	if x, ok := _GuildTagValue[name]; ok {
+		return x, nil
+	}
+	// Case insensitive parse, do a separate lookup to prevent unnecessary cost of lowercasing a string if we don't need to.
+	if x, ok := _GuildTagValue[strings.ToLower(name)]; ok {
+		return x, nil
+	}
+	return GuildTag(""), fmt.Errorf("%s is %w", name, ErrInvalidGuildTag)
+}
+
+const (
+	// SocialPlatformDiscord is a SocialPlatform of type discord.
+	SocialPlatformDiscord SocialPlatform = "discord"
+	// SocialPlatformYoutube is a SocialPlatform of type youtube.
+	SocialPlatformYoutube SocialPlatform = "youtube"
+	// SocialPlatformTwitch is a SocialPlatform of type twitch.
+	SocialPlatformTwitch SocialPlatform = "twitch"
+	// SocialPlatformTwitter is a SocialPlatform of type twitter.
+	SocialPlatformTwitter SocialPlatform = "twitter"
+	// SocialPlatformWebsite is a SocialPlatform of type website.
+	SocialPlatformWebsite SocialPlatform = "website"
+)
+
+var ErrInvalidSocialPlatform = errors.New("not a valid SocialPlatform")
+
+// SocialPlatformValues returns a list of the values for SocialPlatform
+func SocialPlatformValues() []SocialPlatform {
+	return []SocialPlatform{
+		SocialPlatformDiscord,
+		SocialPlatformYoutube,
+		SocialPlatformTwitch,
+		SocialPlatformTwitter,
+		SocialPlatformWebsite,
+	}
+}
+
+// String implements the Stringer interface.
+func (x SocialPlatform) String() string {
+	return string(x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x SocialPlatform) IsValid() bool {
+	_, err := ParseSocialPlatform(string(x))
+	return err == nil
+}
+
+var _SocialPlatformValue = map[string]SocialPlatform{
+	"discord": SocialPlatformDiscord,
+	"youtube": SocialPlatformYoutube,
+	"twitch":  SocialPlatformTwitch,
+	"twitter": SocialPlatformTwitter,
+	"website": SocialPlatformWebsite,
+}
+
+// ParseSocialPlatform attempts to convert a string to a SocialPlatform.
+func ParseSocialPlatform(name string) (SocialPlatform, error) {
+	if x, ok := _SocialPlatformValue[name]; ok {
+		return x, nil
+	}
+	// Case insensitive parse, do a separate lookup to prevent unnecessary cost of lowercasing a string if we don't need to.
+	if x, ok := _SocialPlatformValue[strings.ToLower(name)]; ok {
+		return x, nil
+	}
+	return SocialPlatform(""), fmt.Errorf("%s is %w", name, ErrInvalidSocialPlatform)
+}
+
+const (
 	// WoWEventTypeDamage is a WoWEventType of type damage.
 	WoWEventTypeDamage WoWEventType = "damage"
 	// WoWEventTypeHeal is a WoWEventType of type heal.

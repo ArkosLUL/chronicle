@@ -3,6 +3,7 @@ import GridLayout, { type LayoutItem } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import type { GuildInfo, GuildPagePanel, DeviceVisibility } from "@/api/typesGenerated";
 import { getPanelDefinition } from "../panels/registry";
+import { getPanelStyle } from "./PanelConfigModal";
 import { GripVertical, Settings, Trash2, Monitor, Smartphone } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -159,40 +160,79 @@ export function GuildPageCanvas({
           );
         }
 
+        const style = getPanelStyle((panel.config as Record<string, unknown>) || {});
+        const showHeader = style.showHeader;
+        const panelLabel = style.panelName || definition.label;
+
+        let bgStyle: React.CSSProperties | undefined;
+        let bgClass = "bg-card";
+        if (style.background === "transparent") {
+          bgClass = "bg-transparent";
+        } else if (style.background === "custom") {
+          bgClass = "";
+          bgStyle = { backgroundColor: style.backgroundColor };
+        }
+
         return (
           <div
             key={panel.id}
-            className="bg-card border border-border rounded-lg overflow-hidden shadow-sm"
+            className={`${bgClass} border border-border rounded-lg overflow-hidden shadow-sm relative`}
+            style={bgStyle}
           >
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
-              <div className="flex items-center gap-2">
+            {showHeader && (
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
+                <div className="flex items-center gap-2">
+                  {isEditing && (
+                    <div className="drag-handle cursor-move text-muted-foreground hover:text-foreground">
+                      <GripVertical className="h-4 w-4" />
+                    </div>
+                  )}
+                  <span className="text-muted-foreground">{definition.icon}</span>
+                  <span className="text-sm font-medium">{panelLabel}</span>
+                  {isEditing && <VisibilityBadge visibility={panel.visibility} />}
+                </div>
                 {isEditing && (
-                  <div className="drag-handle cursor-move text-muted-foreground hover:text-foreground">
-                    <GripVertical className="h-4 w-4" />
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onPanelConfig?.(panel.id)}
+                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onPanelDelete?.(panel.id)}
+                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
-                <span className="text-muted-foreground">{definition.icon}</span>
-                <span className="text-sm font-medium">{definition.label}</span>
-                {isEditing && <VisibilityBadge visibility={panel.visibility} />}
               </div>
-              {isEditing && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => onPanelConfig?.(panel.id)}
-                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onPanelDelete?.(panel.id)}
-                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+            )}
+            {/* When header is hidden in edit mode but would be hidden in view, show minimal drag handle */}
+            {!showHeader && isEditing && (
+              <div className="absolute top-1 right-1 z-10 flex items-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
+                <div className="drag-handle cursor-move p-1 rounded bg-black/50 text-white">
+                  <GripVertical className="h-3 w-3" />
                 </div>
-              )}
-            </div>
-            <div className="p-3 overflow-auto styled-scrollbar" style={{ height: "calc(100% - 41px)" }}>
+                <button
+                  onClick={() => onPanelConfig?.(panel.id)}
+                  className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
+                >
+                  <Settings className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={() => onPanelDelete?.(panel.id)}
+                  className="p-1 rounded bg-black/50 text-white hover:bg-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <div
+              className="p-3 overflow-auto styled-scrollbar"
+              style={{ height: showHeader ? "calc(100% - 41px)" : "100%" }}
+            >
               {definition.render({
                 guild,
                 config: panel.config as never,

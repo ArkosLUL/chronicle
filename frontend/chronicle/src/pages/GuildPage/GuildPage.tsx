@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import type { DeviceVisibility } from "@/api/typesGenerated";
 import { useGuildPage } from "@/api/queries";
-import { GuildPageCanvas, TabBar } from "./components";
-import { ArrowLeft, Pencil, Shield } from "lucide-react";
+import { GuildPageCanvas, TabBar, GuildPageHeader } from "./components";
+import { Shield, Pencil, PanelLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Helper to check if an item should be visible on current device
@@ -18,6 +19,7 @@ export function GuildPage() {
   const { guildId, tabSlug } = useParams<{ guildId: string; tabSlug?: string }>();
   const [activeTab, setActiveTab] = useState<string>(tabSlug || "overview");
   const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   const { data: pageConfig, isLoading, error } = useGuildPage(guildId);
 
@@ -56,50 +58,63 @@ export function GuildPage() {
   }
 
   const currentTab = visibleTabs.find((t) => t.slug === activeTab) || visibleTabs[0];
+  const showSidebar = visibleTabs.length > 1;
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link
-            to="/"
-            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">{pageConfig.guild.name}</h1>
-            <p className="text-sm text-muted-foreground">{pageConfig.guild.realm_name}</p>
-          </div>
-        </div>
-        {pageConfig.guild.can_edit && (
-          <Link
-            to={`/guilds/${guildId}/edit`}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit Page
-          </Link>
-        )}
-      </div>
-
-      {/* Tab Navigation */}
-      <TabBar
-        tabs={visibleTabs}
-        activeTab={activeTab}
-        isEditing={false}
-        onTabChange={setActiveTab}
-      />
-
-      {/* Content */}
-      {currentTab && (
-        <GuildPageCanvas
-          guild={pageConfig.guild}
-          panels={currentTab.panels}
-          isEditing={false}
-        />
+    <div className="relative w-full px-4">
+      {/* Edit button pinned top-right */}
+      {pageConfig.guild.can_edit && (
+        <Link
+          to={`/guilds/${guildId}/edit`}
+          className="absolute top-2 right-4 hidden md:flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors z-10"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Edit Page
+        </Link>
       )}
+      <GuildPageHeader guild={pageConfig.guild} theme={pageConfig.theme} />
+
+      {/* Sidebar + Content */}
+      <div className="flex gap-6 relative">
+        {showSidebar && (
+          <>
+            <TabBar
+              tabs={visibleTabs}
+              activeTab={activeTab}
+              isEditing={false}
+              isMobile={isMobile}
+              sidebarOpen={sidebarOpen}
+              onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+              onTabChange={setActiveTab}
+            />
+
+            {/* Desktop: inline toggle when sidebar closed */}
+            {!sidebarOpen && !isMobile && (
+              <div className="shrink-0 border-r border-border pr-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(true)}
+                  title="Show sidebar"
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {currentTab && (
+            <GuildPageCanvas
+              guild={pageConfig.guild}
+              panels={currentTab.panels}
+              isEditing={false}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -176,7 +176,7 @@ export function UploadView({
                 <label className="block">
                   <input
                     type="file"
-                    accept=".txt"
+                    accept=".txt,.txt.gz,.gz"
                     onChange={(e) => onFileSelect(e, "combat")}
                     className="hidden"
                   />
@@ -216,7 +216,7 @@ export function UploadView({
                   <label className="block">
                     <input
                       type="file"
-                      accept=".txt"
+                      accept=".txt,.txt.gz,.gz"
                       onChange={(e) => onFileSelect(e, "combat")}
                       className="hidden"
                     />
@@ -254,7 +254,7 @@ export function UploadView({
                   <label className="block">
                     <input
                       type="file"
-                      accept=".txt,.csv"
+                      accept=".txt,.csv,.txt.gz,.gz"
                       onChange={(e) => onFileSelect(e, "raw")}
                       className="hidden"
                     />
@@ -522,18 +522,30 @@ export function Upload() {
     try {
       const formData = new FormData();
 
+      const isAlreadyGzipped = (file: File) => file.name.endsWith(".gz");
+
       if (useV2Upload) {
         // V2 upload: single file
-        const compressedLog = await compressFile(combatLog);
-        formData.append("combat_log", compressedLog, combatLog.name + ".gz");
+        if (isAlreadyGzipped(combatLog)) {
+          formData.append("combat_log", combatLog, combatLog.name);
+        } else {
+          const compressedLog = await compressFile(combatLog);
+          formData.append("combat_log", compressedLog, combatLog.name + ".gz");
+        }
       } else {
         // V1 upload: two files
-        const [compressedLog, compressedRawLog] = await Promise.all([
-          compressFile(combatLog),
-          compressFile(rawCombatLog!),
-        ]);
-        formData.append("combat_log_1", compressedLog, combatLog.name + ".gz");
-        formData.append("combat_log_2", compressedRawLog, rawCombatLog!.name + ".gz");
+        if (isAlreadyGzipped(combatLog)) {
+          formData.append("combat_log_1", combatLog, combatLog.name);
+        } else {
+          const compressedLog = await compressFile(combatLog);
+          formData.append("combat_log_1", compressedLog, combatLog.name + ".gz");
+        }
+        if (isAlreadyGzipped(rawCombatLog!)) {
+          formData.append("combat_log_2", rawCombatLog!, rawCombatLog!.name);
+        } else {
+          const compressedRawLog = await compressFile(rawCombatLog!);
+          formData.append("combat_log_2", compressedRawLog, rawCombatLog!.name + ".gz");
+        }
       }
 
       const xhr = new XMLHttpRequest();

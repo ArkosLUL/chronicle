@@ -23,7 +23,7 @@ export function EarlyAccessBanner() {
         🔒 Early Access
       </span>
       <span className="text-muted-foreground ml-2">
-        Chronicle is currently in closed beta. Approval is required to join.
+        Chronicle is currently in closed beta. Joining the discord is required to make an account.
       </span>
       <button
         onClick={handleDismiss}

@@ -1,50 +1,97 @@
-import { Calendar, Clock, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Calendar, AlertCircle } from "lucide-react";
+import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
+import { getInstanceCategory } from "@/pages/Logs/utils/instanceImages";
+import { RaidCard } from "@/pages/Recent/RaidCard";
 import type { GuildPanelDefinition, GuildPanelRenderProps } from "./types";
+
+type CategoryFilter = "all" | "raid" | "dungeon";
 
 interface RecentRaidsConfig {
   limit: number;
-  showDate: boolean;
+  category: CategoryFilter;
+  hasVideo: "all" | "with";
 }
 
-// Stubbed fake data
-const FAKE_RAIDS = [
-  { id: "1", name: "Molten Core", date: "2024-01-15", duration: "2h 15m", players: 40 },
-  { id: "2", name: "Blackwing Lair", date: "2024-01-14", duration: "1h 45m", players: 40 },
-  { id: "3", name: "Onyxia's Lair", date: "2024-01-13", duration: "25m", players: 40 },
-  { id: "4", name: "Molten Core", date: "2024-01-12", duration: "2h 30m", players: 38 },
-  { id: "5", name: "Zul'Gurub", date: "2024-01-11", duration: "1h 20m", players: 20 },
-];
 
-function RecentRaidsContent({ config }: GuildPanelRenderProps<RecentRaidsConfig>) {
-  const raids = FAKE_RAIDS.slice(0, config.limit || 5);
+
+function RecentRaidsContent({ config, position, guild }: GuildPanelRenderProps<RecentRaidsConfig>) {
+  // Derive columns from panel grid width (1-12 columns)
+  const cols = position.w >= 9 ? 3 : position.w >= 6 ? 2 : 1;
+  const [instances, setInstances] = useState<RecentInstance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const limit = config.limit || 5;
+  const category = config.category || "all";
+  const hasVideo = config.hasVideo === "with";
+
+  const fetchRecent = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch extra to account for client-side category filtering
+      const fetchLimit = category !== "all" ? limit * 4 : limit;
+      const params = new URLSearchParams();
+      params.set("limit", String(Math.min(fetchLimit, 100)));
+      if (guild.id) params.set("guild_id", guild.id);
+      if (hasVideo) params.set("has_video", "true");
+
+      const response = await fetch(`/api/v1/raidlogs/recent?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch recent instances");
+      const data = (await response.json()) as RecentInstancesResponse;
+      setInstances(data.instances ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, [guild.id, limit, category, hasVideo]);
+
+  useEffect(() => {
+    fetchRecent();
+  }, [fetchRecent]);
+
+  const filtered = useMemo(() => {
+    let result = instances;
+    if (category !== "all") {
+      result = result.filter((inst) => getInstanceCategory(inst.name) === category);
+    }
+    return result.slice(0, limit);
+  }, [instances, category, limit]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[100px]">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-muted-foreground gap-2">
+        <AlertCircle className="h-5 w-5" />
+        <p className="text-xs">Failed to load recent instances</p>
+      </div>
+    );
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[100px] text-muted-foreground">
+        <p className="text-sm">No recent instances found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-2">
-      {raids.map((raid) => (
-        <div
-          key={raid.id}
-          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-        >
-          <div className="flex-1">
-            <div className="font-medium text-sm">{raid.name}</div>
-            {config.showDate && (
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {raid.date}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {raid.duration}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {raid.players}
-            </span>
-          </div>
-        </div>
+    <div
+      className="grid gap-3 p-1"
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+    >
+      {filtered.map((instance) => (
+        <RaidCard key={instance.id} instance={instance} />
       ))}
     </div>
   );
@@ -52,29 +99,45 @@ function RecentRaidsContent({ config }: GuildPanelRenderProps<RecentRaidsConfig>
 
 export const RecentRaidsPanel: GuildPanelDefinition<RecentRaidsConfig> = {
   type: "recent_raids",
-  label: "Recent Raids",
+  label: "Recent",
   icon: <Calendar className="h-4 w-4" />,
-  description: "Shows recent raid instances for the guild",
-  defaultSize: { w: 6, h: 3 },
+  description: "Shows recent raid and dungeon instances with filtering",
+  defaultSize: { w: 12, h: 4 },
   minSize: { w: 4, h: 2 },
-  maxSize: { w: 12, h: 6 },
+  maxSize: { w: 12, h: 8 },
   configSchema: [
     {
       name: "limit",
-      label: "Number of raids to show",
+      label: "Number of instances to show",
       type: "number",
-      defaultValue: 5,
+      defaultValue: 6,
     },
     {
-      name: "showDate",
-      label: "Show raid date",
-      type: "boolean",
-      defaultValue: true,
+      name: "category",
+      label: "Category",
+      type: "select",
+      options: [
+        { value: "all", label: "All" },
+        { value: "raid", label: "Raids Only" },
+        { value: "dungeon", label: "Dungeons Only" },
+      ],
+      defaultValue: "all",
+    },
+    {
+      name: "hasVideo",
+      label: "Video",
+      type: "select",
+      options: [
+        { value: "all", label: "All" },
+        { value: "with", label: "With Video Only" },
+      ],
+      defaultValue: "all",
     },
   ],
   defaultConfig: {
-    limit: 5,
-    showDate: true,
+    limit: 6,
+    category: "all",
+    hasVideo: "all",
   },
   render: (props) => <RecentRaidsContent {...props} />,
 };

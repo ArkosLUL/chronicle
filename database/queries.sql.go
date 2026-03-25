@@ -2107,7 +2107,7 @@ WHERE true
             li.guild_id = $6
         ELSE true
     END
-ORDER BY first_encounter_time ASC, li.id ASC
+ORDER BY first_encounter_time DESC, li.id DESC
 LIMIT CASE WHEN $8 :: int > 0 THEN $8 ELSE NULL END
 OFFSET $7
 `

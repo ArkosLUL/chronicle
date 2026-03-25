@@ -267,7 +267,7 @@ WHERE true
             li.guild_id = @guild_id
         ELSE true
     END
-ORDER BY first_encounter_time ASC, li.id ASC
+ORDER BY first_encounter_time DESC, li.id DESC
 LIMIT CASE WHEN @limit_count :: int > 0 THEN @limit_count ELSE NULL END
 OFFSET @offset_count;
 

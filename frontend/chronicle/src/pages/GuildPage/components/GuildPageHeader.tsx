@@ -67,14 +67,14 @@ export function GuildPageHeader({ guild, theme }: GuildPageHeaderProps) {
             )}
             {hasSocials && (
               <div className="flex items-center gap-1.5">
-                {Object.entries(socials).map(([platform, url]) => {
+                {(Object.entries(socials) as [SocialPlatform, string][]).map(([platform, url]) => {
                   if (!url) return null;
                   const meta = SOCIAL_PLATFORM_META[platform];
                   if (!meta) return null;
                   return (
                     <a
                       key={platform}
-                      href={url}
+                      href={url as string}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-md border border-border hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"

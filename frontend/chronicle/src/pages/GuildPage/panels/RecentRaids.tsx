@@ -40,7 +40,7 @@ function RecentRaidsContent({ config, position, guild }: GuildPanelRenderProps<R
       const response = await fetch(`/api/v1/raidlogs/recent?${params}`);
       if (!response.ok) throw new Error("Failed to fetch recent instances");
       const data = (await response.json()) as RecentInstancesResponse;
-      setInstances(data.instances ?? []);
+      setInstances([...(data.instances ?? [])]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

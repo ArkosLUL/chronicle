@@ -699,7 +699,7 @@ function transformToInstance(
     id: string;
     name: string;
     realm_name?: string;
-    guild?: { name: string };
+    guild?: { id: string; name: string };
     encounters: readonly WoWEncounterWithHostiles[];
     players: Record<string, InstancePlayer>;
     units: Record<string, InstanceUnit>;

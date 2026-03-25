@@ -13,7 +13,7 @@ export function HeaderEditor({ theme, onChange }: HeaderEditorProps) {
   const [expanded, setExpanded] = useState(false);
 
   const tags = theme.tags ?? [];
-  const socials = theme.socials ?? {};
+  const socials: Partial<Record<SocialPlatform, string>> = theme.socials ?? {};
 
   const toggleTag = (tag: GuildTag) => {
     const newTags = tags.includes(tag)
@@ -23,7 +23,7 @@ export function HeaderEditor({ theme, onChange }: HeaderEditorProps) {
   };
 
   const setSocial = (platform: SocialPlatform, url: string) => {
-    onChange({ ...theme, socials: { ...socials, [platform]: url } });
+    onChange({ ...theme, socials: { ...socials, [platform]: url } as Record<SocialPlatform, string> });
   };
 
   return (

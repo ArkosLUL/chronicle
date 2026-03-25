@@ -84,7 +84,7 @@ function CalendarContent({ config, guild }: GuildPanelRenderProps<CalendarConfig
       const response = await fetch(`/api/v1/raidlogs/range?${params}`);
       if (!response.ok) throw new Error("Failed to fetch instances");
       const data = (await response.json()) as RecentInstancesResponse;
-      setInstances(data.instances ?? []);
+      setInstances([...(data.instances ?? [])]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

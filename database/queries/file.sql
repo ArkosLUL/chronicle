@@ -255,6 +255,18 @@ FROM
     ) latest_job ON true
 WHERE
   wow_log_groups.owner = $1
+  AND (
+    sqlc.narg('created_after')::timestamptz IS NULL
+    OR sqlc.narg('created_before')::timestamptz IS NULL
+    OR (wow_log_groups.created_at >= sqlc.narg('created_after') AND wow_log_groups.created_at < sqlc.narg('created_before'))
+    OR EXISTS (
+      SELECT 1
+      FROM log_instances li
+      WHERE li.log_group_id = wow_log_groups.id
+        AND li.start_time < sqlc.narg('created_before')
+        AND li.end_time >= sqlc.narg('created_after')
+    )
+  )
 ORDER BY
   wow_log_groups.created_at DESC
 ;

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link, useSearchParams } from "react-router-dom";
-import { FileText, LogIn, Loader2, Upload as UploadIcon, HardDrive, HelpCircle } from "lucide-react";
+import { LogIn, Loader2, Upload as UploadIcon, HardDrive, HelpCircle } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -79,6 +80,8 @@ export interface LogsListViewProps {
   logsError: Error | null;
   maxStorageBytes: number;
   consumedStorageBytes: number;
+  currentMonth: Date;
+  onMonthChange: (month: Date) => void;
 }
 
 export function LogsListView({
@@ -89,12 +92,11 @@ export function LogsListView({
   logsError,
   maxStorageBytes,
   consumedStorageBytes,
+  currentMonth,
+  onMonthChange,
 }: LogsListViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const instanceFilter = searchParams.get("instance");
-  
-  // Calendar state
-  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showUploadDates, setShowUploadDates] = useLocalStorage("logs-show-uploads", false);
   
   // Table sort state
@@ -175,14 +177,14 @@ export function LogsListView({
             </Link>
           </div>
         </Card>
-      ) : logsLoading ? (
+      ) : logsLoading && !logs ? (
         <Card className="p-6">
           <div className="flex flex-col items-center gap-4 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <p className="text-muted-foreground">Loading your logs...</p>
           </div>
         </Card>
-      ) : logsError ? (
+      ) : logsError && !logs ? (
         <Card className="p-6">
           <div className="flex flex-col items-center gap-4 text-center">
             <div>
@@ -191,24 +193,6 @@ export function LogsListView({
                 {logsError.message}
               </p>
             </div>
-          </div>
-        </Card>
-      ) : logs && logs.length === 0 ? (
-        <Card className="p-6">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground" />
-            <div>
-              <h2 className="font-semibold text-lg">No Logs Found</h2>
-              <p className="text-muted-foreground mt-1">
-                You haven't uploaded any logs yet.
-              </p>
-            </div>
-            <Link to="/upload">
-              <Button>
-                <UploadIcon className="h-4 w-4 mr-2" />
-                Upload Your First Log
-              </Button>
-            </Link>
           </div>
         </Card>
       ) : (
@@ -222,7 +206,7 @@ export function LogsListView({
           <Card className="p-4">
             <LogsCalendar
               month={currentMonth}
-              onMonthChange={setCurrentMonth}
+              onMonthChange={onMonthChange}
               dayContent={renderDayContent}
               headerRight={
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -276,8 +260,16 @@ export function LogsListView({
 
 export function LogsList() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Compute the visible calendar date range (full weeks covering the month)
+  const calendarStart = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
+  const calendarEnd = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
+
   const { data: logs, isLoading: logsLoading, error: logsError } = useLogGroups({
     enabled: isAuthenticated,
+    start: calendarStart.toISOString(),
+    end: calendarEnd.toISOString(),
   });
   const { data: session } = useSession({
     enabled: isAuthenticated,
@@ -292,6 +284,8 @@ export function LogsList() {
       logsError={logsError}
       maxStorageBytes={session?.max_storage_bytes ?? 0}
       consumedStorageBytes={session?.consumed_storage_bytes ?? 0}
+      currentMonth={currentMonth}
+      onMonthChange={setCurrentMonth}
     />
   );
 }

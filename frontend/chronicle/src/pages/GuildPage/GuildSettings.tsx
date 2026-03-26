@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useGuildSettings, useUpdateGuildSettings, useGuildPage } from "@/api/queries";
-import { ArrowLeft, Settings, UserPlus, Menu, X } from "lucide-react";
+import { ArrowLeft, UserPlus, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GuildPageHeader, GuildActionsMenu } from "./components";
 import { Button } from "@/components/ui/button";

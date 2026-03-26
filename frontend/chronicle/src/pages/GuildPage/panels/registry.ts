@@ -1,10 +1,6 @@
 import type { GuildPanelDefinition } from "./types";
 import { RecentRaidsPanel } from "./RecentRaids";
-import { RosterPanel } from "./Roster";
-import { ProgressPanel } from "./Progress";
-import { StatsPanel } from "./Stats";
 import { MarkdownPanel } from "./Markdown";
-import { LeaderboardPanel } from "./Leaderboard";
 import { CalendarPanel } from "./Calendar";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -13,11 +9,11 @@ type AnyPanelDefinition = GuildPanelDefinition<any>;
 // Panel registry - all available panel types
 export const PANEL_REGISTRY: Record<string, AnyPanelDefinition> = {
   recent_raids: RecentRaidsPanel,
-  roster: RosterPanel,
-  progress: ProgressPanel,
-  stats: StatsPanel,
+  // roster: RosterPanel,
+  // progress: ProgressPanel,
+  // stats: StatsPanel,
   markdown: MarkdownPanel,
-  leaderboard: LeaderboardPanel,
+  // leaderboard: LeaderboardPanel,
   calendar: CalendarPanel,
 };
 

@@ -51,9 +51,11 @@ definition guild {
   relation leader: user
   relation member: user
 
+  // manage role leader allows someone to create a guild leader here.
+  permission manage_role_leader = leader + chronicle->admin_guilds
   permission admin_guild = leader + chronicle->admin_guilds
-  permission manage_role_leader = chronicle->admin_guilds
   permission add_member = leader + chronicle->admin_guilds
+  permission view_chronicle_roster = member + leader + chronicle->admin_guilds
 }
 
 definition armory_player {

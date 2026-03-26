@@ -16,7 +16,18 @@ export default defineConfig({
     babel: {
       plugins: [['babel-plugin-react-compiler']]
     }
-  }), tailwindcss()],
+  }), tailwindcss(), {
+    name: 'react-scan-dev',
+    transformIndexHtml(_html, ctx) {
+      if (ctx.server) {
+        return [{
+          tag: 'script',
+          attrs: { src: 'https://unpkg.com/react-scan/dist/auto.global.js' },
+          injectTo: 'head-prepend',
+        }];
+      }
+    },
+  }],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src")

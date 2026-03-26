@@ -50,6 +50,8 @@ definition guild {
   // TODO: Add more roles
   relation leader: user
   relation member: user
+  
+  permission direct_member = member + leader
 
   // manage role leader allows someone to create a guild leader here.
   permission manage_role_leader = leader + chronicle->admin_guilds

@@ -100,6 +100,7 @@ func (z *Authz) UserChronicleRoles(ctx context.Context, user uuid.UUID) ([]strin
 
 	return roles, nil
 }
+
 // GuildRosterMember represents a user's roles in a guild from SpiceDB.
 type GuildRosterMember struct {
 	UserID uuid.UUID
@@ -184,19 +185,7 @@ func (z *Authz) SetGuildMemberRole(ctx context.Context, guildID, userID uuid.UUI
 // IsGuildMember checks if a user has a direct member or leader relation to a guild.
 // This does NOT include site admins who have access via chronicle->admin_guilds.
 func (z *Authz) IsGuildMember(ctx context.Context, guildID, userID uuid.UUID) (bool, error) {
-	g := policy.New().Guild(guildID).Object()
-	u := policy.New().User(userID).Object()
-	f := rel.NewFilter(g.Typ, g.ID, "")
-	f.WithSubjectFilter(u.Typ, u.ID, "")
-
-	for r, err := range z.spice.ReadRelationships(ctx, z.DefaultConsistencyStrategy(), f) {
-		if err != nil {
-			return false, err
-		}
-		if r.ResourceRelation == "member" || r.ResourceRelation == "leader" {
-			return true, nil
-		}
-	}
-	return false, nil
+	zg := policy.New().Guild(guildID)
+	actor := policy.New().User(userID)
+	return z.CheckOne(ctx, nil, zg.CanDirect_member_User(actor))
 }
-

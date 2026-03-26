@@ -138,7 +138,10 @@ func (api *API) ListGuilds(w http.ResponseWriter, r *http.Request) {
 	for _, g := range guilds {
 		canEdit := false
 		if userID != uuid.Nil {
-			canEdit, _ = api.Zed.IsGuildMember(ctx, g.ID, userID)
+			zg := policy.New().Guild(g.ID)
+			actor := policy.New().User(userID)
+			can, err := api.Zed.CheckOne(ctx, nil, zg.CanAdmin_guild_User(actor))
+			canEdit = err == nil && can
 		}
 
 		result = append(result, chroniclesdk.GuildInfo{
@@ -596,6 +599,7 @@ func (api *API) AdminRemoveGuildMember(w http.ResponseWriter, r *http.Request) {
 		Message: "Member removed",
 	})
 }
+
 // GuildRoster returns the list of Chronicle users with SpiceDB roles on this guild.
 func (api *API) GuildRoster(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -641,4 +645,3 @@ func (api *API) GuildRoster(w http.ResponseWriter, r *http.Request) {
 	}
 	httpapi.Write(ctx, w, http.StatusOK, result)
 }
-

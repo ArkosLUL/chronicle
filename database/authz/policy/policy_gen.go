@@ -70,7 +70,7 @@ func (obj *ObjArmory_player) Create() *Armory_playerRelates {
 	return &Armory_playerRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:62
+// Chronicle schema.zed:64
 // Relationship: armory_player:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjArmory_player) Chronicle(subs ...*ObjChronicle) *ObjArmory_player {
@@ -548,6 +548,10 @@ func (obj *ObjGuild) RelationMember() string {
 	return "member"
 }
 
+func (obj *ObjGuild) PermissionDirect_member() string {
+	return "direct_member"
+}
+
 func (obj *ObjGuild) PermissionManage_role_leader() string {
 	return "manage_role_leader"
 }
@@ -633,6 +637,36 @@ func (r *GuildRelates) Member(subs ...*ObjUser) *GuildRelates {
 		r.rel.Add("member", sub.src.Obj, "")
 	}
 	return r
+}
+
+// CanDirect_member_Chronicle checks if the subject has direct_member permission
+// // Object: guild:<id>
+// Schema: permission direct_member = member + leader
+func (obj *ObjGuild) CanDirect_member_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "direct_member",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanDirect_member_User checks if the subject has direct_member permission
+// // Object: guild:<id>
+// Schema: permission direct_member = member + leader
+func (obj *ObjGuild) CanDirect_member_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "direct_member",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
 }
 
 // CanManage_role_leader_Chronicle checks if the subject has manage_role_leader permission
@@ -812,7 +846,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:80
+// Raid_log schema.zed:82
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -830,7 +864,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:81
+// PublicWildcard schema.zed:83
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -1104,7 +1138,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:66
+// Chronicle schema.zed:68
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1122,7 +1156,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:67
+// Uploader schema.zed:69
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {

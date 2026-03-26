@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +9,7 @@ import {
   addMonths,
   subMonths,
 } from "../utils/calendarUtils";
+import { CalendarAgendaView } from "./CalendarAgendaView";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -18,13 +20,39 @@ interface LogsCalendarProps {
   headerRight?: React.ReactNode;
 }
 
+function useIsSmallScreen(): boolean {
+  const [isSmall, setIsSmall] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 640 : false
+  );
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    const handler = (e: MediaQueryListEvent) => setIsSmall(e.matches);
+    setIsSmall(mql.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  return isSmall;
+}
+
 export function LogsCalendar({
   month,
   onMonthChange,
   dayContent,
   headerRight,
 }: LogsCalendarProps) {
+  const isSmall = useIsSmallScreen();
   const weeks = getCalendarWeeks(month);
+
+  if (isSmall) {
+    return (
+      <CalendarAgendaView
+        month={month}
+        onMonthChange={onMonthChange}
+        dayContent={dayContent}
+        headerRight={headerRight}
+      />
+    );
+  }
 
   return (
     <div className="w-full">

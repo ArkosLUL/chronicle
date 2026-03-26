@@ -181,10 +181,22 @@ func (z *Authz) SetGuildMemberRole(ctx context.Context, guildID, userID uuid.UUI
 	return err
 }
 
-// IsGuildMember checks if a user has any relation (member/leader) to a guild.
+// IsGuildMember checks if a user has a direct member or leader relation to a guild.
+// This does NOT include site admins who have access via chronicle->admin_guilds.
 func (z *Authz) IsGuildMember(ctx context.Context, guildID, userID uuid.UUID) (bool, error) {
-	zg := policy.New().Guild(guildID)
-	actor := policy.New().User(userID)
-	return z.CheckOne(ctx, nil, zg.CanView_chronicle_roster_User(actor))
+	g := policy.New().Guild(guildID).Object()
+	u := policy.New().User(userID).Object()
+	f := rel.NewFilter(g.Typ, g.ID, "")
+	f.WithSubjectFilter(u.Typ, u.ID, "")
+
+	for r, err := range z.spice.ReadRelationships(ctx, z.DefaultConsistencyStrategy(), f) {
+		if err != nil {
+			return false, err
+		}
+		if r.ResourceRelation == "member" || r.ResourceRelation == "leader" {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 

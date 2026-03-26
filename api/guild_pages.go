@@ -138,11 +138,7 @@ func (api *API) ListGuilds(w http.ResponseWriter, r *http.Request) {
 	for _, g := range guilds {
 		canEdit := false
 		if userID != uuid.Nil {
-			_, err := api.Opts.Zed.GetGuildMember(ctx, database.GetGuildMemberParams{
-				GuildID: g.ID,
-				UserID:  userID,
-			})
-			canEdit = err == nil
+			canEdit, _ = api.Zed.IsGuildMember(ctx, g.ID, userID)
 		}
 
 		result = append(result, chroniclesdk.GuildInfo{
@@ -180,11 +176,7 @@ func (api *API) GetGuild(w http.ResponseWriter, r *http.Request) {
 	// Check if user can edit
 	canEdit := false
 	if claims, ok := chronauth.AuthenticatedClaims(ctx); ok {
-		_, err := api.Opts.Zed.GetGuildMember(ctx, database.GetGuildMemberParams{
-			GuildID: guildID,
-			UserID:  claims.Subject,
-		})
-		canEdit = err == nil
+		canEdit, _ = api.Zed.IsGuildMember(ctx, guildID, claims.Subject)
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.GuildInfo{
@@ -203,21 +195,27 @@ func (api *API) GetGuildPage(w http.ResponseWriter, r *http.Request) {
 	guild := httpmw.Guild(ctx)
 
 	canEdit := false
+	canViewRoster := false
 	// Check if user can edit
 	// TODO: This should be an auth check call
 	actor, ok := authz.ActorFromContext(ctx)
 	if ok {
-		check, err := api.Zed.CheckOne(ctx, nil, policy.New().Guild(guild.ID).CanAdmin_guild_User(actor))
-		canEdit = err == nil && check
+		zg := policy.New().Guild(guild.ID)
+		results, err := api.Zed.Check(ctx, nil, zg.CanAdmin_guild_User(actor), zg.CanView_chronicle_roster_User(actor))
+		if err == nil && len(results) == 2 {
+			canEdit = results[0]
+			canViewRoster = results[1]
+		}
 	}
 
 	guildInfo := chroniclesdk.GuildInfo{
-		ID:        guild.ID,
-		Name:      guild.Name,
-		RealmID:   guild.RealmID,
-		RealmName: guild.RealmName,
-		HasPage:   true,
-		CanEdit:   canEdit,
+		ID:            guild.ID,
+		Name:          guild.Name,
+		RealmID:       guild.RealmID,
+		RealmName:     guild.RealmName,
+		HasPage:       true,
+		CanEdit:       canEdit,
+		CanViewRoster: canViewRoster,
 	}
 
 	page, err := api.Opts.Zed.GetFullGuildPage(ctx, guild.ID)
@@ -532,19 +530,47 @@ func (api *API) AdminAddGuildMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	member, err := api.Opts.Zed.InsertGuildMember(ctx, database.InsertGuildMemberParams{
-		GuildID: guild.ID,
-		UserID:  req.UserID,
-	})
-	if err != nil {
+	if err := api.Zed.AddGuildMember(ctx, guild.ID, req.UserID); err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.GuildMember{
-		ID:       member.ID,
-		UserID:   member.UserID,
-		JoinedAt: member.JoinedAt.Time,
+	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.Response{
+		Message: "Member added",
+	})
+}
+
+// AdminUpdateGuildMemberRole changes a guild member's role (admin only)
+func (api *API) AdminUpdateGuildMemberRole(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	guild := httpmw.Guild(ctx)
+	userID, err := uuid.Parse(chi.URLParam(r, "userID"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid user ID",
+		})
+		return
+	}
+
+	var req chroniclesdk.UpdateGuildMemberRoleRequest
+	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	if req.Role != "member" && req.Role != "leader" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Role must be 'member' or 'leader'",
+		})
+		return
+	}
+
+	if err := api.Zed.SetGuildMemberRole(ctx, guild.ID, userID, req.Role); err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.Response{
+		Message: "Role updated",
 	})
 }
 
@@ -561,10 +587,7 @@ func (api *API) AdminRemoveGuildMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Cannot remove members that are also admins - need to check if the user is an admin before allowing removal
-	if err := api.Opts.Zed.DeleteGuildMember(ctx, database.DeleteGuildMemberParams{
-		GuildID: guild.ID,
-		UserID:  userID,
-	}); err != nil {
+	if err := api.Zed.RemoveGuildMember(ctx, guild.ID, userID); err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
@@ -573,3 +596,49 @@ func (api *API) AdminRemoveGuildMember(w http.ResponseWriter, r *http.Request) {
 		Message: "Member removed",
 	})
 }
+// GuildRoster returns the list of Chronicle users with SpiceDB roles on this guild.
+func (api *API) GuildRoster(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	guild := httpmw.Guild(ctx)
+
+	rosterMembers, err := api.Zed.GuildRosterMembers(ctx, guild.ID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	if len(rosterMembers) == 0 {
+		httpapi.Write(ctx, w, http.StatusOK, []chroniclesdk.GuildRosterMember{})
+		return
+	}
+
+	// Batch-fetch usernames from DB
+	userIDs := make([]uuid.UUID, len(rosterMembers))
+	for i, m := range rosterMembers {
+		userIDs[i] = m.UserID
+	}
+	users, err := api.Opts.Zed.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+	userMap := make(map[uuid.UUID]database.ChronicleUser, len(users))
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
+	result := make([]chroniclesdk.GuildRosterMember, 0, len(rosterMembers))
+	for _, m := range rosterMembers {
+		u, ok := userMap[m.UserID]
+		if !ok {
+			continue // user deleted from DB but relation remains
+		}
+		result = append(result, chroniclesdk.GuildRosterMember{
+			UserID:   m.UserID,
+			Username: u.Username,
+			Roles:    m.Roles,
+		})
+	}
+	httpapi.Write(ctx, w, http.StatusOK, result)
+}
+

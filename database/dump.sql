@@ -297,11 +297,12 @@ CREATE TABLE game_players (
     level smallint DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE guild_members (
+CREATE TABLE guild_join_requests (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     guild_id uuid NOT NULL,
     user_id uuid NOT NULL,
-    joined_at timestamp with time zone DEFAULT now() NOT NULL
+    message text DEFAULT ''::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE guild_page_panels (
@@ -328,6 +329,12 @@ CREATE TABLE guild_pages (
     guild_id uuid NOT NULL,
     theme jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE guild_settings (
+    guild_id uuid NOT NULL,
+    allow_join_requests_until timestamp with time zone,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -861,11 +868,11 @@ ALTER TABLE ONLY dbc_spell_item_enchantment
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_pkey PRIMARY KEY (id, realm_id);
 
-ALTER TABLE ONLY guild_members
-    ADD CONSTRAINT guild_members_guild_id_user_id_key UNIQUE (guild_id, user_id);
+ALTER TABLE ONLY guild_join_requests
+    ADD CONSTRAINT guild_join_requests_guild_id_user_id_key UNIQUE (guild_id, user_id);
 
-ALTER TABLE ONLY guild_members
-    ADD CONSTRAINT guild_members_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY guild_join_requests
+    ADD CONSTRAINT guild_join_requests_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY guild_page_panels
     ADD CONSTRAINT guild_page_panels_pkey PRIMARY KEY (id);
@@ -881,6 +888,9 @@ ALTER TABLE ONLY guild_pages
 
 ALTER TABLE ONLY guild_pages
     ADD CONSTRAINT guild_pages_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY guild_settings
+    ADD CONSTRAINT guild_settings_pkey PRIMARY KEY (guild_id);
 
 ALTER TABLE ONLY guilds
     ADD CONSTRAINT guilds_pkey PRIMARY KEY (id);
@@ -1005,9 +1015,7 @@ CREATE INDEX game_players_player_and_realm ON game_players USING btree (name, re
 
 CREATE INDEX idx_data_grants_user_id ON data_grants USING btree (user_id);
 
-CREATE INDEX idx_guild_members_guild ON guild_members USING btree (guild_id);
-
-CREATE INDEX idx_guild_members_user ON guild_members USING btree (user_id);
+CREATE INDEX idx_guild_join_requests_guild ON guild_join_requests USING btree (guild_id);
 
 CREATE INDEX idx_guild_page_panels_tab ON guild_page_panels USING btree (tab_id);
 
@@ -1069,11 +1077,11 @@ ALTER TABLE ONLY game_players
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_updated_from_instance_fkey FOREIGN KEY (updated_from_instance) REFERENCES log_instances(id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
 
-ALTER TABLE ONLY guild_members
-    ADD CONSTRAINT guild_members_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+ALTER TABLE ONLY guild_join_requests
+    ADD CONSTRAINT guild_join_requests_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY guild_members
-    ADD CONSTRAINT guild_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE ONLY guild_join_requests
+    ADD CONSTRAINT guild_join_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY guild_page_panels
     ADD CONSTRAINT guild_page_panels_tab_id_fkey FOREIGN KEY (tab_id) REFERENCES guild_page_tabs(id) ON DELETE CASCADE;
@@ -1083,6 +1091,9 @@ ALTER TABLE ONLY guild_page_tabs
 
 ALTER TABLE ONLY guild_pages
     ADD CONSTRAINT guild_pages_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY guild_settings
+    ADD CONSTRAINT guild_settings_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY guilds
     ADD CONSTRAINT guilds_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);

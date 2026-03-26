@@ -1015,20 +1015,6 @@ func (q *sqlQuerier) BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []b
 	return err
 }
 
-const deleteGuildMember = `-- name: DeleteGuildMember :exec
-DELETE FROM guild_members WHERE guild_id = $1 AND user_id = $2
-`
-
-type DeleteGuildMemberParams struct {
-	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
-	UserID  uuid.UUID `db:"user_id" json:"user_id"`
-}
-
-func (q *sqlQuerier) DeleteGuildMember(ctx context.Context, arg DeleteGuildMemberParams) error {
-	_, err := q.db.Exec(ctx, deleteGuildMember, arg.GuildID, arg.UserID)
-	return err
-}
-
 const deleteGuildPage = `-- name: DeleteGuildPage :exec
 DELETE FROM guild_pages WHERE guild_id = $1
 `
@@ -1143,29 +1129,6 @@ func (q *sqlQuerier) GetGuildByID(ctx context.Context, id uuid.UUID) (GetGuildBy
 	return i, err
 }
 
-const getGuildMember = `-- name: GetGuildMember :one
-
-SELECT id, guild_id, user_id, joined_at FROM guild_members WHERE guild_id = $1 AND user_id = $2
-`
-
-type GetGuildMemberParams struct {
-	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
-	UserID  uuid.UUID `db:"user_id" json:"user_id"`
-}
-
-// Guild Members
-func (q *sqlQuerier) GetGuildMember(ctx context.Context, arg GetGuildMemberParams) (GuildMember, error) {
-	row := q.db.QueryRow(ctx, getGuildMember, arg.GuildID, arg.UserID)
-	var i GuildMember
-	err := row.Scan(
-		&i.ID,
-		&i.GuildID,
-		&i.UserID,
-		&i.JoinedAt,
-	)
-	return i, err
-}
-
 const getGuildPage = `-- name: GetGuildPage :one
 
 SELECT id, guild_id, theme, created_at, updated_at FROM guild_pages WHERE guild_id = $1
@@ -1239,29 +1202,6 @@ func (q *sqlQuerier) GetGuildPageTab(ctx context.Context, id uuid.UUID) (GuildPa
 	return i, err
 }
 
-const insertGuildMember = `-- name: InsertGuildMember :one
-INSERT INTO guild_members (guild_id, user_id)
-VALUES ($1, $2)
-RETURNING id, guild_id, user_id, joined_at
-`
-
-type InsertGuildMemberParams struct {
-	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
-	UserID  uuid.UUID `db:"user_id" json:"user_id"`
-}
-
-func (q *sqlQuerier) InsertGuildMember(ctx context.Context, arg InsertGuildMemberParams) (GuildMember, error) {
-	row := q.db.QueryRow(ctx, insertGuildMember, arg.GuildID, arg.UserID)
-	var i GuildMember
-	err := row.Scan(
-		&i.ID,
-		&i.GuildID,
-		&i.UserID,
-		&i.JoinedAt,
-	)
-	return i, err
-}
-
 const insertGuildPagePanel = `-- name: InsertGuildPagePanel :one
 INSERT INTO guild_page_panels (tab_id, panel_type, config, position)
 VALUES ($1, $2, $3, $4)
@@ -1327,48 +1267,6 @@ func (q *sqlQuerier) InsertGuildPageTab(ctx context.Context, arg InsertGuildPage
 	return i, err
 }
 
-const listGuildMembers = `-- name: ListGuildMembers :many
-SELECT gm.id, gm.guild_id, gm.user_id, gm.joined_at, u.username
-FROM guild_members gm
-JOIN users u ON u.id = gm.user_id
-WHERE gm.guild_id = $1
-ORDER BY gm.joined_at
-`
-
-type ListGuildMembersRow struct {
-	ID       uuid.UUID          `db:"id" json:"id"`
-	GuildID  uuid.UUID          `db:"guild_id" json:"guild_id"`
-	UserID   uuid.UUID          `db:"user_id" json:"user_id"`
-	JoinedAt pgtype.Timestamptz `db:"joined_at" json:"joined_at"`
-	Username string             `db:"username" json:"username"`
-}
-
-func (q *sqlQuerier) ListGuildMembers(ctx context.Context, guildID uuid.UUID) ([]ListGuildMembersRow, error) {
-	rows, err := q.db.Query(ctx, listGuildMembers, guildID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListGuildMembersRow
-	for rows.Next() {
-		var i ListGuildMembersRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.GuildID,
-			&i.UserID,
-			&i.JoinedAt,
-			&i.Username,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listGuildPagePanels = `-- name: ListGuildPagePanels :many
 
 SELECT id, tab_id, panel_type, config, position, created_at, updated_at FROM guild_page_panels
@@ -1428,39 +1326,6 @@ func (q *sqlQuerier) ListGuildPageTabs(ctx context.Context, pageID uuid.UUID) ([
 			&i.Label,
 			&i.Slug,
 			&i.SortOrder,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listGuildsForUser = `-- name: ListGuildsForUser :many
-SELECT g.id, g.realm_id, g.name, g.created_at
-FROM guilds g
-JOIN guild_members gm ON gm.guild_id = g.id
-WHERE gm.user_id = $1
-ORDER BY g.name
-`
-
-func (q *sqlQuerier) ListGuildsForUser(ctx context.Context, userID uuid.UUID) ([]Guild, error) {
-	rows, err := q.db.Query(ctx, listGuildsForUser, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Guild
-	for rows.Next() {
-		var i Guild
-		if err := rows.Scan(
-			&i.ID,
-			&i.RealmID,
-			&i.Name,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -1619,6 +1484,146 @@ func (q *sqlQuerier) UpsertGuildPage(ctx context.Context, arg UpsertGuildPagePar
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+	return i, err
+}
+
+const createGuildJoinRequest = `-- name: CreateGuildJoinRequest :one
+
+INSERT INTO guild_join_requests (guild_id, user_id, message)
+VALUES ($1, $2, $3)
+RETURNING id, guild_id, user_id, message, created_at
+`
+
+type CreateGuildJoinRequestParams struct {
+	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
+	UserID  uuid.UUID `db:"user_id" json:"user_id"`
+	Message string    `db:"message" json:"message"`
+}
+
+// Guild Join Requests
+func (q *sqlQuerier) CreateGuildJoinRequest(ctx context.Context, arg CreateGuildJoinRequestParams) (GuildJoinRequest, error) {
+	row := q.db.QueryRow(ctx, createGuildJoinRequest, arg.GuildID, arg.UserID, arg.Message)
+	var i GuildJoinRequest
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.UserID,
+		&i.Message,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const deleteGuildJoinRequest = `-- name: DeleteGuildJoinRequest :exec
+DELETE FROM guild_join_requests WHERE id = $1 AND guild_id = $2
+`
+
+type DeleteGuildJoinRequestParams struct {
+	ID      uuid.UUID `db:"id" json:"id"`
+	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
+}
+
+func (q *sqlQuerier) DeleteGuildJoinRequest(ctx context.Context, arg DeleteGuildJoinRequestParams) error {
+	_, err := q.db.Exec(ctx, deleteGuildJoinRequest, arg.ID, arg.GuildID)
+	return err
+}
+
+const getGuildJoinRequestByUser = `-- name: GetGuildJoinRequestByUser :one
+SELECT id, guild_id, user_id, message, created_at FROM guild_join_requests WHERE guild_id = $1 AND user_id = $2
+`
+
+type GetGuildJoinRequestByUserParams struct {
+	GuildID uuid.UUID `db:"guild_id" json:"guild_id"`
+	UserID  uuid.UUID `db:"user_id" json:"user_id"`
+}
+
+func (q *sqlQuerier) GetGuildJoinRequestByUser(ctx context.Context, arg GetGuildJoinRequestByUserParams) (GuildJoinRequest, error) {
+	row := q.db.QueryRow(ctx, getGuildJoinRequestByUser, arg.GuildID, arg.UserID)
+	var i GuildJoinRequest
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.UserID,
+		&i.Message,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getGuildSettings = `-- name: GetGuildSettings :one
+
+SELECT guild_id, allow_join_requests_until, updated_at FROM guild_settings WHERE guild_id = $1
+`
+
+// Guild Settings
+func (q *sqlQuerier) GetGuildSettings(ctx context.Context, guildID uuid.UUID) (GuildSetting, error) {
+	row := q.db.QueryRow(ctx, getGuildSettings, guildID)
+	var i GuildSetting
+	err := row.Scan(&i.GuildID, &i.AllowJoinRequestsUntil, &i.UpdatedAt)
+	return i, err
+}
+
+const listGuildJoinRequests = `-- name: ListGuildJoinRequests :many
+SELECT gjr.id, gjr.guild_id, gjr.user_id, gjr.message, gjr.created_at, u.username
+FROM guild_join_requests gjr
+JOIN users u ON u.id = gjr.user_id
+WHERE gjr.guild_id = $1
+ORDER BY gjr.created_at ASC
+`
+
+type ListGuildJoinRequestsRow struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	GuildID   uuid.UUID          `db:"guild_id" json:"guild_id"`
+	UserID    uuid.UUID          `db:"user_id" json:"user_id"`
+	Message   string             `db:"message" json:"message"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	Username  string             `db:"username" json:"username"`
+}
+
+func (q *sqlQuerier) ListGuildJoinRequests(ctx context.Context, guildID uuid.UUID) ([]ListGuildJoinRequestsRow, error) {
+	rows, err := q.db.Query(ctx, listGuildJoinRequests, guildID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListGuildJoinRequestsRow
+	for rows.Next() {
+		var i ListGuildJoinRequestsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.GuildID,
+			&i.UserID,
+			&i.Message,
+			&i.CreatedAt,
+			&i.Username,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertGuildSettings = `-- name: UpsertGuildSettings :one
+INSERT INTO guild_settings (guild_id, allow_join_requests_until, updated_at)
+VALUES ($1, $2, NOW())
+ON CONFLICT (guild_id) DO UPDATE SET
+    allow_join_requests_until = $2, updated_at = NOW()
+RETURNING guild_id, allow_join_requests_until, updated_at
+`
+
+type UpsertGuildSettingsParams struct {
+	GuildID                uuid.UUID          `db:"guild_id" json:"guild_id"`
+	AllowJoinRequestsUntil pgtype.Timestamptz `db:"allow_join_requests_until" json:"allow_join_requests_until"`
+}
+
+func (q *sqlQuerier) UpsertGuildSettings(ctx context.Context, arg UpsertGuildSettingsParams) (GuildSetting, error) {
+	row := q.db.QueryRow(ctx, upsertGuildSettings, arg.GuildID, arg.AllowJoinRequestsUntil)
+	var i GuildSetting
+	err := row.Scan(&i.GuildID, &i.AllowJoinRequestsUntil, &i.UpdatedAt)
 	return i, err
 }
 
@@ -3328,6 +3333,44 @@ func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (ChronicleUs
 		&i.ConsumedStorageBytes,
 	)
 	return i, err
+}
+
+const getUsersByIDs = `-- name: GetUsersByIDs :many
+SELECT
+  id, username, email, created_at, updated_at, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
+FROM
+  chronicle_users
+WHERE
+  id = ANY($1::uuid[])
+`
+
+func (q *sqlQuerier) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]ChronicleUser, error) {
+	rows, err := q.db.Query(ctx, getUsersByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ChronicleUser
+	for rows.Next() {
+		var i ChronicleUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MaxStorageBytes,
+			&i.DataLimitUpdatedAt,
+			&i.ConsumedStorageBytes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertUser = `-- name: InsertUser :one

@@ -39,6 +39,11 @@ import type {
   UpdateTabRequest as UpdateTabRequestGenerated,
   CreateTabRequest as CreateTabRequestGenerated,
   UpdateGuildPageRequest as UpdateGuildPageRequestGenerated,
+  GuildRosterMember as GuildRosterMemberGenerated,
+  GuildSettings as GuildSettingsGenerated,
+  GuildJoinRequest as GuildJoinRequestGenerated,
+  UpdateGuildSettingsRequest as UpdateGuildSettingsRequestGenerated,
+  CreateJoinRequestBody as CreateJoinRequestBodyGenerated,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -80,6 +85,11 @@ export type UpdateTabRequest = UpdateTabRequestGenerated;
 export type CreateTabRequest = CreateTabRequestGenerated;
 export type UpdateGuildPageRequest = UpdateGuildPageRequestGenerated;
 export type GuildPageTheme = GuildPageThemeGenerated;
+export type GuildRosterMember = GuildRosterMemberGenerated;
+export type GuildSettings = GuildSettingsGenerated;
+export type GuildJoinRequest = GuildJoinRequestGenerated;
+export type UpdateGuildSettingsRequest = UpdateGuildSettingsRequestGenerated;
+export type CreateJoinRequestBody = CreateJoinRequestBodyGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -927,6 +937,203 @@ export function useGuildPage(guildId: string | undefined) {
       return response.json() as Promise<GuildPageConfig>;
     },
     enabled: !!guildId,
+    retry: false,
+  });
+}
+
+export function useGuildRoster(guildId: string | undefined) {
+  return useQuery({
+    queryKey: ["guild-roster", guildId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/roster`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch guild roster", error);
+      }
+      return response.json() as Promise<GuildRosterMember[]>;
+    },
+    enabled: !!guildId,
+    retry: false,
+  });
+}
+
+export function useGuildSettings(guildId: string | undefined) {
+  return useQuery({
+    queryKey: ["guild-settings", guildId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/settings`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch guild settings", error);
+      }
+      return response.json() as Promise<GuildSettings>;
+    },
+    enabled: !!guildId,
+    retry: false,
+  });
+}
+
+export function useUpdateGuildSettings(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: UpdateGuildSettingsRequest) => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to update guild settings", error);
+      }
+      return response.json() as Promise<GuildSettings>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-settings", guildId] });
+    },
+  });
+}
+
+export function useGuildJoinRequests(guildId: string | undefined) {
+  return useQuery({
+    queryKey: ["guild-join-requests", guildId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/join-requests`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to fetch join requests", error);
+      }
+      return response.json() as Promise<GuildJoinRequest[]>;
+    },
+    enabled: !!guildId,
+  });
+}
+
+export function useMyJoinRequest(guildId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["guild-join-request-me", guildId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/join-requests/me`, {
+        credentials: "include",
+      });
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to check join request status", error);
+      }
+      return response.json() as Promise<GuildJoinRequest>;
+    },
+    enabled: !!guildId && enabled,
+  });
+}
+
+export function useCreateJoinRequest(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CreateJoinRequestBody) => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/join-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to submit join request", error);
+      }
+      return response.json() as Promise<GuildJoinRequest>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-join-request-me", guildId] });
+    },
+  });
+}
+
+export function useAcceptJoinRequest(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/join-requests/${requestId}/accept`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to accept join request", error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-join-requests", guildId] });
+      queryClient.invalidateQueries({ queryKey: ["guild-roster", guildId] });
+    },
+  });
+}
+
+export function useDenyJoinRequest(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/join-requests/${requestId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to deny join request", error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-join-requests", guildId] });
+    },
+  });
+}
+
+export function useUpdateGuildMemberRole(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/members/${userId}/role`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to update member role", error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-roster", guildId] });
+    },
+  });
+}
+
+export function useRemoveGuildMember(guildId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await fetch(`/api/v1/guilds/${guildId}/members/${userId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to remove member", error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guild-roster", guildId] });
+    },
   });
 }
 

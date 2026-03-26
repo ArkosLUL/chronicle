@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import type { DeviceVisibility } from "@/api/typesGenerated";
-import { useGuildPage } from "@/api/queries";
-import { GuildPageCanvas, TabBar, GuildPageHeader } from "./components";
-import { Shield, Pencil, PanelLeft } from "lucide-react";
+import { useGuildPage, useGuildSettings, useMyJoinRequest, useCreateJoinRequest } from "@/api/queries";
+import { useAuth } from "@/hooks/useAuth";
+import { GuildPageCanvas, TabBar, GuildPageHeader, GuildActionsMenu } from "./components";
+import { Shield, PanelLeft, UserPlus, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -20,8 +21,14 @@ export function GuildPage() {
   const [activeTab, setActiveTab] = useState<string>(tabSlug || "overview");
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [joinMessage, setJoinMessage] = useState("");
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
 
+  const { isAuthenticated } = useAuth();
   const { data: pageConfig, isLoading, error } = useGuildPage(guildId);
+  const { data: settings } = useGuildSettings(guildId);
+  const { data: myRequest } = useMyJoinRequest(guildId, isAuthenticated);
+  const createJoinRequest = useCreateJoinRequest(guildId);
 
   // Filter tabs and panels based on device visibility
   const visibleTabs = useMemo(() => {
@@ -59,20 +66,74 @@ export function GuildPage() {
 
   const currentTab = visibleTabs.find((t) => t.slug === activeTab) || visibleTabs[0];
   const showSidebar = visibleTabs.length > 1;
+  const joinButtonVisible = !!(
+    settings?.allow_join_requests_until &&
+    new Date(settings.allow_join_requests_until) > new Date() &&
+    isAuthenticated &&
+    !settings.is_member
+  );
 
   return (
     <div className="relative w-full px-4">
-      {/* Edit button pinned top-right */}
-      {pageConfig.guild.can_edit && (
-        <Link
-          to={`/guilds/${guildId}/edit`}
-          className="absolute top-2 right-4 hidden md:flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors z-10"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Edit Page
-        </Link>
-      )}
-      <GuildPageHeader guild={pageConfig.guild} theme={pageConfig.theme} />
+      <GuildActionsMenu
+        guildId={guildId!}
+        canEdit={pageConfig.guild.can_edit}
+        canViewRoster={pageConfig.guild.can_view_roster}
+      />
+
+      <GuildPageHeader
+        guild={pageConfig.guild}
+        theme={pageConfig.theme}
+        leading={joinButtonVisible ? (
+          myRequest ? (
+            <Button variant="outline" size="sm" disabled>
+              <Clock className="h-4 w-4 mr-2" />
+              Request Pending
+            </Button>
+          ) : showJoinDialog ? (
+            <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2 shadow-lg">
+              <input
+                type="text"
+                placeholder="Optional message..."
+                value={joinMessage}
+                onChange={(e) => setJoinMessage(e.target.value)}
+                className="bg-transparent border border-border rounded px-2 py-1 text-sm w-48 focus:outline-none focus:ring-1 focus:ring-primary"
+                maxLength={500}
+              />
+              <Button
+                size="sm"
+                disabled={createJoinRequest.isPending}
+                onClick={() => {
+                  createJoinRequest.mutate({ message: joinMessage }, {
+                    onSuccess: () => {
+                      setShowJoinDialog(false);
+                      setJoinMessage("");
+                    },
+                  });
+                }}
+              >
+                {createJoinRequest.isPending ? "Sending..." : "Send"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowJoinDialog(false); setJoinMessage(""); }}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              size="sm"
+              onClick={() => setShowJoinDialog(true)}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Join Guild
+            </Button>
+          )
+        ) : undefined}
+      />
 
       {/* Sidebar + Content */}
       <div className="flex gap-6 relative">

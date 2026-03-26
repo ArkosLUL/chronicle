@@ -6,20 +6,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type GuildMember struct {
-	ID       uuid.UUID `json:"id"`
-	UserID   uuid.UUID `json:"user_id"`
-	Username string    `json:"username"`
-	JoinedAt time.Time `json:"joined_at"`
-}
-
 type GuildInfo struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	RealmID   uuid.UUID `json:"realm_id"`
 	RealmName string    `json:"realm_name"`
 	HasPage   bool      `json:"has_page"`
-	CanEdit   bool      `json:"can_edit"`
+	CanEdit       bool `json:"can_edit"`
+	CanViewRoster bool `json:"can_view_roster"`
 }
 
 type GuildPageConfig struct {
@@ -117,7 +111,44 @@ type AddGuildMemberRequest struct {
 	UserID uuid.UUID `json:"user_id"`
 }
 
+type UpdateGuildMemberRoleRequest struct {
+	Role string `json:"role"` // "member" or "leader"
+}
+type GuildRosterMember struct {
+	UserID   uuid.UUID `json:"user_id"`
+	Username string    `json:"username"`
+	Roles    []string  `json:"roles"` // "member", "leader", etc.
+}
+
+
 type GuildPageOptionsResponse struct {
 	AllowedTags     []GuildTag       `json:"allowed_tags"`
 	SocialPlatforms []SocialPlatform `json:"social_platforms"`
+}
+
+// Guild Settings
+
+type GuildSettings struct {
+	GuildID                uuid.UUID  `json:"guild_id"`
+	AllowJoinRequestsUntil *time.Time `json:"allow_join_requests_until"`
+	IsMember               bool       `json:"is_member"`
+}
+
+type UpdateGuildSettingsRequest struct {
+	AllowJoinRequestsUntil *time.Time `json:"allow_join_requests_until"`
+}
+
+// Guild Join Requests
+
+type GuildJoinRequest struct {
+	ID        uuid.UUID `json:"id"`
+	GuildID   uuid.UUID `json:"guild_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Username  string    `json:"username"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type CreateJoinRequestBody struct {
+	Message string `json:"message"`
 }

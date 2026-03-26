@@ -157,6 +157,14 @@ func (api *API) Routes() chi.Router {
 				)
 				r.Get("/", api.GetGuild)
 				r.Get("/page", api.GetGuildPage)
+				r.Get("/settings", api.GetGuildSettings)
+
+				// Authenticated routes (non-admin)
+				r.Group(func(r chi.Router) {
+					r.Use(api.Auth.Authenticated(false))
+					r.Post("/join-requests", api.CreateJoinRequest)
+					r.Get("/join-requests/me", api.MyJoinRequest)
+				})
 
 				// Protected guild page editing routes
 				r.Group(func(r chi.Router) {
@@ -170,14 +178,30 @@ func (api *API) Routes() chi.Router {
 					r.Route("/members", func(r chi.Router) {
 						// Guild member management (admin only)
 						r.Post("/", api.AdminAddGuildMember)
+						r.Put("/{userID}/role", api.AdminUpdateGuildMemberRole)
 						r.Delete("/{userID}", api.AdminRemoveGuildMember)
 					})
+					r.Put("/settings", api.UpdateGuildSettings)
+					r.Get("/join-requests", api.ListJoinRequests)
+					r.Post("/join-requests/{requestID}/accept", api.AcceptJoinRequest)
+					r.Delete("/join-requests/{requestID}", api.DenyJoinRequest)
 
 					r.Put("/page", api.UpsertGuildPage)
 					r.Post("/page/tabs", api.CreateGuildPageTab)
 					r.Put("/page/tabs/reorder", api.ReorderGuildPageTabs)
 					r.Put("/page/tabs/{tabID}", api.UpdateGuildPageTab)
 					r.Delete("/page/tabs/{tabID}", api.DeleteGuildPageTab)
+				})
+
+				// Guild roster route (viewable by members, leaders, and admins)
+				r.Group(func(r chi.Router) {
+					r.Use(
+						api.Auth.Authenticated(false),
+						guildapi.Can(api.Zed, func(on *policy.ObjGuild) func(sub *policy.ObjUser) rel.Relationship {
+							return on.CanView_chronicle_roster_User
+						}),
+					)
+					r.Get("/roster", api.GuildRoster)
 				})
 			})
 		})

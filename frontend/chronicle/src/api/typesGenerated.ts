@@ -125,6 +125,11 @@ export interface ChronicleEncounterEvents {
     readonly start_time: string;
 }
 
+// From chroniclesdk/guild_page.go
+export interface CreateJoinRequestBody {
+    readonly message: string;
+}
+
 // From chroniclesdk/share.go
 export interface CreateShareRequest {
     readonly instance_id: string;
@@ -195,14 +200,17 @@ export interface GuildInfo {
     readonly realm_name: string;
     readonly has_page: boolean;
     readonly can_edit: boolean;
+    readonly can_view_roster: boolean;
 }
 
 // From chroniclesdk/guild_page.go
-export interface GuildMember {
+export interface GuildJoinRequest {
     readonly id: string;
+    readonly guild_id: string;
     readonly user_id: string;
     readonly username: string;
-    readonly joined_at: string;
+    readonly message: string;
+    readonly created_at: string;
 }
 
 // From chroniclesdk/guild_page.go
@@ -257,6 +265,20 @@ export interface GuildPanelPosition {
     readonly y: number;
     readonly w: number;
     readonly h: number;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildRosterMember {
+    readonly user_id: string;
+    readonly username: string;
+    readonly roles: readonly string[]; // "member", "leader", etc.
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildSettings {
+    readonly guild_id: string;
+    readonly allow_join_requests_until: string | null;
+    readonly is_member: boolean;
 }
 
 // From chroniclesdk/constants.go
@@ -753,8 +775,18 @@ export interface UpdateActionBarSlotsRequest {
 }
 
 // From chroniclesdk/guild_page.go
+export interface UpdateGuildMemberRoleRequest {
+    readonly role: string; // "member" or "leader"
+}
+
+// From chroniclesdk/guild_page.go
 export interface UpdateGuildPageRequest {
     readonly theme: GuildPageTheme;
+}
+
+// From chroniclesdk/guild_page.go
+export interface UpdateGuildSettingsRequest {
+    readonly allow_join_requests_until: string | null;
 }
 
 // From chroniclesdk/panel_layout.go

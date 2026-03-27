@@ -29,7 +29,8 @@ export function CalendarAgendaView({
   // Only show days that have content
   const daysWithContent = days
     .map((date) => ({ date, content: dayContent(date) }))
-    .filter(({ content }) => content !== null && content !== undefined);
+    .filter(({ content }) => content !== null && content !== undefined)
+    .reverse();
 
   return (
     <div className="w-full">

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { User, Bell, Shield, Palette, HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone, Menu, X } from "lucide-react";
+import { HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   useInstance,
@@ -158,11 +158,11 @@ type Tab = {
 };
 
 const tabs: Tab[] = [
-  { path: "/account/settings", label: "Profile", icon: User },
+  // { path: "/account/settings", label: "Profile", icon: User },
   { path: "/account/storage", label: "Storage", icon: HardDrive },
-  { path: "/account/notifications", label: "Notifications", icon: Bell },
-  { path: "/account/privacy", label: "Privacy", icon: Shield },
-  { path: "/account/appearance", label: "Appearance", icon: Palette },
+  // { path: "/account/notifications", label: "Notifications", icon: Bell },
+  // { path: "/account/privacy", label: "Privacy", icon: Shield },
+  // { path: "/account/appearance", label: "Appearance", icon: Palette },
   { path: "/account/layout-book", label: "Layout Book", icon: BookOpenText },
   { path: "/account/layout-lab", label: "Layout Lab", icon: LayoutTemplate },
 ];

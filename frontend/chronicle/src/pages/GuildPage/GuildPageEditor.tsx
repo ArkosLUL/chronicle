@@ -110,6 +110,23 @@ export function GuildPageEditor() {
     setHasChanges(true);
   }, [activeTab, pageConfig?.tabs]);
 
+  const handlePanelConfigChange = useCallback((panelId: string, config: Record<string, unknown>) => {
+    setTabs((prevTabs) => {
+      const newTabs = prevTabs.length > 0 ? [...prevTabs] : [...(pageConfig?.tabs || [])];
+      const tabIndex = newTabs.findIndex((t) => t.slug === activeTab);
+      if (tabIndex === -1) return prevTabs;
+
+      newTabs[tabIndex] = {
+        ...newTabs[tabIndex],
+        panels: newTabs[tabIndex].panels.map((p) =>
+          p.id === panelId ? { ...p, config } : p
+        ),
+      };
+      return newTabs;
+    });
+    setHasChanges(true);
+  }, [activeTab, pageConfig?.tabs]);
+
   const handlePanelConfig = useCallback((panelId: string) => {
     const panel = currentTab?.panels.find((p) => p.id === panelId);
     if (panel) {
@@ -299,6 +316,7 @@ export function GuildPageEditor() {
                 onLayoutChange={handleLayoutChange}
                 onPanelConfig={handlePanelConfig}
                 onPanelDelete={handlePanelDelete}
+                onPanelConfigChange={handlePanelConfigChange}
               />
             )}
           </div>

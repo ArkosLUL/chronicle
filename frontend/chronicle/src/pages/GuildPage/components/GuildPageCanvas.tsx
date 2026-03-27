@@ -37,6 +37,7 @@ interface GuildPageCanvasProps {
   onLayoutChange?: (layout: LayoutItem[]) => void;
   onPanelConfig?: (panelId: string) => void;
   onPanelDelete?: (panelId: string) => void;
+  onPanelConfigChange?: (panelId: string, config: Record<string, unknown>) => void;
 }
 
 // Hook to measure container width
@@ -69,6 +70,7 @@ export function GuildPageCanvas({
   onLayoutChange,
   onPanelConfig,
   onPanelDelete,
+  onPanelConfigChange,
 }: GuildPageCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const containerWidth = useContainerWidth(containerRef);
@@ -238,6 +240,9 @@ export function GuildPageCanvas({
                 config: panel.config as never,
                 position: panel.position,
                 isEditing,
+                onConfigChange: isEditing
+                  ? (partial) => onPanelConfigChange?.(panel.id, { ...panel.config, ...partial } as Record<string, unknown>)
+                  : undefined,
               })}
             </div>
           </div>

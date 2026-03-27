@@ -22,6 +22,7 @@ export interface GuildPanelRenderProps<TConfig> {
   config: TConfig;
   position: GuildPanelPosition;
   isEditing: boolean;
+  onConfigChange?: (config: Partial<TConfig>) => void;
 }
 
 export interface ConfigField {

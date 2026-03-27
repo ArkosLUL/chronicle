@@ -1,65 +1,57 @@
+import { useState } from "react";
 import { FileText } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import type { GuildPanelDefinition, GuildPanelRenderProps } from "./types";
 
 interface MarkdownConfig {
   content: string;
 }
 
-function MarkdownContent({ config, isEditing }: GuildPanelRenderProps<MarkdownConfig>) {
-  const content = config.content || "# Welcome to our Guild!\n\nEdit this panel to add your own content.";
+function MarkdownContent({ config, isEditing, onConfigChange }: GuildPanelRenderProps<MarkdownConfig>) {
+  const [editing, setEditing] = useState(false);
+  const content = config.content || "";
+  const displayContent = content || "# Welcome to our Guild!\n\nEdit this panel to add your own content.";
 
-  if (isEditing && !config.content) {
+  if (isEditing && editing) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Click to edit this text block
+      <div className="h-full flex flex-col gap-2">
+        <textarea
+          className="flex-1 w-full resize-none rounded-md border border-border bg-background p-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+          value={content}
+          placeholder="Enter markdown content..."
+          onChange={(e) => onConfigChange?.({ content: e.target.value })}
+          onBlur={() => setEditing(false)}
+          autoFocus
+        />
+        <p className="text-xs text-muted-foreground">Supports Markdown. Click outside to preview.</p>
       </div>
     );
   }
 
-  // Simple markdown-like rendering (for real implementation, use a markdown library)
-  const renderContent = () => {
-    const lines = content.split("\n");
-    return lines.map((line, i) => {
-      if (line.startsWith("# ")) {
-        return (
-          <h1 key={i} className="text-xl font-bold mb-2">
-            {line.slice(2)}
-          </h1>
-        );
-      }
-      if (line.startsWith("## ")) {
-        return (
-          <h2 key={i} className="text-lg font-semibold mb-2">
-            {line.slice(3)}
-          </h2>
-        );
-      }
-      if (line.startsWith("### ")) {
-        return (
-          <h3 key={i} className="text-base font-medium mb-1">
-            {line.slice(4)}
-          </h3>
-        );
-      }
-      if (line.startsWith("- ")) {
-        return (
-          <li key={i} className="ml-4 text-sm">
-            {line.slice(2)}
-          </li>
-        );
-      }
-      if (line.trim() === "") {
-        return <br key={i} />;
-      }
-      return (
-        <p key={i} className="text-sm mb-1">
-          {line}
-        </p>
-      );
-    });
-  };
+  if (isEditing) {
+    return (
+      <div
+        className="h-full cursor-text"
+        onClick={() => setEditing(true)}
+      >
+        {content ? (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown>{displayContent}</ReactMarkdown>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+            Click to edit this text block
+          </div>
+        )}
+      </div>
+    );
+  }
 
-  return <div className="prose prose-sm dark:prose-invert max-w-none">{renderContent()}</div>;
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none">
+      <ReactMarkdown>{displayContent}</ReactMarkdown>
+    </div>
+  );
 }
 
 export const MarkdownPanel: GuildPanelDefinition<MarkdownConfig> = {

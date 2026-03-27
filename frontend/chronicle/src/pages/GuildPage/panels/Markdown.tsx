@@ -7,6 +7,14 @@ interface MarkdownConfig {
   content: string;
 }
 
+const markdownComponents = {
+  a: ({ children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a {...props} target="_blank" rel="noopener noreferrer">{children}</a>
+  ),
+  // Block images to prevent tracking pixels / unwanted external content
+  img: () => null,
+};
+
 function MarkdownContent({ config, isEditing, onConfigChange }: GuildPanelRenderProps<MarkdownConfig>) {
   const [editing, setEditing] = useState(false);
   const content = config.content || "";
@@ -36,7 +44,7 @@ function MarkdownContent({ config, isEditing, onConfigChange }: GuildPanelRender
       >
         {content ? (
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{displayContent}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents}>{displayContent}</ReactMarkdown>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -49,7 +57,7 @@ function MarkdownContent({ config, isEditing, onConfigChange }: GuildPanelRender
 
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none">
-      <ReactMarkdown>{displayContent}</ReactMarkdown>
+      <ReactMarkdown components={markdownComponents}>{displayContent}</ReactMarkdown>
     </div>
   );
 }

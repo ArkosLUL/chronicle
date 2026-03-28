@@ -1102,6 +1102,13 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 		65152: "Creeping Expulsion",
 		62879: "Corruption of Loktanag",
 		62871: "Withermaw Shaman",
+
+		62882: "Foulheart Satyr",      // 13 times
+		62881: "Foulheart Deceiver",   // 9 times
+		62883: "Foulheart Trickster",  // 5 times
+		57647: "Invading Miasma",      // 8 times
+		57649: "Xavian Form",          // 9 times
+		62884: "Foulheart Hellcaller", // 7 times
 	})
 	LoadBosses(hostile, map[uint32]string{
 		62937: "Kodiak",
@@ -1109,6 +1116,9 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 		62946: "Trioch the Devourer",
 		62935: "Ormanos the Cracked",
 		62934: "Karrsh the Sentinel",
+		62941: "Chieftain Partath",  // 1 times
+		62938: "Archdruid Kronn",    // 1 times
+		62940: "Selenaxx Foulheart", // 1 times
 	})
 
 	return hostile

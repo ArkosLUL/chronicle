@@ -50,6 +50,8 @@ var characterFactories = []characterFactory{
 	NewDiseasedGhoul,
 	// Stratholme
 	NewCryptScarab,
+	// Timbermaw Hold
+	NewKarrsh,
 	// AQ 40
 	NewCthun,
 	// Naxx,

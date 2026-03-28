@@ -39,11 +39,11 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 
 	// 10 man
 	r.RegisterWithComment(wrap(instances.TowerOfKarazhan), "Upper tower is not completely supported yet")
-	r.RegisterWithComment(wrap(instances.TimbermawHold), "not yet complete")
 
 	// 20 man
 	r.Register(wrap(instances.ZulGurub))
 	r.RegisterWithComment(wrap(instances.RuinsOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
+	r.RegisterWithComment(wrap(instances.TimbermawHold), "not yet complete")
 
 	// 40 man
 	r.Register(wrap(instances.MoltenCore))

@@ -144,4 +144,10 @@ var (
 		ZoneName: ZoneNameMatcher("the temple of atal'hakkar"),
 		Hostiles: FromMap(SunkenTempleHostiles()),
 	}).New
+
+	TimbermawHold = (&CommonFactory{
+		Name:     "Timbermaw Hold",
+		ZoneName: ZoneNameMatcher("timbermaw hold"),
+		Hostiles: FromMap(TimbermawHoldHostiles()),
+	}).New
 )

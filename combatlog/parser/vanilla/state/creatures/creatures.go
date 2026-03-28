@@ -29,6 +29,7 @@ type Creatures struct {
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone  zone.Zone
 	ZonedUnits   map[string]map[uint32]string
+	UnitQuantity map[uint32]map[guid.GUID]struct{}
 	ZoneSpells   map[string]map[chrondbc.SpellID]int
 	UnknownUnits map[string]map[uint32]int
 	UnitSpells   map[uint32]map[string]struct{}
@@ -47,6 +48,7 @@ func New(logger *slog.Logger) *Creatures {
 		ZoneSpells:   make(map[string]map[chrondbc.SpellID]int),
 		ZonedUnits:   map[string]map[uint32]string{},
 		UnitSpells:   make(map[uint32]map[string]struct{}),
+		UnitQuantity: make(map[uint32]map[guid.GUID]struct{}),
 	}
 	return s
 }
@@ -148,6 +150,11 @@ func (s *Creatures) Process(m messages.Message) error {
 			s.ZonedUnits[s.CurrentZone.Name] = map[uint32]string{}
 		}
 		s.ZonedUnits[s.CurrentZone.Name][entry] = unit.Name
+
+		if s.UnitQuantity[entry] == nil {
+			s.UnitQuantity[entry] = map[guid.GUID]struct{}{}
+		}
+		s.UnitQuantity[entry][unit.Guid] = struct{}{}
 	}
 
 	return nil

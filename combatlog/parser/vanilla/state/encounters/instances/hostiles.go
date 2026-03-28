@@ -1077,3 +1077,39 @@ func SunkenTempleHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func TimbermawHoldHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		62867: "Enraged Withermaw",
+		62873: "Withermaw Totemic",
+		51296: "Timbermaw Defender",
+		62878: "Tainted Mass",
+		62880: "Twisted Rumbler",
+		62942: "Withermaw Illuminator",
+		2141:  "Corrupted Globule",
+		51609: "Son of Ormanos",
+		51297: "Timbermaw Sentinel",
+		51608: "Tremor of Ormanos",
+		62876: "Withermaw Den Watcher",
+		62872: "Withermaw Pathfinder",
+		2139:  "Loktanag the Vile",
+		62885: "Son of Ursol",
+		62877: "Withermaw Ursa",
+		62874: "Vile Skitterer",
+		62875: "Withermaw Tracker",
+		62870: "Withermaw Defiler",
+		65152: "Creeping Expulsion",
+		62879: "Corruption of Loktanag",
+		62871: "Withermaw Shaman",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		62937: "Kodiak",
+		62936: "Rotgrowl",
+		62946: "Trioch the Devourer",
+		62935: "Ormanos the Cracked",
+		62934: "Karrsh the Sentinel",
+	})
+
+	return hostile
+}

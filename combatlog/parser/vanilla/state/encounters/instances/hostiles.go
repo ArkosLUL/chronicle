@@ -1107,7 +1107,14 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 		2141:  "Corrupted Globule",      // 176 times
 		62873: "Withermaw Totemic",      // 2 times
 		57646: "Dreadful Miasma",        // 120 times
-		62872: "Withermaw Pathfinder",   // 3 times
+		62872: "Withermaw Pathfinder",   // 3
+
+		29482: "Nightmare Fiend",        // 129 times
+		57648: "Xavian Image",           // 15 times
+		62943: "Withermaw Shadowkeeper", // 2 times
+		29480: "Withermaw Corrupter",    // 11 times
+		62877: "Withermaw Ursa",         // 9 times
+		29481: "Ursan Horror",           // 39 times
 	})
 	LoadBosses(hostile, map[uint32]string{
 		62937: "Kodiak",
@@ -1119,6 +1126,7 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 		62940: "Selenaxx Foulheart", // 1 times
 		2139:  "Loktanag the Vile",
 		62935: "Ormanos the Cracked", // 1 times
+		62947: "Ursol",               // 1 times
 	})
 
 	return hostile

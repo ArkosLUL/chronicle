@@ -52,6 +52,8 @@ var characterFactories = []characterFactory{
 	NewCryptScarab,
 	// Timbermaw Hold
 	NewKarrsh,
+	NewChieftainPartath,
+	NewOrmanos,
 	// AQ 40
 	NewCthun,
 	// Naxx,

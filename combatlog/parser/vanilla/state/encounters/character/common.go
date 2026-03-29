@@ -116,6 +116,9 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			}
 		}
 	case *messages.Slain:
+		if !c.IsActive() {
+			c.Start("already_killed", m)
+		}
 		if c.ID() == data.Victim {
 			c.Died(ReasonSlain, m)
 			return nil

@@ -27,3 +27,10 @@ func NewUrsol(id guid.GUID, all *Characters) (Character, bool) {
 		29482, // Nightmare Fiend
 	)(id, all)
 }
+
+func NewVileSkitterer(id guid.GUID, all *Characters) (Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 62874 {
+		return nil, false
+	}
+	return NewPermanentDeath(NewCommonCharacter(id, all)), true
+}

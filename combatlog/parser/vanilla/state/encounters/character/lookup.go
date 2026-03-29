@@ -54,6 +54,7 @@ var characterFactories = []characterFactory{
 	NewKarrsh,
 	NewChieftainPartath,
 	NewOrmanos,
+	NewUrsol,
 	// AQ 40
 	NewCthun,
 	// Naxx,

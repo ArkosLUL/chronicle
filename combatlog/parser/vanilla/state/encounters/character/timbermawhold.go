@@ -20,3 +20,10 @@ func NewOrmanos(id guid.GUID, all *Characters) (Character, bool) {
 		51608, // Tremor
 	)(id, all)
 }
+
+func NewUrsol(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(62947,
+		29481, // Ursan Horror
+		29482, // Nightmare Fiend
+	)(id, all)
+}

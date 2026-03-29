@@ -1082,43 +1082,43 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		62867: "Enraged Withermaw",
-		62873: "Withermaw Totemic",
 		51296: "Timbermaw Defender",
-		62878: "Tainted Mass",
 		62880: "Twisted Rumbler",
 		62942: "Withermaw Illuminator",
-		2141:  "Corrupted Globule",
-		51609: "Son of Ormanos",
 		51297: "Timbermaw Sentinel",
-		51608: "Tremor of Ormanos",
-		62876: "Withermaw Den Watcher",
-		62872: "Withermaw Pathfinder",
-		2139:  "Loktanag the Vile",
-		62885: "Son of Ursol",
-		62877: "Withermaw Ursa",
-		62874: "Vile Skitterer",
 		62875: "Withermaw Tracker",
-		62870: "Withermaw Defiler",
-		65152: "Creeping Expulsion",
-		62879: "Corruption of Loktanag",
 		62871: "Withermaw Shaman",
-
-		62882: "Foulheart Satyr",      // 13 times
-		62881: "Foulheart Deceiver",   // 9 times
-		62883: "Foulheart Trickster",  // 5 times
-		57647: "Invading Miasma",      // 8 times
-		57649: "Xavian Form",          // 9 times
-		62884: "Foulheart Hellcaller", // 7 times
+		62882: "Foulheart Satyr",        // 13 times
+		62881: "Foulheart Deceiver",     // 9 times
+		62883: "Foulheart Trickster",    // 5 times
+		57647: "Invading Miasma",        // 8 times
+		57649: "Xavian Form",            // 9 times
+		62884: "Foulheart Hellcaller",   // 7 times
+		62885: "Son of Ursol",           // 4 times
+		62874: "Vile Skitterer",         // 2 times
+		62878: "Tainted Mass",           // 7 times
+		62870: "Withermaw Defiler",      // 5 times
+		51608: "Tremor of Ormanos",      // 10 times
+		51609: "Son of Ormanos",         // 8 times
+		62876: "Withermaw Den Watcher",  // 2 times
+		65152: "Creeping Expulsion",     // 3 times
+		60699: "Dreamform of Kronn",     // 4 times
+		62879: "Corruption of Loktanag", // 17 times
+		2141:  "Corrupted Globule",      // 176 times
+		62873: "Withermaw Totemic",      // 2 times
+		57646: "Dreadful Miasma",        // 120 times
+		62872: "Withermaw Pathfinder",   // 3 times
 	})
 	LoadBosses(hostile, map[uint32]string{
 		62937: "Kodiak",
 		62936: "Rotgrowl",
 		62946: "Trioch the Devourer",
-		62935: "Ormanos the Cracked",
 		62934: "Karrsh the Sentinel",
 		62941: "Chieftain Partath",  // 1 times
 		62938: "Archdruid Kronn",    // 1 times
 		62940: "Selenaxx Foulheart", // 1 times
+		2139:  "Loktanag the Vile",
+		62935: "Ormanos the Cracked", // 1 times
 	})
 
 	return hostile

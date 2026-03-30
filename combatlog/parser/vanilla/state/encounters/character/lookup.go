@@ -73,6 +73,7 @@ var characterFactories = []characterFactory{
 	NewMephistroth,
 	NewDemonicEye,
 	NewSanvTasDal,
+	NewDraeneiNetherWalker,
 	NewKeeperGnarlmoon,
 	NewAnomalus,
 	NewEchoOfMedivh,

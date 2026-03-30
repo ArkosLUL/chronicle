@@ -92,3 +92,10 @@ func NewAnomalus(id guid.GUID, all *Characters) (Character, bool) {
 
 	return NewPermanentDeath(NewCommonCharacter(id, all)), true
 }
+
+func NewDraeneiNetherWalker(id guid.GUID, all *Characters) (Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 59978 {
+		return nil, false
+	}
+	return NewCommonCharacter(id, all).WithTimeoutAsDeath(), true
+}

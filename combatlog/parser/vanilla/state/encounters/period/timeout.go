@@ -38,6 +38,8 @@ type InactivityTimer struct {
 // to inactivity.
 type InactivityPeriod struct {
 	*WorkingPeriod[InactivityTimer]
+
+	timeoutAsDeath bool
 }
 
 // NewInactivityPeriod creates a new inactivity-based period with the given
@@ -48,6 +50,11 @@ func NewInactivityPeriod(me guid.GUID, bumpBy time.Duration) *InactivityPeriod {
 			BumpBy: bumpBy,
 		}),
 	}
+}
+
+func (p *InactivityPeriod) WithTimeoutAsDeath(set bool) *InactivityPeriod {
+	p.timeoutAsDeath = set
+	return p
 }
 
 func (p *InactivityPeriod) Begin(reason string, m messages.Message) {
@@ -105,6 +112,9 @@ func (p *InactivityPeriod) HandleTimeout(now time.Time) bool {
 	// Normal inactivity timeout
 	if now.After(p.Meta.NextTimeout) {
 		p.Timeout("inactivity", p.Meta.NextTimeout)
+		if p.timeoutAsDeath {
+			p.EndState = EndStateSlain
+		}
 		return true
 	}
 	return false

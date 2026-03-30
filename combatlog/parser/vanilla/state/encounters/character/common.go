@@ -18,7 +18,8 @@ const (
 
 type Common struct {
 	*Base[*period.InactivityPeriod]
-	timeout time.Duration
+	timeout        time.Duration
+	timeoutAsDeath bool
 }
 
 func NewCommonCharacter(id guid.GUID, all *Characters) *Common {
@@ -33,6 +34,11 @@ func (c *Common) WithTimeout(timeout time.Duration) *Common {
 	return c
 }
 
+func (c *Common) WithTimeoutAsDeath() *Common {
+	c.timeoutAsDeath = true
+	return c
+}
+
 func (c *Common) Process(m messages.Message) error {
 	// Timeouts should be checked on every timestamp
 	cur, ok := c.Activity.Current()
@@ -44,7 +50,10 @@ func (c *Common) Process(m messages.Message) error {
 }
 
 func (c *Common) Start(reason string, m messages.Message) {
-	c.Activity.Start(period.NewInactivityPeriod(c.ID(), c.timeout), reason, m)
+	c.Activity.Start(
+		period.NewInactivityPeriod(c.ID(), c.timeout).WithTimeoutAsDeath(c.timeoutAsDeath),
+		reason, m,
+	)
 }
 
 type characterBase interface {

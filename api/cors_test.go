@@ -27,7 +27,7 @@ func TestCors(t *testing.T) {
 		wantAllowed bool
 	}{
 		{"production origin OPTIONS allowed", "https://chronicleclassic.com", "OPTIONS", true},
-		{"production origin GET disallowed", "https://chronicleclassic.com", "GET", false},
+		{"production origin GET allowed", "https://chronicleclassic.com", "GET", true},
 		{"production origin POST disallowed", "https://chronicleclassic.com", "POST", false},
 		{"random origin rejected", "https://evil.com", "OPTIONS", false},
 		{"no origin", "", "OPTIONS", false},

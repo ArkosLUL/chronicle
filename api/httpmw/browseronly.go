@@ -22,8 +22,11 @@ func BrowserOnly(accessURL *url.URL) func(next http.Handler) http.Handler {
 
 			site := r.Header.Get("Sec-Fetch-Site")
 			if site == "" || site == "cross-site" {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
+				// TODO: Standardize this more
+				if r.Header.Get("Origin") != "https://jollygrin.github.io" {
+					http.Error(w, "Forbidden, only browser requests from https://chronicleclassic.com are allowed", http.StatusForbidden)
+					return
+				}
 			}
 			next.ServeHTTP(w, r)
 		})

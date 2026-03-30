@@ -11,7 +11,7 @@ import (
 const productionOrigin = "https://chronicleclassic.com"
 
 func Cors(accessURL *url.URL) func(next http.Handler) http.Handler {
-	origins := []string{productionOrigin}
+	origins := []string{productionOrigin, "https://jollygrin.github.io"}
 	if strings.Contains(accessURL.Host, "localhost") {
 		origins = append(origins, "http://"+accessURL.Host)
 	}

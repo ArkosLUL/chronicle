@@ -13,6 +13,7 @@ import type { GridEditorItem } from "@/components/layout/GridLayoutEditor";
 import type { ActionBarSlotsResponse, ActivityPeriod, InstancePlayer } from "@/api/typesGenerated";
 import { PeriodMomentDisplay } from "@/components/PeriodMomentDisplay";
 import { Card } from "@/components/ui/Card/Card";
+import { Checkbox } from "@/components/ui/Checkbox/Checkbox";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -87,6 +88,7 @@ type LocalInstanceViewState = {
   panels: PanelType[];
   panelOptions: Array<string | null>;
   layout: LayoutType;
+  includeWipes: boolean;
 };
 
 const LEGACY_PANEL_CODE_TO_TYPE: Record<string, PanelType> = {
@@ -344,6 +346,8 @@ function EncounterSidebar({
   onCollapse,
   isMobile,
   showHints,
+  includeWipes,
+  onIncludeWipesChange,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
@@ -353,7 +357,12 @@ function EncounterSidebar({
   onCollapse: () => void;
   isMobile: boolean;
   showHints: boolean;
+  includeWipes: boolean;
+  onIncludeWipesChange: (value: boolean) => void;
 }) {
+  const nonWipeFilter = (e: Encounter) => {
+    return includeWipes || (e.kill_type !== "wipe" && e.kill_type !== "reset");
+  };
   const bossEncounters = encounters
     .filter((e) => e.boss)
     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
@@ -429,7 +438,7 @@ function EncounterSidebar({
               variant="outline"
               size="sm"
               className="h-5 px-1.5 text-xs"
-              onClick={() => onSelectMany(encounters.map(e => e.id))}
+              onClick={() => onSelectMany(encounters.filter(nonWipeFilter).map(e => e.id))}
               title="Select all encounters"
             >
               All
@@ -438,7 +447,7 @@ function EncounterSidebar({
               variant="outline"
               size="sm"
               className="h-5 px-1.5 text-xs"
-              onClick={() => onSelectMany(bossEncounters.map(e => e.id))}
+              onClick={() => onSelectMany(bossEncounters.filter(nonWipeFilter).map(e => e.id))}
               disabled={bossEncounters.length === 0}
               title="Select boss encounters only"
             >
@@ -448,13 +457,21 @@ function EncounterSidebar({
               variant="outline"
               size="sm"
               className="h-5 px-1.5 text-xs"
-              onClick={() => onSelectMany(trashEncounterIds)}
+              onClick={() => onSelectMany(trashGroups.flatMap(g => g.encounters.filter(nonWipeFilter).map(e => e.id)))}
               disabled={trashEncounterIds.length === 0}
               title="Select trash encounters only"
             >
               Trash
             </Button>
           </div>
+          <label className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+            <Checkbox
+              checked={includeWipes}
+              onCheckedChange={(checked) => onIncludeWipesChange(checked === true)}
+              className="size-3.5"
+            />
+            Include wipes
+          </label>
         </div>
         <div className="flex items-start gap-1 -mt-1">
           <Tooltip>
@@ -720,6 +737,7 @@ interface SharedViewPayload {
     players?: number[];
     panelOptions?: Record<string, unknown>;
     panelFilters?: Record<string, PanelFilter[]>;
+    includeWipes?: boolean;
   };
 }
 
@@ -1382,13 +1400,14 @@ export function InstancePageView({
   const [activeLayoutId, setActiveLayoutId] = useState<string | null>(defaultLayoutId);
 
   const createDefaultViewState = useCallback((): LocalInstanceViewState => ({
-    encounters: defaultEncounterIDs,
+    encounters: instance.encounters.filter(e => e.kill_type !== "wipe" && e.kill_type !== "reset").map(e => e.id),
     enemies: new Set<string>(),
     players: new Set<string>(),
     panels: defaultOrderedPanels,
     panelOptions: defaultOrderedPanels.map(() => null),
     layout: "standard",
-  }), [defaultEncounterIDs, defaultOrderedPanels]);
+    includeWipes: false,
+  }), [instance.encounters, defaultOrderedPanels]);
 
   const [viewState, setViewState] = useState<LocalInstanceViewState>(() =>
     createDefaultViewState(),
@@ -1410,6 +1429,10 @@ export function InstancePageView({
 
   const setEncounters = useCallback((ids: string[]) => {
     setViewState((prev) => ({ ...prev, encounters: ids }));
+  }, []);
+
+  const setIncludeWipes = useCallback((value: boolean) => {
+    setViewState((prev) => ({ ...prev, includeWipes: value }));
   }, []);
 
   const setEnemies = useCallback((ids: Set<string> | ((prev: Set<string>) => Set<string>)) => {
@@ -1614,9 +1637,11 @@ export function InstancePageView({
       );
       if (validIds.length > 0) return validIds;
     }
-    // Default to all encounters when nothing is selected
-    return instance.encounters.map(e => e.id);
-  }, [viewState.encounters, instance.encounters]);
+    // Default to encounters respecting includeWipes setting
+    return instance.encounters
+      .filter(e => viewState.includeWipes || (e.kill_type !== "wipe" && e.kill_type !== "reset"))
+      .map(e => e.id);
+  }, [viewState.encounters, viewState.includeWipes, instance.encounters]);
   
   const setInternalSelectedIds = useCallback((ids: string[]) => {
     setEncounters(ids);
@@ -1838,6 +1863,7 @@ export function InstancePageView({
       encounters: encounterIds.length > 0 ? encounterIds : instance.encounters.map((e) => e.id),
       enemies: enemyIDs,
       players: playerIDs,
+      includeWipes: payload.view?.includeWipes ?? false,
     }));
     setActiveLayoutId(typeof payload.layoutId === "string" ? payload.layoutId : null);
     setImportedLayoutItems(orderedItems);
@@ -1942,8 +1968,9 @@ export function InstancePageView({
           Object.entries(panelOptionsByID).filter(([, value]) => value !== null),
         ),
         ...(Object.keys(panelFiltersByID).length > 0 ? { panelFilters: panelFiltersByID } : {}),
+        ...(viewState.includeWipes ? { includeWipes: true } : {}),
       },
-    }), [activeLayoutId, activeLayoutItems, allMergedEnemies, instance.encounters, instance.id, instance.players, panelFiltersByID, panelOptionsByID, panelTypesByID, viewState.encounters, viewState.enemies, viewState.players]);
+    }), [activeLayoutId, activeLayoutItems, allMergedEnemies, instance.encounters, instance.id, instance.players, panelFiltersByID, panelOptionsByID, panelTypesByID, viewState.encounters, viewState.enemies, viewState.includeWipes, viewState.players]);
 
   const copyStateToClipboard = useCallback(async () => {
     try {
@@ -2361,6 +2388,8 @@ export function InstancePageView({
             }}
             isMobile={isMobile}
             showHints={showHints}
+            includeWipes={viewState.includeWipes}
+            onIncludeWipesChange={setIncludeWipes}
           />
         )}
         

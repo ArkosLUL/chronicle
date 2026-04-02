@@ -255,7 +255,7 @@ export function InstancePage() {
   // Compute default encounter IDs (all encounters)
   const defaultEncounterIds = useMemo(() => {
     if (!instance) return [];
-    return instance.encounters.map(e => e.id);
+    return instance.encounters.filter(e => e.kill_type !== "wipe" && e.kill_type !== "reset").map(e => e.id);
   }, [instance]);
 
   // Use user selection if set, otherwise use default (all)

@@ -64,6 +64,14 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	characters := character.NewCharacters(db)
 	characters.RegisterHook(p)
 
+	// classificationEmitter needs a forward reference to the hookable for the emit callback.
+	// We set the emit function after creating the hookable.
+	ce := &classificationEmitter{
+		units:      db,
+		characters: characters,
+	}
+	characters.RegisterHook(ce)
+
 	c := &Hookable{
 		name:          f.Name,
 		zoneNameMatch: f.ZoneName,
@@ -77,10 +85,20 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		p:             p,
 		hooks: []instancehook.Hook{
 			g,
+			ce,
 		},
 		verbose:         parseoptions.IsVerbose(ctx),
 		timings:         timings.New(),
 		completedFights: make([]Fight, 0),
+	}
+
+	ce.emit = func(evt *messages.UnitClassificationEvent) {
+		if c.currentFight != nil && c.currentFight.active() {
+			err := c.currentFight.Events.Process(evt)
+			if err != nil {
+				logger.Error("processing classification event in ongoing fight", slog.String("error", err.Error()))
+			}
+		}
 	}
 
 	return c
@@ -97,10 +115,12 @@ func (h *Hookable) SetRealm(r *realm.Info) { h.realm = r }
 func (h *Hookable) MatchesZone(z zone.Zone) bool { return h.zoneNameMatch(z.Name) }
 
 func (h *Hookable) Process(m messages.Message) (finalError error) {
+	err := h.units.ProcessMessage(m)
+	if err != nil {
+		return fmt.Errorf("processing unit message: %w", err)
+	}
+
 	switch msg := m.(type) {
-	case *messages.NewOwner:
-		// Can happen from example enslave demons
-		h.units.UpdateOwner(msg.Target, msg.NewOwner)
 	case *messages.Realm:
 		if h.realm != nil {
 			if h.realm.RealmName != msg.RealmName {
@@ -176,6 +196,7 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 		}
 	}
 
+	wasActive := h.currentFight.active()
 	activeTotal := 0
 	var latestEnd *period.Moment
 	err := h.Characters.All.ForEach(func(char character.Character) error {
@@ -214,8 +235,17 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 		return nil, fmt.Errorf("iterating characters for fight detection: %w", err)
 	}
 
+	if !wasActive && h.currentFight.active() {
+		for _, hook := range h.hooks {
+			hook.FightStarted(h.currentFight.EncounterID, m)
+		}
+	}
+
 	if activeTotal == 0 && h.currentFight.active() {
 		return func() error {
+			for _, hook := range h.hooks {
+				hook.FightEnded(h.currentFight.EncounterID, m)
+			}
 			return timings.Do1(h.timings, timingsFinalizeFight, func() error {
 				h.currentFight.End = latestEnd
 				return h.finalizeFight()

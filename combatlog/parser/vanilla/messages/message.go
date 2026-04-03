@@ -534,3 +534,34 @@ type NewOwner struct {
 
 func (t NewOwner) Affects() []guid.GUID { return []guid.GUID{t.NewOwner, t.Target} }
 func (*NewOwner) isMessage()            {}
+
+// PossessionChange represents a temporary control effect starting or ending.
+// Unlike NewOwner (permanent ownership), this tracks temporal effects like Mind Control.
+type PossessionChange struct {
+	MessageBase
+	Target     guid.GUID
+	Controller guid.GUID
+	Spell      *chrondbc.Spell
+	Gained     bool // true = possessed, false = released
+	// Duration is the max duration.
+	Duration time.Duration // from AuraCast.DurationMS; 0 = unknown
+}
+
+func (t PossessionChange) Affects() []guid.GUID { return []guid.GUID{t.Controller, t.Target} }
+func (*PossessionChange) isMessage()            {}
+
+// UnitClassificationEvent is a synthetic event injected during encounter processing
+// to communicate affiliation/possession state changes to the frontend.
+type UnitClassificationEvent struct {
+	MessageBase
+	Target      guid.GUID
+	UnitType    types.UnitType
+	Affiliation types.Affiliation
+	Owner       *guid.GUID      // permanent owner (pet/totem)
+	Controller  *guid.GUID      // possession controller (nil if not possessed)
+	Spell       *chrondbc.Spell // possession spell (nil if not possessed)
+}
+
+func (u *UnitClassificationEvent) Affects() []guid.GUID { return []guid.GUID{u.Target} }
+func (*UnitClassificationEvent) isMessage()              {}
+

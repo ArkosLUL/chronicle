@@ -1,4 +1,4 @@
-import { Menu, FileText, Copy, Upload, RotateCcw, LayoutGrid, Clock, Share2, HelpCircle } from "lucide-react";
+import { Menu, FileText, Copy, Upload, RotateCcw, LayoutGrid, Clock, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,8 +38,6 @@ export function InstanceMenu({
   isLoggedIn,
   onShareWithLayout,
   onShareWithoutLayout,
-  showHints,
-  onOpenHelp,
 }: InstanceMenuProps) {
   const handleCopyInstanceId = async () => {
     try {

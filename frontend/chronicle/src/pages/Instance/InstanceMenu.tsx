@@ -70,12 +70,6 @@ export function InstanceMenu({
               <Share2 className="h-4 w-4 mr-2" />
               Share without layout
             </DropdownMenuItem>
-            {showHints && onOpenHelp && (
-              <DropdownMenuItem onClick={onOpenHelp}>
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Help
-              </DropdownMenuItem>
-            )}
             <DropdownMenuSeparator />
           </>
         )}

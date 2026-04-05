@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, ty
 import { createPortal } from "react-dom";
 import { useSearchParams, Link } from "react-router-dom";
 import { useSession, useCreateShare, fetchSharedView, type UserPanelLayout } from "@/api/queries";
-import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2, BookOpen, ExternalLink } from "lucide-react";
+import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2, BookOpen, ExternalLink, Hourglass, ClockArrowUp, ClockArrowDown } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -155,6 +155,15 @@ async function copyEncounterTimes(startTime: string, endTime: string) {
   const text = `${start} - ${end}`;
   await navigator.clipboard.writeText(text);
   toast.success("Copied encounter times", { description: text });
+}
+
+function formatTimestamp(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function formatDuration(startTime: string, endTime: string): string {
@@ -334,6 +343,8 @@ function mergeEnemiesByGuid(encounters: Encounter[]): MergedEnemy[] {
 }
 
 // ============================================================================
+type EncounterTimeDisplay = "duration" | "start_time" | "end_time";
+
 // EncounterSidebar component
 // ============================================================================
 
@@ -348,6 +359,7 @@ function EncounterSidebar({
   showHints,
   includeWipes,
   onIncludeWipesChange,
+  instanceStartTime,
 }: {
   encounters: Encounter[];
   trashGroups: TrashGroup[];
@@ -359,6 +371,7 @@ function EncounterSidebar({
   showHints: boolean;
   includeWipes: boolean;
   onIncludeWipesChange: (value: boolean) => void;
+  instanceStartTime: string;
 }) {
   const nonWipeFilter = (e: Encounter) => {
     return includeWipes || (e.kill_type !== "wipe" && e.kill_type !== "reset");
@@ -377,6 +390,13 @@ function EncounterSidebar({
   const [trashOpen, setTrashOpen] = useState(false);
   const [manualExpandedGroup, setManualExpandedGroup] = useState<string | null>(null);
   const [showChronological, setShowChronological] = useState(false);
+  const [timeDisplay, setTimeDisplay] = useState<EncounterTimeDisplay>("duration");
+  const instanceStartMs = useMemo(() => new Date(instanceStartTime).getTime(), [instanceStartTime]);
+  const formatEncounterTime = useCallback((encounter: Encounter) => {
+    if (timeDisplay === "start_time") return formatTimestamp(new Date(encounter.start_time).getTime() - instanceStartMs);
+    if (timeDisplay === "end_time") return formatTimestamp(new Date(encounter.end_time).getTime() - instanceStartMs);
+    return formatDuration(encounter.start_time, encounter.end_time);
+  }, [timeDisplay, instanceStartMs]);
   const [searchParams] = useSearchParams();
   const isDebug = searchParams.get("debug") === "true";
 
@@ -416,7 +436,7 @@ function EncounterSidebar({
         <div>
           <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
             Encounters
-            {showHints && (
+            {!isMobile && showHints && (
               <HintTooltip>
                 <TooltipTrigger asChild>
                   <button className="text-muted-foreground/50 hover:text-muted-foreground">
@@ -474,6 +494,43 @@ function EncounterSidebar({
           </label>
         </div>
         <div className="flex items-start gap-1 -mt-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                title={timeDisplay === "duration" ? "Showing duration" : timeDisplay === "start_time" ? "Showing start time" : "Showing end time"}
+              >
+                {timeDisplay === "duration"
+                  ? <Hourglass className="h-3.5 w-3.5" />
+                  : timeDisplay === "start_time"
+                    ? <ClockArrowUp className="h-3.5 w-3.5" />
+                    : <ClockArrowDown className="h-3.5 w-3.5" />
+                }
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className={cn(timeDisplay === "duration" && "font-semibold")}
+                onClick={() => setTimeDisplay("duration")}
+              >
+                Duration
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={cn(timeDisplay === "start_time" && "font-semibold")}
+                onClick={() => setTimeDisplay("start_time")}
+              >
+                Start time
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={cn(timeDisplay === "end_time" && "font-semibold")}
+                onClick={() => setTimeDisplay("end_time")}
+              >
+                End time
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -545,8 +602,8 @@ function EncounterSidebar({
                 <span className="truncate flex-1">
                   {encounter.boss ? encounter.name : <span className="italic">{encounter.name}</span>}
                 </span>
-                <span className={cn("text-xs shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
-                  {formatDuration(encounter.start_time, encounter.end_time)}
+                <span className={cn("text-xs shrink-0 font-mono", isSelected ? "opacity-70" : "text-muted-foreground")}>
+                  {formatEncounterTime(encounter)}
                 </span>
                 {isDebug && (
                   <button
@@ -600,8 +657,8 @@ function EncounterSidebar({
                 <Skull className="h-4 w-4 shrink-0 text-red-500" />
               )}
               <span className="truncate flex-1">{encounter.name}</span>
-              <span className={cn("text-xs shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
-                {formatDuration(encounter.start_time, encounter.end_time)}
+              <span className={cn("text-xs shrink-0 font-mono", isSelected ? "opacity-70" : "text-muted-foreground")}>
+                {formatEncounterTime(encounter)}
               </span>
               {isDebug && (
                 <button
@@ -685,8 +742,8 @@ function EncounterSidebar({
                               <Skull className="h-3 w-3 text-red-500" />
                             )}
                             <span className="flex-1">#{idx + 1}</span>
-                            <span className={cn("shrink-0", isSelected ? "opacity-70" : "text-muted-foreground")}>
-                              {formatDuration(encounter.start_time, encounter.end_time)}
+                            <span className={cn("shrink-0 font-mono", isSelected ? "opacity-70" : "text-muted-foreground")}>
+                              {formatEncounterTime(encounter)}
                             </span>
                             {isDebug && (
                               <button
@@ -2654,6 +2711,7 @@ export function InstancePageView({
             showHints={showHints}
             includeWipes={viewState.includeWipes}
             onIncludeWipesChange={setIncludeWipes}
+            instanceStartTime={instance.startTime}
           />
         )}
         

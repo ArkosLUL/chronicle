@@ -2555,7 +2555,6 @@ export function InstancePageView({
         </div>
       </div>
 
-      {isMobile && <hr className="border-border mb-4" />}
 
       {/* Share context menu (right-click) */}
       {shareContextMenu && (

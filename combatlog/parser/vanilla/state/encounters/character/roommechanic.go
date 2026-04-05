@@ -35,17 +35,24 @@ func (r *Room) StayActive(me guid.GUID) bool {
 		return false
 	}
 
+	if r.boss != nil && r.boss.IsActive() {
+		// The boss is handling the activity, let the ad die.
+		return false
+	}
+
 	want := 1
 	if _, hasMe := r.Units[me]; hasMe {
 		want += 1
 	}
 
-	if len(r.Units) >= want {
-		return false
+	activeCount := 0
+	for _, u := range r.Units {
+		if u.IsActive() {
+			activeCount++
+		}
 	}
 
-	if r.boss != nil && r.boss.IsActive() {
-		// The boss is handling the activity, let the ad die.
+	if activeCount >= want {
 		return false
 	}
 

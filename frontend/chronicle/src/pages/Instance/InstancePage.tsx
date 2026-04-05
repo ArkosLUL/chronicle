@@ -48,7 +48,7 @@ export interface Instance {
   // GUID -> unit info lookup (creatures, pets, etc.)
   units?: Record<string, InstanceUnit>;
   // Server-computed feature flags for this instance
-  capabilities: string[];
+  capabilities: readonly string[];
 }
 
 // Helper to get unit name from lookup, with fallback
@@ -71,6 +71,7 @@ function transformToInstance(
     encounters: readonly WoWEncounterWithHostiles[];
     players: Record<string, InstancePlayer>;
     units: Record<string, InstanceUnit>;
+    capabilities?: readonly string[];
   },
 ): Instance {
   const { players, units } = apiInstance;

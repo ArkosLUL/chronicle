@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect, useCallback, useRef, type MouseEvent } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, Link } from "react-router-dom";
 import { useSession, useCreateShare, fetchSharedView, type UserPanelLayout } from "@/api/queries";
 import { Skull, CheckCircle, AlertTriangle, ChevronDown, ChevronRight, Clock, PanelLeftClose, PanelLeft, Users, Crown, List, FolderTree, X, HelpCircle, Copy, Share2, BookOpen, ExternalLink } from "lucide-react";
+import { Popover as PopoverPrimitive } from "radix-ui";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useHelpfulHints } from "@/hooks/useHelpfulHints";
@@ -858,9 +859,61 @@ function EncounterDetail({
   // Active tab and collapsible state
   const [activeTab, setActiveTab] = useState<'enemies' | 'players'>('enemies');
   const [isEntityPanelOpen, setIsEntityPanelOpen] = useState(false);
-  
   // Merge enemies across all selected encounters
   const mergedEnemies = mergeEnemies(encounters);
+
+  // Group enemies by name for compact display
+  interface EnemyGroup {
+    name: string;
+    boss: boolean;
+    killed: boolean;
+    totalDamageTaken: number;
+    enemies: MergedEnemy[];
+  }
+
+  const enemyGroups = useMemo((): EnemyGroup[] => {
+    const groupMap = new Map<string, EnemyGroup>();
+    for (const enemy of mergedEnemies) {
+      const existing = groupMap.get(enemy.name);
+      if (existing) {
+        existing.enemies.push(enemy);
+        existing.totalDamageTaken += enemy.damageTaken;
+        existing.killed = existing.killed && enemy.killed;
+        existing.boss = existing.boss || enemy.boss;
+      } else {
+        groupMap.set(enemy.name, {
+          name: enemy.name,
+          boss: enemy.boss,
+          killed: enemy.killed,
+          totalDamageTaken: enemy.damageTaken,
+          enemies: [enemy],
+        });
+      }
+    }
+    return Array.from(groupMap.values()).sort((a, b) => {
+      // Bosses first, then by damage taken
+      if (a.boss !== b.boss) return a.boss ? -1 : 1;
+      return b.totalDamageTaken - a.totalDamageTaken;
+    });
+  }, [mergedEnemies]);
+
+  const toggleEnemyGroup = useCallback((groupEnemyIds: string[]) => {
+    const currentEnemies = entitySelection.enemyIds;
+    const allSelected = groupEnemyIds.every(id => currentEnemies.has(id));
+    if (allSelected) {
+      // Remove all group members from selection
+      const next = new Set(currentEnemies);
+      for (const id of groupEnemyIds) next.delete(id);
+      onSelectEnemies(Array.from(next));
+    } else {
+      // Add all group members to selection
+      const next = new Set(currentEnemies);
+      for (const id of groupEnemyIds) next.add(id);
+      onSelectEnemies(Array.from(next));
+    }
+  }, [entitySelection.enemyIds, onSelectEnemies]);
+
+
   
   const totalDurationMs = computeTotalDuration(encounters);
   
@@ -874,12 +927,15 @@ function EncounterDetail({
   
   const selectedEncounterIDs = useMemo(() => encounters.map((e) => e.id), [encounters]);
 
-  // Build PanelContext for EventsPanels
+  // Defer entity selection for panels so the chip UI updates immediately
+  const deferredEntitySelection = useDeferredValue(entitySelection);
+
+  // Build PanelContext for EventsPanels (uses deferred selection)
   const panelContext: PanelContext = useMemo(
     () => ({
       instance,
       selectedEncounterIds: selectedEncounterIDs,
-      entitySelection,
+      entitySelection: deferredEntitySelection,
       onSelectEncounters,
       onTogglePlayer,
       onTogglePlayers,
@@ -887,7 +943,7 @@ function EncounterDetail({
     [
       instance,
       selectedEncounterIDs,
-      entitySelection,
+      deferredEntitySelection,
       onSelectEncounters,
       onTogglePlayer,
       onTogglePlayers,
@@ -1072,51 +1128,163 @@ function EncounterDetail({
                   {mergedEnemies.length > 0 && (
                     <div className="flex items-center gap-2 mb-2">
                       {mergedEnemies.some(e => e.boss) && (
-                        <>
-                          <button
-                            onClick={() => onSelectEnemies(mergedEnemies.filter(e => e.boss).map(e => e.id))}
-                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            Select Bosses
-                          </button>
-                        </>
+                        <button
+                          onClick={() => onSelectEnemies(mergedEnemies.filter(e => e.boss).map(e => e.id))}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Select Bosses
+                        </button>
                       )}
                     </div>
                   )}
                   <div className="flex flex-wrap gap-2">
-                    {mergedEnemies.length === 0 ? (
+                    {enemyGroups.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No enemies in this encounter</p>
                     ) : (
-                      mergedEnemies.map((enemy) => {
-                        const isSelected = isEnemySelected(enemy.id);
+                      enemyGroups.map((group) => {
+                        // Single enemy — render as before, no grouping chrome
+                        if (group.enemies.length === 1) {
+                          const enemy = group.enemies[0];
+                          const isSelected = isEnemySelected(enemy.id);
+                          const btn = (
+                            <button
+                              key={enemy.id}
+                              onClick={() => onToggleEnemy(enemy.id)}
+                              className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-all",
+                                enemy.killed
+                                  ? "bg-green-500/15 border border-green-500/30"
+                                  : "bg-red-500/15 border border-red-500/30",
+                                isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                                hasSelection && !isSelected && "opacity-50"
+                              )}
+                            >
+                              <span className={cn(
+                                "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                                enemy.killed ? "bg-green-500" : "bg-red-500"
+                              )} />
+                              {enemy.boss && (
+                                <Crown className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                              )}
+                              <span className="font-medium">{enemy.name}</span>
+                            </button>
+                          );
+                          if (isMobile) return btn;
+                          return (
+                            <HintTooltip key={enemy.id}>
+                              <TooltipTrigger asChild>
+                                {btn}
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" hideArrow className="p-3 bg-card text-card-foreground border border-border">
+                                {formatPeriodsTooltip(enemy.id, enemy.periods)}
+                              </TooltipContent>
+                            </HintTooltip>
+                          );
+                        }
+
+                        // Multi-enemy group — popover to expand individuals
+                        const groupIds = group.enemies.map(e => e.id);
+                        const allSelected = groupIds.every(id => isEnemySelected(id));
+                        const someSelected = !allSelected && groupIds.some(id => isEnemySelected(id));
+                        const selectedCount = groupIds.filter(id => isEnemySelected(id)).length;
                         return (
-                          <HintTooltip key={enemy.id}>
-                            <TooltipTrigger asChild>
+                          <PopoverPrimitive.Root key={group.name}>
+                            <PopoverPrimitive.Trigger asChild>
                               <button
-                                onClick={() => onToggleEnemy(enemy.id)}
                                 className={cn(
                                   "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-all",
-                                  enemy.killed
+                                  group.killed
                                     ? "bg-green-500/15 border border-green-500/30"
                                     : "bg-red-500/15 border border-red-500/30",
-                                  isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
-                                  hasSelection && !isSelected && "opacity-50"
+                                  allSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                                  someSelected && "ring-2 ring-primary/50 ring-offset-1 ring-offset-background",
+                                  hasSelection && !allSelected && !someSelected && "opacity-50"
                                 )}
                               >
                                 <span className={cn(
                                   "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                                  enemy.killed ? "bg-green-500" : "bg-red-500"
+                                  group.killed ? "bg-green-500" : "bg-red-500"
                                 )} />
-                                {enemy.boss && (
+                                {group.boss && (
                                   <Crown className="h-3 w-3 text-yellow-500 flex-shrink-0" />
                                 )}
-                                <span className="font-medium">{enemy.name}</span>
+                                <span className="font-medium">{group.name}</span>
+                                <span className="text-muted-foreground ml-0.5">
+                                  {someSelected ? `${selectedCount}/` : "×"}{group.enemies.length}
+                                </span>
                               </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" hideArrow className="p-3 bg-card text-card-foreground border border-border">
-                              {formatPeriodsTooltip(enemy.id, enemy.periods)}
-                            </TooltipContent>
-                          </HintTooltip>
+                            </PopoverPrimitive.Trigger>
+                            <PopoverPrimitive.Portal>
+                              <PopoverPrimitive.Content
+                                side="bottom"
+                                align="start"
+                                sideOffset={4}
+                                avoidCollisions
+                                collisionPadding={16}
+                                className={cn(
+                                  "z-50 rounded-lg border-2 border-border/80 bg-card text-card-foreground shadow-xl overflow-y-auto styled-scrollbar p-2",
+                                  "animate-in fade-in-0 zoom-in-95",
+                                  "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+                                  isMobile
+                                    ? "max-w-[calc(100vw-2rem)] max-h-[50vh]"
+                                    : "w-64 max-h-72"
+                                )}
+                              >
+                                <div className="flex items-center justify-between mb-2 px-1">
+                                  <span className="text-xs font-semibold">{group.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => toggleEnemyGroup(groupIds)}
+                                      className="text-2xs text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                      {allSelected ? "Deselect all" : "Select all"}
+                                    </button>
+                                    <PopoverPrimitive.Close asChild>
+                                      <button className="text-2xs text-red-400 hover:text-red-300 transition-colors">
+                                        Close
+                                      </button>
+                                    </PopoverPrimitive.Close>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {group.enemies.map((enemy, idx) => {
+                                    const isSelected = isEnemySelected(enemy.id);
+                                    const btn = (
+                                      <button
+                                        key={enemy.id}
+                                        onClick={() => onToggleEnemy(enemy.id)}
+                                        className={cn(
+                                          "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-all",
+                                          enemy.killed
+                                            ? "bg-green-500/10 border border-green-500/20"
+                                            : "bg-red-500/10 border border-red-500/20",
+                                          isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                                          hasSelection && !isSelected && "opacity-50"
+                                        )}
+                                      >
+                                        <span className={cn(
+                                          "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                                          enemy.killed ? "bg-green-500" : "bg-red-500"
+                                        )} />
+                                        <span className="font-medium">{enemy.name} #{idx + 1}</span>
+                                      </button>
+                                    );
+                                    if (isMobile) return btn;
+                                    return (
+                                      <HintTooltip key={enemy.id}>
+                                        <TooltipTrigger asChild>
+                                          {btn}
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" hideArrow className="p-3 bg-card text-card-foreground border border-border">
+                                          {formatPeriodsTooltip(enemy.id, enemy.periods)}
+                                        </TooltipContent>
+                                      </HintTooltip>
+                                    );
+                                  })}
+                                </div>
+                              </PopoverPrimitive.Content>
+                            </PopoverPrimitive.Portal>
+                          </PopoverPrimitive.Root>
                         );
                       })
                     )}

@@ -477,6 +477,7 @@ export class HealDecoder {
     hitType: 0,
     amount: 0,
     school: 0,
+    overheal: 0,
     activity: [],
     activityCount: 0,
     spellId: null,
@@ -779,6 +780,7 @@ export class ResourceChangeDecoder {
     amount: 0,
     resourceType: "",
     direction: "",
+    overResource: 0,
     activity: [],
     activityCount: 0,
   };

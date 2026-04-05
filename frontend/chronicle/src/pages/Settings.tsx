@@ -739,6 +739,7 @@ function transformToInstance(
     encounters,
     players,
     units,
+    capabilities: [],
   };
 }
 

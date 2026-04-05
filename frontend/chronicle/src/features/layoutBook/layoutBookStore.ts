@@ -1,3 +1,14 @@
+/** crypto.randomUUID() is unavailable in non-secure (HTTP) contexts on some mobile browsers. */
+function genId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback: random hex string
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 import { useSyncExternalStore } from "react";
 import type { GridEditorItem } from "@/components/layout/GridLayoutEditor";
 import type { LayoutType } from "@/hooks/useUrlState";
@@ -38,7 +49,7 @@ function buildDefaultLayout(): SavedLayout {
   });
 
   return {
-    id: crypto.randomUUID(),
+    id: genId(),
     name: "Starter Layout",
     title: "Starter Layout",
     description: "A default layout to get started.",
@@ -99,7 +110,7 @@ export function useLayoutBookStore() {
         title,
         description: (input.description ?? "").slice(0, 500),
         icon: input.icon ?? "INV_Misc_Book_09",
-        id: crypto.randomUUID(),
+        id: genId(),
         createdAt: now,
         updatedAt: now,
       };

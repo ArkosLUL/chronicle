@@ -196,6 +196,7 @@ export function SimPage() {
           entry: 0,
         },
       },
+      capabilities: [],
     };
   }, [result, playerName, classId, raceId, targetName]);
 

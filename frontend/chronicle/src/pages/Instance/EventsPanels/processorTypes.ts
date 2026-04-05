@@ -364,7 +364,7 @@ export interface SerializableProcessorContext {
   panelContext?: Record<string, unknown> | null;
 
   /** Server-computed feature flags for this instance (e.g., "overheal"). */
-  capabilities?: string[];
+  capabilities?: readonly string[];
 
   /** Optional event filters evaluated before processor.processEvent. */
   filters?: PanelFilter[];
@@ -396,7 +396,7 @@ export interface ProcessorContext {
   panelContext?: Record<string, unknown> | null;
 
   /** Server-computed feature flags for this instance (e.g., "overheal"). */
-  capabilities?: string[];
+  capabilities?: readonly string[];
 
   /** Optional event filters evaluated before processor.processEvent. */
   filters?: PanelFilter[];

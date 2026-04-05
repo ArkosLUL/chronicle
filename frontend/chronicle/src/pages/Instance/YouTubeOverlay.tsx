@@ -721,39 +721,43 @@ export function YouTubeOverlay({ videoUrl, timestamps, targetTime, pauseTime, on
           <span className="truncate max-w-[150px]">YouTube</span>
         </div>
         <div className="flex items-center gap-0.5">
-          {/* Pause at End toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
-                <span>Pause at End</span>
-                <Switch 
-                  size="sm" 
-                  checked={pauseAtEnd} 
-                  onCheckedChange={setPauseAtEnd} 
-                />
-              </label>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="z-[10001]">
-              <p>Pause video when the selected encounter ends</p>
-            </TooltipContent>
-          </Tooltip>
-          {/* Live Sync toggle */}
-          {syncMode && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
-                  <span>Live Sync</span>
-                  <Switch 
-                    size="sm" 
-                    checked={syncEnabled} 
-                    onCheckedChange={(checked: boolean) => checked ? enableSync?.() : disableSync?.()} 
-                  />
-                </label>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="z-[10001]">
-                <p>Sync panel data with video playback position</p>
-              </TooltipContent>
-            </Tooltip>
+          {!isMinimized && (
+            <>
+              {/* Pause at End toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
+                    <span>Pause at End</span>
+                    <Switch 
+                      size="sm" 
+                      checked={pauseAtEnd} 
+                      onCheckedChange={setPauseAtEnd} 
+                    />
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="z-[10001]">
+                  <p>Pause video when the selected encounter ends</p>
+                </TooltipContent>
+              </Tooltip>
+              {/* Live Sync toggle */}
+              {syncMode && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground mr-1">
+                      <span>Live Sync</span>
+                      <Switch 
+                        size="sm" 
+                        checked={syncEnabled} 
+                        onCheckedChange={(checked: boolean) => checked ? enableSync?.() : disableSync?.()} 
+                      />
+                    </label>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="z-[10001]">
+                    <p>Sync panel data with video playback position</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </>
           )}
           <Button
             variant="ghost"

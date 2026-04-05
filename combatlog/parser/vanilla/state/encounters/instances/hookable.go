@@ -72,6 +72,10 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	}
 	characters.RegisterHook(ce)
 
+	overheals := &Overhealing{
+		deficits: make(map[guid.GUID]int32),
+	}
+
 	c := &Hookable{
 		name:          f.Name,
 		zoneNameMatch: f.ZoneName,
@@ -86,6 +90,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		hooks: []instancehook.Hook{
 			g,
 			ce,
+			overheals,
 		},
 		verbose:         parseoptions.IsVerbose(ctx),
 		timings:         timings.New(),
@@ -156,10 +161,6 @@ func (h *Hookable) Process(m messages.Message) (finalError error) {
 		}
 	}
 
-	err = timings.Do1(h.timings, timingsProcessOngoingFightProcess, func() error {
-		return h.currentFight.Process(m)
-	})
-
 	if len(h.hooks) > 0 {
 		err = timings.Do1(h.timings, timingsHooks, func() error {
 			for _, hook := range h.hooks {
@@ -175,6 +176,10 @@ func (h *Hookable) Process(m messages.Message) (finalError error) {
 			return nil
 		})
 	}
+
+	err = timings.Do1(h.timings, timingsProcessOngoingFightProcess, func() error {
+		return h.currentFight.Process(m)
+	})
 
 	return nil
 }

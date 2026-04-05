@@ -220,6 +220,8 @@ const (
 	WoWEventTypeSpellStart WoWEventType = "spell_start"
 	// WoWEventTypeSpellFail is a WoWEventType of type spell_fail.
 	WoWEventTypeSpellFail WoWEventType = "spell_fail"
+	// WoWEventTypeUnitClassification is a WoWEventType of type unit_classification.
+	WoWEventTypeUnitClassification WoWEventType = "unit_classification"
 )
 
 var ErrInvalidWoWEventType = errors.New("not a valid WoWEventType")
@@ -238,6 +240,7 @@ func WoWEventTypeValues() []WoWEventType {
 		WoWEventTypeAuraCast,
 		WoWEventTypeSpellStart,
 		WoWEventTypeSpellFail,
+		WoWEventTypeUnitClassification,
 	}
 }
 
@@ -254,17 +257,18 @@ func (x WoWEventType) IsValid() bool {
 }
 
 var _WoWEventTypeValue = map[string]WoWEventType{
-	"damage":          WoWEventTypeDamage,
-	"heal":            WoWEventTypeHeal,
-	"resource_change": WoWEventTypeResourceChange,
-	"extra_attack":    WoWEventTypeExtraAttack,
-	"slain":           WoWEventTypeSlain,
-	"cast":            WoWEventTypeCast,
-	"aura":            WoWEventTypeAura,
-	"spell_go":        WoWEventTypeSpellGo,
-	"aura_cast":       WoWEventTypeAuraCast,
-	"spell_start":     WoWEventTypeSpellStart,
-	"spell_fail":      WoWEventTypeSpellFail,
+	"damage":              WoWEventTypeDamage,
+	"heal":                WoWEventTypeHeal,
+	"resource_change":     WoWEventTypeResourceChange,
+	"extra_attack":        WoWEventTypeExtraAttack,
+	"slain":               WoWEventTypeSlain,
+	"cast":                WoWEventTypeCast,
+	"aura":                WoWEventTypeAura,
+	"spell_go":            WoWEventTypeSpellGo,
+	"aura_cast":           WoWEventTypeAuraCast,
+	"spell_start":         WoWEventTypeSpellStart,
+	"spell_fail":          WoWEventTypeSpellFail,
+	"unit_classification": WoWEventTypeUnitClassification,
 }
 
 // ParseWoWEventType attempts to convert a string to a WoWEventType.

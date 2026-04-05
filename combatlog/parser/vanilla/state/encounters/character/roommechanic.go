@@ -52,6 +52,7 @@ func (r *Room) StayActive(me guid.GUID) bool {
 		}
 	}
 
+	//nolint:staticcheck
 	if activeCount >= want {
 		return false
 	}

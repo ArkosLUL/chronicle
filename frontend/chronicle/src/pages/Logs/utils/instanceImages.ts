@@ -28,7 +28,7 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Hateforge Quarry": { background: "/c/images/loadingscreens/LoadScreenHateforge.webp", bossCount: 4, abbrev: "HQ", },
   "Gilneas City": { background: "/c/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3, abbrev: "Gilneas", },
   "World Bosses": { background: "/c/images/loadingscreens/LoadScreenRaid.webp", abbrev: "World", category: "raid" },
-  "Timbermaw Hold": { background: "/c/images/loadingscreens/LoadScreenDungeon.webp", abbrev: "TMH", category: "raid"},
+  "Timbermaw Hold": { background: "/c/images/loadingscreens/LoadScreenTimbermaw.webp", abbrev: "TMH", category: "raid"},
   // Dungeons
   "Black Morass": { background: "/c/images/loadingscreens/LoadScreenCavernsTime.webp", bossCount: 4, abbrev: "BM" },
   "Blackrock Spire": { background: "/c/images/loadingscreens/LoadScreenBlackrockSpire.webp", abbrev: "BRS" },

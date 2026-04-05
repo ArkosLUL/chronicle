@@ -1,4 +1,4 @@
-import { Menu, FileText, Copy, Upload, RotateCcw, LayoutGrid, Clock } from "lucide-react";
+import { Menu, FileText, Copy, Upload, RotateCcw, LayoutGrid, Clock, Share2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,14 @@ interface InstanceMenuProps {
   instanceId: string;
   logDetailUrl?: string;
   layoutLabUrl?: string;
+  /** Mobile-only props: show share/help/video inside the menu */
+  isMobile?: boolean;
+  isLoggedIn?: boolean;
+  onShareWithLayout?: () => void;
+  onShareWithoutLayout?: () => void;
+  youtubeButton?: React.ReactNode;
+  showHints?: boolean;
+  onOpenHelp?: () => void;
 }
 
 export function InstanceMenu({
@@ -26,6 +34,12 @@ export function InstanceMenu({
   instanceId,
   logDetailUrl,
   layoutLabUrl,
+  isMobile,
+  isLoggedIn,
+  onShareWithLayout,
+  onShareWithoutLayout,
+  showHints,
+  onOpenHelp,
 }: InstanceMenuProps) {
   const handleCopyInstanceId = async () => {
     try {
@@ -45,6 +59,26 @@ export function InstanceMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {isMobile && onShareWithLayout && (
+          <>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">Share</DropdownMenuLabel>
+            <DropdownMenuItem onClick={onShareWithLayout} disabled={!isLoggedIn}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Share with layout
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onShareWithoutLayout} disabled={!isLoggedIn}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Share without layout
+            </DropdownMenuItem>
+            {showHints && onOpenHelp && (
+              <DropdownMenuItem onClick={onOpenHelp}>
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Help
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+          </>
+        )}
         {onResetView && (
           <>
             <DropdownMenuItem onClick={onResetView}>

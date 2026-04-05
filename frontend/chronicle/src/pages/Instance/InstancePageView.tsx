@@ -42,6 +42,7 @@ import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceAction
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
 import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/CharacterHeader";
 import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
 import { parsePanelLayout } from "@/features/layoutBook/parseLayout";
@@ -159,11 +160,7 @@ async function copyEncounterTimes(startTime: string, endTime: string) {
 function formatDuration(startTime: string, endTime: string): string {
   const start = new Date(startTime);
   const end = new Date(endTime);
-  const durationMs = end.getTime() - start.getTime();
-  const totalSeconds = Math.floor(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  return formatDurationMs(end.getTime() - start.getTime());
 }
 
 function formatTime(timestamp: string): string {
@@ -246,8 +243,10 @@ function computeTotalDuration(encounters: Encounter[]): number {
 
 function formatDurationMs(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}hr ${minutes}m ${seconds.toString().padStart(2, "0")}s`;
   return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 }
 
@@ -1010,7 +1009,7 @@ function EncounterDetail({
   return (
     <div className="flex-1 min-w-0">
       {/* Encounter header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className={cn("mb-6", isMobile ? "flex flex-col gap-1" : "flex items-center justify-between")}>
         <div className="flex items-center gap-3">
           {isSingle && (
             encounter.kill_type === "clean" ? (
@@ -1023,12 +1022,12 @@ function EncounterDetail({
           )}
           <div>
             <h2 className="text-xl font-semibold">{title}</h2>
-            {subtitle && (
+            {subtitle && !isMobile && (
               <p className="text-sm text-muted-foreground truncate max-w-md">{subtitle}</p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-4 text-muted-foreground text-sm">
+        <div className={cn("flex items-center gap-4 text-muted-foreground text-sm", isMobile && "gap-3")}>
           {elapsedTimeMs !== null && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1090,7 +1089,7 @@ function EncounterDetail({
                     )}
                   </TabsTrigger>
                 </TabsList>
-                {showHints && (
+                {showHints && !isMobile && (
                   <HintTooltip>
                     <TooltipTrigger asChild>
                       <button className="text-muted-foreground/50 hover:text-muted-foreground">
@@ -2326,11 +2325,14 @@ export function InstancePageView({
   );
   const trashGroups = groupTrashEncounters(instance.encounters);
 
-  const totalDuration = instance.endTime
-    ? formatDuration(instance.startTime, instance.endTime)
+  const headerBg = getInstanceBackground(instance.name);
+
+  const elapsedDurationMs = instance.endTime
+    ? new Date(instance.endTime).getTime() - new Date(instance.startTime).getTime()
     : null;
+  const totalDuration = elapsedDurationMs !== null ? formatDurationMs(elapsedDurationMs) : null;
     
-  // Compute total duration for explainer view
+  // Compute total combat duration for selected encounters (used by explainer/panels)
   const totalDurationMs = useMemo(() => {
     return selectedEncounters.reduce((acc, enc) => {
       const start = new Date(enc.start_time).getTime();
@@ -2338,6 +2340,15 @@ export function InstancePageView({
       return acc + (end - start);
     }, 0);
   }, [selectedEncounters]);
+
+  // Instance-wide combat duration (all encounters, for header)
+  const instanceCombatDurationMs = useMemo(() => {
+    return instance.encounters.reduce((acc, enc) => {
+      const start = new Date(enc.start_time).getTime();
+      const end = new Date(enc.end_time).getTime();
+      return acc + (end - start);
+    }, 0);
+  }, [instance.encounters]);
   
   // Build panel context for explainer view
   const explainerPanelContext: PanelContext = useMemo(() => ({
@@ -2371,134 +2382,220 @@ export function InstancePageView({
       isMobile ? "px-2" : "px-4"
     )}>
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{instance.name}</h1>
-            <p className="text-muted-foreground text-sm">
-              {instance.guild && (
-                <Link to={`/g/${instance.guild.id}`} className="text-amber-500 hover:underline">&lt;{instance.guild.name}&gt;</Link>
+      <div className="mb-6 rounded-lg border relative">
+        {/* Background image */}
+        {headerBg && (
+          <div className="absolute inset-0 z-0 rounded-lg overflow-hidden">
+            <img
+              src={headerBg}
+              alt=""
+              className="h-full w-full object-cover opacity-70"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/50" />
+          </div>
+        )}
+        {/* Content */}
+        <div className={cn("relative z-10", isMobile ? "p-3" : "p-4")}>
+        {/* Row 1: Title (+ mobile menu only) */}
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>{instance.name}</h1>
+          {isMobile && (
+            <div className="flex items-center gap-2 shrink-0">
+              <InstanceMenu
+                onImportLayout={handleImportLayout}
+                onResetView={resetView}
+                onOpenTimeRange={onOpenTimeRange}
+                instanceId={instance.id}
+                logDetailUrl={logDetailUrl}
+                layoutLabUrl={activeLayoutId ? `/account/layout-lab?layoutId=${activeLayoutId}` : undefined}
+                isMobile={isMobile}
+                isLoggedIn={isLoggedIn}
+                onShareWithLayout={() => { void handleShareView(); }}
+                onShareWithoutLayout={() => { void handleShareWithoutLayout(); }}
+                youtubeButton={youtubeButton}
+                showHints={showHints}
+                onOpenHelp={() => setHelpOpen(true)}
+              />
+              {showHints && (
+                <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
               )}
-              {instance.guild && instance.realm && " • "}
+            </div>
+          )}
+        </div>
+
+        {/* Row 2: Metadata */}
+        {isMobile ? (
+          <div className="text-muted-foreground text-sm">
+            {instance.guild && (
+              <p>
+                <Link to={`/g/${instance.guild.id}`} className="text-amber-500 hover:underline">&lt;{instance.guild.name}&gt;</Link>
+              </p>
+            )}
+            <p>
               {instance.realm && `${instance.realm}`}
-              {(instance.guild || instance.realm) && " • "}
+              {instance.realm && " • "}
               {formatTime(instance.startTime)}
-              {totalDuration && ` • ${totalDuration}`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {instance.guild && (
+              <Link to={`/g/${instance.guild.id}`} className="text-amber-500 hover:underline">&lt;{instance.guild.name}&gt;</Link>
+            )}
+            {instance.guild && instance.realm && " • "}
+            {instance.realm && `${instance.realm}`}
+            {(instance.guild || instance.realm) && " • "}
+            {formatTime(instance.startTime)}
+          </p>
+        )}
+
+        {/* Row 3: Duration stats + action buttons (desktop) */}
+        <div className={cn("flex items-center justify-between mt-1", isMobile && "gap-3")}>
+          <div className={cn("flex items-center gap-4 text-muted-foreground text-sm", isMobile && "gap-3")}>
+            {totalDuration && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <span onContextMenu={handleShareButtonContextMenu}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        disabled={!isLoggedIn}
-                      >
-                        <Share2 className="h-4 w-4" />
-                        Share
-                      </Button>
-                    </span>
-                  </DropdownMenuTrigger>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{totalDuration}</span>
+                    <span className="text-xs opacity-60">elapsed</span>
+                  </div>
                 </TooltipTrigger>
-                {!isLoggedIn && <TooltipContent>You must be logged in to share</TooltipContent>}
+                <TooltipContent>Total time from first encounter start to last encounter end</TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => {
-                    void handleShareView();
-                  }}
-                >
-                  Share with layout
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    void handleShareWithoutLayout();
-                  }}
-                >
-                  Share without layout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {youtubeButton}
-            {shareContextMenu && (
-              <div
-                className="fixed z-[120] min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-                style={{ left: shareContextMenu.x, top: shareContextMenu.y }}
-              >
-                <button
-                  type="button"
-                  disabled={!isLoggedIn}
-                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
-                  onClick={() => {
-                    setShareContextMenu(null);
-                    void handleShareView();
-                  }}
-                >
-                  Share
-                </button>
-                <button
-                  type="button"
-                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => {
-                    setShareContextMenu(null);
-                    importStateFromJSON();
-                  }}
-                >
-                  Import from JSON
-                </button>
-                <button
-                  type="button"
-                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => {
-                    setShareContextMenu(null);
-                    void copyStateToClipboard();
-                  }}
-                >
-                  Copy to clipboard
-                </button>
-              </div>
             )}
-            {showHints && !isMobile && (
-              <>
-                <div className="relative">
-                  <Button
-                    variant={hasSeenHelp ? "ghost" : "default"}
-                    size="sm"
-                    className={cn(
-                      "gap-1.5",
-                      !hasSeenHelp && "animate-bounce shadow-lg shadow-primary/25"
-                    )}
-                    onClick={() => setHelpOpen(true)}
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                    <span className="hidden sm:inline">Help</span>
-                    {!hasSeenHelp && (
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
-                      </span>
-                    )}
-                  </Button>
-                </div>
-                <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
-              </>
+            {instanceCombatDurationMs > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{formatDurationMs(instanceCombatDurationMs)}</span>
+                    <span className="text-xs opacity-60">combat</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Sum of all encounter durations (active combat time)</TooltipContent>
+              </Tooltip>
             )}
-            {/* Hamburger menu with layout options + view log */}
-            <InstanceMenu
-              onImportLayout={handleImportLayout}
-              onResetView={resetView}
-              onOpenTimeRange={onOpenTimeRange}
-              instanceId={instance.id}
-              logDetailUrl={logDetailUrl}
-              layoutLabUrl={activeLayoutId ? `/account/layout-lab?layoutId=${activeLayoutId}` : undefined}
-            />
           </div>
+          {!isMobile && (
+            <div className="flex items-center gap-2 shrink-0">
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <span onContextMenu={handleShareButtonContextMenu}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          disabled={!isLoggedIn}
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Share
+                        </Button>
+                      </span>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  {!isLoggedIn && <TooltipContent>You must be logged in to share</TooltipContent>}
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      void handleShareView();
+                    }}
+                  >
+                    Share with layout
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      void handleShareWithoutLayout();
+                    }}
+                  >
+                    Share without layout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {youtubeButton}
+              {showHints && (
+                <>
+                  <div className="relative">
+                    <Button
+                      variant={hasSeenHelp ? "ghost" : "default"}
+                      size="sm"
+                      className={cn(
+                        "gap-1.5",
+                        !hasSeenHelp && "animate-bounce shadow-lg shadow-primary/25"
+                      )}
+                      onClick={() => setHelpOpen(true)}
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Help</span>
+                      {!hasSeenHelp && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                  <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
+                </>
+              )}
+              <InstanceMenu
+                onImportLayout={handleImportLayout}
+                onResetView={resetView}
+                onOpenTimeRange={onOpenTimeRange}
+                instanceId={instance.id}
+                logDetailUrl={logDetailUrl}
+                layoutLabUrl={activeLayoutId ? `/account/layout-lab?layoutId=${activeLayoutId}` : undefined}
+              />
+            </div>
+          )}
+        </div>
         </div>
       </div>
+
+      {isMobile && <hr className="border-border mb-4" />}
+
+      {/* Share context menu (right-click) */}
+      {shareContextMenu && (
+        <div
+          className="fixed z-[120] min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          style={{ left: shareContextMenu.x, top: shareContextMenu.y }}
+        >
+          <button
+            type="button"
+            disabled={!isLoggedIn}
+            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => {
+              setShareContextMenu(null);
+              void handleShareView();
+            }}
+          >
+            Share
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              setShareContextMenu(null);
+              importStateFromJSON();
+            }}
+          >
+            Import from JSON
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              setShareContextMenu(null);
+              void copyStateToClipboard();
+            }}
+          >
+            Copy to clipboard
+          </button>
+        </div>
+      )}
 
       {actionBarOpen && (
         <div className="fixed bottom-5 left-0 right-0 z-[80] flex justify-center px-2 sm:left-1/2 sm:right-auto sm:w-auto sm:-translate-x-1/2 sm:px-0">

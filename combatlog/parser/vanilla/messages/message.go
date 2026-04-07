@@ -250,13 +250,13 @@ func (*Clock) isMessage()            {}
 
 type ResourceChange struct {
 	MessageBase
-	Target    guid.GUID
+	Target       guid.GUID
 	Amount       int32
 	OverResource int32
 	Resource     types.Resource
-	Caster    *guid.GUID
-	SpellName *string
-	SpellData *chrondbc.Spell
+	Caster       *guid.GUID
+	SpellName    *string
+	SpellData    *chrondbc.Spell
 	// 10/29 22:12:55.926  Naga (Kryaa) gains 35 Happiness from Kryaa 's Feed Pet Effect.
 	// 10/17 21:36:12.823  Sfantu 's Nosferatu loses 52 happiness.
 	Direction types.ChangeDirection
@@ -566,3 +566,13 @@ type UnitClassificationEvent struct {
 
 func (u *UnitClassificationEvent) Affects() []guid.GUID { return []guid.GUID{u.Target} }
 func (*UnitClassificationEvent) isMessage()             {}
+
+type Dispel struct {
+	MessageBase
+	Caster guid.GUID
+	Target guid.GUID
+	Spell  *chrondbc.Spell
+}
+
+func (d Dispel) Affects() []guid.GUID { return []guid.GUID{d.Caster, d.Target} }
+func (*Dispel) isMessage()            {}

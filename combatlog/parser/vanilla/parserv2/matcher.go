@@ -801,6 +801,23 @@ func (p *Parser) slain(_ context.Context, ts time.Time, m *Matched) ([]messages.
 	})
 }
 
+func (p *Parser) dispel(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	caster := m.Guid()
+	target := m.Guid()
+	spell := m.DBCSpellByID(p)
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	return set(&messages.Dispel{
+		MessageBase: messages.Base(ts),
+		Caster:      caster,
+		Target:      target,
+		Spell:       spell,
+	})
+}
+
 func set(m ...messages.Message) ([]messages.Message, error) {
 	return m, nil
 }

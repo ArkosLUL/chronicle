@@ -116,6 +116,8 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.envDmg(ctx, ts, m)
 	case "DMG_SHIELD":
 		return p.dmgShield(ctx, ts, m)
+  case "DISPEL":
+    return p.dispel(ctx, ts, m)
 	}
 
 	return messages.Unparsed(ts, next), nil

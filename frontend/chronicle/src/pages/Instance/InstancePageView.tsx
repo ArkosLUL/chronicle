@@ -2536,7 +2536,7 @@ export function InstancePageView({
           </div>
           {!isMobile && (
             <div className="flex items-center gap-2 shrink-0">
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>

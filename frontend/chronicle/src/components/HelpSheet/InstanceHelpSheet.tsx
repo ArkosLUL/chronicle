@@ -99,7 +99,7 @@ const FEATURE_MAP: FeatureCategory[] = [
         id: "encounter-sidebar",
         label: "Encounter Sidebar",
         selector: "[data-help-encounter-sidebar]",
-        description: "Select encounters to analyze. Ctrl/⌘+click to select multiple. Trash encounters are grouped by mob type.",
+        description: "Select encounters to analyze. Ctrl+click to select multiple. Trash encounters are grouped by mob type.",
       },
       {
         id: "quick-select",

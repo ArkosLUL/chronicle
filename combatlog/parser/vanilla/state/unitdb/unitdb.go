@@ -132,6 +132,13 @@ func (us *Units) GetPlayer(gid guid.GUID) (combatant.Combatant, bool) {
 }
 
 func (us *Units) Update(u unitinfo.Info) {
+	if u.Name == "" {
+		// Do no overwrite an existing entry if this one is missing a name.
+		_, exists := us.Info[u.Guid]
+		if exists {
+			return
+		}
+	}
 	us.Info[u.Guid] = u
 }
 

@@ -1,6 +1,7 @@
 package synthetic
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/traps"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
@@ -33,9 +34,10 @@ func (s *knownObjects) objectSeen(m *messages.Unit) []messages.Message {
 		return nil
 	}
 
-	switch entry {
-	case 181102:
-		// Lightwell has the owner in the charm field.
+	_, isTrap := traps.IsTrap(m.Guid)
+	switch {
+	case entry == 181102, isTrap:
+		// Lightwell & traps have the owner in the charm field.
 		if m.Owner == nil && m.Charm != nil {
 			m.Owner = m.Charm
 			// A unit classification event will be emitted from this NewOwner

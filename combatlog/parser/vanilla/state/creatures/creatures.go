@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/critters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/traps"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/warlockdemon"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
@@ -203,6 +204,9 @@ func (s *Creatures) Zone(z messages.Zone) {
 
 func (s *Creatures) Skip(id guid.GUID) bool {
 	if _, ok := totems.IsTotem(id); ok {
+		return true
+	}
+	if _, ok := traps.IsTrap(id); ok {
 		return true
 	}
 	if _, ok := warlockdemon.IsWarlockDemon(id); ok {

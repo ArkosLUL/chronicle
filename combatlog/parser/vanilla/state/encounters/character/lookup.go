@@ -17,7 +17,7 @@ var characterFactories = []characterFactory{
 	// Global
 	NewTotemCharacter,
 	NewCritterCharacter,
-	NewLightwell,
+	NewObject,
 	// Wailing Caverns,
 	NewDiscipleOfNaralex,
 	// Deadmines

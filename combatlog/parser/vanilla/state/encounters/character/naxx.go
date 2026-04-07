@@ -81,6 +81,8 @@ func NewThaddiusParty(id guid.GUID, all *Characters) (Character, bool) {
 		return nil, false
 	}
 
+	// TODO: If a stalagg or feugen exists and we are one, kill the previous
+
 	return &ThaddiusParty{
 		Common: NewCommonCharacter(id, all),
 		all:    all,
@@ -95,7 +97,12 @@ func (c *ThaddiusParty) Process(m messages.Message) error {
 	}
 
 	c.maybeFinalizePendingDeath(m)
-	return processCommonActivity(c, m)
+	err := processCommonActivity(c, m)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *ThaddiusParty) Died(reason string, m messages.Message) {

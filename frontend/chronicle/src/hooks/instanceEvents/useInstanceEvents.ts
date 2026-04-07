@@ -42,6 +42,9 @@ function getSchemaForType(type: StreamType): DescMessage {
     case "unit_classification":
       // unit_classification uses fast cursor path, not schema-based
       return null as unknown as DescMessage;
+    case "dispel":
+      // dispel has no proto schema yet
+      return null as unknown as DescMessage;
     default: {
       const _exhaustive: never = type;
       throw new Error(`Unknown stream type: ${_exhaustive}`);

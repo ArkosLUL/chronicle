@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Timer, Shield } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Timer, Shield, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -28,15 +28,17 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   damage: { icon: Swords, color: "text-red-500", label: "Damage" },
   heal: { icon: Heart, color: "text-green-500", label: "Healing" },
   resource_change: { icon: Zap, color: "text-yellow-500", label: "Resource" },
-  extra_attack: { icon: Swords, color: "text-orange-500", label: "Extra Attack" },
+  extra_attack: { icon: CircleFadingPlus, color: "text-orange-500", label: "Extra Attack" },
   slain: { icon: Skull, color: "text-gray-500", label: "Slain" },
-  cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
   aura: { icon: Sparkles, color: "text-cyan-500", label: "Aura" },
   spell_go: { icon: Crosshair, color: "text-amber-500", label: "Spell Go" },
-  aura_cast: { icon: Timer, color: "text-teal-500", label: "Aura Cast" },
-  spell_start: { icon: Crosshair, color: "text-lime-500", label: "Spell Start" },
-  spell_fail: { icon: Crosshair, color: "text-red-400", label: "Spell Fail" },
-  unit_classification: { icon: Shield, color: "text-indigo-500", label: "Classification" },
+  aura_cast: { icon: WandSparkles, color: "text-teal-500", label: "Aura Cast" },
+  spell_start: { icon: Play, color: "text-lime-500", label: "Spell Start" },
+  spell_fail: { icon: CircleX, color: "text-red-400", label: "Spell Fail" },
+  unit_classification: { icon: Search, color: "text-indigo-500", label: "Classification" },
+  dispel: { icon: Bubbles, color: "text-violet-400", label: "Dispel" },
+
+  cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
 };
 // --- Panel option encode/decode helpers for state persistence ---
 
@@ -47,6 +49,7 @@ const STREAM_CODES: Record<StreamType, string> = {
   aura: "a", slain: "x", spell_go: "g", aura_cast: "u", spell_start: "ss", spell_fail: "sf",
   extra_attack: "e",
   unit_classification: "uc",
+  dispel: "dp",
 };
 const CODE_TO_STREAM = Object.fromEntries(
   Object.entries(STREAM_CODES).map(([k, v]) => [v, k as StreamType]),
@@ -407,12 +410,12 @@ function AllActivityContent({
 }: AllActivityContentProps) {
   
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], dispel: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, dispel: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,
@@ -437,6 +440,7 @@ function AllActivityContent({
     ...rawEventsByStream.aura_cast,
     ...rawEventsByStream.extra_attack,
     ...rawEventsByStream.unit_classification,
+    ...rawEventsByStream.dispel,
   ];
   
   // Sort by encounter first, then by index within encounter to reconstruct true event order
@@ -456,7 +460,12 @@ function AllActivityContent({
       {/* Stream toggles and ability filter */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Streams:</span>
-        {(["damage", "heal", "resource_change", "extra_attack", "aura", "slain", "spell_go", "aura_cast", "spell_start", "spell_fail", "unit_classification"] as StreamType[]).map((stream) => (
+        {([
+          "damage", "heal", "resource_change", "extra_attack", "slain",
+          "aura", "aura_cast",
+          "spell_start", "spell_go", "spell_fail",
+          "unit_classification", "dispel"
+        ] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}
             streamType={stream}

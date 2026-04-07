@@ -284,7 +284,16 @@ export interface UnitClassificationProcessorEvent extends EventMeta {
 }
 
 
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent;
+export interface DispelProcessorEvent extends EventMeta {
+  type: "dispel";
+  caster: string;        // The unit performing the dispel
+  target: string;        // The unit whose aura was removed
+  spellId: number | null;
+  spellAttackOutcome: number | null;
+  dispelType: number;    // 0=None, 1=Magic, 2=Curse, 3=Disease, 4=Poison, 5=Stealth, 6=Invisibility
+}
+
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | DispelProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

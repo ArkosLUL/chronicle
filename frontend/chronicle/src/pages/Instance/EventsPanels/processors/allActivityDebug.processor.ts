@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent, ExtraAttackProcessorEvent, UnitClassificationProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent, ExtraAttackProcessorEvent, UnitClassificationProcessorEvent, DispelProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -78,14 +78,14 @@ export interface AllActivityDebugState {
 }
 
 // This processor handles damage, heal, resource_change, cast, aura, slain, spell_go, and aura_cast events
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | ExtraAttackProcessorEvent | UnitClassificationProcessorEvent;
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | ExtraAttackProcessorEvent | UnitClassificationProcessorEvent | DispelProcessorEvent;
 
 // Default page size if no pagination specified
 const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast", "extra_attack", "unit_classification"],
+  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast", "extra_attack", "unit_classification", "dispel"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -98,7 +98,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: [],
       aura: [],
       spell_go: [],
-      aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [],
+      aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], dispel: [],
     },
     streamCounts: {
       damage: 0,
@@ -109,7 +109,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: 0,
       aura: 0,
       spell_go: 0,
-      aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0,
+      aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, dispel: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
     totalProcessed: 0,
@@ -188,6 +188,8 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
         abilityName = extraEvent.sourceName;
       } else if (streamType === "unit_classification") {
         abilityName = "Classification";
+      } else if (streamType === "dispel") {
+        abilityName = "Dispel";
       } else {
         const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
         abilityName = regularEvent.sourceName;
@@ -298,6 +300,9 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     } else if (streamType === "unit_classification") {
       sourceName = "Classification";
       amount = 0;
+    } else if (streamType === "dispel") {
+      sourceName = "Dispel";
+      amount = 0;
     } else {
       const regularEvent = event as DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent;
       sourceName = regularEvent.sourceName;
@@ -386,6 +391,11 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     } else if (streamType === "extra_attack") {
       const extraEvent = event as ExtraAttackProcessorEvent;
       rawEvent.extra = `extra attacks=${extraEvent.amount}`;
+    } else if (streamType === "dispel") {
+      const dispelEvent = event as DispelProcessorEvent;
+      const dispelTypeNames = ["None", "Magic", "Curse", "Disease", "Poison", "Stealth", "Invisibility"];
+      rawEvent.extra = `type=${dispelTypeNames[dispelEvent.dispelType] || "Unknown"}`;
+      if (dispelEvent.spellId) rawEvent.spellId = dispelEvent.spellId;
     } else if (streamType === "unit_classification") {
       const ucEvent = event as UnitClassificationProcessorEvent;
       rawEvent.affiliation = ucEvent.affiliation;

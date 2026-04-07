@@ -10,7 +10,7 @@ import (
 // ENUM(UNKNOWN,TRASH,BOSS)
 type EncounterType string
 
-// ENUM(fall,lava)
+// ENUM(fatigue,drowning,fall,lava,slime,fire)
 type EnvironmentType string
 
 // ENUM(Gain,Loss)

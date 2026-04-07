@@ -248,10 +248,18 @@ func ParseEncounterType(name string) (EncounterType, error) {
 }
 
 const (
+	// EnvironmentTypeFatigue is a EnvironmentType of type fatigue.
+	EnvironmentTypeFatigue EnvironmentType = "fatigue"
+	// EnvironmentTypeDrowning is a EnvironmentType of type drowning.
+	EnvironmentTypeDrowning EnvironmentType = "drowning"
 	// EnvironmentTypeFall is a EnvironmentType of type fall.
 	EnvironmentTypeFall EnvironmentType = "fall"
 	// EnvironmentTypeLava is a EnvironmentType of type lava.
 	EnvironmentTypeLava EnvironmentType = "lava"
+	// EnvironmentTypeSlime is a EnvironmentType of type slime.
+	EnvironmentTypeSlime EnvironmentType = "slime"
+	// EnvironmentTypeFire is a EnvironmentType of type fire.
+	EnvironmentTypeFire EnvironmentType = "fire"
 )
 
 var ErrInvalidEnvironmentType = errors.New("not a valid EnvironmentType")
@@ -269,8 +277,12 @@ func (x EnvironmentType) IsValid() bool {
 }
 
 var _EnvironmentTypeValue = map[string]EnvironmentType{
-	"fall": EnvironmentTypeFall,
-	"lava": EnvironmentTypeLava,
+	"fatigue":  EnvironmentTypeFatigue,
+	"drowning": EnvironmentTypeDrowning,
+	"fall":     EnvironmentTypeFall,
+	"lava":     EnvironmentTypeLava,
+	"slime":    EnvironmentTypeSlime,
+	"fire":     EnvironmentTypeFire,
 }
 
 // ParseEnvironmentType attempts to convert a string to a EnvironmentType.

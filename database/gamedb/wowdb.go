@@ -120,6 +120,10 @@ func (w *WoWDB) RangeSpells(f func(*chrondbc.Spell) bool) error {
 }
 
 func (w *WoWDB) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
+	if envSpell, ok := customSpells[id]; ok {
+		return &envSpell, nil
+	}
+
 	if sp, ok := w.spellLRU.Get(id); ok {
 		return sp.Spell, sp.Error
 	}

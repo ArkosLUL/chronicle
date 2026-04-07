@@ -112,6 +112,10 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.energize(ctx, ts, m)
 	case "AURA_CAST":
 		return p.auraCast(ctx, ts, m)
+	case "ENV_DMG":
+		return p.envDmg(ctx, ts, m)
+	case "DMG_SHIELD":
+		return p.dmgShield(ctx, ts, m)
 	}
 
 	return messages.Unparsed(ts, next), nil

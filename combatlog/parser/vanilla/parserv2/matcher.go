@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
@@ -436,6 +437,131 @@ func (p *Parser) spellMiss(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		School:          school,
 		Trailer:         nil,
 		EnvironmentType: nil,
+	})
+}
+
+func (p *Parser) dmgShield(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	caster := m.Guid()
+	target := m.Guid()
+	damage := m.Int32()
+	school := m.School()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	var spellID chrondbc.SpellID
+	switch school {
+	case types.PhysicalSchool:
+		spellID = gamedb.ReflectPhysical
+	case types.HolySchool:
+		spellID = gamedb.ReflectHoly
+	case types.FireSchool:
+		spellID = gamedb.ReflectFire
+	case types.NatureSchool:
+		spellID = gamedb.ReflectNature
+	case types.FrostSchool:
+		spellID = gamedb.ReflectFrost
+	case types.ShadowSchool:
+		spellID = gamedb.ReflectShadow
+	default:
+		return nil, fmt.Errorf("unknown school type: %d", school)
+	}
+
+	spell, err := p.wowDB.Spell(spellID)
+	if err != nil {
+		return nil, fmt.Errorf("fetching environment spell: %w", err)
+	}
+
+	return set(&messages.Damage{
+		MessageBase: messages.Base(ts),
+		Caster:      ptr.Ref(caster),
+		SpellName:   ptr.Ref(spell.Name()),
+		SpellData:   spell,
+		Target:      target,
+		HitType:     types.HitTypeHit,
+		Amount:      damage,
+		School:      school,
+	})
+}
+
+func (p *Parser) envDmg(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	target := m.Guid()
+	dmgType := m.Int32()
+	damage := m.Int32()
+	absorbed := m.Int32()
+	resisted := m.Int32()
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	var trailer types.Trailer
+	if absorbed > 0 {
+		trailer = append(trailer, types.TrailerEntry{
+			Amount:  ptr.Ref(uint32(absorbed)),
+			HitType: types.HitTypePartialAbsorb,
+		})
+	}
+
+	if resisted > 0 {
+		trailer = append(trailer, types.TrailerEntry{
+			Amount:  ptr.Ref(uint32(resisted)),
+			HitType: types.HitTypePartialResist,
+		})
+	}
+
+	var spellID chrondbc.SpellID
+	var envType types.EnvironmentType
+	var school types.School
+	switch dmgType {
+	case 0: // Fatigue
+		envType = types.EnvironmentTypeFatigue
+		school = types.PhysicalSchool
+		spellID = gamedb.EnvironmentFatigue
+	case 1: // Drowning
+		envType = types.EnvironmentTypeDrowning
+		school = types.PhysicalSchool
+		spellID = gamedb.EnvironmentDrowning
+	case 2: // Falling
+		envType = types.EnvironmentTypeFall
+		school = types.PhysicalSchool
+		spellID = gamedb.EnvironmentFalling
+	case 3: // Lava
+		envType = types.EnvironmentTypeLava
+		spellID = 16455
+		school = types.FireSchool
+	case 4: // Slime
+		envType = types.EnvironmentTypeSlime
+		spellID = 16456
+		school = types.NatureSchool
+	case 5: // Fire
+		envType = types.EnvironmentTypeFire
+		school = types.FireSchool
+		spellID = gamedb.EnvironmentFire
+	case 6: // Fall to void
+		envType = types.EnvironmentTypeFall
+		school = types.PhysicalSchool
+		spellID = gamedb.EnvironmentFalling
+	default:
+		return nil, fmt.Errorf("unknown environment damage type: %d", dmgType)
+	}
+
+	spell, err := p.wowDB.Spell(spellID)
+	if err != nil {
+		return nil, fmt.Errorf("fetching environment spell: %w", err)
+	}
+
+	return set(&messages.Damage{
+		MessageBase:     messages.Base(ts),
+		SpellName:       ptr.Ref(spell.Name()),
+		SpellData:       spell,
+		Target:          target,
+		HitType:         types.HitTypeEnvironment,
+		Amount:          damage,
+		School:          school,
+		Trailer:         trailer,
+		EnvironmentType: &envType,
 	})
 }
 

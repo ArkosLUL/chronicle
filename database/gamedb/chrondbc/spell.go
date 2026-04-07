@@ -232,6 +232,8 @@ func (s Spell) SpellDamageType() SpellDamageType {
 
 	for i, eff := range s.Effect {
 		switch eff {
+		case EffectEnvironmentalDMG:
+			base |= SpellDamageNoEngageCombat
 		case EffectOpenLock:
 			base |= SpellDamageNoEngageCombat
 		case EffectDistract:

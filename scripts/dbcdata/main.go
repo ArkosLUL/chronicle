@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 	"github.com/Emyrk/chronicle/scripts/dbcdata/cli"
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
@@ -103,9 +104,11 @@ func demo() *serpent.Command {
 			}
 
 			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
-				if cursor.ID == 12328 {
-					d, _ := json.Marshal(cursor)
-					fmt.Println(string(d))
+				sp := chrondbc.SpellFromDB(cursor)
+				for _, eff := range sp.Effect {
+					if eff == chrondbc.EffectEnvironmentalDMG {
+						fmt.Println(cursor.ID, cursor.Name_lang.String())
+					}
 				}
 
 				//sp := chrondbc.SpellFromDB(cursor)

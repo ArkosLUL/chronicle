@@ -949,9 +949,9 @@ export interface WoWEncounterWithHostiles extends WoWEncounter {
 }
 
 // From types/constants.go
-export type WoWEnvironmentType = "fall" | "lava";
+export type WoWEnvironmentType = "drowning" | "fall" | "fatigue" | "fire" | "lava" | "slime";
 
-export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["fall", "lava"];
+export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["drowning", "fall", "fatigue", "fire", "lava", "slime"];
 
 // From chroniclesdk/constants.go
 export type WoWEventType = "aura" | "aura_cast" | "cast" | "damage" | "extra_attack" | "heal" | "resource_change" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";

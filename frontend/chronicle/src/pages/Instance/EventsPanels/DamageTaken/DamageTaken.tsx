@@ -58,8 +58,12 @@ export function createDamageTakenPanel(
 
   // Default source filters — pre-populated, removable by user.
   const defaultFilters: PanelFilter[] = targetType === "enemies"
-    ? []
-    : [];
+    ? [
+      { type: "source_type" as const, value: "selected_players", applyTo: dmg },
+    ]
+    : [
+      { type: "source_type" as const, value: "selected_enemies", applyTo: dmg },
+    ];
 
   return {
     ...config.processor,

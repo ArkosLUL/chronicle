@@ -132,12 +132,7 @@ export function createDamageTakenProcessor(
       state.EncounterDamage.set(encounterID, encounterDamage);
       
       // Breakouts - filter by entity selection
-      if(context.selectedEncounterIds.has(encounterID) &&
-        (
-          (targetType === "enemies" && (context.entitySelection.enemyIds.size == 0 || context.entitySelection.enemyIds.has(event.target))) ||
-          (targetType === "players" && (context.entitySelection.playerIds.size == 0 || context.entitySelection.playerIds.has(event.target)))
-        )
-      ) {
+      if(context.selectedEncounterIds.has(encounterID)) {
         let abilityName = event.sourceName || "Auto Attack";
         if (hasHitType(event.hitType, HitTypePeriodic)) {
           abilityName = abilityName + " (DoT)";

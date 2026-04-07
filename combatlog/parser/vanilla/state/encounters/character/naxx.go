@@ -1,6 +1,7 @@
 package character
 
 import (
+	"sync"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -63,6 +64,9 @@ type ThaddiusParty struct {
 
 	entry        uint32
 	pendingDeath *messages.Message
+
+	buggedPrevious guid.GUID
+	killBugged     sync.Once
 }
 
 func NewThaddiusParty(id guid.GUID, all *Characters) (Character, bool) {
@@ -75,22 +79,39 @@ func NewThaddiusParty(id guid.GUID, all *Characters) (Character, bool) {
 		return nil, false
 	}
 
+	var buggedPrevious guid.GUID
 	switch entry {
-	case thaddiusEntry, stalaggEntry, feugenEntry:
+	case thaddiusEntry:
+	case stalaggEntry, feugenEntry:
+		for _, o := range all.ByEntry[entry] {
+			if o.IsActive() {
+				buggedPrevious = o.ID()
+				break
+			}
+		}
 	default:
 		return nil, false
 	}
 
-	// TODO: If a stalagg or feugen exists and we are one, kill the previous
-
 	return &ThaddiusParty{
-		Common: NewCommonCharacter(id, all),
-		all:    all,
-		entry:  entry,
+		Common:         NewCommonCharacter(id, all),
+		all:            all,
+		entry:          entry,
+		buggedPrevious: buggedPrevious,
 	}, true
 }
 
 func (c *ThaddiusParty) Process(m messages.Message) error {
+	if !c.buggedPrevious.IsZero() {
+		c.killBugged.Do(func() {
+			prev, ok := c.all.Get(c.buggedPrevious)
+			if ok {
+				prev.Died("bugged_previous", m)
+			}
+			c.buggedPrevious = 0
+		})
+	}
+
 	cur, ok := c.Activity.Current()
 	if ok {
 		cur.HandleTimeout(m.Date())

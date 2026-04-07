@@ -347,7 +347,8 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
                   "border-b border-border/10",
                   event.type === "landed" && "bg-green-500/5",
                   event.type === "refreshed" && "bg-yellow-500/5",
-                  event.type === "failed" && "bg-red-500/5 opacity-50"
+                  event.type === "failed" && "bg-red-500/5 opacity-50",
+                  event.type === "armor_exposed" && "bg-red-500/5 opacity-50"
                 )}
               >
                 <td className="py-0.5 px-2 text-right font-mono">
@@ -357,9 +358,10 @@ function DebugBreakout({ target, onClose }: DebugBreakoutProps) {
                   "py-0.5 px-2",
                   event.type === "landed" && "text-green-400",
                   event.type === "refreshed" && "text-yellow-400",
-                  event.type === "failed" && "text-red-400"
+                  event.type === "failed" && "text-red-400",
+                  event.type === "armor_exposed" && "text-red-400"
                 )}>
-                  {event.type}
+                  {event.type === "armor_exposed" ? "armor exposed" : event.type}
                 </td>
                 <td className="py-0.5 px-2">
                   <span className="text-[var(--color-class-warrior)]">{event.casterName}</span>

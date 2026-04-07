@@ -10,8 +10,9 @@
  * - Which warriors contributed to each target's first 5 sunders
  */
 
-import type { PanelProcessor, AuraCastProcessorEvent, SpellGoProcessorEvent, AuraProcessorEvent, ProcessorContext, AuraState } from "../processorTypes";
+import type { PanelProcessor, AuraCastProcessorEvent, SpellGoProcessorEvent, AuraProcessorEvent, SlainProcessorEvent, ProcessorContext, AuraState } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
+import { createAuraProcessorState, applyAuraEvent, hasAura, type AuraProcessorState, type AuraRef } from "../processors/auraProcessor";
 
 /** Sunder Armor spell IDs (ranks 1-5) */
 const SUNDER_SPELL_IDS = new Set([7386, 7405, 8380, 11596, 11597]);
@@ -30,6 +31,9 @@ const AURA_STATE_REMOVED: AuraState = 2;
 
 /** Max stacks of Sunder Armor */
 const MAX_SUNDER_STACKS = 5;
+
+/** Exposed Armor aura reference — when present, sunders are wasted */
+const EXPOSED_ARMOR_AURA: AuraRef = { spellName: "Expose Armor" };
 
 /** Data for a sunder event (used for both effective and ineffective) */
 interface SunderEventData {
@@ -68,7 +72,7 @@ export interface SunderDebugEvent {
   /** Offset from encounter start in ms */
   offsetMs: number;
   /** Type of event */
-  type: "landed" | "refreshed" | "failed";
+  type: "landed" | "refreshed" | "failed" | "armor_exposed";
   /** Caster name */
   casterName?: string;
   /** Stack count (for landed/refreshed events) */
@@ -102,16 +106,18 @@ export interface SunderResult {
   _encounterStarts: Record<string, number>;
   /** Track current stack count per target */
   _targetStacks: Record<string, number>;
+  /** Aura tracking state for Exposed Armor detection */
+  _auraState: AuraProcessorState;
 }
 
-type SunderEvent = AuraCastProcessorEvent | SpellGoProcessorEvent | AuraProcessorEvent;
+type SunderEvent = AuraCastProcessorEvent | SpellGoProcessorEvent | AuraProcessorEvent | SlainProcessorEvent;
 
 /**
  * Sunder processor implementation.
  */
 export const sunderProcessor: PanelProcessor<SunderResult, SunderEvent> = {
   id: "sunder",
-  streams: ["aura_cast", "spell_go", "aura"] as StreamType[],
+  streams: ["aura_cast", "spell_go", "aura", "slain"] as StreamType[],
   
   createState: (): SunderResult => ({
     warriors: {},
@@ -119,6 +125,7 @@ export const sunderProcessor: PanelProcessor<SunderResult, SunderEvent> = {
     confirmedSunders: [],
     _encounterStarts: {},
     _targetStacks: {},
+    _auraState: createAuraProcessorState(),
   }),
   
   processEvent: (
@@ -139,6 +146,11 @@ export const sunderProcessor: PanelProcessor<SunderResult, SunderEvent> = {
     }
     
     const timestampMs = encounterStartMs + event.offsetMilli;
+    
+    // Feed aura/slain events to aura tracker for Exposed Armor detection
+    if ((streamType === "aura" && event.type === "aura") || (streamType === "slain" && event.type === "slain")) {
+      applyAuraEvent(state._auraState, encounterID, event);
+    }
     
     if (streamType === "aura_cast" && event.type === "aura_cast") {
       processAuraCastEvent(state, event, timestampMs, encounterID, context);
@@ -192,6 +204,35 @@ function processAuraCastEvent(
   // Calculate offset from encounter start for debug
   const encounterStartMs = state._encounterStarts[encounterId] ?? timestampMs;
   const offsetMs = timestampMs - encounterStartMs;
+  
+  // Check if target has Exposed Armor — sunders are wasted
+  if (hasAura(state._auraState, encounterId, event.target, EXPOSED_ARMOR_AURA)) {
+    if (!(event.target in state.targets)) {
+      state.targets[event.target] = {
+        guid: event.target,
+        name: targetName,
+        encounterId,
+        timeToFiveStacksMs: null,
+        first5Contributors: [],
+        totalSunders: 0,
+        debugEvents: [],
+      };
+    }
+    state.targets[event.target].debugEvents.push({
+      offsetMs,
+      type: "armor_exposed",
+      casterName,
+    });
+    recordFailedSunder(state, {
+      timestampMs,
+      casterGuid: event.caster,
+      casterName,
+      targetGuid: event.target,
+      targetName,
+      encounterId,
+    });
+    return;
+  }
   
   // Ensure target exists
   if (!(event.target in state.targets)) {
@@ -259,12 +300,15 @@ function processAuraEvent(
   state: SunderResult,
   event: AuraProcessorEvent,
 ): void {
-  // Only process Sunder Armor removal
-  if (event.state !== AURA_STATE_REMOVED) return;
-  if (event.spellName !== SUNDER_ARMOR_SPELL_NAME) return;
+  // Reset sunder stacks when Sunder Armor is removed
+  if (event.state === AURA_STATE_REMOVED && event.spellName === SUNDER_ARMOR_SPELL_NAME) {
+    delete state._targetStacks[event.target];
+  }
   
-  // Reset stack count for this target
-  delete state._targetStacks[event.target];
+  // Reset sunder stacks when Exposed Armor is applied (mutually exclusive — sunders drop)
+  if (event.spellName === "Expose Armor" && event.state !== AURA_STATE_REMOVED) {
+    delete state._targetStacks[event.target];
+  }
 }
 
 /**

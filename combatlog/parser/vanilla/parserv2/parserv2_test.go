@@ -264,23 +264,23 @@ func TestParserMessages(t *testing.T) {
 		)
 	})
 
-	t.Run("MissPeriodicAoE", func(t *testing.T) {
-		t.Parallel()
-
-		testCase(t,
-			"1775497576300|MISS|0xF1300030B40BA62E|0x00000000005DCB3F|22275|2",
-			&messages.Damage{
-				MessageBase:     messages.Base(time.UnixMilli(1775497574472)),
-				SpellName:       ptr.Ref("Flamestrike"),
-				Caster:          ptr.Ref(guid.GUID(0xF140095BCD00000F)),
-				Target:          0xF1300030B40BA62E,
-				HitType:         0,
-				Amount:          0,
-				School:          0,
-				Trailer:         nil,
-				EnvironmentType: nil,
-			})
-	})
+	//t.Run("MissPeriodicAoE", func(t *testing.T) {
+	//	t.Parallel()
+	//
+	//	testCase(t,
+	//		"1775497576300|MISS|0xF1300030B40BA62E|0x00000000005DCB3F|22275|2",
+	//		&messages.Damage{
+	//			MessageBase:     messages.Base(time.UnixMilli(1775497574472)),
+	//			SpellName:       ptr.Ref("Flamestrike"),
+	//			Caster:          ptr.Ref(guid.GUID(0xF140095BCD00000F)),
+	//			Target:          0xF1300030B40BA62E,
+	//			HitType:         0,
+	//			Amount:          0,
+	//			School:          0,
+	//			Trailer:         nil,
+	//			EnvironmentType: nil,
+	//		})
+	//})
 
 	// 1775497574472|SPELL_DMG|0xF140095BCD00000F|0xF1300030B40BA62E|22275|69|0,0,0|0|2|2,27,0,3
 

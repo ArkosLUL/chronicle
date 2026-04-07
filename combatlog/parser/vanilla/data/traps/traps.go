@@ -7,19 +7,19 @@ type Trap struct {
 	Name string
 }
 
-func IsTrap(id guid.GUID) (Trap, bool) {
+func IsTrap(id guid.GUID) (*Trap, bool) {
 	if id.IsPlayer() {
-		return Trap{}, false
+		return nil, false
 	}
 	entry, ok := id.GetEntry()
 	if !ok {
-		return Trap{}, false
+		return nil, false
 	}
 	trap, exists := trapMap[entry]
 	return trap, exists
 }
 
-var trapMap = map[uint32]Trap{}
+var trapMap = map[uint32]*Trap{}
 
 func init() {
 	register("Explosive Trap", 164839, 164879, 164880)
@@ -30,6 +30,6 @@ func init() {
 
 func register(name string, ids ...uint32) {
 	for _, id := range ids {
-		trapMap[id] = Trap{ID: id, Name: name}
+		trapMap[id] = &Trap{ID: id, Name: name}
 	}
 }

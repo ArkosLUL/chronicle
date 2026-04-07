@@ -76,7 +76,7 @@ func NewObject(id guid.GUID, all *Characters) (Character, bool) {
 
 func (c *Object) Process(m messages.Message) error {
 	if c.LastSlain != nil {
-		return nil // Totems can't be revived
+		return nil // Objects can't be revived
 	}
 
 	// Timeouts should be checked on every timestamp
@@ -105,7 +105,7 @@ func (c *Object) Process(m messages.Message) error {
 
 func (c *Object) Start(reason string, m messages.Message) {
 	if c.LastSlain != nil {
-		return // Totems can't be revived
+		return
 	}
 
 	c.Activity.Start(&ObjectPeriod{

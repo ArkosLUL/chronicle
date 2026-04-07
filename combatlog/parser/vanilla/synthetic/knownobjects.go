@@ -36,13 +36,13 @@ func (s *knownObjects) objectSeen(m *messages.Unit) []messages.Message {
 	switch entry {
 	case 181102:
 		// Lightwell has the owner in the charm field.
-		if m.Info.Owner == nil && m.Info.Charm != nil {
-			m.Info.Owner = m.Info.Charm
+		if m.Owner == nil && m.Charm != nil {
+			m.Owner = m.Charm
 			// A unit classification event will be emitted from this NewOwner
 			return []messages.Message{&messages.NewOwner{
 				MessageBase: messages.Base(m.Date()),
 				Target:      m.Guid,
-				NewOwner:    *m.Info.Charm,
+				NewOwner:    *m.Charm,
 			}}
 		}
 	}

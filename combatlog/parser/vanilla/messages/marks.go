@@ -1,5 +1,7 @@
 package messages
 
+import "github.com/Emyrk/chronicle/combatlog/parser/guid"
+
 const (
 	MarkTypeBump  MarkType = "bump"
 	MarkTypeStart MarkType = "start"
@@ -8,24 +10,23 @@ const (
 type MarkType string
 
 type Mark struct {
-	Type MarkType `json:"type"`
-	// Reason is for debugging
-	Reason string `json:"reason"`
+	Type    MarkType             `json:"type"`
+	Targets map[guid.GUID]string `json:"targets"`
 }
 
 type marks map[MarkType]Mark
 
-func (m *marks) MarkActivityStart(reason string) {
+func (m *marks) MarkActivityStart(reason string, target guid.GUID) {
 	m.MarkAdd(Mark{
-		Type:   MarkTypeStart,
-		Reason: reason,
+		Type:    MarkTypeStart,
+		Targets: map[guid.GUID]string{target: reason},
 	})
 }
 
-func (m *marks) MarkActivityBump(reason string) {
+func (m *marks) MarkActivityBump(reason string, target guid.GUID) {
 	m.MarkAdd(Mark{
-		Type:   MarkTypeBump,
-		Reason: reason,
+		Type:    MarkTypeBump,
+		Targets: map[guid.GUID]string{target: reason},
 	})
 }
 
@@ -33,6 +34,14 @@ func (m *marks) MarkAdd(mark Mark) {
 	if *m == nil {
 		*m = make(map[MarkType]Mark)
 	}
+
+	if existing, ok := (*m)[mark.Type]; ok {
+		for k, v := range mark.Targets {
+			existing.Targets[k] = v
+		}
+		return
+	}
+
 	(*m)[mark.Type] = mark
 }
 
@@ -40,10 +49,18 @@ func (m *marks) MarksExist() bool {
 	return m != nil && len(*m) > 0
 }
 
-func (m *marks) MarkHas(markType MarkType) (string, bool) {
+func (m *marks) MarkHas(markType MarkType, me guid.GUID) (string, bool) {
 	if *m == nil {
 		return "", false
 	}
-	reason, ok := (*m)[markType]
-	return reason.Reason, ok
+	mrk, ok := (*m)[markType]
+	if !ok {
+		return "", false
+	}
+
+	reason, ok := mrk.Targets[me]
+	if !ok {
+		return "", false
+	}
+	return reason, ok
 }

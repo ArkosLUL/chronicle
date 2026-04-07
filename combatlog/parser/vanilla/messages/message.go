@@ -43,7 +43,7 @@ type Message interface {
 	// Marks add custom behavior to messages.
 
 	MarksExist() bool
-	MarkHas(markType MarkType) (string, bool)
+	MarkHas(markType MarkType, me guid.GUID) (string, bool)
 }
 
 type MessageBase struct {
@@ -294,16 +294,25 @@ func (d Damage) RequiresActive() bool {
 		return !d.HitType.Has(types.HitTypePeriodic)
 	}
 
-	if d.SpellData.SpellDamageType().Has(chrondbc.SpellDamageNoEngageCombat) {
+	spd := d.SpellData.SpellDamageType()
+	if spd.Has(chrondbc.SpellDamageNoEngageCombat) {
 		return false
 	}
 
-	if !d.HitType.Has(types.HitTypePeriodic) {
-		return true
+	if spd.Has(chrondbc.SpellDamagePeriodic) &&
+		(d.HitType.Has(types.HitTypeFullResist) ||
+			d.HitType.Has(types.HitTypeImmune) ||
+			d.HitType.Has(types.HitTypeFullAbsorb)) {
+		// Periodic damage can "miss" and should not be counted as active.
+		return false
 	}
 
 	if d.SpellData.Attrs.Has(chrondbc.AttrEx_ChannelTrackTarget) ||
 		d.SpellData.Attrs.Has(chrondbc.AttrEx_Channeled1) {
+		return true
+	}
+
+	if !d.HitType.Has(types.HitTypePeriodic) {
 		return true
 	}
 

@@ -35,8 +35,10 @@ var characterFactories = []characterFactory{
 	NewRagnarosCharacter,
 	NewGolemaggCharacter,
 	// Blackwing Lair
+	NewBroodlordLashlayer,
 	NewRazorgore,
 	NewShadowflameSpark,
+	NewNefarian,
 	// Onyxia
 	NewOnyxiaCharacter,
 	// Zul'Gurub

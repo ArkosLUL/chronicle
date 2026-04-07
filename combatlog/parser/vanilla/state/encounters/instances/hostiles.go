@@ -728,8 +728,6 @@ func ScholomanceHostiles() map[uint32]Identity {
 func BlackwingLairHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
-		14263: "Bronze Drakonid",
-		14264: "Red Drakonid",
 		12464: "Death Talon Seether",
 		12468: "Death Talon Hatcher",
 		14022: "Corrupted Blue Whelp",
@@ -759,7 +757,10 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		50142: "Blackwing Marksman",
 		52153: "Death Talon Scorcher",
 		65151: "Shadowflame Spark",
+		14261: "Blue Drakonid",
 		14262: "Green Drakonid",
+		14263: "Bronze Drakonid",
+		14264: "Red Drakonid",
 		14265: "Black Drakonid",
 
 		14668: "Corrupted Infernal",

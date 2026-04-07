@@ -3751,6 +3751,272 @@ export class FastUnitClassificationCursor {
   }
 }
 
+export const DispelType = {
+  None: 0,
+  Magic: 1,
+  Curse: 2,
+  Disease: 3,
+  Poison: 4,
+  Stealth: 5,
+  Invisibility: 6,
+} as const;
+
+export type DispelType = (typeof DispelType)[keyof typeof DispelType];
+
+export interface ReusableDispel {
+  type: "dispel";
+  index: number;
+  offsetMilli: number;
+  caster: string;
+  target: string;
+  spellId: number | null;
+  spellAttackOutcome: number | null;
+  dispelType: DispelType;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
+}
+
+/**
+ * Zero-allocation Dispel decoder.
+ * 
+ * Dispel proto field numbers:
+ *   1: meta (EventMeta)
+ *   2: caster (string)
+ *   3: target (string)
+ *   4: spellData (SpellData) - nested: 1=id, 2=name, 3=attack_outcome
+ *   5: dispelType (DispelType enum)
+ */
+export class DispelDecoder {
+  private readonly textDecoder = sharedTextDecoder;
+  
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableDispel = {
+    type: "dispel",
+    index: 0,
+    offsetMilli: 0,
+    caster: "",
+    target: "",
+    spellId: null,
+    spellAttackOutcome: null,
+    dispelType: DispelType.None,
+    activity: [],
+    activityCount: 0,
+  };
+  
+  decode(data: Uint8Array, offset: number, length: number): ReusableDispel {
+    const end = offset + length;
+    const msg = this.message;
+    
+    // Reset fields
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.caster = "";
+    msg.target = "";
+    msg.spellId = null;
+    msg.spellAttackOutcome = null;
+    msg.dispelType = DispelType.None;
+    msg.activityCount = 0;
+    
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+      
+      if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        
+        if (fieldNumber === 1) {
+          // EventMeta - decode nested
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+            
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+              
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+              
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+                
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
+            }
+          }
+        } else if (fieldNumber === 2) {
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 3) {
+          msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          // SpellData - decode nested
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+            
+            if (spellWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 1) msg.spellId = value;
+              else if (spellField === 3) msg.spellAttackOutcome = value;
+            } else if (spellWire === 2) {
+              // skip string fields (name)
+              const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+              offset += sLenBytes + sLen;
+            }
+          }
+        } else {
+          offset += len;
+        }
+      } else if (wireType === 0) {
+        // Varint
+        const { value, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        if (fieldNumber === 5) msg.dispelType = value as DispelType;
+      }
+    }
+    
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for Dispel events with zero-allocation decoding.
+ */
+export class FastDispelCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new DispelDecoder();
+  private offset: number = 0;
+  
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+  
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+  
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+  
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+  
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+  
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+  
+  next(): ReusableDispel | null {
+    if (!this.hasMoreInEncounter) return null;
+    
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+    
+    const msg = this.decoder.decode(this.data, msgStart, length);
+    
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+    
+    return msg;
+  }
+  
+  nextEncounter(): boolean {
+    while (this.hasMoreInEncounter) {
+      this.next();
+    }
+    return this._loadNextEncounterHeader();
+  }
+  
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+  
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    
+    const startOffset = this.offset;
+    
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+    
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER 
+      ? new Date(tsNumber) 
+      : new Date(NaN);
+    
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+    
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+    
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+    
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+    
+    return true;
+  }
+}
+
 function readVarintFast(data: Uint8Array, offset: number): { value: number; bytesRead: number } {
   let value = 0;
   let shift = 0;

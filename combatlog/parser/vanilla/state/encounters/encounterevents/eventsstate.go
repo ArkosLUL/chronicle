@@ -23,6 +23,7 @@ type Events struct {
 	SpellFail          []byte
 	AuraCasts          []byte
 	UnitClassification []byte
+	Dispel             []byte
 }
 
 func NewEvents() *Events {
@@ -39,6 +40,7 @@ func NewEvents() *Events {
 		SpellFail:      make([]byte, 0),
 		AuraCasts:          make([]byte, 0),
 		UnitClassification: make([]byte, 0),
+		Dispel:             make([]byte, 0),
 	}
 }
 
@@ -111,6 +113,12 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 		return fmt.Errorf("gzip unit classification events: %w", err)
 	}
 
+	dispelPayload, err := gzipData(e.Dispel)
+	if err != nil {
+		return fmt.Errorf("gzip dispel events: %w", err)
+	}
+	e.Dispel = nil
+
 	res := db.InsertLogInstanceEvents(ctx, []database.InsertLogInstanceEventsParams{
 		{
 			InstanceID: instanceID,
@@ -171,6 +179,11 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 			InstanceID: instanceID,
 			Type:       database.LogInstanceEventTypeUnitClassification,
 			Events:     unitClassification,
+		},
+		{
+			InstanceID: instanceID,
+			Type:       database.LogInstanceEventTypeDispel,
+			Events:     dispelPayload,
 		},
 	})
 	if err := res.Close(); err != nil {

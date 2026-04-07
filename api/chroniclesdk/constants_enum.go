@@ -222,6 +222,8 @@ const (
 	WoWEventTypeSpellFail WoWEventType = "spell_fail"
 	// WoWEventTypeUnitClassification is a WoWEventType of type unit_classification.
 	WoWEventTypeUnitClassification WoWEventType = "unit_classification"
+	// WoWEventTypeDispel is a WoWEventType of type dispel.
+	WoWEventTypeDispel WoWEventType = "dispel"
 )
 
 var ErrInvalidWoWEventType = errors.New("not a valid WoWEventType")
@@ -241,6 +243,7 @@ func WoWEventTypeValues() []WoWEventType {
 		WoWEventTypeSpellStart,
 		WoWEventTypeSpellFail,
 		WoWEventTypeUnitClassification,
+		WoWEventTypeDispel,
 	}
 }
 
@@ -269,6 +272,7 @@ var _WoWEventTypeValue = map[string]WoWEventType{
 	"spell_start":         WoWEventTypeSpellStart,
 	"spell_fail":          WoWEventTypeSpellFail,
 	"unit_classification": WoWEventTypeUnitClassification,
+	"dispel":              WoWEventTypeDispel,
 }
 
 // ParseWoWEventType attempts to convert a string to a WoWEventType.

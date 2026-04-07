@@ -156,6 +156,7 @@ const (
 	LogInstanceEventTypeSpellStart         LogInstanceEventType = "spell_start"
 	LogInstanceEventTypeSpellFail          LogInstanceEventType = "spell_fail"
 	LogInstanceEventTypeUnitClassification LogInstanceEventType = "unit_classification"
+	LogInstanceEventTypeDispel             LogInstanceEventType = "dispel"
 )
 
 func (e *LogInstanceEventType) Scan(src interface{}) error {
@@ -206,7 +207,8 @@ func (e LogInstanceEventType) Valid() bool {
 		LogInstanceEventTypeAuraCast,
 		LogInstanceEventTypeSpellStart,
 		LogInstanceEventTypeSpellFail,
-		LogInstanceEventTypeUnitClassification:
+		LogInstanceEventTypeUnitClassification,
+		LogInstanceEventTypeDispel:
 		return true
 	}
 	return false
@@ -226,6 +228,7 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 		LogInstanceEventTypeSpellStart,
 		LogInstanceEventTypeSpellFail,
 		LogInstanceEventTypeUnitClassification,
+		LogInstanceEventTypeDispel,
 	}
 }
 

@@ -324,3 +324,22 @@ func School(school types.School) chronicleproto.School {
 		return chronicleproto.School_Unknown
 	}
 }
+
+func Dispel(from time.Time, idx int32, d *messages.Dispel) *chronicleproto.Dispel {
+	var dt chronicleproto.DispelType
+	if d.Spell != nil {
+		dt = DispelTypeConv(d.Spell.DispelType)
+	}
+	return &chronicleproto.Dispel{
+		Meta:       EventMeta(from, idx, d),
+		Caster:     d.Caster.String(),
+		Target:     d.Target.String(),
+		SpellData:  SpellData(d.Spell),
+		DispelType: dt,
+	}
+}
+
+func DispelTypeConv(dt chrondbc.DispelType) chronicleproto.DispelType {
+	return chronicleproto.DispelType(dt)
+}
+

@@ -954,9 +954,9 @@ export type WoWEnvironmentType = "drowning" | "fall" | "fatigue" | "fire" | "lav
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["drowning", "fall", "fatigue", "fire", "lava", "slime"];
 
 // From chroniclesdk/constants.go
-export type WoWEventType = "aura" | "aura_cast" | "cast" | "damage" | "extra_attack" | "heal" | "resource_change" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
+export type WoWEventType = "aura" | "aura_cast" | "cast" | "damage" | "dispel" | "extra_attack" | "heal" | "resource_change" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
 
-export const WoWEventTypes: WoWEventType[] = ["aura", "aura_cast", "cast", "damage", "extra_attack", "heal", "resource_change", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
+export const WoWEventTypes: WoWEventType[] = ["aura", "aura_cast", "cast", "damage", "dispel", "extra_attack", "heal", "resource_change", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
 
 // From types/constants.go
 export type WoWHeroClasses = "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";

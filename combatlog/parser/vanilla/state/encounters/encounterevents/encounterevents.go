@@ -28,6 +28,7 @@ type EncounterEvents struct {
 	SpellStart         *Builder[*messages.SpellStart, *chronicleproto.SpellStart]
 	SpellFail          *Builder[*messages.SpellFail, *chronicleproto.SpellFail]
 	UnitClassification *Builder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification]
+	Dispel             *Builder[*messages.Dispel, *chronicleproto.Dispel]
 	cnter              int32
 }
 
@@ -46,6 +47,7 @@ func New(verbose bool) *EncounterEventsInProgress {
 		SpellStart:     NewBuilder[*messages.SpellStart, *chronicleproto.SpellStart](),
 		SpellFail:          NewBuilder[*messages.SpellFail, *chronicleproto.SpellFail](),
 		UnitClassification: NewBuilder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification](),
+		Dispel:             NewBuilder[*messages.Dispel, *chronicleproto.Dispel](),
 	}
 }
 
@@ -110,6 +112,11 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing unit classification events: %w", err)
 	}
 
+	dispel, err := e.Dispel.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing dispel events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
@@ -122,6 +129,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.SpellStart = append(merge.SpellStart, spellStart...)
 	merge.SpellFail = append(merge.SpellFail, spellFail...)
 	merge.UnitClassification = append(merge.UnitClassification, unitClassification...)
+	merge.Dispel = append(merge.Dispel, dispel...)
 
 	return nil
 }
@@ -192,6 +200,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("unit classification proto: %w", err)
 		}
+	case *messages.Dispel:
+		err := AddToBuilder(e.Dispel, ty, e.nextIndex(), types2proto.Dispel)
+		if err != nil {
+			return fmt.Errorf("dispel proto: %w", err)
+		}
 	}
 	return nil
 }
@@ -213,6 +226,7 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.SpellStart.SetZero(e.first)
 	e.SpellFail.SetZero(e.first)
 	e.UnitClassification.SetZero(e.first)
+	e.Dispel.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

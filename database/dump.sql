@@ -29,7 +29,8 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'aura_cast',
     'spell_start',
     'spell_fail',
-    'unit_classification'
+    'unit_classification',
+    'dispel'
 );
 
 CREATE TYPE log_type AS ENUM (

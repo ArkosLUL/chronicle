@@ -190,3 +190,22 @@ message UnitClassification {
   optional string controller = 6;
   int32 spellId = 7;
 }
+
+enum DispelType {
+  DispelTypeNone = 0;
+  DispelTypeMagic = 1;
+  DispelTypeCurse = 2;
+  DispelTypeDisease = 3;
+  DispelTypePoison = 4;
+  DispelTypeStealth = 5;
+  DispelTypeInvisibility = 6;
+}
+
+message Dispel {
+  EventMeta meta = 1;
+  string caster = 2;
+  string target = 3;
+  optional SpellData spellData = 4;
+  DispelType dispelType = 5;
+}
+

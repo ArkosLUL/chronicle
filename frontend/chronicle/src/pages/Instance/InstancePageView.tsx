@@ -2118,6 +2118,26 @@ export function InstancePageView({
     }
   }, [allMergedEnemies, instance.encounters, instance.id, instance.players, setViewState, timeRange]);
 
+  const handleExportLayout = useCallback(() => {
+    const payload = {
+      version: 1,
+      items: activeLayoutItems,
+      panelTypesById: panelTypesByID,
+      panelOptionsById: Object.fromEntries(
+        Object.entries(panelOptionsByID).filter(([, v]) => v !== null),
+      ),
+      ...(Object.keys(panelFiltersByID).length > 0
+        ? { panelFiltersById: panelFiltersByID }
+        : {}),
+    };
+    const json = JSON.stringify(payload, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      toast.success("Layout copied to clipboard");
+    }).catch(() => {
+      window.prompt("Copy this layout JSON:", json);
+    });
+  }, [activeLayoutItems, panelTypesByID, panelOptionsByID, panelFiltersByID]);
+
   const handleImportLayout = useCallback(() => {
     const raw = window.prompt("Paste exported layout JSON");
     if (!raw) return;
@@ -2475,6 +2495,7 @@ export function InstancePageView({
             <div className="flex items-center gap-2 shrink-0">
               <InstanceMenu
                 onImportLayout={handleImportLayout}
+                onExportLayout={handleExportLayout}
                 onResetView={resetView}
                 onOpenTimeRange={onOpenTimeRange}
                 instanceId={instance.id}
@@ -2615,6 +2636,7 @@ export function InstancePageView({
               )}
               <InstanceMenu
                 onImportLayout={handleImportLayout}
+                onExportLayout={handleExportLayout}
                 onResetView={resetView}
                 onOpenTimeRange={onOpenTimeRange}
                 instanceId={instance.id}

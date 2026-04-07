@@ -1,4 +1,4 @@
-import { Menu, FileText, Copy, Upload, RotateCcw, LayoutGrid, Clock, Share2 } from "lucide-react";
+import { Menu, FileText, Copy, Upload, Download, RotateCcw, LayoutGrid, Clock, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/DropdownMenu/DropdownMenu";
 interface InstanceMenuProps {
   onImportLayout?: () => void;
+  onExportLayout?: () => void;
   onResetView?: () => void;
   onOpenTimeRange?: () => void;
   instanceId: string;
@@ -29,6 +30,7 @@ interface InstanceMenuProps {
 
 export function InstanceMenu({
   onImportLayout,
+  onExportLayout,
   onResetView,
   onOpenTimeRange,
   instanceId,
@@ -96,7 +98,12 @@ export function InstanceMenu({
             Import Layout
           </DropdownMenuItem>
         )}
-
+        {onExportLayout && (
+          <DropdownMenuItem onClick={onExportLayout}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Layout
+          </DropdownMenuItem>
+        )}
 
         {layoutLabUrl && (
           <DropdownMenuItem asChild>

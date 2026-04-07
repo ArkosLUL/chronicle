@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } fr
 import ReactDOM from "react-dom";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { HelpCircle, Construction, Filter, EllipsisVertical, Copy, ClipboardPaste } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -517,29 +518,42 @@ export function EventsPanel({
   // Panel copy/paste via sessionStorage
 
   const handleCopyPanel = useCallback(() => {
-    const clipboard = {
+    const data = {
       panelType,
       panelOption: panelOption ?? null,
       filters: userFilters,
     };
-    sessionStorage.setItem(PANEL_CLIPBOARD_KEY, JSON.stringify(clipboard));
+    const json = JSON.stringify(data);
+    navigator.clipboard.writeText(json).then(() => {
+      toast.success("Panel copied to clipboard");
+    }).catch(() => {
+      // Fallback to sessionStorage if clipboard access is denied
+      sessionStorage.setItem(PANEL_CLIPBOARD_KEY, json);
+    });
   }, [panelType, panelOption, userFilters]);
 
-  const handlePastePanel = useCallback(() => {
-    const raw = sessionStorage.getItem(PANEL_CLIPBOARD_KEY);
+  const handlePastePanel = useCallback(async () => {
+    let raw: string | null = null;
+    try {
+      raw = await navigator.clipboard.readText();
+    } catch {
+      // Fallback to sessionStorage if clipboard access is denied
+      raw = sessionStorage.getItem(PANEL_CLIPBOARD_KEY);
+    }
     if (!raw) return;
     try {
-      const clipboard = JSON.parse(raw) as {
+      const parsed = JSON.parse(raw) as {
         panelType: EventsPanelType;
         panelOption: string | null;
         filters: PanelFilter[];
       };
-      onPanelTypeChange(clipboard.panelType);
-      onPanelOptionChange?.(clipboard.panelOption);
-      if (clipboard.filters && clipboard.filters.length > 0) {
-        applyFilters(clipboard.filters);
+      if (!parsed.panelType || !(parsed.panelType in PANELS)) return;
+      onPanelTypeChange(parsed.panelType);
+      onPanelOptionChange?.(parsed.panelOption);
+      if (parsed.filters && parsed.filters.length > 0) {
+        applyFilters(parsed.filters);
       } else {
-        applyFilters(PANELS[clipboard.panelType].defaultFilters ?? []);
+        applyFilters(PANELS[parsed.panelType].defaultFilters ?? []);
       }
       setPendingFilters(null);
     } catch {

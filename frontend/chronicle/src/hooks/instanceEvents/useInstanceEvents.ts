@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "./InstanceEventsContext";
 import { createStreamCursor, FastDamageCursor, type StreamCursor } from "@/api/protodecode/decode";
-import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema, CastSchema, AuraSchema, SpellGoSchema, SpellStartSchema, SpellFailSchema } from "@/api/proto/chronicle_pb";
+import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema, CastSchema, AuraSchema, SpellGoSchema, SpellStartSchema, SpellFailSchema, AuraCastSchema, DispelSchema, UnitClassificationSchema } from "@/api/proto/chronicle_pb";
 import type { DescMessage } from "@bufbuild/protobuf";
 import type {
   StreamType,
@@ -37,14 +37,11 @@ function getSchemaForType(type: StreamType): DescMessage {
     case "spell_fail":
       return SpellFailSchema;
     case "aura_cast":
-      // aura_cast uses the same schema structure - return null to skip for now
-      return null as unknown as DescMessage;
-    case "unit_classification":
-      // unit_classification uses fast cursor path, not schema-based
-      return null as unknown as DescMessage;
+      return AuraCastSchema;
     case "dispel":
-      // dispel has no proto schema yet
-      return null as unknown as DescMessage;
+      return DispelSchema;
+    case "unit_classification":
+      return UnitClassificationSchema;
     default: {
       const _exhaustive: never = type;
       throw new Error(`Unknown stream type: ${_exhaustive}`);

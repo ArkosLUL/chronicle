@@ -425,11 +425,13 @@ export function EventsPanel({
   const hasCustomFilters = filteringSupported && customFilters !== null &&
     JSON.stringify(customFilters) !== JSON.stringify(panel.defaultFilters ?? []);
 
-  // Border color, custom title, grouping, and pet mode derived from panelOption tokens
+  // Border color, custom title, grouping, and pet mode derived from panelOption tokens.
+  // When no explicit token is set, fall back to the panel's first grouping/pet option
+  // so the processor default matches the UI default.
   const borderColor = useMemo(() => extractBorderColorFromTokens(customToggleTokens), [customToggleTokens]);
   const customTitle = useMemo(() => extractCustomTitleFromTokens(customToggleTokens), [customToggleTokens]);
-  const grouping = useMemo(() => extractGroupingFromTokens(customToggleTokens), [customToggleTokens]);
-  const petMode = useMemo(() => extractPetModeFromTokens(customToggleTokens), [customToggleTokens]);
+  const grouping = useMemo(() => extractGroupingFromTokens(customToggleTokens) ?? panel.groupingOptions?.[0]?.value ?? null, [customToggleTokens, panel.groupingOptions]);
+  const petMode = useMemo(() => extractPetModeFromTokens(customToggleTokens) ?? panel.petOptions?.[0]?.value ?? null, [customToggleTokens, panel.petOptions]);
 
   const setBorderColor = useCallback((color: string | null) => {
     if (!onPanelOptionChange) return;
@@ -454,6 +456,15 @@ export function EventsPanel({
     const tokens = buildTokensWithMeta(customToggleTokens, borderColor, customTitle, grouping, p);
     onPanelOptionChange(buildPanelOptionFromTokens(tokens));
   }, [customToggleTokens, borderColor, customTitle, grouping, onPanelOptionChange]);
+
+  // Effective panelOption with grouping/pet defaults injected so the processor
+  // sees the same defaults as the UI (first option in groupingOptions/petOptions).
+  const effectivePanelOption = useMemo(() => {
+    const tokens = [...customToggleTokens];
+    if (grouping && !tokens.some((t) => t.startsWith("g:"))) tokens.push(`g:${grouping}`);
+    if (petMode && !tokens.some((t) => t.startsWith("p:"))) tokens.push(`p:${petMode}`);
+    return buildPanelOptionFromTokens(tokens);
+  }, [customToggleTokens, grouping, petMode]);
 
   // -- ChartDataRegistry: register/unregister for cross-panel comparison ------
   const { register: chartRegister, unregister: chartUnregister } = useChartDataActions();
@@ -643,7 +654,7 @@ export function EventsPanel({
   } = usePanelAggregation({
     panel,
     context,
-    panelOption,
+    panelOption: effectivePanelOption,
     panelContext,
     panelContextKey: panelContextVersion,
     panelIndex,
@@ -791,7 +802,7 @@ export function EventsPanel({
                 processing,
                 error,
                 context,
-                panelOption,
+                panelOption: effectivePanelOption,
                 setPanelOption: onPanelOptionChange,
                 panelContext,
                 panelContextVersion: `${panelContextVersion}|${aggregationContextKey}`,
@@ -815,7 +826,7 @@ export function EventsPanel({
               onBorderColorChange: onPanelOptionChange ? setBorderColor : undefined,
               customTitle,
               onCustomTitleChange: onPanelOptionChange ? setCustomTitle : undefined,
-              panelOption,
+              panelOption: effectivePanelOption,
               setPanelOption: onPanelOptionChange ?? undefined,
             })
           : (

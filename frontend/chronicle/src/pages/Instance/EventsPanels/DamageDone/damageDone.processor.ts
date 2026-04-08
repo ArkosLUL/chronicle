@@ -329,7 +329,7 @@ export function createDamageDoneProcessor(
       if (context.selectedEncounterIds.has(encounterID)) {
         let abilityName = event.sourceName || "Auto Attack";
         // When pet damage is merged into the owner row, label abilities as "<PetName> (Pet)"
-        const casterHasOwner = !!context.units?.[event.caster]?.owner;
+        const casterHasOwner = !!(context.unitState?.getOwner(event.caster) ?? context.units?.[event.caster]?.owner);
         if (casterHasOwner && (grouping === "merged")) {
           const petName = context.units?.[event.caster]?.name || event.caster.toString();
           abilityName = `${petName} (Pet)`;

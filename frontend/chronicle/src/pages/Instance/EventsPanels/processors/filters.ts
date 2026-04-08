@@ -211,6 +211,7 @@ function compileEntityTypeFilter(
   const customGuids = new Set(customEntries.filter((v) => v.startsWith("0x")));
   const customNames = customEntries.filter((v) => !v.startsWith("0x")).map((n) => n.toLowerCase());
 
+  const us = context.unitState;
   const guidCache = createGuidCache();
   const units = context.units ?? {};
   const players = context.players ?? {};
@@ -229,22 +230,26 @@ function compileEntityTypeFilter(
     const guid = (event as unknown as Record<string, unknown>)[field];
     if (typeof guid !== "string" || !guid) return wantNone;
 
+    // Helper: check if a GUID is a player using unitState (temporal) or fallback
+    const checkIsPlayer = (g: string): boolean =>
+      us ? us.isPlayer(g) : (isPlayerGuid(g) || getCachedGuid(guidCache, g).isPlayer());
+
+    // Helper: get effective owner using unitState (temporal) or static units
+    const getOwner = (g: string): string | null =>
+      us ? us.getOwner(g) : (units[g]?.owner ?? null);
+
     // Selected players: match if guid is in playerIds (or a pet owned by one), or any player/player-pet if none selected
     if (wantSelectedPlayers) {
       if (playerIds.size > 0) {
         if (playerIds.has(guid)) return true;
         // Also match pets owned by selected players
-        const unit = units[guid];
-        if (unit?.owner && playerIds.has(unit.owner)) return true;
+        const owner = getOwner(guid);
+        if (owner && playerIds.has(owner)) return true;
       } else {
-        const isPlayer = isPlayerGuid(guid) || getCachedGuid(guidCache, guid).isPlayer();
-        if (isPlayer) return true;
+        if (checkIsPlayer(guid)) return true;
         // Also match any player-owned pet when no specific players selected
-        const unit = units[guid];
-        if (unit?.owner) {
-          const ownerIsPlayer = isPlayerGuid(unit.owner) || getCachedGuid(guidCache, unit.owner).isPlayer();
-          if (ownerIsPlayer) return true;
-        }
+        const owner = getOwner(guid);
+        if (owner && checkIsPlayer(owner)) return true;
       }
     }
 
@@ -253,8 +258,7 @@ function compileEntityTypeFilter(
       if (enemyIds.size > 0) {
         if (enemyIds.has(guid)) return true;
       } else {
-        const isPlayer = isPlayerGuid(guid) || getCachedGuid(guidCache, guid).isPlayer();
-        if (!isPlayer) return true;
+        if (!checkIsPlayer(guid)) return true;
       }
     }
 
@@ -268,21 +272,19 @@ function compileEntityTypeFilter(
     }
 
     // Entity type classification
-    const guidIsPlayer = isPlayerGuid(guid) || getCachedGuid(guidCache, guid).isPlayer();
+    const guidIsPlayer = checkIsPlayer(guid);
     if (wantPlayer && guidIsPlayer) return true;
 
     if (!guidIsPlayer) {
-      const unit = units[guid];
-      const hasOwner = unit?.owner != null;
-      const ownerIsPlayer = hasOwner && (
-        isPlayerGuid(unit.owner!) || getCachedGuid(guidCache, unit.owner!).isPlayer()
-      );
+      const owner = getOwner(guid);
+      const hasOwner = owner != null;
+      const ownerIsPlayer = hasOwner && checkIsPlayer(owner!);
 
       if (wantPet && hasOwner && ownerIsPlayer) return true;
       if (wantEnemyPet && hasOwner && !ownerIsPlayer) return true;
       if (wantEnemy && !hasOwner) return true;
     }
-    if (wantObject && getCachedGuid(guidCache, guid).isObject()) return true;
+    if (wantObject && (us ? us.getCachedGuid(guid).isObject() : getCachedGuid(guidCache, guid).isObject())) return true;
     return false;
   };
 }

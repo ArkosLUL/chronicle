@@ -181,6 +181,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       // Fast path: if already in deficits map, we've validated them before.
       const isPlayerOrFriendlyPet = (targetGuid: string): boolean => {
         if (state.HealthDeficits.has(targetGuid)) return true;
+        const us = context.unitState;
+        if (us) {
+          return us.isPlayer(targetGuid) || us.isPlayerPet(targetGuid);
+        }
         if (isPlayerGuidFast(targetGuid)) return true;
         if (isPetGuidFast(targetGuid)) {
           // Pet must have a player owner
@@ -292,27 +296,22 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       // Determine if this is an "other" target (non-player, non-pet)
       const isOtherTarget = effectiveHeal === 0 && overheal === healAmount && !isPlayerOrFriendlyPet(targetID);
       
-      // For "other" targets, use a fixed ID so they all aggregate together
-      const aggregateTargetID = isOtherTarget ? "__other__" : targetID;
-      
-      // Get target info - format based on target type
+      // Get target info via resolveEntity (respects grouping/petMode settings)
+      let aggregateTargetID: string;
       let targetName: string;
       let targetClass: string;
       if (isOtherTarget) {
+        aggregateTargetID = "__other__";
         targetName = "Other";
         targetClass = "NPC";
       } else {
-        const targetPlayerInfo = context.players[targetID];
-        if (targetPlayerInfo) {
-          // Player target
-          targetName = targetPlayerInfo.name;
-          targetClass = targetPlayerInfo.class || "UNKNOWN";
-        } else {
-          // Pet with owner - format as "{Owner}'s Pet {PetName}"
-          const unitInfo = context.units?.[targetID];
-          const ownerName = unitInfo?.owner ? (context.players[unitInfo.owner]?.name || "Unknown") : "Unknown";
-          targetName = `${ownerName}'s Pet ${unitInfo?.name || "Unknown"}`;
-          targetClass = unitInfo?.owner ? (context.players[unitInfo.owner]?.class || "UNKNOWN") : "UNKNOWN";
+        const targetEntity = resolveEntity(targetID, context, grouping, petMode);
+        aggregateTargetID = targetEntity.id;
+        targetName = targetEntity.name;
+        targetClass = targetEntity.class;
+        // When merged grouping merges pet into owner row, use the owner's actual name
+        if (grouping === "merged" && aggregateTargetID !== targetID && context.players[aggregateTargetID]) {
+          targetName = context.players[aggregateTargetID].name || targetName;
         }
       }
 
@@ -393,7 +392,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       }
 
       // When pet healing is merged into the owner row, label abilities as "<PetName> (Pet)"
-      const casterHasOwner = !!context.units?.[event.caster]?.owner;
+      const casterHasOwner = !!(context.unitState?.getOwner(event.caster) ?? context.units?.[event.caster]?.owner);
       if (casterHasOwner && grouping === "merged") {
         const petName = context.units?.[event.caster]?.name || event.caster.toString();
         abilityName = `${petName} (Pet)`;

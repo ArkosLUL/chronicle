@@ -7,6 +7,7 @@
 
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { PanelFilter } from "./processors/filters";
+import type { UnitState } from "./processors/unitState";
 
 /**
  * Activity entry from encounter period tracking.
@@ -416,6 +417,13 @@ export interface ProcessorContext {
    * Returns true if the event passes the filter.
    */
   compiledFilter?: (event: ProcessorEvent) => boolean;
+
+  /**
+   * Temporal unit ownership state.
+   * Populated by the worker from unit_classification events before each
+   * processEvent call, so ownership queries reflect the current point in time.
+   */
+  unitState?: UnitState;
 }
 
 /**

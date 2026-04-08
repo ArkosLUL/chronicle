@@ -9,6 +9,8 @@ import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAt
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import { compileFilters } from "./processors/filters";
+import { UnitState } from "./processors/unitState";
+import type { UnitClassificationProcessorEvent } from "./processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -133,11 +135,23 @@ function processStreams<TResult>(
   // Convert to ProcessorContext with Sets for fast lookups
   const context = deserializeContext(serializableContext);
 
-  // Compile filters once before the event loop (hot-path optimization)
+  // Create UnitState from static unit data and attach to context.
+  // It will be fed unit_classification events during the loop so that
+  // resolveEntity / filters see temporal ownership at each point in time.
+  const unitState = new UnitState(context.units ?? {});
+  context.unitState = unitState;
+
+  // Compile filters once before the event loop (hot-path optimization).
+  // Note: filter predicates capture `context` by reference, so they will
+  // see unitState updates as classification events are processed.
   const filterPredicate = compileFilters(context.filters ?? [], context);
   
   // Attach compiled filter to context for processors that manage their own filtering
   context.compiledFilter = filterPredicate;
+  
+  // Track which streams the processor actually declared (unit_classification
+  // is always fetched but should only be forwarded to processEvent when requested).
+  const processorStreamSet = new Set(processor.streams);
   
   // Create peekable cursors for all streams
   const cursors = streams.map(createCursor);
@@ -195,6 +209,17 @@ function processStreams<TResult>(
       // Stamp globalOffsetMilli before filtering so time_range filter works across encounters
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (minPeeked.event as any).globalOffsetMilli = encounterBaseOffset + minPeeked.event.offsetMilli;
+
+      // Feed unit_classification events into UnitState so temporal ownership
+      // is up-to-date before any processor or filter sees subsequent events.
+      if (minCursor.streamType === "unit_classification") {
+        unitState.processClassification(minPeeked.event as unknown as UnitClassificationProcessorEvent);
+        // Skip forwarding to processEvent if the processor didn't request this stream
+        if (!processorStreamSet.has("unit_classification")) {
+          consumePeeked(minCursor);
+          continue;
+        }
+      }
 
       // Process the event with the lowest index
       totalEvents++;

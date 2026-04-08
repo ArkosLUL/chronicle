@@ -7,6 +7,7 @@ import type { PanelDefinition, PanelRenderProps } from "../types";
 import type { PanelFilter } from "../processors/filters";
 import { unifiedHealingProcessor, type UnifiedHealingResult } from "../processors";
 import { HealingTakenContent } from "./HealingTakenContent";
+import type { GroupingOption } from "../processors/resolveEntity";
 
 /**
  * Entity target types for healing taken aggregation
@@ -53,6 +54,16 @@ export function createHealingTakenPanel(
     icon: config.icon,
     supportsPerSecond: true,
     supportsFiltering: true,
+    groupingOptions: [
+      { value: "default", label: "By Unit" },
+      { value: "merged", label: "By Unit (Merged)" },
+      { value: "name", label: "By Name" },
+    ] satisfies GroupingOption[],
+    petOptions: [
+      { value: "individual", label: "By Pet" },
+      { value: "owner", label: "By Owner" },
+      { value: "name", label: "By Pet Name" },
+    ] satisfies GroupingOption[],
     fixedFilters,
     defaultFilters,
     

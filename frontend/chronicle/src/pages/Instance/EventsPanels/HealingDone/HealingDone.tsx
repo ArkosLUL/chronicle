@@ -5,7 +5,7 @@
 import { Heart } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import type { PanelFilter } from "../processors/filters";
-import { MERGED_GROUPING_OPTIONS, PET_GROUPING_OPTIONS } from "../processors/resolveEntity";
+import type { GroupingOption } from "../processors/resolveEntity";
 import { unifiedHealingProcessor, type UnifiedHealingResult } from "../processors";
 import { HealingDoneContent } from "./HealingDoneContent";
 
@@ -57,8 +57,16 @@ export function createHealingDonePanel(
     supportsFiltering: true,
     fixedFilters,
     defaultFilters,
-    groupingOptions: MERGED_GROUPING_OPTIONS,
-    petOptions: PET_GROUPING_OPTIONS,
+    groupingOptions: [
+      { value: "default", label: "By Unit" },
+      { value: "merged", label: "By Unit (Merged)" },
+      { value: "name", label: "By Name" },
+    ] satisfies GroupingOption[],
+    petOptions: [
+      { value: "individual", label: "By Pet" },
+      { value: "owner", label: "By Owner" },
+      { value: "name", label: "By Pet Name" },
+    ] satisfies GroupingOption[],
     
     render: (props: PanelRenderProps<UnifiedHealingResult>) => {
       return <HealingDoneContent {...props} sourceType={sourceType} />;

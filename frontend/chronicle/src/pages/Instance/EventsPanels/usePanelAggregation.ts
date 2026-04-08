@@ -334,9 +334,11 @@ export function usePanelAggregation<TResult>(
     
     try {
       const fetchStartMs = performance.now();
-      // Fetch all required streams (these are cached at the eventsContext level)
+      // Fetch all required streams (these are cached at the eventsContext level).
+      // Always include unit_classification so UnitState can track temporal ownership.
+      const requiredStreams = new Set([...panel.streams, "unit_classification" as const]);
       const fetchedStreams = await Promise.all(
-        panel.streams.map(async (type) => {
+        Array.from(requiredStreams).map(async (type) => {
           const stream = await eventsContext.fetchStream(type);
           return { type, data: stream.data };
         })

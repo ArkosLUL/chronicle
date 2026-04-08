@@ -53,8 +53,10 @@ export function resolveEntity(
   grouping: EntityGrouping = "default",
   pets: PetMode = "owner",
 ): EntityDisplay {
+  const us = context.unitState;
+
   // Player
-  if (isPlayerGuidFast(guid)) {
+  if (us ? us.isPlayer(guid) : isPlayerGuidFast(guid)) {
     const p = context.players[guid];
     if (grouping === "class") {
       const cls = p?.class || "UNKNOWN";
@@ -71,17 +73,18 @@ export function resolveEntity(
     };
   }
 
-  // Pet (has an owner)
-  const unit = context.units?.[guid];
-  if (unit?.owner) {
-    const ownerName = context.players[unit.owner]?.name
-      || context.units?.[unit.owner]?.name
+  // Pet (has an owner — static or temporal via possession/charm)
+  const unit = us ? us.getUnit(guid) : context.units?.[guid];
+  const owner = us ? us.getOwner(guid) : unit?.owner ?? null;
+  if (owner) {
+    const ownerName = context.players[owner]?.name
+      || context.units?.[owner]?.name
       || "Unknown";
-    const ownerIsPlayer = !!context.players[unit.owner];
+    const ownerIsPlayer = !!context.players[owner];
     const ownerClass = ownerIsPlayer
-      ? (context.players[unit.owner]?.class || "UNKNOWN")
+      ? (context.players[owner]?.class || "UNKNOWN")
       : "ENEMY";
-    const petName = unit.name || guid;
+    const petName = unit?.name || guid;
 
     // "merged" grouping forces pets into their owner regardless of pet mode
     if (grouping !== "merged") {
@@ -94,7 +97,7 @@ export function resolveEntity(
       }
       if (pets === "name") {
         return {
-          id: `pet_name:${petName.toLowerCase()}:${unit.owner}`,
+          id: `pet_name:${petName.toLowerCase()}:${owner}`,
           name: `${petName} (${ownerName})`,
           class: ownerClass,
         };
@@ -110,7 +113,7 @@ export function resolveEntity(
       };
     }
     return {
-      id: unit.owner,
+      id: owner,
       name: `${ownerName}'s Companions`,
       class: ownerClass,
     };

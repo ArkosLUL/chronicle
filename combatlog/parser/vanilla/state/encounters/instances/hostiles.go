@@ -63,6 +63,41 @@ func SMLibraryHostiles() map[uint32]Identity {
 func BlackrockSpireHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
+		9262:  "Firebrand Invoker",          // 10 times
+		9583:  "Bloodaxe Veteran",           // 11 times
+		9257:  "Scarshield Warlock",         // 2 times
+		9098:  "Scarshield Spellbinder",     // 2 times
+		9201:  "Spirestone Ogre Magus",      // 4 times
+		9200:  "Spirestone Reaver",          // 3 times
+		9268:  "Smolderthorn Berserker",     // 8 times
+		9266:  "Smolderthorn Witch Doctor",  // 3 times
+		9260:  "Firebrand Legionnaire",      // 4 times
+		9259:  "Firebrand Grunt",            // 23 times
+		9097:  "Scarshield Legionnaire",     // 4 times
+		9198:  "Spirestone Mystic",          // 3 times
+		9267:  "Smolderthorn Axe Thrower",   // 6 times
+		10375: "Spire Spiderling",           // 44 times
+		9717:  "Bloodaxe Summoner",          // 2 times
+		9199:  "Spirestone Enforcer",        // 3 times
+		9197:  "Spirestone Battle Mage",     // 3 times
+		9265:  "Smolderthorn Shadow Hunter", // 3 times
+		9236:  "Shadow Hunter Vosh'gajin",   // 1 times
+		10218: "Superior Healing Ward",      // 3 times
+		9716:  "Bloodaxe Warmonger",         // 5 times
+		9416:  "Scarshield Worg",            // 2 times
+		9269:  "Smolderthorn Seer",          // 11 times
+		9240:  "Smolderthorn Shadow Priest", // 13 times
+		9261:  "Firebrand Darkweaver",       // 12 times
+		9264:  "Firebrand Pyromancer",       // 4 times
+		9696:  "Bloodaxe Worg",              // 10 times
+		9216:  "Spirestone Warlord",         // 8 times
+		9239:  "Smolderthorn Mystic",        // 6 times
+		9263:  "Firebrand Dreadweaver",      // 5 times
+		10374: "Spire Spider",               // 7 times
+		9258:  "Scarshield Raider",          // 1 times
+		9692:  "Bloodaxe Raider",            // 5 times
+		9693:  "Bloodaxe Evoker",            // 7 times
+		9241:  "Smolderthorn Headhunter",    // 5 times
 		10161: "Rookery Whelp",
 		10742: "Blackhand Dragon Handler",
 		9096:  "Rage Talon Dragonspawn",
@@ -76,7 +111,6 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		10447: "Chromatic Dragonspawn",
 		10366: "Rage Talon Dragon Guard",
 		10371: "Rage Talon Captain",
-		9097:  "Scarshield Legionnaire",
 		10316: "Blackhand Incarcerator",
 		10083: "Rage Talon Flamescale",
 		10317: "Blackhand Elite",
@@ -91,6 +125,13 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		10339: "Gyth", // Blackhand mount
 		10363: "General Drakkisath",
 		10264: "Solakar Flamewreath",
+
+		9568:  "Overlord Wyrmthalak",    // 1 times
+		9196:  "Highlord Omokk",         // 1 times
+		9218:  "Spirestone Battle Lord", // 1 times
+		9237:  "War Master Voone",       // 1 times
+		9219:  "Spirestone Butcher",     // 1 times
+		10596: "Mother Smolderweb",      // 1 times
 	})
 
 	return hostile

@@ -22,6 +22,7 @@ import { comparisonProcessor } from "../ComparisonPanel/comparison.processor";
 import { timelineProcessor } from "../Timeline/timeline.processor";
 import { rotationsProcessor } from "../Rotations/rotations.processor";
 import { possessionProcessor } from "../PossessionPanel/possession.processor";
+import { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 
 // Export individual processors
 export { damageDoneProcessor, vulnerabilityEffectProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -43,6 +44,7 @@ export { comparisonProcessor } from "../ComparisonPanel/comparison.processor";
 export { timelineProcessor } from "../Timeline/timeline.processor";
 export { rotationsProcessor } from "../Rotations/rotations.processor";
 export { possessionProcessor } from "../PossessionPanel/possession.processor";
+export { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -115,4 +117,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   rotations: rotationsProcessor,
   // Possession timeline
   possession: possessionProcessor,
+  // Unit lookup
+  unit_lookup: unitLookupProcessor,
 };

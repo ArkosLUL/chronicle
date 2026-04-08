@@ -58,13 +58,13 @@ export function createHealingDonePanel(
     fixedFilters,
     defaultFilters,
     groupingOptions: [
-      { value: "default", label: "By Unit" },
       { value: "merged", label: "By Unit (Merged)" },
+      { value: "default", label: "By Unit" },
       { value: "name", label: "By Name" },
     ] satisfies GroupingOption[],
     petOptions: [
-      { value: "individual", label: "By Pet" },
       { value: "owner", label: "By Owner" },
+      { value: "individual", label: "By Pet" },
       { value: "name", label: "By Pet Name" },
     ] satisfies GroupingOption[],
     

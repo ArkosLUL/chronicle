@@ -434,8 +434,10 @@ export function usePanelAggregation<TResult>(
     
     try {
       // Fetch all required streams
+      // Always include unit_classification so UnitState can track temporal ownership (mirrors worker mode)
+      const requiredStreams = new Set([...panel.streams, "unit_classification" as const]);
       const streams = new Map<StreamType, CachedStream>();
-      for (const type of panel.streams) {
+      for (const type of requiredStreams) {
         const stream = await eventsContext.fetchStream(type);
         streams.set(type, stream);
       }
@@ -502,6 +504,7 @@ export function usePanelAggregation<TResult>(
         lastTimestamp: response.lastTimestamp,
         eventsAtLastTimestamp: response.eventsAtLastTimestamp,
         isDone: response.isDone,
+        unitState: response.unitState,
       };
       prevTimestampRef.current = stopAt;
       // Track that we processed this timestamp to avoid redundant work

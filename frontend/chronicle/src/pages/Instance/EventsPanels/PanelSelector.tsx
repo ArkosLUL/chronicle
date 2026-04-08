@@ -75,7 +75,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Utility",
-    items: ["roles", "timeline", "rotations", "comparison", "all_activity", "metrics", "periods", "possession", "empty"],
+    items: ["roles", "timeline", "rotations", "comparison", "all_activity", "metrics", "periods", "possession", "unit_lookup", "empty"],
     icon: <Toolbox className="h-4 w-4" />,
   },
 ];

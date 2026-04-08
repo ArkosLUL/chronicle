@@ -643,6 +643,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   timeline: 'tl',
   rotations: 'rot',
   possession: 'pos',
+  unit_lookup: 'ul',
 };
 
 // ============================================================================

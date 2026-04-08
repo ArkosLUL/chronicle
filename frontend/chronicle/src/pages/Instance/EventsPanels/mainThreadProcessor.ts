@@ -18,6 +18,8 @@ import {
   FastAuraCastCursor,
   FastSpellStartCursor,
   FastSpellFailCursor,
+  FastUnitClassificationCursor,
+  FastDispelCursor,
   type ReusableDamage,
   type ReusableHeal,
   type ReusableResourceChange,
@@ -29,6 +31,8 @@ import {
   type ReusableAuraCast,
   type ReusableSpellStart,
   type ReusableSpellFail,
+  type ReusableUnitClassification,
+  type ReusableDispel,
 } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import { compileFilters, type FilterPredicate, type PanelFilter } from "./processors/filters";
@@ -36,7 +40,9 @@ import type {
   PanelProcessor, 
   ProcessorContext, 
   SerializableProcessorContext,
+  UnitClassificationProcessorEvent,
 } from "./processorTypes";
+import { UnitState } from "./processors/unitState";
 import type { StreamType, CachedStream } from "@/hooks/instanceEvents";
 
 // Cache compiled filter predicates per panel across sync mode ticks. Reference
@@ -54,14 +60,14 @@ const _filterCache = new Map<string, {
 /**
  * Union of all reusable event types
  */
-type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail;
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail | ReusableUnitClassification | ReusableDispel;
 
 /**
  * A cursor wrapper that supports peeking at the next event without consuming it.
  */
 interface PeekableCursor {
   streamType: StreamType;
-  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor | FastUnitClassificationCursor | FastDispelCursor;
   peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
 }
 
@@ -79,6 +85,8 @@ export interface IncrementalProcessorState<TResult> {
   eventsAtLastTimestamp: number;
   /** Whether processing reached the end of all events */
   isDone: boolean;
+  /** Persisted UnitState for temporal ownership tracking across resumes */
+  unitState: UnitState | null;
 }
 
 /**
@@ -123,6 +131,8 @@ export interface ProcessIncrementallyResult<TResult> {
   isDone: boolean;
   /** Error message if processing failed */
   error?: string;
+  /** UnitState for persistence across incremental resumes */
+  unitState: UnitState | null;
 }
 
 /**
@@ -171,6 +181,10 @@ function createCursor(type: StreamType, data: Uint8Array): PeekableCursor {
     ? new FastSpellStartCursor(data)
     : type === "spell_fail"
     ? new FastSpellFailCursor(data)
+    : type === "unit_classification"
+    ? new FastUnitClassificationCursor(data)
+    : type === "dispel"
+    ? new FastDispelCursor(data)
     : null;
 
   if (!cursor) {
@@ -276,6 +290,7 @@ export async function processIncrementally<TResult>(
 
   // Look up processor
   const processor = processorRegistry[panelId] as PanelProcessor<TResult, AnyReusableEvent> | undefined;
+  const processorStreamSet = new Set(processor?.streams ?? []);
   if (!processor) {
     return {
       result: previousState?.result ?? ({} as TResult),
@@ -285,6 +300,7 @@ export async function processIncrementally<TResult>(
       eventsAtLastTimestamp: 0,
       isDone: true,
       error: `Unknown panel: ${panelId}`,
+      unitState: null,
     };
   }
 
@@ -302,6 +318,16 @@ export async function processIncrementally<TResult>(
   } else {
     context = deserializeContext(serializableContext);
   }
+
+  // Restore or create UnitState BEFORE compiling filters (mirrors panelWorker.ts).
+  // Filter predicates capture context.unitState at compilation time — if unitState
+  // is undefined, source_type filters can't detect temporal ownership (mind control)
+  // and will incorrectly filter out possessed units' damage.
+  const mustRestart = timestampMovedBackward(stopAtTimestamp, previousState);
+  const unitState = (!mustRestart && previousState?.unitState)
+    ? previousState.unitState
+    : new UnitState(context.units ?? {});
+  context.unitState = unitState;
 
   let filterPredicate: FilterPredicate;
   if (cached && rawFilters === cached.filtersRef && contextKey === cached.contextKey) {
@@ -321,9 +347,6 @@ export async function processIncrementally<TResult>(
     deserializedContext: context,
   });
 
-  // Check for backward seek - must reprocess from start
-  const mustRestart = timestampMovedBackward(stopAtTimestamp, previousState);
-  
   // Start fresh or resume
   let state: TResult;
   let processedCount: number;
@@ -369,6 +392,7 @@ export async function processIncrementally<TResult>(
           lastTimestamp,
           eventsAtLastTimestamp,
           isDone: true,
+          unitState,
         };
       }
       // Seeking forward past what we processed - continue processing below
@@ -380,7 +404,9 @@ export async function processIncrementally<TResult>(
 
   // Create cursors for all streams
   const cursors: PeekableCursor[] = [];
-  for (const streamType of processor.streams) {
+  // Always include unit_classification so UnitState can track temporal ownership
+  const allStreams = new Set([...processor.streams, "unit_classification" as StreamType]);
+  for (const streamType of allStreams) {
     const cachedStream = streams.get(streamType);
     if (cachedStream) {
       const cursor = createCursor(streamType, cachedStream.data);
@@ -518,6 +544,7 @@ export async function processIncrementally<TResult>(
             lastTimestamp: effectiveLastTimestamp,
             eventsAtLastTimestamp: effectiveEventsAtTimestamp,
             isDone: false,
+            unitState,
           };
         }
         // Track events at each timestamp for precise resume
@@ -530,6 +557,16 @@ export async function processIncrementally<TResult>(
         }
       }
       
+      // Feed unit_classification events into UnitState for temporal ownership tracking
+      if (minCursor.streamType === "unit_classification") {
+        unitState.processClassification(minPeeked.event as unknown as UnitClassificationProcessorEvent);
+        // Skip forwarding to processEvent if the processor didn't request this stream
+        if (!processorStreamSet.has("unit_classification")) {
+          consumePeeked(minCursor);
+          continue;
+        }
+      }
+
       // Apply filters (mirrors panelWorker.ts)
       if (!processor.processAllEvents && !filterPredicate(minPeeked.event)) {
         consumePeeked(minCursor);
@@ -568,5 +605,6 @@ export async function processIncrementally<TResult>(
     lastTimestamp,
     eventsAtLastTimestamp,
     isDone: true,
+    unitState,
   };
 }

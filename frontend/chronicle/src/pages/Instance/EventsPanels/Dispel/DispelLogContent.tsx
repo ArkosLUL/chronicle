@@ -70,7 +70,7 @@ function CategoryBadge({ category }: { category: DispelCategory }) {
 // ============================================================================
 
 interface DispelLogFilterProps {
-  selected: DispelCategory;
+  selected: Set<DispelCategory>;
   onChange: (type: DispelCategory) => void;
   availableTypes: Set<DispelCategory>;
 }
@@ -81,11 +81,13 @@ function DispelLogFilter({ selected, onChange, availableTypes }: DispelLogFilter
   );
   if (visibleTypes.length <= 1) return null;
 
+  const allSelected = selected.size === 0;
+
   return (
     <div className="flex items-center gap-1">
       {visibleTypes.map((type) => {
         const config = CATEGORY_BADGE[type];
-        const isSelected = type === selected;
+        const isSelected = type === "All" ? allSelected : selected.has(type);
         return (
           <button
             key={type}
@@ -135,7 +137,23 @@ type DispelLogContentProps = PanelRenderProps<DispelResult>;
 
 export const DispelLogContent = (props: DispelLogContentProps) => {
   const { result, context, loading, processing, checkboxChecked } = props;
-  const [filterCategory, setFilterCategory] = useState<DispelCategory>("All");
+  const [filterCategories, setFilterCategories] = useState<Set<DispelCategory>>(new Set());
+
+  const handleToggleCategory = useCallback((type: DispelCategory) => {
+    if (type === "All") {
+      setFilterCategories(new Set());
+      return;
+    }
+    setFilterCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
 
   const encounterNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -171,8 +189,8 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
     if (!cachedResult) return [];
     const selected = new Set(context.selectedEncounterIds);
     return cachedResult.DispelEvents
-      .filter((e) => selected.has(e.encounterID) && (filterCategory === "All" || e.category === filterCategory));
-  }, [cachedResult, context.selectedEncounterIds, filterCategory]);
+      .filter((e) => selected.has(e.encounterID) && (filterCategories.size === 0 || filterCategories.has(e.category)));
+  }, [cachedResult, context.selectedEncounterIds, filterCategories]);
 
   const effectiveProps = {
     ...props,
@@ -188,8 +206,8 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
           Dispels: <span className="font-medium text-foreground">{sortedEvents.length}</span>
         </div>
         <DispelLogFilter
-          selected={filterCategory}
-          onChange={setFilterCategory}
+          selected={filterCategories}
+          onChange={handleToggleCategory}
           availableTypes={availableTypes}
         />
       </div>

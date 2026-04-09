@@ -79,12 +79,12 @@ const CATEGORY_CONFIG: Record<DispelCategory, CategoryConfig> = {
 // ============================================================================
 
 interface DispelTypeSelectorProps {
-  selectedType: DispelCategory;
+  selected: Set<DispelCategory>;
   onChange: (type: DispelCategory) => void;
   availableTypes: Set<DispelCategory>;
 }
 
-function DispelTypeSelector({ selectedType, onChange, availableTypes }: DispelTypeSelectorProps) {
+function DispelTypeSelector({ selected, onChange, availableTypes }: DispelTypeSelectorProps) {
   // Always show "All", then only categories with data
   const visibleTypes = ALL_DISPEL_CATEGORIES.filter(
     (t) => t === "All" || availableTypes.has(t),
@@ -92,11 +92,13 @@ function DispelTypeSelector({ selectedType, onChange, availableTypes }: DispelTy
 
   if (visibleTypes.length <= 1) return null; // Only "All" — no point showing selector
 
+  const allSelected = selected.size === 0;
+
   return (
     <div className="flex items-center gap-1">
       {visibleTypes.map((type) => {
         const config = CATEGORY_CONFIG[type];
-        const isSelected = type === selectedType;
+        const isSelected = type === "All" ? allSelected : selected.has(type);
 
         return (
           <button
@@ -229,10 +231,20 @@ function getAvailableDispelTypes(
   return available;
 }
 
+/** Resolve which category keys to iterate based on selection. Empty set = "All". */
+function resolveCategories(
+  selected: Set<DispelCategory>,
+  catMap: Map<DispelCategory, Map<string, DispelEntityData>>,
+): DispelCategory[] {
+  if (selected.size === 0) return ["All"];
+  // If only one selected, use it directly; otherwise iterate each
+  return Array.from(selected).filter((c) => catMap.has(c));
+}
+
 function aggregateForEncounters(
   result: DispelResult,
   perspective: DispelPerspective,
-  category: DispelCategory,
+  categories: Set<DispelCategory>,
   selectedEncounterIds: string[],
   selectedTargets: Set<string>,
 ): PlayerMetricChartData[] {
@@ -242,22 +254,26 @@ function aggregateForEncounters(
   for (const encId of selectedEncounterIds) {
     const catMap = perspectiveMap.get(encId);
     if (!catMap) continue;
-    const entityMap = catMap.get(category);
-    if (!entityMap) continue;
 
-    for (const [entityID, data] of entityMap) {
-      const existing = aggregated.get(entityID);
-      if (existing) {
-        existing.value += data.totalDispels;
-      } else {
-        aggregated.set(entityID, {
-          playerID: data.entityID,
-          playerName: data.entityName,
-          className: data.className,
-          specialization: "",
-          value: data.totalDispels,
-          dimmed: selectedTargets.size !== 0 && !selectedTargets.has(entityID),
-        });
+    const cats = resolveCategories(categories, catMap);
+    for (const category of cats) {
+      const entityMap = catMap.get(category);
+      if (!entityMap) continue;
+
+      for (const [entityID, data] of entityMap) {
+        const existing = aggregated.get(entityID);
+        if (existing) {
+          existing.value += data.totalDispels;
+        } else {
+          aggregated.set(entityID, {
+            playerID: data.entityID,
+            playerName: data.entityName,
+            className: data.className,
+            specialization: "",
+            value: data.totalDispels,
+            dimmed: selectedTargets.size !== 0 && !selectedTargets.has(entityID),
+          });
+        }
       }
     }
   }
@@ -268,7 +284,7 @@ function aggregateForEncounters(
 function getEntityDispelData(
   result: DispelResult,
   perspective: DispelPerspective,
-  category: DispelCategory,
+  categories: Set<DispelCategory>,
   entityID: string,
   selectedEncounterIds: string[],
 ): DispelEntityData | null {
@@ -284,20 +300,24 @@ function getEntityDispelData(
   for (const encId of selectedEncounterIds) {
     const catMap = perspectiveMap.get(encId);
     if (!catMap) continue;
-    const entityMap = catMap.get(category);
-    if (!entityMap) continue;
-    const data = entityMap.get(entityID);
-    if (!data) continue;
 
-    merged.entityName = data.entityName;
-    merged.className = data.className;
-    merged.totalDispels += data.totalDispels;
-    for (const [key, spell] of data.bySpell) {
-      const existing = merged.bySpell.get(key);
-      if (existing) {
-        existing.count += spell.count;
-      } else {
-        merged.bySpell.set(key, { ...spell });
+    const cats = resolveCategories(categories, catMap);
+    for (const category of cats) {
+      const entityMap = catMap.get(category);
+      if (!entityMap) continue;
+      const data = entityMap.get(entityID);
+      if (!data) continue;
+
+      merged.entityName = data.entityName;
+      merged.className = data.className;
+      merged.totalDispels += data.totalDispels;
+      for (const [key, spell] of data.bySpell) {
+        const existing = merged.bySpell.get(key);
+        if (existing) {
+          existing.count += spell.count;
+        } else {
+          merged.bySpell.set(key, { ...spell });
+        }
       }
     }
   }
@@ -322,7 +342,23 @@ export function DispelContent(props: DispelContentProps) {
     [props.panelContextVersion],
   );
 
-  const [selectedCategory, setSelectedCategory] = useState<DispelCategory>("All");
+  const [selectedCategories, setSelectedCategories] = useState<Set<DispelCategory>>(new Set());
+
+  const handleToggleCategory = useCallback((type: DispelCategory) => {
+    if (type === "All") {
+      setSelectedCategories(new Set());
+      return;
+    }
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
 
   // Available categories
   const availableTypes = useMemo(() => {
@@ -330,12 +366,15 @@ export function DispelContent(props: DispelContentProps) {
     return getAvailableDispelTypes(cachedResult, perspective, context.selectedEncounterIds);
   }, [cachedResult, perspective, context.selectedEncounterIds]);
 
-  // Effective category with fallback
-  const effectiveCategory = useMemo((): DispelCategory => {
-    if (selectedCategory === "All") return "All";
-    if (availableTypes.has(selectedCategory)) return selectedCategory;
-    return "All";
-  }, [availableTypes, selectedCategory]);
+  // Effective categories: prune any that no longer have data
+  const effectiveCategories = useMemo((): Set<DispelCategory> => {
+    if (selectedCategories.size === 0) return new Set();
+    const pruned = new Set<DispelCategory>();
+    for (const c of selectedCategories) {
+      if (availableTypes.has(c)) pruned.add(c);
+    }
+    return pruned;
+  }, [availableTypes, selectedCategories]);
 
   // Aggregate data
   const chartData = useMemo(() => {
@@ -343,11 +382,11 @@ export function DispelContent(props: DispelContentProps) {
     return aggregateForEncounters(
       cachedResult,
       perspective,
-      effectiveCategory,
+      effectiveCategories,
       context.selectedEncounterIds,
       context.entitySelection.playerIds,
     );
-  }, [cachedResult, perspective, effectiveCategory, context.selectedEncounterIds, context.entitySelection.playerIds]);
+  }, [cachedResult, perspective, effectiveCategories, context.selectedEncounterIds, context.entitySelection.playerIds]);
 
   // Register chart data for cross-panel comparison
   const { registerChartData } = props;
@@ -378,7 +417,7 @@ export function DispelContent(props: DispelContentProps) {
       const entityData = getEntityDispelData(
         cachedResult,
         perspective,
-        effectiveCategory,
+        effectiveCategories,
         playerID,
         context.selectedEncounterIds,
       );
@@ -403,7 +442,7 @@ export function DispelContent(props: DispelContentProps) {
         </div>
       );
     },
-    [cachedResult, perspective, effectiveCategory, context.selectedEncounterIds, loading, processing],
+    [cachedResult, perspective, effectiveCategories, context.selectedEncounterIds, loading, processing],
   );
 
   // Total
@@ -417,8 +456,8 @@ export function DispelContent(props: DispelContentProps) {
           Total: <span className="font-medium font-mono text-foreground">{displayTotal}</span>
         </div>
         <DispelTypeSelector
-          selectedType={effectiveCategory}
-          onChange={setSelectedCategory}
+          selected={effectiveCategories}
+          onChange={handleToggleCategory}
           availableTypes={availableTypes}
         />
       </div>

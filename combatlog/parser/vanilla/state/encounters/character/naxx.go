@@ -32,7 +32,26 @@ func NewAnubRekhan(id guid.GUID, all *Characters) (Character, bool) {
 }
 
 func NewHeiganTheUnclean(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(15936, 16236, 16056)(id, all)
+	return NewAdsGoWithBoss(15936,
+		16236, // Eye Stalk
+		16056, // Diseased Maggot
+	)(id, all)
+}
+
+func NewEyeStalk(id guid.GUID, all *Characters) (Character, bool) {
+	entry, ok := id.GetEntry()
+	if !ok || entry != 16236 {
+		return nil, false
+	}
+	return NewCommonCharacter(id, all).WithTimeoutAsDeath(), true
+}
+
+func NewDiseasedMaggot(id guid.GUID, all *Characters) (Character, bool) {
+	entry, ok := id.GetEntry()
+	if !ok || entry != 16056 {
+		return nil, false
+	}
+	return NewCommonCharacter(id, all).WithTimeoutAsDeath(), true
 }
 
 const (
@@ -168,19 +187,6 @@ func (c *ThaddiusParty) finalizePendingDeath(reason string, m messages.Message) 
 	c.Common.Died(reason, m)
 	c.pendingDeath = nil
 }
-
-// NewDiseasedMaggot is I think the blobs that crawl along the floor?
-//func NewDiseasedMaggot(id guid.GUID, all *Characters) (Character, bool) {
-//	if entry, ok := id.GetEntry(); !ok || entry != 16056 {
-//		return nil, false
-//	}
-//
-//	if !id.IsCreature() {
-//		return nil, false
-//	}
-//
-//	return &NeverActive{id: id}, true
-//}
 
 func NewGothikRoom(id guid.GUID, all *Characters) (Character, bool) {
 	entry, ok := id.GetEntry()

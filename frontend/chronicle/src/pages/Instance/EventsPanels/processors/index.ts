@@ -24,6 +24,7 @@ import { rotationsProcessor } from "../Rotations/rotations.processor";
 import { possessionProcessor } from "../PossessionPanel/possession.processor";
 import { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 import { dispelProcessor } from "../Dispel/dispel.processor";
+import { equipmentProcessor } from "../Equipment/equipment.processor";
 
 // Export individual processors
 export { damageDoneProcessor, vulnerabilityEffectProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -47,6 +48,7 @@ export { rotationsProcessor } from "../Rotations/rotations.processor";
 export { possessionProcessor } from "../PossessionPanel/possession.processor";
 export { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 export { dispelProcessor } from "../Dispel/dispel.processor";
+export { equipmentProcessor } from "../Equipment/equipment.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -68,6 +70,7 @@ export type { TimelineResult, TimelineSeriesMeta } from "../Timeline/timeline.pr
 export type { TimelineSeriesConfig, AggregationType, TimelineSettings } from "../Timeline/timelineTypes";
 export type { RotationsResult, CastEntry, AuraSegment } from "../Rotations/rotations.processor";
 export type { DispelResult, DispelEntityData, DispelSpellData, DispelCategory, DispelLogEvent } from "../Dispel/dispel.processor";
+export type { EquipmentResult, PlayerSnapshot } from "../Equipment/equipment.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
@@ -126,4 +129,6 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   dispels_done: dispelProcessor,
   dispels_received: dispelProcessor,
   dispel_log: dispelProcessor,
+  // Equipment
+  equipment: equipmentProcessor,
 };

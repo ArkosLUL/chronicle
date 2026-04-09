@@ -248,7 +248,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
 		// V2 parser: single file
-		p, err := parserv2.New(logger, rdr, w.parent.WoWDB)
+		p, err := parserv2.New(logger, rdr, w.parent.WoWDB, w.parent.ItemFetcher)
 		if err != nil {
 			jobResult = "failure"
 			return fmt.Errorf("create v2 parser: %w", err)
@@ -347,7 +347,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// Time DB insert
 		dbInsertStart := time.Now()
 		err = db.InTx(func(tx *authz.AuthzTX) error {
-			guild, err := finalized.Guilds.Insert(ctx,encountersState.Units, instanceID, realmID, tx)
+			guild, err := finalized.Guilds.Insert(ctx, encountersState.Units, instanceID, realmID, tx)
 			if err != nil {
 				return fmt.Errorf("insert guild: %w", err)
 			}

@@ -21,6 +21,7 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/itemfetcher"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/gamedb"
@@ -54,6 +55,7 @@ type Chronicle struct {
 	queue              *riverqueue.Queues
 	Zed                *authz.Authz
 	WoWDB              *gamedb.WoWDB
+	ItemFetcher        *itemfetcher.ItemFetcher
 	metrics            *logParseMetrics
 
 	mu sync.Mutex
@@ -75,6 +77,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		WoWDB:              opts.WoWDB,
 		TemporaryDirectory: filepath.Join(os.TempDir(), "chronicle_uploads"),
 		metrics:            newLogParseMetrics(opts.Registry),
+		ItemFetcher:        itemfetcher.New(ctx, opts.Zed, 450),
 	}
 
 	err := c.initStorage(ctx)

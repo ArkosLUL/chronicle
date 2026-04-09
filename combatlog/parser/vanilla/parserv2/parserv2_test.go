@@ -56,7 +56,7 @@ func testCaseWithDB[T messages.Message](t *testing.T, line string, expected T, w
 	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
 	logger := slog.New(slogzerolog.Option{Level: slog.LevelDebug, Logger: &zerologLogger}.NewZerologHandler())
 
-	p, err := New(logger, strings.NewReader(line), wowDB)
+	p, err := New(logger, strings.NewReader(line), wowDB, nil)
 	require.NoError(t, err)
 	msgs, err := p.Advance(ctx)
 	require.NoError(t, err)

@@ -45,7 +45,6 @@ SELECT
   c.entry,
   c.name,
   c.quality,
-  c.entry,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM combined c
   LEFT JOIN world_display_info wdi ON wdi.id = c.display_id

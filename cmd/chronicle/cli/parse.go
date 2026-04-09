@@ -73,7 +73,7 @@ func ParseV2Cmd() *serpent.Command {
 			}
 			defer func() { closeFiles(files...) }()
 
-			p, err := parserv2.New(logger, files[0], servicewowdb.WoWDB(srvs).GameDB())
+			p, err := parserv2.New(logger, files[0], servicewowdb.WoWDB(srvs).GameDB(), nil)
 			if err != nil {
 				return fmt.Errorf("creating parser: %w", err)
 			}
@@ -234,7 +234,7 @@ func CreaturesCmd() *serpent.Command {
 				if err != nil {
 					return fmt.Errorf("creating wowdb: %w", err)
 				}
-				p, err = parserv2.New(logger, files[0], wowDB)
+				p, err = parserv2.New(logger, files[0], wowDB, nil)
 				if err != nil {
 					return fmt.Errorf("creating parser: %w", err)
 				}
@@ -452,7 +452,7 @@ func HitTypeCMD() *serpent.Command {
 				if err != nil {
 					return fmt.Errorf("creating wowdb: %w", err)
 				}
-				p, err = parserv2.New(logger, files[0], wowDB)
+				p, err = parserv2.New(logger, files[0], wowDB, nil)
 				if err != nil {
 					return fmt.Errorf("creating parser: %w", err)
 				}

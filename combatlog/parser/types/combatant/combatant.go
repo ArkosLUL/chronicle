@@ -144,9 +144,11 @@ type Guild struct {
 
 // GearItem represents an equipped item with optional enchant
 type GearItem struct {
-	Name      string
-	ItemID    int
-	EnchantID *int
+	Name          string
+	ItemID        int
+	EnchantID     *int
+	TempEnchantID *int
+	SuffixID      int
 	// TODO: slot source?
 }
 
@@ -188,13 +190,30 @@ func ParseGear(gear []string) []GearItem {
 			gearItems = append(gearItems, GearItem{}) // Append empty GearItem for "nil" slots
 			continue
 		}
+		suffixID, err := strconv.Atoi(itemArgs[2])
+		if err != nil {
+			suffixID = 0 // Default to 0 if parsing fails
+		}
+
+		var tempEnchantID int
+		if len(itemArgs) >= 4 {
+			tempEnchantID, err = strconv.Atoi(itemArgs[3])
+			if err != nil {
+				gearItems = append(gearItems, GearItem{}) // Append empty GearItem for "nil" slots
+				continue
+			}
+		}
 
 		item := GearItem{
-			Name:   name,
-			ItemID: itemID,
+			Name:     name,
+			ItemID:   itemID,
+			SuffixID: suffixID,
 		}
 		if enchantID != 0 {
 			item.EnchantID = &enchantID
+		}
+		if tempEnchantID != 0 {
+			item.TempEnchantID = &tempEnchantID
 		}
 
 		gearItems = append(gearItems, item)

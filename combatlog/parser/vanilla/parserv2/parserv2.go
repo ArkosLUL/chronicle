@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/types/gameversions"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/itemfetcher"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
@@ -20,19 +22,23 @@ type Parser struct {
 	wowDB   gamedb.SpellFetcher
 	scanner *bufio.Scanner
 
-	lastDate   time.Time
-	synthetics *synthetic.Synthetic
+	lastDate    time.Time
+	synthetics  *synthetic.Synthetic
+	itemFetcher *itemfetcher.ItemFetcher
+
+	gameVersions *gameversions.GameVersion
 }
 
-func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher) (*Parser, error) {
+func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, items *itemfetcher.ItemFetcher) (*Parser, error) {
 	if wowDB == nil {
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
 	return &Parser{
-		logger:     logger,
-		wowDB:      wowDB,
-		scanner:    bufio.NewScanner(r),
-		synthetics: synthetic.New(logger, wowDB),
+		logger:      logger,
+		wowDB:       wowDB,
+		scanner:     bufio.NewScanner(r),
+		synthetics:  synthetic.New(logger, wowDB),
+		itemFetcher: items,
 	}, nil
 }
 
@@ -116,8 +122,8 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.envDmg(ctx, ts, m)
 	case "DMG_SHIELD":
 		return p.dmgShield(ctx, ts, m)
-  case "DISPEL":
-    return p.dispel(ctx, ts, m)
+	case "DISPEL":
+		return p.dispel(ctx, ts, m)
 	}
 
 	return messages.Unparsed(ts, next), nil

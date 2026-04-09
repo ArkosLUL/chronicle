@@ -9,6 +9,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/gameversions"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
@@ -17,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
+	"github.com/Masterminds/semver"
 )
 
 const dateLayout = "02.01.06 15:04:05"
@@ -58,6 +60,14 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 
 	if ts.IsZero() {
 		ts = utcTime
+	}
+
+	chronicleCompanion, ccv := semver.NewVersion(addonVersion)
+
+	if ccv == nil {
+		p.gameVersions = &gameversions.GameVersion{
+			ChronicleCompanionAddon: chronicleCompanion,
+		}
 	}
 
 	return set(
@@ -274,6 +284,10 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 	})
 }
 
+var (
+	talentsSupported = semver.MustParse("0.19")
+)
+
 func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	var guild *combatant.Guild
 
@@ -305,9 +319,19 @@ func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([
 		return nil, err
 	}
 
+	if p.gameVersions != nil &&
+		p.gameVersions.ChronicleCompanionAddon.LessThan(talentsSupported) {
+		talentsStr = ""
+	}
+
 	talents, err := combatant.ParseTalents(talentsStr)
 	if err != nil {
 		return nil, fmt.Errorf("parsing talents: %w", err)
+	}
+
+	gear := combatant.ParseGear(strings.Split(gearStr, "&"))
+	if p.itemFetcher != nil {
+		p.itemFetcher.ResolveGear(gear)
 	}
 
 	return set(&messages.Combatant{
@@ -321,7 +345,7 @@ func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([
 			Race:       race,
 			PetName:    petName,
 			Guild:      guild,
-			GearSetups: combatant.ParseGear(strings.Split(gearStr, "&")),
+			GearSetups: gear,
 			Talents:    talents,
 		},
 	})
@@ -464,6 +488,8 @@ func (p *Parser) dmgShield(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		spellID = gamedb.ReflectFrost
 	case types.ShadowSchool:
 		spellID = gamedb.ReflectShadow
+	case types.ArcaneSchool:
+		spellID = gamedb.ReflectArcane
 	default:
 		return nil, fmt.Errorf("unknown school type: %d", school)
 	}

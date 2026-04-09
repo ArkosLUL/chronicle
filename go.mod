@@ -83,6 +83,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect

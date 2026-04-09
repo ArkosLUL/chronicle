@@ -34,13 +34,15 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
   );
 
   const isEmpty = item.item_id === 0;
+  const quality = item.item_quality ?? tooltipData.data?.quality ?? 0;
   const borderClass = isEmpty
     ? "border-zinc-700"
-    : getQualityBorderClass(item.item_quality ?? 0);
+    : getQualityBorderClass(quality);
   const nameClass = isEmpty
     ? "text-zinc-600"
-    : getQualityTextClass(item.item_quality ?? 0);
-  const displayName = isEmpty ? slotDef.label : (item.item_name ?? "");
+    : getQualityTextClass(quality);
+  const iconName = item.item_icon || tooltipData.data?.icon;
+  const displayName = isEmpty ? slotDef.label : (item.item_name || tooltipData.data?.name || `Item #${item.item_id}`);
 
   const showTooltip = (hovered || pinned) && tooltipData.data && !isEmpty;
 
@@ -95,10 +97,10 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
           !isEmpty && "hover:brightness-125 cursor-pointer",
         )}
       >
-        {!isEmpty && item.item_icon ? (
+        {!isEmpty && iconName ? (
           <img
-            src={getItemIconUrl(item.item_icon)}
-            alt={item.item_name ?? ""}
+            src={getItemIconUrl(iconName)}
+            alt={displayName}
             className="w-full h-full object-cover"
             loading="lazy"
           />

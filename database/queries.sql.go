@@ -3917,7 +3917,6 @@ SELECT
   c.entry,
   c.name,
   c.quality,
-  c.entry,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
 FROM combined c
   LEFT JOIN world_display_info wdi ON wdi.id = c.display_id
@@ -3933,7 +3932,6 @@ type GetItemTemplateMetadataBatchRow struct {
 	Entry   int32  `db:"entry" json:"entry"`
 	Name    string `db:"name" json:"name"`
 	Quality int32  `db:"quality" json:"quality"`
-	Entry_2 int32  `db:"entry_2" json:"entry_2"`
 	Icon    string `db:"icon" json:"icon"`
 }
 
@@ -3953,7 +3951,6 @@ func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, arg GetIt
 			&i.Entry,
 			&i.Name,
 			&i.Quality,
-			&i.Entry_2,
 			&i.Icon,
 		); err != nil {
 			return nil, err

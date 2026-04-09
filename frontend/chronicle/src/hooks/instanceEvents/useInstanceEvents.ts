@@ -42,6 +42,10 @@ function getSchemaForType(type: StreamType): DescMessage {
       return DispelSchema;
     case "unit_classification":
       return UnitClassificationSchema;
+    case "combatant_info":
+      // combatant_info uses FastCombatantInfoCursor, not generic StreamCursor.
+      // Return UnitClassificationSchema as placeholder to satisfy exhaustive check.
+      return UnitClassificationSchema;
     default: {
       const _exhaustive: never = type;
       throw new Error(`Unknown stream type: ${_exhaustive}`);

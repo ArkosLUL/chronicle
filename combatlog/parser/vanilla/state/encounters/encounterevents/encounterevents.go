@@ -28,6 +28,7 @@ type EncounterEvents struct {
 	SpellStart         *Builder[*messages.SpellStart, *chronicleproto.SpellStart]
 	SpellFail          *Builder[*messages.SpellFail, *chronicleproto.SpellFail]
 	UnitClassification *Builder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification]
+	CombatantInfo      *Builder[*messages.Combatant, *chronicleproto.CombatantInfo]
 	Dispel             *Builder[*messages.Dispel, *chronicleproto.Dispel]
 	cnter              int32
 }
@@ -47,6 +48,7 @@ func New(verbose bool) *EncounterEventsInProgress {
 		SpellStart:     NewBuilder[*messages.SpellStart, *chronicleproto.SpellStart](),
 		SpellFail:          NewBuilder[*messages.SpellFail, *chronicleproto.SpellFail](),
 		UnitClassification: NewBuilder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification](),
+		CombatantInfo:      NewBuilder[*messages.Combatant, *chronicleproto.CombatantInfo](),
 		Dispel:             NewBuilder[*messages.Dispel, *chronicleproto.Dispel](),
 	}
 }
@@ -112,6 +114,11 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing unit classification events: %w", err)
 	}
 
+	combatantInfo, err := e.CombatantInfo.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing combatant info events: %w", err)
+	}
+
 	dispel, err := e.Dispel.Finalize(encounterID)
 	if err != nil {
 		return fmt.Errorf("finalizing dispel events: %w", err)
@@ -129,6 +136,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.SpellStart = append(merge.SpellStart, spellStart...)
 	merge.SpellFail = append(merge.SpellFail, spellFail...)
 	merge.UnitClassification = append(merge.UnitClassification, unitClassification...)
+	merge.CombatantInfo = append(merge.CombatantInfo, combatantInfo...)
 	merge.Dispel = append(merge.Dispel, dispel...)
 
 	return nil
@@ -200,6 +208,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("unit classification proto: %w", err)
 		}
+	case *messages.Combatant:
+		err := AddToBuilder(e.CombatantInfo, ty, e.nextIndex(), types2proto.CombatantInfo)
+		if err != nil {
+			return fmt.Errorf("combatant info proto: %w", err)
+		}
 	case *messages.Dispel:
 		err := AddToBuilder(e.Dispel, ty, e.nextIndex(), types2proto.Dispel)
 		if err != nil {
@@ -226,6 +239,7 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.SpellStart.SetZero(e.first)
 	e.SpellFail.SetZero(e.first)
 	e.UnitClassification.SetZero(e.first)
+	e.CombatantInfo.SetZero(e.first)
 	e.Dispel.SetZero(e.first)
 }
 

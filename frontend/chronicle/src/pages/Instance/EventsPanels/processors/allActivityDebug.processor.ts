@@ -2,7 +2,7 @@
  * All Activity Debug processor - stores raw events for debugging stream interleaving
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent, ExtraAttackProcessorEvent, UnitClassificationProcessorEvent, DispelProcessorEvent } from "../processorTypes";
+import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent, CastProcessorEvent, CastAction, AuraProcessorEvent, AuraApplication, SlainProcessorEvent, SpellGoProcessorEvent, AuraCastProcessorEvent, ExtraAttackProcessorEvent, UnitClassificationProcessorEvent, CombatantInfoProcessorEvent, DispelProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 
 /**
@@ -78,14 +78,14 @@ export interface AllActivityDebugState {
 }
 
 // This processor handles damage, heal, resource_change, cast, aura, slain, spell_go, and aura_cast events
-type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | ExtraAttackProcessorEvent | UnitClassificationProcessorEvent | DispelProcessorEvent;
+type AllActivityEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SlainProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | ExtraAttackProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent;
 
 // Default page size if no pagination specified
 const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast", "extra_attack", "unit_classification", "dispel"],
+  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast", "extra_attack", "unit_classification", "combatant_info", "dispel"],
   
   createState: () => ({
     counts: new Map<string, number>(),
@@ -98,7 +98,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: [],
       aura: [],
       spell_go: [],
-      aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], dispel: [],
+      aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], combatant_info: [], dispel: [],
     },
     streamCounts: {
       damage: 0,
@@ -109,7 +109,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: 0,
       aura: 0,
       spell_go: 0,
-      aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, dispel: 0,
+      aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
     totalProcessed: 0,
@@ -138,9 +138,10 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     
     // Filter by selected players if any are selected
     const { entitySelection } = context;
-    // Aura events only have target, cast events have caster but may not have target
-    const eventCaster = "caster" in event ? event.caster : "";
-    const eventTarget = "target" in event ? event.target : "";
+    // Aura events only have target, cast events have caster but may not have target.
+    // Combatant info events use "guid" instead of caster/target.
+    const eventCaster = "caster" in event ? event.caster : ("guid" in event ? event.guid : "");
+    const eventTarget = "target" in event ? event.target : ("guid" in event ? event.guid : "");
     if (entitySelection.playerIds.size > 0) {
       if(!(entitySelection.playerIds.has(eventCaster) || (eventTarget && entitySelection.playerIds.has(eventTarget)))) {
         return;
@@ -188,6 +189,8 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
         abilityName = extraEvent.sourceName;
       } else if (streamType === "unit_classification") {
         abilityName = "Classification";
+      } else if (streamType === "combatant_info") {
+        abilityName = "Combatant Info";
       } else if (streamType === "dispel") {
         abilityName = "Dispel";
       } else {
@@ -300,6 +303,10 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
     } else if (streamType === "unit_classification") {
       sourceName = "Classification";
       amount = 0;
+    } else if (streamType === "combatant_info") {
+      const ciEvent = event as CombatantInfoProcessorEvent;
+      sourceName = "Combatant Info";
+      amount = ciEvent.gearCount;
     } else if (streamType === "dispel") {
       sourceName = "Dispel";
       amount = 0;
@@ -411,6 +418,17 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       const parts = [`${affiliationNames[ucEvent.affiliation] || "Unknown"} ${unitTypeNames[ucEvent.unitType] || "Unknown"}`];
       if (ucEvent.owner) parts.push(`owner=${ucEvent.owner.slice(-6)}`);
       if (ucEvent.spellId) parts.push(`spell=${ucEvent.spellId}`);
+      rawEvent.extra = parts.join(" ");
+    } else if (streamType === "combatant_info") {
+      const ciEvent = event as CombatantInfoProcessorEvent;
+      rawEvent.caster = ciEvent.guid;
+      rawEvent.casterName = ciEvent.name;
+      rawEvent.target = ciEvent.guid;
+      rawEvent.targetName = ciEvent.name;
+      const parts = [`${ciEvent.heroClass} ${ciEvent.race}`];
+      if (ciEvent.talents) parts.push(`talents=${ciEvent.talents.summary.join("/")}`);
+      parts.push(`gear=${ciEvent.gearCount} slots`);
+      if (ciEvent.guildName) parts.push(`guild=${ciEvent.guildName}`);
       rawEvent.extra = parts.join(" ");
     }
     

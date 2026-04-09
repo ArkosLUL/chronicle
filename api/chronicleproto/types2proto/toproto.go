@@ -6,6 +6,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronicleproto"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
@@ -300,6 +301,45 @@ func UnitClassification(from time.Time, idx int32, msg *messages.UnitClassificat
 		uc.Controller = &s
 	}
 	return uc
+}
+
+func CombatantInfo(from time.Time, idx int32, msg *messages.Combatant) *chronicleproto.CombatantInfo {
+	ci := &chronicleproto.CombatantInfo{
+		Meta:      EventMeta(from, idx, msg),
+		Guid:      msg.Guid.String(),
+		Name:      msg.Name,
+		HeroClass: string(msg.HeroClass),
+		Race:      string(msg.Race),
+		Gender:    int32(msg.Gender),
+	}
+	if msg.Guild != nil {
+		ci.GuildName = &msg.Guild.Name
+	}
+	for _, g := range msg.GearSetups {
+		ci.Gear = append(ci.Gear, GearSlot(g))
+	}
+	if msg.Talents != nil {
+		ci.Talents = TalentSummary(msg.Talents)
+	}
+	return ci
+}
+
+func GearSlot(g combatant.GearItem) *chronicleproto.CombatantGearSlot {
+	slot := &chronicleproto.CombatantGearSlot{
+		//nolint:gosec
+		ItemId: int32(g.ItemID),
+	}
+	if g.EnchantID != nil {
+		//nolint:gosec
+		slot.EnchantId = ptr.Ref(int32(*g.EnchantID))
+	}
+	return slot
+}
+
+func TalentSummary(t *combatant.Talents) *chronicleproto.CombatantTalents {
+	return &chronicleproto.CombatantTalents{
+		Summary: []int32{int32(t.Summary[0]), int32(t.Summary[1]), int32(t.Summary[2])},
+	}
 }
 
 func School(school types.School) chronicleproto.School {

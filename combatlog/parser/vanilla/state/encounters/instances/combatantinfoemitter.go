@@ -1,0 +1,79 @@
+package instances
+
+import (
+	"context"
+
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
+	"github.com/google/uuid"
+)
+
+// Verify interface compliance.
+var _ instancehook.Hook = (*combatantInfoEmitter)(nil)
+var _ character.SetHook = (*combatantInfoEmitter)(nil)
+
+// combatantInfoEmitter injects Combatant messages into the current fight's
+// event builder when a fight starts, snapshotting each active player's gear,
+// talents, and other COMBATANT_INFO data.
+type combatantInfoEmitter struct {
+	instancehook.BaseHook
+
+	armory     *armory.Tracker
+	characters *character.Characters
+	emit       func(*messages.Combatant)
+}
+
+// character.SetHook — emit combatant info when a player becomes active mid-fight.
+func (ce *combatantInfoEmitter) ActivityChange(m messages.Message, chars ...character.Character) {
+	for _, c := range chars {
+		if !c.IsActive() || !c.ID().IsPlayer() {
+			continue
+		}
+		player, ok := ce.armory.Players[c.ID()]
+		if !ok {
+			continue
+		}
+		ce.emit(&messages.Combatant{
+			MessageBase: messages.Base(m.Date()),
+			Combatant:   player,
+		})
+	}
+}
+
+// character.SetHook — no-op.
+func (ce *combatantInfoEmitter) CharacterAdded(_ messages.Message, _ ...character.Character) {}
+
+// instancehook.Hook — no-op for messages (armory tracker handles COMBATANT_INFO).
+func (ce *combatantInfoEmitter) ProcessMessage(_ bool, _ uuid.UUID, _ messages.Message) error {
+	return nil
+}
+
+// instancehook.Hook
+func (ce *combatantInfoEmitter) Finalize(_ context.Context) error { return nil }
+
+// instancehook.Hook — emit combatant info for all active players when a fight starts.
+func (ce *combatantInfoEmitter) FightStarted(_ uuid.UUID, m messages.Message) {
+	ce.emitAllActive(m)
+}
+
+// instancehook.Hook — no-op on fight end (gear snapshot at start is sufficient).
+func (ce *combatantInfoEmitter) FightEnded(_ uuid.UUID, _ messages.Message) {}
+
+func (ce *combatantInfoEmitter) emitAllActive(m messages.Message) {
+	_ = ce.characters.All.ForEach(func(char character.Character) error {
+		if !char.IsActive() || !char.ID().IsPlayer() {
+			return nil
+		}
+		player, ok := ce.armory.Players[char.ID()]
+		if !ok {
+			return nil
+		}
+		ce.emit(&messages.Combatant{
+			MessageBase: messages.Base(m.Date()),
+			Combatant:   player,
+		})
+		return nil
+	})
+}

@@ -285,6 +285,19 @@ export interface UnitClassificationProcessorEvent extends EventMeta {
 }
 
 
+export interface CombatantInfoProcessorEvent extends EventMeta {
+  type: "combatant_info";
+  guid: string;              // Player GUID
+  name: string;              // Player name
+  heroClass: string;         // e.g. "Warrior", "Mage"
+  race: string;              // e.g. "Human", "Orc"
+  gender: number;
+  guildName: string | null;
+  gear: { itemId: number; enchantId: number | null; temporaryEnchantId: number | null }[];
+  gearCount: number;
+  talents: { summary: number[] } | null;
+}
+
 export interface DispelProcessorEvent extends EventMeta {
   type: "dispel";
   caster: string;        // The unit performing the dispel
@@ -295,7 +308,7 @@ export interface DispelProcessorEvent extends EventMeta {
   dispelType: number;    // 0=None, 1=Magic, 2=Curse, 3=Disease, 4=Poison, 5=Stealth, 6=Invisibility
 }
 
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | DispelProcessorEvent;
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

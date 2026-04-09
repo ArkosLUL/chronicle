@@ -72,6 +72,12 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	}
 	characters.RegisterHook(ce)
 
+	cie := &combatantInfoEmitter{
+		armory:     g,
+		characters: characters,
+	}
+	characters.RegisterHook(cie)
+
 	overheals := &Overhealing{
 		deficits: make(map[guid.GUID]int32),
 	}
@@ -90,11 +96,21 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		hooks: []instancehook.Hook{
 			g,
 			ce,
+			cie,
 			overheals,
 		},
 		verbose:         parseoptions.IsVerbose(ctx),
 		timings:         timings.New(),
 		completedFights: make([]Fight, 0),
+	}
+
+	cie.emit = func(evt *messages.Combatant) {
+		if c.currentFight != nil && c.currentFight.active() {
+			err := c.currentFight.Events.Process(evt)
+			if err != nil {
+				logger.Error("processing combatant info event in ongoing fight", slog.String("error", err.Error()))
+			}
+		}
 	}
 
 	ce.emit = func(evt *messages.UnitClassificationEvent) {

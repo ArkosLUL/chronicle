@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -36,6 +36,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   spell_start: { icon: Play, color: "text-lime-500", label: "Spell Start" },
   spell_fail: { icon: CircleX, color: "text-red-400", label: "Spell Fail" },
   unit_classification: { icon: Search, color: "text-indigo-500", label: "Classification" },
+  combatant_info: { icon: UserCheck, color: "text-sky-400", label: "Combatant Info" },
   dispel: { icon: Bubbles, color: "text-violet-400", label: "Dispel" },
 
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
@@ -49,6 +50,7 @@ const STREAM_CODES: Record<StreamType, string> = {
   aura: "a", slain: "x", spell_go: "g", aura_cast: "u", spell_start: "ss", spell_fail: "sf",
   extra_attack: "e",
   unit_classification: "uc",
+  combatant_info: "ci",
   dispel: "dp",
 };
 const CODE_TO_STREAM = Object.fromEntries(
@@ -440,6 +442,7 @@ function AllActivityContent({
     ...rawEventsByStream.aura_cast,
     ...rawEventsByStream.extra_attack,
     ...rawEventsByStream.unit_classification,
+    ...rawEventsByStream.combatant_info,
     ...rawEventsByStream.dispel,
   ];
   
@@ -464,7 +467,7 @@ function AllActivityContent({
           "damage", "heal", "resource_change", "extra_attack", "slain",
           "aura", "aura_cast",
           "spell_start", "spell_go", "spell_fail",
-          "unit_classification", "dispel"
+          "unit_classification", "combatant_info", "dispel"
         ] as StreamType[]).map((stream) => (
           <StreamToggle
             key={stream}

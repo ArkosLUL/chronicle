@@ -156,6 +156,7 @@ const (
 	LogInstanceEventTypeSpellStart         LogInstanceEventType = "spell_start"
 	LogInstanceEventTypeSpellFail          LogInstanceEventType = "spell_fail"
 	LogInstanceEventTypeUnitClassification LogInstanceEventType = "unit_classification"
+	LogInstanceEventTypeCombatantInfo      LogInstanceEventType = "combatant_info"
 	LogInstanceEventTypeDispel             LogInstanceEventType = "dispel"
 )
 
@@ -208,6 +209,7 @@ func (e LogInstanceEventType) Valid() bool {
 		LogInstanceEventTypeSpellStart,
 		LogInstanceEventTypeSpellFail,
 		LogInstanceEventTypeUnitClassification,
+		LogInstanceEventTypeCombatantInfo,
 		LogInstanceEventTypeDispel:
 		return true
 	}
@@ -228,6 +230,7 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 		LogInstanceEventTypeSpellStart,
 		LogInstanceEventTypeSpellFail,
 		LogInstanceEventTypeUnitClassification,
+		LogInstanceEventTypeCombatantInfo,
 		LogInstanceEventTypeDispel,
 	}
 }

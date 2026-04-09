@@ -4023,6 +4023,323 @@ export class FastDispelCursor {
   }
 }
 
+// ============================================================================
+// CombatantInfo - Per-encounter gear/talent snapshots
+// ============================================================================
+
+export interface ReusableCombatantGearSlot {
+  itemId: number;
+  enchantId: number | null;
+  temporaryEnchantId: number | null;
+}
+
+export interface ReusableCombatantTalents {
+  summary: number[];
+}
+
+export interface ReusableCombatantInfo {
+  type: "combatant_info";
+  index: number;
+  offsetMilli: number;
+  guid: string;
+  name: string;
+  heroClass: string;
+  race: string;
+  gender: number;
+  guildName: string | null;
+  gear: ReusableCombatantGearSlot[];
+  gearCount: number;
+  talents: ReusableCombatantTalents | null;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
+}
+
+/**
+ * Zero-allocation CombatantInfo decoder.
+ *
+ * CombatantInfo proto field numbers:
+ *   1: meta (EventMeta)
+ *   2: guid (string)
+ *   3: name (string)
+ *   4: heroClass (int32)
+ *   5: race (int32)
+ *   6: gender (int32)
+ *   7: guildName (optional string)
+ *   8: gear (repeated CombatantGearSlot)
+ *   9: talents (optional CombatantTalents)
+ */
+export class CombatantInfoDecoder {
+  private readonly textDecoder = sharedTextDecoder;
+
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableCombatantInfo = {
+    type: "combatant_info",
+    index: 0,
+    offsetMilli: 0,
+    guid: "",
+    name: "",
+    heroClass: "",
+    race: "",
+    gender: 0,
+    guildName: null,
+    gear: [],
+    gearCount: 0,
+    talents: null,
+    activity: [],
+    activityCount: 0,
+  };
+
+  decode(data: Uint8Array, offset: number, length: number): ReusableCombatantInfo {
+    const end = offset + length;
+    const msg = this.message;
+
+    // Reset
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.guid = "";
+    msg.name = "";
+    msg.heroClass = "";
+    msg.race = "";
+    msg.gender = 0;
+    msg.guildName = null;
+    msg.gearCount = 0;
+    msg.talents = null;
+    msg.activityCount = 0;
+
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+
+      if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead: lenBytes } = readVarintFast(data, offset);
+        offset += lenBytes;
+
+        if (fieldNumber === 1) {
+          // EventMeta
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
+            }
+          }
+        } else if (fieldNumber === 2) {
+          msg.guid = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 3) {
+          msg.name = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          msg.heroClass = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 5) {
+          msg.race = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 7) {
+          msg.guildName = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 8) {
+          // CombatantGearSlot (repeated)
+          if (msg.gearCount >= msg.gear.length) {
+            msg.gear.push({ itemId: 0, enchantId: null, temporaryEnchantId: null });
+          }
+          const slot = msg.gear[msg.gearCount];
+          slot.itemId = 0;
+          slot.enchantId = null;
+          slot.temporaryEnchantId = null;
+
+          const slotEnd = offset + len;
+          while (offset < slotEnd) {
+            const slotTag = data[offset++];
+            const slotField = slotTag >> 3;
+            const slotWire = slotTag & 0x7;
+
+            if (slotWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (slotField === 1) slot.itemId = value;
+              else if (slotField === 2) slot.enchantId = value;
+              else if (slotField === 3) slot.temporaryEnchantId = value;
+            }
+          }
+          msg.gearCount++;
+        } else if (fieldNumber === 9) {
+          // CombatantTalents
+          const talentsEnd = offset + len;
+          const summary: number[] = [];
+          while (offset < talentsEnd) {
+            const tTag = data[offset++];
+            const tField = tTag >> 3;
+            const tWire = tTag & 0x7;
+
+            if (tWire === 0 && tField === 1) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              summary.push(value);
+            } else if (tWire === 2 && tField === 1) {
+              // packed repeated int32
+              const { value: packedLen, bytesRead: packedLenBytes } = readVarintFast(data, offset);
+              offset += packedLenBytes;
+              const packedEnd = offset + packedLen;
+              while (offset < packedEnd) {
+                const { value, bytesRead } = readVarintFast(data, offset);
+                offset += bytesRead;
+                summary.push(value);
+              }
+            }
+          }
+          msg.talents = { summary };
+        } else {
+          offset += len;
+        }
+      } else if (wireType === 0) {
+        const { value, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        if (fieldNumber === 6) msg.gender = value;
+      }
+    }
+
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for CombatantInfo events with zero-allocation decoding.
+ */
+export class FastCombatantInfoCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new CombatantInfoDecoder();
+  private offset: number = 0;
+
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+
+  next(): ReusableCombatantInfo | null {
+    if (!this._currentHeader) return null;
+    if (this._messagesReadInEncounter >= this._currentHeader.count) return null;
+
+    const { value: msgLen, bytesRead: msgLenBytes } = readVarint(this.data, this.offset);
+    this.offset += msgLenBytes;
+
+    const msg = this.decoder.decode(this.data, this.offset, msgLen);
+    this.offset += msgLen;
+    this._messagesReadInEncounter++;
+    this._bytesProcessed += msgLenBytes + msgLen;
+
+    return msg;
+  }
+
+  nextEncounter(): boolean {
+    // Skip remaining messages in current encounter
+    while (this.hasMoreInEncounter) {
+      const { value: msgLen, bytesRead: msgLenBytes } = readVarint(this.data, this.offset);
+      this.offset += msgLenBytes + msgLen;
+      this._messagesReadInEncounter++;
+      this._bytesProcessed += msgLenBytes + msgLen;
+    }
+
+    return this._loadNextEncounterHeader();
+  }
+
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+
+    const startOffset = this.offset;
+
+    // Read encounterID (varint-length-prefixed string)
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+
+    // Read timestamp (varint64, milliseconds since epoch)
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER
+      ? new Date(tsNumber)
+      : new Date(NaN);
+
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+
+    return true;
+  }
+}
+
 function readVarintFast(data: Uint8Array, offset: number): { value: number; bytesRead: number } {
   let value = 0;
   let shift = 0;

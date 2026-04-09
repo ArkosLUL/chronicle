@@ -182,7 +182,8 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
 
   return (
     <GenericPanel {...effectiveProps}>
-      <div className="flex items-center justify-between mb-2 gap-2">
+      <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-2 gap-2 shrink-0">
         <div className="text-xs text-muted-foreground">
           Dispels: <span className="font-medium text-foreground">{sortedEvents.length}</span>
         </div>
@@ -198,7 +199,7 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
           {loading || processing ? "Loading..." : "No dispels recorded"}
         </div>
       ) : (
-        <ScrollArea className="max-h-panel">
+        <ScrollArea className="flex-1 min-h-0">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border text-muted-foreground">
@@ -268,6 +269,7 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
           </table>
         </ScrollArea>
       )}
+      </div>
     </GenericPanel>
   );
 };

@@ -787,7 +787,7 @@ describe('petDamageDoneProcessor', () => {
     expect(encDamage.has('0xF140000CE0000002')).toBe(false);
 
     const ownerData = encDamage.get('0x0000000000001234')!;
-    expect(ownerData.playerName).toBe("TestPlayer's Companions");
+    expect(ownerData.playerName).toBe("TestPlayer");
     expect(ownerData.className).toBe('HUNTER');
   });
 

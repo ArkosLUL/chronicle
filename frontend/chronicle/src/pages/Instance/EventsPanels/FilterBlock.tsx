@@ -71,6 +71,9 @@ const SOURCE_TYPE_ALL_OPTIONS = [...SOURCE_TYPE_IDENTITY_OPTIONS, ...SOURCE_TYPE
 /** Known toggle option keys — anything else in the value array is a custom entry */
 const SOURCE_TYPE_KEYS: Set<string> = new Set(SOURCE_TYPE_ALL_OPTIONS.map((o) => o.value));
 
+/** Identity option keys — single-select within this group */
+const SOURCE_TYPE_IDENTITY_KEYS: Set<string> = new Set(SOURCE_TYPE_IDENTITY_OPTIONS.map((o) => o.value));
+
 const APPLY_TO_OPTIONS = [
   { label: "Damage", value: "damage" },
   { label: "Heal", value: "heal" },
@@ -109,36 +112,6 @@ function toArrayValue(value: string | string[]): string[] {
       .split(",")
       .map((entry) => entry.trim())
       .filter(Boolean);
-}
-
-/** Combined dropdown for entity type editors — native <select> with <optgroup> to avoid overflow clipping. */
-function CompactGroupedDropdown({ groups, values, onToggle }: {
-  groups: { label: string; options: readonly { label: string; value: string }[] }[];
-  values: string[];
-  onToggle: (value: string) => void;
-}) {
-  const allOptions = groups.flatMap((g) => g.options);
-  const currentValue = allOptions.find((o) => values.includes(o.value))?.value ?? "";
-
-  return (
-    <select
-      className="h-7 rounded-md border border-input bg-background text-foreground px-1.5 text-xs min-w-0"
-      value={currentValue}
-      onChange={(e) => {
-        const val = e.target.value;
-        if (val) onToggle(val);
-      }}
-    >
-      <option value="">Select…</option>
-      {groups.map((group) => (
-        <optgroup key={group.label} label={group.label}>
-          {group.options.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  );
 }
 
 /** Compact dropdown for narrow containers — multi-select via checkboxes in a native select isn't great,
@@ -395,17 +368,29 @@ function EntityTypeEditor({ filter, onChange }: { filter: PanelFilter; onChange:
   const showCustomInput = toggleValues.includes("custom");
 
   const toggleValue = useCallback((val: string) => {
-    if (toggleValues.includes(val)) {
-      // Deselect: keep only custom entries
-      onChange({ ...filter, value: customValues });
+    const isIdentity = SOURCE_TYPE_IDENTITY_KEYS.has(val);
+    if (isIdentity) {
+      // Identity options are single-select — replace any existing identity, keep type toggles + custom
+      if (toggleValues.includes(val)) {
+        // Deselect: keep type toggles + custom entries
+        const typeToggles = toggleValues.filter((v) => !SOURCE_TYPE_IDENTITY_KEYS.has(v));
+        onChange({ ...filter, value: [...typeToggles, ...customValues] });
+      } else {
+        // Replace any existing identity selection
+        const typeToggles = toggleValues.filter((v) => !SOURCE_TYPE_IDENTITY_KEYS.has(v));
+        const next = val === "custom"
+          ? [val, ...typeToggles, ...customValues]
+          : [val, ...typeToggles];
+        onChange({ ...filter, value: next });
+      }
     } else {
-      // Select: replace previous toggle with this one, keep custom entries
-      const next = val === "custom"
-        ? [val, ...customValues]
-        : [val];
+      // Type options are multi-select — toggle individually
+      const next = arrayValues.includes(val)
+        ? arrayValues.filter((v) => v !== val)
+        : [...arrayValues, val];
       onChange({ ...filter, value: next });
     }
-  }, [toggleValues, customValues, filter, onChange]);
+  }, [toggleValues, customValues, arrayValues, filter, onChange]);
 
   const addCustomEntry = useCallback((raw: string) => {
     const entry = raw.trim();
@@ -445,16 +430,16 @@ function EntityTypeEditor({ filter, onChange }: { filter: PanelFilter; onChange:
           <SegmentedToggle options={SOURCE_TYPE_TYPE_OPTIONS} values={toggleValues} onToggle={toggleValue} />
         </div>
       </div>
-      {/* Narrow: single combined dropdown with grouped sections */}
-      <div className="filter-wide:hidden">
-        <CompactGroupedDropdown
-          groups={[
-            { label: "Identity", options: SOURCE_TYPE_IDENTITY_OPTIONS },
-            { label: "Type", options: SOURCE_TYPE_TYPE_OPTIONS },
-          ]}
-          values={toggleValues}
-          onToggle={toggleValue}
-        />
+      {/* Narrow: two compact dropdown rows (same structure as wide, using SegmentedToggle) */}
+      <div className="filter-wide:hidden flex flex-col gap-1">
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground mr-0.5">Identity</span>
+          <SegmentedToggle options={SOURCE_TYPE_IDENTITY_OPTIONS} values={toggleValues} onToggle={toggleValue} multiSelect={false} />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground mr-0.5">Type</span>
+          <SegmentedToggle options={SOURCE_TYPE_TYPE_OPTIONS} values={toggleValues} onToggle={toggleValue} />
+        </div>
       </div>
       {showCustomInput && (
         <div className="flex flex-wrap items-center gap-1 px-1 py-0.5 rounded border border-input bg-background/60 min-h-[28px]">

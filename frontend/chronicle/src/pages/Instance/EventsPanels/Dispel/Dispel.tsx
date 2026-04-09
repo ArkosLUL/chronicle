@@ -10,12 +10,12 @@ import { Eraser } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import { dispelProcessor, type DispelResult } from "./dispel.processor";
 import { DispelContent } from "./DispelContent";
-import { ENTITY_GROUPING_OPTIONS, PET_MODE_OPTIONS, type GroupingOption } from "../processors/resolveEntity";
+import { ENTITY_GROUPING_OPTIONS, MERGED_GROUPING_OPTIONS, PET_GROUPING_OPTIONS, type GroupingOption } from "../processors/resolveEntity";
 
 /** Pet options with "individual" as default (first). */
 const INDIVIDUAL_PET_OPTIONS: GroupingOption[] = [
-  { value: "individual", label: "Individual" },
   { value: "owner", label: "With Owner" },
+  { value: "individual", label: "Individual" },
   { value: "name", label: "Name" },
 ];
 
@@ -28,11 +28,11 @@ export function createDispelsDonePanel(): PanelDefinition<DispelResult, any> {
     icon: <Eraser className="h-4 w-4" />,
     supportsPerSecond: true,
     supportsFiltering: true,
-    groupingOptions: ENTITY_GROUPING_OPTIONS,
-    petOptions: PET_MODE_OPTIONS,
+    groupingOptions: MERGED_GROUPING_OPTIONS,
+    petOptions: PET_GROUPING_OPTIONS,
     defaultFilters: [
       { type: "time_range" as const, value: "controller" },
-      { type: "source_type" as const, value: "player" },
+      { type: "source_type" as const, value: ["player", "pet"] },
       { type: "target_type" as const, value: "selected_players" },
     ],
 

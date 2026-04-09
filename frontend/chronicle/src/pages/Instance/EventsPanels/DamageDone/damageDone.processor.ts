@@ -236,14 +236,8 @@ export function createDamageDoneProcessor(
 
       const entity = resolveEntity(event.caster, context, grouping, petMode);
       const damageOwner = entity.id;
-      let ownerName = entity.name;
+      const ownerName = entity.name;
       const ownerClass = entity.class;
-
-      // When "merged" grouping merges pet damage into a player-owner row,
-      // use the player's own name instead of "OwnerName's Companions".
-      if (grouping === "merged" && damageOwner !== event.caster && context.players[damageOwner]) {
-        ownerName = context.players[damageOwner].name || ownerName;
-      }
 
       // Vulnerability decomposition (bonus + base). Defaults to no bonus.
       let baseAmount = event.amount;

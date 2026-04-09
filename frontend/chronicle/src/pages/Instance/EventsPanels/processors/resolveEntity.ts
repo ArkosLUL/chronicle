@@ -114,7 +114,7 @@ export function resolveEntity(
     }
     return {
       id: owner,
-      name: `${ownerName}'s Companions`,
+      name: ownerName,
       class: ownerClass,
     };
   }

@@ -284,14 +284,8 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       if (context.compiledFilter && !context.compiledFilter(event)) return;
 
       // Get healer info from resolved entity
-      let healerName = entity.name;
+      const healerName = entity.name;
       const healerClass = entity.class;
-
-      // When merged grouping merges pet healing into a player-owner row,
-      // use the owner's actual name instead of "Owner's Companions"
-      if (grouping === "merged" && healerID !== event.caster && context.players[healerID]) {
-        healerName = context.players[healerID].name || healerName;
-      }
       
       // Determine if this is an "other" target (non-player, non-pet)
       const isOtherTarget = effectiveHeal === 0 && overheal === healAmount && !isPlayerOrFriendlyPet(targetID);
@@ -309,10 +303,6 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         aggregateTargetID = targetEntity.id;
         targetName = targetEntity.name;
         targetClass = targetEntity.class;
-        // When merged grouping merges pet into owner row, use the owner's actual name
-        if (grouping === "merged" && aggregateTargetID !== targetID && context.players[aggregateTargetID]) {
-          targetName = context.players[aggregateTargetID].name || targetName;
-        }
       }
 
       // === Update HealingDone aggregation (by healer) ===

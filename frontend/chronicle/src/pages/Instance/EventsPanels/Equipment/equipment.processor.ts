@@ -1,4 +1,4 @@
-import type { PanelProcessor, CombatantInfoProcessorEvent } from "../processorTypes";
+import type { PanelProcessor, CombatantInfoProcessorEvent, ProcessorContext } from "../processorTypes";
 
 export interface PlayerSnapshot {
   guid: string;
@@ -21,7 +21,8 @@ export const equipmentProcessor: PanelProcessor<EquipmentResult, CombatantInfoPr
   id: "equipment",
   streams: ["combatant_info"],
   createState: () => ({ players: new Map() }),
-  processEvent: (state, event) => {
+  processEvent: (state, event, encounterID: string, _firstTimestamp: Date, _streamType: string, context: ProcessorContext) => {
+    if (!context.selectedEncounterIds.has(encounterID)) return;
     state.players.set(event.guid, {
       guid: event.guid,
       name: event.name,

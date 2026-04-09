@@ -6,6 +6,7 @@ import { GenericPanel } from "../GenericPanel";
 import { useItemTooltip } from "@/api/gamedata";
 import { cn } from "@/lib/utils";
 import { getQualityBorderClass, getQualityTextClass, getClassColorVar } from "@/pages/ArmoryPage/types";
+import { formatRaceLabel } from "@/pages/ArmoryPage/CharacterHeader";
 import { HelpCircle, ExternalLink } from "lucide-react";
 import { ItemTooltip } from "@/components/ui/ItemTooltip/ItemTooltip";
 import { Link } from "react-router-dom";
@@ -228,7 +229,7 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
           </div>
           {selected && (
             <span className="text-2xs text-muted-foreground flex items-center gap-1">
-              {selected.heroClass} · {selected.race}
+              {selected.heroClass} · {formatRaceLabel(selected.race)}
               {selected.talents && ` · ${selected.talents.summary.join("/")}`}
               {selected.guildName && ` · <${selected.guildName}>`}
               {context.instance.realm && (

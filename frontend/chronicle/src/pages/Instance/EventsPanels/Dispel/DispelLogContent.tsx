@@ -182,15 +182,20 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
       if (selected.has(evt.encounterID)) types.add(evt.category);
     }
     return types;
-  }, [cachedResult, context.selectedEncounterIds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- length tracks in-place array mutation during sync mode
+  }, [cachedResult, cachedResult?.DispelEvents?.length, context.selectedEncounterIds]);
 
   // Filtered + sorted events
+  // NOTE: DispelEvents.length is an explicit dep because sync mode mutates the array
+  // in place (incremental processing reuses the same array reference via shallowClone).
+  // Without it, forward playback doesn't trigger re-renders since the array ref is stable.
   const sortedEvents = useMemo(() => {
     if (!cachedResult) return [];
     const selected = new Set(context.selectedEncounterIds);
     return cachedResult.DispelEvents
       .filter((e) => selected.has(e.encounterID) && (filterCategories.size === 0 || filterCategories.has(e.category)));
-  }, [cachedResult, context.selectedEncounterIds, filterCategories]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- length tracks in-place array mutation during sync mode
+  }, [cachedResult, cachedResult?.DispelEvents?.length, context.selectedEncounterIds, filterCategories]);
 
   const effectiveProps = {
     ...props,
@@ -214,7 +219,7 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
 
       {sortedEvents.length === 0 ? (
         <div className="text-xs text-muted-foreground py-4 text-center">
-          {loading || processing ? "Loading..." : "No dispels recorded"}
+          {loading ? "Loading..." : "No dispels recorded"}
         </div>
       ) : (
         <ScrollArea className="flex-1 min-h-0">

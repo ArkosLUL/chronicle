@@ -34,13 +34,13 @@
   height: 10px;
   right: 4px;
   bottom: 4px;
-  border-right: 3px solid rgba(255, 255, 255, 0.5);
-  border-bottom: 3px solid rgba(255, 255, 255, 0.5);
+  border-right: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+  opacity: 0.4;
 }
 
 .react-grid-item:hover > .react-resizable-handle.react-resizable-handle-se::after {
-  border-right-color: rgba(255, 255, 255, 0.8);
-  border-bottom-color: rgba(255, 255, 255, 0.8);
+  opacity: 0.7;
 }
 
 .grid-layout-editor-pulse-resize > .react-resizable-handle.react-resizable-handle-se::after {

@@ -185,7 +185,7 @@ export function GuildPageCanvas({
         return (
           <div
             key={panel.id}
-            className={`${bgClass} border border-border rounded-lg overflow-hidden shadow-sm relative`}
+            className={`${bgClass} rounded-lg overflow-hidden shadow-sm relative ${isEditing && style.background === "transparent" ? "border border-dashed border-muted-foreground/30" : "border border-border"}`}
             style={bgStyle}
           >
             {showHeader && (
@@ -220,7 +220,7 @@ export function GuildPageCanvas({
             )}
             {/* When header is hidden in edit mode but would be hidden in view, show minimal drag handle */}
             {!showHeader && isEditing && (
-              <div className="absolute top-1 right-1 z-10 flex items-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
+              <div className={`absolute top-1 right-1 z-10 flex items-center gap-1 ${style.background === "transparent" ? "opacity-70 hover:opacity-100" : "opacity-0 hover:opacity-100"} transition-opacity`}>
                 <div className="drag-handle cursor-move p-1 rounded bg-black/50 text-white">
                   <GripVertical className="h-3 w-3" />
                 </div>

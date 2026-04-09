@@ -47,12 +47,12 @@ function UnitLookupContent({ result, context }: PanelRenderProps<UnitLookupResul
   // is stable across ticks. Computing on every render is cheap (small collections).
   const map = new Map<string, UnitEntry>();
   const staticUnits = context.instance.units;
-  for (const [guid, unit] of Object.entries(staticUnits)) {
+  for (const [guid, unit] of Object.entries(staticUnits ?? {})) {
     map.set(guid, {
       guid,
       name: unit.name,
       entry: unit.entry,
-      owner: unit.owner,
+      owner: unit.owner as string | null,
       controller: null,
       controllerSpellId: 0,
       unitType: 0,

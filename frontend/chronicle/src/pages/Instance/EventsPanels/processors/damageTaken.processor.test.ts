@@ -64,9 +64,7 @@ describe('enemyDamageTakenProcessor', () => {
   it('falls back to GUID grouping when enemy name is missing in name mode', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        enemyGrouping: 'name',
-      },
+      panelOption: 'g:name',
       units: {},
     });
 
@@ -80,9 +78,7 @@ describe('enemyDamageTakenProcessor', () => {
   it('groups enemies by name when enemyGrouping is name', () => {
     const state = processor.createState();
     const context = createContext({
-      panelContext: {
-        enemyGrouping: 'name',
-      },
+      panelOption: 'g:name',
       units: {
         '0xF130000CE0000001': { name: 'Boss', owner: null, entry: 12345 },
         '0xF130000CE0000002': { name: 'Boss', owner: null, entry: 12345 },

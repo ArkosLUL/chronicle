@@ -52,7 +52,11 @@ export function createDispelsReceivedPanel(): PanelDefinition<DispelResult, any>
     supportsPerSecond: true,
     supportsFiltering: true,
     groupingOptions: ENTITY_GROUPING_OPTIONS,
-    petOptions: INDIVIDUAL_PET_OPTIONS,
+    petOptions: [
+      { value: "individual", label: "Individual" },
+      { value: "owner", label: "With Owner" },
+      { value: "name", label: "Name" },
+    ],
     defaultFilters: [
       { type: "time_range" as const, value: "controller" },
       { type: "source_type" as const, value: "selected_players" },

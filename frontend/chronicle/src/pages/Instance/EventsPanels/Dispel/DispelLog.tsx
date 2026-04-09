@@ -19,6 +19,7 @@ export function createDispelLogPanel(): PanelDefinition<DispelResult, any> {
     checkboxLabel: "Encounter offset",
     groupingOptions: ENTITY_GROUPING_OPTIONS,
     petOptions: PET_MODE_OPTIONS,
+    supportsFiltering: true,
     defaultFilters: [
       { type: "time_range" as const, value: "controller" },
     ],

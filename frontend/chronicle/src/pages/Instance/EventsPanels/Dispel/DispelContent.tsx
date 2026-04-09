@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 import { Sparkles, Skull, Bug, Droplets, HelpCircle } from "lucide-react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { useSpell } from "@/api/queries";
+import { SpellIconWithTooltip } from "@/components/ui/SpellIconWithTooltip";
+import { useBreakoutHover } from "@/components/ui/AbilityBreakout/BreakoutHoverContext";
 import { GenericPanel } from "../GenericPanel";
 import type { PanelRenderProps } from "../types";
 import {
@@ -123,12 +126,35 @@ function DispelTypeSelector({ selectedType, onChange, availableTypes }: DispelTy
 // ============================================================================
 
 interface DispelAbilityDisplay {
+  spellId: number | null;
   name: string;
   count: number;
   dispelType: number;
 }
 
+/** Inline spell icon + name for breakout rows. */
+function BreakoutSpellCell({ spellId, spellName }: { spellId: number | null; spellName: string }) {
+  const { data: spell } = useSpell(
+    spellId != null && spellId > 0 ? String(spellId) : "",
+    { enabled: spellId != null && spellId > 0 },
+  );
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      {spell ? (
+        <SpellIconWithTooltip spell={spell} size={14}>
+          {spellName}
+        </SpellIconWithTooltip>
+      ) : (
+        spellName
+      )}
+    </span>
+  );
+}
+
 function DispelBreakoutTable({ abilities, total }: { abilities: DispelAbilityDisplay[]; total: number }) {
+  const { hover, setHover, clearHover } = useBreakoutHover();
+
   if (!abilities || abilities.length === 0) {
     return <p className="text-xs p-2 text-muted-foreground">No ability breakdown available</p>;
   }
@@ -148,10 +174,20 @@ function DispelBreakoutTable({ abilities, total }: { abilities: DispelAbilityDis
         <tbody>
           {sorted.map((ability) => {
             const percent = total > 0 ? (ability.count / total) * 100 : 0;
+            const key = ability.spellId != null ? String(ability.spellId) : ability.name;
+            const rowHighlight = hover.rowId === ability.name;
             return (
-              <tr key={ability.name} className="border-b border-border/10 hover:bg-muted/50">
+              <tr
+                key={key}
+                className={cn(
+                  "border-b border-border/10 hover:bg-muted/50",
+                  rowHighlight && "bg-muted/80",
+                )}
+                onMouseEnter={() => setHover({ rowId: ability.name, columnId: null })}
+                onMouseLeave={() => clearHover()}
+              >
                 <td className="py-1 px-2 max-w-[150px] truncate" title={ability.name}>
-                  {ability.name}
+                  <BreakoutSpellCell spellId={ability.spellId} spellName={ability.name} />
                 </td>
                 <td className="text-right py-1 px-2 font-mono">{ability.count.toLocaleString()}</td>
                 <td className="text-right py-1 px-2 font-mono text-muted-foreground">

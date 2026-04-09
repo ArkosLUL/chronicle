@@ -38,6 +38,7 @@ function toCategory(dispelType: number): DispelCategory {
 // ============================================================================
 
 export interface DispelSpellData {
+  spellId: number | null;
   name: string;
   count: number;
   dispelType: number;
@@ -71,6 +72,7 @@ export interface DispelLogEvent {
   targetID: string;
   targetName: string;
   targetClass: string;
+  spellId: number | null;  // Spell ID of the aura that was dispelled
   spellName: string;       // The aura that was dispelled
   dispelType: number;      // Raw enum value
   category: DispelCategory;
@@ -111,9 +113,14 @@ function accumulateEntity(
   entityID: string,
   entityName: string,
   entityClass: string,
+  spellId: number | null,
   spellName: string,
   dispelType: number,
 ) {
+  // Key by spellId when available so same-name spells with different IDs get separate rows
+  const key = spellId != null ? String(spellId) : (spellName || `unknown_${dispelType}`);
+  const displayName = spellName || `Spell ${dispelType}`;
+
   // Accumulate into both "All" and the specific category
   for (const cat of [("All" as DispelCategory), category]) {
     let entityMap = catMap.get(cat);
@@ -127,12 +134,11 @@ function accumulateEntity(
       entityMap.set(entityID, data);
     }
     data.totalDispels++;
-    const key = spellName || `Spell ${dispelType}`;
     const spell = data.bySpell.get(key);
     if (spell) {
       spell.count++;
     } else {
-      data.bySpell.set(key, { name: key, count: 1, dispelType });
+      data.bySpell.set(key, { spellId, name: displayName, count: 1, dispelType });
     }
   }
 }
@@ -196,11 +202,11 @@ export const dispelProcessor: PanelProcessor<DispelResult, DispelProcessorEvent>
 
     // Accumulate caster perspective (using resolved owner ID, e.g. shaman not totem)
     const casterCatMap = getOrCreateCategoryMap(state.byCaster, encounterID);
-    accumulateEntity(casterCatMap, category, casterEntity.id, casterName, casterClass, spellName, event.dispelType);
+    accumulateEntity(casterCatMap, category, casterEntity.id, casterName, casterClass, event.spellId, spellName, event.dispelType);
 
     // Accumulate target perspective
     const targetCatMap = getOrCreateCategoryMap(state.byTarget, encounterID);
-    accumulateEntity(targetCatMap, category, targetEntity.id, targetName, targetClass, spellName, event.dispelType);
+    accumulateEntity(targetCatMap, category, targetEntity.id, targetName, targetClass, event.spellId, spellName, event.dispelType);
 
     // Breakout for selected encounters
     if (context.selectedEncounterIds.has(encounterID)) {
@@ -219,6 +225,7 @@ export const dispelProcessor: PanelProcessor<DispelResult, DispelProcessorEvent>
       targetID: targetEntity.id,
       targetName,
       targetClass,
+      spellId: event.spellId,
       spellName,
       dispelType: event.dispelType,
       category,

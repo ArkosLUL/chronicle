@@ -7,8 +7,10 @@ import { cn } from "@/lib/utils";
 import { Sparkles, Skull, Bug, Droplets, HelpCircle } from "lucide-react";
 import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
+import { useSpell } from "@/api/queries";
+import { SpellIconWithTooltip } from "@/components/ui/SpellIconWithTooltip";
 import type { PanelRenderProps } from "../types";
-import type { DispelResult, DispelLogEvent, DispelCategory } from "./dispel.processor";
+import type { DispelResult, DispelCategory } from "./dispel.processor";
 import { ALL_DISPEL_CATEGORIES } from "./dispel.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 
@@ -108,6 +110,26 @@ function DispelLogFilter({ selected, onChange, availableTypes }: DispelLogFilter
 // ============================================================================
 // Content
 // ============================================================================
+
+/** Inline spell icon + name for a dispel log row. */
+function SpellCell({ spellId, spellName }: { spellId: number | null; spellName: string }) {
+  const { data: spell } = useSpell(
+    spellId != null && spellId > 0 ? String(spellId) : "",
+    { enabled: spellId != null && spellId > 0 },
+  );
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      {spell ? (
+        <SpellIconWithTooltip spell={spell} size={14}>
+          {spellName}
+        </SpellIconWithTooltip>
+      ) : (
+        spellName
+      )}
+    </span>
+  );
+}
 
 type DispelLogContentProps = PanelRenderProps<DispelResult>;
 
@@ -234,7 +256,7 @@ export const DispelLogContent = (props: DispelLogContentProps) => {
                       </span>
                     </td>
                     <td className="py-1 px-2 max-w-[140px] truncate" title={evt.spellName}>
-                      {evt.spellName}
+                      <SpellCell spellId={evt.spellId} spellName={evt.spellName} />
                     </td>
                     <td className="py-1 px-2">
                       <CategoryBadge category={evt.category} />

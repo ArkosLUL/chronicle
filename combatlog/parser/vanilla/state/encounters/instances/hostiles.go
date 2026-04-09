@@ -1173,3 +1173,31 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 
 	return hostile
 }
+
+func FrostmaneHollowHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		36519: "Frostmane Ritualist",   // 5 times
+		96:    "Frostmane Ritualist",   // 7 times
+		63134: "Frostmane Leopard",     // 10 times
+		63139: "Frostmane Pathfinder",  // 7 times
+		51:    "Frostmane Slave",       // 17 times
+		19:    "Undermarket Mercenary", // 3 times
+		63138: "Frostmane Berserker",   // 5 times
+		67:    "Frostmane Cretin",      // 19 times
+		63136: "Frostmane Oracle",      // 7 times
+		63137: "Frostmane Snowcaller",  // 10 times
+		108:   "Frostmane Warrior",     // 9 times
+		82:    "Frostmane Tamer",       // 6 times
+		63135: "Ice Elemental",         // 3 times
+	})
+	LoadBosses(hostile, map[uint32]string{
+		63131: "Battlemaster Ubukaz", // 1 times
+		63132: "Tan'sha the Sleek",   // "Handler Oboka",       // 1 times
+		63133: "Tan'sha the Sleek",   // 1 times
+		63129: "Kan'za the Seer",     // 1 times
+		63130: "Hailar the Frigid",   // 1 times
+	})
+
+	return hostile
+}

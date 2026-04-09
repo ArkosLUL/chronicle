@@ -150,4 +150,10 @@ var (
 		ZoneName: ZoneNameMatcher("timbermaw hold"),
 		Hostiles: FromMap(TimbermawHoldHostiles()),
 	}).New
+
+	FrostmaneHollow = (&CommonFactory{
+		Name:     "Frostmane Hollow",
+		ZoneName: ZoneNameMatcher("frostmane hollow"),
+		Hostiles: FromMap(FrostmaneHollowHostiles()),
+	}).New
 )

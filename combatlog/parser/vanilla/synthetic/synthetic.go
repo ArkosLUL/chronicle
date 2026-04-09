@@ -17,6 +17,7 @@ type Synthetic struct {
 	demons       *enslaveDemon
 	possession   *possession
 	knownObjects *knownObjects
+	razuvious    *razuviousOverkill
 	wowDB        gamedb.SpellFetcher
 }
 
@@ -29,6 +30,7 @@ func New(logger *slog.Logger, wowDB gamedb.SpellFetcher) *Synthetic {
 		demons:       newEnslaveDemon(logger),
 		possession:   newPossession(logger),
 		knownObjects: newKnownObjects(),
+		razuvious:    newRazuviousOverkill(),
 		wowDB:        wowDB,
 	}
 }
@@ -42,6 +44,7 @@ func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message
 	msgs = s.demons.ProcessMessages(msgs)
 	msgs = s.possession.ProcessMessages(msgs)
 	msgs = s.knownObjects.ProcessMessages(msgs)
+	s.razuvious.ProcessMessages(msgs)
 
 	return msgs, nil
 }

@@ -1,6 +1,7 @@
 package character
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -115,6 +116,25 @@ func (c *Totem) Process(m messages.Message) error {
 	}
 
 	switch data := m.(type) {
+	case *messages.Dispel:
+		if data.Caster == c.ID() {
+			c.Start(fmt.Sprintf("dispelled %s", data.Spell.Name()), m)
+		}
+	case *messages.SpellGo:
+		if data.Caster == c.ID() {
+			if c.IsActive() {
+				c.Bump("cast", m)
+			} else if data.Target != nil {
+				tc, ok := c.lookup.Get(*data.Target)
+				if ok && tc.IsActive() {
+					// If the totem is cast on an active target, it should be active too.
+					// Think tremor and clense totems
+					c.Start("cast on active target", m)
+					return nil
+				}
+			}
+			return nil
+		}
 	case *messages.ResourceChange:
 		// Mana and health spring totems helping an active target
 		if data.Caster != nil && *data.Caster == c.ID() {

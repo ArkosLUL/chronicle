@@ -3770,6 +3770,7 @@ export interface ReusableDispel {
   caster: string;
   target: string;
   spellId: number | null;
+  spellName: string;
   spellAttackOutcome: number | null;
   dispelType: DispelType;
   activity: ReusableActivityEntry[];
@@ -3797,6 +3798,7 @@ export class DispelDecoder {
     caster: "",
     target: "",
     spellId: null,
+    spellName: "",
     spellAttackOutcome: null,
     dispelType: DispelType.None,
     activity: [],
@@ -3813,6 +3815,7 @@ export class DispelDecoder {
     msg.caster = "";
     msg.target = "";
     msg.spellId = null;
+    msg.spellName = "";
     msg.spellAttackOutcome = null;
     msg.dispelType = DispelType.None;
     msg.activityCount = 0;
@@ -3889,9 +3892,12 @@ export class DispelDecoder {
               if (spellField === 1) msg.spellId = value;
               else if (spellField === 3) msg.spellAttackOutcome = value;
             } else if (spellWire === 2) {
-              // skip string fields (name)
               const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
-              offset += sLenBytes + sLen;
+              offset += sLenBytes;
+              if (spellField === 2) {
+                msg.spellName = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+              }
+              offset += sLen;
             }
           }
         } else {

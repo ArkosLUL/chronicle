@@ -644,6 +644,10 @@ const PANEL_CODES: Record<PanelType, string> = {
   rotations: 'rot',
   possession: 'pos',
   unit_lookup: 'ul',
+  // Dispels
+  dispels_done: 'dsd',
+  dispels_received: 'dsr',
+  dispel_log: 'dsl',
 };
 
 // ============================================================================

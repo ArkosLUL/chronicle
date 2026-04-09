@@ -52,6 +52,10 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     items: ["aura_uptime"],
   },
   {
+    label: "Dispels",
+    items: ["dispels_done", "dispels_received", "dispel_log"],
+  },
+  {
     label: "Class",
     // TODO: Make class icons in this style
     icon: <User className="h-4 w-4" />,

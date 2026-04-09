@@ -290,6 +290,7 @@ export interface DispelProcessorEvent extends EventMeta {
   caster: string;        // The unit performing the dispel
   target: string;        // The unit whose aura was removed
   spellId: number | null;
+  spellName: string;     // Name of the aura that was dispelled
   spellAttackOutcome: number | null;
   dispelType: number;    // 0=None, 1=Magic, 2=Curse, 3=Disease, 4=Poison, 5=Stealth, 6=Invisibility
 }

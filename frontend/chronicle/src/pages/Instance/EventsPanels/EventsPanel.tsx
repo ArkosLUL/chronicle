@@ -55,6 +55,8 @@ import { createComparisonPanel } from "./ComparisonPanel/ComparisonPanel";
 import { createTimelinePanel } from "./Timeline/Timeline";
 import { createRotationsPanel } from "./Rotations/Rotations";
 import { createUnitLookupPanel } from "./UnitLookup/UnitLookup";
+import { createDispelsDonePanel, createDispelsReceivedPanel } from "./Dispel/Dispel";
+import { createDispelLogPanel } from "./Dispel/DispelLog";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -103,6 +105,10 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   possession: createPossessionPanel(),
   // Unit lookup
   unit_lookup: createUnitLookupPanel(),
+  // Dispels
+  dispels_done: createDispelsDonePanel(),
+  dispels_received: createDispelsReceivedPanel(),
+  dispel_log: createDispelLogPanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;

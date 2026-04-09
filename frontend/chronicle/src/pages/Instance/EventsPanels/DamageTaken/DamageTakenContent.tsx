@@ -2,11 +2,11 @@ import { useEffect, useMemo } from "react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { GenericPanel } from "../GenericPanel";
 import type { EntitySelection, PanelRenderProps } from "../types";
-import type { DamageTakenResult, DamageTargetType, EnemyDamageTakenGrouping } from "./damageTaken.processor";
+import type { DamageTakenResult, DamageTargetType } from "./damageTaken.processor";
+import { extractGroupingFromPanelOption, extractPetModeFromPanelOption } from "../processors/resolveEntity";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { useDamageTakenBreakout } from "./DamageTakenBreakout";
 import { formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
 /**
  * Aggregate damage taken data across selected encounters.
  * Merges per-encounter data into a single map by unit.
@@ -65,10 +65,6 @@ interface DamageTakenContentProps extends PanelRenderProps<DamageTakenResult> {
   targetType?: DamageTargetType;
 }
 
-interface EnemyDamageTakenPanelContext {
-  enemyGrouping?: EnemyDamageTakenGrouping;
-}
-
 export function hasDamageTakenEncounterData(result: unknown): result is DamageTakenResult {
   return !!result &&
     typeof result === "object" &&
@@ -79,33 +75,21 @@ export function hasDamageTakenEncounterData(result: unknown): result is DamageTa
 
 export const DamageTakenContent = (props: DamageTakenContentProps) => {
   const { targetType = "players" } = props;
-  const { result, context, panelContext, setPanelContext } = props;
+  const { result, context } = props;
 
-  const enemyPanelContext = targetType === "enemies"
-    ? (panelContext as EnemyDamageTakenPanelContext | null)
-    : null;
-  const enemyGrouping: EnemyDamageTakenGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
-
-  const setEnemyGrouping = (grouping: EnemyDamageTakenGrouping) => {
-    if (!setPanelContext) return;
-
-    if (grouping === "guid") {
-      setPanelContext(null);
-      return;
-    }
-
-    setPanelContext({ enemyGrouping: grouping });
-  };
+  // Grouping is now driven by panelOption tokens (persisted in URL)
+  const grouping = extractGroupingFromPanelOption(props.panelOption, "default");
+  const petMode = extractPetModeFromPanelOption(props.panelOption, "individual");
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
     hasDamageTakenEncounterData,
-    [targetType, enemyGrouping, props.panelContextVersion]
+    [targetType, grouping, petMode, props.panelContextVersion]
   );
 
   const damageData = useMemo(() => {
     if (!cachedResult) return [];
-    const disableUnitSelection = targetType === "enemies" && enemyGrouping === "name";
+    const disableUnitSelection = grouping === "name" || grouping === "class";
     return aggregateForEncounters(
       cachedResult,
       context.selectedEncounterIds,
@@ -113,7 +97,7 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
       targetType,
       disableUnitSelection,
     );
-  }, [cachedResult, context.selectedEncounterIds, context.entitySelection, targetType, enemyGrouping]);
+  }, [cachedResult, context.selectedEncounterIds, context.entitySelection, targetType, grouping]);
 
   // Register chart data for cross-panel comparison
   const { registerChartData } = props;
@@ -153,34 +137,7 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
           Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
         </div>
 
-        {targetType === "enemies" && (
-          <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
-            <button
-              type="button"
-              onClick={() => setEnemyGrouping("guid")}
-              className={cn(
-                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                enemyGrouping === "guid"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              By Unit
-            </button>
-            <button
-              type="button"
-              onClick={() => setEnemyGrouping("name")}
-              className={cn(
-                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                enemyGrouping === "name"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              By Name
-            </button>
-          </div>
-        )}
+
       </div>
       <PlayerMetricChart 
         data={damageData} 

@@ -8,6 +8,7 @@ import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
+import { resolveEntity, extractGroupingFromPanelOption, extractPetModeFromPanelOption } from "../processors/resolveEntity";
 
 // Re-export the shared type for backwards compatibility
 export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
@@ -16,7 +17,6 @@ export type { DamageAbilityBreakout } from "../processors/abilityBreakout";
  * Entity target types for damage taken aggregation
  */
 export type DamageTargetType = "players" | "enemies";
-export type EnemyDamageTakenGrouping = "guid" | "name";
 
 /**
  * Unit metric data for damage taken aggregation.
@@ -82,36 +82,18 @@ export function createDamageTakenProcessor(
         (isPlayerGuidFast(targetInfo.owner) || getCachedGuid(guidCache, targetInfo.owner).isPlayer());
       const isEnemy = !isPlayer && !isPet;
 
-      // Filter by target type
-      if (targetType === "players" && !isPlayer) return;
+      // Filter by target type — include pets in the players view
+      if (targetType === "players" && !isPlayer && !isPet) return;
       if (targetType === "enemies" && !isEnemy) return;
 
-      const enemyPanelContext = targetType === "enemies"
-        ? (context.panelContext as { enemyGrouping?: EnemyDamageTakenGrouping } | null)
-        : null;
-      const enemyGrouping = enemyPanelContext?.enemyGrouping ?? "guid";
+      // Use resolveEntity for consistent grouping (entity grouping + pet mode)
+      const grouping = extractGroupingFromPanelOption(context.panelOption, "default");
+      const petMode = extractPetModeFromPanelOption(context.panelOption, "individual");
+      const entity = resolveEntity(event.target, context, grouping, petMode);
 
-      // The unit receiving damage
-      let damageReceiver = event.target;
-      if (targetType === "enemies" && enemyGrouping === "name") {
-        const enemyName = targetInfo?.name?.trim();
-        if (enemyName) {
-          damageReceiver = `enemy_name:${enemyName.toLowerCase()}`;
-        }
-      }
-
-      // By default, use the raw GUID as name
-      let receiverName = damageReceiver;
-      let receiverClass = "UNKNOWN";
-
-      if (targetType === "players") {
-        receiverName = context.players[damageReceiver]?.name || receiverName;
-        receiverClass = context.players[damageReceiver]?.class || "UNKNOWN";
-      } else {
-        // For enemies, use the unit's name
-        receiverName = targetInfo?.name || receiverName;
-        receiverClass = "ENEMY";
-      }
+      const damageReceiver = entity.id;
+      const receiverName = entity.name;
+      const receiverClass = entity.class;
 
       if (!state.EncounterDamage.has(encounterID)) {
         state.EncounterDamage.set(encounterID, new Map<string, DamageTakenData>());

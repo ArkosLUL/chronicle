@@ -207,8 +207,11 @@ export function extractGroupingFromPanelOption(
  * Extract the pet mode value from a panelOption string.
  * Looks for a "p:<value>" token.
  */
-export function extractPetModeFromPanelOption(panelOption: string | null | undefined): PetMode {
-  if (!panelOption) return "owner";
+export function extractPetModeFromPanelOption(
+  panelOption: string | null | undefined,
+  fallback: PetMode = "owner",
+): PetMode {
+  if (!panelOption) return fallback;
   const token = panelOption.split(",").find((t) => t.startsWith("p:"));
-  return (token ? token.slice(2) : "owner") as PetMode;
+  return (token ? token.slice(2) : fallback) as PetMode;
 }

@@ -7,6 +7,7 @@
 import { Shield, Skull } from "lucide-react";
 import type { PanelDefinition, PanelRenderProps } from "../types";
 import type { PanelFilter } from "../processors/filters";
+import type { GroupingOption } from "../processors/resolveEntity";
 import {
   damageTakenProcessor,
   enemyDamageTakenProcessor,
@@ -65,6 +66,17 @@ export function createDamageTakenPanel(
       { type: "source_type" as const, value: "selected_enemies", applyTo: dmg },
     ];
 
+  const groupingOptions: GroupingOption[] = [
+    { value: "default", label: "By Unit" },
+    { value: "name", label: "By Name" },
+  ];
+
+  const petOptions: GroupingOption[] = [
+    { value: "individual", label: "By Pet" },
+    { value: "owner", label: "By Owner" },
+    { value: "name", label: "By Pet Name" },
+  ];
+
   return {
     ...config.processor,
     label: config.label,
@@ -72,6 +84,8 @@ export function createDamageTakenPanel(
     supportsPerSecond: true,
     supportsFiltering: true,
     fixedFilters,
+    groupingOptions,
+    petOptions,
     defaultFilters: [{ type: "time_range" as const, value: "controller", applyTo:["damage"]}, ...defaultFilters],
     render: (props: PanelRenderProps<DamageTakenResult>) => {
       return <DamageTakenContent {...props} targetType={targetType} />;

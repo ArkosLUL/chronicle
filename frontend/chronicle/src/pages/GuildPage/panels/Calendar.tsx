@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, AlertCircle } from "lucide-react";
+import { CalendarDays, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
 import { getInstanceCategory, getInstanceBackground, getInstanceAbbrev } from "@/pages/Logs/utils/instanceImages";
@@ -62,6 +62,42 @@ function InstanceDayCard({ instance }: { instance: RecentInstance }) {
   );
 }
 
+function ExpandableDayCell({ instances }: { instances: RecentInstance[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const MAX_SHOWN = 3;
+
+  if (instances.length === 0) return null;
+
+  const shown = expanded ? instances : instances.slice(0, MAX_SHOWN);
+  const remaining = instances.length - MAX_SHOWN;
+
+  return (
+    <>
+      {shown.map((inst) => (
+        <InstanceDayCard key={inst.id} instance={inst} />
+      ))}
+      {instances.length > MAX_SHOWN && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full text-[10px] text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted px-1.5 py-1 rounded text-center transition-colors flex items-center justify-center gap-0.5"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="h-3 w-3" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3 w-3" />
+              +{remaining} more
+            </>
+          )}
+        </button>
+      )}
+    </>
+  );
+}
+
 function CalendarContent({ config, guild }: GuildPanelRenderProps<CalendarConfig>) {
   const [month, setMonth] = useState(() => new Date());
   const [instances, setInstances] = useState<RecentInstance[]>([]);
@@ -109,22 +145,7 @@ function CalendarContent({ config, guild }: GuildPanelRenderProps<CalendarConfig
       const dayInstances = byDate[key];
       if (!dayInstances || dayInstances.length === 0) return null;
 
-      const MAX_SHOWN = 3;
-      const shown = dayInstances.slice(0, MAX_SHOWN);
-      const remaining = dayInstances.length - MAX_SHOWN;
-
-      return (
-        <>
-          {shown.map((inst) => (
-            <InstanceDayCard key={inst.id} instance={inst} />
-          ))}
-          {remaining > 0 && (
-            <div className="text-[10px] text-muted-foreground text-center">
-              +{remaining} more
-            </div>
-          )}
-        </>
-      );
+      return <ExpandableDayCell instances={dayInstances} />;
     },
     [byDate]
   );

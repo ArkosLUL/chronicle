@@ -572,6 +572,26 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 		60748: "Solnius",
 	})
 
+	hardMode := func(f Fight) (string, bool) {
+		hasErennius := false
+		hasSolnius := false
+		for _, host := range f.Hostiles {
+			entry, _ := host.ID.GetEntry()
+			if entry == 60747 {
+				hasErennius = true
+			}
+			if entry == 60748 {
+				hasSolnius = true
+			}
+		}
+		if hasErennius && hasSolnius {
+			return "Solnius (Hard Mode)", true
+		}
+		return "", false
+	}
+	hostile[60747] = Identity{Hostile: true, EncounterName: "Erennius", Boss: true, EncounterNameFn: hardMode}
+	hostile[60748] = Identity{Hostile: true, EncounterName: "Solnius", Boss: true, EncounterNameFn: hardMode}
+
 	return hostile
 }
 

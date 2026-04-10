@@ -370,6 +370,12 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 				encounterType = types.EncounterTypeBOSS
 			}
 
+			if id.EncounterNameFn != nil {
+				if name, ok := id.EncounterNameFn(fight); ok {
+					encounterName = name
+				}
+			}
+
 			if encounterName == "" {
 				info, hasInfo := h.units.Get(hostile.ID)
 				if hasInfo {

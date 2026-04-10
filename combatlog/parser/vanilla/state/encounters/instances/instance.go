@@ -16,6 +16,8 @@ type Identity struct {
 	EncounterName string
 	// Boss indicates if the unit is considered a boss for encounter purposes.
 	Boss bool
+
+	EncounterNameFn func(f Fight) (string, bool)
 }
 
 // Instance represents a dungeon or raid instance

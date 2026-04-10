@@ -73,7 +73,11 @@ export function CharacterHeader({ player }: CharacterHeaderProps) {
       {/* Guild name */}
       {player.guild_name && (
         <p className="text-sm text-zinc-400">
-          &lt;{player.guild_name}&gt;
+          &lt;{player.guild_id ? (
+            <Link to={`/g/${player.guild_id}`} className="hover:text-zinc-200 transition-colors">
+              {player.guild_name}
+            </Link>
+          ) : player.guild_name}&gt;
         </p>
       )}
 

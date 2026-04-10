@@ -11,7 +11,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/gameversions"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/itemfetcher"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
@@ -24,12 +23,12 @@ type Parser struct {
 
 	lastDate    time.Time
 	synthetics  *synthetic.Synthetic
-	itemFetcher *itemfetcher.ItemFetcher
+	itemFetcher gamedb.GearResolver
 
 	gameVersions *gameversions.GameVersion
 }
 
-func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, items *itemfetcher.ItemFetcher) (*Parser, error) {
+func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamedb.GearResolver) (*Parser, error) {
 	if wowDB == nil {
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
@@ -38,7 +37,7 @@ func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, items *ite
 		wowDB:       wowDB,
 		scanner:     bufio.NewScanner(r),
 		synthetics:  synthetic.New(logger, wowDB),
-		itemFetcher: items,
+		itemFetcher: gear,
 	}, nil
 }
 

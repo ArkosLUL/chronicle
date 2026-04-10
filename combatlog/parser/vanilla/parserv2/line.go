@@ -21,6 +21,9 @@ type Matched struct {
 
 // TODO: Reuse the same slice
 func ParseLine(content string) (time.Time, string, *Matched, error) {
+	if content == "" {
+		return time.Time{}, "", nil, errors.New("empty line")
+	}
 	parts := strings.Split(content, "|")
 	if len(parts) < 2 {
 		return time.Time{}, "", nil, fmt.Errorf("invalid line format: expected at least 3 parts, got %d", len(parts))

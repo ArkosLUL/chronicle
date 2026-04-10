@@ -9,18 +9,29 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Gophercraft/core/format/dbc"
 	"github.com/Gophercraft/core/vsn"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
+type GameDB interface {
+	SpellFetcher
+	GearResolver
+}
+
 type SpellFetcher interface {
 	Spell(id chrondbc.SpellID) (*chrondbc.Spell, error)
 }
 
+type GearResolver interface {
+	ResolveGear(gear []combatant.GearItem)
+}
+
 type Options struct {
 	SpellsDBCPath string
+	DB            ItemMetadataQuerier
 }
 
 type SpellEntry struct {
@@ -36,6 +47,8 @@ type WoWDB struct {
 
 	// spellNames is a READONLY map
 	spellNames atomic.Pointer[map[string][]int32]
+
+	itemFetcher *itemFetcher
 }
 
 func New(ctx context.Context, opts Options) (*WoWDB, error) {
@@ -61,10 +74,11 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 	spDBC := chrondbc.NewSpells(v)
 
 	wdb := &WoWDB{
-		ctx:        ctx,
-		spellLRU:   c,
-		spellFiles: sf,
-		spells:     spDBC,
+		ctx:         ctx,
+		spellLRU:    c,
+		spellFiles:  sf,
+		spells:      spDBC,
+		itemFetcher: newItemFetcher(ctx, opts.DB, 400),
 	}
 	go func() {
 		spNames, err := loadSpellName(ctx, spDBC)
@@ -137,6 +151,10 @@ func (w *WoWDB) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 
 	w.spellLRU.Add(id, SpellEntry{Spell: sp, Error: err})
 	return sp, nil
+}
+
+func (w *WoWDB) ResolveGear(gear []combatant.GearItem) {
+	w.itemFetcher.ResolveGear(gear)
 }
 
 func (w *WoWDB) Close() error {

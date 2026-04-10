@@ -1,22 +1,27 @@
 package unitname
 
 import (
-  "github.com/Emyrk/chronicle/combatlog/parser/guid"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/warlockdemon"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/warlockdemon"
 )
 
 // ByEntry is a static list of some unit names by their entry ID. Helps when
 // identifying units in the combat log if their name is not given from the addon.
 func ByEntry(entry uint32) string {
-return ""
+	return ""
 }
 
 func ByGUID(id guid.GUID) string {
 	if name, ok := warlockdemon.IsWarlockDemon(id); ok {
-    return name
-  }
+		return name
+	}
 
-  entry, ok := id.GetEntry()
+	if totem, ok := totems.IsTotem(id); ok {
+		return totem.Name
+	}
+
+	entry, ok := id.GetEntry()
 	if !ok {
 		return ""
 	}

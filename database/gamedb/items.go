@@ -1,13 +1,12 @@
-package itemfetcher
+package gamedb
 
 import (
 	"context"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru/v2"
-
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/database"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 // ItemMetadataQuerier is the subset of database.Store needed for item resolution.
@@ -19,7 +18,7 @@ type ItemMetadataQuerier interface {
 // Two LRU caches:
 //   - idCache:   itemID → itemID (correct IDs map to themselves, unknown IDs map to 0)
 //   - nameCache: itemName → itemID (for name-based fallback resolution)
-type ItemFetcher struct {
+type itemFetcher struct {
 	db  ItemMetadataQuerier
 	ctx context.Context
 
@@ -28,10 +27,10 @@ type ItemFetcher struct {
 	nameCache *lru.Cache[string, int] // itemName → resolved itemID (0 = not found)
 }
 
-func New(ctx context.Context, db ItemMetadataQuerier, cacheSize int) *ItemFetcher {
+func newItemFetcher(ctx context.Context, db ItemMetadataQuerier, cacheSize int) *itemFetcher {
 	idC, _ := lru.New[int, int](cacheSize)
 	nameC, _ := lru.New[string, int](cacheSize)
-	return &ItemFetcher{
+	return &itemFetcher{
 		db:        db,
 		ctx:       ctx,
 		idCache:   idC,
@@ -42,8 +41,8 @@ func New(ctx context.Context, db ItemMetadataQuerier, cacheSize int) *ItemFetche
 // ResolveGear fixes item IDs in a gear slice in-place.
 // Items whose ID is already cached (or found by ID in DB) are left as-is.
 // Items whose ID is unknown are resolved by name if unique.
-func (f *ItemFetcher) ResolveGear(gear []combatant.GearItem) {
-	if f == nil || len(gear) == 0 {
+func (f *itemFetcher) ResolveGear(gear []combatant.GearItem) {
+	if f == nil || len(gear) == 0 || f.db == nil {
 		return
 	}
 

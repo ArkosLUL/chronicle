@@ -116,23 +116,22 @@ func (c *Totem) Process(m messages.Message) error {
 	}
 
 	switch data := m.(type) {
-	case *messages.Dispel:
-		if data.Caster == c.ID() {
-			c.Start(fmt.Sprintf("dispelled %s", data.Spell.Name()), m)
-		}
-	case *messages.SpellGo:
+	case *messages.Heal:
 		if data.Caster == c.ID() {
 			if c.IsActive() {
-				c.Bump("cast", m)
-			} else if data.Target != nil {
-				tc, ok := c.lookup.Get(*data.Target)
+				c.Bump("healed", m)
+				return nil
+			} else {
+				tc, ok := c.lookup.Get(data.Target)
 				if ok && tc.IsActive() {
-					// If the totem is cast on an active target, it should be active too.
-					// Think tremor and clense totems
-					c.Start("cast on active target", m)
+					c.Start(fmt.Sprintf("healed active"), m)
 					return nil
 				}
 			}
+		}
+	case *messages.Dispel:
+		if data.Caster == c.ID() && data.Spell != nil {
+			c.Start(fmt.Sprintf("dispelled %s", data.Spell.Name()), m)
 			return nil
 		}
 	case *messages.ResourceChange:
@@ -147,18 +146,58 @@ func (c *Totem) Process(m messages.Message) error {
 
 		//12/11 12:16:19.738  CAST: 0x00000000000C270C(Noflex) casts Totemic Recall(45513).
 		//12/11 12:16:19.738  0x00000000000C270C gains 44 Mana from 0x00000000000C270C's Totemic Recall.
-		owner, ok := c.Owner()
-		if ok &&
-			data.Caster != nil &&
-			*data.Caster == owner && data.Target == owner &&
-			data.SpellName != nil && *data.SpellName == "Totemic Recall" {
-			// Owner cast totemic recall, totem should end activity
-			c.Activity.End("totemic recall", m, period.EndStateSlain)
+		if data.SpellData != nil && data.SpellData.ID == 45513 {
+			c.TotemicRecall(m, data.Caster, &data.Target)
 			return nil
 		}
+	case *messages.SpellGo:
+		if data.SpellData == nil {
+			break
+		}
+
+		if data.SpellData.ID == 45513 {
+			c.TotemicRecall(m, &data.Caster, data.Target)
+			return nil
+		}
+
+		if data.Caster == c.ID() {
+			if c.IsActive() {
+				c.Bump("cast", m)
+				return nil
+			} else if data.Target != nil {
+				tc, ok := c.lookup.Get(*data.Target)
+				if ok && tc.IsActive() {
+					// If the totem is cast on an active target, it should be active too.
+					// Think tremor and clense totems
+					c.Start("cast on active target", m)
+					return nil
+				}
+			}
+			return nil
+		}
+
 	}
 
 	return processCommonActivity(c, m)
+}
+
+func (c *Totem) TotemicRecall(m messages.Message, caster *guid.GUID, target *guid.GUID) {
+	owner, ok := c.Owner()
+	if !ok {
+		return
+	}
+
+	if caster == nil {
+		return
+	}
+
+	if target == nil {
+		return
+	}
+
+	if *caster == owner && *target == owner {
+		c.Activity.End("totemic recall", m, period.EndStateSlain)
+	}
 }
 
 func (c *Totem) Start(reason string, m messages.Message) {

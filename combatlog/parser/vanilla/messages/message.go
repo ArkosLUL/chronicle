@@ -200,6 +200,15 @@ type Combatant struct {
 func (c Combatant) Affects() []guid.GUID { return []guid.GUID{c.Guid} }
 func (*Combatant) isMessage()            {}
 
+type Transmog struct {
+	MessageBase
+	PlayerName string
+	Transmogs  []combatant.Transmog
+}
+
+func (c Transmog) Affects() []guid.GUID { return []guid.GUID{} }
+func (*Transmog) isMessage()            {}
+
 type Realm struct {
 	MessageBase
 	realm.Info

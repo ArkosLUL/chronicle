@@ -3,6 +3,7 @@ package parserv2
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -287,6 +288,53 @@ func (p *Parser) unitInfo(ctx context.Context, ts time.Time, m *Matched) ([]mess
 var (
 	talentsSupported = semver.MustParse("0.19")
 )
+
+func (p *Parser) combatantTransmog(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	name := m.String()
+	items := strings.Split(m.String(), "&")
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	mogs := make([]combatant.Transmog, 0, len(items))
+	for _, item := range items {
+		parts := strings.Split(item, ":")
+		if len(parts) != 3 {
+			continue
+		}
+
+		slot, err := strconv.Atoi(parts[0])
+		if err != nil {
+			continue
+		}
+
+		itemID, err := strconv.Atoi(parts[1])
+		if err != nil {
+			continue
+		}
+
+		transmogID, err := strconv.Atoi(parts[2])
+		if err != nil {
+			continue
+		}
+		mogs = append(mogs, combatant.Transmog{
+			Slot:       int32(slot),
+			ItemID:     int32(itemID),
+			TransmogID: int32(transmogID),
+		})
+	}
+
+	if len(mogs) == 0 {
+		return nil, nil
+	}
+
+	return set(&messages.Transmog{
+		MessageBase: messages.Base(ts),
+		PlayerName:  name,
+		Transmogs:   mogs,
+	})
+}
 
 func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	var guild *combatant.Guild

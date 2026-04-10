@@ -87,6 +87,8 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.zoneInfo(ctx, ts, m)
 	case "UNIT_INFO":
 		return p.unitInfo(ctx, ts, m)
+	case "COMBATANT_TRANSMOG":
+		return p.combatantTransmog(ctx, ts, m)
 	case "COMBATANT_INFO":
 		return p.combatantInfo(ctx, ts, m)
 	case "SWING":

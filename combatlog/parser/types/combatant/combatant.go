@@ -11,6 +11,12 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 )
 
+type Transmog struct {
+	Slot       int32
+	ItemID     int32
+	TransmogID int32
+}
+
 const (
 	PrefixCombatant = `COMBATANT_INFO:`
 )

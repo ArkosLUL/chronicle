@@ -124,7 +124,7 @@ func (c *Totem) Process(m messages.Message) error {
 			} else {
 				tc, ok := c.lookup.Get(data.Target)
 				if ok && tc.IsActive() {
-					c.Start(fmt.Sprintf("healed active"), m)
+					c.Start("healed active", m)
 					return nil
 				}
 			}

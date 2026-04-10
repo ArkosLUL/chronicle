@@ -228,6 +228,9 @@ func (s Spell) SpellDamageType() SpellDamageType {
 		return SpellDamageNoEngageCombat
 	case 36736: // TODO: Alchemist's Fire from BWL new boss
 		return SpellDamageNoEngageCombat
+	case 22439: // Mark of Destruction
+		// Ads in Ony cast this, the mark can trigger post death
+		return SpellDamageNoEngageCombat
 	}
 
 	for i, eff := range s.Effect {

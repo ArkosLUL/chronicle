@@ -136,7 +136,7 @@ function SpellCell({ spellId, spellName }: { spellId: number | null; spellName: 
 type DispelLogContentProps = PanelRenderProps<DispelResult>;
 
 export const DispelLogContent = (props: DispelLogContentProps) => {
-  const { result, context, loading, processing, checkboxChecked } = props;
+  const { result, context, loading, processing: _processing, checkboxChecked } = props;
   const [filterCategories, setFilterCategories] = useState<Set<DispelCategory>>(new Set());
 
   const handleToggleCategory = useCallback((type: DispelCategory) => {

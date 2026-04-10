@@ -184,6 +184,12 @@ function formatRelativeTime(offsetMilli: number): string {
   return `${sign}${minutes}:${seconds.padStart(4, "0")}`;
 }
 
+const GEAR_SLOT_NAMES = [
+  "Head", "Neck", "Shoulder", "Shirt", "Chest", "Waist", "Legs", "Feet",
+  "Wrist", "Hands", "Finger 1", "Finger 2", "Trinket 1", "Trinket 2",
+  "Back", "Main Hand", "Off Hand", "Ranged", "Tabard",
+];
+
 interface RawEventRowProps {
   event: RawDebugEvent;
   index: number;
@@ -234,7 +240,7 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
     <span className="w-36 shrink-0 text-muted-foreground/30">-</span>
   );
   
-  return (
+  const rowContent = (
     <div className="flex items-center gap-2 text-xs font-mono py-0.5 border-b border-border/30 hover:bg-muted/30">
       <span className="text-muted-foreground w-6 text-right shrink-0">{index}</span>
       <Icon className={cn("h-3 w-3 shrink-0", config.color)} />
@@ -259,6 +265,27 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
       {activityEventElement}
     </div>
   );
+
+  if (event.gear && event.gear.length > 0) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{rowContent}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs">
+          <div className="text-xs font-mono space-y-0.5">
+            <div className="font-semibold text-sky-400 mb-1">{event.casterName} — Equipment</div>
+            {event.gear.map((g, i) => (
+              <div key={i} className={cn("flex justify-between gap-3", g.itemId === 0 && "text-muted-foreground/40")}>
+                <span className="text-muted-foreground">{GEAR_SLOT_NAMES[i] ?? `Slot ${i}`}</span>
+                <span>{g.itemId > 0 ? g.itemId : "—"}{g.enchantId ? ` (ench: ${g.enchantId})` : ""}</span>
+              </div>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return rowContent;
 }
 
 // ============================================================================
@@ -412,12 +439,12 @@ function AllActivityContent({
 }: AllActivityContentProps) {
   
   // Default state during loading
-  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], dispel: [] };
+  const emptyByStream = { damage: [], heal: [], resource_change: [], extra_attack: [], slain: [], cast: [], aura: [], spell_go: [], aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], combatant_info: [], dispel: [] };
   const emptyEncounters = new Map<string, EncounterMeta>();
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, dispel: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,

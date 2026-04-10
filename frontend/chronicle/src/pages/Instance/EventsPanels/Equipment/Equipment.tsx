@@ -1,9 +1,9 @@
 import { equipmentProcessor, type EquipmentResult } from "./equipment.processor";
-import type { PanelDefinition, PanelRenderProps } from "../processorTypes";
+import type { PanelDefinition, PanelRenderProps } from "../types";
 import { Shirt } from "lucide-react";
 import { EquipmentContent } from "./EquipmentContent";
 
-export function createEquipmentPanel(): PanelDefinition<EquipmentResult> {
+export function createEquipmentPanel(): PanelDefinition<EquipmentResult, any> {
   return {
     ...equipmentProcessor,
     label: "Equipment",

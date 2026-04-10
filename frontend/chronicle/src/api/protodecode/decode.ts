@@ -4286,6 +4286,11 @@ export class FastCombatantInfoCursor {
     return msg;
   }
 
+  /** Alias for nextEncounter – matches the interface used by other cursors. */
+  skipEncounter(): boolean {
+    return this.nextEncounter();
+  }
+
   nextEncounter(): boolean {
     // Skip remaining messages in current encounter
     while (this.hasMoreInEncounter) {

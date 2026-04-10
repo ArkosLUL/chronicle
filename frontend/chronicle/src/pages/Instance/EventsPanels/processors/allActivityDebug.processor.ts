@@ -50,6 +50,8 @@ export interface RawDebugEvent {
   // Debug annotations (when WithDebug is enabled during reparse)
   // Can have multiple activity entries per event
   activityEvents?: ActivityEventInfo[];
+  // Combatant info gear (for hover tooltip)
+  gear?: { itemId: number; enchantId: number | null; temporaryEnchantId: number | null }[];
 }
 
 /**
@@ -430,6 +432,11 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       parts.push(`gear=${ciEvent.gearCount} slots`);
       if (ciEvent.guildName) parts.push(`guild=${ciEvent.guildName}`);
       rawEvent.extra = parts.join(" ");
+      rawEvent.gear = ciEvent.gear.slice(0, ciEvent.gearCount).map(g => ({
+        itemId: g.itemId,
+        enchantId: g.enchantId,
+        temporaryEnchantId: g.temporaryEnchantId,
+      }));
     }
     
     // Store in appropriate stream bucket

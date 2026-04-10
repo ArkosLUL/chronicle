@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
-import type { PanelRenderProps } from "../processorTypes";
+import type { PanelRenderProps } from "../types";
 import type { EquipmentResult, PlayerSnapshot } from "./equipment.processor";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { GenericPanel } from "../GenericPanel";
@@ -158,6 +158,7 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
   const { cachedValue } = useCachedValue(
     result,
     (r) => !!r && r.players instanceof Map && r.players.size > 0,
+    [context.selectedEncounterIds],
   );
 
   const playerList = useMemo(() => {

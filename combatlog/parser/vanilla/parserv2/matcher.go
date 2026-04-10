@@ -319,7 +319,7 @@ func (p *Parser) combatantTransmog(ctx context.Context, ts time.Time, m *Matched
 			continue
 		}
 		mogs = append(mogs, combatant.Transmog{
-			Slot:       int32(slot),
+			Slot:       int32(slot - 1),
 			ItemID:     int32(itemID),
 			TransmogID: int32(transmogID),
 		})

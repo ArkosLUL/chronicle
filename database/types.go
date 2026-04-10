@@ -160,6 +160,7 @@ type PlayerGear struct {
 	ItemName    string `json:"item_name,omitempty"`
 	ItemQuality int32  `json:"item_quality,omitempty"`
 	ItemIcon    string `json:"item_icon,omitzero"`
+	TransmogID  *int32 `json:"transmog_id,omitempty"`
 	// TODO: transmog
 }
 

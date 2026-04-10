@@ -99,6 +99,8 @@ interface ItemTooltipProps {
   showItemLevel?: boolean;
   /** Set of item entry IDs the player has equipped (for set piece highlighting). */
   equippedItemIds?: ReadonlySet<number>;
+  /** If the item is transmogrified, the name of the transmog appearance. */
+  transmogName?: string;
 }
 
 /**
@@ -106,7 +108,7 @@ interface ItemTooltipProps {
  * Renders a full item tooltip with stats, damage, set bonuses, etc.
  * Designed to match the in-game tooltip appearance.
  */
-export function ItemTooltip({ item, className, includeReferenceLinks = false, showItemLevel = false, equippedItemIds }: ItemTooltipProps) {
+export function ItemTooltip({ item, className, includeReferenceLinks = false, showItemLevel = false, equippedItemIds, transmogName }: ItemTooltipProps) {
   const qualityColor = QUALITY_COLORS[item.quality] ?? "text-white";
   const iconUrl = getItemIconUrl(item.icon);
   const slotText = INVENTORY_TYPE_TEXT[item.inventory_type] ?? "";
@@ -142,6 +144,9 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
           <h2 className={cn("font-medium text-sm leading-tight", qualityColor)}>
             {displayName}
           </h2>
+          {transmogName && (
+            <span className="text-fuchsia-400 text-xs">Transmogrified to {transmogName}</span>
+          )}
           {showItemLevel && item.item_level > 0 && (
             <span className="text-yellow-400 text-xs">Item Level {item.item_level}</span>
           )}

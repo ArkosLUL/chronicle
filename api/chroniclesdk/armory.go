@@ -7,19 +7,19 @@ import (
 )
 
 type ArmoryPlayer struct {
-	ID        GUIDString   `json:"id"`
-	RealmName string       `json:"realm_name"`
-	RealmID   uuid.UUID    `json:"realm_id"`
-	Name      string       `json:"name"`
-	Class     string       `json:"class"`
-	Race      string       `json:"race"`
-	Gender    string       `json:"gender"`
-	Level     int32        `json:"level"`
-	GuildID   *uuid.UUID   `json:"guild_id,omitempty"`
-	GuildName string       `json:"guild_name,omitempty"`
-	Gear               PlayerOutfit `json:"gear"`
-	UpdatedAt          time.Time    `json:"updated_at"`
-	UpdatedFromInstance *uuid.UUID  `json:"updated_from_instance,omitempty"`
+	ID                  GUIDString   `json:"id"`
+	RealmName           string       `json:"realm_name"`
+	RealmID             uuid.UUID    `json:"realm_id"`
+	Name                string       `json:"name"`
+	Class               string       `json:"class"`
+	Race                string       `json:"race"`
+	Gender              string       `json:"gender"`
+	Level               int32        `json:"level"`
+	GuildID             *uuid.UUID   `json:"guild_id,omitempty"`
+	GuildName           string       `json:"guild_name,omitempty"`
+	Gear                PlayerOutfit `json:"gear"`
+	UpdatedAt           time.Time    `json:"updated_at"`
+	UpdatedFromInstance *uuid.UUID   `json:"updated_from_instance,omitempty"`
 }
 
 // PlayerOutfit mirrors database.PlayerOutfit for the SDK layer.
@@ -31,6 +31,7 @@ type PlayerGear struct {
 	ItemName    string `json:"item_name,omitempty"`
 	ItemQuality int32  `json:"item_quality,omitempty"`
 	ItemIcon    string `json:"item_icon,omitempty"`
+	TransmogID  *int32 `json:"transmog_id,omitempty"`
 }
 
 // ArmorySearchResult is a lightweight player result without gear data.

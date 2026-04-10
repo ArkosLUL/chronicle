@@ -32,6 +32,11 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
       ? { itemId: item.item_id, enchant: item.enchant_id }
       : null,
   );
+  const transmogTooltipData = useItemTooltip(
+    item.transmog_id && item.transmog_id > 0
+      ? { itemId: item.transmog_id }
+      : null,
+  );
 
   const isEmpty = item.item_id === 0;
   const quality = item.item_quality ?? tooltipData.data?.quality ?? 0;
@@ -77,6 +82,7 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
           {enchantText}
         </span>
       )}
+
     </div>
   );
 
@@ -133,13 +139,13 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
                 >
                   ✕
                 </button>
-                <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} />
+                <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} transmogName={transmogTooltipData.data?.name} />
               </div>
             </div>
           ) : (
             /* Desktop: centered fixed tooltip */
             <div className="fixed inset-0 z-50 flex items-center justify-center -translate-y-[15%] pointer-events-none">
-              <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} />
+              <ItemTooltip item={tooltipData.data!} equippedItemIds={equippedItemIds} transmogName={transmogTooltipData.data?.name} />
             </div>
           )}
         </>

@@ -365,22 +365,23 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 			ItemName:    g.ItemName,
 			ItemQuality: g.ItemQuality,
 			ItemIcon:    g.ItemIcon,
+			TransmogID:  g.TransmogID,
 		}
 	}
 
 	return chroniclesdk.ArmoryPlayer{
-		ID:        row.ID,
-		RealmID:   row.RealmID,
-		RealmName: row.RealmName,
-		Name:      row.Name,
-		Class:     HeroClass(row.Class).String(),
-		Race:      HeroRace(row.Race).String(),
-		Gender:    HeroGender(row.Gender).String(),
-		Level:     int32(row.Level),
-		GuildID:   guildID,
-		GuildName: row.GuildName.String,
-		Gear:               gear,
-		UpdatedAt:          row.UpdatedAt.Time,
+		ID:                  row.ID,
+		RealmID:             row.RealmID,
+		RealmName:           row.RealmName,
+		Name:                row.Name,
+		Class:               HeroClass(row.Class).String(),
+		Race:                HeroRace(row.Race).String(),
+		Gender:              HeroGender(row.Gender).String(),
+		Level:               int32(row.Level),
+		GuildID:             guildID,
+		GuildName:           row.GuildName.String,
+		Gear:                gear,
+		UpdatedAt:           row.UpdatedAt.Time,
 		UpdatedFromInstance: instanceID,
 	}
 }

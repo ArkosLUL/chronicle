@@ -155,6 +155,7 @@ type GearItem struct {
 	EnchantID     *int
 	TempEnchantID *int
 	SuffixID      int
+	TransmogID    *int
 	// TODO: slot source?
 }
 

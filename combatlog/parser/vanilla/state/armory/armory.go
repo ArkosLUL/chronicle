@@ -25,6 +25,7 @@ type Tracker struct {
 	Guilds      map[string]map[guid.GUID]struct{}
 	Participant map[guid.GUID]struct{}
 	Players     map[guid.GUID]combatant.Combatant
+	ByName      map[string]guid.GUID
 }
 
 func New() *Tracker {
@@ -32,6 +33,7 @@ func New() *Tracker {
 		Guilds:      make(map[string]map[guid.GUID]struct{}),
 		Participant: make(map[guid.GUID]struct{}),
 		Players:     make(map[guid.GUID]combatant.Combatant),
+		ByName:      make(map[string]guid.GUID),
 	}
 }
 
@@ -108,6 +110,9 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 			if item.EnchantID != nil {
 				dbGear[i].EnchantID = ptr.Ref(int32(*item.EnchantID))
 			}
+			if item.TransmogID != nil {
+				dbGear[i].TransmogID = ptr.Ref(int32(*item.TransmogID))
+			}
 			if meta, ok := itemMeta[int32(item.ItemID)]; ok {
 				dbGear[i].ItemName = meta.Name
 				dbGear[i].ItemQuality = meta.Quality
@@ -182,6 +187,8 @@ func (g *Tracker) ProcessMessage(active bool, encounterID uuid.UUID, msg message
 	case *messages.Combatant:
 		g.Guild(ty)
 		g.Player(ty)
+	case *messages.Transmog:
+		g.Transmog(ty)
 	}
 
 	return nil
@@ -212,4 +219,22 @@ func (g *Tracker) Player(msg *messages.Combatant) {
 		return
 	}
 	g.Players[msg.Guid] = msg.Combatant
+	g.ByName[msg.Name] = msg.Guid
+}
+
+func (g *Tracker) Transmog(msg *messages.Transmog) {
+	gid, ok := g.ByName[msg.PlayerName]
+	if !ok {
+		return
+	}
+
+	pl := g.Players[gid]
+	for _, item := range msg.Transmogs {
+		if item.Slot < 0 || int(item.Slot) >= len(pl.GearSetups) {
+			continue
+		}
+
+		pl.GearSetups[item.Slot].ItemID = int(item.ItemID)
+		pl.GearSetups[item.Slot].TransmogID = ptr.Ref(int(item.TransmogID))
+	}
 }

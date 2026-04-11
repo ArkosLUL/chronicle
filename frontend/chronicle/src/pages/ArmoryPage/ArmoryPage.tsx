@@ -102,7 +102,7 @@ export function ArmoryPage() {
         {/* Tab content — gear stays in center column */}
         {activeTab === "gear" && (
           <div className="mt-6">
-            <GearDisplay gear={player.gear} />
+            <GearDisplay gear={player.gear} race={player.race} gender={player.gender} />
           </div>
         )}
       </div>

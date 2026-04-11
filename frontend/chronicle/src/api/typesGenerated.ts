@@ -529,6 +529,7 @@ export interface PlayerGear {
     readonly item_name?: string;
     readonly item_quality?: number;
     readonly item_icon?: string;
+    readonly transmog_id?: number;
 }
 
 // From chroniclesdk/armory.go

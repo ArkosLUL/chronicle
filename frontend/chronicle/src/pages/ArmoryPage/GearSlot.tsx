@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useItemTooltip } from "@/api/gamedata";
 import type { PlayerGear } from "@/api/typesGenerated";
 import { ItemTooltip } from "@/components/ui/ItemTooltip/ItemTooltip";
@@ -21,9 +22,11 @@ interface GearSlotProps {
   side?: GearSlotSide;
   /** Set of all equipped item IDs (for set piece highlighting in tooltips). */
   equippedItemIds?: ReadonlySet<number>;
+  /** True when the 3D model viewer failed to load display data for this slot. */
+  modelError?: boolean;
 }
 
-export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: GearSlotProps) {
+export function GearSlot({ slotDef, item, side = "right", equippedItemIds, modelError }: GearSlotProps) {
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const isMobile = useIsMobile();
@@ -96,24 +99,34 @@ export function GearSlot({ slotDef, item, side = "right", equippedItemIds }: Gea
       onMouseLeave={() => !isMobile && setHovered(false)}
       onClick={handleClick}
     >
-      <div
-        className={cn(
-          "w-11 h-11 shrink-0 rounded border-2 bg-zinc-900/80 flex items-center justify-center overflow-hidden transition-colors",
-          borderClass,
-          !isEmpty && "hover:brightness-125 cursor-pointer",
-        )}
-      >
-        {!isEmpty && iconName ? (
-          <img
-            src={getItemIconUrl(iconName)}
-            alt={displayName}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <span className="text-3xs text-zinc-600 text-center leading-tight select-none">
-            {slotDef.label}
-          </span>
+      <div className="relative shrink-0">
+        <div
+          className={cn(
+            "w-11 h-11 rounded border-2 bg-zinc-900/80 flex items-center justify-center overflow-hidden transition-colors",
+            borderClass,
+            !isEmpty && "hover:brightness-125 cursor-pointer",
+          )}
+        >
+          {!isEmpty && iconName ? (
+            <img
+              src={getItemIconUrl(iconName)}
+              alt={displayName}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span className="text-3xs text-zinc-600 text-center leading-tight select-none">
+              {slotDef.label}
+            </span>
+          )}
+        </div>
+        {modelError && (
+          <div className="absolute -top-1.5 -right-1.5 group/warn">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-2xs text-zinc-200 bg-zinc-800 border border-zinc-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover/warn:opacity-100 pointer-events-none transition-opacity">
+              Some or all 3D model data unavailable
+            </div>
+          </div>
         )}
       </div>
 

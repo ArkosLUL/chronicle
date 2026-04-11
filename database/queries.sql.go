@@ -1627,6 +1627,69 @@ func (q *sqlQuerier) UpsertGuildSettings(ctx context.Context, arg UpsertGuildSet
 	return i, err
 }
 
+const getInstanceLoot = `-- name: GetInstanceLoot :many
+SELECT
+  il.id, il.instance_id, il.realm_id, il.source_guid, il.source_ts, il.received_guid, il.received_ts, il.item_id, il.item_name, il.loot_suffix, il.quantity,
+  COALESCE(wit.quality, 0)::INT as quality,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '')::TEXT as icon
+FROM instance_loot il
+  LEFT JOIN world_item_template wit ON wit.entry = il.item_id
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
+WHERE il.instance_id = $1
+ORDER BY il.source_ts
+`
+
+type GetInstanceLootRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	InstanceID   uuid.UUID          `db:"instance_id" json:"instance_id"`
+	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
+	SourceGuid   int64              `db:"source_guid" json:"source_guid"`
+	SourceTs     pgtype.Timestamptz `db:"source_ts" json:"source_ts"`
+	ReceivedGuid int64              `db:"received_guid" json:"received_guid"`
+	ReceivedTs   pgtype.Timestamptz `db:"received_ts" json:"received_ts"`
+	ItemID       int32              `db:"item_id" json:"item_id"`
+	ItemName     string             `db:"item_name" json:"item_name"`
+	LootSuffix   int32              `db:"loot_suffix" json:"loot_suffix"`
+	Quantity     int32              `db:"quantity" json:"quantity"`
+	Quality      int32              `db:"quality" json:"quality"`
+	Icon         string             `db:"icon" json:"icon"`
+}
+
+func (q *sqlQuerier) GetInstanceLoot(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceLootRow, error) {
+	rows, err := q.db.Query(ctx, getInstanceLoot, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetInstanceLootRow
+	for rows.Next() {
+		var i GetInstanceLootRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.InstanceID,
+			&i.RealmID,
+			&i.SourceGuid,
+			&i.SourceTs,
+			&i.ReceivedGuid,
+			&i.ReceivedTs,
+			&i.ItemID,
+			&i.ItemName,
+			&i.LootSuffix,
+			&i.Quantity,
+			&i.Quality,
+			&i.Icon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteAllParsedLogsByGroupID = `-- name: DeleteAllParsedLogsByGroupID :exec
 DELETE FROM
   parsed_log_group

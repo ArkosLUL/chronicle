@@ -73,7 +73,7 @@ export function GearDisplay({ gear, race, gender }: GearDisplayProps) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="flex gap-10">
+      <div className="flex gap-70 md:gap-10">
         {/* Left column — names on the left (outside) */}
         <div className="flex flex-col gap-1.5">
           {leftItems.map((entry, i) => (

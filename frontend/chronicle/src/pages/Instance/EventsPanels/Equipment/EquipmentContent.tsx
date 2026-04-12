@@ -39,7 +39,7 @@ function getItemIconUrl(icon: string): string {
 }
 
 /** Compact single-row item display with tooltip-fetched icon/name/quality. */
-function GearRow({ itemId, enchantId, slotLabel }: { itemId: number; enchantId: number | null; slotLabel: string }) {
+function GearRow({ itemId, enchantId, slotLabel, equippedItemIds }: { itemId: number; enchantId: number | null; slotLabel: string; equippedItemIds?: ReadonlySet<number> }) {
   const [hovered, setHovered] = useState(false);
   const isEmpty = itemId === 0;
   const tooltip = useItemTooltip(
@@ -90,7 +90,7 @@ function GearRow({ itemId, enchantId, slotLabel }: { itemId: number; enchantId: 
       {/* Tooltip on hover */}
       {hovered && tooltip.data && (
         <div className="fixed inset-0 z-50 flex items-center justify-center -translate-y-[15%] pointer-events-none">
-          <ItemTooltip item={tooltip.data} />
+          <ItemTooltip item={tooltip.data} equippedItemIds={equippedItemIds} />
         </div>
       )}
     </div>
@@ -188,6 +188,15 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
     }
   }
 
+  const equippedItemIds = useMemo(() => {
+    if (!selected) return undefined;
+    const ids = new Set<number>();
+    for (const g of selected.gear) {
+      if (g.itemId > 0) ids.add(g.itemId);
+    }
+    return ids;
+  }, [selected]);
+
   if (!cachedValue || playerList.length === 0) {
     return (
       <GenericPanel {...props}>
@@ -257,6 +266,7 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
                   itemId={g?.itemId ?? 0}
                   enchantId={g?.enchantId ?? null}
                   slotLabel={slot.label}
+                  equippedItemIds={equippedItemIds}
                 />
               );
             })}

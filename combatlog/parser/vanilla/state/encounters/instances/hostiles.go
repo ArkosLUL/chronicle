@@ -520,6 +520,48 @@ func WailingCavernsHostiles() map[uint32]Identity {
 	return hostile
 }
 
+func WindhornCanyonHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		62762: "Venomous Cloudstalker",  // 15 times
+		62774: "Deathtotem Bonespeaker", // 10 times
+		62773: "Deathtotem Shaman",      // 7 times
+		10183: "Moonflare Totem",        // 7 times
+		62765: "Blackwind Geologist",    // 10 times
+		62766: "Blackwind Overseer",     // 8 times
+		62866: "Storm Residue",          // 21 times
+		62763: "Storm Elemental",        // 13 times
+		62759: "Blackwind Trapper",      // 12 times
+		62760: "Blackwind Villager",     // 51 times
+		62767: "Blackwind Warrior",      // 15 times
+		62772: "Blackwind Totemkeeper",  // 19 times
+		62769: "Blackwind Watcher",      // 4 times
+		62761: "Rocktail Scorpid",       // 25 times
+		62771: "Blackwind Bloodguard",   // 3 times
+		62768: "Blackwind Elder",        // 9 times
+		62865: "Storm Guardian",         // 7 times
+		62770: "Blackwind Earthkeeper",  // 6 times
+		62764: "Blackwind Hunter",       // 11 times
+		62985: "Deathtotem Behemoth",    // 7 times
+		62777: "Deathtotem Avenger",     // 11 times
+	})
+
+	LoadBosses(hostile, map[uint32]string{
+		62785: "Champion Rotag",            // 1 times
+		62782: "Chieftain Shalk Blackwind", // 1 times
+		62779: "Pathun Duskhide",           // 1 times
+		62757: "Blackwind Brute",           // 1 times
+		62784: "Walgan Bloodcaller",        // 1 times
+		62783: "Ambassador Vortalus",       // 1 times
+		62781: "Prophet Stormhoof",         // 1 times
+		62778: "Ahgk'tos the Pure",         // 1 times
+		61410: "Bonespeaker Narlgom",       // "Spirit of Champion Rotag",  // 1 times
+		62780: "Bonespeaker Narlgom",       // 1 times
+	})
+
+	return hostile
+}
+
 func DeadminesHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{

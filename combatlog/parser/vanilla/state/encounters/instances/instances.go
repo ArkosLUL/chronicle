@@ -1,6 +1,12 @@
 package instances
 
 var (
+	WindhornCanyon = (&CommonFactory{
+		Name:     "Windhorn Canyon",
+		ZoneName: ZoneNameMatcher("windhorn canyon"),
+		Hostiles: FromMap(WindhornCanyonHostiles()),
+	}).New
+
 	Deadmines = (&CommonFactory{
 		Name:     "Deadmines",
 		ZoneName: ZoneNameMatcher("the deadmines"),

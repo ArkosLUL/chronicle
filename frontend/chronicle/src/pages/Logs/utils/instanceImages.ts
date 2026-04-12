@@ -29,6 +29,7 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Gilneas City": { background: "/c/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3, abbrev: "Gilneas", },
   "World Bosses": { background: "/c/images/loadingscreens/LoadScreenRaid.webp", abbrev: "World", category: "raid" },
   "Timbermaw Hold": { background: "/c/images/loadingscreens/LoadScreenTimbermaw.webp", abbrev: "TMH", category: "raid"},
+  "Windhorn Canyon": { background: "/c/images/loadingscreens/LoadScreenWindhorn.webp", abbrev: "WHC" },
   // Dungeons
   "Frostmane Hollow": { background: "/c/images/loadingscreens/LoadScreenFrostmane.webp", abbrev: "FH" },
   "Black Morass": { background: "/c/images/loadingscreens/LoadScreenCavernsTime.webp", bossCount: 4, abbrev: "BM" },

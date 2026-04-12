@@ -6,7 +6,7 @@ import { useInstanceLoot, type InstanceLoot } from "../../../../api/queries";
 import { useItemTooltip } from "../../../../api/gamedata";
 import { ItemTooltip } from "../../../../components/ui/ItemTooltip/ItemTooltip";
 import { getQualityTextClass, getQualityBorderClass, getClassColorVar } from "../../../ArmoryPage/types";
-import { getInstanceLootFilters, getInstanceTurninConfig, type InstanceTurninConfig, type TurninGroup } from "./lootFilters";
+import { getInstanceLootFilters, getInstanceTurninConfig, type InstanceTurninConfig } from "./lootFilters";
 import { cn } from "../../../../lib/utils";
 
 function getItemIconUrl(icon: string): string {

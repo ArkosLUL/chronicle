@@ -1,4 +1,4 @@
-import type { PanelProcessor } from "../types";
+import type { PanelProcessor } from "../processorTypes";
 
 export type LootResult = Record<string, never>;
 

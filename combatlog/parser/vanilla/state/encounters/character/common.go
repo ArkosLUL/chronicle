@@ -118,7 +118,7 @@ func processCommonActivity(c characterBase, m messages.Message) error {
 			}
 		}
 
-		if data.SpellData != nil && applied {
+		if data.SpellData != nil && applied && !c.RecentlySlain(m) {
 			if data.SpellData.SpellDamageType().Has(chrondbc.SpellDamageActiveDebuff) {
 				// Faerie fire, sunder armor, etc.
 				c.Start(fmt.Sprintf("debuff_%s", data.SpellData.Name()), m)

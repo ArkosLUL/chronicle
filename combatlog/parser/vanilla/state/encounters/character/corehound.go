@@ -51,6 +51,18 @@ func (c *CoreHound) Process(m messages.Message) error {
 				}
 			}
 		}
+
+		// This is a niche scenario, but explosive traps can damage through the core
+		// hound's dead body. Just toss these out. This does include actual valid damage
+		// when the core hound is alive, but this is just easier. If a fight actually
+		// starts with a trap, then this message would incorrectly be ignored, but that
+		// seems unlikely.
+		if data.Target == c.ID() && data.SpellData != nil {
+			switch data.SpellData.ID {
+			case 14315:
+				return nil
+			}
+		}
 	}
 
 	err := c.Common.Process(m)

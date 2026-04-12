@@ -20,7 +20,6 @@ const (
 )
 
 type Hook interface {
-
 }
 
 // TODO: Slim the interface for external use
@@ -87,6 +86,10 @@ func (c *Base[M]) CurrentPeriodIsPeriod() (period.IsPeriod, bool) {
 
 func (c *Base[_]) IsActive() bool {
 	return c.Activity.IsActive()
+}
+
+func (c *Base[_]) NumberOfPeriods() int {
+	return len(c.Activity.History)
 }
 
 func (c *Base[_]) Periods() []period.Period {

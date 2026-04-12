@@ -44,8 +44,10 @@ type Hookable struct {
 	CurrentZone zone.Zone
 	*Identifier
 	verbose bool
-	realm   *realm.Info         // mostly static
-	hooks   []instancehook.Hook // TODO: unroll?
+	realm        *realm.Info         // mostly static
+	versions     map[string]string   // addon/dependency versions from HEADER
+	recorderGUID *guid.GUID         // recording player GUID from HEADER
+	hooks        []instancehook.Hook // TODO: unroll?
 
 	// Live tracking data
 	Characters      *character.Characters
@@ -136,6 +138,11 @@ func (h *Hookable) AddHook(hook instancehook.Hook) {
 }
 func (h *Hookable) Name() string           { return h.name }
 func (h *Hookable) SetRealm(r *realm.Info) { h.realm = r }
+func (h *Hookable) SetVersions(versions map[string]string, player *guid.GUID) {
+	h.versions = versions
+	h.recorderGUID = player
+}
+
 
 // MatchesZone
 // TODO: Should we care about the instance ID here?
@@ -432,8 +439,10 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	}
 
 	return &FinalizedInstance{
-		Realm:      h.realm,
-		Encounters: encounters,
+		Realm:        h.realm,
+		Versions:     h.versions,
+		RecorderGUID: h.recorderGUID,
+		Encounters:   encounters,
 		// TODO: Break off guild and spellbook
 		Guilds:       h.g,
 		Loot:         h.lootTracking,

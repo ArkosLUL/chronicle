@@ -1002,6 +1002,9 @@ export interface WoWInstance {
     readonly slug: string;
     readonly guild?: Guild;
     readonly capabilities: readonly string[];
+    readonly versions: Record<string, string>;
+    readonly recorder_name: string;
+    readonly recorder_guid: string;
 }
 
 // From chroniclesdk/log.go

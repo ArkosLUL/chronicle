@@ -101,6 +101,9 @@ func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) ch
 		Slug:         instance.HashedSlug.String,
 		Guild:        g,
 		Capabilities: instance.Capabilities,
+		Versions:     map[string]string(instance.Versions),
+		RecorderName: instance.RecorderName,
+		RecorderGUID: instance.RecorderGuid,
 	}
 }
 
@@ -121,6 +124,9 @@ func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
 		Slug:         instance.HashedSlug.String,
 		Guild:        g,
 		Capabilities: instance.Capabilities,
+		Versions:     map[string]string(instance.Versions),
+		RecorderName: instance.RecorderName,
+		RecorderGUID: instance.RecorderGuid,
 	}
 }
 

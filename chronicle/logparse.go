@@ -373,6 +373,15 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				}
 			}
 
+			recorderName := ""
+			recorderGUID := ""
+			if finalized.RecorderGUID != nil {
+				recorderGUID = finalized.RecorderGUID.String()
+				if u, ok := encountersState.Units.Get(*finalized.RecorderGUID); ok {
+					recorderName = u.Name
+				}
+			}
+
 			insertInstanceParams := database.InsertInstanceParams{
 				ID:         instanceID,
 				RealmID:    realmID,
@@ -389,6 +398,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				StartTime:    instanceStart,
 				EndTime:      instanceEnd,
 				Capabilities: []string{"overheal"},
+				Versions:     database.VersionsMap(finalized.Versions),
+				RecorderName: recorderName,
+				RecorderGuid: recorderGUID,
 			}
 
 			// Handling colliding slugs

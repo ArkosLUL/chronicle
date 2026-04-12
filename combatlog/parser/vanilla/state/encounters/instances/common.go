@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
@@ -14,6 +15,8 @@ import (
 
 type FinalizedInstance struct {
 	Realm        *realm.Info
+	Versions     map[string]string
+	RecorderGUID *guid.GUID
 	Encounters   []Encounter
 	Guilds       *armory.Tracker
 	Loot         *loot.LootTracker

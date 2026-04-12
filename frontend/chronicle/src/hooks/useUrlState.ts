@@ -650,6 +650,8 @@ const PANEL_CODES: Record<PanelType, string> = {
   dispels_received: 'dsr',
   dispel_log: 'dsl',
   loot: 'lt',
+  logging_metadata: 'lm',
+
 };
 
 // ============================================================================

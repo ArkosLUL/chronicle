@@ -180,3 +180,25 @@ func (g *PlayerOutfit) Scan(src interface{}) error {
 func (g PlayerOutfit) Value() (driver.Value, error) {
 	return json.Marshal(g)
 }
+
+// VersionsMap is a map[string]string stored as JSONB for instance version metadata.
+type VersionsMap map[string]string
+
+func (v *VersionsMap) Scan(src interface{}) error {
+	switch val := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(val), v)
+	case []byte:
+		return json.Unmarshal(val, v)
+	case json.RawMessage:
+		return json.Unmarshal(val, v)
+	}
+	return xerrors.Errorf("unexpected type %T", src)
+}
+
+func (v VersionsMap) Value() (driver.Value, error) {
+	if v == nil {
+		return json.Marshal(map[string]string{})
+	}
+	return json.Marshal(v)
+}

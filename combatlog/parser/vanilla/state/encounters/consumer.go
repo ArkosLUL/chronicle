@@ -42,6 +42,7 @@ type State struct {
 	// CurrentZone is the zone the player is currently in.
 	CurrentZone     *zoner.Location
 	CurrentRealm    *realm.Info
+	CurrentVersions *messages.Versions
 	CurrentInstance *instances.Hookable
 	Instances       []*instances.Hookable
 
@@ -85,6 +86,8 @@ func (s *State) Process(m messages.Message) error {
 	switch typed := m.(type) {
 	case *messages.Realm:
 		s.CurrentRealm = &typed.Info
+	case *messages.Versions:
+		s.CurrentVersions = typed
 	case *messages.Zone:
 		zoneStart := time.Now()
 		s.Zone(*typed)
@@ -140,6 +143,9 @@ func (s *State) Zone(z messages.Zone) {
 		if s.CurrentInstance != nil {
 			// Set any initial realm state that we have
 			s.CurrentInstance.SetRealm(s.CurrentRealm)
+			if s.CurrentVersions != nil {
+				s.CurrentInstance.SetVersions(s.CurrentVersions.Versions, s.CurrentVersions.Player)
+			}
 			s.logger.Info("Matched new instance",
 				slog.String("name", s.CurrentInstance.Name()),
 			)

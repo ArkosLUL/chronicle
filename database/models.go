@@ -811,6 +811,9 @@ type LogInstance struct {
 	StartTime    pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	EndTime      pgtype.Timestamptz `db:"end_time" json:"end_time"`
 	Capabilities []string           `db:"capabilities" json:"capabilities"`
+	Versions     VersionsMap        `db:"versions" json:"versions"`
+	RecorderName string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid string             `db:"recorder_guid" json:"recorder_guid"`
 }
 
 type LogInstanceEncounter struct {
@@ -885,6 +888,9 @@ type LogInstancesGuild struct {
 	HashedSlug     pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
 	GuildID        uuid.NullUUID      `db:"guild_id" json:"guild_id"`
 	Capabilities   []string           `db:"capabilities" json:"capabilities"`
+	Versions       VersionsMap        `db:"versions" json:"versions"`
+	RecorderName   string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid   string             `db:"recorder_guid" json:"recorder_guid"`
 	RealmName      string             `db:"realm_name" json:"realm_name"`
 	GuildName      pgtype.Text        `db:"guild_name" json:"guild_name"`
 	GuildRealmID   uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`

@@ -217,6 +217,16 @@ type Realm struct {
 func (u Realm) Affects() []guid.GUID { return []guid.GUID{} }
 func (*Realm) isMessage()            {}
 
+type Versions struct {
+	MessageBase
+	Player   *guid.GUID
+	Versions map[string]string
+}
+
+func (v Versions) Affects() []guid.GUID { return []guid.GUID{} }
+func (*Versions) isMessage()            {}
+
+
 type UnitDied struct {
 	MessageBase
 	unitdied.Info

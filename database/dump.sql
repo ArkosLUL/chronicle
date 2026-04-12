@@ -437,7 +437,10 @@ CREATE TABLE log_instances (
     guild_id uuid,
     start_time timestamp with time zone,
     end_time timestamp with time zone,
-    capabilities text[] DEFAULT '{}'::text[] NOT NULL
+    capabilities text[] DEFAULT '{}'::text[] NOT NULL,
+    versions jsonb DEFAULT '{}'::jsonb NOT NULL,
+    recorder_name text DEFAULT ''::text NOT NULL,
+    recorder_guid text DEFAULT ''::text NOT NULL
 );
 
 COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
@@ -456,6 +459,9 @@ CREATE VIEW log_instances_guild AS
     li.hashed_slug,
     li.guild_id,
     li.capabilities,
+    li.versions,
+    li.recorder_name,
+    li.recorder_guid,
     COALESCE(wsr.name, 'Unknown'::text) AS realm_name,
     g.name AS guild_name,
     g.realm_id AS guild_realm_id,

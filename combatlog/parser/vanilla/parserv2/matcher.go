@@ -41,9 +41,7 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 
 	// TODO: If ts is 0, set to utc time
 
-	var _ = player
 	var _ = zoneName
-	var _, _, _, _ = addonVersion, superWoWVersion, namPowerVersion, xp3Version
 
 	if err := m.Error(); err != nil {
 		return nil, err
@@ -72,6 +70,26 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 		}
 	}
 
+	versions := make(map[string]string)
+	if addonVersion != "" {
+		versions["chronicle_companion"] = addonVersion
+	}
+	if superWoWVersion != "" {
+		versions["superwow"] = superWoWVersion
+	}
+	if namPowerVersion != "" {
+		versions["nampower"] = namPowerVersion
+	}
+	if xp3Version != "" {
+		versions["xp3"] = xp3Version
+	}
+	if wowVersion != "" {
+		versions["wow_client"] = wowVersion
+	}
+	if wowBuild != 0 {
+		versions["wow_build"] = fmt.Sprintf("%d", wowBuild)
+	}
+
 	return set(
 		//&messages.Zone{
 		//	MessageBase: messages.Base(ts),
@@ -92,6 +110,11 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 				BuildDate: wowBuildDate,
 				RealmName: realmName,
 			},
+		},
+		&messages.Versions{
+			MessageBase: messages.Base(ts),
+			Player:      player,
+			Versions:    versions,
 		},
 	)
 }

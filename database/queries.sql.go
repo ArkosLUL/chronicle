@@ -1931,10 +1931,10 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid
 `
 
 type InsertInstanceParams struct {
@@ -1947,6 +1947,9 @@ type InsertInstanceParams struct {
 	StartTime    pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	EndTime      pgtype.Timestamptz `db:"end_time" json:"end_time"`
 	Capabilities []string           `db:"capabilities" json:"capabilities"`
+	Versions     VersionsMap        `db:"versions" json:"versions"`
+	RecorderName string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid string             `db:"recorder_guid" json:"recorder_guid"`
 }
 
 func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
@@ -1960,6 +1963,9 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		arg.StartTime,
 		arg.EndTime,
 		arg.Capabilities,
+		arg.Versions,
+		arg.RecorderName,
+		arg.RecorderGuid,
 	)
 	var i LogInstance
 	err := row.Scan(
@@ -1972,6 +1978,9 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		&i.StartTime,
 		&i.EndTime,
 		&i.Capabilities,
+		&i.Versions,
+		&i.RecorderName,
+		&i.RecorderGuid,
 	)
 	return i, err
 }
@@ -1990,7 +1999,7 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -2008,6 +2017,9 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 		&i.HashedSlug,
 		&i.GuildID,
 		&i.Capabilities,
+		&i.Versions,
+		&i.RecorderName,
+		&i.RecorderGuid,
 		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
@@ -2018,7 +2030,7 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 
 const instanceBySlug = `-- name: InstanceBySlug :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -2036,6 +2048,9 @@ func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text)
 		&i.HashedSlug,
 		&i.GuildID,
 		&i.Capabilities,
+		&i.Versions,
+		&i.RecorderName,
+		&i.RecorderGuid,
 		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,

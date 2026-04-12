@@ -12,6 +12,8 @@ import { unifiedHealingProcessor } from "./healing.processor";
 import { mitigationProcessor } from "./mitigation.processor";
 import { avoidanceProcessor } from "./avoidance.processor";
 import { emptyProcessor } from "../Empty/empty.processor";
+import { loggingMetadataProcessor } from "../LoggingMetadata/loggingMetadata.processor";
+
 import { resourceRegenProcessor } from "../ResourceRegen/resourceRegen.processor";
 import { innervateProcessor } from "../Innervate/innervate.processor";
 import { sunderProcessor } from "../Sunder/sunder.processor";
@@ -37,6 +39,8 @@ export { unifiedHealingProcessor } from "./healing.processor";
 export { mitigationProcessor } from "./mitigation.processor";
 export { avoidanceProcessor } from "./avoidance.processor";
 export { emptyProcessor } from "../Empty/empty.processor";
+export { loggingMetadataProcessor } from "../LoggingMetadata/loggingMetadata.processor";
+
 export { resourceRegenProcessor } from "../ResourceRegen/resourceRegen.processor";
 export { innervateProcessor } from "../Innervate/innervate.processor";
 export { sunderProcessor } from "../Sunder/sunder.processor";
@@ -106,6 +110,8 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   mitigation: mitigationProcessor,
   avoidance: avoidanceProcessor,
   empty: emptyProcessor,
+  logging_metadata: loggingMetadataProcessor,
+
   resource_regen: resourceRegenProcessor,
   // Note: roles panel doesn't have its own processor - it reuses damage_taken and healing_done
   // Class: Druid

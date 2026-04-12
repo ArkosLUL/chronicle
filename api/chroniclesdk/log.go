@@ -72,8 +72,11 @@ type WoWInstance struct {
 	LogGroupID uuid.UUID `json:"log_group_id"`
 	Name       string    `json:"name"`
 	Slug       string    `json:"slug"`
-	Guild        *Guild   `json:"guild,omitempty"`
-	Capabilities []string `json:"capabilities"`
+	Guild        *Guild            `json:"guild,omitempty"`
+	Capabilities []string          `json:"capabilities"`
+	Versions     map[string]string `json:"versions"`
+	RecorderName string            `json:"recorder_name"`
+	RecorderGUID string            `json:"recorder_guid"`
 }
 
 // KillType represents the outcome of an encounter.

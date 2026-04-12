@@ -59,6 +59,14 @@ const GLOBAL_FILTERS: InstanceLootFilter[] = [
  * Add new entries here as needed — the loot panel picks them up automatically.
  */
 const INSTANCE_LOOT_FILTERS: Record<string, InstanceLootFilter[]> = {
+  "Black Morass": [
+    {
+      label: "Currency",
+      itemIds: new Set([
+        50203, // Corrupted Sand
+      ]),
+    },
+  ],
   "Zul'Gurub": [
     {
       label: "Currency",
@@ -125,6 +133,17 @@ export interface InstanceTurninConfig {
 }
 
 const INSTANCE_TURNINS: Record<string, InstanceTurninConfig> = {
+  "Black Morass": {
+    tabLabel: "Turnins",
+    groups: [
+      {
+        label: "Sand",
+        itemIds: new Set([
+          50203, // Corrupted Sand
+        ]),
+      }
+    ],
+  },
   "Zul'Gurub": {
     tabLabel: "Turnins",
     groups: [

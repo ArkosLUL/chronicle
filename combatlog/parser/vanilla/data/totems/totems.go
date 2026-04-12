@@ -44,6 +44,9 @@ const (
 )
 
 func init() {
+	register("Grounding Totem", 0,
+		variant{id: 5925, duration: 45 * time.Second})
+
 	// Talent "improved Searing Totem" does not exist in the game.
 	// https://database.turtle-wow.org/?spell=16127
 	// Earthfury set has a set effect for +15 seconds duration

@@ -1143,6 +1143,11 @@ func SunkenTempleHostiles() map[uint32]Identity {
 func TimbermawHoldHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
+		62886: "Totem of Corruption",         // 2 times
+		60684: "Foulheart Manipulator",       // 78 times
+		59816: "Corrupted Draenethyst Geode", // 1 times
+		49020: "Mind Flay Channeler",         // 1784 times
+		60685: "Dirk of the Beast",           // 168 times
 		62867: "Enraged Withermaw",
 		51296: "Timbermaw Defender",
 		62880: "Twisted Rumbler",
@@ -1189,6 +1194,7 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 		2139:  "Loktanag the Vile",
 		62935: "Ormanos the Cracked", // 1 times
 		62947: "Ursol",               // 1 times
+		60686: "Peroth'arn",          // 1 times
 	})
 
 	return hostile

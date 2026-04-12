@@ -189,7 +189,7 @@ function TurninContent({ context, config, loot }: {
   }
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto styled-scrollbar">
       <div className="p-2">
         <table className="w-full">
           <thead>
@@ -369,7 +369,7 @@ function LootContent({ context, panelOption, setPanelOption, useOffset }: Pick<P
         <TurninContent context={context} config={turninConfig} loot={loot} />
       ) : (
         /* Loot tab */
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto styled-scrollbar">
           <div className="p-2">
             <div className="flex items-center gap-1.5 mb-2 flex-wrap">
               {QUALITY_FILTERS.map((qf) => {

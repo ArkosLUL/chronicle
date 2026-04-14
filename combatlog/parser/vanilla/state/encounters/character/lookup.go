@@ -70,7 +70,7 @@ var characterFactories = []characterFactory{
 	NewKelThuzadRoom,
 	NewHeiganTheUnclean,
 	NewDiseasedMaggot,
-  NewEyeStalk,
+	NewEyeStalk,
 	// Kara 40
 	NewKruul,
 	NewKing,
@@ -81,7 +81,10 @@ var characterFactories = []characterFactory{
 	NewKeeperGnarlmoon,
 	NewAnomalus,
 	NewEchoOfMedivh,
+	NewFragmentOfRupturan,
 	NewRupturanTheBroken,
+	NewFelheart,
+	NewLivingStone,
 	NewIncantagos,
 	// Emerald Sanctum
 	NewSolnius,

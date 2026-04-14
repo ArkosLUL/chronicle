@@ -16,10 +16,11 @@ func NewKruul(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(59991, 59990)(id, all)
 }
 
-func NewRupturanTheBroken(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(59961,
-		59901, // Felheart
-	)(id, all)
+func NewLivingStone(id guid.GUID, all *Characters) (Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 59959 {
+		return nil, false
+	}
+	return NewCommonCharacter(id, all).WithTimeoutAsDeath(), true
 }
 
 func NewMephistroth(id guid.GUID, all *Characters) (Character, bool) {
@@ -30,6 +31,7 @@ func NewMephistroth(id guid.GUID, all *Characters) (Character, bool) {
 		93338, // Hellfury Shard
 		93332, // Desolate Doomguard
 		93334, // Demonic Eye
+		93335, // Nightmare Crawler
 	)(id, all)
 }
 

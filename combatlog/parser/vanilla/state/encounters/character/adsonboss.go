@@ -6,15 +6,15 @@ import (
 )
 
 type AdsGoWithBoss struct {
-	Character
+	characterBase
 	bossEntry uint32
 	adds      []uint32
 
 	all *Characters
 }
 
-func NewAdsGoWithBoss(bossEntry uint32, ads ...uint32) func(id guid.GUID, all *Characters) (Character, bool) {
-	return func(id guid.GUID, all *Characters) (Character, bool) {
+func NewAdsGoWithBoss(bossEntry uint32, ads ...uint32) func(id guid.GUID, all *Characters) (*AdsGoWithBoss, bool) {
+	return func(id guid.GUID, all *Characters) (*AdsGoWithBoss, bool) {
 		if !id.IsCreature() {
 			return nil, false
 		}
@@ -29,20 +29,20 @@ func NewAdsGoWithBoss(bossEntry uint32, ads ...uint32) func(id guid.GUID, all *C
 		}
 
 		return &AdsGoWithBoss{
-			Character: NewCommonCharacter(id, all),
-			bossEntry: bossEntry,
-			adds:      ads,
-			all:       all,
+			characterBase: NewCommonCharacter(id, all),
+			bossEntry:     bossEntry,
+			adds:          ads,
+			all:           all,
 		}, true
 	}
 }
 
-func NewAdsGoWithBossCustomCharacter(c Character, all *Characters, bossEntry uint32, ads ...uint32) *AdsGoWithBoss {
+func NewAdsGoWithBossCustomCharacter(c characterBase, all *Characters, bossEntry uint32, ads ...uint32) *AdsGoWithBoss {
 	return &AdsGoWithBoss{
-		Character: c,
-		bossEntry: bossEntry,
-		adds:      ads,
-		all:       all,
+		characterBase: c,
+		bossEntry:     bossEntry,
+		adds:          ads,
+		all:           all,
 	}
 }
 
@@ -53,7 +53,7 @@ type CanDie interface {
 func (c *AdsGoWithBoss) Process(m messages.Message) error {
 	wasActive := c.IsActive()
 
-	err := c.Character.Process(m)
+	err := c.characterBase.Process(m)
 	if err != nil {
 		return err
 	}

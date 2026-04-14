@@ -6,13 +6,13 @@ import (
 )
 
 type PermanentDeath struct {
-	Character
+	characterBase
 	dead bool
 }
 
-func NewPermanentDeath(c Character) *PermanentDeath {
+func NewPermanentDeath(c characterBase) *PermanentDeath {
 	return &PermanentDeath{
-		Character: c,
+		characterBase: c,
 	}
 }
 
@@ -21,7 +21,7 @@ func (c *PermanentDeath) Process(m messages.Message) error {
 		return nil
 	}
 
-	err := c.Character.Process(m)
+	err := c.characterBase.Process(m)
 	if err != nil {
 		return err
 	}

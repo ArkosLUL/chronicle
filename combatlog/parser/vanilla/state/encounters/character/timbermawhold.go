@@ -9,8 +9,14 @@ func NewKarrsh(id guid.GUID, all *Characters) (Character, bool) {
 	return NewPermanentDeath(NewCommonCharacter(id, all)), true
 }
 
+func NewSelenaxxFoulheart(id guid.GUID, all *Characters) (Character, bool) {
+	return NewAdsGoWithBoss(62940,
+		59816, // Corrupted Draenethyst Geode
+	)(id, all)
+}
+
 func NewChieftainPartath(id guid.GUID, all *Characters) (Character, bool) {
-	return NewAdsGoWithBoss(62961,
+	return NewAdsGoWithBoss(62941,
 		62942, // Illuminator
 	)(id, all)
 }
@@ -26,6 +32,13 @@ func NewUrsol(id guid.GUID, all *Characters) (Character, bool) {
 		29481, // Ursan Horror
 		29482, // Nightmare Fiend
 	)(id, all)
+}
+
+func NewNightmareFiend(id guid.GUID, all *Characters) (Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 29482 {
+		return nil, false
+	}
+	return NewCommonCharacter(id, all).WithTimeoutAsDeath(), true
 }
 
 func NewVileSkitterer(id guid.GUID, all *Characters) (Character, bool) {

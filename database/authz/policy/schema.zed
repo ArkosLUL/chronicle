@@ -14,6 +14,7 @@ definition chronicle {
   relation technical_user: user
   relation supporter: user
   relation chronicle_guild_member: user
+  relation chronicle_member: user // Not in discord
 
   permission can_reparse  = technical_user
   permission administer   = admin + technical_admin
@@ -27,8 +28,8 @@ definition chronicle {
   permission shorter_urls = supporter + admin
   permission internal_game_data = technical_admin + administer + supporter
 
-  permission upload_log = upload_capable + administer + supporter + chronicle_guild_member
-  permission create_layout = chronicle_guild_member
+  permission upload_log = upload_capable + administer + supporter + chronicle_guild_member + chronicle_member
+  permission create_layout = chronicle_guild_member + chronicle_member
 }
 
 definition layout {

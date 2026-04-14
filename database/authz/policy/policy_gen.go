@@ -70,7 +70,7 @@ func (obj *ObjArmory_player) Create() *Armory_playerRelates {
 	return &Armory_playerRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:64
+// Chronicle schema.zed:65
 // Relationship: armory_player:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjArmory_player) Chronicle(subs ...*ObjChronicle) *ObjArmory_player {
@@ -120,6 +120,10 @@ func (obj *ObjChronicle) RelationAdmin() string {
 
 func (obj *ObjChronicle) RelationChronicle_guild_member() string {
 	return "chronicle_guild_member"
+}
+
+func (obj *ObjChronicle) RelationChronicle_member() string {
+	return "chronicle_member"
 }
 
 func (obj *ObjChronicle) RelationSupporter() string {
@@ -315,6 +319,24 @@ func (r *ChronicleRelates) Chronicle_guild_member(subs ...*ObjUser) *ChronicleRe
 	return r
 }
 
+// Chronicle_member schema.zed:17
+// Relationship: chronicle:<id>#chronicle_member@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle_member() etc.
+func (obj *ObjChronicle) Chronicle_member(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("chronicle_member", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Chronicle_member on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Chronicle_member(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("chronicle_member", sub.src.Obj, "")
+	}
+	return r
+}
+
 // CanCan_reparse_User checks if the subject has can_reparse permission
 // // Object: chronicle:<id>
 // Schema: permission can_reparse = technical_user
@@ -482,7 +504,7 @@ func (obj *ObjChronicle) CanInternal_game_data_User(sub *ObjUser) rel.Relationsh
 
 // CanUpload_log_User checks if the subject has upload_log permission
 // // Object: chronicle:<id>
-// Schema: permission upload_log = upload_capable + administer + supporter + chronicle_guild_member
+// Schema: permission upload_log = upload_capable + administer + supporter + chronicle_guild_member + chronicle_member
 func (obj *ObjChronicle) CanUpload_log_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -497,7 +519,7 @@ func (obj *ObjChronicle) CanUpload_log_User(sub *ObjUser) rel.Relationship {
 
 // CanCreate_layout_User checks if the subject has create_layout permission
 // // Object: chronicle:<id>
-// Schema: permission create_layout = chronicle_guild_member
+// Schema: permission create_layout = chronicle_guild_member + chronicle_member
 func (obj *ObjChronicle) CanCreate_layout_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -585,7 +607,7 @@ func (obj *ObjGuild) Create() *GuildRelates {
 	return &GuildRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:49
+// Chronicle schema.zed:50
 // Relationship: guild:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjGuild) Chronicle(subs ...*ObjChronicle) *ObjGuild {
@@ -603,7 +625,7 @@ func (r *GuildRelates) Chronicle(subs ...*ObjChronicle) *GuildRelates {
 	return r
 }
 
-// Leader schema.zed:51
+// Leader schema.zed:52
 // Relationship: guild:<id>#leader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Leader() etc.
 func (obj *ObjGuild) Leader(subs ...*ObjUser) *ObjGuild {
@@ -621,7 +643,7 @@ func (r *GuildRelates) Leader(subs ...*ObjUser) *GuildRelates {
 	return r
 }
 
-// Member schema.zed:52
+// Member schema.zed:53
 // Relationship: guild:<id>#member@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Member() etc.
 func (obj *ObjGuild) Member(subs ...*ObjUser) *ObjGuild {
@@ -846,7 +868,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:82
+// Raid_log schema.zed:83
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -864,7 +886,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:83
+// PublicWildcard schema.zed:84
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -971,7 +993,7 @@ func (obj *ObjLayout) Create() *LayoutRelates {
 	return &LayoutRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:35
+// Chronicle schema.zed:36
 // Relationship: layout:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjLayout) Chronicle(subs ...*ObjChronicle) *ObjLayout {
@@ -989,7 +1011,7 @@ func (r *LayoutRelates) Chronicle(subs ...*ObjChronicle) *LayoutRelates {
 	return r
 }
 
-// Owner schema.zed:36
+// Owner schema.zed:37
 // Relationship: layout:<id>#owner@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Owner() etc.
 func (obj *ObjLayout) Owner(subs ...*ObjUser) *ObjLayout {
@@ -1138,7 +1160,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:68
+// Chronicle schema.zed:69
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1156,7 +1178,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:69
+// Uploader schema.zed:70
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {
@@ -1371,7 +1393,7 @@ func (obj *ObjRiver_queue) Create() *River_queueRelates {
 	return &River_queueRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:43
+// Chronicle schema.zed:44
 // Relationship: river_queue:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRiver_queue) Chronicle(subs ...*ObjChronicle) *ObjRiver_queue {

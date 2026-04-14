@@ -24,6 +24,7 @@ const (
 	UniqueGuildSettingsPkey                         UniqueConstraint = "guild_settings_pkey"                             // ALTER TABLE ONLY guild_settings ADD CONSTRAINT guild_settings_pkey PRIMARY KEY (guild_id);
 	UniqueGuildsPkey                                UniqueConstraint = "guilds_pkey"                                     // ALTER TABLE ONLY guilds ADD CONSTRAINT guilds_pkey PRIMARY KEY (id);
 	UniqueGuildsRealmIDNameKey                      UniqueConstraint = "guilds_realm_id_name_key"                        // ALTER TABLE ONLY guilds ADD CONSTRAINT guilds_realm_id_name_key UNIQUE (realm_id, name);
+	UniqueInstanceLootPkey                          UniqueConstraint = "instance_loot_pkey"                              // ALTER TABLE ONLY instance_loot ADD CONSTRAINT instance_loot_pkey PRIMARY KEY (id);
 	UniqueLogFilePkey                               UniqueConstraint = "log_file_pkey"                                   // ALTER TABLE ONLY log_file ADD CONSTRAINT log_file_pkey PRIMARY KEY (id);
 	UniqueLogInstanceEncounterDamageUnitSummaryPkey UniqueConstraint = "log_instance_encounter_damage_unit_summary_pkey" // ALTER TABLE ONLY log_instance_encounter_damage_unit_summary ADD CONSTRAINT log_instance_encounter_damage_unit_summary_pkey PRIMARY KEY (encounter_id, unit_guid);
 	UniqueLogInstanceEncounterHostilesPkey          UniqueConstraint = "log_instance_encounter_hostiles_pkey"            // ALTER TABLE ONLY log_instance_encounter_hostiles ADD CONSTRAINT log_instance_encounter_hostiles_pkey PRIMARY KEY (encounter_id, id);

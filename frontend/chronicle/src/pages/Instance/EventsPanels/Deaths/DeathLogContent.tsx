@@ -80,9 +80,26 @@ function getSortedDeathEvents(selectedEncounterIDs: string[], result: DeathsResu
 
 type DeathLogContentProps = PanelRenderProps<DeathsResult>;
 
+function extractDeathMode(panelOption: string | null | undefined): DeathMode {
+  if (!panelOption) return "players";
+  const token = panelOption.split(",").find((t) => t.trim().startsWith("m:"));
+  const val = token?.slice(2);
+  return val === "enemies" ? "enemies" : "players";
+}
+
 export const DeathLogContent = (props: DeathLogContentProps) => {
-  const { result, context, loading, processing, checkboxChecked } = props;
-  const [mode, setMode] = useState<DeathMode>("players");
+  const { result, context, loading, processing, checkboxChecked, panelOption, setPanelOption } = props;
+  const [mode, setModeLocal] = useState<DeathMode>(() => extractDeathMode(panelOption));
+
+  const setMode = useCallback((next: DeathMode) => {
+    setModeLocal(next);
+    if (setPanelOption) {
+      // Preserve other tokens, replace/add m: token
+      const existing = (panelOption ?? "").split(",").filter((t) => t.trim() && !t.trim().startsWith("m:"));
+      existing.push(`m:${next}`);
+      setPanelOption(existing.join(","));
+    }
+  }, [panelOption, setPanelOption]);
 
   // Build encounter name lookup
   const encounterNames = useMemo(() => {

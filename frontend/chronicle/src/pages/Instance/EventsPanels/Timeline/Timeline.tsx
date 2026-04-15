@@ -123,16 +123,16 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
     hydrated.current = true;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally runs once
 
-  // Sync hiddenSeries when panelContext is hydrated externally (e.g. by parent hydrateContext)
-  const hiddenSynced = useRef(false);
+  // Sync hiddenSeries when panelContext is hydrated externally (e.g. by parent hydrateContext
+  // or preset switch). Track the serialised series config so we re-apply when it changes.
+  const lastSyncedSeriesRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!hiddenSynced.current && pc?.timelineSettings) {
-      const settings = getTimelineSettings(pc);
-      if (settings.hiddenSeries?.length) {
-        setHiddenSeries(new Set(settings.hiddenSeries));
-      }
-      hiddenSynced.current = true;
-    }
+    if (!pc?.timelineSettings) return;
+    const settings = getTimelineSettings(pc);
+    const key = JSON.stringify(settings.hiddenSeries ?? []);
+    if (key === lastSyncedSeriesRef.current) return;
+    lastSyncedSeriesRef.current = key;
+    setHiddenSeries(new Set(settings.hiddenSeries ?? []));
   }, [pc]);
 
   // Current series IDs from config — used to filter stale results during reprocessing

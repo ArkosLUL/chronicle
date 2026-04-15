@@ -56,6 +56,7 @@ import {
   DEFAULT_INSTANCE_PANEL_OPTIONS,
   DEFAULT_INSTANCE_PANEL_FILTERS,
 } from "./viewDefaults";
+import { PRESET_LAYOUTS, PRESET_LAYOUTS_BY_ID, DEFAULT_PRESET_ID } from "./presetLayouts";
 
 // ============================================================================
 // Encounter selector localStorage helpers (7-day expiry)
@@ -891,6 +892,10 @@ interface EncounterDetailProps {
   /** Whether to show helpful hints (tooltips, help icons) */
   showHints: boolean;
   isMobile: boolean;
+  /** Currently active preset ID (null if custom layout) */
+  activePresetId: string | null;
+  /** Callback when user clicks a preset tab */
+  onPresetChange: (presetId: string) => void;
 }
 
 function EncounterDetail({
@@ -915,6 +920,8 @@ function EncounterDetail({
   onExplainerClick,
   showHints,
   isMobile,
+  activePresetId,
+  onPresetChange,
 }: EncounterDetailProps) {
   const isSingle = encounters.length === 1;
   const encounter = encounters[0];
@@ -1455,6 +1462,26 @@ function EncounterDetail({
           </Card>
         </Collapsible>
       </Tabs>
+
+      {/* Preset layout tabs */}
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {PRESET_LAYOUTS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => onPresetChange(preset.id)}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+              activePresetId === preset.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
       {/* Events Panels */}
       <PanelTimingProvider panelCount={layoutItems.length}>
         <PanelTimingResetter encounters={encounters} />
@@ -1732,7 +1759,32 @@ export function InstancePageView({
     setViewState(createDefaultViewState());
     setImportedLayoutItems(null);
     setActiveLayoutId(defaultLayoutId);
+    setActivePresetId(DEFAULT_PRESET_ID);
   }, [createDefaultViewState, defaultLayoutId]);
+
+  // ── Preset layouts ──────────────────────────────────────────────────────
+  const [activePresetId, setActivePresetId] = useState<string | null>(DEFAULT_PRESET_ID);
+
+  const applyPreset = useCallback((presetId: string) => {
+    const preset = PRESET_LAYOUTS_BY_ID[presetId];
+    if (!preset) return;
+
+    const items = orderLayoutItems(normalizeLayoutItems(preset.layoutItems));
+    const panels = items.map((item) => (preset.panelTypes[item.id] ?? "empty") as PanelType);
+    const panelOptions = items.map((item) => preset.panelOptions[item.id] ?? null);
+
+    setImportedLayoutItems(items);
+    setViewState((prev) => ({
+      ...prev,
+      panels,
+      panelOptions,
+      layout: "standard",
+    }));
+    setSeedFiltersByID(preset.panelFilters);
+    setSeedFiltersVersion((v) => v + 1);
+    setPanelFiltersByID(preset.panelFilters);
+    setActivePresetId(presetId);
+  }, []);
 
   const clearEntitySelection = useCallback(() => {
     setViewState((prev) => ({ ...prev, enemies: new Set(), players: new Set() }));
@@ -1901,6 +1953,15 @@ export function InstancePageView({
       setEncounters(propsIds);
     }
   }, [_selectedEncounterIds, internalSelectedIds, setEncounters]);
+
+  // Reset time range selection when selected encounters change
+  const prevEncounterIdsRef = useRef(internalSelectedIds);
+  useEffect(() => {
+    if (prevEncounterIdsRef.current !== internalSelectedIds) {
+      prevEncounterIdsRef.current = internalSelectedIds;
+      timeRange?.reset();
+    }
+  }, [internalSelectedIds, timeRange]);
   
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [hasSeenSelector, setHasSeenSelector] = useState(() => hasSeenEncounterSelector());
@@ -2028,6 +2089,7 @@ export function InstancePageView({
       const { [itemID]: _, ...rest } = prev;
       return rest;
     });
+    setActivePresetId(null); // User customized panels – clear preset
   }, [activeLayoutItems, setPanelType]);
 
   const handlePanelOptionChangeByID = useCallback((itemID: string, option: string | null) => {
@@ -2106,6 +2168,7 @@ export function InstancePageView({
     }));
     setActiveLayoutId(typeof payload.layoutId === "string" ? payload.layoutId : null);
     setImportedLayoutItems(orderedItems);
+    setActivePresetId(null);
 
     // Restore per-panel filters if present in the payload.
     const importedFilters: Record<string, PanelFilter[]> = {};
@@ -2188,6 +2251,7 @@ export function InstancePageView({
 
       setActiveLayoutId(null);
       setImportedLayoutItems(orderedItems);
+      setActivePresetId(null);
 
       // Restore per-panel filters from imported layout.
       const importedFilters: Record<string, PanelFilter[]> = {};
@@ -2336,6 +2400,7 @@ export function InstancePageView({
       setPanels(orderedPanels, orderedOptions);
       setActiveLayoutId(layout.id);
       setImportedLayoutItems(orderedItems);
+      setActivePresetId(null);
 
       // Restore per-panel filters from the layout.
       const importedFilters: Record<string, PanelFilter[]> = {};
@@ -2798,6 +2863,8 @@ export function InstancePageView({
             onExplainerClick={handleExplainerClick}
             showHints={showHints}
             isMobile={isMobile}
+            activePresetId={activePresetId}
+            onPresetChange={applyPreset}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">

@@ -646,6 +646,7 @@ export function EventsPanel({
 
   // Seed filters from shared layout / layout book. Only re-applies when the
   // parent bumps seedFiltersVersion (import / cast), NOT on every reference change.
+  // Also re-hydrates panel context from panelOption (e.g. timeline series config).
   const appliedSeedVersion = useRef(-1);
   useEffect(() => {
     if (seedFiltersVersion == null || seedFiltersVersion === appliedSeedVersion.current) return;
@@ -654,7 +655,15 @@ export function EventsPanel({
       setPanelContext((prev) => ({ ...(prev ?? {}), filters: seedFilters }));
       setPanelContextVersion((v) => v + 1);
     }
-  }, [seedFiltersVersion, seedFilters]);
+    // Re-hydrate context from panelOption (e.g. preset layout changing timeline series)
+    if (panel.hydrateContext && panelOption) {
+      const hydrated = panel.hydrateContext(panelOption);
+      if (hydrated) {
+        setPanelContext((prev) => ({ ...(prev ?? {}), ...hydrated }));
+        setPanelContextVersion((v) => v + 1);
+      }
+    }
+  }, [seedFiltersVersion, seedFilters, panel, panelOption]);
 
   // Only show explainer button on desktop, if hints are enabled, and if panel has an explainer
   const showExplainerButton = showHints && !isMobile && hasExplainer(panelType) && onExplainerClick;

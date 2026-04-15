@@ -9,7 +9,7 @@
 import type { PanelProcessor, ProcessorEvent, ProcessorContext } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { AggregationType, TimelineSeriesConfig } from "./timelineTypes";
-import { DEFAULT_BIN_MS, FALLBACK_SERIES_CONFIG } from "./timelineTypes";
+import { DEFAULT_BIN_MS, FALLBACK_SERIES_CONFIG, resolveStreamType } from "./timelineTypes";
 import { compileFilters, type FilterPredicate } from "../processors/filters";
 
 export interface TimelineSeriesMeta {
@@ -66,7 +66,7 @@ function getEventAmount(event: ProcessorEvent): number {
 
 export const timelineProcessor: PanelProcessor<TimelineResult, ProcessorEvent> = {
   id: "timeline",
-  streams: ["damage", "heal", "resource_change", "extra_attack", "slain", "cast", "aura"],
+  streams: ["damage", "heal", "resource_change", "extra_attack", "slain"],
   processAllEvents: true, // Timeline manages its own per-series filtering internally
 
   createState: (): TimelineResult => ({
@@ -99,7 +99,7 @@ export const timelineProcessor: PanelProcessor<TimelineResult, ProcessorEvent> =
 
     for (const cfg of configs) {
       // Only process events from the stream this series cares about
-      if (cfg.stream !== streamType) continue;
+      if (resolveStreamType(cfg.stream) !== streamType) continue;
 
       // Per-series filter: compile once, cache on state
       if (cfg.filters.length > 0) {
@@ -128,7 +128,11 @@ export const timelineProcessor: PanelProcessor<TimelineResult, ProcessorEvent> =
         bins.push(0);
       }
 
-      bins[binIndex] += amount;
+      // Effective healing: subtract overhealing from raw heal amount
+      const amt = cfg.stream === "effective_heal" && event.type === "heal"
+        ? event.amount - event.overheal
+        : amount;
+      bins[binIndex] += amt;
 
       if (binIndex + 1 > state.binCount) {
         state.binCount = binIndex + 1;

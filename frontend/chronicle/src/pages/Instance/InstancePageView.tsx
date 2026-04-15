@@ -49,8 +49,12 @@ import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarSlots } from "@/features/la
 import { parsePanelLayout } from "@/features/layoutBook/parseLayout";
 import {
   DEFAULT_INSTANCE_LAYOUT_ITEMS,
+  DEFAULT_INSTANCE_LAYOUT_ITEMS_MOBILE,
   ALTERNATE_INSTANCE_LAYOUT_ITEMS,
   DEFAULT_INSTANCE_PANEL_TYPES,
+  DEFAULT_INSTANCE_PANEL_TYPES_MOBILE,
+  DEFAULT_INSTANCE_PANEL_OPTIONS,
+  DEFAULT_INSTANCE_PANEL_FILTERS,
 } from "./viewDefaults";
 
 // ============================================================================
@@ -1600,8 +1604,8 @@ export function InstancePageView({
     : instanceDefaults?.default_desktop_layout?.id ?? null;
 
   const standardOrderedLayoutItems = useMemo(
-    () => orderLayoutItems(normalizeLayoutItems(cachedDefaultLayout?.items ?? DEFAULT_INSTANCE_LAYOUT_ITEMS)),
-    [cachedDefaultLayout?.items],
+    () => orderLayoutItems(normalizeLayoutItems(cachedDefaultLayout?.items ?? (isMobile ? DEFAULT_INSTANCE_LAYOUT_ITEMS_MOBILE : DEFAULT_INSTANCE_LAYOUT_ITEMS))),
+    [cachedDefaultLayout?.items, isMobile],
   );
 
   const alternateOrderedLayoutItems = useMemo(
@@ -1609,7 +1613,7 @@ export function InstancePageView({
     [],
   );
 
-  const defaultPanelTypesByID = cachedDefaultLayout?.panelTypesById ?? DEFAULT_INSTANCE_PANEL_TYPES;
+  const defaultPanelTypesByID = cachedDefaultLayout?.panelTypesById ?? (isMobile ? DEFAULT_INSTANCE_PANEL_TYPES_MOBILE : DEFAULT_INSTANCE_PANEL_TYPES);
 
   const defaultOrderedPanels = useMemo<PanelType[]>(
     () =>
@@ -1633,10 +1637,14 @@ export function InstancePageView({
     enemies: new Set<string>(),
     players: new Set<string>(),
     panels: defaultOrderedPanels,
-    panelOptions: defaultOrderedPanels.map(() => null),
+    panelOptions: defaultOrderedPanels.map((_, i) => {
+      if (isMobile) return null;
+      const itemId = standardOrderedLayoutItems[i]?.id;
+      return itemId ? (DEFAULT_INSTANCE_PANEL_OPTIONS[itemId] ?? null) : null;
+    }),
     layout: "standard",
     includeWipes: false,
-  }), [instance.encounters, defaultOrderedPanels]);
+  }), [instance.encounters, defaultOrderedPanels, isMobile, standardOrderedLayoutItems]);
 
   const [viewState, setViewState] = useState<LocalInstanceViewState>(() =>
     createDefaultViewState(),
@@ -1839,7 +1847,9 @@ export function InstancePageView({
   }, [activeLayoutItems, viewState.panelOptions]);
 
   // Per-panel filters: collected from EventsPanel children for persistence in shared layouts.
-  const [panelFiltersByID, setPanelFiltersByID] = useState<Record<string, PanelFilter[]>>({});
+  const [panelFiltersByID, setPanelFiltersByID] = useState<Record<string, PanelFilter[]>>(
+    () => isMobile ? {} : { ...DEFAULT_INSTANCE_PANEL_FILTERS }
+  );
   // Filters seeded from an imported shared view / layout book (consumed once by EventsPanel).
   const [seedFiltersByID, setSeedFiltersByID] = useState<Record<string, PanelFilter[]>>({});
   // Bumped on each import/cast to tell EventsPanel to re-apply seedFilters.

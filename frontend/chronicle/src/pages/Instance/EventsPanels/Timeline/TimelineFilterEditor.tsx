@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 import { FilterBlock } from "../FilterBlock";
 import type { PanelFilter } from "../processors/filters";
 import type { CardBackProps } from "../types";
-import type { StreamType } from "@/hooks/instanceEvents";
 import {
+  type TimelineSourceType,
   type TimelineSeriesConfig,
   type TimelineSettings,
   type AggregationType,
@@ -37,14 +37,13 @@ const PRESET_BORDER_COLORS: Array<string | null> = [
 ];
 
 /** Available stream types with labels. */
-const STREAM_OPTIONS: { value: StreamType; label: string }[] = [
+const STREAM_OPTIONS: { value: TimelineSourceType; label: string }[] = [
   { value: "damage", label: "Damage" },
   { value: "heal", label: "Healing" },
+  { value: "effective_heal", label: "Effective Healing" },
   { value: "resource_change", label: "Resource" },
   { value: "extra_attack", label: "Extra Attack" },
   { value: "slain", label: "Deaths" },
-  { value: "cast", label: "Casts" },
-  { value: "aura", label: "Auras" },
 ];
 
 /** Bin size presets. */
@@ -436,6 +435,24 @@ function SeriesTab({
               onClick={() => onUpdate({ color })}
             />
           ))}
+          {/* Custom RGB color picker */}
+          <label
+            className={cn(
+              "h-5 w-5 rounded-full border-2 transition-all cursor-pointer overflow-hidden relative",
+              !SERIES_COLORS.includes(config.color)
+                ? "ring-2 ring-white/50 ring-offset-1 ring-offset-zinc-900"
+                : "border-zinc-600 hover:border-zinc-400",
+            )}
+            style={{ backgroundColor: config.color }}
+            title="Custom color"
+          >
+            <input
+              type="color"
+              value={config.color}
+              onChange={(e) => onUpdate({ color: e.target.value })}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
       </div>
 

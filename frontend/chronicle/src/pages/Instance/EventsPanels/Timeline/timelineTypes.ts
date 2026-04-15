@@ -5,14 +5,27 @@
 import type { StreamType } from "@/hooks/instanceEvents";
 import type { PanelFilter } from "../processors/filters";
 
+/**
+ * Virtual source types for the timeline.
+ * Includes real stream types plus derived sources like "effective_heal"
+ * (heal amount minus overhealing).
+ */
+export type TimelineSourceType = "damage" | "heal" | "resource_change" | "extra_attack" | "slain" | "effective_heal";
+
+/** Map virtual sources to the real stream type they consume events from. */
+export function resolveStreamType(source: TimelineSourceType): StreamType {
+  if (source === "effective_heal") return "heal";
+  return source;
+}
+
 /** Configuration for a single time series line on the chart. */
 export interface TimelineSeriesConfig {
   /** Unique id, e.g. "s1", "s2" */
   id: string;
   /** User-editable display name (shown in legend) */
   name: string;
-  /** Which event stream to pull data from */
-  stream: StreamType;
+  /** Which event stream (or virtual source) to pull data from */
+  stream: TimelineSourceType;
   /** How to reduce raw bins for display */
   aggregation: AggregationType;
   /** Line color (hex) */
@@ -31,6 +44,8 @@ export type AggregationType = "sum" | "rolling_avg" | "per_second" | "cumulative
 export interface TimelineSettings {
   /** Bucket width in ms */
   binMs: number;
+  /** Series IDs hidden via legend toggle */
+  hiddenSeries?: string[];
 }
 
 export const DEFAULT_BIN_MS = 1000;

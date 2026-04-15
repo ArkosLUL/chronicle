@@ -18,7 +18,7 @@ import type { PanelDefinition, PanelRenderProps } from "../types";
 import { timelineProcessor, type TimelineResult, type TimelineSeriesMeta } from "./timeline.processor";
 import { applyAggregation } from "./aggregations";
 import { TimelineFilterEditor } from "./TimelineFilterEditor";
-import { getSeriesConfigs, hydrateFromPanelOption } from "./timelineTypes";
+import { getSeriesConfigs, getTimelineSettings, hydrateFromPanelOption, serializeTimelineConfig } from "./timelineTypes";
 
 import { useTimeRangeContextOptional } from "../../TimeRangeContext";
 
@@ -32,7 +32,6 @@ export function createTimelinePanel(): PanelDefinition<TimelineResult> {
     icon: <TrendingUp className="h-4 w-4" />,
     supportsPerSecond: false,
     supportsFiltering: false, // filters are per-series on card back
-    underConstruction: true,
 
     hydrateContext: (panelOption: string) => hydrateFromPanelOption(panelOption),
     renderCardBack: (props) => <TimelineFilterEditor {...props} />,
@@ -95,24 +94,46 @@ type D3ScaleLinear = ((v: number) => number) & { invert: (px: number) => number 
 
 const CHART_MARGIN = { top: 10, right: 20, bottom: 36, left: 50 } as const;
 
-function TimelineContent({ result, durationMs, panelContext: pc, panelOption, setPanelContext }: PanelRenderProps<TimelineResult>) {
+function TimelineContent({ result, durationMs, panelContext: pc, panelOption, setPanelContext, setPanelOption }: PanelRenderProps<TimelineResult>) {
   const timeRange = useTimeRangeContextOptional();
   const containerRef = useRef<HTMLDivElement>(null);
   // Capture Nivo's xScale so mouse handlers can convert pixels ↔ data values.
   const xScaleRef = useRef<D3ScaleLinear | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  /** Series IDs currently hidden by clicking the legend (hydrated from settings). */
+  const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(() => {
+    const settings = getTimelineSettings(pc);
+    return new Set(settings.hiddenSeries ?? []);
+  });
 
-  // Hydrate panelContext from saved panelOption on first render
+  // Hydrate panelContext + hiddenSeries from saved panelOption on first render
   const hydrated = useRef(false);
   useEffect(() => {
     if (!hydrated.current && !pc?.timelineSeries && panelOption && setPanelContext) {
       const restored = hydrateFromPanelOption(panelOption);
       if (restored) {
         setPanelContext(restored);
+        // Also hydrate hiddenSeries from the restored settings
+        const restoredSettings = getTimelineSettings(restored);
+        if (restoredSettings.hiddenSeries?.length) {
+          setHiddenSeries(new Set(restoredSettings.hiddenSeries));
+        }
       }
     }
     hydrated.current = true;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally runs once
+
+  // Sync hiddenSeries when panelContext is hydrated externally (e.g. by parent hydrateContext)
+  const hiddenSynced = useRef(false);
+  useEffect(() => {
+    if (!hiddenSynced.current && pc?.timelineSettings) {
+      const settings = getTimelineSettings(pc);
+      if (settings.hiddenSeries?.length) {
+        setHiddenSeries(new Set(settings.hiddenSeries));
+      }
+      hiddenSynced.current = true;
+    }
+  }, [pc]);
 
   // Current series IDs from config — used to filter stale results during reprocessing
   const activeSeriesIds = useMemo(() => {
@@ -150,13 +171,45 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
 
     return series;
   }, [result, totalBins, activeSeriesIds]);
+  // Build legend from all series (before filtering hidden ones)
   const legendData = useMemo(() => {
     return data.map((s) => ({
       id: s.id,
       label: result.seriesMeta.get(String(s.id))?.name ?? String(s.id),
       color: s.color ?? "#888",
+      hidden: hiddenSeries.has(String(s.id)),
     }));
-  }, [data, result.seriesMeta]);
+  }, [data, result.seriesMeta, hiddenSeries]);
+
+  // Filter hidden series from chart data
+  const visibleData = useMemo(() => {
+    if (hiddenSeries.size === 0) return data;
+    return data.filter((s) => !hiddenSeries.has(String(s.id)));
+  }, [data, hiddenSeries]);
+
+  const toggleSeries = useCallback((seriesId: string) => {
+    setHiddenSeries((prev) => {
+      const next = new Set(prev);
+      if (next.has(seriesId)) next.delete(seriesId);
+      else next.add(seriesId);
+
+      // Persist to panelContext + panelOption
+      const configs = getSeriesConfigs(pc);
+      const settings = getTimelineSettings(pc);
+      const newSettings = { ...settings, hiddenSeries: next.size > 0 ? [...next] : undefined };
+      if (setPanelContext) {
+        setPanelContext({ ...(pc ?? {}), timelineSettings: newSettings });
+      }
+      if (setPanelOption) {
+        const existingTokens = (panelOption ?? "").split(",").filter((t) => t && !t.startsWith("tl:"));
+        const tlToken = `tl:${serializeTimelineConfig(configs, newSettings)}`;
+        existingTokens.push(tlToken);
+        setPanelOption(existingTokens.join(","));
+      }
+
+      return next;
+    });
+  }, [pc, panelOption, setPanelContext, setPanelOption]);
 
 
   // Convert a mouse clientX to snapped seconds using Nivo's own xScale.
@@ -270,7 +323,7 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
     [trEnabled, trStart, trEnd, dragActive, dragStartSec, dragCurrentSec],
   );
 
-  if (data.length === 0) {
+  if (visibleData.length === 0 && data.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground text-sm">
         No data for selected encounters
@@ -290,7 +343,7 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
       onDoubleClick={handleDoubleClick}
     >
       <ResponsiveLine
-        data={data}
+        data={visibleData}
         colors={(d) => (d as ColoredSeries).color ?? "#888"}
         margin={CHART_MARGIN}
         xScale={{ type: "linear", min: 0, max: totalSec }}
@@ -331,22 +384,38 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
           "lines",
           "crosshair",
           "slices",
-          "legends",
-        ]}
-        legends={[
-          {
-            anchor: "top-right",
-            direction: "column",
-            itemWidth: 100,
-            itemHeight: 16,
-            itemTextColor: "#a1a1aa",
-            symbolSize: 8,
-            symbolShape: "circle",
-            translateX: 10,
-            data: legendData,
-          },
         ]}
       />
+
+      {/* Clickable legend — click to toggle series visibility */}
+      <div className="absolute top-2 right-2 flex flex-col gap-0.5 select-none">
+        {legendData.map((item) => (
+          <button
+            key={String(item.id)}
+            type="button"
+            className="flex items-center gap-1.5 text-[11px] leading-4 px-1 py-px rounded hover:bg-zinc-800/60 transition-colors cursor-pointer"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleSeries(String(item.id)); }}
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full shrink-0"
+              style={{
+                backgroundColor: item.hidden ? "transparent" : item.color,
+                border: item.hidden ? `1.5px solid ${item.color}` : "none",
+              }}
+            />
+            <span
+              className="truncate max-w-[90px]"
+              style={{
+                color: item.hidden ? "#52525b" : "#a1a1aa",
+                textDecoration: item.hidden ? "line-through" : "none",
+              }}
+            >
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </div>
 
       {/* Hint when time range is active */}
       {trEnabled && (

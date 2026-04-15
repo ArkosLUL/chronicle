@@ -20,6 +20,7 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
+	"github.com/Emyrk/chronicle/internal/version"
 	"github.com/Masterminds/semver"
 )
 
@@ -89,6 +90,7 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	if wowBuild != 0 {
 		versions["wow_build"] = fmt.Sprintf("%d", wowBuild)
 	}
+	versions["chronicle"] = version.GitTag
 
 	return set(
 		//&messages.Zone{

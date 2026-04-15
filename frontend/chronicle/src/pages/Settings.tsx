@@ -40,6 +40,8 @@ import {
   DEFAULT_INSTANCE_LAYOUT_ITEMS,
   ALTERNATE_INSTANCE_LAYOUT_ITEMS,
   DEFAULT_INSTANCE_PANEL_TYPES,
+  DEFAULT_INSTANCE_PANEL_OPTIONS,
+  DEFAULT_INSTANCE_PANEL_FILTERS,
 } from "@/pages/Instance/viewDefaults";
 import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceActionBar";
 import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarKey, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
@@ -332,7 +334,7 @@ export function LayoutBookSettings() {
         title: trimmed,
         icon: "INV_Misc_Book_09",
         description: "",
-        payload: JSON.parse(serializeLayoutLab(orderedItems, panelTypesById)),
+        payload: JSON.parse(serializeLayoutLab(orderedItems, panelTypesById, layoutType === "standard" ? DEFAULT_INSTANCE_PANEL_OPTIONS : undefined, layoutType === "standard" ? DEFAULT_INSTANCE_PANEL_FILTERS : undefined)),
       } as CreateUserPanelLayoutRequest);
       setName("");
       toast.success("Layout created", { description: trimmed });

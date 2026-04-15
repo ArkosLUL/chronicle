@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -72,11 +72,11 @@ func (t *Tracking) Process(m messages.Message) error {
 }
 
 func (t *Tracking) ProcessMessage(active bool, encounterID uuid.UUID, m messages.Message) error {
-  return nil
+	return nil
 }
 
 func (t *Tracking) Finalize(ctx context.Context) error {
-  return nil
+	return nil
 }
 
 func (t *Tracking) FightStarted(encounterID uuid.UUID, m messages.Message) {
@@ -88,11 +88,11 @@ func (t *Tracking) FightEnded(encounterID uuid.UUID, m messages.Message) {
 }
 
 func (t *Tracking) ActivityChange(m messages.Message, chars ...character.Character) {
-  for _, char := range chars {
-    if char.IsActive() {
-
-    }
-  }
+	//for _, char := range chars {
+	//  if char.IsActive() {
+	//
+	//  }
+	//}
 }
 
 func (t *Tracking) CharacterAdded(m messages.Message, chars ...character.Character) {

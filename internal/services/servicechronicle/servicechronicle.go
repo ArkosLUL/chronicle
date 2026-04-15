@@ -27,7 +27,8 @@ func OnChronicle() string {
 type Service struct {
 	broker *services.Services
 
-	chronicle *chronicle.Chronicle
+	chronicle     *chronicle.Chronicle
+	emitParseLogs bool
 }
 
 func New(broker *services.Services) *Service {
@@ -56,9 +57,10 @@ func (s *Service) Start(ctx context.Context) error {
 	wowDB := servicewowdb.WoWDB(s.broker)
 
 	c, err := chronicle.New(ctx, logger, chronicle.Options{
-		Storage: st,
-		Zed:     zed,
-		WoWDB:   wowDB.GameDB(),
+		Storage:         st,
+		Zed:             zed,
+		WoWDB:           wowDB.GameDB(),
+		EmitParsingLogs: s.emitParseLogs,
 	})
 	if err != nil {
 		return err
@@ -73,7 +75,17 @@ func (s *Service) Close(_ context.Context) error {
 }
 
 func (s *Service) Options() serpent.OptionSet {
-	return serpent.OptionSet{}
+	return serpent.OptionSet{
+		{
+			Name:        "Emit logs during processing",
+			Description: "Emit logs during processing wow log files.",
+			Required:    false,
+			Flag:        "emit-parse-logs",
+			Env:         "CHRONICLE_EMIT_PARSE_LOGS",
+			Default:     "false",
+			Value:       serpent.BoolOf(&s.emitParseLogs),
+		},
+	}
 }
 
 func (s *Service) Configures() []string {

@@ -56,15 +56,17 @@ type Chronicle struct {
 	WoWDB              *gamedb.WoWDB
 	ItemFetcher        gamedb.GearResolver
 	metrics            *logParseMetrics
+	emitParsingLogs    bool
 
 	mu sync.Mutex
 }
 
 type Options struct {
-	Storage  storage.ObjectStorage
-	Zed      *authz.Authz
-	WoWDB    *gamedb.WoWDB
-	Registry prometheus.Registerer
+	Storage         storage.ObjectStorage
+	Zed             *authz.Authz
+	WoWDB           *gamedb.WoWDB
+	Registry        prometheus.Registerer
+	EmitParsingLogs bool
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
@@ -77,6 +79,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		TemporaryDirectory: filepath.Join(os.TempDir(), "chronicle_uploads"),
 		metrics:            newLogParseMetrics(opts.Registry),
 		ItemFetcher:        opts.WoWDB,
+		emitParsingLogs:    opts.EmitParsingLogs,
 	}
 
 	err := c.initStorage(ctx)
@@ -86,6 +89,10 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 
 	_ = c.clearTemporaryFiles()
 	return c, nil
+}
+
+func (c *Chronicle) EmitParsingLogs() bool {
+	return c.emitParsingLogs
 }
 
 func (c *Chronicle) SetQueue(queue *riverqueue.Queues) {

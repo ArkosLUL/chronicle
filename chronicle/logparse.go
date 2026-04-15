@@ -187,12 +187,17 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		return river.JobCancel(fmt.Errorf("log group (type %s) expects %d files, has %d", logGroup.WoWLogGroup.LogType, expectedFiles, len(files)))
 	}
 
+	logLogger := w.parent.logger
+	if !w.parent.EmitParsingLogs() {
+		logLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
 	// encounters
-	encountersState := encounters.New(ctx, logger)
+	encountersState := encounters.New(ctx, logLogger)
 
 	// Parse combat log - branch based on log type
 	parseStart := time.Now()
-	c := consumers.New(logger, encountersState)
+	c := consumers.New(logLogger, encountersState)
 
 	var consumeErr error
 	switch logGroup.WoWLogGroup.LogType {
@@ -248,7 +253,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
 		// V2 parser: single file
-		p, err := parserv2.New(logger, rdr, w.parent.WoWDB, w.parent.ItemFetcher)
+		p, err := parserv2.New(logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher)
 		if err != nil {
 			jobResult = "failure"
 			return fmt.Errorf("create v2 parser: %w", err)

@@ -159,6 +159,11 @@ func (api *API) GetShare(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if instanceID == uuid.Nil {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "instance no longer exists"})
+		return
+	}
+
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SharedViewResponse{
 		InstanceID:   instanceID,
 		InstanceSlug: slug,

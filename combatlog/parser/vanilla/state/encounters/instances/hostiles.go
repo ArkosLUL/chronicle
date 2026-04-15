@@ -1226,8 +1226,8 @@ func TimbermawHoldHostiles() map[uint32]Identity {
 		29481: "Ursan Horror",           // 39 times
 	})
 	LoadBosses(hostile, map[uint32]string{
-		62937: "Kodiak",
-		62936: "Rotgrowl",
+		62937: "Kodiak & Rotgrowl", // "Kodiak",
+		62936: "Kodiak & Rotgrowl", // "Rotgrowl",
 		62946: "Trioch the Devourer",
 		62934: "Karrsh the Sentinel",
 		62941: "Chieftain Partath",  // 1 times

@@ -67,11 +67,6 @@ const THREE_PANEL_GRID: GridEditorItem[] = [
   { id: "panel-3", title: "Panel 3", x: 6, y: 5, w: 6, h: 5, minW: 4 },
 ];
 
-/** Single full-width panel */
-const ONE_PANEL_GRID: GridEditorItem[] = [
-  { id: "panel-1", title: "Panel 1", x: 0, y: 0, w: 12, h: 8, minW: 4 },
-];
-
 // ── Standard damage filters ─────────────────────────────────────────────────
 
 const DAMAGE_TIME_RANGE_FILTER: PanelFilter = { type: "time_range", value: "controller", applyTo: ["damage"] };

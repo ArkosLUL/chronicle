@@ -142,17 +142,25 @@ func (us *Units) GetPlayerByName(name string) (combatant.Combatant, bool) {
 }
 
 func (us *Units) Update(u unitinfo.Info) {
-	if u.Name == "" {
+	existing, exists := us.Info[u.Guid]
+	if u.Name == "" && exists {
 		// Do no overwrite an existing entry if this one is missing a name.
-		_, exists := us.Info[u.Guid]
-		if exists {
-			return
-		}
+		return
+	}
+
+	if u.Guid.IsPet() && u.Owner == nil && existing.Owner != nil {
+		// For some reason, a pet has been recorded not having an owner in a `UNIT_INFO` message.
+		// This bug might exist for things like totems as well, I am not sure.
+		//
+		// In the hunter case, we can at least be sure the pet doesn't go ownerless if we seen it have
+		// an owner at any point.
+		u.Owner = existing.Owner
 	}
 
 	if u.Guid.IsPlayer() && u.Name != "" {
 		us.PlayerByName[u.Name] = u.Guid
 	}
+
 	us.Info[u.Guid] = u
 }
 

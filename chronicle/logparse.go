@@ -318,7 +318,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		instFinalizeDuration := time.Since(finalizeStart)
 		totalFinalizeDuration += instFinalizeDuration
 
-		if len(finalized.Encounters) == 0 {
+		if finalized == nil || len(finalized.Encounters) == 0 {
 			// Skip instances with no encounters
 			continue
 		}

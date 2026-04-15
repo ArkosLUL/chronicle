@@ -19,7 +19,8 @@ export function SharedViewRedirect() {
       try {
         const shared = await fetchSharedView(code);
         if (cancelled) return;
-        navigate(`/instances/${shared.instance_id}?import=${encodeURIComponent(code)}`, { replace: true });
+        const identifier = shared.instance_slug || shared.instance_id;
+        navigate(`/instances/${identifier}?import=${encodeURIComponent(code)}`, { replace: true });
       } catch {
         if (cancelled) return;
         toast.error("Share link not found");

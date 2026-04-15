@@ -964,13 +964,14 @@ type RiverQueue struct {
 }
 
 type SharedView struct {
-	ID         uuid.UUID          `db:"id" json:"id"`
-	Code       string             `db:"code" json:"code"`
-	Hash       string             `db:"hash" json:"hash"`
-	InstanceID uuid.UUID          `db:"instance_id" json:"instance_id"`
-	Payload    []byte             `db:"payload" json:"payload"`
-	CreatedBy  uuid.NullUUID      `db:"created_by" json:"created_by"`
-	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ID           uuid.UUID          `db:"id" json:"id"`
+	Code         string             `db:"code" json:"code"`
+	Hash         string             `db:"hash" json:"hash"`
+	InstanceID   uuid.NullUUID      `db:"instance_id" json:"instance_id"`
+	Payload      []byte             `db:"payload" json:"payload"`
+	CreatedBy    uuid.NullUUID      `db:"created_by" json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	InstanceSlug string             `db:"instance_slug" json:"instance_slug"`
 }
 
 type User struct {

@@ -705,6 +705,7 @@ export interface Session {
 // From chroniclesdk/share.go
 export interface SharedViewResponse {
     readonly instance_id: string;
+    readonly instance_slug?: string;
     readonly payload: Record<string, string>;
 }
 

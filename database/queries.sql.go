@@ -2610,19 +2610,21 @@ INSERT INTO shared_views (
   code,
   hash,
   instance_id,
+  instance_slug,
   payload,
   created_by
 )
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, code, hash, instance_id, payload, created_by, created_at
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, code, hash, instance_id, payload, created_by, created_at, instance_slug
 `
 
 type CreateSharedViewParams struct {
-	Code       string        `db:"code" json:"code"`
-	Hash       string        `db:"hash" json:"hash"`
-	InstanceID uuid.UUID     `db:"instance_id" json:"instance_id"`
-	Payload    []byte        `db:"payload" json:"payload"`
-	CreatedBy  uuid.NullUUID `db:"created_by" json:"created_by"`
+	Code         string        `db:"code" json:"code"`
+	Hash         string        `db:"hash" json:"hash"`
+	InstanceID   uuid.NullUUID `db:"instance_id" json:"instance_id"`
+	InstanceSlug string        `db:"instance_slug" json:"instance_slug"`
+	Payload      []byte        `db:"payload" json:"payload"`
+	CreatedBy    uuid.NullUUID `db:"created_by" json:"created_by"`
 }
 
 func (q *sqlQuerier) CreateSharedView(ctx context.Context, arg CreateSharedViewParams) (SharedView, error) {
@@ -2630,6 +2632,7 @@ func (q *sqlQuerier) CreateSharedView(ctx context.Context, arg CreateSharedViewP
 		arg.Code,
 		arg.Hash,
 		arg.InstanceID,
+		arg.InstanceSlug,
 		arg.Payload,
 		arg.CreatedBy,
 	)
@@ -2642,12 +2645,13 @@ func (q *sqlQuerier) CreateSharedView(ctx context.Context, arg CreateSharedViewP
 		&i.Payload,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.InstanceSlug,
 	)
 	return i, err
 }
 
 const getSharedViewByCode = `-- name: GetSharedViewByCode :one
-SELECT id, code, hash, instance_id, payload, created_by, created_at
+SELECT id, code, hash, instance_id, payload, created_by, created_at, instance_slug
 FROM shared_views
 WHERE code = $1
 `
@@ -2663,19 +2667,20 @@ func (q *sqlQuerier) GetSharedViewByCode(ctx context.Context, code string) (Shar
 		&i.Payload,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.InstanceSlug,
 	)
 	return i, err
 }
 
 const getSharedViewByInstanceAndHash = `-- name: GetSharedViewByInstanceAndHash :one
-SELECT id, code, hash, instance_id, payload, created_by, created_at
+SELECT id, code, hash, instance_id, payload, created_by, created_at, instance_slug
 FROM shared_views
 WHERE instance_id = $1 AND hash = $2
 `
 
 type GetSharedViewByInstanceAndHashParams struct {
-	InstanceID uuid.UUID `db:"instance_id" json:"instance_id"`
-	Hash       string    `db:"hash" json:"hash"`
+	InstanceID uuid.NullUUID `db:"instance_id" json:"instance_id"`
+	Hash       string        `db:"hash" json:"hash"`
 }
 
 func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg GetSharedViewByInstanceAndHashParams) (SharedView, error) {
@@ -2689,8 +2694,25 @@ func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg Get
 		&i.Payload,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.InstanceSlug,
 	)
 	return i, err
+}
+
+const reattachSharedViewsBySlug = `-- name: ReattachSharedViewsBySlug :exec
+UPDATE shared_views
+SET instance_id = $1
+WHERE instance_slug = $2 AND instance_id IS NULL
+`
+
+type ReattachSharedViewsBySlugParams struct {
+	InstanceID   uuid.NullUUID `db:"instance_id" json:"instance_id"`
+	InstanceSlug string        `db:"instance_slug" json:"instance_slug"`
+}
+
+func (q *sqlQuerier) ReattachSharedViewsBySlug(ctx context.Context, arg ReattachSharedViewsBySlugParams) error {
+	_, err := q.db.Exec(ctx, reattachSharedViewsBySlug, arg.InstanceID, arg.InstanceSlug)
+	return err
 }
 
 const getUserActionBarSlots = `-- name: GetUserActionBarSlots :one

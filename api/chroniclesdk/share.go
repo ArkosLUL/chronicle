@@ -17,6 +17,7 @@ type CreateShareResponse struct {
 }
 
 type SharedViewResponse struct {
-	InstanceID uuid.UUID       `json:"instance_id"`
-	Payload    json.RawMessage `json:"payload"`
+	InstanceID   uuid.UUID       `json:"instance_id"`
+	InstanceSlug string          `json:"instance_slug,omitempty"`
+	Payload      json.RawMessage `json:"payload"`
 }

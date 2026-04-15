@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func isUniqueViolation(err error) bool {
@@ -52,9 +53,17 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Look up instance slug to persist on the shared view.
+	var instanceSlug string
+	inst, instErr := api.Zed.Instance(ctx, req.InstanceID)
+	if instErr == nil && inst.HashedSlug.Valid && inst.HashedSlug.String != "" {
+		instanceSlug = inst.HashedSlug.String
+	}
+
+	instanceNullUUID := uuid.NullUUID{UUID: req.InstanceID, Valid: true}
 	hash := sharedViewHash(req.InstanceID, req.Payload)
 	existing, err := api.Zed.GetSharedViewByInstanceAndHash(ctx, database.GetSharedViewByInstanceAndHashParams{
-		InstanceID: req.InstanceID,
+		InstanceID: instanceNullUUID,
 		Hash:       hash,
 	})
 	if err == nil {
@@ -79,17 +88,18 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 		}
 
 		row, err = api.Zed.CreateSharedView(ctx, database.CreateSharedViewParams{
-			Code:       code,
-			Hash:       hash,
-			InstanceID: req.InstanceID,
-			Payload:    req.Payload,
-			CreatedBy:  uuid.NullUUID{UUID: uc.Subject, Valid: true},
+			Code:         code,
+			Hash:         hash,
+			InstanceID:   instanceNullUUID,
+			InstanceSlug: instanceSlug,
+			Payload:      req.Payload,
+			CreatedBy:    uuid.NullUUID{UUID: uc.Subject, Valid: true},
 		})
 		if err == nil {
 			break
 		}
 		if isUniqueViolation(err) {
-			if reused, lookupErr := api.Zed.GetSharedViewByInstanceAndHash(ctx, database.GetSharedViewByInstanceAndHashParams{InstanceID: req.InstanceID, Hash: hash}); lookupErr == nil {
+			if reused, lookupErr := api.Zed.GetSharedViewByInstanceAndHash(ctx, database.GetSharedViewByInstanceAndHashParams{InstanceID: instanceNullUUID, Hash: hash}); lookupErr == nil {
 				httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.CreateShareResponse{
 					Code: reused.Code,
 					URL:  ShareURL(r, reused.Code),
@@ -130,9 +140,29 @@ func (api *API) GetShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	instanceID := row.InstanceID.UUID
+	slug := row.InstanceSlug
+
+	// If instance_id was nulled (reparse cascade), resolve current instance via slug.
+	if !row.InstanceID.Valid && slug != "" {
+		inst, slugErr := api.Zed.InstanceBySlug(ctx, pgtype.Text{String: slug, Valid: true})
+		if slugErr == nil {
+			instanceID = inst.ID
+		}
+	}
+
+	// If we still don't have a slug, try looking it up from the instance.
+	if slug == "" && instanceID != uuid.Nil {
+		inst, instErr := api.Zed.Instance(ctx, instanceID)
+		if instErr == nil && inst.HashedSlug.Valid && inst.HashedSlug.String != "" {
+			slug = inst.HashedSlug.String
+		}
+	}
+
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SharedViewResponse{
-		InstanceID: row.InstanceID,
-		Payload:    row.Payload,
+		InstanceID:   instanceID,
+		InstanceSlug: slug,
+		Payload:      row.Payload,
 	})
 }
 

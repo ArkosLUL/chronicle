@@ -2364,7 +2364,7 @@ export function InstancePageView({
   }, [buildSharedViewPayload, createShare, instance.id]);
 
   const handleShareWithoutLayout = useCallback(async () => {
-    const url = `${window.location.origin}/instances/${instance.id}`;
+    const url = `${window.location.origin}/instances/${instance.slug || instance.id}`;
 
     try {
       await navigator.clipboard.writeText(url);
@@ -2372,7 +2372,7 @@ export function InstancePageView({
     } catch {
       toast.error("Failed to copy link");
     }
-  }, [instance.id]);
+  }, [instance.slug, instance.id]);
 
 
   const castResetToDefault = useCallback(() => {

@@ -887,7 +887,7 @@ export function LayoutLabSettings() {
           id: inst.id,
           name: inst.name,
           startTime,
-          reference: `${window.location.origin}/instances/${inst.id}`,
+          reference: `${window.location.origin}/instances/${inst.slug || inst.id}`,
         };
       });
     });

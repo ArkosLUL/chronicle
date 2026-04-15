@@ -65,7 +65,15 @@ func (api *API) shareOG(code string) *frontend.OGData {
 		return nil
 	}
 
-	inst, err := db.Instance(ctx, shared.InstanceID)
+	// Resolve instance: try by ID first, fall back to slug if ID was nulled (reparse).
+	var inst database.LogInstancesGuild
+	if shared.InstanceID.Valid {
+		inst, err = db.Instance(ctx, shared.InstanceID.UUID)
+	} else if shared.InstanceSlug != "" {
+		inst, err = db.InstanceBySlug(ctx, pgtype.Text{String: shared.InstanceSlug, Valid: true})
+	} else {
+		return nil
+	}
 	if err != nil {
 		return nil
 	}
@@ -121,10 +129,15 @@ func (api *API) buildInstanceOG(ctx context.Context, inst database.LogInstancesG
 	desc.WriteString("\n")
 	desc.WriteString("Raid performance and contribution analysis tool by Chronicle.")
 
+	identifier := inst.ID.String()
+	if inst.HashedSlug.Valid && inst.HashedSlug.String != "" {
+		identifier = inst.HashedSlug.String
+	}
+
 	return &frontend.OGData{
 		Title:       title.String(),
 		Description: desc.String(),
-		URL:         fmt.Sprintf("https://chronicleclassic.com/instances/%s", inst.ID.String()),
+		URL:         fmt.Sprintf("https://chronicleclassic.com/instances/%s", identifier),
 	}
 }
 

@@ -563,10 +563,11 @@ CREATE TABLE shared_views (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     code text NOT NULL,
     hash text NOT NULL,
-    instance_id uuid NOT NULL,
+    instance_id uuid,
     payload jsonb NOT NULL,
     created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    instance_slug text DEFAULT ''::text NOT NULL,
     CONSTRAINT shared_views_payload_max_10kb CHECK ((octet_length((payload)::text) <= 10240))
 );
 
@@ -1184,7 +1185,7 @@ ALTER TABLE ONLY shared_views
     ADD CONSTRAINT shared_views_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY shared_views
-    ADD CONSTRAINT shared_views_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+    ADD CONSTRAINT shared_views_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Loader2, Youtube, Timer } from "lucide-react";
 import { useInstance, useInstanceYoutube, useAuthorizationCheck } from "@/api/queries";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,7 @@ export interface Encounter {
 
 export interface Instance {
   id: string;
+  slug?: string;
   name: string;
   realm?: string;
   guild?: { id: string; name: string };
@@ -71,6 +72,7 @@ function getUnitName(guidStr: string, units: Record<string, InstanceUnit>): stri
 function transformToInstance(
   apiInstance: {
     id: string;
+    slug?: string;
     name: string;
     realm_name?: string;
     guild?: { id: string; name: string };
@@ -123,6 +125,7 @@ function transformToInstance(
 
   return {
     id: apiInstance.id,
+    slug: apiInstance.slug,
     name: apiInstance.name,
     realm: apiInstance.realm_name,
     guild: apiInstance.guild,
@@ -238,6 +241,7 @@ function InstancePageInner({
 // Connected component that fetches data
 export function InstancePage() {
   const { instanceId } = useParams<{ instanceId: string }>();
+  const navigate = useNavigate();
   // Track user selection; null means use default
   const [userSelectedEncounterIds, setUserSelectedEncounterIds] = useState<string[] | null>(null);
 
@@ -250,6 +254,13 @@ export function InstancePage() {
     instanceId || "",
     { enabled: !!instanceId }
   );
+
+  // Canonicalize URL: redirect from UUID to slug when available
+  useEffect(() => {
+    if (apiInstance?.slug && instanceId !== apiInstance.slug) {
+      navigate(`/instances/${apiInstance.slug}${window.location.search}`, { replace: true });
+    }
+  }, [apiInstance?.slug, instanceId, navigate]);
 
   // Check if user can delete this log (uploader or admin) - if so, show link to log detail
   const { isAuthenticated } = useAuth();

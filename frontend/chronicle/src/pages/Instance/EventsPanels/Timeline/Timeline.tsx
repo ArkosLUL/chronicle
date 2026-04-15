@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { ResponsiveLine, type LineSeries, type LineCustomSvgLayerProps, type SliceTooltipProps } from "@nivo/line";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 /** Custom series type with color for per-line coloring. */
 interface ColoredSeries extends LineSeries {
@@ -92,9 +93,13 @@ interface DragState {
 /** D3 linear scale with invert (Nivo wraps d3-scale under the hood). */
 type D3ScaleLinear = ((v: number) => number) & { invert: (px: number) => number };
 
-const CHART_MARGIN = { top: 10, right: 20, bottom: 36, left: 50 } as const;
+const CHART_MARGIN_DESKTOP = { top: 10, right: 20, bottom: 36, left: 50 } as const;
+const CHART_MARGIN_MOBILE = { top: 10, right: 8, bottom: 30, left: 36 } as const;
 
-function TimelineContent({ result, durationMs, panelContext: pc, panelOption, setPanelContext, setPanelOption }: PanelRenderProps<TimelineResult>) {
+function TimelineContent({ result, durationMs, panelContext: pc, panelOption, setPanelContext, setPanelOption, context }: PanelRenderProps<TimelineResult>) {
+  const isMobile = useIsMobile();
+  const CHART_MARGIN = isMobile ? CHART_MARGIN_MOBILE : CHART_MARGIN_DESKTOP;
+
   const timeRange = useTimeRangeContextOptional();
   const containerRef = useRef<HTMLDivElement>(null);
   // Capture Nivo's xScale so mouse handlers can convert pixels ↔ data values.
@@ -323,6 +328,14 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
     [trEnabled, trStart, trEnd, dragActive, dragStartSec, dragCurrentSec],
   );
 
+  if (isMobile && context.selectedEncounterIds.length > 1) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground text-sm text-center px-4">
+        Please select only 1 encounter, or use desktop to see this line chart.
+      </div>
+    );
+  }
+
   if (visibleData.length === 0 && data.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground text-sm">
@@ -333,8 +346,8 @@ function TimelineContent({ result, durationMs, panelContext: pc, panelOption, se
 
   return (
     <div
-      className="relative w-full"
-      style={{ height: 300, cursor: "crosshair" }}
+      className="relative w-full h-full"
+      style={{ cursor: "crosshair" }}
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

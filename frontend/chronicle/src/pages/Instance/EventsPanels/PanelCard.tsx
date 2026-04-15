@@ -23,7 +23,7 @@ export function PanelCard({ flipped, onMouseDown, underConstruction, borderColor
       >
         <Card
           className={cn(
-            "absolute inset-0 p-4 gap-2 h-full mb-0 flex flex-col [backface-visibility:hidden] [transform:rotateY(0deg)]",
+            "absolute inset-0 p-2 sm:p-4 gap-2 h-full mb-0 flex flex-col [backface-visibility:hidden] [transform:rotateY(0deg)]",
             underConstruction && "border-yellow-500/50",
             flipped && "pointer-events-none",
           )}
@@ -32,7 +32,7 @@ export function PanelCard({ flipped, onMouseDown, underConstruction, borderColor
           {front}
         </Card>
         <Card className={cn(
-          "absolute inset-0 p-4 gap-2 h-full mb-0 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]",
+          "absolute inset-0 p-2 sm:p-4 gap-2 h-full mb-0 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]",
           !flipped && "pointer-events-none",
         )}>
           {back}

@@ -1080,7 +1080,7 @@ function EncounterDetail({
   return (
     <div className="flex-1 min-w-0">
       {/* Encounter header */}
-      <div className={cn("mb-6", isMobile ? "flex flex-col gap-1" : "flex items-center justify-between")}>
+      <div className={cn("mb-6", "flex items-center justify-between")}>
         <div className="flex items-center gap-3">
           {isSingle && (
             encounter.kill_type === "clean" ? (
@@ -1098,21 +1098,7 @@ function EncounterDetail({
             )}
           </div>
         </div>
-        <div className={cn("flex items-center gap-4 text-muted-foreground text-sm", isMobile && "gap-3")}>
-          {elapsedTimeMs !== null && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  <span>{formatDurationMs(elapsedTimeMs)}</span>
-                  <span className="text-xs opacity-60">elapsed</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                Total time from first encounter start to last encounter end
-              </TooltipContent>
-            </Tooltip>
-          )}
+        <div className={cn("flex text-muted-foreground text-sm", isMobile ? "flex-col items-end gap-0.5" : "items-center gap-4")}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1.5">
@@ -1128,6 +1114,20 @@ function EncounterDetail({
               }
             </TooltipContent>
           </Tooltip>
+          {elapsedTimeMs !== null && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  <span>{formatDurationMs(elapsedTimeMs)}</span>
+                  <span className="text-xs opacity-60">elapsed</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                Total time from first encounter start to last encounter end
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -1135,7 +1135,7 @@ function EncounterDetail({
       <Tabs value={activeTab} onValueChange={(v) => {
         setActiveTab(v as 'enemies' | 'players');
         setIsEntityPanelOpen(true);
-      }} className="mb-6">
+      }} className="mb-3">
         <Collapsible open={isEntityPanelOpen} onOpenChange={setIsEntityPanelOpen}>
           <Card className="p-4" data-help-entity-panel>
             <div className="flex items-center justify-between">
@@ -1176,7 +1176,7 @@ function EncounterDetail({
                 {hasSelection && (
                   <button
                     onClick={onClearSelection}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-destructive hover:text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-destructive border border-destructive/40 bg-destructive/10 hover:text-destructive-foreground hover:bg-destructive/90 transition-colors"
                   >
                     Clear ({totalSelectionCount})
                   </button>
@@ -1464,7 +1464,7 @@ function EncounterDetail({
       </Tabs>
 
       {/* Preset layout tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1">
+      <div className="flex gap-1 overflow-x-auto mb-3 pb-1 pt-1 styled-scrollbar">
         {PRESET_LAYOUTS.map((preset) => (
           <button
             key={preset.id}
@@ -1501,7 +1501,9 @@ function EncounterDetail({
                 className="min-h-0"
                 style={{
                   gridColumn: isMobile ? "1 / -1" : `${item.x + 1} / span ${item.w}`,
-                  gridRow: isMobile ? `auto / span ${item.h}` : `${item.y + 1} / span ${item.h}`,
+                  gridRow: isMobile
+                    ? `auto / span ${panelType === "timeline" && selectedEncounterIDs.length > 1 ? 1 : item.h}`
+                    : `${item.y + 1} / span ${item.h}`,
                 }}
               >
                 <EventsPanel
@@ -1631,8 +1633,8 @@ export function InstancePageView({
     : instanceDefaults?.default_desktop_layout?.id ?? null;
 
   const standardOrderedLayoutItems = useMemo(
-    () => orderLayoutItems(normalizeLayoutItems(cachedDefaultLayout?.items ?? (isMobile ? DEFAULT_INSTANCE_LAYOUT_ITEMS_MOBILE : DEFAULT_INSTANCE_LAYOUT_ITEMS))),
-    [cachedDefaultLayout?.items, isMobile],
+    () => orderLayoutItems(normalizeLayoutItems(cachedDefaultLayout?.items ?? DEFAULT_INSTANCE_LAYOUT_ITEMS)),
+    [cachedDefaultLayout?.items],
   );
 
   const alternateOrderedLayoutItems = useMemo(
@@ -1640,7 +1642,7 @@ export function InstancePageView({
     [],
   );
 
-  const defaultPanelTypesByID = cachedDefaultLayout?.panelTypesById ?? (isMobile ? DEFAULT_INSTANCE_PANEL_TYPES_MOBILE : DEFAULT_INSTANCE_PANEL_TYPES);
+  const defaultPanelTypesByID = cachedDefaultLayout?.panelTypesById ?? DEFAULT_INSTANCE_PANEL_TYPES;
 
   const defaultOrderedPanels = useMemo<PanelType[]>(
     () =>
@@ -1665,13 +1667,12 @@ export function InstancePageView({
     players: new Set<string>(),
     panels: defaultOrderedPanels,
     panelOptions: defaultOrderedPanels.map((_, i) => {
-      if (isMobile) return null;
       const itemId = standardOrderedLayoutItems[i]?.id;
       return itemId ? (DEFAULT_INSTANCE_PANEL_OPTIONS[itemId] ?? null) : null;
     }),
     layout: "standard",
     includeWipes: false,
-  }), [instance.encounters, defaultOrderedPanels, isMobile, standardOrderedLayoutItems]);
+  }), [instance.encounters, defaultOrderedPanels, standardOrderedLayoutItems]);
 
   const [viewState, setViewState] = useState<LocalInstanceViewState>(() =>
     createDefaultViewState(),
@@ -2618,8 +2619,8 @@ export function InstancePageView({
         )}
 
         {/* Row 3: Duration stats + action buttons (desktop) */}
-        <div className={cn("flex items-center justify-between mt-1", isMobile && "gap-3")}>
-          <div className={cn("flex items-center gap-4 text-muted-foreground text-sm", isMobile && "gap-3")}>
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-4 text-muted-foreground text-sm">
             {totalDuration && (
               <Tooltip>
                 <TooltipTrigger asChild>

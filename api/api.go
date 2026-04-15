@@ -91,6 +91,7 @@ func (api *API) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(
 		httpmw.Recover(api.Opts.Logger),
+		httpmw.Log500(api.Opts.Logger),
 		context2.ClearHandler,
 		Cors(api.Opts.AccessURL),
 		httpmw.SecurityHeaders(),

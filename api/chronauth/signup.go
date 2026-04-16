@@ -15,6 +15,7 @@ import (
 	"github.com/authzed/gochugaru/rel"
 	"github.com/google/uuid"
 	"github.com/markbates/goth"
+	"github.com/riverqueue/river"
 )
 
 func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User) (database.UserAuthSession, bool) {
@@ -99,6 +100,9 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 			if err != nil {
 				return fmt.Errorf("handling discord user: %w", err)
 			}
+			_ = river.RecordOutput(ctx, map[string]any{
+				"username": member.User.Username,
+			})
 		case "dev-oidc":
 			b := policy.New()
 			gChron := b.GlobalChronicle()

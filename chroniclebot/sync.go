@@ -58,6 +58,9 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 				}
 			}
 		}
+		_ = river.RecordOutput(ctx, map[string]any{
+			"username": member.User.Username,
+		})
 	}
 
 	_, err = zed.Write(ctx, *b.Txn())
@@ -65,8 +68,5 @@ func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorize
 		return fmt.Errorf("zed.Write: %w", err)
 	}
 
-	_ = river.RecordOutput(ctx, map[string]any{
-		"username": member.User.Username,
-	})
 	return nil
 }

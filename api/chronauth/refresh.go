@@ -97,7 +97,7 @@ func (s *Service) RefreshSession(ctx context.Context, w http.ResponseWriter, r *
 		return fmt.Errorf("database transaction: %w", err)
 	}
 
-	s.logger.Info("successfully refreshed session",
+	s.logger.Debug("successfully refreshed session",
 		slog.String("user_id", currentClaims.Subject.String()),
 		slog.String("session_id", currentClaims.SessionID.String()),
 	)

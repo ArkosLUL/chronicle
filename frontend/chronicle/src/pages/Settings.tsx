@@ -648,12 +648,12 @@ export function LayoutBookSettings() {
 }
 
 
-function parseSimpleParsedInstances(output: unknown): { id: string; name: string; encounters?: { start_time: string }[] }[] {
+function parseSimpleParsedInstances(output: unknown): { id: string; name: string; slug?: string; encounters?: { start_time: string }[] }[] {
   if (!output || typeof output !== "object") return [];
   const maybeInstances = (output as { instances?: unknown }).instances;
   if (!Array.isArray(maybeInstances)) return [];
 
-  return maybeInstances.filter((inst): inst is { id: string; name: string; encounters?: { start_time: string }[] } => {
+  return maybeInstances.filter((inst): inst is { id: string; name: string; slug?: string; encounters?: { start_time: string }[] } => {
     if (!inst || typeof inst !== "object") return false;
     const row = inst as { id?: unknown; name?: unknown; encounters?: unknown };
     return typeof row.id === "string" && typeof row.name === "string" && (!row.encounters || Array.isArray(row.encounters));

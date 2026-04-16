@@ -174,7 +174,7 @@ export function RaidCard({ instance }: RaidCardProps) {
           </div>
 
           {/* Boss progress */}
-          <div className="flex items-center gap-2 mb-2">
+          {/* <div className="flex items-center gap-2 mb-2">
             <div className={`flex items-center gap-1.5 px-2 py-1 rounded ${
               isFullClear 
                 ? "bg-green-500/30 text-green-300" 
@@ -186,7 +186,7 @@ export function RaidCard({ instance }: RaidCardProps) {
               </span>
               {isFullClear && <CheckCircle className="h-3.5 w-3.5" />}
             </div>
-          </div>
+          </div> */}
 
           {/* Encounter tags (optional, show first few) */}
           {instance.encounters && instance.encounters.length > 0 && (

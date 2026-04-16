@@ -31,6 +31,7 @@ type sqlcQuerier interface {
 	DeleteUserPanelLayoutByID(ctx context.Context, id uuid.UUID) (int64, error)
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLogGroupFilesParams) ([]LogFile, error)
+	DeleteYoutubeVideoByInstanceOrSlug(ctx context.Context, arg DeleteYoutubeVideoByInstanceOrSlugParams) error
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
 	GetDBCItemDisplayInfoByID(ctx context.Context, id int32) (DbcItemDisplayInfo, error)
 	GetDisplayInfoByID(ctx context.Context, id int32) (WorldDisplayInfo, error)
@@ -51,7 +52,7 @@ type sqlcQuerier interface {
 	GetGuildSettings(ctx context.Context, guildID uuid.UUID) (GuildSetting, error)
 	GetInstanceEncounterCharacterFights(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounterHostile, error)
 	GetInstanceLoot(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceLootRow, error)
-	GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (LogInstanceYoutubeTimestamped, error)
+	GetInstanceYoutubeData(ctx context.Context, arg GetInstanceYoutubeDataParams) (LogInstanceYoutubeTimestamped, error)
 	GetItemRandomPropertiesByID(ctx context.Context, id int32) (DbcItemRandomProperty, error)
 	GetItemSetBonuses(ctx context.Context, setID int32) ([]DbcItemSetBonu, error)
 	GetItemSetByID(ctx context.Context, id int32) (DbcItemSet, error)
@@ -115,7 +116,6 @@ type sqlcQuerier interface {
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	ListUserPanelLayouts(ctx context.Context, userID uuid.NullUUID) ([]ListUserPanelLayoutsRow, error)
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
-	ReattachSharedViewsBySlug(ctx context.Context, arg ReattachSharedViewsBySlugParams) error
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
 	SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error)
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)

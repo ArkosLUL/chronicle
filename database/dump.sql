@@ -127,6 +127,23 @@ BEGIN
 END;
 $$;
 
+CREATE FUNCTION reattach_by_slug() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.hashed_slug IS NOT NULL AND NEW.hashed_slug != '' THEN
+        UPDATE shared_views
+        SET instance_id = NEW.id
+        WHERE instance_slug = NEW.hashed_slug AND instance_id IS NULL;
+
+        UPDATE log_instance_youtube_timestamped
+        SET log_instance_id = NEW.id
+        WHERE instance_slug = NEW.hashed_slug AND log_instance_id IS NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
 CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) RETURNS boolean
     LANGUAGE sql IMMUTABLE
     AS $$
@@ -421,11 +438,13 @@ CREATE TABLE log_instance_units (
 COMMENT ON TABLE log_instance_units IS 'Stores all units (NPCs, not players) that participated in an instance.';
 
 CREATE TABLE log_instance_youtube_timestamped (
-    log_instance_id uuid NOT NULL,
+    log_instance_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     exported_at timestamp with time zone DEFAULT now() NOT NULL,
     video_url text NOT NULL,
-    payload jsonb NOT NULL
+    payload jsonb NOT NULL,
+    instance_slug text,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 CREATE TABLE log_instances (
@@ -943,7 +962,7 @@ ALTER TABLE ONLY log_instance_units
     ADD CONSTRAINT log_instance_units_pkey PRIMARY KEY (instance_id, unit_guid);
 
 ALTER TABLE ONLY log_instance_youtube_timestamped
-    ADD CONSTRAINT log_instance_youtube_timestamped_pkey PRIMARY KEY (log_instance_id);
+    ADD CONSTRAINT log_instance_youtube_timestamped_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_pkey PRIMARY KEY (id);
@@ -1076,6 +1095,10 @@ CREATE INDEX idx_world_creature_template_name ON world_creature_template USING b
 
 CREATE INDEX idx_world_item_template_name ON world_item_template USING btree (name);
 
+CREATE UNIQUE INDEX log_instance_youtube_timestamped_instance_id_idx ON log_instance_youtube_timestamped USING btree (log_instance_id) WHERE (log_instance_id IS NOT NULL);
+
+CREATE UNIQUE INDEX log_instance_youtube_timestamped_slug_idx ON log_instance_youtube_timestamped USING btree (instance_slug) WHERE (instance_slug IS NOT NULL);
+
 CREATE UNIQUE INDEX log_instances_hashed_slug_idx ON log_instances USING btree (hashed_slug) WHERE (hashed_slug IS NOT NULL);
 
 CREATE INDEX river_job_args_index ON river_job USING gin (args);
@@ -1097,6 +1120,8 @@ CREATE UNIQUE INDEX user_panel_layouts_user_title_ci_uidx ON user_panel_layouts 
 CREATE TRIGGER trg_cleanup_after_soft_delete AFTER UPDATE OF user_id ON user_panel_layouts FOR EACH ROW WHEN ((new.user_id IS NULL)) EXECUTE FUNCTION cleanup_orphaned_layout();
 
 CREATE TRIGGER trg_cleanup_after_untrack AFTER DELETE ON user_tracked_layouts FOR EACH ROW EXECUTE FUNCTION cleanup_orphaned_layout();
+
+CREATE TRIGGER trg_reattach_by_slug AFTER INSERT ON log_instances FOR EACH ROW EXECUTE FUNCTION reattach_by_slug();
 
 CREATE TRIGGER trigger_insert_default_data_grant AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION insert_default_data_grant();
 
@@ -1164,7 +1189,7 @@ ALTER TABLE ONLY log_instance_units
     ADD CONSTRAINT log_instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY log_instance_youtube_timestamped
-    ADD CONSTRAINT log_instance_youtube_timestamped_log_instance_id_fkey FOREIGN KEY (log_instance_id) REFERENCES log_instances(id) ON DELETE CASCADE;
+    ADD CONSTRAINT log_instance_youtube_timestamped_log_instance_id_fkey FOREIGN KEY (log_instance_id) REFERENCES log_instances(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY log_instances
     ADD CONSTRAINT log_instances_guild_id_fkey FOREIGN KEY (guild_id) REFERENCES guilds(id);

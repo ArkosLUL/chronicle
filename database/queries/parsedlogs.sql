@@ -159,7 +159,7 @@ SELECT
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -176,9 +176,9 @@ WHERE true
     -- Filter by video presence
     AND CASE
         WHEN @has_video :: text = 'true' THEN
-            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         WHEN @has_video :: text = 'false' THEN
-            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         ELSE true
     END
     -- Filter by realm
@@ -224,7 +224,7 @@ SELECT
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -250,9 +250,9 @@ WHERE true
     -- Filter by video presence
     AND CASE
         WHEN @has_video :: text = 'true' THEN
-            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         WHEN @has_video :: text = 'false' THEN
-            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         ELSE true
     END
     -- Filter by realm
@@ -301,7 +301,7 @@ SELECT DISTINCT ON (
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
@@ -319,9 +319,9 @@ WHERE lip.name ILIKE @player_name
     -- Filter by video presence
     AND CASE
         WHEN @has_video :: text = 'true' THEN
-            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         WHEN @has_video :: text = 'false' THEN
-            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         ELSE true
     END
     -- Filter by realm

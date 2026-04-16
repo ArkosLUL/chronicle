@@ -2152,7 +2152,7 @@ SELECT
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -2178,9 +2178,9 @@ WHERE true
     -- Filter by video presence
     AND CASE
         WHEN $4 :: text = 'true' THEN
-            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         WHEN $4 :: text = 'false' THEN
-            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         ELSE true
     END
     -- Filter by realm
@@ -2305,7 +2305,7 @@ SELECT
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -2322,9 +2322,9 @@ WHERE true
     -- Filter by video presence
     AND CASE
         WHEN $2 :: text = 'true' THEN
-            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         WHEN $2 :: text = 'false' THEN
-            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         ELSE true
     END
     -- Filter by realm
@@ -2448,7 +2448,7 @@ SELECT DISTINCT ON (
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
@@ -2466,9 +2466,9 @@ WHERE lip.name ILIKE $1
     -- Filter by video presence
     AND CASE
         WHEN $3 :: text = 'true' THEN
-            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         WHEN $3 :: text = 'false' THEN
-            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id)
+            NOT EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug)
         ELSE true
     END
     -- Filter by realm
@@ -2697,22 +2697,6 @@ func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg Get
 		&i.InstanceSlug,
 	)
 	return i, err
-}
-
-const reattachSharedViewsBySlug = `-- name: ReattachSharedViewsBySlug :exec
-UPDATE shared_views
-SET instance_id = $1
-WHERE instance_slug = $2 AND instance_id IS NULL
-`
-
-type ReattachSharedViewsBySlugParams struct {
-	InstanceID   uuid.NullUUID `db:"instance_id" json:"instance_id"`
-	InstanceSlug string        `db:"instance_slug" json:"instance_slug"`
-}
-
-func (q *sqlQuerier) ReattachSharedViewsBySlug(ctx context.Context, arg ReattachSharedViewsBySlugParams) error {
-	_, err := q.db.Exec(ctx, reattachSharedViewsBySlug, arg.InstanceID, arg.InstanceSlug)
-	return err
 }
 
 const getUserActionBarSlots = `-- name: GetUserActionBarSlots :one
@@ -3700,17 +3684,40 @@ func (q *sqlQuerier) UpdateUserAuthSessionTokens(ctx context.Context, arg Update
 	return i, err
 }
 
+const deleteYoutubeVideoByInstanceOrSlug = `-- name: DeleteYoutubeVideoByInstanceOrSlug :exec
+DELETE FROM log_instance_youtube_timestamped
+WHERE log_instance_id = $1
+   OR instance_slug = $2
+`
+
+type DeleteYoutubeVideoByInstanceOrSlugParams struct {
+	LogInstanceID uuid.NullUUID `db:"log_instance_id" json:"log_instance_id"`
+	InstanceSlug  pgtype.Text   `db:"instance_slug" json:"instance_slug"`
+}
+
+func (q *sqlQuerier) DeleteYoutubeVideoByInstanceOrSlug(ctx context.Context, arg DeleteYoutubeVideoByInstanceOrSlugParams) error {
+	_, err := q.db.Exec(ctx, deleteYoutubeVideoByInstanceOrSlug, arg.LogInstanceID, arg.InstanceSlug)
+	return err
+}
+
 const getInstanceYoutubeData = `-- name: GetInstanceYoutubeData :one
 SELECT
-  log_instance_id, created_at, exported_at, video_url, payload
+  log_instance_id, created_at, exported_at, video_url, payload, instance_slug, id
 FROM
   log_instance_youtube_timestamped
 WHERE
   log_instance_id = $1
+  OR instance_slug = $2
+LIMIT 1
 `
 
-func (q *sqlQuerier) GetInstanceYoutubeData(ctx context.Context, logInstanceID uuid.UUID) (LogInstanceYoutubeTimestamped, error) {
-	row := q.db.QueryRow(ctx, getInstanceYoutubeData, logInstanceID)
+type GetInstanceYoutubeDataParams struct {
+	LogInstanceID uuid.NullUUID `db:"log_instance_id" json:"log_instance_id"`
+	InstanceSlug  pgtype.Text   `db:"instance_slug" json:"instance_slug"`
+}
+
+func (q *sqlQuerier) GetInstanceYoutubeData(ctx context.Context, arg GetInstanceYoutubeDataParams) (LogInstanceYoutubeTimestamped, error) {
+	row := q.db.QueryRow(ctx, getInstanceYoutubeData, arg.LogInstanceID, arg.InstanceSlug)
 	var i LogInstanceYoutubeTimestamped
 	err := row.Scan(
 		&i.LogInstanceID,
@@ -3718,25 +3725,22 @@ func (q *sqlQuerier) GetInstanceYoutubeData(ctx context.Context, logInstanceID u
 		&i.ExportedAt,
 		&i.VideoUrl,
 		&i.Payload,
+		&i.InstanceSlug,
+		&i.ID,
 	)
 	return i, err
 }
 
 const insertStampedYoutubeVideo = `-- name: InsertStampedYoutubeVideo :exec
 INSERT INTO
-  log_instance_youtube_timestamped (log_instance_id, created_at, exported_at, video_url, payload)
+  log_instance_youtube_timestamped (log_instance_id, instance_slug, created_at, exported_at, video_url, payload)
 VALUES
-  ($1, $2, $3, $4, $5)
-ON CONFLICT (log_instance_id) DO UPDATE
-SET
-  created_at = EXCLUDED.created_at,
-  exported_at = EXCLUDED.exported_at,
-  video_url = EXCLUDED.video_url,
-  payload = EXCLUDED.payload
+  ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertStampedYoutubeVideoParams struct {
-	LogInstanceID uuid.UUID          `db:"log_instance_id" json:"log_instance_id"`
+	LogInstanceID uuid.NullUUID      `db:"log_instance_id" json:"log_instance_id"`
+	InstanceSlug  pgtype.Text        `db:"instance_slug" json:"instance_slug"`
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	ExportedAt    pgtype.Timestamptz `db:"exported_at" json:"exported_at"`
 	VideoUrl      string             `db:"video_url" json:"video_url"`
@@ -3746,6 +3750,7 @@ type InsertStampedYoutubeVideoParams struct {
 func (q *sqlQuerier) InsertStampedYoutubeVideo(ctx context.Context, arg InsertStampedYoutubeVideoParams) error {
 	_, err := q.db.Exec(ctx, insertStampedYoutubeVideo,
 		arg.LogInstanceID,
+		arg.InstanceSlug,
 		arg.CreatedAt,
 		arg.ExportedAt,
 		arg.VideoUrl,

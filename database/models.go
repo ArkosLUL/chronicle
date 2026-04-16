@@ -873,11 +873,13 @@ type LogInstanceUnit struct {
 }
 
 type LogInstanceYoutubeTimestamped struct {
-	LogInstanceID uuid.UUID          `db:"log_instance_id" json:"log_instance_id"`
+	LogInstanceID uuid.NullUUID      `db:"log_instance_id" json:"log_instance_id"`
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	ExportedAt    pgtype.Timestamptz `db:"exported_at" json:"exported_at"`
 	VideoUrl      string             `db:"video_url" json:"video_url"`
 	Payload       []VideoTimestamp   `db:"payload" json:"payload"`
+	InstanceSlug  pgtype.Text        `db:"instance_slug" json:"instance_slug"`
+	ID            uuid.UUID          `db:"id" json:"id"`
 }
 
 type LogInstancesGuild struct {

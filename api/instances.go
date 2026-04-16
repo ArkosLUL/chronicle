@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
@@ -140,8 +141,14 @@ func (api *API) PostInstanceYoutube(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	instanceNullUUID := uuid.NullUUID{UUID: inst.ID, Valid: true}
+	_ = db.DeleteYoutubeVideoByInstanceOrSlug(ctx, database.DeleteYoutubeVideoByInstanceOrSlugParams{
+		LogInstanceID: instanceNullUUID,
+		InstanceSlug:  inst.HashedSlug,
+	})
 	err = db.InsertStampedYoutubeVideo(ctx, database.InsertStampedYoutubeVideoParams{
-		LogInstanceID: inst.ID,
+		LogInstanceID: instanceNullUUID,
+		InstanceSlug:  inst.HashedSlug,
 		CreatedAt:     database.Timestamptz(time.Now()),
 		ExportedAt:    database.Timestamptz(req.ExportedAt),
 		VideoUrl:      req.URL,
@@ -167,7 +174,10 @@ func (api *API) GetInstanceYoutube(w http.ResponseWriter, r *http.Request) {
 	inst := httpmw.Instance(ctx)
 	db := api.Opts.Zed
 
-	data, err := db.GetInstanceYoutubeData(ctx, inst.ID)
+	data, err := db.GetInstanceYoutubeData(ctx, database.GetInstanceYoutubeDataParams{
+		LogInstanceID: uuid.NullUUID{UUID: inst.ID, Valid: true},
+		InstanceSlug:  inst.HashedSlug,
+	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

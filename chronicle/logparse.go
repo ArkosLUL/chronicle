@@ -419,13 +419,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return fmt.Errorf("insert instance: %w", err)
 			}
 
-			// Reattach any shared views orphaned by reparse.
-			if insertInstanceParams.HashedSlug.Valid {
-				_ = tx.ReattachSharedViewsBySlug(ctx, database.ReattachSharedViewsBySlugParams{
-					InstanceID:   uuid.NullUUID{UUID: dbinstance.ID, Valid: true},
-					InstanceSlug: insertInstanceParams.HashedSlug.String,
-				})
-			}
+			// Reattach of shared_views and youtube rows is handled by
+			// the reattach_by_slug trigger on log_instances INSERT.
 
 			evts := inst.Events()
 			err = evts.Insert(ctx, tx, dbinstance.ID)

@@ -1931,25 +1931,26 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version
 `
 
 type InsertInstanceParams struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	RealmID      uuid.UUID          `db:"realm_id" json:"realm_id"`
-	LogGroupID   uuid.UUID          `db:"log_group_id" json:"log_group_id"`
-	Name         string             `db:"name" json:"name"`
-	HashedSlug   pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
-	GuildID      uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	StartTime    pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime      pgtype.Timestamptz `db:"end_time" json:"end_time"`
-	Capabilities []string           `db:"capabilities" json:"capabilities"`
-	Versions     VersionsMap        `db:"versions" json:"versions"`
-	RecorderName string             `db:"recorder_name" json:"recorder_name"`
-	RecorderGuid string             `db:"recorder_guid" json:"recorder_guid"`
+	ID            uuid.UUID          `db:"id" json:"id"`
+	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
+	LogGroupID    uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name          string             `db:"name" json:"name"`
+	HashedSlug    pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	GuildID       uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	StartTime     pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime       pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	Capabilities  []string           `db:"capabilities" json:"capabilities"`
+	Versions      VersionsMap        `db:"versions" json:"versions"`
+	RecorderName  string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid  string             `db:"recorder_guid" json:"recorder_guid"`
+	ParserVersion string             `db:"parser_version" json:"parser_version"`
 }
 
 func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
@@ -1966,6 +1967,7 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		arg.Versions,
 		arg.RecorderName,
 		arg.RecorderGuid,
+		arg.ParserVersion,
 	)
 	var i LogInstance
 	err := row.Scan(
@@ -1981,6 +1983,7 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		&i.Versions,
 		&i.RecorderName,
 		&i.RecorderGuid,
+		&i.ParserVersion,
 	)
 	return i, err
 }
@@ -2602,6 +2605,290 @@ type PruneParsedInstanceFromLogOutputParams struct {
 
 func (q *sqlQuerier) PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error {
 	_, err := q.db.Exec(ctx, pruneParsedInstanceFromLogOutput, arg.InstanceID, arg.LogGroupID)
+	return err
+}
+
+const countActiveRegressionJobs = `-- name: CountActiveRegressionJobs :one
+SELECT COUNT(*) FROM river_job
+WHERE kind = 'regression-snapshot'
+AND state IN ('available', 'pending', 'scheduled', 'running')
+`
+
+func (q *sqlQuerier) CountActiveRegressionJobs(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countActiveRegressionJobs)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const deleteRegressionFixture = `-- name: DeleteRegressionFixture :exec
+DELETE FROM regression_fixtures WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteRegressionFixture(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRegressionFixture, id)
+	return err
+}
+
+const deleteRegressionSnapshot = `-- name: DeleteRegressionSnapshot :exec
+DELETE FROM regression_snapshots WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteRegressionSnapshot(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRegressionSnapshot, id)
+	return err
+}
+
+const getLatestRegressionSnapshot = `-- name: GetLatestRegressionSnapshot :one
+SELECT id, fixture_id, version, snapshot, created_at, build_time, matches_previous, previous_snapshot_id FROM regression_snapshots
+WHERE fixture_id = $1
+ORDER BY created_at DESC LIMIT 1
+`
+
+func (q *sqlQuerier) GetLatestRegressionSnapshot(ctx context.Context, fixtureID uuid.UUID) (RegressionSnapshot, error) {
+	row := q.db.QueryRow(ctx, getLatestRegressionSnapshot, fixtureID)
+	var i RegressionSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.FixtureID,
+		&i.Version,
+		&i.Snapshot,
+		&i.CreatedAt,
+		&i.BuildTime,
+		&i.MatchesPrevious,
+		&i.PreviousSnapshotID,
+	)
+	return i, err
+}
+
+const getRegressionFixture = `-- name: GetRegressionFixture :one
+SELECT id, log_group_id, note, created_at FROM regression_fixtures WHERE id = $1
+`
+
+func (q *sqlQuerier) GetRegressionFixture(ctx context.Context, id uuid.UUID) (RegressionFixture, error) {
+	row := q.db.QueryRow(ctx, getRegressionFixture, id)
+	var i RegressionFixture
+	err := row.Scan(
+		&i.ID,
+		&i.LogGroupID,
+		&i.Note,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getRegressionSnapshot = `-- name: GetRegressionSnapshot :one
+SELECT id, fixture_id, version, snapshot, created_at, build_time, matches_previous, previous_snapshot_id FROM regression_snapshots WHERE id = $1
+`
+
+func (q *sqlQuerier) GetRegressionSnapshot(ctx context.Context, id uuid.UUID) (RegressionSnapshot, error) {
+	row := q.db.QueryRow(ctx, getRegressionSnapshot, id)
+	var i RegressionSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.FixtureID,
+		&i.Version,
+		&i.Snapshot,
+		&i.CreatedAt,
+		&i.BuildTime,
+		&i.MatchesPrevious,
+		&i.PreviousSnapshotID,
+	)
+	return i, err
+}
+
+const insertRegressionFixture = `-- name: InsertRegressionFixture :one
+INSERT INTO regression_fixtures (log_group_id, note) VALUES ($1, $2) RETURNING id, log_group_id, note, created_at
+`
+
+type InsertRegressionFixtureParams struct {
+	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	Note       string    `db:"note" json:"note"`
+}
+
+func (q *sqlQuerier) InsertRegressionFixture(ctx context.Context, arg InsertRegressionFixtureParams) (RegressionFixture, error) {
+	row := q.db.QueryRow(ctx, insertRegressionFixture, arg.LogGroupID, arg.Note)
+	var i RegressionFixture
+	err := row.Scan(
+		&i.ID,
+		&i.LogGroupID,
+		&i.Note,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertRegressionSnapshot = `-- name: InsertRegressionSnapshot :one
+INSERT INTO regression_snapshots (fixture_id, version, build_time, snapshot, matches_previous, previous_snapshot_id)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, fixture_id, version, snapshot, created_at, build_time, matches_previous, previous_snapshot_id
+`
+
+type InsertRegressionSnapshotParams struct {
+	FixtureID          uuid.UUID     `db:"fixture_id" json:"fixture_id"`
+	Version            string        `db:"version" json:"version"`
+	BuildTime          string        `db:"build_time" json:"build_time"`
+	Snapshot           []byte        `db:"snapshot" json:"snapshot"`
+	MatchesPrevious    pgtype.Bool   `db:"matches_previous" json:"matches_previous"`
+	PreviousSnapshotID uuid.NullUUID `db:"previous_snapshot_id" json:"previous_snapshot_id"`
+}
+
+func (q *sqlQuerier) InsertRegressionSnapshot(ctx context.Context, arg InsertRegressionSnapshotParams) (RegressionSnapshot, error) {
+	row := q.db.QueryRow(ctx, insertRegressionSnapshot,
+		arg.FixtureID,
+		arg.Version,
+		arg.BuildTime,
+		arg.Snapshot,
+		arg.MatchesPrevious,
+		arg.PreviousSnapshotID,
+	)
+	var i RegressionSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.FixtureID,
+		&i.Version,
+		&i.Snapshot,
+		&i.CreatedAt,
+		&i.BuildTime,
+		&i.MatchesPrevious,
+		&i.PreviousSnapshotID,
+	)
+	return i, err
+}
+
+const listInstancesByParserVersion = `-- name: ListInstancesByParserVersion :many
+SELECT id, log_group_id FROM log_instances WHERE parser_version = $1
+`
+
+type ListInstancesByParserVersionRow struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	LogGroupID uuid.UUID `db:"log_group_id" json:"log_group_id"`
+}
+
+func (q *sqlQuerier) ListInstancesByParserVersion(ctx context.Context, parserVersion string) ([]ListInstancesByParserVersionRow, error) {
+	rows, err := q.db.Query(ctx, listInstancesByParserVersion, parserVersion)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListInstancesByParserVersionRow
+	for rows.Next() {
+		var i ListInstancesByParserVersionRow
+		if err := rows.Scan(&i.ID, &i.LogGroupID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRegressionFixtures = `-- name: ListRegressionFixtures :many
+SELECT rf.id, rf.log_group_id, rf.note, rf.created_at,
+  NOT EXISTS(
+    SELECT 1 FROM log_file lf
+    WHERE lf.wow_log_id = rf.log_group_id
+    AND lf.storage_deleted_at IS NULL
+  ) AS files_deleted
+FROM regression_fixtures rf
+ORDER BY rf.created_at DESC
+`
+
+type ListRegressionFixturesRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	LogGroupID   uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Note         string             `db:"note" json:"note"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	FilesDeleted bool               `db:"files_deleted" json:"files_deleted"`
+}
+
+func (q *sqlQuerier) ListRegressionFixtures(ctx context.Context) ([]ListRegressionFixturesRow, error) {
+	rows, err := q.db.Query(ctx, listRegressionFixtures)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRegressionFixturesRow
+	for rows.Next() {
+		var i ListRegressionFixturesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LogGroupID,
+			&i.Note,
+			&i.CreatedAt,
+			&i.FilesDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRegressionSnapshots = `-- name: ListRegressionSnapshots :many
+SELECT id, fixture_id, version, build_time, matches_previous, previous_snapshot_id, created_at
+FROM regression_snapshots WHERE fixture_id = $1
+ORDER BY created_at DESC LIMIT $2
+`
+
+type ListRegressionSnapshotsParams struct {
+	FixtureID uuid.UUID `db:"fixture_id" json:"fixture_id"`
+	Lim       int32     `db:"lim" json:"lim"`
+}
+
+type ListRegressionSnapshotsRow struct {
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	FixtureID          uuid.UUID          `db:"fixture_id" json:"fixture_id"`
+	Version            string             `db:"version" json:"version"`
+	BuildTime          string             `db:"build_time" json:"build_time"`
+	MatchesPrevious    pgtype.Bool        `db:"matches_previous" json:"matches_previous"`
+	PreviousSnapshotID uuid.NullUUID      `db:"previous_snapshot_id" json:"previous_snapshot_id"`
+	CreatedAt          pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *sqlQuerier) ListRegressionSnapshots(ctx context.Context, arg ListRegressionSnapshotsParams) ([]ListRegressionSnapshotsRow, error) {
+	rows, err := q.db.Query(ctx, listRegressionSnapshots, arg.FixtureID, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRegressionSnapshotsRow
+	for rows.Next() {
+		var i ListRegressionSnapshotsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FixtureID,
+			&i.Version,
+			&i.BuildTime,
+			&i.MatchesPrevious,
+			&i.PreviousSnapshotID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRegressionFixtureNote = `-- name: UpdateRegressionFixtureNote :exec
+UPDATE regression_fixtures SET note = $1 WHERE id = $2
+`
+
+type UpdateRegressionFixtureNoteParams struct {
+	Note string    `db:"note" json:"note"`
+	ID   uuid.UUID `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error {
+	_, err := q.db.Exec(ctx, updateRegressionFixtureNote, arg.Note, arg.ID)
 	return err
 }
 

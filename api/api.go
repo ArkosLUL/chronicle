@@ -140,6 +140,25 @@ func (api *API) Routes() chi.Router {
 
 		})
 
+		// Regression testing routes (under admin auth)
+		r.Route("/regression", func(r chi.Router) {
+			r.Use(
+				api.Auth.Authenticated(false),
+				httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_regressions_User),
+			)
+			r.Get("/fixtures", api.RegressionListFixtures)
+			r.Post("/fixtures", api.RegressionCreateFixture)
+			r.Put("/fixtures/{fixtureID}", api.RegressionUpdateFixtureNote)
+			r.Delete("/fixtures/{fixtureID}", api.RegressionDeleteFixture)
+			r.Post("/fixtures/{fixtureID}/snapshot", api.RegressionTakeSnapshot)
+			r.Post("/snapshot-all", api.RegressionSnapshotAll)
+			r.Get("/fixtures/{fixtureID}/snapshots", api.RegressionListSnapshots)
+			r.Get("/snapshots/{snapshotID}", api.RegressionGetSnapshot)
+			r.Delete("/snapshots/{snapshotID}", api.RegressionDeleteSnapshot)
+			r.Get("/jobs", api.RegressionJobStatus)
+			r.Post("/requeue-version", api.RegressionRequeueVersion)
+		})
+
 		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
 		if api.Opts.WoWDB != nil {
 			r.Mount("/wowdb", api.Opts.WoWDB)

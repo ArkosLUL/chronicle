@@ -37,6 +37,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/slice"
+	"github.com/Emyrk/chronicle/internal/version"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -404,8 +405,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				EndTime:      instanceEnd,
 				Capabilities: []string{"overheal"},
 				Versions:     database.VersionsMap(finalized.Versions),
-				RecorderName: recorderName,
+				RecorderName:  recorderName,
 				RecorderGuid: recorderGUID,
+				ParserVersion: version.GitTag + "+" + version.GitCommit,
 			}
 
 			// Handling colliding slugs

@@ -272,7 +272,7 @@ func (api *API) Routes() chi.Router {
 
 							r.Get("/youtube", api.GetInstanceYoutube)
 							r.Get("/loot", api.GetInstanceLoot)
-						r.Get("/duplicates", api.ListDuplicateInstances)
+							r.Get("/duplicates", api.ListDuplicateInstances)
 
 							r.Group(func(r chi.Router) {
 								r.Use(
@@ -281,12 +281,15 @@ func (api *API) Routes() chi.Router {
 								r.Post("/youtube", api.PostInstanceYoutube)
 							})
 
-								r.Group(func(r chi.Router) {
-									r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User))
-									r.Delete("/duplicate-group", api.UngroupInstance)
-								})
+							r.Group(func(r chi.Router) {
+								r.Use(
+									api.Auth.Authenticated(false),
+									httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User),
+								)
+								r.Delete("/duplicate-group", api.UngroupInstance)
 							})
 						})
+					})
 				})
 			})
 		})

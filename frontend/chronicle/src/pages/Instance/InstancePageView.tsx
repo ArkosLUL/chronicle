@@ -43,6 +43,7 @@ import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceAction
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+import { DuplicatesBadge } from "./DuplicatesBadge";
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
 import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/CharacterHeader";
 import { LAYOUT_ACTION_BAR_KEYS, type LayoutActionBarSlots } from "@/features/layoutBook/layoutBookStore";
@@ -2570,7 +2571,12 @@ export function InstancePageView({
         <div className={cn("relative z-10", isMobile ? "p-3" : "p-4")}>
         {/* Row 1: Title (+ mobile menu only) */}
         <div className="flex items-start justify-between gap-4 mb-1">
-          <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>{instance.name}</h1>
+          <h1 className={cn("font-bold flex items-center gap-2", isMobile ? "text-xl" : "text-2xl")}>
+            {instance.name}
+            {duplicateGroupId && (
+              <DuplicatesBadge instanceId={instance.id} duplicateGroupId={duplicateGroupId} />
+            )}
+          </h1>
           {isMobile && (
             <div className="flex items-center gap-2 shrink-0">
               <InstanceMenu

@@ -1,14 +1,27 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Users, Clock } from "lucide-react";
-import type { RecentInstance } from "@/api/typesGenerated";
+import { X, Users, Clock, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   getInstanceBackground,
 } from "@/pages/Logs/utils/instanceImages";
 
+/** Minimal shape needed for each row in the modal. */
+export interface DuplicateModalInstance {
+  id: string;
+  slug: string;
+  name: string;
+  recorder_name: string;
+  uploader_name?: string;
+  player_count: number;
+  duration_ms?: number | null;
+}
+
 interface DuplicateInstanceModalProps {
-  instances: RecentInstance[];
+  instances: DuplicateModalInstance[];
   onClose: () => void;
+  /** ID of the currently viewed instance (shown as "Selected") */
+  currentInstanceId?: string;
 }
 
 function formatDuration(ms: number | null | undefined): string {
@@ -23,6 +36,7 @@ function formatDuration(ms: number | null | undefined): string {
 export function DuplicateInstanceModal({
   instances,
   onClose,
+  currentInstanceId,
 }: DuplicateInstanceModalProps) {
   const navigate = useNavigate();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -73,16 +87,23 @@ export function DuplicateInstanceModal({
             const url = inst.slug
               ? `/instances/${inst.slug}`
               : `/instances/${inst.id}`;
+            const isCurrent = currentInstanceId === inst.id;
             return (
               <button
                 key={inst.id}
-                className="w-full text-left rounded-md overflow-hidden group cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md"
+                className={cn(
+                  "w-full text-left rounded-md overflow-hidden group transition-all",
+                  isCurrent
+                    ? "ring-2 ring-amber-400/70"
+                    : "cursor-pointer hover:scale-[1.01] hover:shadow-md",
+                )}
                 onClick={() => {
+                  if (isCurrent) { onClose(); return; }
                   navigate(url);
                   onClose();
                 }}
               >
-                <DuplicateInstanceRow instance={inst} />
+                <DuplicateInstanceRow instance={inst} isCurrent={isCurrent} />
               </button>
             );
           })}
@@ -92,11 +113,11 @@ export function DuplicateInstanceModal({
   );
 }
 
-function DuplicateInstanceRow({ instance }: { instance: RecentInstance }) {
+function DuplicateInstanceRow({ instance, isCurrent }: { instance: DuplicateModalInstance; isCurrent?: boolean }) {
   const [imageError, setImageError] = React.useState(false);
   const backgroundImage = getInstanceBackground(instance.name);
   const recorder = instance.recorder_name || "Unknown";
-  const uploader = instance.uploader_name;
+  const uploader = instance.uploader_name ?? "Unknown";
 
   return (
     <div className="relative h-14 rounded-md overflow-hidden">
@@ -125,6 +146,12 @@ function DuplicateInstanceRow({ instance }: { instance: RecentInstance }) {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+          {isCurrent && (
+            <span className="flex items-center gap-0.5 text-[10px] text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded font-medium">
+              <Check className="h-3 w-3" />
+              Selected
+            </span>
+          )}
           <span className="flex items-center gap-1 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
             <Users className="h-3 w-3" />
             {instance.player_count}

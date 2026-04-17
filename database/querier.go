@@ -139,9 +139,16 @@ type sqlcQuerier interface {
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
 	SetDuplicateGroupIDs(ctx context.Context, arg SetDuplicateGroupIDsParams) error
 	SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error)
-	// Returns best qualified run per duplicate group for a given instance name.
-	// Filters out entries below admin-configured minimum version requirements.
-	SpeedrunLeaderboard(ctx context.Context, instanceName string) ([]SpeedrunLeaderboardRow, error)
+	// Returns distinct instance names that have at least one qualified speedrun.
+	SpeedrunInstanceNames(ctx context.Context) ([]string, error)
+	// Returns the leaderboard for a given instance name.
+	// Deduplicates by duplicate_group, then by guild (best per guild unless guild_id filter is set).
+	// Excludes runs without a guild. Optional filters: realm, player count, guild.
+	// When no guild filter: keep only the best run per guild.
+	// When guild filter is set: keep all runs for that guild.
+	SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeaderboardParams) ([]SpeedrunLeaderboardRow, error)
+	// Returns distinct realm names that have at least one qualified speedrun.
+	SpeedrunRealmNames(ctx context.Context) ([]string, error)
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)
 	UntrackUserPanelLayout(ctx context.Context, arg UntrackUserPanelLayoutParams) (int64, error)
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)

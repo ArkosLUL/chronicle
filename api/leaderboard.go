@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -12,9 +13,9 @@ import (
 )
 
 // SpeedrunLeaderboard returns the best qualified speedrun per duplicate group
-// for a given instance name.
+// for a given instance name. Optional realm_name query params filter by realm.
 //
-//	GET /api/v1/leaderboard/speedrun?instance_name=Molten+Core
+//	GET /api/v1/leaderboard/speedrun?instance_name=Molten+Core&realm_name=Turtle+WoW
 func (api *API) SpeedrunLeaderboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -26,7 +27,31 @@ func (api *API) SpeedrunLeaderboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := api.Opts.Zed.SpeedrunLeaderboard(ctx, instanceName)
+	realmNames := r.URL.Query()["realm_name"]
+
+	var minPlayers, maxPlayers int64
+	if v := r.URL.Query().Get("min_players"); v != "" {
+		minPlayers, _ = strconv.ParseInt(v, 10, 64)
+	}
+	if v := r.URL.Query().Get("max_players"); v != "" {
+		maxPlayers, _ = strconv.ParseInt(v, 10, 64)
+	}
+
+	guildID := r.URL.Query().Get("guild_id")
+
+	var sinceDays int64
+	if v := r.URL.Query().Get("since_days"); v != "" {
+		sinceDays, _ = strconv.ParseInt(v, 10, 64)
+	}
+
+	rows, err := api.Opts.Zed.SpeedrunLeaderboard(ctx, database.SpeedrunLeaderboardParams{
+		InstanceName: instanceName,
+		RealmNames:   realmNames,
+		MinPlayers:   minPlayers,
+		MaxPlayers:   maxPlayers,
+		GuildID:      guildID,
+		SinceDays:    sinceDays,
+	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -38,6 +63,46 @@ func (api *API) SpeedrunLeaderboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, slice.List(rows, db2sdk.SpeedrunLeaderboardEntry))
+}
+
+// SpeedrunInstances returns the list of instance names that have qualified speedruns.
+//
+//	GET /api/v1/leaderboard/speedrun/instances
+func (api *API) SpeedrunInstances(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	names, err := api.Opts.Zed.SpeedrunInstanceNames(ctx)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch speedrun instance names",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, names)
+}
+
+// SpeedrunRealms returns the list of realm names that have qualified speedruns.
+//
+//	GET /api/v1/leaderboard/speedrun/realms
+func (api *API) SpeedrunRealms(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	names, err := api.Opts.Zed.SpeedrunRealmNames(ctx)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch speedrun realm names",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, names)
 }
 
 // AdminListLeaderboardVersionRequirements returns all configured version requirements.

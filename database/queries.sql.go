@@ -3324,35 +3324,107 @@ func (q *sqlQuerier) InsertInstanceSpeedrun(ctx context.Context, arg InsertInsta
 	return err
 }
 
-const speedrunLeaderboard = `-- name: SpeedrunLeaderboard :many
-SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
-    sr.instance_id,
-    sr.instance_name,
-    sr.duration_ms,
-    sr.start_time,
-    sr.completion_time,
-    sr.qualified,
-    sr.addon_version,
-    li.hashed_slug,
-    li.duplicate_group_id,
-    li.parser_version,
-    COALESCE(g.name, '') AS guild_name,
-    COALESCE(wsr.name, '') AS realm_name
-FROM instance_speedruns sr
-JOIN log_instances li ON li.id = sr.instance_id
-LEFT JOIN guilds g ON sr.guild_id = g.id
-LEFT JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
-LEFT JOIN leaderboard_version_requirements lvr ON lvr.instance_name = sr.instance_name
-WHERE sr.instance_name = $1
-  AND sr.qualified = true
-  AND sr.parser_version_num >= COALESCE(lvr.min_parser_version_num, 0)
-  AND sr.addon_version_num >= COALESCE(lvr.min_addon_version_num, 0)
-ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+const speedrunInstanceNames = `-- name: SpeedrunInstanceNames :many
+SELECT DISTINCT instance_name
+FROM instance_speedruns
+WHERE qualified = true
+ORDER BY instance_name
 `
+
+// Returns distinct instance names that have at least one qualified speedrun.
+func (q *sqlQuerier) SpeedrunInstanceNames(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, speedrunInstanceNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var instance_name string
+		if err := rows.Scan(&instance_name); err != nil {
+			return nil, err
+		}
+		items = append(items, instance_name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const speedrunLeaderboard = `-- name: SpeedrunLeaderboard :many
+WITH deduped AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        sr.instance_id,
+        sr.instance_name,
+        sr.guild_id,
+        sr.duration_ms,
+        sr.start_time,
+        sr.completion_time,
+        sr.qualified,
+        sr.addon_version,
+        li.hashed_slug,
+        li.duplicate_group_id,
+        li.parser_version,
+        g.name AS guild_name,
+        COALESCE(wsr.name, '') AS realm_name,
+        (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = sr.instance_id) AS player_count,
+        COALESCE(gp.theme->>'logo_url', '')::text AS guild_logo_url
+    FROM instance_speedruns sr
+    JOIN log_instances li ON li.id = sr.instance_id
+    JOIN guilds g ON sr.guild_id = g.id
+    LEFT JOIN guild_pages gp ON gp.guild_id = sr.guild_id
+    LEFT JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
+    LEFT JOIN leaderboard_version_requirements lvr ON lvr.instance_name = sr.instance_name
+    WHERE sr.instance_name = $3
+      AND sr.qualified = true
+      AND sr.guild_id IS NOT NULL
+      AND sr.parser_version_num >= COALESCE(lvr.min_parser_version_num, 0)
+      AND sr.addon_version_num >= COALESCE(lvr.min_addon_version_num, 0)
+      AND CASE
+          WHEN cardinality($4 :: text[]) > 0 THEN
+              COALESCE(wsr.name, '') = ANY($4 :: text[])
+          ELSE true
+      END
+      AND CASE
+          WHEN $5 :: text != '' THEN sr.guild_id = $5 :: uuid
+          ELSE true
+      END
+      AND CASE
+          WHEN $6 :: bigint > 0 THEN sr.completion_time >= now() - make_interval(days => $6::int)
+          ELSE true
+      END
+    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+),
+best AS (
+    SELECT DISTINCT ON (
+        CASE WHEN $5 :: text = '' THEN guild_id END
+    ) instance_id, instance_name, guild_id, duration_ms, start_time, completion_time, qualified, addon_version, hashed_slug, duplicate_group_id, parser_version, guild_name, realm_name, player_count, guild_logo_url
+    FROM deduped
+    ORDER BY
+        CASE WHEN $5 :: text = '' THEN guild_id END,
+        duration_ms ASC
+)
+SELECT instance_id, instance_name, guild_id, duration_ms, start_time, completion_time, qualified, addon_version, hashed_slug, duplicate_group_id, parser_version, guild_name, realm_name, player_count, guild_logo_url FROM best
+WHERE (CASE WHEN $1::bigint > 0 THEN player_count >= $1 ELSE true END)
+  AND (CASE WHEN $2::bigint > 0 THEN player_count <= $2 ELSE true END)
+ORDER BY duration_ms ASC
+LIMIT 50
+`
+
+type SpeedrunLeaderboardParams struct {
+	MinPlayers   int64    `db:"min_players" json:"min_players"`
+	MaxPlayers   int64    `db:"max_players" json:"max_players"`
+	InstanceName string   `db:"instance_name" json:"instance_name"`
+	RealmNames   []string `db:"realm_names" json:"realm_names"`
+	GuildID      string   `db:"guild_id" json:"guild_id"`
+	SinceDays    int64    `db:"since_days" json:"since_days"`
+}
 
 type SpeedrunLeaderboardRow struct {
 	InstanceID       uuid.UUID          `db:"instance_id" json:"instance_id"`
 	InstanceName     string             `db:"instance_name" json:"instance_name"`
+	GuildID          uuid.NullUUID      `db:"guild_id" json:"guild_id"`
 	DurationMs       int64              `db:"duration_ms" json:"duration_ms"`
 	StartTime        pgtype.Timestamptz `db:"start_time" json:"start_time"`
 	CompletionTime   pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
@@ -3363,12 +3435,24 @@ type SpeedrunLeaderboardRow struct {
 	ParserVersion    string             `db:"parser_version" json:"parser_version"`
 	GuildName        string             `db:"guild_name" json:"guild_name"`
 	RealmName        string             `db:"realm_name" json:"realm_name"`
+	PlayerCount      int64              `db:"player_count" json:"player_count"`
+	GuildLogoUrl     string             `db:"guild_logo_url" json:"guild_logo_url"`
 }
 
-// Returns best qualified run per duplicate group for a given instance name.
-// Filters out entries below admin-configured minimum version requirements.
-func (q *sqlQuerier) SpeedrunLeaderboard(ctx context.Context, instanceName string) ([]SpeedrunLeaderboardRow, error) {
-	rows, err := q.db.Query(ctx, speedrunLeaderboard, instanceName)
+// Returns the leaderboard for a given instance name.
+// Deduplicates by duplicate_group, then by guild (best per guild unless guild_id filter is set).
+// Excludes runs without a guild. Optional filters: realm, player count, guild.
+// When no guild filter: keep only the best run per guild.
+// When guild filter is set: keep all runs for that guild.
+func (q *sqlQuerier) SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeaderboardParams) ([]SpeedrunLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, speedrunLeaderboard,
+		arg.MinPlayers,
+		arg.MaxPlayers,
+		arg.InstanceName,
+		arg.RealmNames,
+		arg.GuildID,
+		arg.SinceDays,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -3379,6 +3463,7 @@ func (q *sqlQuerier) SpeedrunLeaderboard(ctx context.Context, instanceName strin
 		if err := rows.Scan(
 			&i.InstanceID,
 			&i.InstanceName,
+			&i.GuildID,
 			&i.DurationMs,
 			&i.StartTime,
 			&i.CompletionTime,
@@ -3389,10 +3474,41 @@ func (q *sqlQuerier) SpeedrunLeaderboard(ctx context.Context, instanceName strin
 			&i.ParserVersion,
 			&i.GuildName,
 			&i.RealmName,
+			&i.PlayerCount,
+			&i.GuildLogoUrl,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const speedrunRealmNames = `-- name: SpeedrunRealmNames :many
+SELECT DISTINCT COALESCE(wsr.name, '') AS realm_name
+FROM instance_speedruns sr
+JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
+WHERE sr.qualified = true
+ORDER BY realm_name
+`
+
+// Returns distinct realm names that have at least one qualified speedrun.
+func (q *sqlQuerier) SpeedrunRealmNames(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, speedrunRealmNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var realm_name string
+		if err := rows.Scan(&realm_name); err != nil {
+			return nil, err
+		}
+		items = append(items, realm_name)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -239,6 +239,9 @@ type SpeedrunLeaderboardEntry struct {
 	GuildName        string     `json:"guild_name"`
 	RealmName        string     `json:"realm_name"`
 	StartTime        time.Time  `json:"start_time"`
+	CompletionTime   time.Time  `json:"completion_time"`
+	PlayerCount      int64      `json:"player_count"`
+	GuildLogoURL     string     `json:"guild_logo_url,omitempty"`
 	ParserVersion    string     `json:"parser_version"`
 	AddonVersion     string     `json:"addon_version"`
 	DuplicateGroupID *uuid.UUID `json:"duplicate_group_id,omitempty"`

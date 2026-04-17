@@ -185,14 +185,17 @@ func SpeedrunResult(sr database.InstanceSpeedrun) *chroniclesdk.SpeedrunResult {
 // SpeedrunLeaderboardEntry converts a database leaderboard row to an SDK entry.
 func SpeedrunLeaderboardEntry(row database.SpeedrunLeaderboardRow) chroniclesdk.SpeedrunLeaderboardEntry {
 	entry := chroniclesdk.SpeedrunLeaderboardEntry{
-		InstanceID:    row.InstanceID,
-		Slug:          row.HashedSlug.String,
-		DurationMs:    row.DurationMs,
-		GuildName:     row.GuildName,
-		RealmName:     row.RealmName,
-		StartTime:     row.StartTime.Time,
-		ParserVersion: row.ParserVersion,
-		AddonVersion:  row.AddonVersion,
+		InstanceID:     row.InstanceID,
+		Slug:           row.HashedSlug.String,
+		DurationMs:     row.DurationMs,
+		GuildName:      row.GuildName,
+		RealmName:      row.RealmName,
+		StartTime:      row.StartTime.Time,
+		CompletionTime: row.CompletionTime.Time,
+		PlayerCount:    row.PlayerCount,
+		GuildLogoURL:   row.GuildLogoUrl,
+		ParserVersion:  row.ParserVersion,
+		AddonVersion:   row.AddonVersion,
 	}
 	if row.DuplicateGroupID.Valid {
 		entry.DuplicateGroupID = &row.DuplicateGroupID.UUID

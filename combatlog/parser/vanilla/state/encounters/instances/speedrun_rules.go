@@ -24,3 +24,19 @@ func MoltenCoreSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Firesworn", EntryIDs: []uint32{12099}, Count: 8, Category: rankings.SpeedrunCategoryTrash},
 	}
 }
+
+// BlackwingLairSpeedrunRequirements returns the boss kills required for a
+// valid Blackwing Lair speedrun.
+func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		{Name: "Razorgore the Untamed", EntryIDs: []uint32{12435}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Vaelastrasz the Corrupt", EntryIDs: []uint32{13020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Broodlord Lashlayer", EntryIDs: []uint32{12017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Firemaw", EntryIDs: []uint32{11983}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+    {Name: "Ezzel Darkbrewer", EntryIDs: []uint32{65148}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+    {Name: "Ebonroc", EntryIDs: []uint32{14601}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+    {Name: "Flamegor", EntryIDs: []uint32{11981}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+    {Name: "Chromaggus", EntryIDs: []uint32{14020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Nefarian", EntryIDs: []uint32{11583}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}

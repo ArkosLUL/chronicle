@@ -114,6 +114,11 @@ var (
 		Name:     "Blackwing Lair",
 		ZoneName: ZoneNameMatcher("blackwing lair"),
 		Hostiles: FromMap(BlackwingLairHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: BlackwingLairSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	Naxxramas = (&CommonFactory{

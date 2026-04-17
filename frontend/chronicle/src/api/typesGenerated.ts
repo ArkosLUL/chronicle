@@ -882,6 +882,9 @@ export interface SpeedrunLeaderboardEntry {
     readonly guild_name: string;
     readonly realm_name: string;
     readonly start_time: string;
+    readonly completion_time: string;
+    readonly player_count: number;
+    readonly guild_logo_url?: string;
     readonly parser_version: string;
     readonly addon_version: string;
     readonly duplicate_group_id?: string;

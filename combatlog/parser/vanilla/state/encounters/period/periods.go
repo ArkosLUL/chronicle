@@ -59,6 +59,7 @@ func (pc *PeriodCollector[M]) Start(p M, reason string, m messages.Message) {
 		return
 	}
 
+	p.SetHook(pc.hook)
 	p.Begin(reason, m)
 	pc.History = append(pc.History, p)
 	if pc.hook != nil {

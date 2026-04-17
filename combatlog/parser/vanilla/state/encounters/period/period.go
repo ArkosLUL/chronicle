@@ -17,6 +17,7 @@ type IsPeriod interface {
 	IsActive() bool
 	Get() Period
 	String() string
+	SetHook(Hook)
 }
 
 // EndState describes how an activity period ended
@@ -89,6 +90,7 @@ type WorkingPeriod[M PeriodMeta] struct {
 	*Period
 	me   guid.GUID
 	Meta *M
+	hook Hook
 }
 
 func New[M PeriodMeta](me guid.GUID, meta *M) *WorkingPeriod[M] {
@@ -97,6 +99,10 @@ func New[M PeriodMeta](me guid.GUID, meta *M) *WorkingPeriod[M] {
 		Meta:   meta,
 		me:     me,
 	}
+}
+
+func (p *WorkingPeriod[M]) SetHook(hook Hook) {
+	p.hook = hook
 }
 
 func (p *WorkingPeriod[M]) Get() Period {
@@ -116,6 +122,10 @@ func (p *WorkingPeriod[M]) Begin(reason string, ts messages.Message) {
 	if p.IsActive() {
 		return
 	}
+	if p.hook != nil {
+		p.hook.OnActivityChange(ts)
+	}
+
 	ts.AddActivity(p.me, messages.ActivityStart)
 	p.Start = m
 }
@@ -132,6 +142,9 @@ func (p *WorkingPeriod[M]) End(reason string, ts messages.Message, endState EndS
 
 	if !p.IsActive() {
 		return
+	}
+	if p.hook != nil {
+		p.hook.OnActivityChange(ts)
 	}
 
 	p.Period.End = m
@@ -151,6 +164,9 @@ func (p *WorkingPeriod[M]) ResetTimeout(reason string, date time.Time) {
 	if !p.IsActive() {
 		return
 	}
+	if p.hook != nil {
+		p.hook.OnActivityChange(messages.TimedOut(date))
+	}
 	p.Period.End = &Moment{
 		Timestamp: messages.TimedOut(date),
 		Reason:    fmt.Sprintf("Reset: %s", reason),
@@ -163,6 +179,10 @@ func (p *WorkingPeriod[M]) Timeout(reason string, date time.Time) {
 	if !p.IsActive() {
 		return
 	}
+	if p.hook != nil {
+		p.hook.OnActivityChange(messages.TimedOut(date))
+	}
+
 	p.Period.End = &Moment{
 		Timestamp: messages.TimedOut(date),
 		Reason:    fmt.Sprintf("Timeout: %s", reason),

@@ -58,7 +58,8 @@ type Chronicle struct {
 	metrics            *logParseMetrics
 	emitParsingLogs    bool
 
-	mu sync.Mutex
+	mu                     sync.Mutex
+	insertParsedInstanceMu sync.Mutex
 }
 
 type Options struct {

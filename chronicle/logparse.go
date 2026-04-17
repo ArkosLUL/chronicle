@@ -352,6 +352,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 		// Time DB insert
 		dbInsertStart := time.Now()
+		// Only 1 instance should be inserted at a time. This will break if we go
+		// multi-worker, but for now it is a simple way for duplicate detection to not
+		// have race conditions.
+		w.parent.insertParsedInstanceMu.Lock()
+		defer w.parent.insertParsedInstanceMu.Unlock()
 		err = db.InTx(func(tx *authz.AuthzTX) error {
 			guild, err := finalized.Guilds.Insert(ctx, encountersState.Units, instanceID, realmID, tx)
 			if err != nil {
@@ -401,12 +406,12 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					UUID:  guildID,
 					Valid: guildID != uuid.Nil,
 				},
-				StartTime:    instanceStart,
-				EndTime:      instanceEnd,
-				Capabilities: []string{"overheal"},
-				Versions:     database.VersionsMap(finalized.Versions),
+				StartTime:     instanceStart,
+				EndTime:       instanceEnd,
+				Capabilities:  []string{"overheal"},
+				Versions:      database.VersionsMap(finalized.Versions),
 				RecorderName:  recorderName,
-				RecorderGuid: recorderGUID,
+				RecorderGuid:  recorderGUID,
 				ParserVersion: version.GitTag + "+" + version.GitCommit,
 			}
 
@@ -826,4 +831,3 @@ func detectAndLinkDuplicate(
 
 	return nil
 }
-

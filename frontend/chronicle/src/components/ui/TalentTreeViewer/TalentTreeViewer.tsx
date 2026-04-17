@@ -1,0 +1,357 @@
+import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import { useMemo, useState } from "react";
+import { useSpell } from "@/api/queries";
+import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip/tooltip";
+
+// ─── Types matching talent-trees.json ─────────────────────────────
+
+interface TalentEntry {
+  id: number;
+  tierID: number;
+  columnIndex: number;
+  maxRank: number;
+  tabIndex: number;
+  spellRanks: number[];
+  prereqTalent?: number[];
+  prereqRank?: number[];
+  iconTexture: string;
+}
+
+interface TalentTabData {
+  id: number;
+  name: string;
+  backgroundFile: string;
+  orderIndex: number;
+  spellIconID: number;
+  iconTexture: string;
+  talents: TalentEntry[];
+}
+
+interface ClassTalentData {
+  tabs: TalentTabData[];
+}
+
+interface TalentTreeJSON {
+  classes: Record<string, ClassTalentData>;
+}
+
+// ─── Props ────────────────────────────────────────────────────────
+
+export interface TalentAllocation {
+  /** Tab name (e.g., "Arms") */
+  tabName: string;
+  /** Total points spent in this tab */
+  pointsSpent: number;
+  /** One digit per talent in tab-index order: rank per talent */
+  rankDigits: string;
+}
+
+export interface TalentTreeViewerProps {
+  /** WoW class ID (1=Warrior, 2=Paladin, etc.) */
+  classId: number;
+  /** Optional talent allocations from combat log. If omitted, shows empty tree. */
+  allocations?: TalentAllocation[];
+  /** Additional CSS class for the root element */
+  className?: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────
+
+function talentIconUrl(texture: string): string {
+  if (!texture) return "";
+  return `https://icons.chronicleclassic.com/${texture.toLowerCase()}.webp`;
+}
+
+const CLASS_NAMES: Record<number, string> = {
+  1: "Warrior",
+  2: "Paladin",
+  3: "Hunter",
+  4: "Rogue",
+  5: "Priest",
+  7: "Shaman",
+  8: "Mage",
+  9: "Warlock",
+  11: "Druid",
+};
+
+// Class colors matching WoW conventions
+const CLASS_COLORS: Record<number, string> = {
+  1: "#C69B6D",  // Warrior
+  2: "#F48CBA",  // Paladin
+  3: "#AAD372",  // Hunter
+  4: "#FFF468",  // Rogue
+  5: "#FFFFFF",  // Priest
+  7: "#0070DD",  // Shaman
+  8: "#3FC7EB",  // Mage
+  9: "#8788EE",  // Warlock
+  11: "#FF7C0A", // Druid
+};
+
+// ─── Data fetching ────────────────────────────────────────────────
+
+function useTalentTrees() {
+  return useQuery<TalentTreeJSON>({
+    queryKey: ["talent-trees"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/assets/talent-trees.json");
+      if (!res.ok) throw new Error("Failed to fetch talent trees");
+      return res.json();
+    },
+    staleTime: Infinity,
+  });
+}
+
+// ─── Components ───────────────────────────────────────────────────
+
+function TalentIcon({
+  talent,
+  currentRank,
+}: {
+  talent: TalentEntry;
+  currentRank: number;
+}) {
+  const maxed = currentRank >= talent.maxRank;
+  const hasPoints = currentRank > 0;
+
+  // Pick the spell ID for the current rank (or max rank if no allocation, or rank 1 as fallback)
+  const displayRank = currentRank > 0 ? currentRank : 1;
+  const spellId = talent.spellRanks[Math.min(displayRank, talent.spellRanks.length) - 1];
+
+  // Lazy-fetch: only fetch spell data once user has hovered
+  const [hovered, setHovered] = useState(false);
+  const { data: spell } = useSpell(spellId?.toString() ?? "", {
+    enabled: hovered && spellId != null,
+  });
+
+  const icon = (
+    <div className="relative">
+      {/* Icon */}
+      <div
+        className={cn(
+          "w-10 h-10 rounded-sm border overflow-hidden relative",
+          maxed
+            ? "border-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]"
+            : hasPoints
+              ? "border-green-500"
+              : "border-zinc-600",
+          !hasPoints && "grayscale opacity-50"
+        )}
+      >
+        <img
+          src={talentIconUrl(talent.iconTexture)}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+
+      {/* Rank badge */}
+      <div
+        className={cn(
+          "absolute -bottom-1 -right-1 text-[10px] font-bold leading-none px-1 py-0.5 rounded-sm min-w-[18px] text-center",
+          maxed
+            ? "bg-amber-400 text-zinc-900"
+            : hasPoints
+              ? "bg-green-600 text-white"
+              : "bg-zinc-700 text-zinc-400"
+        )}
+      >
+        {currentRank}/{talent.maxRank}
+      </div>
+    </div>
+  );
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={150}>
+        <TooltipTrigger asChild>
+          <span
+            className="cursor-pointer"
+            onMouseEnter={() => setHovered(true)}
+          >
+            {icon}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="right"
+          align="start"
+          sideOffset={8}
+          className="p-0 bg-transparent border-0 z-[10000]"
+          hideArrow
+        >
+          {spell ? (
+            <SpellTooltip spell={spell} detailed />
+          ) : (
+            <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg px-3 py-2 text-sm text-zinc-400">
+              Loading…
+            </div>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function TalentTab({
+  tab,
+  allocation,
+}: {
+  tab: TalentTabData;
+  allocation?: TalentAllocation;
+}) {
+  // Build grid: find max tier
+  const maxTier = useMemo(
+    () => Math.max(...tab.talents.map((t) => t.tierID), 0),
+    [tab.talents]
+  );
+
+  // Build a 2D grid [tier][column]
+  const grid = useMemo(() => {
+    const g: (TalentEntry | null)[][] = [];
+    for (let tier = 0; tier <= maxTier; tier++) {
+      g[tier] = [null, null, null, null];
+    }
+    for (const talent of tab.talents) {
+      if (talent.tierID <= maxTier && talent.columnIndex < 4) {
+        g[talent.tierID][talent.columnIndex] = talent;
+      }
+    }
+    return g;
+  }, [tab.talents, maxTier]);
+
+  // Parse rank digits
+  const ranks = useMemo(() => {
+    if (!allocation?.rankDigits) return new Map<number, number>();
+    const m = new Map<number, number>();
+    for (let i = 0; i < allocation.rankDigits.length; i++) {
+      m.set(i, parseInt(allocation.rankDigits[i], 10) || 0);
+    }
+    return m;
+  }, [allocation?.rankDigits]);
+
+  const pointsSpent = allocation?.pointsSpent ?? 0;
+
+  return (
+    <div className="flex flex-col bg-zinc-900/80 rounded-lg overflow-hidden border border-zinc-700/50">
+      {/* Tab header */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/80 border-b border-zinc-700/50">
+        {tab.iconTexture && (
+          <img
+            src={talentIconUrl(tab.iconTexture)}
+            alt=""
+            className="w-5 h-5 rounded-sm"
+          />
+        )}
+        <span className="text-sm font-medium text-zinc-200">{tab.name}</span>
+        <span className="text-xs text-zinc-400 ml-auto">
+          {pointsSpent} pts
+        </span>
+      </div>
+
+      {/* Talent grid */}
+      <div className="p-3">
+        <div className="grid grid-cols-4 gap-2 justify-items-center">
+          {grid.map((row, tierIdx) =>
+            row.map((talent, colIdx) => (
+              <div
+                key={`${tierIdx}-${colIdx}`}
+                className="w-10 h-12 flex items-start justify-center"
+              >
+                {talent && (
+                  <TalentIcon
+                    talent={talent}
+                    currentRank={ranks.get(talent.tabIndex) ?? 0}
+                  />
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────
+
+export function TalentTreeViewer({
+  classId,
+  allocations,
+  className,
+}: TalentTreeViewerProps) {
+  const { data, isLoading, error } = useTalentTrees();
+
+  if (isLoading) {
+    return (
+      <div className={cn("flex items-center justify-center py-8 text-zinc-500 text-sm", className)}>
+        Loading talent trees…
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className={cn("flex items-center justify-center py-8 text-red-400 text-sm", className)}>
+        Failed to load talent data
+      </div>
+    );
+  }
+
+  const classData = data.classes[String(classId)];
+  if (!classData) {
+    return (
+      <div className={cn("flex items-center justify-center py-8 text-zinc-500 text-sm", className)}>
+        No talent data for class {CLASS_NAMES[classId] ?? classId}
+      </div>
+    );
+  }
+
+  // Match allocations to tabs by name (case-insensitive)
+  const allocationMap = new Map<string, TalentAllocation>();
+  if (allocations) {
+    for (const a of allocations) {
+      allocationMap.set(a.tabName.toLowerCase(), a);
+    }
+  }
+
+  const totalPoints = allocations?.reduce((s, a) => s + a.pointsSpent, 0) ?? 0;
+
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <span
+          className="text-sm font-semibold"
+          style={{ color: CLASS_COLORS[classId] ?? "#ccc" }}
+        >
+          {CLASS_NAMES[classId] ?? `Class ${classId}`}
+        </span>
+        {allocations && allocations.length > 0 && (
+          <span className="text-xs text-zinc-400">
+            ({allocations.map((a) => a.pointsSpent).join("/")} — {totalPoints} pts)
+          </span>
+        )}
+      </div>
+
+      {/* Three talent trees side by side */}
+      <div className="flex gap-2">
+        {classData.tabs.map((tab) => (
+          <TalentTab
+            key={tab.id}
+            tab={tab}
+            allocation={allocationMap.get(tab.name.toLowerCase())}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default TalentTreeViewer;

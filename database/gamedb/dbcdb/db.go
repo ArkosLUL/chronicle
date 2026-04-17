@@ -411,3 +411,33 @@ func (w *WoWClient) ItemSet() (Table[dbdefs.Ent_ItemSet], error) {
 
 	return WrapTable[dbdefs.Ent_ItemSet](table), nil
 }
+
+func (w *WoWClient) Talent() (Table[dbdefs.Ent_Talent], error) {
+	data, err := w.ReadFile("DBFilesClient\\Talent.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("Talent", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_Talent](table), nil
+}
+
+func (w *WoWClient) TalentTab() (Table[dbdefs.Ent_TalentTab], error) {
+	data, err := w.ReadFile("DBFilesClient\\TalentTab.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("TalentTab", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_TalentTab](table), nil
+}

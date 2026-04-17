@@ -73,6 +73,9 @@ func DerivedStaticsCmd() *serpent.Command {
 			if err := generateClassSpells(wc, assetsDir); err != nil {
 				return fmt.Errorf("generate class spells: %w", err)
 			}
+			if err := generateTalentTrees(wc, assetsDir); err != nil {
+				return fmt.Errorf("generate talent trees: %w", err)
+			}
 
 			return nil
 		},

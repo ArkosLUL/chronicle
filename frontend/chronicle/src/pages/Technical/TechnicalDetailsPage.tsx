@@ -40,6 +40,12 @@ const TECHNICAL_LINKS: TechnicalLink[] = [
     href: "/technical/class-spells",
     icon: <BookOpen className="h-4 w-4" />,
   },
+  {
+    title: "Talent Trees",
+    description: "Visual talent tree viewer for all classes (from Talent.dbc)",
+    href: "/technical/talent-trees",
+    icon: <Sparkles className="h-4 w-4" />,
+  },
 ];
 
 export function TechnicalDetailsPage() {

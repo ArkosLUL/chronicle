@@ -635,6 +635,8 @@ export interface RecentInstance {
     readonly guild_name?: string;
     readonly encounters?: readonly RecentEncounter[];
     readonly has_youtube_video: boolean;
+    readonly duplicate_group_id?: string;
+    readonly recorder_name: string;
 }
 
 // From chroniclesdk/log.go
@@ -1077,6 +1079,7 @@ export interface WoWInstance {
     readonly versions: Record<string, string>;
     readonly recorder_name: string;
     readonly recorder_guid: string;
+    readonly duplicate_group_id?: string;
 }
 
 // From chroniclesdk/log.go

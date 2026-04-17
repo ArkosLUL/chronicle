@@ -93,7 +93,7 @@ func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) ch
 			CreatedAt: dbG.CreatedAt.Time,
 		}
 	}
-	return chroniclesdk.WoWInstance{
+	ret := chroniclesdk.WoWInstance{
 		ID:           instance.ID,
 		RealmID:      instance.RealmID,
 		LogGroupID:   instance.LogGroupID,
@@ -105,6 +105,10 @@ func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) ch
 		RecorderName: instance.RecorderName,
 		RecorderGUID: instance.RecorderGuid,
 	}
+	if instance.DuplicateGroupID.Valid {
+		ret.DuplicateGroupID = &instance.DuplicateGroupID.UUID
+	}
+	return ret
 }
 
 func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
@@ -116,7 +120,7 @@ func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
 			CreatedAt: instance.GuildCreatedAt.Time,
 		}
 	}
-	return chroniclesdk.WoWInstance{
+	ret := chroniclesdk.WoWInstance{
 		ID:           instance.ID,
 		RealmID:      instance.RealmID,
 		LogGroupID:   instance.LogGroupID,
@@ -128,6 +132,10 @@ func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
 		RecorderName: instance.RecorderName,
 		RecorderGUID: instance.RecorderGuid,
 	}
+	if instance.DuplicateGroupID.Valid {
+		ret.DuplicateGroupID = &instance.DuplicateGroupID.UUID
+	}
+	return ret
 }
 
 func WowDecoratedInstance(instance database.LogInstancesGuild,

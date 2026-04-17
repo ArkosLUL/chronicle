@@ -493,6 +493,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				return err
 			}
 
+			// Duplicate instance detection: find other instances in the same
+			// realm+zone with overlapping time, then check player overlap.
+			if instanceStart.Valid {
+				if dupErr := detectAndLinkDuplicate(ctx, tx, dbinstance.ID, dbinstance.RealmID, dbinstance.Name, instanceStart, builder.participants); dupErr != nil {
+					slog.WarnContext(ctx, "duplicate detection failed", slog.String("err", dupErr.Error()))
+				}
+			}
+
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{
 				WoWInstance: db2sdk.WoWInstanceWithGuild(dbinstance, guild),
 				Encounters:  sdkEncounters,
@@ -722,3 +730,100 @@ func momentToDatabaseMoment(t *period.Moment) *database.PeriodMoment {
 		Message:     msgData,
 	}
 }
+
+// detectAndLinkDuplicate finds existing instances that look like the same raid
+// (same realm, zone name, overlapping start time, >50% player overlap) and
+// links them via duplicate_group_id.
+func detectAndLinkDuplicate(
+	ctx context.Context,
+	tx database.Store,
+	instanceID uuid.UUID,
+	realmID uuid.UUID,
+	name string,
+	startTime pgtype.Timestamptz,
+	players []database.InsertInstancePlayersParams,
+) error {
+	windowStart := database.Timestamptz(startTime.Time.Add(-30 * time.Minute))
+	windowEnd := database.Timestamptz(startTime.Time.Add(30 * time.Minute))
+
+	candidates, err := tx.FindDuplicateInstanceCandidates(ctx, database.FindDuplicateInstanceCandidatesParams{
+		RealmID:     realmID,
+		Name:        name,
+		WindowStart: windowStart,
+		WindowEnd:   windowEnd,
+		ExcludeID:   instanceID,
+	})
+	if err != nil {
+		return fmt.Errorf("find duplicate candidates: %w", err)
+	}
+
+	// Build a set of our player GUIDs for fast lookup.
+	ourPlayers := make(map[guid.GUID]struct{}, len(players))
+	for _, p := range players {
+		ourPlayers[p.UnitGuid] = struct{}{}
+	}
+
+	// Collect all candidates with sufficient player overlap.
+	var matched []database.FindDuplicateInstanceCandidatesRow
+	for _, candidate := range candidates {
+		candidateGUIDs, err := tx.InstancePlayerGUIDsByInstanceID(ctx, candidate.ID)
+		if err != nil {
+			continue
+		}
+
+		// Count overlapping players.
+		overlap := 0
+		for _, g := range candidateGUIDs {
+			if _, ok := ourPlayers[g]; ok {
+				overlap++
+			}
+		}
+
+		// Require >50% overlap relative to the larger roster.
+		maxSize := len(ourPlayers)
+		if len(candidateGUIDs) > maxSize {
+			maxSize = len(candidateGUIDs)
+		}
+		if maxSize == 0 || float64(overlap)/float64(maxSize) <= 0.5 {
+			continue
+		}
+
+		matched = append(matched, candidate)
+	}
+
+	if len(matched) == 0 {
+		return nil
+	}
+
+	// Pick a canonical group ID: prefer the first existing group, otherwise
+	// use the first matched candidate's own ID as the anchor.
+	groupID := uuid.NullUUID{}
+	for _, m := range matched {
+		if m.DuplicateGroupID.Valid {
+			groupID = m.DuplicateGroupID
+			break
+		}
+	}
+	if !groupID.Valid {
+		groupID = uuid.NullUUID{UUID: matched[0].ID, Valid: true}
+	}
+
+	// Collect all IDs (matched candidates + our own instance). The query
+	// also reassigns any instance whose duplicate_group_id matches one of
+	// these IDs, merging previously-separate groups in one statement.
+	ids := make([]uuid.UUID, 0, len(matched)+1)
+	for _, m := range matched {
+		ids = append(ids, m.ID)
+	}
+	ids = append(ids, instanceID)
+
+	if err := tx.SetDuplicateGroupIDs(ctx, database.SetDuplicateGroupIDsParams{
+		DuplicateGroupID: groupID,
+		Ids:              ids,
+	}); err != nil {
+		return fmt.Errorf("set duplicate group: %w", err)
+	}
+
+	return nil
+}
+

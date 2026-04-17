@@ -75,8 +75,9 @@ type WoWInstance struct {
 	Guild        *Guild            `json:"guild,omitempty"`
 	Capabilities []string          `json:"capabilities"`
 	Versions     map[string]string `json:"versions"`
-	RecorderName string            `json:"recorder_name"`
-	RecorderGUID string            `json:"recorder_guid"`
+	RecorderName     string            `json:"recorder_name"`
+	RecorderGUID     string            `json:"recorder_guid"`
+	DuplicateGroupID *uuid.UUID        `json:"duplicate_group_id,omitempty"`
 }
 
 // KillType represents the outcome of an encounter.
@@ -213,6 +214,8 @@ type RecentInstance struct {
 	GuildName          *string           `json:"guild_name,omitempty"`
 	Encounters         []RecentEncounter `json:"encounters,omitempty"`
 	HasYoutubeVideo    bool              `json:"has_youtube_video"`
+	DuplicateGroupID   *uuid.UUID        `json:"duplicate_group_id,omitempty"`
+	RecorderName       string            `json:"recorder_name"`
 }
 
 // RecentEncounter is a simplified encounter summary for the recent raids list.

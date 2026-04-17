@@ -159,7 +159,9 @@ SELECT
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
+    li.duplicate_group_id,
+    li.recorder_name
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -224,7 +226,9 @@ SELECT
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
+    li.duplicate_group_id,
+    li.recorder_name
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -301,7 +305,9 @@ SELECT DISTINCT ON (
      FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms,
     g.id as guild_id,
     g.name as guild_name,
-    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video
+    EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
+    li.duplicate_group_id,
+    li.recorder_name
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
@@ -366,3 +372,24 @@ SELECT
 FROM log_instance_encounters lie
 WHERE lie.instance_id = ANY(@instance_ids :: uuid[])
 ORDER BY lie.instance_id, lie.start_time ASC;
+
+-- name: FindDuplicateInstanceCandidates :many
+SELECT li.id, li.duplicate_group_id
+FROM log_instances li
+WHERE li.realm_id = @realm_id
+  AND li.name = @name
+  AND li.start_time >= @window_start
+  AND li.start_time <= @window_end
+  AND li.id != @exclude_id
+ORDER BY li.start_time ASC
+LIMIT 40;
+
+-- name: SetDuplicateGroupIDs :exec
+UPDATE log_instances
+SET duplicate_group_id = @duplicate_group_id
+WHERE id = ANY(@ids::uuid[])
+   OR (duplicate_group_id IS NOT NULL AND duplicate_group_id = ANY(@ids::uuid[]));
+
+-- name: InstancePlayerGUIDsByInstanceID :many
+SELECT unit_guid FROM log_instance_players WHERE instance_id = $1;
+

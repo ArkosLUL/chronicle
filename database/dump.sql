@@ -461,7 +461,8 @@ CREATE TABLE log_instances (
     versions jsonb DEFAULT '{}'::jsonb NOT NULL,
     recorder_name text DEFAULT ''::text NOT NULL,
     recorder_guid text DEFAULT ''::text NOT NULL,
-    parser_version text DEFAULT '0.0'::text NOT NULL
+    parser_version text DEFAULT '0.0'::text NOT NULL,
+    duplicate_group_id uuid
 );
 
 COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
@@ -483,6 +484,7 @@ CREATE VIEW log_instances_guild AS
     li.versions,
     li.recorder_name,
     li.recorder_guid,
+    li.duplicate_group_id,
     COALESCE(wsr.name, 'Unknown'::text) AS realm_name,
     g.name AS guild_name,
     g.realm_id AS guild_realm_id,
@@ -1107,6 +1109,8 @@ CREATE INDEX idx_instance_loot_received ON instance_loot USING btree (received_g
 CREATE INDEX idx_log_instance_encounters_instance_id ON log_instance_encounters USING btree (instance_id);
 
 CREATE INDEX idx_log_instance_players_instance_id ON log_instance_players USING btree (instance_id);
+
+CREATE INDEX idx_log_instances_duplicate_group ON log_instances USING btree (duplicate_group_id) WHERE (duplicate_group_id IS NOT NULL);
 
 CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_group_id);
 

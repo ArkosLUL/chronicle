@@ -10,6 +10,15 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 )
 
+type EncounterFuncResult struct {
+	// EncounterName, if set, will be used to identify a named encounter.
+	EncounterName string
+	// Boss indicate if this fight has some bosses that need to be manually included.
+	// This is important for fights where the boss comes into the fight after some
+	// period of time.
+	Bosses []uint32
+}
+
 type Identity struct {
 	Hostile bool
 	// EncounterName, if set, will be used to identify a named encounter.
@@ -17,7 +26,7 @@ type Identity struct {
 	// Boss indicates if the unit is considered a boss for encounter purposes.
 	Boss bool
 
-	EncounterNameFn func(f Fight) (string, bool)
+	EncounterNameFn func(f Fight) *EncounterFuncResult
 }
 
 // Instance represents a dungeon or raid instance

@@ -358,6 +358,8 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		isBossFight := false
 		// TODO: Fix to boss count, as there can be 2 bosses
 		aBossRemains := false
+		killed := make(map[uint32]int)
+		bossesRequired := make(map[uint32]struct{})
 		for hid, hostile := range fight.Hostiles {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
@@ -370,11 +372,17 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			if !id.Hostile {
 				continue
 			}
+
+			entry, hasEntry := hostile.ID.GetEntry()
+			lastPeriod := hostile.Activity[len(hostile.Activity)-1]
 			if id.Boss {
 				isBossFight = true
 				// Check if this boss was slain
-				lastPeriod := hostile.Activity[len(hostile.Activity)-1]
 				aBossRemains = aBossRemains || lastPeriod.EndState != period.EndStateSlain
+			}
+
+			if hasEntry && lastPeriod.EndState == period.EndStateSlain {
+				killed[entry]++
 			}
 
 			// Always take the encounter name if set
@@ -384,8 +392,14 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			}
 
 			if id.EncounterNameFn != nil {
-				if name, ok := id.EncounterNameFn(fight); ok {
-					encounterName = name
+				if res := id.EncounterNameFn(fight); res != nil {
+					encounterName = res.EncounterName
+					if res.Bosses != nil {
+						isBossFight = isBossFight || len(res.Bosses) > 0
+						for _, bossID := range res.Bosses {
+							bossesRequired[bossID] = struct{}{}
+						}
+					}
 				}
 			}
 
@@ -400,13 +414,27 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			encounterName = adEncounterName
 		}
 
+		for k := range killed {
+			delete(bossesRequired, k)
+		}
+		aBossRemains = aBossRemains || len(bossesRequired) > 0
+
 		rr := fight.EndStates()
 
 		// Determine kill type based on remaining enemies and boss status
 		var killType KillType
 		if len(rr.Timeouts) == 0 {
 			killType = KillTypeClean
-			if rr.Slain == 0 && rr.Reset > 0 {
+			if aBossRemains {
+				// All present hostiles resolved, but a required boss
+				// never appeared (e.g. King chess fight adds killed
+				// without the King). This is not a clean kill.
+				if len(fight.PlayerDeaths) == 0 {
+					killType = KillTypeReset
+				} else {
+					killType = KillTypeWipe
+				}
+			} else if rr.Slain == 0 && rr.Reset > 0 {
 				killType = KillTypeReset
 				if isBossFight && !aBossRemains {
 					killType = KillTypePartial

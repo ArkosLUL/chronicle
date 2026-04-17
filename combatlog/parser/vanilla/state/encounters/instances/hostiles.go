@@ -318,6 +318,25 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		61222: "Lord Blackwald II",
 		61225: "Moroes",
 	})
+
+	kingAds := func(f Fight) *EncounterFuncResult {
+		return &EncounterFuncResult{
+			EncounterName: "King",
+			Bosses:        []uint32{59967},
+		}
+	}
+	setKing := func(entry uint32) {
+		id := hostile[entry]
+		id.EncounterNameFn = kingAds
+		hostile[entry] = id
+	}
+
+	setKing(59953)
+	setKing(59972)
+	setKing(59970)
+	setKing(59971)
+	setKing(59968)
+
 	return hostile
 }
 
@@ -614,7 +633,7 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 		60748: "Solnius",
 	})
 
-	hardMode := func(f Fight) (string, bool) {
+	hardMode := func(f Fight) *EncounterFuncResult {
 		hasErennius := false
 		hasSolnius := false
 		for _, host := range f.Hostiles {
@@ -627,9 +646,11 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 			}
 		}
 		if hasErennius && hasSolnius {
-			return "Solnius (Hard Mode)", true
+			return &EncounterFuncResult{
+				EncounterName: "Solnius (Hard Mode)",
+			}
 		}
-		return "", false
+		return nil
 	}
 	hostile[60747] = Identity{Hostile: true, EncounterName: "Erennius", Boss: true, EncounterNameFn: hardMode}
 	hostile[60748] = Identity{Hostile: true, EncounterName: "Solnius", Boss: true, EncounterNameFn: hardMode}

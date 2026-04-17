@@ -14,6 +14,7 @@ import (
 
 type sqlcQuerier interface {
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
+	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
 	CountActiveRegressionJobs(ctx context.Context) (int64, error)
 	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	CountUserPanelLayoutsTotal(ctx context.Context, userID uuid.NullUUID) (int32, error)
@@ -122,6 +123,7 @@ type sqlcQuerier interface {
 	// Guild Page Tabs
 	ListGuildPageTabs(ctx context.Context, pageID uuid.UUID) ([]GuildPageTab, error)
 	ListGuildsWithPages(ctx context.Context, arg ListGuildsWithPagesParams) ([]ListGuildsWithPagesRow, error)
+	ListInstancesByDuplicateGroup(ctx context.Context, duplicateGroupID uuid.NullUUID) ([]ListInstancesByDuplicateGroupRow, error)
 	ListInstancesByParserVersion(ctx context.Context, parserVersion string) ([]ListInstancesByParserVersionRow, error)
 	ListInstancesByTimeRange(ctx context.Context, arg ListInstancesByTimeRangeParams) ([]ListInstancesByTimeRangeRow, error)
 	ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error)

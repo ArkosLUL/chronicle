@@ -1,4 +1,4 @@
-import { Menu, FileText, Copy, Upload, Download, RotateCcw, LayoutGrid, Clock, Share2 } from "lucide-react";
+import { Menu, FileText, Copy, Upload, Download, RotateCcw, LayoutGrid, Clock, Share2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,10 @@ interface InstanceMenuProps {
   youtubeButton?: React.ReactNode;
   showHints?: boolean;
   onOpenHelp?: () => void;
+  /** Show "Ungroup" option when instance is part of a duplicate group */
+  duplicateGroupId?: string;
+  /** Whether user has admin_logs permission */
+  canAdminLogs?: boolean;
 }
 
 export function InstanceMenu({
@@ -40,6 +44,8 @@ export function InstanceMenu({
   isLoggedIn,
   onShareWithLayout,
   onShareWithoutLayout,
+  duplicateGroupId,
+  canAdminLogs,
 }: InstanceMenuProps) {
   const handleCopyInstanceId = async () => {
     try {
@@ -47,6 +53,18 @@ export function InstanceMenu({
       toast.success("Copied instance ID", { description: instanceId });
     } catch {
       toast.error("Failed to copy instance ID");
+    }
+  };
+
+  const handleUngroup = async () => {
+    try {
+      const response = await fetch(`/api/v1/raidlogs/instances/${instanceId}/duplicate-group`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to ungroup");
+      toast.success("Instance removed from duplicate group");
+    } catch {
+      toast.error("Failed to ungroup instance");
     }
   };
 
@@ -118,6 +136,13 @@ export function InstanceMenu({
           <Copy className="h-4 w-4 mr-2" />
           Copy Instance ID
         </DropdownMenuItem>
+
+        {canAdminLogs && duplicateGroupId && (
+          <DropdownMenuItem onClick={handleUngroup}>
+            <Unlink className="h-4 w-4 mr-2" />
+            Ungroup from duplicates
+          </DropdownMenuItem>
+        )}
 
         {logDetailUrl && (
           <>

@@ -1547,6 +1547,10 @@ export interface InstancePageViewProps {
   logDetailUrl?: string;
   /** Callback to open the time range controller overlay */
   onOpenTimeRange?: () => void;
+  /** Whether user has admin_logs permission */
+  canAdminLogs?: boolean;
+  /** Duplicate group ID if this instance is part of a group */
+  duplicateGroupId?: string;
 }
 
 export function InstancePageView({
@@ -1556,6 +1560,8 @@ export function InstancePageView({
   youtubeButton,
   logDetailUrl,
   onOpenTimeRange,
+  canAdminLogs,
+  duplicateGroupId,
 }: InstancePageViewProps) {
   const timeRange = useTimeRangeContextOptional();
 
@@ -2575,6 +2581,8 @@ export function InstancePageView({
                 instanceId={instance.id}
                 logDetailUrl={logDetailUrl}
                 layoutLabUrl={activeLayoutId ? `/account/layout-lab?layoutId=${activeLayoutId}` : undefined}
+                duplicateGroupId={duplicateGroupId}
+                canAdminLogs={canAdminLogs}
                 isMobile={isMobile}
                 isLoggedIn={isLoggedIn}
                 onShareWithLayout={() => { void handleShareView(); }}
@@ -2716,6 +2724,8 @@ export function InstancePageView({
                 instanceId={instance.id}
                 logDetailUrl={logDetailUrl}
                 layoutLabUrl={activeLayoutId ? `/account/layout-lab?layoutId=${activeLayoutId}` : undefined}
+                duplicateGroupId={duplicateGroupId}
+                canAdminLogs={canAdminLogs}
               />
             </div>
           )}

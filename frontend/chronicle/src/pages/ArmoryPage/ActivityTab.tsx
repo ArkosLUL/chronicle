@@ -8,6 +8,7 @@ import {
   startOfMonth,
   endOfMonth,
 } from "date-fns";
+import { Copy } from "lucide-react";
 import type {
   ArmoryPlayer,
   RecentInstance,
@@ -19,6 +20,8 @@ import {
   getInstanceBackground,
   getInstanceAbbrev,
 } from "@/pages/Logs/utils/instanceImages";
+import { groupDuplicateInstances } from "@/utils/groupDuplicates";
+import { DuplicateInstanceModal } from "@/components/DuplicateInstanceModal";
 
 interface ActivityTabProps {
   player: ArmoryPlayer;
@@ -82,10 +85,11 @@ export function ActivityTab({ player }: ActivityTabProps) {
     const key = format(date, "yyyy-MM-dd");
     const instances = instancesByDate.get(key);
     if (!instances?.length) return null;
+    const groups = groupDuplicateInstances(instances);
     return (
       <>
-        {instances.map((inst) => (
-          <ActivityDayCard key={inst.id} instance={inst} />
+        {groups.map((group) => (
+          <ActivityDayCard key={group[0].id} group={group} />
         ))}
       </>
     );
@@ -116,7 +120,10 @@ export function ActivityTab({ player }: ActivityTabProps) {
   );
 }
 
-function ActivityDayCard({ instance }: { instance: RecentInstance }) {
+function ActivityDayCard({ group }: { group: RecentInstance[] }) {
+  const [showModal, setShowModal] = useState(false);
+  const instance = group[0];
+  const isDuplicate = group.length > 1;
   const url = instance.slug
     ? `/instances/${instance.slug}`
     : `/instances/${instance.id}`;
@@ -127,33 +134,55 @@ function ActivityDayCard({ instance }: { instance: RecentInstance }) {
       ? `${instance.boss_kills}/${instance.boss_count}`
       : null;
 
-  return (
-    <Link to={url} className="block">
-      <div className="relative h-10 sm:h-12 rounded overflow-hidden group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800" />
-        <InstanceBg name={instance.name} />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/40" />
-        <div className="relative z-10 h-full flex items-center justify-between px-2">
-          <span className="text-xs font-medium text-white truncate drop-shadow-lg group-hover:text-amber-300 transition-colors">
-            <span className="sm:hidden">{abbrev}</span>
-            <span className="hidden sm:inline">{instance.name}</span>
-          </span>
-          <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-            {bossProgress && (
-              <span className="text-[10px] text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
-                {bossProgress}
-              </span>
-            )}
-            {duration && (
-              <span className="text-[10px] text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
-                {duration}
-              </span>
-            )}
-          </div>
+  const card = (
+    <div className="relative h-10 sm:h-12 rounded overflow-hidden group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800" />
+      <InstanceBg name={instance.name} />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/40" />
+      <div className="relative z-10 h-full flex items-center justify-between px-2">
+        <span className="text-xs font-medium text-white truncate drop-shadow-lg group-hover:text-amber-300 transition-colors">
+          <span className="sm:hidden">{abbrev}</span>
+          <span className="hidden sm:inline">{instance.name}</span>
+        </span>
+        <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+          {bossProgress && (
+            <span className="text-[10px] text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+              {bossProgress}
+            </span>
+          )}
+          {duration && (
+            <span className="text-[10px] text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+              {duration}
+            </span>
+          )}
+          {isDuplicate && (
+            <span className="flex items-center gap-0.5 text-[9px] text-white/70 bg-black/50 px-1 py-0.5 rounded">
+              <Copy className="h-2.5 w-2.5" />
+              {group.length}
+            </span>
+          )}
         </div>
       </div>
-    </Link>
+    </div>
   );
+
+  if (isDuplicate) {
+    return (
+      <>
+        <button className="block w-full text-left" onClick={() => setShowModal(true)}>
+          {card}
+        </button>
+        {showModal && (
+          <DuplicateInstanceModal
+            instances={group}
+            onClose={() => setShowModal(false)}
+          />
+        )}
+      </>
+    );
+  }
+
+  return <Link to={url} className="block">{card}</Link>;
 }
 
 function InstanceBg({ name }: { name: string }) {

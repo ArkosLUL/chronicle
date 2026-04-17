@@ -393,3 +393,25 @@ WHERE id = ANY(@ids::uuid[])
 -- name: InstancePlayerGUIDsByInstanceID :many
 SELECT unit_guid FROM log_instance_players WHERE instance_id = $1;
 
+-- name: ClearDuplicateGroupID :exec
+UPDATE log_instances SET duplicate_group_id = NULL WHERE id = @id;
+-- name: ListInstancesByDuplicateGroup :many
+SELECT
+    li.id,
+    li.hashed_slug as slug,
+    li.name,
+    li.recorder_name,
+    wlg.owner as uploader_id,
+    u.username as uploader_name,
+    (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
+    COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+WHERE li.duplicate_group_id = @duplicate_group_id
+ORDER BY li.id;
+
+
+

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarDays, AlertCircle, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
 import { getInstanceCategory, getInstanceBackground, getInstanceAbbrev } from "@/pages/Logs/utils/instanceImages";
 import { LogsCalendar } from "@/pages/Logs/components/LogsCalendar";
+import { groupDuplicateInstances } from "@/utils/groupDuplicates";
+import { DuplicateInstanceModal } from "@/components/DuplicateInstanceModal";
 import type { GuildPanelDefinition, GuildPanelRenderProps } from "./types";
 
 type CategoryFilter = "all" | "raid" | "dungeon";
@@ -28,55 +30,82 @@ function groupByDate(instances: RecentInstance[]): Record<string, RecentInstance
   return result;
 }
 
-// Compact card for a single instance inside a calendar day cell
-function InstanceDayCard({ instance }: { instance: RecentInstance }) {
+// Compact card for a single instance (or duplicate group) inside a calendar day cell
+function InstanceDayCard({ group }: { group: RecentInstance[] }) {
   const [imageError, setImageError] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const instance = group[0];
+  const isDuplicate = group.length > 1;
   const backgroundImage = getInstanceBackground(instance.name);
   const abbrev = getInstanceAbbrev(instance.name);
   const instanceUrl = instance.slug
     ? `/instances/${instance.slug}`
     : `/instances/${instance.id}`;
 
-  return (
-    <Link to={instanceUrl} className="block">
-      <div className="relative h-8 sm:h-10 rounded overflow-hidden group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800" />
-        {!imageError && (
-          <img
-            src={backgroundImage}
-            alt=""
-            onError={() => setImageError(true)}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            style={{ objectPosition: "center 35%" }}
+  const card = (
+    <div className="relative h-8 sm:h-10 rounded overflow-hidden group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800" />
+      {!imageError && (
+        <img
+          src={backgroundImage}
+          alt=""
+          onError={() => setImageError(true)}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          style={{ objectPosition: "center 35%" }}
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/40" />
+      <div className="relative z-10 h-full flex items-center px-1.5">
+        <span className="text-[10px] sm:text-xs font-medium text-white truncate drop-shadow-lg group-hover:text-amber-300 transition-colors">
+          <span className="sm:hidden">{abbrev}</span>
+          <span className="hidden sm:inline">{instance.name}</span>
+        </span>
+        {isDuplicate && (
+          <span className="ml-auto flex items-center gap-0.5 text-[9px] text-white/70 bg-black/50 px-1 py-0.5 rounded flex-shrink-0">
+            <Copy className="h-2.5 w-2.5" />
+            {group.length}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
+  if (isDuplicate) {
+    return (
+      <>
+        <button className="block w-full text-left" onClick={() => setShowModal(true)}>
+          {card}
+        </button>
+        {showModal && (
+          <DuplicateInstanceModal
+            instances={group}
+            onClose={() => setShowModal(false)}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/40" />
-        <div className="relative z-10 h-full flex items-center px-1.5">
-          <span className="text-[10px] sm:text-xs font-medium text-white truncate drop-shadow-lg group-hover:text-amber-300 transition-colors">
-            <span className="sm:hidden">{abbrev}</span>
-            <span className="hidden sm:inline">{instance.name}</span>
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
+      </>
+    );
+  }
+
+  return <Link to={instanceUrl} className="block">{card}</Link>;
 }
 
 function ExpandableDayCell({ instances }: { instances: RecentInstance[] }) {
   const [expanded, setExpanded] = useState(false);
   const MAX_SHOWN = 3;
 
-  if (instances.length === 0) return null;
+  const groups = useMemo(() => groupDuplicateInstances(instances), [instances]);
 
-  const shown = expanded ? instances : instances.slice(0, MAX_SHOWN);
-  const remaining = instances.length - MAX_SHOWN;
+  if (groups.length === 0) return null;
+
+  const shown = expanded ? groups : groups.slice(0, MAX_SHOWN);
+  const remaining = groups.length - MAX_SHOWN;
 
   return (
     <>
-      {shown.map((inst) => (
-        <InstanceDayCard key={inst.id} instance={inst} />
+      {shown.map((group) => (
+        <InstanceDayCard key={group[0].id} group={group} />
       ))}
-      {instances.length > MAX_SHOWN && (
+      {groups.length > MAX_SHOWN && (
         <button
           onClick={() => setExpanded(!expanded)}
           className="w-full text-[10px] text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted px-1.5 py-1 rounded text-center transition-colors flex items-center justify-center gap-0.5"

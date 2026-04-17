@@ -153,6 +153,8 @@ function InstancePageInner({
   selectedEncounterTimes,
   logDetailUrl,
   rawEncounters,
+  canAdminLogs,
+  duplicateGroupId,
 }: {
   instance: Instance;
   selectedEncounterIds?: string[];
@@ -161,6 +163,8 @@ function InstancePageInner({
   selectedEncounterTimes: { start: string | undefined; end: string | undefined };
   logDetailUrl?: string;
   rawEncounters?: readonly import("@/api/typesGenerated").WoWEncounterWithHostiles[];
+  canAdminLogs?: boolean;
+  duplicateGroupId?: string;
 }) {
   const [showYoutube, setShowYoutube] = useState(false);
   const [showSyncPanel, setShowSyncPanel] = useState(false);
@@ -186,6 +190,8 @@ function InstancePageInner({
         selectedEncounterIds={selectedEncounterIds}
         onSelectEncounters={onSelectEncounters}
         logDetailUrl={logDetailUrl}
+        canAdminLogs={canAdminLogs}
+        duplicateGroupId={duplicateGroupId}
         onOpenTimeRange={() => setShowTimeRange(true)}
         youtubeButton={
           <div className="flex gap-1.5">
@@ -267,11 +273,13 @@ export function InstancePage() {
   const logGroupId = apiInstance?.log_group_id;
   const authzChecks = useMemo(() => ({
     delete: logGroupId ? `raid_log:${logGroupId}#delete` : "",
+    adminLogs: "chronicle:chronicle#admin_logs",
   }), [logGroupId]);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated && !!logGroupId,
   });
   const canDeleteLog = authz?.delete ?? false;
+  const canAdminLogs = authz?.adminLogs ?? false;
   const logDetailUrl = canDeleteLog && logGroupId ? `/logs/${logGroupId}` : undefined;
 
   const instance = useMemo(() => {
@@ -359,6 +367,8 @@ export function InstancePage() {
             selectedEncounterTimes={selectedEncounterTimes}
             logDetailUrl={logDetailUrl}
             rawEncounters={apiInstance?.encounters}
+            canAdminLogs={canAdminLogs}
+            duplicateGroupId={apiInstance?.duplicate_group_id}
           />
         </InstanceEventsProvider>
       </TimeRangeProvider>

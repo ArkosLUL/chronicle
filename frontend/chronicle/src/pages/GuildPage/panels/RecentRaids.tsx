@@ -3,6 +3,8 @@ import { Calendar, AlertCircle } from "lucide-react";
 import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
 import { getInstanceCategory } from "@/pages/Logs/utils/instanceImages";
 import { RaidCard } from "@/pages/Recent/RaidCard";
+import { groupDuplicateInstances } from "@/utils/groupDuplicates";
+import { DuplicateInstanceModal } from "@/components/DuplicateInstanceModal";
 import type { GuildPanelDefinition, GuildPanelRenderProps } from "./types";
 
 type CategoryFilter = "all" | "raid" | "dungeon";
@@ -57,8 +59,10 @@ function RecentRaidsContent({ config, position, guild }: GuildPanelRenderProps<R
     if (category !== "all") {
       result = result.filter((inst) => getInstanceCategory(inst.name) === category);
     }
-    return result.slice(0, limit);
-  }, [instances, category, limit]);
+    return result;
+  }, [instances, category]);
+
+  const groups = useMemo(() => groupDuplicateInstances(filtered).slice(0, limit), [filtered, limit]);
 
   if (loading) {
     return (
@@ -77,7 +81,7 @@ function RecentRaidsContent({ config, position, guild }: GuildPanelRenderProps<R
     );
   }
 
-  if (filtered.length === 0) {
+  if (groups.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-[100px] text-muted-foreground">
         <p className="text-sm">No recent instances found</p>
@@ -90,10 +94,36 @@ function RecentRaidsContent({ config, position, guild }: GuildPanelRenderProps<R
       className="grid gap-3 p-1"
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
-      {filtered.map((instance) => (
-        <RaidCard key={instance.id} instance={instance} />
+      {groups.map((group) => (
+        <DuplicateAwareRaidCard key={group[0].id} group={group} />
       ))}
     </div>
+  );
+}
+
+function DuplicateAwareRaidCard({ group }: { group: RecentInstance[] }) {
+  const [showModal, setShowModal] = useState(false);
+
+  if (group.length === 1) {
+    return <RaidCard instance={group[0]} />;
+  }
+
+  return (
+    <>
+      <div className="relative cursor-pointer" onClick={(e) => { e.preventDefault(); setShowModal(true); }}>
+        <RaidCard instance={group[0]} />
+        {/* Duplicate badge overlay */}
+        <div className="absolute top-2 left-2 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white/80 px-1.5 py-0.5 rounded text-[10px] font-medium pointer-events-none">
+          {group.length} logs
+        </div>
+      </div>
+      {showModal && (
+        <DuplicateInstanceModal
+          instances={group}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   );
 }
 

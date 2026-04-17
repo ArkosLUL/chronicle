@@ -224,3 +224,14 @@ type RecentEncounter struct {
 	Boss     bool     `json:"boss"`
 	KillType KillType `json:"kill_type"`
 }
+// DuplicateInstance is a sibling instance in the same duplicate group.
+type DuplicateInstance struct {
+	ID           uuid.UUID `json:"id"`
+	Slug         string    `json:"slug"`
+	Name         string    `json:"name"`
+	RecorderName string    `json:"recorder_name"`
+	UploaderName string    `json:"uploader_name"`
+	PlayerCount  int64     `json:"player_count"`
+	DurationMs   *float64  `json:"duration_ms,omitempty"`
+}
+

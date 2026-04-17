@@ -182,6 +182,20 @@ export type DeviceVisibility = "all" | "desktop" | "mobile";
 export const DeviceVisibilitys: DeviceVisibility[] = ["all", "desktop", "mobile"];
 
 // From chroniclesdk/log.go
+/**
+ * DuplicateInstance is a sibling instance in the same duplicate group.
+ */
+export interface DuplicateInstance {
+    readonly id: string;
+    readonly slug: string;
+    readonly name: string;
+    readonly recorder_name: string;
+    readonly uploader_name: string;
+    readonly player_count: number;
+    readonly duration_ms?: number;
+}
+
+// From chroniclesdk/log.go
 export type Duration = number;
 
 // From chroniclesdk/log.go

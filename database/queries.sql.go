@@ -1692,6 +1692,15 @@ func (q *sqlQuerier) GetInstanceLoot(ctx context.Context, instanceID uuid.UUID) 
 	return items, nil
 }
 
+const clearDuplicateGroupID = `-- name: ClearDuplicateGroupID :exec
+UPDATE log_instances SET duplicate_group_id = NULL WHERE id = $1
+`
+
+func (q *sqlQuerier) ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, clearDuplicateGroupID, id)
+	return err
+}
+
 const deleteAllParsedLogsByGroupID = `-- name: DeleteAllParsedLogsByGroupID :exec
 DELETE FROM
   parsed_log_group
@@ -2203,6 +2212,65 @@ func (q *sqlQuerier) InstanceUnitsByInstanceID(ctx context.Context, instanceID u
 			&i.Name,
 			&i.Entry,
 			&i.OwnerGuid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listInstancesByDuplicateGroup = `-- name: ListInstancesByDuplicateGroup :many
+SELECT
+    li.id,
+    li.hashed_slug as slug,
+    li.name,
+    li.recorder_name,
+    wlg.owner as uploader_id,
+    u.username as uploader_name,
+    (SELECT COUNT(*) FROM log_instance_players lip WHERE lip.instance_id = li.id) as player_count,
+    COALESCE((SELECT EXTRACT(EPOCH FROM (MAX(lie.end_time) - MIN(lie.start_time))) * 1000
+     FROM log_instance_encounters lie WHERE lie.instance_id = li.id), 0)::float8 as duration_ms
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+WHERE li.duplicate_group_id = $1
+ORDER BY li.id
+`
+
+type ListInstancesByDuplicateGroupRow struct {
+	ID           uuid.UUID   `db:"id" json:"id"`
+	Slug         pgtype.Text `db:"slug" json:"slug"`
+	Name         string      `db:"name" json:"name"`
+	RecorderName string      `db:"recorder_name" json:"recorder_name"`
+	UploaderID   uuid.UUID   `db:"uploader_id" json:"uploader_id"`
+	UploaderName string      `db:"uploader_name" json:"uploader_name"`
+	PlayerCount  int64       `db:"player_count" json:"player_count"`
+	DurationMs   float64     `db:"duration_ms" json:"duration_ms"`
+}
+
+func (q *sqlQuerier) ListInstancesByDuplicateGroup(ctx context.Context, duplicateGroupID uuid.NullUUID) ([]ListInstancesByDuplicateGroupRow, error) {
+	rows, err := q.db.Query(ctx, listInstancesByDuplicateGroup, duplicateGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListInstancesByDuplicateGroupRow
+	for rows.Next() {
+		var i ListInstancesByDuplicateGroupRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.RecorderName,
+			&i.UploaderID,
+			&i.UploaderName,
+			&i.PlayerCount,
+			&i.DurationMs,
 		); err != nil {
 			return nil, err
 		}

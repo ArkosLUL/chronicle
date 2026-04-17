@@ -209,3 +209,54 @@ func (api *API) GetInstanceLoot(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, db2sdk.InstanceLoot(loot))
 }
+// UngroupInstance removes an instance from its duplicate group by clearing
+// duplicate_group_id. Requires admin_logs permission.
+func (api *API) UngroupInstance(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	inst := httpmw.Instance(ctx)
+
+	err := api.Opts.Zed.ClearDuplicateGroupID(ctx, inst.ID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusNoContent, nil)
+}
+// ListDuplicateInstances returns all instances in the same duplicate group.
+func (api *API) ListDuplicateInstances(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	inst := httpmw.Instance(ctx)
+
+	if !inst.DuplicateGroupID.Valid {
+		httpapi.Write(ctx, w, http.StatusOK, []chroniclesdk.DuplicateInstance{})
+		return
+	}
+
+	rows, err := api.Opts.Zed.ListInstancesByDuplicateGroup(ctx, inst.DuplicateGroupID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	result := make([]chroniclesdk.DuplicateInstance, 0, len(rows))
+	for _, row := range rows {
+		di := chroniclesdk.DuplicateInstance{
+			ID:           row.ID,
+			Slug:         row.Slug.String,
+			Name:         row.Name,
+			RecorderName: row.RecorderName,
+			UploaderName: row.UploaderName,
+			PlayerCount:  row.PlayerCount,
+		}
+		if row.DurationMs != 0 {
+			d := row.DurationMs
+			di.DurationMs = &d
+		}
+		result = append(result, di)
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, result)
+}
+
+

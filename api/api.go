@@ -305,6 +305,7 @@ func (api *API) Routes() chi.Router {
 			r.Get("/speedrun", api.SpeedrunLeaderboard)
 			r.Get("/speedrun/instances", api.SpeedrunInstances)
 			r.Get("/speedrun/realms", api.SpeedrunRealms)
+			r.Get("/speedrun/rules", api.SpeedrunRules)
 		})
 
 		if api.Opts.InternalGameData != nil {

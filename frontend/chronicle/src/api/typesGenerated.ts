@@ -926,6 +926,15 @@ export interface SpeedrunResult {
 
 // From chroniclesdk/log.go
 /**
+ * SpeedrunRulesResponse is the response for the speedrun rules endpoint.
+ */
+export interface SpeedrunRulesResponse {
+    readonly instance_name: string;
+    readonly requirements: readonly SpeedrunRequirement[];
+}
+
+// From chroniclesdk/log.go
+/**
  * SpeedrunVersionStatus reports whether the instance's tooling versions
  * meet the leaderboard minimum requirements.
  */

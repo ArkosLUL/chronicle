@@ -1,6 +1,15 @@
 package instances
 
 import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
+// SpeedrunRulesByInstance returns speedrun requirements keyed by instance name.
+// Only instances with speedrun rules are included.
+func SpeedrunRulesByInstance() map[string][]rankings.SpeedrunRequirement {
+	return map[string][]rankings.SpeedrunRequirement{
+		"Molten Core":    MoltenCoreSpeedrunRequirements(),
+		"Blackwing Lair": BlackwingLairSpeedrunRequirements(),
+	}
+}
+
 
 // MoltenCoreSpeedrunRequirements returns the 10 boss kills required for a
 // valid Molten Core speedrun.

@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/semverenc"
 	"github.com/Emyrk/chronicle/internal/slice"
@@ -103,6 +104,44 @@ func (api *API) SpeedrunRealms(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, names)
+}
+
+// SpeedrunRules returns the speedrun requirements for a given instance.
+//
+//	GET /api/v1/leaderboard/speedrun/rules?instance_name=...
+func (api *API) SpeedrunRules(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	instanceName := r.URL.Query().Get("instance_name")
+	if instanceName == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "instance_name query parameter is required",
+		})
+		return
+	}
+
+	allRules := instances.SpeedrunRulesByInstance()
+	reqs, ok := allRules[instanceName]
+	if !ok {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
+			Message: "No speedrun rules found for instance",
+		})
+		return
+	}
+
+	sdkReqs := make([]chroniclesdk.SpeedrunRequirement, len(reqs))
+	for i, r := range reqs {
+		sdkReqs[i] = chroniclesdk.SpeedrunRequirement{
+			Name:     r.Name,
+			EntryIDs: r.EntryIDs,
+			Count:    r.Count,
+			Category: string(r.Category),
+		}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SpeedrunRulesResponse{
+		InstanceName: instanceName,
+		Requirements: sdkReqs,
+	})
 }
 
 // AdminListLeaderboardVersionRequirements returns all configured version requirements.

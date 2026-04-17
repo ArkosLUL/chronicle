@@ -247,6 +247,12 @@ type SpeedrunLeaderboardEntry struct {
 	DuplicateGroupID *uuid.UUID `json:"duplicate_group_id,omitempty"`
 }
 
+// SpeedrunRulesResponse is the response for the speedrun rules endpoint.
+type SpeedrunRulesResponse struct {
+	InstanceName string                 `json:"instance_name"`
+	Requirements []SpeedrunRequirement  `json:"requirements"`
+}
+
 // LeaderboardVersionRequirements holds admin-configured minimum version
 // thresholds for leaderboard filtering.
 type LeaderboardVersionRequirements struct {

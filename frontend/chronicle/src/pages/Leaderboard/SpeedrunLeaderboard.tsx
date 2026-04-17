@@ -1,9 +1,9 @@
 import { useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Trophy, Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown } from "lucide-react"
+import { Trophy, Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown, Info } from "lucide-react"
 import { INSTANCE_CONFIG } from "../Logs/utils/instanceImages"
 import { useState, useEffect, useCallback, useRef } from "react"
-import type { SpeedrunLeaderboardEntry } from "../../api/typesGenerated"
+import type { SpeedrunLeaderboardEntry, SpeedrunRulesResponse } from "../../api/typesGenerated"
 import { Podium } from "./Podium"
 import { LeaderboardTable } from "./LeaderboardTable"
 
@@ -53,6 +53,88 @@ function useSpeedrunLeaderboard(
     },
     enabled: !!instanceName,
   })
+}
+
+function useSpeedrunRules(instanceName: string) {
+  return useQuery<SpeedrunRulesResponse>({
+    queryKey: ["leaderboard", "speedrun", "rules", instanceName],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/leaderboard/speedrun/rules?instance_name=${encodeURIComponent(instanceName)}`)
+      if (!res.ok) throw new Error("Failed to fetch rules")
+      return res.json()
+    },
+    enabled: !!instanceName,
+  })
+}
+
+function RulesModal({ open, onClose, instanceName, rules }: {
+  open: boolean
+  onClose: () => void
+  instanceName: string
+  rules: SpeedrunRulesResponse | undefined
+}) {
+  if (!open) return null
+
+  const bosses = rules?.requirements.filter(r => r.category === "Bosses") ?? []
+  const trash = rules?.requirements.filter(r => r.category === "Trash") ?? []
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div
+        className="relative w-full max-w-md max-h-[85vh] flex flex-col bg-popover border rounded-t-2xl md:rounded-2xl shadow-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <h2 className="text-base font-semibold">Speedrun Rules — {instanceName}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {!rules ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                All listed kills must occur in a single log to qualify. Timer runs from first boss kill to last.
+              </p>
+              {bosses.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Bosses</h3>
+                  <ul className="space-y-1">
+                    {bosses.map((r) => (
+                      <li key={r.name} className="flex items-center gap-2 text-sm">
+                        <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 shrink-0" />
+                        {r.name}
+                        {r.count > 1 && <span className="text-muted-foreground">×{r.count}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {trash.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Trash</h3>
+                  <ul className="space-y-1">
+                    {trash.map((r) => (
+                      <li key={r.name} className="flex items-center gap-2 text-sm">
+                        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground shrink-0" />
+                        {r.name}
+                        {r.count > 1 && <span className="text-muted-foreground">×{r.count}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function MultiSelectDropdown({
@@ -311,8 +393,10 @@ export function SpeedrunLeaderboard() {
   const { data: instances, isLoading: instancesLoading } = useSpeedrunInstances()
   const { data: realms } = useSpeedrunRealms()
   const [criteriaOpen, setCriteriaOpen] = useState(false)
+  const [rulesOpen, setRulesOpen] = useState(false)
 
   const selectedInstance = searchParams.get("instance") || instances?.[0] || ""
+  const { data: rulesData } = useSpeedrunRules(selectedInstance)
   const selectedRealms = searchParams.getAll("realm")
   const minPlayers = searchParams.get("min_players") || ""
   const maxPlayers = searchParams.get("max_players") || ""
@@ -387,7 +471,18 @@ export function SpeedrunLeaderboard() {
                   Loading...
                 </div>
               ) : selectedInstance ? (
-                <span className="text-lg font-semibold truncate">{selectedInstance}</span>
+                <span className="flex items-center gap-2 text-xl md:text-3xl font-bold truncate">
+                  {selectedInstance}
+                  {rulesData && (
+                    <button
+                      onClick={() => setRulesOpen(true)}
+                      className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                      title="Speedrun rules"
+                    >
+                      <Info className="h-4 w-4 md:h-5 md:w-5" />
+                    </button>
+                  )}
+                </span>
               ) : (
                 <span className="text-sm text-muted-foreground">No speedrun data yet</span>
               )}
@@ -417,9 +512,9 @@ export function SpeedrunLeaderboard() {
             {/* Criteria Button */}
             <button
               onClick={() => setCriteriaOpen(true)}
-              className="relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-white/10 bg-black/30 text-muted-foreground hover:bg-black/40 hover:text-foreground transition-colors shrink-0"
+              className="relative flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium leading-5 border border-white/10 bg-black/30 text-muted-foreground hover:bg-black/40 hover:text-foreground transition-colors shrink-0"
             >
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-5 w-5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Criteria</span>
               {activeFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-[#5F8FA6] text-white text-[10px] font-bold">
@@ -454,6 +549,14 @@ export function SpeedrunLeaderboard() {
       />
 
       {/* Table Section */}
+      <RulesModal
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        instanceName={selectedInstance}
+        rules={rulesData}
+      />
+
+
       <div className="px-0 md:px-6 py-4 md:py-6">
         {!entriesLoading && entries && entries.length > 0 ? (
           <>

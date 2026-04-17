@@ -16,7 +16,7 @@ type NeverActive struct {
 func (c NeverActive) ID() guid.GUID {
 	return c.id
 }
-
+func (c NeverActive) SetPeriodHook(hook period.Hook) {}
 func (c NeverActive) String() string {
 	return "never_active"
 }

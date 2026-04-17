@@ -8,6 +8,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character/characterset"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
@@ -115,7 +116,8 @@ type Characters struct {
 	//auras *auras.Tracking
 
 	// TODO: unroll hooks?
-	hooks []SetHook
+	hooks           []SetHook
+	activityChanged map[Character]struct{}
 }
 
 func NewCharacters(db *unitdb.Units) *Characters {
@@ -155,12 +157,12 @@ func (c Characters) GetInfo(id guid.GUID) (unitinfo.Info, bool) {
 	return c.db.Get(id)
 }
 
-func (c Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool) {
+func (c *Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool) {
 	char, exists := c.All.Get(id)
 	if !exists {
 		newChar = true
 		for _, factory := range characterFactories {
-			if specialChar, ok := factory(id, &c); ok {
+			if specialChar, ok := factory(id, c); ok {
 				char = specialChar
 				break
 			}
@@ -168,12 +170,20 @@ func (c Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool)
 
 		if char == nil {
 			// Just assume they are a normal character then
-			char = NewCommonCharacter(id, &c)
+			char = NewCommonCharacter(id, c)
 		}
 
 		if entry, ok := id.GetEntry(); ok {
 			c.ByEntry[entry] = append(c.ByEntry[entry], char)
 		}
+
+		char.SetPeriodHook(period.HookFunction(func(m messages.Message) {
+			if c.activityChanged == nil {
+				c.activityChanged = make(map[Character]struct{})
+			}
+			c.activityChanged[char] = struct{}{}
+		}))
+
 		c.All.Add(char, now)
 	}
 
@@ -187,11 +197,10 @@ func (c Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool)
 // This would have to be returned here to be added to the message stream.
 // Idk how feasible that is though. Maybe the original processor can handle this
 // for general types.
-func (c Characters) Process(m messages.Message) (bool, error) {
-	activityChange := c.processNewCharacters(m)
-
-	var changed []Character
-	err := c.All.ForEachAwake(m.Date(), func(char Character) error {
+func (c *Characters) Process(m messages.Message) (bool, error) {
+	defer func() { c.activityChanged = nil }()
+	c.processNewCharacters(m)
+	forAllErr := c.All.ForEachAwake(m.Date(), func(char Character) error {
 		before := char.IsActive()
 
 		// TODO: Dead characters that will never return should be removed from processing?
@@ -202,7 +211,6 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 		}
 
 		if before != char.IsActive() {
-			changed = append(changed, char)
 			// Touch each time the character changes activity status.
 			c.All.Touch(char.ID(), m.Date())
 		}
@@ -210,20 +218,24 @@ func (c Characters) Process(m messages.Message) (bool, error) {
 	})
 
 	// Final boolean value
-	activityChange = activityChange || len(changed) > 0
-	if err != nil {
-		return activityChange, err
+	if len(c.activityChanged) == 0 {
+		return false, forAllErr
 	}
 
+	var list []Character
+	for char := range c.activityChanged {
+		list = append(list, char)
+	}
 	for _, hook := range c.hooks {
-		hook.ActivityChange(m, changed...)
+		hook.ActivityChange(m, list...)
 	}
+	c.activityChanged = nil
 
-	return activityChange, nil
+	return true, forAllErr
 }
 
 // processNewCharacters adds any missing characters to the full character list.
-func (c Characters) processNewCharacters(m messages.Message) bool {
+func (c *Characters) processNewCharacters(m messages.Message) {
 	var created []Character
 	// Add all affected characters to the instance's character list
 	for _, id := range m.Affects() {
@@ -236,6 +248,4 @@ func (c Characters) processNewCharacters(m messages.Message) bool {
 			hook.CharacterAdded(m, created...)
 		}
 	}
-
-	return len(created) > 0
 }

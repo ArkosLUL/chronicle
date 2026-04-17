@@ -32,6 +32,7 @@ type Character interface {
 	RecentlySlain(m messages.Message) bool
 	IsActive() bool
 	CurrentPeriod() (period.Period, bool)
+	SetPeriodHook(hook period.Hook)
 }
 
 type Base[M period.IsPeriod] struct {
@@ -48,6 +49,10 @@ type Base[M period.IsPeriod] struct {
 
 func NewBaseCharacter[M period.IsPeriod](me guid.GUID, lookup *Characters) *Base[M] {
 	return &Base[M]{lookup: lookup, id: me, recentlySlain: time.Second * 3}
+}
+
+func (c *Base[_]) SetPeriodHook(hook period.Hook) {
+	c.Activity.WithHook(hook)
 }
 
 func (c *Base[_]) SetRecentlySlainDuration(d time.Duration) {

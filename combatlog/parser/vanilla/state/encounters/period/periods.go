@@ -8,22 +8,32 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 )
 
-//func x() {
-//	y := NewCollector[*InactivityPeriod]()
-//	p, ok := y.Current()
-//	p.HandleTimeout()
-//}
+type Hook interface {
+	OnActivityChange(m messages.Message)
+}
 
-func NewCollector[M IsPeriod]() *PeriodCollector[M] {
-	return &PeriodCollector[M]{
-		History: make([]M, 0),
-	}
+type hookFunction struct {
+	f func(m messages.Message)
+}
+
+func HookFunction(f func(m messages.Message)) Hook {
+	return &hookFunction{f: f}
+}
+
+func (h *hookFunction) OnActivityChange(m messages.Message) {
+	h.f(m)
 }
 
 // PeriodCollector accumulates periods over time. Periods may start/end and later
 // start/end again; the collector simply appends each new period to History.
 type PeriodCollector[M IsPeriod] struct {
 	History []M
+	hook    Hook
+}
+
+func (pc *PeriodCollector[M]) WithHook(hook Hook) *PeriodCollector[M] {
+	pc.hook = hook
+	return pc
 }
 
 func (pc *PeriodCollector[M]) Current() (M, bool) {
@@ -51,6 +61,9 @@ func (pc *PeriodCollector[M]) Start(p M, reason string, m messages.Message) {
 
 	p.Begin(reason, m)
 	pc.History = append(pc.History, p)
+	if pc.hook != nil {
+		pc.hook.OnActivityChange(m)
+	}
 }
 
 // End ends the current period if one is active with the given end state.
@@ -59,7 +72,13 @@ func (pc *PeriodCollector[M]) End(reason string, m messages.Message, endState En
 	if !ok {
 		return
 	}
+	if !cur.IsActive() {
+		return
+	}
 	cur.End(reason, m, endState)
+	if pc.hook != nil {
+		pc.hook.OnActivityChange(m)
+	}
 }
 
 func (pc *PeriodCollector[M]) Bump(reason string, m messages.Message) {
@@ -76,7 +95,13 @@ func (pc *PeriodCollector[M]) Timeout(reason string, now time.Time) {
 	if !ok {
 		return
 	}
+	if !cur.IsActive() {
+		return
+	}
 	cur.Timeout(reason, now)
+	if pc.hook != nil {
+		pc.hook.OnActivityChange(messages.TimedOut(now))
+	}
 }
 
 func (pc *PeriodCollector[M]) String() string {

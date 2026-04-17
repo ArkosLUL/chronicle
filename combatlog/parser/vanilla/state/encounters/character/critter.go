@@ -3,6 +3,7 @@ package character
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/critters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
 var _ Character = (*Critter)(nil)
@@ -25,4 +26,7 @@ func NewCritterCharacter(id guid.GUID, _ *Characters) (Character, bool) {
 
 func (c Critter) String() string {
 	return "critter"
+}
+
+func (c Critter) SetPeriodHook(hook period.Hook) {
 }

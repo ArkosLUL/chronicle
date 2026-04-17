@@ -24,6 +24,7 @@ func NewChieftainPartath(id guid.GUID, all *Characters) (Character, bool) {
 func NewOrmanos(id guid.GUID, all *Characters) (Character, bool) {
 	return NewAdsGoWithBoss(62935,
 		51608, // Tremor
+		51609, // Son of Ormanos
 	)(id, all)
 }
 
@@ -46,4 +47,8 @@ func NewVileSkitterer(id guid.GUID, all *Characters) (Character, bool) {
 		return nil, false
 	}
 	return NewPermanentDeath(NewCommonCharacter(id, all)), true
+}
+
+func NewLoktanagTheVile(id guid.GUID, all *Characters) (Character, bool) {
+  return NewAdsGoWithBoss(2139, 2141)(id, all)
 }

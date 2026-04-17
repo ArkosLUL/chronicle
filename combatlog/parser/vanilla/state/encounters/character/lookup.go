@@ -61,6 +61,7 @@ var characterFactories = []characterFactory{
 	NewNightmareFiend,
 	NewVileSkitterer,
 	NewSelenaxxFoulheart,
+	NewLoktanagTheVile,
 	// AQ 40
 	NewCthun,
 	// Naxx,

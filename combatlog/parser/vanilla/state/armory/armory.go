@@ -19,21 +19,28 @@ import (
 
 var _ instancehook.Hook = (*Tracker)(nil)
 
+type pendingTalent struct {
+	name    string
+	talents *combatant.Talents
+}
+
 type Tracker struct {
 	instancehook.BaseHook
 
-	Guilds      map[string]map[guid.GUID]struct{}
-	Participant map[guid.GUID]struct{}
-	Players     map[guid.GUID]combatant.Combatant
-	ByName      map[string]guid.GUID
+	Guilds          map[string]map[guid.GUID]struct{}
+	Participant     map[guid.GUID]struct{}
+	Players         map[guid.GUID]combatant.Combatant
+	ByName          map[string]guid.GUID
+	PendingTalents  map[guid.GUID]pendingTalent
 }
 
 func New() *Tracker {
 	return &Tracker{
-		Guilds:      make(map[string]map[guid.GUID]struct{}),
-		Participant: make(map[guid.GUID]struct{}),
-		Players:     make(map[guid.GUID]combatant.Combatant),
-		ByName:      make(map[string]guid.GUID),
+		Guilds:         make(map[string]map[guid.GUID]struct{}),
+		Participant:    make(map[guid.GUID]struct{}),
+		Players:        make(map[guid.GUID]combatant.Combatant),
+		ByName:         make(map[string]guid.GUID),
+		PendingTalents: make(map[guid.GUID]pendingTalent),
 	}
 }
 
@@ -132,6 +139,22 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 			level = int16(info.Level)
 		}
 
+		var dbTalents *database.PlayerTalents
+		if player.Talents != nil {
+			dbTalents = &database.PlayerTalents{}
+			for i := 0; i < 3 && i < len(player.Talents.Trees); i++ {
+				ranks := make([]byte, len(player.Talents.Trees[i]))
+				for j, r := range player.Talents.Trees[i] {
+					ranks[j] = '0' + r
+				}
+				dbTalents.Trees[i] = database.PlayerTalentTab{
+					TabName:     player.Talents.TabNames[i],
+					PointsSpent: int(player.Talents.Summary[i]),
+					Ranks:       string(ranks),
+				}
+			}
+		}
+
 		inserts = append(inserts, database.UpsertPlayersParams{
 			ID:      player.Guid,
 			RealmID: realmID,
@@ -140,11 +163,12 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 				UUID:  guildID,
 				Valid: guildID != uuid.Nil,
 			},
-			Class:  db2sdk.HeroClassToDB(player.HeroClass),
-			Gender: db2sdk.HeroGenderToDB(player.Gender),
-			Race:   db2sdk.HeroRaceToDB(player.Race),
-			Gear:   dbGear,
-			Level:  level,
+			Class:   db2sdk.HeroClassToDB(player.HeroClass),
+			Gender:  db2sdk.HeroGenderToDB(player.Gender),
+			Race:    db2sdk.HeroRaceToDB(player.Race),
+			Gear:    dbGear,
+			Level:   level,
+			Talents: dbTalents,
 			UpdatedFromInstance: uuid.NullUUID{
 				UUID:  instanceID,
 				Valid: instanceID != uuid.Nil,
@@ -187,6 +211,8 @@ func (g *Tracker) ProcessMessage(active bool, encounterID uuid.UUID, msg message
 	case *messages.Combatant:
 		g.Guild(ty)
 		g.Player(ty)
+	case *messages.CombatantTalents:
+		g.CombatantTalents(ty)
 	case *messages.Transmog:
 		g.Transmog(ty)
 	}
@@ -218,8 +244,57 @@ func (g *Tracker) Player(msg *messages.Combatant) {
 	if gid.IsZero() || !gid.IsPlayer() {
 		return
 	}
-	g.Players[msg.Guid] = msg.Combatant
-	g.ByName[msg.Name] = msg.Guid
+	c := msg.Combatant
+
+	// If COMBATANT_TALENTS arrived before COMBATANT_INFO, merge the
+	// detailed talent data (which includes tab names) into this player.
+	if pending, ok := g.PendingTalents[gid]; ok {
+		c.Talents = pending.talents
+		delete(g.PendingTalents, gid)
+	}
+
+	g.Players[gid] = c
+	g.ByName[msg.Name] = gid
+}
+
+func (g *Tracker) CombatantTalents(msg *messages.CombatantTalents) {
+	gid := msg.Guid
+	if gid.IsZero() || !gid.IsPlayer() {
+		return
+	}
+
+	// Build a Talents struct from the detailed tab info
+	tls := &combatant.Talents{}
+	for i, tab := range msg.Tabs {
+		tls.TabNames[i] = tab.TabName
+		ranks := make([]uint8, len(tab.RankDigits))
+		var sum uint8
+		for j, ch := range tab.RankDigits {
+			v := uint8(ch - '0')
+			ranks[j] = v
+			sum += v
+		}
+		tls.Trees[i] = ranks
+		tls.Summary[i] = sum
+	}
+
+	// If we already have this player, merge talents in.
+	// We only update the Talents field — COMBATANT_TALENTS does not carry
+	// class/race/gender/gear, so those must come from COMBATANT_INFO.
+	if pl, ok := g.Players[gid]; ok {
+		pl.Talents = tls
+		g.Players[gid] = pl
+		return
+	}
+
+	// Player not yet seen via COMBATANT_INFO — store talents keyed by name
+	// so they can be merged when COMBATANT_INFO arrives. We don't create a
+	// minimal Combatant here because it would lack class/race/gender and
+	// could be written to the DB with empty required fields.
+	g.PendingTalents[gid] = pendingTalent{
+		name:    msg.PlayerName,
+		talents: tls,
+	}
 }
 
 func (g *Tracker) Transmog(msg *messages.Transmog) {

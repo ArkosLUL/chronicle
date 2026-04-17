@@ -181,6 +181,52 @@ func (g PlayerOutfit) Value() (driver.Value, error) {
 	return json.Marshal(g)
 }
 
+// PlayerTalents represents the talent allocation for a player, stored as JSONB.
+// Nil means no talent data is available.
+type PlayerTalents struct {
+	// Trees contains three talent tab allocations, one per spec tree.
+	Trees [3]PlayerTalentTab `json:"trees"`
+}
+
+type PlayerTalentTab struct {
+	// TabName is the talent tree name (e.g., "Arms", "Fury", "Protection").
+	TabName string `json:"tab_name,omitempty"`
+	// PointsSpent is the total number of talent points allocated in this tab.
+	PointsSpent int `json:"points_spent"`
+	// Ranks is one digit per talent (in tab-index order): the current rank.
+	Ranks string `json:"ranks"`
+}
+
+func (t *PlayerTalents) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case nil:
+		return nil
+	case string:
+		if v == "null" {
+			return nil
+		}
+		return json.Unmarshal([]byte(v), t)
+	case []byte:
+		if string(v) == "null" {
+			return nil
+		}
+		return json.Unmarshal(v, t)
+	case json.RawMessage:
+		if string(v) == "null" {
+			return nil
+		}
+		return json.Unmarshal(v, t)
+	}
+	return xerrors.Errorf("unexpected type %T", src)
+}
+
+func (t *PlayerTalents) Value() (driver.Value, error) {
+	if t == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(t)
+}
+
 // VersionsMap is a map[string]string stored as JSONB for instance version metadata.
 type VersionsMap map[string]string
 

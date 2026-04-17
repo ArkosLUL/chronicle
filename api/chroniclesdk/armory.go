@@ -7,19 +7,31 @@ import (
 )
 
 type ArmoryPlayer struct {
-	ID                  GUIDString   `json:"id"`
-	RealmName           string       `json:"realm_name"`
-	RealmID             uuid.UUID    `json:"realm_id"`
-	Name                string       `json:"name"`
-	Class               string       `json:"class"`
-	Race                string       `json:"race"`
-	Gender              string       `json:"gender"`
-	Level               int32        `json:"level"`
-	GuildID             *uuid.UUID   `json:"guild_id,omitempty"`
-	GuildName           string       `json:"guild_name,omitempty"`
-	Gear                PlayerOutfit `json:"gear"`
-	UpdatedAt           time.Time    `json:"updated_at"`
-	UpdatedFromInstance *uuid.UUID   `json:"updated_from_instance,omitempty"`
+	ID                  GUIDString      `json:"id"`
+	RealmName           string          `json:"realm_name"`
+	RealmID             uuid.UUID       `json:"realm_id"`
+	Name                string          `json:"name"`
+	Class               string          `json:"class"`
+	Race                string          `json:"race"`
+	Gender              string          `json:"gender"`
+	Level               int32           `json:"level"`
+	GuildID             *uuid.UUID      `json:"guild_id,omitempty"`
+	GuildName           string          `json:"guild_name,omitempty"`
+	Gear                PlayerOutfit    `json:"gear"`
+	Talents             *PlayerTalents  `json:"talents,omitempty"`
+	UpdatedAt           time.Time       `json:"updated_at"`
+	UpdatedFromInstance *uuid.UUID      `json:"updated_from_instance,omitempty"`
+}
+
+// PlayerTalents represents a player's talent allocation across three trees.
+type PlayerTalents struct {
+	Trees [3]PlayerTalentTab `json:"trees"`
+}
+
+type PlayerTalentTab struct {
+	TabName     string `json:"tab_name,omitempty"`
+	PointsSpent int    `json:"points_spent"`
+	Ranks       string `json:"ranks"`
 }
 
 // PlayerOutfit mirrors database.PlayerOutfit for the SDK layer.

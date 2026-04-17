@@ -229,4 +229,5 @@ message CombatantGearSlot {
 
 message CombatantTalents {
   repeated int32 summary = 1;  // [3] points per tree
+  repeated string trees = 2;   // [3] rank digit strings, one per tree tab
 }

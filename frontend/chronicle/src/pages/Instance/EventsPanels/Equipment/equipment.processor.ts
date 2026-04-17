@@ -9,7 +9,7 @@ export interface PlayerSnapshot {
   guildName: string | null;
   gear: { itemId: number; enchantId: number | null; temporaryEnchantId: number | null }[];
   gearCount: number;
-  talents: { summary: number[] } | null;
+  talents: { summary: number[]; trees: string[] } | null;
 }
 
 export interface EquipmentResult {

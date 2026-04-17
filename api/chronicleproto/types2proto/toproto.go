@@ -337,8 +337,17 @@ func GearSlot(g combatant.GearItem) *chronicleproto.CombatantGearSlot {
 }
 
 func TalentSummary(t *combatant.Talents) *chronicleproto.CombatantTalents {
+	trees := make([]string, 3)
+	for i, tree := range t.Trees {
+		ranks := make([]byte, len(tree))
+		for j, r := range tree {
+			ranks[j] = '0' + r
+		}
+		trees[i] = string(ranks)
+	}
 	return &chronicleproto.CombatantTalents{
 		Summary: []int32{int32(t.Summary[0]), int32(t.Summary[1]), int32(t.Summary[2])},
+		Trees:   trees,
 	}
 }
 

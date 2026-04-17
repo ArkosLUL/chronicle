@@ -1968,6 +1968,7 @@ func (x *CombatantGearSlot) GetTemporaryEnchantId() int32 {
 type CombatantTalents struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Summary       []int32                `protobuf:"varint,1,rep,packed,name=summary,proto3" json:"summary,omitempty"` // [3] points per tree
+	Trees         []string               `protobuf:"bytes,2,rep,name=trees,proto3" json:"trees,omitempty"`             // [3] rank digit strings, one per tree tab
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2005,6 +2006,13 @@ func (*CombatantTalents) Descriptor() ([]byte, []int) {
 func (x *CombatantTalents) GetSummary() []int32 {
 	if x != nil {
 		return x.Summary
+	}
+	return nil
+}
+
+func (x *CombatantTalents) GetTrees() []string {
+	if x != nil {
+		return x.Trees
 	}
 	return nil
 }
@@ -2211,9 +2219,10 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x12temporaryEnchantId\x18\x03 \x01(\x05H\x01R\x12temporaryEnchantId\x88\x01\x01B\f\n" +
 	"\n" +
 	"_enchantIdB\x15\n" +
-	"\x13_temporaryEnchantId\",\n" +
+	"\x13_temporaryEnchantId\"B\n" +
 	"\x10CombatantTalents\x12\x18\n" +
-	"\asummary\x18\x01 \x03(\x05R\asummary*p\n" +
+	"\asummary\x18\x01 \x03(\x05R\asummary\x12\x14\n" +
+	"\x05trees\x18\x02 \x03(\tR\x05trees*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +

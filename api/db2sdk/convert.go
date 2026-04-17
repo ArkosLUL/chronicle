@@ -394,6 +394,18 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 		}
 	}
 
+	var talents *chroniclesdk.PlayerTalents
+	if row.Talents != nil {
+		talents = &chroniclesdk.PlayerTalents{}
+		for i, t := range row.Talents.Trees {
+			talents.Trees[i] = chroniclesdk.PlayerTalentTab{
+				TabName:     t.TabName,
+				PointsSpent: t.PointsSpent,
+				Ranks:       t.Ranks,
+			}
+		}
+	}
+
 	return chroniclesdk.ArmoryPlayer{
 		ID:                  row.ID,
 		RealmID:             row.RealmID,
@@ -406,6 +418,7 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 		GuildID:             guildID,
 		GuildName:           row.GuildName.String,
 		Gear:                gear,
+		Talents:             talents,
 		UpdatedAt:           row.UpdatedAt.Time,
 		UpdatedFromInstance: instanceID,
 	}

@@ -718,6 +718,7 @@ type GamePlayer struct {
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
 	Level               int16              `db:"level" json:"level"`
+	Talents             *PlayerTalents     `db:"talents" json:"talents"`
 }
 
 type Guild struct {

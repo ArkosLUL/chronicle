@@ -209,6 +209,24 @@ type Transmog struct {
 func (c Transmog) Affects() []guid.GUID { return []guid.GUID{} }
 func (*Transmog) isMessage()            {}
 
+// CombatantTalents is emitted from COMBATANT_TALENTS log lines.
+// It carries detailed talent tab info (with tab names) for a player.
+type CombatantTalents struct {
+	MessageBase
+	Guid       guid.GUID
+	PlayerName string
+	Tabs       [3]CombatantTalentTab
+}
+
+type CombatantTalentTab struct {
+	TabName     string
+	PointsSpent int
+	RankDigits  string
+}
+
+func (c CombatantTalents) Affects() []guid.GUID { return []guid.GUID{c.Guid} }
+func (*CombatantTalents) isMessage()             {}
+
 type Realm struct {
 	MessageBase
 	realm.Info

@@ -4035,6 +4035,7 @@ export interface ReusableCombatantGearSlot {
 
 export interface ReusableCombatantTalents {
   summary: number[];
+  trees: string[];
 }
 
 export interface ReusableCombatantInfo {
@@ -4201,6 +4202,7 @@ export class CombatantInfoDecoder {
           // CombatantTalents
           const talentsEnd = offset + len;
           const summary: number[] = [];
+          const trees: string[] = [];
           while (offset < talentsEnd) {
             const tTag = data[offset++];
             const tField = tTag >> 3;
@@ -4220,9 +4222,21 @@ export class CombatantInfoDecoder {
                 offset += bytesRead;
                 summary.push(value);
               }
+            } else if (tWire === 2 && tField === 2) {
+              // string: rank digits for one tree tab
+              const { value: strLen, bytesRead: strLenBytes } = readVarintFast(data, offset);
+              offset += strLenBytes;
+              trees.push(this.textDecoder.decode(data.subarray(offset, offset + strLen)));
+              offset += strLen;
+            } else if (tWire === 2) {
+              const { value: skipLen, bytesRead: skipLenBytes } = readVarintFast(data, offset);
+              offset += skipLenBytes + skipLen;
+            } else if (tWire === 0) {
+              const { bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
             }
           }
-          msg.talents = { summary };
+          msg.talents = { summary, trees };
         } else {
           offset += len;
         }

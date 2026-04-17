@@ -63,7 +63,7 @@ func FindMe(liner *lines.Liner, scan merge.Scan) (merge.Scan, *SharedMe, int, er
 				continue // Do not fatal on init
 			}
 
-			if cmbt.IsMe() {
+			if cmbt.Talents != nil {
 				return finder.scan, &SharedMe{me: types.Unit{
 					Name: cmbt.Name,
 					Gid:  cmbt.Guid,

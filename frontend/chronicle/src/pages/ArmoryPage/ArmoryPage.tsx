@@ -1,9 +1,10 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Calendar } from "lucide-react";
+import { Shield, Calendar, Sparkles } from "lucide-react";
 import type { ArmoryPlayer } from "@/api/typesGenerated";
 import { CharacterHeader } from "./CharacterHeader";
 import { GearDisplay } from "./GearDisplay";
+import { TalentsTab } from "./TalentsTab";
 import { ActivityTab } from "./ActivityTab";
 
 async function fetchArmoryPlayer(realm: string, player: string): Promise<ArmoryPlayer> {
@@ -16,6 +17,7 @@ async function fetchArmoryPlayer(realm: string, player: string): Promise<ArmoryP
 
 const TABS = [
   { key: "gear", label: "Gear", icon: Shield },
+  { key: "talents", label: "Talents", icon: Sparkles },
   { key: "activity", label: "Activity", icon: Calendar },
 ] as const;
 
@@ -99,10 +101,15 @@ export function ArmoryPage() {
           ))}
         </div>
 
-        {/* Tab content — gear stays in center column */}
+        {/* Tab content — gear and talents stay in center column */}
         {activeTab === "gear" && (
           <div className="mt-6">
             <GearDisplay gear={player.gear} race={player.race} gender={player.gender} />
+          </div>
+        )}
+        {activeTab === "talents" && (
+          <div className="mt-6">
+            <TalentsTab player={player} />
           </div>
         )}
       </div>

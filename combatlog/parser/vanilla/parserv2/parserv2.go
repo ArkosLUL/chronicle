@@ -91,6 +91,8 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.combatantTransmog(ctx, ts, m)
 	case "COMBATANT_INFO":
 		return p.combatantInfo(ctx, ts, m)
+	case "COMBATANT_TALENTS":
+		return p.combatantTalents(ctx, ts, m)
 	case "SWING":
 		return p.swing(ctx, ts, m)
 	case "HEAL":

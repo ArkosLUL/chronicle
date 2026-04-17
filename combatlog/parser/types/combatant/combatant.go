@@ -41,10 +41,6 @@ type Combatant struct {
 	Talents    *Talents
 }
 
-func (c *Combatant) IsMe() bool {
-	return c.Talents != nil && c.Guid.IsPlayer()
-}
-
 func ParseCombatantInfo(ri *realmclock.Info, content string) (Combatant, error) {
 	var empty Combatant
 
@@ -238,6 +234,9 @@ type Talents struct {
 	// Trees contains the points spent in each talent per tree. Talents are numbered,
 	// and each class has a different number of talents per tree.
 	Trees [3][]uint8
+	// TabNames are the talent tree names (e.g., "Arms", "Fury", "Protection").
+	// Populated from COMBATANT_TALENTS; empty from COMBATANT_INFO (which lacks names).
+	TabNames [3]string
 }
 
 // ParseTalents parses the talent string into a Talents struct

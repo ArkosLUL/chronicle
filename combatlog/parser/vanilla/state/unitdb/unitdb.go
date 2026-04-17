@@ -180,15 +180,4 @@ func (us *Units) UpdateUnitName(gid guid.GUID, name string) {
 func (us *Units) UpdatePlayer(c combatant.Combatant) {
 	us.Players[c.Guid] = c
 	us.PlayerByName[c.Name] = c.Guid
-	// TODO: REMOVE this. It is a crutch because `unit_info` is not perfect.
-	if _, ok := us.Info[c.Guid]; !ok {
-		us.Update(unitinfo.Info{
-			Seen:         c.Seen,
-			Guid:         c.Guid,
-			IsPlayer:     c.IsMe(),
-			Name:         c.Name,
-			CanCooperate: true,
-			Owner:        nil,
-		})
-	}
 }

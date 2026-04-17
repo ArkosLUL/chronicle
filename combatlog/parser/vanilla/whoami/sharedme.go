@@ -9,9 +9,9 @@ type SharedMe struct {
 	me types.Unit
 }
 
-func (s *SharedMe) SetMe(me types.Unit) *SharedMe{
+func (s *SharedMe) SetMe(me types.Unit) *SharedMe {
 	s.me = me
-  return s
+	return s
 }
 
 func (s *SharedMe) Unit() types.Unit {
@@ -28,7 +28,7 @@ func (s *SharedMe) Process(msg messages.Message) error {
 			})
 		}
 	case *messages.Combatant:
-		if ty.IsMe() {
+		if ty.Talents != nil {
 			s.SetMe(types.Unit{
 				Name: ty.Name,
 				Gid:  ty.Guid,

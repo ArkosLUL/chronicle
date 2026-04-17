@@ -314,7 +314,8 @@ CREATE TABLE game_players (
     gear jsonb DEFAULT '[]'::jsonb NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_from_instance uuid,
-    level smallint DEFAULT 0 NOT NULL
+    level smallint DEFAULT 0 NOT NULL,
+    talents jsonb DEFAULT 'null'::jsonb NOT NULL
 );
 
 CREATE TABLE guild_join_requests (

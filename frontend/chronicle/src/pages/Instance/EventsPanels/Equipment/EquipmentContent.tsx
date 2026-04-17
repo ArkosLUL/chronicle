@@ -9,7 +9,14 @@ import { getQualityBorderClass, getQualityTextClass, getClassColorVar } from "@/
 import { formatRaceLabel } from "@/pages/ArmoryPage/CharacterHeader";
 import { HelpCircle, ExternalLink } from "lucide-react";
 import { ItemTooltip } from "@/components/ui/ItemTooltip/ItemTooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip/tooltip";
 import { Link } from "react-router-dom";
+import { TalentTreeViewer, type TalentAllocation } from "@/components/ui/TalentTreeViewer/TalentTreeViewer";
 
 const SLOT_ORDER = [
   { index: 0, label: "Head" },
@@ -40,7 +47,6 @@ function getItemIconUrl(icon: string): string {
 
 /** Compact single-row item display with tooltip-fetched icon/name/quality. */
 function GearRow({ itemId, enchantId, slotLabel, equippedItemIds }: { itemId: number; enchantId: number | null; slotLabel: string; equippedItemIds?: ReadonlySet<number> }) {
-  const [hovered, setHovered] = useState(false);
   const isEmpty = itemId === 0;
   const tooltip = useItemTooltip(
     !isEmpty ? { itemId, enchant: enchantId ?? undefined } : null,
@@ -62,12 +68,8 @@ function GearRow({ itemId, enchantId, slotLabel, equippedItemIds }: { itemId: nu
     );
   }
 
-  return (
-    <div
-      className="relative flex items-center gap-1.5 py-0.5"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+  const row = (
+    <div className="flex items-center gap-1.5 py-0.5">
       <div className={cn(
         "w-6 h-6 shrink-0 rounded border bg-zinc-900/80 flex items-center justify-center overflow-hidden cursor-pointer",
         getQualityBorderClass(quality),
@@ -86,14 +88,28 @@ function GearRow({ itemId, enchantId, slotLabel, equippedItemIds }: { itemId: nu
           <span className="text-2xs leading-tight text-quality-uncommon truncate">{enchantText}</span>
         )}
       </div>
-
-      {/* Tooltip on hover */}
-      {hovered && tooltip.data && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center -translate-y-[15%] pointer-events-none">
-          <ItemTooltip item={tooltip.data} equippedItemIds={equippedItemIds} />
-        </div>
-      )}
     </div>
+  );
+
+  if (!tooltip.data) return row;
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={150}>
+        <TooltipTrigger asChild>
+          <span className="cursor-pointer">{row}</span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className="p-0 bg-transparent border-0 z-[10000]"
+          hideArrow
+        >
+          <ItemTooltip item={tooltip.data} equippedItemIds={equippedItemIds} />
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -153,8 +169,39 @@ function DropdownList({ playerList, search, setSearch, searchRef, selectedGuid, 
   );
 }
 
+const CLASS_NAME_TO_ID: Record<string, number> = {
+  warrior: 1, paladin: 2, hunter: 3, rogue: 4, priest: 5,
+  shaman: 7, mage: 8, warlock: 9, druid: 11,
+};
+
+function PlayerTalentsView({ player }: { player: PlayerSnapshot }) {
+  const classId = CLASS_NAME_TO_ID[player.heroClass.toLowerCase()];
+
+  const allocations = useMemo<TalentAllocation[] | undefined>(() => {
+    if (!player.talents || player.talents.trees.length < 3) return undefined;
+    return player.talents.trees.map((ranks, i) => ({
+      tabName: "",
+      pointsSpent: player.talents!.summary[i] ?? 0,
+      rankDigits: ranks,
+    }));
+  }, [player.talents]);
+
+  if (!classId) {
+    return <div className="text-sm text-muted-foreground p-4">Unknown class</div>;
+  }
+
+  if (!allocations) {
+    return <div className="text-sm text-muted-foreground p-4">No talent data available for this player.</div>;
+  }
+
+  return <TalentTreeViewer classId={classId} allocations={allocations} />;
+}
+
+type SubTab = "gear" | "talents";
+
 export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
   const { result, context } = props;
+  const [subTab, setSubTab] = useState<SubTab>("gear");
   const { cachedValue } = useCachedValue(
     result,
     (r) => !!r && r.players instanceof Map && r.players.size > 0,
@@ -209,7 +256,7 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
 
   return (
     <GenericPanel {...props}>
-      <div className="flex flex-col gap-1 p-2 overflow-y-auto">
+      <div className="flex flex-col gap-1 p-2 overflow-y-auto styled-scrollbar">
         {/* Player selector + info */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Custom dropdown for class-colored player names */}
@@ -255,8 +302,26 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
           )}
         </div>
 
-        {/* Compact gear list */}
-        {selected && (
+        {/* Sub-tab toggle */}
+        <div className="flex gap-1 border-b border-border mb-1">
+          {(["gear", "talents"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setSubTab(tab)}
+              className={cn(
+                "px-2 py-1 text-2xs font-medium border-b -mb-px transition-colors capitalize",
+                subTab === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Gear list */}
+        {selected && subTab === "gear" && (
           <div key={selected.guid} className="grid grid-cols-2 gap-x-4 gap-y-0">
             {SLOT_ORDER.map((slot, i) => {
               const g = selected!.gear[slot.index];
@@ -271,6 +336,11 @@ export function EquipmentContent(props: PanelRenderProps<EquipmentResult>) {
               );
             })}
           </div>
+        )}
+
+        {/* Talents view */}
+        {selected && subTab === "talents" && (
+          <PlayerTalentsView player={selected} />
         )}
       </div>
     </GenericPanel>

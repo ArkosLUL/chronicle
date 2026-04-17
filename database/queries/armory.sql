@@ -14,12 +14,12 @@ INSERT INTO
   game_players (
     id, realm_id, name, guild_id,
     class, gender, race,
-    gear, level,
+    gear, level, talents,
     updated_from_instance,
     updated_at
   )
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 ON CONFLICT (id, realm_id) DO UPDATE
   SET name = EXCLUDED.name,
       guild_id = EXCLUDED.guild_id,
@@ -28,6 +28,11 @@ ON CONFLICT (id, realm_id) DO UPDATE
       gender = EXCLUDED.gender,
       gear = EXCLUDED.gear,
       level = EXCLUDED.level,
+      talents = CASE
+        WHEN EXCLUDED.talents IS NOT NULL AND EXCLUDED.talents != 'null'::jsonb
+        THEN EXCLUDED.talents
+        ELSE game_players.talents
+      END,
       updated_from_instance = EXCLUDED.updated_from_instance,
 
       updated_at = EXCLUDED.updated_at

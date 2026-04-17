@@ -313,12 +313,21 @@ export function TalentTreeViewer({
     );
   }
 
-  // Match allocations to tabs by name (case-insensitive)
-  const allocationMap = new Map<string, TalentAllocation>();
-  if (allocations) {
+  // Match allocations to tabs by name, or by index if names are empty
+  // (COMBATANT_INFO provides talents without tab names).
+  const hasTabNames = allocations?.some((a) => a.tabName !== "") ?? false;
+  const allocationByName = new Map<string, TalentAllocation>();
+  if (allocations && hasTabNames) {
     for (const a of allocations) {
-      allocationMap.set(a.tabName.toLowerCase(), a);
+      allocationByName.set(a.tabName.toLowerCase(), a);
     }
+  }
+
+  function getAllocation(tab: TalentTabData, tabIndex: number): TalentAllocation | undefined {
+    if (!allocations) return undefined;
+    if (hasTabNames) return allocationByName.get(tab.name.toLowerCase());
+    // Fall back to positional matching (tabs are already sorted by orderIndex)
+    return allocations[tabIndex];
   }
 
   const totalPoints = allocations?.reduce((s, a) => s + a.pointsSpent, 0) ?? 0;
@@ -342,11 +351,11 @@ export function TalentTreeViewer({
 
       {/* Three talent trees side by side */}
       <div className="flex gap-2">
-        {classData.tabs.map((tab) => (
+        {classData.tabs.map((tab, idx) => (
           <TalentTab
             key={tab.id}
             tab={tab}
-            allocation={allocationMap.get(tab.name.toLowerCase())}
+            allocation={getAllocation(tab, idx)}
           />
         ))}
       </div>

@@ -66,6 +66,7 @@ export interface ArmoryPlayer {
     readonly guild_id?: string;
     readonly guild_name?: string;
     readonly gear: PlayerOutfit;
+    readonly talents?: PlayerTalents;
     readonly updated_at: string;
     readonly updated_from_instance?: string;
 }
@@ -577,6 +578,25 @@ export type PlayerOutfit = [
     PlayerGear,
     PlayerGear
 ];
+
+// From chroniclesdk/armory.go
+export interface PlayerTalentTab {
+    readonly tab_name?: string;
+    readonly points_spent: number;
+    readonly ranks: string;
+}
+
+// From chroniclesdk/armory.go
+/**
+ * PlayerTalents represents a player's talent allocation across three trees.
+ */
+export interface PlayerTalents {
+    readonly trees: [
+        PlayerTalentTab,
+        PlayerTalentTab,
+        PlayerTalentTab
+    ];
+}
 
 // From chroniclesdk/user.go
 export interface Preferences {

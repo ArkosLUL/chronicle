@@ -362,6 +362,42 @@ func (p *Parser) combatantTransmog(ctx context.Context, ts time.Time, m *Matched
 	})
 }
 
+// COMBATANT_TALENTS: guid|playerName|tab1|tab2|tab3
+// Each tab: TabName;pointsSpent;rankDigits
+func (p *Parser) combatantTalents(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
+	id := m.Guid()
+	name := m.String()
+
+	var tabs [3]messages.CombatantTalentTab
+	for i := 0; i < 3; i++ {
+		raw := m.String()
+		parts := strings.SplitN(raw, ";", 3)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid talent tab format: %q", raw)
+		}
+		pts, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid points spent in talent tab: %w", err)
+		}
+		tabs[i] = messages.CombatantTalentTab{
+			TabName:     parts[0],
+			PointsSpent: pts,
+			RankDigits:  parts[2],
+		}
+	}
+
+	if err := m.Error(); err != nil {
+		return nil, err
+	}
+
+	return set(&messages.CombatantTalents{
+		MessageBase: messages.Base(ts),
+		Guid:        id,
+		PlayerName:  name,
+		Tabs:        tabs,
+	})
+}
+
 func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {
 	var guild *combatant.Guild
 

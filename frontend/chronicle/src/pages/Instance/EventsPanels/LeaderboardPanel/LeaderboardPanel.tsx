@@ -86,7 +86,7 @@ function LeaderboardContent(props: PanelRenderProps<LeaderboardPanelResult>) {
       </div>
 
       {Object.entries(
-        speedrun.proof.reduce<Record<string, typeof speedrun.proof>>((acc, p) => {
+        speedrun.proof.reduce<Record<string, Array<typeof speedrun.proof[number]>>>((acc, p) => {
           const cat = p.requirement.category || "Other";
           (acc[cat] ??= []).push(p);
           return acc;

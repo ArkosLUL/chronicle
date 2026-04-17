@@ -51,7 +51,7 @@ function aggregateForEncounters(
 type AbsorbedDamageContentProps = PanelRenderProps<AbsorbedDamageResult>;
 
 export const AbsorbedDamageContent = (props: AbsorbedDamageContentProps) => {
-  const { result, context, loading, processing } = props;
+  const { result, context } = props;
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,

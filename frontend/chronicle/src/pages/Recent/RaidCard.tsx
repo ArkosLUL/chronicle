@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Users, Swords, CheckCircle, XCircle, Youtube } from "lucide-react";
+import { Clock, Users, CheckCircle, XCircle, Youtube } from "lucide-react";
 import type { RecentInstance } from "@/api/typesGenerated";
-import { getInstanceBackground, getInstanceConfig } from "@/pages/Logs/utils/instanceImages";
+import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
 
 function formatDuration(ms: number | null): string {
   if (ms === null || ms === 0) return "—";
@@ -40,9 +40,9 @@ export function RaidCard({ instance }: RaidCardProps) {
   const backgroundImage = getInstanceBackground(instance.name);
   
   // Use static boss count if configured, otherwise fall back to API value
-  const config = getInstanceConfig(instance.name);
-  const displayBossCount = config?.bossCount ?? instance.boss_count;
-  const isFullClear = instance.boss_kills === displayBossCount && displayBossCount > 0;
+  // const config = getInstanceConfig(instance.name);
+  // const displayBossCount = config?.bossCount ?? instance.boss_count;
+  // const isFullClear = instance.boss_kills === displayBossCount && displayBossCount > 0;
   
   // Build instance URL - prefer slug if available
   const instanceUrl = instance.slug 

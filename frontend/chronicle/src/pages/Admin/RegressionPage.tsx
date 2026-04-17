@@ -49,12 +49,12 @@ function SimpleDiff({ left, right, leftLabel, rightLabel }: { left: string; righ
 
 function MatchBadge({ matches }: { matches: boolean | null | undefined }) {
   if (matches === null || matches === undefined) {
-    return <Minus className="h-3.5 w-3.5 text-gray-500" title="No previous snapshot to compare" />;
+    return <span title="No previous snapshot to compare"><Minus className="h-3.5 w-3.5 text-gray-500" /></span>;
   }
   if (matches) {
-    return <Check className="h-3.5 w-3.5 text-green-400" title="Matches previous snapshot" />;
+    return <span title="Matches previous snapshot"><Check className="h-3.5 w-3.5 text-green-400" /></span>;
   }
-  return <X className="h-3.5 w-3.5 text-red-400" title="Differs from previous snapshot" />;
+  return <span title="Differs from previous snapshot"><X className="h-3.5 w-3.5 text-red-400" /></span>;
 }
 
 function FixtureCard({
@@ -94,7 +94,7 @@ function FixtureCard({
         {latestWithStatus ? (
           <MatchBadge matches={latestWithStatus.matches_previous} />
         ) : (
-          <Minus className="h-3.5 w-3.5 text-gray-600" title="No comparison data yet" />
+          <span title="No comparison data yet"><Minus className="h-3.5 w-3.5 text-gray-600" /></span>
         )}
 
         <div className="flex-1 min-w-0">

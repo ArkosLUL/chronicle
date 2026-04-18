@@ -122,7 +122,7 @@ export function AdminOutdatedInstancesPage() {
                     <td className="py-2 px-3">
                       {instance.slug ? (
                         <Link
-                          to={`/instance/${instance.slug}`}
+                          to={`/instances/${instance.slug}`}
                           className="text-blue-500 hover:underline"
                         >
                           {instance.name}

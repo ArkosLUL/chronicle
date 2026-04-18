@@ -83,6 +83,11 @@ var (
 		Name:     "Zul'Gurub",
 		ZoneName: ZoneNameMatcher("zul'gurub"),
 		Hostiles: FromMap(ZulGurubHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: ZulGurubSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	EmeraldSanctum = (&CommonFactory{
@@ -107,12 +112,22 @@ var (
 		Name:     "Temple of Ahn'Qiraj",
 		ZoneName: ZoneNameMatcher("ahn'qiraj"),
 		Hostiles: FromMap(TempleOfAhnQirajHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: TempleOfAhnQirajSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	RuinsOfAhnQiraj = (&CommonFactory{
 		Name:     "Ruins of Ahn'Qiraj",
 		ZoneName: ZoneNameMatcher("ruins of ahn'qiraj"),
 		Hostiles: FromMap(RuinsOfAhnQirajHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: RuinsOfAhnQirajSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	BlackwingLair = (&CommonFactory{
@@ -130,6 +145,11 @@ var (
 		Name:     "Naxxramas",
 		ZoneName: ZoneNameMatcher("naxxramas", "the upper necropolis"),
 		Hostiles: FromMap(NaxxramasHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: NaxxramasSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	Stratholme = (&CommonFactory{

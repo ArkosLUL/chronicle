@@ -1,16 +1,20 @@
 package instances
 
 import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
+
 // SpeedrunRulesByInstance returns speedrun requirements keyed by instance name.
 // Only instances with speedrun rules are included.
 func SpeedrunRulesByInstance() map[string][]rankings.SpeedrunRequirement {
 	return map[string][]rankings.SpeedrunRequirement{
-		"Molten Core":    MoltenCoreSpeedrunRequirements(),
-		"Blackwing Lair":  BlackwingLairSpeedrunRequirements(),
-		"Onyxia's Lair":  OnyxiasLairSpeedrunRequirements(),
+		"Molten Core":         MoltenCoreSpeedrunRequirements(),
+		"Blackwing Lair":      BlackwingLairSpeedrunRequirements(),
+		"Onyxia's Lair":       OnyxiasLairSpeedrunRequirements(),
+		"Naxxramas":           NaxxramasSpeedrunRequirements(),
+		"Zul'Gurub":           ZulGurubSpeedrunRequirements(),
+		"Temple of Ahn'Qiraj": TempleOfAhnQirajSpeedrunRequirements(),
+		"Ruins of Ahn'Qiraj":  RuinsOfAhnQirajSpeedrunRequirements(),
 	}
 }
-
 
 // MoltenCoreSpeedrunRequirements returns the 10 boss kills required for a
 // valid Molten Core speedrun.
@@ -43,10 +47,10 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Vaelastrasz the Corrupt", EntryIDs: []uint32{13020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Broodlord Lashlayer", EntryIDs: []uint32{12017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Firemaw", EntryIDs: []uint32{11983}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-    {Name: "Ezzel Darkbrewer", EntryIDs: []uint32{65148}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-    {Name: "Ebonroc", EntryIDs: []uint32{14601}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-    {Name: "Flamegor", EntryIDs: []uint32{11981}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-    {Name: "Chromaggus", EntryIDs: []uint32{14020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ezzel Darkbrewer", EntryIDs: []uint32{65148}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ebonroc", EntryIDs: []uint32{14601}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Flamegor", EntryIDs: []uint32{11981}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Chromaggus", EntryIDs: []uint32{14020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Nefarian", EntryIDs: []uint32{11583}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
 }
@@ -57,5 +61,88 @@ func OnyxiasLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 	return []rankings.SpeedrunRequirement{
 		{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Broodcommander Axelus", EntryIDs: []uint32{49018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}
+
+// NaxxramasSpeedrunRequirements returns the boss kills required for a
+// valid Naxxramas speedrun.
+func NaxxramasSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		// Arachnid Quarter
+		{Name: "Anub'Rekhan", EntryIDs: []uint32{15956}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Grand Widow Faerlina", EntryIDs: []uint32{15953}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Maexxna", EntryIDs: []uint32{15952}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		// Plague Quarter
+		{Name: "Noth the Plaguebringer", EntryIDs: []uint32{15954}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Heigan the Unclean", EntryIDs: []uint32{15936}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Loatheb", EntryIDs: []uint32{16011}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		// Military Quarter
+		{Name: "Instructor Razuvious", EntryIDs: []uint32{16061}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Gothik the Harvester", EntryIDs: []uint32{16060}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Four Horsemen: Thane Korth'azz", EntryIDs: []uint32{16064}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Four Horsemen: Lady Blaumeux", EntryIDs: []uint32{16065}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Four Horsemen: Sir Zeliek", EntryIDs: []uint32{16063}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Four Horsemen: Highlord Mograine", EntryIDs: []uint32{16062}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+
+		// Construct Quarter
+		{Name: "Patchwerk", EntryIDs: []uint32{16028}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Grobbulus", EntryIDs: []uint32{15931}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Gluth", EntryIDs: []uint32{15932}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Thaddius", EntryIDs: []uint32{15928}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Stalagg", EntryIDs: []uint32{15929}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Feugen", EntryIDs: []uint32{15928}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		// Frostwyrm Lair
+		{Name: "Sapphiron", EntryIDs: []uint32{15989}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Kel'Thuzad", EntryIDs: []uint32{15990}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}
+
+// ZulGurubSpeedrunRequirements returns the boss kills required for a
+// valid Zul'Gurub speedrun.
+func ZulGurubSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		{Name: "High Priestess Jeklik", EntryIDs: []uint32{14517}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "High Priest Venoxis", EntryIDs: []uint32{14507}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "High Priestess Mar'li", EntryIDs: []uint32{14510}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Bloodlord Mandokir", EntryIDs: []uint32{11382}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "High Priest Thekal", EntryIDs: []uint32{11348}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "High Priestess Arlokk", EntryIDs: []uint32{14515}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Jin'do the Hexxer", EntryIDs: []uint32{11380}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Hakkar", EntryIDs: []uint32{14834}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Gahz'ranka", EntryIDs: []uint32{15114}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Edge of Madness", EntryIDs: []uint32{15083, 15084, 15085, 15082}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}
+
+// TempleOfAhnQirajSpeedrunRequirements returns the boss kills required for a
+// valid Temple of Ahn'Qiraj (AQ40) speedrun.
+func TempleOfAhnQirajSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		{Name: "The Prophet Skeram", EntryIDs: []uint32{15263}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Bug Family: Princess Yauj", EntryIDs: []uint32{15543}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Bug Family: Lord Kri", EntryIDs: []uint32{15511}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Bug Family: Vem", EntryIDs: []uint32{15544}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Battleguard Sartura", EntryIDs: []uint32{15516}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Fankriss the Unyielding", EntryIDs: []uint32{15510}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Viscidus", EntryIDs: []uint32{15299}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Princess Huhuran", EntryIDs: []uint32{15509}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Twin Emperors: Vek'nilash", EntryIDs: []uint32{15275}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Twin Emperors: Vek'lor", EntryIDs: []uint32{15276}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ouro", EntryIDs: []uint32{15517}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "C'Thun", EntryIDs: []uint32{15727}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Eye of C'Thun", EntryIDs: []uint32{15589}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}
+
+// RuinsOfAhnQirajSpeedrunRequirements returns the boss kills required for a
+// valid Ruins of Ahn'Qiraj (AQ20) speedrun.
+func RuinsOfAhnQirajSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		{Name: "Kurinnaxx", EntryIDs: []uint32{15348}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "General Rajaxx", EntryIDs: []uint32{15341}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Moam", EntryIDs: []uint32{15340}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Buru the Gorger", EntryIDs: []uint32{15370}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ayamiss the Hunter", EntryIDs: []uint32{15369}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ossirian the Unscarred", EntryIDs: []uint32{15339}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
 }

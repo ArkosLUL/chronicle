@@ -114,12 +114,12 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	}
 
 	c := &Hookable{
-		name:            f.Name,
-		zoneNameMatch:   f.ZoneName,
-		logger:          logger,
-		units:           db,
-		CurrentZone:     z,
-		Auras:           auraTracking,
+		name:          f.Name,
+		zoneNameMatch: f.ZoneName,
+		logger:        logger,
+		units:         db,
+		CurrentZone:   z,
+		//Auras:           auraTracking,
 		Characters:      characters,
 		Identifier:      f.Hostiles(),
 		events:          encounterevents.NewEvents(),
@@ -142,14 +142,14 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		}
 	}
 
-	auraTracking.SetEmit(func(evt *messages.Aura) {
-		if c.currentFight != nil && c.currentFight.active() {
-			err := c.currentFight.Events.Process(evt)
-			if err != nil {
-				logger.Error("processing synthetic aura event in ongoing fight", slog.String("error", err.Error()))
-			}
-		}
-	})
+	//auraTracking.SetEmit(func(evt *messages.Aura) {
+	//	if c.currentFight != nil && c.currentFight.active() {
+	//		err := c.currentFight.Events.Process(evt)
+	//		if err != nil {
+	//			logger.Error("processing synthetic aura event in ongoing fight", slog.String("error", err.Error()))
+	//		}
+	//	}
+	//})
 
 	ce.emit = func(evt *messages.UnitClassificationEvent) {
 		if c.currentFight != nil && c.currentFight.active() {

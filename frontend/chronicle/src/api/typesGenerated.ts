@@ -61,6 +61,7 @@ export interface AdminOutdatedInstance {
     readonly realm_name: string;
     readonly uploader_name: string;
     readonly uploaded_at: string;
+    readonly elapsed_seconds: number | null;
 }
 
 // From chroniclesdk/user.go
@@ -69,7 +70,7 @@ export interface AdminOutdatedInstance {
  */
 export interface AdminOutdatedInstancesResponse {
     readonly instances: readonly AdminOutdatedInstance[];
-    readonly current_version: string;
+    readonly min_version: string;
 }
 
 // From chroniclesdk/user.go

@@ -2889,16 +2889,25 @@ SELECT
   li.hashed_slug,
   wsr.name as realm_name,
   u.username as uploader_name,
-  wlg.created_at as uploaded_at
+  wlg.created_at as uploaded_at,
+  li.start_time,
+  li.end_time
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
-WHERE li.parser_version != $1
-ORDER BY uploaded_at DESC
+WHERE COALESCE(NULLIF(split_part(split_part(li.parser_version, '+', 1), '.', 3), ''), '0')::int
+      < COALESCE(NULLIF(split_part(split_part($1::text, '+', 1), '.', 3), ''), '0')::int
+  AND ($2::text IS NULL OR li.name ILIKE '%' || $2::text || '%')
+ORDER BY (li.end_time - li.start_time) ASC NULLS LAST
 LIMIT 50
 `
+
+type AdminListOutdatedParserVersionInstancesParams struct {
+	MinParserVersion string      `db:"min_parser_version" json:"min_parser_version"`
+	InstanceName     pgtype.Text `db:"instance_name" json:"instance_name"`
+}
 
 type AdminListOutdatedParserVersionInstancesRow struct {
 	ID            uuid.UUID          `db:"id" json:"id"`
@@ -2909,10 +2918,12 @@ type AdminListOutdatedParserVersionInstancesRow struct {
 	RealmName     string             `db:"realm_name" json:"realm_name"`
 	UploaderName  string             `db:"uploader_name" json:"uploader_name"`
 	UploadedAt    pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+	StartTime     pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime       pgtype.Timestamptz `db:"end_time" json:"end_time"`
 }
 
-func (q *sqlQuerier) AdminListOutdatedParserVersionInstances(ctx context.Context, currentParserVersion string) ([]AdminListOutdatedParserVersionInstancesRow, error) {
-	rows, err := q.db.Query(ctx, adminListOutdatedParserVersionInstances, currentParserVersion)
+func (q *sqlQuerier) AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error) {
+	rows, err := q.db.Query(ctx, adminListOutdatedParserVersionInstances, arg.MinParserVersion, arg.InstanceName)
 	if err != nil {
 		return nil, err
 	}
@@ -2929,6 +2940,8 @@ func (q *sqlQuerier) AdminListOutdatedParserVersionInstances(ctx context.Context
 			&i.RealmName,
 			&i.UploaderName,
 			&i.UploadedAt,
+			&i.StartTime,
+			&i.EndTime,
 		); err != nil {
 			return nil, err
 		}

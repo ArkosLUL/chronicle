@@ -791,11 +791,14 @@ export function useAdminInstanceNames(options?: Omit<UseQueryOptions<string[]>, 
   });
 }
 
-export function useAdminOutdatedInstances() {
+export function useAdminOutdatedInstances(instanceName?: string) {
   return useQuery({
-    queryKey: ["admin", "outdated-instances"],
+    queryKey: ["admin", "outdated-instances", instanceName ?? ""],
     queryFn: async () => {
-      const response = await fetch("/api/v1/admin/outdated-instances");
+      const params = new URLSearchParams();
+      if (instanceName) params.set("instance_name", instanceName);
+      const url = "/api/v1/admin/outdated-instances" + (params.toString() ? `?${params}` : "");
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch outdated instances");
       return response.json() as Promise<AdminOutdatedInstancesResponse>;
     },

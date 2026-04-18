@@ -78,19 +78,20 @@ type UpsertDataGrantRequest struct {
 }
 // AdminOutdatedInstance is an instance that is not on the latest parser version.
 type AdminOutdatedInstance struct {
-	ID            uuid.UUID `json:"id"`
-	LogGroupID    uuid.UUID `json:"log_group_id"`
-	Name          string    `json:"name"`
-	Slug          string    `json:"slug"`
-	ParserVersion string    `json:"parser_version"`
-	RealmName     string    `json:"realm_name"`
-	UploaderName  string    `json:"uploader_name"`
-	UploadedAt    time.Time `json:"uploaded_at"`
+	ID             uuid.UUID `json:"id"`
+	LogGroupID     uuid.UUID `json:"log_group_id"`
+	Name           string    `json:"name"`
+	Slug           string    `json:"slug"`
+	ParserVersion  string    `json:"parser_version"`
+	RealmName      string    `json:"realm_name"`
+	UploaderName   string    `json:"uploader_name"`
+	UploadedAt     time.Time `json:"uploaded_at"`
+	ElapsedSeconds *float64  `json:"elapsed_seconds"`
 }
 
 // AdminOutdatedInstancesResponse is the response for listing instances with outdated parser versions.
 type AdminOutdatedInstancesResponse struct {
-	Instances      []AdminOutdatedInstance `json:"instances"`
-	CurrentVersion string                  `json:"current_version"`
+	Instances  []AdminOutdatedInstance `json:"instances"`
+	MinVersion string                  `json:"min_version"`
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 type sqlcQuerier interface {
-	AdminListOutdatedParserVersionInstances(ctx context.Context, currentParserVersion string) ([]AdminListOutdatedParserVersionInstancesRow, error)
+	AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error)
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
 	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
 	CountActiveRegressionJobs(ctx context.Context) (int64, error)

@@ -2,14 +2,32 @@ import { Link } from "react-router-dom";
 import { useAdminOutdatedInstances, useReparseLogGroup } from "@/api/queries";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
+function formatElapsed(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 export function AdminOutdatedInstancesPage() {
-  const { data, isLoading, error, refetch } = useAdminOutdatedInstances();
+  const [nameFilter, setNameFilter] = useState("");
+  const [debouncedFilter, setDebouncedFilter] = useState("");
+  const { data, isLoading, error, refetch } = useAdminOutdatedInstances(debouncedFilter || undefined);
   const reparseLogGroup = useReparseLogGroup();
   const [reparsingIds, setReparsingIds] = useState<Set<string>>(new Set());
+  const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout>>();
+
+  const handleNameFilterChange = (value: string) => {
+    setNameFilter(value);
+    if (debounceTimer) clearTimeout(debounceTimer);
+    setDebounceTimer(setTimeout(() => setDebouncedFilter(value), 300));
+  };
 
   const handleReparse = (logGroupId: string, name: string) => {
     setReparsingIds((prev) => new Set(prev).add(logGroupId));
@@ -50,10 +68,23 @@ export function AdminOutdatedInstancesPage() {
         <h1 className="text-2xl font-bold">Outdated Parser Instances</h1>
         {data && (
           <span className="text-sm text-muted-foreground">
-            Current: <code className="bg-muted px-1 rounded">{data.current_version}</code>
+            Below: <code className="bg-muted px-1 rounded">{data.min_version}</code>
           </span>
         )}
       </div>
+
+      <Card className="p-4">
+        <div className="mb-4 relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Filter by instance name..."
+            value={nameFilter}
+            onChange={(e) => handleNameFilterChange(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background"
+          />
+        </div>
+      </Card>
 
       <Card className="p-4">
         {isLoading && (
@@ -77,6 +108,7 @@ export function AdminOutdatedInstancesPage() {
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 px-3">Instance</th>
+                  <th className="py-2 px-3">Elapsed</th>
                   <th className="py-2 px-3">Realm</th>
                   <th className="py-2 px-3">Uploader</th>
                   <th className="py-2 px-3">Uploaded</th>
@@ -98,6 +130,11 @@ export function AdminOutdatedInstancesPage() {
                       ) : (
                         instance.name
                       )}
+                    </td>
+                    <td className="py-2 px-3 text-muted-foreground">
+                      {instance.elapsed_seconds != null
+                        ? formatElapsed(instance.elapsed_seconds)
+                        : "—"}
                     </td>
                     <td className="py-2 px-3">{instance.realm_name}</td>
                     <td className="py-2 px-3">{instance.uploader_name}</td>

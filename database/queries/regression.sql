@@ -57,13 +57,17 @@ SELECT
   li.hashed_slug,
   wsr.name as realm_name,
   u.username as uploader_name,
-  wlg.created_at as uploaded_at
+  wlg.created_at as uploaded_at,
+  li.start_time,
+  li.end_time
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
 JOIN users u ON u.id = wlg.owner
 JOIN wow_server_realms wsr ON wsr.id = li.realm_id
-WHERE li.parser_version != @current_parser_version
-ORDER BY uploaded_at DESC
+WHERE COALESCE(NULLIF(split_part(split_part(li.parser_version, '+', 1), '.', 3), ''), '0')::int
+      < COALESCE(NULLIF(split_part(split_part(@min_parser_version::text, '+', 1), '.', 3), ''), '0')::int
+  AND (sqlc.narg('instance_name')::text IS NULL OR li.name ILIKE '%' || sqlc.narg('instance_name')::text || '%')
+ORDER BY (li.end_time - li.start_time) ASC NULLS LAST
 LIMIT 50;
 

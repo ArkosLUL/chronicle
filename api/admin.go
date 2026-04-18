@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"github.com/Emyrk/chronicle/internal/version"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -413,13 +412,23 @@ func (a *API) AdminListInstanceNames(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, names)
 }
+
 // AdminListOutdatedInstances returns instances not on the current parser version.
 func (a *API) AdminListOutdatedInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	currentVersion := version.GitTag + "+" + version.GitCommit
+	const minParserVersion = "v0.0.437"
 
-	rows, err := a.Opts.Zed.AdminListOutdatedParserVersionInstances(ctx, currentVersion)
+	nameFilter := r.URL.Query().Get("instance_name")
+	var instanceName pgtype.Text
+	if nameFilter != "" {
+		instanceName = pgtype.Text{String: nameFilter, Valid: true}
+	}
+
+	rows, err := a.Opts.Zed.AdminListOutdatedParserVersionInstances(ctx, database.AdminListOutdatedParserVersionInstancesParams{
+		MinParserVersion: minParserVersion,
+		InstanceName:     instanceName,
+	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -427,7 +436,7 @@ func (a *API) AdminListOutdatedInstances(w http.ResponseWriter, r *http.Request)
 
 	instances := make([]chroniclesdk.AdminOutdatedInstance, len(rows))
 	for i, row := range rows {
-		instances[i] = chroniclesdk.AdminOutdatedInstance{
+		inst := chroniclesdk.AdminOutdatedInstance{
 			ID:            row.ID,
 			LogGroupID:    row.LogGroupID,
 			Name:          row.Name,
@@ -437,11 +446,15 @@ func (a *API) AdminListOutdatedInstances(w http.ResponseWriter, r *http.Request)
 			UploaderName:  row.UploaderName,
 			UploadedAt:    row.UploadedAt.Time,
 		}
+		if row.StartTime.Valid && row.EndTime.Valid {
+			elapsed := row.EndTime.Time.Sub(row.StartTime.Time).Seconds()
+			inst.ElapsedSeconds = &elapsed
+		}
+		instances[i] = inst
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.AdminOutdatedInstancesResponse{
-		Instances:      instances,
-		CurrentVersion: currentVersion,
+		Instances:  instances,
+		MinVersion: minParserVersion,
 	})
 }
-

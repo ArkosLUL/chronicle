@@ -68,6 +68,11 @@ JOIN wow_server_realms wsr ON wsr.id = li.realm_id
 WHERE COALESCE(NULLIF(split_part(split_part(li.parser_version, '+', 1), '.', 3), ''), '0')::int
       < COALESCE(NULLIF(split_part(split_part(@min_parser_version::text, '+', 1), '.', 3), ''), '0')::int
   AND (sqlc.narg('instance_name')::text IS NULL OR li.name ILIKE '%' || sqlc.narg('instance_name')::text || '%')
+  AND EXISTS(
+    SELECT 1 FROM log_file lf
+    WHERE lf.wow_log_id = li.log_group_id
+    AND lf.storage_deleted_at IS NULL
+  )
 ORDER BY (li.end_time - li.start_time) ASC NULLS LAST
 LIMIT 50;
 

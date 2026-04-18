@@ -18,15 +18,24 @@ function formatElapsed(seconds: number): string {
 export function AdminOutdatedInstancesPage() {
   const [nameFilter, setNameFilter] = useState("");
   const [debouncedFilter, setDebouncedFilter] = useState("");
-  const { data, isLoading, error, refetch } = useAdminOutdatedInstances(debouncedFilter || undefined);
+  const [parserVersion, setParserVersion] = useState("");
+  const [debouncedParserVersion, setDebouncedParserVersion] = useState("");
+  const { data, isLoading, error, refetch } = useAdminOutdatedInstances(debouncedFilter || undefined, debouncedParserVersion || undefined);
   const reparseLogGroup = useReparseLogGroup();
   const [reparsingIds, setReparsingIds] = useState<Set<string>>(new Set());
   const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout>>();
+  const [versionDebounceTimer, setVersionDebounceTimer] = useState<ReturnType<typeof setTimeout>>();
 
   const handleNameFilterChange = (value: string) => {
     setNameFilter(value);
     if (debounceTimer) clearTimeout(debounceTimer);
     setDebounceTimer(setTimeout(() => setDebouncedFilter(value), 300));
+  };
+
+  const handleParserVersionChange = (value: string) => {
+    setParserVersion(value);
+    if (versionDebounceTimer) clearTimeout(versionDebounceTimer);
+    setVersionDebounceTimer(setTimeout(() => setDebouncedParserVersion(value), 300));
   };
 
   const handleReparse = (logGroupId: string, name: string) => {
@@ -74,15 +83,26 @@ export function AdminOutdatedInstancesPage() {
       </div>
 
       <Card className="p-4">
-        <div className="mb-4 relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Filter by instance name..."
-            value={nameFilter}
-            onChange={(e) => handleNameFilterChange(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background"
-          />
+        <div className="mb-4 flex gap-4">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Filter by instance name..."
+              value={nameFilter}
+              onChange={(e) => handleNameFilterChange(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background"
+            />
+          </div>
+          <div className="relative max-w-xs">
+            <input
+              type="text"
+              placeholder="Min parser version (e.g. v0.0.437)"
+              value={parserVersion}
+              onChange={(e) => handleParserVersionChange(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded-md bg-background font-mono"
+            />
+          </div>
         </div>
       </Card>
 

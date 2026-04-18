@@ -112,9 +112,6 @@ type Characters struct {
 
 	sharedState map[string]any
 
-	// auras keeps track of auras on all characters.
-	//auras *auras.Tracking
-
 	// TODO: unroll hooks?
 	hooks           []SetHook
 	activityChanged map[Character]struct{}

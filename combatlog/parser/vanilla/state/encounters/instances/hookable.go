@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/auras"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
@@ -44,14 +45,15 @@ type Hookable struct {
 	// Static
 	CurrentZone zone.Zone
 	*Identifier
-	verbose      bool
-	realm        *realm.Info         // mostly static
-	versions     map[string]string   // addon/dependency versions from HEADER
-	recorderGUID *guid.GUID          // recording player GUID from HEADER
+	verbose         bool
+	realm           *realm.Info         // mostly static
+	versions        map[string]string   // addon/dependency versions from HEADER
+	recorderGUID    *guid.GUID          // recording player GUID from HEADER
 	hooks           []instancehook.Hook // TODO: unroll?
 	speedrunTracker *rankings.SpeedrunTracker
 
 	// Live tracking data
+	Auras           *auras.Tracking
 	Characters      *character.Characters
 	currentFight    *ongoingFight
 	events          *encounterevents.Events
@@ -90,6 +92,9 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		characters.RegisterHook(speedrunTracker)
 	}
 
+	//auraTracking := auras.New()
+	//characters.RegisterHook(auraTracking)
+
 	lootTracking := loot.New(db)
 
 	overheals := &Overhealing{
@@ -102,6 +107,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		cie,
 		overheals,
 		lootTracking,
+		//auraTracking,
 	}
 	if speedrunTracker != nil {
 		hooks = append(hooks, speedrunTracker)
@@ -113,6 +119,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		logger:          logger,
 		units:           db,
 		CurrentZone:     z,
+		Auras:           auraTracking,
 		Characters:      characters,
 		Identifier:      f.Hostiles(),
 		events:          encounterevents.NewEvents(),
@@ -134,6 +141,15 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 			}
 		}
 	}
+
+	auraTracking.SetEmit(func(evt *messages.Aura) {
+		if c.currentFight != nil && c.currentFight.active() {
+			err := c.currentFight.Events.Process(evt)
+			if err != nil {
+				logger.Error("processing synthetic aura event in ongoing fight", slog.String("error", err.Error()))
+			}
+		}
+	})
 
 	ce.emit = func(evt *messages.UnitClassificationEvent) {
 		if c.currentFight != nil && c.currentFight.active() {

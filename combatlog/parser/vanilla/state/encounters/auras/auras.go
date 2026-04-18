@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
-	"github.com/google/uuid"
-	lru "github.com/hashicorp/golang-lru/v2"
-
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+	"github.com/google/uuid"
 )
 
 var _ instancehook.Hook = (*Tracking)(nil)
@@ -21,80 +21,185 @@ var _ character.SetHook = (*Tracking)(nil)
 type AuraState struct {
 	Buff   bool
 	Stacks int32
-	// Beyond this time, the aura can no longer exist
+	// Beyond this time, the aura can no longer exist.
 	MaxExistsUntil time.Time
+	SpellID        chrondbc.SpellID
+	SpellName      string
+	Spell          *chrondbc.Spell // retained for attribute checks (e.g. death persistence)
 }
 
 // Tracking maintains active auras per unit.
 type Tracking struct {
 	// units maps GUID -> spell -> aura state
-	units        map[guid.GUID]map[chrondbc.SpellID]*AuraState
-	maxDurations *lru.Cache[chrondbc.SpellID, time.Duration]
+	units map[guid.GUID]map[chrondbc.SpellID]*AuraState
+	// emit is set after construction to inject synthetic aura messages into the
+	// active fight's event stream.
+	emit func(*messages.Aura)
 }
 
-func New(all *character.Characters) (*Tracking, error) {
-	mlru, err := lru.New[chrondbc.SpellID, time.Duration](200)
-	if err != nil {
-		return nil, err
-	}
+func New() *Tracking {
 	return &Tracking{
-		units:        make(map[guid.GUID]map[chrondbc.SpellID]*AuraState),
-		maxDurations: mlru,
-	}, nil
+		units: make(map[guid.GUID]map[chrondbc.SpellID]*AuraState),
+	}
 }
 
-func (t *Tracking) Process(m messages.Message) error {
+// SetEmit sets the callback used to inject synthetic aura messages into the
+// active fight's event builder. Called from hookable wiring after construction.
+func (t *Tracking) SetEmit(fn func(*messages.Aura)) {
+	t.emit = fn
+}
+
+// ProcessMessage handles every message in the instance. Aura tracking runs
+// regardless of fight-active state so pre-buffs are captured.
+func (t *Tracking) ProcessMessage(_ bool, _ uuid.UUID, m messages.Message) error {
 	switch msg := m.(type) {
 	case *messages.Aura:
 		if msg.SpellData == nil {
 			return nil
 		}
-
-		if _, ok := t.units[msg.Target]; !ok {
-			t.units[msg.Target] = make(map[chrondbc.SpellID]*AuraState)
+		switch msg.State {
+		case types.AuraStateAdded, types.AuraStateModified:
+			t.applyAura(msg)
+		case types.AuraStateRemoved:
+			t.removeAura(msg)
 		}
-
-		state, exists := t.units[msg.Target][msg.SpellData.ID]
-		if !exists {
-			state = &AuraState{}
-			t.units[msg.Target][msg.SpellData.ID] = state
-		}
-
-		state.Stacks = msg.Amount
-		state.Buff = msg.IsBuff
-
-		// Calculate the maximum time the aura can exist based on any possible modifiers.
-		dur := chrondbc.MaxAuraDuration(msg.SpellData)
-		state.MaxExistsUntil = m.Date().Add(dur)
 	}
-
 	return nil
 }
 
-func (t *Tracking) ProcessMessage(active bool, encounterID uuid.UUID, m messages.Message) error {
+func (t *Tracking) applyAura(msg *messages.Aura) {
+	if _, ok := t.units[msg.Target]; !ok {
+		t.units[msg.Target] = make(map[chrondbc.SpellID]*AuraState)
+	}
+	state, exists := t.units[msg.Target][msg.SpellData.ID]
+	if !exists {
+		state = &AuraState{}
+		t.units[msg.Target][msg.SpellData.ID] = state
+	}
+	state.Stacks = msg.Amount
+	state.Buff = msg.IsBuff
+	maxDuration := chrondbc.MaxAuraDuration(msg.SpellData)
+	state.MaxExistsUntil = msg.Date().Add(maxDuration)
+	state.SpellID = msg.SpellData.ID
+	state.SpellName = msg.SpellName
+	state.Spell = msg.SpellData
+	t.units[msg.Target][msg.SpellData.ID] = state
+}
+
+func (t *Tracking) removeAura(msg *messages.Aura) {
+	if spells, ok := t.units[msg.Target]; ok {
+		delete(spells, msg.SpellData.ID)
+		if len(spells) == 0 {
+			delete(t.units, msg.Target)
+		}
+	}
+}
+
+// expireStale removes auras whose maximum possible duration has elapsed.
+func (t *Tracking) expireStale(now time.Time) {
+	for unitGUID, spells := range t.units {
+		for spellID, state := range spells {
+			if !state.MaxExistsUntil.IsZero() && now.After(state.MaxExistsUntil) {
+				delete(spells, spellID)
+			}
+		}
+		if len(spells) == 0 {
+			delete(t.units, unitGUID)
+		}
+	}
+}
+
+// FightStarted expires stale auras and emits synthetic "added" messages for all
+// tracked auras so the frontend can see pre-fight buffs.
+func (t *Tracking) FightStarted(_ uuid.UUID, m messages.Message) {
+	t.expireStale(m.Date())
+	t.emitAllAuras(m.Date())
+}
+
+// FightEnded expires stale auras when an encounter ends.
+func (t *Tracking) FightEnded(_ uuid.UUID, m messages.Message) {
+	t.expireStale(m.Date())
+}
+
+// Finalize clears all tracked state when the instance is done.
+func (t *Tracking) Finalize(_ context.Context) error {
+	t.units = make(map[guid.GUID]map[chrondbc.SpellID]*AuraState)
 	return nil
 }
 
-func (t *Tracking) Finalize(ctx context.Context) error {
-	return nil
+// ActivityChange clears non-persistent auras for characters that died.
+// Auras with AttrEx3_DeathPersistent (elixirs, flasks, food buffs, etc.) are kept.
+func (t *Tracking) ActivityChange(_ messages.Message, chars ...character.Character) {
+	for _, char := range chars {
+		if !char.IsActive() {
+			p, ok := char.CurrentPeriod()
+			if ok && p.EndState == period.EndStateSlain {
+				t.clearNonPersistent(char.ID())
+			}
+		}
+	}
 }
 
-func (t *Tracking) FightStarted(encounterID uuid.UUID, m messages.Message) {
-
+// clearNonPersistent removes auras that do not survive death.
+func (t *Tracking) clearNonPersistent(unit guid.GUID) {
+	spells, ok := t.units[unit]
+	if !ok {
+		return
+	}
+	for id, state := range spells {
+		if state.Spell == nil || !state.Spell.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {
+			delete(spells, id)
+		}
+	}
+	if len(spells) == 0 {
+		delete(t.units, unit)
+	}
 }
 
-func (t *Tracking) FightEnded(encounterID uuid.UUID, m messages.Message) {
+func (t *Tracking) CharacterAdded(_ messages.Message, _ ...character.Character) {}
 
+// emitAllAuras emits a synthetic aura message for every tracked aura on every unit.
+func (t *Tracking) emitAllAuras(ts time.Time) {
+	if t.emit == nil {
+		return
+	}
+	for unitGUID, spells := range t.units {
+		for _, aura := range spells {
+			t.emit(&messages.Aura{
+				MessageBase: messages.Base(ts, messages.WithSynthetic()),
+				IsBuff:      aura.Buff,
+				Target:      unitGUID,
+				SpellName:   aura.SpellName,
+				SpellData:   aura.Spell,
+				Amount:      aura.Stacks,
+				State:       types.AuraStateAdded,
+			})
+		}
+	}
 }
 
-func (t *Tracking) ActivityChange(m messages.Message, chars ...character.Character) {
-	//for _, char := range chars {
-	//  if char.IsActive() {
-	//
-	//  }
-	//}
+// --- Query methods ---
+
+// HasAura returns true if the unit currently has the given aura tracked.
+func (t *Tracking) HasAura(unit guid.GUID, spellID chrondbc.SpellID) bool {
+	if spells, ok := t.units[unit]; ok {
+		_, has := spells[spellID]
+		return has
+	}
+	return false
 }
 
-func (t *Tracking) CharacterAdded(m messages.Message, chars ...character.Character) {
+// GetStacks returns the current stack count, or 0 if not present.
+func (t *Tracking) GetStacks(unit guid.GUID, spellID chrondbc.SpellID) int32 {
+	if spells, ok := t.units[unit]; ok {
+		if state, has := spells[spellID]; has {
+			return state.Stacks
+		}
+	}
+	return 0
+}
 
+// ActiveAuras returns all active auras for a unit (nil if none).
+func (t *Tracking) ActiveAuras(unit guid.GUID) map[chrondbc.SpellID]*AuraState {
+	return t.units[unit]
 }

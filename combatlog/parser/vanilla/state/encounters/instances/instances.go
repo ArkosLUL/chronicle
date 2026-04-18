@@ -66,6 +66,11 @@ var (
 		Name:     "Onyxia's Lair",
 		ZoneName: ZoneNameMatcher("onyxia's lair"),
 		Hostiles: FromMap(OnyxiaHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: OnyxiasLairSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	RagefireChasm = (&CommonFactory{

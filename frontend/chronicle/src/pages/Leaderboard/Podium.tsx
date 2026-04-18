@@ -72,9 +72,9 @@ const INSTANCE_THEMES: Record<string, InstanceTheme> = {
     border: "rgba(234, 88, 12, 0.5)",
   },
   "Onyxia's Lair": {
-    glow: "rgba(99, 102, 241, 0.35)",
-    particles: ["#6366f1", "#818cf8", "#4f46e5", "#a5b4fc"],
-    border: "rgba(99, 102, 241, 0.5)",
+    glow: "rgba(15, 15, 25, 0.9)",
+    particles: ["#3a3a52", "#52526e", "#6a6a80", "#2a2a3e"],
+    border: "rgba(90, 90, 120, 0.7)",
   },
 }
 

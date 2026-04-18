@@ -6,7 +6,8 @@ import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/ins
 func SpeedrunRulesByInstance() map[string][]rankings.SpeedrunRequirement {
 	return map[string][]rankings.SpeedrunRequirement{
 		"Molten Core":    MoltenCoreSpeedrunRequirements(),
-		"Blackwing Lair": BlackwingLairSpeedrunRequirements(),
+		"Blackwing Lair":  BlackwingLairSpeedrunRequirements(),
+		"Onyxia's Lair":  OnyxiasLairSpeedrunRequirements(),
 	}
 }
 
@@ -47,5 +48,14 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
     {Name: "Flamegor", EntryIDs: []uint32{11981}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
     {Name: "Chromaggus", EntryIDs: []uint32{14020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Nefarian", EntryIDs: []uint32{11583}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}
+
+// OnyxiasLairSpeedrunRequirements returns the boss kills required for a
+// valid Onyxia's Lair speedrun.
+func OnyxiasLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Broodcommander Axelus", EntryIDs: []uint32{49018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
 }

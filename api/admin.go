@@ -417,7 +417,12 @@ func (a *API) AdminListInstanceNames(w http.ResponseWriter, r *http.Request) {
 func (a *API) AdminListOutdatedInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	const minParserVersion = "v0.0.437"
+	const defaultMinParserVersion = "v0.0.437"
+
+	minParserVersion := r.URL.Query().Get("parser_version")
+	if minParserVersion == "" {
+		minParserVersion = defaultMinParserVersion
+	}
 
 	nameFilter := r.URL.Query().Get("instance_name")
 	var instanceName pgtype.Text

@@ -3,7 +3,9 @@ package fakeoidc
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/markbates/goth"
@@ -15,9 +17,26 @@ func Run(ctx context.Context, accessURL *url.URL) (goth.Provider, error) {
 	mockoidc.NowFunc = func() time.Time {
 		return time.Now().UTC()
 	}
-	oidc, err := mockoidc.Run()
+
+	oidc, err := mockoidc.NewServer(nil)
+	if err != nil {
+		return nil, err
+	}
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, err
+	}
+	err = oidc.Start(ln, nil)
 	if err != nil {
 		return nil, fmt.Errorf("mock oidc: %w", err)
+	}
+
+	if strings.Contains(accessURL.Host, "192.168.1") {
+		_, port, err := net.SplitHostPort(oidc.Server.Addr)
+		if err != nil {
+			return nil, fmt.Errorf("split host port: %w", err)
+		}
+		oidc.Server.Addr = accessURL.Hostname() + ":" + port
 	}
 
 	oidc.AccessTTL = time.Hour

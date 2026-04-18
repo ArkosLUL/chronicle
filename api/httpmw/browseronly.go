@@ -11,7 +11,7 @@ import (
 // set automatically and JavaScript cannot override. Non-browser clients (curl,
 // scripts, bots) won't send it, so they are rejected.
 func BrowserOnly(accessURL *url.URL) func(next http.Handler) http.Handler {
-	isDev := strings.Contains(accessURL.Host, "localhost")
+	isDev := strings.Contains(accessURL.Host, "localhost") || strings.Contains(accessURL.String(), "192.168.1")
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +23,10 @@ func BrowserOnly(accessURL *url.URL) func(next http.Handler) http.Handler {
 			site := r.Header.Get("Sec-Fetch-Site")
 			if site == "" || site == "cross-site" {
 				// TODO: Standardize this more
-				if r.Header.Get("Origin") != "https://jollygrin.github.io" {
+				origin := r.Header.Get("Origin")
+				switch strings.TrimSuffix(origin, "/") {
+				case "https://jollygrin.github.io":
+				default:
 					http.Error(w, "Forbidden, only browser requests from https://chronicleclassic.com are allowed", http.StatusForbidden)
 					return
 				}

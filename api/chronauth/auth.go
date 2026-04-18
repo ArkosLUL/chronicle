@@ -54,7 +54,7 @@ type Service struct {
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, error) {
-	if opts.DevServer && !strings.Contains(opts.AccessURL.String(), "localhost") {
+	if opts.DevServer && !(strings.Contains(opts.AccessURL.String(), "localhost") || strings.Contains(opts.AccessURL.String(), "192.168.1")) {
 		return nil, fmt.Errorf("dev server can only be used with localhost access url, not %s", opts.AccessURL)
 	}
 	if opts.Zed == nil {

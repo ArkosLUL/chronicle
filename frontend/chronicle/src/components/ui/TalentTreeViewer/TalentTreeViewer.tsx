@@ -239,7 +239,7 @@ function TalentTab({
   const pointsSpent = allocation?.pointsSpent ?? 0;
 
   return (
-    <div className="flex flex-col bg-zinc-900/80 rounded-lg overflow-hidden border border-zinc-700/50">
+    <div className="flex flex-col bg-zinc-900/80 rounded-lg overflow-hidden border border-zinc-700/50 shrink-0">
       {/* Tab header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/80 border-b border-zinc-700/50">
         {tab.iconTexture && (
@@ -350,7 +350,7 @@ export function TalentTreeViewer({
       </div>
 
       {/* Three talent trees side by side */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {classData.tabs.map((tab, idx) => (
           <TalentTab
             key={tab.id}

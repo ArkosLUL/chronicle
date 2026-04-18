@@ -527,7 +527,7 @@ export function SpeedrunLeaderboard() {
           {/* Desktop Podium */}
           {!entriesLoading && entries && entries.length > 0 && (
             <div className="hidden md:block">
-              <Podium entries={top3} />
+              <Podium entries={top3} instanceName={selectedInstance} />
             </div>
           )}
 

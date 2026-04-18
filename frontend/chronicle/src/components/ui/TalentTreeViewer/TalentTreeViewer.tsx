@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSpell } from "@/api/queries";
 import { SpellTooltip } from "@/pages/WoWDB/SpellTooltip";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   Tooltip,
   TooltipContent,
@@ -124,10 +126,12 @@ function TalentIcon({
   const displayRank = currentRank > 0 ? currentRank : 1;
   const spellId = talent.spellRanks[Math.min(displayRank, talent.spellRanks.length) - 1];
 
-  // Lazy-fetch: only fetch spell data once user has hovered
+  // Lazy-fetch: only fetch spell data once user has hovered (desktop) or tapped (mobile)
   const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const isMobile = useIsMobile();
   const { data: spell } = useSpell(spellId?.toString() ?? "", {
-    enabled: hovered && spellId != null,
+    enabled: (hovered || pinned) && spellId != null,
   });
 
   const icon = (
@@ -168,6 +172,42 @@ function TalentIcon({
     </div>
   );
 
+  const tooltipBody = spell ? (
+    <SpellTooltip spell={spell} detailed />
+  ) : (
+    <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg px-3 py-2 text-sm text-zinc-400">
+      Loading…
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <span className="cursor-pointer" onClick={() => setPinned(true)}>
+          {icon}
+        </span>
+        {pinned && createPortal(
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60"
+            onClick={() => setPinned(false)}
+          >
+            <div className="relative mx-4 max-w-[calc(100vw-2rem)]" onClick={(e) => e.stopPropagation()}>
+              <button
+                className="absolute -top-3 -right-3 z-10 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-bold shadow-lg"
+                onClick={() => setPinned(false)}
+                aria-label="Close tooltip"
+              >
+                ✕
+              </button>
+              {tooltipBody}
+            </div>
+          </div>,
+          document.body,
+        )}
+      </>
+    );
+  }
+
   return (
     <TooltipProvider>
       <Tooltip delayDuration={150}>
@@ -186,13 +226,7 @@ function TalentIcon({
           className="p-0 bg-transparent border-0 z-[10000]"
           hideArrow
         >
-          {spell ? (
-            <SpellTooltip spell={spell} detailed />
-          ) : (
-            <div className="bg-[#1a1a2e] border-2 border-[#4a4a6a] rounded-lg px-3 py-2 text-sm text-zinc-400">
-              Loading…
-            </div>
-          )}
+          {tooltipBody}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -238,6 +272,45 @@ function TalentTab({
 
   const pointsSpent = allocation?.pointsSpent ?? 0;
 
+  // Build talent-id → grid position lookup for arrows
+  const talentPositions = useMemo(() => {
+    const map = new Map<number, { tier: number; col: number }>();
+    for (const talent of tab.talents) {
+      map.set(talent.id, { tier: talent.tierID, col: talent.columnIndex });
+    }
+    return map;
+  }, [tab.talents]);
+
+  // Collect prerequisite arrows with target talent info for coloring
+  const arrows = useMemo(() => {
+    const result: { fromTier: number; fromCol: number; toTier: number; toCol: number; toTabIndex: number; toMaxRank: number }[] = [];
+    for (const talent of tab.talents) {
+      if (!talent.prereqTalent) continue;
+      for (const prereqId of talent.prereqTalent) {
+        const from = talentPositions.get(prereqId);
+        if (from) {
+          result.push({
+            fromTier: from.tier,
+            fromCol: from.col,
+            toTier: talent.tierID,
+            toCol: talent.columnIndex,
+            toTabIndex: talent.tabIndex,
+            toMaxRank: talent.maxRank,
+          });
+        }
+      }
+    }
+    return result;
+  }, [tab.talents, talentPositions]);
+
+  // Grid cell dimensions (must match the className values below)
+  const cellW = 48; // w-10 = 40px icon + 8px gap
+  const cellH = 56; // h-12 = 48px + 8px gap (gap-2)
+  const iconSize = 40; // w-10
+
+  const svgW = 4 * cellW;
+  const svgH = (maxTier + 1) * cellH;
+
   return (
     <div className="flex flex-col bg-zinc-900/80 rounded-lg overflow-hidden border border-zinc-700/50 shrink-0">
       {/* Tab header */}
@@ -257,22 +330,81 @@ function TalentTab({
 
       {/* Talent grid */}
       <div className="p-3">
-        <div className="grid grid-cols-4 gap-2 justify-items-center">
-          {grid.map((row, tierIdx) =>
-            row.map((talent, colIdx) => (
-              <div
-                key={`${tierIdx}-${colIdx}`}
-                className="w-10 h-12 flex items-start justify-center"
-              >
-                {talent && (
-                  <TalentIcon
-                    talent={talent}
-                    currentRank={ranks.get(talent.tabIndex) ?? 0}
+        <div className="relative">
+          {/* Arrow SVG overlay */}
+          {arrows.length > 0 && (
+            <svg
+              className="absolute inset-0 pointer-events-none z-0"
+              width={svgW}
+              height={svgH}
+            >
+              <defs>
+                {arrows.map((a, i) => {
+                  const targetRank = ranks.get(a.toTabIndex) ?? 0;
+                  const fill = targetRank >= a.toMaxRank
+                    ? "#fbbf24"
+                    : targetRank > 0
+                      ? "#22c55e"
+                      : "#71717a";
+                  return (
+                    <marker
+                      key={i}
+                      id={`arrow-${tab.id}-${i}`}
+                      viewBox="0 0 10 10"
+                      refX="5"
+                      refY="5"
+                      markerWidth="5"
+                      markerHeight="5"
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill={fill} />
+                    </marker>
+                  );
+                })}
+              </defs>
+              {arrows.map((a, i) => {
+                const x1 = a.fromCol * cellW + iconSize / 2;
+                const y1 = a.fromTier * cellH + iconSize;
+                const x2 = a.toCol * cellW + iconSize / 2;
+                const y2 = a.toTier * cellH - 3;
+                const targetRank = ranks.get(a.toTabIndex) ?? 0;
+                const color = targetRank >= a.toMaxRank
+                  ? "#fbbf24" // amber-400 — maxed
+                  : targetRank > 0
+                    ? "#22c55e" // green-500 — partially filled
+                    : "#71717a"; // zinc-500 — unused
+                return (
+                  <line
+                    key={i}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke={color}
+                    strokeWidth={2}
+                    markerEnd={`url(#arrow-${tab.id}-${i})`}
                   />
-                )}
-              </div>
-            ))
+                );
+              })}
+            </svg>
           )}
+          <div className="relative z-10 grid grid-cols-4 gap-2 justify-items-center">
+            {grid.map((row, tierIdx) =>
+              row.map((talent, colIdx) => (
+                <div
+                  key={`${tierIdx}-${colIdx}`}
+                  className="w-10 h-12 flex items-start justify-center"
+                >
+                  {talent && (
+                    <TalentIcon
+                      talent={talent}
+                      currentRank={ranks.get(talent.tabIndex) ?? 0}
+                    />
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -2880,6 +2880,66 @@ func (q *sqlQuerier) SetDuplicateGroupIDs(ctx context.Context, arg SetDuplicateG
 	return err
 }
 
+const adminListOutdatedParserVersionInstances = `-- name: AdminListOutdatedParserVersionInstances :many
+SELECT
+  li.id,
+  li.log_group_id,
+  li.name,
+  li.parser_version,
+  li.hashed_slug,
+  wsr.name as realm_name,
+  u.username as uploader_name,
+  wlg.created_at as uploaded_at
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+WHERE li.parser_version != $1
+ORDER BY uploaded_at DESC
+LIMIT 50
+`
+
+type AdminListOutdatedParserVersionInstancesRow struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	LogGroupID    uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name          string             `db:"name" json:"name"`
+	ParserVersion string             `db:"parser_version" json:"parser_version"`
+	HashedSlug    pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	RealmName     string             `db:"realm_name" json:"realm_name"`
+	UploaderName  string             `db:"uploader_name" json:"uploader_name"`
+	UploadedAt    pgtype.Timestamptz `db:"uploaded_at" json:"uploaded_at"`
+}
+
+func (q *sqlQuerier) AdminListOutdatedParserVersionInstances(ctx context.Context, currentParserVersion string) ([]AdminListOutdatedParserVersionInstancesRow, error) {
+	rows, err := q.db.Query(ctx, adminListOutdatedParserVersionInstances, currentParserVersion)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AdminListOutdatedParserVersionInstancesRow
+	for rows.Next() {
+		var i AdminListOutdatedParserVersionInstancesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LogGroupID,
+			&i.Name,
+			&i.ParserVersion,
+			&i.HashedSlug,
+			&i.RealmName,
+			&i.UploaderName,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countActiveRegressionJobs = `-- name: CountActiveRegressionJobs :one
 SELECT COUNT(*) FROM river_job
 WHERE kind = 'regression-snapshot'

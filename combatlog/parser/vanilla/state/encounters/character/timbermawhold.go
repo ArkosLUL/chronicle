@@ -52,3 +52,7 @@ func NewVileSkitterer(id guid.GUID, all *Characters) (Character, bool) {
 func NewLoktanagTheVile(id guid.GUID, all *Characters) (Character, bool) {
   return NewAdsGoWithBoss(2139, 2141)(id, all)
 }
+
+func NewPerotharn(id guid.GUID, all *Characters) (Character, bool) {
+  return NewAdsGoWithBoss(60686, 60684)(id, all)
+}

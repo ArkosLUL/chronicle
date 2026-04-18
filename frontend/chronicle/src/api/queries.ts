@@ -50,6 +50,7 @@ import type {
   RegressionSnapshotFull as RegressionSnapshotFullGenerated,
   CreateRegressionFixtureRequest as CreateRegressionFixtureRequestGenerated,
   RequeueVersionResponse as RequeueVersionResponseGenerated,
+  AdminOutdatedInstancesResponse,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -787,6 +788,17 @@ export function useAdminInstanceNames(options?: Omit<UseQueryOptions<string[]>, 
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     ...options,
+  });
+}
+
+export function useAdminOutdatedInstances() {
+  return useQuery({
+    queryKey: ["admin", "outdated-instances"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/admin/outdated-instances");
+      if (!response.ok) throw new Error("Failed to fetch outdated instances");
+      return response.json() as Promise<AdminOutdatedInstancesResponse>;
+    },
   });
 }
 

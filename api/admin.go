@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"github.com/Emyrk/chronicle/internal/version"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
@@ -412,3 +413,35 @@ func (a *API) AdminListInstanceNames(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, names)
 }
+// AdminListOutdatedInstances returns instances not on the current parser version.
+func (a *API) AdminListOutdatedInstances(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	currentVersion := version.GitTag + "+" + version.GitCommit
+
+	rows, err := a.Opts.Zed.AdminListOutdatedParserVersionInstances(ctx, currentVersion)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	instances := make([]chroniclesdk.AdminOutdatedInstance, len(rows))
+	for i, row := range rows {
+		instances[i] = chroniclesdk.AdminOutdatedInstance{
+			ID:            row.ID,
+			LogGroupID:    row.LogGroupID,
+			Name:          row.Name,
+			Slug:          row.HashedSlug.String,
+			ParserVersion: row.ParserVersion,
+			RealmName:     row.RealmName,
+			UploaderName:  row.UploaderName,
+			UploadedAt:    row.UploadedAt.Time,
+		}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.AdminOutdatedInstancesResponse{
+		Instances:      instances,
+		CurrentVersion: currentVersion,
+	})
+}
+

@@ -137,6 +137,8 @@ func (api *API) Routes() chi.Router {
 			r.Delete("/users/{userID}/grants/{source}", api.DeleteUserGrant)
 			r.Get("/logs", api.AdminListLogs)
 			r.Get("/instance-names", api.AdminListInstanceNames)
+			r.Get("/outdated-instances", api.AdminListOutdatedInstances)
+
 			r.Route("/leaderboard", func(r chi.Router) {
 				r.Get("/version-requirements", api.AdminListLeaderboardVersionRequirements)
 				r.Group(func(r chi.Router) {

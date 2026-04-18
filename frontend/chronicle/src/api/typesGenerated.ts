@@ -49,6 +49,30 @@ export interface AdminLogsResponse {
 }
 
 // From chroniclesdk/user.go
+/**
+ * AdminOutdatedInstance is an instance that is not on the latest parser version.
+ */
+export interface AdminOutdatedInstance {
+    readonly id: string;
+    readonly log_group_id: string;
+    readonly name: string;
+    readonly slug: string;
+    readonly parser_version: string;
+    readonly realm_name: string;
+    readonly uploader_name: string;
+    readonly uploaded_at: string;
+}
+
+// From chroniclesdk/user.go
+/**
+ * AdminOutdatedInstancesResponse is the response for listing instances with outdated parser versions.
+ */
+export interface AdminOutdatedInstancesResponse {
+    readonly instances: readonly AdminOutdatedInstance[];
+    readonly current_version: string;
+}
+
+// From chroniclesdk/user.go
 export interface AdminUsersResponse {
     readonly users: readonly User[];
 }

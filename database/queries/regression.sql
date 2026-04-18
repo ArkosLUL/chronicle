@@ -47,3 +47,23 @@ DELETE FROM regression_snapshots WHERE id = @id;
 SELECT COUNT(*) FROM river_job
 WHERE kind = 'regression-snapshot'
 AND state IN ('available', 'pending', 'scheduled', 'running');
+
+-- name: AdminListOutdatedParserVersionInstances :many
+SELECT
+  li.id,
+  li.log_group_id,
+  li.name,
+  li.parser_version,
+  li.hashed_slug,
+  wsr.name as realm_name,
+  u.username as uploader_name,
+  wlg.created_at as uploaded_at
+FROM log_instances li
+JOIN parsed_log_group plg ON plg.id = li.log_group_id
+JOIN wow_log_groups wlg ON wlg.id = plg.id
+JOIN users u ON u.id = wlg.owner
+JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+WHERE li.parser_version != @current_parser_version
+ORDER BY uploaded_at DESC
+LIMIT 50;
+

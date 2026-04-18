@@ -13,6 +13,7 @@ func SpeedrunRulesByInstance() map[string][]rankings.SpeedrunRequirement {
 		"Zul'Gurub":           ZulGurubSpeedrunRequirements(),
 		"Temple of Ahn'Qiraj": TempleOfAhnQirajSpeedrunRequirements(),
 		"Ruins of Ahn'Qiraj":  RuinsOfAhnQirajSpeedrunRequirements(),
+		"Timbermaw Hold":      TimbermawHoldSpeedrunRequirements(),
 	}
 }
 
@@ -144,5 +145,23 @@ func RuinsOfAhnQirajSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Buru the Gorger", EntryIDs: []uint32{15370}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Ayamiss the Hunter", EntryIDs: []uint32{15369}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Ossirian the Unscarred", EntryIDs: []uint32{15339}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	}
+}
+
+// TimbermawHoldSpeedrunRequirements returns the boss kills required for a
+// valid Timbermaw Hold speedrun.
+func TimbermawHoldSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	return []rankings.SpeedrunRequirement{
+		{Name: "Kodiak", EntryIDs: []uint32{62937}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Rotgrowl", EntryIDs: []uint32{62936}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Trioch the Devourer", EntryIDs: []uint32{62946}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Karrsh the Sentinel", EntryIDs: []uint32{62934}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Chieftain Partath", EntryIDs: []uint32{62941}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Archdruid Kronn", EntryIDs: []uint32{62938}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Selenaxx Foulheart", EntryIDs: []uint32{62940}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Loktanag the Vile", EntryIDs: []uint32{2139}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ormanos the Cracked", EntryIDs: []uint32{62935}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Ursol", EntryIDs: []uint32{62947}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		{Name: "Peroth'arn", EntryIDs: []uint32{60686}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
 }

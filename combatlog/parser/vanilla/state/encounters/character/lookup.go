@@ -63,6 +63,7 @@ var characterFactories = []characterFactory{
 	NewVileSkitterer,
 	NewSelenaxxFoulheart,
 	NewLoktanagTheVile,
+	NewPerotharn,
 	// AQ 40
 	NewCthun,
 	// Naxx,

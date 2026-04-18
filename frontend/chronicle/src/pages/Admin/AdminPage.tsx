@@ -682,7 +682,17 @@ export function AdminPage() {
             <TestTube className="h-4 w-4" />
             Regression Testing
           </Button>
+        </Link>        <Link to="/admin/outdated-instances">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Outdated Instances
+          </Button>
         </Link>
+
       </div>
 
       {/* Content */}

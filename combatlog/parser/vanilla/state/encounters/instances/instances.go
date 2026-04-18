@@ -192,6 +192,11 @@ var (
 		Name:     "Timbermaw Hold",
 		ZoneName: ZoneNameMatcher("timbermaw hold"),
 		Hostiles: FromMap(TimbermawHoldHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: TimbermawHoldSpeedrunRequirements(),
+			},
+		},
 	}).New
 
 	FrostmaneHollow = (&CommonFactory{

@@ -14,28 +14,31 @@ database/querier.go: database/sqlc.yaml database/dump.sql $(wildcard database/qu
 
 .PHONY: test
 test:
-	gotestsum --format testname -- -race $$(go list ./...)
+	gotestsum --format testname -- -tags $(SERVER) -race $$(go list -tags $(SERVER) ./...)
 
 .PHONY: lint
 lint:
-	golangci-lint run
+	golangci-lint run --build-tags $(SERVER)
 
 frontend/chronicle/dist: $(wildcard frontend/**)
 	(cd frontend/chronicle; pnpm install; pnpm build)
 
+# SERVER controls which WoW server DBC data to compile in (turtle, epoch, etc.)
+SERVER ?= turtle
+
 .PHONY: develop
 develop: frontend/chronicle/dist create-db
-	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --ocr-url="http://localhost:8730"
+	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --ocr-url="http://localhost:8730"
 
 develop-backend: create-db
-	go run --tags static $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --access-url="http://192.168.1.214:5173"
+	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs --access-url="http://192.168.1.214:5173"
 
 .PHONY: build
 build: build-backend frontend/chronicle/dist
 
 .PHONY: build-backend
 build-backend:
-	go build --tags static  $(LD_BUILD_FLAGS) -o bin/chronicled ./cmd/chronicled
+	go build --tags "static $(SERVER)" $(LD_BUILD_FLAGS) -o bin/chronicled ./cmd/chronicled
 
 # Docker Compose targets for local development services
 COMPOSE_FILE := scripts/development/docker-compose.yml

@@ -1,4 +1,4 @@
-//go:build !turtle && !epoch && !kronos
+//go:build !turtle && !epoch && !kronos && !warmane
 
 package services
 

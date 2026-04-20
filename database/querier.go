@@ -80,6 +80,7 @@ type sqlcQuerier interface {
 	GetRegressionSnapshot(ctx context.Context, id uuid.UUID) (RegressionSnapshot, error)
 	GetSharedViewByCode(ctx context.Context, code string) (SharedView, error)
 	GetSharedViewByInstanceAndHash(ctx context.Context, arg GetSharedViewByInstanceAndHashParams) (SharedView, error)
+	GetSiteConfig(ctx context.Context) (SiteConfig, error)
 	GetSpellItemEnchantmentByID(ctx context.Context, id int32) (DbcSpellItemEnchantment, error)
 	GetUserActionBarSlots(ctx context.Context, userID uuid.UUID) (GetUserActionBarSlotsRow, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
@@ -164,6 +165,7 @@ type sqlcQuerier interface {
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)
 	UpdateGuildPageTab(ctx context.Context, arg UpdateGuildPageTabParams) (GuildPageTab, error)
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
+	UpdateSiteConfig(ctx context.Context, signupsEnabled bool) (SiteConfig, error)
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
 	UpdateUserPanelLayoutByID(ctx context.Context, arg UpdateUserPanelLayoutByIDParams) (UserPanelLayout, error)
 	UpdateUserPanelLayoutDefaults(ctx context.Context, arg UpdateUserPanelLayoutDefaultsParams) (UpdateUserPanelLayoutDefaultsRow, error)

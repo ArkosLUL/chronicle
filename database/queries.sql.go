@@ -3336,6 +3336,32 @@ func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg Get
 	return i, err
 }
 
+const getSiteConfig = `-- name: GetSiteConfig :one
+SELECT id, signups_enabled, updated_at FROM site_config WHERE id = TRUE
+`
+
+func (q *sqlQuerier) GetSiteConfig(ctx context.Context) (SiteConfig, error) {
+	row := q.db.QueryRow(ctx, getSiteConfig)
+	var i SiteConfig
+	err := row.Scan(&i.ID, &i.SignupsEnabled, &i.UpdatedAt)
+	return i, err
+}
+
+const updateSiteConfig = `-- name: UpdateSiteConfig :one
+UPDATE site_config SET
+    signups_enabled = $1,
+    updated_at = now()
+WHERE id = TRUE
+RETURNING id, signups_enabled, updated_at
+`
+
+func (q *sqlQuerier) UpdateSiteConfig(ctx context.Context, signupsEnabled bool) (SiteConfig, error) {
+	row := q.db.QueryRow(ctx, updateSiteConfig, signupsEnabled)
+	var i SiteConfig
+	err := row.Scan(&i.ID, &i.SignupsEnabled, &i.UpdatedAt)
+	return i, err
+}
+
 const getInstanceSpeedrun = `-- name: GetInstanceSpeedrun :one
 SELECT instance_id, instance_name, realm_id, guild_id, qualified, start_time, completion_time, duration_ms, proof, created_at, addon_version, parser_version_num, addon_version_num FROM instance_speedruns WHERE instance_id = $1
 `

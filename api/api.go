@@ -126,6 +126,7 @@ func (api *API) Routes() chi.Router {
 		})
 		r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
 		r.Get("/share/{code}", api.GetShare)
+		r.Get("/site-config", api.AdminGetSiteConfig)
 
 		// Admin routes - require admin or technical_admin role
 		r.Route("/admin", func(r chi.Router) {
@@ -141,6 +142,8 @@ func (api *API) Routes() chi.Router {
 			r.Get("/logs", api.AdminListLogs)
 			r.Get("/instance-names", api.AdminListInstanceNames)
 			r.Get("/outdated-instances", api.AdminListOutdatedInstances)
+			r.Get("/site-config", api.AdminGetSiteConfig)
+			r.Put("/site-config", api.AdminUpdateSiteConfig)
 
 			r.Route("/leaderboard", func(r chi.Router) {
 				r.Get("/version-requirements", api.AdminListLeaderboardVersionRequirements)

@@ -101,4 +101,8 @@ type AdminOutdatedInstancesResponse struct {
 	Instances  []AdminOutdatedInstance `json:"instances"`
 	MinVersion string                  `json:"min_version"`
 }
+type SiteConfig struct {
+	SignupsEnabled bool `json:"signups_enabled"`
+}
+
 

@@ -111,6 +111,21 @@ func (s *Service) PasswordRegister(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	var session database.UserAuthSession
 
+	// Check if signups are enabled
+	siteConfig, err := s.Zed.GetSiteConfig(ctx)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusInternalServerError, map[string]string{
+			"message": "Internal error.",
+		})
+		return
+	}
+	if !siteConfig.SignupsEnabled {
+		httpapi.Write(ctx, w, http.StatusForbidden, map[string]string{
+			"message": "Signups are currently disabled.",
+		})
+		return
+	}
+
 	err = s.Zed.InTx(func(tx *authz.AuthzTX) error {
 		// Check if this email is already registered with the password provider
 		_, err := tx.GetUserAuthByLinkedID(ctx, database.GetUserAuthByLinkedIDParams{

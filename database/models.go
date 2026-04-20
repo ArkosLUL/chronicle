@@ -1023,6 +1023,12 @@ type SharedView struct {
 	InstanceSlug string             `db:"instance_slug" json:"instance_slug"`
 }
 
+type SiteConfig struct {
+	ID             bool               `db:"id" json:"id"`
+	SignupsEnabled bool               `db:"signups_enabled" json:"signups_enabled"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type User struct {
 	ID                     uuid.UUID          `db:"id" json:"id"`
 	Username               string             `db:"username" json:"username"`

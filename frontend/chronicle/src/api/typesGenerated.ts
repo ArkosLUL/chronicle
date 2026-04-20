@@ -894,6 +894,11 @@ export interface SimItemSpell {
     readonly category_cooldown_ms?: number;
 }
 
+// From chroniclesdk/user.go
+export interface SiteConfig {
+    readonly signups_enabled: boolean;
+}
+
 // From chroniclesdk/constants.go
 export type SocialPlatform = "discord" | "twitch" | "twitter" | "website" | "youtube";
 

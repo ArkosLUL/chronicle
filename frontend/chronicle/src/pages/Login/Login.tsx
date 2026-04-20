@@ -233,6 +233,15 @@ export function Login() {
               </AlertDescription>
             </Alert>
           )}
+          {authError === "signups_disabled" && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Signups Disabled</AlertTitle>
+              <AlertDescription>
+                New account registration is currently disabled. Please try again later.
+              </AlertDescription>
+            </Alert>
+          )}
+
 
           {formError && (
             <Alert variant="destructive" className="mb-4">

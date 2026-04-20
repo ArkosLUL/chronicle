@@ -637,6 +637,13 @@ CREATE TABLE shared_views (
     CONSTRAINT shared_views_payload_max_10kb CHECK ((octet_length((payload)::text) <= 10240))
 );
 
+CREATE TABLE site_config (
+    id boolean DEFAULT true NOT NULL,
+    signups_enabled boolean DEFAULT true NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT site_config_id_check CHECK (id)
+);
+
 CREATE TABLE user_action_bar_slots (
     user_id uuid NOT NULL,
     slot_1 uuid,
@@ -1071,6 +1078,9 @@ ALTER TABLE ONLY shared_views
 
 ALTER TABLE ONLY shared_views
     ADD CONSTRAINT shared_views_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY site_config
+    ADD CONSTRAINT site_config_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);

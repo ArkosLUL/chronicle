@@ -143,14 +143,15 @@ jobs:
         include:
           - server: turtle
             railway_service: chronicled
+            railway_token_secret: RAILWAY_TOKEN
           - server: epoch
             railway_service: chronicled
-            railway_environment: epoch
+            railway_token_secret: RAILWAY_TOKEN_EPOCH
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
       - name: Redeploy ${{ matrix.server }} on Railway
-        run: railway redeploy --service ${{ matrix.railway_service }} ${{ matrix.railway_environment && format('--environment {0}', matrix.railway_environment) || '' }} --yes
+        run: railway redeploy --service ${{ matrix.railway_service }} --yes
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets[matrix.railway_token_secret] }}

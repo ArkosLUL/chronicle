@@ -14,6 +14,8 @@ func DefaultClientPath(server string) string {
 		return "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW"
 	case "epoch":
 		return "/home/steven/Games/ascension-wow/drive_c/Program Files/Ascension Launcher/resources/epoch-live"
+	case "kronos":
+		return "/home/steven/Games/kronos-wow/drive_c/Program Files (x86)/Kronos"
 	default:
 		return ""
 	}

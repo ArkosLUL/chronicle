@@ -23,8 +23,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   116: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -37,8 +37,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   118: {
     name: "Polymorph",
     spellClassSet: 3,
-    baseDurationMs: 20000,
-    maxDurationMs: 35000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -47,8 +47,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   120: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -61,8 +61,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   139: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -73,8 +73,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   172: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 12000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -86,8 +86,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   205: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 6000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -111,8 +111,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   467: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -133,8 +133,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   589: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -145,8 +145,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   594: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -157,8 +157,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   689: {
     name: "Drain Life",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -168,8 +168,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   699: {
     name: "Drain Life",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -179,8 +179,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   703: {
     name: "Garrote",
     spellClassSet: 8,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "Improved Garrote", percent: 0, flat: 3000, deprecated: false },
@@ -191,8 +191,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   709: {
     name: "Drain Life",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -202,8 +202,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   770: {
     name: "Faerie Fire",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -212,8 +212,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   772: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -222,8 +222,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   774: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -232,8 +232,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   778: {
     name: "Faerie Fire",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -242,8 +242,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   782: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -253,8 +253,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   837: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 6000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -267,8 +267,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   853: {
     name: "Hammer of Justice",
     spellClassSet: 10,
-    baseDurationMs: 3000,
-    maxDurationMs: 4500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24188, name: "Improved Hammer of Justice", percent: 0, flat: 500, deprecated: false },
@@ -278,8 +278,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   871: {
     name: "Shield Wall",
     spellClassSet: 4,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12312, name: "Improved Shield Wall", percent: 0, flat: 1000, deprecated: false },
@@ -322,8 +322,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   970: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -334,8 +334,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   980: {
     name: "Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -345,8 +345,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   992: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -357,8 +357,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1002: {
     name: "Eyes of the Beast",
     spellClassSet: 9,
-    baseDurationMs: 60000,
-    maxDurationMs: 120000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19557, name: "Improved Eyes of the Beast", percent: 0, flat: 30000, deprecated: false },
@@ -368,8 +368,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1014: {
     name: "Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -379,8 +379,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1022: {
     name: "Hand of Protection",
     spellClassSet: 10,
-    baseDurationMs: 6000,
-    maxDurationMs: 6600,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -389,8 +389,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1038: {
     name: "Blessing of Salvation",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 1320000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20194, name: "Improved Blessing of Salvation", percent: 0, flat: 300000, deprecated: false },
@@ -401,8 +401,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1044: {
     name: "Hand of Freedom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 23100,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20106, name: "Improved Hand of Freedom", percent: 0, flat: 1000, deprecated: false },
@@ -418,8 +418,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1058: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -428,8 +428,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1075: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -461,8 +461,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1120: {
     name: "Drain Soul",
     spellClassSet: 5,
-    baseDurationMs: 6000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -472,8 +472,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1160: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -486,8 +486,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1430: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -496,8 +496,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1535: {
     name: "Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -507,8 +507,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1776: {
     name: "Gouge",
     spellClassSet: 8,
-    baseDurationMs: 4000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -519,8 +519,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1777: {
     name: "Gouge",
     spellClassSet: 8,
-    baseDurationMs: 4000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -531,8 +531,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1822: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -542,8 +542,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1823: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -553,8 +553,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1824: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -564,8 +564,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1943: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -577,8 +577,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   1978: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -587,8 +587,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   2090: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -597,8 +597,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   2091: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -607,8 +607,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   2565: {
     name: "Shield Block",
     spellClassSet: 4,
-    baseDurationMs: 5000,
-    maxDurationMs: 7000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12307, name: "Improved Shield Block", percent: 0, flat: 1000, deprecated: false },
@@ -620,8 +620,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   2767: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -632,8 +632,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   2983: {
     name: "Sprint",
     spellClassSet: 8,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23049, name: "Sprint Duration Increase", percent: 0, flat: 3000, deprecated: false },
@@ -653,8 +653,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   3045: {
     name: "Rapid Fire",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 19000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 28755, name: "Rapid Fire", percent: 0, flat: 4000, deprecated: false },
@@ -663,8 +663,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   3355: {
     name: "Freezing Trap Effect",
     spellClassSet: 9,
-    baseDurationMs: 10000,
-    maxDurationMs: 25600,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19239, name: "Clever Traps", percent: 15, flat: 0, deprecated: false },
@@ -680,8 +680,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   3599: {
     name: "Searing Totem",
     spellClassSet: 11,
-    baseDurationMs: 30000,
-    maxDurationMs: 54000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16127, name: "Improved Searing Totem", percent: 20, flat: 0, deprecated: false },
@@ -691,8 +691,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   3627: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -701,8 +701,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5138: {
     name: "Drain Mana",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -712,8 +712,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5143: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -723,8 +723,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5144: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -734,8 +734,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5145: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -745,8 +745,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5171: {
     name: "Slice and Dice",
     spellClassSet: 8,
-    baseDurationMs: 21000,
-    maxDurationMs: 30450,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Improved Blade Tactics", percent: 15, flat: 0, deprecated: false },
@@ -768,8 +768,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5211: {
     name: "Bash",
     spellClassSet: 7,
-    baseDurationMs: 2000,
-    maxDurationMs: 3000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16940, name: "Brutal Impact", percent: 0, flat: 500, deprecated: false },
@@ -779,8 +779,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5229: {
     name: "Enrage",
     spellClassSet: 7,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 17084, name: "Improved Enrage", percent: 0, flat: -5000, deprecated: false },
@@ -789,8 +789,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5242: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -803,8 +803,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5246: {
     name: "Intimidating Shout",
     spellClassSet: 4,
-    baseDurationMs: 8000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19870, name: "Improved Intimidating Shout", percent: 0, flat: 1000, deprecated: false },
@@ -814,8 +814,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5394: {
     name: "Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 70000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "Eventide", percent: 0, flat: 8000, deprecated: false },
@@ -825,8 +825,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5588: {
     name: "Hammer of Justice",
     spellClassSet: 10,
-    baseDurationMs: 4000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24188, name: "Improved Hammer of Justice", percent: 0, flat: 500, deprecated: false },
@@ -836,8 +836,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5589: {
     name: "Hammer of Justice",
     spellClassSet: 10,
-    baseDurationMs: 5000,
-    maxDurationMs: 6500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24188, name: "Improved Hammer of Justice", percent: 0, flat: 500, deprecated: false },
@@ -847,8 +847,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   5599: {
     name: "Hand of Protection",
     spellClassSet: 10,
-    baseDurationMs: 8000,
-    maxDurationMs: 8800,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -857,8 +857,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6074: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -869,8 +869,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6075: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -881,8 +881,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6076: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -893,8 +893,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6077: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -905,8 +905,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6078: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -917,8 +917,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6136: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -931,8 +931,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6190: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -945,8 +945,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6192: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -959,8 +959,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6217: {
     name: "Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -970,8 +970,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6222: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -983,8 +983,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6223: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -996,8 +996,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6226: {
     name: "Drain Mana",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -1007,8 +1007,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6358: {
     name: "Seduction",
     spellClassSet: 5,
-    baseDurationMs: 14000,
-    maxDurationMs: 20300,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 18754, name: "[Deprecated] Improved Succubus", percent: 10, flat: 0, deprecated: true },
@@ -1022,8 +1022,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6363: {
     name: "Searing Totem",
     spellClassSet: 11,
-    baseDurationMs: 35000,
-    maxDurationMs: 60000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16127, name: "Improved Searing Totem", percent: 20, flat: 0, deprecated: false },
@@ -1033,8 +1033,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6364: {
     name: "Searing Totem",
     spellClassSet: 11,
-    baseDurationMs: 40000,
-    maxDurationMs: 66000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16127, name: "Improved Searing Totem", percent: 20, flat: 0, deprecated: false },
@@ -1044,8 +1044,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6365: {
     name: "Searing Totem",
     spellClassSet: 11,
-    baseDurationMs: 45000,
-    maxDurationMs: 72000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16127, name: "Improved Searing Totem", percent: 20, flat: 0, deprecated: false },
@@ -1055,8 +1055,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6375: {
     name: "Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 70000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "Eventide", percent: 0, flat: 8000, deprecated: false },
@@ -1066,8 +1066,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6377: {
     name: "Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 70000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "Eventide", percent: 0, flat: 8000, deprecated: false },
@@ -1077,8 +1077,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6546: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 12000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -1087,8 +1087,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6547: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -1097,8 +1097,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6548: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 18000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -1107,8 +1107,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6552: {
     name: "Pummel",
     spellClassSet: 4,
-    baseDurationMs: 4000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -1120,8 +1120,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6554: {
     name: "zzOLD Pummel",
     spellClassSet: 4,
-    baseDurationMs: 4000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: true,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -1133,8 +1133,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6555: {
     name: "zzOLD Pummel",
     spellClassSet: 4,
-    baseDurationMs: 4000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: true,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -1146,8 +1146,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6673: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -1160,8 +1160,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6774: {
     name: "Slice and Dice",
     spellClassSet: 8,
-    baseDurationMs: 21000,
-    maxDurationMs: 30450,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Improved Blade Tactics", percent: 15, flat: 0, deprecated: false },
@@ -1172,8 +1172,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6798: {
     name: "Bash",
     spellClassSet: 7,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16940, name: "Brutal Impact", percent: 0, flat: 500, deprecated: false },
@@ -1183,8 +1183,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6940: {
     name: "Hand of Sacrifice",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 33000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -1193,8 +1193,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   7321: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1207,8 +1207,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   7322: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 7000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1221,8 +1221,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   7648: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -1234,8 +1234,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   7651: {
     name: "Drain Life",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -1245,8 +1245,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8050: {
     name: "Flame Shock",
     spellClassSet: 11,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16085, name: "Improved Flame Shock", percent: 0, flat: 3000, deprecated: false },
@@ -1256,8 +1256,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8052: {
     name: "Flame Shock",
     spellClassSet: 11,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16085, name: "Improved Flame Shock", percent: 0, flat: 3000, deprecated: false },
@@ -1267,8 +1267,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8053: {
     name: "Flame Shock",
     spellClassSet: 11,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16085, name: "Improved Flame Shock", percent: 0, flat: 3000, deprecated: false },
@@ -1278,8 +1278,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8056: {
     name: "Frost Shock",
     spellClassSet: 11,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24461, name: "Improved Frost Shock", percent: 0, flat: 1000, deprecated: false },
@@ -1288,8 +1288,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8058: {
     name: "Frost Shock",
     spellClassSet: 11,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24461, name: "Improved Frost Shock", percent: 0, flat: 1000, deprecated: false },
@@ -1298,8 +1298,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8122: {
     name: "Psychic Scream",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23044, name: "Psychic Scream Duration Increase", percent: 0, flat: 1000, deprecated: false },
@@ -1308,8 +1308,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8124: {
     name: "Psychic Scream",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23044, name: "Psychic Scream Duration Increase", percent: 0, flat: 1000, deprecated: false },
@@ -1318,8 +1318,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8288: {
     name: "Drain Soul",
     spellClassSet: 5,
-    baseDurationMs: 6000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -1329,8 +1329,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8289: {
     name: "Drain Soul",
     spellClassSet: 5,
-    baseDurationMs: 6000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -1340,8 +1340,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8406: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 7000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1354,8 +1354,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8407: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1368,8 +1368,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8408: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1382,8 +1382,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8416: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -1393,8 +1393,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8417: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -1404,8 +1404,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8492: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1418,8 +1418,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8498: {
     name: "Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -1429,8 +1429,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8499: {
     name: "Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -1440,8 +1440,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8629: {
     name: "Gouge",
     spellClassSet: 8,
-    baseDurationMs: 4000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -1452,8 +1452,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8631: {
     name: "Garrote",
     spellClassSet: 8,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "Improved Garrote", percent: 0, flat: 3000, deprecated: false },
@@ -1464,8 +1464,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8632: {
     name: "Garrote",
     spellClassSet: 8,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "Improved Garrote", percent: 0, flat: 3000, deprecated: false },
@@ -1476,8 +1476,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8633: {
     name: "Garrote",
     spellClassSet: 8,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "Improved Garrote", percent: 0, flat: 3000, deprecated: false },
@@ -1488,8 +1488,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8639: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -1501,8 +1501,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8640: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -1514,8 +1514,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8696: {
     name: "Sprint",
     spellClassSet: 8,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23049, name: "Sprint Duration Increase", percent: 0, flat: 3000, deprecated: false },
@@ -1524,8 +1524,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8910: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -1534,8 +1534,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8914: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -1545,8 +1545,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8921: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1555,8 +1555,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8924: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1565,8 +1565,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8925: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1575,8 +1575,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8926: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1585,8 +1585,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8927: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1595,8 +1595,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8928: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1605,8 +1605,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8929: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1615,8 +1615,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   8983: {
     name: "Bash",
     spellClassSet: 7,
-    baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16940, name: "Brutal Impact", percent: 0, flat: 500, deprecated: false },
@@ -1626,8 +1626,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9005: {
     name: "Pounce",
     spellClassSet: 7,
-    baseDurationMs: 2000,
-    maxDurationMs: 3000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16940, name: "Brutal Impact", percent: 0, flat: 500, deprecated: false },
@@ -1637,8 +1637,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9007: {
     name: "Pounce Bleed",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -1670,8 +1670,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9749: {
     name: "Faerie Fire",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -1691,8 +1691,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9756: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -1702,8 +1702,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9823: {
     name: "Pounce",
     spellClassSet: 7,
-    baseDurationMs: 2000,
-    maxDurationMs: 3000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16940, name: "Brutal Impact", percent: 0, flat: 500, deprecated: false },
@@ -1713,8 +1713,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9824: {
     name: "Pounce Bleed",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -1724,8 +1724,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9826: {
     name: "Pounce Bleed",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -1735,8 +1735,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9827: {
     name: "Pounce",
     spellClassSet: 7,
-    baseDurationMs: 2000,
-    maxDurationMs: 3000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16940, name: "Brutal Impact", percent: 0, flat: 500, deprecated: false },
@@ -1746,8 +1746,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9833: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1756,8 +1756,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9834: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1766,8 +1766,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9835: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 18000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -1776,8 +1776,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9839: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -1786,8 +1786,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9840: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -1796,8 +1796,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9841: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -1850,8 +1850,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9904: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -1861,8 +1861,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9907: {
     name: "Faerie Fire",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -1871,8 +1871,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   9910: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -1882,8 +1882,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10159: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1896,8 +1896,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10160: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1910,8 +1910,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10161: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1924,8 +1924,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10179: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 9000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1938,8 +1938,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10180: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 9000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1952,8 +1952,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10181: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 9000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -1966,8 +1966,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10211: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -1977,8 +1977,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10212: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -1988,8 +1988,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10278: {
     name: "Hand of Protection",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -1998,8 +1998,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10308: {
     name: "Hammer of Justice",
     spellClassSet: 10,
-    baseDurationMs: 6000,
-    maxDurationMs: 7500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24188, name: "Improved Hammer of Justice", percent: 0, flat: 500, deprecated: false },
@@ -2031,8 +2031,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10437: {
     name: "Searing Totem",
     spellClassSet: 11,
-    baseDurationMs: 50000,
-    maxDurationMs: 78000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16127, name: "Improved Searing Totem", percent: 20, flat: 0, deprecated: false },
@@ -2042,8 +2042,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10438: {
     name: "Searing Totem",
     spellClassSet: 11,
-    baseDurationMs: 55000,
-    maxDurationMs: 84000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16127, name: "Improved Searing Totem", percent: 20, flat: 0, deprecated: false },
@@ -2053,8 +2053,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10447: {
     name: "Flame Shock",
     spellClassSet: 11,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16085, name: "Improved Flame Shock", percent: 0, flat: 3000, deprecated: false },
@@ -2064,8 +2064,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10448: {
     name: "Flame Shock",
     spellClassSet: 11,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16085, name: "Improved Flame Shock", percent: 0, flat: 3000, deprecated: false },
@@ -2075,8 +2075,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10462: {
     name: "Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 70000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "Eventide", percent: 0, flat: 8000, deprecated: false },
@@ -2086,8 +2086,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10463: {
     name: "Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 70000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "Eventide", percent: 0, flat: 8000, deprecated: false },
@@ -2097,8 +2097,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10472: {
     name: "Frost Shock",
     spellClassSet: 11,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24461, name: "Improved Frost Shock", percent: 0, flat: 1000, deprecated: false },
@@ -2107,8 +2107,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10473: {
     name: "Frost Shock",
     spellClassSet: 11,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24461, name: "Improved Frost Shock", percent: 0, flat: 1000, deprecated: false },
@@ -2117,8 +2117,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10888: {
     name: "Psychic Scream",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23044, name: "Psychic Scream Duration Increase", percent: 0, flat: 1000, deprecated: false },
@@ -2127,8 +2127,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10890: {
     name: "Psychic Scream",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23044, name: "Psychic Scream Duration Increase", percent: 0, flat: 1000, deprecated: false },
@@ -2137,8 +2137,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10892: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -2149,8 +2149,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10893: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -2161,8 +2161,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10894: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -2173,8 +2173,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10927: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2185,8 +2185,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10928: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2197,8 +2197,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   10929: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2209,8 +2209,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11273: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -2222,8 +2222,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11274: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -2235,8 +2235,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11275: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -2248,8 +2248,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11285: {
     name: "Gouge",
     spellClassSet: 8,
-    baseDurationMs: 4000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -2260,8 +2260,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11286: {
     name: "Gouge",
     spellClassSet: 8,
-    baseDurationMs: 4000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -2272,8 +2272,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11289: {
     name: "Garrote",
     spellClassSet: 8,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "Improved Garrote", percent: 0, flat: 3000, deprecated: false },
@@ -2284,8 +2284,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11290: {
     name: "Garrote",
     spellClassSet: 8,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "Improved Garrote", percent: 0, flat: 3000, deprecated: false },
@@ -2296,8 +2296,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11305: {
     name: "Sprint",
     spellClassSet: 8,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23049, name: "Sprint Duration Increase", percent: 0, flat: 3000, deprecated: false },
@@ -2306,8 +2306,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11314: {
     name: "Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -2317,8 +2317,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11315: {
     name: "Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -2328,8 +2328,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11549: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2342,8 +2342,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11550: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2356,8 +2356,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11551: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2370,8 +2370,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11554: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2384,8 +2384,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11555: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2398,8 +2398,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11556: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2412,8 +2412,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11572: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 21000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -2422,8 +2422,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11573: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 21000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -2432,8 +2432,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11574: {
     name: "Rend",
     spellClassSet: 4,
-    baseDurationMs: 21000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -2442,8 +2442,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11671: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -2455,8 +2455,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11672: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -2468,8 +2468,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11675: {
     name: "Drain Soul",
     spellClassSet: 5,
-    baseDurationMs: 6000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2479,8 +2479,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11699: {
     name: "Drain Life",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2490,8 +2490,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11700: {
     name: "Drain Life",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2501,8 +2501,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11703: {
     name: "Drain Mana",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2512,8 +2512,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11704: {
     name: "Drain Mana",
     spellClassSet: 5,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2523,8 +2523,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11711: {
     name: "Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2534,8 +2534,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11712: {
     name: "Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2545,8 +2545,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   11713: {
     name: "Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -2556,8 +2556,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12484: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 1500,
-    maxDurationMs: 4500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2570,8 +2570,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12485: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 1500,
-    maxDurationMs: 4500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2584,8 +2584,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12486: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 1500,
-    maxDurationMs: 4500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2598,8 +2598,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12531: {
     name: "Chilling Touch",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2612,8 +2612,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12555: {
     name: "Pummel",
     spellClassSet: 4,
-    baseDurationMs: 5000,
-    maxDurationMs: 7000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -2625,8 +2625,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12557: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2639,8 +2639,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12611: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2653,8 +2653,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12721: {
     name: "Deep Wound",
     spellClassSet: 4,
-    baseDurationMs: 6000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51015, name: "Faster Bleeds 5 (Warrior)", percent: -5, flat: 0, deprecated: false },
@@ -2663,8 +2663,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12824: {
     name: "Polymorph",
     spellClassSet: 3,
-    baseDurationMs: 30000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -2673,8 +2673,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12825: {
     name: "Polymorph",
     spellClassSet: 3,
-    baseDurationMs: 40000,
-    maxDurationMs: 55000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -2683,8 +2683,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   12826: {
     name: "Polymorph",
     spellClassSet: 3,
-    baseDurationMs: 50000,
-    maxDurationMs: 65000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -2693,8 +2693,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13549: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2703,8 +2703,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13550: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2713,8 +2713,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13551: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2723,8 +2723,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13552: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2733,8 +2733,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13553: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2743,8 +2743,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13554: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2753,8 +2753,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13555: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -2763,8 +2763,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13730: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -2777,8 +2777,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   13810: {
     name: "Frost Trap Aura",
     spellClassSet: 9,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19239, name: "Clever Traps", percent: 15, flat: 0, deprecated: false },
@@ -2791,8 +2791,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   14207: {
     name: "Frost Trap Effect",
     spellClassSet: 9,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19239, name: "Clever Traps", percent: 15, flat: 0, deprecated: false },
@@ -2805,8 +2805,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   14308: {
     name: "Freezing Trap Effect",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 33600,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19239, name: "Clever Traps", percent: 15, flat: 0, deprecated: false },
@@ -2822,8 +2822,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   14309: {
     name: "Freezing Trap Effect",
     spellClassSet: 9,
-    baseDurationMs: 20000,
-    maxDurationMs: 41600,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19239, name: "Clever Traps", percent: 15, flat: 0, deprecated: false },
@@ -2839,8 +2839,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   14874: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 10000,
-    maxDurationMs: 16000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -2852,8 +2852,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   14903: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 22000,
-    maxDurationMs: 28000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -2865,8 +2865,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   14914: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2875,8 +2875,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15062: {
     name: "Shield Wall",
     spellClassSet: 4,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12312, name: "Improved Shield Wall", percent: 0, flat: 1000, deprecated: false },
@@ -2886,8 +2886,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15229: {
     name: "Crystal Restore",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -2898,8 +2898,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15244: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -2912,8 +2912,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15261: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2922,8 +2922,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15262: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2932,8 +2932,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15263: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2942,8 +2942,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15264: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2952,8 +2952,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15265: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2962,8 +2962,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15266: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2972,8 +2972,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15267: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -2982,8 +2982,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15286: {
     name: "Vampiric Embrace",
     spellClassSet: 6,
-    baseDurationMs: 60000,
-    maxDurationMs: 80000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -2992,8 +2992,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15407: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3002,8 +3002,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15583: {
     name: "Rupture",
     spellClassSet: 8,
-    baseDurationMs: 10000,
-    maxDurationMs: 16000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -3015,8 +3015,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15615: {
     name: "Pummel",
     spellClassSet: 4,
-    baseDurationMs: 5000,
-    maxDurationMs: 7000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -3028,8 +3028,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15735: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -3050,8 +3050,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15790: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -3072,8 +3072,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   15850: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -3097,8 +3097,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   16244: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -3111,8 +3111,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   16508: {
     name: "Intimidating Roar",
     spellClassSet: 4,
-    baseDurationMs: 8000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19870, name: "Improved Intimidating Shout", percent: 0, flat: 1000, deprecated: false },
@@ -3122,8 +3122,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   16568: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3132,8 +3132,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   16857: {
     name: "Faerie Fire (Feral)",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -3142,8 +3142,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   16877: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -3153,8 +3153,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17011: {
     name: "Freezing Claw",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -3167,8 +3167,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17140: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -3177,8 +3177,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17141: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -3187,8 +3187,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17142: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -3197,8 +3197,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17165: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3207,8 +3207,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17311: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3217,8 +3217,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17312: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3227,8 +3227,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17313: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3237,8 +3237,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17314: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3247,8 +3247,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17390: {
     name: "Faerie Fire (Feral)",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -3257,8 +3257,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17391: {
     name: "Faerie Fire (Feral)",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -3267,8 +3267,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   17392: {
     name: "Faerie Fire (Feral)",
     spellClassSet: 7,
-    baseDurationMs: 40000,
-    maxDurationMs: 45000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24479, name: "Improved Faerie Fire", percent: 0, flat: 5000, deprecated: false },
@@ -3277,8 +3277,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   18101: {
     name: "Chilled",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -3291,8 +3291,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   18165: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -3301,8 +3301,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   18167: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -3311,8 +3311,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   18328: {
     name: "Incapacitating Shout",
     spellClassSet: 4,
-    baseDurationMs: 60000,
-    maxDurationMs: 96000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -3325,8 +3325,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   18376: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 30000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -3349,8 +3349,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   18807: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3359,8 +3359,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19134: {
     name: "Intimidating Shout",
     spellClassSet: 4,
-    baseDurationMs: 8000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19870, name: "Improved Intimidating Shout", percent: 0, flat: 1000, deprecated: false },
@@ -3370,8 +3370,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19639: {
     name: "Pummel",
     spellClassSet: 4,
-    baseDurationMs: 5000,
-    maxDurationMs: 7000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -3383,8 +3383,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19740: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3393,8 +3393,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19742: {
     name: "Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3403,8 +3403,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19778: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -3417,8 +3417,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19834: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3427,8 +3427,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19835: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3437,8 +3437,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19836: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3447,8 +3447,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19837: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3457,8 +3457,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19838: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3467,8 +3467,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19850: {
     name: "Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3477,8 +3477,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19852: {
     name: "Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3487,8 +3487,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19853: {
     name: "Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3497,8 +3497,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19854: {
     name: "Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3507,8 +3507,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19977: {
     name: "Blessing of Light",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3517,8 +3517,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19978: {
     name: "Blessing of Light",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3527,8 +3527,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   19979: {
     name: "Blessing of Light",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3537,8 +3537,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20183: {
     name: "Judgement of Fury",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3547,8 +3547,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20184: {
     name: "Judgement of Justice",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3557,8 +3557,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20185: {
     name: "Judgement of Light",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3574,8 +3574,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20186: {
     name: "Judgement of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3591,8 +3591,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20188: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3601,8 +3601,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20204: {
     name: "Blessing of Sanctuary",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3611,8 +3611,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20217: {
     name: "Blessing of Kings",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3621,8 +3621,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20300: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3631,8 +3631,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20301: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3641,8 +3641,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20302: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3651,8 +3651,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20303: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3661,8 +3661,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20304: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3671,8 +3671,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20344: {
     name: "Judgement of Light",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3688,8 +3688,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20345: {
     name: "Judgement of Light",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3705,8 +3705,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20346: {
     name: "Judgement of Light",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3722,8 +3722,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20354: {
     name: "Judgement of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3739,8 +3739,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20355: {
     name: "Judgement of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -3756,8 +3756,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20411: {
     name: "Judgement of Fury",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3766,8 +3766,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20412: {
     name: "Judgement of Fury",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3776,8 +3776,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20413: {
     name: "Judgement of Fury",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3786,8 +3786,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20414: {
     name: "Judgement of Fury",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3796,8 +3796,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20511: {
     name: "Intimidating Shout",
     spellClassSet: 4,
-    baseDurationMs: 8000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19870, name: "Improved Intimidating Shout", percent: 0, flat: 1000, deprecated: false },
@@ -3807,8 +3807,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20690: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -3817,8 +3817,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20729: {
     name: "Hand of Sacrifice",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 33000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3827,8 +3827,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20828: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -3841,8 +3841,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20911: {
     name: "Blessing of Sanctuary",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3851,8 +3851,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20912: {
     name: "Blessing of Sanctuary",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3861,8 +3861,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20913: {
     name: "Blessing of Sanctuary",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3871,8 +3871,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   20914: {
     name: "Blessing of Sanctuary",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -3881,8 +3881,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   21068: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 30000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -3894,8 +3894,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   21183: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -3904,8 +3904,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   21335: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -3915,8 +3915,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   21337: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -3926,8 +3926,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   21669: {
     name: "Moonfire",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52331, name: "Moonfire Insect Swarm Duration", percent: 0, flat: 3000, deprecated: false },
@@ -3936,8 +3936,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   21869: {
     name: "Repulsive Gaze",
     spellClassSet: 4,
-    baseDurationMs: 8000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19870, name: "Improved Intimidating Shout", percent: 0, flat: 1000, deprecated: false },
@@ -3947,8 +3947,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22009: {
     name: "Greater Heal",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -3959,8 +3959,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22128: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: 600000,
-    maxDurationMs: 1500000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -3970,8 +3970,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22203: {
     name: "Blue Beam",
     spellClassSet: 6,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -3990,8 +3990,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22272: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -4044,8 +4044,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22696: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -4055,8 +4055,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22746: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -4069,8 +4069,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22751: {
     name: "Fury of the Frostwolf",
     spellClassSet: 6,
-    baseDurationMs: 120000,
-    maxDurationMs: 140000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -4079,8 +4079,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22781: {
     name: "Thornling",
     spellClassSet: 7,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -4090,8 +4090,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22800: {
     name: "Entangling Roots",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4100,8 +4100,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22802: {
     name: "Choking Spores",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4110,8 +4110,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22803: {
     name: "Dire Maul Trap - Summon",
     spellClassSet: 6,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4120,8 +4120,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22821: {
     name: "Warpwood Spores",
     spellClassSet: 6,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4163,8 +4163,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   22919: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4173,8 +4173,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23262: {
     name: "Demoralize",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -4187,8 +4187,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23415: {
     name: "Improved Blessing of Protection",
     spellClassSet: 10,
-    baseDurationMs: 5000,
-    maxDurationMs: 5500,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4197,8 +4197,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23419: {
     name: "Corrupted Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -4208,8 +4208,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23422: {
     name: "Corrupted Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 70000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "Eventide", percent: 0, flat: 8000, deprecated: false },
@@ -4219,8 +4219,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23511: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -4233,8 +4233,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23603: {
     name: "Wild Polymorph",
     spellClassSet: 3,
-    baseDurationMs: 20000,
-    maxDurationMs: 35000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -4243,8 +4243,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23642: {
     name: "Corruption",
     spellClassSet: 6,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4253,8 +4253,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23693: {
     name: "Stormpike's Salvation",
     spellClassSet: 6,
-    baseDurationMs: 120000,
-    maxDurationMs: 140000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -4263,8 +4263,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23860: {
     name: "Holy Fire",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -4273,8 +4273,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23953: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4283,8 +4283,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23964: {
     name: "Bloodrager's Requiem",
     spellClassSet: 6,
-    baseDurationMs: 600000,
-    maxDurationMs: 620000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -4303,8 +4303,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   24152: {
     name: "Whipweed Roots",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 16000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4324,8 +4324,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   24331: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -4335,8 +4335,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   24332: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 9000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -4346,8 +4346,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25022: {
     name: "Hallow's End Fright",
     spellClassSet: 3,
-    baseDurationMs: 6000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -4360,8 +4360,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25059: {
     name: "Dmg Shield",
     spellClassSet: 7,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -4371,8 +4371,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25282: {
     name: "Shield of Rajaxx",
     spellClassSet: 10,
-    baseDurationMs: 6000,
-    maxDurationMs: 6600,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4381,8 +4381,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25289: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -4395,8 +4395,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25290: {
     name: "Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4405,8 +4405,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25291: {
     name: "Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 600000,
-    maxDurationMs: 660000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4415,8 +4415,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25295: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -4425,8 +4425,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25299: {
     name: "Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -4435,8 +4435,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25304: {
     name: "Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 9000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -4449,8 +4449,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25311: {
     name: "Corruption",
     spellClassSet: 5,
-    baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51058, name: "Eye of Dormant Corruption Warlock", percent: 0, flat: 3000, deprecated: false },
@@ -4462,8 +4462,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25315: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -4474,8 +4474,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25345: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -4485,8 +4485,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25503: {
     name: "Enrage",
     spellClassSet: 7,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 17084, name: "Improved Enrage", percent: 0, flat: -5000, deprecated: false },
@@ -4495,8 +4495,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25640: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -4506,8 +4506,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25751: {
     name: "Copy of Judgement of Light",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 132000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -4523,8 +4523,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25752: {
     name: "Judgement of Light",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -4557,8 +4557,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25757: {
     name: "Judgement of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -4591,8 +4591,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25777: {
     name: "Thorns",
     spellClassSet: 7,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -4602,8 +4602,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25782: {
     name: "Greater Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4612,8 +4612,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25788: {
     name: "Head Butt",
     spellClassSet: 4,
-    baseDurationMs: 5000,
-    maxDurationMs: 7000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12288, name: "Improved Pummel", percent: 0, flat: 1000, deprecated: false },
@@ -4625,8 +4625,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25890: {
     name: "Greater Blessing of Light",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4635,8 +4635,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25894: {
     name: "Greater Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4645,8 +4645,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25895: {
     name: "Greater Blessing of Salvation",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 2640000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20194, name: "Improved Blessing of Salvation", percent: 0, flat: 300000, deprecated: false },
@@ -4657,8 +4657,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25898: {
     name: "Greater Blessing of Kings",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4667,8 +4667,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25899: {
     name: "Greater Blessing of Sanctuary",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4677,8 +4677,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25916: {
     name: "Greater Blessing of Might",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4687,8 +4687,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25918: {
     name: "Greater Blessing of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 1800000,
-    maxDurationMs: 1980000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24460, name: "Improved Blessings", percent: 10, flat: 0, deprecated: false },
@@ -4697,8 +4697,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   25942: {
     name: "Judgement of the Crusader",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 12000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -4717,8 +4717,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   26044: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4727,8 +4727,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   26143: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4737,8 +4737,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   26666: {
     name: "Dmg Shield2",
     spellClassSet: 7,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
@@ -4758,8 +4758,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27555: {
     name: "Shred",
     spellClassSet: 7,
-    baseDurationMs: 10000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -4769,8 +4769,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27556: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -4791,8 +4791,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27578: {
     name: "Battle Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -4805,8 +4805,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27579: {
     name: "Demoralizing Shout",
     spellClassSet: 4,
-    baseDurationMs: 30000,
-    maxDurationMs: 48000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -4819,8 +4819,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27605: {
     name: "Shadow Word: Pain",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -4831,8 +4831,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27606: {
     name: "Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -4843,8 +4843,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27610: {
     name: "Psychic Scream",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 23044, name: "Psychic Scream Duration Increase", percent: 0, flat: 1000, deprecated: false },
@@ -4853,8 +4853,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27623: {
     name: "Fire Nova Totem",
     spellClassSet: 11,
-    baseDurationMs: 5000,
-    maxDurationMs: 5000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -4864,8 +4864,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27638: {
     name: "Rake",
     spellClassSet: 7,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 47356, name: "Improved Bleeds", percent: -10, flat: 0, deprecated: false },
@@ -4875,8 +4875,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27640: {
     name: "Baron Rivendare's Soul Drain",
     spellClassSet: 6,
-    baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4885,8 +4885,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27813: {
     name: "Blessed Recovery",
     spellClassSet: 7,
-    baseDurationMs: 6000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -4895,8 +4895,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27817: {
     name: "Blessed Recovery",
     spellClassSet: 7,
-    baseDurationMs: 6000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -4905,8 +4905,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   27818: {
     name: "Blessed Recovery",
     spellClassSet: 7,
-    baseDurationMs: 6000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -4915,8 +4915,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28270: {
     name: "Polymorph: Cow",
     spellClassSet: 3,
-    baseDurationMs: 50000,
-    maxDurationMs: 65000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -4925,8 +4925,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28271: {
     name: "Polymorph: Turtle",
     spellClassSet: 3,
-    baseDurationMs: 50000,
-    maxDurationMs: 65000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -4935,8 +4935,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28272: {
     name: "Polymorph: Pig",
     spellClassSet: 3,
-    baseDurationMs: 50000,
-    maxDurationMs: 65000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -4945,8 +4945,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28309: {
     name: "Copy of Corruption",
     spellClassSet: 6,
-    baseDurationMs: -1,
-    maxDurationMs: -1,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4955,8 +4955,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28310: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -4965,8 +4965,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28342: {
     name: "Breath of Sargeras",
     spellClassSet: 4,
-    baseDurationMs: 90000,
-    maxDurationMs: 144000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -4979,8 +4979,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28418: {
     name: "General's Warcry",
     spellClassSet: 6,
-    baseDurationMs: 120000,
-    maxDurationMs: 140000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -4989,8 +4989,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28419: {
     name: "General's Warcry",
     spellClassSet: 6,
-    baseDurationMs: 120000,
-    maxDurationMs: 140000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -4999,8 +4999,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28420: {
     name: "General's Warcry",
     spellClassSet: 6,
-    baseDurationMs: 120000,
-    maxDurationMs: 140000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -5009,8 +5009,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   28608: {
     name: "Test Curse of Agony",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: true,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -5030,8 +5030,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29061: {
     name: "Shield Wall",
     spellClassSet: 4,
-    baseDurationMs: 20000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12312, name: "Improved Shield Wall", percent: 0, flat: 1000, deprecated: false },
@@ -5041,8 +5041,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29124: {
     name: "Polymorph",
     spellClassSet: 3,
-    baseDurationMs: 20000,
-    maxDurationMs: 35000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -5051,8 +5051,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29163: {
     name: "Copy of Frostbolt",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -5065,8 +5065,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29228: {
     name: "Flame Shock",
     spellClassSet: 11,
-    baseDurationMs: 15000,
-    maxDurationMs: 21000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16085, name: "Improved Flame Shock", percent: 0, flat: 3000, deprecated: false },
@@ -5076,8 +5076,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29407: {
     name: "Mind Flay",
     spellClassSet: 6,
-    baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -5086,8 +5086,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29544: {
     name: "Intimidating Shout",
     spellClassSet: 4,
-    baseDurationMs: 8000,
-    maxDurationMs: 10000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 19870, name: "Improved Intimidating Shout", percent: 0, flat: 1000, deprecated: false },
@@ -5097,8 +5097,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   30095: {
     name: "Cone of Cold",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 11000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -5122,8 +5122,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   33459: {
     name: "Serpent Sting",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -5132,8 +5132,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   37075: {
     name: "Totem of Corruption",
     spellClassSet: 11,
-    baseDurationMs: 60000,
-    maxDurationMs: 60000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -5143,8 +5143,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45409: {
     name: "Crusader Strike",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -5153,8 +5153,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45410: {
     name: "Crusader Strike",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -5163,8 +5163,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45411: {
     name: "Crusader Strike",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -5173,8 +5173,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45412: {
     name: "Crusader Strike",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -5183,8 +5183,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45413: {
     name: "Crusader Strike",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -5203,8 +5203,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45580: {
     name: "Commanding Shout",
     spellClassSet: 4,
-    baseDurationMs: 120000,
-    maxDurationMs: 192000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 12321, name: "Booming Voice", percent: 12, flat: 0, deprecated: false },
@@ -5217,8 +5217,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45604: {
     name: "Flourish",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 23200,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Improved Blade Tactics", percent: 15, flat: 0, deprecated: false },
@@ -5229,8 +5229,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45661: {
     name: "Serpent Strike",
     spellClassSet: 9,
-    baseDurationMs: 15000,
-    maxDurationMs: 15000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 24467, name: "Improved Serpent Sting", percent: -20, flat: 0, deprecated: false },
@@ -5252,8 +5252,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   45918: {
     name: "Curse of Sargeras [PH]",
     spellClassSet: 5,
-    baseDurationMs: 24000,
-    maxDurationMs: 24000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -5274,8 +5274,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   46236: {
     name: "Sun's Embrace",
     spellClassSet: 6,
-    baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -5284,8 +5284,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   46237: {
     name: "Sun's Embrace",
     spellClassSet: 6,
-    baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -5294,8 +5294,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   46238: {
     name: "Sun's Embrace",
     spellClassSet: 6,
-    baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -5304,8 +5304,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   46239: {
     name: "Sun's Embrace",
     spellClassSet: 6,
-    baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52889, name: "Improved Holy Fire", percent: -50, flat: 0, deprecated: false },
@@ -5314,8 +5314,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51005: {
     name: "Emenating Frost",
     spellClassSet: 3,
-    baseDurationMs: 10000,
-    maxDurationMs: 13000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -5328,8 +5328,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51018: {
     name: "Loop of Infused Renewal: Rejuvenation",
     spellClassSet: 7,
-    baseDurationMs: 12000,
-    maxDurationMs: 14000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21871, name: "Increased Rejuvenation Duration", percent: 0, flat: 2000, deprecated: false },
@@ -5338,8 +5338,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51019: {
     name: "Loop of Infused Renewal: Renew",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 18000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 26171, name: "Increased Renew Duration", percent: 0, flat: 3000, deprecated: false },
@@ -5350,8 +5350,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51175: {
     name: "Surge of Mana",
     spellClassSet: 6,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },
@@ -5360,8 +5360,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51184: {
     name: "Arcane Missiles",
     spellClassSet: 3,
-    baseDurationMs: 8000,
-    maxDurationMs: 9000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
@@ -5371,8 +5371,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51277: {
     name: "Crashing Waves",
     spellClassSet: 3,
-    baseDurationMs: 5000,
-    maxDurationMs: 8000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
@@ -5385,8 +5385,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51687: {
     name: "Drain Soul",
     spellClassSet: 5,
-    baseDurationMs: 6000,
-    maxDurationMs: 6000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 52555, name: "Rapid Deterioration", percent: -6, flat: 0, deprecated: false },
@@ -5396,8 +5396,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51751: {
     name: "Judgement of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -5413,8 +5413,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   51752: {
     name: "Judgement of Wisdom",
     spellClassSet: 10,
-    baseDurationMs: 10000,
-    maxDurationMs: 108000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 20359, name: "Lasting Judgement", percent: 0, flat: 10000, deprecated: false },
@@ -5430,8 +5430,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   52528: {
     name: "Taste for Blood",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -5443,8 +5443,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   52529: {
     name: "Taste for Blood",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -5456,8 +5456,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   52530: {
     name: "[Deprecated] REUSE ME",
     spellClassSet: 8,
-    baseDurationMs: 16000,
-    maxDurationMs: 22000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: true,
     modifiers: [
       { spellId: 14174, name: "Taste for Blood", percent: 0, flat: 4000, deprecated: false },
@@ -5469,8 +5469,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   52896: {
     name: "Qiraji Deterioration",
     spellClassSet: 6,
-    baseDurationMs: 60000,
-    maxDurationMs: 80000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51776, name: "Vampiric Embrace Duration Bonus", percent: 0, flat: 20000, deprecated: false },
@@ -5479,8 +5479,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   52923: {
     name: "Polymorph: Draenei Homunculus",
     spellClassSet: 3,
-    baseDurationMs: 50000,
-    maxDurationMs: 65000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -5489,8 +5489,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   52980: {
     name: "Burning Zeal",
     spellClassSet: 6,
-    baseDurationMs: 18000,
-    maxDurationMs: 27000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 15275, name: "Improved Shadow Word: Pain", percent: 0, flat: 3000, deprecated: false },
@@ -5501,8 +5501,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   57561: {
     name: "Polymorph: Rodent",
     spellClassSet: 3,
-    baseDurationMs: 50000,
-    maxDurationMs: 65000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 21247, name: "Improved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
@@ -5511,8 +5511,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   57636: {
     name: "Vampiric Leech",
     spellClassSet: 6,
-    baseDurationMs: 15000,
-    maxDurationMs: 16000,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
     deprecated: false,
     modifiers: [
       { spellId: 51772, name: "Improved Mind Flay", percent: 0, flat: 1000, deprecated: false },

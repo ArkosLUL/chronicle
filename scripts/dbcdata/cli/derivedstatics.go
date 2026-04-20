@@ -88,7 +88,7 @@ func generateDerivedPeriodicSpells(wc *dbcdb.WoWClient, goDir string, server str
 		return err
 	}
 
-	return writeTemplate(filepath.Join(goDir, "periodicspells.go"), periodicSpellsGoTemplate, serverData{Server: server, Entries: entries})
+	return writeTemplate(filepath.Join(goDir, "periodicspells.go"), periodicSpellsGoTemplate, serverData{Server: server, Entries: entries}, server)
 }
 
 func generateDerivedVulnerabilitySpells(wc *dbcdb.WoWClient, goDir, tsDir string, server string) error {
@@ -97,11 +97,11 @@ func generateDerivedVulnerabilitySpells(wc *dbcdb.WoWClient, goDir, tsDir string
 		return err
 	}
 
-	if err := writeTemplate(filepath.Join(goDir, "vulnerabilityspells.go"), vulnerabilitySpellsGoTemplate, serverData{Server: server, Entries: entries}); err != nil {
+	if err := writeTemplate(filepath.Join(goDir, "vulnerabilityspells.go"), vulnerabilitySpellsGoTemplate, serverData{Server: server, Entries: entries}, server); err != nil {
 		return err
 	}
 
-	return writeTemplate(filepath.Join(tsDir, "VulnerabilitySpells.ts"), vulnerabilitySpellsTSTemplate, entries)
+	return writeTemplate(filepath.Join(tsDir, "VulnerabilitySpells.ts"), vulnerabilitySpellsTSTemplate, entries, server)
 }
 
 func generateDerivedExtraAttacks(wc *dbcdb.WoWClient, goDir, tsDir string, server string) error {
@@ -110,11 +110,11 @@ func generateDerivedExtraAttacks(wc *dbcdb.WoWClient, goDir, tsDir string, serve
 		return err
 	}
 
-	if err := writeTemplate(filepath.Join(goDir, "extraattack.go"), extraAttacksGoTemplate, serverData{Server: server, Entries: entries}); err != nil {
+	if err := writeTemplate(filepath.Join(goDir, "extraattack.go"), extraAttacksGoTemplate, serverData{Server: server, Entries: entries}, server); err != nil {
 		return err
 	}
 
-	return writeTemplate(filepath.Join(tsDir, "ExtraAttack.ts"), extraAttacksTSTemplate, entries)
+	return writeTemplate(filepath.Join(tsDir, "ExtraAttack.ts"), extraAttacksTSTemplate, entries, server)
 }
 
 func generateClassSpells(wc *dbcdb.WoWClient, assetsDir string) error {
@@ -132,7 +132,7 @@ func generateDerivedDurationModifiers(wc *dbcdb.WoWClient, goDir, tsDir string, 
 		return err
 	}
 
-	if err := writeTemplate(filepath.Join(goDir, "durationmodifiers.go"), durationModifiersGoTemplate, serverData{Server: server, Entries: data}); err != nil {
+	if err := writeTemplate(filepath.Join(goDir, "durationmodifiers.go"), durationModifiersGoTemplate, serverData{Server: server, Entries: data}, server); err != nil {
 		return err
 	}
 
@@ -141,5 +141,5 @@ func generateDerivedDurationModifiers(wc *dbcdb.WoWClient, goDir, tsDir string, 
 		return err
 	}
 
-	return writeTemplate(filepath.Join(tsDir, "DurationModifiers.ts"), durationModifiersTSTemplate, affected)
+	return writeTemplate(filepath.Join(tsDir, "DurationModifiers.ts"), durationModifiersTSTemplate, affected, server)
 }

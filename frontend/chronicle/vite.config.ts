@@ -33,7 +33,9 @@ export default defineConfig({
   }],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src")
+      // Server-specific generated constants (must come before generic "@")
+      "@/constants/dbmem": path.resolve(__dirname, `src/constants/dbmem/${process.env.SERVER || 'turtle'}`),
+      "@": path.resolve(__dirname, "src"),
     }
   },
   server: {

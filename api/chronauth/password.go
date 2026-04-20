@@ -41,6 +41,11 @@ const (
 	verificationTokenLifetime  = 24 * time.Hour
 	verificationResendCooldown = 5 * time.Minute
 )
+const (
+	resetTokenLifetime = 1 * time.Hour
+	resetCooldown      = 1 * time.Hour
+)
+
 
 type PasswordRegisterRequest struct {
 	Email    string `json:"email"`
@@ -543,6 +548,151 @@ func (s *Service) ResendVerification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, ok)
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// ForgotPassword handles POST /auth/password/forgot-password
+func (s *Service) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req ForgotPasswordRequest
+	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	// Always return 200 to avoid leaking email existence
+	ok := map[string]string{"message": "If an account exists with that email, a password reset link has been sent."}
+
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	if err := validateEmail(req.Email); err != nil {
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	// Look up auth link
+	linked, err := s.Zed.GetUserAuthByLinkedID(ctx, database.GetUserAuthByLinkedIDParams{
+		LinkedID: req.Email,
+		Provider: PasswordProvider,
+	})
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	// Get password record to check cooldown
+	pw, err := s.Zed.GetUserPasswordByAuthID(ctx, linked.ID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	// 1-hour cooldown
+	if pw.ResetTokenCreatedAt.Valid &&
+		time.Since(pw.ResetTokenCreatedAt.Time) < resetCooldown {
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	// Generate and store reset token
+	raw, hash, err := generateVerificationToken()
+	if err != nil {
+		s.logger.Error("generate reset token", slog.String("error", err.Error()))
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	err = s.Zed.SetResetToken(ctx, database.SetResetTokenParams{
+		UserAuthID:         linked.ID,
+		ResetTokenHash:     pgtype.Text{String: hash, Valid: true},
+		ResetTokenExpiresAt: database.Timestamptz(time.Now().Add(resetTokenLifetime)),
+	})
+	if err != nil {
+		s.logger.Error("store reset token", slog.String("error", err.Error()))
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	if s.mailer != nil {
+		if err := s.mailer.SendPasswordResetEmail(ctx, req.Email, raw); err != nil {
+			s.logger.Error("send password reset email",
+				slog.String("error", err.Error()),
+				slog.String("email", req.Email),
+			)
+		}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, ok)
+}
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
+// ResetPassword handles POST /auth/password/reset-password
+func (s *Service) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req ResetPasswordRequest
+	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	if req.Token == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, map[string]string{
+			"message": "Reset token is required.",
+		})
+		return
+	}
+
+	if err := validatePassword(req.Password); err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Hash the token and look up
+	h := sha256.Sum256([]byte(req.Token))
+	hash := hex.EncodeToString(h[:])
+
+	row, err := s.Zed.GetUserPasswordByResetToken(ctx, pgtype.Text{String: hash, Valid: true})
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, map[string]string{
+			"message": "Invalid or expired reset link.",
+		})
+		return
+	}
+
+	// Hash new password
+	bcryptHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	// Update password
+	err = s.Zed.UpdateUserPassword(ctx, database.UpdateUserPasswordParams{
+		UserAuthID:   row.UserAuthID,
+		PasswordHash: string(bcryptHash),
+	})
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	// Clear reset token
+	err = s.Zed.ClearResetToken(ctx, row.UserAuthID)
+	if err != nil {
+		s.logger.Error("clear reset token", slog.String("error", err.Error()))
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, map[string]string{
+		"message": "Password reset successfully. You can now sign in.",
+	})
 }
 
 func extractIP(r *http.Request) string {

@@ -1091,6 +1091,9 @@ type UserPassword struct {
 	VerificationTokenHash      pgtype.Text        `db:"verification_token_hash" json:"verification_token_hash"`
 	VerificationTokenExpiresAt pgtype.Timestamptz `db:"verification_token_expires_at" json:"verification_token_expires_at"`
 	VerificationTokenCreatedAt pgtype.Timestamptz `db:"verification_token_created_at" json:"verification_token_created_at"`
+	ResetTokenHash             pgtype.Text        `db:"reset_token_hash" json:"reset_token_hash"`
+	ResetTokenExpiresAt        pgtype.Timestamptz `db:"reset_token_expires_at" json:"reset_token_expires_at"`
+	ResetTokenCreatedAt        pgtype.Timestamptz `db:"reset_token_created_at" json:"reset_token_created_at"`
 }
 
 type UserStorageLimit struct {

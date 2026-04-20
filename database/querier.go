@@ -16,6 +16,7 @@ type sqlcQuerier interface {
 	AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error)
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
 	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
+	ClearResetToken(ctx context.Context, userAuthID uuid.UUID) error
 	CountActiveRegressionJobs(ctx context.Context) (int64, error)
 	CountAllWoWLogGroups(ctx context.Context, arg CountAllWoWLogGroupsParams) (int32, error)
 	CountUserPanelLayoutsTotal(ctx context.Context, userID uuid.NullUUID) (int32, error)
@@ -89,6 +90,7 @@ type sqlcQuerier interface {
 	GetUserDataGrants(ctx context.Context, userID uuid.UUID) ([]DataGrant, error)
 	GetUserPanelLayoutDefaults(ctx context.Context, id uuid.UUID) (GetUserPanelLayoutDefaultsRow, error)
 	GetUserPasswordByAuthID(ctx context.Context, userAuthID uuid.UUID) (UserPassword, error)
+	GetUserPasswordByResetToken(ctx context.Context, resetTokenHash pgtype.Text) (GetUserPasswordByResetTokenRow, error)
 	GetUserPasswordByVerificationToken(ctx context.Context, verificationTokenHash pgtype.Text) (GetUserPasswordByVerificationTokenRow, error)
 	GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]ChronicleUser, error)
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
@@ -145,6 +147,7 @@ type sqlcQuerier interface {
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
 	SetDuplicateGroupIDs(ctx context.Context, arg SetDuplicateGroupIDsParams) error
 	SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error)
+	SetResetToken(ctx context.Context, arg SetResetTokenParams) error
 	SetVerificationToken(ctx context.Context, arg SetVerificationTokenParams) error
 	// Returns distinct instance names that have at least one qualified speedrun.
 	SpeedrunInstanceNames(ctx context.Context) ([]string, error)

@@ -354,6 +354,9 @@ func (s *Service) Handler() http.Handler {
 	mux.Post("/password/register", s.PasswordRegister)
 	mux.Post("/password/login", s.PasswordLogin)
 	mux.Get("/password/verify-email", s.VerifyEmail)
+	mux.Post("/password/forgot-password", s.ForgotPassword)
+	mux.Post("/password/reset-password", s.ResetPassword)
+
 	mux.Group(func(r chi.Router) {
 		r.Use(
 			s.AuthenticationMiddleware,

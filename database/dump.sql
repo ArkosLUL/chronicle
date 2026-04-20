@@ -696,7 +696,10 @@ CREATE TABLE user_passwords (
     email_verified boolean DEFAULT false NOT NULL,
     verification_token_hash text,
     verification_token_expires_at timestamp with time zone,
-    verification_token_created_at timestamp with time zone
+    verification_token_created_at timestamp with time zone,
+    reset_token_hash text,
+    reset_token_expires_at timestamp with time zone,
+    reset_token_created_at timestamp with time zone
 );
 
 CREATE TABLE user_tracked_layouts (
@@ -1320,7 +1323,7 @@ ALTER TABLE ONLY user_auth_links
     ADD CONSTRAINT user_auth_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 ALTER TABLE ONLY user_auth_session
-    ADD CONSTRAINT user_auth_session_user_auth_id_fkey FOREIGN KEY (user_auth_id) REFERENCES user_auth_links(id);
+    ADD CONSTRAINT user_auth_session_user_auth_id_fkey FOREIGN KEY (user_auth_id) REFERENCES user_auth_links(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_auth_session
     ADD CONSTRAINT user_auth_session_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);

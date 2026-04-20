@@ -4221,8 +4221,21 @@ func (q *sqlQuerier) UpdateUserPanelLayoutByID(ctx context.Context, arg UpdateUs
 	return i, err
 }
 
+const clearResetToken = `-- name: ClearResetToken :exec
+UPDATE user_passwords
+SET reset_token_hash = NULL,
+    reset_token_expires_at = NULL,
+    updated_at = now()
+WHERE user_auth_id = $1
+`
+
+func (q *sqlQuerier) ClearResetToken(ctx context.Context, userAuthID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, clearResetToken, userAuthID)
+	return err
+}
+
 const getUserPasswordByAuthID = `-- name: GetUserPasswordByAuthID :one
-SELECT user_auth_id, password_hash, updated_at, email_verified, verification_token_hash, verification_token_expires_at, verification_token_created_at FROM user_passwords WHERE user_auth_id = $1
+SELECT user_auth_id, password_hash, updated_at, email_verified, verification_token_hash, verification_token_expires_at, verification_token_created_at, reset_token_hash, reset_token_expires_at, reset_token_created_at FROM user_passwords WHERE user_auth_id = $1
 `
 
 func (q *sqlQuerier) GetUserPasswordByAuthID(ctx context.Context, userAuthID uuid.UUID) (UserPassword, error) {
@@ -4236,12 +4249,58 @@ func (q *sqlQuerier) GetUserPasswordByAuthID(ctx context.Context, userAuthID uui
 		&i.VerificationTokenHash,
 		&i.VerificationTokenExpiresAt,
 		&i.VerificationTokenCreatedAt,
+		&i.ResetTokenHash,
+		&i.ResetTokenExpiresAt,
+		&i.ResetTokenCreatedAt,
+	)
+	return i, err
+}
+
+const getUserPasswordByResetToken = `-- name: GetUserPasswordByResetToken :one
+SELECT up.user_auth_id, up.password_hash, up.updated_at, up.email_verified, up.verification_token_hash, up.verification_token_expires_at, up.verification_token_created_at, up.reset_token_hash, up.reset_token_expires_at, up.reset_token_created_at, ual.linked_id, ual.user_id
+FROM user_passwords up
+JOIN user_auth_links ual ON ual.id = up.user_auth_id
+WHERE up.reset_token_hash = $1
+  AND up.reset_token_expires_at > now()
+`
+
+type GetUserPasswordByResetTokenRow struct {
+	UserAuthID                 uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	PasswordHash               string             `db:"password_hash" json:"password_hash"`
+	UpdatedAt                  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	EmailVerified              bool               `db:"email_verified" json:"email_verified"`
+	VerificationTokenHash      pgtype.Text        `db:"verification_token_hash" json:"verification_token_hash"`
+	VerificationTokenExpiresAt pgtype.Timestamptz `db:"verification_token_expires_at" json:"verification_token_expires_at"`
+	VerificationTokenCreatedAt pgtype.Timestamptz `db:"verification_token_created_at" json:"verification_token_created_at"`
+	ResetTokenHash             pgtype.Text        `db:"reset_token_hash" json:"reset_token_hash"`
+	ResetTokenExpiresAt        pgtype.Timestamptz `db:"reset_token_expires_at" json:"reset_token_expires_at"`
+	ResetTokenCreatedAt        pgtype.Timestamptz `db:"reset_token_created_at" json:"reset_token_created_at"`
+	LinkedID                   string             `db:"linked_id" json:"linked_id"`
+	UserID                     uuid.UUID          `db:"user_id" json:"user_id"`
+}
+
+func (q *sqlQuerier) GetUserPasswordByResetToken(ctx context.Context, resetTokenHash pgtype.Text) (GetUserPasswordByResetTokenRow, error) {
+	row := q.db.QueryRow(ctx, getUserPasswordByResetToken, resetTokenHash)
+	var i GetUserPasswordByResetTokenRow
+	err := row.Scan(
+		&i.UserAuthID,
+		&i.PasswordHash,
+		&i.UpdatedAt,
+		&i.EmailVerified,
+		&i.VerificationTokenHash,
+		&i.VerificationTokenExpiresAt,
+		&i.VerificationTokenCreatedAt,
+		&i.ResetTokenHash,
+		&i.ResetTokenExpiresAt,
+		&i.ResetTokenCreatedAt,
+		&i.LinkedID,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const getUserPasswordByVerificationToken = `-- name: GetUserPasswordByVerificationToken :one
-SELECT up.user_auth_id, up.password_hash, up.updated_at, up.email_verified, up.verification_token_hash, up.verification_token_expires_at, up.verification_token_created_at, ual.linked_id, ual.user_id
+SELECT up.user_auth_id, up.password_hash, up.updated_at, up.email_verified, up.verification_token_hash, up.verification_token_expires_at, up.verification_token_created_at, up.reset_token_hash, up.reset_token_expires_at, up.reset_token_created_at, ual.linked_id, ual.user_id
 FROM user_passwords up
 JOIN user_auth_links ual ON ual.id = up.user_auth_id
 WHERE up.verification_token_hash = $1
@@ -4257,6 +4316,9 @@ type GetUserPasswordByVerificationTokenRow struct {
 	VerificationTokenHash      pgtype.Text        `db:"verification_token_hash" json:"verification_token_hash"`
 	VerificationTokenExpiresAt pgtype.Timestamptz `db:"verification_token_expires_at" json:"verification_token_expires_at"`
 	VerificationTokenCreatedAt pgtype.Timestamptz `db:"verification_token_created_at" json:"verification_token_created_at"`
+	ResetTokenHash             pgtype.Text        `db:"reset_token_hash" json:"reset_token_hash"`
+	ResetTokenExpiresAt        pgtype.Timestamptz `db:"reset_token_expires_at" json:"reset_token_expires_at"`
+	ResetTokenCreatedAt        pgtype.Timestamptz `db:"reset_token_created_at" json:"reset_token_created_at"`
 	LinkedID                   string             `db:"linked_id" json:"linked_id"`
 	UserID                     uuid.UUID          `db:"user_id" json:"user_id"`
 }
@@ -4272,6 +4334,9 @@ func (q *sqlQuerier) GetUserPasswordByVerificationToken(ctx context.Context, ver
 		&i.VerificationTokenHash,
 		&i.VerificationTokenExpiresAt,
 		&i.VerificationTokenCreatedAt,
+		&i.ResetTokenHash,
+		&i.ResetTokenExpiresAt,
+		&i.ResetTokenCreatedAt,
 		&i.LinkedID,
 		&i.UserID,
 	)
@@ -4281,7 +4346,7 @@ func (q *sqlQuerier) GetUserPasswordByVerificationToken(ctx context.Context, ver
 const insertUserPassword = `-- name: InsertUserPassword :one
 INSERT INTO user_passwords (user_auth_id, password_hash, updated_at)
 VALUES ($1, $2, $3)
-RETURNING user_auth_id, password_hash, updated_at, email_verified, verification_token_hash, verification_token_expires_at, verification_token_created_at
+RETURNING user_auth_id, password_hash, updated_at, email_verified, verification_token_hash, verification_token_expires_at, verification_token_created_at, reset_token_hash, reset_token_expires_at, reset_token_created_at
 `
 
 type InsertUserPasswordParams struct {
@@ -4301,6 +4366,9 @@ func (q *sqlQuerier) InsertUserPassword(ctx context.Context, arg InsertUserPassw
 		&i.VerificationTokenHash,
 		&i.VerificationTokenExpiresAt,
 		&i.VerificationTokenCreatedAt,
+		&i.ResetTokenHash,
+		&i.ResetTokenExpiresAt,
+		&i.ResetTokenCreatedAt,
 	)
 	return i, err
 }
@@ -4316,6 +4384,26 @@ WHERE user_auth_id = $1
 
 func (q *sqlQuerier) MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, markEmailVerified, userAuthID)
+	return err
+}
+
+const setResetToken = `-- name: SetResetToken :exec
+UPDATE user_passwords
+SET reset_token_hash = $1,
+    reset_token_expires_at = $2,
+    reset_token_created_at = now(),
+    updated_at = now()
+WHERE user_auth_id = $3
+`
+
+type SetResetTokenParams struct {
+	ResetTokenHash      pgtype.Text        `db:"reset_token_hash" json:"reset_token_hash"`
+	ResetTokenExpiresAt pgtype.Timestamptz `db:"reset_token_expires_at" json:"reset_token_expires_at"`
+	UserAuthID          uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+}
+
+func (q *sqlQuerier) SetResetToken(ctx context.Context, arg SetResetTokenParams) error {
+	_, err := q.db.Exec(ctx, setResetToken, arg.ResetTokenHash, arg.ResetTokenExpiresAt, arg.UserAuthID)
 	return err
 }
 

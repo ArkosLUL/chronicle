@@ -17,7 +17,8 @@ export function Login() {
   const loading = (authLoading || providersLoading) && !providersError
   const authError = searchParams.get("error")
 
-  const [mode, setMode] = useState<"login" | "register">("login")
+  const resetToken = searchParams.get("reset_token")
+  const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">(resetToken ? "reset" : "login")
   const [email, setEmail] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -28,6 +29,7 @@ export function Login() {
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null)
   const [resending, setResending] = useState(false)
   const [resendMessage, setResendMessage] = useState<string | null>(null)
+  const [forgotSent, setForgotSent] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -124,6 +126,63 @@ export function Login() {
       setResending(false)
     }
   }
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+    setFormErrorDetail(null)
+    setSubmitting(true)
+
+    try {
+      await fetch("/auth/password/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      // Always show success regardless of response (don't leak email existence)
+      setForgotSent(true)
+    } catch {
+      setFormError("Network error. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+    setFormErrorDetail(null)
+
+    if (password !== confirmPassword) {
+      setFormError("Passwords do not match.")
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      const response = await fetch("/auth/password/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resetToken, password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setFormError(data.message || "An error occurred.")
+        setFormErrorDetail(data.detail || null)
+        return
+      }
+
+      // Redirect to login with success message
+      window.location.href = "/login?password_reset=1"
+    } catch {
+      setFormError("Network error. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center pb-50">
@@ -145,6 +204,15 @@ export function Login() {
               </AlertDescription>
             </Alert>
           )}
+          {searchParams.get("password_reset") === "1" && (
+            <Alert className="mb-4">
+              <AlertTitle>Password reset!</AlertTitle>
+              <AlertDescription>
+                Your password has been reset. You can now sign in.
+              </AlertDescription>
+            </Alert>
+          )}
+
 
           {authError === "invalid_token" && (
             <Alert variant="destructive" className="mb-4">
@@ -198,7 +266,108 @@ export function Login() {
                 </Button>
               </div>
             </div>
-          ) : (
+          ) : forgotSent ? (
+            <div className="space-y-4 text-center">
+              <h2 className="text-lg font-semibold">Check your email</h2>
+              <p className="text-sm text-muted-foreground">
+                If an account exists with that email, we&apos;ve sent a password reset link.
+              </p>
+              <Button variant="outline" onClick={() => { setMode("login"); setForgotSent(false); setFormError(null); setFormErrorDetail(null) }}>
+                Back to sign in
+              </Button>
+            </div>
+          ) : mode === "forgot" ? (
+          <>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <h2 className="text-lg font-semibold text-center">Forgot Password</h2>
+            <p className="text-sm text-center text-muted-foreground">
+              Enter your email and we&apos;ll send you a link to reset your password.
+            </p>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Sending..." : "Send Reset Link"}
+            </Button>
+
+            <p className="text-sm text-center text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => { setMode("login"); setFormError(null); setFormErrorDetail(null) }}
+                className="underline text-foreground"
+              >
+                Back to sign in
+              </button>
+            </p>
+          </form>
+          </>) : mode === "reset" ? (
+          <>
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <h2 className="text-lg font-semibold text-center">Reset Password</h2>
+            <p className="text-sm text-center text-muted-foreground">
+              Enter your new password.
+            </p>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1">
+                New Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Min 8 characters"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+                Confirm New Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Re-enter password"
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Resetting..." : "Reset Password"}
+            </Button>
+
+            <p className="text-sm text-center text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => { window.location.href = "/login" }}
+                className="underline text-foreground"
+              >
+                Back to sign in
+              </button>
+            </p>
+          </form>
+          </>) : (
           <>
           {/* Email/Password Form */}
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -306,6 +475,18 @@ export function Login() {
                 </>
               )}
             </p>
+
+            {mode === "login" && (
+              <p className="text-sm text-center">
+                <button
+                  type="button"
+                  onClick={() => { setMode("forgot"); setFormError(null); setFormErrorDetail(null) }}
+                  className="text-muted-foreground hover:text-foreground underline text-xs"
+                >
+                  Forgot password?
+                </button>
+              </p>
+            )}
           </form>
 
           {/* OAuth Providers Divider */}

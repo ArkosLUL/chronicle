@@ -34,3 +34,26 @@ SET email_verified = TRUE,
     updated_at = now()
 WHERE user_auth_id = @user_auth_id;
 
+-- name: SetResetToken :exec
+UPDATE user_passwords
+SET reset_token_hash = @reset_token_hash,
+    reset_token_expires_at = @reset_token_expires_at,
+    reset_token_created_at = now(),
+    updated_at = now()
+WHERE user_auth_id = @user_auth_id;
+
+-- name: GetUserPasswordByResetToken :one
+SELECT up.*, ual.linked_id, ual.user_id
+FROM user_passwords up
+JOIN user_auth_links ual ON ual.id = up.user_auth_id
+WHERE up.reset_token_hash = @reset_token_hash
+  AND up.reset_token_expires_at > now();
+
+-- name: ClearResetToken :exec
+UPDATE user_passwords
+SET reset_token_hash = NULL,
+    reset_token_expires_at = NULL,
+    updated_at = now()
+WHERE user_auth_id = @user_auth_id;
+
+

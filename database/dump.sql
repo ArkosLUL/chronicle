@@ -692,7 +692,11 @@ CREATE TABLE user_panel_layouts (
 CREATE TABLE user_passwords (
     user_auth_id uuid NOT NULL,
     password_hash text NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    email_verified boolean DEFAULT false NOT NULL,
+    verification_token_hash text,
+    verification_token_expires_at timestamp with time zone,
+    verification_token_created_at timestamp with time zone
 );
 
 CREATE TABLE user_tracked_layouts (
@@ -1192,7 +1196,7 @@ CREATE INDEX river_job_state_and_finalized_at_index ON river_job USING btree (st
 
 CREATE UNIQUE INDEX river_job_unique_idx ON river_job USING btree (unique_key) WHERE ((unique_key IS NOT NULL) AND (unique_states IS NOT NULL) AND river_job_state_in_bitmask(unique_states, state));
 
-CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (linked_id, provider);
+CREATE UNIQUE INDEX user_auths_unique_linked_id ON user_auth_links USING btree (lower(linked_id), provider);
 
 CREATE UNIQUE INDEX user_panel_layouts_user_title_ci_uidx ON user_panel_layouts USING btree (user_id, title_normalized) WHERE (user_id IS NOT NULL);
 

@@ -1084,9 +1084,13 @@ type UserPanelLayout struct {
 }
 
 type UserPassword struct {
-	UserAuthID   uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
-	PasswordHash string             `db:"password_hash" json:"password_hash"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UserAuthID                 uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	PasswordHash               string             `db:"password_hash" json:"password_hash"`
+	UpdatedAt                  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	EmailVerified              bool               `db:"email_verified" json:"email_verified"`
+	VerificationTokenHash      pgtype.Text        `db:"verification_token_hash" json:"verification_token_hash"`
+	VerificationTokenExpiresAt pgtype.Timestamptz `db:"verification_token_expires_at" json:"verification_token_expires_at"`
+	VerificationTokenCreatedAt pgtype.Timestamptz `db:"verification_token_created_at" json:"verification_token_created_at"`
 }
 
 type UserStorageLimit struct {

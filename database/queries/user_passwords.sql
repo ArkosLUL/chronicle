@@ -9,3 +9,28 @@ SELECT * FROM user_passwords WHERE user_auth_id = @user_auth_id;
 -- name: UpdateUserPassword :exec
 UPDATE user_passwords SET password_hash = @password_hash, updated_at = now()
 WHERE user_auth_id = @user_auth_id;
+
+-- name: SetVerificationToken :exec
+UPDATE user_passwords
+SET verification_token_hash = @verification_token_hash,
+    verification_token_expires_at = @verification_token_expires_at,
+    verification_token_created_at = now(),
+    updated_at = now()
+WHERE user_auth_id = @user_auth_id;
+
+-- name: GetUserPasswordByVerificationToken :one
+SELECT up.*, ual.linked_id, ual.user_id
+FROM user_passwords up
+JOIN user_auth_links ual ON ual.id = up.user_auth_id
+WHERE up.verification_token_hash = @verification_token_hash
+  AND up.verification_token_expires_at > now()
+  AND up.email_verified = FALSE;
+
+-- name: MarkEmailVerified :exec
+UPDATE user_passwords
+SET email_verified = TRUE,
+    verification_token_hash = NULL,
+    verification_token_expires_at = NULL,
+    updated_at = now()
+WHERE user_auth_id = @user_auth_id;
+

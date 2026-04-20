@@ -2,7 +2,11 @@ package chronauth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -18,6 +22,7 @@ import (
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,8 +36,10 @@ const (
 	minPasswordLength = 8
 	maxPasswordLength = 128
 
-	registerRateLimit = 5 * time.Minute
-	loginRateLimit    = 5 * time.Second
+	registerRateLimit          = 5 * time.Minute
+	loginRateLimit             = 5 * time.Second
+	verificationTokenLifetime  = 24 * time.Hour
+	verificationResendCooldown = 5 * time.Minute
 )
 
 type PasswordRegisterRequest struct {
@@ -106,34 +113,36 @@ func (s *Service) PasswordRegister(w http.ResponseWriter, r *http.Request) {
 			Provider: PasswordProvider,
 		})
 		if err == nil {
-			return fmt.Errorf("email already registered")
+			err = errors.New("this email already exists")
+			return httpapi.NewAPIError(err, "This email cannot be used for registration.", http.StatusBadRequest)
 		}
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 
-		// Check if a user with this email already exists (e.g., from Discord OAuth).
-		// If so, link the password provider to the existing user.
-		existingUser, err := tx.GetUserByEmail(ctx, req.Email)
-		var userID uuid.UUID
+		// Reject if a user with this email already exists (e.g., from Discord OAuth).
+		// Linking providers should only happen from an authenticated session, not registration.
+		_, err = tx.GetUserByEmail(ctx, req.Email)
 		if err == nil {
-			userID = existingUser.ID
-		} else if errors.Is(err, sql.ErrNoRows) {
-			// Create new user
-			userRow, err := tx.InsertUser(ctx, database.InsertUserParams{
-				ID:        uuid.New(),
-				Username:  req.Username,
-				Email:     req.Email,
-				CreatedAt: database.Timestamptz(now),
-				UpdatedAt: database.Timestamptz(now),
-			})
-			if err != nil {
-				return fmt.Errorf("insert user: %w", err)
-			}
-			userID = userRow.ID
-		} else {
+			err = errors.New("this email already exists")
+			return httpapi.NewAPIError(err, "This email cannot be used for registration.", http.StatusBadRequest)
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("check existing user: %w", err)
 		}
+
+		// Create new user
+		userRow, err := tx.InsertUser(ctx, database.InsertUserParams{
+			ID:        uuid.New(),
+			Username:  req.Username,
+			Email:     req.Email,
+			CreatedAt: database.Timestamptz(now),
+			UpdatedAt: database.Timestamptz(now),
+		})
+		if err != nil {
+			return fmt.Errorf("insert user: %w", err)
+		}
+		userID := userRow.ID
 
 		// Create auth link
 		linked, err := tx.InsertUserAuth(ctx, database.InsertUserAuthParams{
@@ -184,17 +193,8 @@ func (s *Service) PasswordRegister(w http.ResponseWriter, r *http.Request) {
 		return nil
 	}, nil)
 	if err != nil {
-		if err.Error() == "email already registered" {
-			httpapi.Write(ctx, w, http.StatusConflict, map[string]string{
-				"message": "An account with this email already exists.",
-			})
-			return
-		}
-		s.logger.Error("password register failed",
-			slog.String("error", err.Error()),
-		)
-		httpapi.Write(ctx, w, http.StatusInternalServerError, map[string]string{
-			"message": "Internal error.",
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Status: http.StatusInternalServerError,
 		})
 		return
 	}
@@ -213,8 +213,18 @@ func (s *Service) PasswordRegister(w http.ResponseWriter, r *http.Request) {
 		slog.String("user_id", session.UserID.String()),
 	)
 
+	// Send verification email (non-blocking — don't fail registration)
+	if s.mailer != nil {
+		if err := s.sendVerificationToken(ctx, session.UserAuthID, req.Email); err != nil {
+			s.logger.Error("failed to send verification email",
+				slog.String("error", err.Error()),
+				slog.String("email", req.Email),
+			)
+		}
+	}
+
 	httpapi.Write(ctx, w, http.StatusCreated, map[string]string{
-		"message": "Account created.",
+		"message": "Account created. Please check your email to verify.",
 	})
 }
 
@@ -338,6 +348,9 @@ func validatePassword(password string) error {
 }
 
 func (s *Service) checkLoginRateLimit(ip string) bool {
+	if s.devMode {
+		return true
+	}
 	s.loginMu.Lock()
 	defer s.loginMu.Unlock()
 
@@ -356,6 +369,9 @@ func (s *Service) checkLoginRateLimit(ip string) bool {
 }
 
 func (s *Service) checkRegisterRateLimit(ip string) bool {
+	if s.devMode {
+		return true
+	}
 	s.registerMu.Lock()
 	defer s.registerMu.Unlock()
 
@@ -396,6 +412,137 @@ func (s *Service) syncPasswordUser(ctx context.Context, zed authz.DatabaseAuthor
 	}
 
 	return nil
+}
+
+// generateVerificationToken creates a random token and returns (raw, sha256hash).
+func generateVerificationToken() (string, string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", "", err
+	}
+	raw := base64.URLEncoding.EncodeToString(b)
+	h := sha256.Sum256([]byte(raw))
+	return raw, hex.EncodeToString(h[:]), nil
+}
+
+// sendVerificationToken generates a token, stores the hash, and sends the email.
+func (s *Service) sendVerificationToken(ctx context.Context, userAuthID uuid.UUID, email string) error {
+	raw, hash, err := generateVerificationToken()
+	if err != nil {
+		return fmt.Errorf("generate token: %w", err)
+	}
+
+	err = s.Zed.SetVerificationToken(ctx, database.SetVerificationTokenParams{
+		UserAuthID:            userAuthID,
+		VerificationTokenHash: pgtype.Text{String: hash, Valid: true},
+		VerificationTokenExpiresAt: database.Timestamptz(
+			time.Now().Add(verificationTokenLifetime),
+		),
+	})
+	if err != nil {
+		return fmt.Errorf("store token: %w", err)
+	}
+
+	return s.mailer.SendVerificationEmail(ctx, email, raw)
+}
+
+// VerifyEmail handles GET /auth/password/verify-email?token=...
+func (s *Service) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Redirect(w, r, "/login?error=invalid_token", http.StatusTemporaryRedirect)
+		return
+	}
+
+	h := sha256.Sum256([]byte(token))
+	hash := hex.EncodeToString(h[:])
+
+	row, err := s.Zed.GetUserPasswordByVerificationToken(ctx, pgtype.Text{String: hash, Valid: true})
+	if err != nil {
+		http.Redirect(w, r, "/login?error=invalid_token", http.StatusTemporaryRedirect)
+		return
+	}
+
+	err = s.Zed.MarkEmailVerified(ctx, row.UserAuthID)
+	if err != nil {
+		s.logger.Error("mark email verified failed",
+			slog.String("error", err.Error()),
+			slog.String("user_auth_id", row.UserAuthID.String()),
+		)
+		http.Redirect(w, r, "/login?error=internal", http.StatusTemporaryRedirect)
+		return
+	}
+
+	http.Redirect(w, r, "/login?verified=1", http.StatusTemporaryRedirect)
+}
+
+type ResendVerificationRequest struct {
+	Email string `json:"email"`
+}
+
+// ResendVerification handles POST /auth/password/resend-verification
+func (s *Service) ResendVerification(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims, authed := AuthenticatedClaims(ctx)
+	if !authed {
+		httpapi.Forbidden(w, errors.New("no claims found"))
+		return
+	}
+
+	ip := extractIP(r)
+	if !s.checkRegisterRateLimit(ip) {
+		httpapi.Write(ctx, w, http.StatusTooManyRequests, map[string]string{
+			"message": "Please wait before requesting another verification email.",
+		})
+		return
+	}
+
+	requesting, err := s.Zed.GetUserByID(ctx, claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	// Always return 200 to avoid leaking email existence
+	ok := map[string]string{"message": "If that email is registered, a verification email has been sent."}
+
+	// Look up auth link
+	linked, err := s.Zed.GetUserAuthByLinkedID(ctx, database.GetUserAuthByLinkedIDParams{
+		LinkedID: strings.ToLower(requesting.Email),
+		Provider: PasswordProvider,
+	})
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	// Check if already verified
+	pw, err := s.Zed.GetUserPasswordByAuthID(ctx, linked.ID)
+	if err != nil || pw.EmailVerified {
+		httpapi.Write(ctx, w, http.StatusOK, ok)
+		return
+	}
+
+	// Check cooldown via verification_token_created_at
+	if pw.VerificationTokenCreatedAt.Valid &&
+		time.Since(pw.VerificationTokenCreatedAt.Time) < verificationResendCooldown {
+		httpapi.Write(ctx, w, http.StatusTooManyRequests, map[string]string{
+			"message": "Please wait before requesting another verification email.",
+		})
+		return
+	}
+
+	if s.mailer != nil {
+		if err := s.sendVerificationToken(ctx, linked.ID, requesting.Email); err != nil {
+			s.logger.Error("resend verification email failed",
+				slog.String("error", err.Error()),
+				slog.String("email", requesting.Email),
+			)
+		}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, ok)
 }
 
 func extractIP(r *http.Request) string {

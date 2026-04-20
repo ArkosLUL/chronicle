@@ -31,7 +31,7 @@ develop: frontend/chronicle/dist create-db
 	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --ocr-url="http://localhost:8730"
 
 develop-backend: create-db
-	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs --access-url="http://192.168.1.214:5173"
+	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs
 
 .PHONY: build
 build: build-backend frontend/chronicle/dist

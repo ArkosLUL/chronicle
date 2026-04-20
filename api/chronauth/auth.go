@@ -18,6 +18,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth/fakeoidc"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/chroniclebot"
+	"github.com/Emyrk/chronicle/chroniclemail"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/go-chi/chi/v5"
@@ -41,6 +42,7 @@ type Options struct {
 	Zed       *authz.Authz
 	Discord   DiscordOAuth
 	Bot       *chroniclebot.Bot
+	Mailer    *chroniclemail.Mailer
 
 	Sessions SessionOptions
 }
@@ -53,6 +55,8 @@ type Service struct {
 	logger    *slog.Logger
 
 	sessions *Sessions
+	mailer   *chroniclemail.Mailer
+	devMode  bool
 
 	registerMu       sync.Mutex
 	registerAttempts map[string]time.Time
@@ -112,6 +116,8 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 		sessions:         sess,
 		Bot:              opts.Bot,
 		Zed:              opts.Zed,
+		mailer:           opts.Mailer,
+		devMode:          opts.DevServer,
 		registerAttempts: make(map[string]time.Time),
 		loginAttempts:    make(map[string]time.Time),
 	}, nil
@@ -281,6 +287,7 @@ func (s *Service) Handler() http.Handler {
 	mux := chi.NewRouter()
 	mux.Group(func(r chi.Router) {
 		r.Use(
+			s.AuthenticationMiddleware,
 			s.Authenticated(true),
 		)
 
@@ -346,6 +353,14 @@ func (s *Service) Handler() http.Handler {
 	// Password auth routes (no authentication required)
 	mux.Post("/password/register", s.PasswordRegister)
 	mux.Post("/password/login", s.PasswordLogin)
+	mux.Get("/password/verify-email", s.VerifyEmail)
+	mux.Group(func(r chi.Router) {
+		r.Use(
+			s.AuthenticationMiddleware,
+			s.Authenticated(false),
+		)
+		r.Post("/password/resend-verification", s.ResendVerification)
+	})
 
 	mux.Get("/list", func(w http.ResponseWriter, r *http.Request) {
 		list := make([]string, 0, len(s.Providers))

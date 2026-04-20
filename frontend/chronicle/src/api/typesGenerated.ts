@@ -818,6 +818,19 @@ export interface Session {
     readonly max_storage_bytes: number;
     readonly consumed_storage_bytes: number;
     readonly preferences: Preferences;
+    /**
+     * Email is the user's email address (if available).
+     */
+    readonly email: string;
+    /**
+     * EmailVerified indicates whether the user's email has been verified.
+     * Only meaningful for password-auth users.
+     */
+    readonly email_verified: boolean;
+    /**
+     * AuthProvider is the provider used for the current session (e.g. "discord", "password").
+     */
+    readonly auth_provider: string;
 }
 
 // From chroniclesdk/share.go

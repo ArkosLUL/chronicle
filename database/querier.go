@@ -89,6 +89,7 @@ type sqlcQuerier interface {
 	GetUserDataGrants(ctx context.Context, userID uuid.UUID) ([]DataGrant, error)
 	GetUserPanelLayoutDefaults(ctx context.Context, id uuid.UUID) (GetUserPanelLayoutDefaultsRow, error)
 	GetUserPasswordByAuthID(ctx context.Context, userAuthID uuid.UUID) (UserPassword, error)
+	GetUserPasswordByVerificationToken(ctx context.Context, verificationTokenHash pgtype.Text) (GetUserPasswordByVerificationTokenRow, error)
 	GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]ChronicleUser, error)
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
@@ -139,10 +140,12 @@ type sqlcQuerier interface {
 	ListRegressionFixtures(ctx context.Context) ([]ListRegressionFixturesRow, error)
 	ListRegressionSnapshots(ctx context.Context, arg ListRegressionSnapshotsParams) ([]ListRegressionSnapshotsRow, error)
 	ListUserPanelLayouts(ctx context.Context, userID uuid.NullUUID) ([]ListUserPanelLayoutsRow, error)
+	MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
 	SetDuplicateGroupIDs(ctx context.Context, arg SetDuplicateGroupIDsParams) error
 	SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error)
+	SetVerificationToken(ctx context.Context, arg SetVerificationTokenParams) error
 	// Returns distinct instance names that have at least one qualified speedrun.
 	SpeedrunInstanceNames(ctx context.Context) ([]string, error)
 	// Returns the leaderboard for a given instance name.

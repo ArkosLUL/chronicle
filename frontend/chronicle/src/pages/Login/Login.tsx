@@ -23,7 +23,11 @@ export function Login() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [formError, setFormError] = useState<string | null>(null)
+  const [formErrorDetail, setFormErrorDetail] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,6 +55,7 @@ export function Login() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
+    setFormErrorDetail(null)
 
     if (mode === "register" && password !== confirmPassword) {
       setFormError("Passwords do not match.")
@@ -78,15 +83,45 @@ export function Login() {
 
       if (!response.ok) {
         setFormError(data.message || "An error occurred.")
+        setFormErrorDetail(data.detail || null)
         return
       }
 
-      // Session cookie is set by the server, reload to pick it up
+      if (mode === "register") {
+        // Show "check your email" screen; user is logged in but should verify
+        setRegisteredEmail(email)
+        return
+      }
+
+      // Login: session cookie is set by the server, reload to pick it up
       window.location.href = "/"
     } catch {
       setFormError("Network error. Please try again.")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!registeredEmail) return
+    setResending(true)
+    setResendMessage(null)
+    try {
+      const response = await fetch("/auth/password/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: registeredEmail }),
+      })
+      const data = await response.json()
+      if (response.status === 429) {
+        setResendMessage(data.message || "Please wait before requesting again.")
+      } else {
+        setResendMessage("Verification email sent!")
+      }
+    } catch {
+      setResendMessage("Failed to resend. Please try again.")
+    } finally {
+      setResending(false)
     }
   }
 
@@ -102,6 +137,23 @@ export function Login() {
         </div>
 
         <Card className="p-8">
+          {searchParams.get("verified") === "1" && (
+            <Alert className="mb-4">
+              <AlertTitle>Email verified!</AlertTitle>
+              <AlertDescription>
+                Your email has been verified. You can now sign in.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {authError === "invalid_token" && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>
+                Verification link is invalid or expired. Please request a new one.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {authError === "not_in_discord" && (
             <Alert className="mb-4">
               <AlertTitle>Join Discord first</AlertTitle>
@@ -116,10 +168,38 @@ export function Login() {
 
           {formError && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{formError}</AlertDescription>
+              <AlertDescription>
+                {formError}
+                {formErrorDetail && (
+                  <span className="mt-1 block font-mono text-xs whitespace-pre-wrap break-all">{formErrorDetail}</span>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 
+          {/* Post-registration: Check your email */}
+          {registeredEmail ? (
+            <div className="space-y-4 text-center">
+              <h2 className="text-lg font-semibold">Check your email</h2>
+              <p className="text-sm text-muted-foreground">
+                We sent a verification link to <strong>{registeredEmail}</strong>.
+                <br />
+                You can continue using Chronicle, but please verify your email.
+              </p>
+              {resendMessage && (
+                <p className="text-sm text-muted-foreground">{resendMessage}</p>
+              )}
+              <div className="flex gap-2 justify-center">
+                <Button variant="outline" onClick={handleResendVerification} disabled={resending}>
+                  {resending ? "Sending..." : "Resend email"}
+                </Button>
+                <Button onClick={() => { window.location.href = "/" }}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Email/Password Form */}
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <h2 className="text-lg font-semibold text-center">
@@ -207,7 +287,7 @@ export function Login() {
                   Don&apos;t have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => { setMode("register"); setFormError(null); setConfirmPassword("") }}
+                    onClick={() => { setMode("register"); setFormError(null); setFormErrorDetail(null); setConfirmPassword("") }}
                     className="underline text-foreground"
                   >
                     Register
@@ -218,7 +298,7 @@ export function Login() {
                   Already have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => { setMode("login"); setFormError(null) }}
+                    onClick={() => { setMode("login"); setFormError(null); setFormErrorDetail(null) }}
                     className="underline text-foreground"
                   >
                     Sign in
@@ -268,6 +348,8 @@ export function Login() {
                 {providersErrorMsg?.message || "Failed to load authentication providers"}
               </AlertDescription>
             </Alert>
+          )}
+          </>
           )}
         </Card>
       </div>

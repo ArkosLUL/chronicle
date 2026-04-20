@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chroniclebot"
+	"github.com/Emyrk/chronicle/chroniclemail"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/database/storage"
@@ -39,6 +40,7 @@ type Options struct {
 	WoWDB            http.Handler
 	Assets           http.Handler
 	InternalGameData http.Handler
+	Mailer           *chroniclemail.Mailer
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -67,6 +69,7 @@ func New(ctx context.Context, opts Options) (*API, error) {
 		Discord:   opts.Discord,
 		Bot:       opts.Bot,
 		Zed:       opts.Zed,
+		Mailer:    opts.Mailer,
 		Sessions: chronauth.SessionOptions{
 			SecretPEM: opts.SecretPEM,
 			Registry:  opts.Registry,

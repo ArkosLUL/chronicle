@@ -14,16 +14,18 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chronauth/authkeys"
 	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/serviceaccessurl"
 	"github.com/Emyrk/chronicle/internal/services/serviceassets"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
+	"github.com/Emyrk/chronicle/internal/services/servicegamedata"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
+	"github.com/Emyrk/chronicle/internal/services/servicemail"
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
-	"github.com/Emyrk/chronicle/internal/services/servicegamedata"
 	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 
 	"github.com/coder/serpent"
@@ -43,7 +45,6 @@ func OnAPI() string {
 type Service struct {
 	broker *services.Services
 
-	accessURL   string
 	secretPem   string
 	httpAddress string
 	devAuth     bool
@@ -81,6 +82,8 @@ func (s *Service) DependsOn() []string {
 		servicewowdb.OnWoWDB(),
 		serviceassets.OnAssets(),
 		servicegamedata.OnInternalGameData(),
+		servicemail.OnMailer(),
+		serviceaccessurl.OnAccessURL(),
 	}
 }
 
@@ -98,7 +101,7 @@ func (s *Service) Start(ctx context.Context) error {
 		return err
 	}
 
-	accessURL := s.accessURL
+	accessURL := serviceaccessurl.AccessURL(s.broker)
 	if accessURL == "" {
 		addr := serverLn.Addr().(*net.TCPAddr)
 		if addr.IP.IsUnspecified() {
@@ -143,8 +146,9 @@ func (s *Service) Start(ctx context.Context) error {
 	wowdb := servicewowdb.WoWDB(s.broker)
 	assets := serviceassets.Assets(s.broker)
 	gamedata := servicegamedata.InternalGameData(s.broker)
+	mailer := servicemail.Mailer(s.broker)
 	handler, err := api.New(ctx, api.Options{
-		Logger:     logger,
+		Logger:           logger,
 		Storage:          st,
 		Chronicle:        chron,
 		RiverQueue:       que,
@@ -156,6 +160,7 @@ func (s *Service) Start(ctx context.Context) error {
 		WoWDB:            wowdb,
 		Assets:           assets,
 		InternalGameData: gamedata,
+		Mailer:           mailer,
 
 		AccessURL: au,
 		DevOAuth:  s.devAuth,
@@ -181,15 +186,6 @@ func (s *Service) Close(_ context.Context) error {
 
 func (s *Service) Options() serpent.OptionSet {
 	return serpent.OptionSet{
-		{
-			Name:        "access-url",
-			Description: "Access url to access the server from outside the cluster.",
-			Required:    false,
-			Flag:        "access-url",
-			Env:         "CHRONICLE_ACCESS_URL",
-			Default:     "",
-			Value:       serpent.StringOf(&s.accessURL),
-		},
 		{
 			Name:        "JWT Secret PEM",
 			Description: "PEM encoded private key to use for signing JWTs.",

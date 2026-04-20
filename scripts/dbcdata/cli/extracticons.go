@@ -43,6 +43,7 @@ func ExtractIconsCmd() *serpent.Command {
 			if err != nil {
 				return fmt.Errorf("(extract icons) open wow client: %w", err)
 			}
+			//nolint:errcheck
 			defer wc.Close()
 
 			return extractIcons(wc, outDir, inv.Stdout)

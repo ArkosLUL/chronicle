@@ -3,7 +3,7 @@ import {
   resolveSpellDescription,
   extractReferencedSpellIds,
 } from "./wowdb";
-import { testSpells, spells } from "./testdata/spellTestVectors.generated";
+import { testSpells, spells } from "./testdata/spellTestVectors.turtle.generated";
 
 // === DBC-driven regression tests ===
 // Spell data is generated from the actual Spell.dbc via:

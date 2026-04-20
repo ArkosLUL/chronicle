@@ -135,7 +135,7 @@ func SpellTestDataCmd() *serpent.Command {
 			}
 
 			return writeTemplate(
-				filepath.Join(tsDir, "spellTestVectors.generated.ts"),
+				filepath.Join(tsDir, fmt.Sprintf("spellTestVectors.%s.generated.ts", server)),
 				spellTestDataTSTemplate,
 				data,
 			)

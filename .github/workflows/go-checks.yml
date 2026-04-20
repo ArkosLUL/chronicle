@@ -96,8 +96,7 @@ jobs:
     environment: actions
     strategy:
       matrix:
-        # Add servers here as their dbcmem data becomes available
-        server: [turtle]
+        server: [turtle, epoch]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,12 +140,11 @@ jobs:
     environment: railway
     strategy:
       matrix:
-        # Add servers here as their dbcmem data becomes available
         include:
           - server: turtle
             railway_service: chronicled
-          # - server: epoch
-          #   railway_service: chronicled-epoch
+          - server: epoch
+            railway_service: chronicled-epoch
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli

@@ -1,5 +1,7 @@
 # Stage 1: Build frontend
 FROM node:20.19.1-alpine AS frontend
+ARG SERVER=turtle
+ENV SERVER=${SERVER}
 
 RUN apk --no-cache add make && npm install -g pnpm@9
 

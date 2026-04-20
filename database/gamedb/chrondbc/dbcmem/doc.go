@@ -9,6 +9,15 @@
 //	go generate -run "static|derived-statics|spell-test-data" ./database/gamedb/chrondbc/dbcmem/
 package dbcmem
 
+// Turtle WoW (1.12.1)
 //go:generate go run ../../../../scripts/dbcdata static --server=turtle -o turtle
-//go:generate go run ../../../../scripts/dbcdata derived-statics --server=turtle --assets-dir=../../../../assets/generated --go-dir=turtle --ts-dir=../../../../frontend/chronicle/src/constants/dbmem
+//go:generate go run ../../../../scripts/dbcdata derived-statics --server=turtle --assets-dir=../../../../assets/turtle/generated --go-dir=turtle --ts-dir=../../../../frontend/chronicle/src/constants/dbmem
+//go:generate go run ../../../../scripts/dbcdata extract-dbc --out=../../../../assets/turtle
+//go:generate go run ../../../../scripts/dbcdata extract-icons --out=../../../../frontend/imagecache/turtle/blp
 //go:generate go run ../../../../scripts/dbcdata spell-test-data --ts-dir=../../../../frontend/chronicle/src/api/testdata
+
+// Epoch (3.3.5a)
+//go:generate go run ../../../../scripts/dbcdata static --server=epoch -o epoch
+//go:generate go run ../../../../scripts/dbcdata derived-statics --server=epoch --assets-dir=../../../../assets/epoch/generated --go-dir=epoch --ts-dir=../../../../frontend/chronicle/src/constants/dbmem
+//go:generate go run ../../../../scripts/dbcdata extract-dbc --server=epoch --out=../../../../assets/epoch
+//go:generate go run ../../../../scripts/dbcdata extract-icons --server=epoch --out=../../../../frontend/imagecache/epoch/blp

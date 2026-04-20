@@ -117,6 +117,7 @@ func init() {
 		52601: {SpellID: 52601, Name: "Nemesis Corruption and Siphon Life", Percent: 0, Flat: 3000, Deprecated: false},
 		52889: {SpellID: 52889, Name: "Improved Holy Fire", Percent: -50, Flat: 0, Deprecated: false},
 	}
+
 	dbcmem.DurationModifiersByClassBit = map[int32]map[uint64][]int32{
 		3: {
 			0x800: {21228, 51981},

@@ -7,6 +7,7 @@ require (
 	github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f
 	github.com/Gophercraft/core v0.5.2-0.20240410205646-00865bbdb78a
 	github.com/KromDaniel/regengo v0.5.3
+	github.com/Masterminds/semver v1.5.0
 	github.com/authzed/authzed-go v1.7.0
 	github.com/authzed/gochugaru v0.0.0-20250806201116-319cc7551988
 	github.com/authzed/spicedb v1.49.1
@@ -83,7 +84,6 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/Gophercraft/log v0.0.0-20240214234900-fcacaad0d20e // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -345,6 +345,6 @@ tool (
 // which we use in the awsiamrds package.
 replace github.com/lib/pq => github.com/coder/pq v1.10.5-0.20250807075151-6ad9b0a25151
 
-replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260228020554-a0e7784de9cb
+replace github.com/Gophercraft/core => github.com/Emyrk/core v0.0.0-20260420003500-710dbb062651
 
 replace github.com/cybriq/gotiny => github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688

@@ -100,6 +100,7 @@ type spellResponse struct {
 func SpellTestDataCmd() *serpent.Command {
 	var tsDir string
 	var dbcPath string
+	var server string
 
 	return &serpent.Command{
 		Use:   "spell-test-data",
@@ -111,22 +112,21 @@ func SpellTestDataCmd() *serpent.Command {
 				Flag:        "ts-dir",
 				Value:       serpent.StringOf(&tsDir),
 			},
-			{
-				Name:        "dbc",
-				Description: "Path to WoW client directory.",
-				Flag:        "dbc",
-				Value:       serpent.StringOf(&dbcPath),
-				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
-			},
+			DBCOption(&dbcPath),
+			ServerOption(&server),
 		},
 		Handler: func(inv *serpent.Invocation) error {
 			if tsDir == "" {
 				return fmt.Errorf("--ts-dir is required")
 			}
 
-			wc, err := dbcdb.New(dbcPath)
+			resolved, err := ResolveDBCPath(dbcPath, server)
 			if err != nil {
-				return fmt.Errorf("open wow client: %w", err)
+				return err
+			}
+			wc, err := dbcdb.New(resolved)
+			if err != nil {
+				return fmt.Errorf("(spelltest) open wow client: %w", err)
 			}
 
 			data, err := collectSpellTestData(wc)

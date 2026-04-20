@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { iconUrl } from "@/config/iconUrl";
 import { useQueries } from "@tanstack/react-query";
 import type { ItemTooltip as ItemTooltipData, ItemSpell } from "@/api/typesGenerated";
 import { useSpell } from "@/api/queries";
@@ -87,8 +88,7 @@ const SPELL_TRIGGER_TEXT: Record<number, string> = {
 };
 
 function getItemIconUrl(icon: string): string {
-  if (!icon) return "";
-  return `https://icons.chronicleclassic.com/${icon.toLowerCase()}.webp`;
+  return iconUrl(icon);
 }
 
 interface ItemTooltipProps {

@@ -31,6 +31,8 @@ func rootCmd() *serpent.Command {
 		cli.StaticPopulateCmd(),
 		cli.DerivedStaticsCmd(),
 		cli.SpellTestDataCmd(),
+		cli.ExtractDBCCmd(),
+		cli.ExtractIconsCmd(),
 		demo(),
 		jsonDump(),
 	)
@@ -39,22 +41,22 @@ func rootCmd() *serpent.Command {
 
 func jsonDump() *serpent.Command {
 	var dbcPath string
+	var server string
 	return &serpent.Command{
 		Use:   "dump",
 		Short: "Dump.",
 		Options: serpent.OptionSet{
-			{
-				Name:        "dbc",
-				Description: "Path to WoW client directory.",
-				Flag:        "dbc",
-				Value:       serpent.StringOf(&dbcPath),
-				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
-			},
+			cli.DBCOption(&dbcPath),
+			cli.ServerOption(&server),
 		},
 		Handler: func(inv *serpent.Invocation) error {
-			wc, err := dbcdb.New(dbcPath)
+			resolved, err := cli.ResolveDBCPath(dbcPath, server)
 			if err != nil {
-				return fmt.Errorf("open wow client: %w", err)
+				return err
+			}
+			wc, err := dbcdb.New(resolved)
+			if err != nil {
+				return fmt.Errorf("(dump) open wow client: %w", err)
 			}
 
 			var cpy []dbdefs.Ent_ItemSubClass
@@ -80,22 +82,22 @@ func jsonDump() *serpent.Command {
 
 func demo() *serpent.Command {
 	var dbcPath string
+	var server string
 	return &serpent.Command{
 		Use:   "demo",
 		Short: "Demo.",
 		Options: serpent.OptionSet{
-			{
-				Name:        "dbc",
-				Description: "Path to WoW client directory.",
-				Flag:        "dbc",
-				Value:       serpent.StringOf(&dbcPath),
-				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
-			},
+			cli.DBCOption(&dbcPath),
+			cli.ServerOption(&server),
 		},
 		Handler: func(inv *serpent.Invocation) error {
-			wc, err := dbcdb.New(dbcPath)
+			resolved, err := cli.ResolveDBCPath(dbcPath, server)
 			if err != nil {
-				return fmt.Errorf("open wow client: %w", err)
+				return err
+			}
+			wc, err := dbcdb.New(resolved)
+			if err != nil {
+				return fmt.Errorf("(demo) open wow client: %w", err)
 			}
 
 			spdb, err := wc.Spells()

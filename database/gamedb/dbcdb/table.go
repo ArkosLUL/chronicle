@@ -1,7 +1,6 @@
 package dbcdb
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/Gophercraft/core/format/dbc"

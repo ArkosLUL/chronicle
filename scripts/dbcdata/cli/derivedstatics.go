@@ -38,20 +38,8 @@ func DerivedStaticsCmd() *serpent.Command {
 				Flag:        "assets-dir",
 				Value:       serpent.StringOf(&assetsDir),
 			},
-			{
-				Name:        "dbc",
-				Description: "Path to WoW client directory.",
-				Flag:        "dbc",
-				Value:       serpent.StringOf(&dbcPath),
-				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
-			},
-			{
-				Name:        "server",
-				Description: "Server name for the generated package (e.g. turtle, epoch).",
-				Flag:        "server",
-				Value:       serpent.StringOf(&server),
-				Default:     "turtle",
-			},
+			DBCOption(&dbcPath),
+			ServerOption(&server),
 		},
 		Handler: func(inv *serpent.Invocation) error {
 			if goDir == "" {
@@ -61,9 +49,13 @@ func DerivedStaticsCmd() *serpent.Command {
 				return fmt.Errorf("--ts-dir is required")
 			}
 
-			wc, err := dbcdb.New(dbcPath)
+			resolved, err := ResolveDBCPath(dbcPath, server)
 			if err != nil {
-				return fmt.Errorf("open wow client: %w", err)
+				return err
+			}
+			wc, err := dbcdb.New(resolved)
+			if err != nil {
+				return fmt.Errorf("(derived statics) open wow client: %w", err)
 			}
 
 			if err := generateDerivedPeriodicSpells(wc, goDir, server); err != nil {

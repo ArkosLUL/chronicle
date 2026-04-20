@@ -11,8 +11,8 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Gophercraft/core/format/dbc"
-	"github.com/Gophercraft/core/vsn"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
@@ -52,7 +52,7 @@ type WoWDB struct {
 }
 
 func New(ctx context.Context, opts Options) (*WoWDB, error) {
-	db := dbc.NewDB(vsn.V1_12_1)
+	db := dbc.NewDB(services.ServerBuild)
 	sf, err := os.Open(opts.SpellsDBCPath)
 	if err != nil {
 		return nil, err

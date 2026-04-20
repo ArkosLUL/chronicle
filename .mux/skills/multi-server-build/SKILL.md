@@ -54,10 +54,9 @@ Same pattern as `import _ "github.com/lib/pq"` for database drivers:
 2. **`dbcmem/<server>/*.go`** — generated data files. Each file has
    `package <server>`, imports `dbcmem`, and sets one var via `func init()`.
 
-3. **Wiring files** — build-tagged blank imports in each binary's CLI package:
+3. **Wiring files** — build-tagged blank imports in the `chrondbc` package:
    ```
-   cmd/chronicled/cli/dbcdata_<server>.go  — //go:build <server>
-   cmd/chronicle/cli/dbcdata_<server>.go   — //go:build <server>
+   database/gamedb/chrondbc/server_<server>.go  — //go:build <server>
    ```
 
 ### Directory Layout
@@ -81,13 +80,9 @@ database/gamedb/chrondbc/dbcmem/
 └── epoch/              # Epoch 3.3.5a DBC data (when ready)
     └── (same 11 files)
 
-cmd/chronicled/cli/
-├── dbcdata_turtle.go   # //go:build turtle
-└── dbcdata_epoch.go    # //go:build epoch
-
-cmd/chronicle/cli/
-├── dbcdata_turtle.go   # //go:build turtle
-└── dbcdata_epoch.go    # //go:build epoch
+database/gamedb/chrondbc/
+├── server_turtle.go    # //go:build turtle — blank import of dbcmem/turtle
+└── server_epoch.go     # //go:build epoch  — blank import of dbcmem/epoch
 ```
 
 ## CI/CD Pipeline
@@ -166,24 +161,15 @@ go run ./scripts/dbcdata derived-statics \
 This creates `dbcmem/<name>/` with 11 generated Go files, each containing an
 `init()` function that populates the corresponding `dbcmem` package variable.
 
-### Step 2: Add wiring files
+### Step 2: Add wiring file
 
-Create two build-tagged blank-import files:
+Create a build-tagged blank-import file in the `chrondbc` package:
 
-**`cmd/chronicled/cli/dbcdata_<name>.go`:**
+**`database/gamedb/chrondbc/server_<name>.go`:**
 ```go
 //go:build <name>
 
-package cli
-
-import _ "github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem/<name>"
-```
-
-**`cmd/chronicle/cli/dbcdata_<name>.go`:**
-```go
-//go:build <name>
-
-package cli
+package chrondbc
 
 import _ "github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem/<name>"
 ```
@@ -252,8 +238,7 @@ The `scripts/dbcdata` tool accepts a `--server` flag that controls:
 | `database/gamedb/chrondbc/dbcmem/types.go` | Shared types, nil vars, getters |
 | `database/gamedb/chrondbc/dbcmem/doc.go` | go:generate directives |
 | `database/gamedb/chrondbc/dbcmem/<server>/*.go` | Generated data (11 files per server) |
-| `cmd/chronicled/cli/dbcdata_<server>.go` | Build-tagged wiring (server binary) |
-| `cmd/chronicle/cli/dbcdata_<server>.go` | Build-tagged wiring (CLI binary) |
+| `database/gamedb/chrondbc/server_<server>.go` | Build-tagged wiring (blank import) |
 | `scripts/dbcdata/cli/static.go` | Generator for DBC-direct tables |
 | `scripts/dbcdata/cli/derivedstatics.go` | Generator for spell-derived tables |
 | `services/chronicled/Dockerfile` | Docker build with `SERVER` arg |

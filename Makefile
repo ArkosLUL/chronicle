@@ -21,7 +21,7 @@ lint:
 	golangci-lint run --build-tags $(SERVER)
 
 frontend/chronicle/dist: $(wildcard frontend/**)
-	(cd frontend/chronicle; pnpm install; pnpm build)
+	(cd frontend/chronicle; pnpm install; SERVER=$(SERVER) pnpm build)
 
 # SERVER controls which WoW server DBC data to compile in (turtle, epoch, etc.)
 SERVER ?= turtle
@@ -88,6 +88,34 @@ gen/db: $(DB_GEN_FILES)
 .PHONY: gen/static
 gen/static:
 	go generate ./database/gamedb/chrondbc/dbcmem
+
+# Icon pipeline: extract BLPs from WoW client, convert to WebP, generate manifest
+# Helper: run a command in nix-shell if cwebp/rclone are missing, plain shell otherwise.
+IMAGECACHE_NIX = frontend/imagecache/shell.nix
+define run-imagecache
+	if command -v cwebp >/dev/null 2>&1 && command -v rclone >/dev/null 2>&1; then \
+		cd frontend/imagecache && SERVER=$(SERVER) $(1); \
+	else \
+		cd frontend/imagecache && nix-shell shell.nix --run 'SERVER=$(SERVER) $(1)'; \
+	fi
+endef
+
+.PHONY: icons/convert
+icons/convert:
+	$(call run-imagecache,./convert-blp.sh)
+
+.PHONY: icons/manifest
+icons/manifest: icons/convert
+	go run ./scripts/dbstaticgen --icons-dir=frontend/imagecache/$(SERVER)/icons --out=frontend/imagecache/$(SERVER)/icon-list.json
+
+.PHONY: icons/upload
+icons/upload:
+	$(call run-imagecache,./upload-r2.sh)
+	$(call run-imagecache,./upload-icon-list-r2.sh)
+
+# Full pipeline: convert → manifest → upload
+.PHONY: icons
+icons: icons/convert icons/manifest icons/upload
 
 .PHONY: gen/go
 gen/go:

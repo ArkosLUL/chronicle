@@ -74,8 +74,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0/go.mod h1:HKpQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/Emyrk/core v0.0.0-20260228020554-a0e7784de9cb h1:RxyrA6pwSIZMJjbgYAya6saqrAv6Sy/qmEL987V3Ras=
-github.com/Emyrk/core v0.0.0-20260228020554-a0e7784de9cb/go.mod h1:BLkLA6t8H1k2uugNpTVFbr8dKFehuP+8z/RsY//L0pI=
+github.com/Emyrk/core v0.0.0-20260420003500-710dbb062651 h1:LQpRuawVDH6WGD0G0gXpAC6gmFh9f4L+O+aZEpeRu/w=
+github.com/Emyrk/core v0.0.0-20260420003500-710dbb062651/go.mod h1:BLkLA6t8H1k2uugNpTVFbr8dKFehuP+8z/RsY//L0pI=
 github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688 h1:cE7VzZQ0d4u/1slm+qb+I8MOQjsUHb6ZlBFVo2b7kI4=
 github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688/go.mod h1:LjhkCDCHbvOgyfZ0kSW+cEFLTlCdSwje0fmcMP2m6YE=
 github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f h1:pTAJh+8PR9GJ9LbCzqartCAtG1EN/zpBwDWEsKC+Nnc=

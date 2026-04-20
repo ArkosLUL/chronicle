@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { ICON_LIST_URL } from "@/config/iconUrl";
 import { toast } from "sonner";
 import { HardDrive, Clock, LayoutTemplate, Download, Upload, Plus, Trash2, BookOpenText, Save, Pencil, Trash, Share2, ChevronLeft, ChevronRight, Copy, Eye, Monitor, Smartphone, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -952,7 +953,7 @@ export function LayoutLabSettings() {
   }, [instance, selectedEncounterIds]);
 
   useEffect(() => {
-    void fetch("https://icons.chronicleclassic.com/icon-list.json")
+    void fetch(ICON_LIST_URL)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("failed"))))
       .then((data: unknown) => {
         if (Array.isArray(data)) {

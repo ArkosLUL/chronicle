@@ -22,6 +22,15 @@ func New(path string) (*WoWClient, error) {
 	return &WoWClient{Volume: vol}, nil
 }
 
+func (w *WoWClient) SpellDBCBytes() ([]byte, error) {
+	data, err := w.ReadFile("DBFilesClient\\Spell.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 func (w *WoWClient) SpellItemEnchantment() (Table[dbdefs.Ent_SpellItemEnchantment], error) {
 	data, err := w.ReadFile("DBFilesClient\\SpellItemEnchantment.dbc")
 	if err != nil {

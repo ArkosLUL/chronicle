@@ -62,6 +62,7 @@ func ServerCmd() *serpent.Command {
 
 			logger := getLogger(i)
 			logger.Info("🚀🚀 startup sequence initiated 🚀🚀",
+				slog.String("server", services.ServerName),
 				slog.String("tag", version.GitTag),
 				slog.String("commit", version.GitCommit),
 				slog.String("build_time", version.BuildTime),

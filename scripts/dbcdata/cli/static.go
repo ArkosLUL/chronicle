@@ -29,25 +29,17 @@ func StaticPopulateCmd() *serpent.Command {
 				FlagShorthand: "o",
 				Value:         serpent.StringOf(&outputDir),
 			},
-			{
-				Name:        "dbc",
-				Description: "Path to WoW client directory.",
-				Flag:        "dbc",
-				Value:       serpent.StringOf(&dbcPath),
-				Default:     "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW",
-			},
-			{
-				Name:        "server",
-				Description: "Server name for the generated package (e.g. turtle, epoch).",
-				Flag:        "server",
-				Value:       serpent.StringOf(&server),
-				Default:     "turtle",
-			},
+			DBCOption(&dbcPath),
+			ServerOption(&server),
 		},
 		Handler: func(inv *serpent.Invocation) error {
-			wc, err := dbcdb.New(dbcPath)
+			resolved, err := ResolveDBCPath(dbcPath, server)
 			if err != nil {
-				return fmt.Errorf("open wow client: %w", err)
+				return err
+			}
+			wc, err := dbcdb.New(resolved)
+			if err != nil {
+				return fmt.Errorf("(static) open wow client: %w", err)
 			}
 
 			// Generate cast times

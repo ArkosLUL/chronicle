@@ -21,3 +21,9 @@ package dbcmem
 //go:generate go run ../../../../scripts/dbcdata derived-statics --server=epoch --assets-dir=../../../../assets/epoch/generated --go-dir=epoch --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/epoch
 //go:generate go run ../../../../scripts/dbcdata extract-dbc --server=epoch --out=../../../../assets/epoch
 //go:generate go run ../../../../scripts/dbcdata extract-icons --server=epoch --out=../../../../frontend/imagecache/epoch/blp
+// Kronos (1.12.1)
+//go:generate go run ../../../../scripts/dbcdata static --server=kronos -o kronos
+//go:generate go run ../../../../scripts/dbcdata derived-statics --server=kronos --assets-dir=../../../../assets/kronos/generated --go-dir=kronos --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/kronos
+//go:generate go run ../../../../scripts/dbcdata extract-dbc --server=kronos --out=../../../../assets/kronos
+//go:generate go run ../../../../scripts/dbcdata extract-icons --server=kronos --out=../../../../frontend/imagecache/kronos/blp
+

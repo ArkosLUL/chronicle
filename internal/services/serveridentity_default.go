@@ -1,4 +1,4 @@
-//go:build !turtle && !epoch
+//go:build !turtle && !epoch && !kronos
 
 package services
 

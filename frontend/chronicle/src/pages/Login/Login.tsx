@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
@@ -17,21 +17,26 @@ export function Login() {
   const loading = (authLoading || providersLoading) && !providersError
   const authError = searchParams.get("error")
 
+  const [mode, setMode] = useState<"login" | "register">("login")
+  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [formError, setFormError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/", { replace: true })
     }
   }, [isAuthenticated, navigate])
 
-  const handleLogin = (providerName: string) => {
-    // Redirect to OAuth login endpoint
-    // Check for 'from' in query params, then referrer, then default to "/"
+  const handleOAuthLogin = (providerName: string) => {
     const params = new URLSearchParams(window.location.search)
     let redirectUri = params.get("from")
     if (!redirectUri && document.referrer) {
       try {
         const referrerUrl = new URL(document.referrer)
-        // Only use referrer if it's from the same origin
         if (referrerUrl.origin === window.location.origin) {
           redirectUri = referrerUrl.pathname + referrerUrl.search
         }
@@ -41,6 +46,48 @@ export function Login() {
     }
     redirectUri = redirectUri || "/"
     window.location.assign(`/auth/${providerName}?from=${encodeURIComponent(redirectUri)}`)
+  }
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+
+    if (mode === "register" && password !== confirmPassword) {
+      setFormError("Passwords do not match.")
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      const endpoint = mode === "register"
+        ? "/auth/password/register"
+        : "/auth/password/login"
+
+      const body = mode === "register"
+        ? { email, username, password }
+        : { email, password }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setFormError(data.message || "An error occurred.")
+        return
+      }
+
+      // Session cookie is set by the server, reload to pick it up
+      window.location.href = "/"
+    } catch {
+      setFormError("Network error. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -66,43 +113,163 @@ export function Login() {
               </AlertDescription>
             </Alert>
           )}
-          {(loading) ? (
-            <div className="text-center text-muted-foreground">
-              Loading authentication providers...
+
+          {formError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Email/Password Form */}
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <h2 className="text-lg font-semibold text-center">
+              {mode === "login" ? "Sign In" : "Create Account"}
+            </h2>
+
+            {mode === "register" && (
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium mb-1">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Your username"
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="you@example.com"
+              />
             </div>
-          ) : providersError ? (
-            <Alert variant="destructive">
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Min 8 characters"
+              />
+            </div>
+
+            {mode === "register" && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Re-enter password"
+                />
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting
+                ? "Loading..."
+                : mode === "login"
+                  ? "Sign In"
+                  : "Create Account"
+              }
+            </Button>
+
+            <p className="text-sm text-center text-muted-foreground">
+              {mode === "login" ? (
+                <>
+                  Don&apos;t have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => { setMode("register"); setFormError(null); setConfirmPassword("") }}
+                    className="underline text-foreground"
+                  >
+                    Register
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => { setMode("login"); setFormError(null) }}
+                    className="underline text-foreground"
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
+            </p>
+          </form>
+
+          {/* OAuth Providers Divider */}
+          {!loading && !providersError && providers.length > 0 && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {providers.map((provider) => (
+                  <Button
+                    key={provider}
+                    onClick={() => handleOAuthLogin(provider)}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    <span className="capitalize">Sign in with {provider}</span>
+                  </Button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {loading && (
+            <div className="text-center text-muted-foreground mt-4">
+              Loading...
+            </div>
+          )}
+
+          {providersError && (
+            <Alert variant="destructive" className="mt-4">
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>
                 {providersErrorMsg?.message || "Failed to load authentication providers"}
               </AlertDescription>
             </Alert>
-          ) : providers.length === 0 ? (
-            <div className="text-center text-muted-foreground">
-              No authentication providers configured
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-center mb-4 text-muted-foreground">
-                Choose a provider to sign in:
-              </p>
-              {providers.map((provider) => (
-                <Button
-                  key={provider}
-                  onClick={() => handleLogin(provider)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <span className="capitalize">Sign in with {provider}</span>
-                </Button>
-              ))}
-            </div>
           )}
         </Card>
-
-        <p className="text-center text-xs text-muted-foreground">
-          Authentication is handled by external identity providers
-        </p>
       </div>
     </div>
   )

@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth/fakeoidc"
 	"github.com/Emyrk/chronicle/api/httpapi"
@@ -51,6 +53,12 @@ type Service struct {
 	logger    *slog.Logger
 
 	sessions *Sessions
+
+	registerMu       sync.Mutex
+	registerAttempts map[string]time.Time
+
+	loginMu       sync.Mutex
+	loginAttempts map[string]time.Time
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, error) {
@@ -98,12 +106,14 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 	}
 
 	return &Service{
-		Providers: providers,
-		Store:     store,
-		logger:    logger.With(slog.String("service", "auth")),
-		sessions:  sess,
-		Bot:       opts.Bot,
-		Zed:       opts.Zed,
+		Providers:        providers,
+		Store:            store,
+		logger:           logger.With(slog.String("service", "auth")),
+		sessions:         sess,
+		Bot:              opts.Bot,
+		Zed:              opts.Zed,
+		registerAttempts: make(map[string]time.Time),
+		loginAttempts:    make(map[string]time.Time),
 	}, nil
 }
 
@@ -332,6 +342,10 @@ func (s *Service) Handler() http.Handler {
 			httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
 		})
 	})
+
+	// Password auth routes (no authentication required)
+	mux.Post("/password/register", s.PasswordRegister)
+	mux.Post("/password/login", s.PasswordLogin)
 
 	mux.Get("/list", func(w http.ResponseWriter, r *http.Request) {
 		list := make([]string, 0, len(s.Providers))

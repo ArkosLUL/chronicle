@@ -1083,6 +1083,12 @@ type UserPanelLayout struct {
 	Code            pgtype.Text        `db:"code" json:"code"`
 }
 
+type UserPassword struct {
+	UserAuthID   uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	PasswordHash string             `db:"password_hash" json:"password_hash"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type UserStorageLimit struct {
 	UserID          uuid.UUID   `db:"user_id" json:"user_id"`
 	MaxStorageBytes int64       `db:"max_storage_bytes" json:"max_storage_bytes"`

@@ -689,6 +689,12 @@ CREATE TABLE user_panel_layouts (
     CONSTRAINT user_panel_layouts_title_format_chk CHECK ((title ~ '^[A-Za-z0-9_\-\s]+$'::text))
 );
 
+CREATE TABLE user_passwords (
+    user_auth_id uuid NOT NULL,
+    password_hash text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE user_tracked_layouts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
@@ -1074,6 +1080,9 @@ ALTER TABLE ONLY user_panel_layouts
 ALTER TABLE ONLY user_panel_layouts
     ADD CONSTRAINT user_panel_layouts_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY user_passwords
+    ADD CONSTRAINT user_passwords_pkey PRIMARY KEY (user_auth_id);
+
 ALTER TABLE ONLY user_tracked_layouts
     ADD CONSTRAINT user_tracked_layouts_pkey PRIMARY KEY (id);
 
@@ -1314,6 +1323,9 @@ ALTER TABLE ONLY user_auth_session
 
 ALTER TABLE ONLY user_panel_layouts
     ADD CONSTRAINT user_panel_layouts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY user_passwords
+    ADD CONSTRAINT user_passwords_user_auth_id_fkey FOREIGN KEY (user_auth_id) REFERENCES user_auth_links(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY user_tracked_layouts
     ADD CONSTRAINT user_tracked_layouts_layout_id_fkey FOREIGN KEY (layout_id) REFERENCES user_panel_layouts(id) ON DELETE CASCADE;

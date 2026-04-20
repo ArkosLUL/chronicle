@@ -4221,13 +4221,58 @@ func (q *sqlQuerier) UpdateUserPanelLayoutByID(ctx context.Context, arg UpdateUs
 	return i, err
 }
 
+const getUserPasswordByAuthID = `-- name: GetUserPasswordByAuthID :one
+SELECT user_auth_id, password_hash, updated_at FROM user_passwords WHERE user_auth_id = $1
+`
+
+func (q *sqlQuerier) GetUserPasswordByAuthID(ctx context.Context, userAuthID uuid.UUID) (UserPassword, error) {
+	row := q.db.QueryRow(ctx, getUserPasswordByAuthID, userAuthID)
+	var i UserPassword
+	err := row.Scan(&i.UserAuthID, &i.PasswordHash, &i.UpdatedAt)
+	return i, err
+}
+
+const insertUserPassword = `-- name: InsertUserPassword :one
+INSERT INTO user_passwords (user_auth_id, password_hash, updated_at)
+VALUES ($1, $2, $3)
+RETURNING user_auth_id, password_hash, updated_at
+`
+
+type InsertUserPasswordParams struct {
+	UserAuthID   uuid.UUID          `db:"user_auth_id" json:"user_auth_id"`
+	PasswordHash string             `db:"password_hash" json:"password_hash"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *sqlQuerier) InsertUserPassword(ctx context.Context, arg InsertUserPasswordParams) (UserPassword, error) {
+	row := q.db.QueryRow(ctx, insertUserPassword, arg.UserAuthID, arg.PasswordHash, arg.UpdatedAt)
+	var i UserPassword
+	err := row.Scan(&i.UserAuthID, &i.PasswordHash, &i.UpdatedAt)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE user_passwords SET password_hash = $1, updated_at = now()
+WHERE user_auth_id = $2
+`
+
+type UpdateUserPasswordParams struct {
+	PasswordHash string    `db:"password_hash" json:"password_hash"`
+	UserAuthID   uuid.UUID `db:"user_auth_id" json:"user_auth_id"`
+}
+
+func (q *sqlQuerier) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.PasswordHash, arg.UserAuthID)
+	return err
+}
+
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one
 SELECT
   id, linked_id, user_id, provider, created_at, updated_at
 FROM
   user_auth_links
 WHERE
-  linked_id = $1 AND
+  LOWER(linked_id) = LOWER($1) AND
   provider = $2
 `
 
@@ -4298,6 +4343,25 @@ func (q *sqlQuerier) GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.JwtID,
+	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id FROM users WHERE LOWER(email) = LOWER($1)
+`
+
+func (q *sqlQuerier) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DefaultDesktopLayoutID,
+		&i.DefaultMobileLayoutID,
 	)
 	return i, err
 }

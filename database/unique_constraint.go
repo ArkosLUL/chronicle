@@ -47,6 +47,7 @@ const (
 	UniqueSharedViewsCodeKey                           UniqueConstraint = "shared_views_code_key"                            // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_code_key UNIQUE (code);
 	UniqueSharedViewsInstanceHashUnique                UniqueConstraint = "shared_views_instance_hash_unique"                // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_instance_hash_unique UNIQUE (instance_id, hash);
 	UniqueSharedViewsPkey                              UniqueConstraint = "shared_views_pkey"                                // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_pkey PRIMARY KEY (id);
+	UniqueSiteConfigPkey                               UniqueConstraint = "site_config_pkey"                                 // ALTER TABLE ONLY site_config ADD CONSTRAINT site_config_pkey PRIMARY KEY (id);
 	UniqueUserActionBarSlotsPkey                       UniqueConstraint = "user_action_bar_slots_pkey"                       // ALTER TABLE ONLY user_action_bar_slots ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);
 	UniqueUserAuthLinksPkey                            UniqueConstraint = "user_auth_links_pkey"                             // ALTER TABLE ONLY user_auth_links ADD CONSTRAINT user_auth_links_pkey PRIMARY KEY (id);
 	UniqueUserAuthSessionPkey                          UniqueConstraint = "user_auth_session_pkey"                           // ALTER TABLE ONLY user_auth_session ADD CONSTRAINT user_auth_session_pkey PRIMARY KEY (id);

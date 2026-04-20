@@ -96,7 +96,7 @@ jobs:
     environment: actions
     strategy:
       matrix:
-        server: [turtle, epoch, kronos]
+        server: [turtle, epoch, kronos, warmane]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -150,9 +150,9 @@ jobs:
           - server: kronos
             railway_service: chronicled
             railway_token_secret: RAILWAY_TOKEN_KRONOS
-#          - server: warmane
-#            railway_service: chronicled
-#            railway_token_secret: RAILWAY_TOKEN_WARMANE
+          - server: warmane
+            railway_service: chronicled
+            railway_token_secret: RAILWAY_TOKEN_WARMANE
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli

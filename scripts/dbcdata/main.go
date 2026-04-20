@@ -107,11 +107,10 @@ func demo() *serpent.Command {
 
 			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
 				sp := chrondbc.SpellFromDB(cursor)
-				for _, eff := range sp.Effect {
-					if eff == chrondbc.EffectEnvironmentalDMG {
-						fmt.Println(cursor.ID, cursor.Name_lang.String())
-					}
+				if sp.ID == 139 {
+					fmt.Println("ASd")
 				}
+				fmt.Println(sp.Name(), sp.SpellIconID)
 
 				//sp := chrondbc.SpellFromDB(cursor)
 				////if sp.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {
@@ -146,13 +145,13 @@ func demo() *serpent.Command {
 			//	fmt.Println(cursor.EnumID, cursor.Name_lang.String())
 			//	return true
 			//})
-
-			spell, err := spdb.ID(44095)
-			if err != nil {
-				return fmt.Errorf("spell not found")
-			}
-			d, _ := json.Marshal(spell)
-			fmt.Println(string(d))
+			//
+			//spell, err := spdb.ID(44095)
+			//if err != nil {
+			//	return fmt.Errorf("spell not found")
+			//}
+			//d, _ := json.Marshal(spell)
+			//fmt.Println(string(d))
 			//c := make(map[int]int)
 			//err = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
 			//	c[len(cursor.Reagent)]++

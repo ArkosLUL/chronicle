@@ -11,6 +11,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Gophercraft/core/format/dbc"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -52,7 +53,11 @@ type WoWDB struct {
 }
 
 func New(ctx context.Context, opts Options) (*WoWDB, error) {
-	db := dbc.NewDB(services.ServerBuild)
+	build := services.ServerBuild
+	if dbcdb.SpellBuildOverride != 0 {
+		build = dbcdb.SpellBuildOverride
+	}
+	db := dbc.NewDB(build)
 	sf, err := os.Open(opts.SpellsDBCPath)
 	if err != nil {
 		return nil, err

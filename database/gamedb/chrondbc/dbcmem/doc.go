@@ -27,10 +27,9 @@ package dbcmem
 //go:generate go run -tags kronos ../../../../scripts/dbcdata derived-statics --server=kronos --assets-dir=../../../../assets/kronos/generated --go-dir=kronos --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/kronos
 //go:generate go run ../../../../scripts/dbcdata extract-dbc --server=kronos --out=../../../../assets/kronos
 //go:generate go run ../../../../scripts/dbcdata extract-icons --server=kronos --out=../../../../frontend/imagecache/kronos/blp
+
 // Warmane (3.3.5a)
 //go:generate go run ../../../../scripts/dbcdata static --server=warmane -o warmane
 //go:generate go run -tags warmane ../../../../scripts/dbcdata derived-statics --server=warmane --assets-dir=../../../../assets/warmane/generated --go-dir=warmane --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/warmane
 //go:generate go run ../../../../scripts/dbcdata extract-dbc --server=warmane --out=../../../../assets/warmane
 //go:generate go run ../../../../scripts/dbcdata extract-icons --server=warmane --out=../../../../frontend/imagecache/warmane/blp
-
-

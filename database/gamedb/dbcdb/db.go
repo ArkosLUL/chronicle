@@ -6,7 +6,15 @@ import (
 	"github.com/Gophercraft/core/format/content"
 	"github.com/Gophercraft/core/format/dbc"
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
+	"github.com/Gophercraft/core/vsn"
 )
+
+// SpellBuildOverride, when non-zero, overrides the build version used to
+// select the Spell.dbc layout. This allows private servers with non-standard
+// Spell layouts (e.g. Warmane) to register a custom layout under a
+// pseudo-build number without affecting other servers sharing the same
+// detected build version.
+var SpellBuildOverride vsn.Build
 
 type WoWClient struct {
 	content.Volume
@@ -67,7 +75,11 @@ func (w *WoWClient) Spells() (Table[dbdefs.Ent_Spell], error) {
 		return nil, err
 	}
 
-	db := dbc.NewDB(w.Build())
+	build := w.Build()
+	if SpellBuildOverride != 0 {
+		build = SpellBuildOverride
+	}
+	db := dbc.NewDB(build)
 	table, err := db.Open("Spell", bytes.NewReader(data))
 	if err != nil {
 		return nil, err

@@ -76,6 +76,10 @@ github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/Emyrk/core v0.0.0-20260420081341-5169560c2f84 h1:tQs3Tc4hiooRFutxdhhleV8c09bnPPlKvMeZC2UFLqs=
 github.com/Emyrk/core v0.0.0-20260420081341-5169560c2f84/go.mod h1:BLkLA6t8H1k2uugNpTVFbr8dKFehuP+8z/RsY//L0pI=
+github.com/Emyrk/core v0.0.0-20260420083951-93f52500f4f6 h1:yGIsFGXOIC4DC9ae7hXT1aSSxY2KLUIL/i2mP9BlNH4=
+github.com/Emyrk/core v0.0.0-20260420083951-93f52500f4f6/go.mod h1:BLkLA6t8H1k2uugNpTVFbr8dKFehuP+8z/RsY//L0pI=
+github.com/Emyrk/core v0.0.0-20260420091949-31a9e3f3f80d h1:Dz1IsyN6Ry9s0+ml3QhbRiDwV7L2KDDE5RPVc6ztLOQ=
+github.com/Emyrk/core v0.0.0-20260420091949-31a9e3f3f80d/go.mod h1:BLkLA6t8H1k2uugNpTVFbr8dKFehuP+8z/RsY//L0pI=
 github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688 h1:cE7VzZQ0d4u/1slm+qb+I8MOQjsUHb6ZlBFVo2b7kI4=
 github.com/Emyrk/core/gotiny v0.0.0-20260217042645-fddd00b2f688/go.mod h1:LjhkCDCHbvOgyfZ0kSW+cEFLTlCdSwje0fmcMP2m6YE=
 github.com/Emyrk/zedgen v0.0.0-20260212105940-a30f9042561f h1:pTAJh+8PR9GJ9LbCzqartCAtG1EN/zpBwDWEsKC+Nnc=

@@ -1,4 +1,4 @@
-package epoch
+package wotlk
 
 import (
 	"testing"

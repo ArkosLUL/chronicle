@@ -38,6 +38,7 @@ func ZoneNameMatcher(names ...string) func(z string) bool {
 
 type CommonFactory struct {
 	Name           string
+	ZoneNames      []string
 	ZoneName       func(z string) bool
 	OtherZoneNames []string
 	Hostiles       func() *Identifier

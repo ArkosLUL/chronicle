@@ -1,0 +1,1 @@
+ALTER TYPE log_type ADD VALUE IF NOT EXISTS 'warmane';

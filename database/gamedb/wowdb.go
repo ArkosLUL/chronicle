@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 	"github.com/Emyrk/chronicle/internal/services"
@@ -20,6 +21,7 @@ import (
 type GameDB interface {
 	SpellFetcher
 	GearResolver
+	CreatureFetcher
 }
 
 type SpellFetcher interface {
@@ -30,9 +32,15 @@ type GearResolver interface {
 	ResolveGear(gear []combatant.GearItem)
 }
 
+// WorldQuerier combines all database query interfaces needed by GameDB.
+type WorldQuerier interface {
+	ItemMetadataQuerier
+	CreatureQuerier
+}
+
 type Options struct {
 	SpellsDBCPath string
-	DB            ItemMetadataQuerier
+	DB            WorldQuerier
 }
 
 type SpellEntry struct {
@@ -49,7 +57,8 @@ type WoWDB struct {
 	// spellNames is a READONLY map
 	spellNames atomic.Pointer[map[string][]int32]
 
-	itemFetcher *itemFetcher
+	itemFetcher     *itemFetcher
+	creatureFetcher *creatureFetcher
 }
 
 func New(ctx context.Context, opts Options) (*WoWDB, error) {
@@ -83,7 +92,8 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 		spellLRU:    c,
 		spellFiles:  sf,
 		spells:      spDBC,
-		itemFetcher: newItemFetcher(ctx, opts.DB, 400),
+		itemFetcher:     newItemFetcher(ctx, opts.DB, 400),
+		creatureFetcher: newCreatureFetcher(ctx, opts.DB, 500),
 	}
 	go func() {
 		spNames, err := loadSpellName(ctx, spDBC)
@@ -161,6 +171,10 @@ func (w *WoWDB) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 func (w *WoWDB) ResolveGear(gear []combatant.GearItem) {
 	w.itemFetcher.ResolveGear(gear)
 }
+func (w *WoWDB) Creature(entry int32) (*database.WorldCreatureTemplate, bool) {
+	return w.creatureFetcher.Creature(entry)
+}
+
 
 func (w *WoWDB) Close() error {
 	_ = w.spellFiles.Close()

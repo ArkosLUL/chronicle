@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/google/uuid"
 )
 
@@ -206,7 +207,13 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 		IsGzipped: isGzipped(header),
 	}
 
-	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, database.LogTypeV2)
+	logType := database.LogTypeV2
+	switch services.ServerName {
+	case services.ServerIdentityWarmane:
+		logType = database.LogTypeWarmane
+	}
+
+	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, logType)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -228,4 +235,3 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 		Files: fileIDs,
 	})
 }
-

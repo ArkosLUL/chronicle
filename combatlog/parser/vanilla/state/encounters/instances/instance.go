@@ -86,3 +86,8 @@ func (i *Identifier) IdentifyUnit(id guid.GUID) Identity {
 	}
 	return identity
 }
+
+// HostileEntries returns the raw creature entry → Identity map.
+func (i *Identifier) HostileEntries() map[uint32]Identity {
+	return i.byEntryId
+}

@@ -238,8 +238,9 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 type LogType string
 
 const (
-	LogTypeV1 LogType = "v1"
-	LogTypeV2 LogType = "v2"
+	LogTypeV1      LogType = "v1"
+	LogTypeV2      LogType = "v2"
+	LogTypeWarmane LogType = "warmane"
 )
 
 func (e *LogType) Scan(src interface{}) error {
@@ -280,7 +281,8 @@ func (ns NullLogType) Value() (driver.Value, error) {
 func (e LogType) Valid() bool {
 	switch e {
 	case LogTypeV1,
-		LogTypeV2:
+		LogTypeV2,
+		LogTypeWarmane:
 		return true
 	}
 	return false
@@ -290,6 +292,7 @@ func AllLogTypeValues() []LogType {
 	return []LogType{
 		LogTypeV1,
 		LogTypeV2,
+		LogTypeWarmane,
 	}
 }
 

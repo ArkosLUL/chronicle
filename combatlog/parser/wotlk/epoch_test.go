@@ -1,4 +1,4 @@
-package epoch
+package wotlk
 
 import (
 	"context"
@@ -10,22 +10,29 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+var _ gamedb.GameDB = (*stubSpellDB)(nil)
+
 // stubSpellDB implements gamedb.SpellFetcher with a no-op.
 type stubSpellDB struct{}
 
+func (d stubSpellDB) ResolveGear(gear []combatant.GearItem)                        {}
+func (d stubSpellDB) Creature(entry int32) (*database.WorldCreatureTemplate, bool) { return nil, false }
 func (stubSpellDB) Spell(chrondbc.SpellID) (*chrondbc.Spell, error) {
 	return nil, fmt.Errorf("no spell database loaded")
 }
 
 func newTestParser(t *testing.T, logData string) *Parser {
 	t.Helper()
-	p, err := New(slog.Default(), strings.NewReader(logData), stubSpellDB{}, nil)
+	p, err := New(context.Background(), slog.Default(), strings.NewReader(logData), stubSpellDB{}, nil)
 	require.NoError(t, err)
 	p.SetBaseYear(2025)
 	return p

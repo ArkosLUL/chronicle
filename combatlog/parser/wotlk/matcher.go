@@ -1,6 +1,7 @@
-package epoch
+package wotlk
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -145,6 +146,7 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 	case "_INSTAKILL":
 		return p.suffixInstakill(ts, base, m)
 	default:
+		p.logger.Warn("Unparsed line", slog.String("line", raw))
 		return messages.Unparsed(ts, raw), nil
 	}
 }
@@ -354,7 +356,7 @@ func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, m 
 
 // suffixInterrupt handles _INTERRUPT: extraSpellID, extraSpellName, extraSchool
 func (p *Parser) suffixInterrupt(ts time.Time, base baseParams, _ *spellInfo, m *Matched) ([]messages.Message, error) {
-	_ = m.Int32()  // extraSpellID
+	_ = m.Int32() // extraSpellID
 	extraSpellName := m.String()
 	_ = m.School() // extraSchool
 

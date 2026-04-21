@@ -1,4 +1,4 @@
-package epoch
+package wotlk
 
 import (
 	"bufio"
@@ -10,7 +10,8 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/synthetic"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
@@ -26,7 +27,7 @@ type Parser struct {
 	baseYear    int
 }
 
-func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamedb.GearResolver) (*Parser, error) {
+func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {
 	if wowDB == nil {
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
@@ -34,7 +35,7 @@ func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamed
 		logger:      logger,
 		wowDB:       wowDB,
 		scanner:     bufio.NewScanner(r),
-		synthetics:  synthetic.New(logger, wowDB),
+		synthetics:  synthetic.New(ctx, logger, wowDB, reg),
 		itemFetcher: gear,
 		baseYear:    time.Now().Year(),
 	}, nil

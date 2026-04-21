@@ -31,14 +31,16 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/wotlk"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/dbstatic"
 	"github.com/Emyrk/chronicle/database/jsontransform"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/ptr"
-	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/Emyrk/chronicle/internal/semverenc"
+	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/Emyrk/chronicle/internal/version"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -182,7 +184,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	// Validate file count based on log type
 	expectedFiles := 2
-	if logGroup.WoWLogGroup.LogType == database.LogTypeV2 {
+	if logGroup.WoWLogGroup.LogType == database.LogTypeV2 || logGroup.WoWLogGroup.LogType == database.LogTypeWarmane {
 		expectedFiles = 1
 	}
 	if len(files) != expectedFiles {
@@ -270,6 +272,31 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 		// V2 parser doesn't have metrics yet
 		// TODO: Add metrics to v2 parser
+
+	case database.LogTypeWarmane:
+		// Load single file
+		loadStart := time.Now()
+		rdr, err := w.loadFile(ctx, files[0])
+		if err != nil {
+			return fmt.Errorf("load log file: %w", err)
+		}
+		loadDuration := time.Since(loadStart)
+		report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
+		metrics.loadFileDuration.Observe(loadDuration.Seconds())
+
+		// Warmane (WotLK 3.3.5a) parser: single file
+		reg := registry.WarmaneRegistry(logLogger)
+		p, err := wotlk.New(ctx, logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher, reg)
+		if err != nil {
+			jobResult = "failure"
+			return fmt.Errorf("create warmane parser: %w", err)
+		}
+
+		consumeErr = c.ConsumeAll(ctx, p)
+		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
+			jobResult = "failure"
+			return fmt.Errorf("consume warmane log: %w", consumeErr)
+		}
 
 	default:
 		jobResult = "failure"

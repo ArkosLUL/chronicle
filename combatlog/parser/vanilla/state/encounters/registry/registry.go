@@ -15,6 +15,48 @@ import (
 // InstanceFactory creates a new instance
 type InstanceFactory func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable
 
+// Entry holds metadata and a factory for a single registered instance.
+type Entry struct {
+	// Name is the instance display name (e.g. "Deadmines").
+	Name string
+	// Comment is an optional note (e.g. "not fully implemented").
+	Comment string
+	// Factory creates a Hookable for this instance.
+	Factory InstanceFactory
+
+	// ZoneNames are the lowercase zone name(s) this instance matches.
+	ZoneNames []string
+	// HostileEntries are the creature entry IDs for this instance.
+	HostileEntries map[uint32]instances.Identity
+}
+
+// WithComment returns a copy of the Entry with Comment set.
+func (e Entry) WithComment(comment string) Entry {
+	e.Comment = comment
+	return e
+}
+
+// FromCommonFactory builds an Entry from a CommonFactory, extracting
+// zone names, hostile entries, and the factory function.
+func FromCommonFactory(f *instances.CommonFactory) Entry {
+	var hostiles map[uint32]instances.Identity
+	if f.Hostiles != nil {
+		hostiles = f.Hostiles().HostileEntries()
+	}
+
+	zoneNames := f.ZoneNames
+	if len(zoneNames) == 0 {
+		zoneNames = f.OtherZoneNames
+	}
+
+	return Entry{
+		Name:           f.Name,
+		Factory:        wrap(f.New),
+		ZoneNames:      zoneNames,
+		HostileEntries: hostiles,
+	}
+}
+
 // DefaultRegistry returns a registry with all known instances
 func DefaultRegistry(logger *slog.Logger) *Registry {
 	switch services.ServerName {
@@ -29,29 +71,38 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 
 // Registry manages available instances
 type Registry struct {
-	factories      map[string]InstanceFactory
-	factoryComment map[string]string
-	logger         *slog.Logger
+	entries map[string]*Entry
+	logger  *slog.Logger
 }
 
 // NewRegistry creates a new instance registry
 func NewRegistry(logger *slog.Logger) *Registry {
 	return &Registry{
-		factories:      make(map[string]InstanceFactory),
-		factoryComment: make(map[string]string),
-		logger:         logger,
+		entries: make(map[string]*Entry),
+		logger:  logger,
 	}
+}
+
+// RegisterEntry adds an entry with full metadata to the registry.
+func (r *Registry) RegisterEntry(e Entry) {
+	if _, exists := r.entries[e.Name]; exists {
+		panic(fmt.Sprintf("instance factory named %s already exists", e.Name))
+	}
+	r.entries[e.Name] = &e
 }
 
 func (r *Registry) RegisterWithComment(factory InstanceFactory, comment string) {
 	// temporary instance to get the name
 	tmp := factory(nil, nil, nil, zone.Zone{})
 	name := tmp.Name()
-	if _, exists := r.factories[name]; exists {
+	if _, exists := r.entries[name]; exists {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
 	}
-	r.factories[name] = factory
-	r.factoryComment[name] = comment
+	r.entries[name] = &Entry{
+		Name:    name,
+		Comment: comment,
+		Factory: factory,
+	}
 }
 
 // Register adds an instance factory to the registry
@@ -59,21 +110,24 @@ func (r *Registry) Register(factory InstanceFactory) {
 	// temporary instance to get the name
 	tmp := factory(nil, nil, nil, zone.Zone{})
 	name := tmp.Name()
-	if _, exists := r.factories[name]; exists {
+	if _, exists := r.entries[name]; exists {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
 	}
-	r.factories[name] = factory
+	r.entries[name] = &Entry{
+		Name:    name,
+		Factory: factory,
+	}
 }
 
 // GetInstance returns an instance for the given zone, or nil if none match
 func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
-	for name, factory := range r.factories {
+	for _, entry := range r.entries {
 		// Create a temporary instance to check if it matches
-		inst := factory(parseoptions.WithVerbose(context.Background(), verbose), r.logger, db, z)
+		inst := entry.Factory(parseoptions.WithVerbose(context.Background(), verbose), r.logger, db, z)
 		if inst.MatchesZone(z) {
 			r.logger.Debug("matched instance",
 				slog.String("zone", z.Name),
-				slog.String("instance", name),
+				slog.String("instance", entry.Name),
 			)
 			return inst
 		}
@@ -81,10 +135,20 @@ func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) *ins
 	return nil
 }
 
+// Entries returns all registered entries for external iteration.
+func (r *Registry) Entries() map[string]*Entry {
+	return r.entries
+}
+
+// EntryByName returns a single entry by instance name, or nil if not found.
+func (r *Registry) EntryByName(name string) *Entry {
+	return r.entries[name]
+}
+
 // AllInstances returns all registered instance names
 func (r *Registry) AllInstances() []string {
-	names := make([]string, 0, len(r.factories))
-	for name := range r.factories {
+	names := make([]string, 0, len(r.entries))
+	for name := range r.entries {
 		names = append(names, name)
 	}
 	return names
@@ -92,9 +156,8 @@ func (r *Registry) AllInstances() []string {
 
 func (r *Registry) AllInstancesWithComments() map[string]string {
 	all := make(map[string]string)
-	for name := range r.factories {
-		comment := r.factoryComment[name]
-		all[name] = comment
+	for name, entry := range r.entries {
+		all[name] = entry.Comment
 	}
 	return all
 }

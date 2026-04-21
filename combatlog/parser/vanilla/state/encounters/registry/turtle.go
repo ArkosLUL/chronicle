@@ -11,40 +11,40 @@ func TurtleRegistry(logger *slog.Logger) *Registry {
 
 	// Register instances here as you add them
 	// 5 man
-	r.Register(wrap(instances.WindhornCanyon))
-	r.Register(wrap(instances.Deadmines))
-	r.Register(wrap(instances.WailingCaverns))
-	r.Register(wrap(instances.RazorfenKraul))
-	r.Register(wrap(instances.RagefireChasm))
-	r.Register(wrap(instances.ScarletMonasteryCathedral))
-	r.Register(wrap(instances.ScarletMonasteryLibrary))
-	r.RegisterWithComment(wrap(instances.BlackrockDepths), "Most bosses & mobs are not yet supported")
-	r.RegisterWithComment(wrap(instances.Scholomance), "**new** not fully implemented")
-	r.Register(wrap(instances.BlackMorass))
-	r.RegisterWithComment(wrap(instances.Stratholme), "Only undead side, mechanics not implemented")
-	r.Register(wrap(instances.DireMaul))
-	r.Register(wrap(instances.StormwindVault))
-	r.Register(wrap(instances.Stockades))
-	r.RegisterWithComment(wrap(instances.SunkenTemple), "not yet complete")
-	r.RegisterWithComment(wrap(instances.FrostmaneHollow), "units registered")
+	r.RegisterEntry(FromCommonFactory(instances.WindhornCanyonFactory))
+	r.RegisterEntry(FromCommonFactory(instances.DeadminesFactory))
+	r.RegisterEntry(FromCommonFactory(instances.WailingCavernsFactory))
+	r.RegisterEntry(FromCommonFactory(instances.RazorfenKraulFactory))
+	r.RegisterEntry(FromCommonFactory(instances.RagefireChasmFactory))
+	r.RegisterEntry(FromCommonFactory(instances.ScarletMonasteryCathedralFactory))
+	r.RegisterEntry(FromCommonFactory(instances.ScarletMonasteryLibraryFactory))
+	r.RegisterEntry(FromCommonFactory(instances.BlackrockDepthsFactory).WithComment("Most bosses & mobs are not yet supported"))
+	r.RegisterEntry(FromCommonFactory(instances.ScholomanceFactory).WithComment("**new** not fully implemented"))
+	r.RegisterEntry(FromCommonFactory(instances.BlackMorassFactory))
+	r.RegisterEntry(FromCommonFactory(instances.StratholmeFactory).WithComment("Only undead side, mechanics not implemented"))
+	r.RegisterEntry(FromCommonFactory(instances.DireMaulFactory))
+	r.RegisterEntry(FromCommonFactory(instances.StormwindVaultFactory))
+	r.RegisterEntry(FromCommonFactory(instances.StockadesFactory))
+	r.RegisterEntry(FromCommonFactory(instances.SunkenTempleFactory).WithComment("not yet complete"))
+	r.RegisterEntry(FromCommonFactory(instances.FrostmaneHollowFactory).WithComment("units registered"))
 
-	r.RegisterWithComment(wrap(instances.BlackrockSpire), "Only upper spire is supported at the moment")
+	r.RegisterEntry(FromCommonFactory(instances.BlackrockSpireFactory).WithComment("Only upper spire is supported at the moment"))
 
 	// 10 man
-	r.RegisterWithComment(wrap(instances.TowerOfKarazhan), "Upper tower is not completely supported yet")
+	r.RegisterEntry(FromCommonFactory(instances.TowerOfKarazhanFactory).WithComment("Upper tower is not completely supported yet"))
 
 	// 20 man
-	r.Register(wrap(instances.ZulGurub))
-	r.RegisterWithComment(wrap(instances.RuinsOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
-	r.RegisterWithComment(wrap(instances.TimbermawHold), "not yet complete")
+	r.RegisterEntry(FromCommonFactory(instances.ZulGurubFactory))
+	r.RegisterEntry(FromCommonFactory(instances.RuinsOfAhnQirajFactory).WithComment("**NOT** yet implemented, just registered the mobs"))
+	r.RegisterEntry(FromCommonFactory(instances.TimbermawHoldFactory).WithComment("not yet complete"))
 
 	// 40 man
-	r.Register(wrap(instances.MoltenCore))
-	r.Register(wrap(instances.Onyxia))
-	r.Register(wrap(instances.EmeraldSanctum))
-	r.RegisterWithComment(wrap(instances.TempleOfAhnQiraj), "**NOT** yet implemented, just registered the mobs")
-	r.RegisterWithComment(wrap(instances.BlackwingLair), "**new** mobs registered, mechanics not implemented")
-	r.RegisterWithComment(wrap(instances.Naxxramas), "**new** mobs registered, mechanics not implemented")
+	r.RegisterEntry(FromCommonFactory(instances.MoltenCoreFactory))
+	r.RegisterEntry(FromCommonFactory(instances.OnyxiaFactory))
+	r.RegisterEntry(FromCommonFactory(instances.EmeraldSanctumFactory))
+	r.RegisterEntry(FromCommonFactory(instances.TempleOfAhnQirajFactory).WithComment("**NOT** yet implemented, just registered the mobs"))
+	r.RegisterEntry(FromCommonFactory(instances.BlackwingLairFactory).WithComment("**new** mobs registered, mechanics not implemented"))
+	r.RegisterEntry(FromCommonFactory(instances.NaxxramasFactory).WithComment("**new** mobs registered, mechanics not implemented"))
 
 	return r
 }

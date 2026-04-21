@@ -2,206 +2,237 @@ package instances
 
 import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
 
+// Factory variables expose the *CommonFactory for each instance, allowing
+// access to metadata (zone names, hostile entries) without instantiating.
+// The corresponding function variables (e.g. Deadmines = DeadminesFactory.New)
+// are preserved for backward compatibility.
 var (
-	WindhornCanyon = (&CommonFactory{
-		Name:     "Windhorn Canyon",
-		ZoneName: ZoneNameMatcher("windhorn canyon"),
-		Hostiles: FromMap(WindhornCanyonHostiles()),
-	}).New
+	WindhornCanyonFactory = &CommonFactory{
+		Name:      "Windhorn Canyon",
+		ZoneNames: []string{"windhorn canyon"},
+		ZoneName:  ZoneNameMatcher("windhorn canyon"),
+		Hostiles:  FromMap(WindhornCanyonHostiles()),
+	}
 
-	Deadmines = (&CommonFactory{
-		Name:     "Deadmines",
-		ZoneName: ZoneNameMatcher("the deadmines"),
-		Hostiles: FromMap(DeadminesHostiles()),
-	}).New
+	DeadminesFactory = &CommonFactory{
+		Name:      "Deadmines",
+		ZoneNames: []string{"the deadmines"},
+		ZoneName:  ZoneNameMatcher("the deadmines"),
+		Hostiles:  FromMap(DeadminesHostiles()),
+	}
 
-	WailingCaverns = (&CommonFactory{
-		Name:     "Wailing Caverns",
-		ZoneName: ZoneNameMatcher("wailing caverns"),
-		Hostiles: FromMap(WailingCavernsHostiles()),
-	}).New
+	WailingCavernsFactory = &CommonFactory{
+		Name:      "Wailing Caverns",
+		ZoneNames: []string{"wailing caverns"},
+		ZoneName:  ZoneNameMatcher("wailing caverns"),
+		Hostiles:  FromMap(WailingCavernsHostiles()),
+	}
 
-	RazorfenKraul = (&CommonFactory{
-		Name:     "Razorfen Kraul",
-		ZoneName: ZoneNameMatcher("razorfen kraul"),
-		Hostiles: FromMap(RazorfenKraulHostiles()),
-	}).New
+	RazorfenKraulFactory = &CommonFactory{
+		Name:      "Razorfen Kraul",
+		ZoneNames: []string{"razorfen kraul"},
+		ZoneName:  ZoneNameMatcher("razorfen kraul"),
+		Hostiles:  FromMap(RazorfenKraulHostiles()),
+	}
 
-	ScarletMonasteryCathedral = (&CommonFactory{
-		Name:     "Scarlet Monastery Cathedral",
-		ZoneName: ZoneNameMatcher("scarlet monastery cathedral"),
-		Hostiles: FromMap(CathedralHostiles()),
-	}).New
+	ScarletMonasteryCathedralFactory = &CommonFactory{
+		Name:      "Scarlet Monastery Cathedral",
+		ZoneNames: []string{"scarlet monastery cathedral"},
+		ZoneName:  ZoneNameMatcher("scarlet monastery cathedral"),
+		Hostiles:  FromMap(CathedralHostiles()),
+	}
 
-	ScarletMonasteryLibrary = (&CommonFactory{
-		Name:     "Scarlet Monastery Library",
-		ZoneName: ZoneNameMatcher("scarlet monastery library"),
-		Hostiles: FromMap(SMLibraryHostiles()),
-	}).New
+	ScarletMonasteryLibraryFactory = &CommonFactory{
+		Name:      "Scarlet Monastery Library",
+		ZoneNames: []string{"scarlet monastery library"},
+		ZoneName:  ZoneNameMatcher("scarlet monastery library"),
+		Hostiles:  FromMap(SMLibraryHostiles()),
+	}
 
-	BlackrockSpire = (&CommonFactory{
-		Name:     "Blackrock Spire",
-		ZoneName: ZoneNameMatcher("blackrock spire"),
-		Hostiles: FromMap(BlackrockSpireHostiles()),
-	}).New
+	BlackrockSpireFactory = &CommonFactory{
+		Name:      "Blackrock Spire",
+		ZoneNames: []string{"blackrock spire"},
+		ZoneName:  ZoneNameMatcher("blackrock spire"),
+		Hostiles:  FromMap(BlackrockSpireHostiles()),
+	}
 
-	MoltenCore = (&CommonFactory{
-		Name:     "Molten Core",
-		ZoneName: ZoneNameMatcher("molten core"),
-		Hostiles: FromMap(MoltenCoreHostiles()),
+	MoltenCoreFactory = &CommonFactory{
+		Name:      "Molten Core",
+		ZoneNames: []string{"molten core"},
+		ZoneName:  ZoneNameMatcher("molten core"),
+		Hostiles:  FromMap(MoltenCoreHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: MoltenCoreSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	TowerOfKarazhan = (&CommonFactory{
-		Name:     "Tower of Karazhan",
-		ZoneName: ZoneNameMatcher("tower of karazhan", "the rock of desolation"),
-		Hostiles: FromMap(TowerOfKarazhanHostiles()),
-	}).New
+	TowerOfKarazhanFactory = &CommonFactory{
+		Name:      "Tower of Karazhan",
+		ZoneNames: []string{"tower of karazhan", "the rock of desolation"},
+		ZoneName:  ZoneNameMatcher("tower of karazhan", "the rock of desolation"),
+		Hostiles:  FromMap(TowerOfKarazhanHostiles()),
+	}
 
-	Onyxia = (&CommonFactory{
-		Name:     "Onyxia's Lair",
-		ZoneName: ZoneNameMatcher("onyxia's lair"),
-		Hostiles: FromMap(OnyxiaHostiles()),
+	OnyxiaFactory = &CommonFactory{
+		Name:      "Onyxia's Lair",
+		ZoneNames: []string{"onyxia's lair"},
+		ZoneName:  ZoneNameMatcher("onyxia's lair"),
+		Hostiles:  FromMap(OnyxiaHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: OnyxiasLairSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	RagefireChasm = (&CommonFactory{
-		Name:     "Ragefire Chasm",
-		ZoneName: ZoneNameMatcher("ragefire chasm"),
-		Hostiles: FromMap(RagefireChasmHostiles()),
-	}).New
+	RagefireChasmFactory = &CommonFactory{
+		Name:      "Ragefire Chasm",
+		ZoneNames: []string{"ragefire chasm"},
+		ZoneName:  ZoneNameMatcher("ragefire chasm"),
+		Hostiles:  FromMap(RagefireChasmHostiles()),
+	}
 
-	ZulGurub = (&CommonFactory{
-		Name:     "Zul'Gurub",
-		ZoneName: ZoneNameMatcher("zul'gurub"),
-		Hostiles: FromMap(ZulGurubHostiles()),
+	ZulGurubFactory = &CommonFactory{
+		Name:      "Zul'Gurub",
+		ZoneNames: []string{"zul'gurub"},
+		ZoneName:  ZoneNameMatcher("zul'gurub"),
+		Hostiles:  FromMap(ZulGurubHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: ZulGurubSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	EmeraldSanctum = (&CommonFactory{
-		Name:     "Emerald Sanctum",
-		ZoneName: ZoneNameMatcher("emerald sanctum"),
-		Hostiles: FromMap(EmeraldSanctumHostiles()),
-	}).New
+	EmeraldSanctumFactory = &CommonFactory{
+		Name:      "Emerald Sanctum",
+		ZoneNames: []string{"emerald sanctum"},
+		ZoneName:  ZoneNameMatcher("emerald sanctum"),
+		Hostiles:  FromMap(EmeraldSanctumHostiles()),
+	}
 
-	BlackrockDepths = (&CommonFactory{
-		Name:     "Blackrock Depths",
-		ZoneName: ZoneNameMatcher("blackrock depths"),
-		Hostiles: FromMap(BlackrockDepthsHostiles()),
-	}).New
+	BlackrockDepthsFactory = &CommonFactory{
+		Name:      "Blackrock Depths",
+		ZoneNames: []string{"blackrock depths"},
+		ZoneName:  ZoneNameMatcher("blackrock depths"),
+		Hostiles:  FromMap(BlackrockDepthsHostiles()),
+	}
 
-	Scholomance = (&CommonFactory{
-		Name:     "Scholomance",
-		ZoneName: ZoneNameMatcher("scholomance"),
-		Hostiles: FromMap(ScholomanceHostiles()),
-	}).New
+	ScholomanceFactory = &CommonFactory{
+		Name:      "Scholomance",
+		ZoneNames: []string{"scholomance"},
+		ZoneName:  ZoneNameMatcher("scholomance"),
+		Hostiles:  FromMap(ScholomanceHostiles()),
+	}
 
-	TempleOfAhnQiraj = (&CommonFactory{
-		Name:     "Temple of Ahn'Qiraj",
-		ZoneName: ZoneNameMatcher("ahn'qiraj"),
-		Hostiles: FromMap(TempleOfAhnQirajHostiles()),
+	TempleOfAhnQirajFactory = &CommonFactory{
+		Name:      "Temple of Ahn'Qiraj",
+		ZoneNames: []string{"ahn'qiraj"},
+		ZoneName:  ZoneNameMatcher("ahn'qiraj"),
+		Hostiles:  FromMap(TempleOfAhnQirajHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: TempleOfAhnQirajSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	RuinsOfAhnQiraj = (&CommonFactory{
-		Name:     "Ruins of Ahn'Qiraj",
-		ZoneName: ZoneNameMatcher("ruins of ahn'qiraj"),
-		Hostiles: FromMap(RuinsOfAhnQirajHostiles()),
+	RuinsOfAhnQirajFactory = &CommonFactory{
+		Name:      "Ruins of Ahn'Qiraj",
+		ZoneNames: []string{"ruins of ahn'qiraj"},
+		ZoneName:  ZoneNameMatcher("ruins of ahn'qiraj"),
+		Hostiles:  FromMap(RuinsOfAhnQirajHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: RuinsOfAhnQirajSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	BlackwingLair = (&CommonFactory{
-		Name:     "Blackwing Lair",
-		ZoneName: ZoneNameMatcher("blackwing lair"),
-		Hostiles: FromMap(BlackwingLairHostiles()),
+	BlackwingLairFactory = &CommonFactory{
+		Name:      "Blackwing Lair",
+		ZoneNames: []string{"blackwing lair"},
+		ZoneName:  ZoneNameMatcher("blackwing lair"),
+		Hostiles:  FromMap(BlackwingLairHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: BlackwingLairSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	Naxxramas = (&CommonFactory{
-		Name:     "Naxxramas",
-		ZoneName: ZoneNameMatcher("naxxramas", "the upper necropolis"),
-		Hostiles: FromMap(NaxxramasHostiles()),
+	NaxxramasFactory = &CommonFactory{
+		Name:      "Naxxramas",
+		ZoneNames: []string{"naxxramas", "the upper necropolis"},
+		ZoneName:  ZoneNameMatcher("naxxramas", "the upper necropolis"),
+		Hostiles:  FromMap(NaxxramasHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: NaxxramasSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	Stratholme = (&CommonFactory{
-		Name:     "Stratholme",
-		ZoneName: ZoneNameMatcher("stratholme"),
-		Hostiles: FromMap(StratholmeHostiles()),
-	}).New
+	StratholmeFactory = &CommonFactory{
+		Name:      "Stratholme",
+		ZoneNames: []string{"stratholme"},
+		ZoneName:  ZoneNameMatcher("stratholme"),
+		Hostiles:  FromMap(StratholmeHostiles()),
+	}
 
-	BlackMorass = (&CommonFactory{
-		Name:     "Black Morass",
-		ZoneName: ZoneNameMatcher("the black morass"),
-		Hostiles: FromMap(TheBlackMorassHostiles()),
-	}).New
+	BlackMorassFactory = &CommonFactory{
+		Name:      "Black Morass",
+		ZoneNames: []string{"the black morass"},
+		ZoneName:  ZoneNameMatcher("the black morass"),
+		Hostiles:  FromMap(TheBlackMorassHostiles()),
+	}
 
-	DireMaul = (&CommonFactory{
-		Name:     "Dire Maul",
-		ZoneName: ZoneNameMatcher("dire maul"),
-		Hostiles: FromMap(DireMaulHostiles()),
-	}).New
+	DireMaulFactory = &CommonFactory{
+		Name:      "Dire Maul",
+		ZoneNames: []string{"dire maul"},
+		ZoneName:  ZoneNameMatcher("dire maul"),
+		Hostiles:  FromMap(DireMaulHostiles()),
+	}
 
-	StormwindVault = (&CommonFactory{
-		Name:     "Stormwind Vault",
-		ZoneName: ZoneNameMatcher("stormwind vault"),
-		Hostiles: FromMap(StormwindVaultHostiles()),
-	}).New
+	StormwindVaultFactory = &CommonFactory{
+		Name:      "Stormwind Vault",
+		ZoneNames: []string{"stormwind vault"},
+		ZoneName:  ZoneNameMatcher("stormwind vault"),
+		Hostiles:  FromMap(StormwindVaultHostiles()),
+	}
 
-	Stockades = (&CommonFactory{
-		Name:     "Stormwind Stockade",
-		ZoneName: ZoneNameMatcher("the stockade"),
-		Hostiles: FromMap(StockadeHostiles()),
-	}).New
+	StockadesFactory = &CommonFactory{
+		Name:      "Stormwind Stockade",
+		ZoneNames: []string{"the stockade"},
+		ZoneName:  ZoneNameMatcher("the stockade"),
+		Hostiles:  FromMap(StockadeHostiles()),
+	}
 
-	SunkenTemple = (&CommonFactory{
-		Name:     "Sunken Temple",
-		ZoneName: ZoneNameMatcher("the temple of atal'hakkar"),
-		Hostiles: FromMap(SunkenTempleHostiles()),
-	}).New
+	SunkenTempleFactory = &CommonFactory{
+		Name:      "Sunken Temple",
+		ZoneNames: []string{"the temple of atal'hakkar"},
+		ZoneName:  ZoneNameMatcher("the temple of atal'hakkar"),
+		Hostiles:  FromMap(SunkenTempleHostiles()),
+	}
 
-	TimbermawHold = (&CommonFactory{
-		Name:     "Timbermaw Hold",
-		ZoneName: ZoneNameMatcher("timbermaw hold"),
-		Hostiles: FromMap(TimbermawHoldHostiles()),
+	TimbermawHoldFactory = &CommonFactory{
+		Name:      "Timbermaw Hold",
+		ZoneNames: []string{"timbermaw hold"},
+		ZoneName:  ZoneNameMatcher("timbermaw hold"),
+		Hostiles:  FromMap(TimbermawHoldHostiles()),
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: TimbermawHoldSpeedrunRequirements(),
 			},
 		},
-	}).New
+	}
 
-	FrostmaneHollow = (&CommonFactory{
-		Name:     "Frostmane Hollow",
-		ZoneName: ZoneNameMatcher("frostmane hollow"),
-		Hostiles: FromMap(FrostmaneHollowHostiles()),
-	}).New
+	FrostmaneHollowFactory = &CommonFactory{
+		Name:      "Frostmane Hollow",
+		ZoneNames: []string{"frostmane hollow"},
+		ZoneName:  ZoneNameMatcher("frostmane hollow"),
+		Hostiles:  FromMap(FrostmaneHollowHostiles()),
+	}
 )

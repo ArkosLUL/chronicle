@@ -420,7 +420,7 @@ func (w *WoWClient) ItemSubClass() (Table[dbdefs.Ent_ItemSubClass], error) {
 }
 
 func (w *WoWClient) ItemSparse() (Table[dbdefs.Ent_ItemSparse], error) {
-	data, err := w.ReadFile("DBFilesClient\\ItemNameDescription.dbc")
+	data, err := w.ReadFile("DBFilesClient\\ItemSparse.dbc")
 	if err != nil {
 		return nil, err
 	}

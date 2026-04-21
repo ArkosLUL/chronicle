@@ -109,6 +109,7 @@ func demo() *serpent.Command {
 				return true
 			})
 
+			return nil
 			fmt.Println("s")
 			fmt.Println(si.Len())
 

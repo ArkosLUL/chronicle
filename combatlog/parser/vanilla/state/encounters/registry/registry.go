@@ -64,6 +64,8 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 		return TurtleRegistry(logger)
 	case services.ServerIdentityWarmane:
 		return WarmaneRegistry(logger)
+	case services.ServerIdentityEpoch:
+		return TurtleRegistry(logger)
 	default:
 		return TurtleRegistry(logger)
 	}

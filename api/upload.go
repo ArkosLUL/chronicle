@@ -211,6 +211,10 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 	switch services.ServerName {
 	case services.ServerIdentityWarmane:
 		logType = database.LogTypeWarmane
+	case services.ServerIdentityEpoch:
+		logType = database.LogTypeEpoch
+	case services.ServerIdentityKronos:
+		logType = database.LogTypeKronos
 	}
 
 	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, logType)

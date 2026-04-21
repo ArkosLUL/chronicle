@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,18 +33,25 @@ func (stubSpellDB) Spell(chrondbc.SpellID) (*chrondbc.Spell, error) {
 
 func newTestParser(t *testing.T, logData string) *Parser {
 	t.Helper()
-	p, err := New(context.Background(), slog.Default(), strings.NewReader(logData), stubSpellDB{}, nil)
+	p, err := New(context.Background(), slog.Default(), strings.NewReader(logData), stubSpellDB{}, nil, registry.NewRegistry(slog.Default()))
 	require.NoError(t, err)
 	p.SetBaseYear(2025)
 	return p
 }
 
-// advanceOne is a test helper that calls Advance and returns the first message.
+// advanceOne is a test helper that calls Advance and returns the first
+// non-synthetic-Unit message (synthetic Unit messages are prepended by unitInfo).
 func advanceOne(t *testing.T, p *Parser) messages.Message {
 	t.Helper()
 	msgs, err := p.Advance(context.Background())
 	require.NoError(t, err)
 	require.NotEmpty(t, msgs)
+	for _, m := range msgs {
+		if _, ok := m.(*messages.Unit); ok {
+			continue
+		}
+		return m
+	}
 	return msgs[0]
 }
 
@@ -186,6 +194,8 @@ func TestParser_MultiLine(t *testing.T) {
 		require.NoError(t, err)
 		for _, m := range msgs {
 			switch m.(type) {
+			case *messages.Unit:
+				continue // Skip synthetic unit info messages
 			case *messages.Damage:
 				msgTypes = append(msgTypes, "Damage")
 			case *messages.Aura:

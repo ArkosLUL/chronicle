@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb"
@@ -18,13 +20,15 @@ type unitInfo struct {
 	ctx       context.Context
 	lastEmit  map[guid.GUID]time.Time
 	creatures gamedb.CreatureFetcher
+	names     NameResolver
 }
 
-func newUnitInfo(ctx context.Context, fetcher gamedb.CreatureFetcher) *unitInfo {
+func newUnitInfo(ctx context.Context, fetcher gamedb.CreatureFetcher, names NameResolver) *unitInfo {
 	return &unitInfo{
 		ctx:       ctx,
 		lastEmit:  make(map[guid.GUID]time.Time),
 		creatures: fetcher,
+		names:     names,
 	}
 }
 
@@ -37,7 +41,26 @@ func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
 			}
 
 			if c.IsPlayer() {
-				continue // TODO: Combatant info
+				name, ok := z.names.Get(c)
+				if !ok {
+					continue
+				}
+				add = append(add, &messages.Combatant{
+					MessageBase: messages.Base(msg.Date()),
+					Combatant: combatant.Combatant{
+						Name:       name,
+						Guid:       c,
+						Seen:       msg.Date(),
+						HeroClass:  types.HeroClassesUNKNOWN,
+						Gender:     types.HeroGenderUnknown,
+						Race:       types.HeroRacesUnknown,
+						PetName:    "",
+						Guild:      nil,
+						GearSetups: nil,
+						Talents:    nil,
+					},
+				})
+				continue
 			}
 
 			entry, ok := c.GetEntry()
@@ -45,9 +68,13 @@ func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
 				continue
 			}
 
-			cre, ok := z.creatures.Creature(int32(entry))
+			name, ok := z.names.Get(c)
 			if !ok {
-				continue
+				cre, ok := z.creatures.Creature(int32(entry))
+				if !ok {
+					continue
+				}
+				name = cre.Name
 			}
 
 			add = append(add, &messages.Unit{
@@ -56,7 +83,7 @@ func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
 					Seen:         msg.Date(),
 					Guid:         c,
 					IsPlayer:     false,
-					Name:         cre.Name,
+					Name:         name,
 					CanCooperate: false,
 					Owner:        nil,
 				},

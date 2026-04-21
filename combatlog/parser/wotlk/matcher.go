@@ -62,6 +62,8 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 
 	// Standard events: parse base params.
 	base := parseBase(m)
+	p.guidNames.Record(base.sourceGUID, base.sourceName)
+	p.guidNames.Record(base.destGUID, base.destName)
 
 	prefix, suffix := splitEvent(event)
 
@@ -618,6 +620,8 @@ func (p *Parser) suffixInstakill(ts time.Time, base baseParams, m *Matched) ([]m
 // unitDied handles UNIT_DIED and UNIT_DESTROYED.
 func (p *Parser) unitDied(ts time.Time, m *Matched) ([]messages.Message, error) {
 	base := parseBase(m)
+	p.guidNames.Record(base.sourceGUID, base.sourceName)
+	p.guidNames.Record(base.destGUID, base.destName)
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
@@ -631,6 +635,8 @@ func (p *Parser) unitDied(ts time.Time, m *Matched) ([]messages.Message, error) 
 // partyKill handles PARTY_KILL.
 func (p *Parser) partyKill(ts time.Time, m *Matched) ([]messages.Message, error) {
 	base := parseBase(m)
+	p.guidNames.Record(base.sourceGUID, base.sourceName)
+	p.guidNames.Record(base.destGUID, base.destName)
 	if err := m.Error(); err != nil {
 		return nil, err
 	}

@@ -37,7 +37,9 @@ CREATE TYPE log_instance_event_type AS ENUM (
 CREATE TYPE log_type AS ENUM (
     'v1',
     'v2',
-    'warmane'
+    'warmane',
+    'epoch',
+    'kronos'
 );
 
 CREATE TYPE river_job_state AS ENUM (

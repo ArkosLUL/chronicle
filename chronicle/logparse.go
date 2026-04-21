@@ -30,8 +30,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
@@ -183,9 +183,9 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	}
 
 	// Validate file count based on log type
-	expectedFiles := 2
-	if logGroup.WoWLogGroup.LogType == database.LogTypeV2 || logGroup.WoWLogGroup.LogType == database.LogTypeWarmane {
-		expectedFiles = 1
+	expectedFiles := 1
+	if logGroup.WoWLogGroup.LogType == database.LogTypeV1 {
+		expectedFiles = 2
 	}
 	if len(files) != expectedFiles {
 		jobResult = "cancelled"
@@ -246,7 +246,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		report.TotalLines = parserMetrics.TotalLinesParsed
 		metrics.linesProcessed.Add(float64(parserMetrics.TotalLinesParsed))
 
-	case database.LogTypeV2:
+	case database.LogTypeV2, database.LogTypeKronos:
 		// Load and sort files
 		loadStart := time.Now()
 		rdr, err := w.loadFile(ctx, files[0])
@@ -273,7 +273,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// V2 parser doesn't have metrics yet
 		// TODO: Add metrics to v2 parser
 
-	case database.LogTypeWarmane:
+	case database.LogTypeWarmane, database.LogTypeEpoch:
 		// Load single file
 		loadStart := time.Now()
 		rdr, err := w.loadFile(ctx, files[0])

@@ -22,6 +22,7 @@ type Parser struct {
 	scanner *bufio.Scanner
 
 	lastDate    time.Time
+	guidNames   *GUIDNames
 	synthetics  *synthetic.Synthetic
 	itemFetcher gamedb.GearResolver
 	baseYear    int
@@ -31,11 +32,13 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	if wowDB == nil {
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
+	gn := NewGUIDNames()
 	return &Parser{
 		logger:      logger,
 		wowDB:       wowDB,
 		scanner:     bufio.NewScanner(r),
-		synthetics:  synthetic.New(ctx, logger, wowDB, reg),
+		guidNames:   gn,
+		synthetics:  synthetic.New(ctx, logger, wowDB, reg, gn),
 		itemFetcher: gear,
 		baseYear:    time.Now().Year(),
 	}, nil

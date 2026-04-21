@@ -1,0 +1,2 @@
+ALTER TYPE log_type ADD VALUE IF NOT EXISTS 'epoch';
+ALTER TYPE log_type ADD VALUE IF NOT EXISTS 'kronos';

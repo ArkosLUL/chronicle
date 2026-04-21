@@ -136,7 +136,8 @@ function getEventGuids(event: ProcessorEvent): [string | null, string | null] {
 }
 
 function isPlayerGuid(guid: string): boolean {
-  return guid.startsWith("0x0000");
+  // Matches Go: GetHigh() & 0x00F0 == 0x0000 — check the 0x00F0 nibble (index 4).
+  return guid.length >= 5 && guid[4] === '0';
 }
 
 // ---------------------------------------------------------------------------

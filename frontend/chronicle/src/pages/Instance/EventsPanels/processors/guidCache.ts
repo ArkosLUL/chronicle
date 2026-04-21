@@ -35,9 +35,10 @@ export function getCachedGuid(cache: GuidCache, guidStr: string): GUID {
  * This avoids BigInt parsing for the common case of filtering non-players.
  */
 export function isPlayerGuidFast(guidStr: string): boolean {
-  // Player GUIDs: high 16 bits have form 0x00X0 where X & 0xF0 == 0x00
-  // They start with "0x0000" for the simplest check
-  return guidStr.startsWith("0x0000");
+  // Matches Go: GetHigh() & 0x00F0 == 0x0000
+  // The 0x00F0 nibble is the 5th hex char (index 4). Player = '0'.
+  // Vanilla: "0x0000...", WotLK: "0x0E00..." — both have '0' at index 4.
+  return guidStr.length >= 5 && guidStr[4] === '0';
 }
 
 /**

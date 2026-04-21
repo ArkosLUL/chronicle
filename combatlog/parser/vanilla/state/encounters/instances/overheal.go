@@ -17,7 +17,7 @@ type Overhealing struct {
 }
 
 func (o *Overhealing) ProcessMessage(active bool, _ uuid.UUID, m messages.Message) error {
-	if !active {
+  if !active {
 		return nil
 	}
 	switch msg := m.(type) {

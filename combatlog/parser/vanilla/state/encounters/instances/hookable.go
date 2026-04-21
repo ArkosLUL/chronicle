@@ -23,6 +23,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/timings"
 	"github.com/google/uuid"
 )
@@ -97,20 +98,23 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 
 	lootTracking := loot.New(db)
 
-	overheals := &Overhealing{
-		deficits: make(map[guid.GUID]int32),
-	}
-
 	hooks := []instancehook.Hook{
 		g,
 		ce,
 		cie,
-		overheals,
 		lootTracking,
 		//auraTracking,
 	}
 	if speedrunTracker != nil {
 		hooks = append(hooks, speedrunTracker)
+	}
+
+	switch services.ServerName {
+	// 1.12 does not record overheals in the logs
+	case services.ServerIdentityTurtle, services.ServerIdentityKronos:
+		hooks = append(hooks, &Overhealing{
+			deficits: make(map[guid.GUID]int32),
+		})
 	}
 
 	c := &Hookable{

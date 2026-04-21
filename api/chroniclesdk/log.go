@@ -146,9 +146,15 @@ type LogParseReport struct {
 	// ConsumerTimes contains timing for each consumer (encounter detection, etc.)
 	ConsumerTimes map[string]Duration `json:"consumer_times,omitempty"`
 
-	// MissedSpells maps spell IDs not found in the DBC to their lookup count.
-	MissedSpells map[int32]int `json:"missed_spells,omitempty"`
+	// MissedSpells maps spell IDs not found in the DBC to their lookup count and name.
+	MissedSpells map[int32]MissedSpell `json:"missed_spells,omitempty"`
 }
+// MissedSpell holds the count and name of a spell not found in the DBC.
+type MissedSpell struct {
+	Count int    `json:"count"`
+	Name  string `json:"name,omitempty"`
+}
+
 
 // InstanceReport contains timing details for a single parsed instance.
 type InstanceReport struct {

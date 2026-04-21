@@ -30,7 +30,7 @@ type Parser struct {
 	lineParseDur  time.Duration
 	syntheticsDur time.Duration
 
-	missedSpells map[chrondbc.SpellID]int
+	missedSpells map[chrondbc.SpellID]missedSpellEntry
 }
 
 func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {
@@ -46,7 +46,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 		synthetics:   synthetic.New(ctx, logger, wowDB, reg, gn),
 		itemFetcher:  gear,
 		baseYear:     time.Now().Year(),
-		missedSpells: make(map[chrondbc.SpellID]int),
+		missedSpells: make(map[chrondbc.SpellID]missedSpellEntry),
 	}, nil
 }
 
@@ -119,7 +119,12 @@ func (p *Parser) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	return p.wowDB.Spell(id)
 }
 
-// MissedSpells returns spell IDs that were not found in the DBC, with lookup counts.
-func (p *Parser) MissedSpells() map[chrondbc.SpellID]int {
+type missedSpellEntry struct {
+	Count int
+	Name  string
+}
+
+// MissedSpells returns spell IDs that were not found in the DBC, with lookup counts and names.
+func (p *Parser) MissedSpells() map[chrondbc.SpellID]missedSpellEntry {
 	return p.missedSpells
 }

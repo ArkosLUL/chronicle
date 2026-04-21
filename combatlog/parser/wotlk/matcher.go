@@ -198,7 +198,7 @@ func (p *Parser) suffixDamage(ts time.Time, base baseParams, spell *spellInfo, e
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellName = &spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 		school = spell.spellSchool
 	} else if prefix == "SWING" {
 		spellName = ptr.Ref("Auto Attack")
@@ -237,7 +237,7 @@ func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, i
 	var school types.School
 	if spell != nil {
 		spellName = &spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 		school = spell.spellSchool
 	} else {
 		spellName = ptr.Ref("Auto Attack")
@@ -282,7 +282,7 @@ func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isP
 	var school types.School
 	if spell != nil {
 		spellName = spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 		school = spell.spellSchool
 	}
 
@@ -312,7 +312,7 @@ func (p *Parser) suffixEnergize(ts time.Time, base baseParams, spell *spellInfo,
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellName = &spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	caster := base.sourceGUID
@@ -342,7 +342,7 @@ func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, m 
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellName = &spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	caster := base.sourceGUID
@@ -381,7 +381,7 @@ func (p *Parser) suffixInterrupt(ts time.Time, base baseParams, _ *spellInfo, m 
 // suffixDispel handles _DISPEL and _STOLEN: extraSpellID, extraSpellName, extraSchool, auraType
 func (p *Parser) suffixDispel(ts time.Time, base baseParams, _ *spellInfo, m *Matched) ([]messages.Message, error) {
 	extraSpellID := m.Int32()
-	_ = m.String() // extraSpellName
+	extraSpellName := m.String()
 	_ = m.School() // extraSchool
 	_ = m.String() // auraType (BUFF/DEBUFF)
 
@@ -393,7 +393,7 @@ func (p *Parser) suffixDispel(ts time.Time, base baseParams, _ *spellInfo, m *Ma
 		MessageBase: messages.Base(ts),
 		Caster:      base.sourceGUID,
 		Target:      base.destGUID,
-		Spell:       p.lookupSpell(chrondbc.SpellID(extraSpellID)),
+		Spell:       p.lookupSpell(chrondbc.SpellID(extraSpellID), extraSpellName),
 	})
 }
 
@@ -421,7 +421,7 @@ func (p *Parser) suffixExtraAttacks(ts time.Time, base baseParams, spell *spellI
 
 	var spellData *chrondbc.Spell
 	if spell != nil {
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	return set(&messages.ExtraAttack{
@@ -446,7 +446,7 @@ func (p *Parser) suffixAura(ts time.Time, base baseParams, spell *spellInfo, sta
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellName = spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	return set(&messages.Aura{
@@ -475,7 +475,7 @@ func (p *Parser) suffixAuraDose(ts time.Time, base baseParams, spell *spellInfo,
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellName = spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	return set(&messages.Aura{
@@ -506,7 +506,7 @@ func (p *Parser) suffixAuraBrokenSpell(ts time.Time, base baseParams, spell *spe
 	var spellData *chrondbc.Spell
 	if spell != nil {
 		spellName = spell.spellName
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	return set(&messages.Aura{
@@ -528,7 +528,7 @@ func (p *Parser) suffixCastStart(ts time.Time, base baseParams, spell *spellInfo
 
 	var spellData *chrondbc.Spell
 	if spell != nil {
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	target := base.destGUID
@@ -553,7 +553,7 @@ func (p *Parser) suffixCastSuccess(ts time.Time, base baseParams, spell *spellIn
 
 	var spellData *chrondbc.Spell
 	if spell != nil {
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	target := base.destGUID
@@ -580,7 +580,7 @@ func (p *Parser) suffixCastFailed(ts time.Time, base baseParams, spell *spellInf
 
 	var spellData *chrondbc.Spell
 	if spell != nil {
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	return set(&messages.SpellFail{
@@ -611,7 +611,7 @@ func (p *Parser) suffixSummon(ts time.Time, spell *spellInfo, base baseParams, m
 
 	var spellData *chrondbc.Spell
 	if spell != nil {
-		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
 	return set(
@@ -690,14 +690,20 @@ func set(m ...messages.Message) ([]messages.Message, error) {
 }
 
 // lookupSpell is a best-effort spell lookup; returns nil on error rather
-// than failing the whole line parse.
-func (p *Parser) lookupSpell(id chrondbc.SpellID) *chrondbc.Spell {
+// than failing the whole line parse. When a spell is missed, the name from
+// the combat log is recorded for diagnostics.
+func (p *Parser) lookupSpell(id chrondbc.SpellID, names ...string) *chrondbc.Spell {
 	if id == 0 {
 		return nil
 	}
 	s, err := p.wowDB.Spell(id)
 	if err != nil {
-		p.missedSpells[id]++
+		entry := p.missedSpells[id]
+		entry.Count++
+		if entry.Name == "" && len(names) > 0 {
+			entry.Name = names[0]
+		}
+		p.missedSpells[id] = entry
 		return nil
 	}
 	return s

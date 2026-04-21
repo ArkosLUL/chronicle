@@ -321,15 +321,22 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	}
 
 	// Capture missed spells from parser
+	type missedSpellEntry struct {
+		Count int
+		Name  string
+	}
 	type missedSpeller interface {
-		MissedSpells() map[chrondbc.SpellID]int
+		MissedSpells() map[chrondbc.SpellID]missedSpellEntry
 	}
 	if ms, ok := c.Advancer.(missedSpeller); ok {
 		missed := ms.MissedSpells()
 		if len(missed) > 0 {
-			report.MissedSpells = make(map[int32]int, len(missed))
-			for id, count := range missed {
-				report.MissedSpells[int32(id)] = count
+			report.MissedSpells = make(map[int32]chroniclesdk.MissedSpell, len(missed))
+			for id, entry := range missed {
+				report.MissedSpells[int32(id)] = chroniclesdk.MissedSpell{
+					Count: entry.Count,
+					Name:  entry.Name,
+				}
 			}
 		}
 	}

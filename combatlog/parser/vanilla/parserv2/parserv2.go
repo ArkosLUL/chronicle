@@ -30,7 +30,7 @@ type Parser struct {
 	lineParseDur  time.Duration
 	syntheticsDur time.Duration
 
-	missedSpells map[chrondbc.SpellID]int
+	missedSpells map[chrondbc.SpellID]missedSpellEntry
 }
 
 func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamedb.GearResolver) (*Parser, error) {
@@ -43,7 +43,7 @@ func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamed
 		scanner:      bufio.NewScanner(r),
 		synthetics:   synthetic.New(logger, wowDB),
 		itemFetcher:  gear,
-		missedSpells: make(map[chrondbc.SpellID]int),
+		missedSpells: make(map[chrondbc.SpellID]missedSpellEntry),
 	}, nil
 }
 
@@ -160,13 +160,20 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 func (p *Parser) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	sp, err := p.wowDB.Spell(id)
 	if err != nil {
-		p.missedSpells[id]++
+		entry := p.missedSpells[id]
+		entry.Count++
+		p.missedSpells[id] = entry
 		return nil, err
 	}
 	return sp, nil
 }
 
-// MissedSpells returns spell IDs that were not found in the DBC, with lookup counts.
-func (p *Parser) MissedSpells() map[chrondbc.SpellID]int {
+type missedSpellEntry struct {
+	Count int
+	Name  string
+}
+
+// MissedSpells returns spell IDs that were not found in the DBC, with lookup counts and names.
+func (p *Parser) MissedSpells() map[chrondbc.SpellID]missedSpellEntry {
 	return p.missedSpells
 }

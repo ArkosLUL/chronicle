@@ -4235,20 +4235,54 @@ export class FastInterruptCursor {
     return this._loadNextEncounterHeader();
   }
 
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+
   private _loadNextEncounterHeader(): boolean {
     if (this.offset >= this.data.length) {
       this._currentHeader = null;
       return false;
     }
-    const result = readPayloadHeader(this.data, this.offset);
-    if (!result) {
-      this._currentHeader = null;
-      return false;
-    }
-    this._currentHeader = result.header;
+
+    const startOffset = this.offset;
+
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER
+      ? new Date(tsNumber)
+      : new Date(NaN);
+
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+
     this._messagesReadInEncounter = 0;
-    this.offset = result.newOffset;
-    this._bytesProcessed = result.newOffset;
+    this._bytesProcessed += (this.offset - startOffset);
+
     return true;
   }
 }

@@ -11,6 +11,7 @@ func ServerTurtleWoW() uuid.UUID {
 }
 func ServerSATurtleWoW() uuid.UUID   { return uuid.MustParse("eaa7e20e-ae86-4690-98e0-dde0b9f06cd0") }
 func ServerAsiaTurtleWoW() uuid.UUID { return uuid.MustParse("9750514d-be08-4700-bce7-4108916b7ea0") }
+func ServerEpoch() uuid.UUID         { return uuid.MustParse("2f7e2ccc-9aa2-4b48-8ee9-b146a9138d06") }
 func ServerUnknown() uuid.UUID {
 	return uuid.MustParse("89b9a047-71c7-4f0d-96a0-247308a81f90")
 }
@@ -55,6 +56,16 @@ func RealmUnknown() uuid.UUID {
 	return uuid.MustParse("f6fb8310-9464-4cf1-a143-aba34f1c3037")
 }
 
+// Epoch
+
+func RealmGurubashi() uuid.UUID {
+	return uuid.MustParse("e9c0f97b-0b2e-4f47-848c-68634ba6a3dd")
+}
+
+func RealmKezan() uuid.UUID {
+	return uuid.MustParse("140eaa55-317d-4299-8756-83f495efba15")
+}
+
 func RealmByName(name string) (uuid.UUID, bool) {
 	switch strings.ToLower(name) {
 	case "ambershire":
@@ -73,6 +84,10 @@ func RealmByName(name string) (uuid.UUID, bool) {
 		return RealmKarazhan(), true
 	case "blood ring":
 		return RealmBloodRing(), true
+	case "gurubashi":
+		return RealmGurubashi(), true
+	case "kezan":
+		return RealmKezan(), true
 	default:
 		return RealmUnknown(), false
 	}

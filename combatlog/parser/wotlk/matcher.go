@@ -147,6 +147,8 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 		return p.suffixSummon(ts, spell, base, m)
 	case "_INSTAKILL":
 		return p.suffixInstakill(ts, base, m)
+	case "_RESURRECT":
+		return messages.Unparsed(ts, raw), nil
 	default:
 		p.logger.Warn("Unparsed line", slog.String("line", raw))
 		return messages.Unparsed(ts, raw), nil

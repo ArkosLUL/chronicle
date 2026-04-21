@@ -72,11 +72,19 @@ func spellClassSetToHeroClass(cs chrondbc.SpellClassSet) types.HeroClasses {
 // they cast. If the spell's SpellClassSet is class-specific (non-generic), it maps
 // to a HeroClasses value and caches it. Returns true if a new class was detected.
 func (z *unitInfo) detectClassFromSpell(sourceGUID guid.GUID, spell *chrondbc.Spell) bool {
-	if _, ok := z.detectedClass[sourceGUID]; ok {
-		return false // already detected
-	}
 	if spell == nil {
 		return false
+	}
+	for i := range spell.Effect {
+		// Skip effects that make items. Heathstone and other clickable creates confuse
+		// class detection.
+		if spell.Effect[i] == chrondbc.EffectCreateItem {
+			return false
+		}
+	}
+
+	if _, ok := z.detectedClass[sourceGUID]; ok {
+		return false // already detected
 	}
 	heroClass := spellClassSetToHeroClass(spell.SpellClassSet)
 	if heroClass == types.HeroClassesUNKNOWN {

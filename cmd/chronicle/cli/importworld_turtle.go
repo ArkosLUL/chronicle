@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 
 	dbcdatacli "github.com/Emyrk/chronicle/scripts/dbcdata/cli"
-	"github.com/coder/serpent"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/coder/serpent"
 )
 
 // tableDetector identifies a JSON file's table by checking for unique key fingerprints.
@@ -104,7 +105,7 @@ var tableSchemas = map[string]*tableSchema{
 			"set_id", "max_durability", "area_bound", "map_bound", "duration",
 			"bag_family", "disenchant_id", "food_type", "min_money_loot",
 			"max_money_loot", "wrapped_gift", "extra_flags", "other_team_entry",
-			"script_name", "patch",
+			"script_name", "patch", "tooltip_set_id",
 		},
 		PKColumns: []string{"entry"},
 	},
@@ -160,6 +161,11 @@ func importWorldTurtle(ctx context.Context, pool *pgxpool.Pool, inv *serpent.Inv
 	if err := importDBCData(ctx, pool, wowDir, inv); err != nil {
 		return fmt.Errorf("importing DBC data: %w", err)
 	}
+
+	// Not needed for turtle
+	//if err := fixupMultiTierSets(ctx, pool, inv); err != nil {
+	//	return fmt.Errorf("fixing up multi-tier sets: %w", err)
+	//}
 
 	return nil
 }

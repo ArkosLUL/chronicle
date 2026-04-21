@@ -65,11 +65,13 @@ type sqlcQuerier interface {
 	GetItemRandomPropertiesByID(ctx context.Context, id int32) (DbcItemRandomProperty, error)
 	GetItemSetBonuses(ctx context.Context, setID int32) ([]DbcItemSetBonu, error)
 	GetItemSetByID(ctx context.Context, id int32) (DbcItemSet, error)
+	GetItemSetItems(ctx context.Context, setID int32) ([]DbcItemSetItem, error)
 	GetItemTemplateByEntry(ctx context.Context, entry int32) (WorldItemTemplate, error)
 	// Looks up items by ID. For items not found by ID (e.g. transmog IDs),
 	// falls back to name lookup but only if the name is unique in the table.
 	// Pass paired arrays where item_ids[i] corresponds to item_names[i].
 	GetItemTemplateMetadataBatch(ctx context.Context, arg GetItemTemplateMetadataBatchParams) ([]GetItemTemplateMetadataBatchRow, error)
+	GetItemTemplatesByEntries(ctx context.Context, entries []int32) ([]WorldItemTemplate, error)
 	GetItemTemplatesBySetID(ctx context.Context, setID int32) ([]GetItemTemplatesBySetIDRow, error)
 	GetLatestRegressionSnapshot(ctx context.Context, fixtureID uuid.UUID) (RegressionSnapshot, error)
 	GetLeaderboardVersionRequirements(ctx context.Context, instanceName string) (LeaderboardVersionRequirement, error)

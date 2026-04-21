@@ -435,7 +435,14 @@ export interface ItemSetBonus {
 export interface ItemSetInfo {
     readonly id: number;
     readonly name: string;
-    readonly items: readonly ItemSetPiece[];
+    readonly item_ids: readonly number[]; // canonical item entries from ItemSet.dbc
+    readonly items: readonly ItemSetPiece[]; // resolved canonical pieces (for tooltip display)
+    /**
+     * EligibleItems includes all items with this set_id (cross-tier pieces).
+     * The frontend uses this to check if an equipped item counts toward the set,
+     * even if it's not one of the canonical pieces (e.g. Furious piece in a Wrathful set).
+     */
+    readonly eligible_items: readonly ItemSetPiece[];
     readonly bonuses: readonly ItemSetBonus[];
 }
 
@@ -1124,6 +1131,45 @@ export interface VideoTimestamp {
      */
     readonly utc_time?: string;
     readonly confidence: number;
+}
+
+// From chroniclesdk/gamedata.go
+/**
+ * WDBFieldDiff describes a single changed field.
+ */
+export interface WDBFieldDiff {
+    readonly field: string;
+    // empty interface{} type, falling back to unknown
+    readonly old: unknown;
+    // empty interface{} type, falling back to unknown
+    readonly new: unknown;
+    readonly unreliable?: boolean;
+}
+
+// From chroniclesdk/gamedata.go
+/**
+ * WDBItemDiff describes changes for one item entry.
+ */
+export interface WDBItemDiff {
+    readonly entry: number;
+    readonly name: string;
+    readonly status: string; // "new", "changed", "unchanged"
+    readonly fields?: readonly WDBFieldDiff[];
+}
+
+// From chroniclesdk/gamedata.go
+/**
+ * WDBUploadResponse is the response from uploading a WDB cache file.
+ */
+export interface WDBUploadResponse {
+    readonly signature: string;
+    readonly version: number;
+    readonly record_count: number;
+    readonly mode: string;
+    readonly new_items: number;
+    readonly changed: number;
+    readonly unchanged: number;
+    readonly diffs: readonly WDBItemDiff[];
 }
 
 // From types/date.go

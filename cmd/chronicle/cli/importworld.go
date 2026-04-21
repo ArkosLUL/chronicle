@@ -214,6 +214,7 @@ var dbcTables = []string{
 	"dbc_spell_item_enchantment",
 	"dbc_item_set",
 	"dbc_item_set_bonus",
+	"dbc_item_set_item",
 	"dbc_item_display_info",
 }
 
@@ -294,6 +295,9 @@ func importTable(ctx context.Context, pool *pgxpool.Pool, table, filePath string
 					} else {
 						v = 0
 					}
+				} else if schema.TextColumns[col] {
+					// Coerce to string for TEXT columns (JSON may have numeric values).
+					v = fmt.Sprintf("%v", v)
 				}
 				args[j] = v
 			}
@@ -435,24 +439,37 @@ func importDBCTables(ctx context.Context, pool *pgxpool.Pool, wc *dbcdb.WoWClien
 		return fmt.Errorf("reading ItemSet.dbc: %w", err)
 	}
 
-	const isSQL = `INSERT INTO dbc_item_set (id, name_lang, required_skill, required_skill_rank)
-		VALUES ($1, $2, $3, $4)
+	const isSQL = `INSERT INTO dbc_item_set (id, name_lang, required_skill, required_skill_rank, item_ids)
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (id) DO UPDATE SET name_lang=EXCLUDED.name_lang,
-			required_skill=EXCLUDED.required_skill, required_skill_rank=EXCLUDED.required_skill_rank`
+			required_skill=EXCLUDED.required_skill, required_skill_rank=EXCLUDED.required_skill_rank,
+			item_ids=EXCLUDED.item_ids`
 
 	const isBonusSQL = `INSERT INTO dbc_item_set_bonus (set_id, threshold, spell_id)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (set_id, threshold, spell_id) DO NOTHING`
 
+	const isItemSQL = `INSERT INTO dbc_item_set_item (set_id, item_entry)
+		VALUES ($1, $2)
+		ON CONFLICT (set_id, item_entry) DO NOTHING`
+
 	isCount := 0
 	isBonusCount := 0
+	isItemCount := 0
 	batch = &pgx.Batch{}
 	for i := 0; i < isTable.Len(); i++ {
 		row, err := isTable.Index(i)
 		if err != nil {
 			return fmt.Errorf("reading ItemSet row %d: %w", i, err)
 		}
-		batch.Queue(isSQL, row.ID, row.Name_lang.String(), row.RequiredSkill, row.RequiredSkillRank)
+		// Collect non-zero item IDs from the DBC ItemID array.
+		itemIDs := make([]int32, 0)
+		for _, id := range row.ItemID {
+			if id != 0 {
+				itemIDs = append(itemIDs, id)
+			}
+		}
+		batch.Queue(isSQL, row.ID, row.Name_lang.String(), row.RequiredSkill, row.RequiredSkillRank, itemIDs)
 		isCount++
 
 		// Insert set bonuses (spell + threshold pairs)
@@ -460,6 +477,14 @@ func importDBCTables(ctx context.Context, pool *pgxpool.Pool, wc *dbcdb.WoWClien
 			if row.SetSpellID[j] != 0 && row.SetThreshold[j] != 0 {
 				batch.Queue(isBonusSQL, row.ID, row.SetThreshold[j], row.SetSpellID[j])
 				isBonusCount++
+			}
+		}
+
+		// Insert set item membership from DBC ItemID array
+		for _, itemID := range row.ItemID {
+			if itemID != 0 {
+				batch.Queue(isItemSQL, row.ID, itemID)
+				isItemCount++
 			}
 		}
 
@@ -475,7 +500,7 @@ func importDBCTables(ctx context.Context, pool *pgxpool.Pool, wc *dbcdb.WoWClien
 			return fmt.Errorf("flushing final ItemSet batch: %w", err)
 		}
 	}
-	_, _ = fmt.Fprintf(inv.Stderr, "imported dbc_item_set: %d sets, %d bonuses\n", isCount, isBonusCount)
+	_, _ = fmt.Fprintf(inv.Stderr, "imported dbc_item_set: %d sets, %d bonuses, %d items\n", isCount, isBonusCount, isItemCount)
 
 	// --- ItemDisplayInfo ---
 	idiTable, err := wc.ItemDisplayInfo()
@@ -549,6 +574,129 @@ func importDBCTables(ctx context.Context, pool *pgxpool.Pool, wc *dbcdb.WoWClien
 	}
 	_, _ = fmt.Fprintf(inv.Stderr, "imported dbc_item_display_info: %d rows\n", idiCount)
 
+	return nil
+}
+
+// fixupMultiTierSets splits multi-tier item sets into synthetic per-tier sets.
+// WotLK PvP sets share a single set_id across tiers (Savage, Hateful, Deadly, etc.).
+// This creates synthetic dbc_item_set rows (negative IDs) for each tier and sets
+// tooltip_set_id on world_item_template to point to the tier-specific row.
+// The original set_id is left untouched for cross-tier eligibility.
+func fixupMultiTierSets(ctx context.Context, pool *pgxpool.Pool, inv *serpent.Invocation) error {
+	// Find sets where items have multiple distinct first-word prefixes.
+	rows, err := pool.Query(ctx, `
+		SELECT s.id, s.name_lang
+		FROM dbc_item_set s
+		JOIN world_item_template t ON t.set_id = s.id
+		GROUP BY s.id, s.name_lang
+		HAVING count(DISTINCT split_part(t.name, ' ', 1)) > 1`)
+	if err != nil {
+		return fmt.Errorf("querying multi-tier sets: %w", err)
+	}
+
+	type multiTierSet struct {
+		id   int32
+		name string
+	}
+	var multiSets []multiTierSet
+	for rows.Next() {
+		var s multiTierSet
+		if err := rows.Scan(&s.id, &s.name); err != nil {
+			rows.Close()
+			return fmt.Errorf("scanning multi-tier set: %w", err)
+		}
+		multiSets = append(multiSets, s)
+	}
+	rows.Close()
+
+	if len(multiSets) == 0 {
+		_, _ = fmt.Fprintf(inv.Stderr, "fixup: no multi-tier sets found\n")
+	}
+
+	syntheticID := int32(-1)
+	totalSynthetic := 0
+
+	for _, ms := range multiSets {
+		// Get items grouped by first-word prefix.
+		itemRows, err := pool.Query(ctx, `
+			SELECT entry, name, split_part(name, ' ', 1) as prefix
+			FROM world_item_template WHERE set_id = $1
+			ORDER BY name`, ms.id)
+		if err != nil {
+			return fmt.Errorf("querying items for set %d: %w", ms.id, err)
+		}
+
+		type itemInfo struct {
+			entry int32
+			name  string
+		}
+		groups := make(map[string][]itemInfo)
+		for itemRows.Next() {
+			var entry int32
+			var name, prefix string
+			if err := itemRows.Scan(&entry, &name, &prefix); err != nil {
+				itemRows.Close()
+				return fmt.Errorf("scanning item for set %d: %w", ms.id, err)
+			}
+			groups[prefix] = append(groups[prefix], itemInfo{entry: entry, name: name})
+		}
+		itemRows.Close()
+
+		for prefix, items := range groups {
+			// Derive tier-specific set name.
+			tierName := prefix + " " + ms.name
+
+			// Collect entry IDs.
+			entryIDs := make([]int32, len(items))
+			for i, item := range items {
+				entryIDs[i] = item.entry
+			}
+
+			// Create synthetic dbc_item_set row.
+			_, err := pool.Exec(ctx, `
+				INSERT INTO dbc_item_set (id, name_lang, required_skill, required_skill_rank, item_ids)
+				VALUES ($1, $2, 0, 0, $3)
+				ON CONFLICT (id) DO UPDATE SET name_lang=EXCLUDED.name_lang, item_ids=EXCLUDED.item_ids`,
+				syntheticID, tierName, entryIDs)
+			if err != nil {
+				return fmt.Errorf("inserting synthetic set for %q (set %d): %w", tierName, ms.id, err)
+			}
+
+			// Copy bonuses from original set.
+			_, err = pool.Exec(ctx, `
+				INSERT INTO dbc_item_set_bonus (set_id, threshold, spell_id)
+				SELECT $1, threshold, spell_id FROM dbc_item_set_bonus WHERE set_id = $2
+				ON CONFLICT (set_id, threshold, spell_id) DO NOTHING`,
+				syntheticID, ms.id)
+			if err != nil {
+				return fmt.Errorf("copying bonuses for synthetic set %d: %w", syntheticID, err)
+			}
+
+			// Point items to synthetic set via tooltip_set_id.
+			_, err = pool.Exec(ctx, `
+				UPDATE world_item_template
+				SET tooltip_set_id = $1
+				WHERE entry = ANY($2)`, syntheticID, entryIDs)
+			if err != nil {
+				return fmt.Errorf("updating tooltip_set_id for synthetic set %d: %w", syntheticID, err)
+			}
+
+			totalSynthetic++
+			syntheticID--
+		}
+	}
+
+	// For single-tier sets (and any items not yet assigned), set tooltip_set_id = set_id.
+	_, err = pool.Exec(ctx, `
+		UPDATE world_item_template
+		SET tooltip_set_id = set_id
+		WHERE set_id != 0 AND tooltip_set_id = 0`)
+	if err != nil {
+		return fmt.Errorf("setting default tooltip_set_id: %w", err)
+	}
+
+	_, _ = fmt.Fprintf(inv.Stderr, "fixup: split %d multi-tier sets into %d synthetic sets\n",
+		len(multiSets), totalSynthetic)
 	return nil
 }
 

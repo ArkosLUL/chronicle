@@ -686,6 +686,2888 @@
       "spellDamageType": 0
     }
   ],
+  "DeathKnight": [
+    {
+      "id": 20000,
+      "name": "Alexander's Test Periodic Aura",
+      "spellDamageType": 2
+    },
+    {
+      "id": 42650,
+      "name": "Army of the Dead",
+      "spellDamageType": 4
+    },
+    {
+      "id": 42653,
+      "name": "Lesser Heal Death Knight Test",
+      "spellDamageType": 1
+    },
+    {
+      "id": 43265,
+      "name": "Death and Decay",
+      "spellDamageType": 0
+    },
+    {
+      "id": 45462,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 45463,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 45469,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 45470,
+      "name": "Death Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 45477,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 45524,
+      "name": "Chains of Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 45529,
+      "name": "Blood Tap",
+      "spellDamageType": 1
+    },
+    {
+      "id": 45902,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 46584,
+      "name": "Raise Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 46585,
+      "name": "Raise Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 46619,
+      "name": "Raise Ally",
+      "spellDamageType": 0
+    },
+    {
+      "id": 47139,
+      "name": "Copy of Plague Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 47476,
+      "name": "Strangulate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 47528,
+      "name": "Mind Freeze",
+      "spellDamageType": 0
+    },
+    {
+      "id": 47541,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 47568,
+      "name": "Empower Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 47632,
+      "name": "Death Coil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 47633,
+      "name": "Death Coil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 47804,
+      "name": "Rune Test Spell",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48263,
+      "name": "Frost Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48265,
+      "name": "Unholy Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48266,
+      "name": "Blood Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48289,
+      "name": "Raise Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48680,
+      "name": "Strangulate",
+      "spellDamageType": 2
+    },
+    {
+      "id": 48707,
+      "name": "Anti-Magic Shell",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48721,
+      "name": "Blood Boil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 48743,
+      "name": "Death Pact",
+      "spellDamageType": 1
+    },
+    {
+      "id": 48778,
+      "name": "Acherus Deathcharger",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48792,
+      "name": "Icebound Fortitude",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48962,
+      "name": "Virulence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48963,
+      "name": "Morbidity",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48965,
+      "name": "Ravenous Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48977,
+      "name": "Bloody Strikes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48978,
+      "name": "Bladed Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48979,
+      "name": "Butchery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48982,
+      "name": "Rune Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48985,
+      "name": "Improved Rune Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 48997,
+      "name": "Subversion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49005,
+      "name": "Mark of Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49013,
+      "name": "Outbreak",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49015,
+      "name": "Vendetta",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49016,
+      "name": "Hysteria",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49018,
+      "name": "Sudden Doom",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49020,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49023,
+      "name": "Might of Mograine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49024,
+      "name": "Merciless Combat",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49027,
+      "name": "Bloodworms",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49028,
+      "name": "Dancing Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49032,
+      "name": "Crypt Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49036,
+      "name": "Epidemic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49038,
+      "name": "Ferocious Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49039,
+      "name": "Lichborne",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49040,
+      "name": "Army of the Dead Passive",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49137,
+      "name": "Endless Winter",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49140,
+      "name": "Black Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49142,
+      "name": "Frozen Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49143,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49146,
+      "name": "On a Pale Horse",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49149,
+      "name": "Chill of the Grave",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49158,
+      "name": "Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49175,
+      "name": "Improved Icy Touch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49182,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49184,
+      "name": "Howling Blast",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49186,
+      "name": "Frigid Dreadplate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49188,
+      "name": "Rime",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49189,
+      "name": "Will of the Necropolis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49194,
+      "name": "Unholy Blight",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49200,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49202,
+      "name": "Tundra Stalker",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49203,
+      "name": "Hungering Cold",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49206,
+      "name": "Summon Gargoyle",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49208,
+      "name": "Reaping",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49217,
+      "name": "Wandering Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49219,
+      "name": "Blood-Caked Blade",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49222,
+      "name": "Bone Shield",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49223,
+      "name": "Dirge",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49224,
+      "name": "Magic Suppression",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49390,
+      "name": "Bladed Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49391,
+      "name": "Bladed Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49392,
+      "name": "Bladed Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49393,
+      "name": "Bladed Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49394,
+      "name": "Bloody Strikes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49395,
+      "name": "Bloody Strikes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49455,
+      "name": "Runic Power Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49467,
+      "name": "Death Rune Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49471,
+      "name": "Glacier Rot",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49483,
+      "name": "Butchery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49488,
+      "name": "Improved Rune Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49489,
+      "name": "Improved Rune Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49490,
+      "name": "Subversion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49491,
+      "name": "Subversion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49500,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49501,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49529,
+      "name": "Sudden Doom",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49530,
+      "name": "Sudden Doom",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49533,
+      "name": "Might of Mograine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49534,
+      "name": "Might of Mograine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49538,
+      "name": "Merciless Combat",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49542,
+      "name": "Bloodworms",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49543,
+      "name": "Bloodworms",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49560,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49562,
+      "name": "Epidemic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49564,
+      "name": "Morbidity",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49565,
+      "name": "Morbidity",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49567,
+      "name": "Virulence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49568,
+      "name": "Virulence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49571,
+      "name": "Ravenous Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49572,
+      "name": "Ravenous Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49575,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49576,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49588,
+      "name": "Unholy Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49589,
+      "name": "Unholy Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49595,
+      "name": "Ferocious Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49596,
+      "name": "Ferocious Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49599,
+      "name": "Dirge",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49601,
+      "name": "Improved Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49602,
+      "name": "Improved Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49610,
+      "name": "Magic Suppression",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49611,
+      "name": "Magic Suppression",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49627,
+      "name": "Blood-Caked Blade",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49628,
+      "name": "Blood-Caked Blade",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49631,
+      "name": "Crypt Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49632,
+      "name": "Crypt Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49654,
+      "name": "Wandering Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49655,
+      "name": "Wandering Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49657,
+      "name": "Endless Winter",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49661,
+      "name": "Black Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49662,
+      "name": "Black Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49663,
+      "name": "Black Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49664,
+      "name": "Black Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49772,
+      "name": "Unholy Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49790,
+      "name": "Glacier Rot",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49791,
+      "name": "Glacier Rot",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49796,
+      "name": "Deathchill",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49892,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49893,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49894,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49895,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49896,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49903,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49904,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49909,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49913,
+      "name": "Strangulate",
+      "spellDamageType": 2
+    },
+    {
+      "id": 49914,
+      "name": "Strangulate",
+      "spellDamageType": 2
+    },
+    {
+      "id": 49915,
+      "name": "Strangulate",
+      "spellDamageType": 2
+    },
+    {
+      "id": 49916,
+      "name": "Strangulate",
+      "spellDamageType": 2
+    },
+    {
+      "id": 49917,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49918,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49919,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49920,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49921,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49923,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49924,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49926,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49927,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49928,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49929,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49930,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49936,
+      "name": "Death and Decay",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49937,
+      "name": "Death and Decay",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49938,
+      "name": "Death and Decay",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49939,
+      "name": "Blood Boil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49940,
+      "name": "Blood Boil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49941,
+      "name": "Blood Boil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 49998,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 49999,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50031,
+      "name": "Improved Icy Touch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50033,
+      "name": "Death Rune Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50034,
+      "name": "Death Rune Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50040,
+      "name": "Chilblains",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50041,
+      "name": "Chilblains",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50043,
+      "name": "Chilblains",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50096,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50108,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50109,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50110,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50111,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50115,
+      "name": "Chill of the Grave",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50117,
+      "name": "Rage of Rivendare",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50118,
+      "name": "Rage of Rivendare",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50119,
+      "name": "Rage of Rivendare",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50120,
+      "name": "Rage of Rivendare",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50121,
+      "name": "Rage of Rivendare",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50127,
+      "name": "Tundra Stalker",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50128,
+      "name": "Tundra Stalker",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50129,
+      "name": "Tundra Stalker",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50130,
+      "name": "Tundra Stalker",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50147,
+      "name": "Runic Power Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50149,
+      "name": "Will of the Necropolis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50150,
+      "name": "Will of the Necropolis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50151,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50152,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50154,
+      "name": "Vendetta",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50181,
+      "name": "Vendetta",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50187,
+      "name": "Guile of Gorefiend",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50190,
+      "name": "Guile of Gorefiend",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50191,
+      "name": "Guile of Gorefiend",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50362,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50365,
+      "name": "Improved Blood Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50371,
+      "name": "Improved Blood Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50384,
+      "name": "Improved Frost Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50385,
+      "name": "Improved Frost Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50391,
+      "name": "Improved Unholy Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50392,
+      "name": "Improved Unholy Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50397,
+      "name": "Lichborne",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50401,
+      "name": "Razor Frost",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50406,
+      "name": "Frozen Rune Weapon",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50422,
+      "name": "Scent of Blood",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50434,
+      "name": "Icy Clutch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50435,
+      "name": "Icy Clutch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50436,
+      "name": "Icy Clutch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50438,
+      "name": "Death",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50444,
+      "name": "Corpse Explosion",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50445,
+      "name": "Corpse Rot",
+      "spellDamageType": 2
+    },
+    {
+      "id": 50452,
+      "name": "Bloodworm",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50454,
+      "name": "Health Leech",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50459,
+      "name": "Chilled",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50461,
+      "name": "Anti-Magic Zone",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50462,
+      "name": "Anti-Magic Zone",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50463,
+      "name": "Blood-Caked Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50475,
+      "name": "Blood Presence",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50480,
+      "name": "Chill of the Grave",
+      "spellDamageType": 1
+    },
+    {
+      "id": 50485,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50486,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50488,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50489,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50490,
+      "name": "Acclimation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50508,
+      "name": "Crypt Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50509,
+      "name": "Crypt Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50510,
+      "name": "Crypt Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50514,
+      "name": "Summon Gargoyle",
+      "spellDamageType": 4
+    },
+    {
+      "id": 50515,
+      "name": "Dismiss Gargoyle",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50524,
+      "name": "Runic Power Feed",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50536,
+      "name": "Unholy Blight",
+      "spellDamageType": 2
+    },
+    {
+      "id": 50635,
+      "name": "Frozen",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50707,
+      "name": "Dismiss Runeblade",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50806,
+      "name": "Death Rune Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50807,
+      "name": "Death Rune Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50808,
+      "name": "Death Rune Mastery",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50842,
+      "name": "Pestilence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50880,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50882,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50884,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50885,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50886,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 50887,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51052,
+      "name": "Anti-Magic Zone",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51099,
+      "name": "Ebon Plaguebringer",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51108,
+      "name": "Frigid Dreadplate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51109,
+      "name": "Frigid Dreadplate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51123,
+      "name": "Killing Machine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51124,
+      "name": "Killing Machine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51127,
+      "name": "Killing Machine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51128,
+      "name": "Killing Machine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51129,
+      "name": "Killing Machine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51130,
+      "name": "Killing Machine",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51160,
+      "name": "Ebon Plaguebringer",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51161,
+      "name": "Ebon Plaguebringer",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51206,
+      "name": "Dirge",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51209,
+      "name": "Hungering Cold",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51267,
+      "name": "On a Pale Horse",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51271,
+      "name": "Unbreakable Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51325,
+      "name": "Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51326,
+      "name": "Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51327,
+      "name": "Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51328,
+      "name": "Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51389,
+      "name": "Frozen Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51390,
+      "name": "Frozen Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51391,
+      "name": "Frozen Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51392,
+      "name": "Frozen Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51399,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51409,
+      "name": "Howling Blast",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51410,
+      "name": "Howling Blast",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51411,
+      "name": "Howling Blast",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51416,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51417,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51418,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51419,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51423,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51424,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51425,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51426,
+      "name": "Pestilence",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51427,
+      "name": "Pestilence",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51428,
+      "name": "Pestilence",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51429,
+      "name": "Pestilence",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51440,
+      "name": "Frozen",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51456,
+      "name": "Improved Icy Touch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51459,
+      "name": "Necrosis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51460,
+      "name": "Necrosis",
+      "spellDamageType": 1
+    },
+    {
+      "id": 51462,
+      "name": "Necrosis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51463,
+      "name": "Necrosis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51464,
+      "name": "Necrosis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51465,
+      "name": "Necrosis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51468,
+      "name": "Annihilation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51472,
+      "name": "Annihilation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51473,
+      "name": "Annihilation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51714,
+      "name": "Frost Vulnerability",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51726,
+      "name": "Ebon Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51734,
+      "name": "Ebon Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51735,
+      "name": "Ebon Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51745,
+      "name": "Vicious Strikes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51746,
+      "name": "Vicious Strikes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51789,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51969,
+      "name": "On a Pale Horse",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51970,
+      "name": "On a Pale Horse",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51983,
+      "name": "On a Pale Horse",
+      "spellDamageType": 0
+    },
+    {
+      "id": 51986,
+      "name": "On a Pale Horse",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52143,
+      "name": "Master of Ghouls",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52150,
+      "name": "Raise Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52212,
+      "name": "Death and Decay",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52284,
+      "name": "Will of the Necropolis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52285,
+      "name": "Will of the Necropolis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52286,
+      "name": "Will of the Necropolis",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52372,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 52373,
+      "name": "Plague Strike",
+      "spellDamageType": 2
+    },
+    {
+      "id": 52374,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52375,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52394,
+      "name": "Increased Blood Strike Damage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 52789,
+      "name": "Visual Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 53137,
+      "name": "Abomination's Might",
+      "spellDamageType": 0
+    },
+    {
+      "id": 53138,
+      "name": "Abomination's Might",
+      "spellDamageType": 0
+    },
+    {
+      "id": 53276,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 53386,
+      "name": "Cinderglacier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 53388,
+      "name": "Frostfever",
+      "spellDamageType": 2
+    },
+    {
+      "id": 53534,
+      "name": "Chains of Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 53536,
+      "name": "Howling Blast",
+      "spellDamageType": 1
+    },
+    {
+      "id": 53549,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 53550,
+      "name": "Mind Freeze",
+      "spellDamageType": 1
+    },
+    {
+      "id": 53605,
+      "name": "Degeneration",
+      "spellDamageType": 2
+    },
+    {
+      "id": 53639,
+      "name": "Death Strike",
+      "spellDamageType": 2
+    },
+    {
+      "id": 53769,
+      "name": "Death Coil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 54062,
+      "name": "Melee Intervention",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54088,
+      "name": "Corpse Blight",
+      "spellDamageType": 2
+    },
+    {
+      "id": 54143,
+      "name": "Death and Decay",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54223,
+      "name": "Shadow of Death",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54271,
+      "name": "Death Grip Cooldown Reduction",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54562,
+      "name": "Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54637,
+      "name": "Blood of the North",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54638,
+      "name": "Blood of the North",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54639,
+      "name": "Blood of the North",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54800,
+      "name": "Increased Icy Touch Damage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54802,
+      "name": "Increased Plague Strike DoT Damage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54803,
+      "name": "Increased Icebound Fortitude Mitigation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54807,
+      "name": "Increased Death Coil Damage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 54809,
+      "name": "Increased Scourge Strike Damage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55050,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55061,
+      "name": "Icy Reach",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55062,
+      "name": "Icy Reach",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55078,
+      "name": "Blood Plague",
+      "spellDamageType": 2
+    },
+    {
+      "id": 55090,
+      "name": "Scourge Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55095,
+      "name": "Frost Fever",
+      "spellDamageType": 2
+    },
+    {
+      "id": 55136,
+      "name": "Vendetta",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55225,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55226,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55233,
+      "name": "Vampiric Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55236,
+      "name": "Outbreak",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55237,
+      "name": "Outbreak",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55258,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55259,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55260,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55261,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55262,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55265,
+      "name": "Scourge Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55268,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55270,
+      "name": "Scourge Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55271,
+      "name": "Scourge Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55610,
+      "name": "Improved Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55620,
+      "name": "Night of the Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55621,
+      "name": "The Dead Walk",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55623,
+      "name": "Night of the Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55666,
+      "name": "Desecration",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55667,
+      "name": "Desecration",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55719,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55741,
+      "name": "Desecration",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55744,
+      "name": "The Dead Walk",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55972,
+      "name": "Abominable Might",
+      "spellDamageType": 0
+    },
+    {
+      "id": 55974,
+      "name": "Blood Boil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 55978,
+      "name": "Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 56222,
+      "name": "Dark Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 56815,
+      "name": "Rune Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 56816,
+      "name": "Rune Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 56822,
+      "name": "Rime",
+      "spellDamageType": 0
+    },
+    {
+      "id": 56834,
+      "name": "Reaping",
+      "spellDamageType": 0
+    },
+    {
+      "id": 56835,
+      "name": "Reaping",
+      "spellDamageType": 0
+    },
+    {
+      "id": 57330,
+      "name": "Horn of Winter",
+      "spellDamageType": 0
+    },
+    {
+      "id": 57532,
+      "name": "Eye of Acherus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 57602,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 57603,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 57604,
+      "name": "Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 57623,
+      "name": "Horn of Winter",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58575,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58576,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58577,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58578,
+      "name": "Icy Talons",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58613,
+      "name": "Glyph of Dark Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58616,
+      "name": "Glyph of Heart Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58618,
+      "name": "Glyph of Strangulate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58620,
+      "name": "Glyph of Chains of Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58623,
+      "name": "Glyph of Anti-Magic Shell",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58625,
+      "name": "Glyph of Icebound Fortitude",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58626,
+      "name": "Glyph of Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58628,
+      "name": "Glyph of Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58629,
+      "name": "Glyph of Death and Decay",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58631,
+      "name": "Glyph of Icy Touch",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58635,
+      "name": "Glyph of Unbreakable Armor",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58640,
+      "name": "Glyph of Blood Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58644,
+      "name": "Glyph of Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58647,
+      "name": "Glyph of Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58657,
+      "name": "Glyph of Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58669,
+      "name": "Glyph of Rune Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58671,
+      "name": "Glyph of Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58673,
+      "name": "Glyph of Bone Shield",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58675,
+      "name": "Glyph of Vampiric Blood",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58676,
+      "name": "Glyph of Vampiric Blood",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58677,
+      "name": "Glyph of Death's Embrace",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58679,
+      "name": "Glyph of Death's Embrace",
+      "spellDamageType": 1
+    },
+    {
+      "id": 58680,
+      "name": "Glyph of Horn of Winter",
+      "spellDamageType": 0
+    },
+    {
+      "id": 58686,
+      "name": "Glyph of the Ghoul",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59052,
+      "name": "Freezing Fog",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59057,
+      "name": "Rime",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59131,
+      "name": "Icy Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 59133,
+      "name": "Plague Strike",
+      "spellDamageType": 2
+    },
+    {
+      "id": 59134,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59307,
+      "name": "Glyph of Corpse Explosion",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59309,
+      "name": "Glyph of Pestilence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59327,
+      "name": "Glyph of Rune Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59332,
+      "name": "Glyph of Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59336,
+      "name": "Glyph of Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59539,
+      "name": "Shadow Resistance",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59545,
+      "name": "Gift of the Naaru",
+      "spellDamageType": 2
+    },
+    {
+      "id": 59754,
+      "name": "Rune Tap",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59879,
+      "name": "Blood Plague",
+      "spellDamageType": 0
+    },
+    {
+      "id": 59913,
+      "name": "Swift Hand of Justice",
+      "spellDamageType": 1
+    },
+    {
+      "id": 59921,
+      "name": "Frost Fever",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60130,
+      "name": "Increased Plague Strike Crit",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60132,
+      "name": "Oblit/Scourge Strike Runic Power Up",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60133,
+      "name": "Icebound Duration Increase",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60134,
+      "name": "Scourge/Oblit Crit Up",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60186,
+      "name": "Plague Strike",
+      "spellDamageType": 3
+    },
+    {
+      "id": 60200,
+      "name": "Glyph of Raise Dead",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60675,
+      "name": "Savage Gladiator's Death Knight Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60685,
+      "name": "Hateful Gladiator's Death Knight Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60686,
+      "name": "Deadly Gladiator's Death Knight Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60687,
+      "name": "LK Arena 4 Gladiator's Death Knight Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60688,
+      "name": "LK Arena 5 Gladiator's Death Knight Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60690,
+      "name": "LK Arena 6 Gladiator's Death Knight Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60825,
+      "name": "Copy of Increased Blood Strike Damage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60826,
+      "name": "Sigil of Haunted Dreams",
+      "spellDamageType": 0
+    },
+    {
+      "id": 60837,
+      "name": "Sigil of Awareness",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61077,
+      "name": "Chains of Ice",
+      "spellDamageType": 1
+    },
+    {
+      "id": 61094,
+      "name": "Death Grip",
+      "spellDamageType": 1
+    },
+    {
+      "id": 61154,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61155,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61156,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61157,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61158,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61250,
+      "name": "Strangulate Cooldown Reduction",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61257,
+      "name": "Runic Power Back on Snare/Root",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61261,
+      "name": "Frost Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61274,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61275,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61276,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61277,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61278,
+      "name": "Blood Gorged",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61455,
+      "name": "Runic Focus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61777,
+      "name": "Summon Gargoyle",
+      "spellDamageType": 0
+    },
+    {
+      "id": 61895,
+      "name": "Blood-Caked Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 61999,
+      "name": "Raise Ally",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62036,
+      "name": "Rune Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 62142,
+      "name": "Improved Chains of Ice",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62147,
+      "name": "Icy Touch Defense Increase",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62259,
+      "name": "Glyph of Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62261,
+      "name": "Glyph of Death Grip",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62458,
+      "name": "Bonus Runic Power",
+      "spellDamageType": 1
+    },
+    {
+      "id": 62459,
+      "name": "Chains of Ice Frost Rune Refresh",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62900,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62901,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62902,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62903,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62904,
+      "name": "Death Coil",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62905,
+      "name": "Improved Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 62908,
+      "name": "Improved Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63330,
+      "name": "Glyph of Dancing Rune Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63331,
+      "name": "Glyph of Hungering Cold",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63332,
+      "name": "Glyph of Unholy Blight",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63333,
+      "name": "Glyph of Dark Death",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63334,
+      "name": "Glyph of Disease",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63335,
+      "name": "Glyph of Howling Blast",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63560,
+      "name": "Ghoul Frenzy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63583,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63611,
+      "name": "Improved Blood Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 63622,
+      "name": "Improved Unholy Presence",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64735,
+      "name": "Item - Death Knight T8 Melee 2P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64736,
+      "name": "Item - Death Knight T8 Melee 4P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64744,
+      "name": "Item - Death Knight T8 Tank 2P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64745,
+      "name": "Item - Death Knight T8 Tank 4P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64855,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64856,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64858,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64859,
+      "name": "Blade Barrier",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64962,
+      "name": "Item - Death Knight T8 DPS Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 64964,
+      "name": "Item - Death Knight T8 Tank Relic",
+      "spellDamageType": 0
+    },
+    {
+      "id": 65010,
+      "name": "Spell Cost Reduction",
+      "spellDamageType": 0
+    },
+    {
+      "id": 65221,
+      "name": "Command",
+      "spellDamageType": 0
+    },
+    {
+      "id": 65661,
+      "name": "Threat of Thassarian",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66188,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66191,
+      "name": "Threat of Thassarian",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66192,
+      "name": "Threat of Thassarian",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66196,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66198,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66215,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66216,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66217,
+      "name": "Rune Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 66799,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66800,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66801,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66802,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66803,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66814,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66815,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66816,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66817,
+      "name": "Desolation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66950,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66951,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66952,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66953,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66958,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66959,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66960,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66961,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66962,
+      "name": "Frost Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66972,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66973,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66974,
+      "name": "Obliterate",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66975,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66976,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66977,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66978,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66979,
+      "name": "Blood Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66988,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66989,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66990,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66991,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 66992,
+      "name": "Plague Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67115,
+      "name": "Item - Death Knight T9 Melee 2P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67118,
+      "name": "Item - Death Knight T9 Melee 4P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67119,
+      "name": "Item - Death Knight T9 Tank 2P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67120,
+      "name": "Item - Death Knight T9 Tank 4P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67381,
+      "name": "Item - Death Knight T9 Tank Relic (Rune Strike)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67384,
+      "name": "Item - Death Knight T9 Melee Relic (Rune Strike)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 67804,
+      "name": "Desecration",
+      "spellDamageType": 0
+    },
+    {
+      "id": 68766,
+      "name": "Desecration",
+      "spellDamageType": 0
+    },
+    {
+      "id": 69069,
+      "name": "Shield of Bones",
+      "spellDamageType": 0
+    },
+    {
+      "id": 69642,
+      "name": "Shield of Bones",
+      "spellDamageType": 1
+    },
+    {
+      "id": 69737,
+      "name": "CP Test Spell 2",
+      "spellDamageType": 0
+    },
+    {
+      "id": 69738,
+      "name": "CP Test Spell",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70204,
+      "name": "Shield of Bones",
+      "spellDamageType": 1
+    },
+    {
+      "id": 70207,
+      "name": "Shield of Bones",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70344,
+      "name": "Caught!",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70355,
+      "name": "Caught!",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70650,
+      "name": "Item - Death Knight T10 Tank 2P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70652,
+      "name": "Item - Death Knight T10 Tank 4P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70655,
+      "name": "Item - Death Knight T10 Melee 2P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70656,
+      "name": "Item - Death Knight T10 Melee 4P Bonus",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70657,
+      "name": "Advantage",
+      "spellDamageType": 0
+    },
+    {
+      "id": 70890,
+      "name": "Scourge Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 71226,
+      "name": "Item - Death Knight T10 DPS Relic (Obliterate, Scourge Strike, Death Strike)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 71228,
+      "name": "Item - Death Knight T10 Tank Relic (Runestrike)",
+      "spellDamageType": 0
+    },
+    {
+      "id": 71488,
+      "name": "Scourge Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 71489,
+      "name": "Death Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 71879,
+      "name": "Necrotic Touch",
+      "spellDamageType": 1
+    },
+    {
+      "id": 73313,
+      "name": "Crimson Deathcharger",
+      "spellDamageType": 0
+    }
+  ],
   "Druid": [
     {
       "id": 99,
@@ -36211,2888 +39093,6 @@
     {
       "id": 67591,
       "name": "Riplash Blessing",
-      "spellDamageType": 0
-    }
-  ],
-  "SpellClassSet(15)": [
-    {
-      "id": 20000,
-      "name": "Alexander's Test Periodic Aura",
-      "spellDamageType": 2
-    },
-    {
-      "id": 42650,
-      "name": "Army of the Dead",
-      "spellDamageType": 4
-    },
-    {
-      "id": 42653,
-      "name": "Lesser Heal Death Knight Test",
-      "spellDamageType": 1
-    },
-    {
-      "id": 43265,
-      "name": "Death and Decay",
-      "spellDamageType": 0
-    },
-    {
-      "id": 45462,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 45463,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 45469,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 45470,
-      "name": "Death Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 45477,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 45524,
-      "name": "Chains of Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 45529,
-      "name": "Blood Tap",
-      "spellDamageType": 1
-    },
-    {
-      "id": 45902,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 46584,
-      "name": "Raise Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 46585,
-      "name": "Raise Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 46619,
-      "name": "Raise Ally",
-      "spellDamageType": 0
-    },
-    {
-      "id": 47139,
-      "name": "Copy of Plague Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 47476,
-      "name": "Strangulate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 47528,
-      "name": "Mind Freeze",
-      "spellDamageType": 0
-    },
-    {
-      "id": 47541,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 47568,
-      "name": "Empower Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 47632,
-      "name": "Death Coil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 47633,
-      "name": "Death Coil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 47804,
-      "name": "Rune Test Spell",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48263,
-      "name": "Frost Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48265,
-      "name": "Unholy Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48266,
-      "name": "Blood Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48289,
-      "name": "Raise Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48680,
-      "name": "Strangulate",
-      "spellDamageType": 2
-    },
-    {
-      "id": 48707,
-      "name": "Anti-Magic Shell",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48721,
-      "name": "Blood Boil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 48743,
-      "name": "Death Pact",
-      "spellDamageType": 1
-    },
-    {
-      "id": 48778,
-      "name": "Acherus Deathcharger",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48792,
-      "name": "Icebound Fortitude",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48962,
-      "name": "Virulence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48963,
-      "name": "Morbidity",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48965,
-      "name": "Ravenous Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48977,
-      "name": "Bloody Strikes",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48978,
-      "name": "Bladed Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48979,
-      "name": "Butchery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48982,
-      "name": "Rune Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48985,
-      "name": "Improved Rune Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 48997,
-      "name": "Subversion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49005,
-      "name": "Mark of Blood",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49013,
-      "name": "Outbreak",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49015,
-      "name": "Vendetta",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49016,
-      "name": "Hysteria",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49018,
-      "name": "Sudden Doom",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49020,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49023,
-      "name": "Might of Mograine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49024,
-      "name": "Merciless Combat",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49027,
-      "name": "Bloodworms",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49028,
-      "name": "Dancing Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49032,
-      "name": "Crypt Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49036,
-      "name": "Epidemic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49038,
-      "name": "Ferocious Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49039,
-      "name": "Lichborne",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49040,
-      "name": "Army of the Dead Passive",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49137,
-      "name": "Endless Winter",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49140,
-      "name": "Black Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49142,
-      "name": "Frozen Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49143,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49146,
-      "name": "On a Pale Horse",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49149,
-      "name": "Chill of the Grave",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49158,
-      "name": "Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49175,
-      "name": "Improved Icy Touch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49182,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49184,
-      "name": "Howling Blast",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49186,
-      "name": "Frigid Dreadplate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49188,
-      "name": "Rime",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49189,
-      "name": "Will of the Necropolis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49194,
-      "name": "Unholy Blight",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49200,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49202,
-      "name": "Tundra Stalker",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49203,
-      "name": "Hungering Cold",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49206,
-      "name": "Summon Gargoyle",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49208,
-      "name": "Reaping",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49217,
-      "name": "Wandering Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49219,
-      "name": "Blood-Caked Blade",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49222,
-      "name": "Bone Shield",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49223,
-      "name": "Dirge",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49224,
-      "name": "Magic Suppression",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49390,
-      "name": "Bladed Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49391,
-      "name": "Bladed Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49392,
-      "name": "Bladed Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49393,
-      "name": "Bladed Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49394,
-      "name": "Bloody Strikes",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49395,
-      "name": "Bloody Strikes",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49455,
-      "name": "Runic Power Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49467,
-      "name": "Death Rune Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49471,
-      "name": "Glacier Rot",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49483,
-      "name": "Butchery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49488,
-      "name": "Improved Rune Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49489,
-      "name": "Improved Rune Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49490,
-      "name": "Subversion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49491,
-      "name": "Subversion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49500,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49501,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49529,
-      "name": "Sudden Doom",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49530,
-      "name": "Sudden Doom",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49533,
-      "name": "Might of Mograine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49534,
-      "name": "Might of Mograine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49538,
-      "name": "Merciless Combat",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49542,
-      "name": "Bloodworms",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49543,
-      "name": "Bloodworms",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49560,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49562,
-      "name": "Epidemic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49564,
-      "name": "Morbidity",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49565,
-      "name": "Morbidity",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49567,
-      "name": "Virulence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49568,
-      "name": "Virulence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49571,
-      "name": "Ravenous Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49572,
-      "name": "Ravenous Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49575,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49576,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49588,
-      "name": "Unholy Command",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49589,
-      "name": "Unholy Command",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49595,
-      "name": "Ferocious Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49596,
-      "name": "Ferocious Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49599,
-      "name": "Dirge",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49601,
-      "name": "Improved Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49602,
-      "name": "Improved Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49610,
-      "name": "Magic Suppression",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49611,
-      "name": "Magic Suppression",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49627,
-      "name": "Blood-Caked Blade",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49628,
-      "name": "Blood-Caked Blade",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49631,
-      "name": "Crypt Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49632,
-      "name": "Crypt Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49654,
-      "name": "Wandering Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49655,
-      "name": "Wandering Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49657,
-      "name": "Endless Winter",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49661,
-      "name": "Black Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49662,
-      "name": "Black Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49663,
-      "name": "Black Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49664,
-      "name": "Black Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49772,
-      "name": "Unholy Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49790,
-      "name": "Glacier Rot",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49791,
-      "name": "Glacier Rot",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49796,
-      "name": "Deathchill",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49892,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49893,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49894,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49895,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49896,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49903,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49904,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49909,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49913,
-      "name": "Strangulate",
-      "spellDamageType": 2
-    },
-    {
-      "id": 49914,
-      "name": "Strangulate",
-      "spellDamageType": 2
-    },
-    {
-      "id": 49915,
-      "name": "Strangulate",
-      "spellDamageType": 2
-    },
-    {
-      "id": 49916,
-      "name": "Strangulate",
-      "spellDamageType": 2
-    },
-    {
-      "id": 49917,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49918,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49919,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49920,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49921,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49923,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49924,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49926,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49927,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49928,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49929,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49930,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49936,
-      "name": "Death and Decay",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49937,
-      "name": "Death and Decay",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49938,
-      "name": "Death and Decay",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49939,
-      "name": "Blood Boil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49940,
-      "name": "Blood Boil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49941,
-      "name": "Blood Boil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 49998,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 49999,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50031,
-      "name": "Improved Icy Touch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50033,
-      "name": "Death Rune Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50034,
-      "name": "Death Rune Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50040,
-      "name": "Chilblains",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50041,
-      "name": "Chilblains",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50043,
-      "name": "Chilblains",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50096,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50108,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50109,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50110,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50111,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50115,
-      "name": "Chill of the Grave",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50117,
-      "name": "Rage of Rivendare",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50118,
-      "name": "Rage of Rivendare",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50119,
-      "name": "Rage of Rivendare",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50120,
-      "name": "Rage of Rivendare",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50121,
-      "name": "Rage of Rivendare",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50127,
-      "name": "Tundra Stalker",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50128,
-      "name": "Tundra Stalker",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50129,
-      "name": "Tundra Stalker",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50130,
-      "name": "Tundra Stalker",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50147,
-      "name": "Runic Power Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50149,
-      "name": "Will of the Necropolis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50150,
-      "name": "Will of the Necropolis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50151,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50152,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50154,
-      "name": "Vendetta",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50181,
-      "name": "Vendetta",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50187,
-      "name": "Guile of Gorefiend",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50190,
-      "name": "Guile of Gorefiend",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50191,
-      "name": "Guile of Gorefiend",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50362,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50365,
-      "name": "Improved Blood Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50371,
-      "name": "Improved Blood Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50384,
-      "name": "Improved Frost Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50385,
-      "name": "Improved Frost Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50391,
-      "name": "Improved Unholy Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50392,
-      "name": "Improved Unholy Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50397,
-      "name": "Lichborne",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50401,
-      "name": "Razor Frost",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50406,
-      "name": "Frozen Rune Weapon",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50422,
-      "name": "Scent of Blood",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50434,
-      "name": "Icy Clutch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50435,
-      "name": "Icy Clutch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50436,
-      "name": "Icy Clutch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50438,
-      "name": "Death",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50444,
-      "name": "Corpse Explosion",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50445,
-      "name": "Corpse Rot",
-      "spellDamageType": 2
-    },
-    {
-      "id": 50452,
-      "name": "Bloodworm",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50454,
-      "name": "Health Leech",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50459,
-      "name": "Chilled",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50461,
-      "name": "Anti-Magic Zone",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50462,
-      "name": "Anti-Magic Zone",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50463,
-      "name": "Blood-Caked Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50475,
-      "name": "Blood Presence",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50480,
-      "name": "Chill of the Grave",
-      "spellDamageType": 1
-    },
-    {
-      "id": 50485,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50486,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50488,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50489,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50490,
-      "name": "Acclimation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50508,
-      "name": "Crypt Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50509,
-      "name": "Crypt Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50510,
-      "name": "Crypt Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50514,
-      "name": "Summon Gargoyle",
-      "spellDamageType": 4
-    },
-    {
-      "id": 50515,
-      "name": "Dismiss Gargoyle",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50524,
-      "name": "Runic Power Feed",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50536,
-      "name": "Unholy Blight",
-      "spellDamageType": 2
-    },
-    {
-      "id": 50635,
-      "name": "Frozen",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50707,
-      "name": "Dismiss Runeblade",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50806,
-      "name": "Death Rune Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50807,
-      "name": "Death Rune Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50808,
-      "name": "Death Rune Mastery",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50842,
-      "name": "Pestilence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50880,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50882,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50884,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50885,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50886,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 50887,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51052,
-      "name": "Anti-Magic Zone",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51099,
-      "name": "Ebon Plaguebringer",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51108,
-      "name": "Frigid Dreadplate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51109,
-      "name": "Frigid Dreadplate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51123,
-      "name": "Killing Machine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51124,
-      "name": "Killing Machine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51127,
-      "name": "Killing Machine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51128,
-      "name": "Killing Machine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51129,
-      "name": "Killing Machine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51130,
-      "name": "Killing Machine",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51160,
-      "name": "Ebon Plaguebringer",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51161,
-      "name": "Ebon Plaguebringer",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51206,
-      "name": "Dirge",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51209,
-      "name": "Hungering Cold",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51267,
-      "name": "On a Pale Horse",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51271,
-      "name": "Unbreakable Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51325,
-      "name": "Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51326,
-      "name": "Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51327,
-      "name": "Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51328,
-      "name": "Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51389,
-      "name": "Frozen Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51390,
-      "name": "Frozen Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51391,
-      "name": "Frozen Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51392,
-      "name": "Frozen Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51399,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51409,
-      "name": "Howling Blast",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51410,
-      "name": "Howling Blast",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51411,
-      "name": "Howling Blast",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51416,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51417,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51418,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51419,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51423,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51424,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51425,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51426,
-      "name": "Pestilence",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51427,
-      "name": "Pestilence",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51428,
-      "name": "Pestilence",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51429,
-      "name": "Pestilence",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51440,
-      "name": "Frozen",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51456,
-      "name": "Improved Icy Touch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51459,
-      "name": "Necrosis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51460,
-      "name": "Necrosis",
-      "spellDamageType": 1
-    },
-    {
-      "id": 51462,
-      "name": "Necrosis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51463,
-      "name": "Necrosis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51464,
-      "name": "Necrosis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51465,
-      "name": "Necrosis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51468,
-      "name": "Annihilation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51472,
-      "name": "Annihilation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51473,
-      "name": "Annihilation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51714,
-      "name": "Frost Vulnerability",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51726,
-      "name": "Ebon Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51734,
-      "name": "Ebon Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51735,
-      "name": "Ebon Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51745,
-      "name": "Vicious Strikes",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51746,
-      "name": "Vicious Strikes",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51789,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51969,
-      "name": "On a Pale Horse",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51970,
-      "name": "On a Pale Horse",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51983,
-      "name": "On a Pale Horse",
-      "spellDamageType": 0
-    },
-    {
-      "id": 51986,
-      "name": "On a Pale Horse",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52143,
-      "name": "Master of Ghouls",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52150,
-      "name": "Raise Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52212,
-      "name": "Death and Decay",
-      "spellDamageType": 1
-    },
-    {
-      "id": 52284,
-      "name": "Will of the Necropolis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52285,
-      "name": "Will of the Necropolis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52286,
-      "name": "Will of the Necropolis",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52372,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 52373,
-      "name": "Plague Strike",
-      "spellDamageType": 2
-    },
-    {
-      "id": 52374,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52375,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52394,
-      "name": "Increased Blood Strike Damage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 52789,
-      "name": "Visual Dummy",
-      "spellDamageType": 0
-    },
-    {
-      "id": 53137,
-      "name": "Abomination's Might",
-      "spellDamageType": 0
-    },
-    {
-      "id": 53138,
-      "name": "Abomination's Might",
-      "spellDamageType": 0
-    },
-    {
-      "id": 53276,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 53386,
-      "name": "Cinderglacier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 53388,
-      "name": "Frostfever",
-      "spellDamageType": 2
-    },
-    {
-      "id": 53534,
-      "name": "Chains of Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 53536,
-      "name": "Howling Blast",
-      "spellDamageType": 1
-    },
-    {
-      "id": 53549,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 53550,
-      "name": "Mind Freeze",
-      "spellDamageType": 1
-    },
-    {
-      "id": 53605,
-      "name": "Degeneration",
-      "spellDamageType": 2
-    },
-    {
-      "id": 53639,
-      "name": "Death Strike",
-      "spellDamageType": 2
-    },
-    {
-      "id": 53769,
-      "name": "Death Coil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 54062,
-      "name": "Melee Intervention",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54088,
-      "name": "Corpse Blight",
-      "spellDamageType": 2
-    },
-    {
-      "id": 54143,
-      "name": "Death and Decay",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54223,
-      "name": "Shadow of Death",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54271,
-      "name": "Death Grip Cooldown Reduction",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54562,
-      "name": "Command",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54637,
-      "name": "Blood of the North",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54638,
-      "name": "Blood of the North",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54639,
-      "name": "Blood of the North",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54800,
-      "name": "Increased Icy Touch Damage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54802,
-      "name": "Increased Plague Strike DoT Damage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54803,
-      "name": "Increased Icebound Fortitude Mitigation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54807,
-      "name": "Increased Death Coil Damage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 54809,
-      "name": "Increased Scourge Strike Damage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55050,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55061,
-      "name": "Icy Reach",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55062,
-      "name": "Icy Reach",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55078,
-      "name": "Blood Plague",
-      "spellDamageType": 2
-    },
-    {
-      "id": 55090,
-      "name": "Scourge Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55095,
-      "name": "Frost Fever",
-      "spellDamageType": 2
-    },
-    {
-      "id": 55136,
-      "name": "Vendetta",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55225,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55226,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55233,
-      "name": "Vampiric Blood",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55236,
-      "name": "Outbreak",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55237,
-      "name": "Outbreak",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55258,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55259,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55260,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55261,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55262,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55265,
-      "name": "Scourge Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55268,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55270,
-      "name": "Scourge Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55271,
-      "name": "Scourge Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55610,
-      "name": "Improved Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55620,
-      "name": "Night of the Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55621,
-      "name": "The Dead Walk",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55623,
-      "name": "Night of the Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55666,
-      "name": "Desecration",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55667,
-      "name": "Desecration",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55719,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55741,
-      "name": "Desecration",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55744,
-      "name": "The Dead Walk",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55972,
-      "name": "Abominable Might",
-      "spellDamageType": 0
-    },
-    {
-      "id": 55974,
-      "name": "Blood Boil",
-      "spellDamageType": 1
-    },
-    {
-      "id": 55978,
-      "name": "Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 56222,
-      "name": "Dark Command",
-      "spellDamageType": 0
-    },
-    {
-      "id": 56815,
-      "name": "Rune Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 56816,
-      "name": "Rune Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 56822,
-      "name": "Rime",
-      "spellDamageType": 0
-    },
-    {
-      "id": 56834,
-      "name": "Reaping",
-      "spellDamageType": 0
-    },
-    {
-      "id": 56835,
-      "name": "Reaping",
-      "spellDamageType": 0
-    },
-    {
-      "id": 57330,
-      "name": "Horn of Winter",
-      "spellDamageType": 0
-    },
-    {
-      "id": 57532,
-      "name": "Eye of Acherus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 57602,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 57603,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 57604,
-      "name": "Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 57623,
-      "name": "Horn of Winter",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58575,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58576,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58577,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58578,
-      "name": "Icy Talons",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58613,
-      "name": "Glyph of Dark Command",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58616,
-      "name": "Glyph of Heart Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58618,
-      "name": "Glyph of Strangulate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58620,
-      "name": "Glyph of Chains of Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58623,
-      "name": "Glyph of Anti-Magic Shell",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58625,
-      "name": "Glyph of Icebound Fortitude",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58626,
-      "name": "Glyph of Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58628,
-      "name": "Glyph of Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58629,
-      "name": "Glyph of Death and Decay",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58631,
-      "name": "Glyph of Icy Touch",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58635,
-      "name": "Glyph of Unbreakable Armor",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58640,
-      "name": "Glyph of Blood Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58644,
-      "name": "Glyph of Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58647,
-      "name": "Glyph of Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58657,
-      "name": "Glyph of Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58669,
-      "name": "Glyph of Rune Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58671,
-      "name": "Glyph of Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58673,
-      "name": "Glyph of Bone Shield",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58675,
-      "name": "Glyph of Vampiric Blood",
-      "spellDamageType": 1
-    },
-    {
-      "id": 58676,
-      "name": "Glyph of Vampiric Blood",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58677,
-      "name": "Glyph of Death's Embrace",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58679,
-      "name": "Glyph of Death's Embrace",
-      "spellDamageType": 1
-    },
-    {
-      "id": 58680,
-      "name": "Glyph of Horn of Winter",
-      "spellDamageType": 0
-    },
-    {
-      "id": 58686,
-      "name": "Glyph of the Ghoul",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59052,
-      "name": "Freezing Fog",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59057,
-      "name": "Rime",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59131,
-      "name": "Icy Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 59133,
-      "name": "Plague Strike",
-      "spellDamageType": 2
-    },
-    {
-      "id": 59134,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59307,
-      "name": "Glyph of Corpse Explosion",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59309,
-      "name": "Glyph of Pestilence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59327,
-      "name": "Glyph of Rune Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59332,
-      "name": "Glyph of Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59336,
-      "name": "Glyph of Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59539,
-      "name": "Shadow Resistance",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59545,
-      "name": "Gift of the Naaru",
-      "spellDamageType": 2
-    },
-    {
-      "id": 59754,
-      "name": "Rune Tap",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59879,
-      "name": "Blood Plague",
-      "spellDamageType": 0
-    },
-    {
-      "id": 59913,
-      "name": "Swift Hand of Justice",
-      "spellDamageType": 1
-    },
-    {
-      "id": 59921,
-      "name": "Frost Fever",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60130,
-      "name": "Increased Plague Strike Crit",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60132,
-      "name": "Oblit/Scourge Strike Runic Power Up",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60133,
-      "name": "Icebound Duration Increase",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60134,
-      "name": "Scourge/Oblit Crit Up",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60186,
-      "name": "Plague Strike",
-      "spellDamageType": 3
-    },
-    {
-      "id": 60200,
-      "name": "Glyph of Raise Dead",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60675,
-      "name": "Savage Gladiator's Death Knight Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60685,
-      "name": "Hateful Gladiator's Death Knight Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60686,
-      "name": "Deadly Gladiator's Death Knight Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60687,
-      "name": "LK Arena 4 Gladiator's Death Knight Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60688,
-      "name": "LK Arena 5 Gladiator's Death Knight Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60690,
-      "name": "LK Arena 6 Gladiator's Death Knight Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60825,
-      "name": "Copy of Increased Blood Strike Damage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60826,
-      "name": "Sigil of Haunted Dreams",
-      "spellDamageType": 0
-    },
-    {
-      "id": 60837,
-      "name": "Sigil of Awareness",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61077,
-      "name": "Chains of Ice",
-      "spellDamageType": 1
-    },
-    {
-      "id": 61094,
-      "name": "Death Grip",
-      "spellDamageType": 1
-    },
-    {
-      "id": 61154,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61155,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61156,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61157,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61158,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61250,
-      "name": "Strangulate Cooldown Reduction",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61257,
-      "name": "Runic Power Back on Snare/Root",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61261,
-      "name": "Frost Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61274,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61275,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61276,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61277,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61278,
-      "name": "Blood Gorged",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61455,
-      "name": "Runic Focus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61777,
-      "name": "Summon Gargoyle",
-      "spellDamageType": 0
-    },
-    {
-      "id": 61895,
-      "name": "Blood-Caked Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 61999,
-      "name": "Raise Ally",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62036,
-      "name": "Rune Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 62142,
-      "name": "Improved Chains of Ice",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62147,
-      "name": "Icy Touch Defense Increase",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62259,
-      "name": "Glyph of Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62261,
-      "name": "Glyph of Death Grip",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62458,
-      "name": "Bonus Runic Power",
-      "spellDamageType": 1
-    },
-    {
-      "id": 62459,
-      "name": "Chains of Ice Frost Rune Refresh",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62900,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62901,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62902,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62903,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62904,
-      "name": "Death Coil",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62905,
-      "name": "Improved Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 62908,
-      "name": "Improved Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63330,
-      "name": "Glyph of Dancing Rune Weapon",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63331,
-      "name": "Glyph of Hungering Cold",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63332,
-      "name": "Glyph of Unholy Blight",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63333,
-      "name": "Glyph of Dark Death",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63334,
-      "name": "Glyph of Disease",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63335,
-      "name": "Glyph of Howling Blast",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63560,
-      "name": "Ghoul Frenzy",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63583,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63611,
-      "name": "Improved Blood Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 63622,
-      "name": "Improved Unholy Presence",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64735,
-      "name": "Item - Death Knight T8 Melee 2P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64736,
-      "name": "Item - Death Knight T8 Melee 4P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64744,
-      "name": "Item - Death Knight T8 Tank 2P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64745,
-      "name": "Item - Death Knight T8 Tank 4P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64855,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64856,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64858,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64859,
-      "name": "Blade Barrier",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64962,
-      "name": "Item - Death Knight T8 DPS Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 64964,
-      "name": "Item - Death Knight T8 Tank Relic",
-      "spellDamageType": 0
-    },
-    {
-      "id": 65010,
-      "name": "Spell Cost Reduction",
-      "spellDamageType": 0
-    },
-    {
-      "id": 65221,
-      "name": "Command",
-      "spellDamageType": 0
-    },
-    {
-      "id": 65661,
-      "name": "Threat of Thassarian",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66188,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66191,
-      "name": "Threat of Thassarian",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66192,
-      "name": "Threat of Thassarian",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66196,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66198,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66215,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66216,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66217,
-      "name": "Rune Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 66799,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66800,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66801,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66802,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66803,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66814,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66815,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66816,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66817,
-      "name": "Desolation",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66950,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66951,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66952,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66953,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66958,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66959,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66960,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66961,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66962,
-      "name": "Frost Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66972,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66973,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66974,
-      "name": "Obliterate",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66975,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66976,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66977,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66978,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66979,
-      "name": "Blood Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66988,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66989,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66990,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66991,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 66992,
-      "name": "Plague Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67115,
-      "name": "Item - Death Knight T9 Melee 2P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67118,
-      "name": "Item - Death Knight T9 Melee 4P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67119,
-      "name": "Item - Death Knight T9 Tank 2P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67120,
-      "name": "Item - Death Knight T9 Tank 4P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67381,
-      "name": "Item - Death Knight T9 Tank Relic (Rune Strike)",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67384,
-      "name": "Item - Death Knight T9 Melee Relic (Rune Strike)",
-      "spellDamageType": 0
-    },
-    {
-      "id": 67804,
-      "name": "Desecration",
-      "spellDamageType": 0
-    },
-    {
-      "id": 68766,
-      "name": "Desecration",
-      "spellDamageType": 0
-    },
-    {
-      "id": 69069,
-      "name": "Shield of Bones",
-      "spellDamageType": 0
-    },
-    {
-      "id": 69642,
-      "name": "Shield of Bones",
-      "spellDamageType": 1
-    },
-    {
-      "id": 69737,
-      "name": "CP Test Spell 2",
-      "spellDamageType": 0
-    },
-    {
-      "id": 69738,
-      "name": "CP Test Spell",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70204,
-      "name": "Shield of Bones",
-      "spellDamageType": 1
-    },
-    {
-      "id": 70207,
-      "name": "Shield of Bones",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70344,
-      "name": "Caught!",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70355,
-      "name": "Caught!",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70650,
-      "name": "Item - Death Knight T10 Tank 2P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70652,
-      "name": "Item - Death Knight T10 Tank 4P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70655,
-      "name": "Item - Death Knight T10 Melee 2P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70656,
-      "name": "Item - Death Knight T10 Melee 4P Bonus",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70657,
-      "name": "Advantage",
-      "spellDamageType": 0
-    },
-    {
-      "id": 70890,
-      "name": "Scourge Strike",
-      "spellDamageType": 1
-    },
-    {
-      "id": 71226,
-      "name": "Item - Death Knight T10 DPS Relic (Obliterate, Scourge Strike, Death Strike)",
-      "spellDamageType": 0
-    },
-    {
-      "id": 71228,
-      "name": "Item - Death Knight T10 Tank Relic (Runestrike)",
-      "spellDamageType": 0
-    },
-    {
-      "id": 71488,
-      "name": "Scourge Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 71489,
-      "name": "Death Strike",
-      "spellDamageType": 0
-    },
-    {
-      "id": 71879,
-      "name": "Necrotic Touch",
-      "spellDamageType": 1
-    },
-    {
-      "id": 73313,
-      "name": "Crimson Deathcharger",
       "spellDamageType": 0
     }
   ],

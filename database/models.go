@@ -670,16 +670,22 @@ type DbcItemRandomProperty struct {
 }
 
 type DbcItemSet struct {
-	ID                int32  `db:"id" json:"id"`
-	NameLang          string `db:"name_lang" json:"name_lang"`
-	RequiredSkill     int32  `db:"required_skill" json:"required_skill"`
-	RequiredSkillRank int32  `db:"required_skill_rank" json:"required_skill_rank"`
+	ID                int32   `db:"id" json:"id"`
+	NameLang          string  `db:"name_lang" json:"name_lang"`
+	RequiredSkill     int32   `db:"required_skill" json:"required_skill"`
+	RequiredSkillRank int32   `db:"required_skill_rank" json:"required_skill_rank"`
+	ItemIds           []int32 `db:"item_ids" json:"item_ids"`
 }
 
 type DbcItemSetBonu struct {
 	SetID     int32 `db:"set_id" json:"set_id"`
 	Threshold int32 `db:"threshold" json:"threshold"`
 	SpellID   int32 `db:"spell_id" json:"spell_id"`
+}
+
+type DbcItemSetItem struct {
+	SetID     int32 `db:"set_id" json:"set_id"`
+	ItemEntry int32 `db:"item_entry" json:"item_entry"`
 }
 
 type DbcSpellItemEnchantment struct {
@@ -1313,6 +1319,7 @@ type WorldItemTemplate struct {
 	OtherTeamEntry            int32       `db:"other_team_entry" json:"other_team_entry"`
 	ScriptName                pgtype.Text `db:"script_name" json:"script_name"`
 	Patch                     pgtype.Text `db:"patch" json:"patch"`
+	TooltipSetID              int32       `db:"tooltip_set_id" json:"tooltip_set_id"`
 }
 
 type WorldSpellArea struct {

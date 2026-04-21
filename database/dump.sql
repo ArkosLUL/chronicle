@@ -270,13 +270,19 @@ CREATE TABLE dbc_item_set (
     id integer NOT NULL,
     name_lang text DEFAULT ''::text NOT NULL,
     required_skill integer DEFAULT 0 NOT NULL,
-    required_skill_rank integer DEFAULT 0 NOT NULL
+    required_skill_rank integer DEFAULT 0 NOT NULL,
+    item_ids integer[] DEFAULT '{}'::integer[] NOT NULL
 );
 
 CREATE TABLE dbc_item_set_bonus (
     set_id integer NOT NULL,
     threshold integer NOT NULL,
     spell_id integer NOT NULL
+);
+
+CREATE TABLE dbc_item_set_item (
+    set_id integer NOT NULL,
+    item_entry integer NOT NULL
 );
 
 CREATE TABLE dbc_spell_item_enchantment (
@@ -905,7 +911,8 @@ CREATE TABLE world_item_template (
     extra_flags integer DEFAULT 0 NOT NULL,
     other_team_entry integer DEFAULT 0 NOT NULL,
     script_name text,
-    patch text
+    patch text,
+    tooltip_set_id integer DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE world_spell_area (
@@ -970,6 +977,9 @@ ALTER TABLE ONLY dbc_item_random_properties
 
 ALTER TABLE ONLY dbc_item_set_bonus
     ADD CONSTRAINT dbc_item_set_bonus_pkey PRIMARY KEY (set_id, threshold, spell_id);
+
+ALTER TABLE ONLY dbc_item_set_item
+    ADD CONSTRAINT dbc_item_set_item_pkey PRIMARY KEY (set_id, item_entry);
 
 ALTER TABLE ONLY dbc_item_set
     ADD CONSTRAINT dbc_item_set_pkey PRIMARY KEY (id);

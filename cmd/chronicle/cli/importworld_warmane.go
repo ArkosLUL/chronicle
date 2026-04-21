@@ -58,5 +58,9 @@ func importWorldWarmane(ctx context.Context, pool *pgxpool.Pool, inv *serpent.In
 		_, _ = fmt.Fprintf(inv.Stderr, "no WoW client path for warmane; skipping DBC import\n")
 	}
 
+	if err := fixupMultiTierSets(ctx, pool, inv); err != nil {
+		return fmt.Errorf("fixing up multi-tier sets: %w", err)
+	}
+
 	return nil
 }

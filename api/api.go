@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/gamedataapi"
 	"github.com/Emyrk/chronicle/api/guildapi"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
@@ -23,6 +24,7 @@ import (
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/go-chi/chi/v5/middleware"
 	context2 "github.com/gorilla/context"
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,6 +34,7 @@ type Options struct {
 	Logger           *slog.Logger
 	Storage          storage.ObjectStorage
 	Zed              *authz.Authz
+	Pool             *pgxpool.Pool
 	Chronicle        *chronicle.Chronicle
 	RiverQueue       *riverqueue.Queues
 	Bot              *chroniclebot.Bot
@@ -125,6 +128,7 @@ func (api *API) Routes() chi.Router {
 			r.Post("/share", api.CreateShare)
 		})
 		r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
+		r.Mount("/game-data", gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool).Routes())
 		r.Get("/share/{code}", api.GetShare)
 		r.Get("/site-config", api.AdminGetSiteConfig)
 

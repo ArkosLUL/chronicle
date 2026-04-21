@@ -46,6 +46,8 @@ import { GuildPage, GuildPageEditor, GuildRoster, GuildSettings } from "./pages/
 import { ArmoryPage } from "./pages/ArmoryPage"
 import { ArmorySearchPage } from "./pages/ArmorySearch"
 import { SimPage } from "./pages/Sim"
+import { GameDataLayout } from "./pages/GameData/GameDataPage"
+import { ItemsTab } from "./pages/GameData/ItemsTab"
 import { SpeedrunLeaderboard } from "./pages/Leaderboard/SpeedrunLeaderboard"
 import { Layout } from "./components/Layout/Layout"
 
@@ -112,6 +114,10 @@ function App() {
         <Route path="/g/:guildId/edit" element={<GuildPageEditor />} />
         <Route path="/g/:guildId/roster" element={<GuildRoster />} />
         <Route path="/g/:guildId/settings" element={<GuildSettings />} />
+        <Route path="/game-data" element={<GameDataLayout />}>
+          <Route index element={<Navigate to="/game-data/items" replace />} />
+          <Route path="items" element={<ItemsTab />} />
+        </Route>
         <Route path="/account" element={<AccountLayout />}>
           <Route index element={<Navigate to="/account/settings" replace />} />
           <Route path="settings" element={<ProfileSettings />} />

@@ -137,7 +137,7 @@ func ImportWorldCmd() *serpent.Command {
 		},
 	}
 
-	var dbURL, dataDir, wowDir string
+	var dbURL, dataDir, wowDir, server string
 	cmd.Options = serpent.OptionSet{
 		{
 			Name:        "db-url",
@@ -148,10 +148,17 @@ func ImportWorldCmd() *serpent.Command {
 			Value:       serpent.StringOf(&dbURL),
 		},
 		{
+			Name:        "server",
+			Description: "WoW server name. Used to auto-select --data-dir as ./importdata/world/<server>.",
+			Flag:        "server",
+			Env:         "SERVER",
+			Default:     "turtle",
+			Value:       serpent.StringOf(&server),
+		},
+		{
 			Name:        "data-dir",
-			Description: "Directory containing world data JSON files.",
+			Description: "Directory containing world data JSON files. Overrides --server auto-selection.",
 			Flag:        "data-dir",
-			Default:     "./importdata/world",
 			Value:       serpent.StringOf(&dataDir),
 		},
 		{
@@ -166,6 +173,10 @@ func ImportWorldCmd() *serpent.Command {
 
 	cmd.Handler = func(inv *serpent.Invocation) error {
 		ctx := inv.Context()
+
+		if dataDir == "" {
+			dataDir = filepath.Join(".", "importdata", "world", server)
+		}
 
 		detected, err := detectFiles(dataDir)
 		if err != nil {
@@ -214,17 +225,24 @@ func ImportWorldCmd() *serpent.Command {
 }
 
 func importWorldDetectCmd() *serpent.Command {
-	var dataDir string
+	var dataDir, server string
 	var rename bool
 	return &serpent.Command{
 		Use:   "detect",
 		Short: "Detect world data JSON files and optionally rename them",
 		Options: serpent.OptionSet{
 			{
+				Name:        "server",
+				Description: "WoW server name. Used to auto-select --data-dir as ./importdata/world/<server>.",
+				Flag:        "server",
+				Env:         "SERVER",
+				Default:     "turtle",
+				Value:       serpent.StringOf(&server),
+			},
+			{
 				Name:        "data-dir",
-				Description: "Directory containing world data JSON files.",
+				Description: "Directory containing world data JSON files. Overrides --server auto-selection.",
 				Flag:        "data-dir",
-				Default:     "./importdata/world",
 				Value:       serpent.StringOf(&dataDir),
 			},
 			{
@@ -236,6 +254,9 @@ func importWorldDetectCmd() *serpent.Command {
 			},
 		},
 		Handler: func(inv *serpent.Invocation) error {
+			if dataDir == "" {
+				dataDir = filepath.Join(".", "importdata", "world", server)
+			}
 			detected, err := detectFiles(dataDir)
 			if err != nil {
 				return fmt.Errorf("detecting files: %w", err)

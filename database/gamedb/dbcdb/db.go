@@ -418,6 +418,52 @@ func (w *WoWClient) ItemSubClass() (Table[dbdefs.Ent_ItemSubClass], error) {
 
 	return WrapTable[dbdefs.Ent_ItemSubClass](table), nil
 }
+
+func (w *WoWClient) ItemSparse() (Table[dbdefs.Ent_ItemSparse], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemNameDescription.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemSparse", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemSparse](table), nil
+}
+
+func (w *WoWClient) ItemNameDescription() (Table[dbdefs.Ent_ItemNameDescription], error) {
+	data, err := w.ReadFile("DBFilesClient\\ItemNameDescription.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("ItemNameDescription", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_ItemNameDescription](table), nil
+}
+
+func (w *WoWClient) Item() (Table[dbdefs.Ent_Item], error) {
+	data, err := w.ReadFile("DBFilesClient\\Item.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("Item", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_Item](table), nil
+}
+
 func (w *WoWClient) ItemSet() (Table[dbdefs.Ent_ItemSet], error) {
 	data, err := w.ReadFile("DBFilesClient\\ItemSet.dbc")
 	if err != nil {

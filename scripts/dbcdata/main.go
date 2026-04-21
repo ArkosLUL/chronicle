@@ -100,6 +100,18 @@ func demo() *serpent.Command {
 				return fmt.Errorf("(demo) open wow client: %w", err)
 			}
 
+			si, err := wc.Item()
+			if err != nil {
+				return fmt.Errorf("read items: %w", err)
+			}
+			si.Range(func(cursor *dbdefs.Ent_Item) bool {
+				fmt.Println(cursor.ID)
+				return true
+			})
+
+			fmt.Println("s")
+			fmt.Println(si.Len())
+
 			spdb, err := wc.Spells()
 			if err != nil {
 				return fmt.Errorf("read spells: %w", err)

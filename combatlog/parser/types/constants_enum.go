@@ -316,6 +316,8 @@ const (
 	HeroClassesWARLOCK HeroClasses = "WARLOCK"
 	// HeroClassesWARRIOR is a HeroClasses of type WARRIOR.
 	HeroClassesWARRIOR HeroClasses = "WARRIOR"
+	// HeroClassesDEATHKNIGHT is a HeroClasses of type DEATHKNIGHT.
+	HeroClassesDEATHKNIGHT HeroClasses = "DEATHKNIGHT"
 	// HeroClassesUNKNOWN is a HeroClasses of type UNKNOWN.
 	HeroClassesUNKNOWN HeroClasses = "UNKNOWN"
 )
@@ -335,26 +337,28 @@ func (x HeroClasses) IsValid() bool {
 }
 
 var _HeroClassesValue = map[string]HeroClasses{
-	"DRUID":   HeroClassesDRUID,
-	"druid":   HeroClassesDRUID,
-	"HUNTER":  HeroClassesHUNTER,
-	"hunter":  HeroClassesHUNTER,
-	"MAGE":    HeroClassesMAGE,
-	"mage":    HeroClassesMAGE,
-	"PALADIN": HeroClassesPALADIN,
-	"paladin": HeroClassesPALADIN,
-	"PRIEST":  HeroClassesPRIEST,
-	"priest":  HeroClassesPRIEST,
-	"ROGUE":   HeroClassesROGUE,
-	"rogue":   HeroClassesROGUE,
-	"SHAMAN":  HeroClassesSHAMAN,
-	"shaman":  HeroClassesSHAMAN,
-	"WARLOCK": HeroClassesWARLOCK,
-	"warlock": HeroClassesWARLOCK,
-	"WARRIOR": HeroClassesWARRIOR,
-	"warrior": HeroClassesWARRIOR,
-	"UNKNOWN": HeroClassesUNKNOWN,
-	"unknown": HeroClassesUNKNOWN,
+	"DRUID":       HeroClassesDRUID,
+	"druid":       HeroClassesDRUID,
+	"HUNTER":      HeroClassesHUNTER,
+	"hunter":      HeroClassesHUNTER,
+	"MAGE":        HeroClassesMAGE,
+	"mage":        HeroClassesMAGE,
+	"PALADIN":     HeroClassesPALADIN,
+	"paladin":     HeroClassesPALADIN,
+	"PRIEST":      HeroClassesPRIEST,
+	"priest":      HeroClassesPRIEST,
+	"ROGUE":       HeroClassesROGUE,
+	"rogue":       HeroClassesROGUE,
+	"SHAMAN":      HeroClassesSHAMAN,
+	"shaman":      HeroClassesSHAMAN,
+	"WARLOCK":     HeroClassesWARLOCK,
+	"warlock":     HeroClassesWARLOCK,
+	"WARRIOR":     HeroClassesWARRIOR,
+	"warrior":     HeroClassesWARRIOR,
+	"DEATHKNIGHT": HeroClassesDEATHKNIGHT,
+	"deathknight": HeroClassesDEATHKNIGHT,
+	"UNKNOWN":     HeroClassesUNKNOWN,
+	"unknown":     HeroClassesUNKNOWN,
 }
 
 // ParseHeroClasses attempts to convert a string to a HeroClasses.

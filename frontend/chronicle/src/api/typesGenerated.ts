@@ -1248,9 +1248,9 @@ export type WoWEventType = "aura" | "aura_cast" | "cast" | "combatant_info" | "d
 export const WoWEventTypes: WoWEventType[] = ["aura", "aura_cast", "cast", "combatant_info", "damage", "dispel", "extra_attack", "heal", "resource_change", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
 
 // From types/constants.go
-export type WoWHeroClasses = "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";
+export type WoWHeroClasses = "DEATHKNIGHT" | "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";
 
-export const WoWHeroClasseses: WoWHeroClasses[] = ["DRUID", "HUNTER", "MAGE", "PALADIN", "PRIEST", "ROGUE", "SHAMAN", "UNKNOWN", "WARLOCK", "WARRIOR"];
+export const WoWHeroClasseses: WoWHeroClasses[] = ["DEATHKNIGHT", "DRUID", "HUNTER", "MAGE", "PALADIN", "PRIEST", "ROGUE", "SHAMAN", "UNKNOWN", "WARLOCK", "WARRIOR"];
 
 // From types/constants.go
 export type WoWHeroGender = 3 | 2 | 0 | 1;

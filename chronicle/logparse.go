@@ -694,7 +694,7 @@ func (w *logParseInstanceBuilder) participate(ids ...guid.GUID) {
 				UnitGuid:   id,
 				Name:       playerData.Name,
 				Level:      int32(unitData.Level),
-				Class:      database.WowPlayableClass(playerData.HeroClass),
+				Class:      db2sdk.HeroClassToDB(playerData.HeroClass),
 				Race:       database.WowPlayableRace(playerData.Race),
 			})
 			continue
@@ -720,7 +720,7 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 					UnitGuid:   id,
 					Name:       playerData.Name,
 					Level:      -1,
-					Class:      database.WowPlayableClass(playerData.HeroClass),
+					Class:      db2sdk.HeroClassToDB(playerData.HeroClass),
 					Race:       database.WowPlayableRace(playerData.Race),
 				})
 				continue

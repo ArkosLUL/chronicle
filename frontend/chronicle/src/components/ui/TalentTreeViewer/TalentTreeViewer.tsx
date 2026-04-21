@@ -77,6 +77,7 @@ const CLASS_NAMES: Record<number, string> = {
   3: "Hunter",
   4: "Rogue",
   5: "Priest",
+  6: "Death Knight",
   7: "Shaman",
   8: "Mage",
   9: "Warlock",
@@ -90,6 +91,7 @@ const CLASS_COLORS: Record<number, string> = {
   3: "#AAD372",  // Hunter
   4: "#FFF468",  // Rogue
   5: "#FFFFFF",  // Priest
+  6: "#C41E3A",  // Death Knight
   7: "#0070DD",  // Shaman
   8: "#3FC7EB",  // Mage
   9: "#8788EE",  // Warlock

@@ -144,7 +144,7 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 	case "_CAST_FAILED":
 		return p.suffixCastFailed(ts, base, spell, m)
 	case "_SUMMON", "_CREATE":
-		return p.suffixSummon(ts, base, m)
+		return p.suffixSummon(ts, spell, base, m)
 	case "_INSTAKILL":
 		return p.suffixInstakill(ts, base, m)
 	default:
@@ -587,16 +587,44 @@ func (p *Parser) suffixCastFailed(ts time.Time, base baseParams, spell *spellInf
 }
 
 // suffixSummon handles _SUMMON and _CREATE.
-func (p *Parser) suffixSummon(ts time.Time, base baseParams, m *Matched) ([]messages.Message, error) {
+func (p *Parser) suffixSummon(ts time.Time, spell *spellInfo, base baseParams, m *Matched) ([]messages.Message, error) {
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
 
-	return set(&messages.Create{
-		MessageBase: messages.Base(ts),
-		Caster:      base.sourceGUID,
-		Created:     base.destName,
-	})
+	if base.destGUID == 0 || base.sourceGUID == 0 {
+		return []messages.Message{}, nil
+	}
+
+	ty := types.UnitTypeUnknown
+	if base.destGUID.IsPlayer() {
+		ty = types.UnitTypePlayer
+	} else if base.destGUID.IsObject() {
+		ty = types.UnitTypeObject
+	} else if base.destGUID.IsAnyCreature() {
+		ty = types.UnitTypeCreature
+	}
+
+	var spellData *chrondbc.Spell
+	if spell != nil {
+		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID))
+	}
+
+	return set(
+		&messages.NewOwner{
+			MessageBase: messages.Base(ts),
+			Target:      base.destGUID,
+			NewOwner:    base.sourceGUID,
+		},
+		&messages.UnitClassificationEvent{
+			MessageBase: messages.Base(ts),
+			Target:      base.destGUID,
+			UnitType:    ty,
+			Affiliation: types.AffiliationUnknown,
+			Owner:       ptr.Ref(base.sourceGUID),
+			Controller:  nil,
+			Spell:       spellData,
+		})
 }
 
 // suffixInstakill handles _INSTAKILL.

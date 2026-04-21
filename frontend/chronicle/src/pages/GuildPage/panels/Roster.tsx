@@ -28,6 +28,7 @@ const CLASS_COLORS: Record<string, string> = {
   Warlock: "text-class-warlock",
   Paladin: "text-class-paladin",
   Shaman: "text-class-shaman",
+  Deathknight: "text-class-deathknight",
   Enemy: "text-class-enemy",
   Creature: "text-class-creature",
 };

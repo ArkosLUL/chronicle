@@ -32,7 +32,7 @@ func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB, reg *reg
 	return &Synthetic{
 		logger:       logger,
 		wowDB:        wowDB,
-		unitInfo:     newUnitInfo(ctx, wowDB, names),
+		unitInfo:     newUnitInfo(ctx, logger, wowDB, names, wowDB),
 		zoneDetector: zonedetector.New(reg),
 	}
 }

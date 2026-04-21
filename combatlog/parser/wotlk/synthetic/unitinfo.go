@@ -2,6 +2,7 @@ package synthetic
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -10,6 +11,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 const (
@@ -17,23 +19,150 @@ const (
 )
 
 type unitInfo struct {
-	ctx       context.Context
-	lastEmit  map[guid.GUID]time.Time
-	creatures gamedb.CreatureFetcher
-	names     NameResolver
+	ctx           context.Context
+	logger        *slog.Logger
+	lastEmit      map[guid.GUID]time.Time
+	creatures     gamedb.CreatureFetcher
+	names         NameResolver
+	spells        gamedb.SpellFetcher
+	detectedClass map[guid.GUID]types.HeroClasses
 }
 
-func newUnitInfo(ctx context.Context, fetcher gamedb.CreatureFetcher, names NameResolver) *unitInfo {
+func newUnitInfo(ctx context.Context, logger *slog.Logger, fetcher gamedb.CreatureFetcher, names NameResolver, spells gamedb.SpellFetcher) *unitInfo {
 	return &unitInfo{
-		ctx:       ctx,
-		lastEmit:  make(map[guid.GUID]time.Time),
-		creatures: fetcher,
-		names:     names,
+		ctx:           ctx,
+		logger:        logger,
+		lastEmit:      make(map[guid.GUID]time.Time),
+		creatures:     fetcher,
+		names:         names,
+		spells:        spells,
+		detectedClass: make(map[guid.GUID]types.HeroClasses),
 	}
 }
 
+// spellClassSetToHeroClass converts a DBC SpellClassSet to a HeroClasses enum value.
+func spellClassSetToHeroClass(cs chrondbc.SpellClassSet) types.HeroClasses {
+	switch cs {
+	case chrondbc.SpellClassSetMage:
+		return types.HeroClassesMAGE
+	case chrondbc.SpellClassSetWarrior:
+		return types.HeroClassesWARRIOR
+	case chrondbc.SpellClassSetWarlock:
+		return types.HeroClassesWARLOCK
+	case chrondbc.SpellClassSetPriest:
+		return types.HeroClassesPRIEST
+	case chrondbc.SpellClassSetDruid:
+		return types.HeroClassesDRUID
+	case chrondbc.SpellClassSetRogue:
+		return types.HeroClassesROGUE
+	case chrondbc.SpellClassSetHunter:
+		return types.HeroClassesHUNTER
+	case chrondbc.SpellClassSetPaladin:
+		return types.HeroClassesPALADIN
+	case chrondbc.SpellClassSetShaman:
+		return types.HeroClassesSHAMAN
+	case chrondbc.SpellClassSetDeathKnight:
+		return types.HeroClassesDEATHKNIGHT
+	default:
+		return types.HeroClassesUNKNOWN
+	}
+}
+
+// detectClassFromSpell attempts to determine the class of a player from the spell
+// they cast. If the spell's SpellClassSet is class-specific (non-generic), it maps
+// to a HeroClasses value and caches it. Returns true if a new class was detected.
+func (z *unitInfo) detectClassFromSpell(sourceGUID guid.GUID, spell *chrondbc.Spell) bool {
+	if _, ok := z.detectedClass[sourceGUID]; ok {
+		return false // already detected
+	}
+	if spell == nil {
+		return false
+	}
+	heroClass := spellClassSetToHeroClass(spell.SpellClassSet)
+	if heroClass == types.HeroClassesUNKNOWN {
+		return false
+	}
+	z.detectedClass[sourceGUID] = heroClass
+
+	name := "unknown"
+	if n, ok := z.names.Get(sourceGUID); ok {
+		name = n
+	}
+	z.logger.Info("detected player class from spell",
+		slog.String("player", name),
+		slog.String("guid", sourceGUID.String()),
+		slog.String("class", string(heroClass)),
+		slog.Int("spell_id", int(spell.ID)),
+		slog.String("spell_name", spell.String()),
+		slog.String("spell_class_set", spell.SpellClassSet.String()),
+	)
+	return true
+}
+
+// extractSpellSource returns the caster GUID and spell data from a message.
+// Only SpellGo events are used for class detection — they represent confirmed
+// spell casts and avoid false positives from reflected/proc damage or auras
+// applied by other sources.
+func extractSpellSource(msg messages.Message) (guid.GUID, *chrondbc.Spell) {
+	switch m := msg.(type) {
+	case *messages.SpellGo:
+		if m.Caster.IsPlayer() {
+			return m.Caster, m.SpellData
+		}
+	}
+	return 0, nil
+}
+
+func (z *unitInfo) classForPlayer(g guid.GUID) types.HeroClasses {
+	if c, ok := z.detectedClass[g]; ok {
+		return c
+	}
+	return types.HeroClassesUNKNOWN
+}
+
 func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
+	// First pass: detect classes from spell events before emitting combatant messages.
+	// This way, if a player's first appearance includes a spell, we can immediately
+	// enrich the combatant info with the detected class.
+	var newlyDetected map[guid.GUID]struct{}
+	for _, msg := range msgs {
+		sourceGUID, spell := extractSpellSource(msg)
+		if sourceGUID != 0 && spell != nil && z.detectClassFromSpell(sourceGUID, spell) {
+			if newlyDetected == nil {
+				newlyDetected = make(map[guid.GUID]struct{})
+			}
+			newlyDetected[sourceGUID] = struct{}{}
+		}
+	}
+
+	// Re-emit combatant info for players whose class was just detected, even if
+	// they are still within the 10-minute cooldown window. This ensures downstream
+	// consumers receive the enriched class data promptly.
 	var add []messages.Message
+	if len(newlyDetected) > 0 {
+		for g := range newlyDetected {
+			// Only re-emit if already emitted once (i.e. within cooldown).
+			if _, emittedBefore := z.lastEmit[g]; emittedBefore {
+				name, ok := z.names.Get(g)
+				if !ok {
+					continue
+				}
+				ts := msgs[0].Date()
+				add = append(add, &messages.Combatant{
+					MessageBase: messages.Base(ts),
+					Combatant: combatant.Combatant{
+						Name:      name,
+						Guid:      g,
+						Seen:      ts,
+						HeroClass: z.classForPlayer(g),
+						Gender:    types.HeroGenderUnknown,
+						Race:      types.HeroRacesUnknown,
+					},
+				})
+			}
+		}
+	}
+
 	for _, msg := range msgs {
 		for _, c := range msg.Affects() {
 			if !z.check(c, msg.Date()) {
@@ -51,7 +180,7 @@ func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
 						Name:       name,
 						Guid:       c,
 						Seen:       msg.Date(),
-						HeroClass:  types.HeroClassesUNKNOWN,
+						HeroClass:  z.classForPlayer(c),
 						Gender:     types.HeroGenderUnknown,
 						Race:       types.HeroRacesUnknown,
 						PetName:    "",

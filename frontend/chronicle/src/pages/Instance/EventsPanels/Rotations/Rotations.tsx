@@ -211,6 +211,7 @@ const CLASS_COLORS: Record<string, string> = {
   MAGE: "var(--color-class-mage)",
   WARLOCK: "var(--color-class-warlock)",
   DRUID: "var(--color-class-druid)",
+  DEATHKNIGHT: "var(--color-class-deathknight)",
   UNKNOWN: "var(--color-class-unknown)",
 };
 
@@ -225,6 +226,7 @@ const CLASS_ORDER: Record<string, number> = {
   MAGE: 6,
   WARLOCK: 7,
   PRIEST: 8,
+  DEATHKNIGHT: 9,
 };
 
 // ── RotationsContent ──────────────────────────────────────────

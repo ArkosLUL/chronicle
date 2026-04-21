@@ -19,6 +19,7 @@ const CLASS_NAMES: Record<number, string> = {
   9: "Hunter",
   10: "Paladin",
   11: "Shaman",
+  15: "Death Knight",
 };
 
 function formatDuration(ms: number): string {

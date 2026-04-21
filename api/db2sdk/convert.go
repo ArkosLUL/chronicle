@@ -226,7 +226,9 @@ var dbClassLookup = make(map[string]database.WowPlayableClass)
 var dbRaceLookup = make(map[string]database.WowPlayableRace)
 
 func HeroClass(class database.WowPlayableClass) types.HeroClasses {
-	cl, err := types.ParseHeroClasses(string(class))
+	// Database uses DEATH_KNIGHT but HeroClasses enum uses DEATHKNIGHT.
+	s := strings.ReplaceAll(string(class), "_", "")
+	cl, err := types.ParseHeroClasses(s)
 	if err != nil {
 		return types.HeroClassesUNKNOWN
 	}
@@ -234,6 +236,10 @@ func HeroClass(class database.WowPlayableClass) types.HeroClasses {
 }
 
 func HeroClassToDB(class types.HeroClasses) database.WowPlayableClass {
+	// HeroClasses uses DEATHKNIGHT, DB uses DEATH_KNIGHT.
+	if class == types.HeroClassesDEATHKNIGHT {
+		return database.WowPlayableClassDEATHKNIGHT
+	}
 	f, ok := dbClassLookup[strings.ToLower(class.String())]
 	if !ok {
 		return database.WowPlayableClassUNKNOWN

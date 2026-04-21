@@ -1028,7 +1028,7 @@ function EncounterDetail({
   // Class display order (roughly by armor type / role)
   const CLASS_ORDER = [
     "WARRIOR", "ROGUE", "HUNTER", 
-    "MAGE", "WARLOCK", 
+    "MAGE", "WARLOCK", "DEATHKNIGHT", 
     "PRIEST", "DRUID", "SHAMAN", "PALADIN",
     "UNKNOWN"
   ];

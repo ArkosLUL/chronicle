@@ -56,3 +56,6 @@ FROM combined c
 -- name: GetItemTemplatesByEntries :many
 SELECT * FROM world_item_template WHERE entry = ANY(@entries::int[]);
 
+-- name: GetCreatureTemplatesByEntries :many
+SELECT * FROM world_creature_template WHERE entry = ANY(@entries::int[]);
+

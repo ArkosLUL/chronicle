@@ -4920,6 +4920,66 @@ func (q *sqlQuerier) InsertStampedYoutubeVideo(ctx context.Context, arg InsertSt
 	return err
 }
 
+const getCreatureTemplatesByEntries = `-- name: GetCreatureTemplatesByEntries :many
+SELECT entry, display_id1, display_id2, display_id3, display_id4, mount_display_id, name, subname, level_min, level_max, health_min, health_max, mana_min, mana_max, armor, dmg_min, dmg_max, dmg_school, attack_power, dmg_multiplier, base_attack_time, ranged_attack_time, unit_class, unit_flags, ranged_dmg_min, ranged_dmg_max, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, mechanic_immune_mask, school_immune_mask, immunity_flags FROM world_creature_template WHERE entry = ANY($1::int[])
+`
+
+func (q *sqlQuerier) GetCreatureTemplatesByEntries(ctx context.Context, entries []int32) ([]WorldCreatureTemplate, error) {
+	rows, err := q.db.Query(ctx, getCreatureTemplatesByEntries, entries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorldCreatureTemplate
+	for rows.Next() {
+		var i WorldCreatureTemplate
+		if err := rows.Scan(
+			&i.Entry,
+			&i.DisplayId1,
+			&i.DisplayId2,
+			&i.DisplayId3,
+			&i.DisplayId4,
+			&i.MountDisplayID,
+			&i.Name,
+			&i.Subname,
+			&i.LevelMin,
+			&i.LevelMax,
+			&i.HealthMin,
+			&i.HealthMax,
+			&i.ManaMin,
+			&i.ManaMax,
+			&i.Armor,
+			&i.DmgMin,
+			&i.DmgMax,
+			&i.DmgSchool,
+			&i.AttackPower,
+			&i.DmgMultiplier,
+			&i.BaseAttackTime,
+			&i.RangedAttackTime,
+			&i.UnitClass,
+			&i.UnitFlags,
+			&i.RangedDmgMin,
+			&i.RangedDmgMax,
+			&i.HolyRes,
+			&i.FireRes,
+			&i.NatureRes,
+			&i.FrostRes,
+			&i.ShadowRes,
+			&i.ArcaneRes,
+			&i.MechanicImmuneMask,
+			&i.SchoolImmuneMask,
+			&i.ImmunityFlags,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDBCItemDisplayInfoByID = `-- name: GetDBCItemDisplayInfoByID :one
 SELECT id, model_name, model_texture, geoset_group, flags, spell_visual_id, helmet_geoset_vis, texture, item_visual, particle_color_id, attachment_geoset_group, item_ranged_display_info_id, model_material_resources_id, model_resources_id, model_type_1, override_swoosh_sound_kit_id, sheathe_transform_matrix_id, sheathed_spell_visual_kit_id, state_spell_visual_kit_id, unsheathed_spell_visual_kit_id, inventory_icon, group_sound_index, ground_model, item_size, helmet_geoset_vis_id FROM dbc_item_display_info WHERE id = $1
 `
@@ -5054,7 +5114,7 @@ func (q *sqlQuerier) GetItemSetItems(ctx context.Context, setID int32) ([]DbcIte
 }
 
 const getItemTemplateByEntry = `-- name: GetItemTemplateByEntry :one
-SELECT entry, class, subclass, name, description, display_id, quality, flags, buy_count, buy_price, sell_price, inventory_type, allowable_class, allowable_race, item_level, required_level, required_skill, required_skill_rank, required_spell, required_honor_rank, required_city_rank, required_reputation_faction, required_reputation_rank, max_count, stackable, container_slots, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, delay, range_mod, ammo_type, dmg_min1, dmg_max1, dmg_type1, dmg_min2, dmg_max2, dmg_type2, dmg_min3, dmg_max3, dmg_type3, dmg_min4, dmg_max4, dmg_type4, dmg_min5, dmg_max5, dmg_type5, block, armor, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, spellid_1, spelltrigger_1, spellcharges_1, spellppmrate_1, spellcooldown_1, spellcategory_1, spellcategorycooldown_1, spellid_2, spelltrigger_2, spellcharges_2, spellppmrate_2, spellcooldown_2, spellcategory_2, spellcategorycooldown_2, spellid_3, spelltrigger_3, spellcharges_3, spellppmrate_3, spellcooldown_3, spellcategory_3, spellcategorycooldown_3, spellid_4, spelltrigger_4, spellcharges_4, spellppmrate_4, spellcooldown_4, spellcategory_4, spellcategorycooldown_4, spellid_5, spelltrigger_5, spellcharges_5, spellppmrate_5, spellcooldown_5, spellcategory_5, spellcategorycooldown_5, bonding, page_text, page_language, page_material, start_quest, lock_id, material, sheath, random_property, set_id, max_durability, area_bound, map_bound, duration, bag_family, disenchant_id, food_type, min_money_loot, max_money_loot, wrapped_gift, extra_flags, other_team_entry, script_name, patch, tooltip_set_id FROM world_item_template WHERE entry = $1
+SELECT entry, class, subclass, name, description, display_id, quality, flags, buy_count, buy_price, sell_price, inventory_type, allowable_class, allowable_race, item_level, required_level, required_skill, required_skill_rank, required_spell, required_honor_rank, required_city_rank, required_reputation_faction, required_reputation_rank, max_count, stackable, container_slots, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, delay, range_mod, ammo_type, dmg_min1, dmg_max1, dmg_type1, dmg_min2, dmg_max2, dmg_type2, dmg_min3, dmg_max3, dmg_type3, dmg_min4, dmg_max4, dmg_type4, dmg_min5, dmg_max5, dmg_type5, block, armor, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, spellid_1, spelltrigger_1, spellcharges_1, spellppmrate_1, spellcooldown_1, spellcategory_1, spellcategorycooldown_1, spellid_2, spelltrigger_2, spellcharges_2, spellppmrate_2, spellcooldown_2, spellcategory_2, spellcategorycooldown_2, spellid_3, spelltrigger_3, spellcharges_3, spellppmrate_3, spellcooldown_3, spellcategory_3, spellcategorycooldown_3, spellid_4, spelltrigger_4, spellcharges_4, spellppmrate_4, spellcooldown_4, spellcategory_4, spellcategorycooldown_4, spellid_5, spelltrigger_5, spellcharges_5, spellppmrate_5, spellcooldown_5, spellcategory_5, spellcategorycooldown_5, bonding, page_text, page_language, page_material, start_quest, lock_id, material, sheath, random_property, set_id, max_durability, area_bound, map_bound, duration, bag_family, disenchant_id, food_type, min_money_loot, max_money_loot, wrapped_gift, extra_flags, other_team_entry, script_name, patch, tooltip_set_id, random_suffix, totem_category, socket_color_1, socket_content_1, socket_color_2, socket_content_2, socket_color_3, socket_content_3, socket_bonus, gem_properties, required_disenchant_skill, armor_damage_modifier, scaling_stat_distribution, scaling_stat_value, item_limit_category, holiday_id FROM world_item_template WHERE entry = $1
 `
 
 func (q *sqlQuerier) GetItemTemplateByEntry(ctx context.Context, entry int32) (WorldItemTemplate, error) {
@@ -5193,6 +5253,22 @@ func (q *sqlQuerier) GetItemTemplateByEntry(ctx context.Context, entry int32) (W
 		&i.ScriptName,
 		&i.Patch,
 		&i.TooltipSetID,
+		&i.RandomSuffix,
+		&i.TotemCategory,
+		&i.SocketColor1,
+		&i.SocketContent1,
+		&i.SocketColor2,
+		&i.SocketContent2,
+		&i.SocketColor3,
+		&i.SocketContent3,
+		&i.SocketBonus,
+		&i.GemProperties,
+		&i.RequiredDisenchantSkill,
+		&i.ArmorDamageModifier,
+		&i.ScalingStatDistribution,
+		&i.ScalingStatValue,
+		&i.ItemLimitCategory,
+		&i.HolidayID,
 	)
 	return i, err
 }
@@ -5264,7 +5340,7 @@ func (q *sqlQuerier) GetItemTemplateMetadataBatch(ctx context.Context, arg GetIt
 }
 
 const getItemTemplatesByEntries = `-- name: GetItemTemplatesByEntries :many
-SELECT entry, class, subclass, name, description, display_id, quality, flags, buy_count, buy_price, sell_price, inventory_type, allowable_class, allowable_race, item_level, required_level, required_skill, required_skill_rank, required_spell, required_honor_rank, required_city_rank, required_reputation_faction, required_reputation_rank, max_count, stackable, container_slots, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, delay, range_mod, ammo_type, dmg_min1, dmg_max1, dmg_type1, dmg_min2, dmg_max2, dmg_type2, dmg_min3, dmg_max3, dmg_type3, dmg_min4, dmg_max4, dmg_type4, dmg_min5, dmg_max5, dmg_type5, block, armor, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, spellid_1, spelltrigger_1, spellcharges_1, spellppmrate_1, spellcooldown_1, spellcategory_1, spellcategorycooldown_1, spellid_2, spelltrigger_2, spellcharges_2, spellppmrate_2, spellcooldown_2, spellcategory_2, spellcategorycooldown_2, spellid_3, spelltrigger_3, spellcharges_3, spellppmrate_3, spellcooldown_3, spellcategory_3, spellcategorycooldown_3, spellid_4, spelltrigger_4, spellcharges_4, spellppmrate_4, spellcooldown_4, spellcategory_4, spellcategorycooldown_4, spellid_5, spelltrigger_5, spellcharges_5, spellppmrate_5, spellcooldown_5, spellcategory_5, spellcategorycooldown_5, bonding, page_text, page_language, page_material, start_quest, lock_id, material, sheath, random_property, set_id, max_durability, area_bound, map_bound, duration, bag_family, disenchant_id, food_type, min_money_loot, max_money_loot, wrapped_gift, extra_flags, other_team_entry, script_name, patch, tooltip_set_id FROM world_item_template WHERE entry = ANY($1::int[])
+SELECT entry, class, subclass, name, description, display_id, quality, flags, buy_count, buy_price, sell_price, inventory_type, allowable_class, allowable_race, item_level, required_level, required_skill, required_skill_rank, required_spell, required_honor_rank, required_city_rank, required_reputation_faction, required_reputation_rank, max_count, stackable, container_slots, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, delay, range_mod, ammo_type, dmg_min1, dmg_max1, dmg_type1, dmg_min2, dmg_max2, dmg_type2, dmg_min3, dmg_max3, dmg_type3, dmg_min4, dmg_max4, dmg_type4, dmg_min5, dmg_max5, dmg_type5, block, armor, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, spellid_1, spelltrigger_1, spellcharges_1, spellppmrate_1, spellcooldown_1, spellcategory_1, spellcategorycooldown_1, spellid_2, spelltrigger_2, spellcharges_2, spellppmrate_2, spellcooldown_2, spellcategory_2, spellcategorycooldown_2, spellid_3, spelltrigger_3, spellcharges_3, spellppmrate_3, spellcooldown_3, spellcategory_3, spellcategorycooldown_3, spellid_4, spelltrigger_4, spellcharges_4, spellppmrate_4, spellcooldown_4, spellcategory_4, spellcategorycooldown_4, spellid_5, spelltrigger_5, spellcharges_5, spellppmrate_5, spellcooldown_5, spellcategory_5, spellcategorycooldown_5, bonding, page_text, page_language, page_material, start_quest, lock_id, material, sheath, random_property, set_id, max_durability, area_bound, map_bound, duration, bag_family, disenchant_id, food_type, min_money_loot, max_money_loot, wrapped_gift, extra_flags, other_team_entry, script_name, patch, tooltip_set_id, random_suffix, totem_category, socket_color_1, socket_content_1, socket_color_2, socket_content_2, socket_color_3, socket_content_3, socket_bonus, gem_properties, required_disenchant_skill, armor_damage_modifier, scaling_stat_distribution, scaling_stat_value, item_limit_category, holiday_id FROM world_item_template WHERE entry = ANY($1::int[])
 `
 
 func (q *sqlQuerier) GetItemTemplatesByEntries(ctx context.Context, entries []int32) ([]WorldItemTemplate, error) {
@@ -5409,6 +5485,22 @@ func (q *sqlQuerier) GetItemTemplatesByEntries(ctx context.Context, entries []in
 			&i.ScriptName,
 			&i.Patch,
 			&i.TooltipSetID,
+			&i.RandomSuffix,
+			&i.TotemCategory,
+			&i.SocketColor1,
+			&i.SocketContent1,
+			&i.SocketColor2,
+			&i.SocketContent2,
+			&i.SocketColor3,
+			&i.SocketContent3,
+			&i.SocketBonus,
+			&i.GemProperties,
+			&i.RequiredDisenchantSkill,
+			&i.ArmorDamageModifier,
+			&i.ScalingStatDistribution,
+			&i.ScalingStatValue,
+			&i.ItemLimitCategory,
+			&i.HolidayID,
 		); err != nil {
 			return nil, err
 		}

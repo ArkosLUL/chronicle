@@ -68,22 +68,34 @@ func testParseWDB(t *testing.T, path string) {
 	t.Logf("parsed %d records", len(records))
 
 	for i, rec := range records {
-		if i >= 10 {
-			t.Logf("... and %d more", len(records)-10)
-			break
-		}
-
 		switch header.Signature {
 		case wdb.SigItem:
 			item, err := wdb.ParseItem(rec)
 			if err != nil {
-				t.Logf("  entry=%d PARSE ERROR: %v", rec.EntryID, err)
+				t.Errorf("  entry=%d PARSE ERROR: %v", rec.EntryID, err)
 				continue
 			}
-			t.Logf("  [%d] %q  class=%d subclass=%d quality=%d ilvl=%d reqLvl=%d armor=%d",
-				item.Entry, item.Name, item.Class, item.SubClass, item.Quality, item.ItemLevel, item.RequiredLevel, item.Armor)
+			if i < 10 {
+				t.Logf("  [%d] %q  class=%d subclass=%d quality=%d ilvl=%d reqLvl=%d armor=%d",
+					item.Entry, item.Name, item.Class, item.SubClass, item.Quality, item.ItemLevel, item.RequiredLevel, item.Armor)
+			}
+		case wdb.SigCreature:
+			c, err := wdb.ParseCreature(rec)
+			if err != nil {
+				t.Errorf("  entry=%d PARSE ERROR: %v", rec.EntryID, err)
+				continue
+			}
+			if i < 10 {
+				t.Logf("  [%d] %q sub=%q type=%d rank=%d displayIDs=[%d,%d,%d,%d]",
+					c.Entry, c.Name, c.SubName, c.Type, c.Rank, c.DisplayID[0], c.DisplayID[1], c.DisplayID[2], c.DisplayID[3])
+			}
 		default:
-			t.Logf("  entry=%d dataLen=%d", rec.EntryID, len(rec.Data))
+			if i < 10 {
+				t.Logf("  entry=%d dataLen=%d", rec.EntryID, len(rec.Data))
+			}
+		}
+		if i == 10 && len(records) > 10 {
+			t.Logf("... and %d more", len(records)-10)
 		}
 	}
 }

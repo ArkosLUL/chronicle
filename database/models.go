@@ -1154,8 +1154,8 @@ type WorldCreatureTemplate struct {
 	ManaMin            int32       `db:"mana_min" json:"mana_min"`
 	ManaMax            int32       `db:"mana_max" json:"mana_max"`
 	Armor              int32       `db:"armor" json:"armor"`
-	DmgMin             int32       `db:"dmg_min" json:"dmg_min"`
-	DmgMax             int32       `db:"dmg_max" json:"dmg_max"`
+	DmgMin             float64     `db:"dmg_min" json:"dmg_min"`
+	DmgMax             float64     `db:"dmg_max" json:"dmg_max"`
 	DmgSchool          int32       `db:"dmg_school" json:"dmg_school"`
 	AttackPower        int32       `db:"attack_power" json:"attack_power"`
 	DmgMultiplier      float64     `db:"dmg_multiplier" json:"dmg_multiplier"`
@@ -1320,6 +1320,22 @@ type WorldItemTemplate struct {
 	ScriptName                pgtype.Text `db:"script_name" json:"script_name"`
 	Patch                     pgtype.Text `db:"patch" json:"patch"`
 	TooltipSetID              int32       `db:"tooltip_set_id" json:"tooltip_set_id"`
+	RandomSuffix              int32       `db:"random_suffix" json:"random_suffix"`
+	TotemCategory             int32       `db:"totem_category" json:"totem_category"`
+	SocketColor1              int32       `db:"socket_color_1" json:"socket_color_1"`
+	SocketContent1            int32       `db:"socket_content_1" json:"socket_content_1"`
+	SocketColor2              int32       `db:"socket_color_2" json:"socket_color_2"`
+	SocketContent2            int32       `db:"socket_content_2" json:"socket_content_2"`
+	SocketColor3              int32       `db:"socket_color_3" json:"socket_color_3"`
+	SocketContent3            int32       `db:"socket_content_3" json:"socket_content_3"`
+	SocketBonus               int32       `db:"socket_bonus" json:"socket_bonus"`
+	GemProperties             int32       `db:"gem_properties" json:"gem_properties"`
+	RequiredDisenchantSkill   int32       `db:"required_disenchant_skill" json:"required_disenchant_skill"`
+	ArmorDamageModifier       float64     `db:"armor_damage_modifier" json:"armor_damage_modifier"`
+	ScalingStatDistribution   int32       `db:"scaling_stat_distribution" json:"scaling_stat_distribution"`
+	ScalingStatValue          int32       `db:"scaling_stat_value" json:"scaling_stat_value"`
+	ItemLimitCategory         int32       `db:"item_limit_category" json:"item_limit_category"`
+	HolidayID                 int32       `db:"holiday_id" json:"holiday_id"`
 }
 
 type WorldSpellArea struct {

@@ -11,7 +11,7 @@ type Signature [4]byte
 
 var (
 	SigItem     = Signature{'B', 'D', 'I', 'W'}
-	SigCreature = Signature{'W', 'M', 'O', 'B'}
+	SigCreature = Signature{'B', 'O', 'M', 'W'}
 )
 
 func (s Signature) String() string {

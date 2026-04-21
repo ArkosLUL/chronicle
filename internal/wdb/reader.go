@@ -34,6 +34,15 @@ func (r *reader) Int32() (int32, error) {
 	return int32(v), err
 }
 
+func (r *reader) Uint8() (byte, error) {
+	if r.remaining() < 1 {
+		return 0, fmt.Errorf("offset %d: need 1 byte, have %d", r.off, r.remaining())
+	}
+	v := r.data[r.off]
+	r.off++
+	return v, nil
+}
+
 func (r *reader) Float32() (float32, error) {
 	v, err := r.Uint32()
 	return math.Float32frombits(v), err

@@ -747,8 +747,8 @@ CREATE TABLE world_creature_template (
     mana_min integer DEFAULT 0 NOT NULL,
     mana_max integer DEFAULT 0 NOT NULL,
     armor integer DEFAULT 0 NOT NULL,
-    dmg_min integer DEFAULT 0 NOT NULL,
-    dmg_max integer DEFAULT 0 NOT NULL,
+    dmg_min double precision DEFAULT 0 NOT NULL,
+    dmg_max double precision DEFAULT 0 NOT NULL,
     dmg_school integer DEFAULT 0 NOT NULL,
     attack_power integer DEFAULT 0 NOT NULL,
     dmg_multiplier double precision DEFAULT 1 NOT NULL,
@@ -912,7 +912,23 @@ CREATE TABLE world_item_template (
     other_team_entry integer DEFAULT 0 NOT NULL,
     script_name text,
     patch text,
-    tooltip_set_id integer DEFAULT 0 NOT NULL
+    tooltip_set_id integer DEFAULT 0 NOT NULL,
+    random_suffix integer DEFAULT 0 NOT NULL,
+    totem_category integer DEFAULT 0 NOT NULL,
+    socket_color_1 integer DEFAULT 0 NOT NULL,
+    socket_content_1 integer DEFAULT 0 NOT NULL,
+    socket_color_2 integer DEFAULT 0 NOT NULL,
+    socket_content_2 integer DEFAULT 0 NOT NULL,
+    socket_color_3 integer DEFAULT 0 NOT NULL,
+    socket_content_3 integer DEFAULT 0 NOT NULL,
+    socket_bonus integer DEFAULT 0 NOT NULL,
+    gem_properties integer DEFAULT 0 NOT NULL,
+    required_disenchant_skill integer DEFAULT '-1'::integer NOT NULL,
+    armor_damage_modifier double precision DEFAULT 0 NOT NULL,
+    scaling_stat_distribution integer DEFAULT 0 NOT NULL,
+    scaling_stat_value integer DEFAULT 0 NOT NULL,
+    item_limit_category integer DEFAULT 0 NOT NULL,
+    holiday_id integer DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE world_spell_area (

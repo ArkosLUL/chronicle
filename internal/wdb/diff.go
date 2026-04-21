@@ -196,3 +196,92 @@ func CompareItems(wdbRow, dbRow database.WorldItemTemplate) []FieldDiff {
 	}
 	return diffs
 }
+
+// CompareCreatures compares WDB-sourced fields between two WorldCreatureTemplate rows.
+// Only compares fields available in the creature cache (name, subname, display IDs).
+func CompareCreatures(wdbRow, dbRow database.WorldCreatureTemplate) []FieldDiff {
+	// For subname, compare the string value (treat NULL as "").
+	wdbSub := ""
+	if wdbRow.Subname.Valid {
+		wdbSub = wdbRow.Subname.String
+	}
+	dbSub := ""
+	if dbRow.Subname.Valid {
+		dbSub = dbRow.Subname.String
+	}
+
+	checks := []struct {
+		name string
+		wdb  any
+		db   any
+	}{
+		{"name", wdbRow.Name, dbRow.Name},
+		{"subname", wdbSub, dbSub},
+		{"display_id1", wdbRow.DisplayId1, dbRow.DisplayId1},
+		{"display_id2", wdbRow.DisplayId2, dbRow.DisplayId2},
+		{"display_id3", wdbRow.DisplayId3, dbRow.DisplayId3},
+		{"display_id4", wdbRow.DisplayId4, dbRow.DisplayId4},
+	}
+
+	var diffs []FieldDiff
+	for _, c := range checks {
+		if c.wdb != c.db {
+			diffs = append(diffs, FieldDiff{Field: c.name, Old: c.db, New: c.wdb})
+		}
+	}
+	return diffs
+}
+
+// CompareCreaturesFull compares all overlapping fields between two WorldCreatureTemplate rows.
+// Used for SQL dump imports where all fields are available (unlike WDB which only has a subset).
+func CompareCreaturesFull(newRow, dbRow database.WorldCreatureTemplate) []FieldDiff {
+	newSub := ""
+	if newRow.Subname.Valid {
+		newSub = newRow.Subname.String
+	}
+	dbSub := ""
+	if dbRow.Subname.Valid {
+		dbSub = dbRow.Subname.String
+	}
+
+	checks := []struct {
+		name string
+		a    any
+		b    any
+	}{
+		{"name", newRow.Name, dbRow.Name},
+		{"subname", newSub, dbSub},
+		{"display_id1", newRow.DisplayId1, dbRow.DisplayId1},
+		{"display_id2", newRow.DisplayId2, dbRow.DisplayId2},
+		{"display_id3", newRow.DisplayId3, dbRow.DisplayId3},
+		{"display_id4", newRow.DisplayId4, dbRow.DisplayId4},
+		{"level_min", newRow.LevelMin, dbRow.LevelMin},
+		{"level_max", newRow.LevelMax, dbRow.LevelMax},
+		{"dmg_min", newRow.DmgMin, dbRow.DmgMin},
+		{"dmg_max", newRow.DmgMax, dbRow.DmgMax},
+		{"dmg_school", newRow.DmgSchool, dbRow.DmgSchool},
+		{"attack_power", newRow.AttackPower, dbRow.AttackPower},
+		{"dmg_multiplier", newRow.DmgMultiplier, dbRow.DmgMultiplier},
+		{"base_attack_time", newRow.BaseAttackTime, dbRow.BaseAttackTime},
+		{"ranged_attack_time", newRow.RangedAttackTime, dbRow.RangedAttackTime},
+		{"unit_class", newRow.UnitClass, dbRow.UnitClass},
+		{"unit_flags", newRow.UnitFlags, dbRow.UnitFlags},
+		{"ranged_dmg_min", newRow.RangedDmgMin, dbRow.RangedDmgMin},
+		{"ranged_dmg_max", newRow.RangedDmgMax, dbRow.RangedDmgMax},
+		{"holy_res", newRow.HolyRes, dbRow.HolyRes},
+		{"fire_res", newRow.FireRes, dbRow.FireRes},
+		{"nature_res", newRow.NatureRes, dbRow.NatureRes},
+		{"frost_res", newRow.FrostRes, dbRow.FrostRes},
+		{"shadow_res", newRow.ShadowRes, dbRow.ShadowRes},
+		{"arcane_res", newRow.ArcaneRes, dbRow.ArcaneRes},
+		{"mechanic_immune_mask", newRow.MechanicImmuneMask, dbRow.MechanicImmuneMask},
+	}
+
+	var diffs []FieldDiff
+	for _, c := range checks {
+		if c.a != c.b {
+			diffs = append(diffs, FieldDiff{Field: c.name, Old: c.b, New: c.a})
+		}
+	}
+	return diffs
+}

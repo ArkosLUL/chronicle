@@ -1,6 +1,9 @@
 package wdb
 
-import "github.com/Emyrk/chronicle/database"
+import (
+	"github.com/Emyrk/chronicle/database"
+	"github.com/jackc/pgx/v5/pgtype"
+)
 
 // ItemToWorldTemplate converts a parsed WDB Item to a database WorldItemTemplate.
 // Server-only fields (buy_count, spellppmrate, disenchant_id, food_type,
@@ -116,5 +119,41 @@ func ItemToWorldTemplate(it Item) database.WorldItemTemplate {
 		MapBound:               int32(it.Map),
 		Duration:               int32(it.Duration),
 		BagFamily:              int32(it.BagFamily),
+		TotemCategory:          int32(it.TotemCategory),
+		SocketColor1:           int32(it.SocketColor[0]),
+		SocketContent1:         int32(it.SocketContent[0]),
+		SocketColor2:           int32(it.SocketColor[1]),
+		SocketContent2:         int32(it.SocketContent[1]),
+		SocketColor3:           int32(it.SocketColor[2]),
+		SocketContent3:         int32(it.SocketContent[2]),
+		SocketBonus:            int32(it.SocketBonus),
+		GemProperties:          int32(it.GemProperties),
+		RequiredDisenchantSkill: it.RequiredDisenchantSkill,
+		ArmorDamageModifier:    float64(it.ArmorDamageModifier),
+		ScalingStatDistribution: it.ScalingStatDistribution,
+		ScalingStatValue:       it.ScalingStatValue,
+		ItemLimitCategory:      it.ItemLimitCategory,
+		HolidayID:              it.HolidayID,
+		RandomSuffix:           int32(it.RandomSuffix),
+	}
+}
+
+// CreatureToWorldTemplate converts a parsed WDB Creature to a database WorldCreatureTemplate.
+// The creature cache only contains name, subname, and display IDs from fields
+// that overlap with the DB schema. Combat stats (health, damage, armor, resistances)
+// are server-side only and not present in the WDB cache.
+func CreatureToWorldTemplate(c Creature) database.WorldCreatureTemplate {
+	sub := pgtype.Text{}
+	if c.SubName != "" {
+		sub = pgtype.Text{String: c.SubName, Valid: true}
+	}
+	return database.WorldCreatureTemplate{
+		Entry:      int32(c.Entry),
+		Name:       c.Name,
+		Subname:    sub,
+		DisplayId1: int32(c.DisplayID[0]),
+		DisplayId2: int32(c.DisplayID[1]),
+		DisplayId3: int32(c.DisplayID[2]),
+		DisplayId4: int32(c.DisplayID[3]),
 	}
 }

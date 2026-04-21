@@ -28,5 +28,6 @@ func (h *Handler) Routes() http.Handler {
 		httpmw.Can(h.zed, policy.New().GlobalChronicle().CanAdmin_world_data_User),
 	)
 	r.Post("/wdb/upload", h.UploadWDB)
+	r.Post("/sql/import", h.ImportSQL)
 	return r
 }

@@ -160,6 +160,20 @@ export const PRESET_LAYOUTS: PresetLayout[] = [
     panelFilters: {},
   },
   {
+    id: "interrupts",
+    label: "Interrupts",
+    layoutItems: [
+      { id: "panel-1", title: "Panel 1", x: 0, y: 0, w: 6, h: 5, minW: 4 },
+      { id: "panel-2", title: "Panel 2", x: 6, y: 0, w: 6, h: 5, minW: 4 },
+    ],
+    panelTypes: {
+      "panel-1": "interrupts",
+      "panel-2": "interrupt_log",
+    },
+    panelOptions: {},
+    panelFilters: {},
+  },
+  {
     id: "deaths",
     label: "Deaths",
     layoutItems: FOUR_PANEL_GRID,

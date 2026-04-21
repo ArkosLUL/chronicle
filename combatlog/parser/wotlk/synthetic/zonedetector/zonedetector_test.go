@@ -41,8 +41,8 @@ func TestZoneDetector_EmitsZoneOnNexusCreature(t *testing.T) {
 
 	zoneMsg, ok := result[0].(*messages.Zone)
 	require.True(t, ok, "first message should be *messages.Zone")
-	assert.Equal(t, "the nexus", zoneMsg.Zone.Name)
-	assert.True(t, zoneMsg.Zone.IsInstance)
+	assert.Equal(t, "the nexus", zoneMsg.Name)
+	assert.True(t, zoneMsg.IsInstance)
 	assert.Equal(t, "the nexus", zd.LastZone())
 }
 

@@ -104,7 +104,8 @@ func demo() *serpent.Command {
 			if err != nil {
 				return fmt.Errorf("read items: %w", err)
 			}
-			si.Range(func(cursor *dbdefs.Ent_ItemSet) bool {
+
+			_ = si.Range(func(cursor *dbdefs.Ent_ItemSet) bool {
 				fmt.Println(cursor.Name_lang)
 				if cursor.ID == 765 {
 					fmt.Println(cursor.ID)

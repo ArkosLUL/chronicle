@@ -56,6 +56,7 @@ func testParseWDB(t *testing.T, path string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	//nolint:errcheck
 	defer f.Close()
 
 	header, records, err := wdb.Parse(f)

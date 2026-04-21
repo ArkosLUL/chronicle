@@ -19,6 +19,8 @@ const ExtendedSpellBuild vsn.Build = 12341
 // registerExtendedSpellLayout sets SpellBuildOverride and registers a patched
 // Spell definition layout under ExtendedSpellBuild. Call from init() in
 // server-specific build-tagged files.
+//
+//nolint:unused
 func registerExtendedSpellLayout() {
 	SpellBuildOverride = ExtendedSpellBuild
 

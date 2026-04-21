@@ -1,5 +1,7 @@
 package instances
 
+import "github.com/Emyrk/chronicle/internal/services"
+
 func LoadAdds(src map[uint32]Identity, adds map[uint32]string) {
 	for k := range adds {
 		src[k] = Identity{Hostile: true}
@@ -355,10 +357,22 @@ func OnyxiaHostiles() map[uint32]Identity {
 	LoadBosses(hostile, map[uint32]string{
 		10184: "Onyxia",
 		49018: "Broodcommander Axelus",
-
-		// 3.3.5a
-		45133: "Onyxia",
 	})
+
+	switch services.ServerName {
+	case services.ServerIdentityEpoch:
+		LoadAdds(hostile, map[uint32]string{
+			45237:  "Onyxian Flameweaver",
+			45238:  "Onyxian Honorguard",
+			12129:  "Onyxian Warder",
+			300057: "Living Dragonfire",
+		})
+		LoadBosses(hostile, map[uint32]string{
+			45136: "Ortorg the Ardent",
+			45125: "Atressian",
+			45133: "Onyxia",
+		})
+	}
 
 	return hostile
 }

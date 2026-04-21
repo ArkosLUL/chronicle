@@ -530,31 +530,58 @@ func (c *Hookable) DetailedTimes() map[string]time.Duration {
 	return c.timings.Snapshot()
 }
 // resolveUnknownUnits maps unknown creature entry IDs to their names using the unitdb.
+// Units are filtered out if they are players or have an owner (pets, totems, summons).
 func (h *Hookable) resolveUnknownUnits() map[uint32]UnknownUnit {
 	raw := h.UnknownUnits()
 	if len(raw) == 0 {
 		return nil
 	}
 
-	// Build entry ID → name from unitdb
-	entryNames := make(map[uint32]string)
+	// Build entry ID → name and owned status from unitdb.
+	type entryInfo struct {
+		name  string
+		owned bool // true if any GUID with this entry has an owner
+	}
+	entries := make(map[uint32]*entryInfo)
 	for gid, info := range h.units.Info {
-		if gid.IsPlayer() || info.Name == "" {
+		if gid.IsPlayer() {
 			continue
 		}
 		entry, ok := gid.GetEntry()
 		if !ok {
 			continue
 		}
-		entryNames[entry] = info.Name
+		ei := entries[entry]
+		if ei == nil {
+			ei = &entryInfo{}
+			entries[entry] = ei
+		}
+		if info.Name != "" {
+			ei.name = info.Name
+		}
+		if info.Owner != nil {
+			ei.owned = true
+		}
 	}
 
 	result := make(map[uint32]UnknownUnit, len(raw))
 	for entryID, count := range raw {
+		// Skip owned units — they're pets, totems, or other player summons.
+		if ei := entries[entryID]; ei != nil && ei.owned {
+			continue
+		}
+
+		name := ""
+		if ei := entries[entryID]; ei != nil {
+			name = ei.name
+		}
 		result[entryID] = UnknownUnit{
-			Name:  entryNames[entryID],
+			Name:  name,
 			Count: count,
 		}
+	}
+	if len(result) == 0 {
+		return nil
 	}
 	return result
 }

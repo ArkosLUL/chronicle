@@ -108,6 +108,9 @@ func init() {
 		variant{id: 7464, duration: 20 * time.Second},
 		variant{id: 7465, duration: 20 * time.Second},
 		variant{id: 7466, duration: 20 * time.Second},
+		variant{id: 15484, duration: 20 * time.Second},
+		variant{id: 31166, duration: 20 * time.Second},
+		variant{id: 31167, duration: 20 * time.Second},
 	)
 
 	register("Windwall Totem",

@@ -53,7 +53,7 @@ const PANEL_CATEGORIES: PanelCategory[] = [
   },
   {
     label: "Dispels & Interrupts",
-    items: ["dispels_done", "dispels_received", "dispel_log", "interrupts"],
+    items: ["dispels_done", "dispels_received", "dispel_log", "interrupts", "interrupt_log"],
   },
   {
     label: "Class",

@@ -149,6 +149,7 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   dispel_log: dispelProcessor,
   // Interrupts
   interrupts: interruptProcessor,
+  interrupt_log: interruptProcessor,
   // Equipment
   equipment: equipmentProcessor,
   // Loot

@@ -652,6 +652,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   dispel_log: 'dsl',
   // Interrupts
   interrupts: 'ipt',
+  interrupt_log: 'iptl',
   loot: 'lt',
   logging_metadata: 'lm',
   absorbed_damage: 'ad',

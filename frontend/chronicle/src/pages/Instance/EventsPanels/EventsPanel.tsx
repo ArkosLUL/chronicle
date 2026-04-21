@@ -62,6 +62,7 @@ import { createLoggingMetadataPanel } from "./LoggingMetadata/LoggingMetadata";
 
 import { createDispelsDonePanel, createDispelsReceivedPanel } from "./Dispel/Dispel";
 import { createInterruptsPanel } from "./Interrupt/Interrupt";
+import { createInterruptLogPanel } from "./Interrupt/InterruptLog";
 import { createAbsorbedDamagePanel } from "./AbsorbedDamage/AbsorbedDamage";
 import { createDispelLogPanel } from "./Dispel/DispelLog";
 // TODO: Avoidance panel requires spell school data which isn't available yet
@@ -120,6 +121,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   dispel_log: createDispelLogPanel(),
   // Interrupts
   interrupts: createInterruptsPanel(),
+  interrupt_log: createInterruptLogPanel(),
   loot: createLootPanel(),
   logging_metadata: createLoggingMetadataPanel(),
   absorbed_damage: createAbsorbedDamagePanel(),

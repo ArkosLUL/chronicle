@@ -520,6 +520,7 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		Loot:         h.lootTracking,
 		Participants: h.p,
 		Rankings:     rankingsResult,
+		UnknownUnits: h.resolveUnknownUnits(),
 
 		//SpellBook:  c.SpellBook,
 	}, nil
@@ -528,3 +529,33 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 func (c *Hookable) DetailedTimes() map[string]time.Duration {
 	return c.timings.Snapshot()
 }
+// resolveUnknownUnits maps unknown creature entry IDs to their names using the unitdb.
+func (h *Hookable) resolveUnknownUnits() map[uint32]UnknownUnit {
+	raw := h.UnknownUnits()
+	if len(raw) == 0 {
+		return nil
+	}
+
+	// Build entry ID → name from unitdb
+	entryNames := make(map[uint32]string)
+	for gid, info := range h.units.Info {
+		if gid.IsPlayer() || info.Name == "" {
+			continue
+		}
+		entry, ok := gid.GetEntry()
+		if !ok {
+			continue
+		}
+		entryNames[entry] = info.Name
+	}
+
+	result := make(map[uint32]UnknownUnit, len(raw))
+	for entryID, count := range raw {
+		result[entryID] = UnknownUnit{
+			Name:  entryNames[entryID],
+			Count: count,
+		}
+	}
+	return result
+}
+

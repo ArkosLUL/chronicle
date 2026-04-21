@@ -26,6 +26,11 @@ type Parser struct {
 	synthetics  *synthetic.Synthetic
 	itemFetcher gamedb.GearResolver
 	baseYear    int
+
+	lineParseDur  time.Duration
+	syntheticsDur time.Duration
+
+	missedSpells map[chrondbc.SpellID]int
 }
 
 func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {
@@ -34,13 +39,14 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	}
 	gn := NewGUIDNames()
 	return &Parser{
-		logger:      logger,
-		wowDB:       wowDB,
-		scanner:     bufio.NewScanner(r),
-		guidNames:   gn,
-		synthetics:  synthetic.New(ctx, logger, wowDB, reg, gn),
-		itemFetcher: gear,
-		baseYear:    time.Now().Year(),
+		logger:       logger,
+		wowDB:        wowDB,
+		scanner:      bufio.NewScanner(r),
+		guidNames:    gn,
+		synthetics:   synthetic.New(ctx, logger, wowDB, reg, gn),
+		itemFetcher:  gear,
+		baseYear:     time.Now().Year(),
+		missedSpells: make(map[chrondbc.SpellID]int),
 	}, nil
 }
 
@@ -49,13 +55,28 @@ func (p *Parser) SetBaseYear(year int) {
 	p.baseYear = year
 }
 
+func (p *Parser) DetailedTimes() map[string]time.Duration {
+	times := map[string]time.Duration{
+		"parser.line_parse":  p.lineParseDur,
+		"parser.synthetics":  p.syntheticsDur,
+	}
+	for k, v := range p.synthetics.DetailedTimes() {
+		times[k] = v
+	}
+	return times
+}
+
 func (p *Parser) Advance(ctx context.Context) ([]messages.Message, error) {
+	now := time.Now()
 	msgs, err := p.advance(ctx)
+	p.lineParseDur += time.Since(now)
 	if err != nil {
 		return nil, err
 	}
 
+	now = time.Now()
 	msgs, err = p.synthetics.ProcessMessages(msgs)
+	p.syntheticsDur += time.Since(now)
 	if err != nil {
 		return nil, fmt.Errorf("processing synthetics: %w", err)
 	}
@@ -96,4 +117,9 @@ func (p *Parser) advance(_ context.Context) (_ []messages.Message, final error) 
 
 func (p *Parser) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
 	return p.wowDB.Spell(id)
+}
+
+// MissedSpells returns spell IDs that were not found in the DBC, with lookup counts.
+func (p *Parser) MissedSpells() map[chrondbc.SpellID]int {
+	return p.missedSpells
 }

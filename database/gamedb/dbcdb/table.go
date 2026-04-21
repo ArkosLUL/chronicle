@@ -1,6 +1,7 @@
 package dbcdb
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/Gophercraft/core/format/dbc"
@@ -60,11 +61,13 @@ func (w *WrappedTable[T]) ID(i int) (*T, error) {
 		return w.Index(idx)
 	}
 
-	x := new(T)
-	if err := w.wrapped.ID(i, x); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return nil, fmt.Errorf("couldn't find record matching ID %d", i)
+
+	//x := new(T)
+	//if err := w.wrapped.ID(i, x); err != nil {
+	//	return nil, err
+	//}
+	//return x, nil
 }
 
 func (w *WrappedTable[T]) Index(i int) (*T, error) {

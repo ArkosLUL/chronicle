@@ -61,12 +61,14 @@ type DepreceatedInstance interface {
 }
 
 type Identifier struct {
-	byEntryId map[uint32]Identity
+	byEntryId    map[uint32]Identity
+	unknownUnits map[uint32]int // creature entry IDs not in hostiles map, with hit count
 }
 
 func NewIdentifier(byEntryId map[uint32]Identity) *Identifier {
 	return &Identifier{
-		byEntryId: byEntryId,
+		byEntryId:    byEntryId,
+		unknownUnits: make(map[uint32]int),
 	}
 }
 
@@ -82,9 +84,16 @@ func (i *Identifier) IdentifyUnit(id guid.GUID) Identity {
 
 	identity, exists := i.byEntryId[entryID]
 	if !exists {
+		i.unknownUnits[entryID]++
 		return Identity{Hostile: false}
 	}
 	return identity
+}
+
+// UnknownUnits returns creature entry IDs that were looked up but not found in the
+// hostiles map, with the number of times each was seen.
+func (i *Identifier) UnknownUnits() map[uint32]int {
+	return i.unknownUnits
 }
 
 // HostileEntries returns the raw creature entry → Identity map.

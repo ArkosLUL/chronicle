@@ -355,6 +355,9 @@ func OnyxiaHostiles() map[uint32]Identity {
 	LoadBosses(hostile, map[uint32]string{
 		10184: "Onyxia",
 		49018: "Broodcommander Axelus",
+
+		// 3.3.5a
+		45133: "Onyxia",
 	})
 
 	return hostile

@@ -88,10 +88,10 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 	spDBC := chrondbc.NewSpells(v)
 
 	wdb := &WoWDB{
-		ctx:         ctx,
-		spellLRU:    c,
-		spellFiles:  sf,
-		spells:      spDBC,
+		ctx:             ctx,
+		spellLRU:        c,
+		spellFiles:      sf,
+		spells:          spDBC,
 		itemFetcher:     newItemFetcher(ctx, opts.DB, 400),
 		creatureFetcher: newCreatureFetcher(ctx, opts.DB, 500),
 	}
@@ -174,7 +174,6 @@ func (w *WoWDB) ResolveGear(gear []combatant.GearItem) {
 func (w *WoWDB) Creature(entry int32) (*database.WorldCreatureTemplate, bool) {
 	return w.creatureFetcher.Creature(entry)
 }
-
 
 func (w *WoWDB) Close() error {
 	_ = w.spellFiles.Close()

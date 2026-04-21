@@ -14,6 +14,12 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
+// UnknownUnit represents a creature entry not found in the hostiles map.
+type UnknownUnit struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 type FinalizedInstance struct {
 	Realm        *realm.Info
 	Versions     map[string]string
@@ -23,6 +29,8 @@ type FinalizedInstance struct {
 	Loot         *loot.LootTracker
 	Participants *participants.Tracker
 	Rankings     *rankings.RankingsResult
+	// UnknownUnits maps creature entry IDs not in the hostiles map to their name and hit count.
+	UnknownUnits map[uint32]UnknownUnit
 }
 
 func ZoneNameMatcher(names ...string) func(z string) bool {

@@ -3,6 +3,7 @@ package synthetic
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -26,6 +27,9 @@ type Synthetic struct {
 	zoneDetector *zonedetector.ZoneDetector
 
 	wowDB gamedb.GameDB
+
+	unitInfoDur     time.Duration
+	zoneDetectorDur time.Duration
 }
 
 func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB, reg *registry.Registry, names NameResolver) *Synthetic {
@@ -37,8 +41,21 @@ func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB, reg *reg
 	}
 }
 
+func (s *Synthetic) DetailedTimes() map[string]time.Duration {
+	return map[string]time.Duration{
+		"parser.synthetic.unit_info":      s.unitInfoDur,
+		"parser.synthetic.zone_detector":  s.zoneDetectorDur,
+	}
+}
+
 func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message, error) {
+	now := time.Now()
 	msgs = s.unitInfo.ProcessMessages(msgs)
+	s.unitInfoDur += time.Since(now)
+
+	now = time.Now()
 	msgs = s.zoneDetector.ProcessMessages(msgs)
+	s.zoneDetectorDur += time.Since(now)
+
 	return msgs, nil
 }

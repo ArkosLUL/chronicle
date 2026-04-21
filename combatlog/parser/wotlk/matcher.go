@@ -693,6 +693,7 @@ func (p *Parser) lookupSpell(id chrondbc.SpellID) *chrondbc.Spell {
 	}
 	s, err := p.wowDB.Spell(id)
 	if err != nil {
+		p.missedSpells[id]++
 		return nil
 	}
 	return s

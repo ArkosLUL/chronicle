@@ -26,6 +26,7 @@ import {
   Download,
   Timer,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
@@ -260,15 +261,35 @@ function TimingSection({ report }: { report: LogParseReport }) {
               <h4 className="text-sm font-medium text-muted-foreground mb-2">Per-Instance Timing</h4>
               <div className="space-y-1">
                 {report.instances.map((inst, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-2 bg-muted/50 rounded text-sm">
-                    <span className="flex items-center gap-2">
-                      <Castle className="h-4 w-4 text-muted-foreground" />
-                      {inst.name}
-                      <span className="text-muted-foreground">({inst.encounter_count} encounters)</span>
-                    </span>
-                    <span className="font-mono text-muted-foreground">
-                      finalize: {formatMs(inst.finalize_duration_ms)}, db: {formatMs(inst.db_insert_duration_ms)}
-                    </span>
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-sm">
+                      <span className="flex items-center gap-2">
+                        <Castle className="h-4 w-4 text-muted-foreground" />
+                        {inst.name}
+                        <span className="text-muted-foreground">({inst.encounter_count} encounters)</span>
+                      </span>
+                      <span className="font-mono text-muted-foreground">
+                        finalize: {formatMs(inst.finalize_duration_ms)}, db: {formatMs(inst.db_insert_duration_ms)}
+                      </span>
+                    </div>
+                    {inst.unknown_units && Object.keys(inst.unknown_units).length > 0 && (
+                      <div className="ml-6 p-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded text-sm">
+                        <div className="flex items-center gap-1 text-yellow-700 dark:text-yellow-400 font-medium mb-1">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Unknown Units ({Object.keys(inst.unknown_units).length})
+                        </div>
+                        <div className="grid gap-1 text-xs">
+                          {Object.entries(inst.unknown_units)
+                            .sort(([, a], [, b]) => b.count - a.count)
+                            .map(([entryId, unit]) => (
+                            <div key={entryId} className="flex justify-between font-mono text-yellow-800 dark:text-yellow-300">
+                              <span>{unit.name || `Entry ${entryId}`} <span className="text-yellow-600 dark:text-yellow-500">({entryId})</span></span>
+                              <span className="text-yellow-600 dark:text-yellow-500">{unit.count}× lookups</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -288,6 +309,27 @@ function TimingSection({ report }: { report: LogParseReport }) {
                     <span className="font-mono">{formatMs(duration)}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+          {/* Missed Spells */}
+          {report.missed_spells && Object.keys(report.missed_spells).length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4" />
+                Missed Spells ({Object.keys(report.missed_spells).length})
+              </h4>
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded">
+                <div className="grid gap-1 text-xs max-h-60 overflow-y-auto">
+                  {Object.entries(report.missed_spells)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([spellId, count]) => (
+                    <div key={spellId} className="flex justify-between font-mono text-yellow-800 dark:text-yellow-300">
+                      <span>Spell {spellId}</span>
+                      <span className="text-yellow-600 dark:text-yellow-500">{count}× lookups</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

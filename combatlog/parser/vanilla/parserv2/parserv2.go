@@ -26,6 +26,11 @@ type Parser struct {
 	itemFetcher gamedb.GearResolver
 
 	gameVersions *gameversions.GameVersion
+
+	lineParseDur  time.Duration
+	syntheticsDur time.Duration
+
+	missedSpells map[chrondbc.SpellID]int
 }
 
 func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamedb.GearResolver) (*Parser, error) {
@@ -33,21 +38,37 @@ func New(logger *slog.Logger, r io.Reader, wowDB gamedb.SpellFetcher, gear gamed
 		return nil, fmt.Errorf("wowDB cannot be nil")
 	}
 	return &Parser{
-		logger:      logger,
-		wowDB:       wowDB,
-		scanner:     bufio.NewScanner(r),
-		synthetics:  synthetic.New(logger, wowDB),
-		itemFetcher: gear,
+		logger:       logger,
+		wowDB:        wowDB,
+		scanner:      bufio.NewScanner(r),
+		synthetics:   synthetic.New(logger, wowDB),
+		itemFetcher:  gear,
+		missedSpells: make(map[chrondbc.SpellID]int),
 	}, nil
 }
 
+func (p *Parser) DetailedTimes() map[string]time.Duration {
+	times := map[string]time.Duration{
+		"parser.line_parse": p.lineParseDur,
+		"parser.synthetics": p.syntheticsDur,
+	}
+	for k, v := range p.synthetics.DetailedTimes() {
+		times[k] = v
+	}
+	return times
+}
+
 func (p *Parser) Advance(ctx context.Context) ([]messages.Message, error) {
+	now := time.Now()
 	msgs, err := p.advance(ctx)
+	p.lineParseDur += time.Since(now)
 	if err != nil {
 		return nil, err
 	}
 
+	now = time.Now()
 	msgs, err = p.synthetics.ProcessMessages(msgs)
+	p.syntheticsDur += time.Since(now)
 	if err != nil {
 		return nil, fmt.Errorf("processing synthetics: %w", err)
 	}
@@ -127,15 +148,25 @@ func (p *Parser) advance(ctx context.Context) (_ []messages.Message, final error
 		return p.dmgShield(ctx, ts, m)
 	case "DISPEL":
 		return p.dispel(ctx, ts, m)
-  case "LOOT":
-    return p.loot(ctx, ts, m)
-  case "LOOT_TRADE":
-    return p.lootTrade(ctx, ts, m)
+	case "LOOT":
+		return p.loot(ctx, ts, m)
+	case "LOOT_TRADE":
+		return p.lootTrade(ctx, ts, m)
 	}
 
 	return messages.Unparsed(ts, next), nil
 }
 
 func (p *Parser) Spell(id chrondbc.SpellID) (*chrondbc.Spell, error) {
-	return p.wowDB.Spell(id)
+	sp, err := p.wowDB.Spell(id)
+	if err != nil {
+		p.missedSpells[id]++
+		return nil, err
+	}
+	return sp, nil
+}
+
+// MissedSpells returns spell IDs that were not found in the DBC, with lookup counts.
+func (p *Parser) MissedSpells() map[chrondbc.SpellID]int {
+	return p.missedSpells
 }

@@ -22,8 +22,9 @@ type detailedTimingConsumer interface {
 }
 
 type Consumers struct {
-	logger *slog.Logger
-	list   []Consumer
+	logger   *slog.Logger
+	list     []Consumer
+	Advancer Advancer
 
 	time map[string]time.Duration
 }
@@ -38,6 +39,13 @@ func New(logger *slog.Logger, consumers ...Consumer) *Consumers {
 
 func (c Consumers) Times() map[string]time.Duration {
 	times := maps.Clone(c.time)
+	// Merge advancer detailed times (parser sub-timings)
+	if dt, ok := c.Advancer.(detailedTimingConsumer); ok {
+		for name, duration := range dt.DetailedTimes() {
+			times[name] += duration
+		}
+	}
+	// Merge consumer detailed times
 	for _, consumer := range c.list {
 		detailedTimes, ok := consumer.(detailedTimingConsumer)
 		if !ok {

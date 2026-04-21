@@ -145,6 +145,9 @@ type LogParseReport struct {
 
 	// ConsumerTimes contains timing for each consumer (encounter detection, etc.)
 	ConsumerTimes map[string]Duration `json:"consumer_times,omitempty"`
+
+	// MissedSpells maps spell IDs not found in the DBC to their lookup count.
+	MissedSpells map[int32]int `json:"missed_spells,omitempty"`
 }
 
 // InstanceReport contains timing details for a single parsed instance.
@@ -153,6 +156,14 @@ type InstanceReport struct {
 	FinalizeDuration Duration `json:"finalize_duration_ms"`
 	DBInsertDuration Duration `json:"db_insert_duration_ms"`
 	EncounterCount   int      `json:"encounter_count"`
+	// UnknownUnits maps creature entry IDs not in the hostiles map to name and hit count.
+	UnknownUnits map[uint32]UnknownUnit `json:"unknown_units,omitempty"`
+}
+
+// UnknownUnit represents a creature entry not found in the hostiles map.
+type UnknownUnit struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }
 
 // Duration wraps time.Duration for JSON serialization as milliseconds.

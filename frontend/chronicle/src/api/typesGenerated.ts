@@ -373,6 +373,10 @@ export interface InstanceReport {
     readonly finalize_duration_ms: Duration;
     readonly db_insert_duration_ms: Duration;
     readonly encounter_count: number;
+    /**
+     * UnknownUnits maps creature entry IDs not in the hostiles map to name and hit count.
+     */
+    readonly unknown_units?: Record<number, UnknownUnit>;
 }
 
 // From chroniclesdk/log.go
@@ -578,6 +582,10 @@ export interface LogParseReport {
      * ConsumerTimes contains timing for each consumer (encounter detection, etc.)
      */
     readonly consumer_times?: Record<string, Duration>;
+    /**
+     * MissedSpells maps spell IDs not found in the DBC to their lookup count.
+     */
+    readonly missed_spells?: Record<number, number>;
 }
 
 // From chroniclesdk/response.go
@@ -1003,6 +1011,15 @@ export interface SpeedrunVersionStatus {
  */
 export interface TrackLayoutRequest {
     readonly layout_id: string;
+}
+
+// From chroniclesdk/log.go
+/**
+ * UnknownUnit represents a creature entry not found in the hostiles map.
+ */
+export interface UnknownUnit {
+    readonly name: string;
+    readonly count: number;
 }
 
 // From chroniclesdk/panel_layout.go

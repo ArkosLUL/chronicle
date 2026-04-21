@@ -36,6 +36,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/dbstatic"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/jsontransform"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/ptr"
@@ -235,6 +236,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 
 		p := vanilla.NewFromScanner(logger, liner, scan, w.parent.WoWDB)
+		c.Advancer = p
 		consumeErr = c.ConsumeAll(ctx, p)
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
 			jobResult = "failure"
@@ -264,6 +266,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			return fmt.Errorf("create v2 parser: %w", err)
 		}
 
+		c.Advancer = p
 		consumeErr = c.ConsumeAll(ctx, p)
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
 			jobResult = "failure"
@@ -285,13 +288,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
 		// Warmane (WotLK 3.3.5a) parser: single file
-		reg := registry.WarmaneRegistry(logLogger)
+		reg := registry.DefaultRegistry(logLogger)
 		p, err := wotlk.New(ctx, logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher, reg)
 		if err != nil {
 			jobResult = "failure"
 			return fmt.Errorf("create warmane parser: %w", err)
 		}
 
+		c.Advancer = p
 		consumeErr = c.ConsumeAll(ctx, p)
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
 			jobResult = "failure"
@@ -313,6 +317,20 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		report.ConsumerTimes = make(map[string]chroniclesdk.Duration, len(consumerTimes))
 		for k, v := range consumerTimes {
 			report.ConsumerTimes[k] = chroniclesdk.DurationFrom(v)
+		}
+	}
+
+	// Capture missed spells from parser
+	type missedSpeller interface {
+		MissedSpells() map[chrondbc.SpellID]int
+	}
+	if ms, ok := c.Advancer.(missedSpeller); ok {
+		missed := ms.MissedSpells()
+		if len(missed) > 0 {
+			report.MissedSpells = make(map[int32]int, len(missed))
+			for id, count := range missed {
+				report.MissedSpells[int32(id)] = count
+			}
 		}
 	}
 
@@ -370,6 +388,15 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		}
 
 		instReport.EncounterCount = len(finalized.Encounters)
+		if len(finalized.UnknownUnits) > 0 {
+			instReport.UnknownUnits = make(map[uint32]chroniclesdk.UnknownUnit, len(finalized.UnknownUnits))
+			for entryID, u := range finalized.UnknownUnits {
+				instReport.UnknownUnits[entryID] = chroniclesdk.UnknownUnit{
+					Name:  u.Name,
+					Count: u.Count,
+				}
+			}
+		}
 
 		var realmID = dbstatic.RealmUnknown()
 		if finalized.Realm != nil {

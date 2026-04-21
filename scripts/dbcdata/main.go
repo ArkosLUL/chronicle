@@ -106,7 +106,6 @@ func demo() *serpent.Command {
 			}
 			si.Range(func(cursor *dbdefs.Ent_ItemSet) bool {
 				fmt.Println(cursor.Name_lang)
-				cursor.ItemID
 				if cursor.ID == 765 {
 					fmt.Println(cursor.ID)
 				}

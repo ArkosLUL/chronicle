@@ -12,5 +12,8 @@ func WarmaneRegistry(logger *slog.Logger) *Registry {
 	// Dungeons
 	r.RegisterEntry(FromCommonFactory(instances.NexusFactory))
 
+	// Raids
+	r.RegisterEntry(FromCommonFactory(instances.VoAFactory))
+
 	return r
 }

@@ -47,7 +47,8 @@ func advanceOne(t *testing.T, p *Parser) messages.Message {
 	require.NoError(t, err)
 	require.NotEmpty(t, msgs)
 	for _, m := range msgs {
-		if _, ok := m.(*messages.Unit); ok {
+		switch m.(type) {
+		case *messages.Unit, *messages.Combatant:
 			continue
 		}
 		return m
@@ -194,8 +195,8 @@ func TestParser_MultiLine(t *testing.T) {
 		require.NoError(t, err)
 		for _, m := range msgs {
 			switch m.(type) {
-			case *messages.Unit:
-				continue // Skip synthetic unit info messages
+			case *messages.Unit, *messages.Combatant:
+				continue // Skip synthetic unit/combatant info messages
 			case *messages.Damage:
 				msgTypes = append(msgTypes, "Damage")
 			case *messages.Aura:

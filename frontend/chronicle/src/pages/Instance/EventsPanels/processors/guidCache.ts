@@ -38,7 +38,7 @@ export function isPlayerGuidFast(guidStr: string): boolean {
   // Matches Go: GetHigh() & 0x00F0 == 0x0000
   // The 0x00F0 nibble is the 5th hex char (index 4). Player = '0'.
   // Vanilla: "0x0000...", WotLK: "0x0E00..." — both have '0' at index 4.
-  return guidStr.length >= 5 && guidStr[4] === '0';
+  return guidStr.length >= 6 && guidStr[4] === '0' && guidStr[5] === '0';
 }
 
 /**

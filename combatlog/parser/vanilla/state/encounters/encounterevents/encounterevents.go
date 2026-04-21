@@ -30,6 +30,7 @@ type EncounterEvents struct {
 	UnitClassification *Builder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification]
 	CombatantInfo      *Builder[*messages.Combatant, *chronicleproto.CombatantInfo]
 	Dispel             *Builder[*messages.Dispel, *chronicleproto.Dispel]
+	Interrupt          *Builder[*messages.Interrupt, *chronicleproto.Interrupt]
 	cnter              int32
 }
 
@@ -50,6 +51,7 @@ func New(verbose bool) *EncounterEventsInProgress {
 		UnitClassification: NewBuilder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification](),
 		CombatantInfo:      NewBuilder[*messages.Combatant, *chronicleproto.CombatantInfo](),
 		Dispel:             NewBuilder[*messages.Dispel, *chronicleproto.Dispel](),
+		Interrupt:          NewBuilder[*messages.Interrupt, *chronicleproto.Interrupt](),
 	}
 }
 
@@ -124,6 +126,11 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing dispel events: %w", err)
 	}
 
+	interrupt, err := e.Interrupt.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing interrupt events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
@@ -138,6 +145,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.UnitClassification = append(merge.UnitClassification, unitClassification...)
 	merge.CombatantInfo = append(merge.CombatantInfo, combatantInfo...)
 	merge.Dispel = append(merge.Dispel, dispel...)
+	merge.Interrupt = append(merge.Interrupt, interrupt...)
 
 	return nil
 }
@@ -218,6 +226,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("dispel proto: %w", err)
 		}
+	case *messages.Interrupt:
+		err := AddToBuilder(e.Interrupt, ty, e.nextIndex(), types2proto.Interrupt)
+		if err != nil {
+			return fmt.Errorf("interrupt proto: %w", err)
+		}
 	}
 	return nil
 }
@@ -241,6 +254,7 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.UnitClassification.SetZero(e.first)
 	e.CombatantInfo.SetZero(e.first)
 	e.Dispel.SetZero(e.first)
+	e.Interrupt.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

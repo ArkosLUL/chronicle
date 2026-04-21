@@ -360,19 +360,21 @@ func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, m 
 
 // suffixInterrupt handles _INTERRUPT: extraSpellID, extraSpellName, extraSchool
 func (p *Parser) suffixInterrupt(ts time.Time, base baseParams, _ *spellInfo, m *Matched) ([]messages.Message, error) {
-	_ = m.Int32() // extraSpellID
+	extraSpellID := m.Int32()
 	extraSpellName := m.String()
-	_ = m.School() // extraSchool
+	extraSchool := m.School()
 
 	if err := m.Error(); err != nil {
 		return nil, err
 	}
 
 	return set(&messages.Interrupt{
-		MessageBase: messages.Base(ts),
-		Caster:      base.sourceGUID,
-		SpellName:   extraSpellName,
-		Target:      base.destGUID,
+		MessageBase:  messages.Base(ts),
+		Caster:       base.sourceGUID,
+		Target:       base.destGUID,
+		SpellName:    extraSpellName,
+		ExtraSpellID: extraSpellID,
+		ExtraSchool:  extraSchool,
 	})
 }
 

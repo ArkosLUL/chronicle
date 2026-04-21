@@ -366,6 +366,13 @@ func OnyxiaHostiles() map[uint32]Identity {
 			45238:  "Onyxian Honorguard",
 			12129:  "Onyxian Warder",
 			300057: "Living Dragonfire",
+
+			45131: "Evorian",
+			45132: "Efevian",
+			45129: "Omevian",
+			45127: "Adession",
+			45128: "Hazerion",
+			45130: "Vatryrion",
 		})
 		LoadBosses(hostile, map[uint32]string{
 			45136: "Ortorg the Ardent",

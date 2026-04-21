@@ -31,7 +31,8 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'spell_fail',
     'unit_classification',
     'dispel',
-    'combatant_info'
+    'combatant_info',
+    'interrupt'
 );
 
 CREATE TYPE log_type AS ENUM (

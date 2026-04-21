@@ -226,6 +226,8 @@ const (
 	WoWEventTypeDispel WoWEventType = "dispel"
 	// WoWEventTypeCombatantInfo is a WoWEventType of type combatant_info.
 	WoWEventTypeCombatantInfo WoWEventType = "combatant_info"
+	// WoWEventTypeInterrupt is a WoWEventType of type interrupt.
+	WoWEventTypeInterrupt WoWEventType = "interrupt"
 )
 
 var ErrInvalidWoWEventType = errors.New("not a valid WoWEventType")
@@ -247,6 +249,7 @@ func WoWEventTypeValues() []WoWEventType {
 		WoWEventTypeUnitClassification,
 		WoWEventTypeDispel,
 		WoWEventTypeCombatantInfo,
+		WoWEventTypeInterrupt,
 	}
 }
 
@@ -277,6 +280,7 @@ var _WoWEventTypeValue = map[string]WoWEventType{
 	"unit_classification": WoWEventTypeUnitClassification,
 	"dispel":              WoWEventTypeDispel,
 	"combatant_info":      WoWEventTypeCombatantInfo,
+	"interrupt":           WoWEventTypeInterrupt,
 }
 
 // ParseWoWEventType attempts to convert a string to a WoWEventType.

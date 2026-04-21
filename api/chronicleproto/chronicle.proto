@@ -221,6 +221,15 @@ message CombatantInfo {
   optional CombatantTalents talents = 9;
 }
 
+message Interrupt {
+  EventMeta meta = 1;
+  string caster = 2;
+  string target = 3;
+  string spell_name = 4;        // name of interrupted spell
+  int32 extra_spell_id = 5;     // ID of interrupted spell
+  School extra_school = 6;      // school of interrupted spell
+}
+
 message CombatantGearSlot {
   int32 itemId = 1;
   optional int32 enchantId = 2;

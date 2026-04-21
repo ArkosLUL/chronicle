@@ -465,9 +465,11 @@ func (*Aura) isMessage()            {}
 type Interrupt struct {
 	MessageBase
 	Caster guid.GUID
+	Target guid.GUID
 	// SpellName is the spell that was interrupted
-	SpellName string
-	Target    guid.GUID
+	SpellName    string
+	ExtraSpellID int32
+	ExtraSchool  types.School
 }
 
 func (i Interrupt) Affects() []guid.GUID { return []guid.GUID{i.Caster, i.Target} }

@@ -388,6 +388,17 @@ func Dispel(from time.Time, idx int32, d *messages.Dispel) *chronicleproto.Dispe
 	}
 }
 
+func Interrupt(from time.Time, idx int32, i *messages.Interrupt) *chronicleproto.Interrupt {
+	return &chronicleproto.Interrupt{
+		Meta:         EventMeta(from, idx, i),
+		Caster:       i.Caster.String(),
+		Target:       i.Target.String(),
+		SpellName:    i.SpellName,
+		ExtraSpellId: i.ExtraSpellID,
+		ExtraSchool:  School(i.ExtraSchool),
+	}
+}
+
 func DispelTypeConv(dt chrondbc.DispelType) chronicleproto.DispelType {
 	return chronicleproto.DispelType(dt)
 }

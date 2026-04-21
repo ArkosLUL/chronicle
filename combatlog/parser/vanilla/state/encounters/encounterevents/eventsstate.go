@@ -25,6 +25,7 @@ type Events struct {
 	UnitClassification []byte
 	CombatantInfo      []byte
 	Dispel             []byte
+	Interrupt          []byte
 }
 
 func NewEvents() *Events {
@@ -43,6 +44,7 @@ func NewEvents() *Events {
 		UnitClassification: make([]byte, 0),
 		CombatantInfo:      make([]byte, 0),
 		Dispel:             make([]byte, 0),
+		Interrupt:          make([]byte, 0),
 	}
 }
 
@@ -127,6 +129,12 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 	}
 	e.Dispel = nil
 
+	interruptPayload, err := gzipData(e.Interrupt)
+	if err != nil {
+		return fmt.Errorf("gzip interrupt events: %w", err)
+	}
+	e.Interrupt = nil
+
 	res := db.InsertLogInstanceEvents(ctx, []database.InsertLogInstanceEventsParams{
 		{
 			InstanceID: instanceID,
@@ -197,6 +205,11 @@ func (e *Events) Insert(ctx context.Context, db database.Store, instanceID uuid.
 			InstanceID: instanceID,
 			Type:       database.LogInstanceEventTypeDispel,
 			Events:     dispelPayload,
+		},
+		{
+			InstanceID: instanceID,
+			Type:       database.LogInstanceEventTypeInterrupt,
+			Events:     interruptPayload,
 		},
 	})
 	if err := res.Close(); err != nil {

@@ -1,6 +1,9 @@
 package instances
 
-import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
+import (
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
+	"github.com/Emyrk/chronicle/internal/services"
+)
 
 // SpeedrunRulesByInstance returns speedrun requirements keyed by instance name.
 // Only instances with speedrun rules are included.
@@ -59,9 +62,20 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 // OnyxiasLairSpeedrunRequirements returns the boss kills required for a
 // valid Onyxia's Lair speedrun.
 func OnyxiasLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
-	return []rankings.SpeedrunRequirement{
-		{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-		{Name: "Broodcommander Axelus", EntryIDs: []uint32{49018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+	switch services.ServerName {
+	case services.ServerIdentityTurtle:
+		return []rankings.SpeedrunRequirement{
+			{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			{Name: "Broodcommander Axelus", EntryIDs: []uint32{49018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		}
+	case services.ServerIdentityEpoch:
+		return []rankings.SpeedrunRequirement{
+			{Name: "Onyxia", EntryIDs: []uint32{45133}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			{Name: "Ortorg the Ardent", EntryIDs: []uint32{45136}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			{Name: "Ortorg the Atressian", EntryIDs: []uint32{45125}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		}
+	default:
+		return nil
 	}
 }
 

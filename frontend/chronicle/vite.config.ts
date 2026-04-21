@@ -35,6 +35,8 @@ export default defineConfig({
     alias: {
       // Server-specific generated constants (must come before generic "@")
       "@/constants/dbmem": path.resolve(__dirname, `src/constants/dbmem/${process.env.SERVER || 'turtle'}`),
+      // Server-specific spell test vectors
+      "@testdata/spellTestVectors": path.resolve(__dirname, `src/api/testdata/spellTestVectors.${process.env.SERVER || 'turtle'}.generated`),
       "@": path.resolve(__dirname, "src"),
     }
   },

@@ -18,6 +18,8 @@ func DefaultClientPath(server string) string {
 		return "/home/steven/Games/kronos-wow/drive_c/Program Files (x86)/Kronos"
 	case "warmane":
 		return "/home/steven/Games/Warmane"
+	case "ascension":
+		return "/home/steven/Games/ascension-wow/drive_c/Program Files/Ascension Launcher/resources/ascension-live"
 	default:
 		return ""
 	}

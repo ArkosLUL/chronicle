@@ -47,13 +47,6 @@ export const testSpells = [
     crossSpellRefs: [],
   },
   {
-    id: 52551,
-    name: "Dark Harvest",
-    descriptionTemplate: "Reaps the target's life, dealing $*8;s1 Shadow damage over $d. While channeling, the time between periodic ticks of your Affliction spells on the target is reduced by $s2%. If the target dies while channeling, the cooldown of Dark Harvest is reset.",
-    auraDescriptionTemplate: "$*8;s1 Shadow damage over $d.",
-    crossSpellRefs: [],
-  },
-  {
     id: 16511,
     name: "Hemorrhage",
     descriptionTemplate: "An instant strike that deals $s1% weapon damage and causes the target to hemorrhage, increasing any Physical damage dealt to the target by $s3%.  Lasts $n charges or $d.  Awards $s2 combo $lpoint:points;.",
@@ -75,17 +68,24 @@ export const testSpells = [
     crossSpellRefs: [],
   },
   {
-    id: 52550,
+    id: 11712,
+    name: "Curse of Agony",
+    descriptionTemplate: "Curses the target with agony, causing $*12;s1 Shadow damage over $d.  This damage is dealt slowly at first, and builds up as the Curse reaches its full duration.  Only one Curse per Warlock can be active on any one target.",
+    auraDescriptionTemplate: "$*12;s1 Shadow damage over $d.",
+    crossSpellRefs: [],
+  },
+  {
+    id: 52551,
     name: "Dark Harvest",
     descriptionTemplate: "Reaps the target's life, dealing $*8;s1 Shadow damage over $d. While channeling, the time between periodic ticks of your Affliction spells on the target is reduced by $s2%. If the target dies while channeling, the cooldown of Dark Harvest is reset.",
     auraDescriptionTemplate: "$*8;s1 Shadow damage over $d.",
     crossSpellRefs: [],
   },
   {
-    id: 11712,
-    name: "Curse of Agony",
-    descriptionTemplate: "Curses the target with agony, causing $*12;s1 Shadow damage over $d.  This damage is dealt slowly at first, and builds up as the Curse reaches its full duration.  Only one Curse per Warlock can be active on any one target.",
-    auraDescriptionTemplate: "$*12;s1 Shadow damage over $d.",
+    id: 52550,
+    name: "Dark Harvest",
+    descriptionTemplate: "Reaps the target's life, dealing $*8;s1 Shadow damage over $d. While channeling, the time between periodic ticks of your Affliction spells on the target is reduced by $s2%. If the target dies while channeling, the cooldown of Dark Harvest is reset.",
+    auraDescriptionTemplate: "$*8;s1 Shadow damage over $d.",
     crossSpellRefs: [],
   },
   {

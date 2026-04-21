@@ -106,11 +106,16 @@ func demo() *serpent.Command {
 			}
 
 			_ = spdb.Range(func(cursor *dbdefs.Ent_Spell) bool {
-				sp := chrondbc.SpellFromDB(cursor)
-				if sp.ID == 139 {
-					fmt.Println("ASd")
+				if cursor.SchoolMask != 0 {
+					sp := chrondbc.SpellFromDB(cursor)
+					fmt.Println(sp.Name())
 				}
-				fmt.Println(sp.Name(), sp.SpellIconID)
+				//for _, v := range cursor.EffectSpellClassMaskA {
+				//	if v != 0 {
+				//		sp := chrondbc.SpellFromDB(cursor)
+				//		fmt.Println(sp.Name())
+				//	}
+				//}
 
 				//sp := chrondbc.SpellFromDB(cursor)
 				////if sp.Attrs.Has(chrondbc.AttrEx3_DeathPersistent) {

@@ -153,6 +153,9 @@ jobs:
           - server: warmane
             railway_service: chronicled
             railway_token_secret: RAILWAY_TOKEN_WARMANE
+#          - server: ascension
+#            railway_service: chronicled
+#            railway_token_secret: RAILWAY_TOKEN_ASCENSION
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli

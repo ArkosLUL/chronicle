@@ -52,8 +52,8 @@ const PANEL_CATEGORIES: PanelCategory[] = [
     items: ["aura_uptime"],
   },
   {
-    label: "Dispels",
-    items: ["dispels_done", "dispels_received", "dispel_log"],
+    label: "Dispels & Interrupts",
+    items: ["dispels_done", "dispels_received", "dispel_log", "interrupts"],
   },
   {
     label: "Class",

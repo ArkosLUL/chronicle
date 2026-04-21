@@ -307,8 +307,17 @@ export interface DispelProcessorEvent extends EventMeta {
   spellAttackOutcome: number | null;
   dispelType: number;    // 0=None, 1=Magic, 2=Curse, 3=Disease, 4=Poison, 5=Stealth, 6=Invisibility
 }
+export interface InterruptProcessorEvent extends EventMeta {
+  type: "interrupt";
+  caster: string;        // The unit performing the interrupt
+  target: string;        // The unit being interrupted
+  spellName: string;     // Name of the interrupted spell
+  extraSpellId: number;  // ID of the interrupted spell
+  extraSchool: number;   // 0=Unknown, 1=None, 2=Physical, 3=Holy, 4=Fire, 5=Nature, 6=Frost, 7=Shadow, 8=Arcane
+}
 
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent;
+
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | InterruptProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

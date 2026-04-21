@@ -27,6 +27,7 @@ import { rotationsProcessor } from "../Rotations/rotations.processor";
 import { possessionProcessor } from "../PossessionPanel/possession.processor";
 import { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 import { dispelProcessor } from "../Dispel/dispel.processor";
+import { interruptProcessor } from "../Interrupt/interrupt.processor";
 import { equipmentProcessor } from "../Equipment/equipment.processor";
 import { lootProcessor } from "../LootPanel/loot.processor";
 import { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
@@ -56,6 +57,7 @@ export { rotationsProcessor } from "../Rotations/rotations.processor";
 export { possessionProcessor } from "../PossessionPanel/possession.processor";
 export { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 export { dispelProcessor } from "../Dispel/dispel.processor";
+export { interruptProcessor } from "../Interrupt/interrupt.processor";
 export { equipmentProcessor } from "../Equipment/equipment.processor";
 export { lootProcessor } from "../LootPanel/loot.processor";
 export { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
@@ -80,6 +82,7 @@ export type { TimelineResult, TimelineSeriesMeta } from "../Timeline/timeline.pr
 export type { TimelineSeriesConfig, AggregationType, TimelineSettings } from "../Timeline/timelineTypes";
 export type { RotationsResult, CastEntry, AuraSegment } from "../Rotations/rotations.processor";
 export type { DispelResult, DispelEntityData, DispelSpellData, DispelCategory, DispelLogEvent } from "../Dispel/dispel.processor";
+export type { InterruptResult, InterruptEntityData, InterruptSpellData, InterruptLogEvent } from "../Interrupt/interrupt.processor";
 export type { EquipmentResult, PlayerSnapshot } from "../Equipment/equipment.processor";
 export type { LootResult } from "../LootPanel/loot.processor";
 export type { AbsorbedDamageResult, AbsorbedDamageData } from "../AbsorbedDamage/absorbedDamage.processor";
@@ -144,6 +147,8 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   dispels_done: dispelProcessor,
   dispels_received: dispelProcessor,
   dispel_log: dispelProcessor,
+  // Interrupts
+  interrupts: interruptProcessor,
   // Equipment
   equipment: equipmentProcessor,
   // Loot

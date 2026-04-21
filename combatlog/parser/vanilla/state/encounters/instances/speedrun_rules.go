@@ -73,6 +73,10 @@ func OnyxiasLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 			{Name: "Onyxia", EntryIDs: []uint32{45133}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 			{Name: "Ortorg the Ardent", EntryIDs: []uint32{45136}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 			{Name: "Ortorg the Atressian", EntryIDs: []uint32{45125}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+
+			{Name: "Onyxian Honorguard/Warder/Flameweaver", EntryIDs: []uint32{45237, 45238, 12129}, Count: 1, Category: rankings.SpeedrunCategoryTrash},
+			{Name: "Evorian", EntryIDs: []uint32{45131}, Count: 1, Category: rankings.SpeedrunCategoryTrash},
+			{Name: "45132", EntryIDs: []uint32{45132}, Count: 1, Category: rankings.SpeedrunCategoryTrash},
 		}
 	default:
 		return nil

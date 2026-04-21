@@ -5,7 +5,7 @@
  * It receives stream data and context, processes events, and returns results.
  */
 
-import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, FastAuraCastCursor, FastSpellStartCursor, FastSpellFailCursor, FastUnitClassificationCursor, FastDispelCursor, FastCombatantInfoCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableCast, type ReusableAura, type ReusableSpellGo, type ReusableAuraCast, type ReusableSpellStart, type ReusableSpellFail, type ReusableUnitClassification, type ReusableDispel, type ReusableCombatantInfo } from "@/api/protodecode/decode";
+import { FastDamageCursor, FastHealCursor, FastResourceChangeCursor, FastExtraAttackCursor, FastSlainCursor, FastCastCursor, FastAuraCursor, FastSpellGoCursor, FastAuraCastCursor, FastSpellStartCursor, FastSpellFailCursor, FastUnitClassificationCursor, FastDispelCursor, FastInterruptCursor, FastCombatantInfoCursor, type ReusableDamage, type ReusableHeal, type ReusableResourceChange, type ReusableExtraAttack, type ReusableSlain, type ReusableCast, type ReusableAura, type ReusableSpellGo, type ReusableAuraCast, type ReusableSpellStart, type ReusableSpellFail, type ReusableUnitClassification, type ReusableDispel, type ReusableInterrupt, type ReusableCombatantInfo } from "@/api/protodecode/decode";
 import { processorRegistry } from "./processors";
 import type { WorkerRequest, WorkerResponse, PanelProcessor, ProcessorContext, SerializableProcessorContext } from "./processorTypes";
 import { compileFilters } from "./processors/filters";
@@ -36,14 +36,14 @@ function deserializeContext(ctx: SerializableProcessorContext): ProcessorContext
 /**
  * Union of all reusable event types
  */
-type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail | ReusableUnitClassification | ReusableDispel | ReusableCombatantInfo;
+type AnyReusableEvent = ReusableDamage | ReusableHeal | ReusableResourceChange | ReusableExtraAttack | ReusableSlain | ReusableCast | ReusableAura | ReusableSpellGo | ReusableAuraCast | ReusableSpellStart | ReusableSpellFail | ReusableUnitClassification | ReusableDispel | ReusableInterrupt | ReusableCombatantInfo;
 
 /**
  * A cursor wrapper that supports peeking at the next event without consuming it.
  */
 interface PeekableCursor {
   streamType: StreamType;
-  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor | FastUnitClassificationCursor | FastDispelCursor | FastCombatantInfoCursor;
+  cursor: FastDamageCursor | FastHealCursor | FastResourceChangeCursor | FastExtraAttackCursor | FastSlainCursor | FastCastCursor | FastAuraCursor | FastSpellGoCursor | FastAuraCastCursor | FastSpellStartCursor | FastSpellFailCursor | FastUnitClassificationCursor | FastDispelCursor | FastInterruptCursor | FastCombatantInfoCursor;
   peeked: { event: AnyReusableEvent; encounterID: string; firstTimestamp: Date } | null;
 }
 
@@ -107,6 +107,8 @@ function createCursor(stream: WorkerRequest["streams"][0]): PeekableCursor {
     ? new FastUnitClassificationCursor(stream.data)
     : stream.type === "dispel"
     ? new FastDispelCursor(stream.data)
+    : stream.type === "interrupt"
+    ? new FastInterruptCursor(stream.data)
     : stream.type === "combatant_info"
     ? new FastCombatantInfoCursor(stream.data)
     : new FastDamageCursor(stream.data);

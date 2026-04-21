@@ -4024,6 +4024,235 @@ export class FastDispelCursor {
 }
 
 // ============================================================================
+// ============================================================================
+// Interrupt - Spell interrupt events
+// ============================================================================
+
+export const InterruptSchool = {
+  Unknown: 0,
+  None: 1,
+  Physical: 2,
+  Holy: 3,
+  Fire: 4,
+  Nature: 5,
+  Frost: 6,
+  Shadow: 7,
+  Arcane: 8,
+} as const;
+
+export type InterruptSchool = (typeof InterruptSchool)[keyof typeof InterruptSchool];
+
+export interface ReusableInterrupt {
+  type: "interrupt";
+  index: number;
+  offsetMilli: number;
+  caster: string;
+  target: string;
+  spellName: string;
+  extraSpellId: number;
+  extraSchool: InterruptSchool;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
+}
+
+/**
+ * Zero-allocation Interrupt decoder.
+ *
+ * Interrupt proto field numbers:
+ *   1: meta (EventMeta)
+ *   2: caster (string)
+ *   3: target (string)
+ *   4: spell_name (string) — plain string, NOT nested SpellData
+ *   5: extra_spell_id (int32 varint)
+ *   6: extra_school (School enum varint)
+ */
+export class InterruptDecoder {
+  private readonly textDecoder = sharedTextDecoder;
+
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableInterrupt = {
+    type: "interrupt",
+    index: 0,
+    offsetMilli: 0,
+    caster: "",
+    target: "",
+    spellName: "",
+    extraSpellId: 0,
+    extraSchool: InterruptSchool.Unknown,
+    activity: [],
+    activityCount: 0,
+  };
+
+  decode(data: Uint8Array, offset: number, length: number): ReusableInterrupt {
+    const end = offset + length;
+    const msg = this.message;
+
+    // Reset fields
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.caster = "";
+    msg.target = "";
+    msg.spellName = "";
+    msg.extraSpellId = 0;
+    msg.extraSchool = InterruptSchool.Unknown;
+    msg.activityCount = 0;
+
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+
+      if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+
+        if (fieldNumber === 1) {
+          // EventMeta - decode nested
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
+            }
+          }
+        } else if (fieldNumber === 2) {
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 3) {
+          msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          // spell_name - plain string
+          msg.spellName = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else {
+          offset += len;
+        }
+      } else if (wireType === 0) {
+        // Varint
+        const { value, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        if (fieldNumber === 5) msg.extraSpellId = value;
+        else if (fieldNumber === 6) msg.extraSchool = value as InterruptSchool;
+      }
+    }
+
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for Interrupt events with zero-allocation decoding.
+ */
+export class FastInterruptCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new InterruptDecoder();
+  private offset: number = 0;
+
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+
+  next(): ReusableInterrupt | null {
+    if (!this.hasMoreInEncounter) return null;
+
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+
+    const msg = this.decoder.decode(this.data, msgStart, length);
+
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+
+    return msg;
+  }
+
+  nextEncounter(): boolean {
+    // Skip remaining messages in current encounter
+    while (this.hasMoreInEncounter) {
+      const { value: length, bytesRead } = readVarint(this.data, this.offset);
+      this.offset += bytesRead + length;
+      this._bytesProcessed += bytesRead + length;
+      this._messagesReadInEncounter++;
+    }
+    return this._loadNextEncounterHeader();
+  }
+
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+    const result = readPayloadHeader(this.data, this.offset);
+    if (!result) {
+      this._currentHeader = null;
+      return false;
+    }
+    this._currentHeader = result.header;
+    this._messagesReadInEncounter = 0;
+    this.offset = result.newOffset;
+    this._bytesProcessed = result.newOffset;
+    return true;
+  }
+}
+
 // CombatantInfo - Per-encounter gear/talent snapshots
 // ============================================================================
 

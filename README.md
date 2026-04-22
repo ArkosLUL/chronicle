@@ -92,5 +92,3 @@ pnpm dev
 | Frontend | React + TypeScript + Vite + Tailwind CSS |
 | Database | PostgreSQL |
 | Auth | OAuth (Discord) |
-
-> **Note:** Chronicle is source-available for transparency and contribution, but is not open source. See [LICENSE](LICENSE) for details.

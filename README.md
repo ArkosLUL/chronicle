@@ -14,7 +14,7 @@
 
 Chronicle transforms raid logs into a live, interactive breakdown of everything that happened in your raid.
 
-<video src=".github/assets/overview.webm" autoplay loop muted playsinline width="800"></video>
+<video src="https://github.com/Emyrk/chronicle/raw/refs/heads/readme/.github/assets/overview.webm" autoplay loop muted playsinline width="800"></video>
 
 ## Features
 

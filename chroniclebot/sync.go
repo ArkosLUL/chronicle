@@ -17,6 +17,11 @@ import (
 var ErrMustJoinDiscordServer = errors.New("must be in the discord server to use chronicle")
 
 func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorizer, discordID string, userID uuid.UUID) (retErr error) {
+	if bot.disabled {
+		// Nothing to do
+		return nil
+	}
+
 	b := policy.New()
 	gChron := b.GlobalChronicle()
 	usr := b.User(userID)

@@ -20,9 +20,10 @@ type Config struct {
 	// Token is the bot token from Discord Developer Portal.
 	Token string
 	// GuildID is your Discord server ID. If empty, commands are registered globally.
-	GuildID string
-	DB      database.Store
-	Zed     *authz.Authz
+	GuildID  string
+	Disabled bool
+	DB       database.Store
+	Zed      *authz.Authz
 }
 
 // Bot represents a Discord bot instance.
@@ -35,7 +36,8 @@ type Bot struct {
 	handlers []func()
 	queue    JobInserter
 
-	roles []*discordgo.Role
+	roles    []*discordgo.Role
+	disabled bool
 }
 
 // New creates a new Discord bot instance.
@@ -43,6 +45,13 @@ type Bot struct {
 func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) {
 	if config.Token == "" {
 		return nil, fmt.Errorf("no token provided")
+	}
+
+	if config.Disabled {
+		logger.Info("discord bot is disabled, skipping initialization")
+		return &Bot{
+			disabled: true,
+		}, nil
 	}
 
 	session, err := discordgo.New("Bot " + config.Token)
@@ -73,6 +82,10 @@ func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) 
 	}
 
 	return bot, nil
+}
+
+func (b *Bot) Disabled() bool {
+	return b.disabled
 }
 
 // Session returns the underlying discordgo session.
@@ -175,6 +188,10 @@ func (b *Bot) onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMember
 }
 
 func (b *Bot) enqueueSyncJob(discordID, uniqueString string) {
+	if b.disabled {
+		b.logger.Info("bot is disabled, skipping sync job")
+		return
+	}
 	if b.queue == nil {
 		b.logger.Warn("no river queue configured, skipping sync job",
 			slog.String("discord_id", discordID),

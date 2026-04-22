@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useInstanceEventsContext } from "./InstanceEventsContext";
 import { createStreamCursor, FastDamageCursor, type StreamCursor } from "@/api/protodecode/decode";
-import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema, CastSchema, AuraSchema, SpellGoSchema, SpellStartSchema, SpellFailSchema, AuraCastSchema, DispelSchema, UnitClassificationSchema } from "@/api/proto/chronicle_pb";
+import { DamageSchema, ExtraAttackSchema, HealSchema, ResourceChangeSchema, SlainSchema, CastSchema, AuraSchema, SpellGoSchema, SpellStartSchema, SpellFailSchema, AuraCastSchema, DispelSchema, InterruptSchema, UnitClassificationSchema } from "@/api/proto/chronicle_pb";
 import type { DescMessage } from "@bufbuild/protobuf";
 import type {
   StreamType,
@@ -42,6 +42,8 @@ function getSchemaForType(type: StreamType): DescMessage {
       return DispelSchema;
     case "unit_classification":
       return UnitClassificationSchema;
+    case "interrupt":
+      return InterruptSchema;
     case "combatant_info":
       // combatant_info uses FastCombatantInfoCursor, not generic StreamCursor.
       // Return UnitClassificationSchema as placeholder to satisfy exhaustive check.

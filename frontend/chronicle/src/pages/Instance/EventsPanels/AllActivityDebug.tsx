@@ -3,7 +3,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus, UserCheck } from "lucide-react";
+import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus, UserCheck, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { ScrollArea, ScrollBar } from "@/components/ui/ScrollArea/ScrollArea";
@@ -38,6 +38,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   unit_classification: { icon: Search, color: "text-indigo-500", label: "Classification" },
   combatant_info: { icon: UserCheck, color: "text-sky-400", label: "Combatant Info" },
   dispel: { icon: Bubbles, color: "text-violet-400", label: "Dispel" },
+  interrupt: { icon: Ban, color: "text-rose-400", label: "Interrupt" },
 
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
 };
@@ -52,6 +53,7 @@ const STREAM_CODES: Record<StreamType, string> = {
   unit_classification: "uc",
   combatant_info: "ci",
   dispel: "dp",
+  interrupt: "int",
 };
 const CODE_TO_STREAM = Object.fromEntries(
   Object.entries(STREAM_CODES).map(([k, v]) => [v, k as StreamType]),
@@ -444,7 +446,7 @@ function AllActivityContent({
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,

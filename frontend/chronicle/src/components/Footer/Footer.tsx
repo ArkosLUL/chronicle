@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
 
+const SERVER_NAME = import.meta.env.VITE_SERVER_NAME ?? "turtle";
+
 
 const DISCORD_URL = "https://discord.gg/gz97ABFVAj";
 const PATREON_URL = "https://www.patreon.com/cw/ChronicleClassic";
@@ -129,7 +131,7 @@ export function Footer() {
               </Link>
             </div>
             <p className="text-xs mt-2">
-              {gitTag} ({gitCommit}) • Built {buildTime}
+              {gitTag} ({gitCommit}) • Built {buildTime} • Server: {SERVER_NAME}
             </p>
           </div>
         </div>

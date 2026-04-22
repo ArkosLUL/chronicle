@@ -14,7 +14,7 @@
 
 Chronicle transforms raid logs into a live, interactive breakdown of everything that happened in your raid.
 
-<video src="https://github.com/Emyrk/chronicle/raw/refs/heads/readme/.github/assets/overview.webm" autoplay loop muted playsinline width="800"></video>
+![Overview](.github/assets/overview.png)
 
 ## Features
 
@@ -24,19 +24,48 @@ Chronicle transforms raid logs into a live, interactive breakdown of everything 
 
 🔍 **Custom Filters** — Filter any panel by ability, school, hit type, source, target, and more. [See it in action →](https://chrn.link/1WyKHE)
 
-<!-- screenshot: filtered panels — e.g. the mainhand vs offhand comparison from chrn.link/1WyKHE -->
+<details>
+<summary>Filters use boolean `AND/OR/NOT` blocks to filter events</summary>
+
+![Custom Filters](.github/assets/filter.png)
+
+</details>
 
 🔗 **Shareable Links** — Every view is URL-encoded — encounters, filters, layout, time range. Copy the link and anyone sees exactly what you see.
 
 📐 **Customizable Layouts** — Resize, rearrange, and swap panels. Save layouts and share them with your guild.
 
-<!-- screenshot: a custom layout with several resized/rearranged panels -->
+<details>
+<summary>Mainhand vs Offhand damage layout</summary>
+
+![Custom Layout](.github/assets/customlayout.png)
+
+</details>
 
 ⏱️ **Time Range Selection** — Drag-select on the timeline to filter every panel to that slice.
 
-<!-- screenshot: timeline with a drag-selected time range -->
+<details>
+<summary>Time range selection example</summary>
+
+![Time Range](.github/assets/timerange.png)
+
+</details>
 
 🎒 **Loot & Gear** — See what dropped and inspect player gear from the log.
+
+<details>
+<summary>Loot</summary>
+
+![Loot](.github/assets/loot.png)
+
+</details>
+
+<details>
+<summary>Equipment</summary>
+
+![Equipment](.github/assets/equipment.png)
+
+</details>
 
 ⚔️ **Class-Specific Panels** — Sunder Armor uptime, debuff tracking, and more.
 

@@ -43,15 +43,15 @@ type Bot struct {
 // New creates a new Discord bot instance.
 // Call Open() to connect to Discord.
 func New(ctx context.Context, logger *slog.Logger, config Config) (*Bot, error) {
-	if config.Token == "" {
-		return nil, fmt.Errorf("no token provided")
-	}
-
 	if config.Disabled {
 		logger.Info("discord bot is disabled, skipping initialization")
 		return &Bot{
 			disabled: true,
 		}, nil
+	}
+
+	if config.Token == "" {
+		return nil, fmt.Errorf("no token provided")
 	}
 
 	session, err := discordgo.New("Bot " + config.Token)

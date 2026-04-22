@@ -56,19 +56,25 @@ func (s *Service) Start(ctx context.Context) error {
 	zed := serviceauthz.Authz(s.broker)
 
 	bot, err := chroniclebot.New(ctx, logger, chroniclebot.Config{
-		Token:   s.cfg.Token,
-		GuildID: s.cfg.GuildID,
-		DB:      db,
-		Zed:     zed,
+		Token:    s.cfg.Token,
+		GuildID:  s.cfg.GuildID,
+		Disabled: s.cfg.Disabled,
+		DB:       db,
+		Zed:      zed,
 	})
 	if err != nil {
 		return fmt.Errorf("create chronicle bot: %w", err)
 	}
+	s.bot = bot
+
+	// Do not do anything else
+	if bot.Disabled() {
+		return nil
+	}
+
 	if err := bot.RegisterCommands(chroniclebot.DefaultCommands(bot)); err != nil {
 		return fmt.Errorf("register discord commands: %w", err)
 	}
-
-	s.bot = bot
 
 	return nil
 }
@@ -91,7 +97,7 @@ func (s *Service) Options() serpent.OptionSet {
 		{
 			Name:        "Discord bot token",
 			Description: "Address to serve the api on.",
-			Required:    true,
+			Required:    false,
 			Flag:        "discord-token",
 			Env:         "CHRONICLE_DISCORD_BOT_TOKEN",
 			Default:     "",

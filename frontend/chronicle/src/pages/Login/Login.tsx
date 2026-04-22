@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/Card/Card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert"
 import { MagicLogo } from "@/components/MagicLogo"
-import { useAuthProviders } from "@/api/queries"
+import { useAuthProviders, useSiteConfig } from "@/api/queries"
 import { useAuth } from "@/hooks/useAuth"
 
 const DISCORD_URL = "https://discord.gg/gz97ABFVAj"
@@ -14,6 +14,8 @@ export function Login() {
   const [searchParams] = useSearchParams()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { data: providers = [], isLoading: providersLoading, isError: providersError, error: providersErrorMsg } = useAuthProviders()
+  const { data: siteConfig } = useSiteConfig()
+  const signupsDisabled = siteConfig?.signups_enabled === false
   const loading = (authLoading || providersLoading) && !providersError
   const authError = searchParams.get("error")
 
@@ -233,11 +235,11 @@ export function Login() {
               </AlertDescription>
             </Alert>
           )}
-          {authError === "signups_disabled" && (
+          {(authError === "signups_disabled" || signupsDisabled) && (
             <Alert variant="destructive" className="mb-4">
               <AlertTitle>Signups Disabled</AlertTitle>
               <AlertDescription>
-                New account registration is currently disabled. Please try again later.
+                <p>New account registration is currently disabled. Join the <a href="https://discord.com/invite/gz97ABFVAj" target="_blank" rel="noopener noreferrer" className="inline underline font-medium hover:text-destructive-foreground/80">Discord</a> for updates.</p>
               </AlertDescription>
             </Alert>
           )}
@@ -450,7 +452,7 @@ export function Login() {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button type="submit" className="w-full" disabled={submitting || (mode === "register" && signupsDisabled)}>
               {submitting
                 ? "Loading..."
                 : mode === "login"

@@ -1,4 +1,4 @@
-# mod-chronicle-logger
+# mod-chronicle
 
 A server-side AzerothCore module that generates combat log files compatible with
 [Chronicle](https://github.com/Emyrk/chronicle)'s V2 pipe-delimited format.
@@ -33,10 +33,10 @@ tree. AC's CMake auto-discovers any subdirectory containing `.cpp` files.
 cd research/azerothcore/azerothcore-wotlk/modules
 
 # Option A: Symlink (local/non-Docker builds)
-ln -s ../../mod-chronicle-logger mod-chronicle-logger
+ln -s ../../mod-chronicle mod-chronicle
 
 # Option B: Copy (required for Docker COPY)
-cp -r ../../mod-chronicle-logger mod-chronicle-logger
+cp -r ../../mod-chronicle mod-chronicle
 ```
 
 > **Docker note:** `COPY modules /azerothcore/modules` in the Dockerfile doesn't
@@ -68,14 +68,14 @@ The module config file is automatically copied to the AC `etc/` directory on
 first run. Edit it at:
 
 ```
-./env/dist/etc/mod_chronicle_logger.conf
+./env/dist/etc/mod_chronicle.conf
 ```
 
 Default settings:
 ```ini
-ChronicleLogger.Enable = 1
-ChronicleLogger.LogDir = "chronicle_logs"
-ChronicleLogger.RealmName = "AzerothCore"
+Chronicle.Enable = 1
+Chronicle.LogDir = "chronicle_logs"
+Chronicle.RealmName = "AzerothCore"
 ```
 
 ### 4. Getting Combat Logs
@@ -153,7 +153,7 @@ bind mount:
 services:
   ac-dev-server:
     volumes:
-      - ../../mod-chronicle-logger:/azerothcore/modules/mod-chronicle-logger
+      - ../../mod-chronicle:/azerothcore/modules/mod-chronicle
 ```
 
 Then:

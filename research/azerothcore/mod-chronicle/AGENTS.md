@@ -2,7 +2,7 @@
 
 ## What This Is
 
-**ChronicleServer** is a server-side AzerothCore module (`mod-chronicle-logger`) that generates combat log files from inside the game server. It produces the same V2 pipe-delimited format that [Chronicle](https://github.com/Emyrk/chronicle) already parses from its client-side WoW addon ([ChronicleCompanion](https://github.com/Emyrk/ChronicleCompanion)).
+**ChronicleServer** is a server-side AzerothCore module (`mod-chronicle`) that generates combat log files from inside the game server. It produces the same V2 pipe-delimited format that [Chronicle](https://github.com/Emyrk/chronicle) already parses from its client-side WoW addon ([ChronicleCompanion](https://github.com/Emyrk/ChronicleCompanion)).
 
 **The big idea:** Instead of relying on each player running an addon to capture combat logs, the server itself records everything. This means:
 - 100% coverage — every player in every instance, no opt-in required
@@ -137,7 +137,7 @@ git clone https://github.com/azerothcore/azerothcore-wotlk.git
 
 # Copy this module into the modules directory
 # (Docker COPY doesn't follow symlinks — must be a real copy)
-cp -r /path/to/ChronicleServer azerothcore-wotlk/modules/mod-chronicle-logger
+cp -r /path/to/ChronicleServer azerothcore-wotlk/modules/mod-chronicle
 
 # Build and run
 cd azerothcore-wotlk
@@ -152,8 +152,8 @@ The server is ready when you see `AzerothCore rev. ... ready.` in the worldserve
 After changing module code:
 ```bash
 cd azerothcore-wotlk
-rm -rf modules/mod-chronicle-logger
-cp -r /path/to/ChronicleServer modules/mod-chronicle-logger
+rm -rf modules/mod-chronicle
+cp -r /path/to/ChronicleServer modules/mod-chronicle
 docker compose build --no-cache ac-worldserver
 docker compose up
 ```
@@ -170,23 +170,23 @@ The `rm -rf` + fresh copy is important — `cp -r` over an existing directory do
 
 ### Configuration
 
-Config auto-copies to `env/dist/etc/mod_chronicle_logger.conf` on first run:
+Config auto-copies to `env/dist/etc/mod_chronicle.conf` on first run:
 ```ini
-ChronicleLogger.Enable = 1
-ChronicleLogger.LogDir = "chronicle_logs"
-ChronicleLogger.RealmName = "AzerothCore"
+Chronicle.Enable = 1
+Chronicle.LogDir = "chronicle_logs"
+Chronicle.RealmName = "AzerothCore"
 ```
 
 ## File Structure
 
 ```
 src/
-├── ChronicleLogger.h        # Class declarations: EventFormatter, CombatLogWriter, InstanceTracker
-├── ChronicleLogger.cpp      # All implementations
+├── Chronicle.h              # Class declarations: EventFormatter, CombatLogWriter, InstanceTracker
+├── Chronicle.cpp            # All implementations
 ├── ChronicleLogs_SC.cpp     # Hook classes that capture events and call into the above
 └── MP_loader.cpp            # AzerothCore module registration boilerplate
 conf/
-└── mod_chronicle_logger.conf.dist   # Default config
+└── mod_chronicle.conf.dist          # Default config
 ```
 
 ## What Needs to Happen Next

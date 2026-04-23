@@ -3,7 +3,7 @@
  * Released under GNU AGPL v3 license
  */
 
-#include "ChronicleLogger.h"
+#include "Chronicle.h"
 
 #include "Config.h"
 #include "GameTime.h"
@@ -414,11 +414,11 @@ CombatLogWriter::CombatLogWriter(std::string const& dir, uint32 mapId, uint32 in
 
     if (_file.is_open())
     {
-        LOG_INFO("module", "ChronicleLogger: opened log file {}", _path);
+        LOG_INFO("module", "Chronicle: opened log file {}", _path);
     }
     else
     {
-        LOG_ERROR("module", "ChronicleLogger: FAILED to open log file {}", _path);
+        LOG_ERROR("module", "Chronicle: FAILED to open log file {}", _path);
     }
 }
 
@@ -445,7 +445,7 @@ void CombatLogWriter::Close()
     {
         _file.flush();
         _file.close();
-        LOG_INFO("module", "ChronicleLogger: closed log file {}", _path);
+        LOG_INFO("module", "Chronicle: closed log file {}", _path);
     }
 }
 
@@ -464,11 +464,11 @@ InstanceTracker& InstanceTracker::Instance()
 
 void InstanceTracker::LoadConfig()
 {
-    _enabled   = sConfigMgr->GetOption<bool>("ChronicleLogger.Enable", true);
-    _logDir    = sConfigMgr->GetOption<std::string>("ChronicleLogger.LogDir", "chronicle_logs");
-    _realmName = sConfigMgr->GetOption<std::string>("ChronicleLogger.RealmName", "AzerothCore");
+    _enabled   = sConfigMgr->GetOption<bool>("Chronicle.Enable", true);
+    _logDir    = sConfigMgr->GetOption<std::string>("Chronicle.LogDir", "chronicle_logs");
+    _realmName = sConfigMgr->GetOption<std::string>("Chronicle.RealmName", "AzerothCore");
 
-    LOG_INFO("module", "ChronicleLogger: enabled={}, logDir={}, realm={}",
+    LOG_INFO("module", "Chronicle: enabled={}, logDir={}, realm={}",
              _enabled, _logDir, _realmName);
 }
 

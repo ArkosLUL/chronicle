@@ -3,10 +3,10 @@
  * Released under GNU AGPL v3 license
  */
 
-void AddChronicleLoggerScripts();
+void AddChronicleScripts();
 
 // The function name must match: Add<module_dir_with_dashes_as_underscores>Scripts
-void Addmod_chronicle_loggerScripts()
+void Addmod_chronicleScripts()
 {
-    AddChronicleLoggerScripts();
+    AddChronicleScripts();
 }

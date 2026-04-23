@@ -6,8 +6,8 @@
  * Produces per-instance log files in Chronicle's V2 pipe-delimited format.
  */
 
-#ifndef MOD_CHRONICLE_LOGGER_H
-#define MOD_CHRONICLE_LOGGER_H
+#ifndef MOD_CHRONICLE_H
+#define MOD_CHRONICLE_H
 
 #include "ObjectGuid.h"
 #include <fstream>
@@ -124,4 +124,4 @@ private:
     std::string _realmName = "AzerothCore";
 };
 
-#endif // MOD_CHRONICLE_LOGGER_H
+#endif // MOD_CHRONICLE_H

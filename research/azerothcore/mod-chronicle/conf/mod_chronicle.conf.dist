@@ -9,7 +9,7 @@
 # Chronicle Logger configuration
 ########################################
 #
-#    ChronicleLogger.Enable
+#    Chronicle.Enable
 #        Description: Enable server-side combat log generation.
 #                     Log files are created per dungeon/raid instance in
 #                     Chronicle's V2 pipe-delimited format.
@@ -17,22 +17,22 @@
 #                     0 - Disabled
 #
 
-ChronicleLogger.Enable = 1
+Chronicle.Enable = 1
 
 #
-#    ChronicleLogger.LogDir
+#    Chronicle.LogDir
 #        Description: Subdirectory name (relative to LogsDir) where combat
 #                     log files are written.
 #        Default:     "chronicle_logs"
 #
 
-ChronicleLogger.LogDir = "chronicle_logs"
+Chronicle.LogDir = "chronicle_logs"
 
 #
-#    ChronicleLogger.RealmName
+#    Chronicle.RealmName
 #        Description: Realm name written into the HEADER event.
 #                     Used by Chronicle to identify the source server.
 #        Default:     "AzerothCore"
 #
 
-ChronicleLogger.RealmName = "AzerothCore"
+Chronicle.RealmName = "AzerothCore"

@@ -3,10 +3,10 @@
  * Released under GNU AGPL v3 license
  *
  * AzerothCore hook scripts that capture combat events and feed them
- * to ChronicleLogger for writing as Chronicle V2 combat log lines.
+ * to Chronicle module classes for writing as Chronicle V2 combat log lines.
  */
 
-#include "ChronicleLogger.h"
+#include "Chronicle.h"
 
 #include "Map.h"
 #include "Player.h"
@@ -224,7 +224,7 @@ public:
 // ===========================================================================
 // Script registration — called from MP_loader.cpp
 // ===========================================================================
-void AddChronicleLoggerScripts()
+void AddChronicleScripts()
 {
     new ChronicleUnitScript();
     new ChronicleAllSpellScript();

@@ -436,7 +436,8 @@ func (p *Parser) combatantInfo(ctx context.Context, ts time.Time, m *Matched) ([
 
 	talents, err := combatant.ParseTalents(talentsStr)
 	if err != nil {
-		return nil, fmt.Errorf("parsing talents: %w", err)
+		talents = nil
+		p.logger.Error("parsing talents, setting to nil", "error", err)
 	}
 
 	gear := combatant.ParseGear(strings.Split(gearStr, "&"))

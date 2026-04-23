@@ -8,6 +8,8 @@
 
 <p align="center">
   <a href="http://chronicleclassic.com/">chronicleclassic.com</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/sponsors/Emyrk">💖 Sponsor</a>
 </p>
 
 ---

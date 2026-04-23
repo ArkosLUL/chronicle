@@ -11,6 +11,46 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 )
 
+// ParseLineUnixMillis parses an AzerothCore combat log line of the form:
+//
+//	<unix_millis>  EVENT,field,field,...
+//
+// Same structure as ParseLine (double-space separator, comma-separated fields)
+// but the timestamp is Unix epoch milliseconds instead of M/DD HH:MM:SS.mmm.
+func ParseLineUnixMillis(content string) (time.Time, string, *Matched, error) {
+	if content == "" {
+		return time.Time{}, "", nil, errors.New("empty line")
+	}
+
+	idx := strings.Index(content, "  ")
+	if idx < 0 {
+		return time.Time{}, "", nil, fmt.Errorf("no double-space separator found in line: %q", truncate(content, 80))
+	}
+
+	tsStr := content[:idx]
+	payload := content[idx+2:]
+
+	ms, err := strconv.ParseInt(tsStr, 10, 64)
+	if err != nil {
+		return time.Time{}, "", nil, fmt.Errorf("parsing unix millis %q: %w", tsStr, err)
+	}
+	ts := time.UnixMilli(ms)
+
+	parts := strings.Split(payload, ",")
+	if len(parts) < 1 || parts[0] == "" {
+		return time.Time{}, "", nil, fmt.Errorf("empty event type in line: %q", truncate(content, 80))
+	}
+
+	event := strings.TrimSpace(parts[0])
+
+	fields := make([]string, 0, len(parts)-1)
+	for _, p := range parts[1:] {
+		fields = append(fields, unquote(strings.TrimSpace(p)))
+	}
+
+	return ts, event, &Matched{parts: fields, index: 0}, nil
+}
+
 // Matched is a stateful cursor over comma-separated fields from a WotLK
 // COMBAT_LOG_EVENT_UNFILTERED line. Fields are consumed sequentially via typed
 // getter methods. The first parse error is recorded and never overwritten.

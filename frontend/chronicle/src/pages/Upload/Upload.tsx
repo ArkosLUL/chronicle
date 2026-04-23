@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Upload as UploadIcon, FileText, Info, LogIn, AlertCircle, CheckCircle, FolderOpen, AlertTriangle, ArrowRight } from "lucide-react";
 import { compressFile } from "@/api/compress";
@@ -10,38 +10,144 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck } from "@/api/queries";
 
+/** Reusable file drop zone — supports click-to-browse and drag-and-drop. */
+function FileDropZone({
+  file,
+  accept,
+  onFile,
+  label,
+  sizeUnit = "MB",
+}: {
+  file: File | null;
+  accept: string;
+  onFile: (file: File) => void;
+  label: string;
+  sizeUnit?: "MB" | "KB";
+}) {
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+
+  const formatSize = (bytes: number) =>
+    sizeUnit === "KB"
+      ? `${(bytes / 1024).toFixed(2)} KB`
+      : `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items.length > 0) setDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+    dragCounter.current = 0;
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) onFile(dropped);
+  };
+
+  return (
+    <div
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onClick={() => inputRef.current?.click()}
+      className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+        dragging
+          ? "border-primary bg-primary/5"
+          : "hover:border-primary"
+      }`}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+        }}
+        className="hidden"
+      />
+      {file ? (
+        <div className="space-y-1">
+          <FileText className="h-8 w-8 mx-auto text-primary" />
+          <p className="text-sm font-medium">{file.name}</p>
+          <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{label}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const LOG_TYPE_OPTIONS = [
+  { value: "", label: "Default (server)" },
+  { value: "v1", label: "V1 (Vanilla addon)" },
+  { value: "v2", label: "V2 (Turtle WoW)" },
+  { value: "warmane", label: "Warmane (WotLK)" },
+  { value: "epoch", label: "Epoch" },
+  { value: "kronos", label: "Kronos" },
+  { value: "azerothcore", label: "AzerothCore" },
+] as const;
+
 export interface UploadViewProps {
   isAuthenticated: boolean;
   authLoading: boolean;
   hasUploadPermission: boolean;
+  hasAdminLogs: boolean;
   combatLog: File | null;
   rawCombatLog: File | null;
   uploading: boolean;
   uploadProgress: number;
   error: { message: string; call_to_action?: string; detail?: string; link?: string; link_text?: string } | null;
   success: { message: string; logId: string } | null;
-  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>, type: "combat" | "raw") => void;
+  onFileDrop: (file: File, type: "combat" | "raw") => void;
   onUpload: () => void;
   useV2Upload: boolean;
   onToggleV2Upload: (checked: boolean) => void;
   showLegacy: boolean;
+  logTypeOverride: string;
+  onLogTypeOverrideChange: (value: string) => void;
 }
 
 export function UploadView({
   isAuthenticated,
   authLoading,
   hasUploadPermission,
+  hasAdminLogs,
   combatLog,
   rawCombatLog,
   uploading,
   uploadProgress,
   error,
   success,
-  onFileSelect,
+  onFileDrop,
   onUpload,
   useV2Upload,
   onToggleV2Upload,
   showLegacy,
+  logTypeOverride,
+  onLogTypeOverrideChange,
 }: UploadViewProps) {
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -147,6 +253,27 @@ export function UploadView({
             </Alert>
           )}
 
+          {/* Admin-only log type override */}
+          {hasAdminLogs && (
+            <div className="flex items-center gap-3">
+              <Label htmlFor="log-type-override" className="text-sm font-medium whitespace-nowrap">
+                Log Type
+              </Label>
+              <select
+                id="log-type-override"
+                value={logTypeOverride}
+                onChange={(e) => onLogTypeOverrideChange(e.target.value)}
+                className="h-8 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {LOG_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* V2 Upload Toggle - only visible with ?debug=true */}
           {showLegacy && (
             <div className="flex items-center gap-3">
@@ -173,32 +300,12 @@ export function UploadView({
                 <p className="text-sm text-muted-foreground">
                   Select <code>/CustomData/Chronicle_&lt;character_name&gt;.txt</code> file
                 </p>
-                <label className="block">
-                  <input
-                    type="file"
-                    accept=".txt,.txt.gz,.gz"
-                    onChange={(e) => onFileSelect(e, "combat")}
-                    className="hidden"
-                  />
-                  <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                    {combatLog ? (
-                      <div className="space-y-1">
-                        <FileText className="h-8 w-8 mx-auto text-primary" />
-                        <p className="text-sm font-medium">{combatLog.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(combatLog.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Click to select file
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </label>
+                <FileDropZone
+                  file={combatLog}
+                  accept=".txt,.txt.gz,.gz"
+                  onFile={(f) => onFileDrop(f, "combat")}
+                  label="Click or drag file here"
+                />
               </div>
             </Card>
           ) : (
@@ -213,32 +320,12 @@ export function UploadView({
                   <p className="text-sm text-muted-foreground">
                     Select your WoWCombatLog.txt file
                   </p>
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept=".txt,.txt.gz,.gz"
-                      onChange={(e) => onFileSelect(e, "combat")}
-                      className="hidden"
-                    />
-                    <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                      {combatLog ? (
-                        <div className="space-y-1">
-                          <FileText className="h-8 w-8 mx-auto text-primary" />
-                          <p className="text-sm font-medium">{combatLog.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(combatLog.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Click to select file
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </label>
+                  <FileDropZone
+                    file={combatLog}
+                    accept=".txt,.txt.gz,.gz"
+                    onFile={(f) => onFileDrop(f, "combat")}
+                    label="Click or drag file here"
+                  />
                 </div>
               </Card>
 
@@ -251,32 +338,13 @@ export function UploadView({
                   <p className="text-sm text-muted-foreground">
                     Select your WoWRawCombatLog.txt
                   </p>
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept=".txt,.csv,.txt.gz,.gz"
-                      onChange={(e) => onFileSelect(e, "raw")}
-                      className="hidden"
-                    />
-                    <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                      {rawCombatLog ? (
-                        <div className="space-y-1">
-                          <FileText className="h-8 w-8 mx-auto text-primary" />
-                          <p className="text-sm font-medium">{rawCombatLog.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(rawCombatLog.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <UploadIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Click to select file
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </label>
+                  <FileDropZone
+                    file={rawCombatLog}
+                    accept=".txt,.csv,.txt.gz,.gz"
+                    onFile={(f) => onFileDrop(f, "raw")}
+                    label="Click or drag file here"
+                    sizeUnit="KB"
+                  />
                 </div>
               </Card>
             </div>
@@ -467,16 +535,19 @@ export function UploadView({
 export function Upload() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   
-  // Check upload permission via SpiceDB
+  // Check upload + admin_logs permissions via SpiceDB
   const authzChecks = useMemo(() => ({ 
-    upload: "chronicle:chronicle#upload_log" 
+    upload: "chronicle:chronicle#upload_log",
+    adminLogs: "chronicle:chronicle#admin_logs",
   }), []);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
   });
   const hasUploadPermission = authz?.upload ?? false;
+  const hasAdminLogs = authz?.adminLogs ?? false;
   const [combatLog, setCombatLog] = useState<File | null>(null);
   const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
+  const [logTypeOverride, setLogTypeOverride] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<{ message: string; call_to_action?: string; detail?: string; link?: string; link_text?: string } | null>(null);
@@ -494,11 +565,7 @@ export function Upload() {
     setSuccess(null);
   }, []);
 
-  const handleFileSelect = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "combat" | "raw"
-  ) => {
-    const file = e.target.files?.[0] || null;
+  const handleFileDrop = (file: File, type: "combat" | "raw") => {
     if (type === "combat") {
       setCombatLog(file);
     } else {
@@ -615,9 +682,12 @@ export function Upload() {
       });
 
       // Use different endpoint based on upload version
-      const endpoint = useV2Upload
+      let endpoint = useV2Upload
         ? "/api/v1/raidlogs/logs/upload-v2"
         : "/api/v1/raidlogs/logs/upload";
+      if (logTypeOverride && useV2Upload) {
+        endpoint += `?log_type=${encodeURIComponent(logTypeOverride)}`;
+      }
       xhr.open("POST", endpoint);
       xhr.send(formData);
     } catch (err) {
@@ -627,24 +697,27 @@ export function Upload() {
         detail: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [combatLog, rawCombatLog, useV2Upload]);
+  }, [combatLog, rawCombatLog, useV2Upload, logTypeOverride]);
 
   return (
     <UploadView
       isAuthenticated={isAuthenticated}
       authLoading={authLoading}
       hasUploadPermission={hasUploadPermission}
+      hasAdminLogs={hasAdminLogs}
       combatLog={combatLog}
       rawCombatLog={rawCombatLog}
       uploading={uploading}
       uploadProgress={uploadProgress}
       error={error}
       success={success}
-      onFileSelect={handleFileSelect}
+      onFileDrop={handleFileDrop}
       onUpload={handleUpload}
       useV2Upload={useV2Upload}
       onToggleV2Upload={handleToggleV2Upload}
       showLegacy={showLegacy}
+      logTypeOverride={logTypeOverride}
+      onLogTypeOverrideChange={setLogTypeOverride}
     />
   );
 }

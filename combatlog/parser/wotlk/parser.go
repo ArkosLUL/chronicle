@@ -21,11 +21,14 @@ type Parser struct {
 	wowDB   gamedb.SpellFetcher
 	scanner *bufio.Scanner
 
-	lastDate    time.Time
-	guidNames   *GUIDNames
-	synthetics  *synthetic.Synthetic
-	itemFetcher gamedb.GearResolver
-	baseYear    int
+	lastDate   time.Time
+	guidNames  *GUIDNames
+	synthetics interface {
+		ProcessMessages([]messages.Message) ([]messages.Message, error)
+	}
+	itemFetcher   gamedb.GearResolver
+	baseYear      int
+	useUnixMillis bool // true for AzerothCore logs (unix millis timestamps)
 
 	lineParseDur  time.Duration
 	syntheticsDur time.Duration
@@ -50,20 +53,37 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	}, nil
 }
 
+func (p *Parser) SetSynthetics(s interface {
+	ProcessMessages([]messages.Message) ([]messages.Message, error)
+}) {
+	p.synthetics = s
+}
+
 // SetBaseYear overrides the year used for timestamps (WotLK logs omit the year).
 func (p *Parser) SetBaseYear(year int) {
 	p.baseYear = year
 }
 
+// SetUnixMillisMode configures the parser to expect unix millisecond timestamps
+// instead of the standard WotLK M/DD HH:MM:SS.mmm format. Used for AzerothCore
+// server-generated logs.
+func (p *Parser) SetUnixMillisMode(enabled bool) {
+	p.useUnixMillis = enabled
+}
+
 func (p *Parser) DetailedTimes() map[string]time.Duration {
-	times := map[string]time.Duration{
-		"parser.line_parse":  p.lineParseDur,
-		"parser.synthetics":  p.syntheticsDur,
+	if ws, ok := p.synthetics.(*synthetic.Synthetic); ok {
+		times := map[string]time.Duration{
+			"parser.line_parse": p.lineParseDur,
+			"parser.synthetics": p.syntheticsDur,
+		}
+		for k, v := range ws.DetailedTimes() {
+			times[k] = v
+		}
+		return times
 	}
-	for k, v := range p.synthetics.DetailedTimes() {
-		times[k] = v
-	}
-	return times
+
+	return map[string]time.Duration{}
 }
 
 func (p *Parser) Advance(ctx context.Context) ([]messages.Message, error) {
@@ -94,7 +114,16 @@ func (p *Parser) advance(_ context.Context) (_ []messages.Message, final error) 
 		return messages.Unparsed(time.Time{}, next), nil
 	}
 
-	ts, event, m, err := ParseLine(next)
+	var ts time.Time
+	var event string
+	var m *Matched
+	var err error
+
+	if p.useUnixMillis {
+		ts, event, m, err = ParseLineUnixMillis(next)
+	} else {
+		ts, event, m, err = ParseLine(next)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +133,10 @@ func (p *Parser) advance(_ context.Context) (_ []messages.Message, final error) 
 		}
 	}()
 
-	// Apply base year — WotLK timestamps have no year.
-	ts = ts.AddDate(p.baseYear, 0, 0)
+	if !p.useUnixMillis {
+		// Apply base year — WotLK timestamps have no year.
+		ts = ts.AddDate(p.baseYear, 0, 0)
+	}
 
 	if !p.lastDate.IsZero() && ts.Before(p.lastDate.Add(-time.Second)) {
 		return nil, parseerrors.AsFatalError(fmt.Errorf("log dates went backwards: last %v, current %v", p.lastDate, ts))

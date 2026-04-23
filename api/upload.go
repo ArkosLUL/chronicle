@@ -217,6 +217,27 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 		logType = database.LogTypeKronos
 	}
 
+	// Admin override: allow specifying log_type via query parameter.
+	if override := r.URL.Query().Get("log_type"); override != "" {
+		overrideType := database.LogType(override)
+		if !overrideType.Valid() {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+				Message: "Invalid log_type override",
+				Detail:  fmt.Sprintf("unknown log type: %q", override),
+			})
+			return
+		}
+		actor, _ := authz.ActorFromContext(ctx)
+		ok, err := api.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_logs_User(actor))
+		if err != nil || !ok {
+			httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
+				Message: "Only admins can override the log type",
+			})
+			return
+		}
+		logType = overrideType
+	}
+
 	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, logType)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{

@@ -90,7 +90,7 @@ var (
 	RagefireChasmFactory = &CommonFactory{
 		Name:      "Ragefire Chasm",
 		ZoneNames: []string{"ragefire chasm"},
-		ZoneName:  ZoneNameMatcher("ragefire chasm"),
+		ZoneName:  ZoneNameMatcher("ragefire chasm", "Ragefire Chasm"),
 		Hostiles:  FromMap(RagefireChasmHostiles()),
 	}
 

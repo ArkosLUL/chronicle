@@ -21,6 +21,7 @@ import (
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
+	"github.com/Emyrk/chronicle/combatlog/parser/azerothcore"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
@@ -300,6 +301,32 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
 			jobResult = "failure"
 			return fmt.Errorf("consume warmane log: %w", consumeErr)
+		}
+
+	case database.LogTypeAzerothCore:
+		// Load single file
+		loadStart := time.Now()
+		rdr, err := w.loadFile(ctx, files[0])
+		if err != nil {
+			return fmt.Errorf("load log file: %w", err)
+		}
+		loadDuration := time.Since(loadStart)
+		report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
+		metrics.loadFileDuration.Observe(loadDuration.Seconds())
+
+		// AzerothCore parser: WotLK format with unix millis + CHRONICLE_* extensions
+		reg := registry.DefaultRegistry(logLogger)
+		p, err := azerothcore.New(ctx, logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher, reg)
+		if err != nil {
+			jobResult = "failure"
+			return fmt.Errorf("create azerothcore parser: %w", err)
+		}
+
+		c.Advancer = p
+		consumeErr = c.ConsumeAll(ctx, p)
+		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
+			jobResult = "failure"
+			return fmt.Errorf("consume azerothcore log: %w", consumeErr)
 		}
 
 	default:

@@ -241,11 +241,12 @@ func AllLogInstanceEventTypeValues() []LogInstanceEventType {
 type LogType string
 
 const (
-	LogTypeV1      LogType = "v1"
-	LogTypeV2      LogType = "v2"
-	LogTypeWarmane LogType = "warmane"
-	LogTypeEpoch   LogType = "epoch"
-	LogTypeKronos  LogType = "kronos"
+	LogTypeV1          LogType = "v1"
+	LogTypeV2          LogType = "v2"
+	LogTypeWarmane     LogType = "warmane"
+	LogTypeEpoch       LogType = "epoch"
+	LogTypeKronos      LogType = "kronos"
+	LogTypeAzerothCore LogType = "azerothcore"
 )
 
 func (e *LogType) Scan(src interface{}) error {
@@ -289,7 +290,8 @@ func (e LogType) Valid() bool {
 		LogTypeV2,
 		LogTypeWarmane,
 		LogTypeEpoch,
-		LogTypeKronos:
+		LogTypeKronos,
+		LogTypeAzerothCore:
 		return true
 	}
 	return false
@@ -302,6 +304,7 @@ func AllLogTypeValues() []LogType {
 		LogTypeWarmane,
 		LogTypeEpoch,
 		LogTypeKronos,
+		LogTypeAzerothCore,
 	}
 }
 

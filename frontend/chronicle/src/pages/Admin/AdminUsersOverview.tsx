@@ -44,10 +44,10 @@ const ASSIGNABLE_ROLES = [
   { value: "upload_capable", label: "Upload Capable", icon: Upload, className: "bg-green-500/15 text-green-400" },
   { value: "moderate_logs", label: "Moderate Logs", icon: Eye, className: "bg-cyan-500/15 text-cyan-400" },
   { value: "moderate_guilds", label: "Moderate Guilds", icon: Megaphone, className: "bg-teal-500/15 text-teal-400" },
-  { value: "admin_users", label: "Admin Users", icon: Users, className: "bg-indigo-500/15 text-indigo-400" },
-  { value: "admin_queues", label: "Admin Queues", icon: ListTodo, className: "bg-orange-500/15 text-orange-400" },
-  { value: "admin_game_data", label: "Admin Game Data", icon: Database, className: "bg-pink-500/15 text-pink-400" },
-  { value: "admin_raid_requirements", label: "Admin Raid Req", icon: Trophy, className: "bg-amber-500/15 text-amber-400" },
+  { value: "is_admin_users", label: "Admin Users", icon: Users, className: "bg-indigo-500/15 text-indigo-400" },
+  { value: "is_admin_queues", label: "Admin Queues", icon: ListTodo, className: "bg-orange-500/15 text-orange-400" },
+  { value: "is_admin_game_data", label: "Admin Game Data", icon: Database, className: "bg-pink-500/15 text-pink-400" },
+  { value: "is_admin_raid_requirements", label: "Admin Raid Req", icon: Trophy, className: "bg-amber-500/15 text-amber-400" },
 ] as const;
 
 const ROLE_LOOKUP = new Map(ASSIGNABLE_ROLES.map((r) => [r.value, r]));

@@ -1033,6 +1033,14 @@ type RiverQueue struct {
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type ServerUploadMetum struct {
+	LogGroupID   uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	InstanceID   string             `db:"instance_id" json:"instance_id"`
+	InstanceName string             `db:"instance_name" json:"instance_name"`
+	RealmName    string             `db:"realm_name" json:"realm_name"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type SharedView struct {
 	ID           uuid.UUID          `db:"id" json:"id"`
 	Code         string             `db:"code" json:"code"`

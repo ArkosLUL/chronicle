@@ -996,6 +996,35 @@ func (q *sqlQuerier) ListDistinctInstanceNames(ctx context.Context) ([]string, e
 	return items, nil
 }
 
+const updateLogFileAfterAppend = `-- name: UpdateLogFileAfterAppend :exec
+UPDATE log_file
+SET hash = $1,
+    size_bytes = $2,
+    compressed_size_bytes = $3,
+    content_encoding = $4,
+    updated_at = now()
+WHERE id = $5
+`
+
+type UpdateLogFileAfterAppendParams struct {
+	Hash                string      `db:"hash" json:"hash"`
+	SizeBytes           int64       `db:"size_bytes" json:"size_bytes"`
+	CompressedSizeBytes pgtype.Int8 `db:"compressed_size_bytes" json:"compressed_size_bytes"`
+	ContentEncoding     pgtype.Text `db:"content_encoding" json:"content_encoding"`
+	ID                  uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error {
+	_, err := q.db.Exec(ctx, updateLogFileAfterAppend,
+		arg.Hash,
+		arg.SizeBytes,
+		arg.CompressedSizeBytes,
+		arg.ContentEncoding,
+		arg.ID,
+	)
+	return err
+}
+
 const updateWoWLogGroupLogType = `-- name: UpdateWoWLogGroupLogType :exec
 UPDATE
   wow_log_groups
@@ -3259,6 +3288,67 @@ type UpdateRegressionFixtureNoteParams struct {
 
 func (q *sqlQuerier) UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error {
 	_, err := q.db.Exec(ctx, updateRegressionFixtureNote, arg.Note, arg.ID)
+	return err
+}
+
+const findMatchingServerUpload = `-- name: FindMatchingServerUpload :one
+SELECT wlg.id, wlg.owner, wlg.created_at, wlg.updated_at, wlg.log_type
+FROM wow_log_groups wlg
+JOIN server_upload_meta sm ON sm.log_group_id = wlg.id
+WHERE wlg.owner = $1
+  AND sm.instance_id = $2
+  AND sm.instance_name = $3
+  AND sm.realm_name = $4
+  AND wlg.log_type = 'azerothcore'
+  AND sm.created_at > now() - interval '24 hours'
+ORDER BY sm.created_at DESC
+LIMIT 1
+`
+
+type FindMatchingServerUploadParams struct {
+	Owner        uuid.UUID `db:"owner" json:"owner"`
+	InstanceID   string    `db:"instance_id" json:"instance_id"`
+	InstanceName string    `db:"instance_name" json:"instance_name"`
+	RealmName    string    `db:"realm_name" json:"realm_name"`
+}
+
+func (q *sqlQuerier) FindMatchingServerUpload(ctx context.Context, arg FindMatchingServerUploadParams) (WoWLogGroup, error) {
+	row := q.db.QueryRow(ctx, findMatchingServerUpload,
+		arg.Owner,
+		arg.InstanceID,
+		arg.InstanceName,
+		arg.RealmName,
+	)
+	var i WoWLogGroup
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LogType,
+	)
+	return i, err
+}
+
+const insertServerUploadMeta = `-- name: InsertServerUploadMeta :exec
+INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_name)
+VALUES ($1, $2, $3, $4)
+`
+
+type InsertServerUploadMetaParams struct {
+	LogGroupID   uuid.UUID `db:"log_group_id" json:"log_group_id"`
+	InstanceID   string    `db:"instance_id" json:"instance_id"`
+	InstanceName string    `db:"instance_name" json:"instance_name"`
+	RealmName    string    `db:"realm_name" json:"realm_name"`
+}
+
+func (q *sqlQuerier) InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error {
+	_, err := q.db.Exec(ctx, insertServerUploadMeta,
+		arg.LogGroupID,
+		arg.InstanceID,
+		arg.InstanceName,
+		arg.RealmName,
+	)
 	return err
 }
 

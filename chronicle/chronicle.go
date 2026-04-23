@@ -1,6 +1,7 @@
 package chronicle
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -30,6 +31,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -351,6 +353,96 @@ func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logTyp
 
 	// Both files are now fully uploaded in the database and object storage
 	return &group, dbFiles, nil
+}
+
+// AppendServerLog appends new (gzip-compressed) data to an existing log group's
+// file. Both the existing stored blob and newData are gzip streams; concatenating
+// them produces valid multistream gzip that Go's gzip.Reader reads transparently.
+// After appending, the file record is updated and a reparse is enqueued.
+func (c *Chronicle) AppendServerLog(ctx context.Context, group database.WoWLogGroup, newData io.Reader) error {
+	files, err := c.Zed.GetWoWLogFilesByGroupID(ctx, group.ID)
+	if err != nil {
+		return fmt.Errorf("fetch log files for group %s: %w", group.ID, err)
+	}
+	if len(files) == 0 {
+		return fmt.Errorf("no files found for log group %s", group.ID)
+	}
+	file := files[0]
+
+	// Download existing file from storage
+	existing, err := c.Storage.DownloadFile(ctx, BucketRaidLogs, c.logPath(file.ID))
+	if err != nil {
+		return fmt.Errorf("download existing log file %s: %w", file.ID, err)
+	}
+
+	// If existing file is plaintext (uploaded before gzip was enabled),
+	// compress it so we can do multistream gzip concatenation.
+	isExistingGzip := file.ContentEncoding.Valid && file.ContentEncoding.String == "gzip"
+	if !isExistingGzip {
+		var buf bytes.Buffer
+		gzw := gzip.NewWriter(&buf)
+		if _, err := gzw.Write(existing); err != nil {
+			return fmt.Errorf("compress existing plaintext log: %w", err)
+		}
+		if err := gzw.Close(); err != nil {
+			return fmt.Errorf("finalize gzip of existing log: %w", err)
+		}
+		existing = buf.Bytes()
+	}
+
+	// Read new gzip upload into memory
+	newBytes, err := io.ReadAll(newData)
+	if err != nil {
+		return fmt.Errorf("read new log data: %w", err)
+	}
+
+	// Concatenate compressed blobs (valid multistream gzip)
+	combined := append(existing, newBytes...)
+
+	// Hash the compressed blob (that's what we store & deduplicate)
+	h := sha256.Sum256(combined)
+	newHash := hex.EncodeToString(h[:])
+
+	// Compute decompressed size for the DB record
+	gzr, err := gzip.NewReader(bytes.NewReader(combined))
+	if err != nil {
+		return fmt.Errorf("open combined gzip for size calculation: %w", err)
+	}
+	decompressedSize, err := io.Copy(io.Discard, gzr)
+	_ = gzr.Close()
+	if err != nil {
+		return fmt.Errorf("calculate decompressed size: %w", err)
+	}
+
+	// Re-upload combined file (overwrites existing key)
+	_, err = c.Storage.UploadFile(ctx, BucketRaidLogs, c.logPath(file.ID),
+		bytes.NewReader(combined), storage.FileOptions{
+			ContentType: ptr.Ref("application/gzip"),
+		})
+	if err != nil {
+		return fmt.Errorf("re-upload combined log file: %w", err)
+	}
+
+	// Update DB record with new hash, sizes, and encoding
+	compressedSize := int64(len(combined))
+	err = c.Zed.UpdateLogFileAfterAppend(ctx, database.UpdateLogFileAfterAppendParams{
+		ID:                  file.ID,
+		Hash:                newHash,
+		SizeBytes:           decompressedSize,
+		CompressedSizeBytes: database.Int8(&compressedSize),
+		ContentEncoding:     pgtype.Text{String: "gzip", Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("update log file record after append: %w", err)
+	}
+
+	// Trigger reparse with the larger combined file
+	_, err = c.EnqueueReParseLog(ctx, group.ID, false, false)
+	if err != nil {
+		return fmt.Errorf("enqueue reparse after append: %w", err)
+	}
+
+	return nil
 }
 
 // countingWriter wraps a writer and counts bytes written

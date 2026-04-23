@@ -24,9 +24,9 @@ import (
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/go-chi/chi/v5/middleware"
 	context2 "github.com/gorilla/context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -44,6 +44,10 @@ type Options struct {
 	Assets           http.Handler
 	InternalGameData http.Handler
 	Mailer           *chroniclemail.Mailer
+
+	// ServerUploadSecret is the shared secret for server-side log uploads
+	// from AzerothCore mod-chronicle. Empty string disables the endpoint.
+	ServerUploadSecret string
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -257,27 +261,33 @@ func (api *API) Routes() chi.Router {
 				r.Get("/recent", api.RecentInstances)
 				r.Get("/range", api.InstancesByTimeRange)
 				r.Route("/logs", func(r chi.Router) {
-					r.Use(
-						api.Auth.Authenticated(false),
-					)
+					// Server-side upload from AzerothCore mod-chronicle.
+					// Uses shared-secret bearer auth, NOT session auth.
+					r.Post("/server-upload", api.ServerLogUpload)
+
 					r.Group(func(r chi.Router) {
-						r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_log_User))
-						r.Post("/upload", api.WoWLogUpload)
-						r.Post("/upload-v2", api.WoWLogUploadV2)
-					})
-					r.Get("/", api.WoWLogGroups)
-					r.Get("/by-file-hash/{file-hash}", api.WoWLogGroupByFile)
-					r.Route("/{logID}", func(r chi.Router) {
-						r.Use(httpmw.LogIDMiddleware)
+						r.Use(
+							api.Auth.Authenticated(false),
+						)
 						r.Group(func(r chi.Router) {
-							r.Post("/reparse", api.WoWLogReparse)
-							r.Delete("/delete-files", api.DeleteWoWLogFiles)
-							r.Delete("/instances/{instance_id}", api.WoWLogDeleteInstance)
+							r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_log_User))
+							r.Post("/upload", api.WoWLogUpload)
+							r.Post("/upload-v2", api.WoWLogUploadV2)
 						})
-						r.Get("/", api.WoWLogGroup)
-						r.Get("/files/{fileID}/download", api.WoWLogFileDownload)
-						r.Group(func(r chi.Router) {
-							r.Delete("/", api.WoWLogDeleteGroup)
+						r.Get("/", api.WoWLogGroups)
+						r.Get("/by-file-hash/{file-hash}", api.WoWLogGroupByFile)
+						r.Route("/{logID}", func(r chi.Router) {
+							r.Use(httpmw.LogIDMiddleware)
+							r.Group(func(r chi.Router) {
+								r.Post("/reparse", api.WoWLogReparse)
+								r.Delete("/delete-files", api.DeleteWoWLogFiles)
+								r.Delete("/instances/{instance_id}", api.WoWLogDeleteInstance)
+							})
+							r.Get("/", api.WoWLogGroup)
+							r.Get("/files/{fileID}/download", api.WoWLogFileDownload)
+							r.Group(func(r chi.Router) {
+								r.Delete("/", api.WoWLogDeleteGroup)
+							})
 						})
 					})
 				})

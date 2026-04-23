@@ -17,7 +17,7 @@ var (
 	DeadminesFactory = &CommonFactory{
 		Name:      "Deadmines",
 		ZoneNames: []string{"the deadmines"},
-		ZoneName:  ZoneNameMatcher("the deadmines"),
+		ZoneName:  ZoneNameMatcher("the deadmines", "deadmines"),
 		Hostiles:  FromMap(DeadminesHostiles()),
 	}
 

@@ -636,6 +636,14 @@ CREATE TABLE river_queue (
     updated_at timestamp with time zone NOT NULL
 );
 
+CREATE TABLE server_upload_meta (
+    log_group_id uuid NOT NULL,
+    instance_id text NOT NULL,
+    instance_name text NOT NULL,
+    realm_name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE shared_views (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     code text NOT NULL,
@@ -1101,6 +1109,9 @@ ALTER TABLE ONLY river_migration
 ALTER TABLE ONLY river_queue
     ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
 
+ALTER TABLE ONLY server_upload_meta
+    ADD CONSTRAINT server_upload_meta_pkey PRIMARY KEY (log_group_id);
+
 ALTER TABLE ONLY shared_views
     ADD CONSTRAINT shared_views_code_key UNIQUE (code);
 
@@ -1209,6 +1220,8 @@ CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_gr
 CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
 
 CREATE INDEX idx_regression_snapshots_fixture ON regression_snapshots USING btree (fixture_id, created_at DESC);
+
+CREATE INDEX idx_server_upload_meta_lookup ON server_upload_meta USING btree (instance_id, instance_name, realm_name);
 
 CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
 
@@ -1350,6 +1363,9 @@ ALTER TABLE ONLY regression_snapshots
 
 ALTER TABLE ONLY river_client_queue
     ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY server_upload_meta
+    ADD CONSTRAINT server_upload_meta_log_group_id_fkey FOREIGN KEY (log_group_id) REFERENCES wow_log_groups(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY shared_views
     ADD CONSTRAINT shared_views_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;

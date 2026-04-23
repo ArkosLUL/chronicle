@@ -103,6 +103,14 @@ func (s *Service) AuthenticationMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// WithClaims injects synthetic claims into context for service-to-service auth.
+// Used by server-side log upload to impersonate the chronicle-service account.
+func WithClaims(ctx context.Context, c *claims.Claims) context.Context {
+	return context.WithValue(ctx, authContextKey{}, &AuthenticationContext{
+		Claims: c,
+	})
+}
+
 func MustAuthenticatedClaims(ctx context.Context) *claims.Claims {
 	c, ok := AuthenticatedClaims(ctx)
 	if !ok || c == nil {

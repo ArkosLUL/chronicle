@@ -41,6 +41,7 @@ type sqlcQuerier interface {
 	DeleteYoutubeVideoByInstanceOrSlug(ctx context.Context, arg DeleteYoutubeVideoByInstanceOrSlugParams) error
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
 	FindDuplicateInstanceCandidates(ctx context.Context, arg FindDuplicateInstanceCandidatesParams) ([]FindDuplicateInstanceCandidatesRow, error)
+	FindMatchingServerUpload(ctx context.Context, arg FindMatchingServerUploadParams) (WoWLogGroup, error)
 	GetCreatureTemplatesByEntries(ctx context.Context, entries []int32) ([]WorldCreatureTemplate, error)
 	GetDBCItemDisplayInfoByID(ctx context.Context, id int32) (DbcItemDisplayInfo, error)
 	GetDisplayInfoByID(ctx context.Context, id int32) (WorldDisplayInfo, error)
@@ -114,6 +115,7 @@ type sqlcQuerier interface {
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
 	InsertRegressionFixture(ctx context.Context, arg InsertRegressionFixtureParams) (RegressionFixture, error)
 	InsertRegressionSnapshot(ctx context.Context, arg InsertRegressionSnapshotParams) (RegressionSnapshot, error)
+	InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error
 	InsertStampedYoutubeVideo(ctx context.Context, arg InsertStampedYoutubeVideoParams) error
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
@@ -167,6 +169,7 @@ type sqlcQuerier interface {
 	UntrackUserPanelLayout(ctx context.Context, arg UntrackUserPanelLayoutParams) (int64, error)
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)
 	UpdateGuildPageTab(ctx context.Context, arg UpdateGuildPageTabParams) (GuildPageTab, error)
+	UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
 	UpdateSiteConfig(ctx context.Context, signupsEnabled bool) (SiteConfig, error)
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)

@@ -246,7 +246,7 @@ const (
 	LogTypeWarmane     LogType = "warmane"
 	LogTypeEpoch       LogType = "epoch"
 	LogTypeKronos      LogType = "kronos"
-	LogTypeAzerothCore LogType = "azerothcore"
+	LogTypeAzerothcore LogType = "azerothcore"
 )
 
 func (e *LogType) Scan(src interface{}) error {
@@ -291,7 +291,7 @@ func (e LogType) Valid() bool {
 		LogTypeWarmane,
 		LogTypeEpoch,
 		LogTypeKronos,
-		LogTypeAzerothCore:
+		LogTypeAzerothcore:
 		return true
 	}
 	return false
@@ -304,7 +304,7 @@ func AllLogTypeValues() []LogType {
 		LogTypeWarmane,
 		LogTypeEpoch,
 		LogTypeKronos,
-		LogTypeAzerothCore,
+		LogTypeAzerothcore,
 	}
 }
 

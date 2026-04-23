@@ -59,6 +59,16 @@ ORDER BY
   created_at DESC
 ;
 
+-- name: UpdateWoWLogGroupLogType :exec
+UPDATE
+  wow_log_groups
+SET
+  log_type = $2,
+  updated_at = NOW()
+WHERE
+  id = $1
+;
+
 -- name: DeleteWoWLogGroup :exec
 DELETE FROM
   wow_log_groups

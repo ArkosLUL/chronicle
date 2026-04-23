@@ -57,7 +57,48 @@ func (api *API) WoWLogReparse(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID, r.URL.Query().Get("verbose") == "true")
+	verbose := r.URL.Query().Get("verbose") == "true"
+	identityMode := r.URL.Query().Get("identity_mode") == "true"
+	if identityMode {
+		idActor, _ := authz.ActorFromContext(ctx)
+		isAdmin, adminErr := api.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_logs_User(idActor))
+		if adminErr != nil || !isAdmin {
+			httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
+				Message: "Only admins can use identity mode",
+			})
+			return
+		}
+	}
+
+	// Admin override: allow changing the log_type before reparsing.
+	if override := r.URL.Query().Get("log_type"); override != "" {
+		overrideType := database.LogType(override)
+		if !overrideType.Valid() {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+				Message: "Invalid log_type override",
+				Detail:  fmt.Sprintf("unknown log type: %q", override),
+			})
+			return
+		}
+		ltActor, _ := authz.ActorFromContext(ctx)
+		isAdmin, adminErr := api.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_logs_User(ltActor))
+		if adminErr != nil || !isAdmin {
+			httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
+				Message: "Only admins can override the log type",
+			})
+			return
+		}
+		err := api.Zed.UpdateWoWLogGroupLogType(ctx, database.UpdateWoWLogGroupLogTypeParams{
+			ID:      logID,
+			LogType: overrideType,
+		})
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+	}
+
+	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID, verbose, identityMode)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

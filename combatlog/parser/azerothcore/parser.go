@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/azerothcore/synthetic"
@@ -31,6 +30,10 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 		return nil, err
 	}
 
+	p := &Parser{inner: inner, logger: logger}
+
+	inner.WithEventHook("CHRONICLE_UNIT_INFO", p.parseUnitInfo)
+
 	// Replace the WoTLK synthetics with our own.
 	// A lot of the context comes from the logs now.
 	inner.SetSynthetics(synthetic.New(ctx, logger, wowDB))
@@ -45,7 +48,7 @@ func (p *Parser) Advance(ctx context.Context) ([]messages.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	return p.postProcess(msgs), nil
+	return msgs, nil
 }
 
 // DetailedTimes delegates to the inner parser for timing metrics.
@@ -53,48 +56,10 @@ func (p *Parser) DetailedTimes() map[string]time.Duration {
 	return p.inner.DetailedTimes()
 }
 
-func (p *Parser) postProcess(msgs []messages.Message) []messages.Message {
-	result := make([]messages.Message, 0, len(msgs))
-	for _, msg := range msgs {
-		unparsed, ok := msg.(*messages.UnparsedLine)
-		if !ok {
-			result = append(result, msg)
-			continue
-		}
-
-		if replacement := p.tryParseChronicleEvent(unparsed); replacement != nil {
-			result = append(result, replacement...)
-		} else {
-			result = append(result, msg)
-		}
-	}
-	return result
-}
-
-func (p *Parser) tryParseChronicleEvent(unparsed *messages.UnparsedLine) []messages.Message {
-	content := unparsed.Content
-	if !strings.Contains(content, "CHRONICLE_") {
-		return nil
-	}
-
-	ts, event, m, err := wotlk.ParseLineUnixMillis(content)
-	if err != nil {
-		return nil
-	}
-
-	switch event {
-	case "CHRONICLE_UNIT_INFO":
-		return p.parseUnitInfo(ts, m)
-	// Future: CHRONICLE_HEADER, CHRONICLE_ZONE_INFO, CHRONICLE_COMBATANT_INFO
-	default:
-		return nil
-	}
-}
-
 // parseUnitInfo converts a CHRONICLE_UNIT_INFO line into a messages.Unit.
 //
 // Fields: guid, "name", level, unitFlags (hex, currently always 0x0), ownerGuid, maxHealth
-func (p *Parser) parseUnitInfo(ts time.Time, m *wotlk.Matched) []messages.Message {
+func (p *Parser) parseUnitInfo(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
 	id := m.Guid()
 	name := m.String()
 	level := m.Int32()
@@ -104,7 +69,7 @@ func (p *Parser) parseUnitInfo(ts time.Time, m *wotlk.Matched) []messages.Messag
 
 	if m.Error() != nil {
 		p.logger.Warn("failed to parse CHRONICLE_UNIT_INFO", "error", m.Error())
-		return nil
+		return nil, nil
 	}
 
 	info := unitinfo.Info{
@@ -123,5 +88,5 @@ func (p *Parser) parseUnitInfo(ts time.Time, m *wotlk.Matched) []messages.Messag
 			MessageBase: messages.Base(ts),
 			Info:        info,
 		},
-	}
+	}, nil
 }

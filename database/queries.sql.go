@@ -996,6 +996,26 @@ func (q *sqlQuerier) ListDistinctInstanceNames(ctx context.Context) ([]string, e
 	return items, nil
 }
 
+const updateWoWLogGroupLogType = `-- name: UpdateWoWLogGroupLogType :exec
+UPDATE
+  wow_log_groups
+SET
+  log_type = $2,
+  updated_at = NOW()
+WHERE
+  id = $1
+`
+
+type UpdateWoWLogGroupLogTypeParams struct {
+	ID      uuid.UUID `db:"id" json:"id"`
+	LogType LogType   `db:"log_type" json:"log_type"`
+}
+
+func (q *sqlQuerier) UpdateWoWLogGroupLogType(ctx context.Context, arg UpdateWoWLogGroupLogTypeParams) error {
+	_, err := q.db.Exec(ctx, updateWoWLogGroupLogType, arg.ID, arg.LogType)
+	return err
+}
+
 const bulkUpsertGuildPagePanels = `-- name: BulkUpsertGuildPagePanels :exec
 INSERT INTO guild_page_panels (id, tab_id, panel_type, config, position)
 SELECT 

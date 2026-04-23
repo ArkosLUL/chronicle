@@ -60,6 +60,10 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 		return messages.Unparsed(ts, raw), nil
 	}
 
+  if hook, ok := p.eventHook[event]; ok {
+    return hook(ts, m, raw)
+  }
+
 	// Standard events: parse base params.
 	base := parseBase(m)
 	p.guidNames.Record(base.sourceGUID, base.sourceName)

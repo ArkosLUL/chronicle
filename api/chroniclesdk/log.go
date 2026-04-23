@@ -148,6 +148,9 @@ type LogParseReport struct {
 
 	// MissedSpells maps spell IDs not found in the DBC to their lookup count and name.
 	MissedSpells map[int32]MissedSpell `json:"missed_spells,omitempty"`
+
+	// Identity contains all creatures/spells seen, populated only when identity_mode is enabled.
+	Identity *IdentityReport `json:"identity,omitempty"`
 }
 // MissedSpell holds the count and name of a spell not found in the DBC.
 type MissedSpell struct {
@@ -170,6 +173,30 @@ type InstanceReport struct {
 type UnknownUnit struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`
+}
+
+// IdentityReport contains all creatures and spells seen in a parsed log,
+// organized by zone. Used for programming raid encounter definitions.
+type IdentityReport struct {
+	// ZonedUnits maps zone name → list of creatures seen in that zone.
+	ZonedUnits map[string][]IdentityCreature `json:"zoned_units,omitempty"`
+	// ZoneSpells maps zone name → list of spells seen in that zone.
+	ZoneSpells map[string][]IdentitySpell `json:"zone_spells,omitempty"`
+	// UnitSpells maps creature entry ID → list of spell names that creature cast.
+	UnitSpells map[uint32][]string `json:"unit_spells,omitempty"`
+}
+
+// IdentityCreature represents a creature seen during identity mode parsing.
+type IdentityCreature struct {
+	EntryID     uint32 `json:"entry_id"`
+	Name        string `json:"name"`
+	UniqueCount int    `json:"unique_count"`
+}
+
+// IdentitySpell represents a spell seen during identity mode parsing.
+type IdentitySpell struct {
+	SpellID int32 `json:"spell_id"`
+	Count   int   `json:"count"`
 }
 
 // Duration wraps time.Duration for JSON serialization as milliseconds.

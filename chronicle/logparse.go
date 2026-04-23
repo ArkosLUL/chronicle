@@ -29,6 +29,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
@@ -58,8 +59,9 @@ type OutputLogParse struct {
 }
 
 type ArgsLogParse struct {
-	LogID   uuid.UUID `json:"log_group_id"`
-	Verbose bool      `json:"verbose,omitempty"`
+	LogID        uuid.UUID `json:"log_group_id"`
+	Verbose      bool      `json:"verbose,omitempty"`
+	IdentityMode bool      `json:"identity_mode,omitempty"`
 }
 
 func (ArgsLogParse) InsertOpts() river.InsertOpts {
@@ -204,7 +206,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	// Parse combat log - branch based on log type
 	parseStart := time.Now()
-	c := consumers.New(logLogger, encountersState)
+	var creaturesState *creatures.Creatures
+	var c *consumers.Consumers
+	if job.Args.IdentityMode {
+		creaturesState = creatures.New(logLogger)
+		c = consumers.New(logLogger, encountersState, creaturesState)
+	} else {
+		c = consumers.New(logLogger, encountersState)
+	}
 
 	var consumeErr error
 	switch logGroup.WoWLogGroup.LogType {
@@ -303,7 +312,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			return fmt.Errorf("consume warmane log: %w", consumeErr)
 		}
 
-	case database.LogTypeAzerothCore:
+	case database.LogTypeAzerothcore:
 		// Load single file
 		loadStart := time.Now()
 		rdr, err := w.loadFile(ctx, files[0])
@@ -377,6 +386,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			jobResult = "failure"
 		}
 		return consumeErr
+	}
+
+	if creaturesState != nil {
+		report.Identity = buildIdentityReport(creaturesState)
 	}
 
 	jobOut := chroniclesdk.WoWParsedLogJobOutput{
@@ -834,10 +847,49 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 	}
 }
 
-func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool) (*rivertype.JobInsertResult, error) {
+func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
+	rpt := &chroniclesdk.IdentityReport{
+		ZonedUnits: make(map[string][]chroniclesdk.IdentityCreature),
+		ZoneSpells: make(map[string][]chroniclesdk.IdentitySpell),
+		UnitSpells: make(map[uint32][]string),
+	}
+
+	for zone, units := range cs.ZonedUnits {
+		for entryID, name := range units {
+			count := len(cs.UnitQuantity[entryID])
+			rpt.ZonedUnits[zone] = append(rpt.ZonedUnits[zone], chroniclesdk.IdentityCreature{
+				EntryID:     entryID,
+				Name:        name,
+				UniqueCount: count,
+			})
+		}
+	}
+
+	for zone, spells := range cs.ZoneSpells {
+		for spellID, count := range spells {
+			rpt.ZoneSpells[zone] = append(rpt.ZoneSpells[zone], chroniclesdk.IdentitySpell{
+				SpellID: int32(spellID),
+				Count:   count,
+			})
+		}
+	}
+
+	for entryID, spells := range cs.UnitSpells {
+		names := make([]string, 0, len(spells))
+		for name := range spells {
+			names = append(names, name)
+		}
+		rpt.UnitSpells[entryID] = names
+	}
+
+	return rpt
+}
+
+func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool, identityMode bool) (*rivertype.JobInsertResult, error) {
 	res, err := c.queue.Insert(ctx, ArgsLogParse{
-		LogID:   log.ID,
-		Verbose: verbose,
+		LogID:        log.ID,
+		Verbose:      verbose,
+		IdentityMode: identityMode,
 	}, &river.InsertOpts{
 		Tags: []string{
 			fmt.Sprintf("owner_%s", log.Owner.String()),

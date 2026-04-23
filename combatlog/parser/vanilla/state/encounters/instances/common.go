@@ -3,6 +3,7 @@ package instances
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
@@ -36,7 +37,7 @@ type FinalizedInstance struct {
 func ZoneNameMatcher(names ...string) func(z string) bool {
 	return func(z string) bool {
 		for _, name := range names {
-			if z == name {
+			if strings.EqualFold(z, name) {
 				return true
 			}
 		}

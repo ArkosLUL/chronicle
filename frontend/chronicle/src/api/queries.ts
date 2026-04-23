@@ -613,16 +613,26 @@ export interface ReparseLogGroupOptions {
   logId: string;
   /** Enable debug mode annotations in parsed output */
   withDebug?: boolean;
+  /** Enable identity mode to collect all creatures/spells (admin only) */
+  identityMode?: boolean;
+  /** Override the log type before reparsing (admin only) */
+  logType?: string;
 }
 
 export function useReparseLogGroup() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ logId, withDebug = false }: ReparseLogGroupOptions) => {
+    mutationFn: async ({ logId, withDebug = false, identityMode = false, logType }: ReparseLogGroupOptions) => {
       const url = new URL(`/api/v1/raidlogs/logs/${logId}/reparse`, window.location.origin);
       if (withDebug) {
         url.searchParams.set("verbose", "true");
+      }
+      if (identityMode) {
+        url.searchParams.set("identity_mode", "true");
+      }
+      if (logType) {
+        url.searchParams.set("log_type", logType);
       }
       const response = await fetch(url.toString(), {
         method: "POST",

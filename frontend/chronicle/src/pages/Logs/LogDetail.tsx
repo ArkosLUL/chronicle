@@ -34,6 +34,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu/DropdownMenu";
 import { useAuth } from "@/hooks/useAuth";
@@ -77,6 +81,15 @@ function formatBytes(bytes: number): string {
 }
 
 // River job states - these match rivertype.JobState values
+const REPARSE_LOG_TYPES = [
+  { value: "v1", label: "V1" },
+  { value: "v2", label: "V2" },
+  { value: "warmane", label: "Warmane" },
+  { value: "epoch", label: "Epoch" },
+  { value: "kronos", label: "Kronos" },
+  { value: "azerothcore", label: "AzerothCore" },
+] as const;
+
 const RIVER_STATES = {
   available: "available",
   cancelled: "cancelled", 
@@ -603,7 +616,7 @@ export interface LogDetailViewProps {
   isDeleting: boolean;
   showDeleteConfirm: boolean;
   setShowDeleteConfirm: (show: boolean) => void;
-  onReparse: (verbose: boolean) => void;
+  onReparse: (verbose: boolean, identityMode?: boolean, logType?: string) => void;
   isReparsing: boolean;
   canReparse: boolean;
   onDeleteFiles: () => void;
@@ -767,6 +780,34 @@ export function LogDetailView({
                     <Play className="h-4 w-4 mr-2 text-yellow-500" />
                     Reparse (Verbose)
                   </DropdownMenuItem>
+                  {canDownloadFiles && (
+                    <>
+                      <DropdownMenuItem onClick={() => onReparse(false, true)}>
+                        <Play className="h-4 w-4 mr-2 text-blue-500" />
+                        Reparse (Identity)
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <Play className="h-4 w-4 mr-2 text-purple-500" />
+                          Reparse as...
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          {REPARSE_LOG_TYPES.map((opt) => (
+                            <DropdownMenuItem
+                              key={opt.value}
+                              onClick={() => onReparse(false, false, opt.value)}
+                            >
+                              {opt.label}
+                              {log?.log_type === opt.value && (
+                                <span className="ml-2 text-xs text-muted-foreground">(current)</span>
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -1189,15 +1230,21 @@ export function LogDetail() {
     });
   };
 
-  const handleReparse = (withDebug = false) => {
+  const handleReparse = (withDebug = false, identityMode = false, logType?: string) => {
     if (!logId) return;
-    reparseLogGroup.mutate({ logId, withDebug }, {
+    reparseLogGroup.mutate({ logId, withDebug, identityMode, logType }, {
       onSuccess: () => {
-        toast.success(withDebug ? "Debug reparse started" : "Reparse started", {
-          description: withDebug 
-            ? "Your log is being reprocessed with debug annotations." 
-            : "Your log is being reprocessed.",
-        });
+        const label = logType
+          ? `Reparse as ${logType} started`
+          : identityMode ? "Identity reparse started" : withDebug ? "Debug reparse started" : "Reparse started";
+        const desc = logType
+          ? `Your log is being reprocessed as ${logType}.`
+          : identityMode
+            ? "Your log is being reprocessed to collect all creatures and spells."
+            : withDebug
+              ? "Your log is being reprocessed with debug annotations."
+              : "Your log is being reprocessed.";
+        toast.success(label, { description: desc });
         refetch();
       },
       onError: (error) => {
@@ -1342,15 +1389,21 @@ export function LogDetailByHash() {
     });
   };
 
-  const handleReparse = (withDebug = false) => {
+  const handleReparse = (withDebug = false, identityMode = false, logType?: string) => {
     if (!logId) return;
-    reparseLogGroup.mutate({ logId, withDebug }, {
+    reparseLogGroup.mutate({ logId, withDebug, identityMode, logType }, {
       onSuccess: () => {
-        toast.success(withDebug ? "Debug reparse started" : "Reparse started", {
-          description: withDebug 
-            ? "Your log is being reprocessed with debug annotations." 
-            : "Your log is being reprocessed.",
-        });
+        const label = logType
+          ? `Reparse as ${logType} started`
+          : identityMode ? "Identity reparse started" : withDebug ? "Debug reparse started" : "Reparse started";
+        const desc = logType
+          ? `Your log is being reprocessed as ${logType}.`
+          : identityMode
+            ? "Your log is being reprocessed to collect all creatures and spells."
+            : withDebug
+              ? "Your log is being reprocessed with debug annotations."
+              : "Your log is being reprocessed.";
+        toast.success(label, { description: desc });
         refetch();
       },
       onError: (error) => {

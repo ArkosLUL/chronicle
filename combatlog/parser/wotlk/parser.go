@@ -34,6 +34,9 @@ type Parser struct {
 	syntheticsDur time.Duration
 
 	missedSpells map[chrondbc.SpellID]missedSpellEntry
+	//eventHooks allow overriding or extending handling of specific events without needing to replace the entire processer.
+	// The processer is for 3.3.5a logs, so it's possible some AzerothCore-specific events may need custom handling.
+	eventHook map[string]func(ts time.Time, m *Matched, raw string) ([]messages.Message, error)
 }
 
 func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {
@@ -42,6 +45,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	}
 	gn := NewGUIDNames()
 	return &Parser{
+		eventHook:    map[string]func(ts time.Time, m *Matched, raw string) ([]messages.Message, error){},
 		logger:       logger,
 		wowDB:        wowDB,
 		scanner:      bufio.NewScanner(r),
@@ -51,6 +55,12 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 		baseYear:     time.Now().Year(),
 		missedSpells: make(map[chrondbc.SpellID]missedSpellEntry),
 	}, nil
+}
+
+func (p *Parser) WithEventHook(event string, hook func(ts time.Time, m *Matched, raw string) ([]messages.Message, error)) func(*Parser) {
+	return func(p *Parser) {
+		p.eventHook[event] = hook
+	}
 }
 
 func (p *Parser) SetSynthetics(s interface {

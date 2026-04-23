@@ -44,9 +44,10 @@ function getAbilitiesForUnit(
   // Choose which ability map to use based on view mode
   const effectiveAbilities = result.HealerByAbility.get(unitId);
   const overhealAbilities = result.HealerByAbilityOverheal.get(unitId);
+  const absorbedAbilities = result.HealerByAbilityAbsorbed.get(unitId);
   
   if (viewMode === "overheal") {
-    // Only show overhealing
+    // Only show overhealing — no absorbed column
     if (!overhealAbilities) return [];
     const abilities: AbilityData[] = [];
     for (const [abilityName, data] of overhealAbilities) {
@@ -70,6 +71,7 @@ function getAbilitiesForUnit(
         ...data,
         name: abilityName,
         value: data.Total,
+        absorbed: absorbedAbilities?.get(abilityName),
       });
     }
     return abilities.sort((a, b) => b.value - a.value);
@@ -86,6 +88,7 @@ function getAbilitiesForUnit(
       name: abilityName,
       value: data.Total,
       overheal: overhealData?.Total,
+      absorbed: absorbedAbilities?.get(abilityName),
     });
   }
   
@@ -439,6 +442,7 @@ export function useHealingDoneBreakout({
           targetTabLabel={viewMode === "overheal" ? "Overhealed" : "Healed"}
           showHits={false}
           showOverheal={viewMode === "effective"}
+          showAbsorbed={viewMode !== "overheal"}
         />
       );
     },

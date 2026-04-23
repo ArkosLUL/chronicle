@@ -108,6 +108,12 @@ export type UnifiedHealingResult = {
   TargetBySourceOverheal: Map<string, Map<string, number>>;
   TargetBySourceTotal: Map<string, Map<string, number>>;
   
+  // === Absorbed amounts (from heal events only) ===
+  // Healer: healerID -> abilityName -> total absorbed
+  HealerByAbilityAbsorbed: Map<string, Map<string, number>>;
+  // Target: targetID -> abilityName -> total absorbed
+  TargetByAbilityAbsorbed: Map<string, Map<string, number>>;
+  
   // === Shared state ===
   // Health deficit tracking: targetGUID -> deficit (positive = damage taken)
   // Reset to empty when encounterID changes. Only used when ServerOverheal is false.
@@ -164,6 +170,9 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       TargetByAbilityBySpellId: new Map(),
       TargetByAbilityOverhealBySpellId: new Map(),
       TargetByAbilityTotalBySpellId: new Map(),
+      // Absorbed
+      HealerByAbilityAbsorbed: new Map(),
+      TargetByAbilityAbsorbed: new Map(),
       TargetBySource: new Map(),
       TargetBySourceOverheal: new Map(),
       TargetBySourceTotal: new Map(),
@@ -453,6 +462,18 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
           accumulateAbilityBreakoutBySpellId(state.TargetByAbilityOverhealBySpellId, aggregateTargetID, spellId, abilityName, overheal, hitType);
         }
         accumulateAbilityBreakoutBySpellId(state.TargetByAbilityTotalBySpellId, aggregateTargetID, spellId, abilityName, healAmount, hitType);
+      }
+
+      // Absorbed tracking (heal events only)
+      const absorbed = streamType === "heal" ? (event as HealProcessorEvent).absorbed ?? 0 : 0;
+      if (absorbed > 0) {
+        const healerAbsorbs = state.HealerByAbilityAbsorbed.get(healerID) || new Map();
+        healerAbsorbs.set(abilityName, (healerAbsorbs.get(abilityName) || 0) + absorbed);
+        state.HealerByAbilityAbsorbed.set(healerID, healerAbsorbs);
+
+        const targetAbsorbs = state.TargetByAbilityAbsorbed.get(aggregateTargetID) || new Map();
+        targetAbsorbs.set(abilityName, (targetAbsorbs.get(abilityName) || 0) + absorbed);
+        state.TargetByAbilityAbsorbed.set(aggregateTargetID, targetAbsorbs);
       }
 
       // Target source breakdown

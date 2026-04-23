@@ -226,7 +226,24 @@ func (p *Parser) suffixDamage(ts time.Time, base baseParams, spell *spellInfo, e
 
 // suffixMissed handles _MISSED: missType, isOffHand, amountMissed*
 func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, isPeriodic bool, m *Matched) ([]messages.Message, error) {
+	var trailer types.Trailer
 	missTypeStr := m.String()
+	switch missTypeStr {
+	case "ABSORB":
+		if m.Remain() < 1 {
+			break
+		}
+
+		if m.Remain() == 2 {
+			m.pop()
+		}
+
+		amount := m.Int32()
+		trailer = append(trailer, types.TrailerEntry{
+			Amount:  ptr.Ref(uint32(amount)),
+			HitType: types.HitTypePartialAbsorb,
+		})
+	}
 
 	// isOffHand and amountMissed are optional and may not be present.
 	// We don't consume them to avoid index-out-of-range on short lines.
@@ -259,6 +276,7 @@ func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, i
 		HitType:     ht,
 		Amount:      0,
 		School:      school,
+		Trailer:     trailer,
 	})
 }
 
@@ -266,7 +284,7 @@ func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, i
 func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isPeriodic bool, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
 	overheal := m.Int32()
-	absorbed := m.Int32()
+	_ = m.Int32() // Absorbed healing, not absorbed damage incoming.
 	critical := m.NilBool()
 
 	if err := m.Error(); err != nil {
@@ -298,9 +316,10 @@ func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isP
 		SpellData:   spellData,
 		Amount:      amount,
 		Overheal:    overheal,
-		Absorbed:    absorbed,
-		HitType:     ht,
-		School:      school,
+		// Always 0.
+		Absorbed: 0,
+		HitType:  ht,
+		School:   school,
 	})
 }
 

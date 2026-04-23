@@ -203,6 +203,8 @@ export interface AbilityData extends DamageAbilityBreakout{
   value: number
   /** Optional overheal value - displayed in a separate column with distinct styling */
   overheal?: number
+  /** Optional absorbed value - displayed in a separate column (heal absorbs from WotLK) */
+  absorbed?: number
   /** Optional subtitle displayed in muted text after the name (e.g., spell rank) */
   subtitle?: string
   /** Optional spell ID for showing spell icon and tooltip */
@@ -318,6 +320,8 @@ export interface AbilityTableProps {
   showOverheal?: boolean
   /** Label for the stacked secondary column */
   stackedLabel?: string
+  /** Whether to show the absorbed column */
+  showAbsorbed?: boolean
 }
 
 /**
@@ -330,6 +334,7 @@ export function AbilityTable({
   showHits = true,
   showOverheal = false,
   stackedLabel = 'Overheal',
+  showAbsorbed = false,
 }: AbilityTableProps) {
   const { hover, setHover, clearHover, selectedAbilities, toggleAbilitySelection, clearSelection } = useBreakoutHover()
   const [isExpanded, setIsExpanded] = useState(false)
@@ -346,6 +351,8 @@ export function AbilityTable({
   
   // Check if any ability has overheal data
   const hasOverhealData = showOverheal && sorted.some(a => a.overheal !== undefined && a.overheal > 0)
+  // Check if any ability has absorbed data
+  const hasAbsorbedData = showAbsorbed && sorted.some(a => a.absorbed !== undefined && a.absorbed > 0)
   
   // Get visible columns based on view mode
   const visibleHitTypeColumns = isExpanded && viewMode !== 'minmax' ? getVisibleHitTypeColumns(sorted) : []
@@ -361,11 +368,13 @@ export function AbilityTable({
   const mergedTotals = mergeAbilities(abilitiesToSum)
   const totalValueForSelection = abilitiesToSum.reduce((sum, a) => sum + a.value, 0)
   const totalOverhealForSelection = abilitiesToSum.reduce((sum, a) => sum + (a.overheal || 0), 0)
+  const totalAbsorbedForSelection = abilitiesToSum.reduce((sum, a) => sum + (a.absorbed || 0), 0)
 
   // Column IDs for hover tracking
   const COL = {
     ABILITY: 'ability',
     OVERHEAL: 'overheal',
+    ABSORBED: 'absorbed',
     VALUE: 'value',
     PERCENT: 'percent',
     COUNT: 'count',
@@ -443,6 +452,9 @@ export function AbilityTable({
               <th className={cn("text-left py-1.5 px-2 font-medium", hover.columnId === COL.ABILITY && "bg-primary/20")}>Ability</th>
               {hasOverhealData && (
                 <th className={cn("text-right py-1.5 px-2 font-medium text-yellow-500/80", hover.columnId === COL.OVERHEAL && "bg-primary/20")}>{stackedLabel}</th>
+              )}
+              {hasAbsorbedData && (
+                <th className={cn("text-right py-1.5 px-2 font-medium text-sky-400/80", hover.columnId === COL.ABSORBED && "bg-primary/20")}>Absorbed</th>
               )}
               <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.VALUE && "bg-primary/20")}>{valueLabel}</th>
               <th className={cn("text-right py-1.5 px-2 font-medium", hover.columnId === COL.PERCENT && "bg-primary/20")}>%</th>
@@ -560,6 +572,24 @@ export function AbilityTable({
                     </HoverCell>
                   );
                 })()}
+                {hasAbsorbedData && (() => {
+                  const absorbedVal = ability.absorbed ?? 0;
+                  const totalForAbility = ability.value + absorbedVal;
+                  const absorbedPct = totalForAbility > 0 ? (absorbedVal / totalForAbility) * 100 : 0;
+                  return (
+                    <HoverCell
+                      rowId={rowId}
+                      columnId={COL.ABSORBED}
+                      hover={hover}
+                      setHover={setHover}
+                      clearHover={clearHover}
+                      className="text-right py-1 px-2 font-mono text-sky-400/70"
+                    >
+                      {absorbedVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                      <span className="text-sky-400/50 ml-1">({absorbedPct.toFixed(0)}%)</span>
+                    </HoverCell>
+                  );
+                })()}
                 <HoverCell
                   rowId={rowId}
                   columnId={COL.VALUE}
@@ -665,6 +695,11 @@ export function AbilityTable({
               {hasOverhealData && (
                 <td className="text-right py-1.5 px-2 font-mono text-yellow-500/70">
                   {totalOverhealForSelection.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                </td>
+              )}
+              {hasAbsorbedData && (
+                <td className="text-right py-1.5 px-2 font-mono text-sky-400/70">
+                  {totalAbsorbedForSelection.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                 </td>
               )}
               <td className="text-right py-1.5 px-2 font-mono">
@@ -879,6 +914,8 @@ export interface AbilityBreakoutProps {
   showOverheal?: boolean
   /** Label for the stacked secondary column */
   stackedLabel?: string
+  /** Whether to show the absorbed column */
+  showAbsorbed?: boolean
 }
 
 function formatValue(value: number): string {
@@ -907,6 +944,7 @@ export function AbilityBreakout({
   showHits = true,
   showOverheal = false,
   stackedLabel = 'Overheal',
+  showAbsorbed = false,
 }: AbilityBreakoutProps) {
   const [internalTab, setInternalTab] = useState<BreakoutTab>('ability')
   const [groupTargets, setGroupTargets] = useLocalStorage<boolean>(GROUP_TARGETS_STORAGE_KEY, false)
@@ -954,6 +992,7 @@ export function AbilityBreakout({
           showHits={showHits}
           showOverheal={showOverheal}
           stackedLabel={stackedLabel}
+          showAbsorbed={showAbsorbed}
         />
       </div>
     )
@@ -999,6 +1038,7 @@ export function AbilityBreakout({
           showHits={showHits}
           showOverheal={showOverheal}
           stackedLabel={stackedLabel}
+          showAbsorbed={showAbsorbed}
         />
       ) : (
         <TargetTable

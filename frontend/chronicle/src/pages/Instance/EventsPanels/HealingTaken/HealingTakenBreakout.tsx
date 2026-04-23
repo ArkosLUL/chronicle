@@ -43,6 +43,7 @@ function getAbilitiesForUnit(
 ): AbilityData[] {
   const effectiveAbilities = result.TargetByAbility.get(unitId);
   const overhealAbilities = result.TargetByAbilityOverheal.get(unitId);
+  const absorbedAbilities = result.TargetByAbilityAbsorbed.get(unitId);
   
   if (viewMode === "overheal") {
     if (!overhealAbilities) return [];
@@ -68,6 +69,7 @@ function getAbilitiesForUnit(
         ...data,
         name: abilityName,
         value: data.Total,
+        absorbed: absorbedAbilities?.get(abilityName),
       });
     }
     return abilities.sort((a, b) => b.value - a.value);
@@ -83,6 +85,7 @@ function getAbilitiesForUnit(
       name: abilityName,
       value: data.Total,
       overheal: overhealData?.Total,
+      absorbed: absorbedAbilities?.get(abilityName),
     });
   }
   
@@ -389,6 +392,7 @@ export function useHealingTakenBreakout({
           targetTabLabel={viewMode === "overheal" ? "Overhealed By" : "Healed By"}
           showHits={false}
           showOverheal={viewMode === "effective"}
+          showAbsorbed={viewMode !== "overheal"}
         />
       );
     },

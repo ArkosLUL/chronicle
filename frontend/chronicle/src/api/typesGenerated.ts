@@ -188,6 +188,19 @@ export interface CreateUserPanelLayoutRequest {
     readonly payload: Record<string, string>;
 }
 
+// From chroniclesdk/gamedata.go
+/**
+ * DBCUploadResponse is the response from uploading a DBC file.
+ */
+export interface DBCUploadResponse {
+    readonly dbc_name: string;
+    readonly record_count: number;
+    readonly mode: string;
+    readonly inserted: number;
+    readonly updated: number;
+    readonly unchanged: number;
+}
+
 // From chroniclesdk/user.go
 /**
  * DataGrant represents a storage grant given to a user from various sources
@@ -898,6 +911,14 @@ export interface Session {
      * AuthProvider is the provider used for the current session (e.g. "discord", "password").
      */
     readonly auth_provider: string;
+}
+
+// From chroniclesdk/user.go
+/**
+ * SetUserRolesRequest is the request body for setting a user's Chronicle roles.
+ */
+export interface SetUserRolesRequest {
+    readonly roles: readonly string[];
 }
 
 // From chroniclesdk/share.go

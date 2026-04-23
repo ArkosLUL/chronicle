@@ -70,7 +70,7 @@ func (obj *ObjArmory_player) Create() *Armory_playerRelates {
 	return &Armory_playerRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:68
+// Chronicle schema.zed:78
 // Relationship: armory_player:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjArmory_player) Chronicle(subs ...*ObjChronicle) *ObjArmory_player {
@@ -118,12 +118,36 @@ func (obj *ObjChronicle) RelationAdmin() string {
 	return "admin"
 }
 
+func (obj *ObjChronicle) RelationAdmin_game_data() string {
+	return "admin_game_data"
+}
+
+func (obj *ObjChronicle) RelationAdmin_queues() string {
+	return "admin_queues"
+}
+
+func (obj *ObjChronicle) RelationAdmin_raid_requirements() string {
+	return "admin_raid_requirements"
+}
+
+func (obj *ObjChronicle) RelationAdmin_users() string {
+	return "admin_users"
+}
+
 func (obj *ObjChronicle) RelationChronicle_guild_member() string {
 	return "chronicle_guild_member"
 }
 
 func (obj *ObjChronicle) RelationChronicle_member() string {
 	return "chronicle_member"
+}
+
+func (obj *ObjChronicle) RelationModerate_guilds() string {
+	return "moderate_guilds"
+}
+
+func (obj *ObjChronicle) RelationModerate_logs() string {
+	return "moderate_logs"
 }
 
 func (obj *ObjChronicle) RelationSupporter() string {
@@ -142,20 +166,20 @@ func (obj *ObjChronicle) RelationUpload_capable() string {
 	return "upload_capable"
 }
 
-func (obj *ObjChronicle) PermissionCan_reparse() string {
-	return "can_reparse"
-}
-
 func (obj *ObjChronicle) PermissionAdminister() string {
 	return "administer"
 }
 
-func (obj *ObjChronicle) PermissionAdminister_authz() string {
-	return "administer_authz"
-}
-
 func (obj *ObjChronicle) PermissionAdmin_logs() string {
 	return "admin_logs"
+}
+
+func (obj *ObjChronicle) PermissionCan_reparse() string {
+	return "can_reparse"
+}
+
+func (obj *ObjChronicle) PermissionAdminister_authz() string {
+	return "administer_authz"
 }
 
 func (obj *ObjChronicle) PermissionAdmin_layouts() string {
@@ -180,10 +204,6 @@ func (obj *ObjChronicle) PermissionSet_user_data_limit() string {
 
 func (obj *ObjChronicle) PermissionShorter_urls() string {
 	return "shorter_urls"
-}
-
-func (obj *ObjChronicle) PermissionInternal_game_data() string {
-	return "internal_game_data"
 }
 
 func (obj *ObjChronicle) PermissionAdmin_regressions() string {
@@ -349,19 +369,112 @@ func (r *ChronicleRelates) Chronicle_member(subs ...*ObjUser) *ChronicleRelates 
 	return r
 }
 
-// CanCan_reparse_User checks if the subject has can_reparse permission
-// // Object: chronicle:<id>
-// Schema: permission can_reparse = technical_user
-func (obj *ObjChronicle) CanCan_reparse_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "can_reparse",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
+// Moderate_logs schema.zed:20
+// Relationship: chronicle:<id>#moderate_logs@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Moderate_logs() etc.
+func (obj *ObjChronicle) Moderate_logs(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("moderate_logs", sub.src.Obj, "")
 	}
+	return obj
+}
+
+// Moderate_logs on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Moderate_logs(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("moderate_logs", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Moderate_guilds schema.zed:21
+// Relationship: chronicle:<id>#moderate_guilds@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Moderate_guilds() etc.
+func (obj *ObjChronicle) Moderate_guilds(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("moderate_guilds", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Moderate_guilds on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Moderate_guilds(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("moderate_guilds", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Admin_users schema.zed:22
+// Relationship: chronicle:<id>#admin_users@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_users() etc.
+func (obj *ObjChronicle) Admin_users(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("admin_users", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Admin_users on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Admin_users(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("admin_users", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Admin_queues schema.zed:23
+// Relationship: chronicle:<id>#admin_queues@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_queues() etc.
+func (obj *ObjChronicle) Admin_queues(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("admin_queues", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Admin_queues on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Admin_queues(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("admin_queues", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Admin_game_data schema.zed:24
+// Relationship: chronicle:<id>#admin_game_data@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_game_data() etc.
+func (obj *ObjChronicle) Admin_game_data(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("admin_game_data", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Admin_game_data on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Admin_game_data(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("admin_game_data", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Admin_raid_requirements schema.zed:25
+// Relationship: chronicle:<id>#admin_raid_requirements@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_raid_requirements() etc.
+func (obj *ObjChronicle) Admin_raid_requirements(subs ...*ObjUser) *ObjChronicle {
+	for _, sub := range subs {
+		obj.src.Touch().Add("admin_raid_requirements", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Admin_raid_requirements on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Admin_raid_requirements(subs ...*ObjUser) *ChronicleRelates {
+	for _, sub := range subs {
+		r.rel.Add("admin_raid_requirements", sub.src.Obj, "")
+	}
+	return r
 }
 
 // CanAdminister_User checks if the subject has administer permission
@@ -379,6 +492,36 @@ func (obj *ObjChronicle) CanAdminister_User(sub *ObjUser) rel.Relationship {
 	}
 }
 
+// CanAdmin_logs_User checks if the subject has admin_logs permission
+// // Object: chronicle:<id>
+// Schema: permission admin_logs = administer + moderate_logs
+func (obj *ObjChronicle) CanAdmin_logs_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "admin_logs",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanCan_reparse_User checks if the subject has can_reparse permission
+// // Object: chronicle:<id>
+// Schema: permission can_reparse = technical_user + moderate_logs
+func (obj *ObjChronicle) CanCan_reparse_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "can_reparse",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
 // CanAdminister_authz_User checks if the subject has administer_authz permission
 // // Object: chronicle:<id>
 // Schema: permission administer_authz = technical_admin
@@ -388,21 +531,6 @@ func (obj *ObjChronicle) CanAdminister_authz_User(sub *ObjUser) rel.Relationship
 		ResourceType:     r.ObjectType,
 		ResourceID:       r.ObjectId,
 		ResourceRelation: "administer_authz",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
-// CanAdmin_logs_User checks if the subject has admin_logs permission
-// // Object: chronicle:<id>
-// Schema: permission admin_logs = administer
-func (obj *ObjChronicle) CanAdmin_logs_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "admin_logs",
 		SubjectType:      s.Obj.ObjectType,
 		SubjectID:        s.Obj.ObjectId,
 		SubjectRelation:  s.OptionalRelation,
@@ -426,7 +554,7 @@ func (obj *ObjChronicle) CanAdmin_layouts_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_guilds_User checks if the subject has admin_guilds permission
 // // Object: chronicle:<id>
-// Schema: permission admin_guilds = administer
+// Schema: permission admin_guilds = administer + moderate_guilds
 func (obj *ObjChronicle) CanAdmin_guilds_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -441,7 +569,7 @@ func (obj *ObjChronicle) CanAdmin_guilds_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_users_User checks if the subject has admin_users permission
 // // Object: chronicle:<id>
-// Schema: permission admin_users = administer
+// Schema: permission admin_users = administer + admin_users
 func (obj *ObjChronicle) CanAdmin_users_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -456,7 +584,7 @@ func (obj *ObjChronicle) CanAdmin_users_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_queues_User checks if the subject has admin_queues permission
 // // Object: chronicle:<id>
-// Schema: permission admin_queues = technical_admin
+// Schema: permission admin_queues = technical_admin + admin_queues
 func (obj *ObjChronicle) CanAdmin_queues_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -499,24 +627,9 @@ func (obj *ObjChronicle) CanShorter_urls_User(sub *ObjUser) rel.Relationship {
 	}
 }
 
-// CanInternal_game_data_User checks if the subject has internal_game_data permission
-// // Object: chronicle:<id>
-// Schema: permission internal_game_data = technical_admin + administer + supporter
-func (obj *ObjChronicle) CanInternal_game_data_User(sub *ObjUser) rel.Relationship {
-	r, s := obj.src.Obj, sub.src
-	return rel.Relationship{
-		ResourceType:     r.ObjectType,
-		ResourceID:       r.ObjectId,
-		ResourceRelation: "internal_game_data",
-		SubjectType:      s.Obj.ObjectType,
-		SubjectID:        s.Obj.ObjectId,
-		SubjectRelation:  s.OptionalRelation,
-	}
-}
-
 // CanAdmin_regressions_User checks if the subject has admin_regressions permission
 // // Object: chronicle:<id>
-// Schema: permission admin_regressions = technical_admin
+// Schema: permission admin_regressions = technical_admin + admin_raid_requirements
 func (obj *ObjChronicle) CanAdmin_regressions_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -531,7 +644,7 @@ func (obj *ObjChronicle) CanAdmin_regressions_User(sub *ObjUser) rel.Relationshi
 
 // CanAdmin_speedrun_requirements_User checks if the subject has admin_speedrun_requirements permission
 // // Object: chronicle:<id>
-// Schema: permission admin_speedrun_requirements = technical_admin
+// Schema: permission admin_speedrun_requirements = technical_admin + admin_raid_requirements
 func (obj *ObjChronicle) CanAdmin_speedrun_requirements_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -576,7 +689,7 @@ func (obj *ObjChronicle) CanCreate_layout_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_world_data_User checks if the subject has admin_world_data permission
 // // Object: chronicle:<id>
-// Schema: permission admin_world_data = technical_admin
+// Schema: permission admin_world_data = technical_admin + admin_game_data
 func (obj *ObjChronicle) CanAdmin_world_data_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -664,7 +777,7 @@ func (obj *ObjGuild) Create() *GuildRelates {
 	return &GuildRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:53
+// Chronicle schema.zed:63
 // Relationship: guild:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjGuild) Chronicle(subs ...*ObjChronicle) *ObjGuild {
@@ -682,7 +795,7 @@ func (r *GuildRelates) Chronicle(subs ...*ObjChronicle) *GuildRelates {
 	return r
 }
 
-// Leader schema.zed:55
+// Leader schema.zed:65
 // Relationship: guild:<id>#leader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Leader() etc.
 func (obj *ObjGuild) Leader(subs ...*ObjUser) *ObjGuild {
@@ -700,7 +813,7 @@ func (r *GuildRelates) Leader(subs ...*ObjUser) *GuildRelates {
 	return r
 }
 
-// Member schema.zed:56
+// Member schema.zed:66
 // Relationship: guild:<id>#member@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Member() etc.
 func (obj *ObjGuild) Member(subs ...*ObjUser) *ObjGuild {
@@ -925,7 +1038,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:86
+// Raid_log schema.zed:96
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -943,7 +1056,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:87
+// PublicWildcard schema.zed:97
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -1050,7 +1163,7 @@ func (obj *ObjLayout) Create() *LayoutRelates {
 	return &LayoutRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:39
+// Chronicle schema.zed:49
 // Relationship: layout:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjLayout) Chronicle(subs ...*ObjChronicle) *ObjLayout {
@@ -1068,7 +1181,7 @@ func (r *LayoutRelates) Chronicle(subs ...*ObjChronicle) *LayoutRelates {
 	return r
 }
 
-// Owner schema.zed:40
+// Owner schema.zed:50
 // Relationship: layout:<id>#owner@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Owner() etc.
 func (obj *ObjLayout) Owner(subs ...*ObjUser) *ObjLayout {
@@ -1217,7 +1330,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:72
+// Chronicle schema.zed:82
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1235,7 +1348,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:73
+// Uploader schema.zed:83
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {
@@ -1450,7 +1563,7 @@ func (obj *ObjRiver_queue) Create() *River_queueRelates {
 	return &River_queueRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:47
+// Chronicle schema.zed:57
 // Relationship: river_queue:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRiver_queue) Chronicle(subs ...*ObjChronicle) *ObjRiver_queue {

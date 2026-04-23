@@ -189,3 +189,55 @@ func (z *Authz) IsGuildMember(ctx context.Context, guildID, userID uuid.UUID) (b
 	actor := policy.New().User(userID)
 	return z.CheckOne(ctx, nil, zg.CanDirect_member_User(actor))
 }
+
+// SetUserChronicleRoles replaces all Chronicle roles for a user.
+// It deletes all existing chronicle→user relationships, then writes the new set.
+func (z *Authz) SetUserChronicleRoles(ctx context.Context, userID uuid.UUID, roles []string) error {
+	b := policy.New()
+	gChron := b.GlobalChronicle()
+	usr := b.User(userID)
+
+	// Delete all existing chronicle roles for this user
+	f := rel.NewFilter(gChron.Object().Typ, gChron.Object().ID, "")
+	f.WithSubjectFilter(usr.Object().Typ, usr.Object().ID, "")
+	if err := z.Delete(ctx, rel.NewPreconditionedFilter(f)); err != nil {
+		return fmt.Errorf("delete existing roles: %w", err)
+	}
+
+	if len(roles) == 0 {
+		return nil
+	}
+
+	// Re-create builder after delete (fresh txn)
+	b = policy.New()
+	gChron = b.GlobalChronicle()
+	usr = b.User(userID)
+
+	for _, role := range roles {
+		switch role {
+		case "technical_admin":
+			gChron.Technical_admin(usr)
+		case "admin":
+			gChron.Admin(usr)
+		case "upload_capable":
+			gChron.Upload_capable(usr)
+		case "moderate_logs":
+			gChron.Moderate_logs(usr)
+		case "moderate_guilds":
+			gChron.Moderate_guilds(usr)
+		case "admin_users":
+			gChron.Admin_users(usr)
+		case "admin_queues":
+			gChron.Admin_queues(usr)
+		case "admin_game_data":
+			gChron.Admin_game_data(usr)
+		case "admin_raid_requirements":
+			gChron.Admin_raid_requirements(usr)
+		default:
+			return fmt.Errorf("invalid role: %s", role)
+		}
+	}
+
+	_, err := z.Write(ctx, *b.Txn())
+	return err
+}

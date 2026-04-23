@@ -238,6 +238,51 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(r.Context(), w, http.StatusOK, db2sdk.User(user, roles))
 }
 
+// AdminSetUserRoles sets a user's Chronicle roles directly.
+// @Summary Set user roles
+// @Tags Admin
+// @Param userID path string true "User ID"
+// @Param request body chroniclesdk.SetUserRolesRequest true "Role list"
+// @Success 200 {object} chroniclesdk.User
+// @Router /api/v1/admin/users/{userID}/roles [put]
+func (a *API) AdminSetUserRoles(w http.ResponseWriter, r *http.Request) {
+	userIDStr := chi.URLParam(r, "userID")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		httpapi.Write(r.Context(), w, http.StatusBadRequest, map[string]string{
+			"message": "Invalid user ID",
+		})
+		return
+	}
+
+	var req chroniclesdk.SetUserRolesRequest
+	if !httpapi.Read(r.Context(), w, r, &req) {
+		return
+	}
+
+	if err := a.Opts.Zed.SetUserChronicleRoles(r.Context(), userID, req.Roles); err != nil {
+		httpapi.Write(r.Context(), w, http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Return updated user
+	user, err := a.Opts.Zed.GetUserByID(r.Context(), userID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	roles, err := a.Opts.Zed.UserChronicleRoles(r.Context(), userID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(r.Context(), w, http.StatusOK, db2sdk.User(user, roles))
+}
+
 const (
 	defaultAdminLogsLimit = 50
 	maxAdminLogsLimit     = 100

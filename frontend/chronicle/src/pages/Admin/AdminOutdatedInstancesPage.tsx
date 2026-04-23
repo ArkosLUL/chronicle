@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAdminOutdatedInstances, useReparseLogGroup } from "@/api/queries";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Loader2, Search } from "lucide-react";
+import { RefreshCw, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -66,14 +66,8 @@ export function AdminOutdatedInstancesPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-6xl p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/admin">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Admin
-          </Button>
-        </Link>
         <h1 className="text-2xl font-bold">Outdated Parser Instances</h1>
         {data && (
           <span className="text-sm text-muted-foreground">

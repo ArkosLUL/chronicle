@@ -26,7 +26,6 @@ import {
   Gift,
   Trash2,
   Clock,
-  ArrowLeft,
   Copy,
   Check,
   ExternalLink,
@@ -364,15 +363,8 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-6">
-        <Link
-          to="/admin"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Admin
-        </Link>
+    <div className="space-y-6">
+      <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Users className="h-6 w-6" />
           User Management

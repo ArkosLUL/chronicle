@@ -4,9 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/database/authz"
-	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
 	"github.com/go-chi/chi/v5"
 
@@ -59,12 +57,10 @@ func (s *Service) Start(_ context.Context) error {
 	return nil
 }
 
-func (s *Service) setupRoutes(zed *authz.Authz) {
+func (s *Service) setupRoutes(_ *authz.Authz) {
 	s.router.Get("/tooltip/item/{item_id}", s.handleItemTooltip)
 	s.router.Get("/display/item/{item_id}", s.handleItemDisplay)
-
-	mw := httpmw.Can(zed, policy.New().GlobalChronicle().CanInternal_game_data_User)
-	s.router.Get("/sim/item/{item_id}", mw(http.HandlerFunc(s.handleItemSim)).ServeHTTP)
+	s.router.Get("/sim/item/{item_id}", s.handleItemSim)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

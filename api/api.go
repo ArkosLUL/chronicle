@@ -140,6 +140,7 @@ func (api *API) Routes() chi.Router {
 			)
 			r.Get("/users", api.AdminListUsers)
 			r.Post("/users/{userID}/resync", api.AdminResyncUserRoles)
+			r.Put("/users/{userID}/roles", api.AdminSetUserRoles)
 			r.Get("/users/{userID}/grants", api.GetUserGrants)
 			r.Put("/users/{userID}/grants", api.UpsertUserGrant)
 			r.Delete("/users/{userID}/grants/{source}", api.DeleteUserGrant)

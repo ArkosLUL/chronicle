@@ -15,7 +15,11 @@ import { SharedViewRedirect } from "./pages/SharedViewRedirect"
 import { RecentRaids } from "./pages/Recent/RecentRaids"
 import { ProtoDecode } from "./pages/Debug/ProtoDecode"
 import { YouTubeSyncPage } from "./pages/YouTubeSync/YouTubeSyncPage"
-import { AdminPage } from "./pages/Admin/AdminPage"
+import { AdminLayout } from "./pages/Admin/AdminLayout"
+import { AdminUsersOverview } from "./pages/Admin/AdminUsersOverview"
+import { AdminLogsPage } from "./pages/Admin/AdminLogsPage"
+import { AdminLeaderboardPage } from "./pages/Admin/AdminLeaderboardPage"
+import { AdminSiteSettingsPage } from "./pages/Admin/AdminSiteSettingsPage"
 import { AdminStoragePage } from "./pages/Admin/AdminStoragePage"
 import { AdminUsersPage } from "./pages/Admin/AdminUsersPage"
 import { RegressionPage } from "./pages/Admin/RegressionPage"
@@ -90,11 +94,17 @@ function App() {
         <Route path="/sim" element={<SimPage />} />
         <Route path="/leaderboard" element={<SpeedrunLeaderboard />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/admin/users" element={<AdminUsersPage />} />
-        <Route path="/admin/storage" element={<AdminStoragePage />} />
-        <Route path="/admin/regression" element={<RegressionPage />} />
-        <Route path="/admin/outdated-instances" element={<AdminOutdatedInstancesPage />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/users-overview" replace />} />
+          <Route path="users-overview" element={<AdminUsersOverview />} />
+          <Route path="logs" element={<AdminLogsPage />} />
+          <Route path="leaderboard" element={<AdminLeaderboardPage />} />
+          <Route path="site-settings" element={<AdminSiteSettingsPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="storage" element={<AdminStoragePage />} />
+          <Route path="regression" element={<RegressionPage />} />
+          <Route path="outdated-instances" element={<AdminOutdatedInstancesPage />} />
+        </Route>
         <Route path="/wowdb/spell" element={<SpellPage />} />
         <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
         <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />

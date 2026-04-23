@@ -105,4 +105,9 @@ type SiteConfig struct {
 	SignupsEnabled bool `json:"signups_enabled"`
 }
 
+// SetUserRolesRequest is the request body for setting a user's Chronicle roles.
+type SetUserRolesRequest struct {
+	Roles []string `json:"roles"`
+}
+
 

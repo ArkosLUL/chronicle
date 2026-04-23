@@ -866,6 +866,28 @@ export function useResyncUserRoles() {
   });
 }
 
+export function useSetUserRoles() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, roles }: { userId: string; roles: string[] }) => {
+      const response = await fetch(`/api/v1/admin/users/${userId}/roles`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roles }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to set roles" }));
+        throw new Error(error.message || "Failed to set roles");
+      }
+      return response.json() as Promise<User>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}
+
 export function useUserGrants(userId: string, options?: Omit<UseQueryOptions<DataGrant[]>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["admin", "users", userId, "grants"],

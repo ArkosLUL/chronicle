@@ -16,23 +16,33 @@ definition chronicle {
   relation chronicle_guild_member: user
   relation chronicle_member: user // Not in discord
 
-  permission can_reparse  = technical_user
+  // Granular roles
+  relation moderate_logs: user
+  relation moderate_guilds: user
+  relation admin_users: user
+  relation admin_queues: user
+  relation admin_game_data: user
+  relation admin_raid_requirements: user
+
+
   permission administer   = admin + technical_admin
+
+
+  permission admin_logs    = administer + moderate_logs
+  permission can_reparse  = technical_user + moderate_logs
   permission administer_authz = technical_admin
-  permission admin_logs    = administer
   permission admin_layouts = administer
-  permission admin_guilds = administer
-  permission admin_users  = administer
-  permission admin_queues = technical_admin
+  permission admin_guilds = administer + moderate_guilds
+  permission admin_users  = administer + admin_users
+  permission admin_queues = technical_admin + admin_queues
   permission set_user_data_limit = technical_admin
   permission shorter_urls = supporter + admin
-  permission internal_game_data = technical_admin + administer + supporter
-  permission admin_regressions = technical_admin
-  permission admin_speedrun_requirements = technical_admin
+  permission admin_regressions = technical_admin + admin_raid_requirements
+  permission admin_speedrun_requirements = technical_admin + admin_raid_requirements
 
   permission upload_log = upload_capable + administer + supporter + chronicle_guild_member + chronicle_member
   permission create_layout = chronicle_guild_member + chronicle_member
-  permission admin_world_data = technical_admin
+  permission admin_world_data = technical_admin + admin_game_data
 }
 
 definition layout {

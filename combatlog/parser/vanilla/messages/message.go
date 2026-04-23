@@ -647,3 +647,27 @@ type LootTrade struct {
 
 func (l LootTrade) Affects() []guid.GUID { return []guid.GUID{} }
 func (*LootTrade) isMessage()            {}
+
+// UnitEvade is emitted when a creature enters evade mode (resets aggro/returns home).
+type UnitEvade struct {
+	MessageBase
+	UnitGUID guid.GUID
+	UnitName string
+	Reason   uint8 // AzerothCore EvadeReason: 0=Other, 1=Boundary, 2=NoHostiles, 3=SequenceBreak, 4=NoPath
+}
+
+func (u UnitEvade) Affects() []guid.GUID { return []guid.GUID{u.UnitGUID} }
+func (*UnitEvade) isMessage()            {}
+
+// UnitCombatEnter is emitted when a unit enters combat with another unit.
+type UnitCombatEnter struct {
+	MessageBase
+	UnitGUID   guid.GUID
+	UnitName   string
+	VictimGUID guid.GUID
+	VictimName string
+}
+
+func (u UnitCombatEnter) Affects() []guid.GUID { return []guid.GUID{u.UnitGUID, u.VictimGUID} }
+func (*UnitCombatEnter) isMessage()            {}
+

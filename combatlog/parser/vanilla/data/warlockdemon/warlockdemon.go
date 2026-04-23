@@ -14,6 +14,10 @@ func IsWarlockDemon(id guid.GUID) (string, bool) {
 		return "", false
 	}
 
-	name, ok := demons[entry]
-	return name, ok
+	return IsWarlockDemonEntry(entry)
+}
+
+func IsWarlockDemonEntry(entry uint32) (string, bool) {
+  name, ok := demons[entry]
+  return name, ok
 }

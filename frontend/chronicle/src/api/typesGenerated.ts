@@ -332,6 +332,45 @@ export type GuildTag = "Casual" | "Chinese" | "Dungeons" | "English" | "French" 
 
 export const GuildTags: GuildTag[] = ["Casual", "Chinese", "Dungeons", "English", "French", "German", "Hardcore", "Korean", "Leveling", "Portuguese", "PvP", "Questing", "RP", "Raiding", "Russian", "Social", "Spanish", "Taiwanese"];
 
+// From chroniclesdk/log.go
+/**
+ * IdentityCreature represents a creature seen during identity mode parsing.
+ */
+export interface IdentityCreature {
+    readonly entry_id: number;
+    readonly name: string;
+    readonly unique_count: number;
+}
+
+// From chroniclesdk/log.go
+/**
+ * IdentityReport contains all creatures and spells seen in a parsed log,
+ * organized by zone. Used for programming raid encounter definitions.
+ */
+export interface IdentityReport {
+    /**
+     * ZonedUnits maps zone name → list of creatures seen in that zone.
+     */
+    readonly zoned_units?: Record<string, IdentityCreature[]>;
+    /**
+     * ZoneSpells maps zone name → list of spells seen in that zone.
+     */
+    readonly zone_spells?: Record<string, IdentitySpell[]>;
+    /**
+     * UnitSpells maps creature entry ID → list of spell names that creature cast.
+     */
+    readonly unit_spells?: Record<number, string[]>;
+}
+
+// From chroniclesdk/log.go
+/**
+ * IdentitySpell represents a spell seen during identity mode parsing.
+ */
+export interface IdentitySpell {
+    readonly spell_id: number;
+    readonly count: number;
+}
+
 // From chroniclesdk/panel_layout.go
 /**
  * InstanceDefaultsResponse provides everything needed by the instance page in one request.
@@ -583,9 +622,13 @@ export interface LogParseReport {
      */
     readonly consumer_times?: Record<string, Duration>;
     /**
-     * MissedSpells maps spell IDs not found in the DBC to their lookup count.
+     * MissedSpells maps spell IDs not found in the DBC to their lookup count and name.
      */
-    readonly missed_spells?: Record<number, number>;
+    readonly missed_spells?: Record<number, MissedSpell>;
+    /**
+     * Identity contains all creatures/spells seen, populated only when identity_mode is enabled.
+     */
+    readonly identity?: IdentityReport;
 }
 
 // From chroniclesdk/response.go
@@ -599,6 +642,15 @@ export const MaxDescriptionLength = 500;
 
 // From chroniclesdk/guild_page.go
 export const MaxTags = 10;
+
+// From chroniclesdk/log.go
+/**
+ * MissedSpell holds the count and name of a spell not found in the DBC.
+ */
+export interface MissedSpell {
+    readonly count: number;
+    readonly name?: string;
+}
 
 // From chroniclesdk/log.go
 export interface PeriodMoment {

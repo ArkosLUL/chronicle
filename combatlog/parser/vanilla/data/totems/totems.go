@@ -30,8 +30,12 @@ func IsTotem(id guid.GUID) (Totem, bool) {
 	if !ok {
 		return Totem{}, false
 	}
-	totem, exists := totems[entry]
-	return totem, exists
+	return EntryIsTotem(entry)
+}
+
+func EntryIsTotem(entry uint32) (Totem, bool) {
+  totem, exists := totems[entry]
+  return totem, exists
 }
 
 var totems = make(map[uint32]Totem)

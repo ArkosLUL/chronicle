@@ -36,7 +36,7 @@ func ParseLineUnixMillis(content string) (time.Time, string, *Matched, error) {
 	}
 	ts := time.UnixMilli(ms)
 
-	parts := strings.Split(payload, ",")
+	parts := splitCSVFields(payload)
 	if len(parts) < 1 || parts[0] == "" {
 		return time.Time{}, "", nil, fmt.Errorf("empty event type in line: %q", truncate(content, 80))
 	}
@@ -85,8 +85,9 @@ func ParseLine(content string) (time.Time, string, *Matched, error) {
 		return time.Time{}, "", nil, fmt.Errorf("parsing timestamp %q: %w", tsStr, err)
 	}
 
-	// Split payload on commas. WoW names cannot contain commas, so this is safe.
-	parts := strings.Split(payload, ",")
+	// Split payload on commas, respecting double-quoted fields that may
+	// contain commas (e.g. AzerothCore spell descriptions).
+	parts := splitCSVFields(payload)
 	if len(parts) < 1 || parts[0] == "" {
 		return time.Time{}, "", nil, fmt.Errorf("empty event type in line: %q", truncate(content, 80))
 	}
@@ -108,6 +109,31 @@ func unquote(s string) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+// splitCSVFields splits a comma-separated string, treating commas inside
+// double-quoted segments as literal characters rather than delimiters.
+// This handles AzerothCore spell descriptions like:
+//
+//	"Defensive State - Follows a successful block, dodge or parry."
+//
+// Quotes are NOT stripped here; that happens in unquote() during field processing.
+func splitCSVFields(s string) []string {
+	fields := make([]string, 0, 16)
+	start := 0
+	inQuotes := false
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '"':
+			inQuotes = !inQuotes
+		case ',':
+			if !inQuotes {
+				fields = append(fields, s[start:i])
+				start = i + 1
+			}
+		}
+	}
+	fields = append(fields, s[start:])
+	return fields
 }
 
 func truncate(s string, n int) string {

@@ -160,3 +160,76 @@ func TestMatched_OutOfBounds(t *testing.T) {
 	_ = m.String() // out of bounds
 	require.Error(t, m.Error())
 }
+func TestSplitCSVFields(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		input  string
+		expect []string
+	}{
+		{
+			name:   "simple",
+			input:  `SWING_DAMAGE,0x01,"Agar",0x0`,
+			expect: []string{`SWING_DAMAGE`, `0x01`, `"Agar"`, `0x0`},
+		},
+		{
+			name:   "comma inside quotes",
+			input:  `SPELL_AURA_REMOVED,0x01,"Agar",0x0,0x01,"Agar",0x0,5302,"Defensive State - Follows a successful block, dodge or parry.",0x0,BUFF`,
+			expect: []string{`SPELL_AURA_REMOVED`, `0x01`, `"Agar"`, `0x0`, `0x01`, `"Agar"`, `0x0`, `5302`, `"Defensive State - Follows a successful block, dodge or parry."`, `0x0`, `BUFF`},
+		},
+		{
+			name:   "no quotes",
+			input:  `A,B,C`,
+			expect: []string{`A`, `B`, `C`},
+		},
+		{
+			name:   "empty field",
+			input:  `A,,C`,
+			expect: []string{`A`, ``, `C`},
+		},
+		{
+			name:   "single field",
+			input:  `EVENT`,
+			expect: []string{`EVENT`},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := splitCSVFields(tc.input)
+			assert.Equal(t, tc.expect, got)
+		})
+	}
+}
+
+func TestParseLineUnixMillis_QuotedComma(t *testing.T) {
+	t.Parallel()
+	line := `1776935650722  SPELL_AURA_REMOVED,0x0000000000000001,"Agar",0x0,0x0000000000000001,"Agar",0x0,5302,"Defensive State - Follows a successful block, dodge or parry.",0x0,BUFF`
+
+	_, event, m, err := ParseLineUnixMillis(line)
+	require.NoError(t, err)
+	assert.Equal(t, "SPELL_AURA_REMOVED", event)
+
+	// source
+	assert.Equal(t, guid.GUID(0x0000000000000001), m.Guid())
+	assert.Equal(t, "Agar", m.String())
+	_ = m.HexUint32() // sourceFlags
+
+	// dest
+	assert.Equal(t, guid.GUID(0x0000000000000001), m.Guid())
+	assert.Equal(t, "Agar", m.String())
+	_ = m.HexUint32() // destFlags
+
+	// spell prefix
+	assert.Equal(t, int32(5302), m.Int32())
+	assert.Equal(t, "Defensive State - Follows a successful block, dodge or parry.", m.String())
+	_ = m.School() // spellSchool
+
+	// aura type
+	assert.Equal(t, "BUFF", m.String())
+	require.NoError(t, m.Error())
+	assert.Equal(t, 0, m.Remain())
+}
+

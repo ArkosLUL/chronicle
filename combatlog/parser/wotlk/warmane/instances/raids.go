@@ -42,3 +42,34 @@ var VoAFactory = &instances.CommonFactory{
 	ZoneName:  instances.ZoneNameMatcher("vault of archavon"),
 	Hostiles:  instances.FromMap(VoAHostiles()),
 }
+// ObsidianSanctumHostiles returns creature entry IDs for The Obsidian Sanctum (zone 4493).
+// Single boss (Sartharion) with three optional drake lieutenants.
+func ObsidianSanctumHostiles() map[uint32]instances.Identity {
+	hostile := make(map[uint32]instances.Identity)
+	instances.LoadAdds(hostile, map[uint32]string{
+		// Trash
+		30680: "Onyx Brood General",
+		30681: "Onyx Blaze Mistress",
+		30682: "Onyx Flight Captain",
+		30453: "Onyx Sanctum Guardian",
+		// Encounter adds
+		30643: "Lava Blaze",
+		31218: "Acolyte of Shadron",
+		31219: "Acolyte of Vesperon",
+	})
+	instances.LoadBosses(hostile, map[uint32]string{
+		28860: "Sartharion",
+		30449: "Vesperon",
+		30451: "Shadron",
+		30452: "Tenebron",
+	})
+	return hostile
+}
+
+var ObsidianSanctumFactory = &instances.CommonFactory{
+	Name:      "Obsidian Sanctum",
+	ZoneNames: []string{"the obsidian sanctum"},
+	ZoneName:  instances.ZoneNameMatcher("the obsidian sanctum"),
+	Hostiles:  instances.FromMap(ObsidianSanctumHostiles()),
+}
+

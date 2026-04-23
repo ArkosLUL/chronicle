@@ -57,10 +57,8 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	}, nil
 }
 
-func (p *Parser) WithEventHook(event string, hook func(ts time.Time, m *Matched, raw string) ([]messages.Message, error)) func(*Parser) {
-	return func(p *Parser) {
-		p.eventHook[event] = hook
-	}
+func (p *Parser) WithEventHook(event string, hook func(ts time.Time, m *Matched, raw string) ([]messages.Message, error)) {
+	p.eventHook[event] = hook
 }
 
 func (p *Parser) SetSynthetics(s interface {

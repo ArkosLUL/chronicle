@@ -28,6 +28,8 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/totems"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/data/warlockdemon"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -856,6 +858,12 @@ func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
 
 	for zone, units := range cs.ZonedUnits {
 		for entryID, name := range units {
+			if _, ok := totems.EntryIsTotem(entryID); ok {
+				continue
+			}
+			if _, ok := warlockdemon.IsWarlockDemonEntry(entryID); ok {
+				continue
+			}
 			count := len(cs.UnitQuantity[entryID])
 			rpt.ZonedUnits[zone] = append(rpt.ZonedUnits[zone], chroniclesdk.IdentityCreature{
 				EntryID:     entryID,

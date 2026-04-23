@@ -29,7 +29,7 @@ func TestCombatantInfoEmitter_FightStarted(t *testing.T) {
 	}
 
 	units := unitdb.New()
-	chars := character.NewCharacters(units)
+	chars := character.NewCharacters(units, character.TurtleCharacterFactories())
 
 	var emitted []*messages.Combatant
 	cie := &combatantInfoEmitter{
@@ -69,7 +69,7 @@ func TestCombatantInfoEmitter_NoDataInArmory(t *testing.T) {
 	// Don't add any player data to the armory.
 
 	units := unitdb.New()
-	chars := character.NewCharacters(units)
+	chars := character.NewCharacters(units, character.TurtleCharacterFactories())
 
 	var emitted []*messages.Combatant
 	cie := &combatantInfoEmitter{

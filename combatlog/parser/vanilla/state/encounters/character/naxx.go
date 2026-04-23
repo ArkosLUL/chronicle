@@ -137,7 +137,7 @@ func (c *ThaddiusParty) Process(m messages.Message) error {
 	}
 
 	c.maybeFinalizePendingDeath(m)
-	err := processCommonActivity(c, m)
+	err := ProcessCommonActivity(c, m)
 	if err != nil {
 		return err
 	}

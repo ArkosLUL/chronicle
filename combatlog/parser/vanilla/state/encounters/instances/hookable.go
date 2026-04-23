@@ -70,7 +70,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	p := participants.New()
 	g := armory.New()
 
-	characters := character.NewCharacters(db)
+	characters := character.NewCharacters(db, character.TurtleCharacterFactories())
 	characters.RegisterHook(p)
 
 	// classificationEmitter needs a forward reference to the hookable for the emit callback.

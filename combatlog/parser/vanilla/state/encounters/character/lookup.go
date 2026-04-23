@@ -12,88 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
-type characterFactory func(id guid.GUID, chars *Characters) (Character, bool)
-
-var characterFactories = []characterFactory{
-	// Global
-	NewTotemCharacter,
-	NewCritterCharacter,
-	NewObject,
-	// Wailing Caverns,
-	NewDiscipleOfNaralex,
-	// Deadmines
-	NewSneedShredder,
-	NewEdwinVanCleef,
-	// Dire Maul
-	NewImmolthar,
-	// Molten Core
-	NewCoreHoundCharacter,
-	NewMajordomoPartyCharacter,
-	NewIncindisCharacter,
-	NewSulfuronHarbingerCharacter,
-	NewSmoldarisBasaltharCharacter,
-	NewSorcererThaneCharacter,
-	NewRagnarosCharacter,
-	NewGolemaggCharacter,
-	// Blackwing Lair
-	NewBroodlordLashlayer,
-	NewRazorgore,
-	NewShadowflameSpark,
-	NewNefarian,
-	// Onyxia
-	NewOnyxiaCharacter,
-	// Zul'Gurub
-	NewHighPriestArlokk,
-	NewHighPriestMarli,
-	NewHighPriestessJeklik,
-	NewHighPriestThekalParty,
-	NewJindoHexxer,
-	NewHooktoothFrenzy,
-	// Scholomance
-	NewJandiceBarov,
-	NewDiseasedGhoul,
-	// Stratholme
-	NewCryptScarab,
-	// Timbermaw Hold
-	NewKarrsh,
-	NewChieftainPartath,
-	NewOrmanos,
-	NewUrsol,
-	NewNightmareFiend,
-	NewVileSkitterer,
-	NewSelenaxxFoulheart,
-	NewLoktanagTheVile,
-	NewPerotharn,
-	// AQ 40
-	NewCthun,
-	// Naxx,
-	NewGluth,
-	NewGrobbulus,
-	NewAnubRekhan,
-	NewThaddiusParty,
-	NewGothikRoom,
-	NewKelThuzadRoom,
-	NewHeiganTheUnclean,
-	NewDiseasedMaggot,
-	NewEyeStalk,
-	// Kara 40
-	NewKruul,
-	NewKing,
-	NewMephistroth,
-	NewDemonicEye,
-	NewSanvTasDal,
-	NewDraeneiNetherWalker,
-	NewKeeperGnarlmoon,
-	NewAnomalus,
-	NewEchoOfMedivh,
-	NewFragmentOfRupturan,
-	NewRupturanTheBroken,
-	NewFelheart,
-	NewLivingStone,
-	NewIncantagos,
-	// Emerald Sanctum
-	NewSolnius,
-}
+type CharacterFactory func(id guid.GUID, chars *Characters) (Character, bool)
 
 type SetHook interface {
 	// ActivityChange is invoked every time a character's activity status changes.
@@ -108,8 +27,9 @@ type SetHook interface {
 type Characters struct {
 	All *characterset.Set[Character]
 	// ByEntry only works on creatures
-	ByEntry map[uint32][]Character
-	db      *unitdb.Units
+	ByEntry   map[uint32][]Character
+	db        *unitdb.Units
+	factories []CharacterFactory
 
 	sharedState map[string]any
 
@@ -118,15 +38,14 @@ type Characters struct {
 	activityChanged map[Character]struct{}
 }
 
-func NewCharacters(db *unitdb.Units) *Characters {
-	ch := &Characters{
+func NewCharacters(db *unitdb.Units, factories []CharacterFactory) *Characters {
+	return &Characters{
 		db:          db,
+		factories:   factories,
 		All:         characterset.New[Character](),
 		ByEntry:     make(map[uint32][]Character),
 		sharedState: make(map[string]any),
 	}
-
-	return ch
 }
 
 func (c *Characters) RegisterHook(hook SetHook) {
@@ -159,7 +78,7 @@ func (c *Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool
 	char, exists := c.All.Get(id)
 	if !exists {
 		newChar = true
-		for _, factory := range characterFactories {
+		for _, factory := range c.factories {
 			if specialChar, ok := factory(id, c); ok {
 				char = specialChar
 				break

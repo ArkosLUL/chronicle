@@ -6,7 +6,7 @@ import (
 )
 
 type AdsGoWithBoss struct {
-	characterBase
+	CharacterBase
 	bossEntry uint32
 	adds      []uint32
 
@@ -29,7 +29,7 @@ func NewAdsGoWithBoss(bossEntry uint32, ads ...uint32) func(id guid.GUID, all *C
 		}
 
 		return &AdsGoWithBoss{
-			characterBase: NewCommonCharacter(id, all),
+			CharacterBase: NewCommonCharacter(id, all),
 			bossEntry:     bossEntry,
 			adds:          ads,
 			all:           all,
@@ -37,9 +37,9 @@ func NewAdsGoWithBoss(bossEntry uint32, ads ...uint32) func(id guid.GUID, all *C
 	}
 }
 
-func NewAdsGoWithBossCustomCharacter(c characterBase, all *Characters, bossEntry uint32, ads ...uint32) *AdsGoWithBoss {
+func NewAdsGoWithBossCustomCharacter(c CharacterBase, all *Characters, bossEntry uint32, ads ...uint32) *AdsGoWithBoss {
 	return &AdsGoWithBoss{
-		characterBase: c,
+		CharacterBase: c,
 		bossEntry:     bossEntry,
 		adds:          ads,
 		all:           all,
@@ -53,7 +53,7 @@ type CanDie interface {
 func (c *AdsGoWithBoss) Process(m messages.Message) error {
 	wasActive := c.IsActive()
 
-	err := c.characterBase.Process(m)
+	err := c.CharacterBase.Process(m)
 	if err != nil {
 		return err
 	}

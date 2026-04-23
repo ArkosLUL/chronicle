@@ -30,7 +30,7 @@ func TestTotemicRecall(t *testing.T) {
 	p := vanilla.NewFromScanner(logger, liner, merge.FromIOReader(liner, strings.NewReader(logs)), nil)
 
 	db := unitdb.New()
-	c := character.NewCharacters(db)
+	c := character.NewCharacters(db, character.TurtleCharacterFactories())
 	for {
 		msgs, err := p.Advance(context.Background())
 		if errors.Is(err, io.EOF) {

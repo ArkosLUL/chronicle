@@ -97,7 +97,7 @@ func (c *HighPriestThekalParty) Process(m messages.Message) error {
 	// Check if pending death should be finalized (no resurrection occurred)
 	c.checkPendingDeath(m)
 
-	return processCommonActivity(c, m)
+	return ProcessCommonActivity(c, m)
 }
 
 // checkPendingDeath finalizes a pending death if the resurrection window has passed.
@@ -175,7 +175,7 @@ func (c *HooktoothFrenzy) Process(m messages.Message) error {
 		}
 	}
 
-	err := processCommonActivity(c, m)
+	err := ProcessCommonActivity(c, m)
 	if err != nil {
 		return err
 	}

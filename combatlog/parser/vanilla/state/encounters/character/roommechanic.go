@@ -109,7 +109,7 @@ func (c *RoomMechanic) Process(m messages.Message) error {
 		cur.HandleTimeout(m.Date())
 	}
 
-	if err := processCommonActivity(c, m); err != nil {
+	if err := ProcessCommonActivity(c, m); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func (c *RoomMechanic) Died(reason string, m messages.Message) {
 		return
 	}
 
-	if !c.room.StayActive(c.id) {
+	if !c.room.StayActive(c.ID()) {
 		c.finalizeDeath(reason, m)
 		return
 	}

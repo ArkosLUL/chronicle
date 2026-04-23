@@ -10,7 +10,7 @@ const (
 	fragmentOfRupturanEntry = 59957
 )
 
-var _ characterBase = (*FragmentOfRupturan)(nil)
+var _ CharacterBase = (*FragmentOfRupturan)(nil)
 
 type FragmentOfRupturan struct {
 	*Common
@@ -38,7 +38,7 @@ func (f *FragmentOfRupturan) Process(m messages.Message) error {
 		cur.HandleTimeout(m.Date())
 	}
 
-	return processCommonActivity(f, m)
+	return ProcessCommonActivity(f, m)
 }
 
 func (f *FragmentOfRupturan) Bump(reason string, m messages.Message) {

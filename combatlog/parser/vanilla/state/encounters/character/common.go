@@ -46,7 +46,7 @@ func (c *Common) Process(m messages.Message) error {
 		cur.HandleTimeout(m.Date())
 	}
 
-	return processCommonActivity(c, m)
+	return ProcessCommonActivity(c, m)
 }
 
 func (c *Common) Start(reason string, m messages.Message) {
@@ -56,7 +56,7 @@ func (c *Common) Start(reason string, m messages.Message) {
 	)
 }
 
-type characterBase interface {
+type CharacterBase interface {
 	Character
 
 	End(reason string, m messages.Message, state period.EndState)
@@ -78,8 +78,8 @@ func isImmobilizeCC(spellName string) bool {
 	return strings.HasPrefix(spellName, "Polymorph: ")
 }
 
-// processCommonActivity handles the basics of activity processing for a character.
-func processCommonActivity(c characterBase, m messages.Message) error {
+// ProcessCommonActivity handles the basics of activity processing for a character.
+func ProcessCommonActivity(c CharacterBase, m messages.Message) error {
 	if m.MarksExist() {
 		if reason, ok := m.MarkHas(messages.MarkTypeStart, c.ID()); ok {
 			c.Start(reason, m)

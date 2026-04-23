@@ -20,7 +20,7 @@ func TestCharacters(t *testing.T) {
 	t.Parallel()
 
 	t.Run("BasicActivity", func(t *testing.T) {
-		cars := character.NewCharacters(unitdb.New())
+		cars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 		// 0xF1300010C7009C09(Scarlet Myrmidon)
 		// 0x000000000001C7AC(Doyd)

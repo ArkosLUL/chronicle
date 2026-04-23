@@ -178,7 +178,7 @@ func (c *Totem) Process(m messages.Message) error {
 
 	}
 
-	return processCommonActivity(c, m)
+	return ProcessCommonActivity(c, m)
 }
 
 func (c *Totem) TotemicRecall(m messages.Message, caster *guid.GUID, target *guid.GUID) {

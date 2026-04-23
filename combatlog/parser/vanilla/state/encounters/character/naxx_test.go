@@ -15,7 +15,7 @@ import (
 func TestThaddiusParty_BridgesAddsIntoBossPhase(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	player := guid.GUID(0x1)
 	thaddius := creatureGUID(15928, 0x1)
@@ -65,7 +65,7 @@ func TestThaddiusParty_BridgesAddsIntoBossPhase(t *testing.T) {
 func TestThaddiusParty_TransitionTimeoutFinalizesAdds(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	player := guid.GUID(0x1)
 	feugen := creatureGUID(15930, 0x1)
@@ -94,7 +94,7 @@ func TestThaddiusParty_TransitionTimeoutFinalizesAdds(t *testing.T) {
 func TestGothikParty_StartsOnAnyAdd_WithSinglePendingAnchor(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	player := guid.GUID(0x1)
 	unrelentingTrainee := creatureGUID(16124, 0x10)
@@ -139,7 +139,7 @@ func TestGothikParty_StartsOnAnyAdd_WithSinglePendingAnchor(t *testing.T) {
 func TestGothikParty_EndsOnBossDeath_FlushesPendingAdds(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	player := guid.GUID(0x1)
 	gothik := creatureGUID(16060, 0x20)
@@ -180,7 +180,7 @@ func TestGothikParty_EndsOnBossDeath_FlushesPendingAdds(t *testing.T) {
 func TestGothikParty_TimesOutWithoutBossDeath(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	player := guid.GUID(0x1)
 	unrelentingTrainee := creatureGUID(16124, 0x30)
@@ -220,7 +220,7 @@ func TestGothikParty_TimesOutWithoutBossDeath(t *testing.T) {
 func TestKelThuzadRoom_AddIsFinalizedWhenBossEngagesOrDies(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	player := guid.GUID(0x1)
 	kelThuzad := creatureGUID(15990, 0x40)
@@ -256,7 +256,7 @@ func TestKelThuzadRoom_AddIsFinalizedWhenBossEngagesOrDies(t *testing.T) {
 func TestNewGothikParty_MatchesOnlyExpectedEntries(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	for _, entry := range []uint32{16060, 16124, 16125, 16126, 16127, 16148, 16149, 16150} {
 		id := creatureGUID(entry, entry)
@@ -282,7 +282,7 @@ func TestNewGothikParty_MatchesOnlyExpectedEntries(t *testing.T) {
 func TestNewThaddiusParty_MatchesOnlyExpectedEntries(t *testing.T) {
 	t.Parallel()
 
-	chars := character.NewCharacters(unitdb.New())
+	chars := character.NewCharacters(unitdb.New(), character.TurtleCharacterFactories())
 
 	for _, entry := range []uint32{15928, 15929, 15930} {
 		id := creatureGUID(entry, entry)

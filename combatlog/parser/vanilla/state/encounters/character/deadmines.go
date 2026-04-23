@@ -61,7 +61,7 @@ func (c *SneedShredder) Process(m messages.Message) error {
 		cur.HandleTimeout(m.Date())
 	}
 
-	err := processCommonActivity(c, m)
+	err := ProcessCommonActivity(c, m)
 	if err != nil {
 		return err
 	}

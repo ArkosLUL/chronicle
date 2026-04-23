@@ -1,12 +1,12 @@
 package participants
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 )
 
-var _ character.SetHook = (*Tracker)(nil)
+var _ characters.SetHook = (*Tracker)(nil)
 
 type Tracker struct {
 	Active map[guid.GUID]bool
@@ -18,7 +18,7 @@ func New() *Tracker {
 	}
 }
 
-func (t *Tracker) ActivityChange(m messages.Message, chars ...character.Character) {
+func (t *Tracker) ActivityChange(m messages.Message, chars ...characters.Character) {
 	for _, c := range chars {
 		if c.IsActive() {
 			t.Active[c.ID()] = true
@@ -26,4 +26,4 @@ func (t *Tracker) ActivityChange(m messages.Message, chars ...character.Characte
 	}
 }
 
-func (t *Tracker) CharacterAdded(m messages.Message, chars ...character.Character) {}
+func (t *Tracker) CharacterAdded(m messages.Message, chars ...characters.Character) {}

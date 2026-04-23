@@ -4,18 +4,18 @@ import (
 	"context"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/google/uuid"
 )
 
 var _ instancehook.Hook = (*Tracking)(nil)
-var _ character.SetHook = (*Tracking)(nil)
+var _ characters.SetHook = (*Tracking)(nil)
 
 // AuraState holds the current stack count for an aura.
 type AuraState struct {
@@ -129,7 +129,7 @@ func (t *Tracking) Finalize(_ context.Context) error {
 
 // ActivityChange clears non-persistent auras for characters that died.
 // Auras with AttrEx3_DeathPersistent (elixirs, flasks, food buffs, etc.) are kept.
-func (t *Tracking) ActivityChange(_ messages.Message, chars ...character.Character) {
+func (t *Tracking) ActivityChange(_ messages.Message, chars ...characters.Character) {
 	for _, char := range chars {
 		if !char.IsActive() {
 			p, ok := char.CurrentPeriod()
@@ -156,7 +156,7 @@ func (t *Tracking) clearNonPersistent(unit guid.GUID) {
 	}
 }
 
-func (t *Tracking) CharacterAdded(_ messages.Message, _ ...character.Character) {}
+func (t *Tracking) CharacterAdded(_ messages.Message, _ ...characters.Character) {}
 
 // emitAllAuras emits a synthetic aura message for every tracked aura on every unit.
 func (t *Tracking) emitAllAuras(ts time.Time) {

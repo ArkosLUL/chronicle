@@ -6,16 +6,16 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
 var (
 	_ instancehook.Hook  = (*SpeedrunTracker)(nil)
-	_ character.SetHook  = (*SpeedrunTracker)(nil)
+	_ characters.SetHook = (*SpeedrunTracker)(nil)
 )
 
 type requirementState struct {
@@ -26,7 +26,7 @@ type requirementState struct {
 // SpeedrunTracker watches character activity changes and fight lifecycle events
 // to determine whether all speedrun requirements have been met and how long it
 // took. It implements both instancehook.Hook (fight start/end) and
-// character.SetHook (kill detection via EndStateSlain).
+// characters.SetHook (kill detection via EndStateSlain).
 type SpeedrunTracker struct {
 	instancehook.BaseHook
 
@@ -57,12 +57,12 @@ func NewSpeedrunTracker(rules SpeedrunRules) *SpeedrunTracker {
 	}
 }
 
-// --- character.SetHook implementation ---
+// --- characters.SetHook implementation ---
 
 // ActivityChange is called whenever characters' activity status changes. We look
 // for characters that just went inactive with EndStateSlain and check whether
 // their entry ID matches a tracked requirement.
-func (t *SpeedrunTracker) ActivityChange(m messages.Message, chars ...character.Character) {
+func (t *SpeedrunTracker) ActivityChange(m messages.Message, chars ...characters.Character) {
 	if t.completed {
 		return
 	}
@@ -110,7 +110,7 @@ func (t *SpeedrunTracker) ActivityChange(m messages.Message, chars ...character.
 	}
 }
 
-func (t *SpeedrunTracker) CharacterAdded(_ messages.Message, _ ...character.Character) {}
+func (t *SpeedrunTracker) CharacterAdded(_ messages.Message, _ ...characters.Character) {}
 
 // --- instancehook.Hook implementation ---
 

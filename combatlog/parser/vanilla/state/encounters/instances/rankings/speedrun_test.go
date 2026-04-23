@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 )
 
 // makeCreatureGUID builds a creature GUID with the given entry and spawn IDs.
@@ -33,14 +33,14 @@ type stubChar struct {
 	hasPeriod bool
 }
 
-func (s *stubChar) ID() guid.GUID                            { return s.id }
-func (s *stubChar) IsActive() bool                           { return s.active }
-func (s *stubChar) String() string                           { return s.id.String() }
-func (s *stubChar) Died(string, messages.Message)            {}
-func (s *stubChar) Process(messages.Message) error           { return nil }
-func (s *stubChar) Periods() []period.Period                 { return nil }
-func (s *stubChar) RecentlySlain(messages.Message) bool      { return false }
-func (s *stubChar) SetPeriodHook(period.Hook)                {}
+func (s *stubChar) ID() guid.GUID                       { return s.id }
+func (s *stubChar) IsActive() bool                      { return s.active }
+func (s *stubChar) String() string                      { return s.id.String() }
+func (s *stubChar) Died(string, messages.Message)       {}
+func (s *stubChar) Process(messages.Message) error      { return nil }
+func (s *stubChar) Periods() []period.Period            { return nil }
+func (s *stubChar) RecentlySlain(messages.Message) bool { return false }
+func (s *stubChar) SetPeriodHook(period.Hook)           {}
 func (s *stubChar) CurrentPeriod() (period.Period, bool) {
 	if !s.hasPeriod {
 		return period.Period{}, false

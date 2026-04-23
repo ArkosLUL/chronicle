@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
@@ -15,11 +17,10 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/auras"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -55,7 +56,7 @@ type Hookable struct {
 
 	// Live tracking data
 	Auras           *auras.Tracking
-	Characters      *character.Characters
+	Characters      *characters.Characters
 	currentFight    *ongoingFight
 	events          *encounterevents.Events
 	completedFights []Fight
@@ -70,7 +71,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	p := participants.New()
 	g := armory.New()
 
-	characters := character.NewCharacters(db, character.TurtleCharacterFactories())
+	characters := characters.NewCharacters(db, creatures.TurtleCharacterFactories())
 	characters.RegisterHook(p)
 
 	// classificationEmitter needs a forward reference to the hookable for the emit callback.
@@ -266,7 +267,7 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 	wasActive := h.currentFight.active()
 	activeTotal := 0
 	var latestEnd *period.Moment
-	err := h.Characters.All.ForEach(func(char character.Character) error {
+	err := h.Characters.All.ForEach(func(char characters.Character) error {
 		if info := h.IdentifyUnit(char.ID()); !info.Hostile {
 			// Only consider hostile characters for fights
 			return nil
@@ -529,6 +530,7 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 func (c *Hookable) DetailedTimes() map[string]time.Duration {
 	return c.timings.Snapshot()
 }
+
 // resolveUnknownUnits maps unknown creature entry IDs to their names using the unitdb.
 // Units are filtered out if they are players or have an owner (pets, totems, summons).
 func (h *Hookable) resolveUnknownUnits() map[uint32]UnknownUnit {
@@ -585,4 +587,3 @@ func (h *Hookable) resolveUnknownUnits() map[uint32]UnknownUnit {
 	}
 	return result
 }
-

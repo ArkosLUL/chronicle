@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/character"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestCombatantInfoEmitter_FightStarted(t *testing.T) {
 	}
 
 	units := unitdb.New()
-	chars := character.NewCharacters(units, character.TurtleCharacterFactories())
+	chars := characters.NewCharacters(units, creatures.TurtleCharacterFactories())
 
 	var emitted []*messages.Combatant
 	cie := &combatantInfoEmitter{
@@ -69,7 +70,7 @@ func TestCombatantInfoEmitter_NoDataInArmory(t *testing.T) {
 	// Don't add any player data to the armory.
 
 	units := unitdb.New()
-	chars := character.NewCharacters(units, character.TurtleCharacterFactories())
+	chars := characters.NewCharacters(units, creatures.TurtleCharacterFactories())
 
 	var emitted []*messages.Combatant
 	cie := &combatantInfoEmitter{

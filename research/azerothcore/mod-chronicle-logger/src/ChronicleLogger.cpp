@@ -83,24 +83,18 @@ std::string EventFormatter::Header(uint64 ts, std::string const& realmName)
 
 // ---------------------------------------------------------------------------
 // ZONE_INFO
-// Format: ts|ZONE_INFO|dateStr&zoneName&instanceType
-// Chronicle's parser reads: dateStr, zoneName, instanceType (& separated)
+// Format: ts|ZONE_INFO|zoneName|instanceId|inInstance|instanceType|isGhost
 // ---------------------------------------------------------------------------
-std::string EventFormatter::ZoneInfo(uint64 ts, std::string const& zoneName, uint32 /*instanceId*/)
+std::string EventFormatter::ZoneInfo(uint64 ts, std::string const& zoneName,
+                                      uint32 instanceId, std::string const& instanceType)
 {
-    auto now    = std::chrono::system_clock::now();
-    auto tt     = std::chrono::system_clock::to_time_t(now);
-    struct tm t = {};
-    gmtime_r(&tt, &t);
-
-    char dateBuf[32];
-    snprintf(dateBuf, sizeof(dateBuf), "%02d.%02d.%02d %02d:%02d:%02d",
-             t.tm_mday, t.tm_mon + 1, t.tm_year % 100,
-             t.tm_hour, t.tm_min, t.tm_sec);
-
     std::ostringstream ss;
     ss << ts << "|ZONE_INFO"
-       << "|" << dateBuf << "&" << zoneName << "&0";
+       << "|" << zoneName
+       << "|" << instanceId
+       << "|1"              // inInstance (always true — we only log instances)
+       << "|" << instanceType
+       << "|0";             // isGhost (not applicable server-side)
     return ss.str();
 }
 
@@ -290,7 +284,9 @@ std::string EventFormatter::Death(uint64 ts, Unit* victim, Unit* killer)
 
 // ---------------------------------------------------------------------------
 // BUFF_ADD / DEBUFF_ADD
-// Format: ts|BUFF_ADD|targetGuid|casterGuid|spellId|stacks
+// Format: ts|BUFF_ADD|targetGuid|luaSlot|spellId|stacks|auraLevel|auraSlot|state
+// luaSlot, auraLevel, auraSlot are addon-specific — 0 from server.
+// state: 0=added, 1=removed, 2=derive from event name
 // ---------------------------------------------------------------------------
 std::string EventFormatter::AuraApply(uint64 ts, Unit* target, Aura* aura)
 {
@@ -300,14 +296,18 @@ std::string EventFormatter::AuraApply(uint64 ts, Unit* target, Aura* aura)
     std::ostringstream ss;
     ss << ts << "|" << (isBuff ? "BUFF_ADD" : "DEBUFF_ADD")
        << "|" << Guid(target->GetGUID())
-       << "|" << Guid(aura->GetCasterGUID())
+       << "|0"                                          // luaSlot (N/A server-side)
        << "|" << spell->Id
-       << "|" << static_cast<int>(aura->GetStackAmount());
+       << "|" << static_cast<int>(aura->GetStackAmount())
+       << "|0"                                          // auraLevel
+       << "|0"                                          // auraSlot
+       << "|0";                                         // state = added
     return ss.str();
 }
 
 // ---------------------------------------------------------------------------
 // BUFF_REM / DEBUFF_REM
+// Format: ts|BUFF_REM|targetGuid|luaSlot|spellId|stacks|auraLevel|auraSlot|state
 // ---------------------------------------------------------------------------
 std::string EventFormatter::AuraRemove(uint64 ts, Unit* target, AuraApplication* aurApp)
 {
@@ -318,9 +318,12 @@ std::string EventFormatter::AuraRemove(uint64 ts, Unit* target, AuraApplication*
     std::ostringstream ss;
     ss << ts << "|" << (isBuff ? "BUFF_REM" : "DEBUFF_REM")
        << "|" << Guid(target->GetGUID())
-       << "|" << Guid(aura->GetCasterGUID())
+       << "|0"                                          // luaSlot
        << "|" << spell->Id
-       << "|" << static_cast<int>(aura->GetStackAmount());
+       << "|" << static_cast<int>(aura->GetStackAmount())
+       << "|0"                                          // auraLevel
+       << "|0"                                          // auraSlot
+       << "|1";                                         // state = removed
     return ss.str();
 }
 
@@ -497,7 +500,8 @@ CombatLogWriter* InstanceTracker::GetOrCreateWriter(Map* map)
     writer->WriteLine(EventFormatter::Header(ts, _realmName));
 
     // Write ZONE_INFO
-    writer->WriteLine(EventFormatter::ZoneInfo(ts, map->GetMapName(), instanceId));
+    std::string instanceType = map->IsRaid() ? "raid" : "party";
+    writer->WriteLine(EventFormatter::ZoneInfo(ts, map->GetMapName(), instanceId, instanceType));
 
     CombatLogWriter* ptr = writer.get();
     _writers[instanceId] = std::move(writer);

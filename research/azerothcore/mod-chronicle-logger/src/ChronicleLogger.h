@@ -43,7 +43,8 @@ public:
 
     // Log events
     static std::string Header(uint64 ts, std::string const& realmName);
-    static std::string ZoneInfo(uint64 ts, std::string const& zoneName, uint32 instanceId);
+    static std::string ZoneInfo(uint64 ts, std::string const& zoneName,
+                                uint32 instanceId, std::string const& instanceType);
     static std::string CombatantInfo(uint64 ts, Player* player);
 
     // Combat events

@@ -19,8 +19,9 @@ import (
 
 const maxDBCFileSize = 50 * 1024 * 1024 // 50 MB
 
-// wotlkBuild is the client build number for WoW 3.3.5a (WotLK).
-const wotlkBuild vsn.Build = 12340
+// knownBuilds lists builds to try when auto-detecting the DBC layout.
+// Order: vanilla (1.12.x), TBC (2.4.3), WotLK (3.3.5a).
+var knownBuilds = []vsn.Build{vsn.V1_12_1, vsn.V2_4_3, vsn.V3_3_5a}
 
 func (h *Handler) UploadDBC(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -62,13 +63,23 @@ func (h *Handler) UploadDBC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Try to open as ItemDisplayInfo.dbc
-	db := dbc.NewDB(wotlkBuild)
-	table, err := db.Open("ItemDisplayInfo", bytes.NewReader(data))
-	if err != nil {
+	// Try to open as ItemDisplayInfo.dbc, auto-detecting the build version.
+	var table *dbc.Table
+	var lastErr error
+	for _, build := range knownBuilds {
+		d := dbc.NewDB(build)
+		t, err := d.Open("ItemDisplayInfo", bytes.NewReader(data))
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		table = t
+		break
+	}
+	if table == nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Failed to parse DBC file as ItemDisplayInfo",
-			Detail:  err.Error(),
+			Message: "Failed to parse DBC file as ItemDisplayInfo (tried vanilla, TBC, WotLK builds)",
+			Detail:  lastErr.Error(),
 		})
 		return
 	}

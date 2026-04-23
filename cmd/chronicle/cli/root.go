@@ -40,6 +40,7 @@ func RootCmd() *serpent.Command {
 		SpellInfo(),
 		Stringify(),
 		ImportWorldCmd(),
+		DBCCmd(),
 	)
 
 	return cmd

@@ -70,6 +70,7 @@ message Heal {
   optional SpellData spellData = 8;
   School school = 9;
   int32 overheal = 10;
+  int32 absorbed = 11;
 }
 
 message Damage {

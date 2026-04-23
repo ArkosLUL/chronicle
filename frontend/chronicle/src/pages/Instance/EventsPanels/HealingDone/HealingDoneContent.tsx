@@ -125,7 +125,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
 
     return {
       viewMode: modeToken ?? "effective",
-      showRanks: tokens.includes("ranks"),
+      showRanks: tokens.includes("noranks") ? false : true,
       focusedPlayerId: focusToken ? focusToken.slice(2) : null,
     };
   }, [panelOption]);
@@ -133,7 +133,7 @@ export const HealingDoneContent = (props: HealingDoneContentProps) => {
   const serializeOption = useCallback((nextMode: HealingViewMode, nextShowRanks: boolean, nextFocus: string | null) => {
     const tokens: string[] = [];
     if (nextMode !== "effective") tokens.push(nextMode);
-    if (nextShowRanks) tokens.push("ranks");
+    if (!nextShowRanks) tokens.push("noranks");
     if (nextFocus) tokens.push(`f:${nextFocus}`);
     return tokens.length > 0 ? tokens.join(",") : null;
   }, []);

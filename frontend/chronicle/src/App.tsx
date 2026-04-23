@@ -50,6 +50,7 @@ import { GameDataLayout } from "./pages/GameData/GameDataPage"
 import { ItemsTab } from "./pages/GameData/ItemsTab"
 import { CreaturesTab } from "./pages/GameData/CreaturesTab"
 import { ImportSQLTab } from "./pages/GameData/ImportSQLTab"
+import { DBCTab } from "./pages/GameData/DBCTab"
 import { SpeedrunLeaderboard } from "./pages/Leaderboard/SpeedrunLeaderboard"
 import { Layout } from "./components/Layout/Layout"
 
@@ -121,6 +122,7 @@ function App() {
           <Route path="items" element={<ItemsTab />} />
           <Route path="creatures" element={<CreaturesTab />} />
           <Route path="import-sql" element={<ImportSQLTab />} />
+          <Route path="dbc" element={<DBCTab />} />
         </Route>
         <Route path="/account" element={<AccountLayout />}>
           <Route index element={<Navigate to="/account/settings" replace />} />

@@ -447,6 +447,7 @@ export interface ReusableHeal {
   spellId: number | null; // From SpellData field 8
   spellAttackOutcome: number | null; // From SpellData field 3 (AttackOutcome bitmask)
   overheal: number;
+  absorbed: number;
 }
 
 /**
@@ -478,6 +479,7 @@ export class HealDecoder {
     amount: 0,
     school: 0,
     overheal: 0,
+    absorbed: 0,
     activity: [],
     activityCount: 0,
     spellId: null,
@@ -505,6 +507,7 @@ export class HealDecoder {
     msg.spellId = null;
     msg.spellAttackOutcome = null;
     msg.overheal = 0;
+    msg.absorbed = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -520,6 +523,7 @@ export class HealDecoder {
         else if (fieldNumber === 7) msg.hitType = value;
         else if (fieldNumber === 9) msg.school = value;
         else if (fieldNumber === 10) msg.overheal = value;
+        else if (fieldNumber === 11) msg.absorbed = value;
       } else if (wireType === 2) {
         // Length-delimited
         const { value: len, bytesRead } = readVarintFast(data, offset);

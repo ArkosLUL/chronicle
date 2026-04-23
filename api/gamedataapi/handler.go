@@ -29,5 +29,6 @@ func (h *Handler) Routes() http.Handler {
 	)
 	r.Post("/wdb/upload", h.UploadWDB)
 	r.Post("/sql/import", h.ImportSQL)
+	r.Post("/dbc/upload", h.UploadDBC)
 	return r
 }

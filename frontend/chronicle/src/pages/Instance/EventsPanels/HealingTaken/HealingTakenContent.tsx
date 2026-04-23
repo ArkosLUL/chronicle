@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Layers } from "lucide-react";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { RowContextMenu, getArmoryUrl } from "@/components/ui/PlayerMetricChart/RowContextMenu";
 import { AbilityBreakout, type AbilityData } from "@/components/ui/AbilityBreakout";
@@ -11,6 +11,7 @@ import { useCachedValue } from "@/hooks/useCachedValue";
 import { useHealingTakenBreakout } from "./HealingTakenBreakout";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/Tooltip/tooltip";
 
 /**
  * View modes for healing display
@@ -100,18 +101,37 @@ interface HealingTakenContentProps extends PanelRenderProps<UnifiedHealingResult
 export const HealingTakenContent = (props: HealingTakenContentProps) => {
   const { targetType = "players" } = props;
   const { result, context, panelOption, setPanelOption } = props;
-  const [viewMode, setViewMode] = useState<HealingViewMode>("effective");
 
-  // Derive focus from URL-persisted panelOption
-  const focusedPlayerId = useMemo(() => {
-    if (!panelOption) return null;
-    const token = panelOption.split(",").find(t => t.startsWith("f:"));
-    return token ? token.slice(2) : null;
+  // Derive viewMode, showRanks, and focus from URL-persisted panelOption
+  const { viewMode, showRanks, focusedPlayerId } = useMemo(() => {
+    const tokens = (panelOption ?? "").split(",").map((token) => token.trim()).filter(Boolean);
+    const modeToken = tokens.find((token): token is HealingViewMode => (
+      token === "effective" || token === "overheal" || token === "total"
+    ));
+    const focusToken = tokens.find((token) => token.startsWith("f:"));
+
+    return {
+      viewMode: modeToken ?? "effective",
+      showRanks: tokens.includes("noranks") ? false : true,
+      focusedPlayerId: focusToken ? focusToken.slice(2) : null,
+    };
   }, [panelOption]);
 
+  const serializeOption = useCallback((nextMode: HealingViewMode, nextShowRanks: boolean, nextFocus: string | null) => {
+    const tokens: string[] = [];
+    if (nextMode !== "effective") tokens.push(nextMode);
+    if (!nextShowRanks) tokens.push("noranks");
+    if (nextFocus) tokens.push(`f:${nextFocus}`);
+    return tokens.length > 0 ? tokens.join(",") : null;
+  }, []);
+
+  const updatePanelOption = (nextMode: HealingViewMode, nextShowRanks: boolean) => {
+    setPanelOption?.(serializeOption(nextMode, nextShowRanks, focusedPlayerId));
+  };
+
   const setFocusedPlayerId = useCallback((id: string | null) => {
-    setPanelOption?.(id ? `f:${id}` : null);
-  }, [setPanelOption]);
+    setPanelOption?.(serializeOption(viewMode, showRanks, id));
+  }, [setPanelOption, serializeOption, viewMode, showRanks]);
   
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
@@ -134,6 +154,7 @@ export const HealingTakenContent = (props: HealingTakenContentProps) => {
     loading: props.loading,
     processing: props.processing,
     viewMode,
+    showRanks,
   });
 
   // ── Focus feature: right-click a player row to show per-ability view ──
@@ -268,23 +289,49 @@ export const HealingTakenContent = (props: HealingTakenContentProps) => {
           )}
         </div>
         
-        {/* View mode toggle */}
-        <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
-          {(["effective", "overheal", "total"] as HealingViewMode[]).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setViewMode(mode)}
-              className={cn(
-                "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
-                viewMode === mode
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {viewModeLabels[mode]}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Show ranks toggle */}
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => updatePanelOption(viewMode, !showRanks)}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    showRanks
+                      ? "bg-[color:var(--tertiary)]/20 text-[color:var(--tertiary)] border border-[color:var(--tertiary)]/30"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Layers className="h-3 w-3" />
+                  Ranks
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px]">
+                <p className="text-xs">Show spells separated by rank in the ability breakdown (e.g., Flash Heal Rank 4 vs Rank 7)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* View mode toggle */}
+          <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
+            {(["effective", "overheal", "total"] as HealingViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => updatePanelOption(mode, showRanks)}
+                className={cn(
+                  "px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                  viewMode === mode
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {viewModeLabels[mode]}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       

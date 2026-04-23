@@ -102,7 +102,7 @@ interface DamageDoneContentProps extends PanelRenderProps<DamageDoneResult> {
 export const DamageDoneContent = (props: DamageDoneContentProps) => {
   const { sourceType = "players" } = props;
   const { result, context, panelOption, setPanelOption } = props;
-  const [showRanks, setShowRanks] = useState(false);
+  const [showRanks, setShowRanks] = useState(true);
 
   // Derive focus, grouping, and pet mode from the URL-persisted panelOption tokens
   const focusedPlayerId = useMemo(() => parseFocusFromOption(panelOption), [panelOption]);

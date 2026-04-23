@@ -64,6 +64,7 @@ func Heal(from time.Time, idx int32, heal *messages.Heal) *chronicleproto.Heal {
 		SpellData:  SpellData(heal.SpellData),
 		School:     School(heal.School),
 		Overheal:   heal.Overheal,
+		Absorbed:   heal.Absorbed,
 	}
 }
 

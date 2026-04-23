@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Database, Package, Bug, FileCode, Menu, X } from "lucide-react";
+import { Database, Package, Bug, FileCode, HardDrive, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -15,6 +15,7 @@ const tabs: Tab[] = [
   { path: "/game-data/items", label: "Items", icon: Package },
   { path: "/game-data/creatures", label: "Creatures", icon: Bug },
   { path: "/game-data/import-sql", label: "Import SQL", icon: FileCode },
+  { path: "/game-data/dbc", label: "DBC Import", icon: HardDrive },
 ];
 
 export function GameDataLayout() {

@@ -99,6 +99,10 @@ export type UnifiedHealingResult = {
   TargetByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
   TargetByAbilityOverheal: Map<string, Map<string, DamageAbilityBreakout>>;
   TargetByAbilityTotal: Map<string, Map<string, DamageAbilityBreakout>>;
+  // Breakouts by spell ID (for "Show ranks" mode): targetID -> spellId -> data
+  TargetByAbilityBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
+  TargetByAbilityOverhealBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
+  TargetByAbilityTotalBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
   // Breakouts: targetID -> sourceID -> amount
   TargetBySource: Map<string, Map<string, number>>;
   TargetBySourceOverheal: Map<string, Map<string, number>>;
@@ -157,6 +161,9 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       TargetByAbility: new Map(),
       TargetByAbilityOverheal: new Map(),
       TargetByAbilityTotal: new Map(),
+      TargetByAbilityBySpellId: new Map(),
+      TargetByAbilityOverhealBySpellId: new Map(),
+      TargetByAbilityTotalBySpellId: new Map(),
       TargetBySource: new Map(),
       TargetBySourceOverheal: new Map(),
       TargetBySourceTotal: new Map(),
@@ -436,6 +443,17 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       }
       // Always track total (effective + overheal) - counts each event exactly once
       accumulateAbilityBreakout(state.TargetByAbilityTotal, aggregateTargetID, abilityName, healAmount, hitType);
+
+      // Target spell ID keyed breakdown (for "Show ranks" mode)
+      if (spellId != null) {
+        if (effectiveHeal > 0) {
+          accumulateAbilityBreakoutBySpellId(state.TargetByAbilityBySpellId, aggregateTargetID, spellId, abilityName, effectiveHeal, hitType);
+        }
+        if (overheal > 0) {
+          accumulateAbilityBreakoutBySpellId(state.TargetByAbilityOverhealBySpellId, aggregateTargetID, spellId, abilityName, overheal, hitType);
+        }
+        accumulateAbilityBreakoutBySpellId(state.TargetByAbilityTotalBySpellId, aggregateTargetID, spellId, abilityName, healAmount, hitType);
+      }
 
       // Target source breakdown
       const targetSources = state.TargetBySource.get(aggregateTargetID) || new Map();

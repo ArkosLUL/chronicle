@@ -27,3 +27,14 @@ type WDBFieldDiff struct {
 	New        any    `json:"new"`
 	Unreliable bool   `json:"unreliable,omitempty"`
 }
+
+// DBCUploadResponse is the response from uploading a DBC file.
+type DBCUploadResponse struct {
+	DBCName     string `json:"dbc_name"`
+	RecordCount int    `json:"record_count"`
+	Mode        string `json:"mode"`
+	Inserted    int    `json:"inserted"`
+	Updated     int    `json:"updated"`
+	Unchanged   int    `json:"unchanged"`
+}
+

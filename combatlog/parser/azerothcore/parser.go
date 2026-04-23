@@ -123,7 +123,7 @@ func (p *Parser) parseZoneInfo(ts time.Time, m *wotlk.Matched, _ string) ([]mess
 
 // parseCombatantInfo converts a CHRONICLE_COMBATANT_INFO line into a messages.Combatant.
 //
-// Fields: playerGUID, "name", "class", "race", gender, level, "guild", "gearString"
+// Fields: playerGUID, "name", "class", "race", gender, level, "guild", "gearString", "talentString"
 func (p *Parser) parseCombatantInfo(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
 	id := m.Guid()
 	name := m.String()
@@ -133,6 +133,7 @@ func (p *Parser) parseCombatantInfo(ts time.Time, m *wotlk.Matched, _ string) ([
 	_ = m.Int32() // level — combatant.Combatant has no level field
 	guildName := m.String()
 	gearStr := m.String()
+	talentStr := m.String()
 
 	if m.Error() != nil {
 		p.logger.Warn("failed to parse CHRONICLE_COMBATANT_INFO", "error", m.Error())
@@ -174,6 +175,15 @@ func (p *Parser) parseCombatantInfo(ts time.Time, m *wotlk.Matched, _ string) ([
 		}
 	}
 
+	var talents *combatant.Talents
+	if talentStr != "" {
+		var err error
+		talents, err = combatant.ParseTalents(talentStr)
+		if err != nil {
+			p.logger.Warn("failed to parse talents in CHRONICLE_COMBATANT_INFO", "error", err)
+		}
+	}
+
 	return []messages.Message{
 		&messages.Combatant{
 			MessageBase: messages.Base(ts),
@@ -186,6 +196,7 @@ func (p *Parser) parseCombatantInfo(ts time.Time, m *wotlk.Matched, _ string) ([
 				Race:       heroRace,
 				Guild:      guild,
 				GearSetups: gear,
+				Talents:    talents,
 			},
 		},
 	}, nil

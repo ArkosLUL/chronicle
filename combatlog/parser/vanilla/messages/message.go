@@ -385,6 +385,7 @@ type Heal struct {
 	SpellData *chrondbc.Spell
 	Amount    int32
 	Overheal  int32
+	Absorbed  int32
 	HitType   types.HitType
 	School    types.School
 }

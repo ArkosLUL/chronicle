@@ -1,8 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } from "@/components/ui/AbilityBreakout";
 import type { UnifiedHealingResult } from "../processors";
 import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingTakenContent";
+import type { WoWSpell } from "@/api/wowdb";
 
 /**
  * Resolve a unit name from context, formatting pets as "{Owner}'s Pet {PetName}".
@@ -171,6 +173,80 @@ function getSourcesForUnit(
   return sources.sort((a, b) => b.value - a.value);
 }
 
+interface AbilityDataWithSpellId extends AbilityData {
+  spellId: number;
+}
+
+/**
+ * Get abilities keyed by spell ID for a target unit (for "Show ranks" mode).
+ */
+function getAbilitiesBySpellIdForUnit(
+  result: UnifiedHealingResult,
+  unitId: string,
+  viewMode: HealingViewMode
+): AbilityDataWithSpellId[] {
+  const effectiveAbilities = result.TargetByAbilityBySpellId.get(unitId);
+  const overhealAbilities = result.TargetByAbilityOverhealBySpellId.get(unitId);
+  
+  if (viewMode === "overheal") {
+    if (!overhealAbilities) return [];
+    const abilities: AbilityDataWithSpellId[] = [];
+    for (const [spellId, data] of overhealAbilities) {
+      abilities.push({ ...data, name: data.spellName, value: data.Total, spellId });
+    }
+    return abilities.sort((a, b) => b.value - a.value);
+  }
+  
+  if (viewMode === "total") {
+    const totalAbilities = result.TargetByAbilityTotalBySpellId.get(unitId);
+    if (!totalAbilities) return [];
+    const abilities: AbilityDataWithSpellId[] = [];
+    for (const [spellId, data] of totalAbilities) {
+      abilities.push({ ...data, name: data.spellName, value: data.Total, spellId });
+    }
+    return abilities.sort((a, b) => b.value - a.value);
+  }
+  
+  // Default: effective - include overheal as separate column
+  if (!effectiveAbilities) return [];
+  const abilities: AbilityDataWithSpellId[] = [];
+  for (const [spellId, data] of effectiveAbilities) {
+    const overhealData = overhealAbilities?.get(spellId);
+    abilities.push({ ...data, name: data.spellName, value: data.Total, overheal: overhealData?.Total, spellId });
+  }
+  
+  if (overhealAbilities) {
+    for (const [spellId, data] of overhealAbilities) {
+      if (!effectiveAbilities?.has(spellId)) {
+        abilities.push({ ...data, name: data.spellName, value: 0, overheal: data.Total, spellId });
+      }
+    }
+  }
+
+  return abilities.sort((a, b) => b.value - a.value);
+}
+
+/**
+ * Collect all unique spell IDs from the target result for fetching spell data.
+ */
+function getAllTargetSpellIds(result: UnifiedHealingResult | undefined): number[] {
+  if (!result) return [];
+  
+  const spellIds = new Set<number>();
+  
+  for (const targetMap of result.TargetByAbilityBySpellId.values()) {
+    for (const id of targetMap.keys()) spellIds.add(id);
+  }
+  for (const targetMap of result.TargetByAbilityOverhealBySpellId.values()) {
+    for (const id of targetMap.keys()) spellIds.add(id);
+  }
+  for (const targetMap of result.TargetByAbilityTotalBySpellId.values()) {
+    for (const id of targetMap.keys()) spellIds.add(id);
+  }
+  
+  return Array.from(spellIds);
+}
+
 export interface UseHealingTakenBreakoutOptions {
   result: UnifiedHealingResult | undefined;
   context: PanelContext;
@@ -182,6 +258,8 @@ export interface UseHealingTakenBreakoutOptions {
   processing?: boolean;
   /** View mode for healing display */
   viewMode?: HealingViewMode;
+  /** When true, shows spells by rank (spell ID) instead of combined by name */
+  showRanks?: boolean;
 }
 
 /**
@@ -197,9 +275,42 @@ export function useHealingTakenBreakout({
   loading = false,
   processing = false,
   viewMode = "effective",
+  showRanks = false,
 }: UseHealingTakenBreakoutOptions) {
   // Track tab selection per player so it persists across reloads
   const [tabByPlayer, setTabByPlayer] = useState<Map<string, BreakoutTab>>(new Map());
+  
+  // Collect all spell IDs for fetching spell data when showRanks is enabled
+  const spellIds = useMemo(() => {
+    if (!showRanks) return [];
+    return getAllTargetSpellIds(result);
+  }, [result, showRanks]);
+  
+  // Fetch spell data for all spell IDs (only when showRanks is true)
+  const spellQueries = useQueries({
+    queries: spellIds.map((id) => ({
+      queryKey: ["wowdb", "spell", id.toString()],
+      queryFn: async (): Promise<WoWSpell> => {
+        const response = await fetch(`/api/v1/wowdb/spell/${id}`);
+        if (!response.ok) throw new Error("Spell not found");
+        return response.json();
+      },
+      staleTime: Infinity, // DBC data never changes
+      retry: false,
+      enabled: showRanks,
+    })),
+  });
+  
+  // Build spell data lookup map
+  const spellDataMap = useMemo(() => {
+    const map = new Map<number, WoWSpell>();
+    spellQueries.forEach((query, index) => {
+      if (query.data) {
+        map.set(spellIds[index], query.data);
+      }
+    });
+    return map;
+  }, [spellQueries, spellIds]);
   
   const breakout = useCallback(
     (playerID: string, pinned: boolean) => {
@@ -221,7 +332,23 @@ export function useHealingTakenBreakout({
         );
       }
 
-      const abilities = getAbilitiesForUnit(result, playerID, viewMode);
+      // Choose data source based on showRanks
+      let abilities: AbilityData[];
+      if (showRanks) {
+        const abilitiesWithSpellId = getAbilitiesBySpellIdForUnit(result, playerID, viewMode);
+        abilities = abilitiesWithSpellId.map((a) => {
+          const spellData = spellDataMap.get(a.spellId);
+          const rank = spellData?.subtext?.["0"];
+          return {
+            ...a,
+            key: `spell-${a.spellId}`,
+            spellId: a.spellId,
+            subtitle: rank || undefined,
+          };
+        });
+      } else {
+        abilities = getAbilitiesForUnit(result, playerID, viewMode);
+      }
       const sources = getSourcesForUnit(result, playerID, context, viewMode);
       const totalValue = getTotalForUnit(result, playerID, viewMode);
 
@@ -265,7 +392,7 @@ export function useHealingTakenBreakout({
         />
       );
     },
-    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer, viewMode]
+    [result, context, valueLabel, perSecond, durationMs, loading, processing, tabByPlayer, viewMode, showRanks, spellDataMap]
   );
 
   return breakout;

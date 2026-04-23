@@ -60,9 +60,9 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 		return messages.Unparsed(ts, raw), nil
 	}
 
-  if hook, ok := p.eventHook[event]; ok {
-    return hook(ts, m, raw)
-  }
+	if hook, ok := p.eventHook[event]; ok {
+		return hook(ts, m, raw)
+	}
 
 	// Standard events: parse base params.
 	base := parseBase(m)
@@ -266,7 +266,7 @@ func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, i
 func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isPeriodic bool, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
 	overheal := m.Int32()
-	_ = m.Int32() // absorbed
+	absorbed := m.Int32()
 	critical := m.NilBool()
 
 	if err := m.Error(); err != nil {
@@ -298,6 +298,7 @@ func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isP
 		SpellData:   spellData,
 		Amount:      amount,
 		Overheal:    overheal,
+		Absorbed:    absorbed,
 		HitType:     ht,
 		School:      school,
 	})

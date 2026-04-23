@@ -76,6 +76,7 @@ export interface HealProcessorEvent extends EventMeta {
   hitType: number;
   amount: number;
   overheal: number;
+  absorbed: number;
   school: number;
   spellId: number | null;
   /** AttackOutcome bitmask of possible hit table results (from SpellData) */

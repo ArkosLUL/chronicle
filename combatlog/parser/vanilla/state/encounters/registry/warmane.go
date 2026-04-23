@@ -29,6 +29,7 @@ func WarmaneRegistry(logger *slog.Logger) *Registry {
 	// Raids
 	r.RegisterEntry(FromCommonFactory(instances.VoAFactory))
 	r.RegisterEntry(FromCommonFactory(instances.ObsidianSanctumFactory))
+	r.RegisterEntry(FromCommonFactory(instances.NaxxramasFactory))
 
 	return r
 }

@@ -72,4 +72,24 @@ var ObsidianSanctumFactory = &instances.CommonFactory{
 	ZoneName:  instances.ZoneNameMatcher("the obsidian sanctum"),
 	Hostiles:  instances.FromMap(ObsidianSanctumHostiles()),
 }
+// NaxxramasHostiles returns creature entry IDs for Naxxramas (WotLK).
+// Reuses the Vanilla Naxx hostile list, replacing Highlord Mograine with Baron Rivendare
+// for the Four Horsemen encounter.
+func NaxxramasHostiles() map[uint32]instances.Identity {
+	hostile := instances.NaxxramasHostiles()
+	// WotLK replaces Highlord Mograine with Baron Rivendare in the Four Horsemen
+	delete(hostile, 16062)
+	instances.LoadBosses(hostile, map[uint32]string{
+		30549: "Four Horsemen", // Baron Rivendare
+	})
+	return hostile
+}
+
+var NaxxramasFactory = &instances.CommonFactory{
+	Name:      "Naxxramas",
+	ZoneNames: []string{"naxxramas", "the upper necropolis"},
+	ZoneName:  instances.ZoneNameMatcher("naxxramas", "the upper necropolis"),
+	Hostiles:  instances.FromMap(NaxxramasHostiles()),
+}
+
 

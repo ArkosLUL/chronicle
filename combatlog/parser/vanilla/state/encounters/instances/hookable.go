@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
+	wotlkcreatures "github.com/Emyrk/chronicle/combatlog/parser/azerothcore/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
@@ -17,13 +19,14 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/auras"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
+	classiccreatures "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/loot"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/participants"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/timings"
 	"github.com/google/uuid"
@@ -71,31 +74,40 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 	p := participants.New()
 	g := armory.New()
 
-	characters := characters.NewCharacters(db, creatures.TurtleCharacterFactories())
-	characters.RegisterHook(p)
+	cres := classiccreatures.TurtleCharacterFactories()
+	logType, ok := parsectx.Type(ctx)
+	if ok {
+		switch logType {
+		case database.LogTypeAzerothcore:
+			cres = wotlkcreatures.WoTLKCharacterFactories()
+		}
+	}
+
+	chrs := characters.NewCharacters(db, cres)
+	chrs.RegisterHook(p)
 
 	// classificationEmitter needs a forward reference to the hookable for the emit callback.
 	// We set the emit function after creating the hookable.
 	ce := &classificationEmitter{
 		units:      db,
-		characters: characters,
+		characters: chrs,
 	}
-	characters.RegisterHook(ce)
+	chrs.RegisterHook(ce)
 
 	cie := &combatantInfoEmitter{
 		armory:     g,
-		characters: characters,
+		characters: chrs,
 	}
-	characters.RegisterHook(cie)
+	chrs.RegisterHook(cie)
 
 	var speedrunTracker *rankings.SpeedrunTracker
 	if f.Rankings != nil && f.Rankings.Speedrun != nil {
 		speedrunTracker = rankings.NewSpeedrunTracker(*f.Rankings.Speedrun)
-		characters.RegisterHook(speedrunTracker)
+		chrs.RegisterHook(speedrunTracker)
 	}
 
 	//auraTracking := auras.New()
-	//characters.RegisterHook(auraTracking)
+	//chrs.RegisterHook(auraTracking)
 
 	lootTracking := loot.New(db)
 
@@ -125,7 +137,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 		units:         db,
 		CurrentZone:   z,
 		//Auras:           auraTracking,
-		Characters:      characters,
+		Characters:      chrs,
 		Identifier:      f.Hostiles(),
 		events:          encounterevents.NewEvents(),
 		g:               g,

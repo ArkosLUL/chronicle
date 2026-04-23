@@ -100,14 +100,13 @@ func demo() *serpent.Command {
 				return fmt.Errorf("(demo) open wow client: %w", err)
 			}
 
-			si, err := wc.ItemSet()
+			si, err := wc.ItemDisplayInfo()
 			if err != nil {
 				return fmt.Errorf("read items: %w", err)
 			}
 
-			_ = si.Range(func(cursor *dbdefs.Ent_ItemSet) bool {
-				fmt.Println(cursor.Name_lang)
-				if cursor.ID == 765 {
+			_ = si.Range(func(cursor *dbdefs.Ent_ItemDisplayInfo) bool {
+				if cursor.ID == 4112 {
 					fmt.Println(cursor.ID)
 				}
 				return true

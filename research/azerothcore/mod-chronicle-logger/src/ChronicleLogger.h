@@ -58,6 +58,9 @@ public:
 
     // Spell cast
     static std::string SpellGo(uint64 ts, Unit* caster, SpellInfo const* info);
+
+    // Unit registration — tells Chronicle what a GUID is (name, level, type)
+    static std::string UnitInfo(uint64 ts, Unit* unit);
 };
 
 // ---------------------------------------------------------------------------
@@ -99,6 +102,10 @@ public:
     // Called from UnitScript / AllSpellScript hooks — resolves unit→map→writer.
     void WriteForUnit(Unit* unit, std::string const& line);
 
+    // Emits UNIT_INFO for a unit the first time it's seen in an instance.
+    // Called from combat hooks before writing damage/heal/death events.
+    void EnsureUnitInfo(Unit* unit);
+
 private:
     InstanceTracker() = default;
 
@@ -108,6 +115,8 @@ private:
     std::unordered_map<uint32, std::unique_ptr<CombatLogWriter>> _writers;
     // Set of (instanceId, playerGuid) pairs to avoid duplicate COMBATANT_INFO
     std::unordered_map<uint32, std::unordered_set<uint64>> _seenPlayers;
+    // Set of (instanceId, unitGuid) pairs to avoid duplicate UNIT_INFO
+    std::unordered_map<uint32, std::unordered_set<uint64>> _seenUnits;
 
     bool        _enabled   = false;
     std::string _logDir    = "chronicle_logs";

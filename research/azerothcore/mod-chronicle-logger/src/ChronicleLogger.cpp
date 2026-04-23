@@ -8,10 +8,10 @@
 #include "Config.h"
 #include "GameTime.h"
 #include "Guild.h"
-#include "GuildMgr.h"
 #include "Item.h"
 #include "Log.h"
 #include "Map.h"
+#include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
 #include "SpellInfo.h"
@@ -167,19 +167,13 @@ std::string EventFormatter::CombatantInfo(uint64 ts, Player* player)
     if (guild)
     {
         ss << "|" << guild->GetName();
-        // Guild rank name — get from RankInfo (public API)
-        Guild::Member const* member = guild->GetMember(player->GetGUID());
-        uint8 rankId = member ? member->GetRankId() : player->GetRank();
-        Guild::RankInfo const* rankInfo = guild->GetRankInfo(rankId);
-        if (rankInfo)
-            ss << "|" << rankInfo->GetName();
-        else
-            ss << "|";
+        uint8 rankId = player->GetRank();
+        ss << "|Rank " << static_cast<int>(rankId); // rank name (no public API)
         ss << "|" << static_cast<int>(rankId);
     }
     else
     {
-        ss << "||" ;  // empty guildName
+        ss << "||";   // empty guildName
         ss << "|";    // empty rankName
         ss << "|0";   // rank
     }
@@ -213,7 +207,7 @@ std::string EventFormatter::CombatantInfo(uint64 ts, Player* player)
     ss << "|nil";
 
     // pet name and guid
-    Unit* pet = player->GetPet();
+    Pet* pet = player->GetPet();
     if (pet)
     {
         ss << "|" << pet->GetName();
@@ -346,6 +340,55 @@ std::string EventFormatter::SpellGo(uint64 ts, Unit* caster, SpellInfo const* in
     return ss.str();
 }
 
+// ---------------------------------------------------------------------------
+// UNIT_INFO — registers a unit (player or NPC) with Chronicle's unit database.
+// Format: ts|UNIT_INFO|guid|isPlayer|name|canCooperate|ownerGuid|buffs|level|challenges|maxHealth
+// ---------------------------------------------------------------------------
+std::string EventFormatter::UnitInfo(uint64 ts, Unit* unit)
+{
+    std::ostringstream ss;
+    ss << ts << "|UNIT_INFO"
+       << "|" << Guid(unit->GetGUID())
+       << "|" << (unit->IsPlayer() ? "1" : "0")
+       << "|" << unit->GetName()
+       << "|" << (unit->IsPlayer() ? "1" : "0");  // canCooperate: players=friendly, NPCs=hostile
+
+    // Owner (for pets/totems/guardians)
+    ObjectGuid ownerGuid = unit->GetOwnerGUID();
+    ss << "|";
+    if (!ownerGuid.IsEmpty())
+        ss << Guid(ownerGuid);
+
+    // Buffs — comma-separated spellId=stacks for positive auras
+    ss << "|";
+    {
+        bool first = true;
+        Unit::AuraApplicationMap const& auras = unit->GetAppliedAuras();
+        for (auto const& pair : auras)
+        {
+            AuraApplication* aurApp = pair.second;
+            if (!aurApp)
+                continue;
+            Aura* aura = aurApp->GetBase();
+            if (!aura || !aura->GetSpellInfo()->IsPositive())
+                continue;
+            if (!first)
+                ss << ",";
+            ss << aura->GetId() << "=" << static_cast<int>(aura->GetStackAmount());
+            first = false;
+        }
+    }
+
+    // Level
+    ss << "|" << static_cast<int>(unit->GetLevel());
+    // Challenges (not applicable server-side)
+    ss << "|";
+    // MaxHealth
+    ss << "|" << unit->GetMaxHealth();
+
+    return ss.str();
+}
+
 // ===== CombatLogWriter =====
 
 CombatLogWriter::CombatLogWriter(std::string const& dir, uint32 mapId, uint32 instanceId)
@@ -384,7 +427,7 @@ CombatLogWriter::~CombatLogWriter()
 void CombatLogWriter::WriteLine(std::string const& line)
 {
     if (_file.is_open())
-        _file << line << "\n";
+        _file << line << std::endl;  // endl flushes after every line
 }
 
 void CombatLogWriter::Flush()
@@ -508,6 +551,33 @@ void InstanceTracker::RemoveInstance(uint32 instanceId)
         _writers.erase(it);
     }
     _seenPlayers.erase(instanceId);
+    _seenUnits.erase(instanceId);
+}
+
+void InstanceTracker::EnsureUnitInfo(Unit* unit)
+{
+    if (!_enabled || !unit)
+        return;
+
+    Map* map = unit->FindMap();
+    if (!map || !map->IsDungeon())
+        return;
+
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    uint32 instId = map->GetInstanceId();
+    uint64 raw = unit->GetGUID().GetRawValue();
+
+    auto& seen = _seenUnits[instId];
+    if (seen.count(raw))
+        return;
+    seen.insert(raw);
+
+    auto it = _writers.find(instId);
+    if (it == _writers.end())
+        return;
+
+    it->second->WriteLine(EventFormatter::UnitInfo(EventFormatter::Now(), unit));
 }
 
 void InstanceTracker::WriteForUnit(Unit* unit, std::string const& line)

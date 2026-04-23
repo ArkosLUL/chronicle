@@ -59,6 +59,9 @@ public:
         // TODO: In Phase 2, use a thread-local flag set in ModifySpellDamageTaken
         // to suppress the duplicate SWING for spell damage events.
 
+        InstanceTracker::Instance().EnsureUnitInfo(attacker);
+        InstanceTracker::Instance().EnsureUnitInfo(victim);
+
         uint64 ts = EventFormatter::Now();
         InstanceTracker::Instance().WriteForUnit(
             victim, EventFormatter::Swing(ts, attacker, victim, damage));
@@ -73,6 +76,9 @@ public:
         if (!target || !spellInfo || !InstanceTracker::Instance().IsEnabled())
             return;
 
+        InstanceTracker::Instance().EnsureUnitInfo(attacker);
+        InstanceTracker::Instance().EnsureUnitInfo(target);
+
         uint64 ts = EventFormatter::Now();
         InstanceTracker::Instance().WriteForUnit(
             target, EventFormatter::SpellDmg(ts, target, attacker, spellInfo, damage));
@@ -86,6 +92,9 @@ public:
     {
         if (!target || !spellInfo || !InstanceTracker::Instance().IsEnabled())
             return;
+
+        InstanceTracker::Instance().EnsureUnitInfo(healer);
+        InstanceTracker::Instance().EnsureUnitInfo(target);
 
         uint64 ts = EventFormatter::Now();
         InstanceTracker::Instance().WriteForUnit(
@@ -126,6 +135,9 @@ public:
         if (!unit || !InstanceTracker::Instance().IsEnabled())
             return;
 
+        InstanceTracker::Instance().EnsureUnitInfo(unit);
+        InstanceTracker::Instance().EnsureUnitInfo(killer);
+
         uint64 ts = EventFormatter::Now();
         InstanceTracker::Instance().WriteForUnit(
             unit, EventFormatter::Death(ts, unit, killer));
@@ -147,6 +159,8 @@ public:
     {
         if (!caster || !spellInfo || !InstanceTracker::Instance().IsEnabled())
             return;
+
+        InstanceTracker::Instance().EnsureUnitInfo(caster);
 
         uint64 ts = EventFormatter::Now();
         InstanceTracker::Instance().WriteForUnit(

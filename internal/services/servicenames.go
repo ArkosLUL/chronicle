@@ -17,4 +17,5 @@ const (
 	ServiceGameData   = "gamedata"
 	ServiceMail       = "mail"
 	ServiceAccessURL  = "accessurl"
+	ServiceRetention  = "retention"
 )

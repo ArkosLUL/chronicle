@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Emyrk/chronicle/chronicle/retention"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
+	"github.com/Emyrk/chronicle/internal/services/serviceretention"
 	"github.com/riverqueue/river"
 
 	"github.com/coder/serpent"
@@ -49,6 +51,7 @@ func (s *Service) DependsOn() []string {
 		servicepgxpool.OnPGXPool(),
 		servicechronicle.OnChronicle(),
 		servicebot.OnDiscordBot(),
+		serviceretention.OnRetention(),
 	}
 }
 
@@ -80,6 +83,24 @@ func (s *Service) Start(ctx context.Context) error {
 	riverqueue.AddWorker(q, chron.NewWorkerReLogParse())
 	riverqueue.AddWorker(q, chron.NewWorkerRegressionSnapshot())
 	riverqueue.AddWorker(q, bot.NewWorkerSyncDiscordUser())
+
+	// Register retention worker and periodic job.
+	ret := serviceretention.RetentionService(s.broker)
+	riverqueue.AddWorker(q, ret.Worker)
+	q.AddQueue(riverqueue.QueueRetention, river.QueueConfig{
+		MaxWorkers: 1,
+	})
+	if ret.Schedule > 0 {
+		q.AddPeriodicJob(
+			river.NewPeriodicJob(
+				river.PeriodicInterval(ret.Schedule),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return retention.ArgsRetention{DryRun: false}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: false},
+			),
+		)
+	}
 
 	err = q.Start(ctx)
 	if err != nil {

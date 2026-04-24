@@ -159,6 +159,17 @@ func (api *API) Routes() chi.Router {
 					r.Put("/version-requirements", api.AdminUpsertLeaderboardVersionRequirements)
 				})
 			})
+
+			r.Route("/retention", func(r chi.Router) {
+				r.Get("/policies", api.AdminListRetentionPolicies)
+				r.Put("/policies", api.AdminUpsertRetentionPolicy)
+				r.Delete("/policies/{policyID}", api.AdminDeleteRetentionPolicy)
+				r.Get("/policies/{policyID}/rules", api.AdminGetRetentionRules)
+				r.Put("/policies/{policyID}/rules", api.AdminUpsertRetentionRule)
+				r.Delete("/rules/{ruleID}", api.AdminDeleteRetentionRule)
+				r.Post("/preview", api.AdminRetentionPreview)
+				r.Post("/run", api.AdminRetentionRun)
+			})
 		})
 
 		// Regression testing routes (under admin auth)

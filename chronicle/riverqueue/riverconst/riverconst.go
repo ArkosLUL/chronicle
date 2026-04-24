@@ -5,6 +5,7 @@ package riverconst
 const (
 	QueueLogParsing  = "log-parsing"
 	QueueDiscordSync = "discord-sync"
+	QueueRetention   = "retention"
 )
 
 const (

@@ -22,6 +22,7 @@ import (
 const (
 	QueueLogParsing  = riverconst.QueueLogParsing
 	QueueDiscordSync = riverconst.QueueDiscordSync
+	QueueRetention   = riverconst.QueueRetention
 	PriorityHighest  = riverconst.PriorityHighest
 	PriorityHigh     = riverconst.PriorityHigh
 	PriorityDefault  = riverconst.PriorityDefault
@@ -39,9 +40,10 @@ type Queues struct {
 	*river.Client[pgx.Tx]
 	UI http.Handler
 
-	opts    Options
-	workers *river.Workers
-	queues  map[string]river.QueueConfig
+	opts         Options
+	workers      *river.Workers
+	queues       map[string]river.QueueConfig
+	periodicJobs []*river.PeriodicJob
 }
 
 func New(_ context.Context, opts Options) (*Queues, error) {
@@ -65,6 +67,11 @@ func (q *Queues) AddQueue(name string, config river.QueueConfig) *Queues {
 	return q
 }
 
+func (q *Queues) AddPeriodicJob(job *river.PeriodicJob) *Queues {
+	q.periodicJobs = append(q.periodicJobs, job)
+	return q
+}
+
 func (q *Queues) Start(ctx context.Context) error {
 	driver := riverpgxv5.New(q.opts.Pool)
 	queues := q.queues
@@ -78,6 +85,7 @@ func (q *Queues) Start(ctx context.Context) error {
 		Middleware: []rivertype.Middleware{
 			NewWorkerPanicMW(q.opts.Logger),
 		},
+		PeriodicJobs: q.periodicJobs,
 		// Retain all jobs
 		// TODO: Create our own reaper to clean up old jobs after a certain period
 		CompletedJobRetentionPeriod: -1,

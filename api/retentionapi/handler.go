@@ -1,4 +1,4 @@
-package api
+package retentionapi
 
 import (
 	"net/http"
@@ -7,16 +7,45 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/chronicle/retention"
+	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-// AdminListRetentionPolicies returns all retention policies.
-func (a *API) AdminListRetentionPolicies(w http.ResponseWriter, r *http.Request) {
+// Handler serves retention policy admin endpoints.
+type Handler struct {
+	zed    *authz.Authz
+	queues *riverqueue.Queues
+}
+
+// New creates a new retention API handler.
+func New(zed *authz.Authz, queues *riverqueue.Queues) *Handler {
+	return &Handler{zed: zed, queues: queues}
+}
+
+// Routes returns the chi router for retention endpoints.
+func (h *Handler) Routes() http.Handler {
+	r := chi.NewRouter()
+
+	r.Get("/policies", h.ListPolicies)
+	r.Put("/policies", h.UpsertPolicy)
+	r.Delete("/policies/{policyID}", h.DeletePolicy)
+	r.Get("/policies/{policyID}/rules", h.GetRules)
+	r.Put("/policies/{policyID}/rules", h.UpsertRule)
+	r.Delete("/rules/{ruleID}", h.DeleteRule)
+	r.Post("/preview", h.Preview)
+	r.Post("/run", h.Run)
+
+	return r
+}
+
+// ListPolicies returns all retention policies with their rules.
+func (h *Handler) ListPolicies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	policies, err := a.Opts.Zed.ListAllRetentionPolicies(ctx)
+	policies, err := h.zed.ListAllRetentionPolicies(ctx)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -24,21 +53,20 @@ func (a *API) AdminListRetentionPolicies(w http.ResponseWriter, r *http.Request)
 
 	resp := make([]chroniclesdk.RetentionPolicy, 0, len(policies))
 	for _, p := range policies {
-		rules, err := a.Opts.Zed.GetRetentionRulesByPolicy(ctx, p.ID)
+		rules, err := h.zed.GetRetentionRulesByPolicy(ctx, p.ID)
 		if err != nil {
 			httpapi.InternalServerError(w, err)
 			return
 		}
 
-		sdkPolicy := retentionPolicyToSDK(p, rules)
-		resp = append(resp, sdkPolicy)
+		resp = append(resp, retentionPolicyToSDK(p, rules))
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-// AdminUpsertRetentionPolicy creates or updates a retention policy.
-func (a *API) AdminUpsertRetentionPolicy(w http.ResponseWriter, r *http.Request) {
+// UpsertPolicy creates or updates a retention policy.
+func (h *Handler) UpsertPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req chroniclesdk.UpsertRetentionPolicyRequest
 	if !httpapi.Read(ctx, w, r, &req) {
@@ -61,12 +89,12 @@ func (a *API) AdminUpsertRetentionPolicy(w http.ResponseWriter, r *http.Request)
 	var policy database.RetentionPolicy
 	var err error
 	if req.RealmID != nil {
-		policy, err = a.Opts.Zed.UpsertRetentionPolicyByRealm(ctx, database.UpsertRetentionPolicyByRealmParams{
+		policy, err = h.zed.UpsertRetentionPolicyByRealm(ctx, database.UpsertRetentionPolicyByRealmParams{
 			RealmID: uuid.NullUUID{UUID: *req.RealmID, Valid: true},
 			Enabled: req.Enabled,
 		})
 	} else {
-		policy, err = a.Opts.Zed.UpsertRetentionPolicy(ctx, database.UpsertRetentionPolicyParams{
+		policy, err = h.zed.UpsertRetentionPolicy(ctx, database.UpsertRetentionPolicyParams{
 			ServerID: uuid.NullUUID{UUID: *req.ServerID, Valid: true},
 			RealmID:  uuid.NullUUID{},
 			Enabled:  req.Enabled,
@@ -80,8 +108,8 @@ func (a *API) AdminUpsertRetentionPolicy(w http.ResponseWriter, r *http.Request)
 	httpapi.Write(ctx, w, http.StatusOK, retentionPolicyToSDK(policy, nil))
 }
 
-// AdminDeleteRetentionPolicy deletes a retention policy and all its rules.
-func (a *API) AdminDeleteRetentionPolicy(w http.ResponseWriter, r *http.Request) {
+// DeletePolicy deletes a retention policy and all its rules.
+func (h *Handler) DeletePolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	policyID, err := uuid.Parse(chi.URLParam(r, "policyID"))
 	if err != nil {
@@ -92,7 +120,7 @@ func (a *API) AdminDeleteRetentionPolicy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = a.Opts.Zed.DeleteRetentionPolicy(ctx, policyID)
+	err = h.zed.DeleteRetentionPolicy(ctx, policyID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -103,8 +131,8 @@ func (a *API) AdminDeleteRetentionPolicy(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-// AdminGetRetentionRules returns all rules for a policy.
-func (a *API) AdminGetRetentionRules(w http.ResponseWriter, r *http.Request) {
+// GetRules returns all rules for a policy.
+func (h *Handler) GetRules(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	policyID, err := uuid.Parse(chi.URLParam(r, "policyID"))
 	if err != nil {
@@ -115,21 +143,21 @@ func (a *API) AdminGetRetentionRules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rules, err := a.Opts.Zed.GetRetentionRulesByPolicy(ctx, policyID)
+	rules, err := h.zed.GetRetentionRulesByPolicy(ctx, policyID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
 	resp := make([]chroniclesdk.RetentionRule, 0, len(rules))
-	for _, r := range rules {
-		resp = append(resp, retentionRuleToSDK(r))
+	for _, rule := range rules {
+		resp = append(resp, retentionRuleToSDK(rule))
 	}
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-// AdminUpsertRetentionRule creates or updates a rule within a policy.
-func (a *API) AdminUpsertRetentionRule(w http.ResponseWriter, r *http.Request) {
+// UpsertRule creates or updates a rule within a policy.
+func (h *Handler) UpsertRule(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	policyID, err := uuid.Parse(chi.URLParam(r, "policyID"))
 	if err != nil {
@@ -161,7 +189,7 @@ func (a *API) AdminUpsertRetentionRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rule, err := a.Opts.Zed.UpsertRetentionRule(ctx, database.UpsertRetentionRuleParams{
+	rule, err := h.zed.UpsertRetentionRule(ctx, database.UpsertRetentionRuleParams{
 		PolicyID:    policyID,
 		Priority:    int32(req.Priority),
 		Action:      req.Action,
@@ -176,8 +204,8 @@ func (a *API) AdminUpsertRetentionRule(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, retentionRuleToSDK(rule))
 }
 
-// AdminDeleteRetentionRule deletes a single rule.
-func (a *API) AdminDeleteRetentionRule(w http.ResponseWriter, r *http.Request) {
+// DeleteRule deletes a single rule.
+func (h *Handler) DeleteRule(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ruleID, err := uuid.Parse(chi.URLParam(r, "ruleID"))
 	if err != nil {
@@ -188,7 +216,7 @@ func (a *API) AdminDeleteRetentionRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.Opts.Zed.DeleteRetentionRule(ctx, ruleID)
+	err = h.zed.DeleteRetentionRule(ctx, ruleID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -199,8 +227,8 @@ func (a *API) AdminDeleteRetentionRule(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// AdminRetentionPreview runs a dry-run of retention evaluation.
-func (a *API) AdminRetentionPreview(w http.ResponseWriter, r *http.Request) {
+// Preview runs a dry-run of retention evaluation.
+func (h *Handler) Preview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req chroniclesdk.RetentionPreviewRequest
 	if !httpapi.Read(ctx, w, r, &req) {
@@ -214,7 +242,7 @@ func (a *API) AdminRetentionPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := retention.Preview(ctx, a.Opts.Zed, *req.RealmID, time.Now())
+	items, err := retention.Preview(ctx, h.zed, *req.RealmID, time.Now())
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -243,15 +271,15 @@ func (a *API) AdminRetentionPreview(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-// AdminRetentionRun triggers a manual retention job.
-func (a *API) AdminRetentionRun(w http.ResponseWriter, r *http.Request) {
+// Run triggers a manual retention job.
+func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req chroniclesdk.RetentionRunRequest
 	if !httpapi.Read(ctx, w, r, &req) {
 		return
 	}
 
-	_, err := a.Queues.Insert(ctx, retention.ArgsRetention{DryRun: req.DryRun}, nil)
+	_, err := h.queues.Insert(ctx, retention.ArgsRetention{DryRun: req.DryRun}, nil)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return

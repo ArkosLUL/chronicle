@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/api/guildapi"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
+	"github.com/Emyrk/chronicle/api/retentionapi"
 	"github.com/Emyrk/chronicle/api/panellayoutapi"
 	"github.com/Emyrk/chronicle/api/serviceazerothcore"
 	"github.com/Emyrk/chronicle/chronicle"
@@ -160,16 +161,7 @@ func (api *API) Routes() chi.Router {
 				})
 			})
 
-			r.Route("/retention", func(r chi.Router) {
-				r.Get("/policies", api.AdminListRetentionPolicies)
-				r.Put("/policies", api.AdminUpsertRetentionPolicy)
-				r.Delete("/policies/{policyID}", api.AdminDeleteRetentionPolicy)
-				r.Get("/policies/{policyID}/rules", api.AdminGetRetentionRules)
-				r.Put("/policies/{policyID}/rules", api.AdminUpsertRetentionRule)
-				r.Delete("/rules/{ruleID}", api.AdminDeleteRetentionRule)
-				r.Post("/preview", api.AdminRetentionPreview)
-				r.Post("/run", api.AdminRetentionRun)
-			})
+			r.Mount("/retention", retentionapi.New(api.Zed, api.Queues).Routes())
 		})
 
 		// Regression testing routes (under admin auth)

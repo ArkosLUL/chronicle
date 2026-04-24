@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -1462,4 +1463,159 @@ export function useRequeueVersion() {
     },
   });
 }
+
+// -- AzerothCore Server Management --
+
+export function useAzerothcoreServers(options?: Omit<UseQueryOptions<WoWServer[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["azerothcore", "servers"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/azerothcore/servers");
+      if (!response.ok) throw new Error("Failed to fetch servers");
+      return response.json() as Promise<WoWServer[]>;
+    },
+    retry: false,
+    ...options,
+  });
+}
+
+export function useCreateAzerothcoreServer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: CreateWoWServerRequest) => {
+      const response = await fetch("/api/v1/azerothcore/servers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to create server");
+      }
+      return response.json() as Promise<WoWServer>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "servers"] });
+    },
+  });
+}
+
+export function useDeleteAzerothcoreServer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (serverId: string) => {
+      const response = await fetch(`/api/v1/azerothcore/servers/${serverId}`, { method: "DELETE" });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete server");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "servers"] });
+    },
+  });
+}
+
+export function useAzerothcoreRealms(serverId: string, options?: Omit<UseQueryOptions<WoWServerRealm[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["azerothcore", "realms", serverId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/azerothcore/servers/${serverId}/realms`);
+      if (!response.ok) throw new Error("Failed to fetch realms");
+      return response.json() as Promise<WoWServerRealm[]>;
+    },
+    enabled: !!serverId,
+    retry: false,
+    ...options,
+  });
+}
+
+export function useCreateAzerothcoreRealm() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ serverId, ...req }: CreateWoWServerRealmRequest & { serverId: string }) => {
+      const response = await fetch(`/api/v1/azerothcore/servers/${serverId}/realms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to create realm");
+      }
+      return response.json() as Promise<WoWServerRealm>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "realms"] });
+    },
+  });
+}
+
+export function useDeleteAzerothcoreRealm() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (realmId: string) => {
+      const response = await fetch(`/api/v1/azerothcore/realms/${realmId}`, { method: "DELETE" });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete realm");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "realms"] });
+    },
+  });
+}
+
+export function useAzerothcoreUploadKeys(realmId: string, options?: Omit<UseQueryOptions<UploadKey[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["azerothcore", "keys", realmId],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/azerothcore/realms/${realmId}/keys`);
+      if (!response.ok) throw new Error("Failed to fetch upload keys");
+      return response.json() as Promise<UploadKey[]>;
+    },
+    enabled: !!realmId,
+    retry: false,
+    ...options,
+  });
+}
+
+export function useCreateAzerothcoreUploadKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ realmId, ...req }: CreateUploadKeyRequest & { realmId: string }) => {
+      const response = await fetch(`/api/v1/azerothcore/realms/${realmId}/keys`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to create upload key");
+      }
+      return response.json() as Promise<UploadKey>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "keys"] });
+    },
+  });
+}
+
+export function useDeleteAzerothcoreUploadKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (keyId: string) => {
+      const response = await fetch(`/api/v1/azerothcore/keys/${keyId}`, { method: "DELETE" });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete upload key");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "keys"] });
+    },
+  });
+}
+
 

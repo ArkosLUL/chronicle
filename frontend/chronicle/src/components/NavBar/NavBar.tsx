@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu, Swords, Trophy, Database } from "lucide-react";
+import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu, Swords, Trophy, Database, Server } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { serverCapabilities } from "@/config/serverCapabilities";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,7 @@ export function NavBar() {
     admin: "chronicle:chronicle#admin_users",
     adminAuthz: "chronicle:chronicle#administer_authz",
     adminWorldData: "chronicle:chronicle#admin_world_data",
+    canAdminSomeServer: "lookup:wow_server#administer",
   }), []);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
@@ -40,12 +41,14 @@ export function NavBar() {
   const isAdmin = authz?.admin ?? false;
   const canAdminAuthz = authz?.adminAuthz ?? false;
   const canAdminWorldData = authz?.adminWorldData ?? false;
+  const canAdminSomeServer = authz?.canAdminSomeServer ?? false;
 
   const accountMenuItems: NavItem[] = [
     { title: "My Logs", href: "/logs", icon: FileText },
     { title: "Upload", href: "/upload", icon: Upload },
     ...(isAdmin ? [{ title: "Admin", href: "/admin", icon: Shield } as NavItem] : []),
     ...(canAdminWorldData ? [{ title: "Game Data", href: "/game-data", icon: Database } as NavItem] : []),
+    ...(canAdminSomeServer ? [{ title: "Servers", href: "/servers", icon: Server } as NavItem] : []),
     ...(canAdminAuthz ? [{ title: "Saffron", href: "/saffron", icon: Key, external: true } as NavItem] : []),
     { title: "Settings", href: "/account/settings", icon: Settings },
     { title: "Sign Out", onClick: logout, icon: LogOut },

@@ -506,7 +506,10 @@ COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild r
 CREATE TABLE wow_server_realms (
     id uuid NOT NULL,
     server_id uuid NOT NULL,
-    name text NOT NULL
+    name text NOT NULL,
+    created_by uuid,
+    url text,
+    description text DEFAULT ''::text NOT NULL
 );
 
 CREATE VIEW log_instances_guild AS
@@ -985,9 +988,22 @@ CREATE TABLE wow_log_groups (
     log_type log_type DEFAULT 'v1'::log_type NOT NULL
 );
 
+CREATE TABLE wow_server_upload_keys (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    realm_id uuid NOT NULL,
+    secret_hash text NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_used_at timestamp with time zone,
+    created_by uuid
+);
+
 CREATE TABLE wow_servers (
     id uuid NOT NULL,
-    name text NOT NULL
+    name text NOT NULL,
+    created_by uuid,
+    url text,
+    description text DEFAULT ''::text NOT NULL
 );
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
@@ -1184,6 +1200,9 @@ ALTER TABLE ONLY wow_log_groups
 ALTER TABLE ONLY wow_server_realms
     ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY wow_server_upload_keys
+    ADD CONSTRAINT wow_server_upload_keys_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY wow_servers
     ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 
@@ -1226,6 +1245,8 @@ CREATE INDEX idx_server_upload_meta_lookup ON server_upload_meta USING btree (in
 CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
 
 CREATE INDEX idx_shared_views_instance_hash ON shared_views USING btree (instance_id, hash);
+
+CREATE INDEX idx_upload_keys_realm ON wow_server_upload_keys USING btree (realm_id);
 
 CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code);
 
@@ -1407,6 +1428,18 @@ ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
 
 ALTER TABLE ONLY wow_server_realms
+    ADD CONSTRAINT wow_server_realms_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
+
+ALTER TABLE ONLY wow_server_realms
     ADD CONSTRAINT wow_server_realms_server_id_fkey FOREIGN KEY (server_id) REFERENCES wow_servers(id);
+
+ALTER TABLE ONLY wow_server_upload_keys
+    ADD CONSTRAINT wow_server_upload_keys_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
+
+ALTER TABLE ONLY wow_server_upload_keys
+    ADD CONSTRAINT wow_server_upload_keys_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY wow_servers
+    ADD CONSTRAINT wow_servers_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
 
 

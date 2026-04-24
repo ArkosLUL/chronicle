@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
@@ -41,12 +42,31 @@ func (api *API) checkAuthorization(rw http.ResponseWriter, r *http.Request) {
 
 	response := make(chroniclesdk.AuthorizationResponse)
 
+	actorObj := actor.Object()
+	subject := actorObj.Typ + ":" + actorObj.ID
+
 	for k, v := range params.Checks {
 		if v == "" {
 			httpapi.Write(ctx, rw, http.StatusBadRequest, chroniclesdk.Response{
 				Message: fmt.Sprintf("Object string must be defined for key %q.", k),
 			})
 			return
+		}
+
+		// "lookup:type#permission" — returns true if LookupResources yields ≥1 result.
+		if strings.HasPrefix(v, "lookup:") {
+			permission := strings.TrimPrefix(v, "lookup:")
+			found := false
+			for _, err := range api.Zed.LookupResources(ctx, nil, permission, subject) {
+				if err != nil {
+					httpapi.InternalServerError(rw, err)
+					return
+				}
+				found = true
+				break // we only need one
+			}
+			response[k] = found
+			continue
 		}
 
 		// Parse SpiceDB-style object string: "type:id#permission"
@@ -73,13 +93,13 @@ func (api *API) checkAuthorization(rw http.ResponseWriter, r *http.Request) {
 				ResourceType:     objectType,
 				ResourceID:       objectID,
 				ResourceRelation: permission,
-				SubjectType:      actor.Object().Typ,
-				SubjectID:        actor.Object().ID,
+				SubjectType:      actorObj.Typ,
+				SubjectID:        actorObj.ID,
 			},
 		})
 	}
 
-	// If no checks to perform, return empty response
+	// If no standard checks to perform, return response (may already have lookup results)
 	if len(checks) == 0 {
 		httpapi.Write(ctx, rw, http.StatusOK, response)
 		return

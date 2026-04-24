@@ -1,0 +1,54 @@
+-- Servers
+
+-- name: ListWoWServers :many
+SELECT * FROM wow_servers ORDER BY name;
+
+-- name: GetWoWServer :one
+SELECT * FROM wow_servers WHERE id = $1;
+
+-- name: InsertWoWServer :one
+INSERT INTO wow_servers (id, name, description, url, created_by)
+VALUES ($1, $2, $3, $4, $5) RETURNING *;
+
+-- name: DeleteWoWServer :exec
+DELETE FROM wow_servers WHERE id = $1;
+
+-- Realms
+
+-- name: ListWoWServerRealms :many
+SELECT * FROM wow_server_realms WHERE server_id = $1 ORDER BY name;
+
+-- name: GetWoWServerRealm :one
+SELECT * FROM wow_server_realms WHERE id = $1;
+
+-- name: InsertWoWServerRealm :one
+INSERT INTO wow_server_realms (id, server_id, name, description, url, created_by)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+
+-- name: DeleteWoWServerRealm :exec
+DELETE FROM wow_server_realms WHERE id = $1;
+
+-- Upload Keys
+
+-- name: InsertUploadKey :one
+INSERT INTO wow_server_upload_keys (id, realm_id, secret_hash, description, created_by)
+VALUES ($1, $2, $3, $4, $5) RETURNING *;
+
+-- name: ListUploadKeysByRealm :many
+SELECT id, realm_id, description, created_at, last_used_at, created_by
+FROM wow_server_upload_keys WHERE realm_id = $1 ORDER BY created_at;
+
+-- name: GetUploadKey :one
+SELECT * FROM wow_server_upload_keys WHERE id = $1;
+
+-- name: DeleteUploadKey :exec
+DELETE FROM wow_server_upload_keys WHERE id = $1;
+
+-- name: GetUploadKeyByHash :one
+SELECT uk.*, wsr.server_id
+FROM wow_server_upload_keys uk
+JOIN wow_server_realms wsr ON wsr.id = uk.realm_id
+WHERE uk.secret_hash = $1;
+
+-- name: TouchUploadKeyLastUsed :exec
+UPDATE wow_server_upload_keys SET last_used_at = now() WHERE id = $1;

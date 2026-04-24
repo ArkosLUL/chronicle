@@ -43,6 +43,28 @@ definition chronicle {
   permission upload_log = upload_capable + administer + supporter + chronicle_guild_member + chronicle_member
   permission create_layout = chronicle_guild_member + chronicle_member
   permission admin_world_data = technical_admin + is_admin_game_data
+
+  permission admin_servers = technical_admin
+}
+
+// An upload key is on a azeroth core world server.
+definition wow_server_upload_key {}
+
+definition wow_server {
+  relation chronicle: chronicle
+  relation admin: user
+
+  permission upload_log = admin + chronicle->admin_servers
+  permission administer = admin + chronicle->admin_servers
+}
+
+definition wow_server_realm {
+  // More than 1 realm belongs to a server
+  relation wow_server: wow_server
+  relation world_daemon: wow_server_upload_key
+
+  permission administer = wow_server->administer
+  permission upload_log = world_daemon + wow_server->upload_log
 }
 
 definition layout {

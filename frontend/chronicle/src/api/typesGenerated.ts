@@ -131,6 +131,10 @@ export interface AuthorizationRequest {
      * Values are in the format "type:id#permission", e.g.:
      *   - "raid_log:550e8400-e29b-41d4-a716-446655440000#view"
      *   - "instance:550e8400-e29b-41d4-a716-446655440000#edit"
+     *
+     * The "lookup:" prefix uses LookupResources to check if the user has the
+     * given permission on at least one resource of that type, e.g.:
+     *   - "lookup:wow_server#administer" — true if user can admin any server
      */
     readonly checks: Record<string, string>;
 }
@@ -180,12 +184,31 @@ export interface CreateTabRequest {
     readonly slug: string;
 }
 
+// From chroniclesdk/azerothcore.go
+export interface CreateUploadKeyRequest {
+    readonly description: string;
+}
+
 // From chroniclesdk/panel_layout.go
 export interface CreateUserPanelLayoutRequest {
     readonly title: string;
     readonly icon: string;
     readonly description: string;
     readonly payload: Record<string, string>;
+}
+
+// From chroniclesdk/azerothcore.go
+export interface CreateWoWServerRealmRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly url?: string;
+}
+
+// From chroniclesdk/azerothcore.go
+export interface CreateWoWServerRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly url?: string;
 }
 
 // From chroniclesdk/gamedata.go
@@ -1149,6 +1172,20 @@ export interface UpdateUserPanelLayoutRequest {
     readonly payload?: (Record<string, string>);
 }
 
+// From chroniclesdk/azerothcore.go
+export interface UploadKey {
+    readonly id: string;
+    readonly realm_id: string;
+    readonly description: string;
+    readonly created_at: string;
+    readonly last_used_at?: string;
+    readonly created_by?: string;
+    /**
+     * Secret is only populated on creation response (shown once).
+     */
+    readonly secret?: string;
+}
+
 // From chroniclesdk/user.go
 /**
  * UpsertDataGrantRequest is used to create or update a storage grant
@@ -1432,6 +1469,25 @@ export const WoWResources: WoWResource[] = ["Energy", "Focus", "Happiness", "Hea
 export type WoWSchool = 64 | 4 | 16 | 2 | 8 | 0 | 1 | 32;
 
 export const WoWSchools: WoWSchool[] = [64, 4, 16, 2, 8, 0, 1, 32];
+
+// From chroniclesdk/azerothcore.go
+export interface WoWServer {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly url?: string;
+    readonly created_by?: string;
+}
+
+// From chroniclesdk/azerothcore.go
+export interface WoWServerRealm {
+    readonly id: string;
+    readonly server_id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly url?: string;
+    readonly created_by?: string;
+}
 
 // From chroniclesdk/log.go
 export interface WoWSimpleParsedInstance extends WoWInstance {

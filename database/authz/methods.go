@@ -117,6 +117,69 @@ func (z *interceptor) UpsertGuild(ctx context.Context, arg database.UpsertGuildP
 	return g, nil
 }
 
+func (z *interceptor) InsertWoWServer(ctx context.Context, arg database.InsertWoWServerParams) (database.WowServer, error) {
+	b := policy.New()
+	b.Wow_server(arg.ID).Chronicle(b.GlobalChronicle())
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.WowServer{}, err
+	}
+	return z.Store.InsertWoWServer(ctx, arg)
+}
+
+func (z *interceptor) DeleteWoWServer(ctx context.Context, id uuid.UUID) error {
+	obj := policy.New().Wow_server(id).Object()
+	f := rel.NewFilter(obj.Typ, obj.ID, "")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return fmt.Errorf("delete authz relations: %w", err)
+	}
+	return z.Store.DeleteWoWServer(ctx, id)
+}
+
+func (z *interceptor) InsertWoWServerRealm(ctx context.Context, arg database.InsertWoWServerRealmParams) (database.WowServerRealm, error) {
+	b := policy.New()
+	b.Wow_server_realm(arg.ID).Wow_server(b.Wow_server(arg.ServerID))
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.WowServerRealm{}, err
+	}
+	return z.Store.InsertWoWServerRealm(ctx, arg)
+}
+
+func (z *interceptor) DeleteWoWServerRealm(ctx context.Context, id uuid.UUID) error {
+	obj := policy.New().Wow_server_realm(id).Object()
+	f := rel.NewFilter(obj.Typ, obj.ID, "")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return fmt.Errorf("delete authz relations: %w", err)
+	}
+	return z.Store.DeleteWoWServerRealm(ctx, id)
+}
+
+func (z *interceptor) InsertUploadKey(ctx context.Context, arg database.InsertUploadKeyParams) (database.WowServerUploadKey, error) {
+	b := policy.New()
+	b.Wow_server_realm(arg.RealmID).World_daemon(b.Wow_server_upload_key(arg.ID))
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.WowServerUploadKey{}, err
+	}
+	return z.Store.InsertUploadKey(ctx, arg)
+}
+
+func (z *interceptor) DeleteUploadKey(ctx context.Context, id uuid.UUID) error {
+	obj := policy.New().Wow_server_upload_key(id).Object()
+	f := rel.NewFilter(obj.Typ, obj.ID, "")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return fmt.Errorf("delete authz relations: %w", err)
+	}
+	return z.Store.DeleteUploadKey(ctx, id)
+}
+
 func (z *interceptor) UpsertPlayers(ctx context.Context, args []database.UpsertPlayersParams) *database.UpsertPlayersBatchResults {
 	b := policy.New()
 	g := b.GlobalChronicle()

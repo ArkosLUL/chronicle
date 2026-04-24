@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
 	"github.com/Emyrk/chronicle/api/panellayoutapi"
+	"github.com/Emyrk/chronicle/api/serviceazerothcore"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chroniclebot"
@@ -44,10 +45,6 @@ type Options struct {
 	Assets           http.Handler
 	InternalGameData http.Handler
 	Mailer           *chroniclemail.Mailer
-
-	// ServerUploadSecret is the shared secret for server-side log uploads
-	// from AzerothCore mod-chronicle. Empty string disables the endpoint.
-	ServerUploadSecret string
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
@@ -133,6 +130,7 @@ func (api *API) Routes() chi.Router {
 		})
 		r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
 		r.Mount("/game-data", gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool).Routes())
+		r.Mount("/azerothcore", serviceazerothcore.New(api.Opts.Logger, api.Opts.Zed, api.Auth, api.Chronicle).Routes())
 		r.Get("/share/{code}", api.GetShare)
 		r.Get("/site-config", api.AdminGetSiteConfig)
 
@@ -261,10 +259,6 @@ func (api *API) Routes() chi.Router {
 				r.Get("/recent", api.RecentInstances)
 				r.Get("/range", api.InstancesByTimeRange)
 				r.Route("/logs", func(r chi.Router) {
-					// Server-side upload from AzerothCore mod-chronicle.
-					// Uses shared-secret bearer auth, NOT session auth.
-					r.Post("/server-upload", api.ServerLogUpload)
-
 					r.Group(func(r chi.Router) {
 						r.Use(
 							api.Auth.Authenticated(false),

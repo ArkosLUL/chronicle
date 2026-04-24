@@ -200,6 +200,339 @@ func (q *sqlQuerier) UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Gu
 	return i, err
 }
 
+const deleteUploadKey = `-- name: DeleteUploadKey :exec
+DELETE FROM wow_server_upload_keys WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteUploadKey(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUploadKey, id)
+	return err
+}
+
+const deleteWoWServer = `-- name: DeleteWoWServer :exec
+DELETE FROM wow_servers WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteWoWServer(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWoWServer, id)
+	return err
+}
+
+const deleteWoWServerRealm = `-- name: DeleteWoWServerRealm :exec
+DELETE FROM wow_server_realms WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteWoWServerRealm(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWoWServerRealm, id)
+	return err
+}
+
+const getUploadKey = `-- name: GetUploadKey :one
+SELECT id, realm_id, secret_hash, description, created_at, last_used_at, created_by FROM wow_server_upload_keys WHERE id = $1
+`
+
+func (q *sqlQuerier) GetUploadKey(ctx context.Context, id uuid.UUID) (WowServerUploadKey, error) {
+	row := q.db.QueryRow(ctx, getUploadKey, id)
+	var i WowServerUploadKey
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.SecretHash,
+		&i.Description,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const getUploadKeyByHash = `-- name: GetUploadKeyByHash :one
+SELECT uk.id, uk.realm_id, uk.secret_hash, uk.description, uk.created_at, uk.last_used_at, uk.created_by, wsr.server_id
+FROM wow_server_upload_keys uk
+JOIN wow_server_realms wsr ON wsr.id = uk.realm_id
+WHERE uk.secret_hash = $1
+`
+
+type GetUploadKeyByHashRow struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	RealmID     uuid.UUID          `db:"realm_id" json:"realm_id"`
+	SecretHash  string             `db:"secret_hash" json:"secret_hash"`
+	Description string             `db:"description" json:"description"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastUsedAt  pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
+	CreatedBy   uuid.NullUUID      `db:"created_by" json:"created_by"`
+	ServerID    uuid.UUID          `db:"server_id" json:"server_id"`
+}
+
+func (q *sqlQuerier) GetUploadKeyByHash(ctx context.Context, secretHash string) (GetUploadKeyByHashRow, error) {
+	row := q.db.QueryRow(ctx, getUploadKeyByHash, secretHash)
+	var i GetUploadKeyByHashRow
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.SecretHash,
+		&i.Description,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.CreatedBy,
+		&i.ServerID,
+	)
+	return i, err
+}
+
+const getWoWServer = `-- name: GetWoWServer :one
+SELECT id, name, created_by, url, description FROM wow_servers WHERE id = $1
+`
+
+func (q *sqlQuerier) GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer, error) {
+	row := q.db.QueryRow(ctx, getWoWServer, id)
+	var i WowServer
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+	)
+	return i, err
+}
+
+const getWoWServerRealm = `-- name: GetWoWServerRealm :one
+SELECT id, server_id, name, created_by, url, description FROM wow_server_realms WHERE id = $1
+`
+
+func (q *sqlQuerier) GetWoWServerRealm(ctx context.Context, id uuid.UUID) (WowServerRealm, error) {
+	row := q.db.QueryRow(ctx, getWoWServerRealm, id)
+	var i WowServerRealm
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+	)
+	return i, err
+}
+
+const insertUploadKey = `-- name: InsertUploadKey :one
+
+INSERT INTO wow_server_upload_keys (id, realm_id, secret_hash, description, created_by)
+VALUES ($1, $2, $3, $4, $5) RETURNING id, realm_id, secret_hash, description, created_at, last_used_at, created_by
+`
+
+type InsertUploadKeyParams struct {
+	ID          uuid.UUID     `db:"id" json:"id"`
+	RealmID     uuid.UUID     `db:"realm_id" json:"realm_id"`
+	SecretHash  string        `db:"secret_hash" json:"secret_hash"`
+	Description string        `db:"description" json:"description"`
+	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+}
+
+// Upload Keys
+func (q *sqlQuerier) InsertUploadKey(ctx context.Context, arg InsertUploadKeyParams) (WowServerUploadKey, error) {
+	row := q.db.QueryRow(ctx, insertUploadKey,
+		arg.ID,
+		arg.RealmID,
+		arg.SecretHash,
+		arg.Description,
+		arg.CreatedBy,
+	)
+	var i WowServerUploadKey
+	err := row.Scan(
+		&i.ID,
+		&i.RealmID,
+		&i.SecretHash,
+		&i.Description,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const insertWoWServer = `-- name: InsertWoWServer :one
+INSERT INTO wow_servers (id, name, description, url, created_by)
+VALUES ($1, $2, $3, $4, $5) RETURNING id, name, created_by, url, description
+`
+
+type InsertWoWServerParams struct {
+	ID          uuid.UUID     `db:"id" json:"id"`
+	Name        string        `db:"name" json:"name"`
+	Description string        `db:"description" json:"description"`
+	Url         pgtype.Text   `db:"url" json:"url"`
+	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+}
+
+func (q *sqlQuerier) InsertWoWServer(ctx context.Context, arg InsertWoWServerParams) (WowServer, error) {
+	row := q.db.QueryRow(ctx, insertWoWServer,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Url,
+		arg.CreatedBy,
+	)
+	var i WowServer
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+	)
+	return i, err
+}
+
+const insertWoWServerRealm = `-- name: InsertWoWServerRealm :one
+INSERT INTO wow_server_realms (id, server_id, name, description, url, created_by)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, server_id, name, created_by, url, description
+`
+
+type InsertWoWServerRealmParams struct {
+	ID          uuid.UUID     `db:"id" json:"id"`
+	ServerID    uuid.UUID     `db:"server_id" json:"server_id"`
+	Name        string        `db:"name" json:"name"`
+	Description string        `db:"description" json:"description"`
+	Url         pgtype.Text   `db:"url" json:"url"`
+	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+}
+
+func (q *sqlQuerier) InsertWoWServerRealm(ctx context.Context, arg InsertWoWServerRealmParams) (WowServerRealm, error) {
+	row := q.db.QueryRow(ctx, insertWoWServerRealm,
+		arg.ID,
+		arg.ServerID,
+		arg.Name,
+		arg.Description,
+		arg.Url,
+		arg.CreatedBy,
+	)
+	var i WowServerRealm
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+	)
+	return i, err
+}
+
+const listUploadKeysByRealm = `-- name: ListUploadKeysByRealm :many
+SELECT id, realm_id, description, created_at, last_used_at, created_by
+FROM wow_server_upload_keys WHERE realm_id = $1 ORDER BY created_at
+`
+
+type ListUploadKeysByRealmRow struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	RealmID     uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Description string             `db:"description" json:"description"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastUsedAt  pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
+	CreatedBy   uuid.NullUUID      `db:"created_by" json:"created_by"`
+}
+
+func (q *sqlQuerier) ListUploadKeysByRealm(ctx context.Context, realmID uuid.UUID) ([]ListUploadKeysByRealmRow, error) {
+	rows, err := q.db.Query(ctx, listUploadKeysByRealm, realmID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUploadKeysByRealmRow
+	for rows.Next() {
+		var i ListUploadKeysByRealmRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RealmID,
+			&i.Description,
+			&i.CreatedAt,
+			&i.LastUsedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWoWServerRealms = `-- name: ListWoWServerRealms :many
+
+SELECT id, server_id, name, created_by, url, description FROM wow_server_realms WHERE server_id = $1 ORDER BY name
+`
+
+// Realms
+func (q *sqlQuerier) ListWoWServerRealms(ctx context.Context, serverID uuid.UUID) ([]WowServerRealm, error) {
+	rows, err := q.db.Query(ctx, listWoWServerRealms, serverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WowServerRealm
+	for rows.Next() {
+		var i WowServerRealm
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerID,
+			&i.Name,
+			&i.CreatedBy,
+			&i.Url,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWoWServers = `-- name: ListWoWServers :many
+
+SELECT id, name, created_by, url, description FROM wow_servers ORDER BY name
+`
+
+// Servers
+func (q *sqlQuerier) ListWoWServers(ctx context.Context) ([]WowServer, error) {
+	rows, err := q.db.Query(ctx, listWoWServers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WowServer
+	for rows.Next() {
+		var i WowServer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedBy,
+			&i.Url,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const touchUploadKeyLastUsed = `-- name: TouchUploadKeyLastUsed :exec
+UPDATE wow_server_upload_keys SET last_used_at = now() WHERE id = $1
+`
+
+func (q *sqlQuerier) TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, touchUploadKeyLastUsed, id)
+	return err
+}
+
 const deleteDataGrant = `-- name: DeleteDataGrant :exec
 DELETE FROM data_grants
 WHERE user_id = $1 AND source = $2

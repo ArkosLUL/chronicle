@@ -52,8 +52,6 @@ type Service struct {
 	saffronURL         *url.URL
 	ocrURL             *url.URL
 	discordAuth        chronauth.DiscordOAuth
-	serverUploadSecret string
-
 	app           *api.API
 	closeListener func()
 }
@@ -167,8 +165,6 @@ func (s *Service) Start(ctx context.Context) error {
 		InternalGameData: gamedata,
 		Mailer:           mailer,
 
-		ServerUploadSecret: s.serverUploadSecret,
-
 		AccessURL: au,
 		DevOAuth:  s.devAuth,
 		Discord:   s.discordAuth,
@@ -254,15 +250,6 @@ func (s *Service) Options() serpent.OptionSet {
 			Env:         "CHRONICLE_OCR_URL",
 			Default:     "",
 			Value:       serpent.URLOf(s.ocrURL),
-		},
-		{
-			Name:        "Server Upload Secret",
-			Description: "Shared secret for server-side log uploads from AzerothCore mod-chronicle. Empty disables the endpoint.",
-			Required:    false,
-			Flag:        "server-upload-secret",
-			Env:         "CHRONICLE_SERVER_UPLOAD_SECRET",
-			Default:     "",
-			Value:       serpent.StringOf(&s.serverUploadSecret),
 		},
 	}
 }

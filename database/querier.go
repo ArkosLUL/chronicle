@@ -35,9 +35,12 @@ type sqlcQuerier interface {
 	DeleteLogInstanceByIDAndGroup(ctx context.Context, arg DeleteLogInstanceByIDAndGroupParams) (uuid.UUID, error)
 	DeleteRegressionFixture(ctx context.Context, id uuid.UUID) error
 	DeleteRegressionSnapshot(ctx context.Context, id uuid.UUID) error
+	DeleteUploadKey(ctx context.Context, id uuid.UUID) error
 	DeleteUserPanelLayoutByID(ctx context.Context, id uuid.UUID) (int64, error)
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
 	DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLogGroupFilesParams) ([]LogFile, error)
+	DeleteWoWServer(ctx context.Context, id uuid.UUID) error
+	DeleteWoWServerRealm(ctx context.Context, id uuid.UUID) error
 	DeleteYoutubeVideoByInstanceOrSlug(ctx context.Context, arg DeleteYoutubeVideoByInstanceOrSlugParams) error
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
 	FindDuplicateInstanceCandidates(ctx context.Context, arg FindDuplicateInstanceCandidatesParams) ([]FindDuplicateInstanceCandidatesRow, error)
@@ -86,6 +89,8 @@ type sqlcQuerier interface {
 	GetSharedViewByInstanceAndHash(ctx context.Context, arg GetSharedViewByInstanceAndHashParams) (SharedView, error)
 	GetSiteConfig(ctx context.Context) (SiteConfig, error)
 	GetSpellItemEnchantmentByID(ctx context.Context, id int32) (DbcSpellItemEnchantment, error)
+	GetUploadKey(ctx context.Context, id uuid.UUID) (WowServerUploadKey, error)
+	GetUploadKeyByHash(ctx context.Context, secretHash string) (GetUploadKeyByHashRow, error)
 	GetUserActionBarSlots(ctx context.Context, userID uuid.UUID) (GetUserActionBarSlotsRow, error)
 	GetUserAuthByLinkedID(ctx context.Context, arg GetUserAuthByLinkedIDParams) (UserAuthLink, error)
 	GetUserAuthLinkByUserID(ctx context.Context, userID uuid.UUID) (UserAuthLink, error)
@@ -101,6 +106,8 @@ type sqlcQuerier interface {
 	GetWoWLogFilesByGroupID(ctx context.Context, wowLogID uuid.UUID) ([]LogFile, error)
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
 	GetWoWLogGroupsByOwner(ctx context.Context, arg GetWoWLogGroupsByOwnerParams) ([]GetWoWLogGroupsByOwnerRow, error)
+	GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer, error)
+	GetWoWServerRealm(ctx context.Context, id uuid.UUID) (WowServerRealm, error)
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error)
 	InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults
 	InsertGuildPagePanel(ctx context.Context, arg InsertGuildPagePanelParams) (GuildPagePanel, error)
@@ -117,11 +124,15 @@ type sqlcQuerier interface {
 	InsertRegressionSnapshot(ctx context.Context, arg InsertRegressionSnapshotParams) (RegressionSnapshot, error)
 	InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error
 	InsertStampedYoutubeVideo(ctx context.Context, arg InsertStampedYoutubeVideoParams) error
+	// Upload Keys
+	InsertUploadKey(ctx context.Context, arg InsertUploadKeyParams) (WowServerUploadKey, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	InsertUserAuth(ctx context.Context, arg InsertUserAuthParams) (UserAuthLink, error)
 	InsertUserAuthSession(ctx context.Context, arg InsertUserAuthSessionParams) (UserAuthSession, error)
 	InsertUserPassword(ctx context.Context, arg InsertUserPasswordParams) (UserPassword, error)
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
+	InsertWoWServer(ctx context.Context, arg InsertWoWServerParams) (WowServer, error)
+	InsertWoWServerRealm(ctx context.Context, arg InsertWoWServerRealmParams) (WowServerRealm, error)
 	Instance(ctx context.Context, id uuid.UUID) (LogInstancesGuild, error)
 	InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text) (LogInstancesGuild, error)
 	InstanceEvent(ctx context.Context, arg InstanceEventParams) (LogInstanceEvent, error)
@@ -147,7 +158,12 @@ type sqlcQuerier interface {
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	ListRegressionFixtures(ctx context.Context) ([]ListRegressionFixturesRow, error)
 	ListRegressionSnapshots(ctx context.Context, arg ListRegressionSnapshotsParams) ([]ListRegressionSnapshotsRow, error)
+	ListUploadKeysByRealm(ctx context.Context, realmID uuid.UUID) ([]ListUploadKeysByRealmRow, error)
 	ListUserPanelLayouts(ctx context.Context, userID uuid.NullUUID) ([]ListUserPanelLayoutsRow, error)
+	// Realms
+	ListWoWServerRealms(ctx context.Context, serverID uuid.UUID) ([]WowServerRealm, error)
+	// Servers
+	ListWoWServers(ctx context.Context) ([]WowServer, error)
 	MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
@@ -165,6 +181,7 @@ type sqlcQuerier interface {
 	SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeaderboardParams) ([]SpeedrunLeaderboardRow, error)
 	// Returns distinct realm names that have at least one qualified speedrun.
 	SpeedrunRealmNames(ctx context.Context) ([]string, error)
+	TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)
 	UntrackUserPanelLayout(ctx context.Context, arg UntrackUserPanelLayoutParams) (int64, error)
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)

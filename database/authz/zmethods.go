@@ -3,6 +3,7 @@ package authz
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz/policy"
@@ -69,6 +70,16 @@ func (z *Authz) CheckOne(ctx context.Context, cs *consistency.Strategy, rs rel.I
 		cs = z.DefaultConsistencyStrategy()
 	}
 	return z.spice.CheckOne(ctx, cs, rs)
+}
+
+// LookupResources returns an iterator of resource IDs where the given subject
+// has the specified permission. permission is "type#relation" (e.g.
+// "wow_server#administer"), subject is "type:id" (e.g. "user:<uuid>").
+func (z *Authz) LookupResources(ctx context.Context, cs *consistency.Strategy, permission, subject string) iter.Seq2[string, error] {
+	if cs == nil {
+		cs = z.DefaultConsistencyStrategy()
+	}
+	return z.spice.LookupResources(ctx, cs, permission, subject)
 }
 
 func (z *Authz) Check(ctx context.Context, cs *consistency.Strategy, rs ...rel.Interface) ([]bool, error) {
@@ -226,13 +237,13 @@ func (z *Authz) SetUserChronicleRoles(ctx context.Context, userID uuid.UUID, rol
 		case "moderate_guilds":
 			gChron.Moderate_guilds(usr)
 		case "admin_users":
-			gChron.Admin_users(usr)
+			gChron.Is_admin_users(usr)
 		case "admin_queues":
-			gChron.Admin_queues(usr)
+			gChron.Is_admin_queues(usr)
 		case "admin_game_data":
-			gChron.Admin_game_data(usr)
+			gChron.Is_admin_game_data(usr)
 		case "admin_raid_requirements":
-			gChron.Admin_raid_requirements(usr)
+			gChron.Is_admin_raid_requirements(usr)
 		default:
 			return fmt.Errorf("invalid role: %s", role)
 		}

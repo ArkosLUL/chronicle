@@ -70,7 +70,7 @@ func (obj *ObjArmory_player) Create() *Armory_playerRelates {
 	return &Armory_playerRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:78
+// Chronicle schema.zed:100
 // Relationship: armory_player:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjArmory_player) Chronicle(subs ...*ObjChronicle) *ObjArmory_player {
@@ -118,28 +118,28 @@ func (obj *ObjChronicle) RelationAdmin() string {
 	return "admin"
 }
 
-func (obj *ObjChronicle) RelationAdmin_game_data() string {
-	return "admin_game_data"
-}
-
-func (obj *ObjChronicle) RelationAdmin_queues() string {
-	return "admin_queues"
-}
-
-func (obj *ObjChronicle) RelationAdmin_raid_requirements() string {
-	return "admin_raid_requirements"
-}
-
-func (obj *ObjChronicle) RelationAdmin_users() string {
-	return "admin_users"
-}
-
 func (obj *ObjChronicle) RelationChronicle_guild_member() string {
 	return "chronicle_guild_member"
 }
 
 func (obj *ObjChronicle) RelationChronicle_member() string {
 	return "chronicle_member"
+}
+
+func (obj *ObjChronicle) RelationIs_admin_game_data() string {
+	return "is_admin_game_data"
+}
+
+func (obj *ObjChronicle) RelationIs_admin_queues() string {
+	return "is_admin_queues"
+}
+
+func (obj *ObjChronicle) RelationIs_admin_raid_requirements() string {
+	return "is_admin_raid_requirements"
+}
+
+func (obj *ObjChronicle) RelationIs_admin_users() string {
+	return "is_admin_users"
 }
 
 func (obj *ObjChronicle) RelationModerate_guilds() string {
@@ -224,6 +224,10 @@ func (obj *ObjChronicle) PermissionCreate_layout() string {
 
 func (obj *ObjChronicle) PermissionAdmin_world_data() string {
 	return "admin_world_data"
+}
+
+func (obj *ObjChronicle) PermissionAdmin_servers() string {
+	return "admin_servers"
 }
 
 type ChronicleRelates struct {
@@ -405,74 +409,74 @@ func (r *ChronicleRelates) Moderate_guilds(subs ...*ObjUser) *ChronicleRelates {
 	return r
 }
 
-// Admin_users schema.zed:22
-// Relationship: chronicle:<id>#admin_users@user:<id>
-// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_users() etc.
-func (obj *ObjChronicle) Admin_users(subs ...*ObjUser) *ObjChronicle {
+// Is_admin_users schema.zed:22
+// Relationship: chronicle:<id>#is_admin_users@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Is_admin_users() etc.
+func (obj *ObjChronicle) Is_admin_users(subs ...*ObjUser) *ObjChronicle {
 	for _, sub := range subs {
-		obj.src.Touch().Add("admin_users", sub.src.Obj, "")
+		obj.src.Touch().Add("is_admin_users", sub.src.Obj, "")
 	}
 	return obj
 }
 
-// Admin_users on Relates uses the specified operation (Touch/Create/Delete)
-func (r *ChronicleRelates) Admin_users(subs ...*ObjUser) *ChronicleRelates {
+// Is_admin_users on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Is_admin_users(subs ...*ObjUser) *ChronicleRelates {
 	for _, sub := range subs {
-		r.rel.Add("admin_users", sub.src.Obj, "")
+		r.rel.Add("is_admin_users", sub.src.Obj, "")
 	}
 	return r
 }
 
-// Admin_queues schema.zed:23
-// Relationship: chronicle:<id>#admin_queues@user:<id>
-// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_queues() etc.
-func (obj *ObjChronicle) Admin_queues(subs ...*ObjUser) *ObjChronicle {
+// Is_admin_queues schema.zed:23
+// Relationship: chronicle:<id>#is_admin_queues@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Is_admin_queues() etc.
+func (obj *ObjChronicle) Is_admin_queues(subs ...*ObjUser) *ObjChronicle {
 	for _, sub := range subs {
-		obj.src.Touch().Add("admin_queues", sub.src.Obj, "")
+		obj.src.Touch().Add("is_admin_queues", sub.src.Obj, "")
 	}
 	return obj
 }
 
-// Admin_queues on Relates uses the specified operation (Touch/Create/Delete)
-func (r *ChronicleRelates) Admin_queues(subs ...*ObjUser) *ChronicleRelates {
+// Is_admin_queues on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Is_admin_queues(subs ...*ObjUser) *ChronicleRelates {
 	for _, sub := range subs {
-		r.rel.Add("admin_queues", sub.src.Obj, "")
+		r.rel.Add("is_admin_queues", sub.src.Obj, "")
 	}
 	return r
 }
 
-// Admin_game_data schema.zed:24
-// Relationship: chronicle:<id>#admin_game_data@user:<id>
-// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_game_data() etc.
-func (obj *ObjChronicle) Admin_game_data(subs ...*ObjUser) *ObjChronicle {
+// Is_admin_game_data schema.zed:24
+// Relationship: chronicle:<id>#is_admin_game_data@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Is_admin_game_data() etc.
+func (obj *ObjChronicle) Is_admin_game_data(subs ...*ObjUser) *ObjChronicle {
 	for _, sub := range subs {
-		obj.src.Touch().Add("admin_game_data", sub.src.Obj, "")
+		obj.src.Touch().Add("is_admin_game_data", sub.src.Obj, "")
 	}
 	return obj
 }
 
-// Admin_game_data on Relates uses the specified operation (Touch/Create/Delete)
-func (r *ChronicleRelates) Admin_game_data(subs ...*ObjUser) *ChronicleRelates {
+// Is_admin_game_data on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Is_admin_game_data(subs ...*ObjUser) *ChronicleRelates {
 	for _, sub := range subs {
-		r.rel.Add("admin_game_data", sub.src.Obj, "")
+		r.rel.Add("is_admin_game_data", sub.src.Obj, "")
 	}
 	return r
 }
 
-// Admin_raid_requirements schema.zed:25
-// Relationship: chronicle:<id>#admin_raid_requirements@user:<id>
-// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin_raid_requirements() etc.
-func (obj *ObjChronicle) Admin_raid_requirements(subs ...*ObjUser) *ObjChronicle {
+// Is_admin_raid_requirements schema.zed:25
+// Relationship: chronicle:<id>#is_admin_raid_requirements@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Is_admin_raid_requirements() etc.
+func (obj *ObjChronicle) Is_admin_raid_requirements(subs ...*ObjUser) *ObjChronicle {
 	for _, sub := range subs {
-		obj.src.Touch().Add("admin_raid_requirements", sub.src.Obj, "")
+		obj.src.Touch().Add("is_admin_raid_requirements", sub.src.Obj, "")
 	}
 	return obj
 }
 
-// Admin_raid_requirements on Relates uses the specified operation (Touch/Create/Delete)
-func (r *ChronicleRelates) Admin_raid_requirements(subs ...*ObjUser) *ChronicleRelates {
+// Is_admin_raid_requirements on Relates uses the specified operation (Touch/Create/Delete)
+func (r *ChronicleRelates) Is_admin_raid_requirements(subs ...*ObjUser) *ChronicleRelates {
 	for _, sub := range subs {
-		r.rel.Add("admin_raid_requirements", sub.src.Obj, "")
+		r.rel.Add("is_admin_raid_requirements", sub.src.Obj, "")
 	}
 	return r
 }
@@ -569,7 +573,7 @@ func (obj *ObjChronicle) CanAdmin_guilds_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_users_User checks if the subject has admin_users permission
 // // Object: chronicle:<id>
-// Schema: permission admin_users = administer + admin_users
+// Schema: permission admin_users = administer + is_admin_users
 func (obj *ObjChronicle) CanAdmin_users_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -584,7 +588,7 @@ func (obj *ObjChronicle) CanAdmin_users_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_queues_User checks if the subject has admin_queues permission
 // // Object: chronicle:<id>
-// Schema: permission admin_queues = technical_admin + admin_queues
+// Schema: permission admin_queues = technical_admin + is_admin_queues
 func (obj *ObjChronicle) CanAdmin_queues_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -629,7 +633,7 @@ func (obj *ObjChronicle) CanShorter_urls_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_regressions_User checks if the subject has admin_regressions permission
 // // Object: chronicle:<id>
-// Schema: permission admin_regressions = technical_admin + admin_raid_requirements
+// Schema: permission admin_regressions = technical_admin + is_admin_raid_requirements
 func (obj *ObjChronicle) CanAdmin_regressions_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -644,7 +648,7 @@ func (obj *ObjChronicle) CanAdmin_regressions_User(sub *ObjUser) rel.Relationshi
 
 // CanAdmin_speedrun_requirements_User checks if the subject has admin_speedrun_requirements permission
 // // Object: chronicle:<id>
-// Schema: permission admin_speedrun_requirements = technical_admin + admin_raid_requirements
+// Schema: permission admin_speedrun_requirements = technical_admin + is_admin_raid_requirements
 func (obj *ObjChronicle) CanAdmin_speedrun_requirements_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
@@ -689,13 +693,28 @@ func (obj *ObjChronicle) CanCreate_layout_User(sub *ObjUser) rel.Relationship {
 
 // CanAdmin_world_data_User checks if the subject has admin_world_data permission
 // // Object: chronicle:<id>
-// Schema: permission admin_world_data = technical_admin + admin_game_data
+// Schema: permission admin_world_data = technical_admin + is_admin_game_data
 func (obj *ObjChronicle) CanAdmin_world_data_User(sub *ObjUser) rel.Relationship {
 	r, s := obj.src.Obj, sub.src
 	return rel.Relationship{
 		ResourceType:     r.ObjectType,
 		ResourceID:       r.ObjectId,
 		ResourceRelation: "admin_world_data",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanAdmin_servers_User checks if the subject has admin_servers permission
+// // Object: chronicle:<id>
+// Schema: permission admin_servers = technical_admin
+func (obj *ObjChronicle) CanAdmin_servers_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "admin_servers",
 		SubjectType:      s.Obj.ObjectType,
 		SubjectID:        s.Obj.ObjectId,
 		SubjectRelation:  s.OptionalRelation,
@@ -777,7 +796,7 @@ func (obj *ObjGuild) Create() *GuildRelates {
 	return &GuildRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:63
+// Chronicle schema.zed:85
 // Relationship: guild:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjGuild) Chronicle(subs ...*ObjChronicle) *ObjGuild {
@@ -795,7 +814,7 @@ func (r *GuildRelates) Chronicle(subs ...*ObjChronicle) *GuildRelates {
 	return r
 }
 
-// Leader schema.zed:65
+// Leader schema.zed:87
 // Relationship: guild:<id>#leader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Leader() etc.
 func (obj *ObjGuild) Leader(subs ...*ObjUser) *ObjGuild {
@@ -813,7 +832,7 @@ func (r *GuildRelates) Leader(subs ...*ObjUser) *GuildRelates {
 	return r
 }
 
-// Member schema.zed:66
+// Member schema.zed:88
 // Relationship: guild:<id>#member@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Member() etc.
 func (obj *ObjGuild) Member(subs ...*ObjUser) *ObjGuild {
@@ -1038,7 +1057,7 @@ func (obj *ObjInstance) Create() *InstanceRelates {
 	return &InstanceRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Raid_log schema.zed:96
+// Raid_log schema.zed:118
 // Relationship: instance:<id>#raid_log@raid_log:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Raid_log() etc.
 func (obj *ObjInstance) Raid_log(subs ...*ObjRaid_log) *ObjInstance {
@@ -1056,7 +1075,7 @@ func (r *InstanceRelates) Raid_log(subs ...*ObjRaid_log) *InstanceRelates {
 	return r
 }
 
-// PublicWildcard schema.zed:97
+// PublicWildcard schema.zed:119
 // Relationship: instance:<id>#public@user:*
 func (obj *ObjInstance) PublicWildcard() *ObjInstance {
 	obj.src.Touch().Add("public", &v1.ObjectReference{
@@ -1163,7 +1182,7 @@ func (obj *ObjLayout) Create() *LayoutRelates {
 	return &LayoutRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:49
+// Chronicle schema.zed:71
 // Relationship: layout:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjLayout) Chronicle(subs ...*ObjChronicle) *ObjLayout {
@@ -1181,7 +1200,7 @@ func (r *LayoutRelates) Chronicle(subs ...*ObjChronicle) *LayoutRelates {
 	return r
 }
 
-// Owner schema.zed:50
+// Owner schema.zed:72
 // Relationship: layout:<id>#owner@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Owner() etc.
 func (obj *ObjLayout) Owner(subs ...*ObjUser) *ObjLayout {
@@ -1330,7 +1349,7 @@ func (obj *ObjRaid_log) Create() *Raid_logRelates {
 	return &Raid_logRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:82
+// Chronicle schema.zed:104
 // Relationship: raid_log:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRaid_log) Chronicle(subs ...*ObjChronicle) *ObjRaid_log {
@@ -1348,7 +1367,7 @@ func (r *Raid_logRelates) Chronicle(subs ...*ObjChronicle) *Raid_logRelates {
 	return r
 }
 
-// Uploader schema.zed:83
+// Uploader schema.zed:105
 // Relationship: raid_log:<id>#uploader@user:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Uploader() etc.
 func (obj *ObjRaid_log) Uploader(subs ...*ObjUser) *ObjRaid_log {
@@ -1563,7 +1582,7 @@ func (obj *ObjRiver_queue) Create() *River_queueRelates {
 	return &River_queueRelates{obj: obj, rel: obj.src.Create()}
 }
 
-// Chronicle schema.zed:57
+// Chronicle schema.zed:79
 // Relationship: river_queue:<id>#chronicle@chronicle:<id>
 // Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
 func (obj *ObjRiver_queue) Chronicle(subs ...*ObjChronicle) *ObjRiver_queue {
@@ -1616,6 +1635,342 @@ func (obj *ObjUser) Object() rel.Object {
 
 // AsSubject returns this object as a SubjectReference for use in checks.
 func (obj *ObjUser) AsSubject() *v1.SubjectReference {
+	return &v1.SubjectReference{
+		Object:           obj.src.Obj,
+		OptionalRelation: obj.src.OptionalRelation,
+	}
+}
+
+type ObjWow_server struct {
+	src Object
+}
+
+func (b *SchemaBuilder) Wow_server(id fmt.Stringer) *ObjWow_server {
+	return &ObjWow_server{
+		src: b.Object(&v1.ObjectReference{
+			ObjectType: "wow_server",
+			ObjectId:   id.String(),
+		}, ""),
+	}
+}
+
+// Object returns the underlying ObjectReference for use in SpiceDB API calls.
+func (obj *ObjWow_server) Object() rel.Object {
+	return obj.src.Object()
+}
+
+// AsSubject returns this object as a SubjectReference for use in checks.
+func (obj *ObjWow_server) AsSubject() *v1.SubjectReference {
+	return &v1.SubjectReference{
+		Object:           obj.src.Obj,
+		OptionalRelation: obj.src.OptionalRelation,
+	}
+}
+
+func (obj *ObjWow_server) RelationAdmin() string {
+	return "admin"
+}
+
+func (obj *ObjWow_server) RelationChronicle() string {
+	return "chronicle"
+}
+
+func (obj *ObjWow_server) PermissionUpload_log() string {
+	return "upload_log"
+}
+
+func (obj *ObjWow_server) PermissionAdminister() string {
+	return "administer"
+}
+
+type Wow_serverRelates struct {
+	obj *ObjWow_server
+	rel Relationship
+}
+
+func (obj *ObjWow_server) Touch() *Wow_serverRelates {
+	return &Wow_serverRelates{obj: obj, rel: obj.src.Touch()}
+}
+
+func (obj *ObjWow_server) Delete() *Wow_serverRelates {
+	return &Wow_serverRelates{obj: obj, rel: obj.src.Delete()}
+}
+
+func (obj *ObjWow_server) Create() *Wow_serverRelates {
+	return &Wow_serverRelates{obj: obj, rel: obj.src.Create()}
+}
+
+// Chronicle schema.zed:54
+// Relationship: wow_server:<id>#chronicle@chronicle:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Chronicle() etc.
+func (obj *ObjWow_server) Chronicle(subs ...*ObjChronicle) *ObjWow_server {
+	for _, sub := range subs {
+		obj.src.Touch().Add("chronicle", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Chronicle on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Wow_serverRelates) Chronicle(subs ...*ObjChronicle) *Wow_serverRelates {
+	for _, sub := range subs {
+		r.rel.Add("chronicle", sub.src.Obj, "")
+	}
+	return r
+}
+
+// Admin schema.zed:55
+// Relationship: wow_server:<id>#admin@user:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Admin() etc.
+func (obj *ObjWow_server) Admin(subs ...*ObjUser) *ObjWow_server {
+	for _, sub := range subs {
+		obj.src.Touch().Add("admin", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Admin on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Wow_serverRelates) Admin(subs ...*ObjUser) *Wow_serverRelates {
+	for _, sub := range subs {
+		r.rel.Add("admin", sub.src.Obj, "")
+	}
+	return r
+}
+
+// CanUpload_log_Chronicle checks if the subject has upload_log permission
+// // Object: wow_server:<id>
+// Schema: permission upload_log = admin + chronicle->admin_servers
+func (obj *ObjWow_server) CanUpload_log_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_log",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanUpload_log_User checks if the subject has upload_log permission
+// // Object: wow_server:<id>
+// Schema: permission upload_log = admin + chronicle->admin_servers
+func (obj *ObjWow_server) CanUpload_log_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_log",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanAdminister_Chronicle checks if the subject has administer permission
+// // Object: wow_server:<id>
+// Schema: permission administer = admin + chronicle->admin_servers
+func (obj *ObjWow_server) CanAdminister_Chronicle(sub *ObjChronicle) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "administer",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanAdminister_User checks if the subject has administer permission
+// // Object: wow_server:<id>
+// Schema: permission administer = admin + chronicle->admin_servers
+func (obj *ObjWow_server) CanAdminister_User(sub *ObjUser) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "administer",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+type ObjWow_server_realm struct {
+	src Object
+}
+
+func (b *SchemaBuilder) Wow_server_realm(id fmt.Stringer) *ObjWow_server_realm {
+	return &ObjWow_server_realm{
+		src: b.Object(&v1.ObjectReference{
+			ObjectType: "wow_server_realm",
+			ObjectId:   id.String(),
+		}, ""),
+	}
+}
+
+// Object returns the underlying ObjectReference for use in SpiceDB API calls.
+func (obj *ObjWow_server_realm) Object() rel.Object {
+	return obj.src.Object()
+}
+
+// AsSubject returns this object as a SubjectReference for use in checks.
+func (obj *ObjWow_server_realm) AsSubject() *v1.SubjectReference {
+	return &v1.SubjectReference{
+		Object:           obj.src.Obj,
+		OptionalRelation: obj.src.OptionalRelation,
+	}
+}
+
+func (obj *ObjWow_server_realm) RelationWorld_daemon() string {
+	return "world_daemon"
+}
+
+func (obj *ObjWow_server_realm) RelationWow_server() string {
+	return "wow_server"
+}
+
+func (obj *ObjWow_server_realm) PermissionAdminister() string {
+	return "administer"
+}
+
+func (obj *ObjWow_server_realm) PermissionUpload_log() string {
+	return "upload_log"
+}
+
+type Wow_server_realmRelates struct {
+	obj *ObjWow_server_realm
+	rel Relationship
+}
+
+func (obj *ObjWow_server_realm) Touch() *Wow_server_realmRelates {
+	return &Wow_server_realmRelates{obj: obj, rel: obj.src.Touch()}
+}
+
+func (obj *ObjWow_server_realm) Delete() *Wow_server_realmRelates {
+	return &Wow_server_realmRelates{obj: obj, rel: obj.src.Delete()}
+}
+
+func (obj *ObjWow_server_realm) Create() *Wow_server_realmRelates {
+	return &Wow_server_realmRelates{obj: obj, rel: obj.src.Create()}
+}
+
+// Wow_server schema.zed:63
+// Relationship: wow_server_realm:<id>#wow_server@wow_server:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().Wow_server() etc.
+func (obj *ObjWow_server_realm) Wow_server(subs ...*ObjWow_server) *ObjWow_server_realm {
+	for _, sub := range subs {
+		obj.src.Touch().Add("wow_server", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// Wow_server on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Wow_server_realmRelates) Wow_server(subs ...*ObjWow_server) *Wow_server_realmRelates {
+	for _, sub := range subs {
+		r.rel.Add("wow_server", sub.src.Obj, "")
+	}
+	return r
+}
+
+// World_daemon schema.zed:64
+// Relationship: wow_server_realm:<id>#world_daemon@wow_server_upload_key:<id>
+// Uses Touch operation implicitly. For Delete/Create, use obj.Delete().World_daemon() etc.
+func (obj *ObjWow_server_realm) World_daemon(subs ...*ObjWow_server_upload_key) *ObjWow_server_realm {
+	for _, sub := range subs {
+		obj.src.Touch().Add("world_daemon", sub.src.Obj, "")
+	}
+	return obj
+}
+
+// World_daemon on Relates uses the specified operation (Touch/Create/Delete)
+func (r *Wow_server_realmRelates) World_daemon(subs ...*ObjWow_server_upload_key) *Wow_server_realmRelates {
+	for _, sub := range subs {
+		r.rel.Add("world_daemon", sub.src.Obj, "")
+	}
+	return r
+}
+
+// CanAdminister_Wow_server checks if the subject has administer permission
+// // Object: wow_server_realm:<id>
+// Schema: permission administer = wow_server->administer
+func (obj *ObjWow_server_realm) CanAdminister_Wow_server(sub *ObjWow_server) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "administer",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanAdminister_Wow_server_upload_key checks if the subject has administer permission
+// // Object: wow_server_realm:<id>
+// Schema: permission administer = wow_server->administer
+func (obj *ObjWow_server_realm) CanAdminister_Wow_server_upload_key(sub *ObjWow_server_upload_key) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "administer",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanUpload_log_Wow_server checks if the subject has upload_log permission
+// // Object: wow_server_realm:<id>
+// Schema: permission upload_log = world_daemon + wow_server->upload_log
+func (obj *ObjWow_server_realm) CanUpload_log_Wow_server(sub *ObjWow_server) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_log",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+// CanUpload_log_Wow_server_upload_key checks if the subject has upload_log permission
+// // Object: wow_server_realm:<id>
+// Schema: permission upload_log = world_daemon + wow_server->upload_log
+func (obj *ObjWow_server_realm) CanUpload_log_Wow_server_upload_key(sub *ObjWow_server_upload_key) rel.Relationship {
+	r, s := obj.src.Obj, sub.src
+	return rel.Relationship{
+		ResourceType:     r.ObjectType,
+		ResourceID:       r.ObjectId,
+		ResourceRelation: "upload_log",
+		SubjectType:      s.Obj.ObjectType,
+		SubjectID:        s.Obj.ObjectId,
+		SubjectRelation:  s.OptionalRelation,
+	}
+}
+
+type ObjWow_server_upload_key struct {
+	src Object
+}
+
+func (b *SchemaBuilder) Wow_server_upload_key(id fmt.Stringer) *ObjWow_server_upload_key {
+	return &ObjWow_server_upload_key{
+		src: b.Object(&v1.ObjectReference{
+			ObjectType: "wow_server_upload_key",
+			ObjectId:   id.String(),
+		}, ""),
+	}
+}
+
+// Object returns the underlying ObjectReference for use in SpiceDB API calls.
+func (obj *ObjWow_server_upload_key) Object() rel.Object {
+	return obj.src.Object()
+}
+
+// AsSubject returns this object as a SubjectReference for use in checks.
+func (obj *ObjWow_server_upload_key) AsSubject() *v1.SubjectReference {
 	return &v1.SubjectReference{
 		Object:           obj.src.Obj,
 		OptionalRelation: obj.src.OptionalRelation,

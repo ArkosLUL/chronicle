@@ -1395,12 +1395,28 @@ type WorldSpellThreat struct {
 }
 
 type WowServer struct {
-	ID   uuid.UUID `db:"id" json:"id"`
-	Name string    `db:"name" json:"name"`
+	ID          uuid.UUID     `db:"id" json:"id"`
+	Name        string        `db:"name" json:"name"`
+	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+	Url         pgtype.Text   `db:"url" json:"url"`
+	Description string        `db:"description" json:"description"`
 }
 
 type WowServerRealm struct {
-	ID       uuid.UUID `db:"id" json:"id"`
-	ServerID uuid.UUID `db:"server_id" json:"server_id"`
-	Name     string    `db:"name" json:"name"`
+	ID          uuid.UUID     `db:"id" json:"id"`
+	ServerID    uuid.UUID     `db:"server_id" json:"server_id"`
+	Name        string        `db:"name" json:"name"`
+	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
+	Url         pgtype.Text   `db:"url" json:"url"`
+	Description string        `db:"description" json:"description"`
+}
+
+type WowServerUploadKey struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	RealmID     uuid.UUID          `db:"realm_id" json:"realm_id"`
+	SecretHash  string             `db:"secret_hash" json:"secret_hash"`
+	Description string             `db:"description" json:"description"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastUsedAt  pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
+	CreatedBy   uuid.NullUUID      `db:"created_by" json:"created_by"`
 }

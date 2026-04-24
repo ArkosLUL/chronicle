@@ -45,6 +45,7 @@ const (
 	UniqueRiverLeaderPkey                              UniqueConstraint = "river_leader_pkey"                                // ALTER TABLE ONLY river_leader ADD CONSTRAINT river_leader_pkey PRIMARY KEY (name);
 	UniqueRiverMigrationPkey1                          UniqueConstraint = "river_migration_pkey1"                            // ALTER TABLE ONLY river_migration ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
 	UniqueRiverQueuePkey                               UniqueConstraint = "river_queue_pkey"                                 // ALTER TABLE ONLY river_queue ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
+	UniqueServerUploadMetaPkey                         UniqueConstraint = "server_upload_meta_pkey"                          // ALTER TABLE ONLY server_upload_meta ADD CONSTRAINT server_upload_meta_pkey PRIMARY KEY (log_group_id);
 	UniqueSharedViewsCodeKey                           UniqueConstraint = "shared_views_code_key"                            // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_code_key UNIQUE (code);
 	UniqueSharedViewsInstanceHashUnique                UniqueConstraint = "shared_views_instance_hash_unique"                // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_instance_hash_unique UNIQUE (instance_id, hash);
 	UniqueSharedViewsPkey                              UniqueConstraint = "shared_views_pkey"                                // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_pkey PRIMARY KEY (id);
@@ -69,6 +70,7 @@ const (
 	UniqueWorldSpellThreatPkey                         UniqueConstraint = "world_spell_threat_pkey"                          // ALTER TABLE ONLY world_spell_threat ADD CONSTRAINT world_spell_threat_pkey PRIMARY KEY (entry);
 	UniqueWowLogGroupsPkey                             UniqueConstraint = "wow_log_groups_pkey"                              // ALTER TABLE ONLY wow_log_groups ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
 	UniqueWowServerRealmsPkey                          UniqueConstraint = "wow_server_realms_pkey"                           // ALTER TABLE ONLY wow_server_realms ADD CONSTRAINT wow_server_realms_pkey PRIMARY KEY (id);
+	UniqueWowServerUploadKeysPkey                      UniqueConstraint = "wow_server_upload_keys_pkey"                      // ALTER TABLE ONLY wow_server_upload_keys ADD CONSTRAINT wow_server_upload_keys_pkey PRIMARY KEY (id);
 	UniqueWowServersPkey                               UniqueConstraint = "wow_servers_pkey"                                 // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 	UniqueFilesUniqueOwnerHash                         UniqueConstraint = "files_unique_owner_hash"                          // CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
 	UniqueLogInstanceYoutubeTimestampedInstanceIDIndex UniqueConstraint = "log_instance_youtube_timestamped_instance_id_idx" // CREATE UNIQUE INDEX log_instance_youtube_timestamped_instance_id_idx ON log_instance_youtube_timestamped USING btree (log_instance_id) WHERE (log_instance_id IS NOT NULL);

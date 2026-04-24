@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Emyrk/chronicle/api/chronauth"
-	"github.com/Emyrk/chronicle/api/chronauth/claims"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
@@ -18,10 +16,6 @@ import (
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/google/uuid"
 )
-
-// ServiceAccountID is the well-known UUID for the chronicle-service user
-// created by migration 000082. Used for server-side log uploads.
-var ServiceAccountID = uuid.MustParse("8e3cd4a1-a9f6-4190-8de5-ef037e534981")
 
 const MaxLogFileSize = 250 * 1024 * 1024 // 250 MB
 
@@ -308,141 +302,3 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ServerLogUpload handles log uploads from AzerothCore mod-chronicle.
-// Authenticated via shared-secret bearer token, not session auth.
-func (api *API) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	secret := api.Opts.ServerUploadSecret
-	if secret == "" {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
-			Message: "Server uploads are not configured",
-		})
-		return
-	}
-
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+secret {
-		httpapi.Write(ctx, w, http.StatusUnauthorized, chroniclesdk.Response{
-			Message: "Invalid authorization",
-		})
-		return
-	}
-
-	// Inject the well-known service account as the authenticated user
-	// so UploadLogs can look up the owner and check storage limits.
-	ctx = chronauth.WithClaims(ctx, &claims.Claims{
-		Subject: ServiceAccountID,
-	})
-	ctx = authz.AsUser(ctx, ServiceAccountID)
-
-	// Extract server metadata from headers for log merging
-	instanceID := r.Header.Get("X-Chronicle-Instance-Id")
-	instanceName := r.Header.Get("X-Chronicle-Instance-Name")
-	realmName := r.Header.Get("X-Chronicle-Realm-Name")
-
-	file, header, err := r.FormFile("combat_log")
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Failed to get file from form",
-			Detail:  err.Error(),
-		})
-		return
-	}
-	defer func() { _ = file.Close() }()
-
-	if header.Size > MaxLogFileSize {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "Log file is too large, exceeds maximum allowed size of 250 MB",
-			Detail:  fmt.Sprintf("file size: %d bytes", header.Size),
-		})
-		return
-	}
-
-	// Check for an existing log group with matching instance metadata.
-	// If found, append to the existing file (multistream gzip concatenation)
-	// and trigger a reparse. This merges logs from raid/dungeon breaks.
-	if instanceID != "" && instanceName != "" { // Realmname is not working
-		existing, findErr := api.Zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
-			Owner:        ServiceAccountID,
-			InstanceID:   instanceID,
-			InstanceName: instanceName,
-			RealmName:    realmName,
-		})
-		if findErr == nil {
-			// Append to existing group
-			if appendErr := api.Chronicle.AppendServerLog(ctx, existing, file); appendErr != nil {
-				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
-					Message: "Failed to append log to existing group",
-					Detail:  appendErr.Error(),
-				})
-				return
-			}
-
-			existingFiles, _ := api.Zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
-			fileIDs := make([]uuid.UUID, 0, len(existingFiles))
-			for _, f := range existingFiles {
-				fileIDs = append(fileIDs, f.ID)
-			}
-
-			api.Opts.Logger.Info("Appended server log to existing group",
-				"log_group_id", existing.ID,
-				"instance_id", instanceID,
-				"instance_name", instanceName,
-			)
-			httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
-				LogID: existing.ID,
-				Files: fileIDs,
-			})
-			return
-		}
-	}
-
-	// No matching group found — normal upload flow
-	input := chronicle.UploadInput{
-		Reader:    file,
-		IsGzipped: isGzipped(header),
-	}
-
-	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, database.LogTypeAzerothcore)
-	if err != nil {
-		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
-			Response: chroniclesdk.Response{
-				Message: "Failed to process uploaded log file",
-				Detail:  err.Error(),
-			},
-			Status: http.StatusInternalServerError,
-		})
-		return
-	}
-
-	fileIDs := make([]uuid.UUID, 0, len(files))
-	for _, f := range files {
-		fileIDs = append(fileIDs, f.ID)
-	}
-
-	// Store server metadata for future append matching
-	if instanceID != "" && instanceName != "" { // realmName may be empty until configured
-		if metaErr := api.Zed.InsertServerUploadMeta(ctx, database.InsertServerUploadMetaParams{
-			LogGroupID:   group.ID,
-			InstanceID:   instanceID,
-			InstanceName: instanceName,
-			RealmName:    realmName,
-		}); metaErr != nil {
-			api.Opts.Logger.Warn("Failed to store server upload metadata",
-				"error", metaErr,
-				"log_group_id", group.ID,
-			)
-		}
-	}
-
-	api.Opts.Logger.Info("Received server log upload",
-		"log_group_id", group.ID,
-		"instance_id", instanceID,
-		"instance_name", instanceName,
-	)
-	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
-		LogID: group.ID,
-		Files: fileIDs,
-	})
-}

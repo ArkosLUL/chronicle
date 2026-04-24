@@ -375,6 +375,32 @@ CREATE TABLE guild_settings (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE TABLE instance_speedruns (
+    instance_id uuid NOT NULL,
+    instance_name text NOT NULL,
+    realm_id uuid NOT NULL,
+    guild_id uuid,
+    qualified boolean NOT NULL,
+    start_time timestamp with time zone NOT NULL,
+    completion_time timestamp with time zone NOT NULL,
+    duration_ms bigint NOT NULL,
+    proof jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    addon_version text DEFAULT ''::text NOT NULL,
+    parser_version_num bigint DEFAULT 0 NOT NULL,
+    addon_version_num bigint DEFAULT 0 NOT NULL
+);
+
+CREATE VIEW guild_speedrun_ranks AS
+ SELECT instance_speedruns.instance_id,
+    instance_speedruns.instance_name,
+    instance_speedruns.realm_id,
+    instance_speedruns.guild_id,
+    instance_speedruns.duration_ms,
+    rank() OVER (PARTITION BY instance_speedruns.guild_id, instance_speedruns.instance_name, instance_speedruns.realm_id ORDER BY instance_speedruns.duration_ms) AS guild_rank
+   FROM instance_speedruns
+  WHERE ((instance_speedruns.qualified = true) AND (instance_speedruns.guild_id IS NOT NULL));
+
 CREATE TABLE guilds (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     realm_id uuid NOT NULL,
@@ -394,22 +420,6 @@ CREATE TABLE instance_loot (
     item_name text NOT NULL,
     loot_suffix integer DEFAULT 0 NOT NULL,
     quantity integer DEFAULT 1 NOT NULL
-);
-
-CREATE TABLE instance_speedruns (
-    instance_id uuid NOT NULL,
-    instance_name text NOT NULL,
-    realm_id uuid NOT NULL,
-    guild_id uuid,
-    qualified boolean NOT NULL,
-    start_time timestamp with time zone NOT NULL,
-    completion_time timestamp with time zone NOT NULL,
-    duration_ms bigint NOT NULL,
-    proof jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    addon_version text DEFAULT ''::text NOT NULL,
-    parser_version_num bigint DEFAULT 0 NOT NULL,
-    addon_version_num bigint DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE leaderboard_version_requirements (
@@ -559,6 +569,27 @@ CREATE TABLE regression_snapshots (
     build_time text DEFAULT ''::text NOT NULL,
     matches_previous boolean,
     previous_snapshot_id uuid
+);
+
+CREATE TABLE retention_policies (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    server_id uuid,
+    realm_id uuid,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT retention_policies_scope CHECK ((((server_id IS NOT NULL) AND (realm_id IS NULL)) OR ((server_id IS NULL) AND (realm_id IS NOT NULL))))
+);
+
+CREATE TABLE retention_rules (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    policy_id uuid NOT NULL,
+    priority integer NOT NULL,
+    action text NOT NULL,
+    conditions jsonb DEFAULT '[]'::jsonb NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT retention_rules_action_check CHECK ((action = ANY (ARRAY['keep'::text, 'delete'::text])))
 );
 
 CREATE UNLOGGED TABLE river_client (
@@ -1115,6 +1146,21 @@ ALTER TABLE ONLY regression_fixtures
 ALTER TABLE ONLY regression_snapshots
     ADD CONSTRAINT regression_snapshots_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY retention_policies
+    ADD CONSTRAINT retention_policies_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY retention_policies
+    ADD CONSTRAINT retention_policies_unique_realm UNIQUE (realm_id);
+
+ALTER TABLE ONLY retention_policies
+    ADD CONSTRAINT retention_policies_unique_server UNIQUE (server_id);
+
+ALTER TABLE ONLY retention_rules
+    ADD CONSTRAINT retention_rules_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY retention_rules
+    ADD CONSTRAINT retention_rules_unique_priority UNIQUE (policy_id, priority);
+
 ALTER TABLE ONLY river_client
     ADD CONSTRAINT river_client_pkey PRIMARY KEY (id);
 
@@ -1389,6 +1435,15 @@ ALTER TABLE ONLY regression_snapshots
 
 ALTER TABLE ONLY regression_snapshots
     ADD CONSTRAINT regression_snapshots_previous_snapshot_id_fkey FOREIGN KEY (previous_snapshot_id) REFERENCES regression_snapshots(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY retention_policies
+    ADD CONSTRAINT retention_policies_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY retention_policies
+    ADD CONSTRAINT retention_policies_server_id_fkey FOREIGN KEY (server_id) REFERENCES wow_servers(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY retention_rules
+    ADD CONSTRAINT retention_rules_policy_id_fkey FOREIGN KEY (policy_id) REFERENCES retention_policies(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY river_client_queue
     ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;

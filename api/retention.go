@@ -62,7 +62,7 @@ func (a *API) AdminUpsertRetentionPolicy(w http.ResponseWriter, r *http.Request)
 	var err error
 	if req.RealmID != nil {
 		policy, err = a.Opts.Zed.UpsertRetentionPolicyByRealm(ctx, database.UpsertRetentionPolicyByRealmParams{
-			RealmID: *req.RealmID,
+			RealmID: uuid.NullUUID{UUID: *req.RealmID, Valid: true},
 			Enabled: req.Enabled,
 		})
 	} else {

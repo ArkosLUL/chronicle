@@ -38,10 +38,9 @@ SELECT
   li.log_group_id,
   gsr.guild_rank
 FROM log_instances li
-JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+LEFT JOIN guild_speedrun_ranks gsr ON gsr.instance_id = li.id
 WHERE li.realm_id = @realm_id
-  AND li.end_time IS NOT NULL
-LEFT JOIN guild_speedrun_ranks gsr ON gsr.instance_id = li.id;
+  AND li.end_time IS NOT NULL;
 
 -- name: DeleteLogInstancesByIDs :execrows
 DELETE FROM log_instances

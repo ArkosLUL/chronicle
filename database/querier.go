@@ -34,8 +34,11 @@ type sqlcQuerier interface {
 	DeleteGuildPageTab(ctx context.Context, id uuid.UUID) error
 	DeleteGuildPageTabsByPage(ctx context.Context, pageID uuid.UUID) error
 	DeleteLogInstanceByIDAndGroup(ctx context.Context, arg DeleteLogInstanceByIDAndGroupParams) (uuid.UUID, error)
+	DeleteLogInstancesByIDs(ctx context.Context, ids []uuid.UUID) (int64, error)
 	DeleteRegressionFixture(ctx context.Context, id uuid.UUID) error
 	DeleteRegressionSnapshot(ctx context.Context, id uuid.UUID) error
+	DeleteRetentionPolicy(ctx context.Context, id uuid.UUID) error
+	DeleteRetentionRule(ctx context.Context, id uuid.UUID) error
 	DeleteUploadKey(ctx context.Context, id uuid.UUID) error
 	DeleteUserPanelLayoutByID(ctx context.Context, id uuid.UUID) (int64, error)
 	DeleteWoWLogGroup(ctx context.Context, id uuid.UUID) error
@@ -69,6 +72,8 @@ type sqlcQuerier interface {
 	GetInstanceLoot(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceLootRow, error)
 	GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UUID) (InstanceSpeedrun, error)
 	GetInstanceYoutubeData(ctx context.Context, arg GetInstanceYoutubeDataParams) (LogInstanceYoutubeTimestamped, error)
+	// Fetches log instances for a given realm with pre-joined speedrun rank data.
+	GetInstancesForRetentionCheck(ctx context.Context, realmID uuid.UUID) ([]GetInstancesForRetentionCheckRow, error)
 	GetItemRandomPropertiesByID(ctx context.Context, id int32) (DbcItemRandomProperty, error)
 	GetItemSetBonuses(ctx context.Context, setID int32) ([]DbcItemSetBonu, error)
 	GetItemSetByID(ctx context.Context, id int32) (DbcItemSet, error)
@@ -85,8 +90,16 @@ type sqlcQuerier interface {
 	GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error)
 	GetPanelLayoutByCode(ctx context.Context, code pgtype.Text) (GetPanelLayoutByCodeRow, error)
 	GetPanelLayoutByID(ctx context.Context, id uuid.UUID) (GetPanelLayoutByIDRow, error)
+	// Returns all realm IDs that have an applicable retention policy
+	// (either directly or through their server).
+	GetRealmsWithRetentionPolicies(ctx context.Context) ([]uuid.UUID, error)
 	GetRegressionFixture(ctx context.Context, id uuid.UUID) (RegressionFixture, error)
 	GetRegressionSnapshot(ctx context.Context, id uuid.UUID) (RegressionSnapshot, error)
+	GetRetentionPolicies(ctx context.Context) ([]RetentionPolicy, error)
+	GetRetentionPolicy(ctx context.Context, id uuid.UUID) (RetentionPolicy, error)
+	// Returns the realm-specific policy if it exists, otherwise the server-level policy.
+	GetRetentionPolicyForRealm(ctx context.Context, realmID uuid.NullUUID) (RetentionPolicy, error)
+	GetRetentionRulesByPolicy(ctx context.Context, policyID uuid.UUID) ([]RetentionRule, error)
 	GetSharedViewByCode(ctx context.Context, code string) (SharedView, error)
 	GetSharedViewByInstanceAndHash(ctx context.Context, arg GetSharedViewByInstanceAndHashParams) (SharedView, error)
 	GetSiteConfig(ctx context.Context) (SiteConfig, error)
@@ -142,6 +155,7 @@ type sqlcQuerier interface {
 	InstancePlayersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstancePlayer, error)
 	InstanceUnitsByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceUnit, error)
 	IsLayoutTrackedByUser(ctx context.Context, arg IsLayoutTrackedByUserParams) (bool, error)
+	ListAllRetentionPolicies(ctx context.Context) ([]RetentionPolicy, error)
 	ListAllUsers(ctx context.Context) ([]ChronicleUser, error)
 	ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAllWoWLogGroupsWithOwnerRow, error)
 	ListAllWoWLogGroupsWithOwnerPaginated(ctx context.Context, arg ListAllWoWLogGroupsWithOwnerPaginatedParams) ([]ListAllWoWLogGroupsWithOwnerPaginatedRow, error)
@@ -203,6 +217,9 @@ type sqlcQuerier interface {
 	UpsertGuildSettings(ctx context.Context, arg UpsertGuildSettingsParams) (GuildSetting, error)
 	UpsertLeaderboardVersionRequirements(ctx context.Context, arg UpsertLeaderboardVersionRequirementsParams) (LeaderboardVersionRequirement, error)
 	UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults
+	UpsertRetentionPolicy(ctx context.Context, arg UpsertRetentionPolicyParams) (RetentionPolicy, error)
+	UpsertRetentionPolicyByRealm(ctx context.Context, arg UpsertRetentionPolicyByRealmParams) (RetentionPolicy, error)
+	UpsertRetentionRule(ctx context.Context, arg UpsertRetentionRuleParams) (RetentionRule, error)
 	UpsertUserActionBarSlots(ctx context.Context, arg UpsertUserActionBarSlotsParams) (UpsertUserActionBarSlotsRow, error)
 }
 

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue/riverconst"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
@@ -85,7 +84,7 @@ func (w *Worker) Work(ctx context.Context, job *river.Job[ArgsRetention]) error 
 
 func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.Time, dryRun bool, logger *slog.Logger) (int64, error) {
 	// Get the effective policy for this realm.
-	policy, err := w.Store.GetRetentionPolicyForRealm(ctx, realmID)
+	policy, err := w.Store.GetRetentionPolicyForRealm(ctx, uuid.NullUUID{UUID: realmID, Valid: true})
 	if err != nil {
 		return 0, fmt.Errorf("get policy: %w", err)
 	}
@@ -119,15 +118,7 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 	var toDelete []uuid.UUID
 	var toDeleteGroups []uuid.UUID
 	for _, c := range candidates {
-		candidate := InstanceCandidate{
-			ID:           c.ID,
-			InstanceName: c.InstanceName,
-			EndTime:      c.EndTime.Time,
-			LogGroupID:   c.LogGroupID,
-		}
-		if c.GuildRank != nil {
-			candidate.GuildRank = c.GuildRank
-		}
+		candidate := instanceCandidateFromRow(c)
 
 		result := Evaluate(rules, candidate, now)
 		if result.Action == ActionDelete {
@@ -162,9 +153,22 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 	return deleted, nil
 }
 
+func instanceCandidateFromRow(c database.GetInstancesForRetentionCheckRow) InstanceCandidate {
+	candidate := InstanceCandidate{
+		ID:           c.ID,
+		InstanceName: c.InstanceName,
+		EndTime:      c.EndTime.Time,
+		LogGroupID:   c.LogGroupID,
+	}
+	if c.GuildRank.Valid {
+		candidate.GuildRank = &c.GuildRank.Int64
+	}
+	return candidate
+}
+
 // Preview runs the retention evaluation for a specific realm without deleting anything.
-func Preview(ctx context.Context, store database.Store, realmID uuid.UUID, now time.Time) ([]PreviewItem, error) {
-	policy, err := store.GetRetentionPolicyForRealm(ctx, realmID)
+func Preview(ctx context.Context, store database.StoreQueries, realmID uuid.UUID, now time.Time) ([]PreviewItem, error) {
+	policy, err := store.GetRetentionPolicyForRealm(ctx, uuid.NullUUID{UUID: realmID, Valid: true})
 	if err != nil {
 		return nil, fmt.Errorf("get policy: %w", err)
 	}
@@ -195,15 +199,7 @@ func Preview(ctx context.Context, store database.Store, realmID uuid.UUID, now t
 
 	items := make([]PreviewItem, 0, len(candidates))
 	for _, c := range candidates {
-		candidate := InstanceCandidate{
-			ID:           c.ID,
-			InstanceName: c.InstanceName,
-			EndTime:      c.EndTime.Time,
-			LogGroupID:   c.LogGroupID,
-		}
-		if c.GuildRank != nil {
-			candidate.GuildRank = c.GuildRank
-		}
+		candidate := instanceCandidateFromRow(c)
 
 		result := Evaluate(rules, candidate, now)
 		items = append(items, PreviewItem{

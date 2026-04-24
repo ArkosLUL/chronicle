@@ -50,7 +50,7 @@ func (s *Service) Name() string {
 func (s *Service) DependsOn() []string {
 	return []string{
 		servicelogger.OnLogger(),
-		servicedbstore.OnDBStore(),
+		servicedbstore.OnDatabaseStore(),
 		servicestorage.OnStorage(),
 	}
 }
@@ -61,7 +61,7 @@ func (s *Service) Configures() []string {
 
 func (s *Service) Start(_ context.Context) error {
 	logger := servicelogger.Logger(s.broker)
-	store := servicedbstore.Store(s.broker)
+	store := servicedbstore.DatabaseStore(s.broker)
 	stor := servicestorage.Storage(s.broker)
 
 	s.Worker = &retention.Worker{
@@ -93,7 +93,7 @@ func (s *Service) Options() serpent.OptionSet {
 
 // Store returns the database store from the service broker.
 func Store(broker *services.Services) database.Store {
-	return servicedbstore.Store(broker)
+	return servicedbstore.DatabaseStore(broker)
 }
 
 // ObjectStorage returns the object storage from the service broker.

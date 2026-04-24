@@ -795,6 +795,15 @@ type GuildSetting struct {
 	UpdatedAt              pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type GuildSpeedrunRank struct {
+	InstanceID   uuid.UUID     `db:"instance_id" json:"instance_id"`
+	InstanceName string        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.UUID     `db:"realm_id" json:"realm_id"`
+	GuildID      uuid.NullUUID `db:"guild_id" json:"guild_id"`
+	DurationMs   int64         `db:"duration_ms" json:"duration_ms"`
+	GuildRank    int64         `db:"guild_rank" json:"guild_rank"`
+}
+
 type InstanceLoot struct {
 	ID           uuid.UUID          `db:"id" json:"id"`
 	InstanceID   uuid.UUID          `db:"instance_id" json:"instance_id"`
@@ -975,6 +984,25 @@ type RegressionSnapshot struct {
 	BuildTime          string             `db:"build_time" json:"build_time"`
 	MatchesPrevious    pgtype.Bool        `db:"matches_previous" json:"matches_previous"`
 	PreviousSnapshotID uuid.NullUUID      `db:"previous_snapshot_id" json:"previous_snapshot_id"`
+}
+
+type RetentionPolicy struct {
+	ID        uuid.UUID          `db:"id" json:"id"`
+	ServerID  uuid.NullUUID      `db:"server_id" json:"server_id"`
+	RealmID   uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	Enabled   bool               `db:"enabled" json:"enabled"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type RetentionRule struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	PolicyID    uuid.UUID          `db:"policy_id" json:"policy_id"`
+	Priority    int32              `db:"priority" json:"priority"`
+	Action      string             `db:"action" json:"action"`
+	Conditions  []byte             `db:"conditions" json:"conditions"`
+	Description string             `db:"description" json:"description"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type RiverClient struct {

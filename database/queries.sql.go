@@ -3657,6 +3657,373 @@ func (q *sqlQuerier) UpdateRegressionFixtureNote(ctx context.Context, arg Update
 	return err
 }
 
+const deleteLogInstancesByIDs = `-- name: DeleteLogInstancesByIDs :execrows
+DELETE FROM log_instances
+WHERE id = ANY($1::uuid[])
+`
+
+func (q *sqlQuerier) DeleteLogInstancesByIDs(ctx context.Context, ids []uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteLogInstancesByIDs, ids)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteRetentionPolicy = `-- name: DeleteRetentionPolicy :exec
+DELETE FROM retention_policies
+WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteRetentionPolicy(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRetentionPolicy, id)
+	return err
+}
+
+const deleteRetentionRule = `-- name: DeleteRetentionRule :exec
+DELETE FROM retention_rules
+WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteRetentionRule(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRetentionRule, id)
+	return err
+}
+
+const getInstancesForRetentionCheck = `-- name: GetInstancesForRetentionCheck :many
+SELECT
+  li.id,
+  li.name AS instance_name,
+  li.end_time,
+  li.log_group_id,
+  gsr.guild_rank
+FROM log_instances li
+LEFT JOIN guild_speedrun_ranks gsr ON gsr.instance_id = li.id
+WHERE li.realm_id = $1
+  AND li.end_time IS NOT NULL
+`
+
+type GetInstancesForRetentionCheckRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	InstanceName string             `db:"instance_name" json:"instance_name"`
+	EndTime      pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	LogGroupID   uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	GuildRank    pgtype.Int8        `db:"guild_rank" json:"guild_rank"`
+}
+
+// Fetches log instances for a given realm with pre-joined speedrun rank data.
+func (q *sqlQuerier) GetInstancesForRetentionCheck(ctx context.Context, realmID uuid.UUID) ([]GetInstancesForRetentionCheckRow, error) {
+	rows, err := q.db.Query(ctx, getInstancesForRetentionCheck, realmID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetInstancesForRetentionCheckRow
+	for rows.Next() {
+		var i GetInstancesForRetentionCheckRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.InstanceName,
+			&i.EndTime,
+			&i.LogGroupID,
+			&i.GuildRank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRealmsWithRetentionPolicies = `-- name: GetRealmsWithRetentionPolicies :many
+SELECT DISTINCT wsr.id AS realm_id
+FROM wow_server_realms wsr
+WHERE EXISTS (
+  SELECT 1 FROM retention_policies rp
+  WHERE rp.enabled = true
+    AND (rp.realm_id = wsr.id OR rp.server_id = wsr.server_id)
+)
+`
+
+// Returns all realm IDs that have an applicable retention policy
+// (either directly or through their server).
+func (q *sqlQuerier) GetRealmsWithRetentionPolicies(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getRealmsWithRetentionPolicies)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var realm_id uuid.UUID
+		if err := rows.Scan(&realm_id); err != nil {
+			return nil, err
+		}
+		items = append(items, realm_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRetentionPolicies = `-- name: GetRetentionPolicies :many
+SELECT
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+FROM retention_policies rp
+WHERE rp.enabled = true
+`
+
+func (q *sqlQuerier) GetRetentionPolicies(ctx context.Context) ([]RetentionPolicy, error) {
+	rows, err := q.db.Query(ctx, getRetentionPolicies)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RetentionPolicy
+	for rows.Next() {
+		var i RetentionPolicy
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerID,
+			&i.RealmID,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRetentionPolicy = `-- name: GetRetentionPolicy :one
+SELECT
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+FROM retention_policies rp
+WHERE rp.id = $1
+`
+
+func (q *sqlQuerier) GetRetentionPolicy(ctx context.Context, id uuid.UUID) (RetentionPolicy, error) {
+	row := q.db.QueryRow(ctx, getRetentionPolicy, id)
+	var i RetentionPolicy
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.RealmID,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getRetentionPolicyForRealm = `-- name: GetRetentionPolicyForRealm :one
+SELECT
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+FROM retention_policies rp
+WHERE rp.enabled = true
+  AND (
+    rp.realm_id = $1
+    OR (
+      rp.server_id = (SELECT server_id FROM wow_server_realms WHERE id = $1)
+      AND NOT EXISTS (
+        SELECT 1 FROM retention_policies rp2
+        WHERE rp2.realm_id = $1 AND rp2.enabled = true
+      )
+    )
+  )
+LIMIT 1
+`
+
+// Returns the realm-specific policy if it exists, otherwise the server-level policy.
+func (q *sqlQuerier) GetRetentionPolicyForRealm(ctx context.Context, realmID uuid.NullUUID) (RetentionPolicy, error) {
+	row := q.db.QueryRow(ctx, getRetentionPolicyForRealm, realmID)
+	var i RetentionPolicy
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.RealmID,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getRetentionRulesByPolicy = `-- name: GetRetentionRulesByPolicy :many
+SELECT
+  rr.id, rr.policy_id, rr.priority, rr.action, rr.conditions, rr.description, rr.created_at
+FROM retention_rules rr
+WHERE rr.policy_id = $1
+ORDER BY rr.priority ASC
+`
+
+func (q *sqlQuerier) GetRetentionRulesByPolicy(ctx context.Context, policyID uuid.UUID) ([]RetentionRule, error) {
+	rows, err := q.db.Query(ctx, getRetentionRulesByPolicy, policyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RetentionRule
+	for rows.Next() {
+		var i RetentionRule
+		if err := rows.Scan(
+			&i.ID,
+			&i.PolicyID,
+			&i.Priority,
+			&i.Action,
+			&i.Conditions,
+			&i.Description,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllRetentionPolicies = `-- name: ListAllRetentionPolicies :many
+SELECT
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+FROM retention_policies rp
+ORDER BY rp.created_at ASC
+`
+
+func (q *sqlQuerier) ListAllRetentionPolicies(ctx context.Context) ([]RetentionPolicy, error) {
+	rows, err := q.db.Query(ctx, listAllRetentionPolicies)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RetentionPolicy
+	for rows.Next() {
+		var i RetentionPolicy
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerID,
+			&i.RealmID,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertRetentionPolicy = `-- name: UpsertRetentionPolicy :one
+INSERT INTO retention_policies (server_id, realm_id, enabled)
+VALUES ($1, $2, $3)
+ON CONFLICT ON CONSTRAINT retention_policies_unique_server
+  DO UPDATE SET enabled = $3, updated_at = now()
+  WHERE retention_policies.server_id IS NOT NULL
+RETURNING id, server_id, realm_id, enabled, created_at, updated_at
+`
+
+type UpsertRetentionPolicyParams struct {
+	ServerID uuid.NullUUID `db:"server_id" json:"server_id"`
+	RealmID  uuid.NullUUID `db:"realm_id" json:"realm_id"`
+	Enabled  bool          `db:"enabled" json:"enabled"`
+}
+
+func (q *sqlQuerier) UpsertRetentionPolicy(ctx context.Context, arg UpsertRetentionPolicyParams) (RetentionPolicy, error) {
+	row := q.db.QueryRow(ctx, upsertRetentionPolicy, arg.ServerID, arg.RealmID, arg.Enabled)
+	var i RetentionPolicy
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.RealmID,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertRetentionPolicyByRealm = `-- name: UpsertRetentionPolicyByRealm :one
+INSERT INTO retention_policies (realm_id, enabled)
+VALUES ($1, $2)
+ON CONFLICT ON CONSTRAINT retention_policies_unique_realm
+  DO UPDATE SET enabled = $2, updated_at = now()
+RETURNING id, server_id, realm_id, enabled, created_at, updated_at
+`
+
+type UpsertRetentionPolicyByRealmParams struct {
+	RealmID uuid.NullUUID `db:"realm_id" json:"realm_id"`
+	Enabled bool          `db:"enabled" json:"enabled"`
+}
+
+func (q *sqlQuerier) UpsertRetentionPolicyByRealm(ctx context.Context, arg UpsertRetentionPolicyByRealmParams) (RetentionPolicy, error) {
+	row := q.db.QueryRow(ctx, upsertRetentionPolicyByRealm, arg.RealmID, arg.Enabled)
+	var i RetentionPolicy
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.RealmID,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertRetentionRule = `-- name: UpsertRetentionRule :one
+INSERT INTO retention_rules (policy_id, priority, action, conditions, description)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT ON CONSTRAINT retention_rules_unique_priority
+  DO UPDATE SET
+    action = $3,
+    conditions = $4,
+    description = $5
+RETURNING id, policy_id, priority, action, conditions, description, created_at
+`
+
+type UpsertRetentionRuleParams struct {
+	PolicyID    uuid.UUID `db:"policy_id" json:"policy_id"`
+	Priority    int32     `db:"priority" json:"priority"`
+	Action      string    `db:"action" json:"action"`
+	Conditions  []byte    `db:"conditions" json:"conditions"`
+	Description string    `db:"description" json:"description"`
+}
+
+func (q *sqlQuerier) UpsertRetentionRule(ctx context.Context, arg UpsertRetentionRuleParams) (RetentionRule, error) {
+	row := q.db.QueryRow(ctx, upsertRetentionRule,
+		arg.PolicyID,
+		arg.Priority,
+		arg.Action,
+		arg.Conditions,
+		arg.Description,
+	)
+	var i RetentionRule
+	err := row.Scan(
+		&i.ID,
+		&i.PolicyID,
+		&i.Priority,
+		&i.Action,
+		&i.Conditions,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const findMatchingServerUpload = `-- name: FindMatchingServerUpload :one
 SELECT wlg.id, wlg.owner, wlg.created_at, wlg.updated_at, wlg.log_type
 FROM wow_log_groups wlg

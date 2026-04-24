@@ -880,6 +880,76 @@ export interface Response {
     readonly detail?: string;
 }
 
+// From chroniclesdk/retention.go
+/**
+ * RetentionPolicy is a retention policy scoped to a server or realm.
+ */
+export interface RetentionPolicy {
+    readonly id: string;
+    readonly server_id: string | null;
+    readonly realm_id: string | null;
+    readonly enabled: boolean;
+    readonly last_run_at: string | null;
+    readonly total_deleted: number;
+    readonly total_kept: number;
+    readonly created_at: string;
+    readonly updated_at: string;
+    readonly rules?: readonly RetentionRule[];
+}
+
+// From chroniclesdk/retention.go
+/**
+ * RetentionPreviewItem describes a single instance's retention evaluation.
+ */
+export interface RetentionPreviewItem {
+    readonly instance_id: string;
+    readonly instance_name: string;
+    readonly end_time: string;
+    readonly matched_rule?: string;
+}
+
+// From chroniclesdk/retention.go
+/**
+ * RetentionPreviewRequest triggers a dry-run of retention evaluation.
+ */
+export interface RetentionPreviewRequest {
+    readonly realm_id?: string;
+    readonly server_id?: string;
+}
+
+// From chroniclesdk/retention.go
+/**
+ * RetentionPreviewResponse is the result of a dry-run evaluation.
+ */
+export interface RetentionPreviewResponse {
+    readonly total_evaluated: number;
+    readonly to_delete: readonly RetentionPreviewItem[];
+    readonly to_keep: readonly RetentionPreviewItem[];
+    readonly no_match: readonly RetentionPreviewItem[];
+}
+
+// From chroniclesdk/retention.go
+/**
+ * RetentionRule is an ordered rule within a retention policy.
+ */
+export interface RetentionRule {
+    readonly id: string;
+    readonly policy_id: string;
+    readonly priority: number;
+    readonly action: string; // "keep" | "delete"
+    readonly conditions: Record<string, string>;
+    readonly description: string;
+    readonly created_at: string;
+}
+
+// From chroniclesdk/retention.go
+/**
+ * RetentionRunRequest triggers a manual retention run.
+ */
+export interface RetentionRunRequest {
+    readonly dry_run: boolean;
+}
+
 // From rivertype/river_type.go
 /**
  * AttemptError is an error from a single job attempt that failed due to an
@@ -1195,6 +1265,27 @@ export interface UpsertDataGrantRequest {
     readonly storage_bytes: number;
     readonly description?: string;
     readonly expires_at?: string;
+}
+
+// From chroniclesdk/retention.go
+/**
+ * UpsertRetentionPolicyRequest creates or updates a retention policy.
+ */
+export interface UpsertRetentionPolicyRequest {
+    readonly server_id: string | null;
+    readonly realm_id: string | null;
+    readonly enabled: boolean;
+}
+
+// From chroniclesdk/retention.go
+/**
+ * UpsertRetentionRuleRequest creates or updates a retention rule.
+ */
+export interface UpsertRetentionRuleRequest {
+    readonly priority: number;
+    readonly action: string;
+    readonly conditions: Record<string, string>;
+    readonly description: string;
 }
 
 // From chroniclesdk/user.go

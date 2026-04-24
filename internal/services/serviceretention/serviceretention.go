@@ -2,7 +2,6 @@ package serviceretention
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Emyrk/chronicle/chronicle/retention"
@@ -89,7 +88,7 @@ func (s *Service) Options() serpent.OptionSet {
 	return serpent.OptionSet{
 		{
 			Name:        "Retention Schedule",
-			Description: fmt.Sprintf("How often to run the retention job. Set to 0 to disable periodic runs."),
+			Description: "How often to run the retention job. Set to 0 to disable periodic runs.",
 			Required:    false,
 			Flag:        "retention-schedule",
 			Env:         "CHRONICLE_RETENTION_SCHEDULE",

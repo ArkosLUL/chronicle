@@ -3711,7 +3711,8 @@ type GetInstancesForRetentionCheckRow struct {
 	GuildRank    pgtype.Int8        `db:"guild_rank" json:"guild_rank"`
 }
 
-// Fetches log instances for a given realm with pre-joined speedrun rank data.
+// Fetches all log instances for a given realm with pre-joined speedrun rank data.
+// Used by the preview endpoint (admin-only, synchronous).
 func (q *sqlQuerier) GetInstancesForRetentionCheck(ctx context.Context, realmID uuid.UUID) ([]GetInstancesForRetentionCheckRow, error) {
 	rows, err := q.db.Query(ctx, getInstancesForRetentionCheck, realmID)
 	if err != nil {
@@ -3721,6 +3722,70 @@ func (q *sqlQuerier) GetInstancesForRetentionCheck(ctx context.Context, realmID 
 	var items []GetInstancesForRetentionCheckRow
 	for rows.Next() {
 		var i GetInstancesForRetentionCheckRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.InstanceName,
+			&i.EndTime,
+			&i.LogGroupID,
+			&i.GuildRank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getInstancesForRetentionCheckPaged = `-- name: GetInstancesForRetentionCheckPaged :many
+SELECT
+  li.id,
+  li.name AS instance_name,
+  li.end_time,
+  li.log_group_id,
+  gsr.guild_rank
+FROM log_instances li
+LEFT JOIN guild_speedrun_ranks gsr ON gsr.instance_id = li.id
+WHERE li.realm_id = $1
+  AND li.end_time IS NOT NULL
+  AND (li.end_time > $2 OR (li.end_time = $2 AND li.id > $3::uuid))
+ORDER BY li.end_time ASC, li.id ASC
+LIMIT $4
+`
+
+type GetInstancesForRetentionCheckPagedParams struct {
+	RealmID    uuid.UUID          `db:"realm_id" json:"realm_id"`
+	CursorTime pgtype.Timestamptz `db:"cursor_time" json:"cursor_time"`
+	CursorID   uuid.UUID          `db:"cursor_id" json:"cursor_id"`
+	PageSize   int32              `db:"page_size" json:"page_size"`
+}
+
+type GetInstancesForRetentionCheckPagedRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	InstanceName string             `db:"instance_name" json:"instance_name"`
+	EndTime      pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	LogGroupID   uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	GuildRank    pgtype.Int8        `db:"guild_rank" json:"guild_rank"`
+}
+
+// Fetches a page of log instances for cursor-based retention processing.
+// Ordered by end_time ASC so older logs are processed first.
+func (q *sqlQuerier) GetInstancesForRetentionCheckPaged(ctx context.Context, arg GetInstancesForRetentionCheckPagedParams) ([]GetInstancesForRetentionCheckPagedRow, error) {
+	rows, err := q.db.Query(ctx, getInstancesForRetentionCheckPaged,
+		arg.RealmID,
+		arg.CursorTime,
+		arg.CursorID,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetInstancesForRetentionCheckPagedRow
+	for rows.Next() {
+		var i GetInstancesForRetentionCheckPagedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.InstanceName,

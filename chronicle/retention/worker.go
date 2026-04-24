@@ -2,22 +2,30 @@ package retention
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue/riverconst"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
 
-const KindRetention = "retention"
+const (
+	KindRetention      = "retention"
+	KindRetentionRealm = "retention-realm"
+	DefaultPageSize    = 5000
+)
 
-// ArgsRetention are the arguments for a retention job.
+// ---------------------------------------------------------------------------
+// ArgsRetention — dispatch job: fans out one ArgsRetentionRealm per realm.
+// ---------------------------------------------------------------------------
+
 type ArgsRetention struct {
 	DryRun bool `json:"dry_run"`
 }
@@ -30,7 +38,7 @@ func (ArgsRetention) InsertOpts() river.InsertOpts {
 		Priority:    riverconst.PriorityLow,
 		MaxAttempts: 3,
 		UniqueOpts: river.UniqueOpts{
-			ByArgs:  true,
+			ByArgs: true,
 			ByState: []rivertype.JobState{
 				rivertype.JobStateScheduled,
 				rivertype.JobStatePending,
@@ -41,93 +49,122 @@ func (ArgsRetention) InsertOpts() river.InsertOpts {
 	}
 }
 
-// Worker processes retention jobs.
+// Worker is the dispatch worker. It enqueues one realm-batch job per realm
+// that has an active retention policy.
 type Worker struct {
 	river.WorkerDefaults[ArgsRetention]
 
-	Store   database.Store
-	Storage storage.ObjectStorage
-	Logger  *slog.Logger
+	Store  database.Store
+	Queue  *riverqueue.Queues
+	Logger *slog.Logger
 }
 
 func (w *Worker) Work(ctx context.Context, job *river.Job[ArgsRetention]) error {
 	logger := w.Logger.With(slog.Bool("dry_run", job.Args.DryRun))
-	logger.InfoContext(ctx, "starting retention run")
+	logger.InfoContext(ctx, "dispatching retention jobs")
 
-	now := time.Now()
-
-	// Get all realms with active retention policies.
 	realmIDs, err := w.Store.GetRealmsWithRetentionPolicies(ctx)
 	if err != nil {
 		return fmt.Errorf("get realms with policies: %w", err)
 	}
 
-	var totalDeleted, totalKept int64
 	for _, realmID := range realmIDs {
-		result, err := w.processRealm(ctx, realmID, now, job.Args.DryRun, logger)
+		_, err := w.Queue.Insert(ctx, ArgsRetentionRealm{
+			RealmID:    realmID,
+			DryRun:     job.Args.DryRun,
+			CursorTime: time.Time{},
+			CursorID:   uuid.Nil,
+			PageSize:   DefaultPageSize,
+		}, nil)
 		if err != nil {
-			logger.ErrorContext(ctx, "retention failed for realm",
+			logger.ErrorContext(ctx, "failed to enqueue realm retention job",
 				slog.String("realm_id", realmID.String()),
 				slog.String("error", err.Error()),
 			)
-			continue // Best-effort: continue with other realms
 		}
-		totalDeleted += result.deleted
-		totalKept += result.kept
 	}
 
-	logger.InfoContext(ctx, "retention run complete",
-		slog.Int64("total_deleted", totalDeleted),
-		slog.Int64("total_kept", totalKept),
-		slog.Int("realms_processed", len(realmIDs)),
+	logger.InfoContext(ctx, "dispatched retention jobs",
+		slog.Int("realms", len(realmIDs)),
 	)
 	return nil
 }
 
-type realmResult struct {
-	deleted int64
-	kept    int64
+// ---------------------------------------------------------------------------
+// ArgsRetentionRealm — processes one page of instances for a single realm.
+// When the page is full, enqueues the next page with an advanced cursor.
+// ---------------------------------------------------------------------------
+
+type ArgsRetentionRealm struct {
+	RealmID    uuid.UUID `json:"realm_id"`
+	DryRun     bool      `json:"dry_run"`
+	CursorTime time.Time `json:"cursor_time"`
+	CursorID   uuid.UUID `json:"cursor_id"`
+	PageSize   int       `json:"page_size"`
 }
 
-func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.Time, dryRun bool, logger *slog.Logger) (realmResult, error) {
-	// Get the effective policy for this realm.
-	policy, err := w.Store.GetRetentionPolicyForRealm(ctx, uuid.NullUUID{UUID: realmID, Valid: true})
+func (ArgsRetentionRealm) Kind() string { return KindRetentionRealm }
+
+func (ArgsRetentionRealm) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{
+		Queue:       riverconst.QueueRetention,
+		Priority:    riverconst.PriorityLow,
+		MaxAttempts: 3,
+	}
+}
+
+// RealmWorker processes a single page of instances for one realm.
+type RealmWorker struct {
+	river.WorkerDefaults[ArgsRetentionRealm]
+
+	Store   database.Store
+	Storage storage.ObjectStorage
+	Queue   *riverqueue.Queues
+	Logger  *slog.Logger
+}
+
+func (w *RealmWorker) Work(ctx context.Context, job *river.Job[ArgsRetentionRealm]) error {
+	args := job.Args
+	logger := w.Logger.With(
+		slog.String("realm_id", args.RealmID.String()),
+		slog.Bool("dry_run", args.DryRun),
+	)
+
+	now := time.Now()
+
+	// Load policy + rules.
+	policy, err := w.Store.GetRetentionPolicyForRealm(ctx, uuid.NullUUID{UUID: args.RealmID, Valid: true})
 	if err != nil {
-		return realmResult{}, fmt.Errorf("get policy: %w", err)
+		return fmt.Errorf("get policy: %w", err)
 	}
 
-	// Get ordered rules.
-	dbRules, err := w.Store.GetRetentionRulesByPolicy(ctx, policy.ID)
+	rules, err := loadRules(ctx, w.Store, policy.ID)
 	if err != nil {
-		return realmResult{}, fmt.Errorf("get rules: %w", err)
+		return err
 	}
 
-	rules := make([]Rule, len(dbRules))
-	for i, r := range dbRules {
-		conditions, err := ParseConditions(r.Conditions)
-		if err != nil {
-			return realmResult{}, fmt.Errorf("parse conditions for rule %d: %w", r.Priority, err)
-		}
-		rules[i] = Rule{
-			Priority:    int(r.Priority),
-			Action:      r.Action,
-			Conditions:  conditions,
-			Description: r.Description,
-		}
+	// Fetch one page of candidates.
+	pageSize := args.PageSize
+	if pageSize <= 0 {
+		pageSize = DefaultPageSize
 	}
 
-	// Fetch candidate instances.
-	candidates, err := w.Store.GetInstancesForRetentionCheck(ctx, realmID)
+	candidates, err := w.Store.GetInstancesForRetentionCheckPaged(ctx, database.GetInstancesForRetentionCheckPagedParams{
+		RealmID:    args.RealmID,
+		CursorTime: pgtype.Timestamptz{Time: args.CursorTime, Valid: true},
+		CursorID:   args.CursorID,
+		PageSize:   int32(pageSize),
+	})
 	if err != nil {
-		return realmResult{}, fmt.Errorf("get instances: %w", err)
+		return fmt.Errorf("get instances: %w", err)
 	}
 
+	// Evaluate rules.
 	var toDelete []uuid.UUID
 	var toDeleteGroups []uuid.UUID
 	var kept int64
 	for _, c := range candidates {
-		candidate := instanceCandidateFromRow(c)
-
+		candidate := instanceCandidateFromPagedRow(c)
 		result := Evaluate(rules, candidate, now)
 		if result.Action == ActionDelete {
 			toDelete = append(toDelete, c.ID)
@@ -137,38 +174,72 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 		}
 	}
 
-	logger.InfoContext(ctx, "retention evaluation complete",
-		slog.String("realm_id", realmID.String()),
+	logger.InfoContext(ctx, "retention page evaluated",
 		slog.Int("candidates", len(candidates)),
 		slog.Int("to_delete", len(toDelete)),
 		slog.Int64("kept", kept),
-		slog.Bool("dry_run", dryRun),
 	)
 
-	if dryRun || len(toDelete) == 0 {
-		return realmResult{deleted: int64(len(toDelete)), kept: kept}, nil
+	if !args.DryRun && len(toDelete) > 0 {
+		// Delete object storage first (we retry DB deletes).
+		for _, groupID := range toDeleteGroups {
+			_, _ = w.Storage.RemoveFile(ctx, "raidlogs", []string{groupID.String()})
+		}
+
+		deleted, err := w.Store.DeleteLogInstancesByIDs(ctx, toDelete)
+		if err != nil {
+			return fmt.Errorf("delete instances: %w", err)
+		}
+
+		_ = w.Store.UpdateRetentionPolicyStats(ctx, database.UpdateRetentionPolicyStatsParams{
+			ID:      policy.ID,
+			Deleted: deleted,
+			Kept:    kept,
+		})
 	}
 
-	// Delete object storage first (per user request: we retry DB deletes).
-	for _, groupID := range toDeleteGroups {
-		// Best-effort storage cleanup. The files are stored under the log group path.
-		_, _ = w.Storage.RemoveFile(ctx, "raidlogs", []string{groupID.String()})
+	// If we got a full page, enqueue the next page.
+	if len(candidates) == pageSize {
+		last := candidates[len(candidates)-1]
+		_, err := w.Queue.Insert(ctx, ArgsRetentionRealm{
+			RealmID:    args.RealmID,
+			DryRun:     args.DryRun,
+			CursorTime: last.EndTime.Time,
+			CursorID:   last.ID,
+			PageSize:   pageSize,
+		}, nil)
+		if err != nil {
+			return fmt.Errorf("enqueue next page: %w", err)
+		}
 	}
 
-	// Delete from DB (cascades to encounters, speedruns, etc).
-	deleted, err := w.Store.DeleteLogInstancesByIDs(ctx, toDelete)
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+func loadRules(ctx context.Context, store database.StoreQueries, policyID uuid.UUID) ([]Rule, error) {
+	dbRules, err := store.GetRetentionRulesByPolicy(ctx, policyID)
 	if err != nil {
-		return realmResult{}, fmt.Errorf("delete instances: %w", err)
+		return nil, fmt.Errorf("get rules: %w", err)
 	}
 
-	// Record stats on the policy.
-	_ = w.Store.UpdateRetentionPolicyStats(ctx, database.UpdateRetentionPolicyStatsParams{
-		ID:      policy.ID,
-		Deleted: deleted,
-		Kept:    kept,
-	})
-
-	return realmResult{deleted: deleted, kept: kept}, nil
+	rules := make([]Rule, len(dbRules))
+	for i, r := range dbRules {
+		conditions, err := ParseConditions(r.Conditions)
+		if err != nil {
+			return nil, fmt.Errorf("parse conditions for rule %d: %w", r.Priority, err)
+		}
+		rules[i] = Rule{
+			Priority:    int(r.Priority),
+			Action:      r.Action,
+			Conditions:  conditions,
+			Description: r.Description,
+		}
+	}
+	return rules, nil
 }
 
 func instanceCandidateFromRow(c database.GetInstancesForRetentionCheckRow) InstanceCandidate {
@@ -184,30 +255,30 @@ func instanceCandidateFromRow(c database.GetInstancesForRetentionCheckRow) Insta
 	return candidate
 }
 
+func instanceCandidateFromPagedRow(c database.GetInstancesForRetentionCheckPagedRow) InstanceCandidate {
+	candidate := InstanceCandidate{
+		ID:           c.ID,
+		InstanceName: c.InstanceName,
+		EndTime:      c.EndTime.Time,
+		LogGroupID:   c.LogGroupID,
+	}
+	if c.GuildRank.Valid {
+		candidate.GuildRank = &c.GuildRank.Int64
+	}
+	return candidate
+}
+
 // Preview runs the retention evaluation for a specific realm without deleting anything.
+// It loads all instances (unbounded) — admin-only, synchronous.
 func Preview(ctx context.Context, store database.StoreQueries, realmID uuid.UUID, now time.Time) ([]PreviewItem, error) {
 	policy, err := store.GetRetentionPolicyForRealm(ctx, uuid.NullUUID{UUID: realmID, Valid: true})
 	if err != nil {
 		return nil, fmt.Errorf("get policy: %w", err)
 	}
 
-	dbRules, err := store.GetRetentionRulesByPolicy(ctx, policy.ID)
+	rules, err := loadRules(ctx, store, policy.ID)
 	if err != nil {
-		return nil, fmt.Errorf("get rules: %w", err)
-	}
-
-	rules := make([]Rule, len(dbRules))
-	for i, r := range dbRules {
-		conditions, err := ParseConditions(r.Conditions)
-		if err != nil {
-			return nil, fmt.Errorf("parse conditions: %w", err)
-		}
-		rules[i] = Rule{
-			Priority:    int(r.Priority),
-			Action:      r.Action,
-			Conditions:  conditions,
-			Description: r.Description,
-		}
+		return nil, err
 	}
 
 	candidates, err := store.GetInstancesForRetentionCheck(ctx, realmID)
@@ -218,7 +289,6 @@ func Preview(ctx context.Context, store database.StoreQueries, realmID uuid.UUID
 	items := make([]PreviewItem, 0, len(candidates))
 	for _, c := range candidates {
 		candidate := instanceCandidateFromRow(c)
-
 		result := Evaluate(rules, candidate, now)
 		items = append(items, PreviewItem{
 			InstanceID:   c.ID,
@@ -238,13 +308,4 @@ type PreviewItem struct {
 	EndTime      time.Time
 	Action       string  // "keep", "delete", or "" (no match = default keep)
 	MatchedRule  *string
-}
-
-// MarshalMetadata serializes a summary for River job metadata.
-func MarshalMetadata(deleted, evaluated int) json.RawMessage {
-	data, _ := json.Marshal(map[string]int{
-		"deleted":   deleted,
-		"evaluated": evaluated,
-	})
-	return data
 }

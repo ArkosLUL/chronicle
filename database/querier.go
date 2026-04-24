@@ -72,8 +72,12 @@ type sqlcQuerier interface {
 	GetInstanceLoot(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceLootRow, error)
 	GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UUID) (InstanceSpeedrun, error)
 	GetInstanceYoutubeData(ctx context.Context, arg GetInstanceYoutubeDataParams) (LogInstanceYoutubeTimestamped, error)
-	// Fetches log instances for a given realm with pre-joined speedrun rank data.
+	// Fetches all log instances for a given realm with pre-joined speedrun rank data.
+	// Used by the preview endpoint (admin-only, synchronous).
 	GetInstancesForRetentionCheck(ctx context.Context, realmID uuid.UUID) ([]GetInstancesForRetentionCheckRow, error)
+	// Fetches a page of log instances for cursor-based retention processing.
+	// Ordered by end_time ASC so older logs are processed first.
+	GetInstancesForRetentionCheckPaged(ctx context.Context, arg GetInstancesForRetentionCheckPagedParams) ([]GetInstancesForRetentionCheckPagedRow, error)
 	GetItemRandomPropertiesByID(ctx context.Context, id int32) (DbcItemRandomProperty, error)
 	GetItemSetBonuses(ctx context.Context, setID int32) ([]DbcItemSetBonu, error)
 	GetItemSetByID(ctx context.Context, id int32) (DbcItemSet, error)

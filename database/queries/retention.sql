@@ -30,7 +30,8 @@ WHERE rr.policy_id = @policy_id
 ORDER BY rr.priority ASC;
 
 -- name: GetInstancesForRetentionCheck :many
--- Fetches log instances for a given realm with pre-joined speedrun rank data.
+-- Fetches all log instances for a given realm with pre-joined speedrun rank data.
+-- Used by the preview endpoint (admin-only, synchronous).
 SELECT
   li.id,
   li.name AS instance_name,
@@ -41,6 +42,23 @@ FROM log_instances li
 LEFT JOIN guild_speedrun_ranks gsr ON gsr.instance_id = li.id
 WHERE li.realm_id = @realm_id
   AND li.end_time IS NOT NULL;
+
+-- name: GetInstancesForRetentionCheckPaged :many
+-- Fetches a page of log instances for cursor-based retention processing.
+-- Ordered by end_time ASC so older logs are processed first.
+SELECT
+  li.id,
+  li.name AS instance_name,
+  li.end_time,
+  li.log_group_id,
+  gsr.guild_rank
+FROM log_instances li
+LEFT JOIN guild_speedrun_ranks gsr ON gsr.instance_id = li.id
+WHERE li.realm_id = @realm_id
+  AND li.end_time IS NOT NULL
+  AND (li.end_time > @cursor_time OR (li.end_time = @cursor_time AND li.id > @cursor_id::uuid))
+ORDER BY li.end_time ASC, li.id ASC
+LIMIT @page_size;
 
 -- name: DeleteLogInstancesByIDs :execrows
 DELETE FROM log_instances

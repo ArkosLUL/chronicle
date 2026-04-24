@@ -95,3 +95,6 @@ WHERE
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE LOWER(email) = LOWER(@email);
 
+-- name: CountUserAuthLinks :one
+SELECT COUNT(*) FROM user_auth_links;
+

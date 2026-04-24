@@ -200,6 +200,39 @@ func (q *sqlQuerier) UpsertGuild(ctx context.Context, arg UpsertGuildParams) (Gu
 	return i, err
 }
 
+const getAppliedAuthzMigrations = `-- name: GetAppliedAuthzMigrations :many
+SELECT version FROM authz_schema_migrations ORDER BY version
+`
+
+func (q *sqlQuerier) GetAppliedAuthzMigrations(ctx context.Context) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getAppliedAuthzMigrations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var version int32
+		if err := rows.Scan(&version); err != nil {
+			return nil, err
+		}
+		items = append(items, version)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recordAuthzMigration = `-- name: RecordAuthzMigration :exec
+INSERT INTO authz_schema_migrations (version) VALUES ($1)
+`
+
+func (q *sqlQuerier) RecordAuthzMigration(ctx context.Context, version int32) error {
+	_, err := q.db.Exec(ctx, recordAuthzMigration, version)
+	return err
+}
+
 const deleteUploadKey = `-- name: DeleteUploadKey :exec
 DELETE FROM wow_server_upload_keys WHERE id = $1
 `
@@ -4909,6 +4942,17 @@ type UpdateUserPasswordParams struct {
 func (q *sqlQuerier) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.Exec(ctx, updateUserPassword, arg.PasswordHash, arg.UserAuthID)
 	return err
+}
+
+const countUserAuthLinks = `-- name: CountUserAuthLinks :one
+SELECT COUNT(*) FROM user_auth_links
+`
+
+func (q *sqlQuerier) CountUserAuthLinks(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countUserAuthLinks)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const getUserAuthByLinkedID = `-- name: GetUserAuthByLinkedID :one

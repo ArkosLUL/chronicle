@@ -77,11 +77,12 @@ function RealmsList({ server }: { server: WoWServer }) {
             onChange={(e) => setName(e.target.value)}
             required
           />
-          <input
-            className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+          <textarea
+            className="w-full rounded-md border bg-background px-3 py-1.5 text-sm resize-y min-h-[60px]"
             placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            rows={2}
           />
           <input
             className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
@@ -184,8 +185,8 @@ export function ServersPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 max-w-3xl">
+      <div className="flex items-center gap-4">
         <h2 className="text-xl font-semibold">Servers & Realms</h2>
         <Button size="sm" className="gap-1" onClick={() => setShowAdd(!showAdd)}>
           <Plus className="h-4 w-4" /> Add Server
@@ -202,11 +203,12 @@ export function ServersPage() {
               onChange={(e) => setName(e.target.value)}
               required
             />
-            <input
-              className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+            <textarea
+              className="w-full rounded-md border bg-background px-3 py-1.5 text-sm resize-y min-h-[60px]"
               placeholder="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              rows={2}
             />
             <input
               className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"

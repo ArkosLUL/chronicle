@@ -194,3 +194,34 @@ func (z *interceptor) UpsertPlayers(ctx context.Context, args []database.UpsertP
 
 	return z.Store.UpsertPlayers(ctx, args)
 }
+func (z *interceptor) InsertUserAuthSession(ctx context.Context, arg database.InsertUserAuthSessionParams) (database.UserAuthSession, error) {
+	session, err := z.Store.InsertUserAuthSession(ctx, arg)
+	if err != nil {
+		return session, err
+	}
+
+	b := policy.New()
+	usr := b.User(arg.UserID)
+
+	// Every user gets chronicle_member
+	b.GlobalChronicle().Chronicle_member(usr)
+
+	// First user auth link = first real signup → technical_admin
+	count, err := z.Store.CountUserAuthLinks(ctx)
+	fmt.Println(count)
+	if err != nil {
+		return session, fmt.Errorf("count user auth links: %w", err)
+	}
+
+	if count == 1 {
+		// The very first user is made a technical admin by default so they can manage the system.
+		b.GlobalChronicle().Technical_admin(usr)
+	}
+
+	_, err = z.Write(ctx, *b.Txn())
+	if err != nil {
+		return session, fmt.Errorf("write user roles: %w", err)
+	}
+
+	return session, nil
+}

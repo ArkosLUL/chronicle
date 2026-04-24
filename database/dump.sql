@@ -165,6 +165,11 @@ CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) R
     END = 1;
 $$;
 
+CREATE TABLE authz_schema_migrations (
+    version integer NOT NULL,
+    applied_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE data_grants (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
@@ -1007,6 +1012,9 @@ CREATE TABLE wow_servers (
 );
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
+
+ALTER TABLE ONLY authz_schema_migrations
+    ADD CONSTRAINT authz_schema_migrations_pkey PRIMARY KEY (version);
 
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_pkey PRIMARY KEY (id);

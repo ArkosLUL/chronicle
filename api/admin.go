@@ -214,13 +214,13 @@ func (a *API) AdminResyncUserRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.Opts.Bot.SyncDiscordUser(r.Context(), a.Opts.Zed, link.LinkedID, userID)
-	if err != nil {
-		httpapi.Write(r.Context(), w, http.StatusInternalServerError, map[string]string{
-			"message": "Failed to sync user roles: " + err.Error(),
-		})
-		return
-	}
+	//err = a.Opts.Bot.SyncDiscordUser(r.Context(), a.Opts.Zed, link.LinkedID, userID)
+	//if err != nil {
+	//	httpapi.Write(r.Context(), w, http.StatusInternalServerError, map[string]string{
+	//		"message": "Failed to sync user roles: " + err.Error(),
+	//	})
+	//	return
+	//}
 
 	// Fetch updated user
 	user, err := a.Opts.Zed.GetUserByID(r.Context(), userID)
@@ -535,4 +535,3 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		SignupsEnabled: config.SignupsEnabled,
 	})
 }
-

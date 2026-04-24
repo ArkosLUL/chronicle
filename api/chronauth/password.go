@@ -46,7 +46,6 @@ const (
 	resetCooldown      = 1 * time.Hour
 )
 
-
 type PasswordRegisterRequest struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
@@ -187,12 +186,6 @@ func (s *Service) PasswordRegister(w http.ResponseWriter, r *http.Request) {
 			return fmt.Errorf("insert user password: %w", err)
 		}
 
-		// Sync roles
-		err = s.syncPasswordUser(ctx, tx, userID)
-		if err != nil {
-			return fmt.Errorf("sync password user: %w", err)
-		}
-
 		// Create session
 		session, err = tx.InsertUserAuthSession(ctx, database.InsertUserAuthSessionParams{
 			ID:                uuid.New(),
@@ -321,16 +314,6 @@ func (s *Service) PasswordLogin(w http.ResponseWriter, r *http.Request) {
 			"message": "Internal error.",
 		})
 		return
-	}
-
-	// Sync roles on each login
-	err = s.syncPasswordUser(ctx, s.Zed, linked.UserID)
-	if err != nil {
-		s.logger.Error("sync password user on login",
-			slog.String("error", err.Error()),
-			slog.String("user_id", linked.UserID.String()),
-		)
-		// Non-fatal: don't block login for role sync failure
 	}
 
 	err = s.SetSessionCookie(w, r, PasswordProvider, session)
@@ -620,8 +603,8 @@ func (s *Service) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.Zed.SetResetToken(ctx, database.SetResetTokenParams{
-		UserAuthID:         linked.ID,
-		ResetTokenHash:     pgtype.Text{String: hash, Valid: true},
+		UserAuthID:          linked.ID,
+		ResetTokenHash:      pgtype.Text{String: hash, Valid: true},
 		ResetTokenExpiresAt: database.Timestamptz(time.Now().Add(resetTokenLifetime)),
 	})
 	if err != nil {

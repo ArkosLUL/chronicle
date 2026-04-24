@@ -624,6 +624,11 @@ func AllWowPlayableRaceValues() []WowPlayableRace {
 	}
 }
 
+type AuthzSchemaMigration struct {
+	Version   int32              `db:"version" json:"version"`
+	AppliedAt pgtype.Timestamptz `db:"applied_at" json:"applied_at"`
+}
+
 type ChronicleUser struct {
 	ID                   uuid.UUID          `db:"id" json:"id"`
 	Username             string             `db:"username" json:"username"`

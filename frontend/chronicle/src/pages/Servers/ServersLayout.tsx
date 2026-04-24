@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAuth } from "@/hooks/useAuth";
-import { useAzerothcoreServers } from "@/api/queries";
+import { useAuthorizationCheck } from "@/api/queries";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,11 +33,16 @@ export function ServersLayout() {
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const { data: servers, isLoading: serversLoading } = useAzerothcoreServers({
+  const authzChecks = useMemo(() => ({
+    adminServers: "chronicle:chronicle#admin_servers",
+    canAdminSomeServer: "lookup:wow_server#administer",
+  }), []);
+  const { data: authz, isLoading: authzLoading } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
   });
+  const canManageServers = (authz?.canAdminSomeServer ?? false) || (authz?.adminServers ?? false);
 
-  const sessionLoading = authLoading || serversLoading;
+  const sessionLoading = authLoading || authzLoading;
 
   if (sessionLoading) {
     return (
@@ -52,7 +57,7 @@ export function ServersLayout() {
     );
   }
 
-  if (!servers || servers.length === 0) {
+  if (!canManageServers) {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <Card className="p-6">

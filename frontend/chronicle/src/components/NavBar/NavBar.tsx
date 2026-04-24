@@ -34,6 +34,7 @@ export function NavBar() {
     adminAuthz: "chronicle:chronicle#administer_authz",
     adminWorldData: "chronicle:chronicle#admin_world_data",
     canAdminSomeServer: "lookup:wow_server#administer",
+    adminServers: "chronicle:chronicle#admin_servers",
   }), []);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
@@ -41,14 +42,14 @@ export function NavBar() {
   const isAdmin = authz?.admin ?? false;
   const canAdminAuthz = authz?.adminAuthz ?? false;
   const canAdminWorldData = authz?.adminWorldData ?? false;
-  const canAdminSomeServer = authz?.canAdminSomeServer ?? false;
+  const canManageServers = (authz?.canAdminSomeServer ?? false) || (authz?.adminServers ?? false);
 
   const accountMenuItems: NavItem[] = [
     { title: "My Logs", href: "/logs", icon: FileText },
     { title: "Upload", href: "/upload", icon: Upload },
     ...(isAdmin ? [{ title: "Admin", href: "/admin", icon: Shield } as NavItem] : []),
     ...(canAdminWorldData ? [{ title: "Game Data", href: "/game-data", icon: Database } as NavItem] : []),
-    ...(canAdminSomeServer ? [{ title: "Servers", href: "/servers", icon: Server } as NavItem] : []),
+    ...(canManageServers ? [{ title: "Servers", href: "/servers", icon: Server } as NavItem] : []),
     ...(canAdminAuthz ? [{ title: "Saffron", href: "/saffron", icon: Key, external: true } as NavItem] : []),
     { title: "Settings", href: "/account/settings", icon: Settings },
     { title: "Sign Out", onClick: logout, icon: LogOut },

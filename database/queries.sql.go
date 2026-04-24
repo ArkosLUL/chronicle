@@ -3664,7 +3664,7 @@ JOIN server_upload_meta sm ON sm.log_group_id = wlg.id
 WHERE wlg.owner = $1
   AND sm.instance_id = $2
   AND sm.instance_name = $3
-  AND sm.realm_name = $4
+  AND sm.realm_id IS NOT DISTINCT FROM $4
   AND wlg.log_type = 'azerothcore'
   AND sm.created_at > now() - interval '24 hours'
 ORDER BY sm.created_at DESC
@@ -3672,10 +3672,10 @@ LIMIT 1
 `
 
 type FindMatchingServerUploadParams struct {
-	Owner        uuid.UUID `db:"owner" json:"owner"`
-	InstanceID   string    `db:"instance_id" json:"instance_id"`
-	InstanceName string    `db:"instance_name" json:"instance_name"`
-	RealmName    string    `db:"realm_name" json:"realm_name"`
+	Owner        uuid.UUID     `db:"owner" json:"owner"`
+	InstanceID   string        `db:"instance_id" json:"instance_id"`
+	InstanceName string        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.NullUUID `db:"realm_id" json:"realm_id"`
 }
 
 func (q *sqlQuerier) FindMatchingServerUpload(ctx context.Context, arg FindMatchingServerUploadParams) (WoWLogGroup, error) {
@@ -3683,7 +3683,7 @@ func (q *sqlQuerier) FindMatchingServerUpload(ctx context.Context, arg FindMatch
 		arg.Owner,
 		arg.InstanceID,
 		arg.InstanceName,
-		arg.RealmName,
+		arg.RealmID,
 	)
 	var i WoWLogGroup
 	err := row.Scan(
@@ -3697,15 +3697,15 @@ func (q *sqlQuerier) FindMatchingServerUpload(ctx context.Context, arg FindMatch
 }
 
 const insertServerUploadMeta = `-- name: InsertServerUploadMeta :exec
-INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_name)
+INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_id)
 VALUES ($1, $2, $3, $4)
 `
 
 type InsertServerUploadMetaParams struct {
-	LogGroupID   uuid.UUID `db:"log_group_id" json:"log_group_id"`
-	InstanceID   string    `db:"instance_id" json:"instance_id"`
-	InstanceName string    `db:"instance_name" json:"instance_name"`
-	RealmName    string    `db:"realm_name" json:"realm_name"`
+	LogGroupID   uuid.UUID     `db:"log_group_id" json:"log_group_id"`
+	InstanceID   string        `db:"instance_id" json:"instance_id"`
+	InstanceName string        `db:"instance_name" json:"instance_name"`
+	RealmID      uuid.NullUUID `db:"realm_id" json:"realm_id"`
 }
 
 func (q *sqlQuerier) InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error {
@@ -3713,7 +3713,7 @@ func (q *sqlQuerier) InsertServerUploadMeta(ctx context.Context, arg InsertServe
 		arg.LogGroupID,
 		arg.InstanceID,
 		arg.InstanceName,
-		arg.RealmName,
+		arg.RealmID,
 	)
 	return err
 }

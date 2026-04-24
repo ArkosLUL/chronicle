@@ -19,8 +19,6 @@ import (
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
-	"github.com/Emyrk/chronicle/database/authz/policy"
-	"github.com/authzed/gochugaru/rel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -391,30 +389,6 @@ func (s *Service) checkRegisterRateLimit(ip string) bool {
 	}
 	s.registerAttempts[ip] = now
 	return true
-}
-
-// syncPasswordUser assigns the base Chronicle_member role to a password-auth user.
-// Similar to SyncDiscordUser but without Discord-specific role mapping.
-func (s *Service) syncPasswordUser(ctx context.Context, zed authz.DatabaseAuthorizer, userID uuid.UUID) error {
-	b := policy.New()
-	gChron := b.GlobalChronicle()
-	usr := b.User(userID)
-
-	// Clear existing roles for this user in the global namespace
-	f := rel.NewFilter(gChron.Object().Typ, gChron.Object().ID, "")
-	f.WithSubjectFilter(usr.Object().Typ, usr.Object().ID, "")
-	err := zed.Delete(ctx, rel.NewPreconditionedFilter(f))
-	if err != nil {
-		return fmt.Errorf("zed.Delete: %w", err)
-	}
-
-	gChron.Chronicle_member(usr)
-	_, err = zed.Write(ctx, *b.Txn())
-	if err != nil {
-		return fmt.Errorf("zed.Write: %w", err)
-	}
-
-	return nil
 }
 
 // generateVerificationToken creates a random token and returns (raw, sha256hash).

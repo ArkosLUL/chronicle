@@ -1042,8 +1042,8 @@ type ServerUploadMetum struct {
 	LogGroupID   uuid.UUID          `db:"log_group_id" json:"log_group_id"`
 	InstanceID   string             `db:"instance_id" json:"instance_id"`
 	InstanceName string             `db:"instance_name" json:"instance_name"`
-	RealmName    string             `db:"realm_name" json:"realm_name"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	RealmID      uuid.NullUUID      `db:"realm_id" json:"realm_id"`
 }
 
 type SharedView struct {

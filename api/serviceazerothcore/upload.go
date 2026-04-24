@@ -44,7 +44,6 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	// Check SpiceDB permission: can this key upload to this realm?
 	b := policy.New()
 	can, err := h.zed.CheckOne(ctx, nil,
@@ -70,7 +69,20 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 	// Extract server metadata from headers for log merging
 	instanceID := r.Header.Get("X-Chronicle-Instance-Id")
 	instanceName := r.Header.Get("X-Chronicle-Instance-Name")
-	realmName := r.Header.Get("X-Chronicle-Realm-Name")
+	realmID := uuid.NullUUID{UUID: key.RealmID, Valid: key.RealmID != uuid.Nil}
+
+	if instanceID == "" || instanceName == "" {
+		h.logger.Error("Missing instance metadata in upload request",
+			"instance_id", instanceID,
+			"instance_name", instanceName,
+		)
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message:      "Missing required instance metadata headers: X-Chronicle-Instance-Id and X-Chronicle-Instance-Name",
+			CallToAction: "Ensure your AzerothCore mod-chronicle is updated",
+			Detail:       "Both headers must be included for proper log processing and merging. See documentation for details.",
+		})
+		return
+	}
 
 	file, header, err := r.FormFile("combat_log")
 	if err != nil {
@@ -93,40 +105,38 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 	// Check for an existing log group with matching instance metadata.
 	// If found, append to the existing file (multistream gzip concatenation)
 	// and trigger a reparse. This merges logs from raid/dungeon breaks.
-	if instanceID != "" && instanceName != "" { // Realmname is not working
-		existing, findErr := h.zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
-			Owner:        ServiceAccountID,
-			InstanceID:   instanceID,
-			InstanceName: instanceName,
-			RealmName:    realmName,
-		})
-		if findErr == nil {
-			// Append to existing group
-			if appendErr := h.chronicle.AppendServerLog(ctx, existing, file); appendErr != nil {
-				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
-					Message: "Failed to append log to existing group",
-					Detail:  appendErr.Error(),
-				})
-				return
-			}
-
-			existingFiles, _ := h.zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
-			fileIDs := make([]uuid.UUID, 0, len(existingFiles))
-			for _, f := range existingFiles {
-				fileIDs = append(fileIDs, f.ID)
-			}
-
-			h.logger.Info("Appended server log to existing group",
-				"log_group_id", existing.ID,
-				"instance_id", instanceID,
-				"instance_name", instanceName,
-			)
-			httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
-				LogID: existing.ID,
-				Files: fileIDs,
+	existing, findErr := h.zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
+		Owner:        ServiceAccountID,
+		InstanceID:   instanceID,
+		InstanceName: instanceName,
+		RealmID:      realmID,
+	})
+	if findErr == nil {
+		// Append to existing group
+		if appendErr := h.chronicle.AppendServerLog(ctx, existing, file); appendErr != nil {
+			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+				Message: "Failed to append log to existing group",
+				Detail:  appendErr.Error(),
 			})
 			return
 		}
+
+		existingFiles, _ := h.zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
+		fileIDs := make([]uuid.UUID, 0, len(existingFiles))
+		for _, f := range existingFiles {
+			fileIDs = append(fileIDs, f.ID)
+		}
+
+		h.logger.Info("Appended server log to existing group",
+			"log_group_id", existing.ID,
+			"instance_id", instanceID,
+			"instance_name", instanceName,
+		)
+		httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
+			LogID: existing.ID,
+			Files: fileIDs,
+		})
+		return
 	}
 
 	// No matching group found — normal upload flow
@@ -153,18 +163,16 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store server metadata for future append matching
-	if instanceID != "" && instanceName != "" { // realmName may be empty until configured
-		if metaErr := h.zed.InsertServerUploadMeta(ctx, database.InsertServerUploadMetaParams{
-			LogGroupID:   group.ID,
-			InstanceID:   instanceID,
-			InstanceName: instanceName,
-			RealmName:    realmName,
-		}); metaErr != nil {
-			h.logger.Warn("Failed to store server upload metadata",
-				"error", metaErr,
-				"log_group_id", group.ID,
-			)
-		}
+	if metaErr := h.zed.InsertServerUploadMeta(ctx, database.InsertServerUploadMetaParams{
+		LogGroupID:   group.ID,
+		InstanceID:   instanceID,
+		InstanceName: instanceName,
+		RealmID:      realmID,
+	}); metaErr != nil {
+		h.logger.Warn("Failed to store server upload metadata",
+			"error", metaErr,
+			"log_group_id", group.ID,
+		)
 	}
 
 	h.logger.Info("Received server log upload",

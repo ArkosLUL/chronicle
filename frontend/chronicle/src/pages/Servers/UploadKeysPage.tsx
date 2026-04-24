@@ -41,11 +41,20 @@ function KeyRow({ uploadKey }: { uploadKey: UploadKey }) {
 
 function CopyableSecret({ secret }: { secret: string }) {
   const [copied, setCopied] = useState(false);
+  const [copiedConfig, setCopiedConfig] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(secret);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const configSnippet = `Chronicle.Enable = 1\nChronicle.UploadURL = "${window.location.origin}"\nChronicle.UploadSecret = "${secret}"`;
+
+  const handleCopyConfig = () => {
+    navigator.clipboard.writeText(configSnippet);
+    setCopiedConfig(true);
+    setTimeout(() => setCopiedConfig(false), 2000);
   };
 
   return (
@@ -59,6 +68,19 @@ function CopyableSecret({ secret }: { secret: string }) {
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Copy"}
         </Button>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        <p className="text-sm font-medium">AzerothCore Configuration</p>
+        <p className="text-xs text-muted-foreground">
+          Add the following to your <code className="rounded bg-muted px-1 py-0.5">worldserver.conf</code>:
+        </p>
+        <div className="relative">
+          <pre className="rounded bg-muted px-3 py-2 text-xs font-mono whitespace-pre overflow-x-auto">{configSnippet}</pre>
+          <Button variant="outline" size="sm" className="absolute top-1.5 right-1.5 gap-1 h-6 text-xs" onClick={handleCopyConfig}>
+            {copiedConfig ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copiedConfig ? "Copied" : "Copy"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -105,7 +127,7 @@ export function UploadKeysPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-4xl">
       <h2 className="text-xl font-semibold">Upload Keys</h2>
 
       <div className="flex flex-wrap gap-3">

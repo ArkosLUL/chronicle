@@ -1,17 +1,18 @@
 package serviceretention
 
 import (
-	"context"
-	"time"
+  "context"
+  "time"
 
-	"github.com/Emyrk/chronicle/chronicle/retention"
-	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/database/storage"
-	"github.com/Emyrk/chronicle/internal/services"
-	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
-	"github.com/Emyrk/chronicle/internal/services/servicelogger"
-	"github.com/Emyrk/chronicle/internal/services/servicestorage"
-	"github.com/coder/serpent"
+  "github.com/Emyrk/chronicle/chronicle/retention"
+  "github.com/Emyrk/chronicle/database"
+  "github.com/Emyrk/chronicle/database/storage"
+  "github.com/Emyrk/chronicle/internal/services"
+  "github.com/Emyrk/chronicle/internal/services/servicedbstore"
+  "github.com/Emyrk/chronicle/internal/services/servicelogger"
+  "github.com/Emyrk/chronicle/internal/services/servicestorage"
+
+  "github.com/coder/serpent"
 )
 
 var _ services.Servicer = (*Service)(nil)

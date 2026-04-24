@@ -24,6 +24,7 @@ import { AdminStoragePage } from "./pages/Admin/AdminStoragePage"
 import { AdminUsersPage } from "./pages/Admin/AdminUsersPage"
 import { RegressionPage } from "./pages/Admin/RegressionPage"
 import { AdminOutdatedInstancesPage } from "./pages/Admin/AdminOutdatedInstancesPage"
+import { AdminRetentionPage } from "./pages/Admin/AdminRetentionPage"
 import { ServersLayout, ServersPage, UploadKeysPage } from "./pages/Servers"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
@@ -105,6 +106,7 @@ function App() {
           <Route path="storage" element={<AdminStoragePage />} />
           <Route path="regression" element={<RegressionPage />} />
           <Route path="outdated-instances" element={<AdminOutdatedInstancesPage />} />
+          <Route path="retention" element={<AdminRetentionPage />} />
         </Route>
         <Route path="/servers" element={<ServersLayout />}>
           <Route index element={<ServersPage />} />

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -1619,3 +1619,142 @@ export function useDeleteAzerothcoreUploadKey() {
 }
 
 
+
+// -- Retention Policy Management --
+
+export function useRetentionPolicies(options?: Omit<UseQueryOptions<RetentionPolicy[]>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["admin", "retention", "policies"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/admin/retention/policies");
+      if (!response.ok) throw new Error("Failed to fetch retention policies");
+      return response.json() as Promise<RetentionPolicy[]>;
+    },
+    retry: false,
+    ...options,
+  });
+}
+
+export function useUpsertRetentionPolicy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: { server_id?: string; realm_id?: string; enabled: boolean }) => {
+      const response = await fetch("/api/v1/admin/retention/policies", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to upsert retention policy");
+      }
+      return response.json() as Promise<RetentionPolicy>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "retention", "policies"] });
+    },
+  });
+}
+
+export function useDeleteRetentionPolicy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (policyId: string) => {
+      const response = await fetch(`/api/v1/admin/retention/policies/${policyId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete retention policy");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "retention", "policies"] });
+    },
+  });
+}
+
+export function useUpsertRetentionRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      policyId,
+      ...req
+    }: {
+      policyId: string;
+      priority: number;
+      action: string;
+      conditions: unknown;
+      description: string;
+    }) => {
+      const response = await fetch(`/api/v1/admin/retention/policies/${policyId}/rules`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to upsert retention rule");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "retention", "policies"] });
+    },
+  });
+}
+
+export function useDeleteRetentionRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ruleId: string) => {
+      const response = await fetch(`/api/v1/admin/retention/rules/${ruleId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete retention rule");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "retention", "policies"] });
+    },
+  });
+}
+
+export function useRetentionPreview() {
+  return useMutation({
+    mutationFn: async (req: RetentionPreviewRequest) => {
+      const response = await fetch("/api/v1/admin/retention/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to preview retention");
+      }
+      return response.json() as Promise<RetentionPreviewResponse>;
+    },
+  });
+}
+
+export function useRetentionRun() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dryRun: boolean) => {
+      const response = await fetch("/api/v1/admin/retention/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dry_run: dryRun }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to trigger retention run");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "retention", "policies"] });
+    },
+  });
+}

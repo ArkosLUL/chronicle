@@ -6,6 +6,8 @@ type CheckConstraint string
 
 // CheckConstraint enums.
 const (
+	CheckRetentionPoliciesScope         CheckConstraint = "retention_policies_scope"            // retention_policies
+	CheckRetentionRulesActionCheck      CheckConstraint = "retention_rules_action_check"        // retention_rules
 	CheckFinalizedOrFinalizedAtNull     CheckConstraint = "finalized_or_finalized_at_null"      // river_job
 	CheckKindLength                     CheckConstraint = "kind_length"                         // river_job
 	CheckMaxAttemptsIsPositive          CheckConstraint = "max_attempts_is_positive"            // river_job

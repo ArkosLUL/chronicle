@@ -47,7 +47,7 @@ const CONDITION_TYPES = [
 
 // -- Main Page --
 
-export function AdminRetentionPage() {
+export function RetentionPage() {
   const { data: policies, isLoading, error } = useRetentionPolicies();
   const { data: servers } = useAzerothcoreServers();
   const runMutation = useRetentionRun();

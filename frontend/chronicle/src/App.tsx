@@ -24,8 +24,7 @@ import { AdminStoragePage } from "./pages/Admin/AdminStoragePage"
 import { AdminUsersPage } from "./pages/Admin/AdminUsersPage"
 import { RegressionPage } from "./pages/Admin/RegressionPage"
 import { AdminOutdatedInstancesPage } from "./pages/Admin/AdminOutdatedInstancesPage"
-import { AdminRetentionPage } from "./pages/Admin/AdminRetentionPage"
-import { ServersLayout, ServersPage, UploadKeysPage } from "./pages/Servers"
+import { ServersLayout, ServersPage, UploadKeysPage, RetentionPage } from "./pages/Servers"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
 import { ItemPage } from "./pages/WoWDB/ItemPage"
@@ -106,11 +105,11 @@ function App() {
           <Route path="storage" element={<AdminStoragePage />} />
           <Route path="regression" element={<RegressionPage />} />
           <Route path="outdated-instances" element={<AdminOutdatedInstancesPage />} />
-          <Route path="retention" element={<AdminRetentionPage />} />
         </Route>
         <Route path="/servers" element={<ServersLayout />}>
           <Route index element={<ServersPage />} />
           <Route path="keys" element={<UploadKeysPage />} />
+          <Route path="retention" element={<RetentionPage />} />
         </Route>
         <Route path="/wowdb/spell" element={<SpellPage />} />
         <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />

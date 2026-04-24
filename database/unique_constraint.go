@@ -6,6 +6,7 @@ type UniqueConstraint string
 
 // UniqueConstraint enums.
 const (
+	UniqueAuthzSchemaMigrationsPkey                    UniqueConstraint = "authz_schema_migrations_pkey"                     // ALTER TABLE ONLY authz_schema_migrations ADD CONSTRAINT authz_schema_migrations_pkey PRIMARY KEY (version);
 	UniqueDataGrantsPkey                               UniqueConstraint = "data_grants_pkey"                                 // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_pkey PRIMARY KEY (id);
 	UniqueDataGrantsUserIDSourceKey                    UniqueConstraint = "data_grants_user_id_source_key"                   // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
 	UniqueDbcItemDisplayInfoPkey                       UniqueConstraint = "dbc_item_display_info_pkey"                       // ALTER TABLE ONLY dbc_item_display_info ADD CONSTRAINT dbc_item_display_info_pkey PRIMARY KEY (id);
@@ -39,6 +40,11 @@ const (
 	UniqueRegressionFixturesLogGroupIDKey              UniqueConstraint = "regression_fixtures_log_group_id_key"             // ALTER TABLE ONLY regression_fixtures ADD CONSTRAINT regression_fixtures_log_group_id_key UNIQUE (log_group_id);
 	UniqueRegressionFixturesPkey                       UniqueConstraint = "regression_fixtures_pkey"                         // ALTER TABLE ONLY regression_fixtures ADD CONSTRAINT regression_fixtures_pkey PRIMARY KEY (id);
 	UniqueRegressionSnapshotsPkey                      UniqueConstraint = "regression_snapshots_pkey"                        // ALTER TABLE ONLY regression_snapshots ADD CONSTRAINT regression_snapshots_pkey PRIMARY KEY (id);
+	UniqueRetentionPoliciesPkey                        UniqueConstraint = "retention_policies_pkey"                          // ALTER TABLE ONLY retention_policies ADD CONSTRAINT retention_policies_pkey PRIMARY KEY (id);
+	UniqueRetentionPoliciesUniqueRealm                 UniqueConstraint = "retention_policies_unique_realm"                  // ALTER TABLE ONLY retention_policies ADD CONSTRAINT retention_policies_unique_realm UNIQUE (realm_id);
+	UniqueRetentionPoliciesUniqueServer                UniqueConstraint = "retention_policies_unique_server"                 // ALTER TABLE ONLY retention_policies ADD CONSTRAINT retention_policies_unique_server UNIQUE (server_id);
+	UniqueRetentionRulesPkey                           UniqueConstraint = "retention_rules_pkey"                             // ALTER TABLE ONLY retention_rules ADD CONSTRAINT retention_rules_pkey PRIMARY KEY (id);
+	UniqueRetentionRulesUniquePriority                 UniqueConstraint = "retention_rules_unique_priority"                  // ALTER TABLE ONLY retention_rules ADD CONSTRAINT retention_rules_unique_priority UNIQUE (policy_id, priority);
 	UniqueRiverClientPkey                              UniqueConstraint = "river_client_pkey"                                // ALTER TABLE ONLY river_client ADD CONSTRAINT river_client_pkey PRIMARY KEY (id);
 	UniqueRiverClientQueuePkey                         UniqueConstraint = "river_client_queue_pkey"                          // ALTER TABLE ONLY river_client_queue ADD CONSTRAINT river_client_queue_pkey PRIMARY KEY (river_client_id, name);
 	UniqueRiverJobPkey                                 UniqueConstraint = "river_job_pkey"                                   // ALTER TABLE ONLY river_job ADD CONSTRAINT river_job_pkey PRIMARY KEY (id);

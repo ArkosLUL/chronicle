@@ -88,7 +88,7 @@ func (q *Queues) Start(ctx context.Context) error {
 		PeriodicJobs: q.periodicJobs,
 		// Retain all jobs
 		// TODO: Create our own reaper to clean up old jobs after a certain period
-		CompletedJobRetentionPeriod: -1,
+		CompletedJobRetentionPeriod: time.Hour * 24 * 30, // 30 days
 		RescueStuckJobsAfter:        time.Minute * 60,
 		JobTimeout:                  time.Minute * 30,
 	})

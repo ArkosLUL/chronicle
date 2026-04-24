@@ -14,7 +14,6 @@ import {
   HardDrive,
   FlaskConical,
   RefreshCw,
-  Archive,
   Menu,
   X,
   Loader2,
@@ -36,7 +35,6 @@ const tabs: Tab[] = [
   { path: "/admin/storage", label: "Storage Grants", icon: HardDrive },
   { path: "/admin/regression", label: "Regression", icon: FlaskConical },
   { path: "/admin/outdated-instances", label: "Outdated Instances", icon: RefreshCw },
-  { path: "/admin/retention", label: "Log Retention", icon: Archive },
 ];
 
 export function AdminLayout() {

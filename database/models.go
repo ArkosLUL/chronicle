@@ -987,12 +987,15 @@ type RegressionSnapshot struct {
 }
 
 type RetentionPolicy struct {
-	ID        uuid.UUID          `db:"id" json:"id"`
-	ServerID  uuid.NullUUID      `db:"server_id" json:"server_id"`
-	RealmID   uuid.NullUUID      `db:"realm_id" json:"realm_id"`
-	Enabled   bool               `db:"enabled" json:"enabled"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID           uuid.UUID          `db:"id" json:"id"`
+	ServerID     uuid.NullUUID      `db:"server_id" json:"server_id"`
+	RealmID      uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	Enabled      bool               `db:"enabled" json:"enabled"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	LastRunAt    pgtype.Timestamptz `db:"last_run_at" json:"last_run_at"`
+	TotalDeleted int64              `db:"total_deleted" json:"total_deleted"`
+	TotalKept    int64              `db:"total_kept" json:"total_kept"`
 }
 
 type RetentionRule struct {

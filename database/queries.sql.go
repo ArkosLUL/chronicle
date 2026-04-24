@@ -3772,7 +3772,7 @@ func (q *sqlQuerier) GetRealmsWithRetentionPolicies(ctx context.Context) ([]uuid
 
 const getRetentionPolicies = `-- name: GetRetentionPolicies :many
 SELECT
-  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at, rp.last_run_at, rp.total_deleted, rp.total_kept
 FROM retention_policies rp
 WHERE rp.enabled = true
 `
@@ -3793,6 +3793,9 @@ func (q *sqlQuerier) GetRetentionPolicies(ctx context.Context) ([]RetentionPolic
 			&i.Enabled,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LastRunAt,
+			&i.TotalDeleted,
+			&i.TotalKept,
 		); err != nil {
 			return nil, err
 		}
@@ -3806,7 +3809,7 @@ func (q *sqlQuerier) GetRetentionPolicies(ctx context.Context) ([]RetentionPolic
 
 const getRetentionPolicy = `-- name: GetRetentionPolicy :one
 SELECT
-  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at, rp.last_run_at, rp.total_deleted, rp.total_kept
 FROM retention_policies rp
 WHERE rp.id = $1
 `
@@ -3821,13 +3824,16 @@ func (q *sqlQuerier) GetRetentionPolicy(ctx context.Context, id uuid.UUID) (Rete
 		&i.Enabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastRunAt,
+		&i.TotalDeleted,
+		&i.TotalKept,
 	)
 	return i, err
 }
 
 const getRetentionPolicyForRealm = `-- name: GetRetentionPolicyForRealm :one
 SELECT
-  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at, rp.last_run_at, rp.total_deleted, rp.total_kept
 FROM retention_policies rp
 WHERE rp.enabled = true
   AND (
@@ -3854,6 +3860,9 @@ func (q *sqlQuerier) GetRetentionPolicyForRealm(ctx context.Context, realmID uui
 		&i.Enabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastRunAt,
+		&i.TotalDeleted,
+		&i.TotalKept,
 	)
 	return i, err
 }
@@ -3896,7 +3905,7 @@ func (q *sqlQuerier) GetRetentionRulesByPolicy(ctx context.Context, policyID uui
 
 const listAllRetentionPolicies = `-- name: ListAllRetentionPolicies :many
 SELECT
-  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at
+  rp.id, rp.server_id, rp.realm_id, rp.enabled, rp.created_at, rp.updated_at, rp.last_run_at, rp.total_deleted, rp.total_kept
 FROM retention_policies rp
 ORDER BY rp.created_at ASC
 `
@@ -3917,6 +3926,9 @@ func (q *sqlQuerier) ListAllRetentionPolicies(ctx context.Context) ([]RetentionP
 			&i.Enabled,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LastRunAt,
+			&i.TotalDeleted,
+			&i.TotalKept,
 		); err != nil {
 			return nil, err
 		}
@@ -3928,13 +3940,34 @@ func (q *sqlQuerier) ListAllRetentionPolicies(ctx context.Context) ([]RetentionP
 	return items, nil
 }
 
+const updateRetentionPolicyStats = `-- name: UpdateRetentionPolicyStats :exec
+UPDATE retention_policies
+SET
+  last_run_at = now(),
+  total_deleted = total_deleted + $1::bigint,
+  total_kept = total_kept + $2::bigint,
+  updated_at = now()
+WHERE id = $3
+`
+
+type UpdateRetentionPolicyStatsParams struct {
+	Deleted int64     `db:"deleted" json:"deleted"`
+	Kept    int64     `db:"kept" json:"kept"`
+	ID      uuid.UUID `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateRetentionPolicyStats(ctx context.Context, arg UpdateRetentionPolicyStatsParams) error {
+	_, err := q.db.Exec(ctx, updateRetentionPolicyStats, arg.Deleted, arg.Kept, arg.ID)
+	return err
+}
+
 const upsertRetentionPolicy = `-- name: UpsertRetentionPolicy :one
 INSERT INTO retention_policies (server_id, realm_id, enabled)
 VALUES ($1, $2, $3)
 ON CONFLICT ON CONSTRAINT retention_policies_unique_server
   DO UPDATE SET enabled = $3, updated_at = now()
   WHERE retention_policies.server_id IS NOT NULL
-RETURNING id, server_id, realm_id, enabled, created_at, updated_at
+RETURNING id, server_id, realm_id, enabled, created_at, updated_at, last_run_at, total_deleted, total_kept
 `
 
 type UpsertRetentionPolicyParams struct {
@@ -3953,6 +3986,9 @@ func (q *sqlQuerier) UpsertRetentionPolicy(ctx context.Context, arg UpsertRetent
 		&i.Enabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastRunAt,
+		&i.TotalDeleted,
+		&i.TotalKept,
 	)
 	return i, err
 }
@@ -3962,7 +3998,7 @@ INSERT INTO retention_policies (realm_id, enabled)
 VALUES ($1, $2)
 ON CONFLICT ON CONSTRAINT retention_policies_unique_realm
   DO UPDATE SET enabled = $2, updated_at = now()
-RETURNING id, server_id, realm_id, enabled, created_at, updated_at
+RETURNING id, server_id, realm_id, enabled, created_at, updated_at, last_run_at, total_deleted, total_kept
 `
 
 type UpsertRetentionPolicyByRealmParams struct {
@@ -3980,6 +4016,9 @@ func (q *sqlQuerier) UpsertRetentionPolicyByRealm(ctx context.Context, arg Upser
 		&i.Enabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastRunAt,
+		&i.TotalDeleted,
+		&i.TotalKept,
 	)
 	return i, err
 }

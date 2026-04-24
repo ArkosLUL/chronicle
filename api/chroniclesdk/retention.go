@@ -9,13 +9,16 @@ import (
 
 // RetentionPolicy is a retention policy scoped to a server or realm.
 type RetentionPolicy struct {
-	ID        uuid.UUID  `json:"id"`
-	ServerID  *uuid.UUID `json:"server_id"`
-	RealmID   *uuid.UUID `json:"realm_id"`
-	Enabled   bool       `json:"enabled"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	Rules     []RetentionRule `json:"rules,omitempty"`
+	ID           uuid.UUID  `json:"id"`
+	ServerID     *uuid.UUID `json:"server_id"`
+	RealmID      *uuid.UUID `json:"realm_id"`
+	Enabled      bool       `json:"enabled"`
+	LastRunAt    *time.Time `json:"last_run_at"`
+	TotalDeleted int64      `json:"total_deleted"`
+	TotalKept    int64      `json:"total_kept"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Rules        []RetentionRule `json:"rules,omitempty"`
 }
 
 // RetentionRule is an ordered rule within a retention policy.

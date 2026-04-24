@@ -578,6 +578,9 @@ CREATE TABLE retention_policies (
     enabled boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_run_at timestamp with time zone,
+    total_deleted bigint DEFAULT 0 NOT NULL,
+    total_kept bigint DEFAULT 0 NOT NULL,
     CONSTRAINT retention_policies_scope CHECK ((((server_id IS NOT NULL) AND (realm_id IS NULL)) OR ((server_id IS NULL) AND (realm_id IS NOT NULL))))
 );
 

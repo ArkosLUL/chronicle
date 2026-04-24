@@ -62,9 +62,9 @@ func (w *Worker) Work(ctx context.Context, job *river.Job[ArgsRetention]) error 
 		return fmt.Errorf("get realms with policies: %w", err)
 	}
 
-	var totalDeleted int64
+	var totalDeleted, totalKept int64
 	for _, realmID := range realmIDs {
-		deleted, err := w.processRealm(ctx, realmID, now, job.Args.DryRun, logger)
+		result, err := w.processRealm(ctx, realmID, now, job.Args.DryRun, logger)
 		if err != nil {
 			logger.ErrorContext(ctx, "retention failed for realm",
 				slog.String("realm_id", realmID.String()),
@@ -72,34 +72,41 @@ func (w *Worker) Work(ctx context.Context, job *river.Job[ArgsRetention]) error 
 			)
 			continue // Best-effort: continue with other realms
 		}
-		totalDeleted += deleted
+		totalDeleted += result.deleted
+		totalKept += result.kept
 	}
 
 	logger.InfoContext(ctx, "retention run complete",
 		slog.Int64("total_deleted", totalDeleted),
+		slog.Int64("total_kept", totalKept),
 		slog.Int("realms_processed", len(realmIDs)),
 	)
 	return nil
 }
 
-func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.Time, dryRun bool, logger *slog.Logger) (int64, error) {
+type realmResult struct {
+	deleted int64
+	kept    int64
+}
+
+func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.Time, dryRun bool, logger *slog.Logger) (realmResult, error) {
 	// Get the effective policy for this realm.
 	policy, err := w.Store.GetRetentionPolicyForRealm(ctx, uuid.NullUUID{UUID: realmID, Valid: true})
 	if err != nil {
-		return 0, fmt.Errorf("get policy: %w", err)
+		return realmResult{}, fmt.Errorf("get policy: %w", err)
 	}
 
 	// Get ordered rules.
 	dbRules, err := w.Store.GetRetentionRulesByPolicy(ctx, policy.ID)
 	if err != nil {
-		return 0, fmt.Errorf("get rules: %w", err)
+		return realmResult{}, fmt.Errorf("get rules: %w", err)
 	}
 
 	rules := make([]Rule, len(dbRules))
 	for i, r := range dbRules {
 		conditions, err := ParseConditions(r.Conditions)
 		if err != nil {
-			return 0, fmt.Errorf("parse conditions for rule %d: %w", r.Priority, err)
+			return realmResult{}, fmt.Errorf("parse conditions for rule %d: %w", r.Priority, err)
 		}
 		rules[i] = Rule{
 			Priority:    int(r.Priority),
@@ -112,11 +119,12 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 	// Fetch candidate instances.
 	candidates, err := w.Store.GetInstancesForRetentionCheck(ctx, realmID)
 	if err != nil {
-		return 0, fmt.Errorf("get instances: %w", err)
+		return realmResult{}, fmt.Errorf("get instances: %w", err)
 	}
 
 	var toDelete []uuid.UUID
 	var toDeleteGroups []uuid.UUID
+	var kept int64
 	for _, c := range candidates {
 		candidate := instanceCandidateFromRow(c)
 
@@ -124,6 +132,8 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 		if result.Action == ActionDelete {
 			toDelete = append(toDelete, c.ID)
 			toDeleteGroups = append(toDeleteGroups, c.LogGroupID)
+		} else {
+			kept++
 		}
 	}
 
@@ -131,11 +141,12 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 		slog.String("realm_id", realmID.String()),
 		slog.Int("candidates", len(candidates)),
 		slog.Int("to_delete", len(toDelete)),
+		slog.Int64("kept", kept),
 		slog.Bool("dry_run", dryRun),
 	)
 
 	if dryRun || len(toDelete) == 0 {
-		return int64(len(toDelete)), nil
+		return realmResult{deleted: int64(len(toDelete)), kept: kept}, nil
 	}
 
 	// Delete object storage first (per user request: we retry DB deletes).
@@ -147,10 +158,17 @@ func (w *Worker) processRealm(ctx context.Context, realmID uuid.UUID, now time.T
 	// Delete from DB (cascades to encounters, speedruns, etc).
 	deleted, err := w.Store.DeleteLogInstancesByIDs(ctx, toDelete)
 	if err != nil {
-		return 0, fmt.Errorf("delete instances: %w", err)
+		return realmResult{}, fmt.Errorf("delete instances: %w", err)
 	}
 
-	return deleted, nil
+	// Record stats on the policy.
+	_ = w.Store.UpdateRetentionPolicyStats(ctx, database.UpdateRetentionPolicyStatsParams{
+		ID:      policy.ID,
+		Deleted: deleted,
+		Kept:    kept,
+	})
+
+	return realmResult{deleted: deleted, kept: kept}, nil
 }
 
 func instanceCandidateFromRow(c database.GetInstancesForRetentionCheckRow) InstanceCandidate {

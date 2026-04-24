@@ -91,6 +91,15 @@ RETURNING *;
 DELETE FROM retention_rules
 WHERE id = @id;
 
+-- name: UpdateRetentionPolicyStats :exec
+UPDATE retention_policies
+SET
+  last_run_at = now(),
+  total_deleted = total_deleted + @deleted::bigint,
+  total_kept = total_kept + @kept::bigint,
+  updated_at = now()
+WHERE id = @id;
+
 -- name: GetRealmsWithRetentionPolicies :many
 -- Returns all realm IDs that have an applicable retention policy
 -- (either directly or through their server).

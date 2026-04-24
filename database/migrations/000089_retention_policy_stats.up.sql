@@ -1,0 +1,4 @@
+ALTER TABLE retention_policies
+  ADD COLUMN last_run_at TIMESTAMPTZ,
+  ADD COLUMN total_deleted BIGINT NOT NULL DEFAULT 0,
+  ADD COLUMN total_kept BIGINT NOT NULL DEFAULT 0;

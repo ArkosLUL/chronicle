@@ -292,16 +292,22 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 
 func retentionPolicyToSDK(p database.RetentionPolicy, rules []database.RetentionRule) chroniclesdk.RetentionPolicy {
 	sdk := chroniclesdk.RetentionPolicy{
-		ID:        p.ID,
-		Enabled:   p.Enabled,
-		CreatedAt: p.CreatedAt.Time,
-		UpdatedAt: p.UpdatedAt.Time,
+		ID:           p.ID,
+		Enabled:      p.Enabled,
+		TotalDeleted: p.TotalDeleted,
+		TotalKept:    p.TotalKept,
+		CreatedAt:    p.CreatedAt.Time,
+		UpdatedAt:    p.UpdatedAt.Time,
 	}
 	if p.ServerID.Valid {
 		sdk.ServerID = &p.ServerID.UUID
 	}
 	if p.RealmID.Valid {
 		sdk.RealmID = &p.RealmID.UUID
+	}
+	if p.LastRunAt.Valid {
+		t := p.LastRunAt.Time
+		sdk.LastRunAt = &t
 	}
 	for _, r := range rules {
 		sdk.Rules = append(sdk.Rules, retentionRuleToSDK(r))

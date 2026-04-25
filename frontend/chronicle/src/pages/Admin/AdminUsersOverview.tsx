@@ -52,7 +52,7 @@ const ASSIGNABLE_ROLES = [
   { value: "is_admin_raid_requirements", label: "Admin Raid Req", icon: Trophy, className: "bg-amber-500/15 text-amber-400" },
 ] as const;
 
-const ROLE_LOOKUP = new Map(ASSIGNABLE_ROLES.map((r) => [r.value, r]));
+const ROLE_LOOKUP = new Map<string, (typeof ASSIGNABLE_ROLES)[number]>(ASSIGNABLE_ROLES.map((r) => [r.value, r]));
 
 type SortField = "username" | "storage_used" | "storage_limit" | "storage_pct" | "created_at";
 type SortOrder = "asc" | "desc";

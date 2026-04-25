@@ -36,6 +36,7 @@ describe('healingProcessor pet/object caster support', () => {
       hitType: 0,
       amount: 500,
       overheal: 0,
+      absorbed: 0,
       school: 8,
       spellId: 331,
       spellAttackOutcome: null,

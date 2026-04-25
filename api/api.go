@@ -49,6 +49,9 @@ type Options struct {
 
 	Registry  *prometheus.Registry
 	AccessURL *url.URL
+	// ShortLinkDomain is the domain used for short share links (e.g. "chrn.link").
+	// If empty, short links use same-origin paths instead.
+	ShortLinkDomain string
 	DevOAuth  bool
 	Discord   chronauth.DiscordOAuth
 	SecretPEM []byte // Used for JWTs

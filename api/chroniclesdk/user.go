@@ -102,7 +102,8 @@ type AdminOutdatedInstancesResponse struct {
 	MinVersion string                  `json:"min_version"`
 }
 type SiteConfig struct {
-	SignupsEnabled bool `json:"signups_enabled"`
+	SignupsEnabled   bool   `json:"signups_enabled"`
+	ShortLinkDomain string `json:"short_link_domain,omitempty"`
 }
 
 // SetUserRolesRequest is the request body for setting a user's Chronicle roles.

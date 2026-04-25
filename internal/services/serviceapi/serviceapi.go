@@ -51,8 +51,9 @@ type Service struct {
 	devAuth            bool
 	saffronURL         *url.URL
 	ocrURL             *url.URL
+	shortLinkDomain    string
 	discordAuth        chronauth.DiscordOAuth
-	app           *api.API
+	app                *api.API
 	closeListener func()
 }
 
@@ -165,8 +166,9 @@ func (s *Service) Start(ctx context.Context) error {
 		InternalGameData: gamedata,
 		Mailer:           mailer,
 
-		AccessURL: au,
-		DevOAuth:  s.devAuth,
+		AccessURL:       au,
+		ShortLinkDomain: s.shortLinkDomain,
+		DevOAuth:        s.devAuth,
 		Discord:   s.discordAuth,
 		SecretPEM: decodedSecret,
 	})
@@ -241,6 +243,15 @@ func (s *Service) Options() serpent.OptionSet {
 			Env:         "CHRONICLE_SAFFRON_URL",
 			Default:     "",
 			Value:       serpent.URLOf(s.saffronURL),
+		},
+		{
+			Name:        "Short Link Domain",
+			Description: "Domain for short share links (e.g. chrn.link). If empty, uses same-origin paths.",
+			Required:    false,
+			Flag:        "short-link-domain",
+			Env:         "CHRONICLE_SHORT_LINK_DOMAIN",
+			Default:     "",
+			Value:       serpent.StringOf(&s.shortLinkDomain),
 		},
 		{
 			Name:        "Internal OCR URL",

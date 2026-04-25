@@ -103,19 +103,6 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 	instanceName := r.Header.Get("X-Chronicle-Instance-Name")
 	realmID := uuid.NullUUID{UUID: key.RealmID, Valid: key.RealmID != uuid.Nil}
 
-	if instanceID == "" || instanceName == "" {
-		h.logger.Error("Missing instance metadata in upload request",
-			"instance_id", instanceID,
-			"instance_name", instanceName,
-		)
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message:      "Missing required instance metadata headers: X-Chronicle-Instance-Id and X-Chronicle-Instance-Name",
-			CallToAction: "Ensure your AzerothCore mod-chronicle is updated",
-			Detail:       "Both headers must be included for proper log processing and merging. See documentation for details.",
-		})
-		return
-	}
-
 	file, header, err := r.FormFile("combat_log")
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
@@ -134,41 +121,43 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check for an existing log group with matching instance metadata.
-	// If found, append to the existing file (multistream gzip concatenation)
-	// and trigger a reparse. This merges logs from raid/dungeon breaks.
-	existing, findErr := h.zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
-		Owner:        ServiceAccountID,
-		InstanceID:   instanceID,
-		InstanceName: instanceName,
-		RealmID:      realmID,
-	})
-	if findErr == nil {
-		// Append to existing group
-		if appendErr := h.chronicle.AppendServerLog(ctx, existing, file); appendErr != nil {
-			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
-				Message: "Failed to append log to existing group",
-				Detail:  appendErr.Error(),
+	if instanceID == "" || instanceName == "" {
+		// Check for an existing log group with matching instance metadata.
+		// If found, append to the existing file (multistream gzip concatenation)
+		// and trigger a reparse. This merges logs from raid/dungeon breaks.
+		existing, findErr := h.zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
+			Owner:        ServiceAccountID,
+			InstanceID:   instanceID,
+			InstanceName: instanceName,
+			RealmID:      realmID,
+		})
+		if findErr == nil {
+			// Append to existing group
+			if appendErr := h.chronicle.AppendServerLog(ctx, existing, file); appendErr != nil {
+				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+					Message: "Failed to append log to existing group",
+					Detail:  appendErr.Error(),
+				})
+				return
+			}
+
+			existingFiles, _ := h.zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
+			fileIDs := make([]uuid.UUID, 0, len(existingFiles))
+			for _, f := range existingFiles {
+				fileIDs = append(fileIDs, f.ID)
+			}
+
+			h.logger.Info("Appended server log to existing group",
+				"log_group_id", existing.ID,
+				"instance_id", instanceID,
+				"instance_name", instanceName,
+			)
+			httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
+				LogID: existing.ID,
+				Files: fileIDs,
 			})
 			return
 		}
-
-		existingFiles, _ := h.zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
-		fileIDs := make([]uuid.UUID, 0, len(existingFiles))
-		for _, f := range existingFiles {
-			fileIDs = append(fileIDs, f.ID)
-		}
-
-		h.logger.Info("Appended server log to existing group",
-			"log_group_id", existing.ID,
-			"instance_id", instanceID,
-			"instance_name", instanceName,
-		)
-		httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
-			LogID: existing.ID,
-			Files: fileIDs,
-		})
-		return
 	}
 
 	// No matching group found — normal upload flow

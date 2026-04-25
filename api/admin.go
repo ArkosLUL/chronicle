@@ -515,8 +515,11 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 		httpapi.InternalServerError(w, err)
 		return
 	}
+
+	w.Header().Set("Cache-Control", "public, max-age=30")
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SiteConfig{
-		SignupsEnabled: config.SignupsEnabled,
+		SignupsEnabled:  config.SignupsEnabled,
+		ShortLinkDomain: a.Opts.ShortLinkDomain,
 	})
 }
 
@@ -532,6 +535,7 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SiteConfig{
-		SignupsEnabled: config.SignupsEnabled,
+		SignupsEnabled:  config.SignupsEnabled,
+		ShortLinkDomain: a.Opts.ShortLinkDomain,
 	})
 }

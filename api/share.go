@@ -69,7 +69,7 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.CreateShareResponse{
 			Code: existing.Code,
-			URL:  ShareURL(r, existing.Code),
+			URL:  api.ShareURL(r, existing.Code),
 		})
 		return
 	}
@@ -102,7 +102,7 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 			if reused, lookupErr := api.Zed.GetSharedViewByInstanceAndHash(ctx, database.GetSharedViewByInstanceAndHashParams{InstanceID: instanceNullUUID, Hash: hash}); lookupErr == nil {
 				httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.CreateShareResponse{
 					Code: reused.Code,
-					URL:  ShareURL(r, reused.Code),
+					URL:  api.ShareURL(r, reused.Code),
 				})
 				return
 			}
@@ -118,7 +118,7 @@ func (api *API) CreateShare(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.CreateShareResponse{
 		Code: row.Code,
-		URL:  ShareURL(r, row.Code),
+		URL:  api.ShareURL(r, row.Code),
 	})
 }
 
@@ -173,19 +173,25 @@ func (api *API) GetShare(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) shortLinkRedirectMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if api.Opts.ShortLinkDomain == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		host := r.Host
 		if i := strings.IndexByte(host, ':'); i >= 0 {
 			host = host[:i]
 		}
 
-		if host == "chrn.link" && r.Method == http.MethodGet {
+		if host == api.Opts.ShortLinkDomain && r.Method == http.MethodGet {
+			accessURL := api.Opts.AccessURL.String()
 			path := strings.TrimPrefix(r.URL.Path, "/")
 			if code, ok := strings.CutPrefix(path, "l/"); ok && code != "" && !strings.Contains(code, "/") {
-				http.Redirect(w, r, "https://chronicleclassic.com/account/layout-lab?shared_code="+code, http.StatusFound)
+				http.Redirect(w, r, accessURL+"/account/layout-lab?shared_code="+code, http.StatusFound)
 				return
 			}
 			if path != "" && !strings.Contains(path, "/") {
-				http.Redirect(w, r, "https://chronicleclassic.com/s/"+path, http.StatusFound)
+				http.Redirect(w, r, accessURL+"/s/"+path, http.StatusFound)
 				return
 			}
 		}
@@ -193,18 +199,29 @@ func (api *API) shortLinkRedirectMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func LayoutShareURL(r *http.Request, code string) string {
-	host := r.Host
-	if strings.HasPrefix(host, "localhost") {
-		return "http://" + host + "/account/layout-lab?shared_code=" + code
+// ShareURL returns the short share URL for a given code. If a short link domain
+// is configured, it uses that domain. Otherwise it falls back to same-origin paths.
+func (api *API) ShareURL(r *http.Request, code string) string {
+	if api.Opts.ShortLinkDomain != "" {
+		return "https://" + api.Opts.ShortLinkDomain + "/" + code
 	}
-	return "https://chrn.link/l/" + code
+	return requestOrigin(r) + "/s/" + code
 }
 
-func ShareURL(r *http.Request, code string) string {
-	host := r.Host
-	if strings.HasPrefix(host, "localhost") {
-		return "http://" + host + "/s/" + code
+// LayoutShareURL returns the short share URL for a layout code. If a short link
+// domain is configured, it uses that domain. Otherwise it falls back to same-origin paths.
+func (api *API) LayoutShareURL(r *http.Request, code string) string {
+	if api.Opts.ShortLinkDomain != "" {
+		return "https://" + api.Opts.ShortLinkDomain + "/l/" + code
 	}
-	return "https://chrn.link/" + code
+	return requestOrigin(r) + "/account/layout-lab?shared_code=" + code
+}
+
+// requestOrigin returns the scheme + host for the current request.
+func requestOrigin(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	return scheme + "://" + r.Host
 }

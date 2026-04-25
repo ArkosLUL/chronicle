@@ -16,14 +16,14 @@ type Config struct {
 }
 
 type Mailer struct {
-  emailClient resend.EmailsSvc
+	client    *resend.Client
 	from      string
 	accessURL *url.URL
 	logger    *slog.Logger
 }
 
 func New(logger *slog.Logger, cfg Config) *Mailer {
-	var client res
+	var client *resend.Client
 	if cfg.APIKey != "" {
 		client = resend.NewClient(cfg.APIKey)
 	} else {
@@ -31,7 +31,7 @@ func New(logger *slog.Logger, cfg Config) *Mailer {
 	}
 	from := cfg.From
 	return &Mailer{
-		emailClient:    client.,
+		client:    client,
 		from:      from,
 		accessURL: cfg.AccessURL,
 		logger:    logger.With(slog.String("component", "mailer")),

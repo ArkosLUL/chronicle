@@ -179,3 +179,46 @@ func TestParseCreatureTemplateSQLNullSubname(t *testing.T) {
 		t.Errorf("mechanic_immune_mask: got %d, want 8388624", c.MechanicImmuneMask)
 	}
 }
+func TestParseItemTemplateSQLClassicFormat(t *testing.T) {
+	t.Parallel()
+
+	// Classic format uses explicit column names in the INSERT statement.
+	input := "INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `dmg_min3`, `dmg_max3`, `dmg_type3`, `dmg_min4`, `dmg_max4`, `dmg_type4`, `dmg_min5`, `dmg_max5`, `dmg_type5`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `Duration`, `ExtraFlags`) VALUES \n" +
+		"(25,2,7,'Worn Shortsword',1542,1,0,1,35,7,21,-1,-1,2,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1900,0,0,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,0,0,0,0,'',0,1,0,0,0,1,3,0,0,0,20,0,0,0,0,0,0,0,0,0);\n"
+
+	items, err := ParseItemTemplateSQL(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+
+	it := items[0]
+	if it.Entry != 25 {
+		t.Errorf("entry: got %d, want 25", it.Entry)
+	}
+	if it.Name != "Worn Shortsword" {
+		t.Errorf("name: got %q, want %q", it.Name, "Worn Shortsword")
+	}
+	if it.Class != 2 {
+		t.Errorf("class: got %d, want 2", it.Class)
+	}
+	if it.Subclass != 7 {
+		t.Errorf("subclass: got %d, want 7", it.Subclass)
+	}
+	if it.Quality != 1 {
+		t.Errorf("quality: got %d, want 1", it.Quality)
+	}
+	if it.DmgMin1 != 1 || it.DmgMax1 != 3 {
+		t.Errorf("dmg: got %v-%v, want 1-3", it.DmgMin1, it.DmgMax1)
+	}
+	if it.Delay != 1900 {
+		t.Errorf("delay: got %d, want 1900", it.Delay)
+	}
+	if it.MaxDurability != 20 {
+		t.Errorf("max_durability: got %d, want 20", it.MaxDurability)
+	}
+}
+

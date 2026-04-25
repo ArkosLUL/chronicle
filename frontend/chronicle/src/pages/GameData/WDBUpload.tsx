@@ -36,9 +36,11 @@ interface WDBUploadProps {
   fileHint: string;
   /** Whether to show the "hide unreliable" checkbox (item cache has unreliable spell fields) */
   showUnreliableFilter?: boolean;
+  /** Optional content rendered inside the Card before the file drop zone */
+  cardHeader?: React.ReactNode;
 }
 
-export function WDBUpload({ title, description, fileHint, showUnreliableFilter }: WDBUploadProps) {
+export function WDBUpload({ title, description, fileHint, showUnreliableFilter, cardHeader }: WDBUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"compare" | "upsert" | "insert">("compare");
   const [uploading, setUploading] = useState(false);
@@ -123,6 +125,7 @@ export function WDBUpload({ title, description, fileHint, showUnreliableFilter }
             <FileText className="h-5 w-5 text-muted-foreground" />
             <h3 className="font-semibold">WDB File</h3>
           </div>
+          {cardHeader}
           <p className="text-sm text-muted-foreground">
             Select your <code>{fileHint}</code> file, typically found in your
             WoW client's <code>Cache/WDB/enUS/</code> directory.

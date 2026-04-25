@@ -52,8 +52,7 @@ import { ArmoryPage } from "./pages/ArmoryPage"
 import { ArmorySearchPage } from "./pages/ArmorySearch"
 import { SimPage } from "./pages/Sim"
 import { GameDataLayout } from "./pages/GameData/GameDataPage"
-import { ItemsTab } from "./pages/GameData/ItemsTab"
-import { CreaturesTab } from "./pages/GameData/CreaturesTab"
+import { WDBTab } from "./pages/GameData/WDBTab"
 import { ImportSQLTab } from "./pages/GameData/ImportSQLTab"
 import { DBCTab } from "./pages/GameData/DBCTab"
 import { SpeedrunLeaderboard } from "./pages/Leaderboard/SpeedrunLeaderboard"
@@ -134,9 +133,8 @@ function App() {
         <Route path="/g/:guildId/roster" element={<GuildRoster />} />
         <Route path="/g/:guildId/settings" element={<GuildSettings />} />
         <Route path="/game-data" element={<GameDataLayout />}>
-          <Route index element={<Navigate to="/game-data/items" replace />} />
-          <Route path="items" element={<ItemsTab />} />
-          <Route path="creatures" element={<CreaturesTab />} />
+          <Route index element={<Navigate to="/game-data/wdb" replace />} />
+          <Route path="wdb" element={<WDBTab />} />
           <Route path="import-sql" element={<ImportSQLTab />} />
           <Route path="dbc" element={<DBCTab />} />
         </Route>

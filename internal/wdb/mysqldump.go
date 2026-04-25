@@ -11,9 +11,99 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// parseInsertColumnNames extracts backtick-quoted column names from an INSERT
+// statement that uses explicit columns, e.g.:
+//
+//	INSERT INTO `tbl` (`col1`, `col2`) VALUES ...
+//
+// Returns nil if no column list is found (positional VALUES format).
+func parseInsertColumnNames(stmt string) []string {
+	// Find the table name closing backtick, then look for '(' before VALUES.
+	valIdx := strings.Index(strings.ToUpper(stmt), "VALUES")
+	if valIdx == -1 {
+		return nil
+	}
+	prefix := stmt[:valIdx]
+	// Look for a parenthesised column list between the table name and VALUES.
+	openParen := strings.Index(prefix, "(")
+	if openParen == -1 {
+		return nil
+	}
+	closeParen := strings.LastIndex(prefix, ")")
+	if closeParen == -1 || closeParen <= openParen {
+		return nil
+	}
+	colSection := prefix[openParen+1 : closeParen]
+	parts := strings.Split(colSection, ",")
+	cols := make([]string, 0, len(parts))
+	for _, p := range parts {
+		col := strings.TrimSpace(p)
+		col = strings.Trim(col, "`")
+		if col != "" {
+			cols = append(cols, strings.ToLower(col))
+		}
+	}
+	if len(cols) == 0 {
+		return nil
+	}
+	return cols
+}
+
+// buildColIndex builds a lowercase column name → position map from a column list.
+func buildColIndex(cols []string) map[string]int {
+	m := make(map[string]int, len(cols))
+	for i, c := range cols {
+		m[c] = i
+	}
+	return m
+}
+
+// colStr returns the string value at the named column, or "" if not found.
+func colStr(vals []string, idx map[string]int, name string) string {
+	if i, ok := idx[name]; ok && i < len(vals) {
+		return vals[i]
+	}
+	return ""
+}
+
+// colI32 returns the int32 value at the named column, or 0 if not found.
+func colI32(vals []string, idx map[string]int, name string) int32 {
+	s := colStr(vals, idx, name)
+	if s == "" {
+		return 0
+	}
+	v, _ := atoi32(s)
+	return v
+}
+
+// colI64 returns the int64 value at the named column, or 0 if not found.
+func colI64(vals []string, idx map[string]int, name string) int64 {
+	s := colStr(vals, idx, name)
+	if s == "" {
+		return 0
+	}
+	v, _ := atoi64(s)
+	return v
+}
+
+// colF64 returns the float64 value at the named column, or 0 if not found.
+func colF64(vals []string, idx map[string]int, name string) float64 {
+	s := colStr(vals, idx, name)
+	if s == "" {
+		return 0
+	}
+	v, _ := atof64(s)
+	return v
+}
+
+const (
+	insertCreaturePrefix = "INSERT INTO `creature_template`"
+	insertItemPrefix     = "INSERT INTO `item_template`"
+)
+
 // ParseCreatureTemplateSQL parses AzerothCore-format MySQL INSERT statements
 // for the creature_template table and returns WorldCreatureTemplate rows.
-// It expects positional VALUES matching the AzerothCore schema column order.
+// Supports both positional VALUES (WoTLK) and explicit column-list formats (Classic).
 func ParseCreatureTemplateSQL(r io.Reader) ([]database.WorldCreatureTemplate, error) {
 	scanner := bufio.NewScanner(r)
 	// MySQL dumps can have very long INSERT lines (many rows per statement).
@@ -31,7 +121,7 @@ func ParseCreatureTemplateSQL(r io.Reader) ([]database.WorldCreatureTemplate, er
 		line := scanner.Text()
 
 		if !inInsert {
-			if !strings.HasPrefix(line, "INSERT INTO `creature_template` VALUES") {
+			if !strings.HasPrefix(line, insertCreaturePrefix) {
 				continue
 			}
 			inInsert = true
@@ -48,15 +138,23 @@ func ParseCreatureTemplateSQL(r io.Reader) ([]database.WorldCreatureTemplate, er
 		}
 
 		inInsert = false
-		rows, err := parseMySQLValueRows(stmt.String())
+		full := stmt.String()
+		colNames := parseInsertColumnNames(full)
+		rows, err := parseMySQLValueRows(full)
 		if err != nil {
 			return nil, fmt.Errorf("parse INSERT statement: %w", err)
 		}
 
 		for _, vals := range rows {
-			ct, err := creatureRowFromValues(vals)
-			if err != nil {
-				return nil, err
+			var ct database.WorldCreatureTemplate
+			var parseErr error
+			if colNames != nil {
+				ct, parseErr = creatureRowFromNamedValues(vals, buildColIndex(colNames))
+			} else {
+				ct, parseErr = creatureRowFromValues(vals)
+			}
+			if parseErr != nil {
+				return nil, parseErr
 			}
 			results = append(results, ct)
 		}
@@ -261,8 +359,57 @@ func creatureRowFromValues(vals []string) (database.WorldCreatureTemplate, error
 	return ct, nil
 }
 
+// creatureRowFromNamedValues builds a WorldCreatureTemplate from column-name-indexed values.
+// Used for Classic-format dumps that have explicit column lists.
+func creatureRowFromNamedValues(vals []string, idx map[string]int) (database.WorldCreatureTemplate, error) {
+	var ct database.WorldCreatureTemplate
+
+	entry := colStr(vals, idx, "entry")
+	if entry == "" {
+		return ct, fmt.Errorf("creature row missing 'entry' column")
+	}
+	var err error
+	ct.Entry, err = atoi32(entry)
+	if err != nil {
+		return ct, fmt.Errorf("creature entry: %w", err)
+	}
+
+	ct.Name = colStr(vals, idx, "name")
+	sub := colStr(vals, idx, "subname")
+	if sub != "" && sub != "NULL" {
+		ct.Subname = pgtype.Text{String: sub, Valid: true}
+	}
+	ct.DisplayId1 = colI32(vals, idx, "modelid1")
+	ct.DisplayId2 = colI32(vals, idx, "modelid2")
+	ct.DisplayId3 = colI32(vals, idx, "modelid3")
+	ct.DisplayId4 = colI32(vals, idx, "modelid4")
+	ct.LevelMin = colI32(vals, idx, "minlevel")
+	ct.LevelMax = colI32(vals, idx, "maxlevel")
+	ct.DmgMin = colF64(vals, idx, "mindmg")
+	ct.DmgMax = colF64(vals, idx, "maxdmg")
+	ct.DmgSchool = colI32(vals, idx, "dmgschool")
+	ct.AttackPower = colI32(vals, idx, "attackpower")
+	ct.DmgMultiplier = colF64(vals, idx, "dmg_multiplier")
+	ct.BaseAttackTime = colI32(vals, idx, "baseattacktime")
+	ct.RangedAttackTime = colI32(vals, idx, "rangeattacktime")
+	ct.UnitClass = colI32(vals, idx, "unitclass")
+	ct.UnitFlags = colI32(vals, idx, "unitflags")
+	ct.RangedDmgMin = colF64(vals, idx, "minrangedmg")
+	ct.RangedDmgMax = colF64(vals, idx, "maxrangedmg")
+	ct.HolyRes = colI32(vals, idx, "resistance1")
+	ct.FireRes = colI32(vals, idx, "resistance2")
+	ct.NatureRes = colI32(vals, idx, "resistance3")
+	ct.FrostRes = colI32(vals, idx, "resistance4")
+	ct.ShadowRes = colI32(vals, idx, "resistance5")
+	ct.ArcaneRes = colI32(vals, idx, "resistance6")
+	ct.MechanicImmuneMask = colI64(vals, idx, "mechanicimmune_mask")
+
+	return ct, nil
+}
+
 // ParseItemTemplateSQL parses AzerothCore-format MySQL INSERT statements
 // for the item_template table and returns WorldItemTemplate rows.
+// Supports both positional VALUES (WoTLK) and explicit column-list formats (Classic).
 func ParseItemTemplateSQL(r io.Reader) ([]database.WorldItemTemplate, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 0, 64*1024), 64*1024*1024)
@@ -275,7 +422,7 @@ func ParseItemTemplateSQL(r io.Reader) ([]database.WorldItemTemplate, error) {
 		line := scanner.Text()
 
 		if !inInsert {
-			if !strings.HasPrefix(line, "INSERT INTO `item_template` VALUES") {
+			if !strings.HasPrefix(line, insertItemPrefix) {
 				continue
 			}
 			inInsert = true
@@ -291,15 +438,23 @@ func ParseItemTemplateSQL(r io.Reader) ([]database.WorldItemTemplate, error) {
 		}
 
 		inInsert = false
-		rows, err := parseMySQLValueRows(stmt.String())
+		full := stmt.String()
+		colNames := parseInsertColumnNames(full)
+		rows, err := parseMySQLValueRows(full)
 		if err != nil {
 			return nil, fmt.Errorf("parse INSERT statement: %w", err)
 		}
 
 		for _, vals := range rows {
-			it, err := itemRowFromValues(vals)
-			if err != nil {
-				return nil, err
+			var it database.WorldItemTemplate
+			var parseErr error
+			if colNames != nil {
+				it, parseErr = itemRowFromNamedValues(vals, buildColIndex(colNames))
+			} else {
+				it, parseErr = itemRowFromValues(vals)
+			}
+			if parseErr != nil {
+				return nil, parseErr
 			}
 			results = append(results, it)
 		}
@@ -544,6 +699,147 @@ func itemRowFromValues(vals []string) (database.WorldItemTemplate, error) {
 	it.FoodType, _ = atoi32(vals[aiFoodType])
 	it.MinMoneyLoot, _ = atoi32(vals[aiMinMoneyLoot])
 	it.MaxMoneyLoot, _ = atoi32(vals[aiMaxMoneyLoot])
+
+	return it, nil
+}
+
+// itemRowFromNamedValues builds a WorldItemTemplate from column-name-indexed values.
+// Used for Classic-format dumps that have explicit column lists.
+// Column names are matched case-insensitively (idx keys are already lowercase).
+func itemRowFromNamedValues(vals []string, idx map[string]int) (database.WorldItemTemplate, error) {
+	var it database.WorldItemTemplate
+
+	entry := colStr(vals, idx, "entry")
+	if entry == "" {
+		return it, fmt.Errorf("item row missing 'entry' column")
+	}
+	var err error
+	it.Entry, err = atoi32(entry)
+	if err != nil {
+		return it, fmt.Errorf("item entry: %w", err)
+	}
+
+	it.Class = colI32(vals, idx, "class")
+	it.Subclass = colI32(vals, idx, "subclass")
+	it.Name = colStr(vals, idx, "name")
+	it.DisplayID = colI32(vals, idx, "displayid")
+	it.Quality = colI32(vals, idx, "quality")
+	it.Flags = colI32(vals, idx, "flags")
+	it.BuyCount = colI32(vals, idx, "buycount")
+	it.BuyPrice = colI32(vals, idx, "buyprice")
+	it.SellPrice = colI32(vals, idx, "sellprice")
+	it.InventoryType = colI32(vals, idx, "inventorytype")
+	it.AllowableClass = colI32(vals, idx, "allowableclass")
+	it.AllowableRace = colI32(vals, idx, "allowablerace")
+	it.ItemLevel = colI32(vals, idx, "itemlevel")
+	it.RequiredLevel = colI32(vals, idx, "requiredlevel")
+	it.RequiredSkill = colI32(vals, idx, "requiredskill")
+	it.RequiredSkillRank = colI32(vals, idx, "requiredskillrank")
+	it.RequiredSpell = colI32(vals, idx, "requiredspell")
+	it.RequiredHonorRank = colI32(vals, idx, "requiredhonorrank")
+	it.RequiredCityRank = colI32(vals, idx, "requiredcityrank")
+	it.RequiredReputationFaction = colI32(vals, idx, "requiredreputationfaction")
+	it.RequiredReputationRank = colI32(vals, idx, "requiredreputationrank")
+	it.MaxCount = colI32(vals, idx, "maxcount")
+	it.Stackable = colI32(vals, idx, "stackable")
+	it.ContainerSlots = colI32(vals, idx, "containerslots")
+
+	for i := 1; i <= 10; i++ {
+		typ := colI32(vals, idx, fmt.Sprintf("stat_type%d", i))
+		val := colI32(vals, idx, fmt.Sprintf("stat_value%d", i))
+		switch i {
+		case 1:  it.StatType1, it.StatValue1 = typ, val
+		case 2:  it.StatType2, it.StatValue2 = typ, val
+		case 3:  it.StatType3, it.StatValue3 = typ, val
+		case 4:  it.StatType4, it.StatValue4 = typ, val
+		case 5:  it.StatType5, it.StatValue5 = typ, val
+		case 6:  it.StatType6, it.StatValue6 = typ, val
+		case 7:  it.StatType7, it.StatValue7 = typ, val
+		case 8:  it.StatType8, it.StatValue8 = typ, val
+		case 9:  it.StatType9, it.StatValue9 = typ, val
+		case 10: it.StatType10, it.StatValue10 = typ, val
+		}
+	}
+
+	it.DmgMin1 = colF64(vals, idx, "dmg_min1")
+	it.DmgMax1 = colF64(vals, idx, "dmg_max1")
+	it.DmgType1 = colI32(vals, idx, "dmg_type1")
+	it.DmgMin2 = colF64(vals, idx, "dmg_min2")
+	it.DmgMax2 = colF64(vals, idx, "dmg_max2")
+	it.DmgType2 = colI32(vals, idx, "dmg_type2")
+	it.Armor = colI32(vals, idx, "armor")
+	it.HolyRes = colI32(vals, idx, "holy_res")
+	it.FireRes = colI32(vals, idx, "fire_res")
+	it.NatureRes = colI32(vals, idx, "nature_res")
+	it.FrostRes = colI32(vals, idx, "frost_res")
+	it.ShadowRes = colI32(vals, idx, "shadow_res")
+	it.ArcaneRes = colI32(vals, idx, "arcane_res")
+	it.Delay = colI32(vals, idx, "delay")
+	it.AmmoType = colI32(vals, idx, "ammo_type")
+	it.RangeMod = colF64(vals, idx, "rangedmodrange")
+
+	for i := 1; i <= 5; i++ {
+		sid := colI32(vals, idx, fmt.Sprintf("spellid_%d", i))
+		trig := colI32(vals, idx, fmt.Sprintf("spelltrigger_%d", i))
+		chg := colI32(vals, idx, fmt.Sprintf("spellcharges_%d", i))
+		ppm := colF64(vals, idx, fmt.Sprintf("spellppmrate_%d", i))
+		cd := colI32(vals, idx, fmt.Sprintf("spellcooldown_%d", i))
+		cat := colI32(vals, idx, fmt.Sprintf("spellcategory_%d", i))
+		catcd := colI32(vals, idx, fmt.Sprintf("spellcategorycooldown_%d", i))
+		switch i {
+		case 1:
+			it.Spellid1, it.Spelltrigger1, it.Spellcharges1 = sid, trig, chg
+			it.Spellppmrate1, it.Spellcooldown1, it.Spellcategory1, it.Spellcategorycooldown1 = ppm, cd, cat, catcd
+		case 2:
+			it.Spellid2, it.Spelltrigger2, it.Spellcharges2 = sid, trig, chg
+			it.Spellppmrate2, it.Spellcooldown2, it.Spellcategory2, it.Spellcategorycooldown2 = ppm, cd, cat, catcd
+		case 3:
+			it.Spellid3, it.Spelltrigger3, it.Spellcharges3 = sid, trig, chg
+			it.Spellppmrate3, it.Spellcooldown3, it.Spellcategory3, it.Spellcategorycooldown3 = ppm, cd, cat, catcd
+		case 4:
+			it.Spellid4, it.Spelltrigger4, it.Spellcharges4 = sid, trig, chg
+			it.Spellppmrate4, it.Spellcooldown4, it.Spellcategory4, it.Spellcategorycooldown4 = ppm, cd, cat, catcd
+		case 5:
+			it.Spellid5, it.Spelltrigger5, it.Spellcharges5 = sid, trig, chg
+			it.Spellppmrate5, it.Spellcooldown5, it.Spellcategory5, it.Spellcategorycooldown5 = ppm, cd, cat, catcd
+		}
+	}
+
+	it.Bonding = colI32(vals, idx, "bonding")
+	it.Description = colStr(vals, idx, "description")
+	it.PageText = colI32(vals, idx, "pagetext")
+	it.PageLanguage = colI32(vals, idx, "languageid")
+	it.PageMaterial = colI32(vals, idx, "pagematerial")
+	it.StartQuest = colI32(vals, idx, "startquest")
+	it.LockID = colI32(vals, idx, "lockid")
+	it.Material = colI32(vals, idx, "material")
+	it.Sheath = colI32(vals, idx, "sheath")
+	it.RandomProperty = colI32(vals, idx, "randomproperty")
+	it.RandomSuffix = colI32(vals, idx, "randomsuffix")
+	it.Block = colI32(vals, idx, "block")
+	it.SetID = colI32(vals, idx, "itemset")
+	it.MaxDurability = colI32(vals, idx, "maxdurability")
+	it.AreaBound = colI32(vals, idx, "area")
+	it.MapBound = colI32(vals, idx, "map")
+	it.BagFamily = colI32(vals, idx, "bagfamily")
+	it.TotemCategory = colI32(vals, idx, "totemcategory")
+	it.SocketColor1 = colI32(vals, idx, "socketcolor_1")
+	it.SocketContent1 = colI32(vals, idx, "socketcontent_1")
+	it.SocketColor2 = colI32(vals, idx, "socketcolor_2")
+	it.SocketContent2 = colI32(vals, idx, "socketcontent_2")
+	it.SocketColor3 = colI32(vals, idx, "socketcolor_3")
+	it.SocketContent3 = colI32(vals, idx, "socketcontent_3")
+	it.SocketBonus = colI32(vals, idx, "socketbonus")
+	it.GemProperties = colI32(vals, idx, "gemproperties")
+	it.RequiredDisenchantSkill = colI32(vals, idx, "requireddisenchantskill")
+	it.ArmorDamageModifier = colF64(vals, idx, "armordamagemodifier")
+	it.Duration = colI32(vals, idx, "duration")
+	it.ItemLimitCategory = colI32(vals, idx, "itemlimitcategory")
+	it.HolidayID = colI32(vals, idx, "holidayid")
+	it.DisenchantID = colI32(vals, idx, "disenchantid")
+	it.FoodType = colI32(vals, idx, "foodtype")
+	it.MinMoneyLoot = colI32(vals, idx, "minmoneyloot")
+	it.MaxMoneyLoot = colI32(vals, idx, "maxmoneyloot")
 
 	return it, nil
 }

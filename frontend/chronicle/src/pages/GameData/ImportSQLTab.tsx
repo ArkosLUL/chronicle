@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { FileText, Upload as UploadIcon, Database, ExternalLink } from "lucide-react";
+import { FileText, Upload as UploadIcon, Database, ExternalLink, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
@@ -28,16 +28,45 @@ interface UploadResult {
   diffs: EntryDiff[] | null;
 }
 
-const SUPPORTED_TABLES = [
-  { value: "creature_template", label: "creature_template", description: "AzerothCore creature template data", url: "https://raw.githubusercontent.com/azerothcore/database-wotlk/refs/heads/master/sql/base/creature_template.sql" },
-  { value: "item_template", label: "item_template", description: "AzerothCore item template data", url: "https://raw.githubusercontent.com/azerothcore/database-wotlk/refs/heads/master/sql/base/item_template.sql" },
-] as const;
+interface SQLSource {
+  label: string;
+  url: string;
+}
+
+interface SupportedTable {
+  value: string;
+  label: string;
+  description: string;
+  sources: SQLSource[];
+}
+
+const SUPPORTED_TABLES: SupportedTable[] = [
+  {
+    value: "creature_template",
+    label: "creature_template",
+    description: "Creature template data",
+    sources: [
+      { label: "Classic", url: "https://raw.githubusercontent.com/azerothcore/database-classic/refs/heads/master/World/Setup/FullDB/creature_template.sql" },
+      { label: "WoTLK", url: "https://raw.githubusercontent.com/azerothcore/database-wotlk/refs/heads/master/sql/base/creature_template.sql" },
+    ],
+  },
+  {
+    value: "item_template",
+    label: "item_template",
+    description: "Item template data",
+    sources: [
+      { label: "Classic", url: "https://raw.githubusercontent.com/azerothcore/database-classic/refs/heads/master/World/Setup/FullDB/item_template.sql" },
+      { label: "WoTLK", url: "https://raw.githubusercontent.com/azerothcore/database-wotlk/refs/heads/master/sql/base/item_template.sql" },
+    ],
+  },
+];
 
 export function ImportSQLTab() {
   const [file, setFile] = useState<File | null>(null);
   const [table, setTable] = useState<string>(SUPPORTED_TABLES[0].value);
   const [mode, setMode] = useState<"compare" | "upsert" | "insert">("compare");
   const [uploading, setUploading] = useState(false);
+  const [fetchingUrl, setFetchingUrl] = useState<string | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -73,6 +102,31 @@ export function ImportSQLTab() {
     },
     [selectFile],
   );
+
+  const onFetchFromURL = async (sourceUrl: string) => {
+    setFetchingUrl(sourceUrl);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await fetch(
+        `/api/v1/game-data/sql/import-url?mode=${mode}&table=${table}&url=${encodeURIComponent(sourceUrl)}`,
+        { method: "POST" },
+      );
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.message ?? `Import failed (${response.status})`);
+      }
+
+      const data: UploadResult = await response.json();
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setFetchingUrl(null);
+    }
+  };
 
   const onUpload = async () => {
     if (!file) return;
@@ -135,17 +189,43 @@ export function ImportSQLTab() {
             </select>
             {(() => {
               const selected = SUPPORTED_TABLES.find((t) => t.value === table);
-              return selected?.url ? (
-                <a
-                  href={selected.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1.5"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Download from AzerothCore GitHub
-                </a>
-              ) : null;
+              if (!selected?.sources.length) return null;
+              return (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-xs text-muted-foreground font-medium">Fetch from AzerothCore GitHub:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.sources.map((source) => (
+                      <div key={source.label} className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1.5"
+                          disabled={!!fetchingUrl || uploading}
+                          onClick={() => onFetchFromURL(source.url)}
+                        >
+                          {fetchingUrl === source.url ? (
+                            <>Processing…</>
+                          ) : (
+                            <>
+                              <Download className="h-3 w-3" />
+                              {source.label}
+                            </>
+                          )}
+                        </Button>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground"
+                          title={`View ${source.label} source`}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
             })()}
           </div>
 
@@ -203,7 +283,7 @@ export function ImportSQLTab() {
             </label>
           </div>
 
-          <Button onClick={onUpload} disabled={!file || uploading} className="w-full">
+          <Button onClick={onUpload} disabled={!file || uploading || !!fetchingUrl} className="w-full">
             {uploading
               ? "Processing..."
               : mode === "upsert"

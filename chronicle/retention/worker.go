@@ -177,6 +177,7 @@ func (w *RealmWorker) Work(ctx context.Context, job *river.Job[ArgsRetentionReal
 	logger.InfoContext(ctx, "retention page evaluated",
 		slog.Int("candidates", len(candidates)),
 		slog.Int("to_delete", len(toDelete)),
+		slog.Int("candidates", len(candidates)),
 		slog.Int64("kept", kept),
 	)
 
@@ -194,6 +195,12 @@ func (w *RealmWorker) Work(ctx context.Context, job *river.Job[ArgsRetentionReal
 		_ = w.Store.UpdateRetentionPolicyStats(ctx, database.UpdateRetentionPolicyStatsParams{
 			ID:      policy.ID,
 			Deleted: deleted,
+			Kept:    kept,
+		})
+	} else if args.DryRun {
+		_ = w.Store.UpdateRetentionPolicyStats(ctx, database.UpdateRetentionPolicyStatsParams{
+			ID:      policy.ID,
+			Deleted: int64(len(toDelete)),
 			Kept:    kept,
 		})
 	}
@@ -306,6 +313,6 @@ type PreviewItem struct {
 	InstanceID   uuid.UUID
 	InstanceName string
 	EndTime      time.Time
-	Action       string  // "keep", "delete", or "" (no match = default keep)
+	Action       string // "keep", "delete", or "" (no match = default keep)
 	MatchedRule  *string
 }

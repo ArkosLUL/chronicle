@@ -224,6 +224,7 @@ func (z *Authz) SetUserChronicleRoles(ctx context.Context, userID uuid.UUID, rol
 	gChron = b.GlobalChronicle()
 	usr = b.User(userID)
 
+	gChron.Chronicle_member(usr)
 	for _, role := range roles {
 		switch role {
 		case "technical_admin":

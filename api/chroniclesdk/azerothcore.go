@@ -49,3 +49,9 @@ type UploadKey struct {
 type CreateUploadKeyRequest struct {
 	Description string `json:"description"`
 }
+
+type AzerothCorePingResponse struct {
+	RealmName string `json:"realm_name"`
+	Status    string `json:"status"`
+}
+

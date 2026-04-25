@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useRetentionPolicies,
   useUpsertRetentionPolicy,
@@ -27,6 +27,9 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  ArrowUp,
+  ArrowDown,
+  Pencil,
 } from "lucide-react";
 
 // -- Condition types for the rule builder --
@@ -53,17 +56,35 @@ export function RetentionPage() {
   const runMutation = useRetentionRun();
   const [showAddPolicy, setShowAddPolicy] = useState(false);
 
-  // Build realm lookup from servers
-  const { serverMap, realmMap } = useMemo(() => {
+  // Build server lookup
+  const serverMap = useMemo(() => {
     const sMap = new Map<string, WoWServer>();
-    const rMap = new Map<string, { realm: WoWServerRealm; server: WoWServer }>();
     if (servers) {
-      for (const s of servers) {
-        sMap.set(s.id, s);
-        // Realms are fetched per-server; we'll show server names for now
-      }
+      for (const s of servers) sMap.set(s.id, s);
     }
-    return { serverMap: sMap, realmMap: rMap };
+    return sMap;
+  }, [servers]);
+
+  // Fetch realms for all servers to build realm lookup
+  const [realmMap, setRealmMap] = useState(new Map<string, { realm: WoWServerRealm; server: WoWServer }>());
+  useEffect(() => {
+    if (!servers?.length) return;
+    const controller = new AbortController();
+    Promise.all(
+      servers.map(async (s) => {
+        const res = await fetch(`/api/v1/azerothcore/servers/${s.id}/realms`, { signal: controller.signal });
+        if (!res.ok) return [];
+        const realms: WoWServerRealm[] = await res.json();
+        return realms.map((r) => ({ realm: r, server: s }));
+      }),
+    ).then((results) => {
+      const rMap = new Map<string, { realm: WoWServerRealm; server: WoWServer }>();
+      for (const entries of results) {
+        for (const entry of entries) rMap.set(entry.realm.id, entry);
+      }
+      setRealmMap(rMap);
+    });
+    return () => controller.abort();
   }, [servers]);
 
   if (error) {
@@ -144,6 +165,7 @@ export function RetentionPage() {
               key={policy.id}
               policy={policy}
               serverMap={serverMap}
+              realmMap={realmMap}
             />
           ))}
         </div>
@@ -281,9 +303,11 @@ function AddPolicyForm({
 function PolicyCard({
   policy,
   serverMap,
+  realmMap,
 }: {
   policy: RetentionPolicy;
   serverMap: Map<string, WoWServer>;
+  realmMap: Map<string, { realm: WoWServerRealm; server: WoWServer }>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAddRule, setShowAddRule] = useState(false);
@@ -294,7 +318,12 @@ function PolicyCard({
 
   const scopeLabel = policy.server_id
     ? `Server: ${serverMap.get(policy.server_id)?.name ?? policy.server_id}`
-    : `Realm: ${policy.realm_id ?? "unknown"}`;
+    : (() => {
+        const entry = policy.realm_id ? realmMap.get(policy.realm_id) : undefined;
+        return entry
+          ? `${entry.server.name} — ${entry.realm.name}`
+          : `Realm: ${policy.realm_id ?? "unknown"}`;
+      })();
 
   const toggleEnabled = () => {
     upsertPolicy.mutate({
@@ -312,7 +341,7 @@ function PolicyCard({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden transition-opacity ${!policy.enabled ? "opacity-50" : ""}`}>
       <div
         className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
@@ -328,10 +357,10 @@ function PolicyCard({
             <span className="font-medium">{scopeLabel}</span>
             {policy.enabled ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-green-500/15 text-green-500">
-                <Shield className="h-3 w-3" /> Active
+                <Shield className="h-3 w-3" /> Enabled
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-red-500/15 text-red-500">
                 <ShieldOff className="h-3 w-3" /> Disabled
               </span>
             )}
@@ -410,9 +439,12 @@ function PolicyCard({
             <p className="text-sm text-muted-foreground py-2">No rules yet. Add rules to define retention behavior.</p>
           ) : (
             <div className="space-y-2">
-              {[...policy.rules].sort((a, b) => a.priority - b.priority).map((rule) => (
-                <RuleRow key={rule.id} rule={rule} />
-              ))}
+              {(() => {
+                const sorted = [...policy.rules].sort((a, b) => a.priority - b.priority);
+                return sorted.map((rule, idx) => (
+                  <RuleRow key={rule.id} rule={rule} policyId={policy.id} sortedRules={sorted} index={idx} />
+                ));
+              })()}
             </div>
           )}
 
@@ -427,12 +459,164 @@ function PolicyCard({
 
 // -- Rule Row --
 
-function RuleRow({ rule }: { rule: RetentionRule }) {
+function RuleRow({
+  rule,
+  policyId,
+  sortedRules,
+  index,
+}: {
+  rule: RetentionRule;
+  policyId: string;
+  sortedRules: RetentionRule[];
+  index: number;
+}) {
   const deleteMutation = useDeleteRetentionRule();
+  const upsertRule = useUpsertRetentionRule();
   const conditions = parseConditions(rule.conditions);
+  const [editing, setEditing] = useState(false);
+  const [action, setAction] = useState<"keep" | "delete">(rule.action as "keep" | "delete");
+  const [description, setDescription] = useState(rule.description);
+  const [editConditions, setEditConditions] = useState<Condition[]>(conditions);
+
+  const isFirst = index === 0;
+  const isLast = index === sortedRules.length - 1;
+  const busy = upsertRule.isPending;
+
+  const swapPriority = (direction: "up" | "down") => {
+    const other = direction === "up" ? sortedRules[index - 1] : sortedRules[index + 1];
+    if (!other) return;
+    // Swap priorities between this rule and the adjacent one
+    upsertRule.mutate(
+      { policyId, priority: other.priority, action: rule.action, conditions: rule.conditions, description: rule.description },
+      {
+        onSuccess: () => {
+          upsertRule.mutate({
+            policyId,
+            priority: rule.priority,
+            action: other.action,
+            conditions: other.conditions,
+            description: other.description,
+          });
+        },
+      },
+    );
+  };
+
+  const addCondition = () => {
+    setEditConditions([
+      ...editConditions,
+      { type: "age", combinator: editConditions.length > 0 ? "and" : undefined, days: 90 },
+    ]);
+  };
+
+  const updateCondition = (i: number, updates: Partial<Condition>) => {
+    const next = [...editConditions];
+    next[i] = { ...next[i], ...updates };
+    setEditConditions(next);
+  };
+
+  const removeCondition = (i: number) => {
+    setEditConditions(editConditions.filter((_, idx) => idx !== i));
+  };
+
+  const handleSave = () => {
+    upsertRule.mutate(
+      {
+        policyId,
+        priority: rule.priority,
+        action,
+        conditions: editConditions.length > 0 ? editConditions : [],
+        description,
+      },
+      { onSuccess: () => setEditing(false) },
+    );
+  };
+
+  if (editing) {
+    return (
+      <Card className="p-4 space-y-3 border-dashed">
+        <h4 className="text-sm font-semibold">Edit Rule #{rule.priority}</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground">Action</label>
+            <select
+              value={action}
+              onChange={(e) => setAction(e.target.value as "keep" | "delete")}
+              className="w-full px-2 py-1.5 bg-background border rounded text-sm"
+            >
+              <option value="delete">Delete</option>
+              <option value="keep">Keep</option>
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs text-muted-foreground">Description</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-2 py-1.5 bg-background border rounded text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-muted-foreground">Conditions</label>
+            <Button size="sm" variant="ghost" onClick={addCondition}>
+              <Plus className="h-3 w-3 mr-1" /> Add
+            </Button>
+          </div>
+          {editConditions.length === 0 && (
+            <p className="text-xs text-muted-foreground italic">No conditions = always matches (catch-all)</p>
+          )}
+          {editConditions.map((cond, i) => (
+            <ConditionEditor
+              key={i}
+              condition={cond}
+              index={i}
+              onChange={(updates) => updateCondition(i, updates)}
+              onRemove={() => removeCondition(i)}
+            />
+          ))}
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <Button size="sm" onClick={handleSave} disabled={busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+            Save
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+        {upsertRule.isError && (
+          <p className="text-sm text-destructive">{String(upsertRule.error)}</p>
+        )}
+      </Card>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 px-3 py-2 bg-muted/30 rounded text-sm">
+      <div className="flex flex-col shrink-0">
+        <button
+          className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default"
+          disabled={isFirst || busy}
+          onClick={() => swapPriority("up")}
+          title="Move up"
+        >
+          <ArrowUp className="h-3 w-3" />
+        </button>
+        <button
+          className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default"
+          disabled={isLast || busy}
+          onClick={() => swapPriority("down")}
+          title="Move down"
+        >
+          <ArrowDown className="h-3 w-3" />
+        </button>
+      </div>
+
       <span className="text-muted-foreground font-mono text-xs w-6 shrink-0">
         #{rule.priority}
       </span>
@@ -457,18 +641,23 @@ function RuleRow({ rule }: { rule: RetentionRule }) {
         </span>
       </div>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          if (confirm("Delete this rule?")) {
-            deleteMutation.mutate(rule.id);
-          }
-        }}
-        disabled={deleteMutation.isPending}
-      >
-        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-      </Button>
+      <div className="flex gap-1 shrink-0">
+        <Button variant="ghost" size="sm" onClick={() => setEditing(true)} title="Edit">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            if (confirm("Delete this rule?")) {
+              deleteMutation.mutate(rule.id);
+            }
+          }}
+          disabled={deleteMutation.isPending}
+        >
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </Button>
+      </div>
     </div>
   );
 }

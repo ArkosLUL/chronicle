@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -16,6 +17,97 @@ import (
 )
 
 const maxSQLFileSize = 200 * 1024 * 1024 // 200 MB
+// allowedSQLHosts restricts which hosts the server will fetch SQL dumps from.
+var allowedSQLHosts = map[string]bool{
+	"raw.githubusercontent.com": true,
+}
+
+func (h *Handler) ImportSQLFromURL(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	mode := r.URL.Query().Get("mode")
+	if mode == "" {
+		mode = "compare"
+	}
+	if mode != "compare" && mode != "upsert" && mode != "insert" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid mode, must be 'compare', 'upsert', or 'insert'",
+		})
+		return
+	}
+
+	table := r.URL.Query().Get("table")
+	if table == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Missing 'table' query parameter (e.g. 'creature_template')",
+		})
+		return
+	}
+
+	rawURL := r.URL.Query().Get("url")
+	if rawURL == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Missing 'url' query parameter",
+		})
+		return
+	}
+
+	parsed, err := url.Parse(rawURL)
+	if err != nil || !allowedSQLHosts[parsed.Host] {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: fmt.Sprintf("URL host not allowed, must be one of: %s", allowedSQLHostList()),
+		})
+		return
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Invalid URL",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadGateway, chroniclesdk.Response{
+			Message: "Failed to fetch SQL file from URL",
+			Detail:  err.Error(),
+		})
+		return
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		httpapi.Write(ctx, w, http.StatusBadGateway, chroniclesdk.Response{
+			Message: fmt.Sprintf("Remote server returned %d", resp.StatusCode),
+		})
+		return
+	}
+
+	body := io.LimitReader(resp.Body, maxSQLFileSize+1)
+
+	switch table {
+	case "creature_template":
+		h.importCreatureTemplateSQL(ctx, w, mode, body)
+	case "item_template":
+		h.importItemTemplateSQL(ctx, w, mode, body)
+	default:
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: fmt.Sprintf("Unsupported table %q, supported: creature_template, item_template", table),
+		})
+	}
+}
+
+func allowedSQLHostList() string {
+	hosts := make([]string, 0, len(allowedSQLHosts))
+	for h := range allowedSQLHosts {
+		hosts = append(hosts, h)
+	}
+	return strings.Join(hosts, ", ")
+}
+
 
 func (h *Handler) ImportSQL(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

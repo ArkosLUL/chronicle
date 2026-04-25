@@ -31,21 +31,22 @@ func (h *Handler) Routes() http.Handler {
 
 	// Upload: key-based auth (no session)
 	r.Post("/upload", h.ServerLogUpload)
+	r.Get("/ping", h.Ping)
 
 	// Admin CRUD: session auth required, per-resource permission checks in handlers.
 	r.Group(func(r chi.Router) {
 		r.Use(h.auth.Authenticated(false))
 
 		// Server management
-		r.Get("/servers", h.ListServers)                  // filtered by wow_server#administer
-		r.Post("/servers", h.CreateServer)                // requires chronicle#admin_servers (global)
-		r.Delete("/servers/{serverID}", h.DeleteServer)   // requires wow_server#administer
-		r.Get("/servers/{serverID}/realms", h.ListRealms) // requires wow_server#administer
+		r.Get("/servers", h.ListServers)                    // filtered by wow_server#administer
+		r.Post("/servers", h.CreateServer)                  // requires chronicle#admin_servers (global)
+		r.Delete("/servers/{serverID}", h.DeleteServer)     // requires wow_server#administer
+		r.Get("/servers/{serverID}/realms", h.ListRealms)   // requires wow_server#administer
 		r.Post("/servers/{serverID}/realms", h.CreateRealm) // requires wow_server#administer
 
 		// Realm management (administer inherited from server)
-		r.Delete("/realms/{realmID}", h.DeleteRealm)       // requires wow_server_realm#administer
-		r.Get("/realms/{realmID}/keys", h.ListUploadKeys)  // requires wow_server_realm#administer
+		r.Delete("/realms/{realmID}", h.DeleteRealm)        // requires wow_server_realm#administer
+		r.Get("/realms/{realmID}/keys", h.ListUploadKeys)   // requires wow_server_realm#administer
 		r.Post("/realms/{realmID}/keys", h.CreateUploadKey) // requires wow_server_realm#administer
 		r.Delete("/keys/{keyID}", h.DeleteUploadKey)        // requires realm's wow_server_realm#administer
 	})

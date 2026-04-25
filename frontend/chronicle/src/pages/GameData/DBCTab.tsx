@@ -1,8 +1,24 @@
 import { useCallback, useRef, useState } from "react";
-import { FileText, Upload as UploadIcon } from "lucide-react";
+import { FileText, Upload as UploadIcon, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card/Card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert";
+
+interface SupportedDBC {
+  value: string;
+  label: string;
+  description: string;
+  fileHint: string;
+}
+
+const SUPPORTED_DBCS: SupportedDBC[] = [
+  {
+    value: "ItemDisplayInfo",
+    label: "ItemDisplayInfo",
+    description: "Item display info and icon mappings",
+    fileHint: "ItemDisplayInfo.dbc",
+  },
+];
 
 interface DBCUploadResult {
   dbc_name: string;
@@ -15,6 +31,7 @@ interface DBCUploadResult {
 
 export function DBCTab() {
   const [file, setFile] = useState<File | null>(null);
+  const [dbcType, setDbcType] = useState<string>(SUPPORTED_DBCS[0].value);
   const [mode, setMode] = useState<"compare" | "upsert" | "insert">("compare");
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<DBCUploadResult | null>(null);
@@ -96,13 +113,34 @@ export function DBCTab() {
       <Card className="p-6 max-w-lg">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-muted-foreground" />
+            <Database className="h-5 w-5 text-muted-foreground" />
             <h3 className="font-semibold">DBC File</h3>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Select an <code>ItemDisplayInfo.dbc</code> file, typically found in
-            your WoW client's <code>DBFilesClient/</code> directory (extract from MPQ).
-          </p>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">DBC Type</label>
+            <select
+              value={dbcType}
+              onChange={(e) => setDbcType(e.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              {SUPPORTED_DBCS.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label} — {d.description}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {(() => {
+            const selected = SUPPORTED_DBCS.find((d) => d.value === dbcType);
+            return (
+              <p className="text-sm text-muted-foreground">
+                Select a <code>{selected?.fileHint ?? ".dbc"}</code> file, typically found in
+                your WoW client's <code>DBFilesClient/</code> directory (extract from MPQ).
+              </p>
+            );
+          })()}
           <div
             role="button"
             tabIndex={0}

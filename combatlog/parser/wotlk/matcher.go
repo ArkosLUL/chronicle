@@ -473,13 +473,19 @@ func (p *Parser) suffixAura(ts time.Time, base baseParams, spell *spellInfo, sta
 		spellData = p.lookupSpell(chrondbc.SpellID(spell.spellID), spell.spellName)
 	}
 
+	// TODO: This is not wholly correct.
+	amt := int32(1)
+	if state == types.AuraStateRemoved {
+		amt = 0
+	}
+
 	return set(&messages.Aura{
 		MessageBase: messages.Base(ts),
 		IsBuff:      isBuff,
 		Target:      base.destGUID,
 		SpellName:   spellName,
 		SpellData:   spellData,
-		Amount:      1,
+		Amount:      amt,
 		State:       state,
 	})
 }

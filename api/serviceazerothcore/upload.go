@@ -20,39 +20,71 @@ import (
 
 const MaxLogFileSize = 250 * 1024 * 1024 // 250 MB
 
-// ServerLogUpload handles log uploads from AzerothCore mod-chronicle.
-// Authenticated via per-realm upload key (Bearer token looked up from DB).
-func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Extract bearer token
+// authenticateUploadKey extracts the Bearer token from the request, looks up
+// the upload key by hash, and checks SpiceDB upload permission on the realm.
+// On failure it writes the appropriate HTTP error and returns false.
+func (h *Handler) authenticateUploadKey(ctx context.Context, w http.ResponseWriter, r *http.Request) (database.GetUploadKeyByHashRow, bool) {
 	bearer := r.Header.Get("Authorization")
 	token := strings.TrimPrefix(bearer, "Bearer ")
 	if token == "" || token == bearer {
 		httpapi.Write(ctx, w, http.StatusUnauthorized, chroniclesdk.Response{
 			Message: "Missing or invalid Authorization header",
 		})
-		return
+		return database.GetUploadKeyByHashRow{}, false
 	}
 
-	// Look up the key by its hash
 	tokenHash := hashToken(token)
 	key, err := h.zed.GetUploadKeyByHash(ctx, tokenHash)
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusUnauthorized, chroniclesdk.Response{
 			Message: "Invalid upload key",
 		})
-		return
+		return database.GetUploadKeyByHashRow{}, false
 	}
-	// Check SpiceDB permission: can this key upload to this realm?
+
 	b := policy.New()
 	can, err := h.zed.CheckOne(ctx, nil,
 		b.Wow_server_realm(key.RealmID).CanUpload_log_Wow_server_upload_key(b.Wow_server_upload_key(key.ID)),
 	)
 	if err != nil || !can {
 		httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
-			Message: "Upload key does not have permission to upload",
+			Message: "Upload key does not have permission",
 		})
+		return database.GetUploadKeyByHashRow{}, false
+	}
+
+	return key, true
+}
+
+func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	key, ok := h.authenticateUploadKey(ctx, w, r)
+	if !ok {
+		return
+	}
+
+	realm, err := h.zed.GetWoWServerRealm(ctx, key.RealmID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+			Message: "Failed to look up realm",
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.AzerothCorePingResponse{
+		RealmName: realm.Name,
+		Status:    "ok",
+	})
+}
+
+// ServerLogUpload handles log uploads from AzerothCore mod-chronicle.
+// Authenticated via per-realm upload key (Bearer token looked up from DB).
+func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	key, ok := h.authenticateUploadKey(ctx, w, r)
+	if !ok {
 		return
 	}
 

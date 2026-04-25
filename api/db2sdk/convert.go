@@ -20,7 +20,7 @@ func User(user database.ChronicleUser, roles []string) chroniclesdk.User {
 	if t, ok := user.DataLimitUpdatedAt.(time.Time); ok {
 		dataLimitUpdated = t
 	}
-	return chroniclesdk.User{
+	u := chroniclesdk.User{
 		ID:                     user.ID,
 		Username:               user.Username,
 		Email:                  user.Email,
@@ -31,6 +31,11 @@ func User(user database.ChronicleUser, roles []string) chroniclesdk.User {
 		MaxStorageBytesUpdated: dataLimitUpdated,
 		ConsumedStorageBytes:   user.ConsumedStorageBytes,
 	}
+	if user.RawLogRetentionHours.Valid {
+		v := user.RawLogRetentionHours.Int32
+		u.RawLogRetentionHours = &v
+	}
+	return u
 }
 
 func WoWLogGroupRow[T database.GetWoWLogGroupsByOwnerRow | database.GetWoWLogGroupByIDRow](group T) chroniclesdk.WoWLogGroup {

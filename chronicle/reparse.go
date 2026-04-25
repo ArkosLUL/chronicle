@@ -14,6 +14,7 @@ const KindLogReparse = "log-reparse"
 
 type ArgsLogReparse struct {
 	LogID        uuid.UUID `json:"log_group_id"`
+	RealmID      uuid.UUID `json:"realm_id,omitempty"`
 	Verbose      bool      `json:"verbose,omitempty"`
 	IdentityMode bool      `json:"identity_mode,omitempty"`
 }
@@ -87,7 +88,7 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 		}
 	}
 
-	res, err := w.parent.EnqueueParseLog(ctx, logGroup.WoWLogGroup, job.Args.Verbose, job.Args.IdentityMode)
+	res, err := w.parent.EnqueueParseLog(ctx, logGroup.WoWLogGroup, job.Args.Verbose, job.Args.IdentityMode, job.Args.RealmID)
 	if err != nil {
 		return fmt.Errorf("enqueue log parse job: %w", err)
 	}
@@ -98,9 +99,10 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 	return nil
 }
 
-func (c *Chronicle) EnqueueReParseLog(ctx context.Context, logID uuid.UUID, verbose bool, identityMode bool) (*rivertype.JobInsertResult, error) {
+func (c *Chronicle) EnqueueReParseLog(ctx context.Context, logID uuid.UUID, verbose bool, identityMode bool, realmID uuid.UUID) (*rivertype.JobInsertResult, error) {
 	res, err := c.queue.Insert(ctx, ArgsLogReparse{
 		LogID:        logID,
+		RealmID:      realmID,
 		Verbose:      verbose,
 		IdentityMode: identityMode,
 	}, &river.InsertOpts{

@@ -768,6 +768,41 @@ func (q *sqlQuerier) DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLo
 	return items, nil
 }
 
+const getExpiredRawLogGroups = `-- name: GetExpiredRawLogGroups :many
+SELECT DISTINCT
+  wlg.id AS log_group_id
+FROM wow_log_groups wlg
+JOIN log_file lf ON lf.wow_log_id = wlg.id
+JOIN users u ON u.id = lf.owner
+WHERE
+  u.raw_log_retention_hours IS NOT NULL
+  AND lf.storage_deleted_at IS NULL
+  AND lf.created_at < NOW() - make_interval(hours => u.raw_log_retention_hours)
+LIMIT $1
+`
+
+// Returns log groups whose raw files are past their owner's retention window.
+// Only considers users who have set a retention policy (non-NULL).
+func (q *sqlQuerier) GetExpiredRawLogGroups(ctx context.Context, limit int32) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getExpiredRawLogGroups, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var log_group_id uuid.UUID
+		if err := rows.Scan(&log_group_id); err != nil {
+			return nil, err
+		}
+		items = append(items, log_group_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFileByHash = `-- name: GetFileByHash :one
 SELECT id, owner, wow_log_id, hash, size_bytes, mime_type, created_at, updated_at, storage_deleted_at, compressed_size_bytes, content_encoding FROM log_file WHERE hash = $1
 `
@@ -4167,6 +4202,17 @@ func (q *sqlQuerier) FindMatchingServerUpload(ctx context.Context, arg FindMatch
 	return i, err
 }
 
+const getServerUploadMetaRealmID = `-- name: GetServerUploadMetaRealmID :one
+SELECT realm_id FROM server_upload_meta WHERE log_group_id = $1
+`
+
+func (q *sqlQuerier) GetServerUploadMetaRealmID(ctx context.Context, logGroupID uuid.UUID) (uuid.NullUUID, error) {
+	row := q.db.QueryRow(ctx, getServerUploadMetaRealmID, logGroupID)
+	var realm_id uuid.NullUUID
+	err := row.Scan(&realm_id)
+	return realm_id, err
+}
+
 const insertServerUploadMeta = `-- name: InsertServerUploadMeta :exec
 INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_id)
 VALUES ($1, $2, $3, $4)
@@ -5508,7 +5554,7 @@ func (q *sqlQuerier) GetUserAuthSessionByID(ctx context.Context, id uuid.UUID) (
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id FROM users WHERE LOWER(email) = LOWER($1)
+SELECT id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours FROM users WHERE LOWER(email) = LOWER($1)
 `
 
 func (q *sqlQuerier) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -5522,13 +5568,14 @@ func (q *sqlQuerier) GetUserByEmail(ctx context.Context, email string) (User, er
 		&i.UpdatedAt,
 		&i.DefaultDesktopLayoutID,
 		&i.DefaultMobileLayoutID,
+		&i.RawLogRetentionHours,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-  id, username, email, created_at, updated_at, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
+  id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
 FROM
   chronicle_users
 WHERE
@@ -5544,6 +5591,9 @@ func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (ChronicleUs
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DefaultDesktopLayoutID,
+		&i.DefaultMobileLayoutID,
+		&i.RawLogRetentionHours,
 		&i.MaxStorageBytes,
 		&i.DataLimitUpdatedAt,
 		&i.ConsumedStorageBytes,
@@ -5553,7 +5603,7 @@ func (q *sqlQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (ChronicleUs
 
 const getUsersByIDs = `-- name: GetUsersByIDs :many
 SELECT
-  id, username, email, created_at, updated_at, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
+  id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
 FROM
   chronicle_users
 WHERE
@@ -5575,6 +5625,9 @@ func (q *sqlQuerier) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]Chro
 			&i.Email,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DefaultDesktopLayoutID,
+			&i.DefaultMobileLayoutID,
+			&i.RawLogRetentionHours,
 			&i.MaxStorageBytes,
 			&i.DataLimitUpdatedAt,
 			&i.ConsumedStorageBytes,
@@ -5594,7 +5647,7 @@ INSERT INTO
   users(id, username, email, created_at, updated_at)
 VALUES
   ($1, $2, $3, $4, $5)
-RETURNING id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id
+RETURNING id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours
 `
 
 type InsertUserParams struct {
@@ -5622,6 +5675,7 @@ func (q *sqlQuerier) InsertUser(ctx context.Context, arg InsertUserParams) (User
 		&i.UpdatedAt,
 		&i.DefaultDesktopLayoutID,
 		&i.DefaultMobileLayoutID,
+		&i.RawLogRetentionHours,
 	)
 	return i, err
 }
@@ -5716,7 +5770,7 @@ func (q *sqlQuerier) InsertUserAuthSession(ctx context.Context, arg InsertUserAu
 
 const listAllUsers = `-- name: ListAllUsers :many
 SELECT
-  id, username, email, created_at, updated_at, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
+  id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours, max_storage_bytes, data_limit_updated_at, consumed_storage_bytes
 FROM
   chronicle_users
 ORDER BY
@@ -5738,6 +5792,9 @@ func (q *sqlQuerier) ListAllUsers(ctx context.Context) ([]ChronicleUser, error) 
 			&i.Email,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DefaultDesktopLayoutID,
+			&i.DefaultMobileLayoutID,
+			&i.RawLogRetentionHours,
 			&i.MaxStorageBytes,
 			&i.DataLimitUpdatedAt,
 			&i.ConsumedStorageBytes,
@@ -5799,6 +5856,34 @@ func (q *sqlQuerier) UpdateUserAuthSessionTokens(ctx context.Context, arg Update
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.JwtID,
+	)
+	return i, err
+}
+
+const updateUserRawLogRetentionHours = `-- name: UpdateUserRawLogRetentionHours :one
+UPDATE users
+SET raw_log_retention_hours = $1
+WHERE id = $2
+RETURNING id, username, email, created_at, updated_at, default_desktop_layout_id, default_mobile_layout_id, raw_log_retention_hours
+`
+
+type UpdateUserRawLogRetentionHoursParams struct {
+	RawLogRetentionHours pgtype.Int4 `db:"raw_log_retention_hours" json:"raw_log_retention_hours"`
+	ID                   uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateUserRawLogRetentionHours(ctx context.Context, arg UpdateUserRawLogRetentionHoursParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserRawLogRetentionHours, arg.RawLogRetentionHours, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DefaultDesktopLayoutID,
+		&i.DefaultMobileLayoutID,
+		&i.RawLogRetentionHours,
 	)
 	return i, err
 }

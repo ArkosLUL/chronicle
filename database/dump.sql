@@ -217,7 +217,8 @@ CREATE TABLE users (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     default_desktop_layout_id uuid,
-    default_mobile_layout_id uuid
+    default_mobile_layout_id uuid,
+    raw_log_retention_hours integer
 );
 
 CREATE VIEW chronicle_users AS
@@ -226,6 +227,9 @@ CREATE VIEW chronicle_users AS
     u.email,
     u.created_at,
     u.updated_at,
+    u.default_desktop_layout_id,
+    u.default_mobile_layout_id,
+    u.raw_log_retention_hours,
     COALESCE(sl.max_storage_bytes, (0)::numeric) AS max_storage_bytes,
     sl.updated_at AS data_limit_updated_at,
     COALESCE(lf.total_size_bytes, (0)::numeric) AS consumed_storage_bytes

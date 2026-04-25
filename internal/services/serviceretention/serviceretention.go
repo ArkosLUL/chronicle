@@ -33,9 +33,10 @@ func OnRetention() string {
 type Service struct {
 	broker *services.Services
 
-	Schedule    time.Duration
-	Worker      *retention.Worker
-	RealmWorker *retention.RealmWorker
+	Schedule       time.Duration
+	Worker         *retention.Worker
+	RealmWorker    *retention.RealmWorker
+	RawLogWorker   *retention.RawLogWorker
 }
 
 func New(broker *services.Services) *Service {
@@ -73,6 +74,12 @@ func (s *Service) Start(_ context.Context) error {
 	}
 
 	s.RealmWorker = &retention.RealmWorker{
+		Store:   store,
+		Storage: stor,
+		Logger:  namedLogger,
+	}
+
+	s.RawLogWorker = &retention.RawLogWorker{
 		Store:   store,
 		Storage: stor,
 		Logger:  namedLogger,

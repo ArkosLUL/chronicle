@@ -14,3 +14,6 @@ LIMIT 1;
 -- name: InsertServerUploadMeta :exec
 INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_id)
 VALUES (@log_group_id, @instance_id, @instance_name, @realm_id);
+
+-- name: GetServerUploadMetaRealmID :one
+SELECT realm_id FROM server_upload_meta WHERE log_group_id = @log_group_id;

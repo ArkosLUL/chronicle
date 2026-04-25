@@ -126,7 +126,7 @@ func (c *Chronicle) initStorage(ctx context.Context) error {
 	return nil
 }
 
-func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logType database.LogType) (*database.WoWLogGroup, []database.LogFile, error) {
+func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logType database.LogType, realmID uuid.UUID) (*database.WoWLogGroup, []database.LogFile, error) {
 	clean := cleanup.New()
 	defer clean.Do()
 
@@ -342,7 +342,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logTyp
 		clean.Add(func() { _, _ = c.Storage.RemoveFile(ctx, BucketRaidLogs, []string{storageObject.Key}) })
 	}
 
-	res, err := c.EnqueueParseLog(ctx, group, false, false)
+	res, err := c.EnqueueParseLog(ctx, group, false, false, realmID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("enqueue log parse job: %w", err)
 	}
@@ -359,7 +359,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logTyp
 // file. Both the existing stored blob and newData are gzip streams; concatenating
 // them produces valid multistream gzip that Go's gzip.Reader reads transparently.
 // After appending, the file record is updated and a reparse is enqueued.
-func (c *Chronicle) AppendServerLog(ctx context.Context, group database.WoWLogGroup, newData io.Reader) error {
+func (c *Chronicle) AppendServerLog(ctx context.Context, group database.WoWLogGroup, newData io.Reader, realmID uuid.UUID) error {
 	files, err := c.Zed.GetWoWLogFilesByGroupID(ctx, group.ID)
 	if err != nil {
 		return fmt.Errorf("fetch log files for group %s: %w", group.ID, err)
@@ -437,7 +437,7 @@ func (c *Chronicle) AppendServerLog(ctx context.Context, group database.WoWLogGr
 	}
 
 	// Trigger reparse with the larger combined file
-	_, err = c.EnqueueReParseLog(ctx, group.ID, false, false)
+	_, err = c.EnqueueReParseLog(ctx, group.ID, false, false, realmID)
 	if err != nil {
 		return fmt.Errorf("enqueue reparse after append: %w", err)
 	}

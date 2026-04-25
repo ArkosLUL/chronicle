@@ -98,7 +98,14 @@ func (api *API) WoWLogReparse(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID, verbose, identityMode)
+	// Look up realm ID from server_upload_meta (e.g. AzerothCore uploads
+	// where REALM_INFO is not present in the combat log).
+	var realmID uuid.UUID
+	if meta, metaErr := api.Zed.GetServerUploadMetaRealmID(ctx, logID); metaErr == nil && meta.Valid {
+		realmID = meta.UUID
+	}
+
+	res, err := api.Chronicle.EnqueueReParseLog(ctx, logID, verbose, identityMode, realmID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -192,7 +199,7 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		IsGzipped: isGzipped(secondHeader),
 	}
 
-	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{firstInput, secondInput}, database.LogTypeV1)
+	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{firstInput, secondInput}, database.LogTypeV1, uuid.Nil)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -279,7 +286,7 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 		logType = overrideType
 	}
 
-	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, logType)
+	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, logType, uuid.Nil)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

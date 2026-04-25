@@ -630,14 +630,17 @@ type AuthzSchemaMigration struct {
 }
 
 type ChronicleUser struct {
-	ID                   uuid.UUID          `db:"id" json:"id"`
-	Username             string             `db:"username" json:"username"`
-	Email                string             `db:"email" json:"email"`
-	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	MaxStorageBytes      int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
-	DataLimitUpdatedAt   interface{}        `db:"data_limit_updated_at" json:"data_limit_updated_at"`
-	ConsumedStorageBytes int64              `db:"consumed_storage_bytes" json:"consumed_storage_bytes"`
+	ID                     uuid.UUID          `db:"id" json:"id"`
+	Username               string             `db:"username" json:"username"`
+	Email                  string             `db:"email" json:"email"`
+	CreatedAt              pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	DefaultDesktopLayoutID uuid.NullUUID      `db:"default_desktop_layout_id" json:"default_desktop_layout_id"`
+	DefaultMobileLayoutID  uuid.NullUUID      `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
+	RawLogRetentionHours   pgtype.Int4        `db:"raw_log_retention_hours" json:"raw_log_retention_hours"`
+	MaxStorageBytes        int64              `db:"max_storage_bytes" json:"max_storage_bytes"`
+	DataLimitUpdatedAt     interface{}        `db:"data_limit_updated_at" json:"data_limit_updated_at"`
+	ConsumedStorageBytes   int64              `db:"consumed_storage_bytes" json:"consumed_storage_bytes"`
 }
 
 type DataGrant struct {
@@ -1102,6 +1105,7 @@ type User struct {
 	UpdatedAt              pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	DefaultDesktopLayoutID uuid.NullUUID      `db:"default_desktop_layout_id" json:"default_desktop_layout_id"`
 	DefaultMobileLayoutID  uuid.NullUUID      `db:"default_mobile_layout_id" json:"default_mobile_layout_id"`
+	RawLogRetentionHours   pgtype.Int4        `db:"raw_log_retention_hours" json:"raw_log_retention_hours"`
 }
 
 type UserActionBarSlot struct {

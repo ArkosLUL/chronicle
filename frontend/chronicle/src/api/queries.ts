@@ -889,6 +889,28 @@ export function useSetUserRoles() {
   });
 }
 
+export function useSetUserRetention() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, rawLogRetentionHours }: { userId: string; rawLogRetentionHours: number }) => {
+      const response = await fetch(`/api/v1/admin/users/${userId}/retention`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raw_log_retention_hours: rawLogRetentionHours }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to set retention" }));
+        throw new Error(error.message || "Failed to set retention");
+      }
+      return response.json() as Promise<User>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}
+
 export function useUserGrants(userId: string, options?: Omit<UseQueryOptions<DataGrant[]>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["admin", "users", userId, "grants"],

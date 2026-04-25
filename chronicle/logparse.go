@@ -63,6 +63,7 @@ type OutputLogParse struct {
 
 type ArgsLogParse struct {
 	LogID        uuid.UUID `json:"log_group_id"`
+	RealmID      uuid.UUID `json:"realm_id,omitempty"`
 	Verbose      bool      `json:"verbose,omitempty"`
 	IdentityMode bool      `json:"identity_mode,omitempty"`
 }
@@ -455,6 +456,11 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			if ok {
 				realmID = foundRealm
 			}
+		}
+		// Fallback: use realm ID from job args (e.g. AzerothCore uploads
+		// where REALM_INFO is not present in the combat log).
+		if realmID == dbstatic.RealmUnknown() && job.Args.RealmID != uuid.Nil {
+			realmID = job.Args.RealmID
 		}
 
 		// Time DB insert
@@ -895,9 +901,10 @@ func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
 	return rpt
 }
 
-func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool, identityMode bool) (*rivertype.JobInsertResult, error) {
+func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool, identityMode bool, realmID uuid.UUID) (*rivertype.JobInsertResult, error) {
 	res, err := c.queue.Insert(ctx, ArgsLogParse{
 		LogID:        log.ID,
+		RealmID:      realmID,
 		Verbose:      verbose,
 		IdentityMode: identityMode,
 	}, &river.InsertOpts{

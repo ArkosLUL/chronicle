@@ -133,7 +133,7 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		})
 		if findErr == nil {
 			// Append to existing group
-			if appendErr := h.chronicle.AppendServerLog(ctx, existing, file); appendErr != nil {
+			if appendErr := h.chronicle.AppendServerLog(ctx, existing, file, key.RealmID); appendErr != nil {
 				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
 					Message: "Failed to append log to existing group",
 					Detail:  appendErr.Error(),
@@ -166,7 +166,7 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		IsGzipped: isGzipped(header),
 	}
 
-	group, files, err := h.chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, database.LogTypeAzerothcore)
+	group, files, err := h.chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, database.LogTypeAzerothcore, key.RealmID)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

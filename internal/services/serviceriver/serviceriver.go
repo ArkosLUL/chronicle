@@ -90,6 +90,7 @@ func (s *Service) Start(ctx context.Context) error {
 	ret.RealmWorker.Queue = q
 	riverqueue.AddWorker(q, ret.Worker)
 	riverqueue.AddWorker(q, ret.RealmWorker)
+	riverqueue.AddWorker(q, ret.RawLogWorker)
 	q.AddQueue(riverqueue.QueueRetention, river.QueueConfig{
 		MaxWorkers: 3,
 	})
@@ -99,6 +100,15 @@ func (s *Service) Start(ctx context.Context) error {
 				river.PeriodicInterval(ret.Schedule),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return retention.ArgsRetention{DryRun: false}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: false},
+			),
+		)
+		q.AddPeriodicJob(
+			river.NewPeriodicJob(
+				river.PeriodicInterval(ret.Schedule),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return retention.ArgsRawLogRetention{}, nil
 				},
 				&river.PeriodicJobOpts{RunOnStart: false},
 			),

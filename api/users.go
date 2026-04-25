@@ -9,6 +9,8 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
@@ -33,10 +35,7 @@ func (a *API) WhoAmI(w http.ResponseWriter, r *http.Request) {
 		Roles:                roles,
 		MaxStorageBytes:      user.MaxStorageBytes,
 		ConsumedStorageBytes: user.ConsumedStorageBytes,
-		Preferences: chroniclesdk.Preferences{
-			// Should allow people to disable hints if they want, but for now we'll just enable them by default
-			HelpfulHints: true,
-		},
+		Preferences: userPreferences(user),
 		Email:        user.Email,
 		AuthProvider: state.Claims.Provider,
 	}
@@ -79,4 +78,55 @@ func (a *API) GetMyStorage(w http.ResponseWriter, r *http.Request) {
 		ConsumedStorageBytes: user.ConsumedStorageBytes,
 		Grants:               db2sdk.DataGrants(grants),
 	})
+}
+
+// UpdateMyPreferences updates the current user's preferences.
+func (a *API) UpdateMyPreferences(w http.ResponseWriter, r *http.Request) {
+	state := chronauth.AuthenticationState(r)
+	ctx := r.Context()
+
+	var req chroniclesdk.UpdatePreferencesRequest
+	if !httpapi.Read(ctx, w, r, &req) {
+		return
+	}
+
+	if req.RawLogRetentionHours != nil {
+		val := *req.RawLogRetentionHours
+		var retentionHours pgtype.Int4
+		if val > 0 {
+			retentionHours = pgtype.Int4{Int32: val, Valid: true}
+		}
+		// val == 0 means "keep forever" → NULL in DB (retentionHours.Valid stays false)
+
+		_, err := a.Opts.Zed.UpdateUserRawLogRetentionHours(ctx, database.UpdateUserRawLogRetentionHoursParams{
+			ID:                   state.Claims.Subject,
+			RawLogRetentionHours: retentionHours,
+		})
+		if err != nil {
+			httpapi.InternalServerError(w, err)
+			return
+		}
+	}
+
+	// Return updated preferences.
+	user, err := a.Opts.Zed.GetUserByID(ctx, state.Claims.Subject)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, userPreferences(user))
+}
+
+// userPreferences converts a database user to SDK preferences.
+func userPreferences(user database.ChronicleUser) chroniclesdk.Preferences {
+	prefs := chroniclesdk.Preferences{
+		// Should allow people to disable hints if they want, but for now we'll just enable them by default
+		HelpfulHints: true,
+	}
+	if user.RawLogRetentionHours.Valid {
+		v := user.RawLogRetentionHours.Int32
+		prefs.RawLogRetentionHours = &v
+	}
+	return prefs
 }

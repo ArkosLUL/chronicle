@@ -27,11 +27,11 @@ type pendingTalent struct {
 type Tracker struct {
 	instancehook.BaseHook
 
-	Guilds          map[string]map[guid.GUID]struct{}
-	Participant     map[guid.GUID]struct{}
-	Players         map[guid.GUID]combatant.Combatant
-	ByName          map[string]guid.GUID
-	PendingTalents  map[guid.GUID]pendingTalent
+	Guilds         map[string]map[guid.GUID]struct{}
+	Participant    map[guid.GUID]struct{}
+	Players        map[guid.GUID]combatant.Combatant
+	ByName         map[string]guid.GUID
+	PendingTalents map[guid.GUID]pendingTalent
 }
 
 func New() *Tracker {
@@ -230,9 +230,7 @@ func (g *Tracker) Guild(msg *messages.Combatant) {
 	if msg.Guild.Name == "" {
 		return
 	}
-	if _, ok := g.Participant[msg.Guid]; !ok {
-		return
-	}
+
 	if _, ok := g.Guilds[msg.Guild.Name]; !ok {
 		g.Guilds[msg.Guild.Name] = make(map[guid.GUID]struct{})
 	}

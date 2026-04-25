@@ -74,6 +74,18 @@ export interface AdminOutdatedInstancesResponse {
 }
 
 // From chroniclesdk/user.go
+/**
+ * AdminSetUserRetentionRequest is the request body for setting a user's raw log retention.
+ */
+export interface AdminSetUserRetentionRequest {
+    /**
+     * RawLogRetentionHours is the number of hours to retain raw log files.
+     * 0 means keep forever (sets NULL in DB).
+     */
+    readonly raw_log_retention_hours: number;
+}
+
+// From chroniclesdk/user.go
 export interface AdminUsersResponse {
     readonly users: readonly User[];
 }
@@ -146,6 +158,12 @@ export interface AuthorizationRequest {
  * Values are true if the authorization check passed, false otherwise.
  */
 export type AuthorizationResponse = Record<string, boolean>;
+
+// From chroniclesdk/azerothcore.go
+export interface AzerothCorePingResponse {
+    readonly realm_name: string;
+    readonly status: string;
+}
 
 // From chroniclesdk/events.go
 export interface ChronicleEncounterEvents {
@@ -754,6 +772,11 @@ export interface PlayerTalents {
 // From chroniclesdk/user.go
 export interface Preferences {
     readonly helpful_hints: boolean;
+    /**
+     * RawLogRetentionHours is how long to keep raw log files in object storage
+     * after upload. nil means keep forever.
+     */
+    readonly raw_log_retention_hours: number | null;
 }
 
 // From chroniclesdk/log.go
@@ -1078,6 +1101,7 @@ export interface SimItemSpell {
 // From chroniclesdk/user.go
 export interface SiteConfig {
     readonly signups_enabled: boolean;
+    readonly short_link_domain?: string;
 }
 
 // From chroniclesdk/constants.go
@@ -1223,6 +1247,17 @@ export interface UpdateLayoutDefaultsRequest {
     readonly default_mobile_layout_id?: string;
 }
 
+// From chroniclesdk/user.go
+/**
+ * UpdatePreferencesRequest is the request body for updating user preferences.
+ */
+export interface UpdatePreferencesRequest {
+    /**
+     * RawLogRetentionHours controls raw log file retention. nil = no change, 0 = keep forever.
+     */
+    readonly raw_log_retention_hours: number | null;
+}
+
 // From chroniclesdk/regression.go
 export interface UpdateRegressionFixtureNoteRequest {
     readonly note: string;
@@ -1299,6 +1334,10 @@ export interface User {
     readonly max_storage_bytes: number;
     readonly max_storage_bytes_updated: string;
     readonly consumed_storage_bytes: number;
+    /**
+     * RawLogRetentionHours is how long to keep raw log files. nil means keep forever.
+     */
+    readonly raw_log_retention_hours: number | null;
 }
 
 // From chroniclesdk/panel_layout.go

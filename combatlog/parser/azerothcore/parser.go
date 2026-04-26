@@ -17,6 +17,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk"
 	"github.com/Emyrk/chronicle/database/gamedb"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
 // Parser wraps the WotLK parser and handles Chronicle-specific extension
@@ -26,6 +27,7 @@ type Parser struct {
 	inner  *wotlk.Parser
 	logger *slog.Logger
 	gear   gamedb.GearResolver
+	wowDB  gamedb.GameDB
 }
 
 // New creates an AzerothCore parser that wraps a WotLK parser with unix
@@ -36,7 +38,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 		return nil, err
 	}
 
-	p := &Parser{inner: inner, logger: logger, gear: gear}
+	p := &Parser{inner: inner, logger: logger, gear: gear, wowDB: wowDB}
 
 	inner.WithEventHook("CHRONICLE_HEADER", p.parseHeader)
 	inner.WithEventHook("CHRONICLE_ZONE_INFO", p.parseZoneInfo)
@@ -44,6 +46,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	inner.WithEventHook("CHRONICLE_UNIT_INFO", p.parseUnitInfo)
 	inner.WithEventHook("CHRONICLE_UNIT_EVADE", p.parseUnitEvade)
 	inner.WithEventHook("CHRONICLE_UNIT_COMBAT", p.parseUnitCombat)
+	inner.WithEventHook("SPELL_ABSORBED", p.parseSpellAbsorbed)
 
 	// Replace the WoTLK synthetics with our own.
 	// A lot of the context comes from the logs now.
@@ -284,3 +287,75 @@ func (p *Parser) parseUnitInfo(ts time.Time, m *wotlk.Matched, _ string) ([]mess
 		},
 	}, nil
 }
+// lookupSpell fetches a spell from the game database by ID.
+// Returns nil if the ID is zero or the spell is not found.
+func (p *Parser) lookupSpell(id chrondbc.SpellID) *chrondbc.Spell {
+	if id == 0 {
+		return nil
+	}
+	s, err := p.wowDB.Spell(id)
+	if err != nil {
+		return nil
+	}
+	return s
+}
+
+// parseSpellAbsorbed handles the SPELL_ABSORBED event emitted by the
+// Chronicle module's OnDamageAbsorbed hook.
+//
+// Two variants (melee vs spell damage absorbed):
+//
+//	Melee:  <base 6>, <absorbCaster 3>, <absorbSpell 3>, amount   → 7 fields after base
+//	Spell:  <base 6>, <dmgSpell 3>, <absorbCaster 3>, <absorbSpell 3>, amount  → 10 fields after base
+func (p *Parser) parseSpellAbsorbed(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
+	// Base params (6 fields).
+	srcGUID := m.Guid()
+	_ = m.String()    // srcName
+	_ = m.HexUint32() // srcFlags
+	dstGUID := m.Guid()
+	_ = m.String()    // dstName
+	_ = m.HexUint32() // dstFlags
+
+	// Variant detection: 10 remaining = spell, 7 remaining = melee.
+	var dmgSpell *chrondbc.Spell
+	if m.Remain() >= 10 {
+		dmgSpellID := m.Int32()
+		_ = m.String() // dmgSpellName
+		_ = m.School() // dmgSpellSchool
+		dmgSpell = p.lookupSpell(chrondbc.SpellID(dmgSpellID))
+	}
+
+	// Absorb caster (unit triplet).
+	absorbCaster := m.Guid()
+	_ = m.String()    // absorbCasterName
+	_ = m.HexUint32() // absorbCasterFlags
+
+	// Absorb spell prefix.
+	absorbSpellID := m.Int32()
+	_ = m.String() // absorbSpellName
+	absorbSchool := m.School()
+
+	// Amount.
+	amount := m.Int32()
+
+	if err := m.Error(); err != nil {
+		p.logger.Warn("failed to parse SPELL_ABSORBED", "error", err)
+		return nil, nil
+	}
+
+	absorbSpell := p.lookupSpell(chrondbc.SpellID(absorbSpellID))
+
+	return []messages.Message{
+		&messages.SpellAbsorbed{
+			MessageBase:  messages.Base(ts),
+			Attacker:     srcGUID,
+			Victim:       dstGUID,
+			DamageSpell:  dmgSpell,
+			AbsorbCaster: absorbCaster,
+			AbsorbSpell:  absorbSpell,
+			AbsorbSchool: absorbSchool,
+			Amount:       amount,
+		},
+	}, nil
+}
+

@@ -118,7 +118,7 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 	case "_ENERGIZE":
 		return p.suffixEnergize(ts, base, spell, m)
 	case "_DRAIN", "_LEECH":
-		return p.suffixDrain(ts, base, spell, m)
+		return p.suffixDrain(ts, base, spell, suffix, m)
 	case "_INTERRUPT":
 		return p.suffixInterrupt(ts, base, spell, m)
 	case "_DISPEL", "_STOLEN":
@@ -354,10 +354,11 @@ func (p *Parser) suffixEnergize(ts time.Time, base baseParams, spell *spellInfo,
 }
 
 // suffixDrain handles _DRAIN and _LEECH: amount, powerType, extraAmount
-func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, m *Matched) ([]messages.Message, error) {
+// _LEECH additionally emits a Gain event for the source unit (extraAmount).
+func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, suffix string, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
 	powerType := m.Int32()
-	_ = m.Int32() // extraAmount
+	extraAmount := m.Int32()
 
 	if err := m.Error(); err != nil {
 		return nil, err
@@ -371,7 +372,7 @@ func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, m 
 	}
 
 	caster := base.sourceGUID
-	return set(&messages.ResourceChange{
+	lossEvent := &messages.ResourceChange{
 		MessageBase: messages.Base(ts),
 		Target:      base.destGUID,
 		Amount:      amount,
@@ -380,7 +381,23 @@ func (p *Parser) suffixDrain(ts time.Time, base baseParams, spell *spellInfo, m 
 		SpellName:   spellName,
 		SpellData:   spellData,
 		Direction:   types.ChangeDirectionLoss,
-	})
+	}
+
+	if suffix == "_LEECH" && extraAmount > 0 {
+		dest := base.destGUID
+		gainEvent := &messages.ResourceChange{
+			MessageBase: messages.Base(ts),
+			Target:      base.sourceGUID,
+			Amount:      extraAmount,
+			Resource:    PowerTypeToResource(powerType),
+			Caster:      &dest,
+			SpellName:   spellName,
+			SpellData:   spellData,
+			Direction:   types.ChangeDirectionGain,
+		}
+		return set(lossEvent, gainEvent)
+	}
+	return set(lossEvent)
 }
 
 // suffixInterrupt handles _INTERRUPT: extraSpellID, extraSpellName, extraSchool

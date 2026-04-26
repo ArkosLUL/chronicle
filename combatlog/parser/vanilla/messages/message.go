@@ -671,3 +671,23 @@ type UnitCombatEnter struct {
 
 func (u UnitCombatEnter) Affects() []guid.GUID { return []guid.GUID{u.UnitGUID, u.VictimGUID} }
 func (*UnitCombatEnter) isMessage()            {}
+
+// SpellAbsorbed records which absorb aura soaked how much of an
+// incoming damage event. Fires once per absorb aura per hit.
+type SpellAbsorbed struct {
+	MessageBase
+	Attacker     guid.GUID
+	Victim       guid.GUID
+	// DamageSpell is nil for melee (swing) damage.
+	DamageSpell  *chrondbc.Spell
+	AbsorbCaster guid.GUID
+	AbsorbSpell  *chrondbc.Spell
+	AbsorbSchool types.School
+	Amount       int32
+}
+
+func (s SpellAbsorbed) Affects() []guid.GUID {
+	return []guid.GUID{s.Attacker, s.Victim, s.AbsorbCaster}
+}
+func (*SpellAbsorbed) isMessage() {}
+

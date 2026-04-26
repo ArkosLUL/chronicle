@@ -231,6 +231,17 @@ message Interrupt {
   int32 extra_spell_id = 5;     // ID of interrupted spell
   School extra_school = 6;      // school of interrupted spell
 }
+message Absorbed {
+  EventMeta meta = 1;
+  string attacker = 2;
+  string victim = 3;
+  optional SpellData damageSpellData = 4;  // nil for melee (swing) damage
+  string absorbCaster = 5;
+  optional SpellData absorbSpellData = 6;
+  School absorbSchool = 7;
+  int32 amount = 8;
+}
+
 
 message CombatantGearSlot {
   int32 itemId = 1;

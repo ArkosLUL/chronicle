@@ -574,8 +574,8 @@ export function AbilityTable({
                 })()}
                 {hasAbsorbedData && (() => {
                   const absorbedVal = ability.absorbed ?? 0;
-                  const totalForAbility = ability.value + absorbedVal;
-                  const absorbedPct = totalForAbility > 0 ? (absorbedVal / totalForAbility) * 100 : 0;
+                  // absorbed is a subset of value (not additive), so percentage = absorbed/value
+                  const absorbedPct = ability.value > 0 ? (absorbedVal / ability.value) * 100 : 0;
                   return (
                     <HoverCell
                       rowId={rowId}

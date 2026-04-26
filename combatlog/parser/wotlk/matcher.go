@@ -285,8 +285,9 @@ func (p *Parser) suffixMissed(ts time.Time, base baseParams, spell *spellInfo, i
 func (p *Parser) suffixHeal(ts time.Time, base baseParams, spell *spellInfo, isPeriodic bool, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
 	overheal := m.Int32()
-	_ = m.Int32() // Absorbed healing, not absorbed damage incoming.
+	absorbed := m.Int32() // Absorbed healing, not absorbed damage incoming.
 	critical := m.NilBool()
+	var _ = absorbed
 
 	if err := m.Error(); err != nil {
 		return nil, err

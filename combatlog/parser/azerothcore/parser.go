@@ -46,6 +46,9 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	inner.WithEventHook("CHRONICLE_UNIT_INFO", p.parseUnitInfo)
 	inner.WithEventHook("CHRONICLE_UNIT_EVADE", p.parseUnitEvade)
 	inner.WithEventHook("CHRONICLE_UNIT_COMBAT", p.parseUnitCombat)
+	inner.WithEventHook("CHRONICLE_ENCOUNTER_START", p.parseEncounterNoop)
+	inner.WithEventHook("CHRONICLE_ENCOUNTER_END", p.parseEncounterNoop)
+	inner.WithEventHook("CHRONICLE_ENCOUNTER_CREDIT", p.parseEncounterNoop)
 	inner.WithEventHook("SPELL_ABSORBED", p.parseSpellAbsorbed)
 
 	// Replace the WoTLK synthetics with our own.
@@ -287,6 +290,7 @@ func (p *Parser) parseUnitInfo(ts time.Time, m *wotlk.Matched, _ string) ([]mess
 		},
 	}, nil
 }
+
 // lookupSpell fetches a spell from the game database by ID.
 // Returns nil if the ID is zero or the spell is not found.
 func (p *Parser) lookupSpell(id chrondbc.SpellID) *chrondbc.Spell {
@@ -307,6 +311,13 @@ func (p *Parser) lookupSpell(id chrondbc.SpellID) *chrondbc.Spell {
 //
 //	Melee:  <base 6>, <absorbCaster 3>, <absorbSpell 3>, amount   → 7 fields after base
 //	Spell:  <base 6>, <dmgSpell 3>, <absorbCaster 3>, <absorbSpell 3>, amount  → 10 fields after base
+// parseEncounterNoop consumes CHRONICLE_ENCOUNTER_START, CHRONICLE_ENCOUNTER_END,
+// and CHRONICLE_ENCOUNTER_CREDIT without producing any messages.
+// TODO: parse into typed messages when the frontend needs encounter events.
+func (p *Parser) parseEncounterNoop(_ time.Time, _ *wotlk.Matched, _ string) ([]messages.Message, error) {
+	return nil, nil
+}
+
 func (p *Parser) parseSpellAbsorbed(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
 	// Base params (6 fields).
 	srcGUID := m.Guid()
@@ -346,7 +357,7 @@ func (p *Parser) parseSpellAbsorbed(ts time.Time, m *wotlk.Matched, _ string) ([
 	absorbSpell := p.lookupSpell(chrondbc.SpellID(absorbSpellID))
 
 	return []messages.Message{
-		&messages.SpellAbsorbed{
+		&messages.Absorbed{
 			MessageBase:  messages.Base(ts),
 			Attacker:     srcGUID,
 			Victim:       dstGUID,
@@ -358,4 +369,3 @@ func (p *Parser) parseSpellAbsorbed(ts time.Time, m *wotlk.Matched, _ string) ([
 		},
 	}, nil
 }
-

@@ -31,6 +31,7 @@ type EncounterEvents struct {
 	CombatantInfo      *Builder[*messages.Combatant, *chronicleproto.CombatantInfo]
 	Dispel             *Builder[*messages.Dispel, *chronicleproto.Dispel]
 	Interrupt          *Builder[*messages.Interrupt, *chronicleproto.Interrupt]
+	Absorbed           *Builder[*messages.Absorbed, *chronicleproto.Absorbed]
 	cnter              int32
 }
 
@@ -52,6 +53,7 @@ func New(verbose bool) *EncounterEventsInProgress {
 		CombatantInfo:      NewBuilder[*messages.Combatant, *chronicleproto.CombatantInfo](),
 		Dispel:             NewBuilder[*messages.Dispel, *chronicleproto.Dispel](),
 		Interrupt:          NewBuilder[*messages.Interrupt, *chronicleproto.Interrupt](),
+		Absorbed:           NewBuilder[*messages.Absorbed, *chronicleproto.Absorbed](),
 	}
 }
 
@@ -131,6 +133,11 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing interrupt events: %w", err)
 	}
 
+	absorbed, err := e.Absorbed.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing absorbed events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
@@ -146,6 +153,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.CombatantInfo = append(merge.CombatantInfo, combatantInfo...)
 	merge.Dispel = append(merge.Dispel, dispel...)
 	merge.Interrupt = append(merge.Interrupt, interrupt...)
+	merge.Absorbed = append(merge.Absorbed, absorbed...)
 
 	return nil
 }
@@ -231,6 +239,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("interrupt proto: %w", err)
 		}
+	case *messages.Absorbed:
+		err := AddToBuilder(e.Absorbed, ty, e.nextIndex(), types2proto.Absorbed)
+		if err != nil {
+			return fmt.Errorf("absorbed proto: %w", err)
+		}
 	}
 	return nil
 }
@@ -255,6 +268,7 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.CombatantInfo.SetZero(e.first)
 	e.Dispel.SetZero(e.first)
 	e.Interrupt.SetZero(e.first)
+	e.Absorbed.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

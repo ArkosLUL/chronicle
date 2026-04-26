@@ -128,6 +128,7 @@ function getAbilitiesBySpellIdForUnit(
   // Choose which ability map to use based on view mode
   const effectiveAbilities = result.HealerByAbilityBySpellId.get(unitId);
   const overhealAbilities = result.HealerByAbilityOverhealBySpellId.get(unitId);
+  const absorbedAbilities = result.HealerByAbilityAbsorbedBySpellId.get(unitId);
   
   if (viewMode === "overheal") {
     // Only show overhealing
@@ -155,6 +156,7 @@ function getAbilitiesBySpellIdForUnit(
         ...data,
         name: data.spellName,
         value: data.Total,
+        absorbed: absorbedAbilities?.get(spellId),
         spellId,
       });
     }
@@ -172,6 +174,7 @@ function getAbilitiesBySpellIdForUnit(
       name: data.spellName,
       value: data.Total,
       overheal: overhealData?.Total,
+      absorbed: absorbedAbilities?.get(spellId),
       spellId,
     });
   }
@@ -410,6 +413,7 @@ export function useHealingDoneBreakout({
             ...a,
             value: (a.value / durationMs) * 1000,
             overheal: a.overheal !== undefined ? (a.overheal / durationMs) * 1000 : undefined,
+            absorbed: a.absorbed !== undefined ? (a.absorbed / durationMs) * 1000 : undefined,
           }))
         : abilities;
 

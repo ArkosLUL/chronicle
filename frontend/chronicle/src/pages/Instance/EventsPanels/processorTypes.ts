@@ -318,8 +318,20 @@ export interface InterruptProcessorEvent extends EventMeta {
   extraSchool: number;   // 0=Unknown, 1=None, 2=Physical, 3=Holy, 4=Fire, 5=Nature, 6=Frost, 7=Shadow, 8=Arcane
 }
 
+export interface AbsorbedProcessorEvent extends EventMeta {
+  type: "absorbed";
+  attacker: string;              // Unit dealing the initial damage
+  victim: string;                // Unit whose shield absorbs the damage
+  damageSpellId: number | null;  // Spell that dealt the damage (null for melee)
+  damageSpellName: string | null;
+  absorbCaster: string;          // Unit that cast the absorb shield (often == victim)
+  absorbSpellId: number | null;  // e.g. Power Word: Shield
+  absorbSpellName: string | null;
+  absorbSchool: number;          // School of the absorb spell
+  amount: number;                // Damage absorbed
+}
 
-export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | InterruptProcessorEvent;
+export type ProcessorEvent = DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | ExtraAttackProcessorEvent | SlainProcessorEvent | CastProcessorEvent | AuraProcessorEvent | SpellGoProcessorEvent | AuraCastProcessorEvent | SpellStartProcessorEvent | SpellFailProcessorEvent | UnitClassificationProcessorEvent | CombatantInfoProcessorEvent | DispelProcessorEvent | InterruptProcessorEvent | AbsorbedProcessorEvent;
 
 /**
  * Selection state for filtering entities (serializable for worker transport).

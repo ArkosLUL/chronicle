@@ -400,6 +400,19 @@ func Interrupt(from time.Time, idx int32, i *messages.Interrupt) *chronicleproto
 		ExtraSchool:  School(i.ExtraSchool),
 	}
 }
+func Absorbed(from time.Time, idx int32, a *messages.Absorbed) *chronicleproto.Absorbed {
+	return &chronicleproto.Absorbed{
+		Meta:            EventMeta(from, idx, a),
+		Attacker:        a.Attacker.String(),
+		Victim:          a.Victim.String(),
+		DamageSpellData: SpellData(a.DamageSpell),
+		AbsorbCaster:    a.AbsorbCaster.String(),
+		AbsorbSpellData: SpellData(a.AbsorbSpell),
+		AbsorbSchool:    School(a.AbsorbSchool),
+		Amount:          a.Amount,
+	}
+}
+
 
 func DispelTypeConv(dt chrondbc.DispelType) chronicleproto.DispelType {
 	return chronicleproto.DispelType(dt)

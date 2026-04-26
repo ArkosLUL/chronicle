@@ -190,6 +190,7 @@ function getAbilitiesBySpellIdForUnit(
 ): AbilityDataWithSpellId[] {
   const effectiveAbilities = result.TargetByAbilityBySpellId.get(unitId);
   const overhealAbilities = result.TargetByAbilityOverhealBySpellId.get(unitId);
+  const absorbedAbilities = result.TargetByAbilityAbsorbedBySpellId.get(unitId);
   
   if (viewMode === "overheal") {
     if (!overhealAbilities) return [];
@@ -205,7 +206,7 @@ function getAbilitiesBySpellIdForUnit(
     if (!totalAbilities) return [];
     const abilities: AbilityDataWithSpellId[] = [];
     for (const [spellId, data] of totalAbilities) {
-      abilities.push({ ...data, name: data.spellName, value: data.Total, spellId });
+      abilities.push({ ...data, name: data.spellName, value: data.Total, absorbed: absorbedAbilities?.get(spellId), spellId });
     }
     return abilities.sort((a, b) => b.value - a.value);
   }
@@ -215,7 +216,7 @@ function getAbilitiesBySpellIdForUnit(
   const abilities: AbilityDataWithSpellId[] = [];
   for (const [spellId, data] of effectiveAbilities) {
     const overhealData = overhealAbilities?.get(spellId);
-    abilities.push({ ...data, name: data.spellName, value: data.Total, overheal: overhealData?.Total, spellId });
+    abilities.push({ ...data, name: data.spellName, value: data.Total, overheal: overhealData?.Total, absorbed: absorbedAbilities?.get(spellId), spellId });
   }
   
   if (overhealAbilities) {
@@ -361,6 +362,7 @@ export function useHealingTakenBreakout({
             ...a,
             value: (a.value / durationMs) * 1000,
             overheal: a.overheal !== undefined ? (a.overheal / durationMs) * 1000 : undefined,
+            absorbed: a.absorbed !== undefined ? (a.absorbed / durationMs) * 1000 : undefined,
           }))
         : abilities;
 

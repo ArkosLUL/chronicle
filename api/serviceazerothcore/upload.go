@@ -121,7 +121,7 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if instanceID == "" || instanceName == "" {
+	if instanceID != "" && instanceName != "" {
 		// Check for an existing log group with matching instance metadata.
 		// If found, append to the existing file (multistream gzip concatenation)
 		// and trigger a reparse. This merges logs from raid/dungeon breaks.

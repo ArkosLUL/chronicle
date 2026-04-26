@@ -4295,6 +4295,309 @@ export class FastInterruptCursor {
   }
 }
 
+// ============================================================================
+// Absorbed - Damage absorbed by shields (e.g. Power Word: Shield)
+// ============================================================================
+
+export interface ReusableAbsorbed {
+  type: "absorbed";
+  index: number;
+  offsetMilli: number;
+  attacker: string;
+  victim: string;
+  damageSpellId: number | null;
+  damageSpellName: string | null;
+  absorbCaster: string;
+  absorbSpellId: number | null;
+  absorbSpellName: string | null;
+  absorbSchool: number;
+  amount: number;
+  activity: ReusableActivityEntry[];
+  activityCount: number;
+}
+
+/**
+ * Zero-allocation Absorbed decoder.
+ *
+ * Absorbed proto field numbers:
+ *   1: meta (EventMeta)
+ *   2: attacker (string)
+ *   3: victim (string)
+ *   4: damageSpellData (optional SpellData) — nested: 1=id, 2=name, 3=attack_outcome
+ *   5: absorbCaster (string)
+ *   6: absorbSpellData (optional SpellData) — nested: 1=id, 2=name, 3=attack_outcome
+ *   7: absorbSchool (School enum varint)
+ *   8: amount (int32 varint)
+ */
+export class AbsorbedDecoder {
+  private readonly textDecoder = sharedTextDecoder;
+
+  /** Reusable message - mutated on each decode */
+  readonly message: ReusableAbsorbed = {
+    type: "absorbed",
+    index: 0,
+    offsetMilli: 0,
+    attacker: "",
+    victim: "",
+    damageSpellId: null,
+    damageSpellName: null,
+    absorbCaster: "",
+    absorbSpellId: null,
+    absorbSpellName: null,
+    absorbSchool: 0,
+    amount: 0,
+    activity: [],
+    activityCount: 0,
+  };
+
+  decode(data: Uint8Array, offset: number, length: number): ReusableAbsorbed {
+    const end = offset + length;
+    const msg = this.message;
+
+    // Reset fields
+    msg.index = 0;
+    msg.offsetMilli = 0;
+    msg.attacker = "";
+    msg.victim = "";
+    msg.damageSpellId = null;
+    msg.damageSpellName = null;
+    msg.absorbCaster = "";
+    msg.absorbSpellId = null;
+    msg.absorbSpellName = null;
+    msg.absorbSchool = 0;
+    msg.amount = 0;
+    msg.activityCount = 0;
+
+    while (offset < end) {
+      const tag = data[offset++];
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+
+      if (wireType === 2) {
+        // Length-delimited
+        const { value: len, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+
+        if (fieldNumber === 1) {
+          // EventMeta - decode nested
+          const metaEnd = offset + len;
+          while (offset < metaEnd) {
+            const metaTag = data[offset++];
+            const metaField = metaTag >> 3;
+            const metaWire = metaTag & 0x7;
+
+            if (metaWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (metaField === 1) msg.index = value;
+              else if (metaField === 2) msg.offsetMilli = value;
+            } else if (metaWire === 2 && metaField === 3) {
+              // ActivityEntry
+              const { value: actLen, bytesRead: actLenBytes } = readVarintFast(data, offset);
+              offset += actLenBytes;
+
+              if (msg.activityCount >= msg.activity.length) {
+                msg.activity.push({ guid: "", eventType: "" });
+              }
+              const entry = msg.activity[msg.activityCount];
+              entry.guid = "";
+              entry.eventType = "";
+
+              const actEnd = offset + actLen;
+              while (offset < actEnd) {
+                const actTag = data[offset++];
+                const actField = actTag >> 3;
+                const actWire = actTag & 0x7;
+
+                if (actWire === 2) {
+                  const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+                  offset += sLenBytes;
+                  if (actField === 1) entry.guid = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  else if (actField === 2) entry.eventType = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+                  offset += sLen;
+                }
+              }
+              msg.activityCount++;
+            }
+          }
+        } else if (fieldNumber === 2) {
+          msg.attacker = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 3) {
+          msg.victim = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 4) {
+          // damageSpellData - decode nested SpellData
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+
+            if (spellWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 1) msg.damageSpellId = value;
+            } else if (spellWire === 2) {
+              const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+              offset += sLenBytes;
+              if (spellField === 2) {
+                msg.damageSpellName = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+              }
+              offset += sLen;
+            }
+          }
+        } else if (fieldNumber === 5) {
+          msg.absorbCaster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          offset += len;
+        } else if (fieldNumber === 6) {
+          // absorbSpellData - decode nested SpellData
+          const spellEnd = offset + len;
+          while (offset < spellEnd) {
+            const spellTag = data[offset++];
+            const spellField = spellTag >> 3;
+            const spellWire = spellTag & 0x7;
+
+            if (spellWire === 0) {
+              const { value, bytesRead } = readVarintFast(data, offset);
+              offset += bytesRead;
+              if (spellField === 1) msg.absorbSpellId = value;
+            } else if (spellWire === 2) {
+              const { value: sLen, bytesRead: sLenBytes } = readVarintFast(data, offset);
+              offset += sLenBytes;
+              if (spellField === 2) {
+                msg.absorbSpellName = this.textDecoder.decode(data.subarray(offset, offset + sLen));
+              }
+              offset += sLen;
+            }
+          }
+        } else {
+          offset += len;
+        }
+      } else if (wireType === 0) {
+        // Varint
+        const { value, bytesRead } = readVarintFast(data, offset);
+        offset += bytesRead;
+        if (fieldNumber === 7) msg.absorbSchool = value;
+        else if (fieldNumber === 8) msg.amount = value;
+      }
+    }
+
+    return msg;
+  }
+}
+
+/**
+ * Fast cursor for Absorbed events with zero-allocation decoding.
+ */
+export class FastAbsorbedCursor {
+  private readonly data: Uint8Array;
+  private readonly decoder = new AbsorbedDecoder();
+  private offset: number = 0;
+
+  private _currentHeader: PayloadHeader | null = null;
+  private _messagesReadInEncounter: number = 0;
+  private _bytesProcessed: number = 0;
+
+  constructor(data: Uint8Array) {
+    this.data = data;
+    this._loadNextEncounterHeader();
+  }
+
+  get currentHeader(): PayloadHeader | null {
+    return this._currentHeader;
+  }
+
+  get hasMoreInEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    return this._messagesReadInEncounter < this._currentHeader.count;
+  }
+
+  get bytesProcessed(): number {
+    return this._bytesProcessed;
+  }
+
+  get bytesTotal(): number {
+    return this.data.length;
+  }
+
+  next(): ReusableAbsorbed | null {
+    if (!this.hasMoreInEncounter) return null;
+
+    const { value: length, bytesRead } = readVarint(this.data, this.offset);
+    const msgStart = this.offset + bytesRead;
+
+    const msg = this.decoder.decode(this.data, msgStart, length);
+
+    this.offset = msgStart + length;
+    this._bytesProcessed += bytesRead + length;
+    this._messagesReadInEncounter++;
+
+    return msg;
+  }
+
+  nextEncounter(): boolean {
+    while (this.hasMoreInEncounter) {
+      const { value: length, bytesRead } = readVarint(this.data, this.offset);
+      this.offset += bytesRead + length;
+      this._bytesProcessed += bytesRead + length;
+      this._messagesReadInEncounter++;
+    }
+    return this._loadNextEncounterHeader();
+  }
+
+  skipEncounter(): boolean {
+    if (!this._currentHeader) return false;
+    if (this._messagesReadInEncounter > 0) {
+      return this.nextEncounter();
+    }
+    this.offset += this._currentHeader.dataLength;
+    this._bytesProcessed += this._currentHeader.dataLength;
+    this._currentHeader = null;
+    this._messagesReadInEncounter = 0;
+    return this._loadNextEncounterHeader();
+  }
+
+  private _loadNextEncounterHeader(): boolean {
+    if (this.offset >= this.data.length) {
+      this._currentHeader = null;
+      return false;
+    }
+
+    const startOffset = this.offset;
+
+    const { value: strLen, bytesRead: strLenBytes } = readVarint(this.data, this.offset);
+    this.offset += strLenBytes;
+    const encounterID = sharedTextDecoder.decode(this.data.subarray(this.offset, this.offset + strLen));
+    this.offset += strLen;
+
+    const { value: timestampMs, bytesRead: tsBytes } = readVarint64(this.data, this.offset);
+    this.offset += tsBytes;
+    const tsNumber = Number(timestampMs);
+    const firstTimestamp = tsNumber >= 0 && tsNumber < Number.MAX_SAFE_INTEGER
+      ? new Date(tsNumber)
+      : new Date(NaN);
+
+    const { value: count, bytesRead: countBytes } = readVarint(this.data, this.offset);
+    this.offset += countBytes;
+
+    const { value: dataLength, bytesRead: dataLenBytes } = readVarint(this.data, this.offset);
+    this.offset += dataLenBytes;
+
+    this._currentHeader = {
+      encounterID,
+      firstTimestamp,
+      count,
+      dataLength,
+    };
+
+    this._messagesReadInEncounter = 0;
+    this._bytesProcessed += (this.offset - startOffset);
+
+    return true;
+  }
+}
+
 // CombatantInfo - Per-encounter gear/talent snapshots
 // ============================================================================
 

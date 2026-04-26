@@ -15,7 +15,7 @@
  * - Overhealing = heal amount - effective healing
  */
 
-import type { DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
+import type { AbsorbedProcessorEvent, DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
 import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "./abilityBreakout";
 import { isResourceChangeEvent, isDamageEvent } from "./events";
@@ -113,6 +113,9 @@ export type UnifiedHealingResult = {
   HealerByAbilityAbsorbed: Map<string, Map<string, number>>;
   // Target: targetID -> abilityName -> total absorbed
   TargetByAbilityAbsorbed: Map<string, Map<string, number>>;
+  // Absorbed by spell ID (for "Show ranks" mode)
+  HealerByAbilityAbsorbedBySpellId: Map<string, Map<number, number>>;
+  TargetByAbilityAbsorbedBySpellId: Map<string, Map<number, number>>;
   
   // === Shared state ===
   // Health deficit tracking: targetGUID -> deficit (positive = damage taken)
@@ -143,10 +146,10 @@ function getDeficits(state: UnifiedHealingResult, encounterID: string): Map<stri
 /**
  * Create the unified healing processor.
  */
-export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingResult, DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent> {
+export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingResult, DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | AbsorbedProcessorEvent> {
   return {
     id: "healing",
-    streams: ["damage", "heal", "resource_change"],
+    streams: ["damage", "heal", "resource_change", "absorbed"],
     processAllEvents: true, // Deficit tracking needs ALL events; filter applied inside for aggregation only
 
     createState: () => ({
@@ -173,6 +176,8 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       // Absorbed
       HealerByAbilityAbsorbed: new Map(),
       TargetByAbilityAbsorbed: new Map(),
+      HealerByAbilityAbsorbedBySpellId: new Map(),
+      TargetByAbilityAbsorbedBySpellId: new Map(),
       TargetBySource: new Map(),
       TargetBySourceOverheal: new Map(),
       TargetBySourceTotal: new Map(),
@@ -185,7 +190,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
 
     processEvent: (
       state: UnifiedHealingResult,
-      event: DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent,
+      event: DamageProcessorEvent | HealProcessorEvent | ResourceChangeProcessorEvent | AbsorbedProcessorEvent,
       encounterID: string,
       _: Date,
       streamType: string,
@@ -276,35 +281,47 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       }
 
       // ──────────────────────────────────────────────
-      // PHASE 2: Aggregation — event.overheal is always set by now
+      // PHASE 2: Aggregation — event.overheal is always set by now.
+      // Also handles "absorbed" events (3.3.5a only — damage prevented by
+      // absorb shields). Absorbed events pass through Phase 1 untouched
+      // because they are neither damage nor heal nor resource_change.
       // ──────────────────────────────────────────────
       
-      // From here on, we're handling heal events or resource_change health gains
-      if (!(streamType === "heal" || streamType === "resource_change")) return;
-      if (!event.caster) return;
+      const isAbsorbed = streamType === "absorbed";
+
+      // From here on, we're handling heal, resource_change health gains, or absorbed events
+      if (!(streamType === "heal" || streamType === "resource_change" || isAbsorbed)) return;
+
+      // Map fields: absorbed events use absorbCaster/victim instead of caster/target
+      const casterGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).absorbCaster : event.caster;
+      const targetGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).victim : event.target;
+      if (!casterGuid) return;
 
       // Resolve caster via resolveEntity (handles players, pets, objects)
       const grouping = extractGroupingFromPanelOption(context.panelOption, "merged");
       const petMode = extractPetModeFromPanelOption(context.panelOption);
-      const entity = resolveEntity(event.caster, context, grouping, petMode);
+      const entity = resolveEntity(casterGuid, context, grouping, petMode);
 
       const healerID = entity.id;
-      const targetID = event.target;
       const healAmount = event.amount;
-      const overheal = streamType === "heal"
-        ? (event as HealProcessorEvent).overheal ?? 0
-        : (event as ResourceChangeProcessorEvent).overResource ?? 0;
+      // Absorbs are 100% effective (no overheal possible)
+      const overheal = isAbsorbed ? 0
+        : streamType === "heal"
+          ? (event as HealProcessorEvent).overheal ?? 0
+          : (event as ResourceChangeProcessorEvent).overResource ?? 0;
       const effectiveHeal = healAmount - overheal;
 
-      // Filter check: deficit tracking above always runs, but only aggregate events that pass the filter
-      if (context.compiledFilter && !context.compiledFilter(event)) return;
+      // Filter check: deficit tracking above always runs, but only aggregate events that pass the filter.
+      // Absorbed events bypass the compiled filter (they lack the standard caster/target
+      // fields the filter system expects; Phase 1 filtering is sufficient).
+      if (context.compiledFilter && !isAbsorbed && !context.compiledFilter(event)) return;
 
       // Get healer info from resolved entity
       const healerName = entity.name;
       const healerClass = entity.class;
       
       // Determine if this is an "other" target (non-player, non-pet)
-      const isOtherTarget = effectiveHeal === 0 && overheal === healAmount && !isPlayerOrFriendlyPet(targetID);
+      const isOtherTarget = !isAbsorbed && effectiveHeal === 0 && overheal === healAmount && !isPlayerOrFriendlyPet(targetGuid);
       
       // Get target info via resolveEntity (respects grouping/petMode settings)
       let aggregateTargetID: string;
@@ -315,7 +332,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         targetName = "Other";
         targetClass = "NPC";
       } else {
-        const targetEntity = resolveEntity(targetID, context, grouping, petMode);
+        const targetEntity = resolveEntity(targetGuid, context, grouping, petMode);
         aggregateTargetID = targetEntity.id;
         targetName = targetEntity.name;
         targetClass = targetEntity.class;
@@ -391,16 +408,18 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       if (!context.selectedEncounterIds.has(encounterID)) return;
       
       // Determine ability name
-      let abilityName = event.sourceName || "???";
-      const hitType = isResourceChangeEvent(event, streamType) ? HitTypePeriodic : (event as HealProcessorEvent).hitType;
+      let abilityName = isAbsorbed
+        ? ((event as AbsorbedProcessorEvent).absorbSpellName || "Absorb")
+        : (event.sourceName || "???");
+      const hitType = isAbsorbed ? 0 : isResourceChangeEvent(event, streamType) ? HitTypePeriodic : (event as HealProcessorEvent).hitType;
       if (hasHitType(hitType, HitTypePeriodic)) {
         abilityName = abilityName + " (HoT)";
       }
 
       // When pet healing is merged into the owner row, label abilities as "<PetName> (Pet)"
-      const casterHasOwner = !!(context.unitState?.getOwner(event.caster) ?? context.units?.[event.caster]?.owner);
+      const casterHasOwner = !!(context.unitState?.getOwner(casterGuid) ?? context.units?.[casterGuid]?.owner);
       if (casterHasOwner && grouping === "merged") {
-        const petName = context.units?.[event.caster]?.name || event.caster.toString();
+        const petName = context.units?.[casterGuid]?.name || casterGuid.toString();
         abilityName = `${petName} (Pet)`;
       }
 
@@ -416,8 +435,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       accumulateAbilityBreakout(state.HealerByAbilityTotal, healerID, abilityName, healAmount, hitType);
 
       // Spell ID keyed breakdown (for "Show ranks" mode)
-      // Only available for actual heal events, not resource_change events
-      const spellId = !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
+      // Available for heal events and absorbed events, not resource_change
+      const spellId = isAbsorbed
+        ? (event as AbsorbedProcessorEvent).absorbSpellId
+        : !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
       if (spellId != null) {
         if (effectiveHeal > 0) {
           accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, spellId, abilityName, effectiveHeal, hitType);
@@ -464,8 +485,11 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         accumulateAbilityBreakoutBySpellId(state.TargetByAbilityTotalBySpellId, aggregateTargetID, spellId, abilityName, healAmount, hitType);
       }
 
-      // Absorbed tracking (heal events only)
-      const absorbed = streamType === "heal" ? (event as HealProcessorEvent).absorbed ?? 0 : 0;
+      // Absorbed tracking: heal events' absorbed field (healing eaten by a shield on
+      // the target) AND absorbed stream events (damage prevented by absorb shields).
+      const absorbed = isAbsorbed ? event.amount
+        : streamType === "heal" ? (event as HealProcessorEvent).absorbed ?? 0
+        : 0;
       if (absorbed > 0) {
         const healerAbsorbs = state.HealerByAbilityAbsorbed.get(healerID) || new Map();
         healerAbsorbs.set(abilityName, (healerAbsorbs.get(abilityName) || 0) + absorbed);
@@ -474,6 +498,17 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         const targetAbsorbs = state.TargetByAbilityAbsorbed.get(aggregateTargetID) || new Map();
         targetAbsorbs.set(abilityName, (targetAbsorbs.get(abilityName) || 0) + absorbed);
         state.TargetByAbilityAbsorbed.set(aggregateTargetID, targetAbsorbs);
+
+        // Spell-ID-keyed absorbed (for "Show ranks" mode)
+        if (spellId != null) {
+          const healerAbsorbsBySpellId = state.HealerByAbilityAbsorbedBySpellId.get(healerID) || new Map();
+          healerAbsorbsBySpellId.set(spellId, (healerAbsorbsBySpellId.get(spellId) || 0) + absorbed);
+          state.HealerByAbilityAbsorbedBySpellId.set(healerID, healerAbsorbsBySpellId);
+
+          const targetAbsorbsBySpellId = state.TargetByAbilityAbsorbedBySpellId.get(aggregateTargetID) || new Map();
+          targetAbsorbsBySpellId.set(spellId, (targetAbsorbsBySpellId.get(spellId) || 0) + absorbed);
+          state.TargetByAbilityAbsorbedBySpellId.set(aggregateTargetID, targetAbsorbsBySpellId);
+        }
       }
 
       // Target source breakdown

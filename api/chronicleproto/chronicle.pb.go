@@ -2005,6 +2005,106 @@ func (x *Interrupt) GetExtraSchool() School {
 	return School_Unknown
 }
 
+type Absorbed struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Meta            *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Attacker        string                 `protobuf:"bytes,2,opt,name=attacker,proto3" json:"attacker,omitempty"`
+	Victim          string                 `protobuf:"bytes,3,opt,name=victim,proto3" json:"victim,omitempty"`
+	DamageSpellData *SpellData             `protobuf:"bytes,4,opt,name=damageSpellData,proto3,oneof" json:"damageSpellData,omitempty"` // nil for melee (swing) damage
+	AbsorbCaster    string                 `protobuf:"bytes,5,opt,name=absorbCaster,proto3" json:"absorbCaster,omitempty"`
+	AbsorbSpellData *SpellData             `protobuf:"bytes,6,opt,name=absorbSpellData,proto3,oneof" json:"absorbSpellData,omitempty"`
+	AbsorbSchool    School                 `protobuf:"varint,7,opt,name=absorbSchool,proto3,enum=chronicleproto.School" json:"absorbSchool,omitempty"`
+	Amount          int32                  `protobuf:"varint,8,opt,name=amount,proto3" json:"amount,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *Absorbed) Reset() {
+	*x = Absorbed{}
+	mi := &file_chronicle_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Absorbed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Absorbed) ProtoMessage() {}
+
+func (x *Absorbed) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Absorbed.ProtoReflect.Descriptor instead.
+func (*Absorbed) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *Absorbed) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *Absorbed) GetAttacker() string {
+	if x != nil {
+		return x.Attacker
+	}
+	return ""
+}
+
+func (x *Absorbed) GetVictim() string {
+	if x != nil {
+		return x.Victim
+	}
+	return ""
+}
+
+func (x *Absorbed) GetDamageSpellData() *SpellData {
+	if x != nil {
+		return x.DamageSpellData
+	}
+	return nil
+}
+
+func (x *Absorbed) GetAbsorbCaster() string {
+	if x != nil {
+		return x.AbsorbCaster
+	}
+	return ""
+}
+
+func (x *Absorbed) GetAbsorbSpellData() *SpellData {
+	if x != nil {
+		return x.AbsorbSpellData
+	}
+	return nil
+}
+
+func (x *Absorbed) GetAbsorbSchool() School {
+	if x != nil {
+		return x.AbsorbSchool
+	}
+	return School_Unknown
+}
+
+func (x *Absorbed) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
 type CombatantGearSlot struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	ItemId             int32                  `protobuf:"varint,1,opt,name=itemId,proto3" json:"itemId,omitempty"`
@@ -2016,7 +2116,7 @@ type CombatantGearSlot struct {
 
 func (x *CombatantGearSlot) Reset() {
 	*x = CombatantGearSlot{}
-	mi := &file_chronicle_proto_msgTypes[20]
+	mi := &file_chronicle_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2028,7 +2128,7 @@ func (x *CombatantGearSlot) String() string {
 func (*CombatantGearSlot) ProtoMessage() {}
 
 func (x *CombatantGearSlot) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[20]
+	mi := &file_chronicle_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2041,7 +2141,7 @@ func (x *CombatantGearSlot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CombatantGearSlot.ProtoReflect.Descriptor instead.
 func (*CombatantGearSlot) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{20}
+	return file_chronicle_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CombatantGearSlot) GetItemId() int32 {
@@ -2075,7 +2175,7 @@ type CombatantTalents struct {
 
 func (x *CombatantTalents) Reset() {
 	*x = CombatantTalents{}
-	mi := &file_chronicle_proto_msgTypes[21]
+	mi := &file_chronicle_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2087,7 +2187,7 @@ func (x *CombatantTalents) String() string {
 func (*CombatantTalents) ProtoMessage() {}
 
 func (x *CombatantTalents) ProtoReflect() protoreflect.Message {
-	mi := &file_chronicle_proto_msgTypes[21]
+	mi := &file_chronicle_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2100,7 +2200,7 @@ func (x *CombatantTalents) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CombatantTalents.ProtoReflect.Descriptor instead.
 func (*CombatantTalents) Descriptor() ([]byte, []int) {
-	return file_chronicle_proto_rawDescGZIP(), []int{21}
+	return file_chronicle_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CombatantTalents) GetSummary() []int32 {
@@ -2322,7 +2422,18 @@ const file_chronicle_proto_rawDesc = "" +
 	"\n" +
 	"spell_name\x18\x04 \x01(\tR\tspellName\x12$\n" +
 	"\x0eextra_spell_id\x18\x05 \x01(\x05R\fextraSpellId\x129\n" +
-	"\fextra_school\x18\x06 \x01(\x0e2\x16.chronicleproto.SchoolR\vextraSchool\"\xa8\x01\n" +
+	"\fextra_school\x18\x06 \x01(\x0e2\x16.chronicleproto.SchoolR\vextraSchool\"\xa1\x03\n" +
+	"\bAbsorbed\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1a\n" +
+	"\battacker\x18\x02 \x01(\tR\battacker\x12\x16\n" +
+	"\x06victim\x18\x03 \x01(\tR\x06victim\x12H\n" +
+	"\x0fdamageSpellData\x18\x04 \x01(\v2\x19.chronicleproto.SpellDataH\x00R\x0fdamageSpellData\x88\x01\x01\x12\"\n" +
+	"\fabsorbCaster\x18\x05 \x01(\tR\fabsorbCaster\x12H\n" +
+	"\x0fabsorbSpellData\x18\x06 \x01(\v2\x19.chronicleproto.SpellDataH\x01R\x0fabsorbSpellData\x88\x01\x01\x12:\n" +
+	"\fabsorbSchool\x18\a \x01(\x0e2\x16.chronicleproto.SchoolR\fabsorbSchool\x12\x16\n" +
+	"\x06amount\x18\b \x01(\x05R\x06amountB\x12\n" +
+	"\x10_damageSpellDataB\x12\n" +
+	"\x10_absorbSpellData\"\xa8\x01\n" +
 	"\x11CombatantGearSlot\x12\x16\n" +
 	"\x06itemId\x18\x01 \x01(\x05R\x06itemId\x12!\n" +
 	"\tenchantId\x18\x02 \x01(\x05H\x00R\tenchantId\x88\x01\x01\x123\n" +
@@ -2387,7 +2498,7 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),                // 0: chronicleproto.School
 	(CastAction)(0),            // 1: chronicleproto.CastAction
@@ -2414,8 +2525,9 @@ var file_chronicle_proto_goTypes = []any{
 	(*Dispel)(nil),             // 22: chronicleproto.Dispel
 	(*CombatantInfo)(nil),      // 23: chronicleproto.CombatantInfo
 	(*Interrupt)(nil),          // 24: chronicleproto.Interrupt
-	(*CombatantGearSlot)(nil),  // 25: chronicleproto.CombatantGearSlot
-	(*CombatantTalents)(nil),   // 26: chronicleproto.CombatantTalents
+	(*Absorbed)(nil),           // 25: chronicleproto.Absorbed
+	(*CombatantGearSlot)(nil),  // 26: chronicleproto.CombatantGearSlot
+	(*CombatantTalents)(nil),   // 27: chronicleproto.CombatantTalents
 }
 var file_chronicle_proto_depIdxs = []int32{
 	7,  // 0: chronicleproto.EventMeta.activity:type_name -> chronicleproto.ActivityEntry
@@ -2452,15 +2564,19 @@ var file_chronicle_proto_depIdxs = []int32{
 	5,  // 31: chronicleproto.Dispel.spellData:type_name -> chronicleproto.SpellData
 	4,  // 32: chronicleproto.Dispel.dispelType:type_name -> chronicleproto.DispelType
 	8,  // 33: chronicleproto.CombatantInfo.meta:type_name -> chronicleproto.EventMeta
-	25, // 34: chronicleproto.CombatantInfo.gear:type_name -> chronicleproto.CombatantGearSlot
-	26, // 35: chronicleproto.CombatantInfo.talents:type_name -> chronicleproto.CombatantTalents
+	26, // 34: chronicleproto.CombatantInfo.gear:type_name -> chronicleproto.CombatantGearSlot
+	27, // 35: chronicleproto.CombatantInfo.talents:type_name -> chronicleproto.CombatantTalents
 	8,  // 36: chronicleproto.Interrupt.meta:type_name -> chronicleproto.EventMeta
 	0,  // 37: chronicleproto.Interrupt.extra_school:type_name -> chronicleproto.School
-	38, // [38:38] is the sub-list for method output_type
-	38, // [38:38] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	8,  // 38: chronicleproto.Absorbed.meta:type_name -> chronicleproto.EventMeta
+	5,  // 39: chronicleproto.Absorbed.damageSpellData:type_name -> chronicleproto.SpellData
+	5,  // 40: chronicleproto.Absorbed.absorbSpellData:type_name -> chronicleproto.SpellData
+	0,  // 41: chronicleproto.Absorbed.absorbSchool:type_name -> chronicleproto.School
+	42, // [42:42] is the sub-list for method output_type
+	42, // [42:42] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -2485,13 +2601,14 @@ func file_chronicle_proto_init() {
 	file_chronicle_proto_msgTypes[17].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[18].OneofWrappers = []any{}
 	file_chronicle_proto_msgTypes[20].OneofWrappers = []any{}
+	file_chronicle_proto_msgTypes[21].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   22,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

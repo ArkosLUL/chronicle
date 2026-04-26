@@ -85,6 +85,7 @@ message Damage {
   School school = 8;
   repeated Tailer tailers = 9;
   optional SpellData spellData = 10;
+  int32 overkill = 11;
 }
 
 message ResourceChange {

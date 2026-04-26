@@ -48,12 +48,14 @@ function getBinMs(context: ProcessorContext): number {
 /** Extract a numeric "amount" from any event type. Returns 0 for event types without amounts. */
 function getEventAmount(event: ProcessorEvent): number {
   switch (event.type) {
-    case "damage":
     case "resource_change":
+      return event.amount;
     case "extra_attack":
       return event.amount;
     case "heal":
-      return event.amount + event.absorbed
+      return event.amount;
+    case "damage":
+      return event.amount - event.overkill;
     case "slain":
       return 1; // count
     case "cast":

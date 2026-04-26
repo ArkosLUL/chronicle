@@ -239,8 +239,11 @@ export function createDamageDoneProcessor(
       const ownerName = entity.name;
       const ownerClass = entity.class;
 
+      // Effective amount excludes overkill (damage beyond the killing blow).
+      const effectiveAmount = event.amount - (event.overkill || 0);
+
       // Vulnerability decomposition (bonus + base). Defaults to no bonus.
-      let baseAmount = event.amount;
+      let baseAmount = effectiveAmount;
       let bonusAmount = 0;
       let schoolMatchesSelectedVulnerability = true;
 
@@ -265,7 +268,7 @@ export function createDamageDoneProcessor(
           );
 
           if (activeMultiplier != null || activeFlatAffect != null) {
-            let adjustedAmount = event.amount;
+            let adjustedAmount = effectiveAmount;
 
             // Flat modifiers are represented as a per-hit amount in logs.
             // DoT ticks are not "hits" and should not receive flat bonuses (e.g. Gift of Arthas).
@@ -278,7 +281,7 @@ export function createDamageDoneProcessor(
             }
 
             baseAmount = adjustedAmount;
-            bonusAmount = event.amount - baseAmount;
+            bonusAmount = effectiveAmount - baseAmount;
           }
         }
       }
@@ -309,7 +312,7 @@ export function createDamageDoneProcessor(
       } as DamageDoneData;
 
       // Cached static info
-      existing.target.set(event.target, (existing.target.get(event.target) || 0) + event.amount);
+      existing.target.set(event.target, (existing.target.get(event.target) || 0) + effectiveAmount);
       encounterDamage.set(damageOwner, existing);
       state.EncounterDamage.set(encounterID, encounterDamage);
 
@@ -332,13 +335,13 @@ export function createDamageDoneProcessor(
           abilityName = abilityName + " (DoT)";
         }
 
-        accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, event.amount, event.hitType);
+        accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, effectiveAmount, event.hitType, event.amount);
         // Only track by spell ID if we have one (not for melee/environmental damage)
         if (event.spellId != null) {
-          accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageOwner, event.spellId, abilityName, event.amount, event.hitType);
+          accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageOwner, event.spellId, abilityName, effectiveAmount, event.hitType, event.amount);
         }
 
-        accumulateOwnerTargetValue(state.ByTarget, damageOwner, event.target, event.amount);
+        accumulateOwnerTargetValue(state.ByTarget, damageOwner, event.target, effectiveAmount);
 
         // Vulnerability breakouts
         if (includeInVulnerabilityTotals) {

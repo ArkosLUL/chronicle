@@ -660,6 +660,7 @@ type Damage struct {
 	School        School     `protobuf:"varint,8,opt,name=school,proto3,enum=chronicleproto.School" json:"school,omitempty"`
 	Tailers       []*Tailer  `protobuf:"bytes,9,rep,name=tailers,proto3" json:"tailers,omitempty"`
 	SpellData     *SpellData `protobuf:"bytes,10,opt,name=spellData,proto3,oneof" json:"spellData,omitempty"`
+	Overkill      int32      `protobuf:"varint,11,opt,name=overkill,proto3" json:"overkill,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -755,6 +756,13 @@ func (x *Damage) GetSpellData() *SpellData {
 		return x.SpellData
 	}
 	return nil
+}
+
+func (x *Damage) GetOverkill() int32 {
+	if x != nil {
+		return x.Overkill
+	}
+	return 0
 }
 
 type ResourceChange struct {
@@ -2144,7 +2152,7 @@ const file_chronicle_proto_rawDesc = "" +
 	" \x01(\x05R\boverheal\x12\x1a\n" +
 	"\babsorbed\x18\v \x01(\x05R\babsorbedB\f\n" +
 	"\n" +
-	"_spellData\"\xf7\x02\n" +
+	"_spellData\"\x93\x03\n" +
 	"\x06Damage\x12-\n" +
 	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x1b\n" +
 	"\x06caster\x18\x03 \x01(\tH\x00R\x06caster\x88\x01\x01\x12\x1e\n" +
@@ -2157,7 +2165,8 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x06school\x18\b \x01(\x0e2\x16.chronicleproto.SchoolR\x06school\x120\n" +
 	"\atailers\x18\t \x03(\v2\x16.chronicleproto.TailerR\atailers\x12<\n" +
 	"\tspellData\x18\n" +
-	" \x01(\v2\x19.chronicleproto.SpellDataH\x01R\tspellData\x88\x01\x01B\t\n" +
+	" \x01(\v2\x19.chronicleproto.SpellDataH\x01R\tspellData\x88\x01\x01\x12\x1a\n" +
+	"\boverkill\x18\v \x01(\x05R\boverkillB\t\n" +
 	"\a_casterB\f\n" +
 	"\n" +
 	"_spellData\"\xfd\x02\n" +

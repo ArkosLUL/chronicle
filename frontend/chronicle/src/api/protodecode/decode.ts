@@ -254,6 +254,7 @@ export interface ReusableDamage {
   activityCount: number;  // Actual number of activity entries
   spellId: number | null; // From SpellData field 10
   spellAttackOutcome: number | null; // From SpellData field 3 (AttackOutcome bitmask)
+  overkill: number;
 }
 
 /**
@@ -281,6 +282,7 @@ export class DamageDecoder {
     activityCount: 0,
     spellId: null,
     spellAttackOutcome: null,
+    overkill: 0,
   };
   
   /**
@@ -304,6 +306,7 @@ export class DamageDecoder {
     msg.activityCount = 0;
     msg.spellId = null;
     msg.spellAttackOutcome = null;
+    msg.overkill = 0;
     
     while (offset < end) {
       const tag = data[offset++];
@@ -318,6 +321,7 @@ export class DamageDecoder {
         if (fieldNumber === 6) msg.hitType = value;
         else if (fieldNumber === 7) msg.amount = value;
         else if (fieldNumber === 8) msg.school = value;
+        else if (fieldNumber === 11) msg.overkill = value;
       } else if (wireType === 2) {
         // Length-delimited
         const { value: len, bytesRead } = readVarintFast(data, offset);

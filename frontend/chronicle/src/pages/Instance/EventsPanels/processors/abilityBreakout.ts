@@ -63,7 +63,10 @@ export function updateAbilityBreakout(
   amount: number,
   hitType: number,
   _sourceName?: string,
+  /** Raw hit amount for min/avg/max stats (defaults to amount). */
+  rawAmount?: number,
 ): void {
+  const hitAmount = rawAmount ?? amount;
   breakout.Total += amount;
   breakout.Count += 1;
   
@@ -72,14 +75,14 @@ export function updateAbilityBreakout(
     breakout.Hits += 1;
     // Track crit stats
     if (!breakout.CritStats) breakout.CritStats = createEmptyHitTypeStats();
-    updateHitTypeStats(breakout.CritStats, amount);
+    updateHitTypeStats(breakout.CritStats, hitAmount);
   } else if (hasHitType(hitType, HitTypeMiss)) {
     breakout.Misses += 1;
   } else if (hasHitType(hitType, HitTypeHit)) {
     breakout.Hits += 1;
     // Track regular hit stats
     if (!breakout.HitStats) breakout.HitStats = createEmptyHitTypeStats();
-    updateHitTypeStats(breakout.HitStats, amount);
+    updateHitTypeStats(breakout.HitStats, hitAmount);
   } else if (hasHitType(hitType, HitTypeFullResist)) {
     breakout.FullResist = (breakout.FullResist || 0) + 1;
   } else if (hasHitType(hitType, HitTypeDodge)) {
@@ -95,7 +98,7 @@ export function updateAbilityBreakout(
     breakout.Hits += 1;
     // Track glancing stats
     if (!breakout.GlancingStats) breakout.GlancingStats = createEmptyHitTypeStats();
-    updateHitTypeStats(breakout.GlancingStats, amount);
+    updateHitTypeStats(breakout.GlancingStats, hitAmount);
   } else if (hasHitType(hitType, HitTypeReflect)) { 
     breakout.Reflects = (breakout.Reflects || 0) + 1;
   } else if (hasHitType(hitType, HitTypeCrushing)) {
@@ -103,7 +106,7 @@ export function updateAbilityBreakout(
     breakout.Hits += 1;
     // Track crushing stats
     if (!breakout.CrushingStats) breakout.CrushingStats = createEmptyHitTypeStats();
-    updateHitTypeStats(breakout.CrushingStats, amount);
+    updateHitTypeStats(breakout.CrushingStats, hitAmount);
   } else {
     breakout.Unknown = (breakout.Unknown || 0) + 1;
     // console.log("Unknown hit type:", _sourceName, hitType);
@@ -119,11 +122,13 @@ export function accumulateAbilityBreakout(
   abilityName: string,
   amount: number,
   hitType: number,
+  /** Raw hit amount for min/avg/max stats (defaults to amount). */
+  rawAmount?: number,
 ): void {
   const unitBreakout = byAbilityMap.get(unitId) || new Map<string, DamageAbilityBreakout>();
   const abilityBreakout = unitBreakout.get(abilityName) || createEmptyAbilityBreakout();
   
-  updateAbilityBreakout(abilityBreakout, amount, hitType, abilityName);
+  updateAbilityBreakout(abilityBreakout, amount, hitType, abilityName, rawAmount);
   
   unitBreakout.set(abilityName, abilityBreakout);
   byAbilityMap.set(unitId, unitBreakout);
@@ -155,11 +160,13 @@ export function accumulateAbilityBreakoutBySpellId(
   spellName: string,
   amount: number,
   hitType: number,
+  /** Raw hit amount for min/avg/max stats (defaults to amount). */
+  rawAmount?: number,
 ): void {
   const unitBreakout = byAbilityMap.get(unitId) || new Map<number, SpellIdAbilityBreakout>();
   const abilityBreakout = unitBreakout.get(spellId) || createEmptySpellIdAbilityBreakout(spellName);
   
-  updateAbilityBreakout(abilityBreakout, amount, hitType, spellName);
+  updateAbilityBreakout(abilityBreakout, amount, hitType, spellName, rawAmount);
   
   unitBreakout.set(spellId, abilityBreakout);
   byAbilityMap.set(unitId, unitBreakout);

@@ -166,7 +166,7 @@ func (p *Parser) dispatch(ts time.Time, event string, m *Matched, raw string) ([
 // suffixDamage handles _DAMAGE: amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing
 func (p *Parser) suffixDamage(ts time.Time, base baseParams, spell *spellInfo, envType *types.EnvironmentType, isPeriodic bool, prefix string, m *Matched) ([]messages.Message, error) {
 	amount := m.Int32()
-	_ = m.Int32() // overkill
+	overkill := m.Int32() // overkill
 	school := m.School()
 	resisted := m.Int32()
 	blocked := m.Int32()
@@ -218,6 +218,7 @@ func (p *Parser) suffixDamage(ts time.Time, base baseParams, spell *spellInfo, e
 		Target:          base.destGUID,
 		HitType:         ht,
 		Amount:          amount,
+		Overkill:        overkill,
 		School:          school,
 		Trailer:         trailer,
 		EnvironmentType: envType,

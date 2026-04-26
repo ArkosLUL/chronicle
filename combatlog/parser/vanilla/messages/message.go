@@ -225,7 +225,7 @@ type CombatantTalentTab struct {
 }
 
 func (c CombatantTalents) Affects() []guid.GUID { return []guid.GUID{c.Guid} }
-func (*CombatantTalents) isMessage()             {}
+func (*CombatantTalents) isMessage()            {}
 
 type Realm struct {
 	MessageBase
@@ -243,7 +243,6 @@ type Versions struct {
 
 func (v Versions) Affects() []guid.GUID { return []guid.GUID{} }
 func (*Versions) isMessage()            {}
-
 
 type UnitDied struct {
 	MessageBase
@@ -317,6 +316,7 @@ type Damage struct {
 	Target    guid.GUID
 	HitType   types.HitType
 	Amount    int32
+	Overkill  int32
 	School    types.School
 	Trailer   types.Trailer
 	// EnvironmentType is only set when the hit type is environmental.
@@ -671,4 +671,3 @@ type UnitCombatEnter struct {
 
 func (u UnitCombatEnter) Affects() []guid.GUID { return []guid.GUID{u.UnitGUID, u.VictimGUID} }
 func (*UnitCombatEnter) isMessage()            {}
-

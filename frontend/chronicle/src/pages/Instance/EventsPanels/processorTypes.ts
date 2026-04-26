@@ -63,6 +63,7 @@ export interface DamageProcessorEvent extends EventMeta {
   spellId: number | null;
   /** AttackOutcome bitmask of possible hit table results (from SpellData) */
   spellAttackOutcome: number | null;
+  overkill: number;
 }
 
 /**

@@ -71,6 +71,7 @@ export function createDamageTakenProcessor(
     ) => {
       // Only damage events reach here (enforced by type)
       if (!event.target) return;
+      const effectiveAmount = event.amount - (event.overkill || 0);
 
       const guidCache = state.GuidCache;
       
@@ -109,7 +110,7 @@ export function createDamageTakenProcessor(
       } as DamageTakenData;
 
       // Track damage by source
-      existing.source.set(event.caster, (existing.source.get(event.caster) || 0) + event.amount);
+      existing.source.set(event.caster, (existing.source.get(event.caster) || 0) + effectiveAmount);
       encounterDamage.set(damageReceiver, existing);
       state.EncounterDamage.set(encounterID, encounterDamage);
       
@@ -120,10 +121,10 @@ export function createDamageTakenProcessor(
           abilityName = abilityName + " (DoT)";
         }
 
-        accumulateAbilityBreakout(state.ByAbility, damageReceiver, abilityName, event.amount, event.hitType);
+        accumulateAbilityBreakout(state.ByAbility, damageReceiver, abilityName, effectiveAmount, event.hitType, event.amount);
 
         const existingSourceBreakout = state.BySource.get(damageReceiver) || new Map<string, number>();
-        existingSourceBreakout.set(event.caster, (existingSourceBreakout.get(event.caster) || 0) + event.amount);
+        existingSourceBreakout.set(event.caster, (existingSourceBreakout.get(event.caster) || 0) + effectiveAmount);
         state.BySource.set(damageReceiver, existingSourceBreakout);
       }
     },

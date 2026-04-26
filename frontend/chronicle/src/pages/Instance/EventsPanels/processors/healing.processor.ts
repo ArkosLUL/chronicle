@@ -253,11 +253,12 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
 
         // Heal/resource_change health gain → compute overheal from deficit, write onto event
         if (streamType === "heal" || streamType === "resource_change") {
-          if (isPlayerOrFriendlyPet(event.target)) {
-            const deficit = deficits.get(event.target) || 0;
-            const effective = Math.min(event.amount, deficit);
-            const over = event.amount - effective;
-            deficits.set(event.target, Math.max(0, deficit - effective));
+          const healEvent = event as HealProcessorEvent | ResourceChangeProcessorEvent;
+          if (isPlayerOrFriendlyPet(healEvent.target)) {
+            const deficit = deficits.get(healEvent.target) || 0;
+            const effective = Math.min(healEvent.amount, deficit);
+            const over = healEvent.amount - effective;
+            deficits.set(healEvent.target, Math.max(0, deficit - effective));
             if (streamType === "heal") {
               (event as HealProcessorEvent).overheal = over;
             } else {
@@ -293,8 +294,9 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       if (!(streamType === "heal" || streamType === "resource_change" || isAbsorbed)) return;
 
       // Map fields: absorbed events use absorbCaster/victim instead of caster/target
-      const casterGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).absorbCaster : event.caster;
-      const targetGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).victim : event.target;
+      const healOrRcEvent = event as HealProcessorEvent | ResourceChangeProcessorEvent;
+      const casterGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).absorbCaster : healOrRcEvent.caster;
+      const targetGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).victim : healOrRcEvent.target;
       if (!casterGuid) return;
 
       // Resolve caster via resolveEntity (handles players, pets, objects)
@@ -410,7 +412,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       // Determine ability name
       let abilityName = isAbsorbed
         ? ((event as AbsorbedProcessorEvent).absorbSpellName || "Absorb")
-        : (event.sourceName || "???");
+        : (healOrRcEvent.sourceName || "???");
       const hitType = isAbsorbed ? 0 : isResourceChangeEvent(event, streamType) ? HitTypePeriodic : (event as HealProcessorEvent).hitType;
       if (hasHitType(hitType, HitTypePeriodic)) {
         abilityName = abilityName + " (HoT)";

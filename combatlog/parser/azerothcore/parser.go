@@ -49,6 +49,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_START", p.parseEncounterNoop)
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_END", p.parseEncounterNoop)
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_CREDIT", p.parseEncounterNoop)
+	inner.WithEventHook("SPELL_INTERRUPT", p.parseEncounterNoop)
 	inner.WithEventHook("SPELL_ABSORBED", p.parseSpellAbsorbed)
 
 	// Replace the WoTLK synthetics with our own.

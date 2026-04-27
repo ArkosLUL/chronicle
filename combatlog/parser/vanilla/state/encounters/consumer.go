@@ -55,12 +55,18 @@ type State struct {
 	timings *timingAccumulator
 }
 
-func New(ctx context.Context, logger *slog.Logger) *State {
+func New(ctx context.Context, logger *slog.Logger, reg ...*registry.Registry) *State {
+	var r *registry.Registry
+	if len(reg) > 0 && reg[0] != nil {
+		r = reg[0]
+	} else {
+		r = registry.DefaultRegistry(logger)
+	}
 	s := &State{
 		logger:      logger,
 		Units:       unitdb.New(),
 		CurrentZone: zoner.NewLocation(),
-		reg:         registry.DefaultRegistry(logger),
+		reg:         r,
 		Instances:   make([]*instances.Hookable, 0),
 		verbose:     parseoptions.IsVerbose(ctx),
 		timings: newTimingAccumulator(

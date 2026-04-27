@@ -7,7 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/warmane/instances"
 )
 
-func WarmaneRegistry(logger *slog.Logger) *Registry {
+func WarmaneStaticRegistry(logger *slog.Logger) *Registry {
 	r := NewRegistry(logger)
 
 	// Dungeons

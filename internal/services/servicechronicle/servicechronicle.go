@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
+	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
 	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 
@@ -55,10 +56,12 @@ func (s *Service) Start(ctx context.Context) error {
 	st := servicestorage.Storage(s.broker)
 	zed := serviceauthz.Authz(s.broker)
 	wowDB := servicewowdb.WoWDB(s.broker)
+	ps := servicepgxpool.Pubsub(s.broker)
 
 	c, err := chronicle.New(ctx, logger, chronicle.Options{
 		Storage:         st,
 		Zed:             zed,
+		Ps:              ps,
 		WoWDB:           wowDB.GameDB(),
 		EmitParsingLogs: s.emitParseLogs,
 	})

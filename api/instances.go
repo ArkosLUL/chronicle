@@ -9,7 +9,6 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
@@ -22,7 +21,7 @@ import (
 func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	reg := registry.DefaultRegistry(api.Opts.Logger)
+	reg := api.Chronicle.DBRegistry().Registry()
 	httpapi.Write(ctx, w, http.StatusOK, reg.AllInstancesWithComments())
 }
 
@@ -240,6 +239,7 @@ func (api *API) GetInstanceLoot(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, db2sdk.InstanceLoot(loot))
 }
+
 // UngroupInstance removes an instance from its duplicate group by clearing
 // duplicate_group_id. Requires admin_logs permission.
 func (api *API) UngroupInstance(w http.ResponseWriter, r *http.Request) {
@@ -254,6 +254,7 @@ func (api *API) UngroupInstance(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusNoContent, nil)
 }
+
 // ListDuplicateInstances returns all instances in the same duplicate group.
 func (api *API) ListDuplicateInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -289,5 +290,3 @@ func (api *API) ListDuplicateInstances(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, result)
 }
-
-

@@ -471,6 +471,13 @@ type Interrupt struct {
 	SpellName    string
 	ExtraSpellID int32
 	ExtraSchool  types.School
+
+	// InterruptSpell is the spell used to interrupt (e.g. Kick, Counterspell).
+	// Populated by the AzerothCore parser; nil for vanilla/WotLK parsed events.
+	InterruptSpell *chrondbc.Spell
+	// InterruptedSpell is the spell that was being cast and got interrupted.
+	// Populated by the AzerothCore parser; nil for vanilla/WotLK parsed events.
+	InterruptedSpell *chrondbc.Spell
 }
 
 func (i Interrupt) Affects() []guid.GUID { return []guid.GUID{i.Caster, i.Target} }

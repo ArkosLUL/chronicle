@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,6 +24,11 @@ func PGXPool(broker *services.Services) *pgxpool.Pool {
 	return srv.pool
 }
 
+func Pubsub(broker *services.Services) pubsub.Pubsub {
+	srv := services.MustGet[*Service](broker)
+	return srv.ps
+}
+
 func OnPGXPool() string {
 	return (&Service{}).Name()
 }
@@ -32,6 +38,7 @@ type Service struct {
 
 	pgURL string
 	pool  *pgxpool.Pool
+	ps    pubsub.Pubsub
 }
 
 func New(broker *services.Services) *Service {
@@ -64,6 +71,12 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 
 	s.pool = pool
+
+	ps, err := pubsub.New(ctx, logger, s.pool, dbURL)
+	if err != nil {
+		return fmt.Errorf("initialize pubsub: %w", err)
+	}
+	s.ps = ps
 
 	return nil
 }

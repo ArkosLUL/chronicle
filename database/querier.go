@@ -14,6 +14,7 @@ import (
 
 type sqlcQuerier interface {
 	AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error)
+	AssignWorldToServer(ctx context.Context, arg AssignWorldToServerParams) error
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
 	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
 	ClearResetToken(ctx context.Context, userAuthID uuid.UUID) error
@@ -45,9 +46,16 @@ type sqlcQuerier interface {
 	DeleteWoWLogGroupFiles(ctx context.Context, arg DeleteWoWLogGroupFilesParams) ([]LogFile, error)
 	DeleteWoWServer(ctx context.Context, id uuid.UUID) error
 	DeleteWoWServerRealm(ctx context.Context, id uuid.UUID) error
+	DeleteWorld(ctx context.Context, id uuid.UUID) error
+	DeleteWorldInstanceTemplate(ctx context.Context, id uuid.UUID) error
+	DeleteWorldInstanceUnits(ctx context.Context, instanceID uuid.UUID) error
+	DeleteWorldInstanceZoneNames(ctx context.Context, instanceID uuid.UUID) error
 	DeleteYoutubeVideoByInstanceOrSlug(ctx context.Context, arg DeleteYoutubeVideoByInstanceOrSlugParams) error
 	EncountersByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]LogInstanceEncounter, error)
 	FindDuplicateInstanceCandidates(ctx context.Context, arg FindDuplicateInstanceCandidatesParams) ([]FindDuplicateInstanceCandidatesRow, error)
+	// Matches an existing log group by all available instance identity criteria:
+	// instance_token (unique per instance, immune to AzerothCore ID reuse),
+	// instance_id, instance_name, and realm_id.
 	FindMatchingServerUpload(ctx context.Context, arg FindMatchingServerUploadParams) (WoWLogGroup, error)
 	GetAppliedAuthzMigrations(ctx context.Context) ([]int32, error)
 	GetCreatureTemplatesByEntries(ctx context.Context, entries []int32) ([]WorldCreatureTemplate, error)
@@ -108,6 +116,7 @@ type sqlcQuerier interface {
 	GetRetentionPolicyForRealm(ctx context.Context, realmID uuid.NullUUID) (RetentionPolicy, error)
 	GetRetentionRulesByPolicy(ctx context.Context, policyID uuid.UUID) ([]RetentionRule, error)
 	GetServerUploadMetaRealmID(ctx context.Context, logGroupID uuid.UUID) (uuid.NullUUID, error)
+	GetServersForWorld(ctx context.Context, worldID uuid.UUID) ([]WowServer, error)
 	GetSharedViewByCode(ctx context.Context, code string) (SharedView, error)
 	GetSharedViewByInstanceAndHash(ctx context.Context, arg GetSharedViewByInstanceAndHashParams) (SharedView, error)
 	GetSiteConfig(ctx context.Context) (SiteConfig, error)
@@ -130,7 +139,14 @@ type sqlcQuerier interface {
 	GetWoWLogGroupByID(ctx context.Context, id uuid.UUID) (GetWoWLogGroupByIDRow, error)
 	GetWoWLogGroupsByOwner(ctx context.Context, arg GetWoWLogGroupsByOwnerParams) ([]GetWoWLogGroupsByOwnerRow, error)
 	GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer, error)
+	GetWoWServerByName(ctx context.Context, name string) (WowServer, error)
 	GetWoWServerRealm(ctx context.Context, id uuid.UUID) (WowServerRealm, error)
+	GetWorld(ctx context.Context, id uuid.UUID) (World, error)
+	GetWorldByName(ctx context.Context, name string) (World, error)
+	GetWorldInstanceTemplateByZoneName(ctx context.Context, zoneName string) (WorldInstanceTemplate, error)
+	GetWorldInstanceUnits(ctx context.Context, instanceID uuid.UUID) ([]GetWorldInstanceUnitsRow, error)
+	GetWorldInstanceZoneNames(ctx context.Context, instanceID uuid.UUID) ([]WorldInstanceZoneName, error)
+	GetWorldsByServer(ctx context.Context, serverID uuid.UUID) ([]World, error)
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error)
 	InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults
 	InsertGuildPagePanel(ctx context.Context, arg InsertGuildPagePanelParams) (GuildPagePanel, error)
@@ -156,6 +172,8 @@ type sqlcQuerier interface {
 	InsertWoWLogGroup(ctx context.Context, arg InsertWoWLogGroupParams) (WoWLogGroup, error)
 	InsertWoWServer(ctx context.Context, arg InsertWoWServerParams) (WowServer, error)
 	InsertWoWServerRealm(ctx context.Context, arg InsertWoWServerRealmParams) (WowServerRealm, error)
+	InsertWorld(ctx context.Context, name string) (World, error)
+	InsertWorldInstanceZoneName(ctx context.Context, arg InsertWorldInstanceZoneNameParams) error
 	Instance(ctx context.Context, id uuid.UUID) (LogInstancesGuild, error)
 	InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text) (LogInstancesGuild, error)
 	InstanceEvent(ctx context.Context, arg InstanceEventParams) (LogInstanceEvent, error)
@@ -188,6 +206,10 @@ type sqlcQuerier interface {
 	ListWoWServerRealms(ctx context.Context, serverID uuid.UUID) ([]WowServerRealm, error)
 	// Servers
 	ListWoWServers(ctx context.Context) ([]WowServer, error)
+	ListWorldInstanceTemplates(ctx context.Context) ([]WorldInstanceTemplate, error)
+	ListWorldInstanceUnits(ctx context.Context) ([]ListWorldInstanceUnitsRow, error)
+	ListWorldInstanceZoneNames(ctx context.Context) ([]WorldInstanceZoneName, error)
+	ListWorlds(ctx context.Context) ([]World, error)
 	MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
 	RecordAuthzMigration(ctx context.Context, version int32) error
@@ -208,6 +230,7 @@ type sqlcQuerier interface {
 	SpeedrunRealmNames(ctx context.Context) ([]string, error)
 	TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)
+	UnassignWorldFromServer(ctx context.Context, arg UnassignWorldFromServerParams) error
 	UntrackUserPanelLayout(ctx context.Context, arg UntrackUserPanelLayoutParams) (int64, error)
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)
 	UpdateGuildPageTab(ctx context.Context, arg UpdateGuildPageTabParams) (GuildPageTab, error)
@@ -231,6 +254,8 @@ type sqlcQuerier interface {
 	UpsertRetentionPolicyByRealm(ctx context.Context, arg UpsertRetentionPolicyByRealmParams) (RetentionPolicy, error)
 	UpsertRetentionRule(ctx context.Context, arg UpsertRetentionRuleParams) (RetentionRule, error)
 	UpsertUserActionBarSlots(ctx context.Context, arg UpsertUserActionBarSlotsParams) (UpsertUserActionBarSlotsRow, error)
+	UpsertWorldInstanceTemplate(ctx context.Context, arg UpsertWorldInstanceTemplateParams) (WorldInstanceTemplate, error)
+	UpsertWorldInstanceUnit(ctx context.Context, arg UpsertWorldInstanceUnitParams) error
 }
 
 var _ sqlcQuerier = (*sqlQuerier)(nil)

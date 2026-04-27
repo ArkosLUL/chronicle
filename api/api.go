@@ -13,8 +13,8 @@ import (
 	"github.com/Emyrk/chronicle/api/guildapi"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/api/httpmw"
-	"github.com/Emyrk/chronicle/api/retentionapi"
 	"github.com/Emyrk/chronicle/api/panellayoutapi"
+	"github.com/Emyrk/chronicle/api/retentionapi"
 	"github.com/Emyrk/chronicle/api/serviceazerothcore"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
@@ -22,6 +22,7 @@ import (
 	"github.com/Emyrk/chronicle/chroniclemail"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/authzed/gochugaru/rel"
@@ -37,6 +38,7 @@ type Options struct {
 	Storage          storage.ObjectStorage
 	Zed              *authz.Authz
 	Pool             *pgxpool.Pool
+	PS               pubsub.Pubsub
 	Chronicle        *chronicle.Chronicle
 	RiverQueue       *riverqueue.Queues
 	Bot              *chroniclebot.Bot
@@ -52,9 +54,9 @@ type Options struct {
 	// ShortLinkDomain is the domain used for short share links (e.g. "chrn.link").
 	// If empty, short links use same-origin paths instead.
 	ShortLinkDomain string
-	DevOAuth  bool
-	Discord   chronauth.DiscordOAuth
-	SecretPEM []byte // Used for JWTs
+	DevOAuth        bool
+	Discord         chronauth.DiscordOAuth
+	SecretPEM       []byte // Used for JWTs
 }
 
 type API struct {
@@ -134,7 +136,9 @@ func (api *API) Routes() chi.Router {
 			r.Post("/share", api.CreateShare)
 		})
 		r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
-		r.Mount("/game-data", gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool).Routes())
+		gameDataHandler := gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool, api.Opts.PS)
+		r.Mount("/game-data", gameDataHandler.Routes())
+		r.Mount("/world", gameDataHandler.PublicRoutes())
 		r.Mount("/azerothcore", serviceazerothcore.New(api.Opts.Logger, api.Opts.Zed, api.Auth, api.Chronicle).Routes())
 		r.Get("/share/{code}", api.GetShare)
 		r.Get("/site-config", api.AdminGetSiteConfig)

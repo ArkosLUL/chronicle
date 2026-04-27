@@ -35,7 +35,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk"
 	"github.com/Emyrk/chronicle/database"
@@ -62,7 +61,8 @@ type OutputLogParse struct {
 }
 
 type ArgsLogParse struct {
-	LogID        uuid.UUID `json:"log_group_id"`
+	LogID uuid.UUID `json:"log_group_id"`
+	// RealmID is optional
 	RealmID      uuid.UUID `json:"realm_id,omitempty"`
 	Verbose      bool      `json:"verbose,omitempty"`
 	IdentityMode bool      `json:"identity_mode,omitempty"`
@@ -206,8 +206,13 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		logLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	// encounters
-	encountersState := encounters.New(ctx, logLogger)
+	// encounters — use DB-backed registry if available, otherwise fall back to default.
+	var encountersState *encounters.State
+	dbReg := w.parent.DBRegistry()
+	// TODO: Cache this better
+	reg := dbReg.Registry()
+
+	encountersState = encounters.New(ctx, logLogger, reg)
 
 	// Parse combat log - branch based on log type
 	parseStart := time.Now()
@@ -303,7 +308,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
 		// Warmane (WotLK 3.3.5a) parser: single file
-		reg := registry.DefaultRegistry(logLogger)
 		p, err := wotlk.New(ctx, logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher, reg)
 		if err != nil {
 			jobResult = "failure"
@@ -328,8 +332,6 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
 		metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
-		// AzerothCore parser: WotLK format with unix millis + CHRONICLE_* extensions
-		reg := registry.DefaultRegistry(logLogger)
 		p, err := azerothcore.New(ctx, logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher, reg)
 		if err != nil {
 			jobResult = "failure"

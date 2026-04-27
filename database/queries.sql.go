@@ -330,6 +330,23 @@ func (q *sqlQuerier) GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer,
 	return i, err
 }
 
+const getWoWServerByName = `-- name: GetWoWServerByName :one
+SELECT id, name, created_by, url, description FROM wow_servers WHERE name = $1
+`
+
+func (q *sqlQuerier) GetWoWServerByName(ctx context.Context, name string) (WowServer, error) {
+	row := q.db.QueryRow(ctx, getWoWServerByName, name)
+	var i WowServer
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+	)
+	return i, err
+}
+
 const getWoWServerRealm = `-- name: GetWoWServerRealm :one
 SELECT id, server_id, name, created_by, url, description FROM wow_server_realms WHERE id = $1
 `
@@ -4168,9 +4185,10 @@ SELECT wlg.id, wlg.owner, wlg.created_at, wlg.updated_at, wlg.log_type
 FROM wow_log_groups wlg
 JOIN server_upload_meta sm ON sm.log_group_id = wlg.id
 WHERE wlg.owner = $1
-  AND sm.instance_id = $2
-  AND sm.instance_name = $3
-  AND sm.realm_id IS NOT DISTINCT FROM $4
+  AND sm.instance_token = $2
+  AND sm.instance_id = $3
+  AND sm.instance_name = $4
+  AND sm.realm_id IS NOT DISTINCT FROM $5
   AND wlg.log_type = 'azerothcore'
   AND sm.created_at > now() - interval '24 hours'
 ORDER BY sm.created_at DESC
@@ -4178,15 +4196,20 @@ LIMIT 1
 `
 
 type FindMatchingServerUploadParams struct {
-	Owner        uuid.UUID     `db:"owner" json:"owner"`
-	InstanceID   string        `db:"instance_id" json:"instance_id"`
-	InstanceName string        `db:"instance_name" json:"instance_name"`
-	RealmID      uuid.NullUUID `db:"realm_id" json:"realm_id"`
+	Owner         uuid.UUID     `db:"owner" json:"owner"`
+	InstanceToken pgtype.Text   `db:"instance_token" json:"instance_token"`
+	InstanceID    string        `db:"instance_id" json:"instance_id"`
+	InstanceName  string        `db:"instance_name" json:"instance_name"`
+	RealmID       uuid.NullUUID `db:"realm_id" json:"realm_id"`
 }
 
+// Matches an existing log group by all available instance identity criteria:
+// instance_token (unique per instance, immune to AzerothCore ID reuse),
+// instance_id, instance_name, and realm_id.
 func (q *sqlQuerier) FindMatchingServerUpload(ctx context.Context, arg FindMatchingServerUploadParams) (WoWLogGroup, error) {
 	row := q.db.QueryRow(ctx, findMatchingServerUpload,
 		arg.Owner,
+		arg.InstanceToken,
 		arg.InstanceID,
 		arg.InstanceName,
 		arg.RealmID,
@@ -4214,15 +4237,16 @@ func (q *sqlQuerier) GetServerUploadMetaRealmID(ctx context.Context, logGroupID 
 }
 
 const insertServerUploadMeta = `-- name: InsertServerUploadMeta :exec
-INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO server_upload_meta (log_group_id, instance_id, instance_name, realm_id, instance_token)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertServerUploadMetaParams struct {
-	LogGroupID   uuid.UUID     `db:"log_group_id" json:"log_group_id"`
-	InstanceID   string        `db:"instance_id" json:"instance_id"`
-	InstanceName string        `db:"instance_name" json:"instance_name"`
-	RealmID      uuid.NullUUID `db:"realm_id" json:"realm_id"`
+	LogGroupID    uuid.UUID     `db:"log_group_id" json:"log_group_id"`
+	InstanceID    string        `db:"instance_id" json:"instance_id"`
+	InstanceName  string        `db:"instance_name" json:"instance_name"`
+	RealmID       uuid.NullUUID `db:"realm_id" json:"realm_id"`
+	InstanceToken pgtype.Text   `db:"instance_token" json:"instance_token"`
 }
 
 func (q *sqlQuerier) InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error {
@@ -4231,6 +4255,7 @@ func (q *sqlQuerier) InsertServerUploadMeta(ctx context.Context, arg InsertServe
 		arg.InstanceID,
 		arg.InstanceName,
 		arg.RealmID,
+		arg.InstanceToken,
 	)
 	return err
 }
@@ -6615,4 +6640,478 @@ func (q *sqlQuerier) GetSpellItemEnchantmentByID(ctx context.Context, id int32) 
 		&i.MaxLevel,
 	)
 	return i, err
+}
+
+const deleteWorldInstanceTemplate = `-- name: DeleteWorldInstanceTemplate :exec
+DELETE FROM world_instance_template WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteWorldInstanceTemplate(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorldInstanceTemplate, id)
+	return err
+}
+
+const deleteWorldInstanceUnits = `-- name: DeleteWorldInstanceUnits :exec
+DELETE FROM world_instance_units WHERE instance_id = $1
+`
+
+func (q *sqlQuerier) DeleteWorldInstanceUnits(ctx context.Context, instanceID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorldInstanceUnits, instanceID)
+	return err
+}
+
+const deleteWorldInstanceZoneNames = `-- name: DeleteWorldInstanceZoneNames :exec
+DELETE FROM world_instance_zone_names WHERE instance_id = $1
+`
+
+func (q *sqlQuerier) DeleteWorldInstanceZoneNames(ctx context.Context, instanceID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorldInstanceZoneNames, instanceID)
+	return err
+}
+
+const getWorldInstanceTemplateByZoneName = `-- name: GetWorldInstanceTemplateByZoneName :one
+SELECT wit.id, wit.name, wit.abbreviation, wit.category, wit.boss_count, wit.background, wit.created_at, wit.updated_at
+FROM world_instance_template wit
+JOIN world_instance_zone_names wizn ON wit.id = wizn.instance_id
+WHERE wizn.zone_name = $1
+`
+
+func (q *sqlQuerier) GetWorldInstanceTemplateByZoneName(ctx context.Context, zoneName string) (WorldInstanceTemplate, error) {
+	row := q.db.QueryRow(ctx, getWorldInstanceTemplateByZoneName, zoneName)
+	var i WorldInstanceTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Abbreviation,
+		&i.Category,
+		&i.BossCount,
+		&i.Background,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getWorldInstanceUnits = `-- name: GetWorldInstanceUnits :many
+SELECT wiu.instance_id, wiu.entry_id, wiu.override_name, wiu.encounter_name, wiu.boss, wiu.affiliation,
+  COALESCE(wiu.override_name, wct.name, 'Unknown') AS name
+FROM world_instance_units wiu
+LEFT JOIN world_creature_template wct ON wiu.entry_id = wct.entry
+WHERE wiu.instance_id = $1
+`
+
+type GetWorldInstanceUnitsRow struct {
+	InstanceID    uuid.UUID       `db:"instance_id" json:"instance_id"`
+	EntryID       int32           `db:"entry_id" json:"entry_id"`
+	OverrideName  pgtype.Text     `db:"override_name" json:"override_name"`
+	EncounterName pgtype.Text     `db:"encounter_name" json:"encounter_name"`
+	Boss          bool            `db:"boss" json:"boss"`
+	Affiliation   UnitAffiliation `db:"affiliation" json:"affiliation"`
+	Name          string          `db:"name" json:"name"`
+}
+
+func (q *sqlQuerier) GetWorldInstanceUnits(ctx context.Context, instanceID uuid.UUID) ([]GetWorldInstanceUnitsRow, error) {
+	rows, err := q.db.Query(ctx, getWorldInstanceUnits, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetWorldInstanceUnitsRow
+	for rows.Next() {
+		var i GetWorldInstanceUnitsRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.EntryID,
+			&i.OverrideName,
+			&i.EncounterName,
+			&i.Boss,
+			&i.Affiliation,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWorldInstanceZoneNames = `-- name: GetWorldInstanceZoneNames :many
+SELECT instance_id, zone_name, display_name
+FROM world_instance_zone_names
+WHERE instance_id = $1
+`
+
+func (q *sqlQuerier) GetWorldInstanceZoneNames(ctx context.Context, instanceID uuid.UUID) ([]WorldInstanceZoneName, error) {
+	rows, err := q.db.Query(ctx, getWorldInstanceZoneNames, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorldInstanceZoneName
+	for rows.Next() {
+		var i WorldInstanceZoneName
+		if err := rows.Scan(&i.InstanceID, &i.ZoneName, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertWorldInstanceZoneName = `-- name: InsertWorldInstanceZoneName :exec
+INSERT INTO world_instance_zone_names (instance_id, zone_name, display_name)
+VALUES ($1, $2, $3)
+`
+
+type InsertWorldInstanceZoneNameParams struct {
+	InstanceID  uuid.UUID `db:"instance_id" json:"instance_id"`
+	ZoneName    string    `db:"zone_name" json:"zone_name"`
+	DisplayName string    `db:"display_name" json:"display_name"`
+}
+
+func (q *sqlQuerier) InsertWorldInstanceZoneName(ctx context.Context, arg InsertWorldInstanceZoneNameParams) error {
+	_, err := q.db.Exec(ctx, insertWorldInstanceZoneName, arg.InstanceID, arg.ZoneName, arg.DisplayName)
+	return err
+}
+
+const listWorldInstanceTemplates = `-- name: ListWorldInstanceTemplates :many
+SELECT id, name, abbreviation, category, boss_count, background, created_at, updated_at FROM world_instance_template ORDER BY name
+`
+
+func (q *sqlQuerier) ListWorldInstanceTemplates(ctx context.Context) ([]WorldInstanceTemplate, error) {
+	rows, err := q.db.Query(ctx, listWorldInstanceTemplates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorldInstanceTemplate
+	for rows.Next() {
+		var i WorldInstanceTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Abbreviation,
+			&i.Category,
+			&i.BossCount,
+			&i.Background,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWorldInstanceUnits = `-- name: ListWorldInstanceUnits :many
+SELECT wiu.instance_id, wiu.entry_id, wiu.override_name, wiu.encounter_name, wiu.boss, wiu.affiliation,
+  COALESCE(wiu.override_name, wct.name, 'Unknown') AS name
+FROM world_instance_units wiu
+LEFT JOIN world_creature_template wct ON wiu.entry_id = wct.entry
+`
+
+type ListWorldInstanceUnitsRow struct {
+	InstanceID    uuid.UUID       `db:"instance_id" json:"instance_id"`
+	EntryID       int32           `db:"entry_id" json:"entry_id"`
+	OverrideName  pgtype.Text     `db:"override_name" json:"override_name"`
+	EncounterName pgtype.Text     `db:"encounter_name" json:"encounter_name"`
+	Boss          bool            `db:"boss" json:"boss"`
+	Affiliation   UnitAffiliation `db:"affiliation" json:"affiliation"`
+	Name          string          `db:"name" json:"name"`
+}
+
+func (q *sqlQuerier) ListWorldInstanceUnits(ctx context.Context) ([]ListWorldInstanceUnitsRow, error) {
+	rows, err := q.db.Query(ctx, listWorldInstanceUnits)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListWorldInstanceUnitsRow
+	for rows.Next() {
+		var i ListWorldInstanceUnitsRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.EntryID,
+			&i.OverrideName,
+			&i.EncounterName,
+			&i.Boss,
+			&i.Affiliation,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWorldInstanceZoneNames = `-- name: ListWorldInstanceZoneNames :many
+SELECT instance_id, zone_name, display_name FROM world_instance_zone_names
+`
+
+func (q *sqlQuerier) ListWorldInstanceZoneNames(ctx context.Context) ([]WorldInstanceZoneName, error) {
+	rows, err := q.db.Query(ctx, listWorldInstanceZoneNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorldInstanceZoneName
+	for rows.Next() {
+		var i WorldInstanceZoneName
+		if err := rows.Scan(&i.InstanceID, &i.ZoneName, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertWorldInstanceTemplate = `-- name: UpsertWorldInstanceTemplate :one
+INSERT INTO world_instance_template (name, abbreviation, category, boss_count, background)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (name) DO UPDATE SET
+  abbreviation = EXCLUDED.abbreviation,
+  category = EXCLUDED.category,
+  boss_count = EXCLUDED.boss_count,
+  background = EXCLUDED.background,
+  updated_at = NOW()
+RETURNING id, name, abbreviation, category, boss_count, background, created_at, updated_at
+`
+
+type UpsertWorldInstanceTemplateParams struct {
+	Name         string           `db:"name" json:"name"`
+	Abbreviation pgtype.Text      `db:"abbreviation" json:"abbreviation"`
+	Category     InstanceCategory `db:"category" json:"category"`
+	BossCount    pgtype.Int4      `db:"boss_count" json:"boss_count"`
+	Background   pgtype.Text      `db:"background" json:"background"`
+}
+
+func (q *sqlQuerier) UpsertWorldInstanceTemplate(ctx context.Context, arg UpsertWorldInstanceTemplateParams) (WorldInstanceTemplate, error) {
+	row := q.db.QueryRow(ctx, upsertWorldInstanceTemplate,
+		arg.Name,
+		arg.Abbreviation,
+		arg.Category,
+		arg.BossCount,
+		arg.Background,
+	)
+	var i WorldInstanceTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Abbreviation,
+		&i.Category,
+		&i.BossCount,
+		&i.Background,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertWorldInstanceUnit = `-- name: UpsertWorldInstanceUnit :exec
+INSERT INTO world_instance_units (instance_id, entry_id, override_name, encounter_name, boss, affiliation)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (instance_id, entry_id) DO UPDATE SET
+  override_name = EXCLUDED.override_name,
+  encounter_name = EXCLUDED.encounter_name,
+  boss = EXCLUDED.boss,
+  affiliation = EXCLUDED.affiliation
+`
+
+type UpsertWorldInstanceUnitParams struct {
+	InstanceID    uuid.UUID       `db:"instance_id" json:"instance_id"`
+	EntryID       int32           `db:"entry_id" json:"entry_id"`
+	OverrideName  pgtype.Text     `db:"override_name" json:"override_name"`
+	EncounterName pgtype.Text     `db:"encounter_name" json:"encounter_name"`
+	Boss          bool            `db:"boss" json:"boss"`
+	Affiliation   UnitAffiliation `db:"affiliation" json:"affiliation"`
+}
+
+func (q *sqlQuerier) UpsertWorldInstanceUnit(ctx context.Context, arg UpsertWorldInstanceUnitParams) error {
+	_, err := q.db.Exec(ctx, upsertWorldInstanceUnit,
+		arg.InstanceID,
+		arg.EntryID,
+		arg.OverrideName,
+		arg.EncounterName,
+		arg.Boss,
+		arg.Affiliation,
+	)
+	return err
+}
+
+const assignWorldToServer = `-- name: AssignWorldToServer :exec
+INSERT INTO world_server (server_id, world_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+`
+
+type AssignWorldToServerParams struct {
+	ServerID uuid.UUID `db:"server_id" json:"server_id"`
+	WorldID  uuid.UUID `db:"world_id" json:"world_id"`
+}
+
+func (q *sqlQuerier) AssignWorldToServer(ctx context.Context, arg AssignWorldToServerParams) error {
+	_, err := q.db.Exec(ctx, assignWorldToServer, arg.ServerID, arg.WorldID)
+	return err
+}
+
+const deleteWorld = `-- name: DeleteWorld :exec
+DELETE FROM world WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteWorld(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorld, id)
+	return err
+}
+
+const getServersForWorld = `-- name: GetServersForWorld :many
+SELECT s.id, s.name, s.created_by, s.url, s.description
+FROM wow_servers s
+JOIN world_server ws ON s.id = ws.server_id
+WHERE ws.world_id = $1
+ORDER BY s.name
+`
+
+func (q *sqlQuerier) GetServersForWorld(ctx context.Context, worldID uuid.UUID) ([]WowServer, error) {
+	rows, err := q.db.Query(ctx, getServersForWorld, worldID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WowServer
+	for rows.Next() {
+		var i WowServer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedBy,
+			&i.Url,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWorld = `-- name: GetWorld :one
+SELECT id, name, created_at FROM world WHERE id = $1
+`
+
+func (q *sqlQuerier) GetWorld(ctx context.Context, id uuid.UUID) (World, error) {
+	row := q.db.QueryRow(ctx, getWorld, id)
+	var i World
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
+const getWorldByName = `-- name: GetWorldByName :one
+SELECT id, name, created_at FROM world WHERE name = $1
+`
+
+func (q *sqlQuerier) GetWorldByName(ctx context.Context, name string) (World, error) {
+	row := q.db.QueryRow(ctx, getWorldByName, name)
+	var i World
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
+const getWorldsByServer = `-- name: GetWorldsByServer :many
+SELECT w.id, w.name, w.created_at
+FROM world w
+JOIN world_server ws ON w.id = ws.world_id
+WHERE ws.server_id = $1
+ORDER BY w.name
+`
+
+func (q *sqlQuerier) GetWorldsByServer(ctx context.Context, serverID uuid.UUID) ([]World, error) {
+	rows, err := q.db.Query(ctx, getWorldsByServer, serverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []World
+	for rows.Next() {
+		var i World
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertWorld = `-- name: InsertWorld :one
+INSERT INTO world (name)
+VALUES ($1)
+RETURNING id, name, created_at
+`
+
+func (q *sqlQuerier) InsertWorld(ctx context.Context, name string) (World, error) {
+	row := q.db.QueryRow(ctx, insertWorld, name)
+	var i World
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
+const listWorlds = `-- name: ListWorlds :many
+SELECT id, name, created_at FROM world ORDER BY name
+`
+
+func (q *sqlQuerier) ListWorlds(ctx context.Context) ([]World, error) {
+	rows, err := q.db.Query(ctx, listWorlds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []World
+	for rows.Next() {
+		var i World
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const unassignWorldFromServer = `-- name: UnassignWorldFromServer :exec
+DELETE FROM world_server
+WHERE server_id = $1 AND world_id = $2
+`
+
+type UnassignWorldFromServerParams struct {
+	ServerID uuid.UUID `db:"server_id" json:"server_id"`
+	WorldID  uuid.UUID `db:"world_id" json:"world_id"`
+}
+
+func (q *sqlQuerier) UnassignWorldFromServer(ctx context.Context, arg UnassignWorldFromServerParams) error {
+	_, err := q.db.Exec(ctx, unassignWorldFromServer, arg.ServerID, arg.WorldID)
+	return err
 }

@@ -94,3 +94,24 @@ func TestParseSpellAbsorbed_Spell(t *testing.T) {
 	assert.Equal(t, types.School(0x2), sa.AbsorbSchool) // Holy
 	assert.Equal(t, int32(50), sa.Amount)
 }
+
+func TestParseSpellInterrupt(t *testing.T) {
+	t.Parallel()
+	// Kick (spell 1766) interrupts Healing Wave (spell 331).
+	line := `1777228582945  SPELL_INTERRUPT,0x0000000000000001,"Chronicle",0x400,0xF130002C36000022,"Ragefire Trogg",0x0,1766,"Kick",0x1,331,"Healing Wave",0x8`
+
+	p := newTestParser(t, line)
+	msg := advanceOne(t, p)
+
+	ir, ok := msg.(*messages.Interrupt)
+	require.True(t, ok, "expected *messages.Interrupt, got %T", msg)
+
+	assert.Equal(t, guid.GUID(0x0000000000000001), ir.Caster)
+	assert.Equal(t, guid.GUID(0xF130002C36000022), ir.Target)
+	assert.Equal(t, "Healing Wave", ir.SpellName)
+	assert.Equal(t, int32(331), ir.ExtraSpellID)
+	assert.Equal(t, types.School(0x8), ir.ExtraSchool) // Nature
+	// Spell lookups return nil from stub DB.
+	assert.Nil(t, ir.InterruptSpell)
+	assert.Nil(t, ir.InterruptedSpell)
+}

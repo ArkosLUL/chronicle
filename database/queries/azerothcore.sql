@@ -5,6 +5,9 @@ SELECT * FROM wow_servers ORDER BY name;
 
 -- name: GetWoWServer :one
 SELECT * FROM wow_servers WHERE id = $1;
+-- name: GetWoWServerByName :one
+SELECT * FROM wow_servers WHERE name = $1;
+
 
 -- name: InsertWoWServer :one
 INSERT INTO wow_servers (id, name, description, url, created_by)

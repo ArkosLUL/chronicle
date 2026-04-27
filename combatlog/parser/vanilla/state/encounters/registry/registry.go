@@ -57,13 +57,16 @@ func FromCommonFactory(f *instances.CommonFactory) Entry {
 	}
 }
 
-// DefaultRegistry returns a registry with all known instances
+// DefaultRegistry returns a registry with all known instances.
+// When store and serverID are provided, the caller can use them to create
+// a DB-backed registry wrapping the static one. This function only returns
+// the static registry; the DB wrapping is done by the caller.
 func DefaultRegistry(logger *slog.Logger) *Registry {
 	switch services.ServerName {
 	case services.ServerIdentityTurtle:
 		return TurtleRegistry(logger)
 	case services.ServerIdentityWarmane:
-		return WarmaneRegistry(logger)
+		return WarmaneStaticRegistry(logger)
 	case services.ServerIdentityEpoch:
 		return TurtleRegistry(logger)
 	default:
@@ -73,8 +76,9 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 
 // Registry manages available instances
 type Registry struct {
-	entries map[string]*Entry
-	logger  *slog.Logger
+	entries  map[string]*Entry
+	logger   *slog.Logger
+	fallback *Registry
 }
 
 // NewRegistry creates a new instance registry
@@ -83,6 +87,13 @@ func NewRegistry(logger *slog.Logger) *Registry {
 		entries: make(map[string]*Entry),
 		logger:  logger,
 	}
+}
+
+// SetFallback sets a fallback registry consulted when no entry in this
+// registry matches a zone. This allows DB-loaded entries to take priority
+// while still falling through to code-registered instances.
+func (r *Registry) SetFallback(fb *Registry) {
+	r.fallback = fb
 }
 
 // RegisterEntry adds an entry with full metadata to the registry.
@@ -133,6 +144,9 @@ func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) *ins
 			)
 			return inst
 		}
+	}
+	if r.fallback != nil {
+		return r.fallback.GetInstance(verbose, z, db)
 	}
 	return nil
 }

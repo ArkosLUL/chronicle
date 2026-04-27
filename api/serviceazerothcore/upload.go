@@ -16,6 +16,7 @@ import (
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const MaxLogFileSize = 250 * 1024 * 1024 // 250 MB
@@ -98,10 +99,23 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 	})
 	ctx = authz.AsUser(ctx, ServiceAccountID)
 
-	// Extract server metadata from headers for log merging
+	// Extract server metadata from headers for log merging.
+	// instance_token is a unique token generated per-instance by mod-chronicle,
+	// immune to AzerothCore instance-ID reuse across restarts/resets.
+	// Older mod-chronicle versions may not send it, so we fall back to
+	// (instance_id, instance_name) matching.
 	instanceID := r.Header.Get("X-Chronicle-Instance-Id")
 	instanceName := r.Header.Get("X-Chronicle-Instance-Name")
+	instanceToken := r.Header.Get("X-Chronicle-Instance-Token")
 	realmID := uuid.NullUUID{UUID: key.RealmID, Valid: key.RealmID != uuid.Nil}
+
+	if instanceID == "" || instanceName == "" || instanceToken == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "Missing required instance metadata headers",
+			Detail:  "X-Chronicle-Instance-Id, X-Chronicle-Instance-Name, and X-Chronicle-Instance-Token are required",
+		})
+		return
+	}
 
 	file, header, err := r.FormFile("combat_log")
 	if err != nil {
@@ -121,43 +135,41 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if instanceID != "" && instanceName != "" {
-		// Check for an existing log group with matching instance metadata.
-		// If found, append to the existing file (multistream gzip concatenation)
-		// and trigger a reparse. This merges logs from raid/dungeon breaks.
-		existing, findErr := h.zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
-			Owner:        ServiceAccountID,
-			InstanceID:   instanceID,
-			InstanceName: instanceName,
-			RealmID:      realmID,
-		})
-		if findErr == nil {
-			// Append to existing group
-			if appendErr := h.chronicle.AppendServerLog(ctx, existing, file, key.RealmID); appendErr != nil {
-				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
-					Message: "Failed to append log to existing group",
-					Detail:  appendErr.Error(),
-				})
-				return
-			}
-
-			existingFiles, _ := h.zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
-			fileIDs := make([]uuid.UUID, 0, len(existingFiles))
-			for _, f := range existingFiles {
-				fileIDs = append(fileIDs, f.ID)
-			}
-
-			h.logger.Info("Appended server log to existing group",
-				"log_group_id", existing.ID,
-				"instance_id", instanceID,
-				"instance_name", instanceName,
-			)
-			httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
-				LogID: existing.ID,
-				Files: fileIDs,
+	// Try to find an existing log group with matching instance identity.
+	// All criteria (token, instance_id, instance_name, realm_id) must match.
+	if existing, findErr := h.zed.FindMatchingServerUpload(ctx, database.FindMatchingServerUploadParams{
+		Owner:         ServiceAccountID,
+		InstanceToken: pgtype.Text{String: instanceToken, Valid: instanceToken != ""},
+		InstanceID:    instanceID,
+		InstanceName:  instanceName,
+		RealmID:       realmID,
+	}); findErr == nil {
+		// Append to existing group
+		if appendErr := h.chronicle.AppendServerLog(ctx, existing, file, key.RealmID); appendErr != nil {
+			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+				Message: "Failed to append log to existing group",
+				Detail:  appendErr.Error(),
 			})
 			return
 		}
+
+		existingFiles, _ := h.zed.GetWoWLogFilesByGroupID(ctx, existing.ID)
+		fileIDs := make([]uuid.UUID, 0, len(existingFiles))
+		for _, f := range existingFiles {
+			fileIDs = append(fileIDs, f.ID)
+		}
+
+		h.logger.Info("Appended server log to existing group",
+			"log_group_id", existing.ID,
+			"instance_id", instanceID,
+			"instance_name", instanceName,
+			"instance_token", instanceToken,
+		)
+		httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
+			LogID: existing.ID,
+			Files: fileIDs,
+		})
+		return
 	}
 
 	// No matching group found — normal upload flow
@@ -189,6 +201,10 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		InstanceID:   instanceID,
 		InstanceName: instanceName,
 		RealmID:      realmID,
+		InstanceToken: pgtype.Text{
+			String: instanceToken,
+			Valid:  instanceToken != "",
+		},
 	}); metaErr != nil {
 		h.logger.Warn("Failed to store server upload metadata",
 			"error", metaErr,
@@ -200,6 +216,7 @@ func (h *Handler) ServerLogUpload(w http.ResponseWriter, r *http.Request) {
 		"log_group_id", group.ID,
 		"instance_id", instanceID,
 		"instance_name", instanceName,
+		"instance_token", instanceToken,
 	)
 	httpapi.Write(ctx, w, http.StatusCreated, chroniclesdk.LogUploadResponse{
 		LogID: group.ID,

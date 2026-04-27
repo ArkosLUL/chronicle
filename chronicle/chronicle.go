@@ -22,9 +22,11 @@ import (
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/gamedb"
+	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/internal/cleanup"
 	"github.com/Emyrk/chronicle/internal/ptr"
@@ -55,10 +57,12 @@ type Chronicle struct {
 	TemporaryDirectory string
 	queue              *riverqueue.Queues
 	Zed                *authz.Authz
+	ps                 pubsub.Pubsub
 	WoWDB              *gamedb.WoWDB
 	ItemFetcher        gamedb.GearResolver
 	metrics            *logParseMetrics
 	emitParsingLogs    bool
+	instanceRegistry   *registry.DBRegistry
 
 	mu                     sync.Mutex
 	insertParsedInstanceMu sync.Mutex
@@ -67,25 +71,33 @@ type Chronicle struct {
 type Options struct {
 	Storage         storage.ObjectStorage
 	Zed             *authz.Authz
+	Ps              pubsub.Pubsub
 	WoWDB           *gamedb.WoWDB
 	Registry        prometheus.Registerer
 	EmitParsingLogs bool
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
+	reg, err := registry.NewDBRegistry(ctx, logger, opts.Zed, opts.Ps, registry.DefaultRegistry(logger))
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Chronicle{
 		AppContext:         ctx,
 		Storage:            opts.Storage,
 		Zed:                opts.Zed,
+		ps:                 opts.Ps,
 		logger:             logger,
 		WoWDB:              opts.WoWDB,
 		TemporaryDirectory: filepath.Join(os.TempDir(), "chronicle_uploads"),
 		metrics:            newLogParseMetrics(opts.Registry),
 		ItemFetcher:        opts.WoWDB,
 		emitParsingLogs:    opts.EmitParsingLogs,
+		instanceRegistry:   reg,
 	}
 
-	err := c.initStorage(ctx)
+	err = c.initStorage(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init storage: %w", err)
 	}
@@ -96,6 +108,10 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 
 func (c *Chronicle) EmitParsingLogs() bool {
 	return c.emitParsingLogs
+}
+
+func (c *Chronicle) DBRegistry() *registry.DBRegistry {
+	return c.instanceRegistry
 }
 
 func (c *Chronicle) SetQueue(queue *riverqueue.Queues) {

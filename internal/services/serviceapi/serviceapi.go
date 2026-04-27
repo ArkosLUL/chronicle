@@ -20,10 +20,10 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
-	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
 	"github.com/Emyrk/chronicle/internal/services/servicegamedata"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicemail"
+	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
@@ -46,15 +46,15 @@ func OnAPI() string {
 type Service struct {
 	broker *services.Services
 
-	secretPem          string
-	httpAddress        string
-	devAuth            bool
-	saffronURL         *url.URL
-	ocrURL             *url.URL
-	shortLinkDomain    string
-	discordAuth        chronauth.DiscordOAuth
-	app                *api.API
-	closeListener func()
+	secretPem       string
+	httpAddress     string
+	devAuth         bool
+	saffronURL      *url.URL
+	ocrURL          *url.URL
+	shortLinkDomain string
+	discordAuth     chronauth.DiscordOAuth
+	app             *api.API
+	closeListener   func()
 }
 
 func New(broker *services.Services) *Service {
@@ -98,6 +98,7 @@ func (s *Service) Start(ctx context.Context) error {
 	reg := serviceprometheus.Registry(s.broker)
 	zed := serviceauthz.Authz(s.broker)
 	pool := servicepgxpool.PGXPool(s.broker)
+	ps := servicepgxpool.Pubsub(s.broker)
 
 	serverLn, err := ProvisionListener(logger, s.httpAddress)
 	if err != nil {
@@ -159,6 +160,7 @@ func (s *Service) Start(ctx context.Context) error {
 		Registry:         reg,
 		Zed:              zed,
 		Pool:             pool,
+		PS:               ps,
 		SaffronURL:       saffronURL,
 		OCRURL:           ocrURL,
 		WoWDB:            wowdb,
@@ -169,8 +171,8 @@ func (s *Service) Start(ctx context.Context) error {
 		AccessURL:       au,
 		ShortLinkDomain: s.shortLinkDomain,
 		DevOAuth:        s.devAuth,
-		Discord:   s.discordAuth,
-		SecretPEM: decodedSecret,
+		Discord:         s.discordAuth,
+		SecretPEM:       decodedSecret,
 	})
 
 	if err != nil {

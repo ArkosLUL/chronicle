@@ -3,6 +3,12 @@
 
 CREATE DOMAIN activity_periods AS jsonb;
 
+CREATE TYPE instance_category AS ENUM (
+    'raid',
+    'dungeon',
+    'pvp'
+);
+
 CREATE TYPE item_effect_type AS ENUM (
     'on_use',
     'on_equip',
@@ -54,6 +60,14 @@ CREATE TYPE river_job_state AS ENUM (
     'retryable',
     'running',
     'scheduled'
+);
+
+CREATE TYPE unit_affiliation AS ENUM (
+    'unknown',
+    'friendly',
+    'neutral',
+    'hostile',
+    'vary'
 );
 
 CREATE DOMAIN wow_guid AS text
@@ -688,7 +702,8 @@ CREATE TABLE server_upload_meta (
     instance_id text NOT NULL,
     instance_name text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    realm_id uuid
+    realm_id uuid,
+    instance_token text
 );
 
 CREATE TABLE shared_views (
@@ -782,6 +797,12 @@ CREATE TABLE user_tracked_layouts (
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE TABLE world (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE world_creature_spawn (
     guid integer NOT NULL,
     id integer DEFAULT 0 NOT NULL,
@@ -832,6 +853,32 @@ CREATE TABLE world_creature_template (
 CREATE TABLE world_display_info (
     id integer NOT NULL,
     icon text DEFAULT ''::text NOT NULL
+);
+
+CREATE TABLE world_instance_template (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    abbreviation text,
+    category instance_category NOT NULL,
+    boss_count integer,
+    background text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE world_instance_units (
+    instance_id uuid NOT NULL,
+    entry_id integer NOT NULL,
+    override_name text,
+    encounter_name text,
+    boss boolean DEFAULT false NOT NULL,
+    affiliation unit_affiliation DEFAULT 'hostile'::unit_affiliation NOT NULL
+);
+
+CREATE TABLE world_instance_zone_names (
+    instance_id uuid NOT NULL,
+    zone_name text NOT NULL,
+    display_name text NOT NULL
 );
 
 CREATE TABLE world_item_enchantment (
@@ -989,6 +1036,11 @@ CREATE TABLE world_item_template (
     scaling_stat_value integer DEFAULT 0 NOT NULL,
     item_limit_category integer DEFAULT 0 NOT NULL,
     holiday_id integer DEFAULT 0 NOT NULL
+);
+
+CREATE TABLE world_server (
+    server_id uuid NOT NULL,
+    world_id uuid NOT NULL
 );
 
 CREATE TABLE world_spell_area (
@@ -1238,11 +1290,32 @@ ALTER TABLE ONLY world_creature_template
 ALTER TABLE ONLY world_display_info
     ADD CONSTRAINT world_display_info_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY world_instance_template
+    ADD CONSTRAINT world_instance_template_name_key UNIQUE (name);
+
+ALTER TABLE ONLY world_instance_template
+    ADD CONSTRAINT world_instance_template_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY world_instance_units
+    ADD CONSTRAINT world_instance_units_pkey PRIMARY KEY (instance_id, entry_id);
+
+ALTER TABLE ONLY world_instance_zone_names
+    ADD CONSTRAINT world_instance_zone_names_pkey PRIMARY KEY (instance_id, zone_name);
+
 ALTER TABLE ONLY world_item_enchantment
     ADD CONSTRAINT world_item_enchantment_pkey PRIMARY KEY (entry, ench);
 
 ALTER TABLE ONLY world_item_template
     ADD CONSTRAINT world_item_template_pkey PRIMARY KEY (entry);
+
+ALTER TABLE ONLY world
+    ADD CONSTRAINT world_name_key UNIQUE (name);
+
+ALTER TABLE ONLY world
+    ADD CONSTRAINT world_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY world_server
+    ADD CONSTRAINT world_server_pkey PRIMARY KEY (server_id, world_id);
 
 ALTER TABLE ONLY world_spell_area
     ADD CONSTRAINT world_spell_area_pkey PRIMARY KEY (spell, area);
@@ -1304,6 +1377,8 @@ CREATE INDEX idx_regression_snapshots_fixture ON regression_snapshots USING btre
 
 CREATE INDEX idx_server_upload_meta_lookup ON server_upload_meta USING btree (instance_id, instance_name, realm_id);
 
+CREATE INDEX idx_server_upload_meta_token ON server_upload_meta USING btree (instance_token) WHERE (instance_token IS NOT NULL);
+
 CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
 
 CREATE INDEX idx_shared_views_instance_hash ON shared_views USING btree (instance_id, hash);
@@ -1315,6 +1390,8 @@ CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code
 CREATE INDEX idx_world_creature_spawn_id ON world_creature_spawn USING btree (id);
 
 CREATE INDEX idx_world_creature_template_name ON world_creature_template USING btree (name);
+
+CREATE INDEX idx_world_instance_zone_name ON world_instance_zone_names USING btree (zone_name) INCLUDE (instance_id);
 
 CREATE INDEX idx_world_item_template_name ON world_item_template USING btree (name);
 
@@ -1497,6 +1574,18 @@ ALTER TABLE ONLY users
 
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_default_mobile_layout_id_fkey FOREIGN KEY (default_mobile_layout_id) REFERENCES user_panel_layouts(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY world_instance_units
+    ADD CONSTRAINT world_instance_units_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES world_instance_template(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY world_instance_zone_names
+    ADD CONSTRAINT world_instance_zone_names_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES world_instance_template(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY world_server
+    ADD CONSTRAINT world_server_server_id_fkey FOREIGN KEY (server_id) REFERENCES wow_servers(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY world_server
+    ADD CONSTRAINT world_server_world_id_fkey FOREIGN KEY (world_id) REFERENCES world(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);

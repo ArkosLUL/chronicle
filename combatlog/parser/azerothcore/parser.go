@@ -49,7 +49,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_START", p.parseEncounterNoop)
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_END", p.parseEncounterNoop)
 	inner.WithEventHook("CHRONICLE_ENCOUNTER_CREDIT", p.parseEncounterNoop)
-	inner.WithEventHook("SPELL_INTERRUPT", p.parseEncounterNoop)
+	inner.WithEventHook("SPELL_INTERRUPT", p.parseSpellInterrupt)
 	inner.WithEventHook("SPELL_ABSORBED", p.parseSpellAbsorbed)
 
 	// Replace the WoTLK synthetics with our own.
@@ -312,6 +312,51 @@ func (p *Parser) lookupSpell(id chrondbc.SpellID) *chrondbc.Spell {
 //
 //	Melee:  <base 6>, <absorbCaster 3>, <absorbSpell 3>, amount   → 7 fields after base
 //	Spell:  <base 6>, <dmgSpell 3>, <absorbCaster 3>, <absorbSpell 3>, amount  → 10 fields after base
+//
+// parseSpellInterrupt handles the SPELL_INTERRUPT event emitted by the
+// Chronicle module's OnSpellInterrupt hook.
+//
+// Format: <base 6>, <interruptSpell 3>, <interruptedSpell 3>
+func (p *Parser) parseSpellInterrupt(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
+	// Base params (6 fields).
+	srcGUID := m.Guid()
+	_ = m.String()    // srcName
+	_ = m.HexUint32() // srcFlags
+	dstGUID := m.Guid()
+	_ = m.String()    // dstName
+	_ = m.HexUint32() // dstFlags
+
+	// Interrupt spell triplet (the spell that interrupted, e.g. Kick).
+	intSpellID := m.Int32()
+	_ = m.String() // intSpellName (resolved via DBC lookup)
+	intSchool := m.School()
+
+	// Interrupted spell triplet (the spell that was being cast).
+	victimSpellID := m.Int32()
+	victimSpellName := m.String()
+	victimSchool := m.School()
+
+	if err := m.Error(); err != nil {
+		p.logger.Warn("failed to parse SPELL_INTERRUPT", "error", err)
+		return nil, nil
+	}
+
+	_ = intSchool // not stored on Interrupt struct (available via DBC lookup)
+
+	return []messages.Message{
+		&messages.Interrupt{
+			MessageBase:      messages.Base(ts),
+			Caster:           srcGUID,
+			Target:           dstGUID,
+			SpellName:        victimSpellName,
+			ExtraSpellID:     victimSpellID,
+			ExtraSchool:      victimSchool,
+			InterruptSpell:   p.lookupSpell(chrondbc.SpellID(intSpellID)),
+			InterruptedSpell: p.lookupSpell(chrondbc.SpellID(victimSpellID)),
+		},
+	}, nil
+}
+
 // parseEncounterNoop consumes CHRONICLE_ENCOUNTER_START, CHRONICLE_ENCOUNTER_END,
 // and CHRONICLE_ENCOUNTER_CREDIT without producing any messages.
 // TODO: parse into typed messages when the frontend needs encounter events.

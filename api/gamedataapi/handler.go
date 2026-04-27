@@ -1,7 +1,6 @@
 package gamedataapi
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
@@ -15,11 +14,10 @@ import (
 )
 
 type Handler struct {
-	zed                   *authz.Authz
-	auth                  *chronauth.Service
-	pool                  *pgxpool.Pool
-	ps                    pubsub.Pubsub
-	onInstanceDataChanged func(ctx context.Context) // optional callback to reload registry
+	zed  *authz.Authz
+	auth *chronauth.Service
+	pool *pgxpool.Pool
+	ps   pubsub.Pubsub
 }
 
 func New(zed *authz.Authz, auth *chronauth.Service, pool *pgxpool.Pool, ps pubsub.Pubsub) *Handler {

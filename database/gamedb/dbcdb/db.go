@@ -254,6 +254,36 @@ func (w *WoWClient) SpellIcons() (Table[dbdefs.Ent_SpellIcon], error) {
 	return WrapTable[dbdefs.Ent_SpellIcon](table), nil
 }
 
+func (w *WoWClient) DungeonMap() (Table[dbdefs.Ent_DungeonMap], error) {
+	data, err := w.ReadFile("DBFilesClient\\DungeonMap.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("Map", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_DungeonMap](table), nil
+}
+
+func (w *WoWClient) Map() (Table[dbdefs.Ent_Map], error) {
+	data, err := w.ReadFile("DBFilesClient\\Map.dbc")
+	if err != nil {
+		return nil, err
+	}
+
+	db := dbc.NewDB(w.Build())
+	table, err := db.Open("Map", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return WrapTable[dbdefs.Ent_Map](table), nil
+}
+
 func (w *WoWClient) DungeonEncounter() (Table[dbdefs.Ent_DungeonEncounter], error) {
 	data, err := w.ReadFile("DBFilesClient\\DungeonEncounter.dbc")
 	if err != nil {

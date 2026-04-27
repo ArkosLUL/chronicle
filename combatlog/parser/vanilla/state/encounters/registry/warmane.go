@@ -27,6 +27,14 @@ func WarmaneStaticRegistry(logger *slog.Logger) *Registry {
 	r.RegisterEntry(FromCommonFactory(classic.BlackrockSpireFactory).WithComment("Only upper spire is supported at the moment"))
 
 	// Raids
+	r.RegisterEntry(FromCommonFactory(classic.ZulGurubFactory))
+	r.RegisterEntry(FromCommonFactory(classic.RuinsOfAhnQirajFactory).WithComment("**NOT** yet implemented, just registered the mobs"))
+	r.RegisterEntry(FromCommonFactory(classic.MoltenCoreFactory))
+	r.RegisterEntry(FromCommonFactory(classic.OnyxiaFactory))
+	r.RegisterEntry(FromCommonFactory(classic.EmeraldSanctumFactory))
+	r.RegisterEntry(FromCommonFactory(classic.TempleOfAhnQirajFactory).WithComment("**NOT** yet implemented, just registered the mobs"))
+	r.RegisterEntry(FromCommonFactory(classic.BlackwingLairFactory).WithComment("**new** mobs registered, mechanics not implemented"))
+
 	r.RegisterEntry(FromCommonFactory(instances.VoAFactory))
 	r.RegisterEntry(FromCommonFactory(instances.ObsidianSanctumFactory))
 	r.RegisterEntry(FromCommonFactory(instances.NaxxramasFactory))

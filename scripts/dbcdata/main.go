@@ -100,13 +100,13 @@ func demo() *serpent.Command {
 				return fmt.Errorf("(demo) open wow client: %w", err)
 			}
 
-			si, err := wc.DungeonEncounter()
+			si, err := wc.Map()
 			if err != nil {
 				return fmt.Errorf("read items: %w", err)
 			}
 
-			_ = si.Range(func(cursor *dbdefs.Ent_DungeonEncounter) bool {
-				fmt.Println(cursor.Name_lang.String())
+			_ = si.Range(func(cursor *dbdefs.Ent_Map) bool {
+				fmt.Println(cursor.MapName_lang.String(), cursor.MapType)
 				return true
 			})
 

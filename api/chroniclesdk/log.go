@@ -184,6 +184,8 @@ type IdentityReport struct {
 	ZoneSpells map[string][]IdentitySpell `json:"zone_spells,omitempty"`
 	// UnitSpells maps creature entry ID → list of spell names that creature cast.
 	UnitSpells map[uint32][]string `json:"unit_spells,omitempty"`
+	// GoCode contains generated Go source code for instance definitions.
+	GoCode string `json:"go_code,omitempty"`
 }
 
 // IdentityCreature represents a creature seen during identity mode parsing.

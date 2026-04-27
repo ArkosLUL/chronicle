@@ -357,6 +357,8 @@ function IdentitySection({ identity }: { identity: IdentityReport }) {
   const zonedUnits = identity.zoned_units ? Object.entries(identity.zoned_units) : [];
   const zoneSpells = identity.zone_spells ? Object.entries(identity.zone_spells) : [];
   const unitSpells = identity.unit_spells ? Object.entries(identity.unit_spells) : [];
+  const goCode = (identity as Record<string, unknown>).go_code as string | undefined;
+  const [copied, setCopied] = useState(false);
 
   // Build a name lookup from zonedUnits for unit_spells (keyed by entry ID)
   const creatureNames = new Map<string, string>();
@@ -382,6 +384,27 @@ function IdentitySection({ identity }: { identity: IdentityReport }) {
         </summary>
 
         <div className="mt-4 space-y-4">
+          {/* Generated Go Code */}
+          {goCode && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Generated Go Code</h4>
+                <button
+                  className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors"
+                  onClick={() => {
+                    navigator.clipboard.writeText(goCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <pre className="text-xs font-mono bg-muted/50 rounded p-3 overflow-x-auto max-h-96 overflow-y-auto whitespace-pre">
+                {goCode}
+              </pre>
+            </div>
+          )}
           {/* Creatures by Zone */}
           {zonedUnits.length > 0 && (
             <div>

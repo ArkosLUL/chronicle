@@ -900,6 +900,8 @@ func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
 		rpt.UnitSpells[entryID] = names
 	}
 
+	rpt.GoCode = rpt.GenerateGoCode()
+
 	return rpt
 }
 

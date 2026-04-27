@@ -44,15 +44,10 @@ func FromCommonFactory(f *instances.CommonFactory) Entry {
 		hostiles = f.Hostiles().HostileEntries()
 	}
 
-	zoneNames := f.ZoneNames
-	if len(zoneNames) == 0 {
-		zoneNames = f.OtherZoneNames
-	}
-
 	return Entry{
 		Name:           f.Name,
 		Factory:        wrap(f.New),
-		ZoneNames:      zoneNames,
+		ZoneNames:      f.ZoneNames,
 		HostileEntries: hostiles,
 	}
 }

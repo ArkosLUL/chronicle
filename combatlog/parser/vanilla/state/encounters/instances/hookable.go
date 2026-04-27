@@ -43,7 +43,7 @@ const (
 type Hookable struct {
 	name          string
 	timings       *timings.Accumulator
-	zoneNameMatch func(z string) bool
+	factory *CommonFactory
 	logger        *slog.Logger
 	units         *unitdb.Units
 
@@ -132,7 +132,7 @@ func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db
 
 	c := &Hookable{
 		name:          f.Name,
-		zoneNameMatch: f.ZoneName,
+		factory:       f,
 		logger:        logger,
 		units:         db,
 		CurrentZone:   z,
@@ -192,7 +192,7 @@ func (h *Hookable) SetVersions(versions map[string]string, player *guid.GUID) {
 
 // MatchesZone
 // TODO: Should we care about the instance ID here?
-func (h *Hookable) MatchesZone(z zone.Zone) bool { return h.zoneNameMatch(z.Name) }
+func (h *Hookable) MatchesZone(z zone.Zone) bool { return h.factory.MatchZone(z.Name) }
 
 func (h *Hookable) Process(m messages.Message) (finalError error) {
 	err := h.units.ProcessMessage(m)

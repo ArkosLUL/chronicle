@@ -146,7 +146,6 @@ func (dr *DBRegistry) reload(ctx context.Context) error {
 		factory := &instances.CommonFactory{
 			Name:      tmpl.Name,
 			ZoneNames: names,
-			ZoneName:  instances.ZoneNameMatcher(names...),
 			Hostiles:  instances.FromMap(hostiles),
 		}
 

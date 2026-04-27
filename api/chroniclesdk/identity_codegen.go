@@ -56,7 +56,6 @@ func (r *IdentityReport) GenerateGoCode() string {
 		fmt.Fprintf(&b, "var %sFactory = &CommonFactory{\n", ident)
 		fmt.Fprintf(&b, "\tName:      %q,\n", display)
 		fmt.Fprintf(&b, "\tZoneNames: []string{%q},\n", zoneLower)
-		fmt.Fprintf(&b, "\tZoneName:  ZoneNameMatcher(%q),\n", zoneLower)
 		fmt.Fprintf(&b, "\tHostiles:  FromMap(%sHostiles()),\n", ident)
 		fmt.Fprintf(&b, "}\n")
 

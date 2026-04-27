@@ -37,6 +37,5 @@ func NexusHostiles() map[uint32]instances.Identity {
 var NexusFactory = &instances.CommonFactory{
 	Name:      "The Nexus",
 	ZoneNames: []string{"the nexus"},
-	ZoneName:  instances.ZoneNameMatcher("the nexus"),
 	Hostiles:  instances.FromMap(NexusHostiles()),
 }

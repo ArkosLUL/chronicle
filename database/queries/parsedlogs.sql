@@ -63,6 +63,14 @@ VALUES
 RETURNING *
 ;
 
+-- name: GetInstancesByLogGroupID :many
+SELECT
+  *
+FROM
+  log_instances_guild
+WHERE
+  log_group_id = $1;
+
 -- name: Instance :one
 SELECT
   *

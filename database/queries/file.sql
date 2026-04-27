@@ -91,7 +91,7 @@ SELECT
   sqlc.embed(wow_log_groups),
   u.username AS owner_name,
   files_agg.files,
-  latest_job.output AS processing_output
+  instances_output.output AS processing_output
 FROM
   wow_log_groups
     LEFT JOIN users u ON u.id = wow_log_groups.owner
@@ -117,13 +117,38 @@ FROM
     WHERE lf.wow_log_id = wow_log_groups.id
     ) files_agg ON true
 
+    LEFT JOIN parsed_log_group plg ON plg.id = wow_log_groups.id
+
     LEFT JOIN LATERAL (
-    SELECT rj.metadata->'output' AS output
-    FROM river_job rj
-    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
-    ORDER BY rj.created_at DESC
-    LIMIT 1
-    ) latest_job ON true
+    SELECT jsonb_build_object(
+        'complete', CASE WHEN plg.id IS NOT NULL THEN to_jsonb(wow_log_groups.updated_at) ELSE NULL END,
+        'instances', COALESCE((
+            SELECT jsonb_agg(inst_data)
+            FROM (
+                SELECT jsonb_build_object(
+                    'id', li.id,
+                    'name', li.name,
+                    'slug', li.hashed_slug,
+                    'realm_id', li.realm_id,
+                    'log_group_id', li.log_group_id,
+                    'encounters', COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'id', e.id,
+                            'instance_id', e.instance_id,
+                            'start_time', e.start_time,
+                            'end_time', e.end_time
+                        ) ORDER BY e.start_time)
+                        FROM log_instance_encounters e
+                        WHERE e.instance_id = li.id
+                    ), '[]'::jsonb)
+                ) AS inst_data
+                FROM log_instances li
+                WHERE li.log_group_id = wow_log_groups.id
+                ORDER BY li.name
+            ) sub
+        ), '[]'::jsonb)
+    ) AS output
+    ) instances_output ON true
 ORDER BY
   wow_log_groups.created_at DESC
 ;
@@ -134,7 +159,7 @@ SELECT
   u.username AS owner_name,
   files_agg.files,
   files_agg.total_size_bytes,
-  latest_job.output AS processing_output,
+  instances_output.output AS processing_output,
   instances_agg.instance_names,
   instances_agg.first_instance_name
 FROM
@@ -165,14 +190,40 @@ FROM
       FROM log_file lf
       WHERE lf.wow_log_id = wow_log_groups.id
     ) files_agg ON true
-    -- Latest job output
+
+    LEFT JOIN parsed_log_group plg ON plg.id = wow_log_groups.id
+
+    -- Instances from DB tables
     LEFT JOIN LATERAL (
-      SELECT rj.metadata->'output' AS output
-      FROM river_job rj
-      WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
-      ORDER BY rj.created_at DESC
-      LIMIT 1
-    ) latest_job ON true
+      SELECT jsonb_build_object(
+          'complete', CASE WHEN plg.id IS NOT NULL THEN to_jsonb(wow_log_groups.updated_at) ELSE NULL END,
+          'instances', COALESCE((
+              SELECT jsonb_agg(inst_data)
+              FROM (
+                  SELECT jsonb_build_object(
+                      'id', li.id,
+                      'name', li.name,
+                      'slug', li.hashed_slug,
+                      'realm_id', li.realm_id,
+                      'log_group_id', li.log_group_id,
+                      'encounters', COALESCE((
+                          SELECT jsonb_agg(jsonb_build_object(
+                              'id', e.id,
+                              'instance_id', e.instance_id,
+                              'start_time', e.start_time,
+                              'end_time', e.end_time
+                          ) ORDER BY e.start_time)
+                          FROM log_instance_encounters e
+                          WHERE e.instance_id = li.id
+                      ), '[]'::jsonb)
+                  ) AS inst_data
+                  FROM log_instances li
+                  WHERE li.log_group_id = wow_log_groups.id
+                  ORDER BY li.name
+              ) sub
+          ), '[]'::jsonb)
+      ) AS output
+    ) instances_output ON true
     -- Instance names aggregate
     LEFT JOIN LATERAL (
       SELECT 
@@ -230,7 +281,7 @@ ORDER BY li.name ASC;
 SELECT
   sqlc.embed(wow_log_groups),
   files_agg.files,
-  latest_job.output AS processing_output
+  instances_output.output AS processing_output
 FROM
   wow_log_groups
     LEFT JOIN LATERAL (
@@ -256,13 +307,38 @@ FROM
     WHERE lf.wow_log_id = wow_log_groups.id
     ) files_agg ON true
 
+    LEFT JOIN parsed_log_group plg ON plg.id = wow_log_groups.id
+
     LEFT JOIN LATERAL (
-    SELECT rj.metadata->'output' AS output
-    FROM river_job rj
-    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
-    ORDER BY rj.created_at DESC
-    LIMIT 1
-    ) latest_job ON true
+    SELECT jsonb_build_object(
+        'complete', CASE WHEN plg.id IS NOT NULL THEN to_jsonb(wow_log_groups.updated_at) ELSE NULL END,
+        'instances', COALESCE((
+            SELECT jsonb_agg(inst_data)
+            FROM (
+                SELECT jsonb_build_object(
+                    'id', li.id,
+                    'name', li.name,
+                    'slug', li.hashed_slug,
+                    'realm_id', li.realm_id,
+                    'log_group_id', li.log_group_id,
+                    'encounters', COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'id', e.id,
+                            'instance_id', e.instance_id,
+                            'start_time', e.start_time,
+                            'end_time', e.end_time
+                        ) ORDER BY e.start_time)
+                        FROM log_instance_encounters e
+                        WHERE e.instance_id = li.id
+                    ), '[]'::jsonb)
+                ) AS inst_data
+                FROM log_instances li
+                WHERE li.log_group_id = wow_log_groups.id
+                ORDER BY li.name
+            ) sub
+        ), '[]'::jsonb)
+    ) AS output
+    ) instances_output ON true
 WHERE
   wow_log_groups.owner = $1
   AND (

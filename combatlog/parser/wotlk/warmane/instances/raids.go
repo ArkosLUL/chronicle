@@ -39,7 +39,6 @@ func VoAHostiles() map[uint32]instances.Identity {
 var VoAFactory = &instances.CommonFactory{
 	Name:      "Vault of Archavon",
 	ZoneNames: []string{"vault of archavon"},
-	ZoneName:  instances.ZoneNameMatcher("vault of archavon"),
 	Hostiles:  instances.FromMap(VoAHostiles()),
 }
 // ObsidianSanctumHostiles returns creature entry IDs for The Obsidian Sanctum (zone 4493).
@@ -69,7 +68,6 @@ func ObsidianSanctumHostiles() map[uint32]instances.Identity {
 var ObsidianSanctumFactory = &instances.CommonFactory{
 	Name:      "Obsidian Sanctum",
 	ZoneNames: []string{"the obsidian sanctum"},
-	ZoneName:  instances.ZoneNameMatcher("the obsidian sanctum"),
 	Hostiles:  instances.FromMap(ObsidianSanctumHostiles()),
 }
 // NaxxramasHostiles returns creature entry IDs for Naxxramas (WotLK).
@@ -88,7 +86,6 @@ func NaxxramasHostiles() map[uint32]instances.Identity {
 var NaxxramasFactory = &instances.CommonFactory{
 	Name:      "Naxxramas",
 	ZoneNames: []string{"naxxramas", "the upper necropolis"},
-	ZoneName:  instances.ZoneNameMatcher("naxxramas", "the upper necropolis"),
 	Hostiles:  instances.FromMap(NaxxramasHostiles()),
 }
 

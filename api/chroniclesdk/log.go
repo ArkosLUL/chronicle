@@ -42,8 +42,8 @@ type WoWLogGroup struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	LogType   string             `json:"log_type"`
 
-	Files            []WoWLogFile `json:"files"`
-	ProcessingOutput any          `json:"processing_output,omitempty"`
+	Files            []WoWLogFile    `json:"files"`
+	ProcessingOutput json.RawMessage `json:"processing_output,omitempty"`
 }
 
 type WoWLogFile struct {
@@ -67,14 +67,14 @@ type Guild struct {
 }
 
 type WoWInstance struct {
-	ID         uuid.UUID `json:"id"`
-	RealmID    uuid.UUID `json:"realm_id"`
-	LogGroupID uuid.UUID `json:"log_group_id"`
-	Name       string    `json:"name"`
-	Slug       string    `json:"slug"`
-	Guild        *Guild            `json:"guild,omitempty"`
-	Capabilities []string          `json:"capabilities"`
-	Versions     map[string]string `json:"versions"`
+	ID               uuid.UUID         `json:"id"`
+	RealmID          uuid.UUID         `json:"realm_id"`
+	LogGroupID       uuid.UUID         `json:"log_group_id"`
+	Name             string            `json:"name"`
+	Slug             string            `json:"slug"`
+	Guild            *Guild            `json:"guild,omitempty"`
+	Capabilities     []string          `json:"capabilities"`
+	Versions         map[string]string `json:"versions"`
 	RecorderName     string            `json:"recorder_name"`
 	RecorderGUID     string            `json:"recorder_guid"`
 	DuplicateGroupID *uuid.UUID        `json:"duplicate_group_id,omitempty"`
@@ -152,12 +152,12 @@ type LogParseReport struct {
 	// Identity contains all creatures/spells seen, populated only when identity_mode is enabled.
 	Identity *IdentityReport `json:"identity,omitempty"`
 }
+
 // MissedSpell holds the count and name of a spell not found in the DBC.
 type MissedSpell struct {
 	Count int    `json:"count"`
 	Name  string `json:"name,omitempty"`
 }
-
 
 // InstanceReport contains timing details for a single parsed instance.
 type InstanceReport struct {
@@ -258,11 +258,11 @@ type SpeedrunProof struct {
 
 // SpeedrunResult is the outcome of evaluating speedrun rules against an instance.
 type SpeedrunResult struct {
-	Qualified      bool                  `json:"qualified"`
-	StartTime      time.Time             `json:"start_time"`
-	CompletionTime time.Time             `json:"completion_time"`
-	DurationMs     int64                 `json:"duration_ms"`
-	Proof          []SpeedrunProof       `json:"proof"`
+	Qualified      bool                   `json:"qualified"`
+	StartTime      time.Time              `json:"start_time"`
+	CompletionTime time.Time              `json:"completion_time"`
+	DurationMs     int64                  `json:"duration_ms"`
+	Proof          []SpeedrunProof        `json:"proof"`
 	VersionStatus  *SpeedrunVersionStatus `json:"version_status,omitempty"`
 }
 
@@ -295,8 +295,8 @@ type SpeedrunLeaderboardEntry struct {
 
 // SpeedrunRulesResponse is the response for the speedrun rules endpoint.
 type SpeedrunRulesResponse struct {
-	InstanceName string                 `json:"instance_name"`
-	Requirements []SpeedrunRequirement  `json:"requirements"`
+	InstanceName string                `json:"instance_name"`
+	Requirements []SpeedrunRequirement `json:"requirements"`
 }
 
 // LeaderboardVersionRequirements holds admin-configured minimum version
@@ -343,6 +343,7 @@ type RecentEncounter struct {
 	Boss     bool     `json:"boss"`
 	KillType KillType `json:"kill_type"`
 }
+
 // DuplicateInstance is a sibling instance in the same duplicate group.
 type DuplicateInstance struct {
 	ID           uuid.UUID `json:"id"`
@@ -353,4 +354,3 @@ type DuplicateInstance struct {
 	PlayerCount  int64     `json:"player_count"`
 	DurationMs   *float64  `json:"duration_ms,omitempty"`
 }
-

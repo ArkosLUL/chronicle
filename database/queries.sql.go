@@ -964,7 +964,7 @@ const getWoWLogGroupsByOwner = `-- name: GetWoWLogGroupsByOwner :many
 SELECT
   wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type,
   files_agg.files,
-  latest_job.output AS processing_output
+  instances_output.output AS processing_output
 FROM
   wow_log_groups
     LEFT JOIN LATERAL (
@@ -990,13 +990,38 @@ FROM
     WHERE lf.wow_log_id = wow_log_groups.id
     ) files_agg ON true
 
+    LEFT JOIN parsed_log_group plg ON plg.id = wow_log_groups.id
+
     LEFT JOIN LATERAL (
-    SELECT rj.metadata->'output' AS output
-    FROM river_job rj
-    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
-    ORDER BY rj.created_at DESC
-    LIMIT 1
-    ) latest_job ON true
+    SELECT jsonb_build_object(
+        'complete', CASE WHEN plg.id IS NOT NULL THEN to_jsonb(wow_log_groups.updated_at) ELSE NULL END,
+        'instances', COALESCE((
+            SELECT jsonb_agg(inst_data)
+            FROM (
+                SELECT jsonb_build_object(
+                    'id', li.id,
+                    'name', li.name,
+                    'slug', li.hashed_slug,
+                    'realm_id', li.realm_id,
+                    'log_group_id', li.log_group_id,
+                    'encounters', COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'id', e.id,
+                            'instance_id', e.instance_id,
+                            'start_time', e.start_time,
+                            'end_time', e.end_time
+                        ) ORDER BY e.start_time)
+                        FROM log_instance_encounters e
+                        WHERE e.instance_id = li.id
+                    ), '[]'::jsonb)
+                ) AS inst_data
+                FROM log_instances li
+                WHERE li.log_group_id = wow_log_groups.id
+                ORDER BY li.name
+            ) sub
+        ), '[]'::jsonb)
+    ) AS output
+    ) instances_output ON true
 WHERE
   wow_log_groups.owner = $1
   AND (
@@ -1024,7 +1049,7 @@ type GetWoWLogGroupsByOwnerParams struct {
 type GetWoWLogGroupsByOwnerRow struct {
 	WoWLogGroup      WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
 	Files            []LogFile   `db:"files" json:"files"`
-	ProcessingOutput interface{} `db:"processing_output" json:"processing_output"`
+	ProcessingOutput []byte      `db:"processing_output" json:"processing_output"`
 }
 
 func (q *sqlQuerier) GetWoWLogGroupsByOwner(ctx context.Context, arg GetWoWLogGroupsByOwnerParams) ([]GetWoWLogGroupsByOwnerRow, error) {
@@ -1180,7 +1205,7 @@ SELECT
   wow_log_groups.id, wow_log_groups.owner, wow_log_groups.created_at, wow_log_groups.updated_at, wow_log_groups.log_type,
   u.username AS owner_name,
   files_agg.files,
-  latest_job.output AS processing_output
+  instances_output.output AS processing_output
 FROM
   wow_log_groups
     LEFT JOIN users u ON u.id = wow_log_groups.owner
@@ -1206,13 +1231,38 @@ FROM
     WHERE lf.wow_log_id = wow_log_groups.id
     ) files_agg ON true
 
+    LEFT JOIN parsed_log_group plg ON plg.id = wow_log_groups.id
+
     LEFT JOIN LATERAL (
-    SELECT rj.metadata->'output' AS output
-    FROM river_job rj
-    WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
-    ORDER BY rj.created_at DESC
-    LIMIT 1
-    ) latest_job ON true
+    SELECT jsonb_build_object(
+        'complete', CASE WHEN plg.id IS NOT NULL THEN to_jsonb(wow_log_groups.updated_at) ELSE NULL END,
+        'instances', COALESCE((
+            SELECT jsonb_agg(inst_data)
+            FROM (
+                SELECT jsonb_build_object(
+                    'id', li.id,
+                    'name', li.name,
+                    'slug', li.hashed_slug,
+                    'realm_id', li.realm_id,
+                    'log_group_id', li.log_group_id,
+                    'encounters', COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'id', e.id,
+                            'instance_id', e.instance_id,
+                            'start_time', e.start_time,
+                            'end_time', e.end_time
+                        ) ORDER BY e.start_time)
+                        FROM log_instance_encounters e
+                        WHERE e.instance_id = li.id
+                    ), '[]'::jsonb)
+                ) AS inst_data
+                FROM log_instances li
+                WHERE li.log_group_id = wow_log_groups.id
+                ORDER BY li.name
+            ) sub
+        ), '[]'::jsonb)
+    ) AS output
+    ) instances_output ON true
 ORDER BY
   wow_log_groups.created_at DESC
 `
@@ -1221,7 +1271,7 @@ type ListAllWoWLogGroupsWithOwnerRow struct {
 	WoWLogGroup      WoWLogGroup `db:"wo_wlog_group" json:"wo_wlog_group"`
 	OwnerName        pgtype.Text `db:"owner_name" json:"owner_name"`
 	Files            []LogFile   `db:"files" json:"files"`
-	ProcessingOutput interface{} `db:"processing_output" json:"processing_output"`
+	ProcessingOutput []byte      `db:"processing_output" json:"processing_output"`
 }
 
 func (q *sqlQuerier) ListAllWoWLogGroupsWithOwner(ctx context.Context) ([]ListAllWoWLogGroupsWithOwnerRow, error) {
@@ -1259,7 +1309,7 @@ SELECT
   u.username AS owner_name,
   files_agg.files,
   files_agg.total_size_bytes,
-  latest_job.output AS processing_output,
+  instances_output.output AS processing_output,
   instances_agg.instance_names,
   instances_agg.first_instance_name
 FROM
@@ -1290,14 +1340,40 @@ FROM
       FROM log_file lf
       WHERE lf.wow_log_id = wow_log_groups.id
     ) files_agg ON true
-    -- Latest job output
+
+    LEFT JOIN parsed_log_group plg ON plg.id = wow_log_groups.id
+
+    -- Instances from DB tables
     LEFT JOIN LATERAL (
-      SELECT rj.metadata->'output' AS output
-      FROM river_job rj
-      WHERE rj.args ->> 'log_group_id' = wow_log_groups.id::text
-      ORDER BY rj.created_at DESC
-      LIMIT 1
-    ) latest_job ON true
+      SELECT jsonb_build_object(
+          'complete', CASE WHEN plg.id IS NOT NULL THEN to_jsonb(wow_log_groups.updated_at) ELSE NULL END,
+          'instances', COALESCE((
+              SELECT jsonb_agg(inst_data)
+              FROM (
+                  SELECT jsonb_build_object(
+                      'id', li.id,
+                      'name', li.name,
+                      'slug', li.hashed_slug,
+                      'realm_id', li.realm_id,
+                      'log_group_id', li.log_group_id,
+                      'encounters', COALESCE((
+                          SELECT jsonb_agg(jsonb_build_object(
+                              'id', e.id,
+                              'instance_id', e.instance_id,
+                              'start_time', e.start_time,
+                              'end_time', e.end_time
+                          ) ORDER BY e.start_time)
+                          FROM log_instance_encounters e
+                          WHERE e.instance_id = li.id
+                      ), '[]'::jsonb)
+                  ) AS inst_data
+                  FROM log_instances li
+                  WHERE li.log_group_id = wow_log_groups.id
+                  ORDER BY li.name
+              ) sub
+          ), '[]'::jsonb)
+      ) AS output
+    ) instances_output ON true
     -- Instance names aggregate
     LEFT JOIN LATERAL (
       SELECT 
@@ -1344,7 +1420,7 @@ type ListAllWoWLogGroupsWithOwnerPaginatedRow struct {
 	OwnerName         pgtype.Text `db:"owner_name" json:"owner_name"`
 	Files             []LogFile   `db:"files" json:"files"`
 	TotalSizeBytes    interface{} `db:"total_size_bytes" json:"total_size_bytes"`
-	ProcessingOutput  interface{} `db:"processing_output" json:"processing_output"`
+	ProcessingOutput  []byte      `db:"processing_output" json:"processing_output"`
 	InstanceNames     interface{} `db:"instance_names" json:"instance_names"`
 	FirstInstanceName interface{} `db:"first_instance_name" json:"first_instance_name"`
 }
@@ -2492,6 +2568,51 @@ func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, in
 			&i.ID,
 			&i.Periods,
 			&i.Boss,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getInstancesByLogGroupID = `-- name: GetInstancesByLogGroupID :many
+SELECT
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, realm_name, guild_name, guild_realm_id, guild_created_at
+FROM
+  log_instances_guild
+WHERE
+  log_group_id = $1
+`
+
+func (q *sqlQuerier) GetInstancesByLogGroupID(ctx context.Context, logGroupID uuid.UUID) ([]LogInstancesGuild, error) {
+	rows, err := q.db.Query(ctx, getInstancesByLogGroupID, logGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LogInstancesGuild
+	for rows.Next() {
+		var i LogInstancesGuild
+		if err := rows.Scan(
+			&i.ID,
+			&i.RealmID,
+			&i.LogGroupID,
+			&i.Name,
+			&i.HashedSlug,
+			&i.GuildID,
+			&i.Capabilities,
+			&i.Versions,
+			&i.RecorderName,
+			&i.RecorderGuid,
+			&i.DuplicateGroupID,
+			&i.RealmName,
+			&i.GuildName,
+			&i.GuildRealmID,
+			&i.GuildCreatedAt,
 		); err != nil {
 			return nil, err
 		}

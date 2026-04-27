@@ -152,7 +152,7 @@ function formatJobKind(kind: string): string {
     .trim();
 }
 
-function StatusBadge({ state }: { state: RiverJobState }) {
+function StatusBadge({ state, errors }: { state: RiverJobState; errors?: readonly { error: string }[] }) {
   switch (state) {
     case RIVER_STATES.completed:
       return (
@@ -168,13 +168,23 @@ function StatusBadge({ state }: { state: RiverJobState }) {
           <span className="text-sm font-medium">Processing</span>
         </div>
       );
-    case RIVER_STATES.discarded:
+    case RIVER_STATES.discarded: {
+      const hasErrors = errors && errors.length > 0;
+      if (!hasErrors) {
+        return (
+          <div className="flex items-center gap-2 text-yellow-600">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="text-sm font-medium">Log Expired</span>
+          </div>
+        );
+      }
       return (
         <div className="flex items-center gap-2 text-destructive">
           <XCircle className="h-4 w-4" />
           <span className="text-sm font-medium">Failed</span>
         </div>
       );
+    }
     case RIVER_STATES.cancelled:
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -882,9 +892,15 @@ export function LogDetailView({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <StatusBadge state={log.status.state} />
+              <StatusBadge state={log.status.state} errors={log.status.errors} />
             </div>
           </div>
+
+          {log.status.state === RIVER_STATES.discarded && (!log.status.errors || log.status.errors.length === 0) && (
+            <p className="text-sm text-muted-foreground">
+              The processing record for this log has expired, but all parsed data is still available below.
+            </p>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between">
@@ -975,7 +991,7 @@ export function LogDetailView({
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
-                  <StatusBadge state={log.status.state} />
+                  <StatusBadge state={log.status.state} errors={log.status.errors} />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Attempt</p>

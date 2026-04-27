@@ -34,24 +34,22 @@ type FinalizedInstance struct {
 	UnknownUnits map[uint32]UnknownUnit
 }
 
-func ZoneNameMatcher(names ...string) func(z string) bool {
-	return func(z string) bool {
-		for _, name := range names {
-			if strings.EqualFold(z, name) {
-				return true
-			}
-		}
-		return false
-	}
+type CommonFactory struct {
+	Name      string
+	ZoneNames []string
+	Hostiles  func() *Identifier
+	Rankings  *rankings.Rankings
 }
 
-type CommonFactory struct {
-	Name           string
-	ZoneNames      []string
-	ZoneName       func(z string) bool
-	OtherZoneNames []string
-	Hostiles       func() *Identifier
-	Rankings       *rankings.Rankings
+// MatchZone returns true if z matches any of the factory's zone names
+// (case-insensitive).
+func (f *CommonFactory) MatchZone(z string) bool {
+	for _, name := range f.ZoneNames {
+		if strings.EqualFold(z, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // New handles all the extra hooks

@@ -39,6 +39,7 @@ describe('enemyDamageTakenProcessor', () => {
       activityCount: 0,
       spellId: null,
       spellAttackOutcome: null,
+      overkill: 0,
       ...overrides,
     };
   }

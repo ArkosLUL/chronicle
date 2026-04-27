@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -35,6 +36,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/riverqueue/river/rivertype"
 )
 
 // UploadInput represents a file to be uploaded, potentially gzip-compressed.
@@ -485,14 +487,55 @@ func (c *Chronicle) WoWLogGroup(ctx context.Context, groupID uuid.UUID) (*chroni
 		return nil, fmt.Errorf("fetch log parse jobs: %w", err)
 	}
 
-	if len(list.Jobs) == 0 {
-		return nil, fmt.Errorf("no log parse job found for log group %s", groupID)
+	var jobStatus chroniclesdk.JobStatus
+	if len(list.Jobs) > 0 {
+		jobStatus = db2sdk.JobStatus(*(list.Jobs[0]))
+	} else {
+		jobStatus = chroniclesdk.JobStatus{
+			ID:          0,
+			Attempt:     0,
+			MaxAttempts: 0,
+			State:       rivertype.JobStateDiscarded,
+			CreatedAt:   time.Time{},
+			ScheduledAt: time.Time{},
+			AttemptedAt: nil,
+			FinalizedAt: nil,
+			Errors:      []rivertype.AttemptError{},
+			Kind:        KindLogParse,
+			Output:      nil,
+		}
+
+		// When no job exists (e.g. River purged old completed jobs), fetch
+		// instances directly from the database so the frontend can still
+		// display them.
+		dbInstances, err := c.Zed.GetInstancesByLogGroupID(ctx, groupID)
+		if err == nil && len(dbInstances) > 0 {
+			parsed := chroniclesdk.WoWParsedLogJobOutput{
+				Instances: make([]chroniclesdk.WoWSimpleParsedInstance, 0, len(dbInstances)),
+			}
+			for _, inst := range dbInstances {
+				encounters, err := c.Zed.EncountersByInstanceID(ctx, inst.ID)
+				if err != nil {
+					continue
+				}
+				sdkEncounters := make([]chroniclesdk.WoWEncounter, 0, len(encounters))
+				for _, e := range encounters {
+					sdkEncounters = append(sdkEncounters, db2sdk.WoWEncounter(e))
+				}
+				parsed.Instances = append(parsed.Instances, chroniclesdk.WoWSimpleParsedInstance{
+					WoWInstance: db2sdk.WoWInstance(inst),
+					Encounters:  sdkEncounters,
+				})
+			}
+			if outputJSON, err := json.Marshal(parsed); err == nil {
+				jobStatus.Output = outputJSON
+			}
+		}
 	}
 
-	currentJob := list.Jobs[0]
 	return &chroniclesdk.WoWLogGroupState{
 		WoWLogGroup: db2sdk.WoWLogGroupRow(group),
-		Status:      db2sdk.JobStatus(*currentJob),
+		Status:      jobStatus,
 	}, nil
 }
 

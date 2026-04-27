@@ -64,7 +64,7 @@ type Chronicle struct {
 	ItemFetcher        gamedb.GearResolver
 	metrics            *logParseMetrics
 	emitParsingLogs    bool
-	instanceRegistry   *registry.DBRegistry
+	instanceRegistry   *registry.Registry
 
 	mu                     sync.Mutex
 	insertParsedInstanceMu sync.Mutex
@@ -80,10 +80,12 @@ type Options struct {
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
-	reg, err := registry.NewDBRegistry(ctx, logger, opts.Zed, opts.Ps, registry.DefaultRegistry(logger))
-	if err != nil {
-		return nil, err
-	}
+	//reg, err := registry.NewDBRegistry(ctx, logger, opts.Zed, opts.Ps, registry.DefaultRegistry(logger))
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	reg := registry.DefaultRegistry(logger)
 
 	c := &Chronicle{
 		AppContext:         ctx,
@@ -99,7 +101,7 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, er
 		instanceRegistry:   reg,
 	}
 
-	err = c.initStorage(ctx)
+	err := c.initStorage(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init storage: %w", err)
 	}
@@ -112,7 +114,7 @@ func (c *Chronicle) EmitParsingLogs() bool {
 	return c.emitParsingLogs
 }
 
-func (c *Chronicle) DBRegistry() *registry.DBRegistry {
+func (c *Chronicle) Registry() *registry.Registry {
 	return c.instanceRegistry
 }
 

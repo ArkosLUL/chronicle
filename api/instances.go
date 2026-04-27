@@ -21,7 +21,7 @@ import (
 func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	reg := api.Chronicle.DBRegistry().Registry()
+	reg := api.Chronicle.Registry()
 	httpapi.Write(ctx, w, http.StatusOK, reg.AllInstancesWithComments())
 }
 

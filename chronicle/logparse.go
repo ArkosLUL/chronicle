@@ -208,9 +208,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	// encounters — use DB-backed registry if available, otherwise fall back to default.
 	var encountersState *encounters.State
-	dbReg := w.parent.DBRegistry()
-	// TODO: Cache this better
-	reg := dbReg.Registry()
+	reg := w.parent.Registry()
 
 	encountersState = encounters.New(ctx, logLogger, reg)
 

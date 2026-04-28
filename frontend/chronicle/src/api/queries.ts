@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -53,6 +53,7 @@ import type {
   RequeueVersionResponse as RequeueVersionResponseGenerated,
   AdminBulkDeleteResponse as AdminBulkDeleteResponseGenerated,
   AdminBulkSelectedReparseResponse as AdminBulkSelectedReparseResponseGenerated,
+  AdminBulkReparseResponse as AdminBulkReparseResponseGenerated,
   AdminOutdatedInstancesResponse,
   SiteConfig,
 } from "./typesGenerated";
@@ -105,6 +106,7 @@ export type UpdateGuildSettingsRequest = UpdateGuildSettingsRequestGenerated;
 export type CreateJoinRequestBody = CreateJoinRequestBodyGenerated;
 export type AdminBulkDeleteResponse = AdminBulkDeleteResponseGenerated;
 export type AdminBulkSelectedReparseResponse = AdminBulkSelectedReparseResponseGenerated;
+export type AdminBulkReparseResponse = AdminBulkReparseResponseGenerated;
 
 export function useWhoami(options?: Omit<UseQueryOptions<boolean>, "queryKey" | "queryFn">) {
   return useQuery({
@@ -499,16 +501,13 @@ export function useAuthProviders(options?: Omit<UseQueryOptions<string[]>, "quer
   });
 }
 
-// Map of instance name to optional note/caveat (empty string = fully supported)
-export type SupportedInstances = Record<string, string>;
-
-export function useSupportedInstances(options?: Omit<UseQueryOptions<SupportedInstances>, "queryKey" | "queryFn">) {
+export function useSupportedInstances(options?: Omit<UseQueryOptions<SupportedInstance[]>, "queryKey" | "queryFn">) {
   return useQuery({
     queryKey: ["supportedInstances"],
     queryFn: async () => {
       const response = await fetch("/api/v1/raidlogs/supported");
       if (!response.ok) throw new Error("Failed to fetch supported instances");
-      return response.json() as Promise<SupportedInstances>;
+      return response.json() as Promise<SupportedInstance[]>;
     },
     staleTime: 1000 * 60 * 60, // Cache for 1 hour - this data rarely changes
     ...options,
@@ -651,6 +650,28 @@ export function useReparseLogGroup() {
     onSuccess: (_data, { logId }) => {
       // Invalidate to refetch with new job status
       queryClient.invalidateQueries({ queryKey: ["logGroup", logId] });
+    },
+  });
+}
+
+export function useBulkReparseOutdatedInstances() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ instanceName, parserVersion }: { instanceName?: string; parserVersion?: string }) => {
+      const params = new URLSearchParams();
+      if (instanceName) params.set("instance_name", instanceName);
+      if (parserVersion) params.set("parser_version", parserVersion);
+      const url = "/api/v1/admin/outdated-instances/reparse" + (params.toString() ? `?${params}` : "");
+      const response = await fetch(url, { method: "POST" });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to bulk reparse logs" }));
+        throw new Error(error.message || "Failed to bulk reparse logs");
+      }
+      return response.json() as Promise<AdminBulkReparseResponse>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "outdated-instances"] });
     },
   });
 }

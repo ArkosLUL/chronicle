@@ -30,8 +30,8 @@ RUN go mod download
 COPY . .
 COPY --from=frontend /chronicle/frontend/chronicle/dist ./frontend/chronicle/dist
 
-# Pass version info and server target to the Go build
-RUN GIT_TAG=${GIT_TAG} GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} SERVER=${SERVER} make build-backend
+# Build the backend with embedded frontend assets from the prebuilt dist directory.
+RUN GIT_TAG=${GIT_TAG} GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} SERVER=${SERVER} make build-backend-static
 
 # Stage 3: Final minimal image
 FROM alpine:latest

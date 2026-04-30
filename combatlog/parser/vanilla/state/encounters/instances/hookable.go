@@ -608,16 +608,15 @@ func (h *Hookable) resolveUnknownUnits() map[uint32]UnknownUnit {
 }
 
 type encounterName struct {
-	byCharacterName string
-	byBossName      string
-	byEncounterName string
-	encounterType   types.EncounterType
+	byCharacterName   string
+	byBossName        string
+	byEncounterName   string
+	byEncounterFnName string
+	encounterType     types.EncounterType
 
 	bossDeadState map[uint32]bool
 
 	killed map[uint32]int
-
-	bossFight bool
 }
 
 func (e *encounterName) Apply(ch CharacterFight, id Identity, f Fight) {
@@ -642,6 +641,9 @@ func (e *encounterName) BossRemains() bool {
 }
 
 func (e *encounterName) Name() string {
+	if e.byEncounterFnName != "" {
+		return e.byEncounterFnName
+	}
 	if e.byEncounterName != "" {
 		return e.byEncounterName
 	}
@@ -656,7 +658,7 @@ func (e *encounterName) Type() types.EncounterType {
 }
 
 func (e *encounterName) IsBossFight() bool {
-	return e.bossFight
+	return e.encounterType == types.EncounterTypeBOSS
 }
 
 func (e *encounterName) applyState(ch CharacterFight, id Identity, f Fight) {
@@ -664,7 +666,6 @@ func (e *encounterName) applyState(ch CharacterFight, id Identity, f Fight) {
 	lastPeriod := ch.Activity[len(ch.Activity)-1]
 	if id.Boss {
 		e.encounterType = types.EncounterTypeBOSS
-		e.bossFight = true
 		e.bossDeadState[entry] = false
 	}
 
@@ -674,8 +675,10 @@ func (e *encounterName) applyState(ch CharacterFight, id Identity, f Fight) {
 
 	if id.EncounterNameFn != nil {
 		res := id.EncounterNameFn(f)
-		for _, r := range res.Bosses {
+		if res.EncounterName != "" || len(res.Bosses) > 0 {
 			e.encounterType = types.EncounterTypeBOSS
+		}
+		for _, r := range res.Bosses {
 			e.bossDeadState[r] = false
 		}
 	}
@@ -689,8 +692,12 @@ func (e *encounterName) applyName(id Identity, f Fight) {
 		e.byBossName = id.Name
 	}
 
+	if e.byEncounterName == "" && id.EncounterName != "" {
+		e.byEncounterName = id.EncounterName
+	}
+
 	if e.byEncounterName == "" && id.EncounterNameFn != nil {
 		res := id.EncounterNameFn(f)
-		e.byEncounterName = res.EncounterName
+		e.byEncounterFnName = res.EncounterName
 	}
 }

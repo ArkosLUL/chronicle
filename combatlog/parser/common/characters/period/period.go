@@ -79,7 +79,7 @@ func (p Period) Compare(other Period) int {
 		return -1
 	}
 
-	if p.Start != nil || other.Start == nil {
+	if p.Start != nil && other.Start == nil {
 		return 1
 	}
 

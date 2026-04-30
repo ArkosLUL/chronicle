@@ -33,7 +33,7 @@ func main() {
 	}
 
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "usage: blp2webp [-o outdir] <file.blp | directory>...\n")
+		_, _ = fmt.Fprintf(os.Stderr, "usage: blp2webp [-o outdir] <file.blp | directory>...\n")
 		os.Exit(1)
 	}
 
@@ -41,13 +41,13 @@ func main() {
 	for _, arg := range args {
 		info, err := os.Stat(arg)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
 		if info.IsDir() {
 			entries, err := os.ReadDir(arg)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error reading dir: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "error reading dir: %v\n", err)
 				os.Exit(1)
 			}
 			for _, e := range entries {
@@ -61,13 +61,13 @@ func main() {
 	}
 
 	if len(files) == 0 {
-		fmt.Fprintln(os.Stderr, "no .blp files found")
+		_, _ = fmt.Fprintln(os.Stderr, "no .blp files found")
 		os.Exit(1)
 	}
 
 	if outDir != "" {
 		if err := os.MkdirAll(outDir, 0o755); err != nil {
-			fmt.Fprintf(os.Stderr, "error creating output dir: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "error creating output dir: %v\n", err)
 			os.Exit(1)
 		}
 	}
@@ -76,14 +76,14 @@ func main() {
 	for _, path := range files {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "SKIP %s: %v\n", path, err)
+			_, _ = fmt.Fprintf(os.Stderr, "SKIP %s: %v\n", path, err)
 			failed++
 			continue
 		}
 
 		img, err := decodeBLP2(data)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "SKIP %s: %v\n", path, err)
+			_, _ = fmt.Fprintf(os.Stderr, "SKIP %s: %v\n", path, err)
 			failed++
 			continue
 		}
@@ -98,18 +98,18 @@ func main() {
 
 		f, err := os.Create(dest)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "SKIP %s: %v\n", path, err)
+			_, _ = fmt.Fprintf(os.Stderr, "SKIP %s: %v\n", path, err)
 			failed++
 			continue
 		}
 		if err := nativewebp.Encode(f, img, nil); err != nil {
-			f.Close()
-			os.Remove(dest)
-			fmt.Fprintf(os.Stderr, "SKIP %s: encode error: %v\n", path, err)
+			_ = f.Close()
+			_ = os.Remove(dest)
+			_, _ = fmt.Fprintf(os.Stderr, "SKIP %s: encode error: %v\n", path, err)
 			failed++
 			continue
 		}
-		f.Close()
+		_ = f.Close()
 		fmt.Printf("OK %s → %s\n", filepath.Base(path), dest)
 		converted++
 	}

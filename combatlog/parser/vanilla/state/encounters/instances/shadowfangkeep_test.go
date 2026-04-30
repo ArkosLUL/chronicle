@@ -16,6 +16,6 @@ func TestShadowfangKeepHostiles_BossCoverage(t *testing.T) {
 	require.Equal(t, "Archmage Arugal", hostiles[4275].EncounterName)
 	require.True(t, hostiles[4278].Boss)
 	require.Equal(t, "Commander Springvale", hostiles[4278].EncounterName)
-	require.True(t, hostiles[3872].Hostile)
+	require.True(t, hostiles[3872].Affiliation)
 	require.False(t, hostiles[3872].Boss)
 }

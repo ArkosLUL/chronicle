@@ -297,8 +297,8 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 	activeTotal := 0
 	var latestEnd *period.Moment
 	err := h.Characters.All.ForEach(func(char characters.Character) error {
-		if info := h.IdentifyUnit(char.ID()); !info.Hostile {
-			// Only consider hostile characters for fights
+		if info := h.IdentifyUnit(char.ID()); !info.CanBattle() {
+			// Only consider hostile & neutral characters for fights
 			return nil
 		}
 
@@ -401,6 +401,12 @@ func (h *Hookable) Events() *encounterevents.Events {
 }
 
 func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
+	if h.currentFight != nil && h.currentFight.active() {
+		if len(h.currentFight.ActiveHostiles) > 0 {
+			h.logger.Error("hostiles remaining in finalized instance", slog.Int("cnt", len(h.currentFight.ActiveHostiles)))
+		}
+	}
+
 	// TODO: What about any ongoing fight? Do we finalize it? Do we discard it? Do we error?
 	//if false && c.currentFight != nil {
 	//  // TODO: We need to end any ongoing fight with what timestamp?
@@ -434,7 +440,7 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 			}
 
 			id := h.IdentifyUnit(hostile.ID)
-			if !id.Hostile {
+			if !id.CanBattle() {
 				continue
 			}
 

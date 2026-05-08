@@ -182,20 +182,6 @@ func (m *Matched) Uint64() uint64 {
 	})
 }
 
-func (m *Matched) OptionalUint32() uint32 {
-	return parseMatch(m, func(s string) (uint32, error) {
-		s = strings.TrimSpace(s)
-		if s == "" || s == "nil" {
-			return 0, nil
-		}
-		u, err := strconv.ParseUint(s, 10, 32)
-		if err != nil {
-			return 0, err
-		}
-		return uint32(u), nil
-	})
-}
-
 func (m *Matched) Uint32() uint32 {
 	return parseMatch(m, func(s string) (uint32, error) {
 		u, err := strconv.ParseUint(s, 10, 32)

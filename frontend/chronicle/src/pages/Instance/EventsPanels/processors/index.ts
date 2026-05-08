@@ -31,6 +31,7 @@ import { interruptProcessor } from "../Interrupt/interrupt.processor";
 import { equipmentProcessor } from "../Equipment/equipment.processor";
 import { lootProcessor } from "../LootPanel/loot.processor";
 import { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
+import { resistsProcessor } from "../ResistsPanel/resists.processor";
 
 // Export individual processors
 export { damageDoneProcessor, vulnerabilityEffectProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -61,6 +62,7 @@ export { interruptProcessor } from "../Interrupt/interrupt.processor";
 export { equipmentProcessor } from "../Equipment/equipment.processor";
 export { lootProcessor } from "../LootPanel/loot.processor";
 export { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
+export { resistsProcessor } from "../ResistsPanel/resists.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -86,6 +88,7 @@ export type { InterruptResult, InterruptEntityData, InterruptSpellData, Interrup
 export type { EquipmentResult, PlayerSnapshot } from "../Equipment/equipment.processor";
 export type { LootResult } from "../LootPanel/loot.processor";
 export type { AbsorbedDamageResult, AbsorbedDamageData } from "../AbsorbedDamage/absorbedDamage.processor";
+export type { ResistsResult, PlayerResistData, AbilityResistBreakout } from "../ResistsPanel/resists.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
@@ -155,4 +158,5 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   // Loot
   loot: lootProcessor,
   absorbed_damage: absorbedDamageProcessor,
+  resists: resistsProcessor,
 };

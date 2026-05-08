@@ -342,6 +342,29 @@ func TestParserMessages(t *testing.T) {
 
 	// 1775497574472|SPELL_DMG|0xF140095BCD00000F|0xF1300030B40BA62E|22275|69|0,0,0|0|2|2,27,0,3
 
+	t.Run("SpellDmgPartialResist", func(t *testing.T) {
+		t.Parallel()
+
+		// 1083 damage dealt, 1082 resisted → ~50% resist
+		// Format: ts|SPELL_DMG|target|caster|spellID|amount|blocked,absorbed,resisted|hitInfo|school|effects
+		testCase(t,
+			"1778212906931|SPELL_DMG|0x0000000000099515|0xF13000F1FF276A34|51099|1083|0,0,1082|0|6|2,0,0,0",
+			&messages.Damage{
+				MessageBase: messages.Base(time.UnixMilli(1778212906931)),
+				SpellName:   ptr.Ref("Arcane Bomb"),
+				SpellData:   nil, // ignored (compared via cmpopts)
+				Caster:      ptr.Ref(guid.GUID(0xF13000F1FF276A34)),
+				Target:      guid.GUID(0x0000000000099515),
+				HitType:     types.HitTypeHit,
+				Amount:      1083,
+				School:      types.ArcaneSchool, // school=6 → Arcane
+				Trailer: types.Trailer{
+					{Amount: ptr.Ref(uint32(1082)), HitType: types.HitTypePartialResist},
+				},
+			},
+		)
+	})
+
 	// Add more test cases:
 	// t.Run("Heal", func(t *testing.T) {
 	// 	t.Parallel()

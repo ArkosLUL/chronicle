@@ -656,6 +656,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   loot: 'lt',
   logging_metadata: 'lm',
   absorbed_damage: 'ad',
+  resists: 'rs',
 
 };
 

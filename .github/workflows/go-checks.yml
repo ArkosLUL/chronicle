@@ -144,15 +144,15 @@ jobs:
           - server: turtle
             railway_service: chronicled
             railway_token_secret: RAILWAY_TOKEN
-          - server: epoch
-            railway_service: chronicled
-            railway_token_secret: RAILWAY_TOKEN_EPOCH
-          - server: kronos
-            railway_service: chronicled
-            railway_token_secret: RAILWAY_TOKEN_KRONOS
-          - server: warmane
-            railway_service: chronicled
-            railway_token_secret: RAILWAY_TOKEN_WARMANE
+#          - server: epoch
+#            railway_service: chronicled
+#            railway_token_secret: RAILWAY_TOKEN_EPOCH
+#          - server: kronos
+#            railway_service: chronicled
+#            railway_token_secret: RAILWAY_TOKEN_KRONOS
+#          - server: warmane
+#            railway_service: chronicled
+#            railway_token_secret: RAILWAY_TOKEN_WARMANE
 #          - server: ascension
 #            railway_service: chronicled
 #            railway_token_secret: RAILWAY_TOKEN_ASCENSION

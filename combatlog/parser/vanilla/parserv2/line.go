@@ -194,7 +194,7 @@ func (m *Matched) Uint32() uint32 {
 
 func (m *Matched) OptionalUint32() uint32 {
 	return parseMatch(m, func(s string) (uint32, error) {
-		if s == "" {
+		if s == "" || s == "nil" {
 			return 0, nil
 		}
 		u, err := strconv.ParseUint(s, 10, 32)

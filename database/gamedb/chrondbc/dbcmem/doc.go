@@ -48,3 +48,11 @@ package dbcmem
 //go:generate go run ../../../../scripts/dbcdata extract-icons --server=ascension --out=../../../../frontend/imagecache/ascension/blp
 // DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=ascension --out=../../../../frontend/imagecache/ascension/loading-screens
 //go:generate go run -tags ascension ../../../../scripts/dbcdata spell-test-data --server=ascension --ts-dir=../../../../frontend/chronicle/src/api/testdata
+
+// VanillaPlus (1.12.2)
+//go:generate go run ../../../../scripts/dbcdata static --server=vanillaplus -o vanillaplus
+//go:generate go run -tags vanillaplus ../../../../scripts/dbcdata derived-statics --server=vanillaplus --assets-dir=../../../../assets/vanillaplus/generated --go-dir=vanillaplus --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/vanillaplus
+//go:generate go run ../../../../scripts/dbcdata extract-dbc --server=vanillaplus --out=../../../../assets/vanillaplus
+//go:generate go run ../../../../scripts/dbcdata extract-icons --server=vanillaplus --out=../../../../frontend/imagecache/vanillaplus/blp
+// DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=vanillaplus --out=../../../../frontend/imagecache/vanillaplus/loading-screens
+//go:generate go run -tags vanillaplus ../../../../scripts/dbcdata spell-test-data --server=vanillaplus --ts-dir=../../../../frontend/chronicle/src/api/testdata

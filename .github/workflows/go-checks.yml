@@ -96,7 +96,7 @@ jobs:
     environment: actions
     strategy:
       matrix:
-        server: [turtle, epoch, kronos, warmane]
+        server: [turtle, epoch, kronos, warmane, vanillaplus]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

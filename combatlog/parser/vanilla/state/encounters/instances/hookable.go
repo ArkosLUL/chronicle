@@ -101,6 +101,8 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 			cres = wotlkcreatures.AzerothCoreCharacterFactories()
 			combatantStrategy = EmitAllPlayers
 		}
+	} else {
+		logType = database.LogTypeV2
 	}
 
 	chrs := characters.NewCharacters(db, cres)
@@ -145,7 +147,8 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 	switch services.ServerName {
 	// 1.12 does not record overheals in the logs
-	case services.ServerIdentityTurtle, services.ServerIdentityKronos:
+	case services.ServerIdentityTurtle, services.ServerIdentityKronos,
+		services.ServerIdentityVanillaPlus:
 		hooks = append(hooks, &Overhealing{
 			deficits: make(map[guid.GUID]int32),
 		})

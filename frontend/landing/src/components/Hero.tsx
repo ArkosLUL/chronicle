@@ -81,7 +81,7 @@ export function Hero() {
       <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-24">
         {/* Logo */}
         <img
-          src="/chronicle-logo.svg"
+          src="chronicle-logo.svg"
           alt="Chronicle"
           className="mx-auto mb-6 h-10 sm:h-12"
           onError={(e) => {

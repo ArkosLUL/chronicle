@@ -13,8 +13,8 @@ export const SERVERS: ServerEntry[] = [
     tagline: "Vanilla+ with custom content",
     description:
       "Vanilla 1.12-based server with extensive custom quests, zones, dungeons, raids, races, and class changes. Focuses on expanding the original Azeroth while preserving a Classic-style experience.",
-    logo: "/servers/turtle/logo.png",
-    banner: "/servers/turtle/banner.webp",
+    logo: "servers/turtle/logo.png",
+    banner: "servers/turtle/banner.webp",
     accentColor: "#4ade80",
     expansion: "vanilla",
     client: "1.12.1",
@@ -30,8 +30,8 @@ export const SERVERS: ServerEntry[] = [
     tagline: "WotLK with PlayerBots",
     description:
       "Laid-back WotLK 3.3.5a community server built around AzerothCore and PlayerBots. Designed to support small-group progression with bot-assisted dungeon and raid play.",
-    logo: "/servers/oldmanwarcraft/logo.png",
-    banner: "/servers/oldmanwarcraft/banner.webp",
+    logo: "servers/oldmanwarcraft/logo.png",
+    banner: "servers/oldmanwarcraft/banner.webp",
     accentColor: "#d97706",
     expansion: "wotlk",
     client: "3.3.5a",
@@ -46,8 +46,8 @@ export const SERVERS: ServerEntry[] = [
     tagline: "Authentic Vanilla project",
     description:
       "Long-running Vanilla project under TwinStar focused on an authentic 1.12-style experience. Emphasizes high-quality scripting across raids, dungeons, and non-raid content.",
-    logo: "/servers/kronos/logo.png",
-    banner: "/servers/kronos/banner.jpg",
+    logo: "servers/kronos/logo.png",
+    banner: "servers/kronos/banner.jpg",
     accentColor: "#fbbf24",
     expansion: "vanilla",
     client: "1.12.1",
@@ -62,8 +62,8 @@ export const SERVERS: ServerEntry[] = [
     tagline: "Rebalanced Vanilla PvP",
     description:
       "Vanilla+ PvP server with rebalanced classes, new challenges, custom bosses, battlegrounds, and community-driven content. Designed around new builds without leaving the Vanilla framework.",
-    logo: "/servers/vanillaplus/logo.png",
-    banner: "/servers/vanillaplus/banner.png",
+    logo: "servers/vanillaplus/logo.png",
+    banner: "servers/vanillaplus/banner.png",
     accentColor: "#a78bfa",
     expansion: "vanilla",
     client: "1.12.1",

@@ -568,7 +568,7 @@
               "prereqRank": [
                 4
               ],
-              "iconTexture": "INTERFACE\\ICONS\\Zerkerblood"
+              "iconTexture": "Zerkerblood"
             },
             {
               "id": 167,
@@ -951,7 +951,7 @@
                 33769,
                 33770
               ],
-              "iconTexture": "INTERFACE\\ICONS\\banish_2"
+              "iconTexture": "banish_2"
             },
             {
               "id": 787,
@@ -1139,7 +1139,7 @@
                 16900,
                 16901
               ],
-              "iconTexture": "INTERFACE\\ICONS\\MoonStone"
+              "iconTexture": "MoonStone"
             },
             {
               "id": 1738,
@@ -1417,7 +1417,7 @@
               "prereqRank": [
                 4
               ],
-              "iconTexture": "INTERFACE\\ICONS\\druid_batte_roar"
+              "iconTexture": "druid_batte_roar"
             },
             {
               "id": 1742,
@@ -1447,7 +1447,7 @@
                 33775,
                 33776
               ],
-              "iconTexture": "INTERFACE\\ICONS\\survival_instinctz"
+              "iconTexture": "survival_instinctz"
             },
             {
               "id": 809,
@@ -1574,7 +1574,7 @@
               "spellRanks": [
                 2011
               ],
-              "iconTexture": "INTERFACE\\ICONS\\amulet_of_wild"
+              "iconTexture": "amulet_of_wild"
             },
             {
               "id": 827,
@@ -2344,7 +2344,7 @@
               "spellRanks": [
                 20423
               ],
-              "iconTexture": "INTERFACE\\ICONS\\spell_holy_crusader"
+              "iconTexture": "spell_holy_crusader"
             }
           ]
         },
@@ -2585,7 +2585,7 @@
                 33475,
                 33476
               ],
-              "iconTexture": "INTERFACE\\ICONS\\spell_holy_blessedarm"
+              "iconTexture": "spell_holy_blessedarm"
             },
             {
               "id": 1406,
@@ -2790,7 +2790,7 @@
               "prereqRank": [
                 2
               ],
-              "iconTexture": "INTERFACE\\ICONS\\survival_instinctz"
+              "iconTexture": "survival_instinctz"
             },
             {
               "id": 1390,
@@ -2923,7 +2923,7 @@
               "spellRanks": [
                 33526
               ],
-              "iconTexture": "INTERFACE\\ICONS\\Stampede"
+              "iconTexture": "Stampede"
             }
           ]
         },
@@ -3456,7 +3456,7 @@
                 33573,
                 33574
               ],
-              "iconTexture": "INTERFACE\\ICONS\\spell_frost_frozendecay"
+              "iconTexture": "spell_frost_frozendecay"
             },
             {
               "id": 1325,
@@ -3473,7 +3473,7 @@
               "prereqRank": [
                 0
               ],
-              "iconTexture": "INTERFACE\\ICONS\\amulet_of_wild"
+              "iconTexture": "amulet_of_wild"
             },
             {
               "id": 1313,
@@ -3815,7 +3815,7 @@
                 33706,
                 33707
               ],
-              "iconTexture": "INTERFACE\\ICONS\\banish_2"
+              "iconTexture": "banish_2"
             },
             {
               "id": 382,
@@ -5705,7 +5705,7 @@
               "prereqRank": [
                 1
               ],
-              "iconTexture": "INTERFACE\\ICONS\\stoneskinz"
+              "iconTexture": "stoneskinz"
             },
             {
               "id": 602,
@@ -5861,7 +5861,7 @@
                 33639,
                 33640
               ],
-              "iconTexture": "INTERFACE\\ICONS\\spell_nature_stormhammer"
+              "iconTexture": "spell_nature_stormhammer"
             },
             {
               "id": 905,
@@ -5876,7 +5876,7 @@
                 33645,
                 33646
               ],
-              "iconTexture": "INTERFACE\\ICONS\\spell_nature_shamanism"
+              "iconTexture": "spell_nature_shamanism"
             },
             {
               "id": 901,
@@ -6025,7 +6025,7 @@
                 16184,
                 16209
               ],
-              "iconTexture": "INTERFACE\\ICONS\\spiritwalker"
+              "iconTexture": "spiritwalker"
             },
             {
               "id": 587,
@@ -6356,7 +6356,7 @@
                 11255,
                 12598
               ],
-              "iconTexture": "INTERFACE\\ICONS\\arcane_magic"
+              "iconTexture": "arcane_magic"
             },
             {
               "id": 421,
@@ -6679,7 +6679,7 @@
                 34271,
                 34272
               ],
-              "iconTexture": "INTERFACE\\ICONS\\incinerate_war3"
+              "iconTexture": "incinerate_war3"
             },
             {
               "id": 1764,
@@ -6861,7 +6861,7 @@
                 33912,
                 33913
               ],
-              "iconTexture": "INTERFACE\\ICONS\\ice_shard"
+              "iconTexture": "ice_shard"
             },
             {
               "id": 38,
@@ -7007,7 +7007,7 @@
               "prereqRank": [
                 0
               ],
-              "iconTexture": "INTERFACE\\ICONS\\INV_Jewelcrafting_IceDiamond_02"
+              "iconTexture": "INV_Jewelcrafting_IceDiamond_02"
             },
             {
               "id": 69,
@@ -7204,7 +7204,7 @@
                 17864,
                 18393
               ],
-              "iconTexture": "INTERFACE\\ICONS\\DrainingALL"
+              "iconTexture": "DrainingALL"
             },
             {
               "id": 1006,
@@ -7277,7 +7277,7 @@
               "prereqRank": [
                 0
               ],
-              "iconTexture": "INTERFACE\\ICONS\\cloak_of_flame"
+              "iconTexture": "cloak_of_flame"
             },
             {
               "id": 1041,
@@ -7383,7 +7383,7 @@
               "spellRanks": [
                 34305
               ],
-              "iconTexture": "INTERFACE\\ICONS\\Inevitabledoom"
+              "iconTexture": "Inevitabledoom"
             }
           ]
         },
@@ -7536,7 +7536,7 @@
                 33947,
                 33948
               ],
-              "iconTexture": "INTERFACE\\ICONS\\demonic_resilence"
+              "iconTexture": "demonic_resilence"
             },
             {
               "id": 1242,
@@ -7814,7 +7814,7 @@
               "prereqRank": [
                 1
               ],
-              "iconTexture": "INTERFACE\\ICONS\\dragon_devour"
+              "iconTexture": "dragon_devour"
             },
             {
               "id": 963,
@@ -7973,7 +7973,7 @@
               "spellRanks": [
                 33983
               ],
-              "iconTexture": "INTERFACE\\ICONS\\phoenix"
+              "iconTexture": "phoenix"
             }
           ]
         }

@@ -1566,15 +1566,21 @@
               "iconTexture": "Ability_Druid_Enrage"
             },
             {
-              "id": 1782,
+              "id": 831,
               "tierID": 2,
               "columnIndex": 0,
               "maxRank": 1,
               "tabIndex": 7,
               "spellRanks": [
-                2011
+                17116
               ],
-              "iconTexture": "amulet_of_wild"
+              "prereqTalent": [
+                824
+              ],
+              "prereqRank": [
+                4
+              ],
+              "iconTexture": "Spell_Nature_RavenForm"
             },
             {
               "id": 827,
@@ -1655,22 +1661,11 @@
               "iconTexture": "Ability_Druid_TwilightsWrath"
             },
             {
-              "id": 831,
-              "tierID": 4,
-              "columnIndex": 0,
-              "maxRank": 1,
-              "tabIndex": 14,
-              "spellRanks": [
-                17116
-              ],
-              "iconTexture": "Spell_Nature_RavenForm"
-            },
-            {
               "id": 843,
               "tierID": 4,
-              "columnIndex": 1,
+              "columnIndex": 0,
               "maxRank": 5,
-              "tabIndex": 15,
+              "tabIndex": 14,
               "spellRanks": [
                 24968,
                 24969,
@@ -1679,6 +1674,17 @@
                 24972
               ],
               "iconTexture": "Spell_Holy_ElunesGrace"
+            },
+            {
+              "id": 844,
+              "tierID": 4,
+              "columnIndex": 1,
+              "maxRank": 1,
+              "tabIndex": 15,
+              "spellRanks": [
+                18562
+              ],
+              "iconTexture": "INV_Relics_IdolofRejuvenation"
             },
             {
               "id": 1745,
@@ -1730,21 +1736,21 @@
               "iconTexture": "Spell_Nature_ResistNature"
             },
             {
-              "id": 844,
+              "id": 1782,
               "tierID": 6,
               "columnIndex": 1,
               "maxRank": 1,
               "tabIndex": 19,
               "spellRanks": [
-                18562
+                35723
               ],
               "prereqTalent": [
-                843
+                844
               ],
               "prereqRank": [
-                4
+                0
               ],
-              "iconTexture": "INV_Relics_IdolofRejuvenation"
+              "iconTexture": "Spell_Nature_HealingWay"
             }
           ]
         }
@@ -1828,17 +1834,17 @@
               "iconTexture": "Spell_Holy_AuraMastery"
             },
             {
-              "id": 1504,
+              "id": 1505,
               "tierID": 1,
               "columnIndex": 1,
               "maxRank": 3,
               "tabIndex": 5,
               "spellRanks": [
-                33445,
-                33446,
-                33447
+                34830,
+                34831,
+                34832
               ],
-              "iconTexture": "Spell_Holy_PurifyingPower"
+              "iconTexture": "Spell_Holy_Fanaticism"
             },
             {
               "id": 1627,
@@ -1890,12 +1896,6 @@
               "spellRanks": [
                 26573
               ],
-              "prereqTalent": [
-                1504
-              ],
-              "prereqRank": [
-                2
-              ],
               "iconTexture": "Spell_Holy_InnerFire"
             },
             {
@@ -1911,17 +1911,23 @@
               "iconTexture": "Spell_Holy_SealOfWisdom"
             },
             {
-              "id": 1505,
+              "id": 1504,
               "tierID": 3,
               "columnIndex": 1,
               "maxRank": 3,
               "tabIndex": 11,
               "spellRanks": [
-                34830,
-                34831,
-                34832
+                33445,
+                33446,
+                33447
               ],
-              "iconTexture": "Spell_Holy_Fanaticism"
+              "prereqTalent": [
+                1435
+              ],
+              "prereqRank": [
+                0
+              ],
+              "iconTexture": "Spell_Holy_PurifyingPower"
             },
             {
               "id": 1461,
@@ -2052,11 +2058,24 @@
           "iconTexture": "Spell_Holy_DevotionAura",
           "talents": [
             {
+              "id": 1521,
+              "tierID": 0,
+              "columnIndex": 0,
+              "maxRank": 3,
+              "tabIndex": 0,
+              "spellRanks": [
+                20487,
+                20488,
+                20489
+              ],
+              "iconTexture": "Spell_Holy_SealOfMight"
+            },
+            {
               "id": 1423,
               "tierID": 0,
               "columnIndex": 1,
               "maxRank": 5,
-              "tabIndex": 0,
+              "tabIndex": 1,
               "spellRanks": [
                 20143,
                 20144,
@@ -2070,14 +2089,11 @@
               "id": 1424,
               "tierID": 0,
               "columnIndex": 2,
-              "maxRank": 5,
-              "tabIndex": 1,
+              "maxRank": 2,
+              "tabIndex": 2,
               "spellRanks": [
                 20148,
-                20149,
-                20150,
-                20151,
-                20152
+                20149
               ],
               "iconTexture": "INV_Shield_06"
             },
@@ -2086,7 +2102,7 @@
               "tierID": 1,
               "columnIndex": 0,
               "maxRank": 3,
-              "tabIndex": 2,
+              "tabIndex": 3,
               "spellRanks": [
                 9452,
                 26016,
@@ -2099,7 +2115,7 @@
               "tierID": 1,
               "columnIndex": 1,
               "maxRank": 2,
-              "tabIndex": 3,
+              "tabIndex": 4,
               "spellRanks": [
                 20138,
                 20139
@@ -2111,7 +2127,7 @@
               "tierID": 1,
               "columnIndex": 2,
               "maxRank": 5,
-              "tabIndex": 4,
+              "tabIndex": 5,
               "spellRanks": [
                 20127,
                 20130,
@@ -2123,29 +2139,31 @@
                 1424
               ],
               "prereqRank": [
-                4
+                1
               ],
               "iconTexture": "Ability_Defend"
             },
             {
-              "id": 1521,
+              "id": 1630,
               "tierID": 1,
               "columnIndex": 3,
-              "maxRank": 3,
-              "tabIndex": 5,
+              "maxRank": 5,
+              "tabIndex": 6,
               "spellRanks": [
-                20487,
-                20488,
-                20489
+                20189,
+                20192,
+                20193,
+                34720,
+                34721
               ],
-              "iconTexture": "Spell_Holy_SealOfMight"
+              "iconTexture": "Ability_Rogue_Ambush"
             },
             {
               "id": 1442,
               "tierID": 2,
               "columnIndex": 0,
               "maxRank": 1,
-              "tabIndex": 6,
+              "tabIndex": 7,
               "spellRanks": [
                 34369
               ],
@@ -2162,33 +2180,31 @@
               "tierID": 2,
               "columnIndex": 1,
               "maxRank": 1,
-              "tabIndex": 7,
+              "tabIndex": 8,
               "spellRanks": [
                 20911
               ],
               "iconTexture": "Spell_Nature_LightningShield"
             },
             {
-              "id": 1630,
+              "id": 1626,
               "tierID": 2,
               "columnIndex": 2,
-              "maxRank": 5,
-              "tabIndex": 8,
+              "maxRank": 3,
+              "tabIndex": 9,
               "spellRanks": [
-                20189,
-                20192,
-                20193,
-                34720,
-                34721
+                20254,
+                20255,
+                20256
               ],
-              "iconTexture": "Ability_Rogue_Ambush"
+              "iconTexture": "Spell_Holy_MindSooth"
             },
             {
               "id": 1778,
               "tierID": 2,
               "columnIndex": 3,
               "maxRank": 5,
-              "tabIndex": 9,
+              "tabIndex": 10,
               "spellRanks": [
                 34032,
                 34033,
@@ -2203,7 +2219,7 @@
               "tierID": 3,
               "columnIndex": 0,
               "maxRank": 2,
-              "tabIndex": 10,
+              "tabIndex": 11,
               "spellRanks": [
                 20174,
                 20175
@@ -2211,11 +2227,26 @@
               "iconTexture": "Spell_Holy_SealOfProtection"
             },
             {
-              "id": 1629,
+              "id": 1429,
               "tierID": 3,
               "columnIndex": 2,
+              "maxRank": 5,
+              "tabIndex": 12,
+              "spellRanks": [
+                20196,
+                20197,
+                20198,
+                20199,
+                20200
+              ],
+              "iconTexture": "INV_Sword_20"
+            },
+            {
+              "id": 1629,
+              "tierID": 3,
+              "columnIndex": 3,
               "maxRank": 3,
-              "tabIndex": 11,
+              "tabIndex": 13,
               "spellRanks": [
                 20096,
                 20097,
@@ -2224,37 +2255,29 @@
               "iconTexture": "INV_Shield_20"
             },
             {
-              "id": 1626,
-              "tierID": 3,
-              "columnIndex": 3,
-              "maxRank": 3,
-              "tabIndex": 12,
-              "spellRanks": [
-                20254,
-                20255,
-                20256
-              ],
-              "iconTexture": "Spell_Holy_MindSooth"
-            },
-            {
-              "id": 1501,
+              "id": 1706,
               "tierID": 4,
               "columnIndex": 0,
-              "maxRank": 3,
-              "tabIndex": 13,
+              "maxRank": 2,
+              "tabIndex": 14,
               "spellRanks": [
-                20468,
-                20469,
-                20470
+                33467,
+                33468
               ],
-              "iconTexture": "Spell_Holy_SealOfFury"
+              "prereqTalent": [
+                1430
+              ],
+              "prereqRank": [
+                0
+              ],
+              "iconTexture": "Spell_Holy_BlessingOfProtection"
             },
             {
               "id": 1430,
               "tierID": 4,
               "columnIndex": 1,
               "maxRank": 1,
-              "tabIndex": 14,
+              "tabIndex": 15,
               "spellRanks": [
                 20925
               ],
@@ -2267,26 +2290,24 @@
               "iconTexture": "Spell_Holy_BlessingOfProtection"
             },
             {
-              "id": 1429,
+              "id": 1501,
               "tierID": 4,
-              "columnIndex": 2,
-              "maxRank": 5,
-              "tabIndex": 15,
+              "columnIndex": 3,
+              "maxRank": 3,
+              "tabIndex": 16,
               "spellRanks": [
-                20196,
-                20197,
-                20198,
-                20199,
-                20200
+                20468,
+                20469,
+                20470
               ],
-              "iconTexture": "INV_Sword_20"
+              "iconTexture": "Spell_Holy_SealOfFury"
             },
             {
               "id": 1705,
               "tierID": 5,
-              "columnIndex": 0,
+              "columnIndex": 1,
               "maxRank": 5,
-              "tabIndex": 16,
+              "tabIndex": 17,
               "spellRanks": [
                 33462,
                 33463,
@@ -2295,24 +2316,6 @@
                 33466
               ],
               "iconTexture": "Spell_Holy_Heroism"
-            },
-            {
-              "id": 1706,
-              "tierID": 5,
-              "columnIndex": 1,
-              "maxRank": 2,
-              "tabIndex": 17,
-              "spellRanks": [
-                33467,
-                33468
-              ],
-              "prereqTalent": [
-                1430
-              ],
-              "prereqRank": [
-                0
-              ],
-              "iconTexture": "Spell_Holy_BlessingOfProtection"
             },
             {
               "id": 1426,
@@ -2846,12 +2849,14 @@
               "id": 1708,
               "tierID": 4,
               "columnIndex": 3,
-              "maxRank": 3,
+              "maxRank": 5,
               "tabIndex": 15,
               "spellRanks": [
                 33497,
                 33498,
-                33499
+                33499,
+                33500,
+                33501
               ],
               "iconTexture": "Ability_Druid_Swipe"
             },
@@ -3180,7 +3185,7 @@
             {
               "id": 1717,
               "tierID": 5,
-              "columnIndex": 0,
+              "columnIndex": 1,
               "maxRank": 5,
               "tabIndex": 17,
               "spellRanks": [
@@ -3215,12 +3220,6 @@
               "tabIndex": 19,
               "spellRanks": [
                 19506
-              ],
-              "prereqTalent": [
-                1347
-              ],
-              "prereqRank": [
-                2
               ],
               "iconTexture": "Ability_TrueShot"
             }
@@ -4225,15 +4224,15 @@
               "iconTexture": "Spell_Nature_MirrorImage"
             },
             {
-              "id": 303,
+              "id": 244,
               "tierID": 2,
               "columnIndex": 1,
               "maxRank": 1,
               "tabIndex": 7,
               "spellRanks": [
-                14278
+                13975
               ],
-              "iconTexture": "Spell_Shadow_Curse"
+              "iconTexture": "Ability_Stealth"
             },
             {
               "id": 263,
@@ -4255,19 +4254,19 @@
               "iconTexture": "Ability_Rogue_Ambush"
             },
             {
-              "id": 244,
+              "id": 303,
               "tierID": 2,
               "columnIndex": 3,
               "maxRank": 5,
               "tabIndex": 9,
               "spellRanks": [
-                13975,
-                14062,
-                14063,
-                14064,
-                14065
+                35398,
+                35399,
+                35400,
+                35401,
+                35402
               ],
-              "iconTexture": "Ability_Stealth"
+              "iconTexture": "cloak_of_flame"
             },
             {
               "id": 1701,
@@ -4290,12 +4289,6 @@
               "spellRanks": [
                 13981,
                 14066
-              ],
-              "prereqTalent": [
-                303
-              ],
-              "prereqRank": [
-                0
               ],
               "iconTexture": "Spell_Magic_LesserInvisibilty"
             },
@@ -4876,11 +4869,14 @@
               "id": 403,
               "tierID": 3,
               "columnIndex": 2,
-              "maxRank": 2,
+              "maxRank": 5,
               "tabIndex": 12,
               "spellRanks": [
                 14909,
-                15017
+                15017,
+                35394,
+                35395,
+                35396
               ],
               "prereqTalent": [
                 1181
@@ -4894,14 +4890,11 @@
               "id": 402,
               "tierID": 3,
               "columnIndex": 3,
-              "maxRank": 5,
+              "maxRank": 2,
               "tabIndex": 13,
               "spellRanks": [
                 14901,
-                15028,
-                15029,
-                15030,
-                15031
+                15028
               ],
               "iconTexture": "Spell_Holy_SpiritualGuidence"
             },
@@ -5535,14 +5528,11 @@
               "id": 1720,
               "tierID": 5,
               "columnIndex": 0,
-              "maxRank": 5,
+              "maxRank": 2,
               "tabIndex": 16,
               "spellRanks": [
                 33611,
-                33612,
-                33613,
-                33614,
-                33615
+                33612
               ],
               "iconTexture": "Spell_Nature_ElementalPrecision_1"
             },
@@ -5550,11 +5540,14 @@
               "id": 1780,
               "tierID": 5,
               "columnIndex": 2,
-              "maxRank": 2,
+              "maxRank": 5,
               "tabIndex": 17,
               "spellRanks": [
                 34281,
-                34282
+                34282,
+                34283,
+                34284,
+                34285
               ],
               "prereqTalent": [
                 721
@@ -6889,19 +6882,17 @@
               "iconTexture": "Spell_Frost_FreezingBreath"
             },
             {
-              "id": 66,
+              "id": 64,
               "tierID": 1,
               "columnIndex": 3,
-              "maxRank": 5,
+              "maxRank": 3,
               "tabIndex": 6,
               "spellRanks": [
-                11160,
-                12518,
-                12519,
-                34239,
-                34240
+                11190,
+                12489,
+                12490
               ],
-              "iconTexture": "Spell_Frost_Stun"
+              "iconTexture": "INV_Misc_Rune_09"
             },
             {
               "id": 72,
@@ -6933,17 +6924,19 @@
               "iconTexture": "Spell_Shadow_DarkRitual"
             },
             {
-              "id": 63,
+              "id": 66,
               "tierID": 2,
               "columnIndex": 3,
-              "maxRank": 3,
+              "maxRank": 5,
               "tabIndex": 9,
               "spellRanks": [
-                11185,
-                12487,
-                12488
+                11160,
+                12518,
+                12519,
+                34239,
+                34240
               ],
-              "iconTexture": "Spell_Frost_IceStorm"
+              "iconTexture": "Spell_Frost_Stun"
             },
             {
               "id": 73,
@@ -6980,15 +6973,14 @@
               "iconTexture": "Spell_Frost_FrostShock"
             },
             {
-              "id": 64,
+              "id": 63,
               "tierID": 3,
               "columnIndex": 3,
-              "maxRank": 3,
+              "maxRank": 2,
               "tabIndex": 12,
               "spellRanks": [
-                11190,
-                12489,
-                12490
+                11185,
+                12487
               ],
               "iconTexture": "Spell_Frost_Glacier"
             },
@@ -7016,9 +7008,15 @@
               "maxRank": 1,
               "tabIndex": 14,
               "spellRanks": [
-                12472
+                35714
               ],
-              "iconTexture": "Spell_Frost_WizardMark"
+              "prereqTalent": [
+                73
+              ],
+              "prereqRank": [
+                4
+              ],
+              "iconTexture": "Spell_Frost_Frostbolt"
             },
             {
               "id": 1779,
@@ -7038,7 +7036,7 @@
             {
               "id": 61,
               "tierID": 5,
-              "columnIndex": 0,
+              "columnIndex": 1,
               "maxRank": 5,
               "tabIndex": 16,
               "spellRanks": [
@@ -7073,12 +7071,6 @@
               "tabIndex": 18,
               "spellRanks": [
                 11426
-              ],
-              "prereqTalent": [
-                69
-              ],
-              "prereqRank": [
-                0
               ],
               "iconTexture": "Spell_Ice_Lament"
             },

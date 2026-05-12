@@ -138,8 +138,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 14170, name: "zzzOld Improved Expose Armor", percent: 10, flat: 0, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   467: {
@@ -209,9 +209,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
       { spellId: 14078, name: "zzOLDImproved Garrote", percent: 0, flat: 6000, deprecated: true },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   707: {
@@ -517,9 +514,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
-      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 3000, deprecated: false },
-      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
-      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 9000, deprecated: false },
+      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   1725: {
@@ -529,8 +526,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 0,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1766: {
@@ -540,8 +537,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 5000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1767: {
@@ -551,8 +548,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 5000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1768: {
@@ -562,8 +559,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 5000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1769: {
@@ -573,8 +570,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 5000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1776: {
@@ -587,8 +584,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
       { spellId: 13792, name: "Improved Gouge", percent: 0, flat: 1500, deprecated: false },
       { spellId: 13793, name: "Improved Gouge", percent: 0, flat: 1000, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1777: {
@@ -601,8 +598,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
       { spellId: 13792, name: "Improved Gouge", percent: 0, flat: 1500, deprecated: false },
       { spellId: 13793, name: "Improved Gouge", percent: 0, flat: 1000, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1833: {
@@ -612,8 +609,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 5000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1842: {
@@ -623,8 +620,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 0,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   1943: {
@@ -636,9 +633,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   1978: {
@@ -654,12 +648,12 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   2070: {
     name: "Sap",
     spellClassSet: 8,
-    baseDurationMs: 35000,
-    maxDurationMs: 36000,
+    baseDurationMs: 60000,
+    maxDurationMs: 61000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   2090: {
@@ -689,8 +683,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 11000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   2767: {
@@ -981,6 +975,17 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 16200, name: "zzOLDEventide", percent: 0, flat: 10000, deprecated: true },
     ],
   },
+  5730: {
+    name: "Stoneclaw Totem",
+    spellClassSet: 11,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
   6074: {
     name: "Renew",
     spellClassSet: 6,
@@ -1188,6 +1193,39 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 16200, name: "zzOLDEventide", percent: 0, flat: 10000, deprecated: true },
     ],
   },
+  6390: {
+    name: "Stoneclaw Totem",
+    spellClassSet: 11,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  6391: {
+    name: "Stoneclaw Totem",
+    spellClassSet: 11,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  6392: {
+    name: "Stoneclaw Totem",
+    spellClassSet: 11,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
   6673: {
     name: "Battle Shout",
     spellClassSet: 4,
@@ -1205,12 +1243,12 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   6770: {
     name: "Sap",
     spellClassSet: 8,
-    baseDurationMs: 25000,
-    maxDurationMs: 26000,
+    baseDurationMs: 60000,
+    maxDurationMs: 61000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   6774: {
@@ -1311,9 +1349,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
-      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 3000, deprecated: false },
-      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
-      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 9000, deprecated: false },
+      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   7373: {
@@ -1323,9 +1361,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
-      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 3000, deprecated: false },
-      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
-      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 9000, deprecated: false },
+      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   7648: {
@@ -1371,8 +1409,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   8044: {
@@ -1382,8 +1420,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   8045: {
@@ -1393,8 +1431,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   8046: {
@@ -1404,8 +1442,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   8056: {
@@ -1556,8 +1594,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
       { spellId: 13792, name: "Improved Gouge", percent: 0, flat: 1500, deprecated: false },
       { spellId: 13793, name: "Improved Gouge", percent: 0, flat: 1000, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   8631: {
@@ -1569,9 +1607,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
       { spellId: 14078, name: "zzOLDImproved Garrote", percent: 0, flat: 6000, deprecated: true },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   8632: {
@@ -1583,9 +1618,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
       { spellId: 14078, name: "zzOLDImproved Garrote", percent: 0, flat: 6000, deprecated: true },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   8633: {
@@ -1597,9 +1629,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
       { spellId: 14078, name: "zzOLDImproved Garrote", percent: 0, flat: 6000, deprecated: true },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   8639: {
@@ -1611,9 +1640,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   8640: {
@@ -1625,9 +1651,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   8643: {
@@ -1638,8 +1661,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 14170, name: "zzzOld Improved Expose Armor", percent: 10, flat: 0, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   8647: {
@@ -2046,8 +2069,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   10413: {
@@ -2057,8 +2080,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   10414: {
@@ -2068,8 +2091,30 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 3000,
     deprecated: false,
     modifiers: [
-      { spellId: 16043, name: "Earth's Grasp", percent: 0, flat: 500, deprecated: false },
-      { spellId: 16130, name: "Earth's Grasp", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  10427: {
+    name: "Stoneclaw Totem",
+    spellClassSet: 11,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  10428: {
+    name: "Stoneclaw Totem",
+    spellClassSet: 11,
+    baseDurationMs: 20000,
+    maxDurationMs: 20000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   10437: {
@@ -2303,9 +2348,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   11274: {
@@ -2317,9 +2359,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   11275: {
@@ -2331,9 +2370,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   11285: {
@@ -2346,8 +2382,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
       { spellId: 13792, name: "Improved Gouge", percent: 0, flat: 1500, deprecated: false },
       { spellId: 13793, name: "Improved Gouge", percent: 0, flat: 1000, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   11286: {
@@ -2360,8 +2396,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
       { spellId: 13792, name: "Improved Gouge", percent: 0, flat: 1500, deprecated: false },
       { spellId: 13793, name: "Improved Gouge", percent: 0, flat: 1000, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   11289: {
@@ -2373,9 +2409,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
       { spellId: 14078, name: "zzOLDImproved Garrote", percent: 0, flat: 6000, deprecated: true },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   11290: {
@@ -2387,20 +2420,17 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
       { spellId: 14078, name: "zzOLDImproved Garrote", percent: 0, flat: 6000, deprecated: true },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   11297: {
     name: "Sap",
     spellClassSet: 8,
-    baseDurationMs: 45000,
-    maxDurationMs: 46000,
+    baseDurationMs: 60000,
+    maxDurationMs: 61000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   11305: {
@@ -2996,9 +3026,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   14902: {
@@ -3008,8 +3035,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 5000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   14903: {
@@ -3021,9 +3048,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   15054: {
@@ -3033,8 +3057,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 6000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   15055: {
@@ -3044,8 +3068,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 6000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   15062: {
@@ -3082,9 +3106,6 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
       { spellId: 14166, name: "Exhaustion", percent: 50, flat: 0, deprecated: false },
-      { spellId: 14171, name: "Serrated Blades", percent: 0, flat: 2000, deprecated: false },
-      { spellId: 14172, name: "Serrated Blades", percent: 0, flat: 4000, deprecated: false },
-      { spellId: 14173, name: "Serrated Blades", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   15629: {
@@ -4301,6 +4322,54 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 23557, name: "Improved Thorns Damage", percent: 50, flat: 0, deprecated: false },
     ],
   },
+  23153: {
+    name: "Brood Affliction: Blue",
+    spellClassSet: 5,
+    baseDurationMs: 600000,
+    maxDurationMs: 606000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  23154: {
+    name: "Brood Affliction: Black",
+    spellClassSet: 5,
+    baseDurationMs: 600000,
+    maxDurationMs: 606000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  23155: {
+    name: "Brood Affliction: Red",
+    spellClassSet: 5,
+    baseDurationMs: 600000,
+    maxDurationMs: 606000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  23169: {
+    name: "Brood Affliction: Green",
+    spellClassSet: 5,
+    baseDurationMs: 600000,
+    maxDurationMs: 606000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
   23262: {
     name: "Demoralize",
     spellClassSet: 4,
@@ -4340,8 +4409,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   23422: {
     name: "Corrupted Healing Stream Totem",
     spellClassSet: 11,
-    baseDurationMs: 300000,
-    maxDurationMs: 300000,
+    baseDurationMs: 120000,
+    maxDurationMs: 120000,
     deprecated: false,
     modifiers: [
       { spellId: 16199, name: "zzOLDEventide", percent: 0, flat: 8000, deprecated: true },
@@ -4362,14 +4431,15 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 12838, name: "Booming Voice", percent: 50, flat: 0, deprecated: false },
     ],
   },
-  23603: {
-    name: "Wild Polymorph",
-    spellClassSet: 3,
-    baseDurationMs: 20000,
-    maxDurationMs: 35000,
+  23789: {
+    name: "Stoneclaw Totem TEST",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
     deprecated: false,
     modifiers: [
-      { spellId: 21247, name: "ZZOLDImproved Polymorph Duration", percent: 0, flat: 15000, deprecated: false },
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
     ],
   },
   24131: {
@@ -4439,9 +4509,9 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: -1,
     deprecated: false,
     modifiers: [
-      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 3000, deprecated: false },
-      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
-      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 9000, deprecated: false },
+      { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33394, name: "Improved Hamstring", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 33395, name: "Improved Hamstring", percent: 0, flat: 6000, deprecated: false },
     ],
   },
   24854: {
@@ -4835,8 +4905,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     maxDurationMs: 4000,
     deprecated: false,
     modifiers: [
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   26233: {
@@ -4940,8 +5010,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     deprecated: false,
     modifiers: [
       { spellId: 14170, name: "zzzOld Improved Expose Armor", percent: 10, flat: 0, deprecated: false },
-      { spellId: 33698, name: "Total Control", percent: 0, flat: 500, deprecated: false },
-      { spellId: 33699, name: "Total Control", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
     ],
   },
   27623: {
@@ -5079,8 +5149,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   29203: {
     name: "Healing Way",
     spellClassSet: 10,
-    baseDurationMs: 30000,
-    maxDurationMs: 36000,
+    baseDurationMs: 20000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 26130, name: "Avenger Judgment Bonus", percent: 20, flat: 0, deprecated: false },
@@ -5139,8 +5209,8 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
   33616: {
     name: "Earthquake",
     spellClassSet: 11,
-    baseDurationMs: 0,
-    maxDurationMs: 0,
+    baseDurationMs: 250,
+    maxDurationMs: 250,
     deprecated: false,
     modifiers: [
       { spellId: 16086, name: "Improved Fire Totems", percent: 0, flat: -1000, deprecated: false },
@@ -5216,6 +5286,313 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
       { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
       { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
       { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35056: {
+    name: "Stoneclaw Totem Shield Dummy",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35057: {
+    name: "Stoneclaw Totem Shield Dummy",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35058: {
+    name: "Stoneclaw Totem Shield Dummy",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35059: {
+    name: "Stoneclaw Totem Shield Dummy",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35060: {
+    name: "Stoneclaw Totem Shield Dummy",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35061: {
+    name: "Stoneclaw Totem Shield Dummy",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35062: {
+    name: "Stoneclaw Protection",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35063: {
+    name: "Stoneclaw Protection",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35064: {
+    name: "Stoneclaw Protection",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35065: {
+    name: "Stoneclaw Protection",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35066: {
+    name: "Stoneclaw Protection",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35067: {
+    name: "Stoneclaw Protection",
+    spellClassSet: 11,
+    baseDurationMs: -1,
+    maxDurationMs: -1,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
+      { spellId: 16130, name: "Earth's Grasp", percent: 50, flat: 0, deprecated: false },
+    ],
+  },
+  35127: {
+    name: "Blind",
+    spellClassSet: 8,
+    baseDurationMs: 10000,
+    maxDurationMs: 11000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
+      { spellId: 33699, name: "Total Control", percent: 20, flat: 0, deprecated: false },
+    ],
+  },
+  35128: {
+    name: "Corruption",
+    spellClassSet: 5,
+    baseDurationMs: 15000,
+    maxDurationMs: 21000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35130: {
+    name: "Immolate",
+    spellClassSet: 5,
+    baseDurationMs: 18000,
+    maxDurationMs: 24000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35169: {
+    name: "Arcane Missiles",
+    spellClassSet: 3,
+    baseDurationMs: 2000,
+    maxDurationMs: 3000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 21228, name: "Arcane Missiles +1", percent: 0, flat: 1000, deprecated: false },
+    ],
+  },
+  35324: {
+    name: "Dragon sickness",
+    spellClassSet: 5,
+    baseDurationMs: 10000,
+    maxDurationMs: 16000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35366: {
+    name: "Corruption",
+    spellClassSet: 5,
+    baseDurationMs: 18000,
+    maxDurationMs: 24000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35367: {
+    name: "Immolate",
+    spellClassSet: 5,
+    baseDurationMs: 15000,
+    maxDurationMs: 21000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35372: {
+    name: "Curse of Agony",
+    spellClassSet: 5,
+    baseDurationMs: 24000,
+    maxDurationMs: 30000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 33938, name: "Prolonged Misery", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 33939, name: "Prolonged Misery", percent: 0, flat: 4000, deprecated: false },
+      { spellId: 34409, name: "Prolonged Misery", percent: 0, flat: 6000, deprecated: false },
+    ],
+  },
+  35714: {
+    name: "Ice Shards",
+    spellClassSet: 3,
+    baseDurationMs: 0,
+    maxDurationMs: 0,
+    deprecated: false,
+    modifiers: [
+      { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 12569, name: "Permafrost", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 12570, name: "zzOLDPermafrost", percent: 0, flat: 2500, deprecated: true },
+      { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 12573, name: "zzOLDPermafrost", percent: 0, flat: 3000, deprecated: true },
+    ],
+  },
+  35716: {
+    name: "Ice Shards",
+    spellClassSet: 3,
+    baseDurationMs: 2000,
+    maxDurationMs: 5000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 12569, name: "Permafrost", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 12570, name: "zzOLDPermafrost", percent: 0, flat: 2500, deprecated: true },
+      { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 12573, name: "zzOLDPermafrost", percent: 0, flat: 3000, deprecated: true },
+    ],
+  },
+  35717: {
+    name: "Ice Shards",
+    spellClassSet: 3,
+    baseDurationMs: 2000,
+    maxDurationMs: 5000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 12569, name: "Permafrost", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 12570, name: "zzOLDPermafrost", percent: 0, flat: 2500, deprecated: true },
+      { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 12573, name: "zzOLDPermafrost", percent: 0, flat: 3000, deprecated: true },
+    ],
+  },
+  35718: {
+    name: "Ice Shards",
+    spellClassSet: 3,
+    baseDurationMs: 2000,
+    maxDurationMs: 5000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 12569, name: "Permafrost", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 12570, name: "zzOLDPermafrost", percent: 0, flat: 2500, deprecated: true },
+      { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 12573, name: "zzOLDPermafrost", percent: 0, flat: 3000, deprecated: true },
+    ],
+  },
+  35719: {
+    name: "Ice Shards",
+    spellClassSet: 3,
+    baseDurationMs: 2000,
+    maxDurationMs: 5000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 11175, name: "Permafrost", percent: 0, flat: 1000, deprecated: false },
+      { spellId: 12569, name: "Permafrost", percent: 0, flat: 2000, deprecated: false },
+      { spellId: 12570, name: "zzOLDPermafrost", percent: 0, flat: 2500, deprecated: true },
+      { spellId: 12571, name: "Permafrost", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 12573, name: "zzOLDPermafrost", percent: 0, flat: 3000, deprecated: true },
+    ],
+  },
+  35721: {
+    name: "Grizzly's Fury",
+    spellClassSet: 7,
+    baseDurationMs: 6000,
+    maxDurationMs: 15000,
+    deprecated: false,
+    modifiers: [
+      { spellId: 16947, name: "Feral Instinct", percent: 0, flat: 3000, deprecated: false },
+      { spellId: 16948, name: "Feral Instinct", percent: 0, flat: 6000, deprecated: false },
+      { spellId: 16949, name: "Feral Instinct", percent: 0, flat: 9000, deprecated: false },
     ],
   },
 };

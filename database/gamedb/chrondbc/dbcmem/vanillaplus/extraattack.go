@@ -24,5 +24,6 @@ func init() {
 		25175: {Name: "Triple Attack", NumExtraAttacks: 2},
 		27035: {Name: "Sword Specialization (OLD)", NumExtraAttacks: 1},
 		34756: {Name: "Windfury Weapon", NumExtraAttacks: 2},
+		35314: {Name: "Corrupted Windfury", NumExtraAttacks: 2},
 	}
 }

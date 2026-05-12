@@ -30,5 +30,14 @@ func init() {
 		28: {ID: 28, Radius: 50000, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 50000},
 		29: {ID: 29, Radius: 6, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 6},
 		31: {ID: 31, Radius: 80, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 80},
+		32: {ID: 32, Radius: 220, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 220},
+		33: {ID: 33, Radius: 230, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 230},
+		34: {ID: 34, Radius: 240, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 240},
+		35: {ID: 35, Radius: 250, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 250},
+		36: {ID: 36, Radius: 280, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 280},
+		37: {ID: 37, Radius: 12, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 12},
+		38: {ID: 38, Radius: 55, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 55},
+		39: {ID: 39, Radius: 60, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 60},
+		40: {ID: 40, Radius: 90, RadiusPerLevel: 0, RadiusMin: 0, RadiusMax: 90},
 	}
 }

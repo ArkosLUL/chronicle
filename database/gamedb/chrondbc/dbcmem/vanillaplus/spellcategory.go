@@ -172,5 +172,14 @@ func init() {
 		1159: {ID: 1159, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
 		1160: {ID: 1160, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
 		1161: {ID: 1161, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1162: {ID: 1162, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1163: {ID: 1163, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1164: {ID: 1164, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1165: {ID: 1165, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1166: {ID: 1166, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1167: {ID: 1167, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1168: {ID: 1168, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1169: {ID: 1169, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
+		1170: {ID: 1170, Flags: 0, UsesPerWeek: 0, Name: "<empty>", MaxCharges: 0, ChargeRecoveryTime: 0, TypeMask: 0},
 	}
 }

@@ -24,4 +24,5 @@ export const ExtraAttackSpells: Record<number, ExtraAttackSpell> = {
   25175: { name: "Triple Attack", numExtraAttacks: 2 },
   27035: { name: "Sword Specialization (OLD)", numExtraAttacks: 1 },
   34756: { name: "Windfury Weapon", numExtraAttacks: 2 },
+  35314: { name: "Corrupted Windfury", numExtraAttacks: 2 },
 };

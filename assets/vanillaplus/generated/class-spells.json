@@ -343,6 +343,11 @@
       "spellDamageType": 0
     },
     {
+      "id": 1178,
+      "name": "Bear Form (Passive)",
+      "spellDamageType": 0
+    },
+    {
       "id": 1430,
       "name": "Rejuvenation",
       "spellDamageType": 2
@@ -738,6 +743,16 @@
       "spellDamageType": 1
     },
     {
+      "id": 8998,
+      "name": "Cower",
+      "spellDamageType": 0
+    },
+    {
+      "id": 9000,
+      "name": "Cower",
+      "spellDamageType": 0
+    },
+    {
       "id": 9005,
       "name": "Pounce",
       "spellDamageType": 0
@@ -961,6 +976,11 @@
       "id": 9889,
       "name": "Healing Touch",
       "spellDamageType": 1
+    },
+    {
+      "id": 9892,
+      "name": "Cower",
+      "spellDamageType": 0
     },
     {
       "id": 9894,
@@ -2885,6 +2905,36 @@
     {
       "id": 34948,
       "name": "Area Dummy Friendly",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35286,
+      "name": "Amir Range Druid",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35303,
+      "name": "Involuntary Transformation",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35353,
+      "name": "Star Wrath Idol",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35354,
+      "name": "Idol of Wilderness",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35721,
+      "name": "Grizzly's Fury",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35723,
+      "name": "Swiftbloom",
       "spellDamageType": 0
     }
   ],
@@ -4940,6 +4990,31 @@
       "spellDamageType": 4
     },
     {
+      "id": 33502,
+      "name": "Savage Flurry Effect",
+      "spellDamageType": 0
+    },
+    {
+      "id": 33503,
+      "name": "Savage Flurry Effect",
+      "spellDamageType": 0
+    },
+    {
+      "id": 33504,
+      "name": "Savage Flurry Effect",
+      "spellDamageType": 0
+    },
+    {
+      "id": 33505,
+      "name": "Savage Flurry Effect",
+      "spellDamageType": 0
+    },
+    {
+      "id": 33506,
+      "name": "Savage Flurry Effect",
+      "spellDamageType": 0
+    },
+    {
       "id": 33507,
       "name": "Survival Instincts",
       "spellDamageType": 4
@@ -5505,8 +5580,63 @@
       "spellDamageType": 0
     },
     {
-      "id": 34974,
-      "name": "AC Lock GCD",
+      "id": 35134,
+      "name": "Savage Blow",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35322,
+      "name": "Corrupt Weapon",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35403,
+      "name": "Lightning Reflexes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35404,
+      "name": "Lightning Reflexes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35405,
+      "name": "Lightning Reflexes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35406,
+      "name": "Lightning Reflexes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35407,
+      "name": "Lightning Reflexes",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35409,
+      "name": "Savage Flurry Player",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35410,
+      "name": "Savage Flurry Player",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35411,
+      "name": "Savage Flurry Player",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35412,
+      "name": "Savage Flurry Player",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35413,
+      "name": "Savage Flurry Player",
       "spellDamageType": 0
     }
   ],
@@ -6418,7 +6548,7 @@
     },
     {
       "id": 11185,
-      "name": "Improved Blizzard",
+      "name": "Cold Grip",
       "spellDamageType": 0
     },
     {
@@ -6428,12 +6558,12 @@
     },
     {
       "id": 11190,
-      "name": "Improved Cone of Cold",
+      "name": "Cold Blood",
       "spellDamageType": 0
     },
     {
       "id": 11207,
-      "name": "Ice Shards",
+      "name": "Frost Shards",
       "spellDamageType": 0
     },
     {
@@ -6718,7 +6848,7 @@
     },
     {
       "id": 12487,
-      "name": "Improved Blizzard",
+      "name": "Cold Grip",
       "spellDamageType": 0
     },
     {
@@ -6728,12 +6858,12 @@
     },
     {
       "id": 12489,
-      "name": "Improved Cone of Cold",
+      "name": "Cold Blood",
       "spellDamageType": 0
     },
     {
       "id": 12490,
-      "name": "Improved Cone of Cold",
+      "name": "Cold Blood",
       "spellDamageType": 0
     },
     {
@@ -6943,7 +7073,7 @@
     },
     {
       "id": 12672,
-      "name": "Ice Shards",
+      "name": "Frost Shards",
       "spellDamageType": 0
     },
     {
@@ -7203,17 +7333,17 @@
     },
     {
       "id": 15047,
-      "name": "Ice Shards",
+      "name": "Frost Shards",
       "spellDamageType": 0
     },
     {
       "id": 15052,
-      "name": "Ice Shards",
+      "name": "Frost Shards",
       "spellDamageType": 0
     },
     {
       "id": 15053,
-      "name": "Ice Shards",
+      "name": "Frost Shards",
       "spellDamageType": 0
     },
     {
@@ -7844,11 +7974,6 @@
     {
       "id": 23549,
       "name": "Increased Area",
-      "spellDamageType": 0
-    },
-    {
-      "id": 23603,
-      "name": "Wild Polymorph",
       "spellDamageType": 0
     },
     {
@@ -8705,6 +8830,41 @@
       "id": 34567,
       "name": "Netherwind 4/4",
       "spellDamageType": 0
+    },
+    {
+      "id": 35169,
+      "name": "Arcane Missiles",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35174,
+      "name": "Counterspell",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35714,
+      "name": "Ice Shards",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35716,
+      "name": "Ice Shards",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35717,
+      "name": "Ice Shards",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35718,
+      "name": "Ice Shards",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35719,
+      "name": "Ice Shards",
+      "spellDamageType": 1
     }
   ],
   "Paladin": [
@@ -8799,6 +8959,11 @@
       "spellDamageType": 1
     },
     {
+      "id": 2878,
+      "name": "Turn Undead",
+      "spellDamageType": 0
+    },
+    {
       "id": 3472,
       "name": "Holy Light",
       "spellDamageType": 0
@@ -8842,6 +9007,11 @@
       "id": 5615,
       "name": "Exorcism",
       "spellDamageType": 1
+    },
+    {
+      "id": 5627,
+      "name": "Turn Undead",
+      "spellDamageType": 0
     },
     {
       "id": 6940,
@@ -8927,6 +9097,11 @@
       "id": 10318,
       "name": "Holy Wrath",
       "spellDamageType": 1
+    },
+    {
+      "id": 10326,
+      "name": "Turn Evil",
+      "spellDamageType": 0
     },
     {
       "id": 10328,
@@ -10741,27 +10916,27 @@
     {
       "id": 33462,
       "name": "Morale",
-      "spellDamageType": 0
+      "spellDamageType": 4
     },
     {
       "id": 33463,
       "name": "Morale",
-      "spellDamageType": 0
+      "spellDamageType": 4
     },
     {
       "id": 33464,
       "name": "Morale",
-      "spellDamageType": 0
+      "spellDamageType": 4
     },
     {
       "id": 33465,
       "name": "Morale",
-      "spellDamageType": 0
+      "spellDamageType": 4
     },
     {
       "id": 33466,
       "name": "Morale",
-      "spellDamageType": 0
+      "spellDamageType": 4
     },
     {
       "id": 33467,
@@ -10986,6 +11161,26 @@
     {
       "id": 34755,
       "name": "Judgement of Light",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35288,
+      "name": "Amir Range Paladin",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35335,
+      "name": "Libram of Stoicism",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35349,
+      "name": "Libram of Vengeance",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35504,
+      "name": "Devouring Sorrows",
       "spellDamageType": 0
     }
   ],
@@ -12927,12 +13122,12 @@
     },
     {
       "id": 23401,
-      "name": "Corrupted Healing",
+      "name": "Corrupted Aid",
       "spellDamageType": 0
     },
     {
       "id": 23402,
-      "name": "Corrupted Healing",
+      "name": "Corrupted Aid",
       "spellDamageType": 2
     },
     {
@@ -13779,6 +13974,26 @@
       "id": 34876,
       "name": "Mind Blast",
       "spellDamageType": 1
+    },
+    {
+      "id": 35285,
+      "name": "Amir Range Priest",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35394,
+      "name": "Searing Light",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35395,
+      "name": "Searing Light",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35396,
+      "name": "Searing Light",
+      "spellDamageType": 0
     }
   ],
   "Rogue": [
@@ -14364,7 +14579,7 @@
     },
     {
       "id": 13219,
-      "name": "Wound Poison",
+      "name": "Wound Poison I",
       "spellDamageType": 0
     },
     {
@@ -14384,17 +14599,17 @@
     },
     {
       "id": 13225,
-      "name": "Wound Poison",
+      "name": "Wound Poison II",
       "spellDamageType": 0
     },
     {
       "id": 13226,
-      "name": "Wound Poison",
+      "name": "Wound Poison III",
       "spellDamageType": 0
     },
     {
       "id": 13227,
-      "name": "Wound Poison",
+      "name": "Wound Poison IV",
       "spellDamageType": 0
     },
     {
@@ -14744,12 +14959,12 @@
     },
     {
       "id": 14136,
-      "name": "Lethality",
+      "name": "zzOLDLethality",
       "spellDamageType": 0
     },
     {
       "id": 14137,
-      "name": "Lethality",
+      "name": "zzOLDLethality",
       "spellDamageType": 0
     },
     {
@@ -14764,7 +14979,7 @@
     },
     {
       "id": 14151,
-      "name": "Remorseless",
+      "name": "zzOLDRemorseless",
       "spellDamageType": 0
     },
     {
@@ -14949,7 +15164,7 @@
     },
     {
       "id": 14278,
-      "name": "Ghostly Strike",
+      "name": "Ghostly Trick",
       "spellDamageType": 0
     },
     {
@@ -15580,7 +15795,7 @@
     {
       "id": 33732,
       "name": "Brigandage",
-      "spellDamageType": 1
+      "spellDamageType": 0
     },
     {
       "id": 33733,
@@ -15685,6 +15900,51 @@
     {
       "id": 34883,
       "name": "Wound Poison",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35127,
+      "name": "Blind",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35251,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35252,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35253,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35254,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35255,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35256,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35257,
+      "name": "Sinister Strike",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35258,
+      "name": "Sinister Strike",
       "spellDamageType": 0
     }
   ],
@@ -15832,7 +16092,7 @@
     {
       "id": 3600,
       "name": "Earthbind",
-      "spellDamageType": 0
+      "spellDamageType": 4
     },
     {
       "id": 3606,
@@ -15955,8 +16215,18 @@
       "spellDamageType": 0
     },
     {
+      "id": 6474,
+      "name": "Earthbinds Totem Passive",
+      "spellDamageType": 0
+    },
+    {
       "id": 6495,
       "name": "Sentry Totem",
+      "spellDamageType": 0
+    },
+    {
+      "id": 7178,
+      "name": "Water Breathing",
       "spellDamageType": 0
     },
     {
@@ -16752,6 +17022,11 @@
     {
       "id": 11315,
       "name": "Fire Nova Totem",
+      "spellDamageType": 0
+    },
+    {
+      "id": 11319,
+      "name": "Water Walking",
       "spellDamageType": 0
     },
     {
@@ -17796,7 +18071,7 @@
     },
     {
       "id": 24462,
-      "name": "Improved Lightning Bolt",
+      "name": "Improved Augur Range",
       "spellDamageType": 0
     },
     {
@@ -18953,6 +19228,96 @@
       "id": 34951,
       "name": "Venomous Totem",
       "spellDamageType": 0
+    },
+    {
+      "id": 35056,
+      "name": "Stoneclaw Totem Shield Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35057,
+      "name": "Stoneclaw Totem Shield Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35058,
+      "name": "Stoneclaw Totem Shield Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35059,
+      "name": "Stoneclaw Totem Shield Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35060,
+      "name": "Stoneclaw Totem Shield Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35061,
+      "name": "Stoneclaw Totem Shield Dummy",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35062,
+      "name": "Stoneclaw Protection",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35063,
+      "name": "Stoneclaw Protection",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35064,
+      "name": "Stoneclaw Protection",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35065,
+      "name": "Stoneclaw Protection",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35066,
+      "name": "Stoneclaw Protection",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35067,
+      "name": "Stoneclaw Protection",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35287,
+      "name": "Amir Range Shaman",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35315,
+      "name": "Corrupted Fire Nova",
+      "spellDamageType": 4
+    },
+    {
+      "id": 35316,
+      "name": "Corrupted Fire Nova",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35317,
+      "name": "Corrupted Healing Totem Cleainsing Effect",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35351,
+      "name": "Totem of Fury",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35352,
+      "name": "Totem of Impact",
+      "spellDamageType": 0
     }
   ],
   "SpellClassSet(13)": [
@@ -19182,11 +19547,6 @@
       "spellDamageType": 0
     },
     {
-      "id": 7178,
-      "name": "Water Breathing",
-      "spellDamageType": 0
-    },
-    {
       "id": 7230,
       "name": "Fire Protection",
       "spellDamageType": 0
@@ -19335,11 +19695,6 @@
       "id": 9512,
       "name": "Restore Energy",
       "spellDamageType": 1
-    },
-    {
-      "id": 11319,
-      "name": "Water Walking",
-      "spellDamageType": 0
     },
     {
       "id": 11328,
@@ -19835,6 +20190,21 @@
       "id": 34786,
       "name": "Petrification",
       "spellDamageType": 0
+    },
+    {
+      "id": 35383,
+      "name": "Hopping Mad",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35452,
+      "name": "Healing Potion",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35453,
+      "name": "Restore Mana",
+      "spellDamageType": 1
     }
   ],
   "Warlock": [
@@ -21889,6 +22259,31 @@
       "spellDamageType": 0
     },
     {
+      "id": 23153,
+      "name": "Brood Affliction: Blue",
+      "spellDamageType": 12
+    },
+    {
+      "id": 23154,
+      "name": "Brood Affliction: Black",
+      "spellDamageType": 0
+    },
+    {
+      "id": 23155,
+      "name": "Brood Affliction: Red",
+      "spellDamageType": 2
+    },
+    {
+      "id": 23169,
+      "name": "Brood Affliction: Green",
+      "spellDamageType": 0
+    },
+    {
+      "id": 23427,
+      "name": "OLDChaotic Magic",
+      "spellDamageType": 0
+    },
+    {
       "id": 23468,
       "name": "Minor Healthstone",
       "spellDamageType": 1
@@ -22677,6 +23072,116 @@
       "id": 34957,
       "name": "Curse of Nemesis",
       "spellDamageType": 2
+    },
+    {
+      "id": 35128,
+      "name": "Corruption",
+      "spellDamageType": 2
+    },
+    {
+      "id": 35130,
+      "name": "Immolate",
+      "spellDamageType": 3
+    },
+    {
+      "id": 35131,
+      "name": "Conflagrate",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35222,
+      "name": "Incineration",
+      "spellDamageType": 2
+    },
+    {
+      "id": 35324,
+      "name": "Dragon sickness",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35362,
+      "name": "Brood Afflictions Passive",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35365,
+      "name": "Shadow Bolt",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35366,
+      "name": "Corruption",
+      "spellDamageType": 2
+    },
+    {
+      "id": 35367,
+      "name": "Immolate",
+      "spellDamageType": 3
+    },
+    {
+      "id": 35368,
+      "name": "Soul Fire",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35369,
+      "name": "Shadowburn",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35370,
+      "name": "Searing Pain",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35371,
+      "name": "Conflagrate",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35372,
+      "name": "Curse of Agony",
+      "spellDamageType": 2
+    },
+    {
+      "id": 35373,
+      "name": "Death Coil",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35374,
+      "name": "Siphon Life",
+      "spellDamageType": 2
+    },
+    {
+      "id": 35375,
+      "name": "Curse of Doom",
+      "spellDamageType": 2
+    },
+    {
+      "id": 35389,
+      "name": "Inevitable Doom 2",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35390,
+      "name": "Inevitable Doom 2",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35391,
+      "name": "Inevitable Doom 2",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35392,
+      "name": "Inevitable Doom 2",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35393,
+      "name": "Inevitable Doom 2",
+      "spellDamageType": 0
     }
   ],
   "Warrior": [
@@ -23896,11 +24401,6 @@
       "spellDamageType": 1
     },
     {
-      "id": 22427,
-      "name": "Concussion Blow",
-      "spellDamageType": 0
-    },
-    {
       "id": 22738,
       "name": "Intercept Cooldown Reduction",
       "spellDamageType": 0
@@ -23943,7 +24443,7 @@
     {
       "id": 23410,
       "name": "Wild Magic",
-      "spellDamageType": 4
+      "spellDamageType": 0
     },
     {
       "id": 23411,
@@ -23959,11 +24459,6 @@
       "id": 23413,
       "name": "Arcane Explosion",
       "spellDamageType": 1
-    },
-    {
-      "id": 23414,
-      "name": "Paralyze",
-      "spellDamageType": 0
     },
     {
       "id": 23416,
@@ -23984,11 +24479,6 @@
       "id": 23425,
       "name": "Corrupted Totems",
       "spellDamageType": 4
-    },
-    {
-      "id": 23427,
-      "name": "Summon Infernals",
-      "spellDamageType": 0
     },
     {
       "id": 23436,
@@ -24849,6 +25339,31 @@
       "id": 34961,
       "name": "ZG war tier set bonus",
       "spellDamageType": 0
+    },
+    {
+      "id": 35119,
+      "name": "Charge",
+      "spellDamageType": 0
+    },
+    {
+      "id": 35165,
+      "name": "Mental Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35178,
+      "name": "Untamed Strike",
+      "spellDamageType": 1
+    },
+    {
+      "id": 35320,
+      "name": "Berserk Whirlwind",
+      "spellDamageType": 4
+    },
+    {
+      "id": 35321,
+      "name": "Whirlwind",
+      "spellDamageType": 1
     }
   ]
 }

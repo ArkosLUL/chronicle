@@ -207,14 +207,18 @@ func ParseItem(rec Record, build uint32) (Item, error) {
 	it.Material = i()
 	it.Sheath = u()
 	it.RandomProperty = i()
-	it.RandomSuffix = i()
+	if build >= buildTBC {
+		it.RandomSuffix = i() // TBC+ only
+	}
 	it.Block = u()
 	it.ItemSet = u()
 	it.MaxDurability = u()
 	it.Area = u()
 	it.Map = u()
 	it.BagFamily = u()
-	it.TotemCategory = u()
+	if build >= buildTBC {
+		it.TotemCategory = u() // TBC+ only
+	}
 
 	if build >= buildTBC {
 		for j := range 3 {

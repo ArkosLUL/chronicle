@@ -103,7 +103,7 @@ function FileDropZone({
 const LOG_TYPE_OPTIONS = [
   { value: "", label: "Default (server)" },
   { value: "v1", label: "V1 (Vanilla addon)" },
-  { value: "v2", label: "V2 (Turtle WoW)" },
+  { value: "v2", label: "V2 (ChronicleCompanion Addon)" },
   { value: "warmane", label: "Warmane (WotLK)" },
   { value: "epoch", label: "Epoch" },
   { value: "kronos", label: "Kronos" },
@@ -381,7 +381,7 @@ export function UploadView({
         <div className="flex items-center gap-2 mb-4">
           <Info className="h-5 w-5 text-muted-foreground" />
           <h2 className="font-semibold">
-            {useV2Upload ? "Raid Log Uploading (Version 2)" : "Raid Log Uploading"}
+            {useV2Upload ? "Raid Log Uploading" : "Raid Log Uploading"}
           </h2>
         </div>
 
@@ -392,18 +392,8 @@ export function UploadView({
                 <h3 className="font-medium mb-2">Requirements</h3>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>
-                    <a href="https://github.com/balakethelock/SuperWoW" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
-                      SuperWoW Mod
-                    </a>
-                  </li>
-                  <li>
                     <a href="https://gitea.com/avitasia/nampower" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                       Nampower
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://codeberg.org/konaka/UnitXP_SP3" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
-                      UnitXP3
                     </a>
                   </li>
                   <li>
@@ -421,18 +411,18 @@ export function UploadView({
               <div>
                 <h3 className="font-medium mb-2">On Raid Night</h3>
                 <div className="space-y-3 text-muted-foreground">
-                  <p className="italic">Optional: Configure the addon with <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/chronicle config</code></p>
+                  <p className="italic">Optional: Configure the addon with <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/clog config</code></p>
                   <div>
                     <p className="mb-1"><strong className="text-foreground">1. Prepare the logs</strong></p>
                     <ul className="list-none ml-4">
-                      <li>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/chron delete</code> to delete any existing logs</li>
+                      <li>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/clog delete</code> to delete any existing logs</li>
                     </ul>
                   </div>
                   <p><strong className="text-foreground">2. Do your raid</strong></p>
                   <div>
                     <p><strong className="text-foreground">3. Save your logs</strong></p>
                     <ul className="list-none ml-4">
-                      <li>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/chron save</code> to save the logs to disk</li>
+                      <li>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/clog save</code> to save the logs to disk</li>
                     </ul>
                   </div>
                   

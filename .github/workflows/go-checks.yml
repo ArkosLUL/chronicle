@@ -95,6 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: actions
     strategy:
+      fail-fast: false
       matrix:
         server: [turtle, epoch, kronos, warmane, vanillaplus]
     steps:
@@ -139,6 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: railway
     strategy:
+      fail-fast: false
       matrix:
         include:
           - server: turtle
@@ -147,9 +149,12 @@ jobs:
 #          - server: epoch
 #            railway_service: chronicled
 #            railway_token_secret: RAILWAY_TOKEN_EPOCH
-#          - server: kronos
-#            railway_service: chronicled
-#            railway_token_secret: RAILWAY_TOKEN_KRONOS
+          - server: kronos
+            railway_service: chronicled
+            railway_token_secret: RAILWAY_TOKEN_KRONOS
+          - server: vanillaplus
+            railway_service: chronicled
+            railway_token_secret: RAILWAY_TOKEN_VANILLAPLUS
 #          - server: warmane
 #            railway_service: chronicled
 #            railway_token_secret: RAILWAY_TOKEN_WARMANE

@@ -267,6 +267,10 @@ func (api *API) Routes() chi.Router {
 		r.Get("/armory/search", api.SearchArmoryPlayers)
 		r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)
 
+		// Public realm listing
+		r.Get("/realms", api.ListPublicRealms)
+
+
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {
 				r.Get("/supported", api.SupportedInstances)

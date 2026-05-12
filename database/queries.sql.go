@@ -486,6 +486,37 @@ func (q *sqlQuerier) InsertWoWServerRealm(ctx context.Context, arg InsertWoWServ
 	return i, err
 }
 
+const listAllWoWServerRealms = `-- name: ListAllWoWServerRealms :many
+SELECT id, server_id, name, created_by, url, description FROM wow_server_realms ORDER BY name
+`
+
+func (q *sqlQuerier) ListAllWoWServerRealms(ctx context.Context) ([]WowServerRealm, error) {
+	rows, err := q.db.Query(ctx, listAllWoWServerRealms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WowServerRealm
+	for rows.Next() {
+		var i WowServerRealm
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerID,
+			&i.Name,
+			&i.CreatedBy,
+			&i.Url,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUploadKeysByRealm = `-- name: ListUploadKeysByRealm :many
 SELECT id, realm_id, description, created_at, last_used_at, created_by
 FROM wow_server_upload_keys WHERE realm_id = $1 ORDER BY created_at

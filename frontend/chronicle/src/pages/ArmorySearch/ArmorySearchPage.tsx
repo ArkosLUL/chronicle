@@ -1,21 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Search, Shield, Users, Loader2 } from "lucide-react";
-import { useArmorySearch } from "@/api/queries";
+import { useArmorySearch, useRealms } from "@/api/queries";
 import type { ArmorySearchResult } from "@/api/typesGenerated";
 import { getClassColorVar } from "@/pages/ArmoryPage/types";
-
-/** Static realm list matching database/dbstatic/dbstatic.go */
-const REALMS = [
-  { name: "Ambershire", id: "851d2fd3-f9c5-4623-b714-924b59d916aa" },
-  { name: "Tel'Abim", id: "f94d3103-1cd8-40e9-ad91-a2366de33354" },
-  { name: "Nordanaar", id: "bcf173a7-c94a-49fe-8930-27435d722fb7" },
-  { name: "South Seas", id: "ad486d39-31dd-4eb6-a43d-7d469df4ffcf" },
-  { name: "Gehennas", id: "c240e1e4-9d2b-46f7-b23c-6b55a37b4710" },
-  { name: "Ravenstorm", id: "885cd224-aa71-4592-81e2-98fe138ca650" },
-  { name: "Karazhan", id: "0f9825e5-8a88-4bfb-80f6-26b472c7a1aa" },
-  { name: "Blood Ring", id: "5f786828-1c60-4360-8b0f-14b7b494be3a" },
-] as const;
 
 const WOW_CLASSES = [
   "Warrior",
@@ -52,6 +40,7 @@ function useDebounce<T>(value: T, delayMs: number): T {
 }
 
 export function ArmorySearchPage() {
+  const { data: realms } = useRealms();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = searchParams.get("q") ?? "";
@@ -131,7 +120,7 @@ export function ArmorySearchPage() {
             className="bg-card border border-border rounded-lg px-3 py-2 text-sm min-w-[140px] focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
           >
             <option value="">All Realms</option>
-            {REALMS.map((r) => (
+            {realms?.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
               </option>

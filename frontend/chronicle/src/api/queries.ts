@@ -1855,3 +1855,19 @@ export function useRetentionRun() {
     },
   });
 }
+
+export function useRealms() {
+  return useQuery({
+    queryKey: ["realms"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/realms");
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to fetch realms",
+          await response.json()
+        );
+      return response.json() as Promise<WoWServerRealm[]>;
+    },
+  });
+}
+

@@ -71,7 +71,7 @@ func testParseWDB(t *testing.T, path string) {
 	for i, rec := range records {
 		switch header.Signature {
 		case wdb.SigItem:
-			item, err := wdb.ParseItem(rec)
+			item, err := wdb.ParseItem(rec, header.Version)
 			if err != nil {
 				t.Errorf("  entry=%d PARSE ERROR: %v", rec.EntryID, err)
 				continue

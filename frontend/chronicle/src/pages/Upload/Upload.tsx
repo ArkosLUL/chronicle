@@ -392,14 +392,59 @@ export function UploadView({
                 <h3 className="font-medium mb-2">Requirements</h3>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>
-                    <a href="https://gitea.com/avitasia/nampower" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
-                      Nampower
-                    </a>
-                  </li>
-                  <li>
                     <a href="https://github.com/Emyrk/ChronicleCompanion/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                       ChronicleCompanion Addon
                     </a>
+                  </li>
+                  <li>
+                    <a href="https://gitea.com/avitasia/nampower" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                      Nampower
+                    </a>
+                    <details className="mt-2 rounded-md border border-border/70 bg-muted/20">
+                      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium hover:bg-muted/40">
+                        How to install Nampower
+                      </summary>
+                      <div className="px-3 pb-3 space-y-3 text-muted-foreground text-sm">
+                        <p>
+                          Nampower is a DLL mod — it requires a DLL loader like{" "}
+                          <a href="https://github.com/hannesmann/vanillafixes" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                            VanillaFixes
+                          </a>
+                          {" "}to run.
+                        </p>
+                        <div>
+                          <p className="font-medium text-foreground mb-1">1. Install VanillaFixes (DLL loader)</p>
+                          <ol className="list-decimal list-inside space-y-1 ml-1">
+                            <li>Go to the{" "}
+                              <a href="https://github.com/hannesmann/vanillafixes/releases" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                                VanillaFixes releases page
+                              </a>
+                            </li>
+                            <li>Download the latest release zip</li>
+                            <li>Extract <code className="bg-muted px-1.5 py-0.5 rounded text-xs">VanillaFixes.exe</code> and <code className="bg-muted px-1.5 py-0.5 rounded text-xs">VfPatcher.dll</code> into your WoW folder (the same directory as <code className="bg-muted px-1.5 py-0.5 rounded text-xs">WoW.exe</code>)</li>
+                          </ol>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground mb-1">2. Install Nampower</p>
+                          <ol className="list-decimal list-inside space-y-1 ml-1">
+                            <li>Go to the{" "}
+                              <a href="https://gitea.com/avitasia/nampower/releases" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                                Nampower releases page
+                              </a>
+                            </li>
+                            <li>Download the latest <code className="bg-muted px-1.5 py-0.5 rounded text-xs">nampower.dll</code></li>
+                            <li>Place it in your WoW folder (the same directory as <code className="bg-muted px-1.5 py-0.5 rounded text-xs">WoW.exe</code>)</li>
+                            <li>Create or edit <code className="bg-muted px-1.5 py-0.5 rounded text-xs">dlls.txt</code> in the same folder and add <code className="bg-muted px-1.5 py-0.5 rounded text-xs">nampower.dll</code> on its own line</li>
+                          </ol>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground mb-1">3. Launch the game</p>
+                          <p className="ml-1">
+                            Run <code className="bg-muted px-1.5 py-0.5 rounded text-xs">VanillaFixes.exe</code> instead of <code className="bg-muted px-1.5 py-0.5 rounded text-xs">WoW.exe</code>. VanillaFixes automatically loads DLLs listed in <code className="bg-muted px-1.5 py-0.5 rounded text-xs">dlls.txt</code>, including nampower.
+                          </p>
+                        </div>
+                      </div>
+                    </details>
                   </li>
                 </ul>
               </div>

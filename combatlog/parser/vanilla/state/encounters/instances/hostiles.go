@@ -183,15 +183,18 @@ func MoltenCoreHostiles() map[uint32]Identity {
 		11502: "Ragnaros",
 		12056: "Baron Geddon",
 		12018: "Majordomo Executus",
-		52145: "Incindis",
 		12057: "Garr",
 		11988: "Golemagg the Incinerator",
+
+		12098: "Sulfuron Harbinger",
+		12259: "Gehennas",
+
+		// TWoW
 		// Basalthar & Smoldaris are a duo
 		65020: "Basalthar & Smoldaris",
 		65021: "Basalthar & Smoldaris",
-
 		57642: "Sorcerer-Thane Thaurissan",
-		12098: "Sulfuron Harbinger",
+		52145: "Incindis",
 	})
 
 	return hostile

@@ -56,3 +56,11 @@ package dbcmem
 //go:generate go run ../../../../scripts/dbcdata extract-icons --server=vanillaplus --out=../../../../frontend/imagecache/vanillaplus/blp
 // DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=vanillaplus --out=../../../../frontend/imagecache/vanillaplus/loading-screens
 //go:generate go run -tags vanillaplus ../../../../scripts/dbcdata spell-test-data --server=vanillaplus --ts-dir=../../../../frontend/chronicle/src/api/testdata
+
+// OctoWoW (1.12.x)
+//go:generate go run ../../../../scripts/dbcdata static --server=octowow -o octowow
+//go:generate go run -tags octowow ../../../../scripts/dbcdata derived-statics --server=octowow --assets-dir=../../../../assets/octowow/generated --go-dir=octowow --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/octowow
+//go:generate go run ../../../../scripts/dbcdata extract-dbc --server=octowow --out=../../../../assets/octowow
+//go:generate go run ../../../../scripts/dbcdata extract-icons --server=octowow --out=../../../../frontend/imagecache/octowow/blp
+// DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=octowow --out=../../../../frontend/imagecache/octowow/loading-screens
+//go:generate go run -tags octowow ../../../../scripts/dbcdata spell-test-data --server=octowow --ts-dir=../../../../frontend/chronicle/src/api/testdata

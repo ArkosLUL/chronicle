@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [turtle, epoch, kronos, warmane, vanillaplus]
+        server: [turtle, epoch, kronos, warmane, vanillaplus, octowow]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -161,6 +161,9 @@ jobs:
 #          - server: ascension
 #            railway_service: chronicled
 #            railway_token_secret: RAILWAY_TOKEN_ASCENSION
+          - server: octowow
+            railway_service: chronicled
+            railway_token_secret: RAILWAY_TOKEN_OCTOWOW
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli

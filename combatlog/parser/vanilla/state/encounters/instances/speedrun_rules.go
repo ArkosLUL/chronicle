@@ -40,7 +40,7 @@ func MoltenCoreSpeedrunRequirements() []rankings.SpeedrunRequirement {
 	}
 
 	switch services.ServerName {
-	case services.ServerIdentityTurtle:
+	case services.ServerIdentityTurtle, services.ServerIdentityOctoWoW:
 		mc = append(mc, []rankings.SpeedrunRequirement{
 			{Name: "Incindis", EntryIDs: []uint32{52145}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 			{Name: "Basalthar", EntryIDs: []uint32{65020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
@@ -72,7 +72,7 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Nefarian", EntryIDs: []uint32{11583}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
 	switch services.ServerName {
-	case services.ServerIdentityTurtle:
+	case services.ServerIdentityTurtle, services.ServerIdentityOctoWoW:
 		bwl = append(bwl, []rankings.SpeedrunRequirement{
 			{Name: "Flameweaver Koegler", EntryIDs: []uint32{49017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		}...)
@@ -84,7 +84,7 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 // valid Onyxia's Lair speedrun.
 func OnyxiasLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 	switch services.ServerName {
-	case services.ServerIdentityTurtle:
+	case services.ServerIdentityTurtle, services.ServerIdentityOctoWoW:
 		return []rankings.SpeedrunRequirement{
 			{Name: "Onyxia", EntryIDs: []uint32{10184}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 			{Name: "Broodcommander Axelus", EntryIDs: []uint32{49018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},

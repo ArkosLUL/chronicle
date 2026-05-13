@@ -148,7 +148,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	switch services.ServerName {
 	// 1.12 does not record overheals in the logs
 	case services.ServerIdentityTurtle, services.ServerIdentityKronos,
-		services.ServerIdentityVanillaPlus:
+		services.ServerIdentityVanillaPlus, services.ServerIdentityOctoWoW:
 		hooks = append(hooks, &Overhealing{
 			deficits: make(map[guid.GUID]int32),
 		})

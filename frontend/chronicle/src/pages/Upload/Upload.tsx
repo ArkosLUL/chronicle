@@ -429,7 +429,7 @@ export function UploadView({
                   <div>
                     <p className="mb-1"><strong className="text-foreground">4. Upload the file:</strong></p>
                     <ul className="list-none ml-4">
-                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/CustomData/Chronicle_&lt;character_name&gt;.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/CustomData/Chronicle_&lt;character_name&gt;.txt</code></li>
                     </ul>
                   </div>
                 </div>
@@ -472,16 +472,16 @@ export function UploadView({
                   <div>
                     <p className="mb-1">1. <strong className="text-foreground">Delete these files before raiding:</strong></p>
                     <ul className="list-none space-y-1 ml-4">
-                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
-                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
                     </ul>
                   </div>
                   <p>2. <strong className="text-foreground">Launch WoW and do your raid.</strong></p>
                   <div>
                     <p className="mb-1">3. <strong className="text-foreground">Upload both files</strong> (required):</p>
                     <ul className="list-none space-y-1 ml-4">
-                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
-                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;TurtleWoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                      <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/Logs/WoWRawCombatLog.txt</code></li>
                     </ul>
                   </div>
                 </div>

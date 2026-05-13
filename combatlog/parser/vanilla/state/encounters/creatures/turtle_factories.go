@@ -87,5 +87,6 @@ func TurtleCharacterFactories() []characters.CharacterFactory {
 		NewSolnius,
 		// L/UBRS
 		NewMotherSmolderweb,
+		NewBloodaxeWorgPup,
 	}
 }

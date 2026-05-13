@@ -339,6 +339,8 @@ export interface GuildInfo {
     readonly realm_id: string;
     readonly realm_name: string;
     readonly has_page: boolean;
+    readonly player_count: number;
+    readonly logo_url: string;
     readonly can_edit: boolean;
     readonly can_view_roster: boolean;
 }

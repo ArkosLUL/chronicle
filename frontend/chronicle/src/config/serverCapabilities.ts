@@ -10,7 +10,7 @@ const CAPABILITIES: Record<string, ServerCapabilities> = {
 };
 
 const DEFAULT_CAPABILITIES: ServerCapabilities = {
-  armory: false,
+  armory: true,
 };
 
 /** Capabilities for the current server. */

@@ -697,7 +697,6 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Cache-Control", "public, max-age=30")
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SiteConfig{
 		SignupsEnabled:  config.SignupsEnabled,
 		ShortLinkDomain: a.Opts.ShortLinkDomain,

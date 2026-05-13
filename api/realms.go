@@ -32,5 +32,7 @@ func (api *API) ListPublicRealms(w http.ResponseWriter, r *http.Request) {
 	for _, r := range realms {
 		resp = append(resp, db2sdk.WoWServerRealm(r))
 	}
+
+	w.Header().Set("Cache-Control", "public, max-age=300")
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }

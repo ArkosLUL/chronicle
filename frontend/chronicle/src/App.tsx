@@ -50,6 +50,7 @@ import {
 import { GuildPage, GuildPageEditor, GuildRoster, GuildSettings } from "./pages/GuildPage"
 import { ArmoryPage } from "./pages/ArmoryPage"
 import { ArmorySearchPage } from "./pages/ArmorySearch"
+import { GuildSearchPage } from "./pages/GuildSearch"
 import { SimPage } from "./pages/Sim"
 import { GameDataLayout } from "./pages/GameData/GameDataPage"
 import { WDBTab } from "./pages/GameData/WDBTab"
@@ -89,6 +90,7 @@ function App() {
         <Route path="/logs/file/:fileHash" element={<LogDetailByHash />} />
         <Route path="/instances/:instanceId" element={<InstancePage />} />
         <Route path="/s/:code" element={<SharedViewRedirect />} />
+        <Route path="/guilds" element={<GuildSearchPage />} />
         <Route path="/armory" element={<ArmorySearchPage />} />
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/sim" element={<SimPage />} />

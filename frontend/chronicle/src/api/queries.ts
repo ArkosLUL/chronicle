@@ -34,6 +34,7 @@ import type {
   CreateShareResponse as CreateShareResponseGenerated,
   SharedViewResponse as SharedViewResponseGenerated,
   ArmorySearchResponse as ArmorySearchResponseGenerated,
+  ListGuildsResponse as ListGuildsResponseGenerated,
   GuildPageConfig as GuildPageConfigGenerated,
   GuildPageTheme as GuildPageThemeGenerated,
   GuildPageTab as GuildPageTabGenerated,
@@ -92,6 +93,7 @@ export type CreateShareRequest = CreateShareRequestGenerated;
 export type CreateShareResponse = CreateShareResponseGenerated;
 export type SharedViewResponse = SharedViewResponseGenerated;
 export type ArmorySearchResponse = ArmorySearchResponseGenerated;
+export type ListGuildsResponse = ListGuildsResponseGenerated;
 export type GuildPageConfig = GuildPageConfigGenerated;
 export type GuildPageTab = GuildPageTabGenerated;
 export type GuildPagePanel = GuildPagePanelGenerated;
@@ -1116,6 +1118,24 @@ export function useArmorySearch(
     enabled: params.q.length >= 2,
     staleTime: 30_000,
     ...options,
+  });
+}
+
+export function useGuildSearch(params: { search: string; offset?: number }) {
+  return useQuery({
+    queryKey: ["guild-search", params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params.search) searchParams.set("search", params.search);
+      if (params.offset) searchParams.set("offset", String(params.offset));
+      const response = await fetch(`/api/v1/guilds/?${searchParams}`);
+      if (!response.ok) {
+        throw buildAPIError("Guild search failed", await response.json());
+      }
+      return response.json() as Promise<ListGuildsResponse>;
+    },
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 }
 

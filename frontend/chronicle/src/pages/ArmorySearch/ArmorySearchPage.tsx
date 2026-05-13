@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, Shield, Users, Loader2 } from "lucide-react";
+import { Search, Shield, Users, Loader2, Swords } from "lucide-react";
 import { useArmorySearch, useRealms } from "@/api/queries";
 import type { ArmorySearchResult } from "@/api/typesGenerated";
 import { getClassColorVar } from "@/pages/ArmoryPage/types";
+import { GuildSearchContent } from "@/pages/GuildSearch/GuildSearchContent";
+
+type ArmoryTab = "characters" | "guilds";
 
 const WOW_CLASSES = [
   "Warrior",
@@ -40,6 +43,64 @@ function useDebounce<T>(value: T, delayMs: number): T {
 }
 
 export function ArmorySearchPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab: ArmoryTab = searchParams.get("tab") === "guilds" ? "guilds" : "characters";
+
+  const setTab = (tab: ArmoryTab) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === "guilds") next.set("tab", "guilds");
+    else next.delete("tab");
+    setSearchParams(next, { replace: true });
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto p-4 md:p-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Shield className="h-6 w-6 text-primary" />
+          Armory
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Search for characters and guilds seen in uploaded combat logs.
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 border-b border-border">
+        <button
+          onClick={() => setTab("characters")}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "characters"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Swords className="h-4 w-4" />
+          Characters
+        </button>
+        <button
+          onClick={() => setTab("guilds")}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "guilds"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          Guilds
+        </button>
+      </div>
+
+      {activeTab === "guilds" ? (
+        <GuildSearchContent />
+      ) : (
+        <CharacterSearchContent />
+      )}
+    </div>
+  );
+}
+
+function CharacterSearchContent() {
   const { data: realms } = useRealms();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -86,17 +147,7 @@ export function ArmorySearchPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="h-6 w-6 text-primary" />
-          Armory
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Search for characters seen in uploaded combat logs.
-        </p>
-      </div>
-
+    <div>
       {/* Search + Filters */}
       <div className="space-y-3 mb-6">
         {/* Name search */}

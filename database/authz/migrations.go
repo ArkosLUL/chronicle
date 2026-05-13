@@ -19,6 +19,7 @@ type AuthzMigration struct {
 // To add a new migration, append an entry with the next version number.
 var migrations = []AuthzMigration{
 	{Version: 1, Run: migration001},
+	{Version: 2, Run: migration002},
 }
 
 // RunSchemaMigrations runs any authz migrations not yet recorded in the

@@ -85,5 +85,7 @@ func TurtleCharacterFactories() []characters.CharacterFactory {
 		NewIncantagos,
 		// Emerald Sanctum
 		NewSolnius,
+		// L/UBRS
+		NewMotherSmolderweb,
 	}
 }

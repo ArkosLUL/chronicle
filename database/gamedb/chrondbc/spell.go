@@ -285,6 +285,9 @@ func (s Spell) SpellDamageType() SpellDamageType {
 					base |= SpellDamageActiveDebuff
 				}
 			}
+		case EffectApplyAreaAuraEnemy:
+			// Example: https://vanillaplus.chronicleclassic.com/wowdb/spell/34487
+			base |= SpellDamageNoEngageCombat
 		default:
 		}
 	}

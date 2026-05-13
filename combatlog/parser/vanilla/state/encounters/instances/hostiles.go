@@ -122,7 +122,13 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		10372: "Rage Talon Fire Tongue",
 		10319: "Blackhand Iron Guard",
 		9819:  "Blackhand Veteran",
+		9708:  "Burning Imp",
+		9701:  "Spire Scorpid",
+		9045:  "Scarshield Acolyte",
+		10261: "Burning Felhound",
+		10221: "Bloodaxe Worg Pup",
 	})
+
 	LoadBosses(hostile, map[uint32]string{
 		9816:  "Pyroguard Emberseer",
 		10430: "The Beast",
@@ -137,6 +143,10 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		9237:  "War Master Voone",       // 1 times
 		9219:  "Spirestone Butcher",     // 1 times
 		10596: "Mother Smolderweb",      // 1 times
+		10220: "Halycon",
+		9736:  "Quartermaster Zigris",
+		10268: "Gizrul the Slavener",
+		10299: "Vaelan",
 	})
 
 	return hostile
@@ -399,6 +409,7 @@ func RagefireChasmHostiles() map[uint32]Identity {
 		11318: "Ragefire Trogg",
 		11321: "Molten Elemental",
 		11319: "Ragefire Shaman",
+		11324: "Searing Blade Warlock",
 	})
 
 	LoadBosses(hostile, map[uint32]string{

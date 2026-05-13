@@ -270,6 +270,8 @@ func (api *API) Routes() chi.Router {
 		// Public realm listing
 		r.Get("/realms", api.ListPublicRealms)
 
+		// Public census data
+		r.Get("/census", api.Census)
 
 		r.Group(func(r chi.Router) {
 			r.Route("/raidlogs", func(r chi.Router) {

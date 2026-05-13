@@ -16,6 +16,7 @@ type sqlcQuerier interface {
 	AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error)
 	AssignWorldToServer(ctx context.Context, arg AssignWorldToServerParams) error
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
+	CensusPlayerCounts(ctx context.Context, arg CensusPlayerCountsParams) ([]CensusPlayerCountsRow, error)
 	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
 	ClearResetToken(ctx context.Context, userAuthID uuid.UUID) error
 	CountActiveRegressionJobs(ctx context.Context) (int64, error)

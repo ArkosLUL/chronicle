@@ -8714,7 +8714,7 @@
     {
       "id": 34005,
       "name": "Time Lapse",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34091,
@@ -16217,7 +16217,7 @@
     {
       "id": 6474,
       "name": "Earthbinds Totem Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6495,

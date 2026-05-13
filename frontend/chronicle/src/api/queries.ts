@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -1890,4 +1890,25 @@ export function useRealms() {
     },
   });
 }
+
+export function useCensus(options?: { days?: number; realmIds?: string[] }) {
+  const params = new URLSearchParams();
+  if (options?.days) params.set("days", String(options.days));
+  options?.realmIds?.forEach((id) => params.append("realm_id", id));
+
+  return useQuery({
+    queryKey: ["census", options?.days ?? 90, options?.realmIds ?? []],
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/census?${params}`);
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to fetch census data",
+          await response.json()
+        );
+      return response.json() as Promise<CensusEntry[]>;
+    },
+  });
+}
+
 

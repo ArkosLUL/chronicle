@@ -12,6 +12,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const censusPlayerCounts = `-- name: CensusPlayerCounts :many
+SELECT
+  class,
+  race,
+  COUNT(*) AS count
+FROM game_players
+WHERE updated_at >= $1::timestamptz
+  AND (cardinality($2::uuid[]) = 0 OR realm_id = ANY($2::uuid[]))
+GROUP BY class, race
+ORDER BY class, race
+`
+
+type CensusPlayerCountsParams struct {
+	UpdatedAfter pgtype.Timestamptz `db:"updated_after" json:"updated_after"`
+	RealmIds     []uuid.UUID        `db:"realm_ids" json:"realm_ids"`
+}
+
+type CensusPlayerCountsRow struct {
+	Class WowPlayableClass `db:"class" json:"class"`
+	Race  WowPlayableRace  `db:"race" json:"race"`
+	Count int64            `db:"count" json:"count"`
+}
+
+func (q *sqlQuerier) CensusPlayerCounts(ctx context.Context, arg CensusPlayerCountsParams) ([]CensusPlayerCountsRow, error) {
+	rows, err := q.db.Query(ctx, censusPlayerCounts, arg.UpdatedAfter, arg.RealmIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CensusPlayerCountsRow
+	for rows.Next() {
+		var i CensusPlayerCountsRow
+		if err := rows.Scan(&i.Class, &i.Race, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getGamePlayerByGUID = `-- name: GetGamePlayerByGUID :one
 SELECT
   gp.id, gp.realm_id, gp.created_at, gp.guild_id, gp.name, gp.class, gp.gender, gp.race, gp.gear, gp.updated_at, gp.updated_from_instance, gp.level, gp.talents,

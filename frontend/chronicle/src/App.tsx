@@ -57,6 +57,7 @@ import { WDBTab } from "./pages/GameData/WDBTab"
 import { ImportSQLTab } from "./pages/GameData/ImportSQLTab"
 import { DBCTab } from "./pages/GameData/DBCTab"
 import { SpeedrunLeaderboard } from "./pages/Leaderboard/SpeedrunLeaderboard"
+import { CensusPage } from "./pages/Census/CensusPage"
 import { Layout } from "./components/Layout/Layout"
 
 // Backend-handled paths that should bypass React Router
@@ -95,6 +96,7 @@ function App() {
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/sim" element={<SimPage />} />
         <Route path="/leaderboard" element={<SpeedrunLeaderboard />} />
+        <Route path="/census" element={<CensusPage />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/users-overview" replace />} />

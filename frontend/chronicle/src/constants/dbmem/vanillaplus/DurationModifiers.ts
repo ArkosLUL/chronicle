@@ -134,7 +134,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kidney Shot",
     spellClassSet: 8,
     baseDurationMs: 5000,
-    maxDurationMs: 6600,
+    maxDurationMs: 6500,
     deprecated: false,
     modifiers: [
       { spellId: 14170, name: "zzzOld Improved Expose Armor", percent: 10, flat: 0, deprecated: false },
@@ -204,7 +204,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Garrote",
     spellClassSet: 8,
     baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
@@ -511,7 +511,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Hamstring",
     spellClassSet: 4,
     baseDurationMs: 9000,
-    maxDurationMs: 18000,
+    maxDurationMs: 15000,
     deprecated: false,
     modifiers: [
       { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
@@ -534,7 +534,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kick",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    maxDurationMs: 4800,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -545,7 +545,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kick",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    maxDurationMs: 4800,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -556,7 +556,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kick",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    maxDurationMs: 4800,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -567,7 +567,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kick",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    maxDurationMs: 4800,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -578,7 +578,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Gouge",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 6500,
+    maxDurationMs: 6600,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -592,7 +592,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Gouge",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 6500,
+    maxDurationMs: 6600,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -606,7 +606,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Cheap Shot",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    maxDurationMs: 4800,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -628,7 +628,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -649,7 +649,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Sap",
     spellClassSet: 8,
     baseDurationMs: 60000,
-    maxDurationMs: 61000,
+    maxDurationMs: 72000,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -680,7 +680,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Blind",
     spellClassSet: 8,
     baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    maxDurationMs: 12000,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -979,7 +979,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Stoneclaw Totem",
     spellClassSet: 11,
     baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    maxDurationMs: 30000,
     deprecated: false,
     modifiers: [
       { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
@@ -1197,7 +1197,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Stoneclaw Totem",
     spellClassSet: 11,
     baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    maxDurationMs: 30000,
     deprecated: false,
     modifiers: [
       { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
@@ -1208,7 +1208,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Stoneclaw Totem",
     spellClassSet: 11,
     baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    maxDurationMs: 30000,
     deprecated: false,
     modifiers: [
       { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
@@ -1219,7 +1219,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Stoneclaw Totem",
     spellClassSet: 11,
     baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    maxDurationMs: 30000,
     deprecated: false,
     modifiers: [
       { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
@@ -1244,7 +1244,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Sap",
     spellClassSet: 8,
     baseDurationMs: 60000,
-    maxDurationMs: 61000,
+    maxDurationMs: 72000,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -1346,7 +1346,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Hamstring",
     spellClassSet: 4,
     baseDurationMs: 9000,
-    maxDurationMs: 18000,
+    maxDurationMs: 15000,
     deprecated: false,
     modifiers: [
       { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
@@ -1358,7 +1358,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Hamstring",
     spellClassSet: 4,
     baseDurationMs: 9000,
-    maxDurationMs: 18000,
+    maxDurationMs: 15000,
     deprecated: false,
     modifiers: [
       { spellId: 33393, name: "Improved Hamstring", percent: 0, flat: 2000, deprecated: false },
@@ -1588,7 +1588,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Gouge",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 6500,
+    maxDurationMs: 6600,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -1602,7 +1602,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Garrote",
     spellClassSet: 8,
     baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
@@ -1613,7 +1613,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Garrote",
     spellClassSet: 8,
     baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
@@ -1624,7 +1624,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Garrote",
     spellClassSet: 8,
     baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
@@ -1635,7 +1635,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -1646,7 +1646,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -1657,7 +1657,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kidney Shot",
     spellClassSet: 8,
     baseDurationMs: 6000,
-    maxDurationMs: 7700,
+    maxDurationMs: 7800,
     deprecated: false,
     modifiers: [
       { spellId: 14170, name: "zzzOld Improved Expose Armor", percent: 10, flat: 0, deprecated: false },
@@ -2099,7 +2099,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Stoneclaw Totem",
     spellClassSet: 11,
     baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    maxDurationMs: 30000,
     deprecated: false,
     modifiers: [
       { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
@@ -2110,7 +2110,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Stoneclaw Totem",
     spellClassSet: 11,
     baseDurationMs: 20000,
-    maxDurationMs: 20000,
+    maxDurationMs: 30000,
     deprecated: false,
     modifiers: [
       { spellId: 16043, name: "Earth's Grasp", percent: 25, flat: 0, deprecated: false },
@@ -2343,7 +2343,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -2354,7 +2354,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -2365,7 +2365,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -2376,7 +2376,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Gouge",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 6500,
+    maxDurationMs: 6600,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -2390,7 +2390,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Gouge",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 6500,
+    maxDurationMs: 6600,
     deprecated: false,
     modifiers: [
       { spellId: 13741, name: "Improved Gouge", percent: 0, flat: 500, deprecated: false },
@@ -2404,7 +2404,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Garrote",
     spellClassSet: 8,
     baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
@@ -2415,7 +2415,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Garrote",
     spellClassSet: 8,
     baseDurationMs: 18000,
-    maxDurationMs: 24000,
+    maxDurationMs: 18000,
     deprecated: false,
     modifiers: [
       { spellId: 14077, name: "zzOLDImproved Garrote", percent: 0, flat: 3000, deprecated: true },
@@ -2426,7 +2426,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Sap",
     spellClassSet: 8,
     baseDurationMs: 60000,
-    maxDurationMs: 61000,
+    maxDurationMs: 72000,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -3021,7 +3021,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 10000,
-    maxDurationMs: 24000,
+    maxDurationMs: 15000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -3032,7 +3032,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Cheap Shot",
     spellClassSet: 8,
     baseDurationMs: 4000,
-    maxDurationMs: 5000,
+    maxDurationMs: 4800,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -3043,7 +3043,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 22000,
-    maxDurationMs: 42000,
+    maxDurationMs: 33000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -3101,7 +3101,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Rupture",
     spellClassSet: 8,
     baseDurationMs: 16000,
-    maxDurationMs: 33000,
+    maxDurationMs: 24000,
     deprecated: false,
     modifiers: [
       { spellId: 14165, name: "Exhaustion", percent: 25, flat: 0, deprecated: false },
@@ -4902,7 +4902,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Glimpse of Madness",
     spellClassSet: 8,
     baseDurationMs: 3000,
-    maxDurationMs: 4000,
+    maxDurationMs: 3600,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },
@@ -5006,7 +5006,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Kidney Shot",
     spellClassSet: 8,
     baseDurationMs: 5000,
-    maxDurationMs: 6600,
+    maxDurationMs: 6500,
     deprecated: false,
     modifiers: [
       { spellId: 14170, name: "zzzOld Improved Expose Armor", percent: 10, flat: 0, deprecated: false },
@@ -5424,7 +5424,7 @@ export const AffectedSpells: Record<number, AffectedSpell> = {
     name: "Blind",
     spellClassSet: 8,
     baseDurationMs: 10000,
-    maxDurationMs: 11000,
+    maxDurationMs: 12000,
     deprecated: false,
     modifiers: [
       { spellId: 33698, name: "Total Control", percent: 10, flat: 0, deprecated: false },

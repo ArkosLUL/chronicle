@@ -95,7 +95,8 @@ CREATE TYPE wow_playable_race AS ENUM (
     'Dwarf',
     'NightElf',
     'BloodElf',
-    'Unknown'
+    'Unknown',
+    'Draenei'
 );
 
 CREATE FUNCTION cleanup_orphaned_layout() RETURNS trigger

@@ -72,4 +72,20 @@ export const SERVERS: ServerEntry[] = [
     chronicleUrl: "https://vanillaplus.chronicleclassic.com",
     homepageUrl: "https://vanillaplus.org",
   },
+  {
+    id: "octowow",
+    name: "Octo WoW",
+    tagline: "Vanilla+ with custom content",
+    description:
+      "A Vanilla 1.12-based server with custom quests, dungeons, and content additions that expand on the Classic experience.",
+    logo: "servers/octowow/logo.webp",
+    accentColor: "#38bdf8",
+    expansion: "vanilla",
+    client: "1.12.1",
+    logging: "client",
+    engine: "unknown",
+    chronicleUrl: "https://octo.chronicleclassic.com",
+    homepageUrl: "https://octowow.st/",
+    status: ["custom-content"],
+  },
 ];

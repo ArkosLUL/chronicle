@@ -1,6 +1,7 @@
 package chrondbc
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -16,6 +17,17 @@ const (
 type SpellRef struct {
 	ID   int32  `json:"id"`
 	Name string `json:"name"`
+}
+
+func UnknownSpell(id SpellID) Spell {
+	return Spell{
+		ID:               id,
+		Name_lang:        i18n.Text{i18n.English: fmt.Sprintf("Unknown Spell (%d)", id)},
+		Description_lang: i18n.Text{i18n.English: "Spell is missing from Spells.dbc. Report this as a bug."},
+		SpellIconID:      1, // INV_Misc_QuestionMark
+		BaseLevel:        1,
+		SpellLevel:       1,
+	}
 }
 
 type Spell struct {

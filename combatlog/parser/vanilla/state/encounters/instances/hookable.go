@@ -95,14 +95,14 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	combatantStrategy := EmitAllActive
 	cres := classiccreatures.TurtleCharacterFactories()
 	logType, ok := parsectx.Type(ctx)
-	if ok {
-		switch logType {
-		case database.LogTypeAzerothcore:
-			cres = wotlkcreatures.AzerothCoreCharacterFactories()
-			combatantStrategy = EmitAllPlayers
-		}
-	} else {
+	if !ok {
 		logType = database.LogTypeV2
+	}
+
+	switch logType {
+	case database.LogTypeAzerothcore:
+		cres = wotlkcreatures.AzerothCoreCharacterFactories()
+		combatantStrategy = EmitAllPlayers
 	}
 
 	chrs := characters.NewCharacters(db, cres)

@@ -127,6 +127,10 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		9045:  "Scarshield Acolyte",
 		10261: "Burning Felhound",
 		10221: "Bloodaxe Worg Pup",
+		10683: "Rookery Hatcher",
+		10258: "Rookery Guardian",
+		10762: "Blackhand Thug",
+		16066: "Spectral Assassin",
 	})
 
 	LoadBosses(hostile, map[uint32]string{
@@ -136,6 +140,8 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		10339: "Gyth", // Blackhand mount
 		10363: "General Drakkisath",
 		10264: "Solakar Flamewreath",
+		10899: "Goraluk Anvilcrack",
+		16042: "Lord Valthalak",
 
 		9568:  "Overlord Wyrmthalak",    // 1 times
 		9196:  "Highlord Omokk",         // 1 times

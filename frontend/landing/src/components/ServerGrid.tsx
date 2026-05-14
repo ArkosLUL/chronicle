@@ -133,7 +133,7 @@ export function ServerGrid({ servers }: { servers: ServerEntry[] }) {
     <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8 text-center">
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-          Server's using Chronicle
+          Servers using Chronicle
         </h2>
         <p className="mt-2 text-muted-foreground">
           Select a server to view raid logs, damage breakdowns, and more.

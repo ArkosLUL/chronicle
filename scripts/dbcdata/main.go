@@ -106,6 +106,9 @@ func demo() *serpent.Command {
 			}
 
 			_ = spells.Range(func(cursor *dbdefs.Ent_Spell) bool {
+				if cursor.ID == 6603 {
+					fmt.Println(cursor.Name_lang.String())
+				}
 				if cursor.Name_lang.String() == "Ice Shards" {
 					fmt.Println(cursor.Description_lang.String())
 				}

@@ -23,7 +23,7 @@ const (
 var customSpells = map[chrondbc.SpellID]chrondbc.Spell{
 	chrondbc.SpellIDAutoAttack: {
 		ID: chrondbc.SpellIDAutoAttack, Name_lang: i18n.GetEnglish("Auto Attack"),
-		SpellIconID: 535, // Ability_MeleeAttack (or appropriate icon)
+		SpellIconID: 368,
 		School:      chrondbc.SchoolPhysical, BaseLevel: 1, SpellLevel: 1,
 		StanceBarOrder: -1,
 		RangeIndex:     1,

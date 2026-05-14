@@ -1167,6 +1167,37 @@ func DireMaulHostiles() map[uint32]Identity {
 		11472: "Eldreth Spirit",
 		11477: "Rotting Highborne",
 		14370: "Cadaverous Worm",
+
+		// ??
+		11441: "Gordok Brute",             // 18 times
+		14385: "Doomguard Minion",         // 15 times
+		14386: "Wandering Eye of Kilrogg", // 2 times
+		11451: "Wildspawn Satyr",          // 6 times
+		11445: "Gordok Captain",           // 6 times
+		//11500: "[UNUSED] Majordomo Bagrosh", // 1 times
+		11454: "Wildspawn Betrayer",      // 4 times
+		13276: "Wildspawn Imp",           // 21 times
+		11452: "Wildspawn Rogue",         // 4 times
+		11444: "Gordok Mage-Lord",        // 16 times
+		11462: "Warpwood Treant",         // 6 times
+		13022: "Whip Lasher",             // 69 times
+		13285: "Death Lash",              // 7 times
+		11450: "Gordok Reaver",           // 15 times
+		13196: "Phase Lasher",            // 6 times
+		11456: "Wildspawn Shadowstalker", // 8 times
+		11465: "Warpwood Stomper",        // 4 times
+		13036: "Gordok Mastiff",          // 24 times
+		11448: "Gordok Warlock",          // 15 times
+		14351: "Gordok Bushwacker",       // 1 times
+		11464: "Warpwood Tangler",        // 3 times
+		13021: "Warpwood Crusher",        // 13 times
+		11457: "Wildspawn Hellcaller",    // 3 times
+		11460: "Alzzin's Minion",         // 15 times
+		11461: "Warpwood Guardian",       // 2 times
+		13160: "Carrion Swarmer",         // 30 times
+		13197: "Fel Lash",                // 4 times
+		11455: "Wildspawn Felsworn",      // 4 times
+		11453: "Wildspawn Trickster",     // 3 times
 	})
 
 	LoadBosses(hostile, map[uint32]string{
@@ -1175,7 +1206,30 @@ func DireMaulHostiles() map[uint32]Identity {
 		11487: "Magister Kalendris",
 		11496: "Immol'thar",
 		11486: "Prince Tortheldrin",
+
+		// North:
+		14321: "Guard Fengus",          // 1 times
+		14323: "Guard Slip'kik",        // 1 times
+		11501: "King Gordok",           // 1 times
+		14324: "Cho'Rush the Observer", // 1 times
+		14326: "Guard Mol'dar",         // 1 times
+		14325: "Captain Kromcrush",     // 1 times
+
+		// East
+		14349: "Pimgib",                // 1 times
+		13280: "Hydrospawn",            // 1 times
+		11492: "Alzzin the Wildshaper", // 1 times
+		11490: "Zevrim Thornhoof",      // 1 times
+		14327: "Lethtendris",           // 1 times
+		14354: "Pusillin",              // 1 times
+
+		// ??
 	})
+
+	// Not a hostile
+	// 14353: "Mizzle the Crafty", // 1 times
+	//11491: "Ironbark the Redeemed",      // 1 times
+	//14338: "Knot Thimblejack",           // 1 times
 	return hostile
 }
 

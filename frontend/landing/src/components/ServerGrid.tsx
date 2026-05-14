@@ -210,7 +210,7 @@ export function ServerGrid({ servers }: { servers: ServerEntry[] }) {
         <img
           src="chronicle-logo.svg"
           alt="Chronicle"
-          className="mx-auto mb-2 h-8 sm:h-10"
+          className="mx-auto mb-4 h-28 sm:h-28"
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}

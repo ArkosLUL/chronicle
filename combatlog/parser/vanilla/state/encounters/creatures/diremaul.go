@@ -12,3 +12,10 @@ func NewImmolthar(id guid.GUID, all *characters.Characters) (characters.Characte
 		14396, // Eye of Immol'thar
 	)(id, all)
 }
+
+func NewKingGordok(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return characters.NewAdsGoWithBoss(11496,
+		11501, // King Gordok
+		14324, // Observer
+	)(id, all)
+}

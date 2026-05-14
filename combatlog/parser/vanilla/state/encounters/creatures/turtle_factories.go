@@ -18,6 +18,7 @@ func TurtleCharacterFactories() []characters.CharacterFactory {
 		NewEdwinVanCleef,
 		// Dire Maul
 		NewImmolthar,
+		EyeofImmolthar,
 		NewKingGordok,
 		// Molten Core
 		NewCoreHoundCharacter,

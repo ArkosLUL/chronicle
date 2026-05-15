@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert/Alert
 import { Switch } from "@/components/ui/Switch/Switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthorizationCheck } from "@/api/queries";
+import { useAuthorizationCheck, useSiteConfig } from "@/api/queries";
 
 /** Reusable file drop zone — supports click-to-browse and drag-and-drop. */
 function FileDropZone({
@@ -580,6 +580,10 @@ export function Upload() {
   });
   const hasUploadPermission = authz?.upload ?? false;
   const hasAdminLogs = authz?.adminLogs ?? false;
+
+  const { data: siteConfig } = useSiteConfig();
+  const uploadsDisabled = siteConfig?.client_uploads_disabled && !hasAdminLogs;
+
   const [combatLog, setCombatLog] = useState<File | null>(null);
   const [rawCombatLog, setRawCombatLog] = useState<File | null>(null);
   const [logTypeOverride, setLogTypeOverride] = useState("");
@@ -733,6 +737,20 @@ export function Upload() {
       });
     }
   }, [combatLog, rawCombatLog, useV2Upload, logTypeOverride]);
+
+  if (uploadsDisabled) {
+    return (
+      <div className="container max-w-2xl mx-auto py-12 px-4 text-center">
+        <Card className="p-8">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Uploads Disabled</h2>
+          <p className="text-muted-foreground">
+            This server uses server-side logging. Client-side uploads are not available.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <UploadView

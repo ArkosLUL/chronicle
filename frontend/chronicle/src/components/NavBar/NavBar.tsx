@@ -4,7 +4,7 @@ import { Settings, Upload, LogOut, FileText, Shield, Key, Castle, Menu, Swords, 
 import type { LucideIcon } from "lucide-react";
 import { serverCapabilities } from "@/config/serverCapabilities";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthorizationCheck } from "@/api/queries";
+import { useAuthorizationCheck, useSiteConfig } from "@/api/queries";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -35,6 +35,7 @@ export function NavBar() {
     adminWorldData: "chronicle:chronicle#admin_world_data",
     canAdminSomeServer: "lookup:wow_server#administer",
     adminServers: "chronicle:chronicle#admin_servers",
+    adminLogs: "chronicle:chronicle#admin_logs",
   }), []);
   const { data: authz } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
@@ -43,10 +44,14 @@ export function NavBar() {
   const canAdminAuthz = authz?.adminAuthz ?? false;
   const canAdminWorldData = authz?.adminWorldData ?? false;
   const canManageServers = (authz?.canAdminSomeServer ?? false) || (authz?.adminServers ?? false);
+  const hasAdminLogs = authz?.adminLogs ?? false;
+
+  const { data: siteConfig } = useSiteConfig();
+  const uploadsEnabled = !siteConfig?.client_uploads_disabled || hasAdminLogs;
 
   const accountMenuItems: NavItem[] = [
-    { title: "My Logs", href: "/logs", icon: FileText },
-    { title: "Upload", href: "/upload", icon: Upload },
+    ...(uploadsEnabled ? [{ title: "My Logs", href: "/logs", icon: FileText } as NavItem] : []),
+    ...(uploadsEnabled ? [{ title: "Upload", href: "/upload", icon: Upload } as NavItem] : []),
     ...(isAdmin ? [{ title: "Admin", href: "/admin", icon: Shield } as NavItem] : []),
     ...(canAdminWorldData ? [{ title: "Game Data", href: "/game-data", icon: Database } as NavItem] : []),
     ...(canManageServers ? [{ title: "Servers", href: "/servers", icon: Server } as NavItem] : []),

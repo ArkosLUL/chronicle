@@ -1159,6 +1159,11 @@ export interface SimItemSpell {
 export interface SiteConfig {
     readonly signups_enabled: boolean;
     readonly short_link_domain?: string;
+    /**
+     * ClientUploadsDisabled indicates that this server uses server-side logging
+     * and client-side uploads should be hidden from the UI.
+     */
+    readonly client_uploads_disabled: boolean;
 }
 
 // From chroniclesdk/constants.go

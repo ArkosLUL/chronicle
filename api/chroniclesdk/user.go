@@ -158,6 +158,9 @@ type AdminBulkReparseResponse struct {
 type SiteConfig struct {
 	SignupsEnabled  bool   `json:"signups_enabled"`
 	ShortLinkDomain string `json:"short_link_domain,omitempty"`
+	// ClientUploadsDisabled indicates that this server uses server-side logging
+	// and client-side uploads should be hidden from the UI.
+	ClientUploadsDisabled bool `json:"client_uploads_disabled"`
 }
 
 // SetUserRolesRequest is the request body for setting a user's Chronicle roles.

@@ -698,8 +698,9 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SiteConfig{
-		SignupsEnabled:  config.SignupsEnabled,
-		ShortLinkDomain: a.Opts.ShortLinkDomain,
+		SignupsEnabled:        config.SignupsEnabled,
+		ShortLinkDomain:       a.Opts.ShortLinkDomain,
+		ClientUploadsDisabled: a.Opts.ClientUploadsDisabled,
 	})
 }
 
@@ -715,7 +716,8 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SiteConfig{
-		SignupsEnabled:  config.SignupsEnabled,
-		ShortLinkDomain: a.Opts.ShortLinkDomain,
+		SignupsEnabled:        config.SignupsEnabled,
+		ShortLinkDomain:       a.Opts.ShortLinkDomain,
+		ClientUploadsDisabled: a.Opts.ClientUploadsDisabled,
 	})
 }

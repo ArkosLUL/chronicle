@@ -245,6 +245,10 @@ func (s Spell) SpellDamageType() SpellDamageType {
 	case 22439: // Mark of Destruction
 		// Ads in Ony cast this, the mark can trigger post death
 		return SpellDamageNoEngageCombat
+	case 25228: // Soul Link
+		// Soul link can trigger from any source, including "No Engage Combat" spells.
+		// So it's safest to just ignore this.
+		return SpellDamageNoEngageCombat
 	}
 
 	for i, eff := range s.Effect {

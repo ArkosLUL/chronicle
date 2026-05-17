@@ -31,7 +31,6 @@ func MoltenCoreSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Baron Geddon", EntryIDs: []uint32{12056}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Sulfuron Harbinger", EntryIDs: []uint32{12098}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Golemagg the Incinerator", EntryIDs: []uint32{11988}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-		{Name: "Smoldaris", EntryIDs: []uint32{65021}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Majordomo Executus", EntryIDs: []uint32{12018}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Ragnaros", EntryIDs: []uint32{11502}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 

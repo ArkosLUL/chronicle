@@ -1347,6 +1347,15 @@ export interface UpdateRegressionFixtureNoteRequest {
     readonly note: string;
 }
 
+// From chroniclesdk/user.go
+/**
+ * UpdateSiteConfigRequest allows partial updates to site configuration.
+ * Only non-nil fields will be updated.
+ */
+export interface UpdateSiteConfigRequest {
+    readonly signups_enabled?: boolean;
+}
+
 // From chroniclesdk/guild_page.go
 export interface UpdateTabRequest {
     readonly label: string;

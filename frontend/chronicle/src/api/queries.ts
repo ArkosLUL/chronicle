@@ -57,6 +57,7 @@ import type {
   AdminBulkReparseResponse as AdminBulkReparseResponseGenerated,
   AdminOutdatedInstancesResponse,
   SiteConfig,
+  UpdateSiteConfigRequest,
 } from "./typesGenerated";
 
 // Re-export types for convenience
@@ -908,7 +909,7 @@ export function useSiteConfig() {
 export function useUpdateSiteConfig() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (config: SiteConfig) => {
+    mutationFn: async (config: UpdateSiteConfigRequest) => {
       const response = await fetch("/api/v1/admin/site-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

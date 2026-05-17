@@ -163,6 +163,12 @@ type SiteConfig struct {
 	ClientUploadsDisabled bool `json:"client_uploads_disabled"`
 }
 
+// UpdateSiteConfigRequest allows partial updates to site configuration.
+// Only non-nil fields will be updated.
+type UpdateSiteConfigRequest struct {
+	SignupsEnabled *bool `json:"signups_enabled,omitempty"`
+}
+
 // SetUserRolesRequest is the request body for setting a user's Chronicle roles.
 type SetUserRolesRequest struct {
 	Roles []string `json:"roles"`

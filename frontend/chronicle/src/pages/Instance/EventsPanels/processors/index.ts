@@ -32,6 +32,7 @@ import { equipmentProcessor } from "../Equipment/equipment.processor";
 import { lootProcessor } from "../LootPanel/loot.processor";
 import { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
 import { resistsProcessor } from "../ResistsPanel/resists.processor";
+import { guildsProcessor } from "../Guilds/guilds.processor";
 
 // Export individual processors
 export { damageDoneProcessor, vulnerabilityEffectProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -63,6 +64,7 @@ export { equipmentProcessor } from "../Equipment/equipment.processor";
 export { lootProcessor } from "../LootPanel/loot.processor";
 export { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
 export { resistsProcessor } from "../ResistsPanel/resists.processor";
+export { guildsProcessor } from "../Guilds/guilds.processor";
 
 // Export state types
 export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceType } from "../DamageDone/damageDone.processor";
@@ -89,6 +91,7 @@ export type { EquipmentResult, PlayerSnapshot } from "../Equipment/equipment.pro
 export type { LootResult } from "../LootPanel/loot.processor";
 export type { AbsorbedDamageResult, AbsorbedDamageData } from "../AbsorbedDamage/absorbedDamage.processor";
 export type { ResistsResult, PlayerResistData, AbilityResistBreakout } from "../ResistsPanel/resists.processor";
+export type { GuildsResult, GuildEntry, GuildPlayerInfo } from "../Guilds/guilds.processor";
 // Note: ResourceType is exported from allActivityDebug.processor above
 export type { PlayerRoleData, InferredRole, RoleSummary, RoleDetectionDebug, InferRolesResult } from "../Roles/roles.processor";
 export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
@@ -159,4 +162,5 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   loot: lootProcessor,
   absorbed_damage: absorbedDamageProcessor,
   resists: resistsProcessor,
+  guilds: guildsProcessor,
 };

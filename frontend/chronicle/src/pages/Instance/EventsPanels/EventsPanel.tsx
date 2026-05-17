@@ -66,6 +66,7 @@ import { createInterruptLogPanel } from "./Interrupt/InterruptLog";
 import { createAbsorbedDamagePanel } from "./AbsorbedDamage/AbsorbedDamage";
 import { createResistsPanel } from "./ResistsPanel/Resists";
 import { createDispelLogPanel } from "./Dispel/DispelLog";
+import { createGuildsPanel } from "./Guilds/Guilds";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -127,6 +128,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   logging_metadata: createLoggingMetadataPanel(),
   absorbed_damage: createAbsorbedDamagePanel(),
   resists: createResistsPanel(),
+  guilds: createGuildsPanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;

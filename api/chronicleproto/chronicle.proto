@@ -234,9 +234,9 @@ message Interrupt {
 message Absorbed {
   EventMeta meta = 1;
   string attacker = 2;
-  string victim = 3;
+  string target = 3;
   optional SpellData damageSpellData = 4;  // nil for melee (swing) damage
-  string absorbCaster = 5;
+  string caster = 5;
   optional SpellData absorbSpellData = 6;
   School absorbSchool = 7;
   int32 amount = 8;

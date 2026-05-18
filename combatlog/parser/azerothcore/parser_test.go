@@ -72,9 +72,9 @@ func TestParseSpellAbsorbed_Melee(t *testing.T) {
 	require.True(t, ok, "expected *messages.Absorbed, got %T", msg)
 
 	assert.Equal(t, guid.GUID(0xF130002C36000022), sa.Attacker)
-	assert.Equal(t, guid.GUID(0x0000000000000001), sa.Victim)
+	assert.Equal(t, guid.GUID(0x0000000000000001), sa.Target)
 	assert.Nil(t, sa.DamageSpell, "melee absorbed should have nil DamageSpell")
-	assert.Equal(t, guid.GUID(0x0000000000000001), sa.AbsorbCaster)
+	assert.Equal(t, guid.GUID(0x0000000000000001), sa.Caster)
 	// Spell lookup returns nil from stub, but ID was parsed correctly.
 	assert.Nil(t, sa.AbsorbSpell)
 	assert.Equal(t, types.School(0x2), sa.AbsorbSchool) // Holy
@@ -93,10 +93,10 @@ func TestParseSpellAbsorbed_Spell(t *testing.T) {
 	require.True(t, ok, "expected *messages.Absorbed, got %T", msg)
 
 	assert.Equal(t, guid.GUID(0xF130002C36000022), sa.Attacker)
-	assert.Equal(t, guid.GUID(0x0000000000000001), sa.Victim)
+	assert.Equal(t, guid.GUID(0x0000000000000001), sa.Target)
 	// Spell lookup returns nil from stub, but the spell variant was detected.
 	assert.Nil(t, sa.DamageSpell)
-	assert.Equal(t, guid.GUID(0x0000000000000001), sa.AbsorbCaster)
+	assert.Equal(t, guid.GUID(0x0000000000000001), sa.Caster)
 	assert.Nil(t, sa.AbsorbSpell)
 	assert.Equal(t, types.School(0x2), sa.AbsorbSchool) // Holy
 	assert.Equal(t, int32(50), sa.Amount)

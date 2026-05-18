@@ -77,6 +77,7 @@ const SOURCE_TYPE_IDENTITY_KEYS: Set<string> = new Set(SOURCE_TYPE_IDENTITY_OPTI
 const APPLY_TO_OPTIONS = [
   { label: "Damage", value: "damage" },
   { label: "Heal", value: "heal" },
+  { label: "Absorbed", value: "absorbed" },
   { label: "Spell Go", value: "spell_go" },
   { label: "Spell Start", value: "spell_start" },
   { label: "Spell Fail", value: "spell_fail" },

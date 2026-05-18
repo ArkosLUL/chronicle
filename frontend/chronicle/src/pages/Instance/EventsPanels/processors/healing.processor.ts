@@ -293,10 +293,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       // From here on, we're handling heal, resource_change health gains, or absorbed events
       if (!(streamType === "heal" || streamType === "resource_change" || isAbsorbed)) return;
 
-      // Map fields: absorbed events use absorbCaster/victim instead of caster/target
+      // Map fields: absorbed events use the same caster/target field names now.
       const healOrRcEvent = event as HealProcessorEvent | ResourceChangeProcessorEvent;
-      const casterGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).absorbCaster : healOrRcEvent.caster;
-      const targetGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).victim : healOrRcEvent.target;
+      const casterGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).caster : healOrRcEvent.caster;
+      const targetGuid = isAbsorbed ? (event as AbsorbedProcessorEvent).target : healOrRcEvent.target;
       if (!casterGuid) return;
 
       // Resolve caster via resolveEntity (handles players, pets, objects)
@@ -314,9 +314,7 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       const effectiveHeal = healAmount - overheal;
 
       // Filter check: deficit tracking above always runs, but only aggregate events that pass the filter.
-      // Absorbed events bypass the compiled filter (they lack the standard caster/target
-      // fields the filter system expects; Phase 1 filtering is sufficient).
-      if (context.compiledFilter && !isAbsorbed && !context.compiledFilter(event)) return;
+      if (context.compiledFilter && !context.compiledFilter(event)) return;
 
       // Get healer info from resolved entity
       const healerName = entity.name;

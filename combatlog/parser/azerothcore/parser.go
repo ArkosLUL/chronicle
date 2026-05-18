@@ -471,9 +471,9 @@ func (p *Parser) parseSpellAbsorbed(ts time.Time, m *wotlk.Matched, _ string) ([
 		&messages.Absorbed{
 			MessageBase:  messages.Base(ts),
 			Attacker:     srcGUID,
-			Victim:       dstGUID,
+			Target:       dstGUID,
 			DamageSpell:  dmgSpell,
-			AbsorbCaster: absorbCaster,
+			Caster: absorbCaster,
 			AbsorbSpell:  absorbSpell,
 			AbsorbSchool: absorbSchool,
 			Amount:       amount,

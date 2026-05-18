@@ -4304,10 +4304,10 @@ export interface ReusableAbsorbed {
   index: number;
   offsetMilli: number;
   attacker: string;
-  victim: string;
+  target: string;
   damageSpellId: number | null;
   damageSpellName: string | null;
-  absorbCaster: string;
+  caster: string;
   absorbSpellId: number | null;
   absorbSpellName: string | null;
   absorbSchool: number;
@@ -4322,9 +4322,9 @@ export interface ReusableAbsorbed {
  * Absorbed proto field numbers:
  *   1: meta (EventMeta)
  *   2: attacker (string)
- *   3: victim (string)
+ *   3: target (string)
  *   4: damageSpellData (optional SpellData) — nested: 1=id, 2=name, 3=attack_outcome
- *   5: absorbCaster (string)
+ *   5: caster (string)
  *   6: absorbSpellData (optional SpellData) — nested: 1=id, 2=name, 3=attack_outcome
  *   7: absorbSchool (School enum varint)
  *   8: amount (int32 varint)
@@ -4338,10 +4338,10 @@ export class AbsorbedDecoder {
     index: 0,
     offsetMilli: 0,
     attacker: "",
-    victim: "",
+    target: "",
     damageSpellId: null,
     damageSpellName: null,
-    absorbCaster: "",
+    caster: "",
     absorbSpellId: null,
     absorbSpellName: null,
     absorbSchool: 0,
@@ -4358,10 +4358,10 @@ export class AbsorbedDecoder {
     msg.index = 0;
     msg.offsetMilli = 0;
     msg.attacker = "";
-    msg.victim = "";
+    msg.target = "";
     msg.damageSpellId = null;
     msg.damageSpellName = null;
-    msg.absorbCaster = "";
+    msg.caster = "";
     msg.absorbSpellId = null;
     msg.absorbSpellName = null;
     msg.absorbSchool = 0;
@@ -4424,7 +4424,7 @@ export class AbsorbedDecoder {
           msg.attacker = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else if (fieldNumber === 3) {
-          msg.victim = this.textDecoder.decode(data.subarray(offset, offset + len));
+          msg.target = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else if (fieldNumber === 4) {
           // damageSpellData - decode nested SpellData
@@ -4448,7 +4448,7 @@ export class AbsorbedDecoder {
             }
           }
         } else if (fieldNumber === 5) {
-          msg.absorbCaster = this.textDecoder.decode(data.subarray(offset, offset + len));
+          msg.caster = this.textDecoder.decode(data.subarray(offset, offset + len));
           offset += len;
         } else if (fieldNumber === 6) {
           // absorbSpellData - decode nested SpellData

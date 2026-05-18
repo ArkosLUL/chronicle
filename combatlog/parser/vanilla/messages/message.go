@@ -694,16 +694,16 @@ func (*EncounterCredit) isMessage()            {}
 type Absorbed struct {
 	MessageBase
 	Attacker guid.GUID
-	Victim   guid.GUID
+	Target guid.GUID
 	// DamageSpell is nil for melee (swing) damage.
-	DamageSpell  *chrondbc.Spell
-	AbsorbCaster guid.GUID
+	DamageSpell *chrondbc.Spell
+	Caster      guid.GUID
 	AbsorbSpell  *chrondbc.Spell
 	AbsorbSchool types.School
 	Amount       int32
 }
 
 func (s Absorbed) Affects() []guid.GUID {
-	return []guid.GUID{s.Attacker, s.Victim, s.AbsorbCaster}
+	return []guid.GUID{s.Attacker, s.Target, s.Caster}
 }
 func (*Absorbed) isMessage() {}

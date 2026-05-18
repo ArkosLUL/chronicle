@@ -34,7 +34,7 @@ export function createHealingTakenPanel(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): PanelDefinition<UnifiedHealingResult, any> {
   const config = HEALING_TARGET_CONFIGS[targetType];
-  const heal = ["heal"] as string[];
+  const heal = ["heal", "absorbed"] as string[];
 
   // Fixed: only healing received by players/pets
   const fixedFilters: PanelFilter[] = [

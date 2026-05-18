@@ -321,10 +321,10 @@ export interface InterruptProcessorEvent extends EventMeta {
 export interface AbsorbedProcessorEvent extends EventMeta {
   type: "absorbed";
   attacker: string;              // Unit dealing the initial damage
-  victim: string;                // Unit whose shield absorbs the damage
+  target: string;                // Unit whose shield absorbs the damage
   damageSpellId: number | null;  // Spell that dealt the damage (null for melee)
   damageSpellName: string | null;
-  absorbCaster: string;          // Unit that cast the absorb shield (often == victim)
+  caster: string;                // Unit that cast the absorb shield
   absorbSpellId: number | null;  // e.g. Power Word: Shield
   absorbSpellName: string | null;
   absorbSchool: number;          // School of the absorb spell

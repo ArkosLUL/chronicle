@@ -34,7 +34,7 @@ export function createHealingDonePanel(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): PanelDefinition<UnifiedHealingResult, any> {
   const config = HEALING_SOURCE_CONFIGS[sourceType];
-  const heal = ["heal"] as string[];
+  const heal = ["heal", "absorbed"] as string[];
 
   // Fixed: only healing from player casters (matches processor's isCasterPlayer check)
   const fixedFilters: PanelFilter[] = [

@@ -404,9 +404,9 @@ func Absorbed(from time.Time, idx int32, a *messages.Absorbed) *chronicleproto.A
 	return &chronicleproto.Absorbed{
 		Meta:            EventMeta(from, idx, a),
 		Attacker:        a.Attacker.String(),
-		Victim:          a.Victim.String(),
+		Target:          a.Target.String(),
 		DamageSpellData: SpellData(a.DamageSpell),
-		AbsorbCaster:    a.AbsorbCaster.String(),
+		Caster:          a.Caster.String(),
 		AbsorbSpellData: SpellData(a.AbsorbSpell),
 		AbsorbSchool:    School(a.AbsorbSchool),
 		Amount:          a.Amount,

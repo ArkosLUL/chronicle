@@ -55,6 +55,7 @@ func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.Gam
 	inner.WithEventHook("CHRONICLE_LOOT_MONEY", p.parseChronicleNoop)
 	inner.WithEventHook("SPELL_INTERRUPT", p.parseSpellInterrupt)
 	inner.WithEventHook("SPELL_ABSORBED", p.parseSpellAbsorbed)
+	inner.WithEventHook("CHRONICLE_UNIT_DESPAWN", p.parseUnitDespawn)
 
 	// Replace the WoTLK synthetics with our own.
 	// A lot of the context comes from the logs now.
@@ -476,6 +477,23 @@ func (p *Parser) parseSpellAbsorbed(ts time.Time, m *wotlk.Matched, _ string) ([
 			AbsorbSpell:  absorbSpell,
 			AbsorbSchool: absorbSchool,
 			Amount:       amount,
+		},
+	}, nil
+}
+
+func (p *Parser) parseUnitDespawn(ts time.Time, m *wotlk.Matched, _ string) ([]messages.Message, error) {
+	victim := m.Guid()
+
+	if err := m.Error(); err != nil {
+		p.logger.Warn("failed to parse CHRONICLE_UNIT_DESPAWN", "error", err)
+		return nil, nil
+	}
+	return []messages.Message{
+		&messages.Slain{
+			MessageBase: messages.Base(ts),
+			Victim:      victim,
+			Killer:      nil,
+			Attribution: nil,
 		},
 	}, nil
 }

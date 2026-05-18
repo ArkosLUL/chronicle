@@ -93,7 +93,7 @@ dashboard.get("/internal", async (c) => {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Chronicle Telemetry</title>
-        <link rel="icon" href="https://chronicleclassic.com/c/chronicle/ChronicleFavicon.png" type="image/png" />
+        <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAQlBMVEUrKytVTT1rXkdkWUQdHyQ1Mi9wY0knKCkjJCcuLSxGQTdcUkE9OTNNRjp3aE3GqHCAb1CpkGO6nmqKd1WUgFrYt3iDjUckAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABgklEQVR42pVT23LdMAiUAHHRXbbP//9qcDudyidNM+FJI1bLsogQfhqi/09LziZfpi0kxtKr2H1+C3VuIchEicUR+s5ToEjqnWomnEnDWXQnESwhXmtNaoX4dfTygh0giSnrbIQtx9r7GMd4MhhrY5RgOCf0EI8x4g4wLWc7p1tAEal2wjHyrtLovFpqLEFyFHXQGlV29+KoFDSyaPPawoIj/QVIZQDOYo6gHMkLNiu7gl5V022gRuBZRSrqNhKN/sg0o9/pzJWTJNisdsJbsCTv0jNEmNVg98B1OQM19MZ1YmR/BM9ZcVOtPbmGUrD7hZd4fIIEs8OtsYB34W26yOe8aV2kdw/6y4dbdlmbEaZ41CqR/Uv8NqrStTvlkHWWs/uw1I3ShpTH8QSw1QliPvdZUze5ngCpQDGgSWYEPFO4xhuDcKZ2JWXzEtDXa603QAIA/3L9HlZ8HdP4KdIXwlRzP0UCASdvd9rnrRBqXFNBkq82zFUCxD/4f4bqN8v58/gAYXERW1mDvqEAAAAASUVORK5CYII=" type="image/png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -129,6 +129,18 @@ dashboard.get("/internal", async (c) => {
           .text-muted { color: #777; }
           .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
           .charts-row .section { background: #222; border: 1px solid #333; border-radius: 8px; padding: 18px; margin-bottom: 0; }
+          .row-menu-btn:hover { background: #333 !important; color: #ccc !important; }
+          .row-menu { position: absolute; right: 8px; top: 100%; z-index: 50; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 4px 0; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+          .row-menu-item { display: block; width: 100%; padding: 7px 14px; font-size: 12px; color: #ccc; background: none; border: none; cursor: pointer; text-align: left; }
+          .row-menu-item:hover { background: #333; color: #fff; }
+          .row-menu-item.warn { color: #A6895F; }
+          .row-menu-item.warn:hover { background: #2a2518; }
+          .confirm-bar { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: 11px; color: #A6895F; background: #2a2518; border-top: 1px solid #444; }
+          .confirm-bar button { font-size: 11px; padding: 3px 10px; border-radius: 4px; cursor: pointer; border: 1px solid #555; }
+          .confirm-bar .yes { background: #A6895F; color: #111; border-color: #A6895F; }
+          .confirm-bar .yes:hover { background: #c0a570; }
+          .confirm-bar .no { background: #333; color: #aaa; }
+          .confirm-bar .no:hover { background: #444; }
           .sortable { cursor: pointer; user-select: none; position: relative; padding-right: 18px !important; }
           .sortable:hover { color: #5F8FA6; }
           .sortable::after { content: '⇅'; position: absolute; right: 2px; opacity: 0.3; font-size: 10px; }
@@ -273,11 +285,10 @@ dashboard.get("/internal", async (c) => {
                     <td data-val={d.total_log_files}>{d.total_log_files}</td>
                     <td data-val={d.total_instances}>{d.total_instances}</td>
                     <td data-val={d.last_reported_at} class="text-muted">{timeAgo(d.last_reported_at)}</td>
-                    <td>
-                      <button class="dev-toggle" data-did={d.deployment_id} data-dev={isDev ? "1" : "0"}
-                        style={`font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid #333;background:${isDev ? "#2a2518" : "#222"};color:${isDev ? "#A6895F" : "#777"};`}>
-                        {isDev ? "Unmark" : "Dev"}
-                      </button>
+                    <td style="position: relative;">
+                      <button class="row-menu-btn" data-did={d.deployment_id} data-dev={isDev ? "1" : "0"}
+                        style="font-size:16px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid transparent;background:transparent;color:#666;line-height:1;"
+                        title="Actions">⋮</button>
                     </td>
                   </tr>
                 );
@@ -350,44 +361,93 @@ dashboard.get("/internal", async (c) => {
           // Hide dev rows by default on load
           updateView();
 
-          // Dev toggle buttons
-          document.querySelectorAll('.dev-toggle').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const did = btn.dataset.did;
-              const wasDev = btn.dataset.dev === '1';
-              const newDev = !wasDev;
-              btn.disabled = true;
-              btn.textContent = '…';
-              try {
-                await fetch('/internal/api/v1/deployments/' + did + '/dev', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ is_dev: newDev }),
-                });
-                btn.dataset.dev = newDev ? '1' : '0';
-                btn.textContent = newDev ? 'Unmark' : 'Dev';
-                btn.style.background = newDev ? '#2a2518' : '#222';
-                btn.style.color = newDev ? '#A6895F' : '#777';
-                // Update the row's data-dev attribute
-                const row = btn.closest('tr');
-                row.dataset.dev = newDev ? '1' : '0';
-                // Update the badge in the first cell
-                const firstTd = row.children[0];
-                const badge = firstTd.querySelector('.dev-badge');
-                if (newDev && !badge) {
-                  const span = document.createElement('span');
-                  span.className = 'dev-badge';
-                  span.style.cssText = 'margin-left:6px;font-size:10px;color:#A6895F;border:1px solid #A6895F33;padding:1px 5px;border-radius:3px;';
-                  span.textContent = 'DEV';
-                  firstTd.appendChild(span);
-                } else if (!newDev && badge) {
-                  badge.remove();
-                }
-                updateView();
-              } catch (e) {
-                btn.textContent = 'Error';
+          // Dropdown menus
+          let openMenu = null;
+          function closeMenu() {
+            if (openMenu) { openMenu.remove(); openMenu = null; }
+          }
+          document.addEventListener('click', (e) => {
+            if (openMenu && !openMenu.contains(e.target) && !e.target.classList.contains('row-menu-btn')) {
+              closeMenu();
+            }
+          });
+
+          async function toggleDev(btn, row) {
+            const did = btn.dataset.did;
+            const wasDev = btn.dataset.dev === '1';
+            const newDev = !wasDev;
+            try {
+              await fetch('/internal/api/v1/deployments/' + did + '/dev', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_dev: newDev }),
+              });
+              btn.dataset.dev = newDev ? '1' : '0';
+              row.dataset.dev = newDev ? '1' : '0';
+              const firstTd = row.children[0];
+              const badge = firstTd.querySelector('.dev-badge');
+              if (newDev && !badge) {
+                const span = document.createElement('span');
+                span.className = 'dev-badge';
+                span.style.cssText = 'margin-left:6px;font-size:10px;color:#A6895F;border:1px solid #A6895F33;padding:1px 5px;border-radius:3px;';
+                span.textContent = 'DEV';
+                firstTd.appendChild(span);
+              } else if (!newDev && badge) {
+                badge.remove();
               }
-              btn.disabled = false;
+              updateView();
+            } catch (e) {
+              alert('Failed to update: ' + e.message);
+            }
+          }
+
+          document.querySelectorAll('.row-menu-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              closeMenu();
+              const row = btn.closest('tr');
+              const isDev = btn.dataset.dev === '1';
+              const menu = document.createElement('div');
+              menu.className = 'row-menu';
+
+              // View detail
+              const viewItem = document.createElement('a');
+              viewItem.className = 'row-menu-item';
+              viewItem.href = '/internal/deployment/' + btn.dataset.did;
+              viewItem.textContent = 'View details';
+              menu.appendChild(viewItem);
+
+              // Dev toggle with confirmation
+              const devItem = document.createElement('button');
+              devItem.className = 'row-menu-item warn';
+              devItem.textContent = isDev ? 'Unmark as development' : 'Mark as development';
+              devItem.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                // Replace menu content with confirmation
+                menu.innerHTML = '';
+                const confirm = document.createElement('div');
+                confirm.className = 'confirm-bar';
+                confirm.innerHTML = '<span>' + (isDev ? 'Unmark dev?' : 'Mark as dev?') + '</span>';
+                const yes = document.createElement('button');
+                yes.className = 'yes';
+                yes.textContent = 'Yes';
+                yes.addEventListener('click', async (ev2) => {
+                  ev2.stopPropagation();
+                  await toggleDev(btn, row);
+                  closeMenu();
+                });
+                const no = document.createElement('button');
+                no.className = 'no';
+                no.textContent = 'No';
+                no.addEventListener('click', (ev2) => { ev2.stopPropagation(); closeMenu(); });
+                confirm.appendChild(yes);
+                confirm.appendChild(no);
+                menu.appendChild(confirm);
+              });
+              menu.appendChild(devItem);
+
+              btn.closest('td').appendChild(menu);
+              openMenu = menu;
             });
           });
         })();
@@ -417,7 +477,7 @@ dashboard.get("/internal/deployment/:id", async (c) => {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Deployment {deploymentId.substring(0, 8)} — Chronicle Telemetry</title>
-        <link rel="icon" href="https://chronicleclassic.com/c/chronicle/ChronicleFavicon.png" type="image/png" />
+        <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAQlBMVEUrKytVTT1rXkdkWUQdHyQ1Mi9wY0knKCkjJCcuLSxGQTdcUkE9OTNNRjp3aE3GqHCAb1CpkGO6nmqKd1WUgFrYt3iDjUckAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABgklEQVR42pVT23LdMAiUAHHRXbbP//9qcDudyidNM+FJI1bLsogQfhqi/09LziZfpi0kxtKr2H1+C3VuIchEicUR+s5ToEjqnWomnEnDWXQnESwhXmtNaoX4dfTygh0giSnrbIQtx9r7GMd4MhhrY5RgOCf0EI8x4g4wLWc7p1tAEal2wjHyrtLovFpqLEFyFHXQGlV29+KoFDSyaPPawoIj/QVIZQDOYo6gHMkLNiu7gl5V022gRuBZRSrqNhKN/sg0o9/pzJWTJNisdsJbsCTv0jNEmNVg98B1OQM19MZ1YmR/BM9ZcVOtPbmGUrD7hZd4fIIEs8OtsYB34W26yOe8aV2kdw/6y4dbdlmbEaZ41CqR/Uv8NqrStTvlkHWWs/uw1I3ShpTH8QSw1QliPvdZUze5ngCpQDGgSWYEPFO4xhuDcKZ2JWXzEtDXa603QAIA/3L9HlZ8HdP4KdIXwlRzP0UCASdvd9rnrRBqXFNBkq82zFUCxD/4f4bqN8v58/gAYXERW1mDvqEAAAAASUVORK5CYII=" type="image/png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />

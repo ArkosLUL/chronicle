@@ -127,10 +127,17 @@ func migration003(ctx context.Context, az *Authz) error {
 		return fmt.Errorf("list realms: %w", err)
 	}
 
+	servers := make(map[uuid.UUID]*policy.ObjWow_server)
+
 	for _, r := range realms {
-		srv := b.Wow_server(r.ServerID)
-		srv.Chronicle(chron)
-		realm := b.Wow_server_realm(r.ServerID)
+		srv, exists := servers[r.ServerID]
+		if !exists {
+			srv = b.Wow_server(r.ServerID)
+			srv.Chronicle(chron)
+			servers[r.ServerID] = srv
+		}
+
+		realm := b.Wow_server_realm(r.ID)
 		realm.Wow_server(srv)
 	}
 

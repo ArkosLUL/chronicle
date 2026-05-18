@@ -3,6 +3,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Skull, Swords, Heart, Zap, Wand2, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X, Crosshair, Play, CircleX, Bubbles, WandSparkles, CircleFadingPlus, UserCheck, Ban, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
@@ -250,7 +251,20 @@ function RawEventRow({ event, index, useRelativeTime = false, useLocalTime = fal
       <Icon className={cn("h-3 w-3 shrink-0", config.color)} />
       <span className="text-muted-foreground w-22 shrink-0">{timeStr}</span>
       <span className="text-orange-400 w-24 shrink-0 truncate" title={event.caster}>{event.casterName || "-"}</span>
-      <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>{event.sourceName}</span>
+      {event.spellId ? (
+        <Link
+          to={`/wowdb/spell/${event.spellId}`}
+          className="text-blue-400 hover:text-blue-300 w-24 shrink-0 truncate"
+          title={event.sourceName}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {event.sourceName}
+        </Link>
+      ) : (
+        <span className="text-blue-400 w-24 shrink-0 truncate" title={event.sourceName}>
+          {event.sourceName}
+        </span>
+      )}
       <span className="text-muted-foreground shrink-0">→</span>
       <span className={cn("w-24 shrink-0 truncate",
         event.affiliation === 1 ? "text-green-400" :

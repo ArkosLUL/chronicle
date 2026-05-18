@@ -50,7 +50,7 @@ pkgs.mkShell {
     sqlc
 
     # Node.js / Frontend
-    nodejs_20
+    nodejs_22
     pnpm_10
 
     # Database (client tools: createdb, pg_isready, psql, …)

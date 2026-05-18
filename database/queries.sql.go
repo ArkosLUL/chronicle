@@ -5023,7 +5023,7 @@ func (q *sqlQuerier) TelemetryGetLogFileCount(ctx context.Context) (int64, error
 }
 
 const telemetryGetTotalParsedBytes = `-- name: TelemetryGetTotalParsedBytes :one
-SELECT COALESCE(SUM(events), 0)::bigint FROM log_instance_events
+SELECT COALESCE(SUM(octet_length(events)), 0)::bigint FROM log_instance_events
 `
 
 func (q *sqlQuerier) TelemetryGetTotalParsedBytes(ctx context.Context) (int64, error) {

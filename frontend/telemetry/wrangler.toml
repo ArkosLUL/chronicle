@@ -1,0 +1,15 @@
+name = "chronicle-telemetry"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+
+# Custom domain — requires chronicleclassic.com to be added as a zone in Cloudflare.
+# After deploying, Cloudflare will auto-create the DNS record.
+routes = [
+  { pattern = "telemetry.chronicleclassic.com", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chronicle-telemetry"
+database_id = "e4641bcd-c96b-465d-a47c-d92d5dbd54e2"
+migrations_dir = "migrations"

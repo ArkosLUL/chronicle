@@ -1,0 +1,20 @@
+{
+  "name": "chronicle-telemetry",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply chronicle-telemetry --local",
+    "db:migrate:remote": "wrangler d1 migrations apply chronicle-telemetry --remote"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250505.0",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.14.0"
+  }
+}

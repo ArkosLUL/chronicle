@@ -82,6 +82,7 @@ func (q *Queues) Start(ctx context.Context) error {
 	riverClient, err := river.NewClient(driver, &river.Config{
 		Queues:  queues,
 		Workers: q.workers,
+		Logger:  leveledlog.New(q.opts.Logger.With(slog.String("service", "riverqueue")), slog.LevelWarn),
 		Middleware: []rivertype.Middleware{
 			NewWorkerPanicMW(q.opts.Logger),
 		},

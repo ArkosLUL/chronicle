@@ -177,7 +177,9 @@ func (w *Worker) sendReport(ctx context.Context, report TelemetryReport) error {
 	if err != nil {
 		return fmt.Errorf("http post: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("telemetry receiver returned status %d", resp.StatusCode)

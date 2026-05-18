@@ -33,9 +33,12 @@ dashboard.get("/internal", async (c) => {
     [
       db
         .prepare(
-          "SELECT * FROM deployment_latest ORDER BY last_reported_at DESC"
+          `SELECT dl.*, r.total_log_files, r.total_users as report_users, r.instances_by_zone
+           FROM deployment_latest dl
+           JOIN telemetry_reports r ON r.id = dl.last_report_id
+           ORDER BY dl.last_reported_at DESC`
         )
-        .all<DeploymentLatest>(),
+        .all<DeploymentLatest & { total_log_files: number; report_users: number; instances_by_zone: string }>(),
       db
         .prepare(
           `SELECT
@@ -64,7 +67,15 @@ dashboard.get("/internal", async (c) => {
     ]
   );
 
-  const deployments = deploymentsRes.results ?? [];
+  const rawDeployments = (deploymentsRes.results ?? []).map((d) => {
+    let totalInstances = 0;
+    try {
+      const zones: Record<string, number> = JSON.parse(d.instances_by_zone || "{}");
+      totalInstances = Object.values(zones).reduce((a, b) => a + b, 0);
+    } catch { /* ignore */ }
+    return { ...d, total_instances: totalInstances };
+  });
+  const deployments = rawDeployments;
   const stats = statsRow ?? {
     total: 0,
     active_7d: 0,
@@ -82,58 +93,69 @@ dashboard.get("/internal", async (c) => {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Chronicle Telemetry</title>
+        <link rel="icon" href="https://chronicleclassic.com/c/chronicle/ChronicleFavicon.png" type="image/png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
         {html`<style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e1e4e8; padding: 24px; max-width: 1200px; margin: 0 auto; }
-          h1 { font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #f0f0f0; }
-          h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #c9d1d9; }
-          .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
-          .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
-          .card .label { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-          .card .value { font-size: 28px; font-weight: 700; color: #58a6ff; }
-          .card .value.green { color: #3fb950; }
-          .card .value.purple { color: #bc8cff; }
-          .card .value.orange { color: #d29922; }
+          body { font-family: 'Inter', system-ui, sans-serif; background: #1a1a1a; color: #e8e8e8; padding: 32px; max-width: 1200px; margin: 0 auto; }
+          h1 { font-size: 22px; font-weight: 600; margin-bottom: 24px; color: #f0f0f0; display: flex; align-items: center; gap: 10px; }
+          h1 span { color: #5F8FA6; }
+          h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+          .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 32px; }
+          .card { background: #222; border: 1px solid #333; border-radius: 8px; padding: 18px; }
+          .card .label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+          .card .value { font-size: 28px; font-weight: 700; color: #5F8FA6; }
+          .card .value.green { color: #5FA67E; }
+          .card .value.purple { color: #8F7EBD; }
+          .card .value.orange { color: #A6895F; }
           .section { margin-bottom: 32px; }
           .bar-chart { display: flex; flex-direction: column; gap: 6px; }
           .bar-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-          .bar-label { min-width: 120px; text-align: right; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-          .bar-track { flex: 1; height: 20px; background: #21262d; border-radius: 4px; overflow: hidden; }
+          .bar-label { min-width: 120px; text-align: right; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .bar-track { flex: 1; height: 20px; background: #2a2a2a; border-radius: 4px; overflow: hidden; }
           .bar-fill { height: 100%; border-radius: 4px; min-width: 2px; }
-          .bar-fill.blue { background: #58a6ff; }
-          .bar-fill.green { background: #3fb950; }
-          .bar-count { min-width: 30px; font-size: 12px; color: #8b949e; }
+          .bar-fill.blue { background: #5F8FA6; }
+          .bar-fill.green { background: #5FA67E; }
+          .bar-count { min-width: 30px; font-size: 12px; color: #888; }
           table { width: 100%; border-collapse: collapse; font-size: 13px; }
-          th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #30363d; color: #8b949e; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-          td { padding: 8px 12px; border-bottom: 1px solid #21262d; }
-          tr:hover td { background: #161b22; }
-          a { color: #58a6ff; text-decoration: none; }
-          a:hover { text-decoration: underline; }
-          .mono { font-family: 'SF Mono', SFMono-Regular, Consolas, monospace; font-size: 12px; }
-          .text-muted { color: #8b949e; }
+          th { text-align: left; padding: 10px 12px; border-bottom: 1px solid #333; color: #777; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+          td { padding: 10px 12px; border-bottom: 1px solid #272727; }
+          tr:hover td { background: #252525; }
+          a { color: #5F8FA6; text-decoration: none; }
+          a:hover { color: #7fb3cc; }
+          .mono { font-family: 'Roboto Mono', monospace; font-size: 12px; }
+          .text-muted { color: #777; }
           .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+          .charts-row .section { background: #222; border: 1px solid #333; border-radius: 8px; padding: 18px; margin-bottom: 0; }
+          .sortable { cursor: pointer; user-select: none; position: relative; padding-right: 18px !important; }
+          .sortable:hover { color: #5F8FA6; }
+          .sortable::after { content: '⇅'; position: absolute; right: 2px; opacity: 0.3; font-size: 10px; }
+          .sortable.sort-asc::after { content: '↑'; opacity: 0.8; color: #5F8FA6; }
+          .sortable.sort-desc::after { content: '↓'; opacity: 0.8; color: #5F8FA6; }
           @media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } }
         </style>`}
       </head>
       <body>
-        <h1>📡 Chronicle Telemetry</h1>
+        <h1>Chronicle <span>Telemetry</span></h1>
 
         <div class="cards">
           <div class="card">
             <div class="label">Total Deployments</div>
-            <div class="value">{stats.total}</div>
+            <div class="value" id="stat-total">{stats.total}</div>
           </div>
           <div class="card">
             <div class="label">Active (7d)</div>
-            <div class="value green">{stats.active_7d}</div>
+            <div class="value green" id="stat-active">{stats.active_7d}</div>
           </div>
           <div class="card">
             <div class="label">Total Users</div>
-            <div class="value purple">{stats.total_users}</div>
+            <div class="value purple" id="stat-users">{stats.total_users}</div>
           </div>
           <div class="card">
             <div class="label">Total Log Files</div>
-            <div class="value orange">{stats.total_log_files}</div>
+            <div class="value orange" id="stat-logs">{stats.total_log_files}</div>
           </div>
           <div class="card">
             <div class="label">Top Version</div>
@@ -195,44 +217,61 @@ dashboard.get("/internal", async (c) => {
 
         <div class="section">
           <h2>Deployments</h2>
-          <table>
+          <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; cursor: pointer;">
+              <input type="checkbox" id="omit-localhost" style="accent-color: #5F8FA6;" />
+              Omit localhost
+            </label>
+          </div>
+          <table id="deployments-table">
             <thead>
               <tr>
-                <th>Deployment ID</th>
-                <th>Version</th>
-                <th>Server</th>
+                <th class="sortable" data-col="id">Deployment ID</th>
+                <th class="sortable" data-col="version">Version</th>
+                <th class="sortable" data-col="server">Server</th>
                 <th>Access URL</th>
-                <th>Last Seen</th>
+                <th class="sortable" data-col="users" data-type="num">Users</th>
+                <th class="sortable" data-col="logs" data-type="num">Log Files</th>
+                <th class="sortable" data-col="instances" data-type="num">Instances</th>
+                <th class="sortable" data-col="seen" data-type="date">Last Seen</th>
               </tr>
             </thead>
             <tbody>
-              {deployments.map((d) => (
-                <tr>
-                  <td>
-                    <a
-                      href={`/internal/deployment/${d.deployment_id}`}
-                      class="mono"
-                    >
-                      {d.deployment_id.substring(0, 8)}…
-                    </a>
-                  </td>
-                  <td class="mono">{d.version}</td>
-                  <td>{d.server_type || "—"}</td>
-                  <td class="text-muted" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    {d.access_url ? (
-                      <a href={d.access_url} target="_blank" rel="noopener">
-                        {d.access_url}
+              {deployments.map((d) => {
+                const isLocalhost = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]/.test(d.access_url || "");
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                const isActive = d.last_reported_at >= sevenDaysAgo.slice(0, 19) ? "1" : "0";
+                return (
+                  <tr data-localhost={isLocalhost ? "1" : "0"} data-active={isActive} data-users={d.report_users} data-logs={d.total_log_files}>
+                    <td data-val={d.deployment_id}>
+                      <a
+                        href={`/internal/deployment/${d.deployment_id}`}
+                        class="mono"
+                      >
+                        {d.deployment_id.substring(0, 8)}…
                       </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td class="text-muted">{timeAgo(d.last_reported_at)}</td>
-                </tr>
-              ))}
+                    </td>
+                    <td data-val={d.version} class="mono">{d.version}</td>
+                    <td data-val={d.server_type || ""}>{d.server_type || "—"}</td>
+                    <td class="text-muted" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {d.access_url ? (
+                        <a href={d.access_url} target="_blank" rel="noopener">
+                          {d.access_url}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td data-val={d.report_users}>{d.report_users}</td>
+                    <td data-val={d.total_log_files}>{d.total_log_files}</td>
+                    <td data-val={d.total_instances}>{d.total_instances}</td>
+                    <td data-val={d.last_reported_at} class="text-muted">{timeAgo(d.last_reported_at)}</td>
+                  </tr>
+                );
+              })}
               {deployments.length === 0 && (
                 <tr>
-                  <td colspan={5} class="text-muted" style="text-align: center; padding: 24px;">
+                  <td colspan={8} class="text-muted" style="text-align: center; padding: 24px;">
                     No telemetry reports received yet.
                   </td>
                 </tr>
@@ -240,6 +279,61 @@ dashboard.get("/internal", async (c) => {
             </tbody>
           </table>
         </div>
+
+        {html`<script>
+        (function() {
+          const table = document.getElementById('deployments-table');
+          const tbody = table.querySelector('tbody');
+          const checkbox = document.getElementById('omit-localhost');
+          let sortCol = null, sortAsc = true;
+
+          // Sort
+          table.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+              const col = Array.from(th.parentNode.children).indexOf(th);
+              const isNum = th.dataset.type === 'num';
+              const isDate = th.dataset.type === 'date';
+              if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+
+              // Update header indicators
+              table.querySelectorAll('th.sortable').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+              th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+
+              const rows = Array.from(tbody.querySelectorAll('tr'));
+              rows.sort((a, b) => {
+                const av = a.children[col]?.dataset.val ?? a.children[col]?.textContent ?? '';
+                const bv = b.children[col]?.dataset.val ?? b.children[col]?.textContent ?? '';
+                let cmp;
+                if (isNum) { cmp = (parseFloat(av) || 0) - (parseFloat(bv) || 0); }
+                else if (isDate) { cmp = av.localeCompare(bv); }
+                else { cmp = av.localeCompare(bv, undefined, { sensitivity: 'base' }); }
+                return sortAsc ? cmp : -cmp;
+              });
+              rows.forEach(r => tbody.appendChild(r));
+            });
+          });
+
+          // Localhost filter + recompute stats
+          function updateStats() {
+            const hide = checkbox.checked;
+            let total = 0, active = 0, users = 0, logs = 0;
+            tbody.querySelectorAll('tr').forEach(r => {
+              const isLH = r.dataset.localhost === '1';
+              r.style.display = (hide && isLH) ? 'none' : '';
+              if (hide && isLH) return;
+              total++;
+              if (r.dataset.active === '1') active++;
+              users += parseInt(r.dataset.users || '0');
+              logs += parseInt(r.dataset.logs || '0');
+            });
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-users').textContent = users;
+            document.getElementById('stat-logs').textContent = logs;
+          }
+          checkbox.addEventListener('change', updateStats);
+        })();
+        </script>`}
       </body>
     </html>
   );
@@ -265,23 +359,29 @@ dashboard.get("/internal/deployment/:id", async (c) => {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Deployment {deploymentId.substring(0, 8)} — Chronicle Telemetry</title>
+        <link rel="icon" href="https://chronicleclassic.com/c/chronicle/ChronicleFavicon.png" type="image/png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
         {html`<style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e1e4e8; padding: 24px; max-width: 1200px; margin: 0 auto; }
+          body { font-family: 'Inter', system-ui, sans-serif; background: #1a1a1a; color: #e8e8e8; padding: 32px; max-width: 1200px; margin: 0 auto; }
           h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #f0f0f0; }
-          h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #c9d1d9; }
-          a { color: #58a6ff; text-decoration: none; }
-          a:hover { text-decoration: underline; }
-          .back { margin-bottom: 16px; display: inline-block; font-size: 13px; }
+          h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+          a { color: #5F8FA6; text-decoration: none; }
+          a:hover { color: #7fb3cc; }
+          .back { margin-bottom: 16px; display: inline-block; font-size: 13px; color: #777; }
+          .back:hover { color: #5F8FA6; }
           .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
-          .meta-item { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px; }
-          .meta-item .label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
-          .meta-item .val { font-size: 16px; font-weight: 600; margin-top: 2px; }
-          .mono { font-family: 'SF Mono', SFMono-Regular, Consolas, monospace; font-size: 12px; }
-          .text-muted { color: #8b949e; }
+          .meta-item { background: #222; border: 1px solid #333; border-radius: 8px; padding: 14px; }
+          .meta-item .label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; }
+          .meta-item .val { font-size: 16px; font-weight: 600; margin-top: 4px; color: #e8e8e8; }
+          .mono { font-family: 'Roboto Mono', monospace; font-size: 12px; }
+          .text-muted { color: #777; }
           table { width: 100%; border-collapse: collapse; font-size: 13px; }
-          th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #30363d; color: #8b949e; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-          td { padding: 8px 12px; border-bottom: 1px solid #21262d; }
+          th { text-align: left; padding: 10px 12px; border-bottom: 1px solid #333; color: #777; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+          td { padding: 10px 12px; border-bottom: 1px solid #272727; }
+          tr:hover td { background: #252525; }
         </style>`}
       </head>
       <body>

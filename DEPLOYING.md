@@ -235,6 +235,17 @@ Both endpoints are opt-in:
 
 - **Prometheus metrics** — set `CHRONICLE_PROMETHEUS_ENABLED=true` to expose metrics on port `9091` (configurable). Scrape `/metrics`.
 - **pprof profiling** — set `CHRONICLE_PPROF_ENABLED=true` to expose Go profiling on port `6060` (configurable). Access at `/debug/pprof/`.
+## Telemetry
+
+Chronicle collects basic, anonymous deployment telemetry to help the maintainers understand how the software is being used. Every 6 hours (and on startup), your instance sends a lightweight report to `telemetry.chronicleclassic.com` containing:
+
+- **Deployment ID** — a stable UUID generated on first startup (not tied to any user)
+- **Version and server type** — e.g. `v1.2.3`, `turtle`
+- **Access URL** — the public URL configured via `CHRONICLE_ACCESS_URL`
+- **Aggregate counts** — total users, log files, parsed data bytes, and log instances by zone name
+
+No personal data, user information, log contents, or combat data is ever transmitted. The telemetry source code is fully open — see `internal/services/servicetelemetry/` for the client and `frontend/telemetry/` for the receiver.
+
 
 ## Nginx and Certbot
 

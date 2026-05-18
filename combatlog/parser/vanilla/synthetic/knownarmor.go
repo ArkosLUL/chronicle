@@ -22,11 +22,14 @@ KnownArmorLoop:
 			previous, ok := r.previous[ty.Guid]
 			if ok {
 				for _, item := range ty.GearSetups {
-					if item.ItemID != 0 {
-						r.previous[ty.Guid] = ty.GearSetups
-						continue KnownArmorLoop
+					if item.ItemID == 0 {
+						// Look for thr first non-zero item.
+						continue
 					}
-					break
+
+					// If we find a non-zero item, we can stop looking and keep the current gear setup.
+					r.previous[ty.Guid] = ty.GearSetups
+					continue KnownArmorLoop
 				}
 				ty.GearSetups = previous
 			}

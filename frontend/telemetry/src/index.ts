@@ -48,7 +48,7 @@ app.get("/", (c) => {
       overflow:hidden;
     }
 
-    .container{position:relative;z-index:1;text-align:center;max-width:520px;padding:48px 32px}
+    .container{position:relative;z-index:1;text-align:center;max-width:520px;padding:48px 32px;margin-top:-80px}
 
     /* Logo wrapper with particle + glow effects */
     .logo-wrap{

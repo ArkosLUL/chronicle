@@ -153,6 +153,7 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		9736:  "Quartermaster Zigris",
 		10268: "Gizrul the Slavener",
 		10299: "Vaelan",
+		10509: "Jed Runewatcher",
 	})
 
 	return hostile

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/database/gamedb"
+	"github.com/Emyrk/chronicle/internal/services"
 )
 
 // Synthetic processes the raw combat log events, and occasionally will insert
@@ -20,6 +21,7 @@ type Synthetic struct {
 	knownObjects *knownObjects
 	razuvious    *razuviousOverkill
 	wowDB        gamedb.SpellFetcher
+	knownArmor   *knownArmor
 
 	slainDur        time.Duration
 	extraAttackDur  time.Duration
@@ -27,6 +29,7 @@ type Synthetic struct {
 	possessionDur   time.Duration
 	knownObjectsDur time.Duration
 	razuviousDur    time.Duration
+	knownArmorDur   time.Duration
 }
 
 func New(logger *slog.Logger, wowDB gamedb.SpellFetcher) *Synthetic {
@@ -39,6 +42,7 @@ func New(logger *slog.Logger, wowDB gamedb.SpellFetcher) *Synthetic {
 		possession:   newPossession(logger),
 		knownObjects: newKnownObjects(),
 		razuvious:    newRazuviousOverkill(),
+		knownArmor:   newKnownArmor(),
 		wowDB:        wowDB,
 	}
 }
@@ -51,6 +55,7 @@ func (s *Synthetic) DetailedTimes() map[string]time.Duration {
 		"parser.synthetic.possession":    s.possessionDur,
 		"parser.synthetic.known_objects": s.knownObjectsDur,
 		"parser.synthetic.razuvious":     s.razuviousDur,
+		"parser.synthetic.known_armor":   s.knownArmorDur,
 	}
 }
 
@@ -80,6 +85,12 @@ func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message
 	now = time.Now()
 	s.razuvious.ProcessMessages(msgs)
 	s.razuviousDur += time.Since(now)
+
+	if services.ServerName == services.ServerIdentityVanillaPlus {
+		now := time.Now()
+		s.knownArmor.ProcessMessages(msgs)
+		s.knownArmorDur += time.Since(now)
+	}
 
 	return msgs, nil
 }

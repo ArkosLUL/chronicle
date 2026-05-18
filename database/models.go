@@ -749,7 +749,7 @@ type GamePlayer struct {
 	Class               WowPlayableClass   `db:"class" json:"class"`
 	Gender              WowPlayableGender  `db:"gender" json:"gender"`
 	Race                WowPlayableRace    `db:"race" json:"race"`
-	Gear                PlayerOutfit       `db:"gear" json:"gear"`
+	Gear                *PlayerOutfit      `db:"gear" json:"gear"`
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`
 	Level               int16              `db:"level" json:"level"`

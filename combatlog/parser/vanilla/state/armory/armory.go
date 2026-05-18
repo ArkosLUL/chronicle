@@ -110,7 +110,9 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 		}
 
 		var dbGear database.PlayerOutfit
+		hasGear := false
 		for i, item := range player.GearSetups {
+			hasGear = hasGear || item.ItemID != 0
 			dbGear[i] = database.PlayerGear{
 				ItemID: int32(item.ItemID),
 			}
@@ -140,6 +142,12 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 		}
 
 		var dbTalents *database.PlayerTalents
+
+		var gearPtr *database.PlayerOutfit
+		if hasGear {
+			gearPtr = &dbGear
+		}
+
 		if player.Talents != nil {
 			dbTalents = &database.PlayerTalents{}
 			for i := 0; i < 3 && i < len(player.Talents.Trees); i++ {
@@ -166,7 +174,7 @@ func (g *Tracker) Insert(ctx context.Context, udb *unitdb.Units, instanceID uuid
 			Class:   db2sdk.HeroClassToDB(player.HeroClass),
 			Gender:  db2sdk.HeroGenderToDB(player.Gender),
 			Race:    db2sdk.HeroRaceToDB(player.Race),
-			Gear:    dbGear,
+			Gear:    gearPtr,
 			Level:   level,
 			Talents: dbTalents,
 			UpdatedFromInstance: uuid.NullUUID{
@@ -249,6 +257,20 @@ func (g *Tracker) Player(msg *messages.Combatant) {
 	if pending, ok := g.PendingTalents[gid]; ok {
 		c.Talents = pending.talents
 		delete(g.PendingTalents, gid)
+	}
+
+	previous, ok := g.Players[gid]
+	if ok {
+		gearExists := false
+		for _, item := range c.GearSetups {
+			if item.ItemID != 0 {
+				gearExists = true
+				break
+			}
+		}
+		if !gearExists {
+			c.GearSetups = previous.GearSetups
+		}
 	}
 
 	g.Players[gid] = c

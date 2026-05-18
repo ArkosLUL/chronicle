@@ -26,7 +26,11 @@ ON CONFLICT (id, realm_id) DO UPDATE
       class = EXCLUDED.class,
       race = EXCLUDED.race,
       gender = EXCLUDED.gender,
-      gear = EXCLUDED.gear,
+      gear = CASE
+        WHEN EXCLUDED.gear IS NOT NULL AND EXCLUDED.gear != '[]'::jsonb
+        THEN EXCLUDED.gear
+        ELSE game_players.gear
+      END,
       level = EXCLUDED.level,
       talents = CASE
         WHEN EXCLUDED.talents IS NOT NULL AND EXCLUDED.talents != 'null'::jsonb

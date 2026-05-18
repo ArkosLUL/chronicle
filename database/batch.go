@@ -341,7 +341,11 @@ ON CONFLICT (id, realm_id) DO UPDATE
       class = EXCLUDED.class,
       race = EXCLUDED.race,
       gender = EXCLUDED.gender,
-      gear = EXCLUDED.gear,
+      gear = CASE
+        WHEN EXCLUDED.gear IS NOT NULL AND EXCLUDED.gear != '[]'::jsonb
+        THEN EXCLUDED.gear
+        ELSE game_players.gear
+      END,
       level = EXCLUDED.level,
       talents = CASE
         WHEN EXCLUDED.talents IS NOT NULL AND EXCLUDED.talents != 'null'::jsonb
@@ -369,7 +373,7 @@ type UpsertPlayersParams struct {
 	Class               WowPlayableClass   `db:"class" json:"class"`
 	Gender              WowPlayableGender  `db:"gender" json:"gender"`
 	Race                WowPlayableRace    `db:"race" json:"race"`
-	Gear                PlayerOutfit       `db:"gear" json:"gear"`
+	Gear                *PlayerOutfit      `db:"gear" json:"gear"`
 	Level               int16              `db:"level" json:"level"`
 	Talents             *PlayerTalents     `db:"talents" json:"talents"`
 	UpdatedFromInstance uuid.NullUUID      `db:"updated_from_instance" json:"updated_from_instance"`

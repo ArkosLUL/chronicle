@@ -53,7 +53,7 @@ sql:
               type: "[]VideoTimestamp"
           - column: "game_players.gear"
             go_type:
-              type: "PlayerOutfit"
+              type: "*PlayerOutfit"
           - column: "game_players.talents"
             go_type:
               type: "*PlayerTalents"

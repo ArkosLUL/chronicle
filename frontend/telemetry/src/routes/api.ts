@@ -107,4 +107,18 @@ api.get("/internal/api/v1/stats", async (c) => {
   });
 });
 
+// Toggle dev flag on a deployment.
+api.post("/internal/api/v1/deployments/:id/dev", async (c) => {
+  const deploymentId = c.req.param("id");
+  const body = await c.req.json<{ is_dev: boolean }>();
+  const db = c.env.DB;
+
+  await db
+    .prepare("UPDATE deployment_latest SET is_dev = ? WHERE deployment_id = ?")
+    .bind(body.is_dev ? 1 : 0, deploymentId)
+    .run();
+
+  return c.json({ deployment_id: deploymentId, is_dev: body.is_dev });
+});
+
 export default api;

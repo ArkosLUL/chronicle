@@ -11,6 +11,8 @@ export interface TelemetryReport {
   total_users: number;
   total_log_files: number;
   total_parsed_log_bytes: number;
+  active_file_bytes: number;
+  deleted_file_bytes: number;
   instances_by_zone: Record<string, number>;
 }
 
@@ -25,6 +27,7 @@ export interface DeploymentLatest {
   version: string;
   server_type: string;
   access_url: string;
+  is_dev: number;
 }
 
 export interface StoredReport {
@@ -40,6 +43,8 @@ export interface StoredReport {
   total_users: number;
   total_log_files: number;
   total_parsed_log_bytes: number;
+  active_file_bytes: number;
+  deleted_file_bytes: number;
   instances_by_zone: string;
   reported_at: string;
   remote_ip: string;

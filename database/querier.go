@@ -224,6 +224,8 @@ type sqlcQuerier interface {
 	SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeaderboardParams) ([]SpeedrunLeaderboardRow, error)
 	// Returns distinct realm names that have at least one qualified speedrun.
 	SpeedrunRealmNames(ctx context.Context) ([]string, error)
+	TelemetryGetActiveFileBytes(ctx context.Context) (int64, error)
+	TelemetryGetDeletedFileBytes(ctx context.Context) (int64, error)
 	TelemetryGetLogCountByZone(ctx context.Context) ([]TelemetryGetLogCountByZoneRow, error)
 	TelemetryGetLogFileCount(ctx context.Context) (int64, error)
 	TelemetryGetTotalParsedBytes(ctx context.Context) (int64, error)

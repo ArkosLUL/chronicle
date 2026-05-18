@@ -52,6 +52,8 @@ type TelemetryReport struct {
 	TotalUsers          int64            `json:"total_users"`
 	TotalLogFiles       int64            `json:"total_log_files"`
 	TotalParsedLogBytes int64            `json:"total_parsed_log_bytes"`
+	ActiveFileBytes     int64            `json:"active_file_bytes"`
+	DeletedFileBytes    int64            `json:"deleted_file_bytes"`
 	InstancesByZone     map[string]int64 `json:"instances_by_zone"`
 }
 
@@ -134,6 +136,16 @@ func (w *Worker) collectReport(ctx context.Context, deploymentInfo database.Depl
 		return TelemetryReport{}, fmt.Errorf("get total log bytes: %w", err)
 	}
 
+	activeFileBytes, err := w.Store.TelemetryGetActiveFileBytes(ctx)
+	if err != nil {
+		return TelemetryReport{}, fmt.Errorf("get active file bytes: %w", err)
+	}
+
+	deletedFileBytes, err := w.Store.TelemetryGetDeletedFileBytes(ctx)
+	if err != nil {
+		return TelemetryReport{}, fmt.Errorf("get deleted file bytes: %w", err)
+	}
+
 	zoneRows, err := w.Store.TelemetryGetLogCountByZone(ctx)
 	if err != nil {
 		return TelemetryReport{}, fmt.Errorf("get log count by zone: %w", err)
@@ -156,6 +168,8 @@ func (w *Worker) collectReport(ctx context.Context, deploymentInfo database.Depl
 		TotalUsers:          userCount,
 		TotalLogFiles:       logCount,
 		TotalParsedLogBytes: totalBytes,
+		ActiveFileBytes:     activeFileBytes,
+		DeletedFileBytes:    deletedFileBytes,
 		InstancesByZone:     logsByZone,
 	}, nil
 }

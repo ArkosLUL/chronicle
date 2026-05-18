@@ -1,0 +1,1 @@
+ALTER TABLE deployment_latest ADD COLUMN is_dev INTEGER NOT NULL DEFAULT 0;

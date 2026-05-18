@@ -217,10 +217,14 @@ dashboard.get("/internal", async (c) => {
 
         <div class="section">
           <h2>Deployments</h2>
-          <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+          <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 16px;">
             <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; cursor: pointer;">
               <input type="checkbox" id="omit-localhost" style="accent-color: #5F8FA6;" />
               Omit localhost
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; cursor: pointer;">
+              <input type="checkbox" id="show-dev" style="accent-color: #5F8FA6;" />
+              Show dev
             </label>
           </div>
           <table id="deployments-table">
@@ -234,6 +238,7 @@ dashboard.get("/internal", async (c) => {
                 <th class="sortable" data-col="logs" data-type="num">Log Files</th>
                 <th class="sortable" data-col="instances" data-type="num">Instances</th>
                 <th class="sortable" data-col="seen" data-type="date">Last Seen</th>
+                <th style="width: 70px;"></th>
               </tr>
             </thead>
             <tbody>
@@ -241,8 +246,9 @@ dashboard.get("/internal", async (c) => {
                 const isLocalhost = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]/.test(d.access_url || "");
                 const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
                 const isActive = d.last_reported_at >= sevenDaysAgo.slice(0, 19) ? "1" : "0";
+                const isDev = d.is_dev === 1;
                 return (
-                  <tr data-localhost={isLocalhost ? "1" : "0"} data-active={isActive} data-users={d.report_users} data-logs={d.total_log_files}>
+                  <tr data-localhost={isLocalhost ? "1" : "0"} data-dev={isDev ? "1" : "0"} data-active={isActive} data-users={d.report_users} data-logs={d.total_log_files} data-did={d.deployment_id}>
                     <td data-val={d.deployment_id}>
                       <a
                         href={`/internal/deployment/${d.deployment_id}`}
@@ -250,6 +256,7 @@ dashboard.get("/internal", async (c) => {
                       >
                         {d.deployment_id.substring(0, 8)}…
                       </a>
+                      {isDev && <span class="dev-badge" style="margin-left: 6px; font-size: 10px; color: #A6895F; border: 1px solid #A6895F33; padding: 1px 5px; border-radius: 3px;">DEV</span>}
                     </td>
                     <td data-val={d.version} class="mono">{d.version}</td>
                     <td data-val={d.server_type || ""}>{d.server_type || "—"}</td>
@@ -266,12 +273,18 @@ dashboard.get("/internal", async (c) => {
                     <td data-val={d.total_log_files}>{d.total_log_files}</td>
                     <td data-val={d.total_instances}>{d.total_instances}</td>
                     <td data-val={d.last_reported_at} class="text-muted">{timeAgo(d.last_reported_at)}</td>
+                    <td>
+                      <button class="dev-toggle" data-did={d.deployment_id} data-dev={isDev ? "1" : "0"}
+                        style={`font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid #333;background:${isDev ? "#2a2518" : "#222"};color:${isDev ? "#A6895F" : "#777"};`}>
+                        {isDev ? "Unmark" : "Dev"}
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {deployments.length === 0 && (
                 <tr>
-                  <td colspan={8} class="text-muted" style="text-align: center; padding: 24px;">
+                  <td colspan={9} class="text-muted" style="text-align: center; padding: 24px;">
                     No telemetry reports received yet.
                   </td>
                 </tr>
@@ -284,7 +297,8 @@ dashboard.get("/internal", async (c) => {
         (function() {
           const table = document.getElementById('deployments-table');
           const tbody = table.querySelector('tbody');
-          const checkbox = document.getElementById('omit-localhost');
+          const omitLH = document.getElementById('omit-localhost');
+          const showDev = document.getElementById('show-dev');
           let sortCol = null, sortAsc = true;
 
           // Sort
@@ -294,11 +308,8 @@ dashboard.get("/internal", async (c) => {
               const isNum = th.dataset.type === 'num';
               const isDate = th.dataset.type === 'date';
               if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
-
-              // Update header indicators
               table.querySelectorAll('th.sortable').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
               th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
-
               const rows = Array.from(tbody.querySelectorAll('tr'));
               rows.sort((a, b) => {
                 const av = a.children[col]?.dataset.val ?? a.children[col]?.textContent ?? '';
@@ -313,14 +324,17 @@ dashboard.get("/internal", async (c) => {
             });
           });
 
-          // Localhost filter + recompute stats
-          function updateStats() {
-            const hide = checkbox.checked;
+          // Filter rows + recompute stats
+          function updateView() {
+            const hideLH = omitLH.checked;
+            const hideDev = !showDev.checked;
             let total = 0, active = 0, users = 0, logs = 0;
             tbody.querySelectorAll('tr').forEach(r => {
               const isLH = r.dataset.localhost === '1';
-              r.style.display = (hide && isLH) ? 'none' : '';
-              if (hide && isLH) return;
+              const isDev = r.dataset.dev === '1';
+              const hidden = (hideLH && isLH) || (hideDev && isDev);
+              r.style.display = hidden ? 'none' : '';
+              if (hidden) return;
               total++;
               if (r.dataset.active === '1') active++;
               users += parseInt(r.dataset.users || '0');
@@ -331,7 +345,51 @@ dashboard.get("/internal", async (c) => {
             document.getElementById('stat-users').textContent = users;
             document.getElementById('stat-logs').textContent = logs;
           }
-          checkbox.addEventListener('change', updateStats);
+          omitLH.addEventListener('change', updateView);
+          showDev.addEventListener('change', updateView);
+          // Hide dev rows by default on load
+          updateView();
+
+          // Dev toggle buttons
+          document.querySelectorAll('.dev-toggle').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const did = btn.dataset.did;
+              const wasDev = btn.dataset.dev === '1';
+              const newDev = !wasDev;
+              btn.disabled = true;
+              btn.textContent = '…';
+              try {
+                await fetch('/internal/api/v1/deployments/' + did + '/dev', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ is_dev: newDev }),
+                });
+                btn.dataset.dev = newDev ? '1' : '0';
+                btn.textContent = newDev ? 'Unmark' : 'Dev';
+                btn.style.background = newDev ? '#2a2518' : '#222';
+                btn.style.color = newDev ? '#A6895F' : '#777';
+                // Update the row's data-dev attribute
+                const row = btn.closest('tr');
+                row.dataset.dev = newDev ? '1' : '0';
+                // Update the badge in the first cell
+                const firstTd = row.children[0];
+                const badge = firstTd.querySelector('.dev-badge');
+                if (newDev && !badge) {
+                  const span = document.createElement('span');
+                  span.className = 'dev-badge';
+                  span.style.cssText = 'margin-left:6px;font-size:10px;color:#A6895F;border:1px solid #A6895F33;padding:1px 5px;border-radius:3px;';
+                  span.textContent = 'DEV';
+                  firstTd.appendChild(span);
+                } else if (!newDev && badge) {
+                  badge.remove();
+                }
+                updateView();
+              } catch (e) {
+                btn.textContent = 'Error';
+              }
+              btn.disabled = false;
+            });
+          });
         })();
         </script>`}
       </body>

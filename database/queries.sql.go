@@ -4978,6 +4978,30 @@ func (q *sqlQuerier) GetDeploymentInfo(ctx context.Context) (DeploymentInfo, err
 	return i, err
 }
 
+const telemetryGetActiveFileBytes = `-- name: TelemetryGetActiveFileBytes :one
+SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM log_file
+WHERE storage_deleted_at IS NULL
+`
+
+func (q *sqlQuerier) TelemetryGetActiveFileBytes(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, telemetryGetActiveFileBytes)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const telemetryGetDeletedFileBytes = `-- name: TelemetryGetDeletedFileBytes :one
+SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM log_file
+WHERE storage_deleted_at IS NOT NULL
+`
+
+func (q *sqlQuerier) TelemetryGetDeletedFileBytes(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, telemetryGetDeletedFileBytes)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const telemetryGetLogCountByZone = `-- name: TelemetryGetLogCountByZone :many
 SELECT
     li.name AS zone_name,

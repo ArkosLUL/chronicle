@@ -20,6 +20,7 @@ type AuthzMigration struct {
 var migrations = []AuthzMigration{
 	{Version: 1, Run: migration001},
 	{Version: 2, Run: migration002},
+	{Version: 3, Run: migration003},
 }
 
 // RunSchemaMigrations runs any authz migrations not yet recorded in the
@@ -113,5 +114,27 @@ func migration002(ctx context.Context, az *Authz) error {
 
 	// TOUCH is idempotent — safe to run on every startup.
 	_, err := az.Write(ctx, *b.Txn())
+	return err
+}
+
+// migration003 something is still off. Not all realms and servers are available
+func migration003(ctx context.Context, az *Authz) error {
+	b := policy.New()
+	chron := b.GlobalChronicle()
+
+	realms, err := az.ListAllWoWServerRealms(ctx)
+	if err != nil {
+		return fmt.Errorf("list realms: %w", err)
+	}
+
+	for _, r := range realms {
+		srv := b.Wow_server(r.ServerID)
+		srv.Chronicle(chron)
+		realm := b.Wow_server_realm(r.ServerID)
+		realm.Wow_server(srv)
+	}
+
+	// TOUCH is idempotent — safe to run on every startup.
+	_, err = az.Write(ctx, *b.Txn())
 	return err
 }

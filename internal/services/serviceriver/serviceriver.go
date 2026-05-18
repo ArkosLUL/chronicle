@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
 	"github.com/Emyrk/chronicle/internal/services/serviceretention"
+	"github.com/Emyrk/chronicle/internal/services/servicetelemetry"
 	"github.com/riverqueue/river"
 
 	"github.com/coder/serpent"
@@ -52,6 +53,7 @@ func (s *Service) DependsOn() []string {
 		servicechronicle.OnChronicle(),
 		servicebot.OnDiscordBot(),
 		serviceretention.OnRetention(),
+		servicetelemetry.OnTelemetry(),
 	}
 }
 
@@ -111,6 +113,21 @@ func (s *Service) Start(ctx context.Context) error {
 					return retention.ArgsRawLogRetention{}, nil
 				},
 				&river.PeriodicJobOpts{RunOnStart: false},
+			),
+		)
+	}
+
+	// Register telemetry worker and periodic job.
+	tel := servicetelemetry.TelemetryService(s.broker)
+	riverqueue.AddWorker(q, tel.Worker)
+	if tel.Schedule > 0 {
+		q.AddPeriodicJob(
+			river.NewPeriodicJob(
+				river.PeriodicInterval(tel.Schedule),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return servicetelemetry.ArgsTelemetryReport{}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
 			),
 		)
 	}

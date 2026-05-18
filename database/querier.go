@@ -59,6 +59,7 @@ type sqlcQuerier interface {
 	GetAppliedAuthzMigrations(ctx context.Context) ([]int32, error)
 	GetCreatureTemplatesByEntries(ctx context.Context, entries []int32) ([]WorldCreatureTemplate, error)
 	GetDBCItemDisplayInfoByID(ctx context.Context, id int32) (DbcItemDisplayInfo, error)
+	GetDeploymentInfo(ctx context.Context) (DeploymentInfo, error)
 	GetDisplayInfoByID(ctx context.Context, id int32) (WorldDisplayInfo, error)
 	GetEncounterSummariesByInstanceID(ctx context.Context, instanceID uuid.UUID) ([]GetEncounterSummariesByInstanceIDRow, error)
 	GetEncounterSummariesByInstanceIDs(ctx context.Context, instanceIds []uuid.UUID) ([]GetEncounterSummariesByInstanceIDsRow, error)
@@ -223,6 +224,10 @@ type sqlcQuerier interface {
 	SpeedrunLeaderboard(ctx context.Context, arg SpeedrunLeaderboardParams) ([]SpeedrunLeaderboardRow, error)
 	// Returns distinct realm names that have at least one qualified speedrun.
 	SpeedrunRealmNames(ctx context.Context) ([]string, error)
+	TelemetryGetLogCountByZone(ctx context.Context) ([]TelemetryGetLogCountByZoneRow, error)
+	TelemetryGetLogFileCount(ctx context.Context) (int64, error)
+	TelemetryGetTotalParsedBytes(ctx context.Context) (int64, error)
+	TelemetryGetUserCount(ctx context.Context) (int64, error)
 	TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)
 	UnassignWorldFromServer(ctx context.Context, arg UnassignWorldFromServerParams) error
@@ -233,6 +238,7 @@ type sqlcQuerier interface {
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
 	UpdateRetentionPolicyStats(ctx context.Context, arg UpdateRetentionPolicyStatsParams) error
 	UpdateSiteConfig(ctx context.Context, signupsEnabled bool) (SiteConfig, error)
+	UpdateTelemetryHeartbeat(ctx context.Context) error
 	UpdateUserAuthSessionTokens(ctx context.Context, arg UpdateUserAuthSessionTokensParams) (UserAuthSession, error)
 	UpdateUserPanelLayoutByID(ctx context.Context, arg UpdateUserPanelLayoutByIDParams) (UserPanelLayout, error)
 	UpdateUserPanelLayoutDefaults(ctx context.Context, arg UpdateUserPanelLayoutDefaultsParams) (UpdateUserPanelLayoutDefaultsRow, error)

@@ -324,6 +324,12 @@ CREATE TABLE dbc_spell_item_enchantment (
     max_level integer DEFAULT 0 NOT NULL
 );
 
+CREATE TABLE deployment_info (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_telemetry_heartbeat timestamp with time zone
+);
+
 CREATE TABLE game_players (
     id wow_guid NOT NULL,
     realm_id uuid NOT NULL,
@@ -1084,6 +1090,9 @@ ALTER TABLE ONLY dbc_item_set
 
 ALTER TABLE ONLY dbc_spell_item_enchantment
     ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY deployment_info
+    ADD CONSTRAINT deployment_info_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY game_players
     ADD CONSTRAINT game_players_pkey PRIMARY KEY (id, realm_id);

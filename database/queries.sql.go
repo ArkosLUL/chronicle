@@ -4967,6 +4967,92 @@ func (q *sqlQuerier) SpeedrunRealmNames(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
+const getDeploymentInfo = `-- name: GetDeploymentInfo :one
+SELECT id, created_at, last_telemetry_heartbeat FROM deployment_info LIMIT 1
+`
+
+func (q *sqlQuerier) GetDeploymentInfo(ctx context.Context) (DeploymentInfo, error) {
+	row := q.db.QueryRow(ctx, getDeploymentInfo)
+	var i DeploymentInfo
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.LastTelemetryHeartbeat)
+	return i, err
+}
+
+const telemetryGetLogCountByZone = `-- name: TelemetryGetLogCountByZone :many
+SELECT
+    li.name AS zone_name,
+    COUNT(*)::bigint AS log_count
+FROM log_instances li
+GROUP BY li.name
+`
+
+type TelemetryGetLogCountByZoneRow struct {
+	ZoneName string `db:"zone_name" json:"zone_name"`
+	LogCount int64  `db:"log_count" json:"log_count"`
+}
+
+func (q *sqlQuerier) TelemetryGetLogCountByZone(ctx context.Context) ([]TelemetryGetLogCountByZoneRow, error) {
+	rows, err := q.db.Query(ctx, telemetryGetLogCountByZone)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelemetryGetLogCountByZoneRow
+	for rows.Next() {
+		var i TelemetryGetLogCountByZoneRow
+		if err := rows.Scan(&i.ZoneName, &i.LogCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const telemetryGetLogFileCount = `-- name: TelemetryGetLogFileCount :one
+SELECT COUNT(*)::bigint FROM log_file
+`
+
+func (q *sqlQuerier) TelemetryGetLogFileCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, telemetryGetLogFileCount)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const telemetryGetTotalParsedBytes = `-- name: TelemetryGetTotalParsedBytes :one
+SELECT COALESCE(SUM(events), 0)::bigint FROM log_instance_events
+`
+
+func (q *sqlQuerier) TelemetryGetTotalParsedBytes(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, telemetryGetTotalParsedBytes)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const telemetryGetUserCount = `-- name: TelemetryGetUserCount :one
+SELECT COUNT(*)::bigint FROM users
+`
+
+func (q *sqlQuerier) TelemetryGetUserCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, telemetryGetUserCount)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const updateTelemetryHeartbeat = `-- name: UpdateTelemetryHeartbeat :exec
+UPDATE deployment_info SET last_telemetry_heartbeat = now()
+`
+
+func (q *sqlQuerier) UpdateTelemetryHeartbeat(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, updateTelemetryHeartbeat)
+	return err
+}
+
 const getUserActionBarSlots = `-- name: GetUserActionBarSlots :one
 SELECT
   slot_1,

@@ -15,6 +15,7 @@ const (
 	UniqueDbcItemSetItemPkey                           UniqueConstraint = "dbc_item_set_item_pkey"                           // ALTER TABLE ONLY dbc_item_set_item ADD CONSTRAINT dbc_item_set_item_pkey PRIMARY KEY (set_id, item_entry);
 	UniqueDbcItemSetPkey                               UniqueConstraint = "dbc_item_set_pkey"                                // ALTER TABLE ONLY dbc_item_set ADD CONSTRAINT dbc_item_set_pkey PRIMARY KEY (id);
 	UniqueDbcSpellItemEnchantmentPkey                  UniqueConstraint = "dbc_spell_item_enchantment_pkey"                  // ALTER TABLE ONLY dbc_spell_item_enchantment ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (id);
+	UniqueDeploymentInfoPkey                           UniqueConstraint = "deployment_info_pkey"                             // ALTER TABLE ONLY deployment_info ADD CONSTRAINT deployment_info_pkey PRIMARY KEY (id);
 	UniqueGamePlayersPkey                              UniqueConstraint = "game_players_pkey"                                // ALTER TABLE ONLY game_players ADD CONSTRAINT game_players_pkey PRIMARY KEY (id, realm_id);
 	UniqueGuildJoinRequestsGuildIDUserIDKey            UniqueConstraint = "guild_join_requests_guild_id_user_id_key"         // ALTER TABLE ONLY guild_join_requests ADD CONSTRAINT guild_join_requests_guild_id_user_id_key UNIQUE (guild_id, user_id);
 	UniqueGuildJoinRequestsPkey                        UniqueConstraint = "guild_join_requests_pkey"                         // ALTER TABLE ONLY guild_join_requests ADD CONSTRAINT guild_join_requests_pkey PRIMARY KEY (id);

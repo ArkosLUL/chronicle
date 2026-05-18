@@ -740,6 +740,12 @@ type DbcSpellItemEnchantment struct {
 	MaxLevel          int32  `db:"max_level" json:"max_level"`
 }
 
+type DeploymentInfo struct {
+	ID                     uuid.UUID          `db:"id" json:"id"`
+	CreatedAt              pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastTelemetryHeartbeat pgtype.Timestamptz `db:"last_telemetry_heartbeat" json:"last_telemetry_heartbeat"`
+}
+
 type GamePlayer struct {
 	ID                  guid.GUID          `db:"id" json:"id"`
 	RealmID             uuid.UUID          `db:"realm_id" json:"realm_id"`

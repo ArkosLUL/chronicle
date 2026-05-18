@@ -18,4 +18,5 @@ const (
 	ServiceMail       = "mail"
 	ServiceAccessURL  = "accessurl"
 	ServiceRetention  = "retention"
+	ServiceTelemetry  = "telemetry"
 )

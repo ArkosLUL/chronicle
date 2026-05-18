@@ -715,7 +715,7 @@
     {
       "id": 45463,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45469,
@@ -735,7 +735,7 @@
     {
       "id": 45524,
       "name": "Chains of Ice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45529,
@@ -750,7 +750,7 @@
     {
       "id": 46584,
       "name": "Raise Dead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46585,
@@ -780,7 +780,7 @@
     {
       "id": 47541,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47568,
@@ -800,7 +800,7 @@
     {
       "id": 47804,
       "name": "Rune Test Spell",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48263,
@@ -820,7 +820,7 @@
     {
       "id": 48289,
       "name": "Raise Dead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48680,
@@ -875,7 +875,7 @@
     {
       "id": 48978,
       "name": "Bladed Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48979,
@@ -925,7 +925,7 @@
     {
       "id": 49020,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49023,
@@ -1005,7 +1005,7 @@
     {
       "id": 49158,
       "name": "Corpse Explosion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49175,
@@ -1015,7 +1015,7 @@
     {
       "id": 49182,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49184,
@@ -1035,7 +1035,7 @@
     {
       "id": 49189,
       "name": "Will of the Necropolis",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49194,
@@ -1055,7 +1055,7 @@
     {
       "id": 49203,
       "name": "Hungering Cold",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49206,
@@ -1095,22 +1095,22 @@
     {
       "id": 49390,
       "name": "Bladed Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49391,
       "name": "Bladed Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49392,
       "name": "Bladed Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49393,
       "name": "Bladed Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49394,
@@ -1165,12 +1165,12 @@
     {
       "id": 49500,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49501,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49529,
@@ -1210,7 +1210,7 @@
     {
       "id": 49560,
       "name": "Death Grip",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49562,
@@ -1240,12 +1240,12 @@
     {
       "id": 49571,
       "name": "Ravenous Dead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49572,
       "name": "Ravenous Dead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49575,
@@ -1255,7 +1255,7 @@
     {
       "id": 49576,
       "name": "Death Grip",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49588,
@@ -1380,22 +1380,22 @@
     {
       "id": 49892,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49893,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49894,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49895,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49896,
@@ -1465,12 +1465,12 @@
     {
       "id": 49923,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49924,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49926,
@@ -1530,12 +1530,12 @@
     {
       "id": 49998,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49999,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50031,
@@ -1650,12 +1650,12 @@
     {
       "id": 50149,
       "name": "Will of the Necropolis",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50150,
       "name": "Will of the Necropolis",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50151,
@@ -1730,7 +1730,7 @@
     {
       "id": 50397,
       "name": "Lichborne",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50401,
@@ -1865,12 +1865,12 @@
     {
       "id": 50515,
       "name": "Dismiss Gargoyle",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50524,
       "name": "Runic Power Feed",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50536,
@@ -1905,12 +1905,12 @@
     {
       "id": 50842,
       "name": "Pestilence",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50880,
       "name": "Icy Talons",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50882,
@@ -1920,22 +1920,22 @@
     {
       "id": 50884,
       "name": "Icy Talons",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50885,
       "name": "Icy Talons",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50886,
       "name": "Icy Talons",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50887,
       "name": "Icy Talons",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51052,
@@ -2020,22 +2020,22 @@
     {
       "id": 51325,
       "name": "Corpse Explosion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51326,
       "name": "Corpse Explosion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51327,
       "name": "Corpse Explosion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51328,
       "name": "Corpse Explosion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51389,
@@ -2100,17 +2100,17 @@
     {
       "id": 51423,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51424,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51425,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51426,
@@ -2220,7 +2220,7 @@
     {
       "id": 51789,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51969,
@@ -2290,7 +2290,7 @@
     {
       "id": 52375,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52394,
@@ -2300,7 +2300,7 @@
     {
       "id": 52789,
       "name": "Visual Dummy",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53137,
@@ -2315,7 +2315,7 @@
     {
       "id": 53276,
       "name": "Death Grip",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53386,
@@ -2455,7 +2455,7 @@
     {
       "id": 55090,
       "name": "Scourge Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55095,
@@ -2470,12 +2470,12 @@
     {
       "id": 55225,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55226,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55233,
@@ -2520,7 +2520,7 @@
     {
       "id": 55265,
       "name": "Scourge Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55268,
@@ -2530,12 +2530,12 @@
     {
       "id": 55270,
       "name": "Scourge Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55271,
       "name": "Scourge Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55610,
@@ -2570,7 +2570,7 @@
     {
       "id": 55719,
       "name": "Death Grip",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55741,
@@ -2640,12 +2640,12 @@
     {
       "id": 57602,
       "name": "Death Grip",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 57603,
       "name": "Death Grip",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 57604,
@@ -2820,7 +2820,7 @@
     {
       "id": 59134,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 59307,
@@ -2875,7 +2875,7 @@
     {
       "id": 59921,
       "name": "Frost Fever",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 60130,
@@ -3045,7 +3045,7 @@
     {
       "id": 61999,
       "name": "Raise Ally",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62036,
@@ -3085,27 +3085,27 @@
     {
       "id": 62900,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62901,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62902,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62903,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62904,
       "name": "Death Coil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62905,
@@ -3190,22 +3190,22 @@
     {
       "id": 64855,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 64856,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 64858,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 64859,
       "name": "Blade Barrier",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 64962,
@@ -3235,7 +3235,7 @@
     {
       "id": 66188,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66191,
@@ -3245,7 +3245,7 @@
     {
       "id": 66192,
       "name": "Threat of Thassarian",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66196,
@@ -3255,7 +3255,7 @@
     {
       "id": 66198,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66215,
@@ -3320,22 +3320,22 @@
     {
       "id": 66950,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66951,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66952,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66953,
       "name": "Death Strike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66958,
@@ -3365,17 +3365,17 @@
     {
       "id": 66972,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66973,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66974,
       "name": "Obliterate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 66975,
@@ -3505,7 +3505,7 @@
     {
       "id": 70355,
       "name": "Caught!",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 70650,
@@ -3525,12 +3525,12 @@
     {
       "id": 70656,
       "name": "Item - Death Knight T10 Melee 4P Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 70657,
       "name": "Advantage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 70890,
@@ -5122,7 +5122,7 @@
     {
       "id": 22842,
       "name": "Frenzied Regeneration",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23218,
@@ -5662,7 +5662,7 @@
     {
       "id": 29201,
       "name": "Corrupted Mind",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29274,
@@ -5717,7 +5717,7 @@
     {
       "id": 32618,
       "name": "Cosmetic Nature Cast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 32717,
@@ -5872,17 +5872,17 @@
     {
       "id": 33853,
       "name": "Survival of the Fittest",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33855,
       "name": "Survival of the Fittest",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33856,
       "name": "Survival of the Fittest",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33859,
@@ -6072,7 +6072,7 @@
     {
       "id": 34297,
       "name": "Improved Leader of the Pack",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34299,
@@ -6082,7 +6082,7 @@
     {
       "id": 34300,
       "name": "Improved Leader of the Pack",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34323,
@@ -7162,7 +7162,7 @@
     {
       "id": 49220,
       "name": "Impurity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49307,
@@ -7177,22 +7177,22 @@
     {
       "id": 49633,
       "name": "Impurity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49635,
       "name": "Impurity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49636,
       "name": "Impurity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49638,
       "name": "Impurity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 49799,
@@ -7247,7 +7247,7 @@
     {
       "id": 50286,
       "name": "Starfall",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50288,
@@ -7262,7 +7262,7 @@
     {
       "id": 50322,
       "name": "Survival Instincts",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50334,
@@ -7287,7 +7287,7 @@
     {
       "id": 50516,
       "name": "Typhoon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50763,
@@ -7412,7 +7412,7 @@
     {
       "id": 52610,
       "name": "Savage Roar",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52648,
@@ -7462,17 +7462,17 @@
     {
       "id": 53196,
       "name": "Starfall",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53197,
       "name": "Starfall",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53198,
       "name": "Starfall",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53199,
@@ -7492,17 +7492,17 @@
     {
       "id": 53223,
       "name": "Typhoon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53225,
       "name": "Typhoon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53226,
       "name": "Typhoon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53227,
@@ -8032,7 +8032,7 @@
     {
       "id": 61132,
       "name": "Feral Charge - Cat",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61138,
@@ -8062,7 +8062,7 @@
     {
       "id": 61384,
       "name": "Typhoon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61387,
@@ -10039,7 +10039,7 @@
     {
       "id": 23989,
       "name": "Readiness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24049,
@@ -10579,7 +10579,7 @@
     {
       "id": 31336,
       "name": "Matis Captured DND",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 31407,
@@ -11064,12 +11064,12 @@
     {
       "id": 35029,
       "name": "Focused Fire",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 35030,
       "name": "Focused Fire",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 35040,
@@ -11324,7 +11324,7 @@
     {
       "id": 37506,
       "name": "Scatter Shot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37507,
@@ -11589,7 +11589,7 @@
     {
       "id": 41186,
       "name": "Wyvern Sting",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 41188,
@@ -11609,7 +11609,7 @@
     {
       "id": 42131,
       "name": "Shoot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 42159,
@@ -11654,7 +11654,7 @@
     {
       "id": 42433,
       "name": "Smolderwing Fire Breath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 42579,
@@ -11669,7 +11669,7 @@
     {
       "id": 42611,
       "name": "Shoot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 42671,
@@ -11774,17 +11774,17 @@
     {
       "id": 45145,
       "name": "Snake Trap Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45172,
       "name": "Shoot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45425,
       "name": "Shoot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45578,
@@ -11799,7 +11799,7 @@
     {
       "id": 45761,
       "name": "Shoot Gun",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45815,
@@ -11809,7 +11809,7 @@
     {
       "id": 45827,
       "name": "Spear Throw",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46901,
@@ -11854,17 +11854,17 @@
     {
       "id": 48115,
       "name": "Shoot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48117,
       "name": "Shoot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48623,
       "name": "Shoot Gun",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48815,
@@ -12194,12 +12194,12 @@
     {
       "id": 51753,
       "name": "Camouflage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51907,
       "name": "Shoot Razorpine",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52012,
@@ -12524,7 +12524,7 @@
     {
       "id": 53271,
       "name": "Master's Call",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53290,
@@ -12679,7 +12679,7 @@
     {
       "id": 53478,
       "name": "Last Stand",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53480,
@@ -12984,12 +12984,12 @@
     {
       "id": 54044,
       "name": "Carrion Feeder",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 54114,
       "name": "Heart of the Phoenix",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 54216,
@@ -13009,7 +13009,7 @@
     {
       "id": 54404,
       "name": "Dust Cloud",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 54431,
@@ -13039,7 +13039,7 @@
     {
       "id": 54689,
       "name": "Froststorm Breath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 54706,
@@ -13524,7 +13524,7 @@
     {
       "id": 57635,
       "name": "Disengage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 57636,
@@ -13594,7 +13594,7 @@
     {
       "id": 58605,
       "name": "Lava Breath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58607,
@@ -13834,7 +13834,7 @@
     {
       "id": 61507,
       "name": "Disengage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61508,
@@ -13969,7 +13969,7 @@
     {
       "id": 63461,
       "name": "Trap Launcher",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 63468,
@@ -14124,7 +14124,7 @@
     {
       "id": 68340,
       "name": "Disengage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 68361,
@@ -14326,7 +14326,7 @@
     {
       "id": 759,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 837,
@@ -14436,7 +14436,7 @@
     {
       "id": 3552,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 3561,
@@ -14531,7 +14531,7 @@
     {
       "id": 6139,
       "name": "Blink",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6141,
@@ -14751,12 +14751,12 @@
     {
       "id": 10053,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10054,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10057,
@@ -15131,7 +15131,7 @@
     {
       "id": 11189,
       "name": "Frost Warding",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11190,
@@ -15231,7 +15231,7 @@
     {
       "id": 11958,
       "name": "Cold Snap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 12042,
@@ -15851,7 +15851,7 @@
     {
       "id": 16070,
       "name": "Nefarius Attack 000",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 16144,
@@ -16351,7 +16351,7 @@
     {
       "id": 24392,
       "name": "Frosty Zap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24405,
@@ -16451,7 +16451,7 @@
     {
       "id": 26373,
       "name": "Lunar Invitation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 26406,
@@ -16616,7 +16616,7 @@
     {
       "id": 27101,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27103,
@@ -16721,12 +16721,12 @@
     {
       "id": 28332,
       "name": "Frost Warding",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28391,
       "name": "Blink",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28401,
@@ -16891,7 +16891,7 @@
     {
       "id": 29883,
       "name": "Blink",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29884,
@@ -16921,7 +16921,7 @@
     {
       "id": 29966,
       "name": "Blink",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29967,
@@ -16936,7 +16936,7 @@
     {
       "id": 29975,
       "name": "Conjure Water",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29976,
@@ -17021,7 +17021,7 @@
     {
       "id": 30610,
       "name": "Wrath of the Titans Stacker",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30628,
@@ -17291,7 +17291,7 @@
     {
       "id": 31687,
       "name": "Summon Water Elemental",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 31742,
@@ -17306,7 +17306,7 @@
     {
       "id": 31751,
       "name": "Arcane Missiles",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 31999,
@@ -17406,7 +17406,7 @@
     {
       "id": 32826,
       "name": "Polymorph Cast Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 32920,
@@ -17426,22 +17426,22 @@
     {
       "id": 32990,
       "name": "Enchanting Cast Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 32991,
       "name": "Nature Cast Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 32992,
       "name": "Ice Cast Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 32993,
       "name": "Fire Cast Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33031,
@@ -17636,7 +17636,7 @@
     {
       "id": 34349,
       "name": "Arcane Explosion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34426,
@@ -17961,7 +17961,7 @@
     {
       "id": 36879,
       "name": "Conjure Water",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36880,
@@ -17976,7 +17976,7 @@
     {
       "id": 36883,
       "name": "Conjure Mana Diamond",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36891,
@@ -18006,12 +18006,12 @@
     {
       "id": 37014,
       "name": "Void Zone",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37063,
       "name": "Void Zone",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37110,
@@ -18141,7 +18141,7 @@
     {
       "id": 38194,
       "name": "Blink",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 38203,
@@ -18291,7 +18291,7 @@
     {
       "id": 38642,
       "name": "Blink",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 38643,
@@ -18421,7 +18421,7 @@
     {
       "id": 39330,
       "name": "Rocket Helm Cooldown",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 39414,
@@ -18476,7 +18476,7 @@
     {
       "id": 41060,
       "name": "Return",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 41176,
@@ -18566,7 +18566,7 @@
     {
       "id": 42412,
       "name": "Throw Chum",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 42832,
@@ -18756,12 +18756,12 @@
     {
       "id": 42985,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 42986,
       "name": "Conjure Mana Gem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 42987,
@@ -18861,7 +18861,7 @@
     {
       "id": 43066,
       "name": "Cone of Cold",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43245,
@@ -18876,12 +18876,12 @@
     {
       "id": 43515,
       "name": "Cosmetic - Ashli's Fireball",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43520,
       "name": "Cosmetic - Ashli's Fireball 01",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43521,
@@ -18891,12 +18891,12 @@
     {
       "id": 43525,
       "name": "Cosmetic - Ashli's Fireball 02",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43571,
       "name": "Ice Lance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43665,
@@ -19041,7 +19041,7 @@
     {
       "id": 44450,
       "name": "Burnout",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 44457,
@@ -19196,7 +19196,7 @@
     {
       "id": 45461,
       "name": "Fire Channel Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45525,
@@ -19236,7 +19236,7 @@
     {
       "id": 46440,
       "name": "Cosmetic - Ashli's Fireball TEST",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46450,
@@ -19271,7 +19271,7 @@
     {
       "id": 46704,
       "name": "Raelorasz Fireball",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46706,
@@ -19501,7 +19501,7 @@
     {
       "id": 54646,
       "name": "Focus Magic",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 54648,
@@ -20041,7 +20041,7 @@
     {
       "id": 65633,
       "name": "Arcane Cast Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 65791,
@@ -20126,7 +20126,7 @@
     {
       "id": 70909,
       "name": "Summon Water Elemental (Prototype)",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 70937,
@@ -20973,7 +20973,7 @@
     {
       "id": 20425,
       "name": "Judgement of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20467,
@@ -20998,7 +20998,7 @@
     {
       "id": 20473,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20487,
@@ -21048,12 +21048,12 @@
     {
       "id": 20929,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20930,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 21084,
@@ -21383,7 +21383,7 @@
     {
       "id": 27174,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27175,
@@ -21538,7 +21538,7 @@
     {
       "id": 31789,
       "name": "Righteous Defense",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 31790,
@@ -21853,7 +21853,7 @@
     {
       "id": 33072,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33073,
@@ -22163,7 +22163,7 @@
     {
       "id": 37877,
       "name": "Blessing of Faith",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37879,
@@ -22528,12 +22528,12 @@
     {
       "id": 48824,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48825,
       "name": "Holy Shock",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48826,
@@ -22653,7 +22653,7 @@
     {
       "id": 51640,
       "name": "Taunt Flag Targeting",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51702,
@@ -22698,7 +22698,7 @@
     {
       "id": 53385,
       "name": "Divine Storm",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53407,
@@ -23798,7 +23798,7 @@
     {
       "id": 70757,
       "name": "Holiness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 70758,
@@ -24830,7 +24830,7 @@
     {
       "id": 15273,
       "name": "Improved Mind Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15274,
@@ -24875,22 +24875,22 @@
     {
       "id": 15312,
       "name": "Improved Mind Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15313,
       "name": "Improved Mind Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15314,
       "name": "Improved Mind Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15316,
       "name": "Improved Mind Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15317,
@@ -25340,12 +25340,12 @@
     {
       "id": 22205,
       "name": "Trigger Blue Beam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 22313,
       "name": "Purple Hands",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 22751,
@@ -25400,7 +25400,7 @@
     {
       "id": 23237,
       "name": "Anathema",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23401,
@@ -26695,7 +26695,7 @@
     {
       "id": 35740,
       "name": "Holy Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 35749,
@@ -26770,7 +26770,7 @@
     {
       "id": 36448,
       "name": "Focused Bursts",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36452,
@@ -26780,7 +26780,7 @@
     {
       "id": 36457,
       "name": "Random Bursts",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36458,
@@ -26790,7 +26790,7 @@
     {
       "id": 36475,
       "name": "Focused Bursts",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36508,
@@ -27070,7 +27070,7 @@
     {
       "id": 38444,
       "name": "Energize Headpiece",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 38482,
@@ -27135,12 +27135,12 @@
     {
       "id": 38986,
       "name": "Focused Bursts",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 38987,
       "name": "Focused Bursts",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 38988,
@@ -27205,7 +27205,7 @@
     {
       "id": 39538,
       "name": "ZapTemp",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 39649,
@@ -27335,7 +27335,7 @@
     {
       "id": 43241,
       "name": "Mass Dispel - Cosmetic",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43431,
@@ -27495,22 +27495,22 @@
     {
       "id": 47540,
       "name": "Penance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47558,
       "name": "Test of Faith",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47559,
       "name": "Test of Faith",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47560,
       "name": "Test of Faith",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47562,
@@ -28095,17 +28095,17 @@
     {
       "id": 53005,
       "name": "Penance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53006,
       "name": "Penance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53007,
       "name": "Penance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53022,
@@ -28125,7 +28125,7 @@
     {
       "id": 54704,
       "name": "Divine Aegis",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 55598,
@@ -28285,7 +28285,7 @@
     {
       "id": 57771,
       "name": "Holy Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 57775,
@@ -28827,7 +28827,7 @@
     {
       "id": 408,
       "name": "Kidney Shot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 703,
@@ -29037,7 +29037,7 @@
     {
       "id": 5171,
       "name": "Slice and Dice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 5277,
@@ -29062,7 +29062,7 @@
     {
       "id": 5938,
       "name": "Shiv",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 5940,
@@ -29102,7 +29102,7 @@
     {
       "id": 6774,
       "name": "Slice and Dice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8621,
@@ -29157,12 +29157,12 @@
     {
       "id": 8643,
       "name": "Kidney Shot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8647,
       "name": "Expose Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8649,
@@ -29792,7 +29792,7 @@
     {
       "id": 14185,
       "name": "Preparation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 14186,
@@ -30462,7 +30462,7 @@
     {
       "id": 31231,
       "name": "Cheat Death",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 31234,
@@ -31297,7 +31297,7 @@
     {
       "id": 51662,
       "name": "Hunger For Blood",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51664,
@@ -31337,7 +31337,7 @@
     {
       "id": 51690,
       "name": "Killing Spree",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51692,
@@ -32089,7 +32089,7 @@
     {
       "id": 1535,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 2008,
@@ -32299,7 +32299,7 @@
     {
       "id": 8026,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8027,
@@ -32309,12 +32309,12 @@
     {
       "id": 8028,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8029,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8030,
@@ -32474,7 +32474,7 @@
     {
       "id": 8171,
       "name": "Cleansing Totem Pulse",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8177,
@@ -32549,12 +32549,12 @@
     {
       "id": 8498,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8499,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8502,
@@ -32709,7 +32709,7 @@
     {
       "id": 10445,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10447,
@@ -32944,12 +32944,12 @@
     {
       "id": 11314,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11315,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15207,
@@ -33434,12 +33434,12 @@
     {
       "id": 16343,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 16344,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 16352,
@@ -33674,7 +33674,7 @@
     {
       "id": 25002,
       "name": "Spirit Disruption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25102,
@@ -33769,7 +33769,7 @@
     {
       "id": 25488,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25489,
@@ -33854,12 +33854,12 @@
     {
       "id": 25546,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25547,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25550,
@@ -34949,7 +34949,7 @@
     {
       "id": 39610,
       "name": "Mana Tide Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 39950,
@@ -35669,57 +35669,57 @@
     {
       "id": 52031,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52033,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52034,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52035,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52036,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52041,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52046,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52047,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52048,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52049,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52050,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52109,
@@ -36329,17 +36329,17 @@
     {
       "id": 58759,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58760,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58761,
       "name": "Healing Stream Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58763,
@@ -36389,17 +36389,17 @@
     {
       "id": 58778,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58779,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58780,
       "name": "Mana Spring Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58784,
@@ -36414,17 +36414,17 @@
     {
       "id": 58786,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58787,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58788,
       "name": "Flametongue Weapon Proc",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58789,
@@ -36584,7 +36584,7 @@
     {
       "id": 60103,
       "name": "Lava Lash",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 60164,
@@ -36809,7 +36809,7 @@
     {
       "id": 61649,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61650,
@@ -36829,7 +36829,7 @@
     {
       "id": 61657,
       "name": "Fire Nova",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61683,
@@ -38208,7 +38208,7 @@
     {
       "id": 28548,
       "name": "Shrouding",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28694,
@@ -38663,22 +38663,22 @@
     {
       "id": 41604,
       "name": "Supreme Power of Shattrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 41605,
       "name": "Mighty Restoration of Shattrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 41606,
       "name": "Relentless Assault of Shattrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 41607,
       "name": "Fortification of Shattrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 41608,
@@ -38773,7 +38773,7 @@
     {
       "id": 46838,
       "name": "Pure Death of Shattrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46839,
@@ -38783,7 +38783,7 @@
     {
       "id": 46840,
       "name": "Blinding Light of Shattrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 48719,
@@ -39210,7 +39210,7 @@
     {
       "id": 62758,
       "name": "Wild Hunt",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62759,
@@ -39225,7 +39225,7 @@
     {
       "id": 62762,
       "name": "Wild Hunt",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 62764,
@@ -39417,17 +39417,17 @@
     {
       "id": 1454,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1455,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1456,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1490,
@@ -39702,7 +39702,7 @@
     {
       "id": 7812,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 7813,
@@ -39827,17 +39827,17 @@
     {
       "id": 11687,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11688,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11689,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11693,
@@ -40462,7 +40462,7 @@
     {
       "id": 18213,
       "name": "Improved Drain Soul",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18218,
@@ -40517,7 +40517,7 @@
     {
       "id": 18372,
       "name": "Improved Drain Soul",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18376,
@@ -40807,7 +40807,7 @@
     {
       "id": 19028,
       "name": "Soul Link",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19244,
@@ -40817,27 +40817,27 @@
     {
       "id": 19438,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19440,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19441,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19442,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19443,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19474,
@@ -41077,7 +41077,7 @@
     {
       "id": 25228,
       "name": "Soul Link",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25307,
@@ -41177,7 +41177,7 @@
     {
       "id": 27222,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27223,
@@ -41287,7 +41287,7 @@
     {
       "id": 27273,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27274,
@@ -42032,7 +42032,7 @@
     {
       "id": 34143,
       "name": "Ritual of Souls",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34149,
@@ -42167,7 +42167,7 @@
     {
       "id": 36311,
       "name": "Scan Ground Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36472,
@@ -42397,7 +42397,7 @@
     {
       "id": 39977,
       "name": "Remove Impaling Spine",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 40239,
@@ -42582,7 +42582,7 @@
     {
       "id": 43971,
       "name": "Incinerate",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 43991,
@@ -43222,12 +43222,12 @@
     {
       "id": 47985,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47986,
       "name": "Sacrifice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47987,
@@ -43362,7 +43362,7 @@
     {
       "id": 50982,
       "name": "Power Conversion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51261,
@@ -43772,7 +43772,7 @@
     {
       "id": 57946,
       "name": "Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58079,
@@ -44279,7 +44279,7 @@
     {
       "id": 100,
       "name": "Charge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 284,
@@ -44339,7 +44339,7 @@
     {
       "id": 1464,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1608,
@@ -44414,12 +44414,12 @@
     {
       "id": 5308,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6178,
       "name": "Charge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6190,
@@ -44564,7 +44564,7 @@
     {
       "id": 8820,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11549,
@@ -44634,7 +44634,7 @@
     {
       "id": 11578,
       "name": "Charge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11580,
@@ -44679,12 +44679,12 @@
     {
       "id": 11604,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11605,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11608,
@@ -45059,7 +45059,7 @@
     {
       "id": 12975,
       "name": "Last Stand",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 13490,
@@ -45304,22 +45304,22 @@
     {
       "id": 20658,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20660,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20661,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20662,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 21008,
@@ -45369,7 +45369,7 @@
     {
       "id": 21977,
       "name": "Warrior's Wrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 22120,
@@ -45684,22 +45684,22 @@
     {
       "id": 25234,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25236,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25241,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25242,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25248,
@@ -45854,7 +45854,7 @@
     {
       "id": 27826,
       "name": "Intercept",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28342,
@@ -46074,7 +46074,7 @@
     {
       "id": 30012,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30016,
@@ -46109,7 +46109,7 @@
     {
       "id": 30284,
       "name": "Change Facing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30324,
@@ -46229,7 +46229,7 @@
     {
       "id": 34105,
       "name": "Taunt Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34428,
@@ -46259,7 +46259,7 @@
     {
       "id": 35385,
       "name": "Threshalisk Charge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 35412,
@@ -46349,32 +46349,32 @@
     {
       "id": 37144,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37146,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37148,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37151,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37152,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37153,
       "name": "Move",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 37156,
@@ -46549,12 +46549,12 @@
     {
       "id": 39377,
       "name": "[DND]Taunt Visual",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 39387,
       "name": "Move to Highest Threat Target Primer",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 39435,
@@ -46569,12 +46569,12 @@
     {
       "id": 39583,
       "name": "Change Facing, Left",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 39865,
       "name": "Rizzle's Blackjack",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 40279,
@@ -46739,7 +46739,7 @@
     {
       "id": 45307,
       "name": "Borean Tundra - Valiance Keep Flavor - Queue Global Ping",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45362,
@@ -46924,22 +46924,22 @@
     {
       "id": 47470,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47471,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47474,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47475,
       "name": "Slam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47485,
@@ -47109,7 +47109,7 @@
     {
       "id": 50823,
       "name": "Intercept",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 50874,
@@ -47144,7 +47144,7 @@
     {
       "id": 52719,
       "name": "Concussion Blow",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52744,
@@ -47694,17 +47694,17 @@
     {
       "id": 61216,
       "name": "Armored to the Teeth",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61221,
       "name": "Armored to the Teeth",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61222,
       "name": "Armored to the Teeth",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 61258,

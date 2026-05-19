@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
+import { CryptoTipModal } from "./CryptoTipModal";
 
 const SERVER_NAME = import.meta.env.VITE_SERVER_NAME ?? "turtle";
 
@@ -16,6 +18,8 @@ const PATREON_TOOLTIP =
   "Finantial contributions are greatly appreciated, but never required. Visit the patreon link to learn more!";
 
 export function Footer() {
+  const [cryptoModalOpen, setCryptoModalOpen] = useState(false);
+
   const gitTag = document
     .querySelector("meta[property=GitTag]")
     ?.getAttribute("content");
@@ -31,7 +35,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-muted/30">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Navigation */}
           <div>
             <h4 className="font-semibold mb-3">Navigation</h4>
@@ -74,9 +78,13 @@ export function Footer() {
                   Discord
                 </a>
               </li>
-              <li className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
-                Contribute Support
-              </li>
+            </ul>
+          </div>
+
+          {/* Contribute Support */}
+          <div>
+            <h4 className="font-semibold mb-3">Contribute Support</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <a
                   href={PATREON_URL}
@@ -123,6 +131,18 @@ export function Footer() {
                   GitHub Sponsors
                 </a>
               </li>
+              <li>
+                <button
+                  onClick={() => setCryptoModalOpen(true)}
+                  className="hover:text-foreground transition-colors inline-flex items-center gap-1"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.5 8h5a2 2 0 0 1 0 4h-5m0-4v8m0-8H8m1.5 4h4.5a2 2 0 0 1 0 4H9.5m0 0H8" />
+                  </svg>
+                  Tip with Crypto
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -155,6 +175,12 @@ export function Footer() {
           </div>
         </div>
       </div>
+      {cryptoModalOpen && (
+        <CryptoTipModal
+          open
+          onClose={() => setCryptoModalOpen(false)}
+        />
+      )}
     </footer>
   );
 }

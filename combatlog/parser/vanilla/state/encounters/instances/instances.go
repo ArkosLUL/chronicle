@@ -52,12 +52,26 @@ var (
 
 	BlackrockSpireFactory = &CommonFactory{
 		Name: "Blackrock Spire",
+		DerivedName: NewMultiInstanceZone(map[string][]uint32{
+			"Upper Blackrock Spire": {
+				10363, // "General Drakkisath"
+				10430, // The Beast
+				10339, // Gyth
+				10429, // Warchief Rend Blackhand
+				9816,  // "Pyroguard Emberseer"
+			},
+		}),
 		ZoneNames: []string{"blackrock spire",
 			"黑石塔",   // Blackrock Spire
 			"黑石塔下层", // Lower
 			"黑石塔上层", // "upper"
 		},
 		Hostiles: FromMap(BlackrockSpireHostiles()),
+		Rankings: &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: BlackrockSpireSpeedrunRequirements(),
+			},
+		},
 	}
 
 	MoltenCoreFactory = &CommonFactory{

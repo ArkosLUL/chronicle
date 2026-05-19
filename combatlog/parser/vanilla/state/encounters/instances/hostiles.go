@@ -137,7 +137,7 @@ func BlackrockSpireHostiles() map[uint32]Identity {
 		9816:  "Pyroguard Emberseer",
 		10430: "The Beast",
 		10429: "Warchief Rend Blackhand",
-		10339: "Gyth", // Blackhand mount
+		10339: "Warchief Rend Blackhand", // "Gyth" -- Blackhand mount
 		10363: "General Drakkisath",
 		10264: "Solakar Flamewreath",
 		10899: "Goraluk Anvilcrack",

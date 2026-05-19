@@ -42,10 +42,11 @@ const (
 )
 
 type Hookable struct {
-	name    string
-	timings *timings.Accumulator
-	logger  *slog.Logger
-	units   *unitdb.Units
+	name        string
+	derivedName *MultiInstanceZone
+	timings     *timings.Accumulator
+	logger      *slog.Logger
+	units       *unitdb.Units
 
 	// Static
 	MatchesZoneF func(z zone.Zone) bool
@@ -207,7 +208,15 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 func (h *Hookable) AddHook(hook instancehook.Hook) {
 	h.hooks = append(h.hooks, hook)
 }
-func (h *Hookable) Name() string           { return h.name }
+func (h *Hookable) Name() string {
+	if h.derivedName != nil {
+		name, ok := h.derivedName.Name(h.completedFights)
+		if ok {
+			return name
+		}
+	}
+	return h.name
+}
 func (h *Hookable) SetRealm(r *realm.Info) { h.realm = r }
 func (h *Hookable) SetVersions(versions map[string]string, player *guid.GUID) {
 	h.versions = versions

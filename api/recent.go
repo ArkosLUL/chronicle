@@ -13,8 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-
-
 // RecentInstances returns instances from the last 2 weeks.
 // It delegates to InstancesByTimeRange with a preset time window.
 // @Summary List recent raid/dungeon instances (last 2 weeks)
@@ -29,14 +27,18 @@ import (
 func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	if q.Get("start") == "" {
-		q.Set("start", time.Now().AddDate(0, 0, -14).UTC().Format(time.RFC3339))
+		q.Set("start", time.Now().AddDate(0, 0, -365).UTC().Format(time.RFC3339))
 	}
 	if q.Get("end") == "" {
 		q.Set("end", time.Now().UTC().Format(time.RFC3339))
 	}
+	if q.Get("limit") == "" {
+		q.Set("limit", "25")
+	}
 	r.URL.RawQuery = q.Encode()
 	api.InstancesByTimeRange(w, r)
 }
+
 // InstancesByTimeRange returns instances within a given time range.
 // @Summary List instances within a time range
 // @Tags raidlogs
@@ -212,4 +214,3 @@ func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 
 	httpapi.Write(ctx, w, http.StatusOK, response)
 }
-

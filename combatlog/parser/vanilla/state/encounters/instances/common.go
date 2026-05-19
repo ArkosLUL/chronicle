@@ -35,11 +35,14 @@ type FinalizedInstance struct {
 }
 
 type CommonFactory struct {
-	Name      string
-	ZoneNames []string
-	MapIDs    []uint32
-	Hostiles  func() *Identifier
-	Rankings  *rankings.Rankings
+	Name string
+	// DerivedName allows changing the name dynamically based on the fight data.
+	// If 2 or more instances share the same zone.
+	DerivedName *MultiInstanceZone
+	ZoneNames   []string
+	MapIDs      []uint32
+	Hostiles    func() *Identifier
+	Rankings    *rankings.Rankings
 }
 
 // MatchZone returns true if z matches any of the factory's zone names
@@ -60,5 +63,9 @@ func (f *CommonFactory) MatchZone(z zone.Zone) bool {
 
 // New handles all the extra hooks
 func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
-	return f.NewHookable(ctx, logger, db, z)
+	h := f.NewHookable(ctx, logger, db, z)
+	if f.DerivedName != nil {
+		h.derivedName = f.DerivedName
+	}
+	return h
 }

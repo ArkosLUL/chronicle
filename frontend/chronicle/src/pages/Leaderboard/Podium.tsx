@@ -116,6 +116,12 @@ const INSTANCE_THEMES: Record<string, InstanceTheme> = {
     border: "rgba(147, 197, 253, 0.45)",
     particleStyle: "frost",
   },
+  "Upper Blackrock Spire": {
+    glow: "rgba(180, 83, 9, 0.3)",
+    particles: ["#92400e", "#b45309", "#d97706", "#78350f"],
+    border: "rgba(180, 83, 9, 0.45)",
+    particleStyle: "embers",
+  },
 }
 
 const DEFAULT_THEME: InstanceTheme = {

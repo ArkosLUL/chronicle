@@ -30,7 +30,7 @@ func unitMsg(ts time.Time, g guid.GUID) messages.Message {
 func TestZoneDetector_EmitsZoneOnNexusCreature(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.WarmaneStaticRegistry(slog.Default())
+	reg := registry.AzerothcoreStaticRegistry(slog.Default())
 	zd := zonedetector.New(reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -49,7 +49,7 @@ func TestZoneDetector_EmitsZoneOnNexusCreature(t *testing.T) {
 func TestZoneDetector_NoDuplicateZone(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.WarmaneStaticRegistry(slog.Default())
+	reg := registry.AzerothcoreStaticRegistry(slog.Default())
 	zd := zonedetector.New(reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -67,7 +67,7 @@ func TestZoneDetector_NoDuplicateZone(t *testing.T) {
 func TestZoneDetector_IgnoresPlayerGUID(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.WarmaneStaticRegistry(slog.Default())
+	reg := registry.AzerothcoreStaticRegistry(slog.Default())
 	zd := zonedetector.New(reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)

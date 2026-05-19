@@ -1,4 +1,4 @@
-//go:build warmane
+//go:build azerothcore
 
 package dbcdb
 

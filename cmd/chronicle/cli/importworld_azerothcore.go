@@ -12,16 +12,16 @@ import (
 )
 
 func init() {
-	serverWorldImporters["warmane"] = importWorldWarmane
+	serverWorldImporters["azerothcore"] = importWorldAzerothcore
 }
 
-const warmaneDataDir = "importdata/world/warmane"
+const azerothcoreDataDir = "importdata/world/azerothcore"
 
-// importWorldWarmane imports world data for the Warmane server (WotLK 3.3.5a).
+// importWorldAzerothcore imports world data for the Azerothcore server (WotLK 3.3.5a).
 // Items are sourced from JSON files converted from the cmangos/wotlk-db MySQL dumps.
 // See scripts/convert_cmangos_sql_to_json.py for the conversion tool.
-func importWorldWarmane(ctx context.Context, pool *pgxpool.Pool, inv *serpent.Invocation, _ ImportWorldOptions) error {
-	dataDir := warmaneDataDir
+func importWorldAzerothcore(ctx context.Context, pool *pgxpool.Pool, inv *serpent.Invocation, _ ImportWorldOptions) error {
+	dataDir := azerothcoreDataDir
 
 	detected, err := detectFiles(dataDir)
 	if err != nil {
@@ -44,7 +44,7 @@ func importWorldWarmane(ctx context.Context, pool *pgxpool.Pool, inv *serpent.In
 		_, _ = fmt.Fprintf(inv.Stderr, "imported %s: %d rows\n", table, n)
 	}
 
-	wowDir := dbcdatacli.DefaultClientPath("warmane")
+	wowDir := dbcdatacli.DefaultClientPath("azerothcore")
 	if wowDir != "" {
 		_, _ = fmt.Fprintf(inv.Stderr, "importing DBC data from %s\n", wowDir)
 		wc, err := dbcdb.New(wowDir)
@@ -55,7 +55,7 @@ func importWorldWarmane(ctx context.Context, pool *pgxpool.Pool, inv *serpent.In
 			return fmt.Errorf("importing DBC tables: %w", err)
 		}
 	} else {
-		_, _ = fmt.Fprintf(inv.Stderr, "no WoW client path for warmane; skipping DBC import\n")
+		_, _ = fmt.Fprintf(inv.Stderr, "no WoW client path for azerothcore; skipping DBC import\n")
 	}
 
 	if err := fixupMultiTierSets(ctx, pool, inv); err != nil {

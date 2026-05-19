@@ -1,0 +1,2 @@
+-- PostgreSQL does not support removing enum values.
+-- The 'azerothcore-clientside' value will remain in the enum but be unused.

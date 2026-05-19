@@ -4,10 +4,10 @@ import (
 	"log/slog"
 
 	classic "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
-	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/warmane/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/azerothcore/instances"
 )
 
-func WarmaneStaticRegistry(logger *slog.Logger) *Registry {
+func AzerothcoreStaticRegistry(logger *slog.Logger) *Registry {
 	r := NewRegistry(logger)
 
 	// Dungeons

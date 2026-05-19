@@ -64,7 +64,7 @@ var serverSpellIDs = map[string][]int{
 		48461, // Wrath rank 10 — WotLK spell
 		48441, // Flash of Light rank 9 — WotLK spell
 	},
-	"warmane": {
+	"azerothcore": {
 		48461, // Wrath rank 10 — WotLK spell
 		48441, // Flash of Light rank 9 — WotLK spell
 	},

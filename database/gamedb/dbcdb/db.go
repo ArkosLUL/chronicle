@@ -14,7 +14,7 @@ import (
 
 // SpellBuildOverride, when non-zero, overrides the build version used to
 // select the Spell.dbc layout. This allows private servers with non-standard
-// Spell layouts (e.g. Warmane) to register a custom layout under a
+// Spell layouts (e.g. AzerothCore) to register a custom layout under a
 // pseudo-build number without affecting other servers sharing the same
 // detected build version.
 var SpellBuildOverride vsn.Build
@@ -78,7 +78,7 @@ func (w *WoWClient) LoadingScreens() (Table[dbdefs.Ent_LoadingScreens], error) {
 		return nil, err
 	}
 
-	// Some WotLK private servers (Warmane, Ascension) ship LoadingScreens.dbc
+	// Some WotLK private servers (AzerothCore, Ascension) ship LoadingScreens.dbc
 	// without the HasWideScreen column. Detect this by checking the record size
 	// in the file header and register a 3-column layout if needed.
 	if len(data) >= 20 {

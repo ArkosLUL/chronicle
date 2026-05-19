@@ -1,7 +1,7 @@
 package services
 
 const ServerIdentityTurtle = "turtle"
-const ServerIdentityWarmane = "warmane"
+const ServerIdentityAzerothcore = "azerothcore"
 const ServerIdentityKronos = "kronos"
 const ServerIdentityEpoch = "epoch"
 const ServerIdentityVanillaPlus = "vanillaplus"

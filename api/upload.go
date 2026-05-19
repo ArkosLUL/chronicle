@@ -278,8 +278,8 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 
 	logType := database.LogTypeV2
 	switch services.ServerName {
-	case services.ServerIdentityWarmane:
-		logType = database.LogTypeWarmane
+	case services.ServerIdentityAzerothcore:
+		logType = database.LogTypeAzerothcoreClientside
 	case services.ServerIdentityEpoch:
 		logType = database.LogTypeEpoch
 	case services.ServerIdentityKronos:

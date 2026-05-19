@@ -12,7 +12,7 @@ import (
 //   - Difficulty column removed from the end
 //   - Total: 239 fields, 956 bytes per record (vs 234/936 stock)
 //
-// Servers using this layout: Warmane, Ascension.
+// Servers using this layout: AzerothCore, Ascension.
 // The standard 3.3.5a layout is not affected (Epoch uses the stock layout).
 const ExtendedSpellBuild vsn.Build = 12341
 

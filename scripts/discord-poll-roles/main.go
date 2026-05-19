@@ -23,7 +23,7 @@ var answerToRole = map[int]string{
 	1: "1496275805851095234", // Kronos
 	2: "1496275679476711465", // epoch
 	3: "1496275872691388638", // Bronzebeard
-	4: "1496275762871931001", // warmane
+	4: "1496275762871931001", // azerothcore
 	// Add more as needed
 }
 

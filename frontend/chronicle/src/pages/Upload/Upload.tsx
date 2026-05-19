@@ -104,7 +104,7 @@ const LOG_TYPE_OPTIONS = [
   { value: "", label: "Default (server)" },
   { value: "v1", label: "V1 (Vanilla addon)" },
   { value: "v2", label: "V2 (ChronicleCompanion Addon)" },
-  { value: "warmane", label: "Warmane (WotLK)" },
+  { value: "azerothcore-clientside", label: "AzerothCore Client-Side (WotLK)" },
   { value: "epoch", label: "Epoch" },
   { value: "kronos", label: "Kronos" },
   { value: "azerothcore", label: "AzerothCore" },

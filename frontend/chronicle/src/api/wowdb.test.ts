@@ -121,8 +121,8 @@ const expectedByServer: Record<string, Record<string, string>> = {
     "48441_aura": "Heals 337 damage every 3 seconds.",
   },
 
-  // Warmane (3.3.5a — modified client, same base DBC values as stock for these spells)
-  warmane: {
+  // AzerothCore (3.3.5a — modified client, same base DBC values as stock for these spells)
+  azerothcore: {
     "133": "Hurls a fiery ball that causes 14 to 22 Fire damage and an additional 2 Fire damage over 4 sec.",
     "133_aura": "1 Fire damage every 2 seconds.",
     "139": "Heals the target for 45 over 15 sec.",
@@ -141,7 +141,7 @@ const expectedByServer: Record<string, Record<string, string>> = {
     "48441_aura": "Heals 338 damage every 3 seconds.",
   },
 
-  // Ascension (3.3.5a — modified client, identical DBC to Warmane for base spells)
+  // Ascension (3.3.5a — modified client, identical DBC to AzerothCore for base spells)
   ascension: {
     "133": "Hurls a fiery ball that causes 14 to 22 Fire damage and an additional 2 Fire damage over 4 sec.",
     "133_aura": "1 Fire damage every 2 seconds.",

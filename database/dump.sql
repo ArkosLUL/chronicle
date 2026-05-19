@@ -42,7 +42,8 @@ CREATE TYPE log_type AS ENUM (
     'warmane',
     'epoch',
     'kronos',
-    'azerothcore'
+    'azerothcore',
+    'azerothcore-clientside'
 );
 
 CREATE TYPE river_job_state AS ENUM (

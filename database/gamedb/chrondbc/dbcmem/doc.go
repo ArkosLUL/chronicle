@@ -33,13 +33,13 @@ package dbcmem
 //DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=kronos --out=../../../../frontend/imagecache/kronos/loading-screens
 //go:generate go run -tags kronos ../../../../scripts/dbcdata spell-test-data --server=kronos --ts-dir=../../../../frontend/chronicle/src/api/testdata
 
-// Warmane (3.3.5a)
-//go:generate go run ../../../../scripts/dbcdata static --server=warmane -o warmane
-//go:generate go run -tags warmane ../../../../scripts/dbcdata derived-statics --server=warmane --assets-dir=../../../../assets/warmane/generated --go-dir=warmane --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/warmane
-//go:generate go run ../../../../scripts/dbcdata extract-dbc --server=warmane --out=../../../../assets/warmane
-//go:generate go run ../../../../scripts/dbcdata extract-icons --server=warmane --out=../../../../frontend/imagecache/warmane/blp
-// DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=warmane --out=../../../../frontend/imagecache/warmane/loading-screens
-//go:generate go run -tags warmane ../../../../scripts/dbcdata spell-test-data --server=warmane --ts-dir=../../../../frontend/chronicle/src/api/testdata
+// AzerothCore (3.3.5a)
+//go:generate go run ../../../../scripts/dbcdata static --server=azerothcore -o azerothcore
+//go:generate go run -tags azerothcore ../../../../scripts/dbcdata derived-statics --server=azerothcore --assets-dir=../../../../assets/azerothcore/generated --go-dir=azerothcore --ts-dir=../../../../frontend/chronicle/src/constants/dbmem/azerothcore
+//go:generate go run ../../../../scripts/dbcdata extract-dbc --server=azerothcore --out=../../../../assets/azerothcore
+//go:generate go run ../../../../scripts/dbcdata extract-icons --server=azerothcore --out=../../../../frontend/imagecache/azerothcore/blp
+// DISABLED go:generate go run ../../../../scripts/dbcdata extract-loading-screens --server=azerothcore --out=../../../../frontend/imagecache/azerothcore/loading-screens
+//go:generate go run -tags azerothcore ../../../../scripts/dbcdata spell-test-data --server=azerothcore --ts-dir=../../../../frontend/chronicle/src/api/testdata
 
 // Ascension (3.3.5a)
 //go:generate go run ../../../../scripts/dbcdata static --server=ascension -o ascension

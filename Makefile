@@ -24,7 +24,7 @@ frontend/chronicle/dist: $(wildcard frontend/**)
 	(cd frontend/chronicle; pnpm install; SERVER=$(SERVER) pnpm build)
 
 # SERVER controls which WoW server DBC data to compile in (turtle, epoch, etc.)
-SERVER ?= warmane
+SERVER ?= azerothcore
 DB_NAME := $(if $(filter turtle,$(SERVER)),chronicle,$(SERVER))
 
 .PHONY: develop

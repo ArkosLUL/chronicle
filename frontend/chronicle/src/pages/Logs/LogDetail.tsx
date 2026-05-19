@@ -85,7 +85,7 @@ function formatBytes(bytes: number): string {
 const REPARSE_LOG_TYPES = [
   { value: "v1", label: "V1" },
   { value: "v2", label: "V2" },
-  { value: "warmane", label: "Warmane" },
+  { value: "azerothcore-clientside", label: "AzerothCore Client-Side" },
   { value: "epoch", label: "Epoch" },
   { value: "kronos", label: "Kronos" },
   { value: "azerothcore", label: "AzerothCore" },

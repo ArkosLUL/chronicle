@@ -15,12 +15,13 @@ Before deploying Chronicle, you need:
 
 Images are published to DockerHub under [`emyrk/chronicled`](https://hub.docker.com/r/emyrk/chronicled):
 
-| Image Tag | Server | WoW Version |
-|-----------|--------|-------------|
-| `emyrk/chronicled:turtle` | Turtle WoW | 1.12.2 |
-| `emyrk/chronicled:epoch` | Epoch | 3.3.5a |
-| `emyrk/chronicled:kronos` | Kronos | 1.12.2 |
-| `emyrk/chronicled:warmane` | Warmane | 1.12.2 |
+| Image Tag                      | Server      | WoW Version |
+|--------------------------------|-------------|-------------|
+| `emyrk/chronicled:turtle`      | Turtle WoW  | 1.12.2      |
+| `emyrk/chronicled:vanillaplus` | Vanilla+    | 1.12.2      |
+| `emyrk/chronicled:epoch`       | Epoch       | 3.3.5a      |
+| `emyrk/chronicled:kronos`      | Kronos      | 1.12.2      |
+| `emyrk/chronicled:azerothcore` | AzerothCore | 3.3.5a      |
 
 Unstable builds from the main branch are tagged `<server>-unstable` (e.g. `emyrk/chronicled:turtle-unstable`).
 
@@ -61,7 +62,7 @@ docker run -p 127.0.0.1:4000:4000 \
   -e CHRONICLE_S3_ACCESS_KEY="..." \
   -e CHRONICLE_S3_SECRET_KEY="..." \
   -e CHRONICLE_S3_BUCKET="chronicle-logs" \
-  emyrk/chronicled:warmane
+  emyrk/chronicled:azerothcore
 ```
 
 ### Docker Compose

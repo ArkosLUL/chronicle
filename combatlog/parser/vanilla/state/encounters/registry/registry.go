@@ -61,8 +61,8 @@ func DefaultRegistry(logger *slog.Logger) *Registry {
 	switch services.ServerName {
 	case services.ServerIdentityTurtle, services.ServerIdentityOctoWoW:
 		return TurtleRegistry(logger)
-	case services.ServerIdentityWarmane:
-		return WarmaneStaticRegistry(logger)
+	case services.ServerIdentityAzerothcore:
+		return AzerothcoreStaticRegistry(logger)
 	case services.ServerIdentityEpoch:
 		return TurtleRegistry(logger)
 	default:

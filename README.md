@@ -89,7 +89,7 @@ The app will be available at `http://localhost:4000`.
 
 The supporting services stay on the Docker network by default so the stack does not collide with local Postgres, SpiceDB, or OCR processes you may already have running.
 
-To build a different embedded server dataset, override `SERVER`, for example `SERVER=warmane docker compose up --build`.
+To build a different embedded server dataset, override `SERVER`, for example `SERVER=azerothcore docker compose up --build`.
 
 ### Local Hybrid Development
 

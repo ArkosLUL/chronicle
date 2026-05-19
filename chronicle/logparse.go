@@ -154,6 +154,7 @@ func (w *WorkerLogParse) loadAndSortFile(ctx context.Context, file database.LogF
 }
 
 func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse]) error {
+	logCapabilities := []string{"overheal"}
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 	jobStart := time.Now()
 	metrics := w.parent.metrics
@@ -302,8 +303,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 		// V2 parser doesn't have metrics yet
 		// TODO: Add metrics to v2 parser
-
-	case database.LogTypeWarmane, database.LogTypeEpoch:
+	case database.LogTypeAzerothcoreClientside, database.LogTypeEpoch:
+		logCapabilities = append(logCapabilities, "interrupt")
 		// Load single file
 		loadStart := time.Now()
 		rdr, err := w.loadFile(ctx, files[0])
@@ -314,18 +315,18 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		report.LoadFileDuration = chroniclesdk.DurationFrom(loadDuration)
 		metrics.loadFileDuration.Observe(loadDuration.Seconds())
 
-		// Warmane (WotLK 3.3.5a) parser: single file
+		// AzerothCore client-side (WotLK 3.3.5a) parser: single file
 		p, err := wotlk.New(ctx, logLogger, rdr, w.parent.WoWDB, w.parent.ItemFetcher, reg)
 		if err != nil {
 			jobResult = "failure"
-			return fmt.Errorf("create warmane parser: %w", err)
+			return fmt.Errorf("create azerothcore-clientside parser: %w", err)
 		}
 
 		c.Advancer = p
 		consumeErr = c.ConsumeAll(ctx, p)
 		if consumeErr != nil && !errors.Is(consumeErr, io.EOF) {
 			jobResult = "failure"
-			return fmt.Errorf("consume warmane log: %w", consumeErr)
+			return fmt.Errorf("consume azerothcore-clientside log: %w", consumeErr)
 		}
 
 		parserMetrics := p.Metrics()
@@ -333,6 +334,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		metrics.linesProcessed.Add(float64(parserMetrics.TotalLinesParsed))
 
 	case database.LogTypeAzerothcore:
+		logCapabilities = append(logCapabilities, "interrupt", "absorb")
 		// Load single file and normalize concatenated server chunks by unix timestamp.
 		loadStart := time.Now()
 		rdr, err := w.loadFile(ctx, files[0])
@@ -552,7 +554,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				},
 				StartTime:     instanceStart,
 				EndTime:       instanceEnd,
-				Capabilities:  []string{"overheal"},
+				Capabilities:  logCapabilities,
 				Versions:      database.VersionsMap(finalized.Versions),
 				RecorderName:  recorderName,
 				RecorderGuid:  recorderGUID,

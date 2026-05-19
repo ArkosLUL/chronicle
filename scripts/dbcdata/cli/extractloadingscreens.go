@@ -68,7 +68,7 @@ func extractLoadingScreens(wc *dbcdb.WoWClient, clientPath, outDir string, stdou
 	}
 
 	// Build an MPQ fallback reader for files not found via the Pool's listfile
-	// index. Some WoW clients (Epoch, Warmane, Ascension) have MPQs without
+	// index. Some WoW clients (Epoch, AzerothCore, Ascension) have MPQs without
 	// listfiles, so Pool.OpenFile fails. Direct MPQ hash-based lookup works.
 	fallback, err := newMPQFallback(clientPath)
 	if err != nil {

@@ -22,7 +22,7 @@ func (m *MultiInstanceZone) Name(fights []Fight) (string, bool) {
 	}
 
 	for _, fight := range fights {
-		for gid, _ := range fight.Hostiles {
+		for gid := range fight.Hostiles {
 			entry, ok := gid.GetEntry()
 			if !ok {
 				continue

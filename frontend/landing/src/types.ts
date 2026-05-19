@@ -50,8 +50,3 @@ export interface ServerEntry {
   sponsored?: boolean;
 }
 
-/** Stats fetched live from each Chronicle deployment. */
-export interface ServerStats {
-  recentLogs: number;
-  lastActivityAt: Date | null;
-}

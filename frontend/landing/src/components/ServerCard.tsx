@@ -1,7 +1,6 @@
 import type { ServerEntry } from "../types";
 import { AttributeBadges } from "./AttributeBadges";
 import { StatusBadges } from "./StatusBadges";
-import { LiveStats } from "./LiveStats";
 
 function ExternalIcon() {
   return (
@@ -82,9 +81,6 @@ export function ServerCard({ server }: { server: ServerEntry }) {
           <AttributeBadges server={server} />
           <StatusBadges tags={server.status} />
         </div>
-
-        {/* Live stats */}
-        <LiveStats chronicleUrl={server.chronicleUrl} />
 
         {/* Spacer */}
         <div className="flex-1" />

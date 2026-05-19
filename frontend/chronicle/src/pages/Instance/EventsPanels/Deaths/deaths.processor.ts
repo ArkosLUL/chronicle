@@ -2,7 +2,7 @@
  * Deaths processor - aggregates player and enemy deaths from slain events (pure TS, worker-safe)
  */
 
-import type { SlainProcessorEvent, DamageProcessorEvent, HealProcessorEvent, ResourceChangeProcessorEvent, AbsorbedProcessorEvent, PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
+import type { SlainProcessorEvent, DamageProcessorEvent, HealProcessorEvent, ResourceChangeProcessorEvent, AbsorbedProcessorEvent, AuraCastProcessorEvent, PanelProcessor, ProcessorContext, ProcessorEvent } from "../processorTypes";
 import type { StreamType } from "@/hooks/instanceEvents";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 import { hasHitType, HitTypePartialResist, HitTypeFullResist, HitTypePartialAbsorb, HitTypeFullAbsorb, HitTypePartialBlock, HitTypeFullBlock } from "@/lib/hittype/hittype";
@@ -25,11 +25,14 @@ export interface DeathRecapEntry {
   sourceName: string;        // ability name
   casterName: string;        // who did it
   casterID: string;
+  targetName: string;        // who received it
+  targetID: string;
+  targetClass: string | null; // WoW class name if target is a player, null if hostile/unknown
   amount: number;
   school: number;
   hitType: number;
   spellId: number | null;    // spell ID for icon/tooltip lookup
-  type: "damage" | "heal" | "absorbed" | "resource_change";
+  type: "damage" | "heal" | "absorbed" | "resource_change" | "aura_cast";
   casterClass: string | null; // WoW class name if caster is a player, null if hostile/unknown
   overheal?: number;
   overkill?: number;
@@ -54,7 +57,8 @@ export interface DeathEvent {
   killerName: string;      // Name of the killer
   encounterID: string;
   attribution: DeathAttribution | null;  // The damage that killed the player
-  recap: DeathRecapEntry[];  // Last 10s of incoming activity before death
+  recap: DeathRecapEntry[];  // Last 10s of incoming activity before death (target = this unit)
+  outgoingRecap: DeathRecapEntry[];  // Last 10s of outgoing activity before death (caster = this unit)
 }
 
 /**
@@ -98,6 +102,8 @@ export type DeathsResult = {
   GuidCache: GuidCache;
   // Transient: buffer of incoming events per target per encounter for death recap
   _incomingBuffer: Map<string, Map<string, DeathRecapEntry[]>>;
+  // Transient: buffer of outgoing events per caster per encounter for death recap
+  _outgoingBuffer: Map<string, Map<string, DeathRecapEntry[]>>;
 }
 
 /** RECAP_WINDOW_MS is the lookback window for death recap entries (10 seconds) */
@@ -121,26 +127,34 @@ function resolveUnitName(guid: string, context: ProcessorContext, guidCache: Gui
   return context.units?.[guid]?.name || guid;
 }
 
-/** Push an entry into the incoming buffer for a given encounter + target */
-function pushBuffer(state: DeathsResult, encounterID: string, targetGUID: string, entry: DeathRecapEntry) {
-  let encMap = state._incomingBuffer.get(encounterID);
+/** Push an entry into a buffer map (encounterID → guid → entries[]) */
+function pushToBuffer(bufferMap: Map<string, Map<string, DeathRecapEntry[]>>, encounterID: string, guid: string, entry: DeathRecapEntry) {
+  let encMap = bufferMap.get(encounterID);
   if (!encMap) {
     encMap = new Map();
-    state._incomingBuffer.set(encounterID, encMap);
+    bufferMap.set(encounterID, encMap);
   }
-  let arr = encMap.get(targetGUID);
+  let arr = encMap.get(guid);
   if (!arr) {
     arr = [];
-    encMap.set(targetGUID, arr);
+    encMap.set(guid, arr);
   }
   arr.push(entry);
 }
 
-/** Build recap from the buffer: entries within RECAP_WINDOW_MS before death */
-function buildRecap(state: DeathsResult, encounterID: string, targetGUID: string, deathOffsetMilli: number): DeathRecapEntry[] {
-  const encMap = state._incomingBuffer.get(encounterID);
+/** Push an entry into both the incoming buffer (by target) and outgoing buffer (by caster) */
+function pushBuffer(state: DeathsResult, encounterID: string, targetGUID: string, casterGUID: string, entry: DeathRecapEntry) {
+  pushToBuffer(state._incomingBuffer, encounterID, targetGUID, entry);
+  if (casterGUID) {
+    pushToBuffer(state._outgoingBuffer, encounterID, casterGUID, entry);
+  }
+}
+
+/** Extract recap entries from a buffer within RECAP_WINDOW_MS before death */
+function buildRecapFromBuffer(bufferMap: Map<string, Map<string, DeathRecapEntry[]>>, encounterID: string, guid: string, deathOffsetMilli: number): DeathRecapEntry[] {
+  const encMap = bufferMap.get(encounterID);
   if (!encMap) return [];
-  const entries = encMap.get(targetGUID);
+  const entries = encMap.get(guid);
   if (!entries) return [];
   const cutoff = deathOffsetMilli - RECAP_WINDOW_MS;
   const recap: DeathRecapEntry[] = [];
@@ -159,7 +173,7 @@ function buildRecap(state: DeathsResult, encounterID: string, targetGUID: string
 export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorEvent> {
   return {
     id: "deaths",
-    streams: ["slain", "damage", "heal", "resource_change", "absorbed"],
+    streams: ["slain", "damage", "heal", "resource_change", "absorbed", "aura_cast"],
 
     createState: () => ({
       EncounterDeaths: new Map<string, UnitDeaths>(),
@@ -170,6 +184,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
       EnemyDeathEvents: [],
       GuidCache: createGuidCache(),
       _incomingBuffer: new Map(),
+      _outgoingBuffer: new Map(),
     }),
 
     processEvent: (
@@ -208,11 +223,14 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         // Skip 0-damage events with no mitigation
         if (dmg.amount === 0 && resisted === 0 && blocked === 0 && absorbed === 0) return;
 
-        pushBuffer(state, encounterID, dmg.target, {
+        pushBuffer(state, encounterID, dmg.target, dmg.caster, {
           offsetMilli: dmg.offsetMilli,
           sourceName: dmg.sourceName,
           casterName: resolveUnitName(dmg.caster, context, guidCache),
           casterID: dmg.caster,
+          targetName: resolveUnitName(dmg.target, context, guidCache),
+          targetID: dmg.target,
+          targetClass: resolveCasterClass(dmg.target, context, guidCache),
           amount: dmg.amount,
           school: dmg.school,
           hitType: dmg.hitType,
@@ -231,11 +249,14 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
       if (streamType === "heal") {
         const heal = event as HealProcessorEvent;
         if (!heal.target) return;
-        pushBuffer(state, encounterID, heal.target, {
+        pushBuffer(state, encounterID, heal.target, heal.caster, {
           offsetMilli: heal.offsetMilli,
           sourceName: heal.sourceName,
           casterName: resolveUnitName(heal.caster, context, guidCache),
           casterID: heal.caster,
+          targetName: resolveUnitName(heal.target, context, guidCache),
+          targetID: heal.target,
+          targetClass: resolveCasterClass(heal.target, context, guidCache),
           amount: heal.amount,
           school: heal.school,
           hitType: heal.hitType,
@@ -251,11 +272,14 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
       if (streamType === "absorbed") {
         const abs = event as AbsorbedProcessorEvent;
         if (!abs.target) return;
-        pushBuffer(state, encounterID, abs.target, {
+        pushBuffer(state, encounterID, abs.target, abs.caster, {
           offsetMilli: abs.offsetMilli,
           sourceName: abs.damageSpellName || "Melee",
           casterName: resolveUnitName(abs.caster, context, guidCache),
           casterID: abs.caster,
+          targetName: resolveUnitName(abs.target, context, guidCache),
+          targetID: abs.target,
+          targetClass: resolveCasterClass(abs.target, context, guidCache),
           amount: abs.amount,
           school: abs.absorbSchool,
           hitType: 0,
@@ -273,11 +297,14 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         const rc = event as ResourceChangeProcessorEvent;
         if (!rc.target || rc.resourceType.toLowerCase() !== "health") return;
         if (rc.amount === 0) return;
-        pushBuffer(state, encounterID, rc.target, {
+        pushBuffer(state, encounterID, rc.target, rc.caster, {
           offsetMilli: rc.offsetMilli,
           sourceName: rc.sourceName,
           casterName: resolveUnitName(rc.caster, context, guidCache),
           casterID: rc.caster,
+          targetName: resolveUnitName(rc.target, context, guidCache),
+          targetID: rc.target,
+          targetClass: resolveCasterClass(rc.target, context, guidCache),
           amount: rc.amount,
           school: 0,
           hitType: 0,
@@ -285,6 +312,30 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
           type: "resource_change",
           casterClass: resolveCasterClass(rc.caster, context, guidCache),
         });
+        return;
+      }
+
+      // Buffer aura_cast events (outgoing only — shows all spells the unit cast)
+      if (streamType === "aura_cast") {
+        const ac = event as AuraCastProcessorEvent;
+        if (!ac.caster || ac.spell.id === 0) return;
+        const targetGuid = ac.target || "";
+        const entry: DeathRecapEntry = {
+          offsetMilli: ac.offsetMilli,
+          sourceName: ac.spell.name,
+          casterName: resolveUnitName(ac.caster, context, guidCache),
+          casterID: ac.caster,
+          targetName: targetGuid ? resolveUnitName(targetGuid, context, guidCache) : "",
+          targetID: targetGuid,
+          targetClass: targetGuid ? resolveCasterClass(targetGuid, context, guidCache) : null,
+          amount: 0,
+          school: 0,
+          hitType: 0,
+          spellId: ac.spell.id,
+          type: "aura_cast",
+          casterClass: resolveCasterClass(ac.caster, context, guidCache),
+        };
+        pushToBuffer(state._outgoingBuffer, encounterID, ac.caster, entry);
         return;
       }
 
@@ -357,7 +408,8 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
       }
 
       // Build death recap from buffered events
-      const recap = buildRecap(state, encounterID, victimID, slain.offsetMilli);
+      const recap = buildRecapFromBuffer(state._incomingBuffer, encounterID, victimID, slain.offsetMilli);
+      const outgoingRecap = buildRecapFromBuffer(state._outgoingBuffer, encounterID, victimID, slain.offsetMilli);
 
       deathEventsList.push({
         dateMilli: firstTimestamp.getTime() + slain.offsetMilli,
@@ -370,6 +422,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         encounterID,
         attribution,
         recap,
+        outgoingRecap,
       });
         
       if (context.selectedEncounterIds.size == 0 || context.selectedEncounterIds.has(encounterID)) {

@@ -292,7 +292,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                     {isExpanded && (
                       <tr className="border-b border-border/10">
                         <td colSpan={5} className="p-0 pb-1">
-                          <DeathRecap recap={death.recap} deathOffsetMilli={death.offsetMilli} />
+                          <DeathRecap recap={death.recap} outgoingRecap={death.outgoingRecap} deathOffsetMilli={death.offsetMilli} />
                         </td>
                       </tr>
                     )}

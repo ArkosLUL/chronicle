@@ -105,7 +105,12 @@ export const DeathRecap = ({ recap, deathOffsetMilli }: DeathRecapProps) => {
             {reversed.map((entry, i) => (
               <tr
                 key={i}
-                className="border-b border-border/10 last:border-b-0 hover:bg-muted/40"
+                className={`border-b border-border/10 last:border-b-0 hover:bg-muted/40 ${
+                  entry.type === "damage" ? "bg-red-500/5" :
+                  entry.type === "heal" || entry.type === "resource_change" ? "bg-green-500/5" :
+                  entry.type === "absorbed" ? "bg-blue-500/5" :
+                  ""
+                }`}
               >
                 {/* Time offset */}
                 <td className="py-0.5 px-2 font-mono text-muted-foreground w-14 text-right">

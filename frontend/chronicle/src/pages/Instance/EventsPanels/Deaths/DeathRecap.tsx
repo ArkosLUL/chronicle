@@ -93,13 +93,30 @@ function computeSummary(entries: DeathRecapEntry[]) {
   return { totalDamage, totalHealing, totalAbsorbed };
 }
 
-/** Merge two sorted recap arrays into a single sorted array by offsetMilli */
+/** Check if two recap entries are duplicates */
+function isSameEntry(a: DeathRecapEntry, b: DeathRecapEntry): boolean {
+  return a.offsetMilli === b.offsetMilli
+    && a.casterID === b.casterID
+    && a.targetID === b.targetID
+    && a.sourceName === b.sourceName
+    && a.amount === b.amount
+    && a.type === b.type;
+}
+
+/** Merge two sorted recap arrays into a single deduplicated sorted array by offsetMilli */
 function mergeRecaps(a: DeathRecapEntry[], b: DeathRecapEntry[]): DeathRecapEntry[] {
   const result: DeathRecapEntry[] = [];
   let i = 0, j = 0;
   while (i < a.length && j < b.length) {
-    if (a[i].offsetMilli <= b[j].offsetMilli) result.push(a[i++]);
-    else result.push(b[j++]);
+    // Skip duplicates
+    if (isSameEntry(a[i], b[j])) {
+      result.push(a[i]);
+      i++; j++;
+    } else if (a[i].offsetMilli <= b[j].offsetMilli) {
+      result.push(a[i++]);
+    } else {
+      result.push(b[j++]);
+    }
   }
   while (i < a.length) result.push(a[i++]);
   while (j < b.length) result.push(b[j++]);
@@ -134,24 +151,33 @@ export const DeathRecap = ({ recap, outgoingRecap, deathOffsetMilli }: DeathReca
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30">
         <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
           {([
-            { key: "incoming" as const, label: "To Me" },
-            { key: "outgoing" as const, label: "From Me" },
-            { key: "both" as const, label: "Both" },
-          ]).map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setTab(key); }}
-              className={cn(
-                "px-2 py-0.5 rounded text-2xs transition-all",
-                tab === key
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+            { key: "incoming" as const, label: "To Me", tip: null },
+            { key: "outgoing" as const, label: "From Me", tip: "Shows self-targeted events (source and target are this unit)" },
+            { key: "both" as const, label: "Both", tip: null },
+          ]).map(({ key, label, tip }) => {
+            const btn = (
+              <button
+                key={key}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setTab(key); }}
+                className={cn(
+                  "px-2 py-0.5 rounded text-2xs transition-all",
+                  tab === key
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            );
+            if (!tip) return btn;
+            return (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                <TooltipContent side="bottom" className="text-2xs">{tip}</TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
         <div className="flex items-center gap-3 text-2xs">
           <span className="text-red-400">

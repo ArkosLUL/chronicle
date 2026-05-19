@@ -142,10 +142,11 @@ function pushToBuffer(bufferMap: Map<string, Map<string, DeathRecapEntry[]>>, en
   arr.push(entry);
 }
 
-/** Push an entry into both the incoming buffer (by target) and outgoing buffer (by caster) */
+/** Push an entry into the incoming buffer (by target) and outgoing buffer (self-targeted only: source = me AND target = me) */
 function pushBuffer(state: DeathsResult, encounterID: string, targetGUID: string, casterGUID: string, entry: DeathRecapEntry) {
   pushToBuffer(state._incomingBuffer, encounterID, targetGUID, entry);
-  if (casterGUID) {
+  // Outgoing buffer: only self-targeted events (caster === target)
+  if (casterGUID && casterGUID === targetGUID) {
     pushToBuffer(state._outgoingBuffer, encounterID, casterGUID, entry);
   }
 }
@@ -315,11 +316,12 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         return;
       }
 
-      // Buffer aura_cast events (outgoing only — shows all spells the unit cast)
+      // Buffer aura_cast events (outgoing only — self-casts: source = me AND target = me)
       if (streamType === "aura_cast") {
         const ac = event as AuraCastProcessorEvent;
         if (!ac.caster || ac.spell.id === 0) return;
         const targetGuid = ac.target || "";
+        if (targetGuid !== ac.caster) return;
         const entry: DeathRecapEntry = {
           offsetMilli: ac.offsetMilli,
           sourceName: ac.spell.name,

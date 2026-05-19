@@ -57,16 +57,16 @@ export async function fetchServerStats(
 
   try {
     const res = await fetch(
-      `${chronicleUrl}/api/v1/raidlogs/recent`,
+      `${chronicleUrl}/api/v1/raidlogs/recent?limit=5`,
       { signal: controller.signal },
     );
     if (!res.ok) return null;
 
     const data = await res.json();
 
-    // The response has an `instances` array with `started_at` timestamps.
+    // The response has an `instances` array with `first_encounter_time` timestamps.
     // We take the first 5 most recent and compute stats from those.
-    const instances: Array<{ started_at: string }> =
+    const instances: Array<{ first_encounter_time: string }> =
       Array.isArray(data?.instances) ? data.instances : [];
 
     const now = Date.now();
@@ -78,7 +78,7 @@ export async function fetchServerStats(
     // Only look at up to 5 most recent (they should already be sorted desc)
     const slice = instances.slice(0, 5);
     for (const inst of slice) {
-      const ts = new Date(inst.started_at);
+      const ts = new Date(inst.first_encounter_time);
       if (ts.getTime() >= sevenDaysAgo) {
         recentLogs++;
       }

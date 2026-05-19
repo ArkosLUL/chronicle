@@ -143,14 +143,6 @@ export function NavBar() {
                 <Users className="h-4 w-4" />
                 Census
               </Link>
-              <Link
-                to="/wowdb"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-              >
-                <Database className="h-4 w-4" />
-                WoW Database
-              </Link>
               {isAuthenticated && (
                 <>
                   <div className="border-t my-2" />
@@ -217,12 +209,6 @@ export function NavBar() {
               <Link to="/census" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Census
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/wowdb" className="flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                WoW Database
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

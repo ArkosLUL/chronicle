@@ -71,9 +71,9 @@ FROM world_item_template wit
   LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
   LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
 WHERE wit.name ILIKE '%' || @search_term::text || '%'
-  AND (@quality::int = -1 OR wit.quality = @quality)
-  AND (@inventory_type::int = -1 OR wit.inventory_type = @inventory_type)
-  AND (@item_class::int = -1 OR wit.class = @item_class)
+  AND (array_length(@qualities::int[], 1) IS NULL OR wit.quality = ANY(@qualities))
+  AND (array_length(@inventory_types::int[], 1) IS NULL OR wit.inventory_type = ANY(@inventory_types))
+  AND (array_length(@item_classes::int[], 1) IS NULL OR wit.class = ANY(@item_classes))
 ORDER BY
   CASE WHEN @quality_desc::bool THEN wit.quality END DESC,
   CASE WHEN @item_level_desc::bool THEN wit.item_level END DESC,

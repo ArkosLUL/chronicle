@@ -32,18 +32,18 @@ export function useItemTooltip(params: FetchItemTooltipParams | null) {
 
 export interface SearchItemsParams {
   q: string;
-  quality?: number;
-  slot?: number;
-  class?: number;
+  quality?: string; // comma-separated, e.g. "3,4"
+  slot?: string;    // comma-separated
+  class?: string;   // comma-separated
   sort?: string;
 }
 
 async function fetchSearchItems(params: SearchItemsParams): Promise<ItemSearchResult[]> {
   const qs = new URLSearchParams();
   qs.set("q", params.q);
-  if (params.quality !== undefined && params.quality >= 0) qs.set("quality", params.quality.toString());
-  if (params.slot !== undefined && params.slot >= 0) qs.set("slot", params.slot.toString());
-  if (params.class !== undefined && params.class >= 0) qs.set("class", params.class.toString());
+  if (params.quality) qs.set("quality", params.quality);
+  if (params.slot) qs.set("slot", params.slot);
+  if (params.class) qs.set("class", params.class);
   if (params.sort) qs.set("sort", params.sort);
   const response = await fetch(`/api/v1/internal/gamedata/search/items?${qs.toString()}`);
   if (!response.ok) {

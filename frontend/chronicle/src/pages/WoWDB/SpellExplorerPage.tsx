@@ -131,6 +131,7 @@ export function SpellExplorerPage() {
             </button>
           )}
         </div>
+        <p className="text-xs text-yellow-600/80">Only exact case-sensitive matches are supported right now.</p>
       </form>
 
       {/* Results */}

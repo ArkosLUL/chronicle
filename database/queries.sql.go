@@ -7280,9 +7280,9 @@ FROM world_item_template wit
   LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
   LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
 WHERE wit.name ILIKE '%' || $1::text || '%'
-  AND ($2::int = -1 OR wit.quality = $2)
-  AND ($3::int = -1 OR wit.inventory_type = $3)
-  AND ($4::int = -1 OR wit.class = $4)
+  AND (array_length($2::int[], 1) IS NULL OR wit.quality = ANY($2))
+  AND (array_length($3::int[], 1) IS NULL OR wit.inventory_type = ANY($3))
+  AND (array_length($4::int[], 1) IS NULL OR wit.class = ANY($4))
 ORDER BY
   CASE WHEN $5::bool THEN wit.quality END DESC,
   CASE WHEN $6::bool THEN wit.item_level END DESC,
@@ -7294,15 +7294,15 @@ LIMIT 25
 `
 
 type SearchItemTemplatesParams struct {
-	SearchTerm        string `db:"search_term" json:"search_term"`
-	Quality           int32  `db:"quality" json:"quality"`
-	InventoryType     int32  `db:"inventory_type" json:"inventory_type"`
-	ItemClass         int32  `db:"item_class" json:"item_class"`
-	QualityDesc       bool   `db:"quality_desc" json:"quality_desc"`
-	ItemLevelDesc     bool   `db:"item_level_desc" json:"item_level_desc"`
-	ItemLevelAsc      bool   `db:"item_level_asc" json:"item_level_asc"`
-	RequiredLevelDesc bool   `db:"required_level_desc" json:"required_level_desc"`
-	RequiredLevelAsc  bool   `db:"required_level_asc" json:"required_level_asc"`
+	SearchTerm        string  `db:"search_term" json:"search_term"`
+	Qualities         []int32 `db:"qualities" json:"qualities"`
+	InventoryTypes    []int32 `db:"inventory_types" json:"inventory_types"`
+	ItemClasses       []int32 `db:"item_classes" json:"item_classes"`
+	QualityDesc       bool    `db:"quality_desc" json:"quality_desc"`
+	ItemLevelDesc     bool    `db:"item_level_desc" json:"item_level_desc"`
+	ItemLevelAsc      bool    `db:"item_level_asc" json:"item_level_asc"`
+	RequiredLevelDesc bool    `db:"required_level_desc" json:"required_level_desc"`
+	RequiredLevelAsc  bool    `db:"required_level_asc" json:"required_level_asc"`
 }
 
 type SearchItemTemplatesRow struct {
@@ -7327,9 +7327,9 @@ type SearchItemTemplatesRow struct {
 func (q *sqlQuerier) SearchItemTemplates(ctx context.Context, arg SearchItemTemplatesParams) ([]SearchItemTemplatesRow, error) {
 	rows, err := q.db.Query(ctx, searchItemTemplates,
 		arg.SearchTerm,
-		arg.Quality,
-		arg.InventoryType,
-		arg.ItemClass,
+		arg.Qualities,
+		arg.InventoryTypes,
+		arg.ItemClasses,
 		arg.QualityDesc,
 		arg.ItemLevelDesc,
 		arg.ItemLevelAsc,

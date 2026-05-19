@@ -51,6 +51,11 @@ export function Footer() {
                   Technical Details
                 </Link>
               </li>
+              <li>
+                <Link to="/wowdb" className="hover:text-foreground transition-colors">
+                  WoW Database
+                </Link>
+              </li>
             </ul>
           </div>
 

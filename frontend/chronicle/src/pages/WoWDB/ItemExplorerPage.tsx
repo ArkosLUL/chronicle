@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, Loader2, Package, X, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
+import { Search, Loader2, Package, X, ArrowUpDown, ArrowDown, ArrowUp, ChevronDown, Check } from "lucide-react";
 import { useSearchItems } from "@/api/gamedata";
 import { useItemTooltip } from "@/api/gamedata";
 import { ItemTooltip } from "@/components/ui/ItemTooltip";
@@ -253,7 +253,86 @@ function ResultRow({ item }: { item: ItemSearchResult }) {
   );
 }
 
-const selectClasses = "bg-gray-800 border border-gray-600 rounded px-2 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors";
+// --- Multi-select dropdown ---
+
+function MultiSelect({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  selected: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const toggle = (value: string) => {
+    const next = new Set(selected);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    onChange(next);
+  };
+
+  const summary = selected.size === 0
+    ? label
+    : selected.size === 1
+      ? options.find((o) => o.value === [...selected][0])?.label ?? label
+      : `${selected.size} selected`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 bg-gray-800 border border-gray-600 rounded px-2.5 py-2 text-sm text-white hover:border-gray-500 transition-colors min-w-[120px]"
+      >
+        <span className="truncate">{summary}</span>
+        <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-48 max-h-64 overflow-auto rounded-md border border-gray-600 bg-gray-800 py-1 shadow-lg">
+          {selected.size > 0 && (
+            <button
+              onClick={() => onChange(new Set())}
+              className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-700 transition-colors"
+            >
+              Clear all
+            </button>
+          )}
+          {options.map((opt) => {
+            const isSelected = selected.has(opt.value);
+            return (
+              <button
+                key={opt.value}
+                onClick={() => toggle(opt.value)}
+                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm text-white hover:bg-gray-700 transition-colors"
+              >
+                <span className={cn(
+                  "flex items-center justify-center h-4 w-4 rounded border shrink-0",
+                  isSelected ? "bg-gray-500 border-gray-400" : "border-gray-500"
+                )}>
+                  {isSelected && <Check className="h-3 w-3" />}
+                </span>
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ItemExplorerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -261,13 +340,23 @@ export function ItemExplorerPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const q = searchParams.get("q") ?? "";
-  const quality = searchParams.get("quality") ? Number(searchParams.get("quality")) : undefined;
-  const slot = searchParams.get("slot") ? Number(searchParams.get("slot")) : undefined;
-  const itemClass = searchParams.get("class") ? Number(searchParams.get("class")) : undefined;
+  const qualityParam = searchParams.get("quality") ?? "";
+  const slotParam = searchParams.get("slot") ?? "";
+  const classParam = searchParams.get("class") ?? "";
   const sort = searchParams.get("sort") ?? undefined;
 
+  const qualitySet = useMemo(() => new Set(qualityParam ? qualityParam.split(",") : []), [qualityParam]);
+  const slotSet = useMemo(() => new Set(slotParam ? slotParam.split(",") : []), [slotParam]);
+  const classSet = useMemo(() => new Set(classParam ? classParam.split(",") : []), [classParam]);
+
   const { data: results, isLoading, isFetching, error } = useSearchItems(
-    q.length >= 2 ? { q, quality, slot, class: itemClass, sort } : null
+    q.length >= 2 ? {
+      q,
+      quality: qualityParam || undefined,
+      slot: slotParam || undefined,
+      class: classParam || undefined,
+      sort,
+    } : null
   );
 
   const updateParams = useCallback(
@@ -329,7 +418,7 @@ export function ItemExplorerPage() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Search items by name..."
-            className="w-full bg-gray-800 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 transition-colors"
             autoFocus
           />
           {inputValue && (
@@ -346,40 +435,26 @@ export function ItemExplorerPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <select
-            value={quality ?? -1}
-            onChange={(e) => updateParams({ quality: e.target.value })}
-            className={selectClasses}
-          >
-            <option value="-1">Any Quality</option>
-            {Object.entries(QUALITY_LABELS).map(([v, label]) => (
-              <option key={v} value={v}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            value={slot ?? -1}
-            onChange={(e) => updateParams({ slot: e.target.value })}
-            className={selectClasses}
-          >
-            <option value="-1">Any Slot</option>
-            {Object.entries(INVENTORY_TYPE_LABELS)
-              .filter(([, label]) => label !== "")
-              .map(([v, label]) => (
-                <option key={v} value={v}>{label}</option>
-              ))}
-          </select>
-
-          <select
-            value={itemClass ?? -1}
-            onChange={(e) => updateParams({ class: e.target.value })}
-            className={selectClasses}
-          >
-            <option value="-1">Any Type</option>
-            {Object.entries(ITEM_CLASS_LABELS).map(([v, label]) => (
-              <option key={v} value={v}>{label}</option>
-            ))}
-          </select>
+          <MultiSelect
+            label="Any Quality"
+            options={Object.entries(QUALITY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+            selected={qualitySet}
+            onChange={(s) => updateParams({ quality: [...s].join(",") || undefined })}
+          />
+          <MultiSelect
+            label="Any Slot"
+            options={Object.entries(INVENTORY_TYPE_LABELS)
+              .filter(([, l]) => l !== "")
+              .map(([v, l]) => ({ value: v, label: l }))}
+            selected={slotSet}
+            onChange={(s) => updateParams({ slot: [...s].join(",") || undefined })}
+          />
+          <MultiSelect
+            label="Any Type"
+            options={Object.entries(ITEM_CLASS_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+            selected={classSet}
+            onChange={(s) => updateParams({ class: [...s].join(",") || undefined })}
+          />
         </div>
       </div>
 

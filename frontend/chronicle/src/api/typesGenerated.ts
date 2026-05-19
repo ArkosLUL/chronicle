@@ -281,6 +281,26 @@ export interface CreateWoWServerRequest {
 
 // From chroniclesdk/gamedata.go
 /**
+ * CreatureSearchResult is a lightweight creature summary for search results.
+ */
+export interface CreatureSearchResult {
+    readonly entry: number;
+    readonly name: string;
+    readonly subname: string;
+    readonly level_min: number;
+    readonly level_max: number;
+    readonly health_min: number;
+    readonly health_max: number;
+    readonly mana_min: number;
+    readonly mana_max: number;
+    readonly armor: number;
+    readonly dmg_min: number;
+    readonly dmg_max: number;
+    readonly unit_class: number;
+}
+
+// From chroniclesdk/gamedata.go
+/**
  * DBCUploadResponse is the response from uploading a DBC file.
  */
 export interface DBCUploadResponse {
@@ -579,10 +599,46 @@ export interface ItemResistance {
     readonly value: number;
 }
 
+// From chroniclesdk/gamedata.go
+/**
+ * ItemSearchResult is a lightweight item summary for search results.
+ */
+export interface ItemSearchResult {
+    readonly entry: number;
+    readonly name: string;
+    readonly quality: number;
+    readonly inventory_type: number;
+    readonly class: number;
+    readonly subclass: number;
+    readonly item_level: number;
+    readonly required_level: number;
+    readonly delay: number;
+    readonly dmg_min1: number;
+    readonly dmg_max1: number;
+    readonly container_slots: number;
+    readonly required_skill: number;
+    readonly required_skill_rank: number;
+    readonly armor: number;
+    readonly icon: string;
+}
+
 // From chroniclesdk/tooltip.go
 export interface ItemSetBonus {
     readonly threshold: number; // pieces needed
     readonly spell_id: number;
+}
+
+// From chroniclesdk/gamedata.go
+/**
+ * ItemSetDetail is a full item set with pieces and bonuses.
+ */
+export interface ItemSetDetail {
+    readonly id: number;
+    readonly name: string;
+    readonly required_skill: number;
+    readonly required_skill_rank: number;
+    readonly pieces: readonly ItemSetPieceInfo[];
+    readonly bonuses: readonly ItemSetBonus[];
 }
 
 // From chroniclesdk/tooltip.go
@@ -605,6 +661,33 @@ export interface ItemSetPiece {
     readonly entry: number;
     readonly name: string;
     readonly inventory_type: number;
+}
+
+// From chroniclesdk/gamedata.go
+/**
+ * ItemSetPieceInfo is an item in a set with display info.
+ */
+export interface ItemSetPieceInfo {
+    readonly entry: number;
+    readonly name: string;
+    readonly quality: number;
+    readonly inventory_type: number;
+    readonly icon: string;
+}
+
+// From chroniclesdk/gamedata.go
+/**
+ * ItemSetSearchResult is a summary for item set search results.
+ */
+export interface ItemSetSearchResult {
+    readonly id: number;
+    readonly name: string;
+    readonly required_skill: number;
+    readonly required_skill_rank: number;
+    readonly piece_count: number;
+    readonly bonus_count: number;
+    readonly max_quality: number;
+    readonly first_item_entry: number;
 }
 
 // From chroniclesdk/tooltip.go

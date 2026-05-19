@@ -282,7 +282,7 @@ func (s Spell) SpellDamageType() SpellDamageType {
 				base |= SpellDamagePeriodic
 			case AuraEffectModMeleeHaste, AuraEffectModIncreaseSpeed, AuraEffectModScale:
 				// Auras that modify these attributes do not indicate combat activity.
-				return SpellDamageNoEngageCombat
+				base |= SpellDamageNoEngageCombat
 			case AuraEffectModDetectRange:
 				base |= SpellDamageNoEngageCombat
 			case AuraEffectPeriodicTriggerSpell:

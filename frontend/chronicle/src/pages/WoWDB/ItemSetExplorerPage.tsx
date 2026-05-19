@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Search, Loader2, Shield, X } from "lucide-react";
-import { useSearchItemSets, useItemSetDetail, useItemTooltip } from "@/api/gamedata";
+import { useSearchItemSets, useItemTooltip } from "@/api/gamedata";
 import { ItemTooltip } from "@/components/ui/ItemTooltip";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
-import { iconUrl } from "@/config/iconUrl";
 import { cn } from "@/lib/utils";
-import type { ItemSetSearchResult, ItemSetPieceInfo, ItemSetBonus } from "@/api/typesGenerated";
+import type { ItemSetSearchResult } from "@/api/typesGenerated";
 
 // --- Label maps ---
 
@@ -20,25 +19,6 @@ const QUALITY_COLORS: Record<number, string> = {
   6: "text-quality-artifact",
 };
 
-const QUALITY_BORDER: Record<number, string> = {
-  0: "border-gray-600/60",
-  1: "border-gray-500/60",
-  2: "border-green-500/60",
-  3: "border-blue-400/60",
-  4: "border-purple-500/60",
-  5: "border-orange-400/60",
-  6: "border-yellow-400/60",
-};
-
-const INVENTORY_TYPE_LABELS: Record<number, string> = {
-  0: "", 1: "Head", 2: "Neck", 3: "Shoulder", 4: "Shirt", 5: "Chest",
-  6: "Waist", 7: "Legs", 8: "Feet", 9: "Wrists", 10: "Hands",
-  11: "Finger", 12: "Trinket", 13: "One-Hand", 14: "Shield", 15: "Ranged",
-  16: "Back", 17: "Two-Hand", 18: "Bag", 19: "Tabard", 20: "Robe",
-  21: "Main Hand", 22: "Off Hand", 23: "Holdable", 24: "Ammo", 25: "Thrown",
-  26: "Ranged", 28: "Relic",
-};
-
 const SKILL_LABELS: Record<number, string> = {
   164: "Blacksmithing", 165: "Leatherworking", 171: "Alchemy",
   182: "Herbalism", 185: "Cooking", 186: "Mining", 197: "Tailoring",
@@ -50,34 +30,10 @@ const SKILL_LABELS: Record<number, string> = {
 
 const GRID_COLS = "grid-cols-[1fr_60px_80px_120px]";
 
-function PieceIcon({ piece }: { piece: ItemSetPieceInfo }) {
-  const url = iconUrl(piece.icon);
-  const border = QUALITY_BORDER[piece.quality] ?? QUALITY_BORDER[1];
+function SetHoverTooltip({ itemId, children }: { itemId: number; children: React.ReactNode }) {
+  const { data: item } = useItemTooltip(itemId > 0 ? { itemId } : null);
 
-  if (!url) {
-    return (
-      <div
-        className={cn("rounded border bg-gray-800 flex items-center justify-center shrink-0", border)}
-        style={{ width: 24, height: 24 }}
-      >
-        <Shield className="h-3 w-3 text-gray-500" />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={url}
-      alt=""
-      className={cn("rounded border shrink-0", border)}
-      style={{ width: 24, height: 24 }}
-      loading="lazy"
-    />
-  );
-}
-
-function PieceHoverTooltip({ itemId, children }: { itemId: number; children: React.ReactNode }) {
-  const { data: item } = useItemTooltip({ itemId });
+  if (itemId <= 0) return <>{children}</>;
 
   return (
     <Tooltip>
@@ -95,102 +51,22 @@ function PieceHoverTooltip({ itemId, children }: { itemId: number; children: Rea
   );
 }
 
-function ExpandedSetDetail({ setId, onClose }: { setId: number; onClose: () => void }) {
-  const { data: detail, isLoading, error } = useItemSetDetail(setId);
-
-  return (
-    <div className="border border-gray-700 rounded-lg bg-gray-900/95 p-4 mt-1 mb-2">
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      {isLoading && (
-        <div className="flex items-center gap-2 text-gray-400 py-4 justify-center">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading...
-        </div>
-      )}
-      {error && <div className="text-red-400 text-sm">Failed to load item set details</div>}
-
-      {detail && (
-        <div className="space-y-4">
-          <h3 className="text-green-400 font-medium text-sm">{detail.name}</h3>
-
-          {/* Pieces */}
-          <div className="space-y-1">
-            {detail.pieces.map((piece) => (
-              <PieceHoverTooltip key={piece.entry} itemId={piece.entry}>
-                <Link
-                  to={`/wowdb/item?id=${piece.entry}`}
-                  className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-800/80 transition-colors group"
-                >
-                  <PieceIcon piece={piece} />
-                  <span className={cn("text-sm group-hover:underline", QUALITY_COLORS[piece.quality] ?? "text-quality-common")}>
-                    {piece.name}
-                  </span>
-                  {INVENTORY_TYPE_LABELS[piece.inventory_type] && (
-                    <span className="text-gray-600 text-xs ml-auto">
-                      {INVENTORY_TYPE_LABELS[piece.inventory_type]}
-                    </span>
-                  )}
-                </Link>
-              </PieceHoverTooltip>
-            ))}
-          </div>
-
-          {/* Bonuses */}
-          {detail.bonuses.length > 0 && (
-            <div className="space-y-1 pt-2 border-t border-gray-700/50">
-              {detail.bonuses.map((bonus: ItemSetBonus) => (
-                <div key={bonus.threshold} className="text-sm text-gray-400">
-                  <span className="text-gray-500">({bonus.threshold}) Set: </span>
-                  <Link
-                    to={`/wowdb/spells?q=${bonus.spell_id}`}
-                    className="text-green-400 hover:underline"
-                  >
-                    Spell #{bonus.spell_id}
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ResultRow({
-  set,
-  isExpanded,
-  onToggle,
-}: {
-  set: ItemSetSearchResult;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
+function ResultRow({ set }: { set: ItemSetSearchResult }) {
   const skillLabel = set.required_skill > 0
     ? SKILL_LABELS[set.required_skill] ?? `Skill ${set.required_skill}`
     : "";
 
   return (
-    <>
-      <button
-        onClick={onToggle}
+    <SetHoverTooltip itemId={set.first_item_entry}>
+      <Link
+        to={`/wowdb/set?id=${set.id}`}
         className={cn(
           "w-full text-left grid gap-3 items-center px-3 py-1.5 rounded-md transition-colors",
           GRID_COLS,
-          "hover:bg-gray-800/80",
-          isExpanded && "bg-gray-800/60"
+          "hover:bg-gray-800/80"
         )}
       >
-        <span className="font-medium text-green-400 truncate">{set.name}</span>
+        <span className={cn("font-medium truncate", QUALITY_COLORS[set.max_quality] ?? "text-quality-common")}>{set.name}</span>
         <span className="text-gray-400 text-xs text-right tabular-nums">
           {set.piece_count}
         </span>
@@ -198,16 +74,14 @@ function ResultRow({
           {set.bonus_count}
         </span>
         <span className="text-gray-500 text-xs truncate">{skillLabel}</span>
-      </button>
-      {isExpanded && <ExpandedSetDetail setId={set.id} onClose={onToggle} />}
-    </>
+      </Link>
+    </SetHoverTooltip>
   );
 }
 
 export function ItemSetExplorerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(searchParams.get("q") ?? "");
-  const [expandedSet, setExpandedSet] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const q = searchParams.get("q") ?? "";
@@ -227,7 +101,6 @@ export function ItemSetExplorerPage() {
         }
         return next;
       });
-      setExpandedSet(null);
     },
     [setSearchParams]
   );
@@ -338,14 +211,7 @@ export function ItemSetExplorerPage() {
         {results && results.length > 0 && (
           <div className="space-y-0.5 pt-2">
             {results.map((set) => (
-              <ResultRow
-                key={set.id}
-                set={set}
-                isExpanded={expandedSet === set.id}
-                onToggle={() =>
-                  setExpandedSet((prev) => (prev === set.id ? null : set.id))
-                }
-              />
+              <ResultRow key={set.id} set={set} />
             ))}
           </div>
         )}

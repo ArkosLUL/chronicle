@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useItemTooltip } from "@/api/gamedata";
 import { ItemTooltip } from "@/components/ui/ItemTooltip";
 
@@ -34,7 +34,15 @@ export function ItemPage() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
-      <h1 className="text-2xl font-bold text-white">Item Tooltip Browser</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Item Tooltip Browser</h1>
+        <Link
+          to="/wowdb/items"
+          className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+        >
+          ← Search by name
+        </Link>
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
         <div>

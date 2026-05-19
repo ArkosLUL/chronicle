@@ -1075,7 +1075,7 @@ export function useSpell(
       if (!response.ok) throw new Error("Spell not found");
       return response.json() as Promise<WoWSpell>;
     },
-    staleTime: Infinity, // DBC data never changes
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
     retry: false, // Don't retry on 404
     ...options,
   });
@@ -1092,7 +1092,7 @@ export function useSpellsByName(
       if (!response.ok) throw new Error("Spell not found");
       return response.json() as Promise<WoWSpell[]>;
     },
-    staleTime: Infinity, // DBC data never changes
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
     retry: false, // Don't retry on 404
     ...options,
   });

@@ -187,6 +187,7 @@ func MoltenCoreHostiles() map[uint32]Identity {
 		52147: "Large Incendic Egg",
 		11671: "Core Hound",
 		12119: "Flamewaker Protector",
+		11661: "Flamewaker",
 
 		// What the heck are these?
 		52146: "Small Incendic Egg",

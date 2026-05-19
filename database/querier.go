@@ -94,6 +94,8 @@ type sqlcQuerier interface {
 	GetItemSetBonuses(ctx context.Context, setID int32) ([]DbcItemSetBonu, error)
 	GetItemSetByID(ctx context.Context, id int32) (DbcItemSet, error)
 	GetItemSetItems(ctx context.Context, setID int32) ([]DbcItemSetItem, error)
+	// Returns set pieces with item details for a specific set.
+	GetItemSetWithPieces(ctx context.Context, setID int32) ([]GetItemSetWithPiecesRow, error)
 	GetItemTemplateByEntry(ctx context.Context, entry int32) (WorldItemTemplate, error)
 	// Looks up items by ID. For items not found by ID (e.g. transmog IDs),
 	// falls back to name lookup but only if the name is unique in the table.
@@ -209,7 +211,10 @@ type sqlcQuerier interface {
 	MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
 	RecordAuthzMigration(ctx context.Context, version int32) error
+	SearchCreatureTemplates(ctx context.Context, arg SearchCreatureTemplatesParams) ([]SearchCreatureTemplatesRow, error)
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
+	SearchItemSets(ctx context.Context, searchTerm string) ([]SearchItemSetsRow, error)
+	SearchItemTemplates(ctx context.Context, arg SearchItemTemplatesParams) ([]SearchItemTemplatesRow, error)
 	SetDuplicateGroupIDs(ctx context.Context, arg SetDuplicateGroupIDsParams) error
 	SetPanelLayoutCode(ctx context.Context, arg SetPanelLayoutCodeParams) (int64, error)
 	SetResetToken(ctx context.Context, arg SetResetTokenParams) error

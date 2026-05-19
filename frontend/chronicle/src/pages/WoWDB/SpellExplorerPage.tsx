@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Search, Loader2, BookOpen, X } from "lucide-react";
 import { useSpellsByName } from "@/api/queries";
 import { getEnglishText, getSpellIconUrl, formatCastTime, getResolvedDescription } from "@/api/wowdb";
@@ -44,67 +44,40 @@ function HoverTooltip({ spell, children }: { spell: WoWSpell; children: React.Re
   );
 }
 
-function ResultRow({
-  spell,
-  isExpanded,
-  onToggle,
-}: {
-  spell: WoWSpell;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
+function ResultRow({ spell }: { spell: WoWSpell }) {
   const name = getEnglishText(spell.name);
   const rank = getEnglishText(spell.subtext);
   const description = getResolvedDescription(spell);
 
   return (
-    <>
-      <HoverTooltip spell={spell}>
-        <button
-          onClick={onToggle}
-          className={cn(
-            "w-full text-left grid gap-3 items-center px-3 py-1.5 rounded-md transition-colors",
-            GRID_COLS,
-            "hover:bg-gray-800/80",
-            isExpanded && "bg-gray-800/60"
-          )}
-        >
-          <SpellIcon spell={spell} />
-          <div className="flex items-baseline gap-1.5 min-w-0">
-            <span className="font-medium text-white truncate">{name}</span>
-            {rank && <span className="text-gray-500 text-xs truncate">{rank}</span>}
-          </div>
-          <span className="text-gray-500 text-xs text-right tabular-nums">
-            {spell.spell_level > 0 ? spell.spell_level : ""}
-          </span>
-          <SpellSchoolText school={spell.school.string} className="text-xs" />
-          <span className="text-gray-500 text-xs truncate">{formatCastTime(spell)}</span>
-          <span className="text-gray-600 text-xs truncate">{description}</span>
-        </button>
-      </HoverTooltip>
-      {isExpanded && (
-        <div className="border border-gray-700 rounded-lg bg-gray-900/95 p-4 mt-1 mb-2">
-          <div className="flex justify-end mb-2">
-            <button
-              onClick={onToggle}
-              className="text-gray-400 hover:text-white transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <SpellTooltip spell={spell} detailed />
+    <HoverTooltip spell={spell}>
+      <Link
+        to={`/wowdb/spell/${spell.id}`}
+        className={cn(
+          "w-full text-left grid gap-3 items-center px-3 py-1.5 rounded-md transition-colors",
+          GRID_COLS,
+          "hover:bg-gray-800/80"
+        )}
+      >
+        <SpellIcon spell={spell} />
+        <div className="flex items-baseline gap-1.5 min-w-0">
+          <span className="font-medium text-white truncate">{name}</span>
+          {rank && <span className="text-gray-500 text-xs truncate">{rank}</span>}
         </div>
-      )}
-    </>
+        <span className="text-gray-500 text-xs text-right tabular-nums">
+          {spell.spell_level > 0 ? spell.spell_level : ""}
+        </span>
+        <SpellSchoolText school={spell.school.string} className="text-xs" />
+        <span className="text-gray-500 text-xs truncate">{formatCastTime(spell)}</span>
+        <span className="text-gray-600 text-xs truncate">{description}</span>
+      </Link>
+    </HoverTooltip>
   );
 }
 
 export function SpellExplorerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(searchParams.get("q") ?? "");
-  const [expandedSpell, setExpandedSpell] = useState<number | null>(null);
-
   const q = searchParams.get("q") ?? "";
 
   const { data: results, isLoading, isFetching, error } = useSpellsByName(
@@ -121,7 +94,6 @@ export function SpellExplorerPage() {
       }
       return next;
     });
-    setExpandedSpell(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -171,7 +143,7 @@ export function SpellExplorerPage() {
                 {resultList.length} result{resultList.length !== 1 ? "s" : ""}
                 {isFetching && <Loader2 className="inline h-3 w-3 animate-spin ml-2" />}
               </span>
-              <span className="text-xs text-gray-500">Hover for tooltip · click to expand</span>
+              <span className="text-xs text-gray-500">Hover for tooltip · click to view</span>
             </div>
             <div className={cn("grid gap-3 items-center px-3 text-xs text-gray-500 font-medium", GRID_COLS)}>
               <span />
@@ -233,14 +205,7 @@ export function SpellExplorerPage() {
         {resultList.length > 0 && (
           <div className="space-y-0.5 pt-2">
             {resultList.map((spell) => (
-              <ResultRow
-                key={spell.id}
-                spell={spell}
-                isExpanded={expandedSpell === spell.id}
-                onToggle={() =>
-                  setExpandedSpell((prev) => (prev === spell.id ? null : spell.id))
-                }
-              />
+              <ResultRow key={spell.id} spell={spell} />
             ))}
           </div>
         )}

@@ -24,6 +24,18 @@ const SUPPORTED_DBCS: SupportedDBC[] = [
     description: "Enchantment effects and properties",
     fileHint: "SpellItemEnchantment.dbc",
   },
+  {
+    value: "ItemRandomProperties",
+    label: "ItemRandomProperties",
+    description: "Random enchantment suffixes (e.g. \"of the Owl\")",
+    fileHint: "ItemRandomProperties.dbc",
+  },
+  {
+    value: "ItemSet",
+    label: "ItemSet",
+    description: "Item sets, set bonuses, and set piece membership",
+    fileHint: "ItemSet.dbc",
+  },
 ];
 
 interface DBCUploadResult {

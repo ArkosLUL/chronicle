@@ -2045,7 +2045,7 @@
     {
       "id": 22839,
       "name": "Barkskin Effect (DND)",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 22842,
@@ -2160,7 +2160,7 @@
     {
       "id": 24864,
       "name": "Feline Swiftness Passive 2a",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24866,
@@ -2170,7 +2170,7 @@
     {
       "id": 24867,
       "name": "Feline Swiftness Passive 1a",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24868,
@@ -2255,7 +2255,7 @@
     {
       "id": 25205,
       "name": "zzOLDFeline Swiftness Passive 2b",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25297,
@@ -2275,7 +2275,7 @@
     {
       "id": 25333,
       "name": "zzOLDFeline Swiftness Passive 1b",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25503,
@@ -2930,7 +2930,7 @@
     {
       "id": 35721,
       "name": "Grizzly's Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 35723,
@@ -3072,7 +3072,7 @@
     {
       "id": 5118,
       "name": "Aspect of the Cheetah",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 5384,
@@ -3592,7 +3592,7 @@
     {
       "id": 17331,
       "name": "Fang of the Crystal Spider",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17353,
@@ -4082,7 +4082,7 @@
     {
       "id": 19574,
       "name": "Bestial Wrath",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19575,
@@ -4102,7 +4102,7 @@
     {
       "id": 19582,
       "name": "Tamed Pet Passive (DND)",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19583,
@@ -4782,7 +4782,7 @@
     {
       "id": 24992,
       "name": "Demonic Transformation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25200,
@@ -4992,27 +4992,27 @@
     {
       "id": 33502,
       "name": "Savage Flurry Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33503,
       "name": "Savage Flurry Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33504,
       "name": "Savage Flurry Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33505,
       "name": "Savage Flurry Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33506,
       "name": "Savage Flurry Effect",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33507,
@@ -5092,7 +5092,7 @@
     {
       "id": 33526,
       "name": "Terrifying Roar",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33527,
@@ -5317,17 +5317,17 @@
     {
       "id": 33575,
       "name": "Melee Specialization",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33576,
       "name": "Melee Specialization",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33577,
       "name": "Melee Specialization",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33578,
@@ -5507,7 +5507,7 @@
     {
       "id": 34090,
       "name": "Rapid Strikes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34133,
@@ -5944,7 +5944,7 @@
     {
       "id": 6136,
       "name": "Chilled",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6139,
@@ -5999,7 +5999,7 @@
     {
       "id": 7321,
       "name": "Chilled",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 7322,
@@ -6939,7 +6939,7 @@
     {
       "id": 12531,
       "name": "Chilling Touch",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 12536,
@@ -7434,7 +7434,7 @@
     {
       "id": 15850,
       "name": "Chilled",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 16046,
@@ -7554,7 +7554,7 @@
     {
       "id": 16927,
       "name": "Chilled",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17010,
@@ -7649,7 +7649,7 @@
     {
       "id": 18101,
       "name": "Chilled",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18105,
@@ -8024,7 +8024,7 @@
     {
       "id": 25022,
       "name": "Hallow's End Fright",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25023,
@@ -8569,17 +8569,17 @@
     {
       "id": 33897,
       "name": "Blazing Speed",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33898,
       "name": "Blazing Speed",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33899,
       "name": "Blazing Speed",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33900,
@@ -8961,7 +8961,7 @@
     {
       "id": 2878,
       "name": "Turn Undead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 3472,
@@ -9011,7 +9011,7 @@
     {
       "id": 5627,
       "name": "Turn Undead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6940,
@@ -9101,7 +9101,7 @@
     {
       "id": 10326,
       "name": "Turn Evil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10328,
@@ -11046,7 +11046,7 @@
     {
       "id": 33488,
       "name": "Consecrated Arms",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33489,
@@ -11273,7 +11273,7 @@
     {
       "id": 605,
       "name": "Mind Control",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 724,
@@ -11528,12 +11528,12 @@
     {
       "id": 8122,
       "name": "Psychic Scream",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8124,
       "name": "Psychic Scream",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8129,
@@ -11633,12 +11633,12 @@
     {
       "id": 10888,
       "name": "Psychic Scream",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10890,
       "name": "Psychic Scream",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10892,
@@ -11683,12 +11683,12 @@
     {
       "id": 10911,
       "name": "Mind Control",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10912,
       "name": "Mind Control",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10915,
@@ -12508,7 +12508,7 @@
     {
       "id": 16053,
       "name": "Dominion of Soul",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 16329,
@@ -13318,7 +13318,7 @@
     {
       "id": 27610,
       "name": "Psychic Scream",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27636,
@@ -13608,12 +13608,12 @@
     {
       "id": 33800,
       "name": "Pilgrimage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33801,
       "name": "Pilgrimage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33802,
@@ -14185,7 +14185,7 @@
     {
       "id": 2983,
       "name": "Sprint",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 3408,
@@ -14365,7 +14365,7 @@
     {
       "id": 8696,
       "name": "Sprint",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8721,
@@ -14500,17 +14500,17 @@
     {
       "id": 11305,
       "name": "Sprint",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11327,
       "name": "Vanish",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11329,
       "name": "Vanish",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11335,
@@ -14725,7 +14725,7 @@
     {
       "id": 13877,
       "name": "Blade Flurry",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 13974,
@@ -15105,7 +15105,7 @@
     {
       "id": 14183,
       "name": "Premeditation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 14186,
@@ -15570,12 +15570,12 @@
     {
       "id": 33687,
       "name": "Seek and Destroy",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33688,
       "name": "Seek and Destroy",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33689,
@@ -16072,7 +16072,7 @@
     {
       "id": 2645,
       "name": "Ghost Wolf",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 2860,
@@ -18722,7 +18722,7 @@
     {
       "id": 33630,
       "name": "Bloodlust",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 33631,
@@ -19399,7 +19399,7 @@
     {
       "id": 2379,
       "name": "Speed",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 2380,
@@ -19674,7 +19674,7 @@
     {
       "id": 7396,
       "name": "Fishliver Oil",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 7840,
@@ -19689,7 +19689,7 @@
     {
       "id": 8212,
       "name": "Enlarge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 9512,
@@ -19839,7 +19839,7 @@
     {
       "id": 17038,
       "name": "Winterfall Firewater",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17528,
@@ -20064,7 +20064,7 @@
     {
       "id": 24383,
       "name": "Swiftness of Zanza",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24417,
@@ -20179,7 +20179,7 @@
     {
       "id": 30338,
       "name": "Permanent Swiftness of Zanza",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34323,
@@ -20194,7 +20194,7 @@
     {
       "id": 35383,
       "name": "Hopping Mad",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 35452,
@@ -20436,7 +20436,7 @@
     {
       "id": 5484,
       "name": "Howl of Terror",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 5676,
@@ -20466,7 +20466,7 @@
     {
       "id": 5782,
       "name": "Fear",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 5857,
@@ -20491,12 +20491,12 @@
     {
       "id": 6213,
       "name": "Fear",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6215,
       "name": "Fear",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 6217,
@@ -21296,7 +21296,7 @@
     {
       "id": 17928,
       "name": "Howl of Terror",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17929,
@@ -22221,7 +22221,7 @@
     {
       "id": 20882,
       "name": "Enslave Demon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 21068,
@@ -23323,7 +23323,7 @@
     {
       "id": 5246,
       "name": "Intimidating Shout",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 5308,
@@ -24173,7 +24173,7 @@
     {
       "id": 19134,
       "name": "Intimidating Shout",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19196,
@@ -25203,7 +25203,7 @@
     {
       "id": 34113,
       "name": "Berserker's Blood",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34127,
@@ -25323,7 +25323,7 @@
     {
       "id": 34915,
       "name": "Berserker's Blood",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34934,
@@ -25333,7 +25333,7 @@
     {
       "id": 34955,
       "name": "Thirst",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 34961,

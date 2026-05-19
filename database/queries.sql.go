@@ -6620,6 +6620,53 @@ func (q *sqlQuerier) GetItemSetItems(ctx context.Context, setID int32) ([]DbcIte
 	return items, nil
 }
 
+const getItemSetWithPieces = `-- name: GetItemSetWithPieces :many
+SELECT
+  wit.entry, wit.name, wit.quality, wit.inventory_type,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+FROM dbc_item_set_item isi
+  JOIN world_item_template wit ON wit.entry = isi.item_entry
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
+WHERE isi.set_id = $1::int
+ORDER BY wit.inventory_type
+`
+
+type GetItemSetWithPiecesRow struct {
+	Entry         int32  `db:"entry" json:"entry"`
+	Name          string `db:"name" json:"name"`
+	Quality       int32  `db:"quality" json:"quality"`
+	InventoryType int32  `db:"inventory_type" json:"inventory_type"`
+	Icon          string `db:"icon" json:"icon"`
+}
+
+// Returns set pieces with item details for a specific set.
+func (q *sqlQuerier) GetItemSetWithPieces(ctx context.Context, setID int32) ([]GetItemSetWithPiecesRow, error) {
+	rows, err := q.db.Query(ctx, getItemSetWithPieces, setID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetItemSetWithPiecesRow
+	for rows.Next() {
+		var i GetItemSetWithPiecesRow
+		if err := rows.Scan(
+			&i.Entry,
+			&i.Name,
+			&i.Quality,
+			&i.InventoryType,
+			&i.Icon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getItemTemplateByEntry = `-- name: GetItemTemplateByEntry :one
 SELECT entry, class, subclass, name, description, display_id, quality, flags, buy_count, buy_price, sell_price, inventory_type, allowable_class, allowable_race, item_level, required_level, required_skill, required_skill_rank, required_spell, required_honor_rank, required_city_rank, required_reputation_faction, required_reputation_rank, max_count, stackable, container_slots, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, delay, range_mod, ammo_type, dmg_min1, dmg_max1, dmg_type1, dmg_min2, dmg_max2, dmg_type2, dmg_min3, dmg_max3, dmg_type3, dmg_min4, dmg_max4, dmg_type4, dmg_min5, dmg_max5, dmg_type5, block, armor, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, spellid_1, spelltrigger_1, spellcharges_1, spellppmrate_1, spellcooldown_1, spellcategory_1, spellcategorycooldown_1, spellid_2, spelltrigger_2, spellcharges_2, spellppmrate_2, spellcooldown_2, spellcategory_2, spellcategorycooldown_2, spellid_3, spelltrigger_3, spellcharges_3, spellppmrate_3, spellcooldown_3, spellcategory_3, spellcategorycooldown_3, spellid_4, spelltrigger_4, spellcharges_4, spellppmrate_4, spellcooldown_4, spellcategory_4, spellcategorycooldown_4, spellid_5, spelltrigger_5, spellcharges_5, spellppmrate_5, spellcooldown_5, spellcategory_5, spellcategorycooldown_5, bonding, page_text, page_language, page_material, start_quest, lock_id, material, sheath, random_property, set_id, max_durability, area_bound, map_bound, duration, bag_family, disenchant_id, food_type, min_money_loot, max_money_loot, wrapped_gift, extra_flags, other_team_entry, script_name, patch, tooltip_set_id, random_suffix, totem_category, socket_color_1, socket_content_1, socket_color_2, socket_content_2, socket_color_3, socket_content_3, socket_bonus, gem_properties, required_disenchant_skill, armor_damage_modifier, scaling_stat_distribution, scaling_stat_value, item_limit_category, holiday_id FROM world_item_template WHERE entry = $1
 `
@@ -7079,6 +7126,249 @@ func (q *sqlQuerier) GetSpellItemEnchantmentByID(ctx context.Context, id int32) 
 		&i.MaxLevel,
 	)
 	return i, err
+}
+
+const searchCreatureTemplates = `-- name: SearchCreatureTemplates :many
+SELECT entry, name, subname, level_min, level_max,
+  health_min, health_max, mana_min, mana_max,
+  armor, dmg_min, dmg_max, unit_class
+FROM world_creature_template
+WHERE name ILIKE '%' || $1::text || '%'
+  AND ($2::int = -1 OR unit_class = $2)
+ORDER BY
+  CASE WHEN $3::bool THEN level_max END DESC,
+  CASE WHEN $4::bool THEN level_max END ASC,
+  CASE WHEN $5::bool THEN health_max END DESC,
+  CASE WHEN $6::bool THEN health_max END ASC,
+  name ASC
+LIMIT 25
+`
+
+type SearchCreatureTemplatesParams struct {
+	SearchTerm string `db:"search_term" json:"search_term"`
+	UnitClass  int32  `db:"unit_class" json:"unit_class"`
+	LevelDesc  bool   `db:"level_desc" json:"level_desc"`
+	LevelAsc   bool   `db:"level_asc" json:"level_asc"`
+	HealthDesc bool   `db:"health_desc" json:"health_desc"`
+	HealthAsc  bool   `db:"health_asc" json:"health_asc"`
+}
+
+type SearchCreatureTemplatesRow struct {
+	Entry     int32       `db:"entry" json:"entry"`
+	Name      string      `db:"name" json:"name"`
+	Subname   pgtype.Text `db:"subname" json:"subname"`
+	LevelMin  int32       `db:"level_min" json:"level_min"`
+	LevelMax  int32       `db:"level_max" json:"level_max"`
+	HealthMin int32       `db:"health_min" json:"health_min"`
+	HealthMax int32       `db:"health_max" json:"health_max"`
+	ManaMin   int32       `db:"mana_min" json:"mana_min"`
+	ManaMax   int32       `db:"mana_max" json:"mana_max"`
+	Armor     int32       `db:"armor" json:"armor"`
+	DmgMin    float64     `db:"dmg_min" json:"dmg_min"`
+	DmgMax    float64     `db:"dmg_max" json:"dmg_max"`
+	UnitClass int32       `db:"unit_class" json:"unit_class"`
+}
+
+func (q *sqlQuerier) SearchCreatureTemplates(ctx context.Context, arg SearchCreatureTemplatesParams) ([]SearchCreatureTemplatesRow, error) {
+	rows, err := q.db.Query(ctx, searchCreatureTemplates,
+		arg.SearchTerm,
+		arg.UnitClass,
+		arg.LevelDesc,
+		arg.LevelAsc,
+		arg.HealthDesc,
+		arg.HealthAsc,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchCreatureTemplatesRow
+	for rows.Next() {
+		var i SearchCreatureTemplatesRow
+		if err := rows.Scan(
+			&i.Entry,
+			&i.Name,
+			&i.Subname,
+			&i.LevelMin,
+			&i.LevelMax,
+			&i.HealthMin,
+			&i.HealthMax,
+			&i.ManaMin,
+			&i.ManaMax,
+			&i.Armor,
+			&i.DmgMin,
+			&i.DmgMax,
+			&i.UnitClass,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchItemSets = `-- name: SearchItemSets :many
+SELECT s.id, s.name_lang, s.required_skill, s.required_skill_rank,
+  (SELECT COUNT(*) FROM dbc_item_set_item i WHERE i.set_id = s.id)::int AS piece_count,
+  (SELECT COUNT(*) FROM dbc_item_set_bonus b WHERE b.set_id = s.id)::int AS bonus_count,
+  COALESCE((
+    SELECT MAX(wit.quality) FROM dbc_item_set_item i
+    JOIN world_item_template wit ON wit.entry = i.item_entry
+    WHERE i.set_id = s.id
+  ), 0)::int AS max_quality,
+  COALESCE((
+    SELECT MIN(i.item_entry) FROM dbc_item_set_item i WHERE i.set_id = s.id
+  ), 0)::int AS first_item_entry
+FROM dbc_item_set s
+WHERE s.name_lang ILIKE '%' || $1::text || '%'
+ORDER BY s.name_lang ASC
+LIMIT 25
+`
+
+type SearchItemSetsRow struct {
+	ID                int32  `db:"id" json:"id"`
+	NameLang          string `db:"name_lang" json:"name_lang"`
+	RequiredSkill     int32  `db:"required_skill" json:"required_skill"`
+	RequiredSkillRank int32  `db:"required_skill_rank" json:"required_skill_rank"`
+	PieceCount        int32  `db:"piece_count" json:"piece_count"`
+	BonusCount        int32  `db:"bonus_count" json:"bonus_count"`
+	MaxQuality        int32  `db:"max_quality" json:"max_quality"`
+	FirstItemEntry    int32  `db:"first_item_entry" json:"first_item_entry"`
+}
+
+func (q *sqlQuerier) SearchItemSets(ctx context.Context, searchTerm string) ([]SearchItemSetsRow, error) {
+	rows, err := q.db.Query(ctx, searchItemSets, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchItemSetsRow
+	for rows.Next() {
+		var i SearchItemSetsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NameLang,
+			&i.RequiredSkill,
+			&i.RequiredSkillRank,
+			&i.PieceCount,
+			&i.BonusCount,
+			&i.MaxQuality,
+			&i.FirstItemEntry,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchItemTemplates = `-- name: SearchItemTemplates :many
+SELECT
+  wit.entry, wit.name, wit.quality, wit.inventory_type,
+  wit.class, wit.subclass, wit.item_level, wit.required_level,
+  wit.delay, wit.dmg_min1, wit.dmg_max1,
+  wit.container_slots, wit.required_skill, wit.required_skill_rank,
+  wit.armor,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+FROM world_item_template wit
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
+WHERE wit.name ILIKE '%' || $1::text || '%'
+  AND ($2::int = -1 OR wit.quality = $2)
+  AND ($3::int = -1 OR wit.inventory_type = $3)
+  AND ($4::int = -1 OR wit.class = $4)
+ORDER BY
+  CASE WHEN $5::bool THEN wit.quality END DESC,
+  CASE WHEN $6::bool THEN wit.item_level END DESC,
+  CASE WHEN $7::bool THEN wit.item_level END ASC,
+  CASE WHEN $8::bool THEN wit.required_level END DESC,
+  CASE WHEN $9::bool THEN wit.required_level END ASC,
+  wit.name ASC
+LIMIT 25
+`
+
+type SearchItemTemplatesParams struct {
+	SearchTerm        string `db:"search_term" json:"search_term"`
+	Quality           int32  `db:"quality" json:"quality"`
+	InventoryType     int32  `db:"inventory_type" json:"inventory_type"`
+	ItemClass         int32  `db:"item_class" json:"item_class"`
+	QualityDesc       bool   `db:"quality_desc" json:"quality_desc"`
+	ItemLevelDesc     bool   `db:"item_level_desc" json:"item_level_desc"`
+	ItemLevelAsc      bool   `db:"item_level_asc" json:"item_level_asc"`
+	RequiredLevelDesc bool   `db:"required_level_desc" json:"required_level_desc"`
+	RequiredLevelAsc  bool   `db:"required_level_asc" json:"required_level_asc"`
+}
+
+type SearchItemTemplatesRow struct {
+	Entry             int32   `db:"entry" json:"entry"`
+	Name              string  `db:"name" json:"name"`
+	Quality           int32   `db:"quality" json:"quality"`
+	InventoryType     int32   `db:"inventory_type" json:"inventory_type"`
+	Class             int32   `db:"class" json:"class"`
+	Subclass          int32   `db:"subclass" json:"subclass"`
+	ItemLevel         int32   `db:"item_level" json:"item_level"`
+	RequiredLevel     int32   `db:"required_level" json:"required_level"`
+	Delay             int32   `db:"delay" json:"delay"`
+	DmgMin1           float64 `db:"dmg_min1" json:"dmg_min1"`
+	DmgMax1           float64 `db:"dmg_max1" json:"dmg_max1"`
+	ContainerSlots    int32   `db:"container_slots" json:"container_slots"`
+	RequiredSkill     int32   `db:"required_skill" json:"required_skill"`
+	RequiredSkillRank int32   `db:"required_skill_rank" json:"required_skill_rank"`
+	Armor             int32   `db:"armor" json:"armor"`
+	Icon              string  `db:"icon" json:"icon"`
+}
+
+func (q *sqlQuerier) SearchItemTemplates(ctx context.Context, arg SearchItemTemplatesParams) ([]SearchItemTemplatesRow, error) {
+	rows, err := q.db.Query(ctx, searchItemTemplates,
+		arg.SearchTerm,
+		arg.Quality,
+		arg.InventoryType,
+		arg.ItemClass,
+		arg.QualityDesc,
+		arg.ItemLevelDesc,
+		arg.ItemLevelAsc,
+		arg.RequiredLevelDesc,
+		arg.RequiredLevelAsc,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchItemTemplatesRow
+	for rows.Next() {
+		var i SearchItemTemplatesRow
+		if err := rows.Scan(
+			&i.Entry,
+			&i.Name,
+			&i.Quality,
+			&i.InventoryType,
+			&i.Class,
+			&i.Subclass,
+			&i.ItemLevel,
+			&i.RequiredLevel,
+			&i.Delay,
+			&i.DmgMin1,
+			&i.DmgMax1,
+			&i.ContainerSlots,
+			&i.RequiredSkill,
+			&i.RequiredSkillRank,
+			&i.Armor,
+			&i.Icon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const assignWorldToServer = `-- name: AssignWorldToServer :exec

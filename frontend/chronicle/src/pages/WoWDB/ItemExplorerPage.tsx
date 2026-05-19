@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Search, Loader2, Package, X, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
 import { useSearchItems } from "@/api/gamedata";
 import { useItemTooltip } from "@/api/gamedata";
@@ -217,77 +217,39 @@ function HoverTooltip({ itemId, children }: { itemId: number; children: React.Re
   );
 }
 
-function ExpandedTooltip({ itemId, onClose }: { itemId: number; onClose: () => void }) {
-  const { data: item, isLoading, error } = useItemTooltip({ itemId });
-
-  return (
-    <div className="border border-gray-700 rounded-lg bg-gray-900/95 p-4 mt-1 mb-2">
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors"
-          aria-label="Close tooltip"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      {isLoading && (
-        <div className="flex items-center gap-2 text-gray-400 py-4 justify-center">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading...
-        </div>
-      )}
-      {error && <div className="text-red-400 text-sm">Failed to load item tooltip</div>}
-      {item && <ItemTooltip item={item} includeReferenceLinks showItemLevel />}
-    </div>
-  );
-}
-
 const GRID_COLS = "grid-cols-[36px_1fr_50px_50px_90px_130px_140px]";
 
-function ResultRow({
-  item,
-  isExpanded,
-  onToggle,
-}: {
-  item: ItemSearchResult;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
+function ResultRow({ item }: { item: ItemSearchResult }) {
   const qualityClass = QUALITY_COLORS[item.quality] ?? "text-quality-common";
   const slotLabel = INVENTORY_TYPE_LABELS[item.inventory_type] ?? "";
   const typeLabel = getTypeLabel(item);
   const details = getDetailsLabel(item);
 
   return (
-    <>
-      <HoverTooltip itemId={item.entry}>
-        <button
-          onClick={onToggle}
-          className={cn(
-            "w-full text-left grid gap-3 items-center px-3 py-1.5 rounded-md transition-colors",
-            GRID_COLS,
-            "hover:bg-gray-800/80",
-            isExpanded && "bg-gray-800/60"
-          )}
-        >
-          <ItemIcon icon={item.icon} quality={item.quality} size={28} />
-          <span className={cn("font-medium truncate", qualityClass)}>
-            {item.name}
-          </span>
-          <span className="text-gray-500 text-xs text-right tabular-nums">
-            {item.item_level || ""}
-          </span>
-          <span className="text-gray-500 text-xs text-right tabular-nums">
-            {item.required_level > 0 ? item.required_level : ""}
-          </span>
-          <span className="text-gray-500 text-xs text-right truncate">{slotLabel}</span>
-          <span className="text-gray-500 text-xs truncate">{typeLabel}</span>
-          <span className="text-gray-500 text-xs truncate">{details}</span>
-        </button>
-      </HoverTooltip>
-      {isExpanded && <ExpandedTooltip itemId={item.entry} onClose={onToggle} />}
-    </>
+    <HoverTooltip itemId={item.entry}>
+      <Link
+        to={`/wowdb/item?id=${item.entry}`}
+        className={cn(
+          "w-full text-left grid gap-3 items-center px-3 py-1.5 rounded-md transition-colors",
+          GRID_COLS,
+          "hover:bg-gray-800/80"
+        )}
+      >
+        <ItemIcon icon={item.icon} quality={item.quality} size={28} />
+        <span className={cn("font-medium truncate", qualityClass)}>
+          {item.name}
+        </span>
+        <span className="text-gray-500 text-xs text-right tabular-nums">
+          {item.item_level || ""}
+        </span>
+        <span className="text-gray-500 text-xs text-right tabular-nums">
+          {item.required_level > 0 ? item.required_level : ""}
+        </span>
+        <span className="text-gray-500 text-xs text-right truncate">{slotLabel}</span>
+        <span className="text-gray-500 text-xs truncate">{typeLabel}</span>
+        <span className="text-gray-500 text-xs truncate">{details}</span>
+      </Link>
+    </HoverTooltip>
   );
 }
 
@@ -296,7 +258,6 @@ const selectClasses = "bg-gray-800 border border-gray-600 rounded px-2 py-2 text
 export function ItemExplorerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(searchParams.get("q") ?? "");
-  const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const q = searchParams.get("q") ?? "";
@@ -322,7 +283,6 @@ export function ItemExplorerPage() {
         }
         return next;
       });
-      setExpandedItem(null);
     },
     [setSearchParams]
   );
@@ -341,11 +301,11 @@ export function ItemExplorerPage() {
     [sort, updateParams]
   );
 
-  function SortIcon({ field }: { field: string }) {
+  const sortIcon = (field: string) => {
     if (sort === `${field}_desc`) return <ArrowDown className="h-3 w-3" />;
     if (sort === `${field}_asc`) return <ArrowUp className="h-3 w-3" />;
     return <ArrowUpDown className="h-3 w-3 opacity-40" />;
-  }
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -433,7 +393,7 @@ export function ItemExplorerPage() {
                 {results.length >= 25 ? "25+ results" : `${results.length} result${results.length !== 1 ? "s" : ""}`}
                 {isFetching && <Loader2 className="inline h-3 w-3 animate-spin ml-2" />}
               </span>
-              <span className="text-xs text-gray-500">Hover for tooltip · click to expand</span>
+              <span className="text-xs text-gray-500">Hover for tooltip · click to view</span>
             </div>
             <div className={cn("grid gap-3 items-center px-3 text-xs text-gray-500 font-medium", GRID_COLS)}>
               <span />
@@ -442,13 +402,13 @@ export function ItemExplorerPage() {
                 onClick={() => toggleSort("item_level")}
                 className="flex items-center justify-end gap-1 hover:text-gray-300 transition-colors"
               >
-                iLvl <SortIcon field="item_level" />
+                iLvl {sortIcon("item_level")}
               </button>
               <button
                 onClick={() => toggleSort("required_level")}
                 className="flex items-center justify-end gap-1 hover:text-gray-300 transition-colors"
               >
-                Req <SortIcon field="required_level" />
+                Req {sortIcon("required_level")}
               </button>
               <span className="text-right">Slot</span>
               <span>Type</span>
@@ -512,14 +472,7 @@ export function ItemExplorerPage() {
         {results && results.length > 0 && (
           <div className="space-y-0.5 pt-2">
             {results.map((item) => (
-              <ResultRow
-                key={item.entry}
-                item={item}
-                isExpanded={expandedItem === item.entry}
-                onToggle={() =>
-                  setExpandedItem((prev) => (prev === item.entry ? null : item.entry))
-                }
-              />
+              <ResultRow key={item.entry} item={item} />
             ))}
           </div>
         )}

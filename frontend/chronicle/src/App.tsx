@@ -28,6 +28,12 @@ import { ServersLayout, ServersPage, UploadKeysPage, RetentionPage } from "./pag
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
 import { ItemPage } from "./pages/WoWDB/ItemPage"
+import { ItemExplorerPage } from "./pages/WoWDB/ItemExplorerPage"
+import { SpellExplorerPage } from "./pages/WoWDB/SpellExplorerPage"
+import { CreatureExplorerPage } from "./pages/WoWDB/CreatureExplorerPage"
+import { ItemSetExplorerPage } from "./pages/WoWDB/ItemSetExplorerPage"
+import { ItemSetDetailPage } from "./pages/WoWDB/ItemSetDetailPage"
+import { WoWDBLayout } from "./pages/WoWDB/WoWDBLayout"
 import {
   TechnicalDetailsPage,
   PeriodicSpellsPage,
@@ -114,11 +120,19 @@ function App() {
           <Route path="keys" element={<UploadKeysPage />} />
           <Route path="retention" element={<RetentionPage />} />
         </Route>
+        <Route path="/wowdb" element={<WoWDBLayout />}>
+          <Route index element={<ItemExplorerPage />} />
+          <Route path="items" element={<ItemExplorerPage />} />
+          <Route path="spells" element={<SpellExplorerPage />} />
+          <Route path="creatures" element={<CreatureExplorerPage />} />
+          <Route path="sets" element={<ItemSetExplorerPage />} />
+          <Route path="set" element={<ItemSetDetailPage />} />
+          <Route path="item" element={<ItemPage />} />
+        </Route>
         <Route path="/wowdb/spell" element={<SpellPage />} />
         <Route path="/wowdb/spell/:spellId" element={<SpellPage />} />
         <Route path="/wowdb/spell-by-name" element={<SpellByNamePage />} />
         <Route path="/wowdb/spell-by-name/:name" element={<SpellByNamePage />} />
-        <Route path="/wowdb/item" element={<ItemPage />} />
         <Route path="/technical" element={<TechnicalDetailsPage />} />
         <Route path="/technical/extra-attack-spells" element={<ExtraAttackSpellsPage />} />
         <Route path="/technical/vulnerability-spells" element={<VulnerabilitySpellsPage />} />

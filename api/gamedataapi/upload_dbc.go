@@ -94,6 +94,10 @@ func (h *Handler) UploadDBC(w http.ResponseWriter, r *http.Request) {
 		h.handleItemDisplayInfoUpload(ctx, w, mode, table)
 	case "SpellItemEnchantment":
 		h.handleSpellItemEnchantmentUpload(ctx, w, mode, table)
+	case "ItemRandomProperties":
+		h.handleItemRandomPropertiesUpload(ctx, w, mode, table)
+	case "ItemSet":
+		h.handleItemSetUpload(ctx, w, mode, table)
 	default:
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
 			Message: fmt.Sprintf("Unsupported DBC type: %s", dbcType),
@@ -309,6 +313,212 @@ func (h *Handler) handleSpellItemEnchantmentUpload(ctx context.Context, w http.R
 		if err := flushBatch(ctx, h.pool, batch); err != nil {
 			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
 				Message: "Failed to write final batch",
+				Detail:  err.Error(),
+			})
+			return
+		}
+	}
+
+	resp.Inserted = len(rows)
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleItemRandomPropertiesUpload(ctx context.Context, w http.ResponseWriter, mode string, table *dbc.Table) {
+	var rows []dbdefs.Ent_ItemRandomProperties
+	err := table.Range(func(cursor *dbdefs.Ent_ItemRandomProperties) bool {
+		rows = append(rows, *cursor)
+		return true
+	})
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+			Message: "Failed to iterate DBC rows",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	resp := chroniclesdk.DBCUploadResponse{
+		DBCName:     "ItemRandomProperties",
+		RecordCount: len(rows),
+		Mode:        mode,
+	}
+
+	if mode == "compare" {
+		resp.Inserted = len(rows)
+		httpapi.Write(ctx, w, http.StatusOK, resp)
+		return
+	}
+
+	const batchSize = 500
+	const irpSQL = `INSERT INTO dbc_item_random_properties (
+			id, name, name_lang, enchantment_1, enchantment_2, enchantment_3, enchantment_4, enchantment_5
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+		ON CONFLICT (id) DO UPDATE SET
+			name=EXCLUDED.name, name_lang=EXCLUDED.name_lang,
+			enchantment_1=EXCLUDED.enchantment_1, enchantment_2=EXCLUDED.enchantment_2,
+			enchantment_3=EXCLUDED.enchantment_3, enchantment_4=EXCLUDED.enchantment_4,
+			enchantment_5=EXCLUDED.enchantment_5`
+
+	batch := &pgx.Batch{}
+	for _, row := range rows {
+		batch.Queue(irpSQL,
+			row.ID, row.Name, row.Name_lang.String(),
+			int32At(row.Enchantment, 0), int32At(row.Enchantment, 1),
+			int32At(row.Enchantment, 2), int32At(row.Enchantment, 3),
+			int32At(row.Enchantment, 4),
+		)
+		if batch.Len() >= batchSize {
+			if err := flushBatch(ctx, h.pool, batch); err != nil {
+				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+					Message: "Failed to write batch",
+					Detail:  err.Error(),
+				})
+				return
+			}
+			batch = &pgx.Batch{}
+		}
+	}
+	if batch.Len() > 0 {
+		if err := flushBatch(ctx, h.pool, batch); err != nil {
+			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+				Message: "Failed to write final batch",
+				Detail:  err.Error(),
+			})
+			return
+		}
+	}
+
+	resp.Inserted = len(rows)
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleItemSetUpload(ctx context.Context, w http.ResponseWriter, mode string, table *dbc.Table) {
+	var rows []dbdefs.Ent_ItemSet
+	err := table.Range(func(cursor *dbdefs.Ent_ItemSet) bool {
+		rows = append(rows, *cursor)
+		return true
+	})
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+			Message: "Failed to iterate DBC rows",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	resp := chroniclesdk.DBCUploadResponse{
+		DBCName:     "ItemSet",
+		RecordCount: len(rows),
+		Mode:        mode,
+	}
+
+	if mode == "compare" {
+		resp.Inserted = len(rows)
+		httpapi.Write(ctx, w, http.StatusOK, resp)
+		return
+	}
+
+	const batchSize = 500
+
+	// 1. Upsert dbc_item_set (set metadata)
+	const setSQL = `INSERT INTO dbc_item_set (id, name_lang, required_skill, required_skill_rank)
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (id) DO UPDATE SET
+			name_lang=EXCLUDED.name_lang,
+			required_skill=EXCLUDED.required_skill,
+			required_skill_rank=EXCLUDED.required_skill_rank`
+
+	batch := &pgx.Batch{}
+	for _, row := range rows {
+		batch.Queue(setSQL, row.ID, row.Name_lang.String(), row.RequiredSkill, row.RequiredSkillRank)
+		if batch.Len() >= batchSize {
+			if err := flushBatch(ctx, h.pool, batch); err != nil {
+				httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+					Message: "Failed to write item set batch",
+					Detail:  err.Error(),
+				})
+				return
+			}
+			batch = &pgx.Batch{}
+		}
+	}
+	if batch.Len() > 0 {
+		if err := flushBatch(ctx, h.pool, batch); err != nil {
+			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+				Message: "Failed to write item set final batch",
+				Detail:  err.Error(),
+			})
+			return
+		}
+	}
+
+	// 2. Upsert dbc_item_set_bonus (set bonus spells)
+	const bonusSQL = `INSERT INTO dbc_item_set_bonus (set_id, threshold, spell_id)
+		VALUES ($1,$2,$3)
+		ON CONFLICT (set_id, threshold, spell_id) DO NOTHING`
+
+	batch = &pgx.Batch{}
+	for _, row := range rows {
+		for i := range row.SetSpellID {
+			if i >= len(row.SetThreshold) {
+				break
+			}
+			spellID := row.SetSpellID[i]
+			threshold := row.SetThreshold[i]
+			if spellID == 0 || threshold == 0 {
+				continue
+			}
+			batch.Queue(bonusSQL, row.ID, threshold, spellID)
+			if batch.Len() >= batchSize {
+				if err := flushBatch(ctx, h.pool, batch); err != nil {
+					httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+						Message: "Failed to write set bonus batch",
+						Detail:  err.Error(),
+					})
+					return
+				}
+				batch = &pgx.Batch{}
+			}
+		}
+	}
+	if batch.Len() > 0 {
+		if err := flushBatch(ctx, h.pool, batch); err != nil {
+			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+				Message: "Failed to write set bonus final batch",
+				Detail:  err.Error(),
+			})
+			return
+		}
+	}
+
+	// 3. Upsert dbc_item_set_item (set membership)
+	const itemSQL = `INSERT INTO dbc_item_set_item (set_id, item_entry)
+		VALUES ($1,$2)
+		ON CONFLICT (set_id, item_entry) DO NOTHING`
+
+	batch = &pgx.Batch{}
+	for _, row := range rows {
+		for _, itemID := range row.ItemID {
+			if itemID == 0 {
+				continue
+			}
+			batch.Queue(itemSQL, row.ID, itemID)
+			if batch.Len() >= batchSize {
+				if err := flushBatch(ctx, h.pool, batch); err != nil {
+					httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+						Message: "Failed to write set item batch",
+						Detail:  err.Error(),
+					})
+					return
+				}
+				batch = &pgx.Batch{}
+			}
+		}
+	}
+	if batch.Len() > 0 {
+		if err := flushBatch(ctx, h.pool, batch); err != nil {
+			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
+				Message: "Failed to write set item final batch",
 				Detail:  err.Error(),
 			})
 			return

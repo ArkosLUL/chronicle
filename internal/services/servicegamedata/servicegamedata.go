@@ -3,10 +3,12 @@ package servicegamedata
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/time/rate"
 
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
@@ -61,6 +63,13 @@ func (s *Service) setupRoutes(_ *authz.Authz) {
 	s.router.Get("/tooltip/item/{item_id}", s.handleItemTooltip)
 	s.router.Get("/display/item/{item_id}", s.handleItemDisplay)
 	s.router.Get("/sim/item/{item_id}", s.handleItemSim)
+
+	// Rate limit search endpoints: burst 30, refill 5/min (one token every 12s).
+	searchLimiter := newIPLimiter(rate.Every(12*time.Second), 30)
+	s.router.With(searchLimiter.middleware).Get("/search/items", s.handleSearchItems)
+	s.router.With(searchLimiter.middleware).Get("/search/creatures", s.handleSearchCreatures)
+	s.router.With(searchLimiter.middleware).Get("/search/item-sets", s.handleSearchItemSets)
+	s.router.Get("/item-set", s.handleGetItemSetDetail)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -6189,6 +6189,305 @@
     "8": {
       "tabs": [
         {
+          "id": 41,
+          "name": "Fire",
+          "backgroundFile": "MageFire",
+          "orderIndex": 0,
+          "spellIconID": 11,
+          "iconTexture": "Spell_Fire_Fire",
+          "talents": [
+            {
+              "id": 24,
+              "tierID": 0,
+              "columnIndex": 0,
+              "maxRank": 2,
+              "tabIndex": 0,
+              "spellRanks": [
+                11094,
+                13043
+              ],
+              "iconTexture": "Spell_Fire_FireArmor"
+            },
+            {
+              "id": 26,
+              "tierID": 0,
+              "columnIndex": 1,
+              "maxRank": 5,
+              "tabIndex": 1,
+              "spellRanks": [
+                11069,
+                12338,
+                12339,
+                12340,
+                12341
+              ],
+              "iconTexture": "Spell_Fire_FlameBolt"
+            },
+            {
+              "id": 27,
+              "tierID": 0,
+              "columnIndex": 2,
+              "maxRank": 4,
+              "tabIndex": 2,
+              "spellRanks": [
+                11078,
+                11080,
+                12342,
+                12343
+              ],
+              "iconTexture": "Spell_Fire_Fireball"
+            },
+            {
+              "id": 29,
+              "tierID": 0,
+              "columnIndex": 3,
+              "maxRank": 1,
+              "tabIndex": 3,
+              "spellRanks": [
+                11366
+              ],
+              "prereqTalent": [
+                27
+              ],
+              "prereqRank": [
+                3
+              ],
+              "iconTexture": "Spell_Fire_Fireball02"
+            },
+            {
+              "id": 28,
+              "tierID": 1,
+              "columnIndex": 0,
+              "maxRank": 2,
+              "tabIndex": 4,
+              "spellRanks": [
+                11100,
+                12353
+              ],
+              "iconTexture": "Spell_Fire_Flare"
+            },
+            {
+              "id": 23,
+              "tierID": 1,
+              "columnIndex": 1,
+              "maxRank": 3,
+              "tabIndex": 5,
+              "spellRanks": [
+                11083,
+                12351,
+                12352
+              ],
+              "iconTexture": "Spell_Fire_Fire"
+            },
+            {
+              "id": 30,
+              "tierID": 1,
+              "columnIndex": 2,
+              "maxRank": 5,
+              "tabIndex": 6,
+              "spellRanks": [
+                11103,
+                12357,
+                12358,
+                12359,
+                12360
+              ],
+              "prereqTalent": [
+                27
+              ],
+              "prereqRank": [
+                3
+              ],
+              "iconTexture": "Spell_Fire_MeteorStorm"
+            },
+            {
+              "id": 33,
+              "tierID": 2,
+              "columnIndex": 0,
+              "maxRank": 5,
+              "tabIndex": 7,
+              "spellRanks": [
+                11115,
+                11367,
+                11368,
+                11369,
+                11370
+              ],
+              "iconTexture": "INV_SummerFest_FirePotion"
+            },
+            {
+              "id": 32,
+              "tierID": 2,
+              "columnIndex": 1,
+              "maxRank": 1,
+              "tabIndex": 8,
+              "spellRanks": [
+                11113
+              ],
+              "iconTexture": "Spell_Holy_Excorcism_02"
+            },
+            {
+              "id": 1141,
+              "tierID": 2,
+              "columnIndex": 3,
+              "maxRank": 3,
+              "tabIndex": 9,
+              "spellRanks": [
+                18459,
+                18460,
+                34277
+              ],
+              "iconTexture": "Spell_Fire_FlameShock"
+            },
+            {
+              "id": 31,
+              "tierID": 3,
+              "columnIndex": 1,
+              "maxRank": 2,
+              "tabIndex": 10,
+              "spellRanks": [
+                33897,
+                33898
+              ],
+              "iconTexture": "Ability_Rogue_Sprint"
+            },
+            {
+              "id": 1639,
+              "tierID": 3,
+              "columnIndex": 3,
+              "maxRank": 5,
+              "tabIndex": 11,
+              "spellRanks": [
+                33905,
+                33906,
+                33907,
+                34271,
+                34272
+              ],
+              "iconTexture": "incinerate_war3"
+            },
+            {
+              "id": 1764,
+              "tierID": 4,
+              "columnIndex": 0,
+              "maxRank": 1,
+              "tabIndex": 12,
+              "spellRanks": [
+                33900
+              ],
+              "prereqTalent": [
+                33
+              ],
+              "prereqRank": [
+                4
+              ],
+              "iconTexture": "Spell_Fire_MoltenBlood"
+            },
+            {
+              "id": 1765,
+              "tierID": 4,
+              "columnIndex": 1,
+              "maxRank": 3,
+              "tabIndex": 13,
+              "spellRanks": [
+                33901,
+                33902,
+                33903
+              ],
+              "iconTexture": "Spell_Frost_FireResistanceTotem"
+            },
+            {
+              "id": 1766,
+              "tierID": 4,
+              "columnIndex": 2,
+              "maxRank": 1,
+              "tabIndex": 14,
+              "spellRanks": [
+                34125
+              ],
+              "prereqTalent": [
+                32
+              ],
+              "prereqRank": [
+                0
+              ],
+              "iconTexture": "INV_Elemental_Primal_Fire"
+            },
+            {
+              "id": 25,
+              "tierID": 4,
+              "columnIndex": 3,
+              "maxRank": 3,
+              "tabIndex": 15,
+              "spellRanks": [
+                11095,
+                12872,
+                12873
+              ],
+              "iconTexture": "Spell_Fire_SoulBurn"
+            },
+            {
+              "id": 34,
+              "tierID": 5,
+              "columnIndex": 0,
+              "maxRank": 5,
+              "tabIndex": 16,
+              "spellRanks": [
+                11119,
+                11120,
+                12846,
+                12847,
+                12848
+              ],
+              "iconTexture": "Spell_Fire_Incinerate"
+            },
+            {
+              "id": 35,
+              "tierID": 5,
+              "columnIndex": 2,
+              "maxRank": 5,
+              "tabIndex": 17,
+              "spellRanks": [
+                11124,
+                12378,
+                12398,
+                12399,
+                12400
+              ],
+              "iconTexture": "Spell_Fire_Immolation"
+            },
+            {
+              "id": 1767,
+              "tierID": 5,
+              "columnIndex": 3,
+              "maxRank": 2,
+              "tabIndex": 18,
+              "spellRanks": [
+                33909,
+                33910
+              ],
+              "iconTexture": "INV_Torch_Lit"
+            },
+            {
+              "id": 36,
+              "tierID": 6,
+              "columnIndex": 1,
+              "maxRank": 1,
+              "tabIndex": 19,
+              "spellRanks": [
+                11129
+              ],
+              "prereqTalent": [
+                1765
+              ],
+              "prereqRank": [
+                2
+              ],
+              "iconTexture": "Spell_Fire_SealOfFire"
+            }
+          ]
+        },
+        {
           "id": 81,
           "name": "Arcane",
           "backgroundFile": "MageArcane",
@@ -6493,305 +6792,6 @@
                 34091
               ],
               "iconTexture": "Spell_Nature_Brilliance"
-            }
-          ]
-        },
-        {
-          "id": 41,
-          "name": "Fire",
-          "backgroundFile": "MageFire",
-          "orderIndex": 0,
-          "spellIconID": 11,
-          "iconTexture": "Spell_Fire_Fire",
-          "talents": [
-            {
-              "id": 24,
-              "tierID": 0,
-              "columnIndex": 0,
-              "maxRank": 2,
-              "tabIndex": 0,
-              "spellRanks": [
-                11094,
-                13043
-              ],
-              "iconTexture": "Spell_Fire_FireArmor"
-            },
-            {
-              "id": 26,
-              "tierID": 0,
-              "columnIndex": 1,
-              "maxRank": 5,
-              "tabIndex": 1,
-              "spellRanks": [
-                11069,
-                12338,
-                12339,
-                12340,
-                12341
-              ],
-              "iconTexture": "Spell_Fire_FlameBolt"
-            },
-            {
-              "id": 27,
-              "tierID": 0,
-              "columnIndex": 2,
-              "maxRank": 4,
-              "tabIndex": 2,
-              "spellRanks": [
-                11078,
-                11080,
-                12342,
-                12343
-              ],
-              "iconTexture": "Spell_Fire_Fireball"
-            },
-            {
-              "id": 29,
-              "tierID": 0,
-              "columnIndex": 3,
-              "maxRank": 1,
-              "tabIndex": 3,
-              "spellRanks": [
-                11366
-              ],
-              "prereqTalent": [
-                27
-              ],
-              "prereqRank": [
-                3
-              ],
-              "iconTexture": "Spell_Fire_Fireball02"
-            },
-            {
-              "id": 28,
-              "tierID": 1,
-              "columnIndex": 0,
-              "maxRank": 2,
-              "tabIndex": 4,
-              "spellRanks": [
-                11100,
-                12353
-              ],
-              "iconTexture": "Spell_Fire_Flare"
-            },
-            {
-              "id": 23,
-              "tierID": 1,
-              "columnIndex": 1,
-              "maxRank": 3,
-              "tabIndex": 5,
-              "spellRanks": [
-                11083,
-                12351,
-                12352
-              ],
-              "iconTexture": "Spell_Fire_Fire"
-            },
-            {
-              "id": 30,
-              "tierID": 1,
-              "columnIndex": 2,
-              "maxRank": 5,
-              "tabIndex": 6,
-              "spellRanks": [
-                11103,
-                12357,
-                12358,
-                12359,
-                12360
-              ],
-              "prereqTalent": [
-                27
-              ],
-              "prereqRank": [
-                3
-              ],
-              "iconTexture": "Spell_Fire_MeteorStorm"
-            },
-            {
-              "id": 33,
-              "tierID": 2,
-              "columnIndex": 0,
-              "maxRank": 5,
-              "tabIndex": 7,
-              "spellRanks": [
-                11115,
-                11367,
-                11368,
-                11369,
-                11370
-              ],
-              "iconTexture": "INV_SummerFest_FirePotion"
-            },
-            {
-              "id": 32,
-              "tierID": 2,
-              "columnIndex": 1,
-              "maxRank": 1,
-              "tabIndex": 8,
-              "spellRanks": [
-                11113
-              ],
-              "iconTexture": "Spell_Holy_Excorcism_02"
-            },
-            {
-              "id": 1141,
-              "tierID": 2,
-              "columnIndex": 3,
-              "maxRank": 3,
-              "tabIndex": 9,
-              "spellRanks": [
-                18459,
-                18460,
-                34277
-              ],
-              "iconTexture": "Spell_Fire_FlameShock"
-            },
-            {
-              "id": 31,
-              "tierID": 3,
-              "columnIndex": 1,
-              "maxRank": 2,
-              "tabIndex": 10,
-              "spellRanks": [
-                33897,
-                33898
-              ],
-              "iconTexture": "Ability_Rogue_Sprint"
-            },
-            {
-              "id": 1639,
-              "tierID": 3,
-              "columnIndex": 3,
-              "maxRank": 5,
-              "tabIndex": 11,
-              "spellRanks": [
-                33905,
-                33906,
-                33907,
-                34271,
-                34272
-              ],
-              "iconTexture": "incinerate_war3"
-            },
-            {
-              "id": 1764,
-              "tierID": 4,
-              "columnIndex": 0,
-              "maxRank": 1,
-              "tabIndex": 12,
-              "spellRanks": [
-                33900
-              ],
-              "prereqTalent": [
-                33
-              ],
-              "prereqRank": [
-                4
-              ],
-              "iconTexture": "Spell_Fire_MoltenBlood"
-            },
-            {
-              "id": 1765,
-              "tierID": 4,
-              "columnIndex": 1,
-              "maxRank": 3,
-              "tabIndex": 13,
-              "spellRanks": [
-                33901,
-                33902,
-                33903
-              ],
-              "iconTexture": "Spell_Frost_FireResistanceTotem"
-            },
-            {
-              "id": 1766,
-              "tierID": 4,
-              "columnIndex": 2,
-              "maxRank": 1,
-              "tabIndex": 14,
-              "spellRanks": [
-                34125
-              ],
-              "prereqTalent": [
-                32
-              ],
-              "prereqRank": [
-                0
-              ],
-              "iconTexture": "INV_Elemental_Primal_Fire"
-            },
-            {
-              "id": 25,
-              "tierID": 4,
-              "columnIndex": 3,
-              "maxRank": 3,
-              "tabIndex": 15,
-              "spellRanks": [
-                11095,
-                12872,
-                12873
-              ],
-              "iconTexture": "Spell_Fire_SoulBurn"
-            },
-            {
-              "id": 34,
-              "tierID": 5,
-              "columnIndex": 0,
-              "maxRank": 5,
-              "tabIndex": 16,
-              "spellRanks": [
-                11119,
-                11120,
-                12846,
-                12847,
-                12848
-              ],
-              "iconTexture": "Spell_Fire_Incinerate"
-            },
-            {
-              "id": 35,
-              "tierID": 5,
-              "columnIndex": 2,
-              "maxRank": 5,
-              "tabIndex": 17,
-              "spellRanks": [
-                11124,
-                12378,
-                12398,
-                12399,
-                12400
-              ],
-              "iconTexture": "Spell_Fire_Immolation"
-            },
-            {
-              "id": 1767,
-              "tierID": 5,
-              "columnIndex": 3,
-              "maxRank": 2,
-              "tabIndex": 18,
-              "spellRanks": [
-                33909,
-                33910
-              ],
-              "iconTexture": "INV_Torch_Lit"
-            },
-            {
-              "id": 36,
-              "tierID": 6,
-              "columnIndex": 1,
-              "maxRank": 1,
-              "tabIndex": 19,
-              "spellRanks": [
-                11129
-              ],
-              "prereqTalent": [
-                1765
-              ],
-              "prereqRank": [
-                2
-              ],
-              "iconTexture": "Spell_Fire_SealOfFire"
             }
           ]
         },

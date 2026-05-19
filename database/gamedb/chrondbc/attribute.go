@@ -15,6 +15,14 @@ func (a Attribute) Mask() uint32 { return uint32(a) }
 // SpellAttributes holds all 9 attribute blocks for a spell.
 type SpellAttributes [9]uint32
 
+func MakeSpellAttributes(attrs ...Attribute) SpellAttributes {
+  var sa SpellAttributes
+  for _, a := range attrs {
+    sa.Set(a)
+  }
+  return sa
+}
+
 // Has returns true if the given attribute is set.
 func (sa SpellAttributes) Has(a Attribute) bool {
 	return sa[a.Block()]&a.Mask() != 0

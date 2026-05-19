@@ -27,9 +27,8 @@ function formatRange(min: number, max: number): string {
 
 // --- Components ---
 
-const GRID_COLS = "grid-cols-[1fr_60px_100px_70px_70px_1fr]";
+const GRID_COLS = "grid-cols-[1fr_60px_100px_70px_1fr]";
 
-const selectClasses = "bg-gray-800 border border-gray-600 rounded px-2 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors";
 
 function ExpandedStats({ creature }: { creature: CreatureSearchResult }) {
   return (
@@ -85,7 +84,6 @@ function ResultRow({
 }) {
   const levelStr = formatRange(creature.level_min, creature.level_max);
   const healthStr = formatRange(creature.health_min, creature.health_max);
-  const classLabel = UNIT_CLASS_LABELS[creature.unit_class] ?? "";
   const dmgStr = creature.dmg_max > 0 ? `${formatRange(creature.dmg_min, creature.dmg_max)} dmg` : "";
   const armorStr = creature.armor > 0 ? `${formatNumber(creature.armor)} armor` : "";
   const details = [dmgStr, armorStr].filter(Boolean).join(" · ");
@@ -112,7 +110,6 @@ function ResultRow({
         <span className="text-gray-500 text-xs text-right tabular-nums">
           {creature.armor > 0 ? formatNumber(creature.armor) : ""}
         </span>
-        <span className="text-gray-500 text-xs truncate">{classLabel}</span>
         <span className="text-gray-600 text-xs truncate">{details}</span>
       </button>
       {isExpanded && <ExpandedStats creature={creature} />}
@@ -127,11 +124,10 @@ export function CreatureExplorerPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const q = searchParams.get("q") ?? "";
-  const unitClass = searchParams.get("unit_class") ? Number(searchParams.get("unit_class")) : undefined;
   const sort = searchParams.get("sort") ?? undefined;
 
   const { data: results, isLoading, isFetching, error } = useSearchCreatures(
-    q.length >= 2 ? { q, unit_class: unitClass, sort } : null
+    q.length >= 2 ? { q, sort } : null
   );
 
   const updateParams = useCallback(
@@ -166,11 +162,11 @@ export function CreatureExplorerPage() {
     [sort, updateParams]
   );
 
-  function SortIcon({ field }: { field: string }) {
+  const sortIcon = (field: string) => {
     if (sort === `${field}_desc`) return <ArrowDown className="h-3 w-3" />;
     if (sort === `${field}_asc`) return <ArrowUp className="h-3 w-3" />;
     return <ArrowUpDown className="h-3 w-3 opacity-40" />;
-  }
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -210,18 +206,7 @@ export function CreatureExplorerPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <select
-            value={unitClass ?? -1}
-            onChange={(e) => updateParams({ unit_class: e.target.value })}
-            className={selectClasses}
-          >
-            <option value="-1">Any Class</option>
-            {Object.entries(UNIT_CLASS_LABELS).map(([v, label]) => (
-              <option key={v} value={v}>{label}</option>
-            ))}
-          </select>
-        </div>
+
       </div>
 
       {/* Results */}
@@ -242,16 +227,15 @@ export function CreatureExplorerPage() {
                 onClick={() => toggleSort("level")}
                 className="flex items-center justify-end gap-1 hover:text-gray-300 transition-colors"
               >
-                Level <SortIcon field="level" />
+                Level {sortIcon("level")}
               </button>
               <button
                 onClick={() => toggleSort("health")}
                 className="flex items-center justify-end gap-1 hover:text-gray-300 transition-colors"
               >
-                Health <SortIcon field="health" />
+                Health {sortIcon("health")}
               </button>
               <span className="text-right">Armor</span>
-              <span>Class</span>
               <span>Details</span>
             </div>
           </div>

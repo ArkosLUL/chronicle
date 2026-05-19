@@ -59,3 +59,71 @@ SELECT * FROM world_item_template WHERE entry = ANY(@entries::int[]);
 -- name: GetCreatureTemplatesByEntries :many
 SELECT * FROM world_creature_template WHERE entry = ANY(@entries::int[]);
 
+-- name: SearchItemTemplates :many
+SELECT
+  wit.entry, wit.name, wit.quality, wit.inventory_type,
+  wit.class, wit.subclass, wit.item_level, wit.required_level,
+  wit.delay, wit.dmg_min1, wit.dmg_max1,
+  wit.container_slots, wit.required_skill, wit.required_skill_rank,
+  wit.armor,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+FROM world_item_template wit
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
+WHERE wit.name ILIKE '%' || @search_term::text || '%'
+  AND (@quality::int = -1 OR wit.quality = @quality)
+  AND (@inventory_type::int = -1 OR wit.inventory_type = @inventory_type)
+  AND (@item_class::int = -1 OR wit.class = @item_class)
+ORDER BY
+  CASE WHEN @quality_desc::bool THEN wit.quality END DESC,
+  CASE WHEN @item_level_desc::bool THEN wit.item_level END DESC,
+  CASE WHEN @item_level_asc::bool THEN wit.item_level END ASC,
+  CASE WHEN @required_level_desc::bool THEN wit.required_level END DESC,
+  CASE WHEN @required_level_asc::bool THEN wit.required_level END ASC,
+  wit.name ASC
+LIMIT 25;
+
+-- name: SearchCreatureTemplates :many
+SELECT entry, name, subname, level_min, level_max,
+  health_min, health_max, mana_min, mana_max,
+  armor, dmg_min, dmg_max, unit_class
+FROM world_creature_template
+WHERE name ILIKE '%' || @search_term::text || '%'
+  AND (@unit_class::int = -1 OR unit_class = @unit_class)
+ORDER BY
+  CASE WHEN @level_desc::bool THEN level_max END DESC,
+  CASE WHEN @level_asc::bool THEN level_max END ASC,
+  CASE WHEN @health_desc::bool THEN health_max END DESC,
+  CASE WHEN @health_asc::bool THEN health_max END ASC,
+  name ASC
+LIMIT 25;
+
+-- name: SearchItemSets :many
+SELECT s.id, s.name_lang, s.required_skill, s.required_skill_rank,
+  (SELECT COUNT(*) FROM dbc_item_set_item i WHERE i.set_id = s.id)::int AS piece_count,
+  (SELECT COUNT(*) FROM dbc_item_set_bonus b WHERE b.set_id = s.id)::int AS bonus_count,
+  COALESCE((
+    SELECT MAX(wit.quality) FROM dbc_item_set_item i
+    JOIN world_item_template wit ON wit.entry = i.item_entry
+    WHERE i.set_id = s.id
+  ), 0)::int AS max_quality,
+  COALESCE((
+    SELECT MIN(i.item_entry) FROM dbc_item_set_item i WHERE i.set_id = s.id
+  ), 0)::int AS first_item_entry
+FROM dbc_item_set s
+WHERE s.name_lang ILIKE '%' || @search_term::text || '%'
+ORDER BY s.name_lang ASC
+LIMIT 25;
+
+-- name: GetItemSetWithPieces :many
+-- Returns set pieces with item details for a specific set.
+SELECT
+  wit.entry, wit.name, wit.quality, wit.inventory_type,
+  COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '') :: TEXT as icon
+FROM dbc_item_set_item isi
+  JOIN world_item_template wit ON wit.entry = isi.item_entry
+  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
+WHERE isi.set_id = @set_id::int
+ORDER BY wit.inventory_type;
+

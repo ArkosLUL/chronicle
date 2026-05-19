@@ -10,9 +10,10 @@ func TestSpell_AttackOutcome(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		spell    Spell
-		expected AttackOutcome
+		name         string
+		spell        Spell
+		expected     AttackOutcome
+		expectedType SpellDamageType
 	}{
 		{
 			name: "MeleeBlockable",
@@ -83,13 +84,41 @@ func TestSpell_AttackOutcome(t *testing.T) {
 			},
 			expected: AttackOutcomeMiss | AttackOutcomeHit,
 		},
+		{
+			name: "Hurricane",
+			spell: Spell{
+				DefenseType: DefenseTypeMagic,
+				Effect: [3]Effect{
+					EffectPersistentAA,
+					EffectPersistentAA,
+					EffectNone,
+				},
+				EffectAura: [3]AuraEffect{
+					AuraEffectPeriodicDamage,
+					AuraEffectModMeleeHaste,
+					AuraEffectNone,
+				},
+				ImplicitTargetA: [3]ImplicitTarget{
+					ImplicitTargetDestDynobjEnemy,
+					ImplicitTargetDestDynobjEnemy,
+					ImplicitTargetNone,
+				},
+				Attrs: MakeSpellAttributes(AttrEx_Channeled1, AttrEx_CantBeRedirected, AttrEx_CantBeReflected,
+					AttrEx2_NoInitialThreat, AttrEx2_NotNeedShapeshift, Attr_NotShapeshift),
+			},
+			// TODO: This can't crit right?
+			expected:     AttackOutcomeMiss | AttackOutcomeHit | AttackOutcomeCrit | AttackOutcomeResist,
+			expectedType: SpellDamagePeriodic,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			result := tc.spell.AttackOutcome()
+			typeResult := tc.spell.SpellDamageType()
 			assert.Equal(t, tc.expected, result, "AttackOutcome mismatch for %s", tc.name)
+			assert.Equal(t, tc.expectedType, typeResult, "AttackOutcome mismatch for %s", tc.name)
 		})
 	}
 }
@@ -179,4 +208,3 @@ func TestSpell_SpellDamageNoEngageCombat_MutuallyExclusive(t *testing.T) {
 		})
 	}
 }
-

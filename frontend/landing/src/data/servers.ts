@@ -71,6 +71,7 @@ export const SERVERS: ServerEntry[] = [
     engine: "unknown",
     chronicleUrl: "https://vanillaplus.chronicleclassic.com",
     homepageUrl: "https://vanillaplus.org",
+    status: ["custom-content"],
   },
   {
     id: "octowow",

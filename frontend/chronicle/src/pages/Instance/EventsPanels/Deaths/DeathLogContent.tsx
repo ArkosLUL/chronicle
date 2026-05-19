@@ -2,13 +2,14 @@
  * DeathLogContent - Chronological list of player and enemy deaths with timestamps
  */
 
-import { useMemo, useCallback, useState } from "react";
-import { User, Skull } from "lucide-react";
+import React, { useMemo, useCallback, useState } from "react";
+import { User, Skull, ChevronRight, ChevronDown } from "lucide-react";
 import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import type { PanelRenderProps } from "../types";
 import type { DeathsResult, DeathEvent } from "./deaths.processor";
+import { DeathRecap } from "./DeathRecap";
 import { useCachedValue } from "@/hooks/useCachedValue";
 import { cn } from "@/lib/utils";
 import { hitTypeNames, HitTypeCrit } from "@/lib/hittype/hittype";
@@ -90,6 +91,7 @@ function extractDeathMode(panelOption: string | null | undefined): DeathMode {
 export const DeathLogContent = (props: DeathLogContentProps) => {
   const { result, context, loading, processing, checkboxChecked, panelOption, setPanelOption } = props;
   const [mode, setModeLocal] = useState<DeathMode>(() => extractDeathMode(panelOption));
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const setMode = useCallback((next: DeathMode) => {
     setModeLocal(next);
@@ -188,6 +190,7 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border text-muted-foreground">
+                <th className="w-5" />
                 <th className="text-left py-1.5 px-2 font-medium w-16">Time</th>
                 <th className="text-left py-1.5 px-2 font-medium w-16">Encounter</th>
                 <th className="text-left py-1.5 px-2 font-medium w-28">Killed By</th>
@@ -199,83 +202,101 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                 const encounterName = encounterNames.get(death.encounterID) || "Unknown";
                 const prevDeath = index > 0 ? sortedDeaths[index - 1] : null;
                 const isNewEncounter = prevDeath && prevDeath.encounterID !== death.encounterID;
+                const isExpanded = expandedIndex === index;
+                const rowKey = `${death.playerID}-${death.offsetMilli}-${index}`;
                 return (
-                  <tr
-                    key={`${death.playerID}-${death.offsetMilli}-${index}`}
-                    className={cn(
-                      "border-b border-border/10 hover:bg-muted/50",
-                      isNewEncounter && "border-t-2 border-t-border"
-                    )}
-                    data-death-row={index === 0 ? true : undefined}
-                  >
-                    <td className="py-1 px-2 font-mono text-muted-foreground font-mono text-2xs">
-                      {checkboxChecked 
-                        ? formatRelativeTime(death.offsetMilli)
-                        : formatTimestamp(death.dateMilli)
-                      }
-                    </td>
-                    <td className="py-1 px-2 max-w-[120px]">
-                      <button
-                        type="button"
-                        onClick={() => handleEncounterClick(death.encounterID)}
-                        className={cn(
-                          "text-left text-2xs truncate max-w-full",
-                          "text-blue-500 hover:text-blue-400 hover:underline cursor-pointer"
-                        )}
-                        title={`Select ${encounterName}`}
-                        data-death-encounter-link={index === 0 ? true : undefined}
-                      >
-                        {encounterName}
-                      </button>
-                    </td>
-                                        <td className="py-1 px-2 text-muted-foreground w-24 max-w-24" data-death-killer={index === 0 ? true : undefined}>
-                      {death.attribution ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="block truncate cursor-help underline decoration-dotted decoration-muted-foreground/50">
-                              {death.killerName || "Unknown"}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" hideArrow className="max-w-[250px] bg-popover text-popover-foreground border border-border">
-                            <div className="space-y-1">
-                              <div className="font-medium">{death.killerName || "Unknown"}</div>
-                              <div className="text-xs text-muted-foreground">{death.attribution.sourceName}</div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className={cn("font-medium", getSchoolColor(death.attribution.school))}>
-                                  {death.attribution.amount.toLocaleString()}
-                                </span>
-                                {death.attribution.school > 1 && (
-                                  <span className="text-muted-foreground">
-                                    {getSchoolName(death.attribution.school)}
+                  <React.Fragment key={rowKey}>
+                    <tr
+                      className={cn(
+                        "border-b border-border/10 hover:bg-muted/50 cursor-pointer",
+                        isNewEncounter && "border-t-2 border-t-border",
+                        isExpanded && "bg-muted/30 border-b-0"
+                      )}
+                      data-death-row={index === 0 ? true : undefined}
+                      onClick={() => setExpandedIndex(isExpanded ? null : index)}
+                    >
+                      <td className="py-1 px-1 text-muted-foreground w-5">
+                        {isExpanded
+                          ? <ChevronDown className="h-3 w-3" />
+                          : <ChevronRight className="h-3 w-3" />
+                        }
+                      </td>
+                      <td className="py-1 px-2 font-mono text-muted-foreground font-mono text-2xs">
+                        {checkboxChecked 
+                          ? formatRelativeTime(death.offsetMilli)
+                          : formatTimestamp(death.dateMilli)
+                        }
+                      </td>
+                      <td className="py-1 px-2 max-w-[120px]">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleEncounterClick(death.encounterID); }}
+                          className={cn(
+                            "text-left text-2xs truncate max-w-full",
+                            "text-blue-500 hover:text-blue-400 hover:underline cursor-pointer"
+                          )}
+                          title={`Select ${encounterName}`}
+                          data-death-encounter-link={index === 0 ? true : undefined}
+                        >
+                          {encounterName}
+                        </button>
+                      </td>
+                                          <td className="py-1 px-2 text-muted-foreground w-24 max-w-24" data-death-killer={index === 0 ? true : undefined}>
+                        {death.attribution ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block truncate cursor-help underline decoration-dotted decoration-muted-foreground/50">
+                                {death.killerName || "Unknown"}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" hideArrow className="max-w-[250px] bg-popover text-popover-foreground border border-border">
+                              <div className="space-y-1">
+                                <div className="font-medium">{death.killerName || "Unknown"}</div>
+                                <div className="text-xs text-muted-foreground">{death.attribution.sourceName}</div>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className={cn("font-medium", getSchoolColor(death.attribution.school))}>
+                                    {death.attribution.amount.toLocaleString()}
                                   </span>
-                                )}
-                                {(death.attribution.hitType & HitTypeCrit) !== 0 && (
-                                  <span className="text-yellow-500 font-medium">Crit!</span>
+                                  {death.attribution.school > 1 && (
+                                    <span className="text-muted-foreground">
+                                      {getSchoolName(death.attribution.school)}
+                                    </span>
+                                  )}
+                                  {(death.attribution.hitType & HitTypeCrit) !== 0 && (
+                                    <span className="text-yellow-500 font-medium">Crit!</span>
+                                  )}
+                                </div>
+                                {death.attribution.hitType !== 0 && (
+                                  <div className="text-2xs text-muted-foreground">
+                                    {hitTypeNames(death.attribution.hitType).join(", ")}
+                                  </div>
                                 )}
                               </div>
-                              {death.attribution.hitType !== 0 && (
-                                <div className="text-2xs text-muted-foreground">
-                                  {hitTypeNames(death.attribution.hitType).join(", ")}
-                                </div>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <span className="block truncate" title={death.killerName}>
-                          {death.killerName || "Unknown"}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="block truncate" title={death.killerName}>
+                            {death.killerName || "Unknown"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1 px-2">
+                        <span
+                          className="font-medium"
+                          style={{ color: `var(--color-class-${death.className.toLowerCase()})` }}
+                        >
+                          {death.playerName}
                         </span>
-                      )}
-                    </td>
-                    <td className="py-1 px-2">
-                      <span
-                        className="font-medium"
-                        style={{ color: `var(--color-class-${death.className.toLowerCase()})` }}
-                      >
-                        {death.playerName}
-                      </span>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="border-b border-border/10">
+                        <td colSpan={5} className="p-0 pb-1">
+                          <DeathRecap recap={death.recap} deathOffsetMilli={death.offsetMilli} />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

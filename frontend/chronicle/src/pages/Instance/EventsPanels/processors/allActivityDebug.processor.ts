@@ -87,7 +87,7 @@ const DEFAULT_PAGE_SIZE = 100;
 
 export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActivityEvent> = {
   id: "all_activity",
-  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "aura_cast", "extra_attack", "unit_classification", "combatant_info", "dispel"],
+  streams: ["damage", "heal", "resource_change", "aura", "slain", "spell_go", "spell_start", "aura_cast", "extra_attack", "unit_classification", "combatant_info", "dispel"],
   
   createState: () => ({
     counts: new Map<string, number>(),

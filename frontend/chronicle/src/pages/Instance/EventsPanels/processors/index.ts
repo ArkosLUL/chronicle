@@ -71,7 +71,7 @@ export type { DamageDoneResult as DamageDoneState, DamageDoneData, DamageSourceT
 export type { DamageTakenResult as DamageTakenState, DamageTakenData, DamageTargetType } from "../DamageTaken/damageTaken.processor";
 export type { UnifiedHealingResult, HealerData, HealingReceiverData, HealingTargetData, HealingSourceData } from "./healing.processor";
 export type { ExtraAttacksResult as ExtraAttacksState, ExtraAttacksData } from "../ExtraAttacks/extraAttacks.processor";
-export type { DeathsResult as DeathsState, DeathEvent, PlayerDeathsData } from "../Deaths/deaths.processor";
+export type { DeathsResult as DeathsState, DeathEvent, DeathRecapEntry, PlayerDeathsData } from "../Deaths/deaths.processor";
 export type { AllActivityDebugState as AllActivityState, RawDebugEvent, EncounterMeta, ResourceType } from "./allActivityDebug.processor";
 export type { MitigationResult, MitigationData, EncounterMitigation } from "./mitigation.processor";
 export type { AvoidanceResult, AvoidanceData, EncounterAvoidance } from "./avoidance.processor";

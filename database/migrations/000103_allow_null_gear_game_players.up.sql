@@ -1,0 +1,1 @@
+ALTER TABLE game_players ALTER COLUMN gear DROP NOT NULL;

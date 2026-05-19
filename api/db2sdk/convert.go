@@ -478,14 +478,16 @@ func ArmoryPlayer(row database.GetGamePlayerByGUIDRow) chroniclesdk.ArmoryPlayer
 	}
 
 	var gear chroniclesdk.PlayerOutfit
-	for i, g := range row.Gear {
-		gear[i] = chroniclesdk.PlayerGear{
-			ItemID:      g.ItemID,
-			EnchantID:   g.EnchantID,
-			ItemName:    g.ItemName,
-			ItemQuality: g.ItemQuality,
-			ItemIcon:    g.ItemIcon,
-			TransmogID:  g.TransmogID,
+	if row.Gear != nil {
+		for i, g := range row.Gear {
+			gear[i] = chroniclesdk.PlayerGear{
+				ItemID:      g.ItemID,
+				EnchantID:   g.EnchantID,
+				ItemName:    g.ItemName,
+				ItemQuality: g.ItemQuality,
+				ItemIcon:    g.ItemIcon,
+				TransmogID:  g.TransmogID,
+			}
 		}
 	}
 

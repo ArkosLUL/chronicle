@@ -340,7 +340,7 @@ CREATE TABLE game_players (
     class wow_playable_class NOT NULL,
     gender wow_playable_gender NOT NULL,
     race wow_playable_race NOT NULL,
-    gear jsonb DEFAULT '[]'::jsonb NOT NULL,
+    gear jsonb DEFAULT '[]'::jsonb,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_from_instance uuid,
     level smallint DEFAULT 0 NOT NULL,

@@ -67,6 +67,7 @@ import { createAbsorbedDamagePanel } from "./AbsorbedDamage/AbsorbedDamage";
 import { createResistsPanel } from "./ResistsPanel/Resists";
 import { createDispelLogPanel } from "./Dispel/DispelLog";
 import { createGuildsPanel } from "./Guilds/Guilds";
+import { createCompanionStatsPanel } from "./CompanionStats/CompanionStats";
 // TODO: Avoidance panel requires spell school data which isn't available yet
 // import { createAvoidancePanel } from "./Avoidance/Avoidance";
 
@@ -129,6 +130,7 @@ export const PANELS: Record<string, PanelDefinition<any, any>> = {
   absorbed_damage: createAbsorbedDamagePanel(),
   resists: createResistsPanel(),
   guilds: createGuildsPanel(),
+  companion_stats: createCompanionStatsPanel(),
 };
 
 export type EventsPanelType = keyof typeof PANELS;

@@ -417,4 +417,18 @@ func Absorbed(from time.Time, idx int32, a *messages.Absorbed) *chronicleproto.A
 func DispelTypeConv(dt chrondbc.DispelType) chronicleproto.DispelType {
 	return chronicleproto.DispelType(dt)
 }
+// CompanionStats converts a CompanionStats parser message to its proto representation.
+func CompanionStats(from time.Time, idx int32, msg *messages.CompanionStats) *chronicleproto.CompanionStats {
+	buckets := make([]int32, len(msg.Buckets))
+	for i, v := range msg.Buckets {
+		//nolint:gosec
+		buckets[i] = int32(v)
+	}
+	return &chronicleproto.CompanionStats{
+		Meta:    EventMeta(from, idx, msg),
+		Dirty:   int32(msg.Dirty), //nolint:gosec
+		Buckets: buckets,
+	}
+}
+
 

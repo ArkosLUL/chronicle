@@ -80,6 +80,7 @@ export const SERVERS: ServerEntry[] = [
     description:
       "A Vanilla 1.12-based server with custom quests, dungeons, and content additions that expand on the Classic experience.",
     logo: "servers/octowow/logo.webp",
+    banner: "servers/octowow/banner.jpg",
     accentColor: "#38bdf8",
     expansion: "vanilla",
     client: "1.12.1",
@@ -89,4 +90,21 @@ export const SERVERS: ServerEntry[] = [
     homepageUrl: "https://octowow.st/",
     status: ["custom-content"],
   },
+  {
+    id: "chromiecraft",
+    name: "ChromieCraft",
+    tagline: "Progressive WotLK powered by AzerothCore",
+    description:
+      "Open-source progressive WotLK 3.3.5a server on Wrath of the Lich King. Non-profit, no pay-to-win, built to improve AzerothCore for the community.",
+    logo: "servers/chromiecraft/logo.webp",
+    banner: "servers/chromiecraft/banner.png",
+    accentColor: "#f59e0b",
+    expansion: "wotlk",
+    client: "3.3.5a",
+    logging: "client",
+    engine: "azerothcore",
+    chronicleUrl: "https://chromie.chronicleclassic.com",
+    homepageUrl: "https://www.chromiecraft.com",
+  },
 ];
+

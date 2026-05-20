@@ -117,6 +117,7 @@ function deriveFilters(servers: ServerEntry[]): FilterOption[] {
     add("client", s.client, clientLabels[s.client]);
     add("logging", s.logging, loggingLabels[s.logging]);
     for (const tag of s.status ?? []) {
+      if (tag === "closed") continue;
       add("status", tag, statusLabels[tag]);
     }
   }

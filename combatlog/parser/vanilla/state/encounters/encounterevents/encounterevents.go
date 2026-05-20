@@ -32,6 +32,7 @@ type EncounterEvents struct {
 	Dispel             *Builder[*messages.Dispel, *chronicleproto.Dispel]
 	Interrupt          *Builder[*messages.Interrupt, *chronicleproto.Interrupt]
 	Absorbed           *Builder[*messages.Absorbed, *chronicleproto.Absorbed]
+	CompanionStats     *Builder[*messages.CompanionStats, *chronicleproto.CompanionStats]
 	cnter              int32
 }
 
@@ -54,6 +55,7 @@ func New(verbose bool) *EncounterEventsInProgress {
 		Dispel:             NewBuilder[*messages.Dispel, *chronicleproto.Dispel](),
 		Interrupt:          NewBuilder[*messages.Interrupt, *chronicleproto.Interrupt](),
 		Absorbed:           NewBuilder[*messages.Absorbed, *chronicleproto.Absorbed](),
+		CompanionStats:     NewBuilder[*messages.CompanionStats, *chronicleproto.CompanionStats](),
 	}
 }
 
@@ -138,6 +140,11 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 		return fmt.Errorf("finalizing absorbed events: %w", err)
 	}
 
+	companionStats, err := e.CompanionStats.Finalize(encounterID)
+	if err != nil {
+		return fmt.Errorf("finalizing companion stats events: %w", err)
+	}
+
 	merge.Damage = append(merge.Damage, damagePayload...)
 	merge.Healing = append(merge.Healing, healPayload...)
 	merge.ResourceChange = append(merge.ResourceChange, rcPayload...)
@@ -154,6 +161,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	merge.Dispel = append(merge.Dispel, dispel...)
 	merge.Interrupt = append(merge.Interrupt, interrupt...)
 	merge.Absorbed = append(merge.Absorbed, absorbed...)
+	merge.CompanionStats = append(merge.CompanionStats, companionStats...)
 
 	return nil
 }
@@ -244,6 +252,11 @@ func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 		if err != nil {
 			return fmt.Errorf("absorbed proto: %w", err)
 		}
+	case *messages.CompanionStats:
+		err := AddToBuilder(e.CompanionStats, ty, e.nextIndex(), types2proto.CompanionStats)
+		if err != nil {
+			return fmt.Errorf("companion stats proto: %w", err)
+		}
 	}
 	return nil
 }
@@ -269,6 +282,7 @@ func (e *EncounterEventsInProgress) setFirsts(t time.Time) {
 	e.Dispel.SetZero(e.first)
 	e.Interrupt.SetZero(e.first)
 	e.Absorbed.SetZero(e.first)
+	e.CompanionStats.SetZero(e.first)
 }
 
 func (e *EncounterEventsInProgress) nextIndex() int32 {

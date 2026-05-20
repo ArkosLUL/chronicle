@@ -33,6 +33,7 @@ import { lootProcessor } from "../LootPanel/loot.processor";
 import { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.processor";
 import { resistsProcessor } from "../ResistsPanel/resists.processor";
 import { guildsProcessor } from "../Guilds/guilds.processor";
+import { companionStatsProcessor } from "../CompanionStats/companionStats.processor";
 
 // Export individual processors
 export { damageDoneProcessor, vulnerabilityEffectProcessor, enemyDamageDoneProcessor, petDamageDoneProcessor, friendlyFireProcessor } from "../DamageDone/damageDone.processor";
@@ -163,4 +164,5 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   absorbed_damage: absorbedDamageProcessor,
   resists: resistsProcessor,
   guilds: guildsProcessor,
+  companion_stats: companionStatsProcessor,
 };

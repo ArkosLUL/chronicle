@@ -2217,6 +2217,69 @@ func (x *CombatantTalents) GetTrees() []string {
 	return nil
 }
 
+// CompanionStats carries relay health diagnostics from the
+// ChronicleCompanionWoTLK addon. Each bucket is the number of message chunks
+// that landed in a one-minute window (index 0 = current minute).
+type CompanionStats struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *EventMeta             `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
+	Dirty         int32                  `protobuf:"varint,2,opt,name=dirty,proto3" json:"dirty,omitempty"`            // total pending (unsent) segments across all providers
+	Buckets       []int32                `protobuf:"varint,3,rep,packed,name=buckets,proto3" json:"buckets,omitempty"` // [10] landed chunk counts per minute
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompanionStats) Reset() {
+	*x = CompanionStats{}
+	mi := &file_chronicle_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompanionStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompanionStats) ProtoMessage() {}
+
+func (x *CompanionStats) ProtoReflect() protoreflect.Message {
+	mi := &file_chronicle_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompanionStats.ProtoReflect.Descriptor instead.
+func (*CompanionStats) Descriptor() ([]byte, []int) {
+	return file_chronicle_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *CompanionStats) GetMeta() *EventMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *CompanionStats) GetDirty() int32 {
+	if x != nil {
+		return x.Dirty
+	}
+	return 0
+}
+
+func (x *CompanionStats) GetBuckets() []int32 {
+	if x != nil {
+		return x.Buckets
+	}
+	return nil
+}
+
 var File_chronicle_proto protoreflect.FileDescriptor
 
 const file_chronicle_proto_rawDesc = "" +
@@ -2443,7 +2506,11 @@ const file_chronicle_proto_rawDesc = "" +
 	"\x13_temporaryEnchantId\"B\n" +
 	"\x10CombatantTalents\x12\x18\n" +
 	"\asummary\x18\x01 \x03(\x05R\asummary\x12\x14\n" +
-	"\x05trees\x18\x02 \x03(\tR\x05trees*p\n" +
+	"\x05trees\x18\x02 \x03(\tR\x05trees\"o\n" +
+	"\x0eCompanionStats\x12-\n" +
+	"\x04meta\x18\x01 \x01(\v2\x19.chronicleproto.EventMetaR\x04meta\x12\x14\n" +
+	"\x05dirty\x18\x02 \x01(\x05R\x05dirty\x12\x18\n" +
+	"\abuckets\x18\x03 \x03(\x05R\abuckets*p\n" +
 	"\x06School\x12\v\n" +
 	"\aUnknown\x10\x00\x12\b\n" +
 	"\x04None\x10\x01\x12\f\n" +
@@ -2498,7 +2565,7 @@ func file_chronicle_proto_rawDescGZIP() []byte {
 }
 
 var file_chronicle_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_chronicle_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_chronicle_proto_goTypes = []any{
 	(School)(0),                // 0: chronicleproto.School
 	(CastAction)(0),            // 1: chronicleproto.CastAction
@@ -2528,6 +2595,7 @@ var file_chronicle_proto_goTypes = []any{
 	(*Absorbed)(nil),           // 25: chronicleproto.Absorbed
 	(*CombatantGearSlot)(nil),  // 26: chronicleproto.CombatantGearSlot
 	(*CombatantTalents)(nil),   // 27: chronicleproto.CombatantTalents
+	(*CompanionStats)(nil),     // 28: chronicleproto.CompanionStats
 }
 var file_chronicle_proto_depIdxs = []int32{
 	7,  // 0: chronicleproto.EventMeta.activity:type_name -> chronicleproto.ActivityEntry
@@ -2572,11 +2640,12 @@ var file_chronicle_proto_depIdxs = []int32{
 	5,  // 39: chronicleproto.Absorbed.damageSpellData:type_name -> chronicleproto.SpellData
 	5,  // 40: chronicleproto.Absorbed.absorbSpellData:type_name -> chronicleproto.SpellData
 	0,  // 41: chronicleproto.Absorbed.absorbSchool:type_name -> chronicleproto.School
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	8,  // 42: chronicleproto.CompanionStats.meta:type_name -> chronicleproto.EventMeta
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_chronicle_proto_init() }
@@ -2608,7 +2677,7 @@ func file_chronicle_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chronicle_proto_rawDesc), len(file_chronicle_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   23,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

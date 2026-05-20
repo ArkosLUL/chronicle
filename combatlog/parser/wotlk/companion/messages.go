@@ -145,10 +145,7 @@ func (p *Parser) parseLoot(ts time.Time, data string) ([]messages.Message, error
 		return nil, fmt.Errorf("loot: expected 4 fields after kind, got %d", len(parts))
 	}
 
-	quality, err := strconv.ParseInt(parts[0], 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("loot: invalid quality %q: %w", parts[0], err)
-	}
+	// parts[0] is quality — skipped, the frontend fetches it separately.
 	itemID, err := strconv.ParseInt(parts[1], 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("loot: invalid itemId %q: %w", parts[1], err)
@@ -170,9 +167,7 @@ func (p *Parser) parseLoot(ts time.Time, data string) ([]messages.Message, error
 				MessageBase:    messages.Base(ts),
 				FromPlayerName: tradeParts[0],
 				ToPlayerName:   tradeParts[1],
-				ItemName:       "", // addon provides ID, not name
 				ItemID:         int32(itemID),
-				Quality:        int32(quality),
 			},
 		}, nil
 	}
@@ -183,19 +178,22 @@ func (p *Parser) parseLoot(ts time.Time, data string) ([]messages.Message, error
 			PlayerName:  player,
 			ItemID:      int32(itemID),
 			Quantity:    int32(count),
-			Quality:     int32(quality),
 		},
 	}, nil
 }
 
-// parseMeta parses: M<landed_0>,<landed_1>,...,<landed_9>
-// Returns a CompanionStats message with per-minute-bucket landed counts.
+// parseMeta parses: M<dirty>,<landed_0>,<landed_1>,...,<landed_9>
+// Returns a CompanionStats message with dirty count and per-minute-bucket landed counts.
 func (p *Parser) parseMeta(ts time.Time, data string) ([]messages.Message, error) {
 	parts := strings.Split(data, ",")
+	if len(parts) < 1 {
+		return nil, fmt.Errorf("meta: empty data")
+	}
 	var stats messages.CompanionStats
 	stats.MessageBase = messages.Base(ts)
-	for i := 0; i < len(parts) && i < 10; i++ {
-		stats.Buckets[i], _ = strconv.Atoi(parts[i])
+	stats.Dirty, _ = strconv.Atoi(parts[0])
+	for i := 1; i < len(parts) && i <= 10; i++ {
+		stats.Buckets[i-1], _ = strconv.Atoi(parts[i])
 	}
 	return []messages.Message{&stats}, nil
 }

@@ -26,17 +26,23 @@ type unitInfo struct {
 	names         NameResolver
 	spells        gamedb.SpellFetcher
 	detectedClass map[guid.GUID]types.HeroClasses
+	// knownCombatants tracks player GUIDs for which we've received a real
+	// Combatant message (e.g. from the companion addon or CHRONICLE_COMBATANT_INFO).
+	// The synthetic layer stops emitting anything for these players — both
+	// spell-based class detection and periodic combatant re-emission.
+	knownCombatants map[guid.GUID]struct{}
 }
 
 func newUnitInfo(ctx context.Context, logger *slog.Logger, fetcher gamedb.CreatureFetcher, names NameResolver, spells gamedb.SpellFetcher) *unitInfo {
 	return &unitInfo{
-		ctx:           ctx,
-		logger:        logger,
-		lastEmit:      make(map[guid.GUID]time.Time),
-		creatures:     fetcher,
-		names:         names,
-		spells:        spells,
-		detectedClass: make(map[guid.GUID]types.HeroClasses),
+		ctx:             ctx,
+		logger:          logger,
+		lastEmit:        make(map[guid.GUID]time.Time),
+		creatures:       fetcher,
+		names:           names,
+		spells:          spells,
+		detectedClass:   make(map[guid.GUID]types.HeroClasses),
+		knownCombatants: make(map[guid.GUID]struct{}),
 	}
 }
 
@@ -129,17 +135,36 @@ func (z *unitInfo) classForPlayer(g guid.GUID) types.HeroClasses {
 }
 
 func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
+	// Pass 0: record GUIDs from real Combatant messages (e.g. companion addon or
+	// CHRONICLE_COMBATANT_INFO). Once we have authoritative data for a player the
+	// synthetic layer should not emit anything for that GUID — no spell-based class
+	// detection, no periodic re-emission.
+	for _, msg := range msgs {
+		if c, ok := msg.(*messages.Combatant); ok && c.Guid.IsPlayer() {
+			z.knownCombatants[c.Guid] = struct{}{}
+			if c.HeroClass != "" && c.HeroClass != types.HeroClassesUNKNOWN {
+				z.detectedClass[c.Guid] = c.HeroClass
+			}
+		}
+	}
+
 	// First pass: detect classes from spell events before emitting combatant messages.
 	// This way, if a player's first appearance includes a spell, we can immediately
 	// enrich the combatant info with the detected class.
+	// Skip players that already have a real Combatant message.
 	var newlyDetected map[guid.GUID]struct{}
 	for _, msg := range msgs {
 		sourceGUID, spell := extractSpellSource(msg)
-		if sourceGUID != 0 && spell != nil && z.detectClassFromSpell(sourceGUID, spell) {
-			if newlyDetected == nil {
-				newlyDetected = make(map[guid.GUID]struct{})
+		if sourceGUID != 0 && spell != nil {
+			if _, known := z.knownCombatants[sourceGUID]; known {
+				continue
 			}
-			newlyDetected[sourceGUID] = struct{}{}
+			if z.detectClassFromSpell(sourceGUID, spell) {
+				if newlyDetected == nil {
+					newlyDetected = make(map[guid.GUID]struct{})
+				}
+				newlyDetected[sourceGUID] = struct{}{}
+			}
 		}
 	}
 
@@ -178,6 +203,11 @@ func (z *unitInfo) ProcessMessages(msgs []messages.Message) []messages.Message {
 			}
 
 			if c.IsPlayer() {
+				// Skip players with real Combatant data — the companion addon
+				// or server already provides authoritative info for them.
+				if _, known := z.knownCombatants[c]; known {
+					continue
+				}
 				name, ok := z.names.Get(c)
 				if !ok {
 					continue

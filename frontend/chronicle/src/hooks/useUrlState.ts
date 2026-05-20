@@ -658,7 +658,7 @@ const PANEL_CODES: Record<PanelType, string> = {
   absorbed_damage: 'ad',
   resists: 'rs',
   guilds: 'gld',
-
+  companion_stats: 'cs',
 };
 
 // ============================================================================

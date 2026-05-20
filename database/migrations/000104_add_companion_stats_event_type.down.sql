@@ -1,0 +1,2 @@
+-- PostgreSQL does not support removing enum values.
+-- The 'companion_stats' value will remain but be unused.

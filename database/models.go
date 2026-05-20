@@ -160,6 +160,7 @@ const (
 	LogInstanceEventTypeCombatantInfo      LogInstanceEventType = "combatant_info"
 	LogInstanceEventTypeInterrupt          LogInstanceEventType = "interrupt"
 	LogInstanceEventTypeAbsorbed           LogInstanceEventType = "absorbed"
+	LogInstanceEventTypeCompanionStats     LogInstanceEventType = "companion_stats"
 )
 
 func (e *LogInstanceEventType) Scan(src interface{}) error {

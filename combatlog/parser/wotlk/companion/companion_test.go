@@ -217,7 +217,6 @@ func TestParseLoot_Drop(t *testing.T) {
 	assert.Equal(t, "Arthas", l.PlayerName)
 	assert.Equal(t, int32(49623), l.ItemID)
 	assert.Equal(t, int32(1), l.Quantity)
-	assert.Equal(t, int32(4), l.Quality)
 }
 
 func TestParseLoot_Trade(t *testing.T) {
@@ -233,7 +232,6 @@ func TestParseLoot_Trade(t *testing.T) {
 	assert.Equal(t, "Arthas", lt.FromPlayerName)
 	assert.Equal(t, "Doydz", lt.ToPlayerName)
 	assert.Equal(t, int32(49623), lt.ItemID)
-	assert.Equal(t, int32(4), lt.Quality)
 }
 
 func TestParseLoot_Legendary(t *testing.T) {
@@ -245,8 +243,8 @@ func TestParseLoot_Legendary(t *testing.T) {
 	require.Len(t, msgs, 1)
 
 	l := msgs[0].(*messages.Loot)
-	assert.Equal(t, int32(5), l.Quality) // Legendary
 	assert.Equal(t, int32(32837), l.ItemID)
+	assert.Equal(t, int32(1), l.Quantity)
 }
 
 // --- Player Identity tests ---
@@ -402,12 +400,13 @@ func TestParseMeta(t *testing.T) {
 	t.Parallel()
 	p := newTestParser()
 
-	msgs, err := p.Feed(testTS, `[5M12,8,15,3,0,0,0,0,0,0]`)
+	msgs, err := p.Feed(testTS, `[5M5,12,8,15,3,0,0,0,0,0,0]`)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 
 	stats, ok := msgs[0].(*messages.CompanionStats)
 	require.True(t, ok, "expected *messages.CompanionStats, got %T", msgs[0])
+	assert.Equal(t, 5, stats.Dirty)
 	assert.Equal(t, [10]int{12, 8, 15, 3, 0, 0, 0, 0, 0, 0}, stats.Buckets)
 }
 

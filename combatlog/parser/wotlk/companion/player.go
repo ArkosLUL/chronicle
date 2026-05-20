@@ -22,12 +22,12 @@ type PlayerData struct {
 	Gender    types.HeroGender
 	Level     int
 
-	Guild    *combatant.Guild
-	Gear     []combatant.GearItem
-	Talents  *combatant.Talents
-	Glyphs   *combatant.Glyphs
-	PetName  string
-	PetGUID  *guid.GUID
+	Guild   *combatant.Guild
+	Gear    []combatant.GearItem
+	Talents *combatant.Talents
+	Glyphs  *combatant.Glyphs
+	PetName string
+	PetGUID *guid.GUID
 }
 
 // toCombatantMessage converts accumulated player data into a Combatant message.
@@ -94,11 +94,11 @@ func (p *Parser) parsePlayer(ts time.Time, data string) ([]messages.Message, err
 		return p.parsePet(ts, pd, segData)
 	case 'H':
 		// Honor stats — log and skip for now.
-		p.logger.Debug("companion: player honor segment", "guid", gid.String(), "data", segData)
+		//p.logger.Debug("companion: player honor segment", "guid", gid.String(), "data", segData)
 		return nil, nil
 	case 'A':
 		// Arena stats — log and skip for now.
-		p.logger.Debug("companion: player arena segment", "guid", gid.String(), "data", segData)
+		//p.logger.Debug("companion: player arena segment", "guid", gid.String(), "data", segData)
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("player: unknown segment type %q", string(segType))

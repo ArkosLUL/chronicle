@@ -640,7 +640,6 @@ type Loot struct {
 	ItemID       int32
 	ItemSuffixID int32
 	Quantity     int32
-	Quality      int32 // Item quality: 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary
 }
 
 func (l Loot) Affects() []guid.GUID { return []guid.GUID{} }
@@ -652,7 +651,6 @@ type LootTrade struct {
 	ToPlayerName   string
 	ItemName       string
 	ItemID         int32 // Item ID (populated by companion addon)
-	Quality        int32 // Item quality (populated by companion addon)
 }
 
 func (l LootTrade) Affects() []guid.GUID { return []guid.GUID{} }
@@ -696,10 +694,10 @@ func (*EncounterCredit) isMessage()            {}
 type Absorbed struct {
 	MessageBase
 	Attacker guid.GUID
-	Target guid.GUID
+	Target   guid.GUID
 	// DamageSpell is nil for melee (swing) damage.
-	DamageSpell *chrondbc.Spell
-	Caster      guid.GUID
+	DamageSpell  *chrondbc.Spell
+	Caster       guid.GUID
 	AbsorbSpell  *chrondbc.Spell
 	AbsorbSchool types.School
 	Amount       int32
@@ -709,14 +707,16 @@ func (s Absorbed) Affects() []guid.GUID {
 	return []guid.GUID{s.Attacker, s.Target, s.Caster}
 }
 func (*Absorbed) isMessage() {}
+
 // CompanionStats carries relay health diagnostics from the ChronicleCompanionWoTLK addon.
+// Dirty is the total number of pending (unsent) segments across all providers.
 // Each bucket represents landed chunk counts for a one-minute window
 // (index 0 = current minute, index 9 = 9 minutes ago).
 type CompanionStats struct {
 	MessageBase
+	Dirty   int
 	Buckets [10]int
 }
 
 func (CompanionStats) Affects() []guid.GUID { return nil }
 func (*CompanionStats) isMessage()          {}
-

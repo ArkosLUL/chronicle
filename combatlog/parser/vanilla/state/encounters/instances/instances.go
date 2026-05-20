@@ -220,7 +220,7 @@ var (
 
 	StockadesFactory = &CommonFactory{
 		Name:      "Stormwind Stockade",
-		ZoneNames: []string{"the stockade", "监狱"},
+		ZoneNames: []string{"stormwind stockade", "the stockade", "监狱"},
 		Hostiles:  FromMap(StockadeHostiles()),
 	}
 

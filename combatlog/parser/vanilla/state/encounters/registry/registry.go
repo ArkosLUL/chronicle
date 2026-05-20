@@ -85,6 +85,10 @@ func NewRegistry(logger *slog.Logger) *Registry {
 	}
 }
 
+func (r *Registry) DeleteEntry(name string) {
+	delete(r.entries, name)
+}
+
 // SetFallback sets a fallback registry consulted when no entry in this
 // registry matches a zone. This allows DB-loaded entries to take priority
 // while still falling through to code-registered instances.

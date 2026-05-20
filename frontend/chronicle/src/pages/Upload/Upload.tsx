@@ -476,12 +476,22 @@ export function UploadView({
               <div>
                 <h3 className="font-medium mb-2">On Raid Night</h3>
                 <div className="space-y-3 text-muted-foreground">
-                  <p><strong className="text-foreground">1. Launch WoW and do your raid.</strong></p>
                   <div>
-                    <p className="mb-1"><strong className="text-foreground">2. Upload the file:</strong></p>
+                    <p className="mb-1"><strong className="text-foreground">1. Delete old logs before raiding:</strong></p>
+                    <ul className="list-none ml-4">
+                      <li>Delete <code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
+                    </ul>
+                  </div>
+                  <p><strong className="text-foreground">2. Launch WoW and do your raid.</strong></p>
+                  <div>
+                    <p className="mb-1"><strong className="text-foreground">3. Upload the file:</strong></p>
                     <ul className="list-none ml-4">
                       <li><code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;WoWFolder&gt;/Logs/WoWCombatLog.txt</code></li>
                     </ul>
+                  </div>
+                  <div>
+                    <p className="mb-1"><strong className="text-foreground">4. Delete the log file after uploading</strong></p>
+                    <p className="ml-4">This keeps the file small for next time.</p>
                   </div>
                 </div>
               </div>

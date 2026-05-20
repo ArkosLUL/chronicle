@@ -27,7 +27,6 @@ func AzerothcoreStaticRegistry(logger *slog.Logger) *Registry {
 	r.RegisterEntry(FromCommonFactory(instances.ForgeOfSoulsFactory))
 	r.RegisterEntry(FromCommonFactory(instances.HallsOfReflectionFactory))
 
-	r.RegisterEntry(FromCommonFactory(instances.CullingOfStratholmeFactory).WithComment("need review"))
 	r.RegisterEntry(FromCommonFactory(instances.TrialOfTheChampionFactory).WithComment("need review"))
 	r.RegisterEntry(FromCommonFactory(instances.PitOfSaronFactory).WithComment("need review"))
 	r.RegisterEntry(FromCommonFactory(instances.UtgardeKeepFactory).WithComment("need review"))
@@ -40,7 +39,6 @@ func AzerothcoreStaticRegistry(logger *slog.Logger) *Registry {
 	r.RegisterEntry(FromCommonFactory(instances.GundrakFactory).WithComment("need review"))
 	r.RegisterEntry(FromCommonFactory(instances.VioletHoldFactory).WithComment("need review"))
 	r.RegisterEntry(FromCommonFactory(instances.AhnkahetOldKingdomFactory).WithComment("need review"))
-	r.RegisterEntry(FromCommonFactory(instances.TrialOfTheChampionFactory).WithComment("need review"))
 
 	// Raids
 	r.RegisterEntry(FromCommonFactory(instances.VoAFactory))

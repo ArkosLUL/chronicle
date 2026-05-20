@@ -100,7 +100,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: [],
       aura: [],
       spell_go: [],
-      aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], combatant_info: [], dispel: [], interrupt: [], absorbed: [],
+      aura_cast: [], spell_start: [], spell_fail: [], unit_classification: [], combatant_info: [], dispel: [], interrupt: [], absorbed: [], companion_stats: [],
     },
     streamCounts: {
       damage: 0,
@@ -111,7 +111,7 @@ export const allActivityProcessor: PanelProcessor<AllActivityDebugState, AllActi
       cast: 0,
       aura: 0,
       spell_go: 0,
-      aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0, absorbed: 0,
+      aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0, absorbed: 0, companion_stats: 0,
     },
     encounters: new Map<string, EncounterMeta>(),
     totalProcessed: 0,

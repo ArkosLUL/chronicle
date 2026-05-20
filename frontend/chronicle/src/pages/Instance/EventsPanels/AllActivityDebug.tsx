@@ -41,6 +41,7 @@ const STREAM_CONFIG: Record<StreamType, { icon: React.ElementType; color: string
   dispel: { icon: Bubbles, color: "text-violet-400", label: "Dispel" },
   interrupt: { icon: Ban, color: "text-rose-400", label: "Interrupt" },
   absorbed: { icon: Shield, color: "text-sky-400", label: "Absorbed" },
+  companion_stats: { icon: Shield, color: "text-teal-400", label: "Companion Stats" },
 
   cast: { icon: Wand2, color: "text-purple-500", label: "Cast" },
 };
@@ -57,6 +58,7 @@ const STREAM_CODES: Record<StreamType, string> = {
   dispel: "dp",
   interrupt: "int",
   absorbed: "ab",
+  companion_stats: "cs",
 };
 const CODE_TO_STREAM = Object.fromEntries(
   Object.entries(STREAM_CODES).map(([k, v]) => [v, k as StreamType]),
@@ -462,7 +464,7 @@ function AllActivityContent({
   const safeResult = result ?? {
     counts: new Map<string, number>(),
     rawEventsByStream: emptyByStream,
-    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0, absorbed: 0 },
+    streamCounts: { damage: 0, heal: 0, resource_change: 0, extra_attack: 0, slain: 0, cast: 0, aura: 0, spell_go: 0, aura_cast: 0, spell_start: 0, spell_fail: 0, unit_classification: 0, combatant_info: 0, dispel: 0, interrupt: 0, absorbed: 0, companion_stats: 0 },
     encounters: emptyEncounters,
     totalProcessed: 0,
     eventsSkipped: 0,

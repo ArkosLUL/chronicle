@@ -44,6 +44,7 @@ func RegisterClassicEncounters(r *Registry) {
 	r.RegisterEntry(FromCommonFactory(instances.StormwindVaultFactory))
 	r.RegisterEntry(FromCommonFactory(instances.StockadesFactory))
 	r.RegisterEntry(FromCommonFactory(instances.SunkenTempleFactory).WithComment("not yet complete"))
+	r.RegisterEntry(FromCommonFactory(instances.ZulFarrakFactory))
 
 	r.RegisterEntry(FromCommonFactory(instances.BlackrockSpireFactory).WithComment("units registered"))
 

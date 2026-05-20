@@ -45,6 +45,11 @@ func RegisterClassicEncounters(r *Registry) {
 	r.RegisterEntry(FromCommonFactory(instances.StockadesFactory))
 	r.RegisterEntry(FromCommonFactory(instances.SunkenTempleFactory).WithComment("not yet complete"))
 	r.RegisterEntry(FromCommonFactory(instances.ZulFarrakFactory))
+	r.RegisterEntry(FromCommonFactory(instances.BlackfathomDeepsFactory).WithComment("needs review"))
+	r.RegisterEntry(FromCommonFactory(instances.UldamanFactory).WithComment("needs review"))
+	r.RegisterEntry(FromCommonFactory(instances.GnomereganFactory).WithComment("needs review"))
+	r.RegisterEntry(FromCommonFactory(instances.MaraudonFactory).WithComment("needs review"))
+	r.RegisterEntry(FromCommonFactory(instances.RazorfenDownsFactory).WithComment("needs review"))
 
 	r.RegisterEntry(FromCommonFactory(instances.BlackrockSpireFactory).WithComment("units registered"))
 

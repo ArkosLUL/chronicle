@@ -36,12 +36,15 @@ func filterInstance(
 	}
 
 	// Expand the set to include difficulty variants of spawned creatures.
+	// diffBase maps a variant entry → base entry so we can use the base name.
 	allEntries := make(map[uint32]bool, len(spawned)*2)
+	diffBase := make(map[uint32]uint32)
 	for entry := range spawned {
 		allEntries[entry] = true
 		if tmpl := templates[entry]; tmpl != nil {
 			for _, de := range tmpl.DifficultyEntries() {
 				allEntries[de] = true
+				diffBase[de] = entry
 			}
 		}
 	}
@@ -55,13 +58,22 @@ func filterInstance(
 			continue
 		}
 
+		// Use the base creature's name for difficulty variants so we
+		// don't emit AzerothCore's internal "(1)"/"(2)" suffixes.
+		name := tmpl.Name
+		if baseEntry, ok := diffBase[entry]; ok {
+			if baseTmpl := templates[baseEntry]; baseTmpl != nil {
+				name = baseTmpl.Name
+			}
+		}
+
 		if isBoss(tmpl, encounterBosses) {
-			bosses[entry] = tmpl.Name
+			bosses[entry] = name
 			continue
 		}
 
 		if shouldIncludeAdd(tmpl) {
-			adds[entry] = tmpl.Name
+			adds[entry] = name
 		}
 	}
 

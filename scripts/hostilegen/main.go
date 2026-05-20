@@ -23,14 +23,15 @@ const baseURL = "https://raw.githubusercontent.com/azerothcore/database-wotlk/ma
 func main() {
 	outputDir := flag.String("output-dir", "gen_output", "directory to write generated Go files")
 	cacheDir := flag.String("cache-dir", "", "directory to cache downloaded SQL files (uses temp dir if empty)")
+	skipExisting := flag.Bool("skip-existing", false, "skip instances whose XxxHostiles() function already exists in .go files in the output dir")
 	flag.Parse()
 
-	if err := run(*outputDir, *cacheDir); err != nil {
+	if err := run(*outputDir, *cacheDir, *skipExisting); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(outputDir, cacheDir string) error {
+func run(outputDir, cacheDir string, skipExisting bool) error {
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
@@ -80,6 +81,18 @@ func run(outputDir, cacheDir string) error {
 	log.Println("Building instance data...")
 	instanceData := buildAllInstances(templates, mapCreatures, encounterBosses)
 	log.Printf("  %d instances with data", len(instanceData))
+
+	// ---- Skip existing ----
+	var skipSet map[string]bool
+	if skipExisting {
+		skipSet = scanExistingHostiles(outputDir)
+		if len(skipSet) > 0 {
+			log.Printf("  Skipping %d instances already defined in %s", len(skipSet), outputDir)
+			for prefix := range skipSet {
+				delete(instanceData, metaMapIDByPrefix(prefix))
+			}
+		}
+	}
 
 	// ---- Generate ----
 	log.Println("Generating Go source files...")

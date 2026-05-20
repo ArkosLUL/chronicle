@@ -108,7 +108,7 @@ func TestFeed_DropDetection(t *testing.T) {
 
 	z, ok := msgs[0].(*messages.Zone)
 	require.True(t, ok)
-	assert.Equal(t, "dalaran", z.Zone.Name) // Second message, not the incomplete first.
+	assert.Equal(t, "dalaran", z.Name) // Second message, not the incomplete first.
 }
 
 func TestFeed_OrphanContinuation(t *testing.T) {
@@ -154,15 +154,15 @@ func TestParseZone_ICC(t *testing.T) {
 
 	z, ok := msgs[0].(*messages.Zone)
 	require.True(t, ok)
-	assert.Equal(t, "icecrown citadel", z.Zone.Name)
-	assert.Equal(t, "raid", z.Zone.InstanceType)
-	assert.Equal(t, uint32(631), z.Zone.MapID)
-	assert.True(t, z.Zone.IsInstance)
-	assert.Equal(t, 2, z.Zone.DifficultyIndex)
-	assert.Equal(t, "25 Player", z.Zone.DifficultyName)
-	assert.Equal(t, 25, z.Zone.MaxPlayers)
-	assert.Equal(t, 1, z.Zone.DynamicDifficulty)
-	assert.Equal(t, "The Frozen Throne", z.Zone.SubZone)
+	assert.Equal(t, "icecrown citadel", z.Name)
+	assert.Equal(t, "raid", z.InstanceType)
+	assert.Equal(t, uint32(631), z.MapID)
+	assert.True(t, z.IsInstance)
+	assert.Equal(t, 2, z.DifficultyIndex)
+	assert.Equal(t, "25 Player", z.DifficultyName)
+	assert.Equal(t, 25, z.MaxPlayers)
+	assert.Equal(t, 1, z.DynamicDifficulty)
+	assert.Equal(t, "The Frozen Throne", z.SubZone)
 }
 
 func TestParseZone_City(t *testing.T) {
@@ -174,10 +174,10 @@ func TestParseZone_City(t *testing.T) {
 	require.Len(t, msgs, 1)
 
 	z := msgs[0].(*messages.Zone)
-	assert.Equal(t, "dalaran", z.Zone.Name)
-	assert.Equal(t, "none", z.Zone.InstanceType)
-	assert.False(t, z.Zone.IsInstance)
-	assert.Equal(t, uint32(571), z.Zone.MapID)
+	assert.Equal(t, "dalaran", z.Name)
+	assert.Equal(t, "none", z.InstanceType)
+	assert.False(t, z.IsInstance)
+	assert.Equal(t, uint32(571), z.MapID)
 }
 
 // --- Header tests ---

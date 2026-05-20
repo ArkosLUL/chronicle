@@ -741,10 +741,80 @@ func BlackrockDepthsHostiles() map[uint32]Identity {
 		8889: "Anvilrage Overseer",
 		8892: "Anvilrage Footman",
 		8916: "Arena Spectator",
+
+		8896:  "Shadowforge Peasant",
+		8897:  "Doomforge Craftsman",
+		8898:  "Anvilrage Marshal",
+		8899:  "Doomforge Dragoon",
+		8900:  "Doomforge Arcanasmith",
+		8901:  "Anvilrage Reservist",
+		8902:  "Shadowforge Citizen",
+		8903:  "Anvilrage Captain",
+		8904:  "Shadowforge Senator",
+		8905:  "Warbringer Construct",
+		8906:  "Ragereaver Golem",
+		8907:  "Wrath Hammer Construct",
+		8908:  "Molten War Golem",
+		8909:  "Fireguard",
+		8911:  "Fireguard Destroyer",
+		8913:  "Twilight Emissary",
+		8914:  "Twilight Bodyguard",
+		8915:  "Twilight's Hammer Ambassador",
+		8920:  "Weapon Technician",
+		8922:  "Bloodhound Mastiff",
+		8982:  "Ironhand Guardian",
+		9020:  "Commander Gor'shak",
+		9021:  "Kharan Mighthammer",
+		9022:  "Dughal Stormwing",
+		9023:  "Marshal Windsor",
+		9034:  "Hate'rel",
+		9036:  "Vile'rel",
+		9038:  "Seeth'rel",
+		9040:  "Dope'rel",
+		9042:  "Verek",
+		9500:  "Mistress Nagmara",
+		9503:  "Private Rocknot",
+		9541:  "Blackbreath Crony",
+		9545:  "Grim Patron",
+		9547:  "Guzzling Patron",
+		9554:  "Hammered Patron",
+		9677:  "Ograbisi",
+		9678:  "Shill Dinger",
+		9679:  "Tobias Seecher",
+		9680:  "Crest Killer",
+		9681:  "Jaz",
+		9956:  "Shadowforge Flame Keeper",
+		10043: "Ribbly's Crony",
+		10116: "Slave",
+		10117: "Tortured Slave",
+		15549: "Elder Morndeep",
+		16079: "Theldren Trigger",
+		23872: "Coren Direbrew",
+		28067: "Dark Iron Brewer",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		9016: "Bael'Gar",
 		9018: "High Interrogator Gerstahn",
+
+		8929: "Princess Moira Bronzebeard",
+		8983: "Golem Lord Argelmach",
+		9017: "Lord Incendius",
+		9019: "Emperor Dagran Thaurissan",
+		9024: "Pyromancer Loregrain",
+		9025: "Lord Roccor",
+		9033: "General Angerforge",
+		9035: "Anger'rel",
+		9037: "Gloom'rel",
+		9039: "Doom'rel",
+		9041: "Warder Stilgiss",
+		9056: "Fineous Darkvire",
+		9156: "Ambassador Flamelash",
+		9319: "Houndmaster Grebmar",
+		9499: "Plugger Spazzring",
+		9502: "Phalanx",
+		9537: "Hurley Blackbreath",
+		9543: "Ribbly Screwspigot",
+		9938: "Magmus",
 	})
 
 	return hostile
@@ -1106,6 +1176,31 @@ func StratholmeHostiles() map[uint32]Identity {
 		10394: "Black Guard Sentry",
 		10382: "Mangled Cadaver",
 		10413: "Crypt Beast",
+
+		10384: "Spectral Citizen",
+		10385: "Ghostly Citizen",
+		10393: "Skul",
+		10409: "Rockwing Screecher",
+		10414: "Patchwork Horror",
+		10415: "Ash'ari Crystal",
+		10418: "Crimson Guardsman",
+		10419: "Crimson Conjuror",
+		10420: "Crimson Initiate",
+		10421: "Crimson Defender",
+		10422: "Crimson Sorcerer",
+		10423: "Crimson Priest",
+		10424: "Crimson Gallant",
+		10425: "Crimson Battle Mage",
+		10426: "Crimson Inquisitor",
+		10812: "Grand Crusader Dathrohan",
+		10917: "Aurius",
+		11043: "Crimson Monk",
+		11082: "Stratholme Courier",
+		14646: "Stratholme Trigger",
+		15607: "Elder Farwhisper",
+		16031: "Ysida Harmon",
+		16046: "Jarien and Sothos Trigger",
+		16100: "Ysida's Trigger",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		10438: "Maleki the Pallid",
@@ -1113,6 +1208,14 @@ func StratholmeHostiles() map[uint32]Identity {
 		10440: "Baron Rivendare",
 		10437: "Nerub'enkan",
 		10439: "Ramstein the Gorger",
+
+		10435: "Magistrate Barthilas",
+		10516: "The Unforgiven",
+		10558: "Hearthsinger Forresten",
+		10808: "Timmy the Cruel",
+		10811: "Archivist Galford",
+		10997: "Cannon Master Willey",
+		11032: "Malor the Zealous",
 	})
 
 	return hostile
@@ -1286,33 +1389,37 @@ func StockadeHostiles() map[uint32]Identity {
 func SunkenTempleHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
-		8317: "Atal'ai Deathwalker's Spirit",
-		5717: "Mijan",
-		5280: "Nightmare Wyrmkin",
-		5277: "Nightmare Scalebane",
-		5714: "Loro",
-		5713: "Gasher",
-		5226: "Murk Worm",
-		5228: "Saturated Ooze",
-		8510: "Unknown",
-		5270: "Atal'ai Corpse Eater",
-		8384: "Deep Lurker",
-		8319: "Nightmare Whelp",
-		5273: "Atal'ai High Priest",
-		5269: "Atal'ai Priest",
-		5716: "Zul'Lor",
-		5267: "Unliving Atal'ai",
-		8257: "Oozeling",
-		5256: "Atal'ai Warrior",
-		5720: "Weaver",
-		5712: "Zolo",
-		5271: "Atal'ai Deathwalker",
-		5259: "Atal'ai Witch Doctor",
-		8311: "Slime Maggot",
-		5263: "Mummified Atal'ai",
-		5715: "Hukku",
-		8318: "Atal'ai Slave",
-		5283: "Nightmare Wanderer",
+		8317:  "Atal'ai Deathwalker's Spirit",
+		5717:  "Mijan",
+		5280:  "Nightmare Wyrmkin",
+		5277:  "Nightmare Scalebane",
+		5714:  "Loro",
+		5713:  "Gasher",
+		5226:  "Murk Worm",
+		5228:  "Saturated Ooze",
+		8510:  "Unknown",
+		5270:  "Atal'ai Corpse Eater",
+		8384:  "Deep Lurker",
+		8319:  "Nightmare Whelp",
+		5273:  "Atal'ai High Priest",
+		5269:  "Atal'ai Priest",
+		5716:  "Zul'Lor",
+		5267:  "Unliving Atal'ai",
+		8257:  "Oozeling",
+		5256:  "Atal'ai Warrior",
+		5720:  "Weaver",
+		5712:  "Zolo",
+		5271:  "Atal'ai Deathwalker",
+		5259:  "Atal'ai Witch Doctor",
+		8311:  "Slime Maggot",
+		5263:  "Mummified Atal'ai",
+		5715:  "Hukku",
+		8318:  "Atal'ai Slave",
+		5283:  "Nightmare Wanderer",
+		5291:  "Hakkari Frostwing",
+		5708:  "Spawn of Hakkar",
+		5711:  "Ogom the Wretched",
+		15593: "Elder Starsong",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		5708: "Spawn of Hakkar",
@@ -1322,6 +1429,8 @@ func SunkenTempleHostiles() map[uint32]Identity {
 		5719: "Morphaz",
 		5722: "Hazzas",
 		5709: "Shade of Eranikus",
+		5720: "Weaver",
+		8580: "Atal'alarion",
 	})
 
 	return hostile
@@ -1434,6 +1543,14 @@ func ZulFarrakHostiles() map[uint32]Identity {
 		8120: "Sul'lithuz Abomination",
 		8876: "Sandfury Acolyte",
 		8877: "Sandfury Zealot",
+
+		7604:  "Sergeant Bly",
+		7605:  "Raven",
+		7606:  "Oro Eyegouge",
+		7607:  "Weegli Blastfuse",
+		7608:  "Murta Grimgut",
+		8130:  "Sul'lithuz Hatchling",
+		15578: "Elder Wildmane",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		7271: "Witch Doctor Zum'rah",
@@ -1442,6 +1559,7 @@ func ZulFarrakHostiles() map[uint32]Identity {
 		8127: "Antu'sul",
 		7267: "Chief Ukorz Sandscalp",
 		7796: "Chief Ukorz Sandscalp",
+		7795: "Hydromancer Velratha",
 	})
 
 	// Known event helpers and triggers in the dungeon should not be reported as
@@ -1455,5 +1573,214 @@ func ZulFarrakHostiles() map[uint32]Identity {
 	hostile[12999] = Identity{Affiliation: types.AffiliationUnknown}
 	hostile[141612] = Identity{Affiliation: types.AffiliationUnknown}
 
+	return hostile
+}
+
+// BlackfathomDeepsHostiles returns creature entry IDs for Blackfathom Deeps (map 48).
+func BlackfathomDeepsHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		4787: "Argent Guard Thaelrid",
+		4798: "Fallenroot Shadowstalker",
+		4799: "Fallenroot Hellcaller",
+		4805: "Blackfathom Sea Witch",
+		4807: "Blackfathom Myrmidon",
+		4809: "Twilight Acolyte",
+		4810: "Twilight Reaver",
+		4811: "Twilight Aquamancer",
+		4812: "Twilight Loreseeker",
+		4813: "Twilight Shadowmage",
+		4814: "Twilight Elementalist",
+		4815: "Murkshallow Snapclaw",
+		4818: "Blindlight Murloc",
+		4819: "Blindlight Muckdweller",
+		4820: "Blindlight Oracle",
+		4821: "Skittering Crustacean",
+		4822: "Snapping Crustacean",
+		4823: "Barbed Crustacean",
+		4824: "Aku'mai Fisher",
+		4825: "Aku'mai Snapjaw",
+		4827: "Deep Pool Threshfin",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		4829:  "Aku'mai",
+		4830:  "Old Serra'kis",
+		4831:  "Lady Sarevess",
+		4832:  "Twilight Lord Kelris",
+		4887:  "Ghamoo-ra",
+		6243:  "Gelihast",
+		12902: "Lorgus Jett",
+	})
+	return hostile
+}
+
+// UldamanHostiles returns creature entry IDs for Uldaman (map 70).
+func UldamanHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		4847:  "Shadowforge Relic Hunter",
+		4848:  "Shadowforge Darkcaster",
+		4849:  "Shadowforge Archaeologist",
+		4850:  "Stonevault Cave Lurker",
+		4851:  "Stonevault Rockchewer",
+		4852:  "Stonevault Oracle",
+		4853:  "Stonevault Geomancer",
+		4855:  "Stonevault Brawler",
+		4857:  "Stone Keeper",
+		4860:  "Stone Steward",
+		4861:  "Shrike Bat",
+		4863:  "Jadespine Basilisk",
+		6907:  "Eric \"The Swift\"",
+		6908:  "Olaf",
+		7011:  "Earthen Rocksmasher",
+		7012:  "Earthen Sculptor",
+		7022:  "Venomlash Scorpid",
+		7023:  "Obsidian Sentinel",
+		7030:  "Shadowforge Geologist",
+		7076:  "Earthen Guardian",
+		7077:  "Earthen Hallshaper",
+		7078:  "Cleft Scorpid",
+		7175:  "Stonevault Ambusher",
+		7290:  "Shadowforge Sharpshooter",
+		7309:  "Earthen Custodian",
+		7320:  "Stonevault Mauler",
+		7321:  "Stonevault Flameweaver",
+		7396:  "Earthen Stonebreaker",
+		7397:  "Earthen Stonecarver",
+		7405:  "Deadly Cleft Scorpid",
+		10120: "Vault Warder",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		2748: "Archaedas",
+		4854: "Grimlok",
+		6906: "Baelog",
+		6910: "Revelosh",
+		7206: "Ancient Stone Keeper",
+		7228: "Ironaya",
+		7291: "Galgann Firehammer",
+	})
+	return hostile
+}
+
+// GnomereganHostiles returns creature entry IDs for Gnomeregan (map 90).
+func GnomereganHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		6206:  "Caverndeep Burrower",
+		6207:  "Caverndeep Ambusher",
+		6211:  "Caverndeep Reaver",
+		6212:  "Dark Iron Agent",
+		6218:  "Irradiated Slime",
+		6219:  "Corrosive Lurker",
+		6220:  "Irradiated Horror",
+		6222:  "Leprous Technician",
+		6223:  "Leprous Defender",
+		6224:  "Leprous Machinesmith",
+		6225:  "Mechano-Tank",
+		6226:  "Mechano-Flamewalker",
+		6227:  "Mechano-Frostwalker",
+		6230:  "Peacekeeper Security Suit",
+		6232:  "Arcane Nullifier X-21",
+		6233:  "Mechanized Sentry",
+		6234:  "Mechanized Guardian",
+		6329:  "Irradiated Pillager",
+		6391:  "Holdout Warrior",
+		6392:  "Holdout Medic",
+		6407:  "Holdout Technician",
+		7603:  "Leprous Assistant",
+		7849:  "Mobile Alert System",
+		7850:  "Kernobee",
+		7897:  "Alarm-a-bomb 2600",
+		7998:  "Blastmaster Emi Shortfuse",
+		13876: "Mekgineer Trigger",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		6229: "Crowd Pummeler 9-60",
+		6235: "Electrocutioner 6000",
+		7079: "Viscous Fallout",
+		7800: "Mekgineer Thermaplugg",
+	})
+	return hostile
+}
+
+// RazorfenDownsHostiles returns creature entry IDs for Razorfen Downs (map 129).
+func RazorfenDownsHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		7327: "Withered Warrior",
+		7328: "Withered Reaver",
+		7329: "Withered Quilguard",
+		7332: "Withered Spearhide",
+		7333: "Withered Battle Boar",
+		7334: "Battle Boar Horror",
+		7335: "Death's Head Geomancer",
+		7337: "Death's Head Necromancer",
+		7341: "Skeletal Frostweaver",
+		7342: "Skeletal Summoner",
+		7343: "Splinterbone Skeleton",
+		7344: "Splinterbone Warrior",
+		7345: "Splinterbone Captain",
+		7346: "Splinterbone Centurion",
+		7347: "Boneflayer Ghoul",
+		7348: "Thorn Eater Ghoul",
+		7352: "Frozen Soul",
+		7353: "Freezing Spirit",
+		7354: "Ragglesnout",
+		8516: "Belnistrasz",
+		8662: "Idol Oven Fire Target",
+		8696: "Henry Stern",
+		8767: "Sah'rhee",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		7357: "Mordresh Fire Eye",
+		7358: "Amnennar the Coldbringer",
+		8567: "Glutton",
+	})
+	return hostile
+}
+
+// MaraudonHostiles returns creature entry IDs for Maraudon (map 349).
+func MaraudonHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		11784: "Theradrim Guardian",
+		11789: "Deep Borer",
+		11790: "Putridus Satyr",
+		11791: "Putridus Trickster",
+		11792: "Putridus Shadowstalker",
+		11793: "Celebrian Dryad",
+		11794: "Sister of Celebras",
+		12206: "Primordial Behemoth",
+		12207: "Thessala Hydra",
+		12216: "Poison Sprite",
+		12217: "Corruptor",
+		12218: "Vile Larva",
+		12219: "Barbed Lasher",
+		12220: "Constrictor Vine",
+		12221: "Noxious Slime",
+		12222: "Creeping Sludge",
+		12223: "Cavern Lurker",
+		12224: "Cavern Shambler",
+		12237: "Meshlok the Harvester",
+		12242: "Spirit of Maraudos",
+		12243: "Spirit of Veng",
+		13141: "Deeprot Stomper",
+		13142: "Deeprot Tangler",
+		13323: "Subterranean Diemetradon",
+		13533: "Spewed Larva",
+		13599: "Stolid Snapjaw",
+		13743: "Corrupt Force of Nature",
+		15556: "Elder Splitrock",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		12201: "Princess Theradras",
+		12203: "Landslide",
+		12225: "Celebras the Cursed",
+		12236: "Lord Vyletongue",
+		12258: "Razorlash",
+		13282: "Noxxion",
+		13596: "Rotgrip",
+		13601: "Tinkerer Gizlock",
+	})
 	return hostile
 }

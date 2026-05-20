@@ -253,6 +253,41 @@ var (
 		MapIDs:    []uint32{209},
 		Hostiles:  FromMap(ZulFarrakHostiles()),
 	}
+
+	BlackfathomDeepsFactory = &CommonFactory{
+		Name:      "Blackfathom Deeps",
+		ZoneNames: []string{"blackfathom deeps"},
+		MapIDs:    []uint32{48},
+		Hostiles:  FromMap(BlackfathomDeepsHostiles()),
+	}
+
+	UldamanFactory = &CommonFactory{
+		Name:      "Uldaman",
+		ZoneNames: []string{"uldaman"},
+		MapIDs:    []uint32{70},
+		Hostiles:  FromMap(UldamanHostiles()),
+	}
+
+	GnomereganFactory = &CommonFactory{
+		Name:      "Gnomeregan",
+		ZoneNames: []string{"gnomeregan"},
+		MapIDs:    []uint32{90},
+		Hostiles:  FromMap(GnomereganHostiles()),
+	}
+
+	RazorfenDownsFactory = &CommonFactory{
+		Name:      "Razorfen Downs",
+		ZoneNames: []string{"razorfen downs"},
+		MapIDs:    []uint32{129},
+		Hostiles:  FromMap(RazorfenDownsHostiles()),
+	}
+
+	MaraudonFactory = &CommonFactory{
+		Name:      "Maraudon",
+		ZoneNames: []string{"maraudon"},
+		MapIDs:    []uint32{349},
+		Hostiles:  FromMap(MaraudonHostiles()),
+	}
 )
 
 //["Ahn'Qiraj"] = "安其拉",

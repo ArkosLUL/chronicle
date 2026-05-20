@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 )
 
@@ -154,4 +155,44 @@ func writeGoFile(path string, instances []genInstance) error {
 		return os.WriteFile(path, buf.Bytes(), 0o644)
 	}
 	return os.WriteFile(path, formatted, 0o644)
+}
+
+var hostilesRe = regexp.MustCompile(`func (\w+)Hostiles\(\)`)
+
+// scanExistingHostiles reads all non-generated .go files in dir and returns
+// the set of VarPrefix values that already have a XxxHostiles() function.
+func scanExistingHostiles(dir string) map[string]bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	found := make(map[string]bool)
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || filepath.Ext(name) != ".go" {
+			continue
+		}
+		// Skip files we ourselves generate so a re-run doesn't skip everything.
+		if len(name) > 4 && name[:4] == "gen_" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			continue
+		}
+		for _, m := range hostilesRe.FindAllSubmatch(data, -1) {
+			found[string(m[1])] = true
+		}
+	}
+	return found
+}
+
+// metaMapIDByPrefix returns the map ID for a given VarPrefix, or 0 if unknown.
+func metaMapIDByPrefix(prefix string) uint32 {
+	for _, inst := range AllInstances {
+		if inst.VarPrefix == prefix {
+			return inst.MapID
+		}
+	}
+	return 0
 }

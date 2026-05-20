@@ -166,6 +166,13 @@ icons/upload:
 .PHONY: icons
 icons: icons/convert icons/manifest icons/upload
 
+.PHONY: gen/hostiles-azerothcore
+gen/hostiles-azerothcore:
+	go run ./scripts/hostilegen \
+		--output-dir=combatlog/parser/wotlk/azerothcore/instances \
+		--cache-dir=/tmp/hostilegen-cache \
+		--skip-existing
+
 .PHONY: gen/go
 gen/go:
 	go generate ./...

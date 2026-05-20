@@ -12,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/companion"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/synthetic"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
@@ -39,6 +40,10 @@ type Parser struct {
 	//eventHooks allow overriding or extending handling of specific events without needing to replace the entire processer.
 	// The processer is for 3.3.5a logs, so it's possible some AzerothCore-specific events may need custom handling.
 	eventHook map[string]func(ts time.Time, m *Matched, raw string) ([]messages.Message, error)
+
+	// companion parses ChronicleCompanionWoTLK addon messages smuggled inside
+	// SPELL_CAST_FAILED failedType fields. Lazily initialized on first detection.
+	companion *companion.Parser
 }
 
 func New(ctx context.Context, logger *slog.Logger, r io.Reader, wowDB gamedb.GameDB, gear gamedb.GearResolver, reg *registry.Registry) (*Parser, error) {

@@ -26,6 +26,13 @@ type Zone struct {
 	Ghost        bool
 	InstanceType string
 	IsInstance   bool
+
+	// Difficulty fields (populated by companion addon on 3.3.5a).
+	DifficultyIndex   int    // 1=10N, 2=25N, 3=10H, 4=25H
+	DifficultyName    string // e.g. "25 Player"
+	MaxPlayers        int    // max players for the instance
+	DynamicDifficulty int    // 0=Normal, 1=Heroic (ICC-style toggle)
+	SubZone           string // current subzone name
 }
 
 func (z Zone) ID() string {

@@ -1,0 +1,449 @@
+package companion
+
+import (
+	"log/slog"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+)
+
+var testTS = time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+func newTestParser() *Parser {
+	return New(slog.Default())
+}
+
+// --- Framing tests ---
+
+func TestFeed_SingleSlotMessage(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[3Z:Dalaran,none,0,,0,0,0,571,0,]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	z, ok := msgs[0].(*messages.Zone)
+	require.True(t, ok, "expected *messages.Zone, got %T", msgs[0])
+	assert.Equal(t, "dalaran", z.Zone.Name)
+	assert.Equal(t, uint32(571), z.Zone.MapID)
+	assert.Equal(t, "none", z.Zone.InstanceType)
+	assert.False(t, z.Zone.IsInstance)
+}
+
+func TestFeed_MultiSlotMessage(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	// First slot: starts the message, no closing ']'.
+	msgs, err := p.Feed(testTS, `[4P0x060000000008DCCC;G1.51396.3820.41398.40014.0.0.0.264:2.50633.0.0.0.0.0.0`)
+	require.NoError(t, err)
+	assert.Empty(t, msgs, "should not produce messages yet")
+
+	// Second slot: continuation with closing ']'.
+	msgs, err = p.Feed(testTS, `~.245:5.51398.3832.41398.40051.0.0.0.264]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c, ok := msgs[0].(*messages.Combatant)
+	require.True(t, ok, "expected *messages.Combatant, got %T", msgs[0])
+	// Should have 3 gear slots (from slot 1, 2, 5).
+	require.Len(t, c.GearSetups, 3)
+	assert.Equal(t, 51396, c.GearSetups[0].ItemID)
+	assert.Equal(t, 50633, c.GearSetups[1].ItemID)
+	assert.Equal(t, 51398, c.GearSetups[2].ItemID)
+}
+
+func TestFeed_BinPackedMessages(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	// Three messages packed in one field.
+	field := `[4P0x060000000008DCCC;IArthas,DEATHKNIGHT,HUMAN,2,80][5P0x060000000008DCCC;UMy Guild][6H:0.1,Icecrown,enUS,3.3.5a,12340,a8f3]`
+	msgs, err := p.Feed(testTS, field)
+	require.NoError(t, err)
+	require.Len(t, msgs, 4) // Identity → Combatant, Guild → Combatant, Header → Realm + Versions
+
+	// First: Combatant from Identity
+	c1, ok := msgs[0].(*messages.Combatant)
+	require.True(t, ok, "msg[0] should be Combatant, got %T", msgs[0])
+	assert.Equal(t, "Arthas", c1.Name)
+
+	// Second: Combatant from Guild update (same player)
+	c2, ok := msgs[1].(*messages.Combatant)
+	require.True(t, ok, "msg[1] should be Combatant, got %T", msgs[1])
+	require.NotNil(t, c2.Guild)
+	assert.Equal(t, "My Guild", c2.Guild.Name)
+
+	// Third: Realm from Header
+	r, ok := msgs[2].(*messages.Realm)
+	require.True(t, ok, "msg[2] should be Realm, got %T", msgs[2])
+	assert.Equal(t, "Icecrown", r.RealmName)
+
+	// Fourth: Versions from Header
+	v, ok := msgs[3].(*messages.Versions)
+	require.True(t, ok, "msg[3] should be Versions, got %T", msgs[3])
+	assert.Equal(t, "0.1", v.Versions["chronicle_companion_wotlk"])
+}
+
+func TestFeed_DropDetection(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	// Start a message but don't close it.
+	msgs, err := p.Feed(testTS, `[1Z:Icecrown Citadel,raid,2,25 Player`)
+	require.NoError(t, err)
+	assert.Empty(t, msgs)
+
+	// Start a new message before closing the previous one — should discard.
+	msgs, err = p.Feed(testTS, `[2Z:Dalaran,none,0,,0,0,0,571,0,]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	z, ok := msgs[0].(*messages.Zone)
+	require.True(t, ok)
+	assert.Equal(t, "dalaran", z.Zone.Name) // Second message, not the incomplete first.
+}
+
+func TestFeed_OrphanContinuation(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	// Continuation without a preceding start — should be ignored.
+	msgs, err := p.Feed(testTS, `~.245:5.51398.3832.41398.40051.0.0.0.264]`)
+	require.NoError(t, err)
+	assert.Empty(t, msgs)
+}
+
+func TestIsCompanionMessage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`[3Z:Dalaran]`, true},
+		{`[0H:0.1]`, true},
+		{`~continuation`, true},
+		{`Another ability is not ready yet`, false},
+		{``, false},
+		{`[`, false},
+		{`[X`, false},
+	}
+
+	for _, tc := range tests {
+		assert.Equal(t, tc.expected, IsCompanionMessage(tc.input), "input: %q", tc.input)
+	}
+}
+
+// --- Zone tests ---
+
+func TestParseZone_ICC(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[1Z:Icecrown Citadel,raid,2,25 Player,25,1,1,631,0,The Frozen Throne]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	z, ok := msgs[0].(*messages.Zone)
+	require.True(t, ok)
+	assert.Equal(t, "icecrown citadel", z.Zone.Name)
+	assert.Equal(t, "raid", z.Zone.InstanceType)
+	assert.Equal(t, uint32(631), z.Zone.MapID)
+	assert.True(t, z.Zone.IsInstance)
+	assert.Equal(t, 2, z.Zone.DifficultyIndex)
+	assert.Equal(t, "25 Player", z.Zone.DifficultyName)
+	assert.Equal(t, 25, z.Zone.MaxPlayers)
+	assert.Equal(t, 1, z.Zone.DynamicDifficulty)
+	assert.Equal(t, "The Frozen Throne", z.Zone.SubZone)
+}
+
+func TestParseZone_City(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[2Z:Dalaran,none,0,,0,0,0,571,0,The Violet Citadel]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	z := msgs[0].(*messages.Zone)
+	assert.Equal(t, "dalaran", z.Zone.Name)
+	assert.Equal(t, "none", z.Zone.InstanceType)
+	assert.False(t, z.Zone.IsInstance)
+	assert.Equal(t, uint32(571), z.Zone.MapID)
+}
+
+// --- Header tests ---
+
+func TestParseHeader(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[0H:0.1,Icecrown,enUS,3.3.5a,12340,a8f3]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 2)
+
+	r, ok := msgs[0].(*messages.Realm)
+	require.True(t, ok)
+	assert.Equal(t, "Icecrown", r.RealmName)
+	assert.Equal(t, "3.3.5a", r.Version)
+	assert.Equal(t, 12340, r.Build)
+
+	v, ok := msgs[1].(*messages.Versions)
+	require.True(t, ok)
+	assert.Equal(t, "0.1", v.Versions["chronicle_companion_wotlk"])
+	assert.Equal(t, "3.3.5a", v.Versions["wow"])
+}
+
+// --- Loot tests ---
+
+func TestParseLoot_Drop(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[1LL,4,49623,1,Arthas]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	l, ok := msgs[0].(*messages.Loot)
+	require.True(t, ok)
+	assert.Equal(t, "Arthas", l.PlayerName)
+	assert.Equal(t, int32(49623), l.ItemID)
+	assert.Equal(t, int32(1), l.Quantity)
+	assert.Equal(t, int32(4), l.Quality)
+}
+
+func TestParseLoot_Trade(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[2LT,4,49623,1,Arthas>Doydz]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	lt, ok := msgs[0].(*messages.LootTrade)
+	require.True(t, ok)
+	assert.Equal(t, "Arthas", lt.FromPlayerName)
+	assert.Equal(t, "Doydz", lt.ToPlayerName)
+	assert.Equal(t, int32(49623), lt.ItemID)
+	assert.Equal(t, int32(4), lt.Quality)
+}
+
+func TestParseLoot_Legendary(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[3LL,5,32837,1,Rhyd]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	l := msgs[0].(*messages.Loot)
+	assert.Equal(t, int32(5), l.Quality) // Legendary
+	assert.Equal(t, int32(32837), l.ItemID)
+}
+
+// --- Player Identity tests ---
+
+func TestParsePlayer_Identity(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[4P0x060000000008DCCC;IArthas,DEATHKNIGHT,HUMAN,2,80]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c, ok := msgs[0].(*messages.Combatant)
+	require.True(t, ok)
+	assert.Equal(t, "Arthas", c.Name)
+	assert.Equal(t, "DEATHKNIGHT", string(c.HeroClass))
+	assert.Equal(t, "Human", string(c.Race))
+}
+
+// --- Player Gear tests ---
+
+func TestParsePlayer_Gear(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[5P0x060000000008DCCC;G1.51396.3820.41398.40014.0.0.0.264:2.50633.0.0.0.0.0.0.245]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c := msgs[0].(*messages.Combatant)
+	require.Len(t, c.GearSetups, 2)
+
+	// First slot
+	g0 := c.GearSetups[0]
+	assert.Equal(t, 51396, g0.ItemID)
+	require.NotNil(t, g0.EnchantID)
+	assert.Equal(t, 3820, *g0.EnchantID)
+	assert.Equal(t, [4]int{41398, 40014, 0, 0}, g0.Gems)
+	assert.Equal(t, 264, g0.ItemLevel)
+
+	// Second slot
+	g1 := c.GearSetups[1]
+	assert.Equal(t, 50633, g1.ItemID)
+	assert.Nil(t, g1.EnchantID)
+	assert.Equal(t, 245, g1.ItemLevel)
+}
+
+// --- Player Talents tests ---
+
+func TestParsePlayer_Talents(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	talents := "05032001050000000000000000000}32000000000000000000000000000}00000000000000000000000000000"
+	msg := `[6P0x060000000008DCCC;T1,2,` + talents + `,00000000000000000000000000000}00000000000000000000000000000}00000000000000000000000000000]`
+
+	msgs, err := p.Feed(testTS, msg)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c := msgs[0].(*messages.Combatant)
+	require.NotNil(t, c.Talents)
+	// Tree 0 has "05032001050000000000000000000" — sum is 0+5+0+3+2+0+0+1+0+5 = 16
+	assert.Equal(t, uint8(16), c.Talents.Summary[0])
+	// Tree 1 has "32000000000000000000000000000" — sum is 3+2 = 5
+	assert.Equal(t, uint8(5), c.Talents.Summary[1])
+	// Tree 2 is all zeros
+	assert.Equal(t, uint8(0), c.Talents.Summary[2])
+}
+
+// --- Player Glyphs tests ---
+
+func TestParsePlayer_Glyphs(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[7P0x060000000008DCCC;Y1,55440.58388.54845.58095.57719.0:0.0.0.0.0.0]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c := msgs[0].(*messages.Combatant)
+	require.NotNil(t, c.Glyphs)
+	assert.Equal(t, 1, c.Glyphs.ActiveGroup)
+	require.Len(t, c.Glyphs.Groups, 2)
+
+	// Group 1: 3 major, 3 minor
+	g1 := c.Glyphs.Groups[0]
+	assert.Equal(t, [3]int{55440, 58388, 54845}, g1.Major)
+	assert.Equal(t, [3]int{58095, 57719, 0}, g1.Minor)
+
+	// Group 2: all empty
+	g2 := c.Glyphs.Groups[1]
+	assert.Equal(t, [3]int{0, 0, 0}, g2.Major)
+	assert.Equal(t, [3]int{0, 0, 0}, g2.Minor)
+}
+
+// --- Player Guild tests ---
+
+func TestParsePlayer_Guild(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[8P0x060000000008DCCC;UMy Guild]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c := msgs[0].(*messages.Combatant)
+	require.NotNil(t, c.Guild)
+	assert.Equal(t, "My Guild", c.Guild.Name)
+}
+
+// --- Player Pet tests ---
+
+func TestParsePlayer_Pet(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[9P0x060000000008DCCC;ESpot,0x060000000012ABCD]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	c := msgs[0].(*messages.Combatant)
+	assert.Equal(t, "Spot", c.PetName)
+}
+
+// --- Player data accumulation tests ---
+
+func TestPlayerDataAccumulation(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	// First: Identity.
+	msgs, err := p.Feed(testTS, `[1P0x060000000008DCCC;IArthas,DEATHKNIGHT,HUMAN,2,80]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	c := msgs[0].(*messages.Combatant)
+	assert.Equal(t, "Arthas", c.Name)
+	assert.Nil(t, c.Guild)
+
+	// Second: Guild (should retain Identity data).
+	msgs, err = p.Feed(testTS, `[2P0x060000000008DCCC;UKnights of the Ebon Blade]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	c = msgs[0].(*messages.Combatant)
+	assert.Equal(t, "Arthas", c.Name) // Still has name from Identity.
+	require.NotNil(t, c.Guild)
+	assert.Equal(t, "Knights of the Ebon Blade", c.Guild.Name)
+}
+
+// --- Meta test ---
+
+func TestParseMeta(t *testing.T) {
+	t.Parallel()
+	p := newTestParser()
+
+	msgs, err := p.Feed(testTS, `[5M12,8,15,3,0,0,0,0,0,0]`)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	stats, ok := msgs[0].(*messages.CompanionStats)
+	require.True(t, ok, "expected *messages.CompanionStats, got %T", msgs[0])
+	assert.Equal(t, [10]int{12, 8, 15, 3, 0, 0, 0, 0, 0, 0}, stats.Buckets)
+}
+
+// --- GearItem extension tests ---
+
+func TestGearItem_NewFields(t *testing.T) {
+	t.Parallel()
+
+	item := combatant.GearItem{
+		ItemID:    51396,
+		SuffixID:  0,
+		Gems:      [4]int{41398, 40014, 0, 0},
+		ItemLevel: 264,
+	}
+	assert.Equal(t, 51396, item.ItemID)
+	assert.Equal(t, [4]int{41398, 40014, 0, 0}, item.Gems)
+	assert.Equal(t, 264, item.ItemLevel)
+}
+
+// --- Zone extension tests ---
+
+func TestZone_DifficultyFields(t *testing.T) {
+	t.Parallel()
+
+	z := zone.Zone{
+		Name:              "icecrown citadel",
+		MapID:             631,
+		InstanceType:      "raid",
+		IsInstance:        true,
+		DifficultyIndex:   2,
+		DifficultyName:    "25 Player",
+		MaxPlayers:        25,
+		DynamicDifficulty: 1,
+		SubZone:           "The Frozen Throne",
+	}
+	assert.Equal(t, 2, z.DifficultyIndex)
+	assert.Equal(t, "25 Player", z.DifficultyName)
+	assert.Equal(t, "The Frozen Throne", z.SubZone)
+}

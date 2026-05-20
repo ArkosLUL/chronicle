@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/companion"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
@@ -621,10 +622,18 @@ func (p *Parser) suffixCastSuccess(ts time.Time, base baseParams, spell *spellIn
 
 // suffixCastFailed handles _CAST_FAILED: failedType
 func (p *Parser) suffixCastFailed(ts time.Time, base baseParams, spell *spellInfo, m *Matched) ([]messages.Message, error) {
-	_ = m.String() // failedType (reason string)
+	failedType := m.String()
 
 	if err := m.Error(); err != nil {
 		return nil, err
+	}
+
+	// Detect ChronicleCompanionWoTLK addon messages smuggled in the failedType field.
+	if companion.IsCompanionMessage(failedType) {
+		if p.companion == nil {
+			p.companion = companion.New(p.logger)
+		}
+		return p.companion.Feed(ts, failedType)
 	}
 
 	var spellData *chrondbc.Spell

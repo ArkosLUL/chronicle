@@ -39,6 +39,19 @@ type Combatant struct {
 	Guild      *Guild
 	GearSetups []GearItem
 	Talents    *Talents
+	Glyphs     *Glyphs
+}
+
+// Glyphs holds glyph spell IDs for one or two talent specs.
+type Glyphs struct {
+	ActiveGroup int          // 1 or 2 (which spec is active)
+	Groups      []GlyphGroup // one per talent spec
+}
+
+// GlyphGroup contains the glyph spell IDs for a single talent spec.
+type GlyphGroup struct {
+	Major [3]int // Major glyph spell IDs (0 = empty)
+	Minor [3]int // Minor glyph spell IDs (0 = empty)
 }
 
 func ParseCombatantInfo(ri *realmclock.Info, content string) (Combatant, error) {
@@ -152,7 +165,8 @@ type GearItem struct {
 	TempEnchantID *int
 	SuffixID      int
 	TransmogID    *int
-	// TODO: slot source?
+	Gems          [4]int // Gem item IDs (0 = empty socket)
+	ItemLevel     int    // Item level from the item link
 }
 
 // ParseGear parses gear slot strings into GearItem slices.

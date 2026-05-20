@@ -116,6 +116,7 @@ func downloadOrCache(cacheDir, filename string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("download %s: %w", filename, err)
 	}
+	//nolint:errcheck
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {

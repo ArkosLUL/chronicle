@@ -31,10 +31,10 @@ func TestFeed_SingleSlotMessage(t *testing.T) {
 
 	z, ok := msgs[0].(*messages.Zone)
 	require.True(t, ok, "expected *messages.Zone, got %T", msgs[0])
-	assert.Equal(t, "dalaran", z.Zone.Name)
-	assert.Equal(t, uint32(571), z.Zone.MapID)
-	assert.Equal(t, "none", z.Zone.InstanceType)
-	assert.False(t, z.Zone.IsInstance)
+	assert.Equal(t, "dalaran", z.Name)
+	assert.Equal(t, uint32(571), z.MapID)
+	assert.Equal(t, "none", z.InstanceType)
+	assert.False(t, z.IsInstance)
 }
 
 func TestFeed_MultiSlotMessage(t *testing.T) {

@@ -285,7 +285,7 @@ func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logTyp
 
 	var group database.WoWLogGroup
 	// tmpFiles and hashes are the files that were uploaded now on local disk.
-	err = c.Zed.InTx(func(tx *authz.AuthzTX) error {
+	err = c.Zed.InTx(ctx, func(tx *authz.AuthzTX) error {
 		// Insert the log group
 		var err error
 		group, err = tx.InsertWoWLogGroup(ctx, database.InsertWoWLogGroupParams{

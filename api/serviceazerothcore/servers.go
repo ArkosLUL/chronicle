@@ -49,6 +49,7 @@ func serverToSDK(s database.WowServer) chroniclesdk.WoWServer {
 		Description: s.Description,
 		URL:         pgtextPtr(s.Url),
 		CreatedBy:   nullUUIDPtr(s.CreatedBy),
+		TenantID:    nullUUIDPtr(s.TenantID),
 	}
 }
 

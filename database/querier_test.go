@@ -28,7 +28,7 @@ func TestDatabaseWorks(t *testing.T) {
 		ctx := testutil.Context(t, testutil.WaitShort)
 
 		expected := uuid.New()
-		err = db.InTx(func(tx database.Store) error {
+		err = db.InTx(ctx, func(tx database.Store) error {
 			_, err := tx.InsertUser(ctx, database.InsertUserParams{
 				ID:       expected,
 				Username: "random",

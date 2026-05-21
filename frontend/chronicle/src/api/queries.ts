@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -1739,6 +1739,100 @@ export function useDeleteAzerothcoreUploadKey() {
 
 
 // -- Retention Policy Management --
+// -- Tenant Management --
+
+export function useAdminTenants(
+  options?: Omit<UseQueryOptions<Tenant[]>, "queryKey" | "queryFn">,
+) {
+  return useQuery({
+    queryKey: ["admin", "tenants"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/admin/tenants");
+      if (!response.ok) throw new Error("Failed to fetch tenants");
+      return response.json() as Promise<Tenant[]>;
+    },
+    retry: false,
+    ...options,
+  });
+}
+
+export function useUpsertTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: UpsertTenantRequest) => {
+      const isCreate = !req.id;
+      const method = isCreate ? "POST" : "PUT";
+      const url = isCreate
+        ? "/api/v1/admin/tenants"
+        : `/api/v1/admin/tenants/${req.id}`;
+      // Omit id from the body — on create it's server-generated,
+      // on update it comes from the URL path.
+      const { id: _, ...body } = req;
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to save tenant");
+      }
+      return response.json() as Promise<Tenant>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "tenants"] });
+    },
+  });
+}
+
+export function useDeleteTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tenantId: string) => {
+      const response = await fetch(`/api/v1/admin/tenants/${tenantId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete tenant");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "tenants"] });
+    },
+  });
+}
+
+export function useSetServerTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      serverId,
+      tenantId,
+    }: {
+      serverId: string;
+      tenantId: string | null;
+    }) => {
+      const response = await fetch(
+        `/api/v1/admin/servers/${serverId}/tenant`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenant_id: tenantId }),
+        },
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Failed to set server tenant");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["azerothcore", "servers"] });
+    },
+  });
+}
+
+
 
 export function useRetentionPolicies(options?: Omit<UseQueryOptions<RetentionPolicy[]>, "queryKey" | "queryFn">) {
   return useQuery({

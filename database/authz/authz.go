@@ -104,9 +104,9 @@ func (z *Authz) wrap(tx database.Store) *AuthzTX {
 	return spiceTx
 }
 
-func (z *Authz) InTx(f func(tx *AuthzTX) error, opts *pgx.TxOptions) error {
+func (z *Authz) InTx(ctx context.Context, f func(tx *AuthzTX) error, opts *pgx.TxOptions) error {
 	var wrapped *AuthzTX
-	txErr := z.db.InTx(func(nestedTX database.Store) error {
+	txErr := z.db.InTx(ctx, func(nestedTX database.Store) error {
 		wrapped = z.wrap(nestedTX)
 		return f(wrapped)
 	}, opts)
@@ -140,7 +140,7 @@ func (z *AuthzTX) Close() error {
 	return z.parent.Close()
 }
 
-func (z *AuthzTX) InTx(f func(database.Store) error, _ *pgx.TxOptions) error {
+func (z *AuthzTX) InTx(_ context.Context, f func(database.Store) error, _ *pgx.TxOptions) error {
 	// Already in a transaction
 	return f(z)
 }

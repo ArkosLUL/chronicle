@@ -9,12 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Emyrk/chronicle/api"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 )
 
 func TestCors(t *testing.T) {
 	t.Parallel()
 
 	prodURL, _ := url.Parse("https://chronicleclassic.com")
+	tenant := servicetenant.NewTest(*prodURL)
 
 	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -37,7 +39,7 @@ func TestCors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := api.Cors(prodURL)(ok)
+			handler := api.Cors(tenant)(ok)
 			req := httptest.NewRequest(http.MethodOptions, "/api/v1/whoami", nil)
 			req.Header.Set("Origin", tc.origin)
 			req.Header.Set("Access-Control-Request-Method", tc.method)

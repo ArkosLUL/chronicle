@@ -357,7 +357,7 @@ func (q *sqlQuerier) GetUploadKeyByHash(ctx context.Context, secretHash string) 
 }
 
 const getWoWServer = `-- name: GetWoWServer :one
-SELECT id, name, created_by, url, description FROM wow_servers WHERE id = $1
+SELECT id, name, created_by, url, description, tenant_id FROM wow_servers WHERE id = $1
 `
 
 func (q *sqlQuerier) GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer, error) {
@@ -369,12 +369,13 @@ func (q *sqlQuerier) GetWoWServer(ctx context.Context, id uuid.UUID) (WowServer,
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.TenantID,
 	)
 	return i, err
 }
 
 const getWoWServerByName = `-- name: GetWoWServerByName :one
-SELECT id, name, created_by, url, description FROM wow_servers WHERE name = $1
+SELECT id, name, created_by, url, description, tenant_id FROM wow_servers WHERE name = $1
 `
 
 func (q *sqlQuerier) GetWoWServerByName(ctx context.Context, name string) (WowServer, error) {
@@ -386,6 +387,7 @@ func (q *sqlQuerier) GetWoWServerByName(ctx context.Context, name string) (WowSe
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.TenantID,
 	)
 	return i, err
 }
@@ -464,7 +466,7 @@ func (q *sqlQuerier) InsertUploadKey(ctx context.Context, arg InsertUploadKeyPar
 
 const insertWoWServer = `-- name: InsertWoWServer :one
 INSERT INTO wow_servers (id, name, description, url, created_by)
-VALUES ($1, $2, $3, $4, $5) RETURNING id, name, created_by, url, description
+VALUES ($1, $2, $3, $4, $5) RETURNING id, name, created_by, url, description, tenant_id
 `
 
 type InsertWoWServerParams struct {
@@ -490,6 +492,7 @@ func (q *sqlQuerier) InsertWoWServer(ctx context.Context, arg InsertWoWServerPar
 		&i.CreatedBy,
 		&i.Url,
 		&i.Description,
+		&i.TenantID,
 	)
 	return i, err
 }
@@ -636,7 +639,7 @@ func (q *sqlQuerier) ListWoWServerRealms(ctx context.Context, serverID uuid.UUID
 
 const listWoWServers = `-- name: ListWoWServers :many
 
-SELECT id, name, created_by, url, description FROM wow_servers ORDER BY name
+SELECT id, name, created_by, url, description, tenant_id FROM wow_servers ORDER BY name
 `
 
 // Servers
@@ -655,6 +658,7 @@ func (q *sqlQuerier) ListWoWServers(ctx context.Context) ([]WowServer, error) {
 			&i.CreatedBy,
 			&i.Url,
 			&i.Description,
+			&i.TenantID,
 		); err != nil {
 			return nil, err
 		}
@@ -5128,6 +5132,190 @@ func (q *sqlQuerier) UpdateTelemetryHeartbeat(ctx context.Context) error {
 	return err
 }
 
+const deleteTenant = `-- name: DeleteTenant :exec
+DELETE FROM tenants WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteTenant(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTenant, id)
+	return err
+}
+
+const getTenantByID = `-- name: GetTenantByID :one
+SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at FROM tenants WHERE id = $1
+`
+
+func (q *sqlQuerier) GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error) {
+	row := q.db.QueryRow(ctx, getTenantByID, id)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Name,
+		&i.DisableClientUpload,
+		&i.IncludeInAll,
+		&i.Branding,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTenantBySlug = `-- name: GetTenantBySlug :one
+
+SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at FROM tenants WHERE slug = $1
+`
+
+// Tenant queries. These run with AdminBypass context since the tenants table
+// itself is not behind RLS (only wow_servers/wow_server_realms are).
+func (q *sqlQuerier) GetTenantBySlug(ctx context.Context, slug pgtype.Text) (Tenant, error) {
+	row := q.db.QueryRow(ctx, getTenantBySlug, slug)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Name,
+		&i.DisableClientUpload,
+		&i.IncludeInAll,
+		&i.Branding,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertTenant = `-- name: InsertTenant :one
+INSERT INTO tenants (id, slug, name, disable_client_upload, include_in_all, branding)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at
+`
+
+type InsertTenantParams struct {
+	ID                  uuid.UUID   `db:"id" json:"id"`
+	Slug                pgtype.Text `db:"slug" json:"slug"`
+	Name                string      `db:"name" json:"name"`
+	DisableClientUpload bool        `db:"disable_client_upload" json:"disable_client_upload"`
+	IncludeInAll        bool        `db:"include_in_all" json:"include_in_all"`
+	Branding            []byte      `db:"branding" json:"branding"`
+}
+
+func (q *sqlQuerier) InsertTenant(ctx context.Context, arg InsertTenantParams) (Tenant, error) {
+	row := q.db.QueryRow(ctx, insertTenant,
+		arg.ID,
+		arg.Slug,
+		arg.Name,
+		arg.DisableClientUpload,
+		arg.IncludeInAll,
+		arg.Branding,
+	)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Name,
+		&i.DisableClientUpload,
+		&i.IncludeInAll,
+		&i.Branding,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listTenants = `-- name: ListTenants :many
+SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at FROM tenants ORDER BY name
+`
+
+func (q *sqlQuerier) ListTenants(ctx context.Context) ([]Tenant, error) {
+	rows, err := q.db.Query(ctx, listTenants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Tenant
+	for rows.Next() {
+		var i Tenant
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.DisableClientUpload,
+			&i.IncludeInAll,
+			&i.Branding,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setServerTenant = `-- name: SetServerTenant :exec
+UPDATE wow_servers SET tenant_id = $2 WHERE id = $1
+`
+
+type SetServerTenantParams struct {
+	ID       uuid.UUID     `db:"id" json:"id"`
+	TenantID uuid.NullUUID `db:"tenant_id" json:"tenant_id"`
+}
+
+// Assigns or removes a tenant from a server.
+// Pass NULL to remove the tenant assignment.
+func (q *sqlQuerier) SetServerTenant(ctx context.Context, arg SetServerTenantParams) error {
+	_, err := q.db.Exec(ctx, setServerTenant, arg.ID, arg.TenantID)
+	return err
+}
+
+const updateTenant = `-- name: UpdateTenant :one
+UPDATE tenants SET
+    slug = COALESCE($1, slug),
+    name = COALESCE($2, name),
+    disable_client_upload = COALESCE($3, disable_client_upload),
+    include_in_all = COALESCE($4, include_in_all),
+    branding = COALESCE($5, branding),
+    updated_at = now()
+WHERE id = $6
+RETURNING id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at
+`
+
+type UpdateTenantParams struct {
+	Slug                pgtype.Text `db:"slug" json:"slug"`
+	Name                pgtype.Text `db:"name" json:"name"`
+	DisableClientUpload pgtype.Bool `db:"disable_client_upload" json:"disable_client_upload"`
+	IncludeInAll        pgtype.Bool `db:"include_in_all" json:"include_in_all"`
+	Branding            []byte      `db:"branding" json:"branding"`
+	ID                  uuid.UUID   `db:"id" json:"id"`
+}
+
+// Only non-null params are applied; NULL means "keep existing value".
+func (q *sqlQuerier) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (Tenant, error) {
+	row := q.db.QueryRow(ctx, updateTenant,
+		arg.Slug,
+		arg.Name,
+		arg.DisableClientUpload,
+		arg.IncludeInAll,
+		arg.Branding,
+		arg.ID,
+	)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Name,
+		&i.DisableClientUpload,
+		&i.IncludeInAll,
+		&i.Branding,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserActionBarSlots = `-- name: GetUserActionBarSlots :one
 SELECT
   slot_1,
@@ -7448,7 +7636,7 @@ func (q *sqlQuerier) DeleteWorld(ctx context.Context, id uuid.UUID) error {
 }
 
 const getServersForWorld = `-- name: GetServersForWorld :many
-SELECT s.id, s.name, s.created_by, s.url, s.description
+SELECT s.id, s.name, s.created_by, s.url, s.description, s.tenant_id
 FROM wow_servers s
 JOIN world_server ws ON s.id = ws.server_id
 WHERE ws.world_id = $1
@@ -7470,6 +7658,7 @@ func (q *sqlQuerier) GetServersForWorld(ctx context.Context, worldID uuid.UUID) 
 			&i.CreatedBy,
 			&i.Url,
 			&i.Description,
+			&i.TenantID,
 		); err != nil {
 			return nil, err
 		}

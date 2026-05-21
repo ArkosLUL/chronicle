@@ -1172,6 +1172,15 @@ export interface Session {
     readonly auth_provider: string;
 }
 
+// From chroniclesdk/tenant.go
+/**
+ * SetServerTenantRequest assigns or removes a tenant from a server.
+ * Pass null tenant_id to remove the assignment.
+ */
+export interface SetServerTenantRequest {
+    readonly tenant_id: string | null;
+}
+
 // From chroniclesdk/user.go
 /**
  * SetUserRolesRequest is the request body for setting a user's Chronicle roles.
@@ -1250,6 +1259,11 @@ export interface SiteConfig {
      * and client-side uploads should be hidden from the UI.
      */
     readonly client_uploads_disabled: boolean;
+    /**
+     * Tenant is the resolved tenant for the current request (based on subdomain).
+     * Nil when accessed from the root domain.
+     */
+    readonly tenant: Tenant | null;
 }
 
 // From chroniclesdk/constants.go
@@ -1363,6 +1377,31 @@ export interface SupportedInstance {
 export interface SupportedInstanceUnit {
     readonly entry_id: number;
     readonly name: string;
+}
+
+// From chroniclesdk/tenant.go
+/**
+ * Tenant is the SDK type exposed to the frontend.
+ */
+export interface Tenant {
+    readonly id: string;
+    readonly slug: string | null;
+    readonly name: string;
+    readonly disable_client_upload: boolean;
+    readonly include_in_all: boolean;
+    readonly branding: TenantBranding | null;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/tenant.go
+/**
+ * TenantBranding holds the visual identity for a tenant's subdomain.
+ */
+export interface TenantBranding {
+    readonly logo: string;
+    readonly banner: string;
+    readonly wide_logo: string;
 }
 
 // From chroniclesdk/panel_layout.go
@@ -1500,6 +1539,22 @@ export interface UpsertRetentionRuleRequest {
     readonly action: string;
     readonly conditions: Record<string, string>;
     readonly description: string;
+}
+
+// From chroniclesdk/tenant.go
+/**
+ * UpsertTenantRequest is the request body for creating or updating a tenant.
+ * UpsertTenantRequest is the request body for creating or updating a tenant.
+ * Pointer fields are optional — if nil on update, no change occurs (COALESCE
+ * preserves the existing value).
+ */
+export interface UpsertTenantRequest {
+    readonly id: string | null;
+    readonly slug: string | null;
+    readonly name: string;
+    readonly disable_client_upload: boolean | null;
+    readonly include_in_all: boolean | null;
+    readonly branding: TenantBranding | null;
 }
 
 // From chroniclesdk/user.go
@@ -1790,6 +1845,7 @@ export interface WoWServer {
     readonly description: string;
     readonly url?: string;
     readonly created_by?: string;
+    readonly tenant_id?: string;
 }
 
 // From chroniclesdk/azerothcore.go

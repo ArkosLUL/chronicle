@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
 import { CryptoTipModal } from "./CryptoTipModal";
+import { useSiteConfig } from "@/api/queries";
 
 const SERVER_NAME = import.meta.env.VITE_SERVER_NAME ?? "turtle";
 
@@ -19,6 +20,8 @@ const PATREON_TOOLTIP =
 
 export function Footer() {
   const [cryptoModalOpen, setCryptoModalOpen] = useState(false);
+  const { data: siteConfig } = useSiteConfig();
+  const tenant = siteConfig?.tenant ?? null;
 
   const gitTag = document
     .querySelector("meta[property=GitTag]")
@@ -171,6 +174,7 @@ export function Footer() {
             </div>
             <p className="text-xs mt-2">
               {gitTag} ({gitCommit}) • Built {buildTime} • Server: {SERVER_NAME}
+              {tenant && <> • Tenant: {tenant.name}</>}
             </p>
           </div>
         </div>

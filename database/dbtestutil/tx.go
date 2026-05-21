@@ -1,6 +1,7 @@
 package dbtestutil
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -39,7 +40,7 @@ func StartTx(t *testing.T, db database.Store, opts *pgx.TxOptions) *DBTx {
 		once := sync.Once{}
 		count := 0
 
-		err := db.InTx(func(store database.Store) error {
+		err := db.InTx(context.Background(), func(store database.Store) error {
 			// InTx can be retried
 			once.Do(func() {
 				txC <- store

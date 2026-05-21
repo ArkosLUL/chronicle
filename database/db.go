@@ -27,7 +27,7 @@ type Store interface {
 	sqlcQuerier
 
 	Ping(ctx context.Context) (time.Duration, error)
-	InTx(func(Store) error, *pgx.TxOptions) error
+	InTx(ctx context.Context, f func(Store) error, opts *pgx.TxOptions) error
 	Close() error
 }
 
@@ -42,11 +42,37 @@ type DBTX interface {
 type sqlQuerier struct {
 	sdb *pgxpool.Pool
 	db  DBTX
+	// txCtx is the context that started the current transaction (set only when
+	// db is a *pgxpool.Tx). Used to detect tenant context mismatches on nested
+	// InTx calls — mixing tenant scopes within a single transaction is a bug.
+	txCtx context.Context
 }
 
 type registerTypes struct {
 	migrationsComplete atomic.Bool
 }
+
+// CheckNestedTxFunc is called when a nested InTx is entered. It receives the
+// context that started the outer transaction and the context of the nested call.
+// If the nested context has a different tenant/bypass scope than the outer, it
+// should return an error. Set by servicetenant.
+//
+// If nil, no check is performed.
+var CheckNestedTxFunc func(outerCtx, innerCtx context.Context) error
+
+// PrepareConnFunc is a function that is called on every connection acquired from
+// the pool, before the connection is used. It receives the caller's context and
+// the raw pgx connection. This is used by servicetenant to set RLS session
+// variables (app.tenant_id / app.tenant_bypass) on each connection.
+//
+// If nil, no per-acquire preparation is done.
+var PrepareConnFunc func(ctx context.Context, conn *pgx.Conn) error
+
+// ResetConnFunc is called when a connection is released back to the pool.
+// It should undo anything PrepareConnFunc set (e.g., RESET session variables).
+//
+// If nil, no per-release cleanup is done.
+var ResetConnFunc func(conn *pgx.Conn)
 
 // https://github.com/jackc/pgx/issues/288#issuecomment-901975396
 func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), error) {
@@ -61,6 +87,24 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), err
 
 	r := &registerTypes{}
 	cfg.AfterConnect = r.RegisterTypes
+
+	// Tenant-aware pool hooks. PrepareConn fires before every connection
+	// acquisition (with the caller's context), AfterRelease fires when the
+	// connection is returned to the pool.
+	cfg.PrepareConn = func(ctx context.Context, conn *pgx.Conn) (bool, error) {
+		if PrepareConnFunc != nil {
+			if err := PrepareConnFunc(ctx, conn); err != nil {
+				return true, err // keep conn alive, fail the query
+			}
+		}
+		return true, nil
+	}
+	cfg.AfterRelease = func(conn *pgx.Conn) bool {
+		if ResetConnFunc != nil {
+			ResetConnFunc(conn)
+		}
+		return true
+	}
 
 	return cfg, func() {
 		r.migrationsComplete.Store(true)
@@ -151,7 +195,7 @@ func (q *sqlQuerier) Ping(ctx context.Context) (time.Duration, error) {
 	return time.Since(start), err
 }
 
-func (q *sqlQuerier) InTx(function func(Store) error, txOpts *pgx.TxOptions) error {
+func (q *sqlQuerier) InTx(ctx context.Context, function func(Store) error, txOpts *pgx.TxOptions) error {
 	_, inTx := q.db.(*pgxpool.Tx)
 	isolation := pgx.ReadCommitted
 	if txOpts != nil {
@@ -169,7 +213,7 @@ func (q *sqlQuerier) InTx(function func(Store) error, txOpts *pgx.TxOptions) err
 		var err error
 		attempts := 0
 		for attempts = 0; attempts < retryAmount; attempts++ {
-			err = q.runTx(function, txOpts)
+			err = q.runTx(ctx, function, txOpts)
 			if err == nil {
 				// Transaction succeeded.
 				return nil
@@ -182,15 +226,24 @@ func (q *sqlQuerier) InTx(function func(Store) error, txOpts *pgx.TxOptions) err
 		// Transaction kept failing in serializable mode.
 		return xerrors.Errorf("transaction failed after %d attempts: %w", attempts, err)
 	}
-	return q.runTx(function, txOpts)
+	return q.runTx(ctx, function, txOpts)
 }
 
-// InTx performs database operations inside a transaction.
-func (q *sqlQuerier) runTx(function func(Store) error, txOpts *pgx.TxOptions) error {
+// runTx performs database operations inside a transaction.
+func (q *sqlQuerier) runTx(ctx context.Context, function func(Store) error, txOpts *pgx.TxOptions) error {
 	if _, ok := q.db.(*pgxpool.Tx); ok {
 		// If the current inner "db" is already a transaction, we just reuse it.
 		// We do not need to handle commit/rollback as the outer tx will handle
 		// that.
+		//
+		// Check for tenant context mismatch: mixing tenant scopes within a
+		// single transaction is a bug (e.g., outer is tenant-scoped, inner
+		// tries AdminBypass — the connection's SET won't change mid-tx).
+		if CheckNestedTxFunc != nil && q.txCtx != nil {
+			if err := CheckNestedTxFunc(q.txCtx, ctx); err != nil {
+				return xerrors.Errorf("nested InTx tenant mismatch: %w", err)
+			}
+		}
 		err := function(q)
 		if err != nil {
 			return xerrors.Errorf("execute transaction: %w", err)
@@ -205,7 +258,11 @@ func (q *sqlQuerier) runTx(function func(Store) error, txOpts *pgx.TxOptions) er
 		}
 	}
 
-	transaction, err := q.sdb.BeginTx(context.Background(), *opts)
+	// Use the caller's context for BeginTx so that pgxpool's PrepareConn hook
+	// receives the tenant context and can SET app.tenant_id on the connection.
+	// Note: per pgx docs, the context only affects the begin command — there is
+	// no auto-rollback on context cancellation.
+	transaction, err := q.sdb.BeginTx(ctx, *opts)
 	if err != nil {
 		return xerrors.Errorf("begin transaction: %w", err)
 	}
@@ -218,7 +275,7 @@ func (q *sqlQuerier) runTx(function func(Store) error, txOpts *pgx.TxOptions) er
 		// couldn't roll back for some reason, extend returned error
 		err = xerrors.Errorf("defer (%s): %w", rerr.Error(), err)
 	}()
-	err = function(&sqlQuerier{db: transaction})
+	err = function(&sqlQuerier{db: transaction, txCtx: ctx})
 	if err != nil {
 		return xerrors.Errorf("execute transaction: %w", err)
 	}

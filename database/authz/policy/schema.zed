@@ -34,6 +34,7 @@ definition chronicle {
   permission admin_layouts = administer
   permission admin_guilds = administer + moderate_guilds
   permission admin_users  = administer + is_admin_users
+  permission admin_tenants = technical_admin
   permission admin_queues = technical_admin + is_admin_queues
   permission set_user_data_limit = technical_admin
   permission shorter_urls = supporter + admin
@@ -50,9 +51,17 @@ definition chronicle {
 // An upload key is on a azeroth core world server.
 definition wow_server_upload_key {}
 
+definition wow_tenant {
+  relation chronicle: chronicle
+  relation admin: user
+
+  permission administer = admin + chronicle->admin_tenants
+}
+
 definition wow_server {
   relation chronicle: chronicle
   relation admin: user
+  relation tenant: wow_tenant
 
   permission upload_log = admin + chronicle->admin_servers
   permission administer = admin + chronicle->admin_servers

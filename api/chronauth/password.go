@@ -123,7 +123,7 @@ func (s *Service) PasswordRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Zed.InTx(func(tx *authz.AuthzTX) error {
+	err = s.Zed.InTx(ctx, func(tx *authz.AuthzTX) error {
 		// Check if this email is already registered with the password provider
 		_, err := tx.GetUserAuthByLinkedID(ctx, database.GetUserAuthByLinkedIDParams{
 			LinkedID: req.Email,

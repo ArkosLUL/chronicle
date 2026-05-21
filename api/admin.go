@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -697,11 +698,16 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SiteConfig{
+	resp := chroniclesdk.SiteConfig{
 		SignupsEnabled:        config.SignupsEnabled,
 		ShortLinkDomain:       a.Opts.ShortLinkDomain,
 		ClientUploadsDisabled: a.Opts.ClientUploadsDisabled,
-	})
+	}
+	if t := servicetenant.TenantFromContext(ctx); t != nil {
+		tenant := chroniclesdk.TenantFromDB(*t)
+		resp.Tenant = &tenant
+	}
+	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
 func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {

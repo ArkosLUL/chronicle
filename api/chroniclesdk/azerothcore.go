@@ -12,6 +12,7 @@ type WoWServer struct {
 	Description string     `json:"description"`
 	URL         *string    `json:"url,omitempty"`
 	CreatedBy   *uuid.UUID `json:"created_by,omitempty"`
+	TenantID    *uuid.UUID `json:"tenant_id,omitempty"`
 }
 
 type CreateWoWServerRequest struct {

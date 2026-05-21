@@ -26,7 +26,7 @@ func (s *Service) Signup(w http.ResponseWriter, r *http.Request, user goth.User)
 		return session, false
 	}
 
-	err := s.Zed.InTx(func(tx *authz.AuthzTX) error {
+	err := s.Zed.InTx(ctx, func(tx *authz.AuthzTX) error {
 		linked, err := tx.GetUserAuthByLinkedID(ctx, database.GetUserAuthByLinkedIDParams{
 			LinkedID: user.UserID,
 			Provider: provider.Name(),

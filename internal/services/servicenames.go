@@ -19,4 +19,5 @@ const (
 	ServiceAccessURL  = "accessurl"
 	ServiceRetention  = "retention"
 	ServiceTelemetry  = "telemetry"
+	ServiceTenant     = "tenant"
 )

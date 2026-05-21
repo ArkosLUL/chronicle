@@ -1124,6 +1124,17 @@ type SiteConfig struct {
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type Tenant struct {
+	ID                  uuid.UUID          `db:"id" json:"id"`
+	Slug                pgtype.Text        `db:"slug" json:"slug"`
+	Name                string             `db:"name" json:"name"`
+	DisableClientUpload bool               `db:"disable_client_upload" json:"disable_client_upload"`
+	IncludeInAll        bool               `db:"include_in_all" json:"include_in_all"`
+	Branding            []byte             `db:"branding" json:"branding"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type User struct {
 	ID                     uuid.UUID          `db:"id" json:"id"`
 	Username               string             `db:"username" json:"username"`
@@ -1469,6 +1480,7 @@ type WowServer struct {
 	CreatedBy   uuid.NullUUID `db:"created_by" json:"created_by"`
 	Url         pgtype.Text   `db:"url" json:"url"`
 	Description string        `db:"description" json:"description"`
+	TenantID    uuid.NullUUID `db:"tenant_id" json:"tenant_id"`
 }
 
 type WowServerRealm struct {

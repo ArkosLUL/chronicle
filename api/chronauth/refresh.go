@@ -37,7 +37,7 @@ func (s *Service) RefreshSession(ctx context.Context, w http.ResponseWriter, r *
 		return fmt.Errorf("provider not found")
 	}
 
-	err := s.Zed.InTx(func(tx *authz.AuthzTX) error {
+	err := s.Zed.InTx(ctx, func(tx *authz.AuthzTX) error {
 		// 1. Get the existing session from DB
 		session, err := s.Zed.GetUserAuthSessionByID(ctx, currentClaims.SessionID)
 		if err != nil {

@@ -544,6 +544,8 @@ CREATE TABLE wow_server_realms (
     description text DEFAULT ''::text NOT NULL
 );
 
+ALTER TABLE ONLY wow_server_realms FORCE ROW LEVEL SECURITY;
+
 CREATE VIEW log_instances_guild AS
  SELECT li.id,
     li.realm_id,
@@ -726,6 +728,19 @@ CREATE TABLE site_config (
     signups_enabled boolean DEFAULT true NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT site_config_id_check CHECK (id)
+);
+
+CREATE TABLE tenants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug text,
+    name text NOT NULL,
+    disable_client_upload boolean DEFAULT false NOT NULL,
+    include_in_all boolean DEFAULT true NOT NULL,
+    branding jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT tenants_slug_format CHECK (((slug IS NULL) OR (slug ~ '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'::text))),
+    CONSTRAINT tenants_slug_reserved CHECK ((slug <> ALL (ARRAY['www'::text, 'api'::text, 'auth'::text, 'admin'::text, 'legacy'::text, 'app'::text, 'mail'::text, 'staging'::text])))
 );
 
 CREATE TABLE user_action_bar_slots (
@@ -1067,8 +1082,11 @@ CREATE TABLE wow_servers (
     name text NOT NULL,
     created_by uuid,
     url text,
-    description text DEFAULT ''::text NOT NULL
+    description text DEFAULT ''::text NOT NULL,
+    tenant_id uuid
 );
+
+ALTER TABLE ONLY wow_servers FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
@@ -1224,6 +1242,12 @@ ALTER TABLE ONLY shared_views
 
 ALTER TABLE ONLY site_config
     ADD CONSTRAINT site_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY tenants
+    ADD CONSTRAINT tenants_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY tenants
+    ADD CONSTRAINT tenants_slug_key UNIQUE (slug);
 
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_pkey PRIMARY KEY (user_id);
@@ -1550,5 +1574,27 @@ ALTER TABLE ONLY wow_server_upload_keys
 
 ALTER TABLE ONLY wow_servers
     ADD CONSTRAINT wow_servers_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
+
+ALTER TABLE ONLY wow_servers
+    ADD CONSTRAINT wow_servers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id);
+
+CREATE POLICY tenant_admin_bypass ON wow_server_realms USING ((current_setting('app.tenant_bypass'::text, true) = 'true'::text));
+
+CREATE POLICY tenant_admin_bypass ON wow_servers USING ((current_setting('app.tenant_bypass'::text, true) = 'true'::text));
+
+CREATE POLICY tenant_isolation ON wow_servers USING (
+CASE
+    WHEN (NULLIF(current_setting('app.tenant_id'::text, true), ''::text) IS NULL) THEN ((tenant_id IS NULL) OR (tenant_id IN ( SELECT tenants.id
+       FROM tenants
+      WHERE (tenants.include_in_all = true))))
+    ELSE (tenant_id = (current_setting('app.tenant_id'::text, true))::uuid)
+END);
+
+CREATE POLICY tenant_realm_isolation ON wow_server_realms USING ((server_id IN ( SELECT wow_servers.id
+   FROM wow_servers)));
+
+ALTER TABLE wow_server_realms ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE wow_servers ENABLE ROW LEVEL SECURITY;
 
 

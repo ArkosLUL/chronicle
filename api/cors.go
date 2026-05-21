@@ -2,22 +2,16 @@ package api
 
 import (
 	"net/http"
-	"net/url"
-	"strings"
 
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/cors"
 )
 
-const productionOrigin = "https://chronicleclassic.com"
-
-func Cors(accessURL *url.URL) func(next http.Handler) http.Handler {
-	origins := []string{productionOrigin, "https://jollygrin.github.io"}
-	if strings.Contains(accessURL.Host, "localhost") {
-		origins = append(origins, "http://"+accessURL.Host)
-	}
-
+func Cors(tenant *servicetenant.Service) func(next http.Handler) http.Handler {
 	return cors.Handler(cors.Options{
-		AllowedOrigins:   origins,
+		AllowOriginFunc: func(_ *http.Request, origin string) bool {
+			return tenant.IsAllowedOrigin(origin)
+		},
 		AllowedMethods:   []string{"OPTIONS", "GET"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,

@@ -25,6 +25,7 @@ import (
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -57,8 +58,12 @@ type Options struct {
 	// ClientUploadsDisabled disables client-side log uploads (for servers using server-side logging).
 	ClientUploadsDisabled bool
 	DevOAuth              bool
-	Discord         chronauth.DiscordOAuth
-	SecretPEM       []byte // Used for JWTs
+	Discord               chronauth.DiscordOAuth
+	SecretPEM             []byte // Used for JWTs
+
+	// Tenant is the multi-tenant service for subdomain → tenant resolution.
+	// If nil, tenant middleware is a no-op.
+	Tenant *servicetenant.Service
 }
 
 type API struct {
@@ -108,7 +113,7 @@ func (api *API) Routes() chi.Router {
 		httpmw.Recover(api.Opts.Logger),
 		httpmw.Log500(api.Opts.Logger),
 		context2.ClearHandler,
-		Cors(api.Opts.AccessURL),
+		Cors(api.Opts.Tenant),
 		httpmw.SecurityHeaders(),
 		httpmw.ContentSecurityPolicy(),
 		httpmw.NoWWW(),
@@ -118,6 +123,7 @@ func (api *API) Routes() chi.Router {
 			"application/json", "text/javascript",
 		),
 		api.shortLinkRedirectMiddleware,
+		api.tenantMiddleware,
 	)
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -146,35 +152,62 @@ func (api *API) Routes() chi.Router {
 
 		// Admin routes - require admin or technical_admin role
 		r.Route("/admin", func(r chi.Router) {
-			r.Use(
-				api.Auth.Authenticated(false),
-				httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
-			)
-			r.Get("/users", api.AdminListUsers)
-			r.Post("/users/{userID}/resync", api.AdminResyncUserRoles)
-			r.Put("/users/{userID}/roles", api.AdminSetUserRoles)
-			r.Put("/users/{userID}/retention", api.AdminSetUserRetention)
-			r.Get("/users/{userID}/grants", api.GetUserGrants)
-			r.Put("/users/{userID}/grants", api.UpsertUserGrant)
-			r.Delete("/users/{userID}/grants/{source}", api.DeleteUserGrant)
-			r.Get("/logs", api.AdminListLogs)
-			r.Post("/logs/delete", api.AdminBulkDeleteLogs)
-			r.Post("/logs/reparse", api.AdminBulkReparseLogs)
-			r.Get("/instance-names", api.AdminListInstanceNames)
-			r.Get("/outdated-instances", api.AdminListOutdatedInstances)
-			r.Post("/outdated-instances/reparse", api.AdminBulkReparseOutdatedInstances)
-			r.Get("/site-config", api.AdminGetSiteConfig)
-			r.Put("/site-config", api.AdminUpdateSiteConfig)
+			r.Use(api.Auth.Authenticated(false))
+			r.Route("/users", func(r chi.Router) {
+				r.Use(
+					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
+				)
 
-			r.Route("/leaderboard", func(r chi.Router) {
-				r.Get("/version-requirements", api.AdminListLeaderboardVersionRequirements)
-				r.Group(func(r chi.Router) {
-					r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_speedrun_requirements_User))
-					r.Put("/version-requirements", api.AdminUpsertLeaderboardVersionRequirements)
+				r.Get("/", api.AdminListUsers)
+				r.Post("/{userID}/resync", api.AdminResyncUserRoles)
+				r.Put("/{userID}/roles", api.AdminSetUserRoles)
+				r.Put("/{userID}/retention", api.AdminSetUserRetention)
+				r.Get("/{userID}/grants", api.GetUserGrants)
+				r.Put("/{userID}/grants", api.UpsertUserGrant)
+				r.Delete("/{userID}/grants/{source}", api.DeleteUserGrant)
+			})
+
+			r.Route("/logs", func(r chi.Router) {
+				r.Use(
+					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User),
+				)
+				r.Get("/", api.AdminListLogs)
+				r.Post("/delete", api.AdminBulkDeleteLogs)
+				r.Post("/reparse", api.AdminBulkReparseLogs)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Route("/leaderboard", func(r chi.Router) {
+					r.Get("/version-requirements", api.AdminListLeaderboardVersionRequirements)
+					r.Group(func(r chi.Router) {
+						r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_speedrun_requirements_User))
+						r.Put("/version-requirements", api.AdminUpsertLeaderboardVersionRequirements)
+					})
 				})
 			})
 
-			r.Mount("/retention", retentionapi.New(api.Zed, api.Queues).Routes())
+			// Tenant management — routes owned by servicetenant
+			r.Route("/tenants", func(r chi.Router) {
+				r.Use(
+					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_tenants_User),
+				)
+				r.Mount("/", api.Opts.Tenant.Routes())
+			})
+			r.Put("/servers/{serverID}/tenant", api.Opts.Tenant.SetServerTenant)
+
+			r.Group(func(r chi.Router) {
+				r.Use(
+					// TODO: Determine right authz
+					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
+				)
+				r.Get("/instance-names", api.AdminListInstanceNames)
+				r.Get("/outdated-instances", api.AdminListOutdatedInstances)
+				r.Post("/outdated-instances/reparse", api.AdminBulkReparseOutdatedInstances)
+				r.Get("/site-config", api.AdminGetSiteConfig)
+				r.Put("/site-config", api.AdminUpdateSiteConfig)
+
+				r.Mount("/retention", retentionapi.New(api.Zed, api.Queues).Routes())
+			})
 		})
 
 		// Regression testing routes (under admin auth)

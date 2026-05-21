@@ -1,0 +1,47 @@
+package servicetenant
+
+import (
+	"context"
+
+	"github.com/Emyrk/chronicle/database"
+	"github.com/google/uuid"
+)
+
+type tenantCtxKey struct{}
+type tenantBypassKey struct{}
+
+// WithTenant injects the resolved tenant into the context.
+func WithTenant(ctx context.Context, t database.Tenant) context.Context {
+	return context.WithValue(ctx, tenantCtxKey{}, t)
+}
+
+// TenantFromContext returns the tenant for the current request, or nil if
+// running on the root domain (no tenant context).
+func TenantFromContext(ctx context.Context) *database.Tenant {
+	v, ok := ctx.Value(tenantCtxKey{}).(database.Tenant)
+	if !ok {
+		return nil
+	}
+	return &v
+}
+
+// TenantIDFromContext returns the tenant UUID from context, or uuid.Nil if unset.
+func TenantIDFromContext(ctx context.Context) uuid.UUID {
+	t := TenantFromContext(ctx)
+	if t == nil {
+		return uuid.Nil
+	}
+	return t.ID
+}
+
+// AdminBypass returns a context that causes PrepareConn to set
+// app.tenant_bypass = 'true', skipping RLS filtering.
+// Use for admin endpoints, background jobs, and migrations.
+func AdminBypass(ctx context.Context) context.Context {
+	return context.WithValue(ctx, tenantBypassKey{}, true)
+}
+
+func isBypass(ctx context.Context) bool {
+	v, _ := ctx.Value(tenantBypassKey{}).(bool)
+	return v
+}

@@ -27,6 +27,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/serviceprometheus"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
 	"github.com/Emyrk/chronicle/internal/services/servicestorage"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/Emyrk/chronicle/internal/services/servicewowdb"
 
 	"github.com/coder/serpent"
@@ -87,6 +88,7 @@ func (s *Service) DependsOn() []string {
 		servicegamedata.OnInternalGameData(),
 		servicemail.OnMailer(),
 		serviceaccessurl.OnAccessURL(),
+		servicetenant.OnTenant(),
 	}
 }
 
@@ -100,6 +102,7 @@ func (s *Service) Start(ctx context.Context) error {
 	zed := serviceauthz.Authz(s.broker)
 	pool := servicepgxpool.PGXPool(s.broker)
 	ps := servicepgxpool.Pubsub(s.broker)
+	tenantSvc := servicetenant.Tenant(s.broker)
 
 	serverLn, err := ProvisionListener(logger, s.httpAddress)
 	if err != nil {
@@ -175,6 +178,7 @@ func (s *Service) Start(ctx context.Context) error {
 		DevOAuth:              s.devAuth,
 		Discord:         s.discordAuth,
 		SecretPEM:       decodedSecret,
+		Tenant:          tenantSvc,
 	})
 
 	if err != nil {

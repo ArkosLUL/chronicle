@@ -8,9 +8,13 @@ import {
   useAzerothcoreRealms,
   useCreateAzerothcoreRealm,
   useDeleteAzerothcoreRealm,
+  useAdminTenants,
+  useUpsertTenant,
+  useDeleteTenant,
+  useSetServerTenant,
 } from "@/api/queries";
-import { Loader2, Trash2, Plus, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
-import type { WoWServer } from "@/api/typesGenerated";
+import { Loader2, Trash2, Plus, ChevronDown, ChevronRight, ExternalLink, Building2, Pencil } from "lucide-react";
+import type { WoWServer, Tenant } from "@/api/typesGenerated";
 
 function RealmsList({ server }: { server: WoWServer }) {
   const { data: realms, isLoading } = useAzerothcoreRealms(server.id);
@@ -109,7 +113,161 @@ function RealmsList({ server }: { server: WoWServer }) {
   );
 }
 
-function ServerCard({ server }: { server: WoWServer }) {
+function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void }) {
+  const upsertTenant = useUpsertTenant();
+  const [name, setName] = useState(tenant?.name ?? "");
+  const [slug, setSlug] = useState(tenant?.slug ?? "");
+  const [includeInAll, setIncludeInAll] = useState(tenant?.include_in_all ?? true);
+  const [disableUpload, setDisableUpload] = useState(tenant?.disable_client_upload ?? false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    upsertTenant.mutate(
+      {
+        id: tenant?.id ?? "",
+        name,
+        slug: slug || null,
+        include_in_all: includeInAll,
+        disable_client_upload: disableUpload,
+        branding: tenant?.branding ?? null,
+      },
+      { onSuccess: onDone },
+    );
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 rounded-md border p-3">
+      <input
+        className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+        placeholder="Tenant name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+      />
+      <input
+        className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+        placeholder="Slug (optional, e.g. epoch)"
+        value={slug}
+        onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+      />
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={includeInAll} onChange={(e) => setIncludeInAll(e.target.checked)} />
+        Include in root domain listing
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={disableUpload} onChange={(e) => setDisableUpload(e.target.checked)} />
+        Disable client uploads
+      </label>
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={upsertTenant.isPending}>
+          {upsertTenant.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : tenant ? "Save" : "Create"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+      {upsertTenant.isError && <p className="text-sm text-destructive">{upsertTenant.error.message}</p>}
+    </form>
+  );
+}
+
+function TenantSection() {
+  const { data: tenants, isLoading } = useAdminTenants();
+  const deleteTenant = useDeleteTenant();
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-4">
+        <h2 className="text-xl font-semibold">Tenants</h2>
+        <Button size="sm" className="gap-1" onClick={() => setShowAdd(!showAdd)}>
+          <Plus className="h-4 w-4" /> Add Tenant
+        </Button>
+      </div>
+
+      {showAdd && (
+        <Card className="p-4">
+          <TenantForm onDone={() => setShowAdd(false)} />
+        </Card>
+      )}
+
+      {isLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+
+      {tenants?.length === 0 && !showAdd && (
+        <p className="text-muted-foreground text-sm">No tenants. All servers appear on the root domain.</p>
+      )}
+
+      {tenants?.map((tenant) => (
+        <Card key={tenant.id} className="p-4 space-y-2">
+          {editingId === tenant.id ? (
+            <TenantForm tenant={tenant} onDone={() => setEditingId(null)} />
+          ) : (
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="font-semibold text-base">{tenant.name}</h3>
+                  {tenant.slug && (
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                      {tenant.slug}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                  {tenant.include_in_all && <span>✓ Included in root</span>}
+                  {tenant.disable_client_upload && <span>⊘ Uploads disabled</span>}
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(tenant.id)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={() => {
+                    if (window.confirm(`Delete tenant "${tenant.name}"?`)) {
+                      deleteTenant.mutate(tenant.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function TenantSelect({ server, tenants }: { server: WoWServer; tenants: Tenant[] }) {
+  const setServerTenant = useSetServerTenant();
+
+  return (
+    <select
+      className="rounded-md border bg-background px-2 py-1 text-xs"
+      value={server.tenant_id ?? ""}
+      onChange={(e) => {
+        const tenantId = e.target.value || null;
+        setServerTenant.mutate({ serverId: server.id, tenantId });
+      }}
+      disabled={setServerTenant.isPending}
+    >
+      <option value="">No tenant</option>
+      {tenants.map((t) => (
+        <option key={t.id} value={t.id}>
+          {t.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function ServerCard({ server, tenants }: { server: WoWServer; tenants: Tenant[] }) {
   const deleteServer = useDeleteAzerothcoreServer();
   const [expanded, setExpanded] = useState(false);
 
@@ -124,6 +282,10 @@ function ServerCard({ server }: { server: WoWServer }) {
               {server.url} <ExternalLink className="h-3 w-3" />
             </a>
           )}
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-xs text-muted-foreground">Tenant:</span>
+            <TenantSelect server={server} tenants={tenants} />
+          </div>
         </div>
         <Button
           variant="ghost"
@@ -153,8 +315,59 @@ function ServerCard({ server }: { server: WoWServer }) {
   );
 }
 
+/** Groups servers by tenant, rendering each tenant's servers inside a soft background box. */
+function ServersByTenant({ servers, tenants }: { servers: WoWServer[]; tenants: Tenant[] }) {
+  const tenantMap = new Map(tenants.map((t) => [t.id, t]));
+
+  // Group servers: key = tenant id or "unassigned"
+  const groups = new Map<string, { tenant: Tenant | null; servers: WoWServer[] }>();
+  for (const server of servers) {
+    const key = server.tenant_id ?? "unassigned";
+    if (!groups.has(key)) {
+      groups.set(key, { tenant: server.tenant_id ? tenantMap.get(server.tenant_id) ?? null : null, servers: [] });
+    }
+    groups.get(key)!.servers.push(server);
+  }
+
+  // Sort: tenant groups first (alphabetical), unassigned last
+  const sorted = [...groups.entries()].sort(([aKey, a], [bKey, b]) => {
+    if (aKey === "unassigned") return 1;
+    if (bKey === "unassigned") return -1;
+    return (a.tenant?.name ?? "").localeCompare(b.tenant?.name ?? "");
+  });
+
+  return (
+    <div className="space-y-6">
+      {sorted.map(([key, group]) => (
+        <div key={key} className={group.tenant
+          ? "rounded-lg border border-primary/20 bg-primary/[0.03] p-4 space-y-3"
+          : "space-y-3"
+        }>
+          {group.tenant ? (
+            <div className="flex items-center gap-2 mb-1">
+              <Building2 className="h-4 w-4 text-primary/60" />
+              <h3 className="text-sm font-semibold text-primary/80">{group.tenant.name}</h3>
+              {group.tenant.slug && (
+                <span className="text-xs font-mono text-primary/50 bg-primary/10 px-1.5 py-0.5 rounded">
+                  {group.tenant.slug}
+                </span>
+              )}
+            </div>
+          ) : groups.size > 1 ? (
+            <h3 className="text-sm font-semibold text-muted-foreground mb-1">Unassigned</h3>
+          ) : null}
+          {group.servers.map((server) => (
+            <ServerCard key={server.id} server={server} tenants={tenants} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ServersPage() {
   const { data: servers, isLoading } = useAzerothcoreServers();
+  const { data: tenants } = useAdminTenants();
   const createServer = useCreateAzerothcoreServer();
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -185,7 +398,10 @@ export function ServersPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-8 max-w-3xl">
+      <TenantSection />
+
+      <div className="space-y-4">
       <div className="flex items-center gap-4">
         <h2 className="text-xl font-semibold">Servers & Realms</h2>
         <Button size="sm" className="gap-1" onClick={() => setShowAdd(!showAdd)}>
@@ -233,9 +449,10 @@ export function ServersPage() {
         <p className="text-muted-foreground text-sm">No servers yet. Create one to get started.</p>
       )}
 
-      {servers?.map((server) => (
-        <ServerCard key={server.id} server={server} />
-      ))}
+      {servers && servers.length > 0 && (
+        <ServersByTenant servers={servers} tenants={tenants ?? []} />
+      )}
+      </div>
     </div>
   );
 }

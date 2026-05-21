@@ -499,7 +499,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// multi-worker, but for now it is a simple way for duplicate detection to not
 		// have race conditions.
 		w.parent.insertParsedInstanceMu.Lock()
-		err = db.InTx(func(tx *authz.AuthzTX) error {
+		err = db.InTx(ctx, func(tx *authz.AuthzTX) error {
 			defer func() {
 				// Always unlock at the end of the tx
 				w.parent.insertParsedInstanceMu.Unlock()

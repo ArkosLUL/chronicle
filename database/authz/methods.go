@@ -158,6 +158,51 @@ func (z *interceptor) DeleteWoWServerRealm(ctx context.Context, id uuid.UUID) er
 	}
 	return z.Store.DeleteWoWServerRealm(ctx, id)
 }
+func (z *interceptor) InsertTenant(ctx context.Context, arg database.InsertTenantParams) (database.Tenant, error) {
+	b := policy.New()
+	b.Wow_tenant(arg.ID).Chronicle(b.GlobalChronicle())
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.Tenant{}, err
+	}
+	return z.Store.InsertTenant(ctx, arg)
+}
+
+func (z *interceptor) DeleteTenant(ctx context.Context, id uuid.UUID) error {
+	obj := policy.New().Wow_tenant(id).Object()
+	f := rel.NewFilter(obj.Typ, obj.ID, "")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return fmt.Errorf("delete authz relations: %w", err)
+	}
+	return z.Store.DeleteTenant(ctx, id)
+}
+
+func (z *interceptor) SetServerTenant(ctx context.Context, arg database.SetServerTenantParams) error {
+	b := policy.New()
+	serverObj := b.Wow_server(arg.ID).Object()
+
+	// Always clear the existing tenant relation first.
+	f := rel.NewFilter(serverObj.Typ, serverObj.ID, "tenant")
+	err := z.Delete(ctx, rel.NewPreconditionedFilter(f))
+	if err != nil {
+		return fmt.Errorf("clear existing tenant relation: %w", err)
+	}
+
+	// If assigning a new tenant, write the new relation.
+	if arg.TenantID.Valid {
+		b2 := policy.New()
+		b2.Wow_server(arg.ID).Tenant(b2.Wow_tenant(arg.TenantID.UUID))
+		_, err = z.Write(ctx, *b2.Txn())
+		if err != nil {
+			return err
+		}
+	}
+
+	return z.Store.SetServerTenant(ctx, arg)
+}
+
 
 func (z *interceptor) InsertUploadKey(ctx context.Context, arg database.InsertUploadKeyParams) (database.WowServerUploadKey, error) {
 	b := policy.New()

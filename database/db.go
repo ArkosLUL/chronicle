@@ -112,6 +112,10 @@ func PoolConfig(logger *slog.Logger, dbURL string) (*pgxpool.Config, func(), err
 }
 
 // RegisterTypes registers custom Postgres types (enums, etc.) with pgx.
+// After migrations are complete, it also SET ROLEs to the non-superuser
+// "chronicle" role so that RLS policies (e.g. tenant isolation) are enforced.
+// Superusers bypass RLS unconditionally, so every pooled connection must
+// downgrade to this role before serving application queries.
 func (r *registerTypes) RegisterTypes(ctx context.Context, conn *pgx.Conn) error {
 	if !r.migrationsComplete.Load() {
 		return nil
@@ -134,6 +138,14 @@ func (r *registerTypes) RegisterTypes(ctx context.Context, conn *pgx.Conn) error
 			return fmt.Errorf("load array type %q: %w", arrayTypeName, err)
 		}
 		conn.TypeMap().RegisterType(arrayType)
+	}
+
+	// Downgrade from superuser to the non-superuser "chronicle" role so
+	// that PostgreSQL RLS policies take effect. This runs once per new
+	// pooled connection (AfterConnect), not per acquisition. After
+	// pool.Reset() post-migration, every connection gets this role.
+	if _, err := conn.Exec(ctx, "SET ROLE chronicle"); err != nil {
+		return fmt.Errorf("set role chronicle: %w", err)
 	}
 
 	return nil

@@ -535,6 +535,19 @@ CREATE TABLE log_instances (
 
 COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
 
+CREATE TABLE tenants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug text,
+    name text NOT NULL,
+    disable_client_upload boolean DEFAULT false NOT NULL,
+    include_in_all boolean DEFAULT true NOT NULL,
+    branding jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT tenants_slug_format CHECK (((slug IS NULL) OR (slug ~ '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'::text))),
+    CONSTRAINT tenants_slug_reserved CHECK ((slug <> ALL (ARRAY['www'::text, 'api'::text, 'auth'::text, 'admin'::text, 'legacy'::text, 'app'::text, 'mail'::text, 'staging'::text])))
+);
+
 CREATE TABLE wow_server_realms (
     id uuid NOT NULL,
     server_id uuid NOT NULL,
@@ -545,6 +558,17 @@ CREATE TABLE wow_server_realms (
 );
 
 ALTER TABLE ONLY wow_server_realms FORCE ROW LEVEL SECURITY;
+
+CREATE TABLE wow_servers (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    created_by uuid,
+    url text,
+    description text DEFAULT ''::text NOT NULL,
+    tenant_id uuid
+);
+
+ALTER TABLE ONLY wow_servers FORCE ROW LEVEL SECURITY;
 
 CREATE VIEW log_instances_guild AS
  SELECT li.id,
@@ -566,9 +590,15 @@ CREATE VIEW log_instances_guild AS
     COALESCE(wsr.name, 'Unknown'::text) AS realm_name,
     g.name AS guild_name,
     g.realm_id AS guild_realm_id,
-    g.created_at AS guild_created_at
-   FROM ((public.log_instances li
+    g.created_at AS guild_created_at,
+    ws.name AS server_name,
+    t.name AS tenant_name,
+    t.slug AS tenant_slug,
+    COALESCE(t.include_in_all, true) AS tenant_include_in_all
+   FROM ((((public.log_instances li
      LEFT JOIN wow_server_realms wsr ON ((wsr.id = li.realm_id)))
+     LEFT JOIN wow_servers ws ON ((wsr.server_id = ws.id)))
+     LEFT JOIN tenants t ON ((ws.tenant_id = t.id)))
      LEFT JOIN guilds g ON ((li.guild_id = g.id)));
 
 CREATE TABLE parsed_log_group (
@@ -728,19 +758,6 @@ CREATE TABLE site_config (
     signups_enabled boolean DEFAULT true NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT site_config_id_check CHECK (id)
-);
-
-CREATE TABLE tenants (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    slug text,
-    name text NOT NULL,
-    disable_client_upload boolean DEFAULT false NOT NULL,
-    include_in_all boolean DEFAULT true NOT NULL,
-    branding jsonb,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT tenants_slug_format CHECK (((slug IS NULL) OR (slug ~ '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'::text))),
-    CONSTRAINT tenants_slug_reserved CHECK ((slug <> ALL (ARRAY['www'::text, 'api'::text, 'auth'::text, 'admin'::text, 'legacy'::text, 'app'::text, 'mail'::text, 'staging'::text])))
 );
 
 CREATE TABLE user_action_bar_slots (
@@ -1077,17 +1094,6 @@ CREATE TABLE wow_server_upload_keys (
     created_by uuid
 );
 
-CREATE TABLE wow_servers (
-    id uuid NOT NULL,
-    name text NOT NULL,
-    created_by uuid,
-    url text,
-    description text DEFAULT ''::text NOT NULL,
-    tenant_id uuid
-);
-
-ALTER TABLE ONLY wow_servers FORCE ROW LEVEL SECURITY;
-
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
 ALTER TABLE ONLY authz_schema_migrations
@@ -1363,6 +1369,8 @@ CREATE INDEX idx_shared_views_code ON shared_views USING btree (code);
 
 CREATE INDEX idx_shared_views_instance_hash ON shared_views USING btree (instance_id, hash);
 
+CREATE UNIQUE INDEX idx_tenants_name_unique ON tenants USING btree (lower(name));
+
 CREATE INDEX idx_upload_keys_realm ON wow_server_upload_keys USING btree (realm_id);
 
 CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code);
@@ -1370,6 +1378,10 @@ CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code
 CREATE INDEX idx_world_creature_template_name ON world_creature_template USING btree (name);
 
 CREATE INDEX idx_world_item_template_name ON world_item_template USING btree (name);
+
+CREATE UNIQUE INDEX idx_wow_server_realms_name_unique ON wow_server_realms USING btree (lower(name));
+
+CREATE UNIQUE INDEX idx_wow_servers_name_unique ON wow_servers USING btree (lower(name));
 
 CREATE UNIQUE INDEX log_instance_youtube_timestamped_instance_id_idx ON log_instance_youtube_timestamped USING btree (log_instance_id) WHERE (log_instance_id IS NOT NULL);
 

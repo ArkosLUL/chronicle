@@ -1116,6 +1116,9 @@ FROM
                     'name', li.name,
                     'slug', li.hashed_slug,
                     'realm_id', li.realm_id,
+                    'realm_name', wsr.name,
+                    'server_name', ws.name,
+                    'tenant_name', t.name,
                     'log_group_id', li.log_group_id,
                     'encounters', COALESCE((
                         SELECT jsonb_agg(jsonb_build_object(
@@ -1133,6 +1136,9 @@ FROM
                     ), '[]'::jsonb)
                 ) AS inst_data
                 FROM log_instances li
+                LEFT JOIN wow_server_realms wsr ON li.realm_id = wsr.id
+                LEFT JOIN wow_servers ws ON wsr.server_id = ws.id
+                LEFT JOIN tenants t ON ws.tenant_id = t.id
                 WHERE li.log_group_id = wow_log_groups.id
                 ORDER BY li.name
             ) sub
@@ -2790,7 +2796,7 @@ func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, in
 
 const getInstancesByLogGroupID = `-- name: GetInstancesByLogGroupID :many
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all
 FROM
   log_instances_guild
 WHERE
@@ -2827,6 +2833,10 @@ func (q *sqlQuerier) GetInstancesByLogGroupID(ctx context.Context, logGroupID uu
 			&i.GuildName,
 			&i.GuildRealmID,
 			&i.GuildCreatedAt,
+			&i.ServerName,
+			&i.TenantName,
+			&i.TenantSlug,
+			&i.TenantIncludeInAll,
 		); err != nil {
 			return nil, err
 		}
@@ -2965,7 +2975,7 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all
 FROM
   log_instances_guild
 WHERE
@@ -2996,13 +3006,17 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 		&i.GuildName,
 		&i.GuildRealmID,
 		&i.GuildCreatedAt,
+		&i.ServerName,
+		&i.TenantName,
+		&i.TenantSlug,
+		&i.TenantIncludeInAll,
 	)
 	return i, err
 }
 
 const instanceBySlug = `-- name: InstanceBySlug :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at, server_name, tenant_name, tenant_slug, tenant_include_in_all
 FROM
   log_instances_guild
 WHERE
@@ -3033,6 +3047,10 @@ func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text)
 		&i.GuildName,
 		&i.GuildRealmID,
 		&i.GuildCreatedAt,
+		&i.ServerName,
+		&i.TenantName,
+		&i.TenantSlug,
+		&i.TenantIncludeInAll,
 	)
 	return i, err
 }

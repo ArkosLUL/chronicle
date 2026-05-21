@@ -164,6 +164,8 @@ type SiteConfig struct {
 	// Tenant is the resolved tenant for the current request (based on subdomain).
 	// Nil when accessed from the root domain.
 	Tenant *Tenant `json:"tenant"`
+	// PrimaryDomain is the root domain for building cross-tenant URLs.
+	PrimaryDomain string `json:"primary_domain,omitempty"`
 }
 
 // UpdateSiteConfigRequest allows partial updates to site configuration.

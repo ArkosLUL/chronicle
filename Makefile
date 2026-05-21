@@ -29,17 +29,17 @@ DB_NAME := $(if $(filter turtle,$(SERVER)),chronicle,$(SERVER))
 
 .PHONY: develop
 develop: frontend/chronicle/dist create-db
-	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --ocr-url="http://localhost:8730"
+	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --ocr-url="http://localhost:8730" --primary-domain=localhost
 
 develop-backend-fresh:
 	docker rm -f chronicle-db-fresh 2>/dev/null || true
 	docker run -d --name chronicle-db-fresh -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5533:5432 postgres:17
 	@echo "Waiting for postgres to be ready..."
 	@until docker exec chronicle-db-fresh pg_isready -U postgres >/dev/null 2>&1; do sleep 0.5; done
-	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs --postgres-url="postgres://postgres:postgres@127.0.0.1:5533/postgres?sslmode=disable"
+	go run --tags "static $(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs --postgres-url="postgres://postgres:postgres@127.0.0.1:5533/postgres?sslmode=disable" --primary-domain=localhost
 
 develop-backend: create-db
-	go run --tags "$(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs
+	go run --tags "$(SERVER)" $(LD_BUILD_FLAGS) ./cmd/chronicled server --dev-auth --jwt-secret-pem="dev" --log-parse-worker-count=4 --ocr-url="http://localhost:8730" --emit-parse-logs --primary-domain=localhost
 
 .PHONY: build
 build: build-backend-static

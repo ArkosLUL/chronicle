@@ -175,6 +175,16 @@ func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
 	if instance.DuplicateGroupID.Valid {
 		ret.DuplicateGroupID = &instance.DuplicateGroupID.UUID
 	}
+	if instance.ServerName.Valid {
+		ret.ServerName = instance.ServerName.String
+	}
+	if instance.TenantName.Valid {
+		ret.TenantName = instance.TenantName.String
+	}
+	if instance.TenantSlug.Valid {
+		ret.TenantSlug = instance.TenantSlug.String
+	}
+	ret.TenantIncludeAll = instance.TenantIncludeInAll
 	return ret
 }
 

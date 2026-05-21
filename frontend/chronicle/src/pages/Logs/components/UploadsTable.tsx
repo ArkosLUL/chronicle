@@ -5,16 +5,6 @@ import type { WoWLogGroup } from "@/api/queries";
 import type { WoWSimpleParsedInstance } from "@/api/typesGenerated";
 import { parseParsedOutput, format } from "../utils/calendarUtils";
 
-const REALM_NAMES: Record<string, string> = {
-  "851d2fd3-f9c5-4623-b714-924b59d916aa": "Ambershire",
-  "f94d3103-1cd8-40e9-ad91-a2366de33354": "Tel Abim",
-  "bcf173a7-c94a-49fe-8930-27435d722fb7": "Nordanaar",
-};
-
-function getRealmName(realmId: string): string {
-  return REALM_NAMES[realmId] ?? "Unknown";
-}
-
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -114,7 +104,7 @@ export function UploadsTable({
           const uploadDate = parseTimestamp(log.created_at);
           const sizes = getFileSizes(log.files);
           const filesDeleted = log.files?.some((f) => f.storage_deleted_at) ?? false;
-          const realmName = instances[0] ? getRealmName(instances[0].realm_id) : "—";
+          const realmName = instances[0]?.realm_name ?? "—";
 
           return (
             <div key={log.id} className="border border-border rounded-lg p-3 space-y-2">
@@ -216,7 +206,7 @@ export function UploadsTable({
               const filesDeleted = log.files?.some((f) => f.storage_deleted_at) ?? false;
               
               // Get realm from first instance
-              const realmName = instances[0] ? getRealmName(instances[0].realm_id) : "—";
+              const realmName = instances[0]?.realm_name ?? "—";
 
               return (
                 <tr key={log.id} className="hover:bg-muted/30 transition-colors">

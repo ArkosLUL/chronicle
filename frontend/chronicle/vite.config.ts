@@ -1,7 +1,7 @@
 /// <reference types="vitest/config" />
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from 'vite';
+import { defineConfig, type ProxyOptions } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
@@ -9,6 +9,22 @@ import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+
+// Proxy helper that rewrites the Host header to preserve the subdomain
+// while targeting the backend port. e.g. epoch.localhost:5173 → epoch.localhost:4000
+function backendProxy(): ProxyOptions {
+  return {
+    target: "http://localhost:4000",
+    configure: (proxy) => {
+      proxy.on('proxyReq', (proxyReq, req) => {
+        const host = req.headers.host;
+        if (host) {
+          proxyReq.setHeader('Host', host.replace(/:\d+$/, ':4000'));
+        }
+      });
+    },
+  };
+}
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
@@ -42,9 +58,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:4000",
-      "/auth": "http://localhost:4000",
-      "/static": "http://localhost:4000",
+      "/api": backendProxy(),
+      "/auth": backendProxy(),
+      "/static": backendProxy(),
     }
   },
   test: {

@@ -13,6 +13,7 @@ import { SyncModeProvider, useSyncModeContext } from "./SyncModeContext";
 import { SyncControlOverlay } from "./SyncControlOverlay";
 import { TimeRangeProvider } from "./TimeRangeContext";
 import { TimeRangeController } from "./TimeRangeController";
+import { useTenantGate } from "./TenantGate";
 
 // Types for the Instance page
 export interface EnemyUnit {
@@ -60,6 +61,11 @@ export interface Instance {
   difficultyName?: string;
   maxPlayers?: number;
   dynamicDifficulty?: number;
+  // Tenant info for cross-tenant gating
+  serverName?: string;
+  tenantName?: string;
+  tenantSlug?: string;
+  tenantIncludeInAll?: boolean;
 }
 
 // Helper to get unit name from lookup, with fallback
@@ -100,6 +106,10 @@ function transformToInstance(
     difficulty_name?: string;
     max_players?: number;
     dynamic_difficulty?: number;
+    server_name?: string;
+    tenant_name?: string;
+    tenant_slug?: string;
+    tenant_include_in_all?: boolean;
   },
 ): Instance {
   const players = normalizeRecord(apiInstance.players);
@@ -160,6 +170,10 @@ function transformToInstance(
     difficultyName: apiInstance.difficulty_name,
     maxPlayers: apiInstance.max_players,
     dynamicDifficulty: apiInstance.dynamic_difficulty,
+    serverName: apiInstance.server_name,
+    tenantName: apiInstance.tenant_name,
+    tenantSlug: apiInstance.tenant_slug,
+    tenantIncludeInAll: apiInstance.tenant_include_in_all,
   };
 }
 
@@ -344,6 +358,7 @@ export function InstancePage() {
   }, [selectedEncounterTimes.start, selectedEncounterTimes.end]);
 
   const isLoading = instanceLoading;
+  const tenantGate = useTenantGate(instance);
 
   if (isLoading) {
     return (
@@ -377,10 +392,19 @@ export function InstancePage() {
     );
   }
 
+  if (tenantGate.blocked) {
+    return <>{tenantGate.blocked}</>;
+  }
+
   return (
     <SyncModeProvider>
       <TimeRangeProvider totalDurationMs={totalEncounterDurationMs}>
         <InstanceEventsProvider instanceId={instance.id}>
+          {tenantGate.banner && (
+            <div className="w-full px-4 pt-4">
+              {tenantGate.banner}
+            </div>
+          )}
           <InstancePageInner
             instance={instance}
             selectedEncounterIds={selectedEncounterIds}

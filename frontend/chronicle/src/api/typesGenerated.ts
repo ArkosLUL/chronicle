@@ -1264,6 +1264,10 @@ export interface SiteConfig {
      * Nil when accessed from the root domain.
      */
     readonly tenant: Tenant | null;
+    /**
+     * PrimaryDomain is the root domain for building cross-tenant URLs.
+     */
+    readonly primary_domain?: string;
 }
 
 // From chroniclesdk/constants.go
@@ -1762,6 +1766,11 @@ export const WoWHitTypes: WoWHitType[] = [4, 512, 32768, 2048, 16384, 1024, 128,
 export interface WoWInstance {
     readonly id: string;
     readonly realm_id: string;
+    readonly realm_name?: string;
+    readonly server_name?: string;
+    readonly tenant_name?: string;
+    readonly tenant_slug?: string;
+    readonly tenant_include_in_all?: boolean;
     readonly log_group_id: string;
     readonly name: string;
     readonly slug: string;

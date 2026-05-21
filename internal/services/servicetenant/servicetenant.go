@@ -175,8 +175,11 @@ func (s *Service) IsAllowedOrigin(origin string) bool {
 		return true
 	}
 
-	// In dev mode, allow localhost.
+	// In dev mode, allow localhost and *.localhost subdomains.
 	if strings.HasPrefix(origin, "http://localhost:") || origin == "http://localhost" {
+		return true
+	}
+	if strings.Contains(origin, ".localhost:") || strings.HasSuffix(origin, ".localhost") {
 		return true
 	}
 

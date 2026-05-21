@@ -64,4 +64,5 @@ const (
 	ForeignKeyWowServerUploadKeysCreatedBy                     ForeignKeyConstraint = "wow_server_upload_keys_created_by_fkey"                       // ALTER TABLE ONLY wow_server_upload_keys ADD CONSTRAINT wow_server_upload_keys_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
 	ForeignKeyWowServerUploadKeysRealmID                       ForeignKeyConstraint = "wow_server_upload_keys_realm_id_fkey"                         // ALTER TABLE ONLY wow_server_upload_keys ADD CONSTRAINT wow_server_upload_keys_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id) ON DELETE CASCADE;
 	ForeignKeyWowServersCreatedBy                              ForeignKeyConstraint = "wow_servers_created_by_fkey"                                  // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
+	ForeignKeyWowServersTenantID                               ForeignKeyConstraint = "wow_servers_tenant_id_fkey"                                   // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id);
 )

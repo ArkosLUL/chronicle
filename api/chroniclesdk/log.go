@@ -68,8 +68,13 @@ type Guild struct {
 
 type WoWInstance struct {
 	ID               uuid.UUID         `json:"id"`
-	RealmID          uuid.UUID         `json:"realm_id"`
-	LogGroupID       uuid.UUID         `json:"log_group_id"`
+	RealmID    uuid.UUID `json:"realm_id"`
+	RealmName  string    `json:"realm_name,omitempty"`
+	ServerName       string `json:"server_name,omitempty"`
+	TenantName       string `json:"tenant_name,omitempty"`
+	TenantSlug       string `json:"tenant_slug,omitempty"`
+	TenantIncludeAll bool   `json:"tenant_include_in_all,omitempty"`
+	LogGroupID       uuid.UUID `json:"log_group_id"`
 	Name             string            `json:"name"`
 	Slug             string            `json:"slug"`
 	StartTime        *time.Time        `json:"start_time,omitempty"`

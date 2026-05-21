@@ -1,0 +1,3 @@
+DROP INDEX idx_wow_server_realms_name_unique;
+DROP INDEX idx_wow_servers_name_unique;
+DROP INDEX idx_tenants_name_unique;

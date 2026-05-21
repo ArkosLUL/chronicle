@@ -203,6 +203,12 @@ func (h *Handler) CreateServer(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:   createdBy,
 	})
 	if err != nil {
+		if database.IsUniqueViolation(err) {
+			httpapi.Write(ctx, w, http.StatusConflict, chroniclesdk.Response{
+				Message: "server name already exists",
+			})
+			return
+		}
 		httpapi.InternalServerError(w, err)
 		return
 	}
@@ -306,6 +312,12 @@ func (h *Handler) CreateRealm(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:   createdBy,
 	})
 	if err != nil {
+		if database.IsUniqueViolation(err) {
+			httpapi.Write(ctx, w, http.StatusConflict, chroniclesdk.Response{
+				Message: "realm name already exists",
+			})
+			return
+		}
 		httpapi.InternalServerError(w, err)
 		return
 	}

@@ -970,26 +970,30 @@ type LogInstanceYoutubeTimestamped struct {
 }
 
 type LogInstancesGuild struct {
-	ID                uuid.UUID          `db:"id" json:"id"`
-	RealmID           uuid.UUID          `db:"realm_id" json:"realm_id"`
-	LogGroupID        uuid.UUID          `db:"log_group_id" json:"log_group_id"`
-	Name              string             `db:"name" json:"name"`
-	HashedSlug        pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
-	GuildID           uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	Capabilities      []string           `db:"capabilities" json:"capabilities"`
-	Versions          VersionsMap        `db:"versions" json:"versions"`
-	RecorderName      string             `db:"recorder_name" json:"recorder_name"`
-	RecorderGuid      string             `db:"recorder_guid" json:"recorder_guid"`
-	DuplicateGroupID  uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
-	StartTime         pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime           pgtype.Timestamptz `db:"end_time" json:"end_time"`
-	DifficultyName    string             `db:"difficulty_name" json:"difficulty_name"`
-	MaxPlayers        int32              `db:"max_players" json:"max_players"`
-	DynamicDifficulty int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
-	RealmName         string             `db:"realm_name" json:"realm_name"`
-	GuildName         pgtype.Text        `db:"guild_name" json:"guild_name"`
-	GuildRealmID      uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`
-	GuildCreatedAt    pgtype.Timestamptz `db:"guild_created_at" json:"guild_created_at"`
+	ID                 uuid.UUID          `db:"id" json:"id"`
+	RealmID            uuid.UUID          `db:"realm_id" json:"realm_id"`
+	LogGroupID         uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name               string             `db:"name" json:"name"`
+	HashedSlug         pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	GuildID            uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Capabilities       []string           `db:"capabilities" json:"capabilities"`
+	Versions           VersionsMap        `db:"versions" json:"versions"`
+	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid       string             `db:"recorder_guid" json:"recorder_guid"`
+	DuplicateGroupID   uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
+	StartTime          pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime            pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers         int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty  int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	RealmName          string             `db:"realm_name" json:"realm_name"`
+	GuildName          pgtype.Text        `db:"guild_name" json:"guild_name"`
+	GuildRealmID       uuid.NullUUID      `db:"guild_realm_id" json:"guild_realm_id"`
+	GuildCreatedAt     pgtype.Timestamptz `db:"guild_created_at" json:"guild_created_at"`
+	ServerName         pgtype.Text        `db:"server_name" json:"server_name"`
+	TenantName         pgtype.Text        `db:"tenant_name" json:"tenant_name"`
+	TenantSlug         pgtype.Text        `db:"tenant_slug" json:"tenant_slug"`
+	TenantIncludeInAll bool               `db:"tenant_include_in_all" json:"tenant_include_in_all"`
 }
 
 // A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.

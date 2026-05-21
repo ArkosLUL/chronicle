@@ -707,6 +707,9 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 		tenant := chroniclesdk.TenantFromDB(*t)
 		resp.Tenant = &tenant
 	}
+	if a.Opts.Tenant != nil {
+		resp.PrimaryDomain = a.Opts.Tenant.PrimaryDomain()
+	}
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 

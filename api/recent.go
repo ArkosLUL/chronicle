@@ -56,7 +56,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cacheKey := "range:" + r.URL.RawQuery
+	cacheKey := r.URL.Host + ":range:" + r.URL.RawQuery
 	if api.recentCache != nil {
 		if cached, ok := api.recentCache.Get(cacheKey); ok {
 			httpapi.Write(ctx, w, http.StatusOK, cached)

@@ -83,6 +83,12 @@ func (s *Service) Upsert(w http.ResponseWriter, r *http.Request) {
 		t, err = s.db.UpdateTenant(ctx, req.ToUpdateParams())
 	}
 	if err != nil {
+		if database.IsUniqueViolation(err) {
+			httpapi.Write(ctx, w, http.StatusConflict, chroniclesdk.Response{
+				Message: "tenant name already exists",
+			})
+			return
+		}
 		httpapi.InternalServerError(w, err)
 		return
 	}

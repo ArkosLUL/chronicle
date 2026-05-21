@@ -403,6 +403,9 @@ FROM
                     'name', li.name,
                     'slug', li.hashed_slug,
                     'realm_id', li.realm_id,
+                    'realm_name', wsr.name,
+                    'server_name', ws.name,
+                    'tenant_name', t.name,
                     'log_group_id', li.log_group_id,
                     'encounters', COALESCE((
                         SELECT jsonb_agg(jsonb_build_object(
@@ -420,6 +423,9 @@ FROM
                     ), '[]'::jsonb)
                 ) AS inst_data
                 FROM log_instances li
+                LEFT JOIN wow_server_realms wsr ON li.realm_id = wsr.id
+                LEFT JOIN wow_servers ws ON wsr.server_id = ws.id
+                LEFT JOIN tenants t ON ws.tenant_id = t.id
                 WHERE li.log_group_id = wow_log_groups.id
                 ORDER BY li.name
             ) sub

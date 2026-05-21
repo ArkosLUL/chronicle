@@ -715,6 +715,7 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 		resp.AccessURL = a.Opts.AccessURL.String()
 	}
 	resp.Branding = unmarshalBranding(config.Branding)
+	resp.Discoverable = config.Discoverable
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
@@ -733,6 +734,9 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		b, _ := json.Marshal(req.Branding)
 		params.Branding = b
 	}
+	if req.Discoverable != nil {
+		params.Discoverable = pgtype.Bool{Bool: *req.Discoverable, Valid: true}
+	}
 
 	config, err := a.Opts.Zed.UpdateSiteConfig(ctx, params)
 	if err != nil {
@@ -744,6 +748,7 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		ShortLinkDomain:       a.Opts.ShortLinkDomain,
 		ClientUploadsDisabled: a.Opts.ClientUploadsDisabled,
 		Branding:              unmarshalBranding(config.Branding),
+		Discoverable:          config.Discoverable,
 	})
 }
 

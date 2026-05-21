@@ -1127,6 +1127,7 @@ type SiteConfig struct {
 	SignupsEnabled bool               `db:"signups_enabled" json:"signups_enabled"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	Branding       []byte             `db:"branding" json:"branding"`
+	Discoverable   bool               `db:"discoverable" json:"discoverable"`
 }
 
 type Tenant struct {
@@ -1138,6 +1139,7 @@ type Tenant struct {
 	Branding            []byte             `db:"branding" json:"branding"`
 	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Discoverable        bool               `db:"discoverable" json:"discoverable"`
 }
 
 type User struct {

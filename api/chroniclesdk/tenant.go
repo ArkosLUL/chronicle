@@ -11,25 +11,27 @@ import (
 
 // Tenant is the SDK type exposed to the frontend.
 type Tenant struct {
-	ID                  uuid.UUID       `json:"id"`
-	Slug                *string         `json:"slug"`
-	Name                string          `json:"name"`
-	DisableClientUpload bool            `json:"disable_client_upload"`
-	IncludeInAll        bool            `json:"include_in_all"`
+	ID                  uuid.UUID `json:"id"`
+	Slug                *string   `json:"slug"`
+	Name                string    `json:"name"`
+	DisableClientUpload bool      `json:"disable_client_upload"`
+	IncludeInAll        bool      `json:"include_in_all"`
+	Discoverable        bool      `json:"discoverable"`
 	Branding            *Branding `json:"branding"`
 	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time       `json:"updated_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
 // Branding holds the visual identity for a tenant subdomain or the primary domain.
 type Branding struct {
-	SquareLogo       string `json:"square_logo,omitempty"`
-	LogoWide         string `json:"logo_wide,omitempty"`
-	Favicon          string `json:"favicon,omitempty"`
-	DisplayName      string `json:"display_name,omitempty"`
-	Tagline          string `json:"tagline,omitempty"`
-	Description      string `json:"description,omitempty"`
-	BackgroundBanner string `json:"background_banner,omitempty"`
+	SquareLogo       string   `json:"square_logo,omitempty"`
+	LogoWide         string   `json:"logo_wide,omitempty"`
+	Favicon          string   `json:"favicon,omitempty"`
+	DisplayName      string   `json:"display_name,omitempty"`
+	Tagline          string   `json:"tagline,omitempty"`
+	Description      string   `json:"description,omitempty"`
+	BackgroundBanner string   `json:"background_banner,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
 }
 
 // TenantFromDB converts a database.Tenant to the SDK type.
@@ -39,6 +41,7 @@ func TenantFromDB(t database.Tenant) Tenant {
 		Name:                t.Name,
 		DisableClientUpload: t.DisableClientUpload,
 		IncludeInAll:        t.IncludeInAll,
+		Discoverable:        t.Discoverable,
 		CreatedAt:           t.CreatedAt.Time,
 		UpdatedAt:           t.UpdatedAt.Time,
 	}
@@ -65,12 +68,13 @@ type SetServerTenantRequest struct {
 // Pointer fields are optional — if nil on update, no change occurs (COALESCE
 // preserves the existing value).
 type UpsertTenantRequest struct {
-	ID                  uuid.NullUUID   `json:"id"`
-	Slug                *string         `json:"slug"`
-	Name                string          `json:"name"`
-	DisableClientUpload *bool           `json:"disable_client_upload"`
-	IncludeInAll        *bool           `json:"include_in_all"`
-	Branding            *Branding `json:"branding"`
+	ID                  uuid.NullUUID `json:"id"`
+	Slug                *string       `json:"slug"`
+	Name                string        `json:"name"`
+	DisableClientUpload *bool         `json:"disable_client_upload"`
+	IncludeInAll        *bool         `json:"include_in_all"`
+	Discoverable        *bool         `json:"discoverable"`
+	Branding            *Branding     `json:"branding"`
 }
 
 // IsCreate returns true when the request should insert a new tenant.
@@ -108,12 +112,18 @@ func (r UpsertTenantRequest) ToInsertParams() database.InsertTenantParams {
 		includeInAll = *r.IncludeInAll
 	}
 
+	discoverable := false
+	if r.Discoverable != nil {
+		discoverable = *r.Discoverable
+	}
+
 	return database.InsertTenantParams{
 		ID:                  id,
 		Slug:                slug,
 		Name:                r.Name,
 		DisableClientUpload: disableUpload,
 		IncludeInAll:        includeInAll,
+		Discoverable:        discoverable,
 		Branding:            r.marshalBranding(),
 	}
 }
@@ -141,12 +151,18 @@ func (r UpsertTenantRequest) ToUpdateParams() database.UpdateTenantParams {
 		includeInAll = pgtype.Bool{Bool: *r.IncludeInAll, Valid: true}
 	}
 
+	var discoverable pgtype.Bool
+	if r.Discoverable != nil {
+		discoverable = pgtype.Bool{Bool: *r.Discoverable, Valid: true}
+	}
+
 	return database.UpdateTenantParams{
 		ID:                  r.ID.UUID,
 		Slug:                slug,
 		Name:                name,
 		DisableClientUpload: disableUpload,
 		IncludeInAll:        includeInAll,
+		Discoverable:        discoverable,
 		Branding:            r.marshalBranding(),
 	}
 }

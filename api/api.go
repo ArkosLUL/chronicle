@@ -169,6 +169,7 @@ func (api *API) Routes() chi.Router {
 		r.Mount("/azerothcore", serviceazerothcore.New(api.Opts.Logger, api.Opts.Zed, api.Auth, api.Chronicle).Routes())
 		r.Get("/share/{code}", api.GetShare)
 		r.Get("/site-config", api.AdminGetSiteConfig)
+		r.Get("/discovery", api.Discovery)
 
 		// Admin routes - require admin or technical_admin role
 		r.Route("/admin", func(r chi.Router) {

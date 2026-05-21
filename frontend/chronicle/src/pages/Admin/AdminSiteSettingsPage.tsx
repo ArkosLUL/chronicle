@@ -16,6 +16,7 @@ export function AdminSiteSettingsPage() {
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [backgroundBanner, setBackgroundBanner] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
   useEffect(() => {
     if (config?.branding) {
@@ -26,11 +27,12 @@ export function AdminSiteSettingsPage() {
       setTagline(config.branding.tagline ?? "");
       setDescription(config.branding.description ?? "");
       setBackgroundBanner(config.branding.background_banner ?? "");
+      setTags(config.branding.tags ? [...config.branding.tags] : []);
     }
   }, [config?.branding]);
 
   const saveBranding = () => {
-    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner;
+    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner || tags.length > 0;
     updateConfig.mutate({
       branding: hasBranding
         ? {
@@ -41,6 +43,7 @@ export function AdminSiteSettingsPage() {
             tagline: tagline || undefined,
             description: description || undefined,
             background_banner: backgroundBanner || undefined,
+            tags: tags.length > 0 ? tags : undefined,
           }
         : ({} as never), // empty object clears branding
     });
@@ -93,6 +96,36 @@ export function AdminSiteSettingsPage() {
             )}
           </Button>
         </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Discoverable</p>
+            <p className="text-sm text-muted-foreground">
+              When enabled, this deployment appears on chronicleclassic.com via the discovery API.
+            </p>
+          </div>
+          <Button
+            variant={config?.discoverable ? "default" : "outline"}
+            size="sm"
+            disabled={updateConfig.isPending}
+            onClick={() => {
+              updateConfig.mutate({ discoverable: !config?.discoverable });
+            }}
+          >
+            {updateConfig.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : config?.discoverable ? (
+              <>
+                <Check className="h-4 w-4 mr-1" />
+                Enabled
+              </>
+            ) : (
+              <>
+                <X className="h-4 w-4 mr-1" />
+                Disabled
+              </>
+            )}
+          </Button>
+        </div>
       </Card>
 
       <Card className="p-6 space-y-4">
@@ -108,11 +141,51 @@ export function AdminSiteSettingsPage() {
           <input className={inputClass} placeholder="Wide logo URL" value={logoWide} onChange={(e) => setLogoWide(e.target.value)} />
           <input className={inputClass} placeholder="Favicon URL" value={favicon} onChange={(e) => setFavicon(e.target.value)} />
           <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
+          <TagPicker tags={tags} onChange={setTags} />
         </div>
         <Button size="sm" disabled={updateConfig.isPending} onClick={saveBranding}>
           {updateConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save Branding"}
         </Button>
       </Card>
+    </div>
+  );
+}
+
+const BRANDING_TAGS = [
+  { category: "Client", values: ["1.12", "2.4.3", "2.5.3", "3.3.5a"] },
+  { category: "Version", values: ["Vanilla", "TBC", "Wrath"] },
+  { category: "Style", values: ["Progression", "PvP"] },
+  { category: "Extra", values: ["Custom Content"] },
+  { category: "Core", values: ["Azeroth Core"] },
+  { category: "Logging", values: ["Client Side", "Server Side"] },
+];
+
+function TagPicker({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const toggle = (tag: string) => {
+    onChange(tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]);
+  };
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-muted-foreground">Tags</p>
+      {BRANDING_TAGS.map((group) => (
+        <div key={group.category} className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground w-14 shrink-0">{group.category}</span>
+          {group.values.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => toggle(v)}
+              className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                tags.includes(v)
+                  ? "border-primary/50 bg-primary/15 text-primary font-medium"
+                  : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { ServerEntry } from "../types";
 
 /**
  * Static registry of Chronicle-enabled WoW private servers.
+ * This is the baseline data — always shown even if discovery fails.
  *
  * To add a server, append an entry here. Logos go in public/servers/<id>/logo.png.
  * Banners (optional) go in public/servers/<id>/banner.webp.
@@ -106,5 +107,17 @@ export const SERVERS: ServerEntry[] = [
     chronicleUrl: "https://chromie.chronicleclassic.com",
     homepageUrl: "https://www.chromiecraft.com",
   },
+];
+
+/**
+ * Additional Chronicle deployment URLs to auto-discover via /api/v1/discovery.
+ * Discovered servers are merged on top of SERVERS by chronicleUrl match
+ * (enriching with instances24h, live branding, etc). New URLs not in SERVERS
+ * are appended to the list.
+ */
+export const DISCOVERY_URLS: string[] = [
+  // Add URLs here as servers configure their branding.
+  // e.g. "https://turtle.chronicleclassic.com",
+  "http://localhost:4000",
 ];
 

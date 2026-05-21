@@ -321,7 +321,7 @@ export function RecentRaids() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <Castle className="h-7 w-7" />
-            Recent Raids
+            Recent
           </h1>
           <p className="text-muted-foreground mt-1">
             Browse the latest dungeon & raid uploads from the community

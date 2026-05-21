@@ -4759,7 +4759,7 @@ func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg Get
 }
 
 const getSiteConfig = `-- name: GetSiteConfig :one
-SELECT id, signups_enabled, updated_at, branding FROM site_config WHERE id = TRUE
+SELECT id, signups_enabled, updated_at, branding, discoverable FROM site_config WHERE id = TRUE
 `
 
 func (q *sqlQuerier) GetSiteConfig(ctx context.Context) (SiteConfig, error) {
@@ -4770,6 +4770,7 @@ func (q *sqlQuerier) GetSiteConfig(ctx context.Context) (SiteConfig, error) {
 		&i.SignupsEnabled,
 		&i.UpdatedAt,
 		&i.Branding,
+		&i.Discoverable,
 	)
 	return i, err
 }
@@ -4778,24 +4779,27 @@ const updateSiteConfig = `-- name: UpdateSiteConfig :one
 UPDATE site_config SET
     signups_enabled = COALESCE($1, signups_enabled),
     branding = COALESCE($2, branding),
+    discoverable = COALESCE($3, discoverable),
     updated_at = now()
 WHERE id = TRUE
-RETURNING id, signups_enabled, updated_at, branding
+RETURNING id, signups_enabled, updated_at, branding, discoverable
 `
 
 type UpdateSiteConfigParams struct {
 	SignupsEnabled pgtype.Bool `db:"signups_enabled" json:"signups_enabled"`
 	Branding       []byte      `db:"branding" json:"branding"`
+	Discoverable   pgtype.Bool `db:"discoverable" json:"discoverable"`
 }
 
 func (q *sqlQuerier) UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) (SiteConfig, error) {
-	row := q.db.QueryRow(ctx, updateSiteConfig, arg.SignupsEnabled, arg.Branding)
+	row := q.db.QueryRow(ctx, updateSiteConfig, arg.SignupsEnabled, arg.Branding, arg.Discoverable)
 	var i SiteConfig
 	err := row.Scan(
 		&i.ID,
 		&i.SignupsEnabled,
 		&i.UpdatedAt,
 		&i.Branding,
+		&i.Discoverable,
 	)
 	return i, err
 }
@@ -5180,7 +5184,7 @@ func (q *sqlQuerier) DeleteTenant(ctx context.Context, id uuid.UUID) error {
 }
 
 const getTenantByID = `-- name: GetTenantByID :one
-SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at FROM tenants WHERE id = $1
+SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at, discoverable FROM tenants WHERE id = $1
 `
 
 func (q *sqlQuerier) GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error) {
@@ -5195,13 +5199,14 @@ func (q *sqlQuerier) GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, e
 		&i.Branding,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Discoverable,
 	)
 	return i, err
 }
 
 const getTenantBySlug = `-- name: GetTenantBySlug :one
 
-SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at FROM tenants WHERE slug = $1
+SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at, discoverable FROM tenants WHERE slug = $1
 `
 
 // Tenant queries. These run with AdminBypass context since the tenants table
@@ -5218,14 +5223,15 @@ func (q *sqlQuerier) GetTenantBySlug(ctx context.Context, slug pgtype.Text) (Ten
 		&i.Branding,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Discoverable,
 	)
 	return i, err
 }
 
 const insertTenant = `-- name: InsertTenant :one
-INSERT INTO tenants (id, slug, name, disable_client_upload, include_in_all, branding)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at
+INSERT INTO tenants (id, slug, name, disable_client_upload, include_in_all, branding, discoverable)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at, discoverable
 `
 
 type InsertTenantParams struct {
@@ -5235,6 +5241,7 @@ type InsertTenantParams struct {
 	DisableClientUpload bool        `db:"disable_client_upload" json:"disable_client_upload"`
 	IncludeInAll        bool        `db:"include_in_all" json:"include_in_all"`
 	Branding            []byte      `db:"branding" json:"branding"`
+	Discoverable        bool        `db:"discoverable" json:"discoverable"`
 }
 
 func (q *sqlQuerier) InsertTenant(ctx context.Context, arg InsertTenantParams) (Tenant, error) {
@@ -5245,6 +5252,7 @@ func (q *sqlQuerier) InsertTenant(ctx context.Context, arg InsertTenantParams) (
 		arg.DisableClientUpload,
 		arg.IncludeInAll,
 		arg.Branding,
+		arg.Discoverable,
 	)
 	var i Tenant
 	err := row.Scan(
@@ -5256,12 +5264,13 @@ func (q *sqlQuerier) InsertTenant(ctx context.Context, arg InsertTenantParams) (
 		&i.Branding,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Discoverable,
 	)
 	return i, err
 }
 
 const listTenants = `-- name: ListTenants :many
-SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at FROM tenants ORDER BY name
+SELECT id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at, discoverable FROM tenants ORDER BY name
 `
 
 func (q *sqlQuerier) ListTenants(ctx context.Context) ([]Tenant, error) {
@@ -5282,6 +5291,7 @@ func (q *sqlQuerier) ListTenants(ctx context.Context) ([]Tenant, error) {
 			&i.Branding,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Discoverable,
 		); err != nil {
 			return nil, err
 		}
@@ -5316,9 +5326,10 @@ UPDATE tenants SET
     disable_client_upload = COALESCE($3, disable_client_upload),
     include_in_all = COALESCE($4, include_in_all),
     branding = COALESCE($5, branding),
+    discoverable = COALESCE($6, discoverable),
     updated_at = now()
-WHERE id = $6
-RETURNING id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at
+WHERE id = $7
+RETURNING id, slug, name, disable_client_upload, include_in_all, branding, created_at, updated_at, discoverable
 `
 
 type UpdateTenantParams struct {
@@ -5327,6 +5338,7 @@ type UpdateTenantParams struct {
 	DisableClientUpload pgtype.Bool `db:"disable_client_upload" json:"disable_client_upload"`
 	IncludeInAll        pgtype.Bool `db:"include_in_all" json:"include_in_all"`
 	Branding            []byte      `db:"branding" json:"branding"`
+	Discoverable        pgtype.Bool `db:"discoverable" json:"discoverable"`
 	ID                  uuid.UUID   `db:"id" json:"id"`
 }
 
@@ -5338,6 +5350,7 @@ func (q *sqlQuerier) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (
 		arg.DisableClientUpload,
 		arg.IncludeInAll,
 		arg.Branding,
+		arg.Discoverable,
 		arg.ID,
 	)
 	var i Tenant
@@ -5350,6 +5363,7 @@ func (q *sqlQuerier) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (
 		&i.Branding,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Discoverable,
 	)
 	return i, err
 }

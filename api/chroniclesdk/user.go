@@ -172,6 +172,8 @@ type SiteConfig struct {
 	// Branding is the visual identity for the primary domain.
 	// On tenant subdomains, use Tenant.Branding instead.
 	Branding *Branding `json:"branding"`
+	// Discoverable controls whether this deployment appears in /api/v1/discovery.
+	Discoverable bool `json:"discoverable"`
 }
 
 // UpdateSiteConfigRequest allows partial updates to site configuration.
@@ -179,6 +181,7 @@ type SiteConfig struct {
 type UpdateSiteConfigRequest struct {
 	SignupsEnabled *bool     `json:"signups_enabled,omitempty"`
 	Branding      *Branding `json:"branding,omitempty"`
+	Discoverable  *bool     `json:"discoverable,omitempty"`
 }
 
 // SetUserRolesRequest is the request body for setting a user's Chronicle roles.

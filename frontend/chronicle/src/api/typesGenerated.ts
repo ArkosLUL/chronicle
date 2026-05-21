@@ -217,6 +217,7 @@ export interface Branding {
     readonly tagline?: string;
     readonly description?: string;
     readonly background_banner?: string;
+    readonly tags?: readonly string[];
 }
 
 // From chroniclesdk/census.go
@@ -343,6 +344,21 @@ export interface DataGrant {
 export type DeviceVisibility = "all" | "desktop" | "mobile";
 
 export const DeviceVisibilitys: DeviceVisibility[] = ["all", "desktop", "mobile"];
+
+// From chroniclesdk/discovery.go
+/**
+ * DiscoveryEntry is one server/tenant in the discovery response.
+ */
+export interface DiscoveryEntry {
+    /**
+     * Branding for this server/tenant.
+     */
+    readonly branding: Branding | null;
+    /**
+     * URL is the canonical URL for this server/tenant's Chronicle deployment.
+     */
+    readonly url: string;
+}
 
 // From chroniclesdk/log.go
 /**
@@ -1292,6 +1308,10 @@ export interface SiteConfig {
      * On tenant subdomains, use Tenant.Branding instead.
      */
     readonly branding: Branding | null;
+    /**
+     * Discoverable controls whether this deployment appears in /api/v1/discovery.
+     */
+    readonly discoverable: boolean;
 }
 
 // From chroniclesdk/constants.go
@@ -1417,6 +1437,7 @@ export interface Tenant {
     readonly name: string;
     readonly disable_client_upload: boolean;
     readonly include_in_all: boolean;
+    readonly discoverable: boolean;
     readonly branding: Branding | null;
     readonly created_at: string;
     readonly updated_at: string;
@@ -1498,6 +1519,7 @@ export interface UpdateRegressionFixtureNoteRequest {
 export interface UpdateSiteConfigRequest {
     readonly signups_enabled?: boolean;
     readonly branding?: Branding;
+    readonly discoverable?: boolean;
 }
 
 // From chroniclesdk/guild_page.go
@@ -1573,6 +1595,7 @@ export interface UpsertTenantRequest {
     readonly name: string;
     readonly disable_client_upload: boolean | null;
     readonly include_in_all: boolean | null;
+    readonly discoverable: boolean | null;
     readonly branding: Branding | null;
 }
 

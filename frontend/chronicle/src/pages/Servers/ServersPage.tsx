@@ -119,6 +119,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
   const [slug, setSlug] = useState(tenant?.slug ?? "");
   const [includeInAll, setIncludeInAll] = useState(tenant?.include_in_all ?? true);
   const [disableUpload, setDisableUpload] = useState(tenant?.disable_client_upload ?? false);
+  const [discoverable, setDiscoverable] = useState(tenant?.discoverable ?? false);
 
   // Branding fields
   const [squareLogo, setSquareLogo] = useState(tenant?.branding?.square_logo ?? "");
@@ -128,10 +129,11 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
   const [tagline, setTagline] = useState(tenant?.branding?.tagline ?? "");
   const [description, setDescription] = useState(tenant?.branding?.description ?? "");
   const [backgroundBanner, setBackgroundBanner] = useState(tenant?.branding?.background_banner ?? "");
+  const [tags, setTags] = useState<string[]>(tenant?.branding?.tags ? [...tenant.branding.tags] : []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner;
+    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner || tags.length > 0;
     upsertTenant.mutate(
       {
         id: tenant?.id ?? "",
@@ -139,6 +141,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         slug: slug || null,
         include_in_all: includeInAll,
         disable_client_upload: disableUpload,
+        discoverable,
         branding: hasBranding
           ? {
               square_logo: squareLogo || undefined,
@@ -148,6 +151,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
               tagline: tagline || undefined,
               description: description || undefined,
               background_banner: backgroundBanner || undefined,
+              tags: tags.length > 0 ? tags : undefined,
             }
           : null,
       },
@@ -174,6 +178,10 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         <input type="checkbox" checked={disableUpload} onChange={(e) => setDisableUpload(e.target.checked)} />
         Disable client uploads
       </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={discoverable} onChange={(e) => setDiscoverable(e.target.checked)} />
+        Discoverable (appear on chronicleclassic.com)
+      </label>
       <div className="pt-2 border-t space-y-2">
         <p className="text-xs font-medium text-muted-foreground">Branding</p>
         <input className={inputClass} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
@@ -183,6 +191,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         <input className={inputClass} placeholder="Wide logo URL" value={logoWide} onChange={(e) => setLogoWide(e.target.value)} />
         <input className={inputClass} placeholder="Favicon URL" value={favicon} onChange={(e) => setFavicon(e.target.value)} />
         <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
+        <TagPicker tags={tags} onChange={setTags} />
       </div>
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={upsertTenant.isPending}>
@@ -194,6 +203,45 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
       </div>
       {upsertTenant.isError && <p className="text-sm text-destructive">{upsertTenant.error.message}</p>}
     </form>
+  );
+}
+
+const BRANDING_TAGS = [
+  { category: "Client", values: ["1.12", "2.4.3", "2.5.3", "3.3.5a"] },
+  { category: "Version", values: ["Vanilla", "TBC", "Wrath"] },
+  { category: "Style", values: ["Progression", "PvP"] },
+  { category: "Extra", values: ["Custom Content"] },
+  { category: "Core", values: ["Azeroth Core"] },
+  { category: "Logging", values: ["Client Side", "Server Side"] },
+];
+
+function TagPicker({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const toggle = (tag: string) => {
+    onChange(tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]);
+  };
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-muted-foreground">Tags</p>
+      {BRANDING_TAGS.map((group) => (
+        <div key={group.category} className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground w-14 shrink-0">{group.category}</span>
+          {group.values.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => toggle(v)}
+              className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                tags.includes(v)
+                  ? "border-primary/50 bg-primary/15 text-primary font-medium"
+                  : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 

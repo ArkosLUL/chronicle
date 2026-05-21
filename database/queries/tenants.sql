@@ -11,8 +11,8 @@ SELECT * FROM tenants WHERE id = $1;
 SELECT * FROM tenants ORDER BY name;
 
 -- name: InsertTenant :one
-INSERT INTO tenants (id, slug, name, disable_client_upload, include_in_all, branding)
-VALUES (@id, @slug, @name, @disable_client_upload, @include_in_all, @branding)
+INSERT INTO tenants (id, slug, name, disable_client_upload, include_in_all, branding, discoverable)
+VALUES (@id, @slug, @name, @disable_client_upload, @include_in_all, @branding, @discoverable)
 RETURNING *;
 
 -- name: UpdateTenant :one
@@ -23,6 +23,7 @@ UPDATE tenants SET
     disable_client_upload = COALESCE(sqlc.narg('disable_client_upload'), disable_client_upload),
     include_in_all = COALESCE(sqlc.narg('include_in_all'), include_in_all),
     branding = COALESCE(sqlc.narg('branding'), branding),
+    discoverable = COALESCE(sqlc.narg('discoverable'), discoverable),
     updated_at = now()
 WHERE id = @id
 RETURNING *;

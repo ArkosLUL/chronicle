@@ -120,7 +120,7 @@ export function NavBar() {
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
                 <Castle className="h-4 w-4" />
-                Recent Raids
+                Recent
               </Link>
               {serverCapabilities.armory && (
                 <Link
@@ -212,7 +212,7 @@ export function NavBar() {
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <Castle className="h-4 w-4" />
-          Recent Raids
+          Recent
         </Link>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>

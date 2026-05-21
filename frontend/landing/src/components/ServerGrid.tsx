@@ -94,7 +94,7 @@ interface FilterOption {
 /** Derive available filter options from the actual server list. */
 function deriveFilters(servers: ServerEntry[]): FilterOption[] {
   const expansionLabels: Record<Expansion, string> = { vanilla: "Vanilla", tbc: "TBC", wotlk: "WotLK" };
-  const clientLabels: Record<Client, string> = { "1.12.1": "1.12.1", "2.4.3": "2.4.3", "3.3.5a": "3.3.5a" };
+  const clientLabels: Record<Client, string> = { "1.12.1": "1.12.1", "2.4.3": "2.4.3", "2.5.3": "2.5.3", "3.3.5a": "3.3.5a" };
   const loggingLabels: Record<Logging, string> = { server: "Server-side log", client: "Client-side log" };
   const statusLabels: Record<StatusTag, string> = {
     closed: "Closed", beta: "Beta", new: "New", hardcore: "Hardcore", fresh: "Fresh",
@@ -174,7 +174,7 @@ function FilterPill({
 
 // --- Grid ---
 
-export function ServerGrid({ servers }: { servers: ServerEntry[] }) {
+export function ServerGrid({ servers, loading }: { servers: ServerEntry[]; loading?: boolean }) {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -278,6 +278,26 @@ export function ServerGrid({ servers }: { servers: ServerEntry[] }) {
 
       {/* Grid — non-matching cards are greyed out instead of hidden */}
       <div className="relative grid auto-rows-[1fr] gap-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+        {loading && servers.length === 0 && (
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-lg border border-border bg-card animate-pulse">
+                <div className="h-28 bg-muted" />
+                <div className="p-5 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-md bg-muted" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-4 w-32 rounded bg-muted" />
+                      <div className="h-3 w-48 rounded bg-muted" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-full rounded bg-muted" />
+                  <div className="h-3 w-3/4 rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </>
+        )}
         {sorted.map((server) => {
           const dimmed = matches !== null && !matches.has(server.id);
           return (

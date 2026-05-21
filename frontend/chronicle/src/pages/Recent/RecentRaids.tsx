@@ -13,6 +13,24 @@ import {
 import { RaidCard } from "./RaidCard";
 import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
 
+function renderItems(names: string[], selected: string[], onToggle: (name: string) => void) {
+  return names.map((name) => {
+    const isSelected = selected.includes(name);
+    return (
+      <button
+        key={name}
+        className="w-full flex items-center gap-2 text-sm px-2 py-1.5 rounded-sm hover:bg-accent hover:text-accent-foreground"
+        onClick={() => onToggle(name)}
+      >
+        <span className={`h-4 w-4 shrink-0 flex items-center justify-center rounded-sm border ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'}`}>
+          {isSelected && <Check className="h-3 w-3" />}
+        </span>
+        {name}
+      </button>
+    );
+  });
+}
+
 function InstanceCombobox({
   options,
   selected,
@@ -71,21 +89,7 @@ function InstanceCombobox({
             {filtered.length === 0 && (
               <p className="text-sm text-muted-foreground px-2 py-4 text-center">No instances found</p>
             )}
-            {filtered.map((name) => {
-              const isSelected = selected.includes(name);
-              return (
-                <button
-                  key={name}
-                  className="w-full flex items-center gap-2 text-sm px-2 py-1.5 rounded-sm hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => onToggle(name)}
-                >
-                  <span className={`h-4 w-4 shrink-0 flex items-center justify-center rounded-sm border ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'}`}>
-                    {isSelected && <Check className="h-3 w-3" />}
-                  </span>
-                  {name}
-                </button>
-              );
-            })}
+            {renderItems(filtered, selected, onToggle)}
           </div>
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>

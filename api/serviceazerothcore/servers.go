@@ -11,6 +11,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -124,6 +125,9 @@ func (h *Handler) canAdministerRealm(w http.ResponseWriter, r *http.Request, rea
 
 func (h *Handler) ListServers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// Bypass tenant RLS so admins can see servers across all tenants.
+	// Authorization is enforced by SpiceDB's LookupResources below.
+	ctx = servicetenant.AdminBypass(ctx)
 	actor, ok := authz.ActorFromContext(ctx)
 	if !ok {
 		httpapi.Forbidden(w, nil)
@@ -256,6 +260,9 @@ func (h *Handler) ListRealms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Bypass tenant RLS so admins can see realms for cross-tenant servers.
+	// Authorization was already checked by canAdministerServer above.
+	ctx = servicetenant.AdminBypass(ctx)
 	realms, err := h.zed.ListWoWServerRealms(ctx, serverID)
 	if err != nil {
 		httpapi.InternalServerError(w, err)

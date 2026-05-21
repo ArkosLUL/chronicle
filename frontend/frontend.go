@@ -39,8 +39,9 @@ type ogResult struct {
 
 // HTMLBranding carries per-request branding overrides for the HTML template.
 type HTMLBranding struct {
-	Title   string // Page title. Empty = default "Chronicle".
-	Favicon string // Favicon URL. Empty = default /c/chronicle/favicon.ico.
+	Title    string // Page title. Empty = default "Chronicle".
+	Favicon  string // Favicon URL. Empty = default /c/chronicle/favicon.ico.
+	ThemeCSS string // Pre-built CSS variable overrides for tenant theming.
 }
 
 // BrandingResolver is an optional callback that returns per-request branding
@@ -134,6 +135,7 @@ func (h *handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		if b := h.brandingResolver(req); b != nil {
 			state.Title = b.Title
 			state.Favicon = b.Favicon
+			state.ThemeCSS = b.ThemeCSS
 		}
 	}
 
@@ -189,8 +191,9 @@ type htmlState struct {
 	OGURL         string
 
 	// Branding overrides (populated by StateEnricher from tenant context).
-	Title   string // Page title. Empty = default "Chronicle".
-	Favicon string // Favicon URL. Empty = default /c/chronicle/favicon.ico.
+	Title    string // Page title. Empty = default "Chronicle".
+	Favicon  string // Favicon URL. Empty = default /c/chronicle/favicon.ico.
+	ThemeCSS string // CSS variable overrides, e.g. "--primary: #D4A844; --tertiary: #D4A844;".
 }
 
 func (h *handler) serveHTML(resp http.ResponseWriter, request *http.Request, reqPath string, state htmlState) bool {

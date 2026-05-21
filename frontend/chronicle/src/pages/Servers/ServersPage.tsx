@@ -15,6 +15,7 @@ import {
 } from "@/api/queries";
 import { Loader2, Trash2, Plus, ChevronDown, ChevronRight, ExternalLink, Building2, Pencil } from "lucide-react";
 import type { WoWServer, Tenant } from "@/api/typesGenerated";
+import { ThemeEditor } from "@/components/ThemeEditor/ThemeEditor";
 
 function RealmsList({ server }: { server: WoWServer }) {
   const { data: realms, isLoading } = useAzerothcoreRealms(server.id);
@@ -130,10 +131,12 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
   const [description, setDescription] = useState(tenant?.branding?.description ?? "");
   const [backgroundBanner, setBackgroundBanner] = useState(tenant?.branding?.background_banner ?? "");
   const [tags, setTags] = useState<string[]>(tenant?.branding?.tags ? [...tenant.branding.tags] : []);
+  const [theme, setTheme] = useState<Record<string, string>>(tenant?.branding?.theme ?? {});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner || tags.length > 0;
+    const hasTheme = Object.keys(theme).length > 0;
+    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner || tags.length > 0 || hasTheme;
     upsertTenant.mutate(
       {
         id: tenant?.id ?? "",
@@ -152,6 +155,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
               description: description || undefined,
               background_banner: backgroundBanner || undefined,
               tags: tags.length > 0 ? tags : undefined,
+              theme: Object.keys(theme).length > 0 ? theme : undefined,
             }
           : null,
       },
@@ -191,6 +195,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         <input className={inputClass} placeholder="Wide logo URL" value={logoWide} onChange={(e) => setLogoWide(e.target.value)} />
         <input className={inputClass} placeholder="Favicon URL" value={favicon} onChange={(e) => setFavicon(e.target.value)} />
         <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
+        <ThemeEditor value={theme} onChange={setTheme} />
         <TagPicker tags={tags} onChange={setTags} />
       </div>
       <div className="flex gap-2">

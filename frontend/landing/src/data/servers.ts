@@ -118,6 +118,5 @@ export const SERVERS: ServerEntry[] = [
 export const DISCOVERY_URLS: string[] = [
   // Add URLs here as servers configure their branding.
   // e.g. "https://turtle.chronicleclassic.com",
-  "http://localhost:4000",
 ];
 

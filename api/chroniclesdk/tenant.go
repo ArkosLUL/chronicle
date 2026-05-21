@@ -31,7 +31,8 @@ type Branding struct {
 	Tagline          string   `json:"tagline,omitempty"`
 	Description      string   `json:"description,omitempty"`
 	BackgroundBanner string   `json:"background_banner,omitempty"`
-	Tags             []string `json:"tags,omitempty"`
+	Tags  []string          `json:"tags,omitempty"`
+	Theme map[string]string `json:"theme,omitempty"` // CSS color overrides keyed by knob name (hex "#RRGGBB")
 }
 
 // TenantFromDB converts a database.Tenant to the SDK type.

@@ -3,6 +3,7 @@ import { useSiteConfig, useUpdateSiteConfig } from "@/api/queries";
 import { Loader2, Check, X } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
+import { ThemeEditor } from "@/components/ThemeEditor/ThemeEditor";
 
 export function AdminSiteSettingsPage() {
   const { data: config, isLoading } = useSiteConfig();
@@ -17,6 +18,7 @@ export function AdminSiteSettingsPage() {
   const [description, setDescription] = useState("");
   const [backgroundBanner, setBackgroundBanner] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [theme, setTheme] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (config?.branding) {
@@ -28,11 +30,13 @@ export function AdminSiteSettingsPage() {
       setDescription(config.branding.description ?? "");
       setBackgroundBanner(config.branding.background_banner ?? "");
       setTags(config.branding.tags ? [...config.branding.tags] : []);
+      setTheme(config.branding.theme ?? {});
     }
   }, [config?.branding]);
 
   const saveBranding = () => {
-    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner || tags.length > 0;
+    const hasTheme = Object.keys(theme).length > 0;
+    const hasBranding = squareLogo || logoWide || favicon || displayName || tagline || description || backgroundBanner || tags.length > 0 || hasTheme;
     updateConfig.mutate({
       branding: hasBranding
         ? {
@@ -44,6 +48,7 @@ export function AdminSiteSettingsPage() {
             description: description || undefined,
             background_banner: backgroundBanner || undefined,
             tags: tags.length > 0 ? tags : undefined,
+            theme: hasTheme ? theme : undefined,
           }
         : ({} as never), // empty object clears branding
     });
@@ -141,6 +146,7 @@ export function AdminSiteSettingsPage() {
           <input className={inputClass} placeholder="Wide logo URL" value={logoWide} onChange={(e) => setLogoWide(e.target.value)} />
           <input className={inputClass} placeholder="Favicon URL" value={favicon} onChange={(e) => setFavicon(e.target.value)} />
           <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
+          <ThemeEditor value={theme} onChange={setTheme} />
           <TagPicker tags={tags} onChange={setTags} />
         </div>
         <Button size="sm" disabled={updateConfig.isPending} onClick={saveBranding}>

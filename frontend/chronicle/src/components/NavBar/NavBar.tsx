@@ -188,7 +188,7 @@ export function NavBar() {
         <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
           {hasBranding ? (
             branding?.logo_wide ? (
-              <img src={branding.logo_wide} alt={branding?.display_name ?? ""} className="h-10 -my-1 object-contain" />
+              <img src={branding.logo_wide} alt={branding?.display_name ?? ""} className="h-15 -my-2 object-contain" />
             ) : (
               <div className="flex items-center gap-2">
                 {branding?.square_logo && (

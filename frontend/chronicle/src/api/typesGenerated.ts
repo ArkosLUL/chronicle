@@ -218,6 +218,7 @@ export interface Branding {
     readonly description?: string;
     readonly background_banner?: string;
     readonly tags?: readonly string[];
+    readonly theme?: Record<string, string>; // CSS color overrides keyed by knob name (hex "#RRGGBB")
 }
 
 // From chroniclesdk/census.go

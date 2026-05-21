@@ -53,7 +53,18 @@ export function Login() {
       }
     }
     redirectUri = redirectUri || "/"
-    window.location.assign(`/auth/${providerName}?from=${encodeURIComponent(redirectUri)}`)
+
+    if (siteConfig?.tenant && siteConfig?.access_url) {
+      // On a tenant subdomain — redirect to main domain for OAuth.
+      // The "from" param is a full URL so the backend knows to relay back.
+      const from = window.location.origin + (redirectUri.startsWith("/") ? redirectUri : "/" + redirectUri)
+      window.location.assign(
+        `${siteConfig.access_url}/auth/${providerName}?from=${encodeURIComponent(from)}`,
+      )
+    } else {
+      // On main domain — existing behavior.
+      window.location.assign(`/auth/${providerName}?from=${encodeURIComponent(redirectUri)}`)
+    }
   }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {

@@ -1268,6 +1268,11 @@ export interface SiteConfig {
      * PrimaryDomain is the root domain for building cross-tenant URLs.
      */
     readonly primary_domain?: string;
+    /**
+     * AccessURL is the main domain URL used for OAuth redirects.
+     * On tenant subdomains the frontend redirects OAuth to this origin.
+     */
+    readonly access_url?: string;
 }
 
 // From chroniclesdk/constants.go
@@ -1738,9 +1743,9 @@ export type WoWEnvironmentType = "drowning" | "fall" | "fatigue" | "fire" | "lav
 export const WoWEnvironmentTypes: WoWEnvironmentType[] = ["drowning", "fall", "fatigue", "fire", "lava", "slime"];
 
 // From chroniclesdk/constants.go
-export type WoWEventType = "absorbed" | "aura" | "aura_cast" | "cast" | "combatant_info" | "damage" | "dispel" | "extra_attack" | "heal" | "interrupt" | "resource_change" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
+export type WoWEventType = "absorbed" | "aura" | "aura_cast" | "cast" | "combatant_info" | "companion_stats" | "damage" | "dispel" | "extra_attack" | "heal" | "interrupt" | "resource_change" | "slain" | "spell_fail" | "spell_go" | "spell_start" | "unit_classification";
 
-export const WoWEventTypes: WoWEventType[] = ["absorbed", "aura", "aura_cast", "cast", "combatant_info", "damage", "dispel", "extra_attack", "heal", "interrupt", "resource_change", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
+export const WoWEventTypes: WoWEventType[] = ["absorbed", "aura", "aura_cast", "cast", "combatant_info", "companion_stats", "damage", "dispel", "extra_attack", "heal", "interrupt", "resource_change", "slain", "spell_fail", "spell_go", "spell_start", "unit_classification"];
 
 // From types/constants.go
 export type WoWHeroClasses = "DEATHKNIGHT" | "DRUID" | "HUNTER" | "MAGE" | "PALADIN" | "PRIEST" | "ROGUE" | "SHAMAN" | "UNKNOWN" | "WARLOCK" | "WARRIOR";

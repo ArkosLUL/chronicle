@@ -217,3 +217,9 @@ func (s *Service) IsAllowedOrigin(origin string) bool {
 func (s *Service) PrimaryDomain() string {
 	return s.primaryDomain
 }
+
+// ExtractSlug exposes subdomain extraction from a host string (including port).
+// Returns "" if the host doesn't match a tenant subdomain pattern.
+func (s *Service) ExtractSlug(host string) string {
+	return s.extractSlug(host)
+}

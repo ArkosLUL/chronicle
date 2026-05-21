@@ -166,6 +166,9 @@ type SiteConfig struct {
 	Tenant *Tenant `json:"tenant"`
 	// PrimaryDomain is the root domain for building cross-tenant URLs.
 	PrimaryDomain string `json:"primary_domain,omitempty"`
+	// AccessURL is the main domain URL used for OAuth redirects.
+	// On tenant subdomains the frontend redirects OAuth to this origin.
+	AccessURL string `json:"access_url,omitempty"`
 }
 
 // UpdateSiteConfigRequest allows partial updates to site configuration.

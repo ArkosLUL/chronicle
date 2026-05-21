@@ -45,6 +45,10 @@ type Options struct {
 	Mailer    *chroniclemail.Mailer
 
 	Sessions SessionOptions
+
+	// TenantChecker resolves a host to tenant info for cross-subdomain auth relay.
+	// Nil means relay is disabled (e.g. dev mode without primary domain).
+	TenantChecker func(host string) *TenantInfo
 }
 
 type Service struct {
@@ -57,6 +61,11 @@ type Service struct {
 	sessions *Sessions
 	mailer   *chroniclemail.Mailer
 	devMode  bool
+
+	// RelayStore holds one-time codes for cross-subdomain auth relay.
+	RelayStore    *RelayCodeStore
+	accessURL     *url.URL
+	tenantChecker func(host string) *TenantInfo
 
 	registerMu       sync.Mutex
 	registerAttempts map[string]time.Time
@@ -118,6 +127,9 @@ func New(ctx context.Context, logger *slog.Logger, opts Options) (*Service, erro
 		Zed:              opts.Zed,
 		mailer:           opts.Mailer,
 		devMode:          opts.DevServer,
+		RelayStore:       NewRelayCodeStore(),
+		accessURL:        opts.AccessURL,
+		tenantChecker:    opts.TenantChecker,
 		registerAttempts: make(map[string]time.Time),
 		loginAttempts:    make(map[string]time.Time),
 	}, nil
@@ -301,11 +313,14 @@ func (s *Service) Handler() http.Handler {
 		})
 
 		mux.Get("/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
+			var authSession database.UserAuthSession
+			var authProvider string
+			var isNewAuth bool
+
 			cl, ok := AuthenticatedClaims(r.Context())
 			if !ok || cl == nil {
-				// If authenticated, skip all this
-				_, ok = s.provider(w, r)
-				if !ok {
+				_, provOK := s.provider(w, r)
+				if !provOK {
 					return
 				}
 
@@ -315,20 +330,16 @@ func (s *Service) Handler() http.Handler {
 					return
 				}
 
-				// TODO: Upsert user, make an access token, and send that token as a cookie.
-				//   Switch to chronicle handling the auth
-				session, ok := s.Signup(w, r, user)
-				if !ok {
+				sess, signedUp := s.Signup(w, r, user)
+				if !signedUp {
 					return
 				}
-
-				err = s.SetSessionCookie(w, r, user.Provider, session)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
+				authSession = sess
+				authProvider = user.Provider
+				isNewAuth = true
 			}
 
+			// Read the "from" redirect target.
 			redirectTo := "/"
 			redirect, _ := s.Store.Get(r, "from")
 			if redirect != nil {
@@ -340,8 +351,31 @@ func (s *Service) Handler() http.Handler {
 				delete(redirect.Values, "from")
 				_ = redirect.Save(r, w)
 			}
+
+			// For new authentications, check if we need to relay to a tenant subdomain.
+			if isNewAuth {
+				if relayTarget, redirectPath, tenant, relayOK := s.parseRelayTarget(redirectTo); relayOK {
+					code := s.RelayStore.Generate(&RelayCode{
+						Session:      authSession,
+						Provider:     authProvider,
+						TenantSlug:   tenant.Slug,
+						TenantName:   tenant.Name,
+						RedirectPath: redirectPath,
+						ExpiresAt:    time.Now().Add(60 * time.Second),
+					})
+					http.Redirect(w, r, relayTarget+"/auth/relay?code="+code, http.StatusTemporaryRedirect)
+					return
+				}
+
+				// Normal flow — set cookie on current domain.
+				err := s.SetSessionCookie(w, r, authProvider, authSession)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
 			http.Redirect(w, r, redirectTo, http.StatusTemporaryRedirect)
-			//httpapi.Write(r.Context(), w, http.StatusOK, session)
 		})
 
 		mux.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -349,6 +383,9 @@ func (s *Service) Handler() http.Handler {
 			httpapi.Write(r.Context(), w, http.StatusNoContent, nil)
 		})
 	})
+
+	// Relay endpoint for cross-subdomain auth (no auth required — the code IS the auth).
+	mux.Get("/relay", s.HandleRelay)
 
 	// Password auth routes (no authentication required)
 	mux.Post("/password/register", s.PasswordRegister)
@@ -465,3 +502,72 @@ func validateState(req *http.Request, sess goth.Session) error {
 	}
 	return nil
 }
+// HandleRelay redeems a one-time relay code and sets the session cookie on the
+// current (tenant subdomain) domain, then redirects to the stored path.
+func (s *Service) HandleRelay(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Redirect(w, r, "/login?error=missing_code", http.StatusTemporaryRedirect)
+		return
+	}
+
+	relay, err := s.RelayStore.Redeem(code)
+	if err != nil {
+		// Code is invalid, expired, or already consumed.
+		http.Redirect(w, r, "/login?error=relay_expired", http.StatusTemporaryRedirect)
+		return
+	}
+
+	if err := s.SetSessionCookie(w, r, relay.Provider, relay.Session); err != nil {
+		s.logger.Error("relay: failed to set session cookie", slog.String("error", err.Error()))
+		http.Error(w, "failed to set session", http.StatusInternalServerError)
+		return
+	}
+
+	redirectPath := relay.RedirectPath
+	if redirectPath == "" {
+		redirectPath = "/"
+	}
+	http.Redirect(w, r, redirectPath, http.StatusTemporaryRedirect)
+}
+
+// parseRelayTarget checks if `from` is a full URL pointing to a known tenant
+// subdomain. If so it returns the target origin, the path portion, and tenant
+// info. When relay is not needed (relative path, same domain, or unknown host)
+// it returns isRelay=false.
+func (s *Service) parseRelayTarget(from string) (origin string, path string, tenant *TenantInfo, isRelay bool) {
+	if s.tenantChecker == nil {
+		return "", "", nil, false
+	}
+
+	parsed, err := url.Parse(from)
+	if err != nil || parsed.Host == "" {
+		// Relative path — same domain, no relay needed.
+		return "", "", nil, false
+	}
+
+	// Same host as the access URL — no relay needed.
+	if s.accessURL != nil && parsed.Host == s.accessURL.Host {
+		return "", "", nil, false
+	}
+
+	info := s.tenantChecker(parsed.Host)
+	if info == nil {
+		// Unknown host — refuse to relay (open-redirect prevention).
+		s.logger.Warn("relay: from URL points to unknown host, ignoring",
+			slog.String("from", from))
+		return "", "", nil, false
+	}
+
+	targetOrigin := parsed.Scheme + "://" + parsed.Host
+	targetPath := parsed.Path
+	if parsed.RawQuery != "" {
+		targetPath += "?" + parsed.RawQuery
+	}
+	if targetPath == "" {
+		targetPath = "/"
+	}
+
+	return targetOrigin, targetPath, info, true
+}
+

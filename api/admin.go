@@ -710,6 +710,9 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 	if a.Opts.Tenant != nil {
 		resp.PrimaryDomain = a.Opts.Tenant.PrimaryDomain()
 	}
+	if a.Opts.AccessURL != nil {
+		resp.AccessURL = a.Opts.AccessURL.String()
+	}
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 

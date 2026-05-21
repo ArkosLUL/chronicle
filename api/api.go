@@ -80,13 +80,32 @@ func New(ctx context.Context, opts Options) (*API, error) {
 	if opts.Registry == nil {
 		opts.Registry = prometheus.NewRegistry()
 	}
+	var tenantChecker func(host string) *chronauth.TenantInfo
+	if opts.Tenant != nil {
+		tenantChecker = func(host string) *chronauth.TenantInfo {
+			slug := opts.Tenant.ExtractSlug(host)
+			if slug == "" {
+				return nil
+			}
+			t, ok := opts.Tenant.GetTenantBySlug(slug)
+			if !ok {
+				return nil
+			}
+			return &chronauth.TenantInfo{
+				Slug: t.Slug.String,
+				Name: t.Name,
+			}
+		}
+	}
+
 	service, err := chronauth.New(ctx, opts.Logger, chronauth.Options{
-		AccessURL: opts.AccessURL,
-		DevServer: opts.DevOAuth,
-		Discord:   opts.Discord,
-		Bot:       opts.Bot,
-		Zed:       opts.Zed,
-		Mailer:    opts.Mailer,
+		AccessURL:     opts.AccessURL,
+		DevServer:     opts.DevOAuth,
+		Discord:       opts.Discord,
+		Bot:           opts.Bot,
+		Zed:           opts.Zed,
+		Mailer:        opts.Mailer,
+		TenantChecker: tenantChecker,
 		Sessions: chronauth.SessionOptions{
 			SecretPEM: opts.SecretPEM,
 			Registry:  opts.Registry,

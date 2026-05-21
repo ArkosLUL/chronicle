@@ -159,16 +159,22 @@ func TestDatabaseWorks(t *testing.T) {
 			require.NoError(t, err)
 
 			// Insert server + realm directly (no generated query).
+			// Use a dedicated connection with tenant bypass to satisfy RLS policies.
 			serverID := uuid.New()
 			realmID := uuid.New()
-			_, err = pool.Exec(ctx,
-				"INSERT INTO wow_servers (id, name) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-				serverID, "test-server")
+			conn, err := pool.Acquire(ctx)
 			require.NoError(t, err)
-			_, err = pool.Exec(ctx,
+			_, err = conn.Exec(ctx, "SET app.tenant_bypass = 'true'")
+			require.NoError(t, err)
+			_, err = conn.Exec(ctx,
+				"INSERT INTO wow_servers (id, name) VALUES ($1, $2)",
+				serverID, "test-server-"+serverID.String()[:8])
+			require.NoError(t, err)
+			_, err = conn.Exec(ctx,
 				"INSERT INTO wow_server_realms (id, server_id, name) VALUES ($1, $2, $3)",
-				realmID, serverID, "test-realm")
+				realmID, serverID, "test-realm-"+realmID.String()[:8])
 			require.NoError(t, err)
+			conn.Release()
 
 			var hashedSlug pgtype.Text
 			if slug != "" {

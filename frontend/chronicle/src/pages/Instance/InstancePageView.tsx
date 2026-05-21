@@ -2581,7 +2581,8 @@ export function InstancePageView({
     <div className={cn(
       "w-full py-6",
       // Mobile: minimal padding, full width
-      isMobile ? "px-2" : "px-4"
+      isMobile ? "px-2" : "px-4",
+
     )}>
       {/* Header */}
       <div className={cn("mb-6 rounded-lg border relative", isHeroic && "border-purple-500/30")}>

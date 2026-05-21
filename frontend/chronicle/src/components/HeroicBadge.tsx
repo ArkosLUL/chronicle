@@ -15,7 +15,7 @@ export function HeroicBadge({ size = "md", className }: HeroicBadgeProps) {
   return (
     <span
       className={cn(
-        "relative overflow-hidden font-bold text-white bg-purple-600/90 rounded border border-purple-400/30",
+        "relative inline-flex overflow-hidden font-bold text-white bg-purple-600/90 rounded border border-purple-400/30",
         "shadow-[0_0_10px_rgba(147,51,234,0.6),0_0_3px_rgba(192,132,252,0.4)]",
         size === "sm"
           ? "text-[10px] px-1.5 py-0.5"

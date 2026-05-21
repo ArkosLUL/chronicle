@@ -1,16 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Loader2, Castle } from "lucide-react";
+import { Loader2, Castle, Search, Check, ChevronsUpDown } from "lucide-react";
+import { Popover as PopoverPrimitive } from "radix-ui";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-} from "@/components/ui/DropdownMenu/DropdownMenu";
+
 import { useSupportedInstances, useRealms } from "@/api/queries";
 import { useUrlState, serializers } from "@/hooks/useUrlState";
 import {
@@ -19,6 +12,86 @@ import {
 } from "@/pages/Logs/utils/instanceImages";
 import { RaidCard } from "./RaidCard";
 import type { RecentInstance, RecentInstancesResponse } from "@/api/typesGenerated";
+
+function InstanceCombobox({
+  options,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (name: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    if (!search) return options;
+    const q = search.toLowerCase();
+    return options.filter((name) => name.toLowerCase().includes(q));
+  }, [options, search]);
+
+  return (
+    <PopoverPrimitive.Root open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
+      <PopoverPrimitive.Trigger asChild>
+        <Button size="sm" variant="outline" className="gap-1.5">
+          Instances ({selected.length})
+          <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
+        </Button>
+      </PopoverPrimitive.Trigger>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          align="start"
+          sideOffset={4}
+          className="z-50 w-80 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
+          onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+        >
+          <div className="flex items-center gap-2 border-b px-3 py-2">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <input
+              ref={inputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search instances..."
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+          <div className="max-h-80 overflow-y-auto p-1 styled-scrollbar">
+            {selected.length > 0 && (
+              <button
+                className="w-full text-left text-sm px-2 py-1.5 rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onClick={onClear}
+              >
+                Clear selection
+              </button>
+            )}
+            {filtered.length === 0 && (
+              <p className="text-sm text-muted-foreground px-2 py-4 text-center">No instances found</p>
+            )}
+            {filtered.map((name) => {
+              const isSelected = selected.includes(name);
+              return (
+                <button
+                  key={name}
+                  className="w-full flex items-center gap-2 text-sm px-2 py-1.5 rounded-sm hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => onToggle(name)}
+                >
+                  <span className={`h-4 w-4 shrink-0 flex items-center justify-center rounded-sm border ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'}`}>
+                    {isSelected && <Check className="h-3 w-3" />}
+                  </span>
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
+  );
+}
 
 const API_BASE = "/api/v1/raidlogs";
 
@@ -285,36 +358,12 @@ export function RecentRaids() {
             ))}
           </select>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                Instances ({selectedInstancesValid.length})
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuLabel>Select Instances</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setSelectedInstances([])}>
-                Clear selection
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {categoryInstanceOptions.length === 0 && (
-                <DropdownMenuItem disabled>
-                  No instances available
-                </DropdownMenuItem>
-              )}
-              {categoryInstanceOptions.map((name) => (
-                <DropdownMenuCheckboxItem
-                  key={name}
-                  checked={selectedInstancesValid.includes(name)}
-                  onCheckedChange={() => toggleInstance(name)}
-                  onSelect={(event) => event.preventDefault()}
-                >
-                  {name}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <InstanceCombobox
+            options={categoryInstanceOptions}
+            selected={selectedInstancesValid}
+            onToggle={toggleInstance}
+            onClear={() => setSelectedInstances([])}
+          />
 
           {selectedInstancesValid.length > 0 && (
             <Button size="sm" variant="ghost" onClick={() => setSelectedInstances([])}>

@@ -2527,6 +2527,7 @@ export function InstancePageView({
   const trashGroups = groupTrashEncounters(instance.encounters);
 
   const headerBg = getInstanceBackground(instance.name);
+  const isHeroic = (instance.dynamicDifficulty ?? 0) > 0;
 
   const elapsedDurationMs = instance.endTime
     ? new Date(instance.endTime).getTime() - new Date(instance.startTime).getTime()
@@ -2583,7 +2584,7 @@ export function InstancePageView({
       isMobile ? "px-2" : "px-4"
     )}>
       {/* Header */}
-      <div className="mb-6 rounded-lg border relative">
+      <div className={cn("mb-6 rounded-lg border relative", isHeroic && "border-purple-500/30")}>
         {/* Background image */}
         {headerBg && (
           <div className="absolute inset-0 z-0 rounded-lg overflow-hidden">
@@ -2593,13 +2594,16 @@ export function InstancePageView({
               className="h-full w-full object-cover opacity-70"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/50" />
+            {isHeroic && (
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 via-purple-900/5 to-transparent" />
+            )}
           </div>
         )}
         {/* Content */}
         <div className={cn("relative z-10", isMobile ? "p-3" : "p-4")}>
         {/* Row 1: Title (+ mobile menu / desktop difficulty) */}
         <div className="flex items-start justify-between gap-4 mb-1">
-          <h1 className={cn("font-bold flex items-center gap-2", isMobile ? "text-xl" : "text-2xl")}>
+          <h1 className={cn("font-bold flex items-center gap-2", isMobile ? "text-xl" : "text-2xl", isHeroic && "drop-shadow-[0_0_8px_rgba(147,51,234,0.3)]")}>
             {instance.name}
             {duplicateGroupId && (
               <DuplicatesBadge instanceId={instance.id} duplicateGroupId={duplicateGroupId} />

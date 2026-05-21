@@ -225,7 +225,9 @@ function FooterBranding({ siteConfig, isTenant }: { siteConfig?: SiteConfig; isT
       )}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span>Powered by</span>
-        <img src={CHRONICLE_LOGO} alt="Chronicle" className="h-4 object-contain" />
+        <a href="https://chronicleclassic.com" target="_blank" rel="noopener noreferrer">
+        <img src={CHRONICLE_LOGO} alt="Chronicle" className="h-8 object-contain" />
+        </a>
       </div>
     </div>
   );

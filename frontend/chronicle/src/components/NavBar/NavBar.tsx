@@ -165,6 +165,13 @@ export function NavBar() {
                 </>
               )}
             </nav>
+            {!!siteConfig?.tenant && (
+              <div className="mt-auto pt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>Powered by</span>
+                <img src="/c/chronicle/ChronicleIcon.png" alt="Chronicle" className="h-4 w-4" />
+                <span className="font-medium">Chronicle</span>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
       </div>

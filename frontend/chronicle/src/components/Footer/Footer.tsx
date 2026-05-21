@@ -73,13 +73,24 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <a
+                  href="https://chronicleclassic.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors inline-flex items-center gap-1"
+                >
+                  <img src="/c/chronicle/ChronicleIconSquare.png" alt="" aria-hidden="true" className="h-4 w-4" />
+                  Chronicle
+                </a>
+              </li>
+              <li>
+                <a
                   href={DISCORD_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-foreground transition-colors inline-flex items-center gap-1"
                 >
                   <DiscordIcon className="h-4 w-4" />
-                  Discord
+                  Chronicle Discord
                 </a>
               </li>
             </ul>

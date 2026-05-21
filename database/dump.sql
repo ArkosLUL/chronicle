@@ -757,6 +757,7 @@ CREATE TABLE site_config (
     id boolean DEFAULT true NOT NULL,
     signups_enabled boolean DEFAULT true NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    branding jsonb,
     CONSTRAINT site_config_id_check CHECK (id)
 );
 

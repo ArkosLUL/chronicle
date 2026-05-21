@@ -1126,6 +1126,7 @@ type SiteConfig struct {
 	ID             bool               `db:"id" json:"id"`
 	SignupsEnabled bool               `db:"signups_enabled" json:"signups_enabled"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Branding       []byte             `db:"branding" json:"branding"`
 }
 
 type Tenant struct {

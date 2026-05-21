@@ -169,12 +169,16 @@ type SiteConfig struct {
 	// AccessURL is the main domain URL used for OAuth redirects.
 	// On tenant subdomains the frontend redirects OAuth to this origin.
 	AccessURL string `json:"access_url,omitempty"`
+	// Branding is the visual identity for the primary domain.
+	// On tenant subdomains, use Tenant.Branding instead.
+	Branding *Branding `json:"branding"`
 }
 
 // UpdateSiteConfigRequest allows partial updates to site configuration.
 // Only non-nil fields will be updated.
 type UpdateSiteConfigRequest struct {
-	SignupsEnabled *bool `json:"signups_enabled,omitempty"`
+	SignupsEnabled *bool     `json:"signups_enabled,omitempty"`
+	Branding      *Branding `json:"branding,omitempty"`
 }
 
 // SetUserRolesRequest is the request body for setting a user's Chronicle roles.

@@ -50,7 +50,7 @@ export function useTenantGate(instance: Instance | null): {
 
   // Current tenant info
   const currentTenantName = siteConfig?.tenant?.name ?? "Chronicle";
-  const currentTenantLogo = siteConfig?.tenant?.branding?.logo ?? CHRONICLE_LOGO;
+  const currentTenantLogo = siteConfig?.tenant?.branding?.square_logo ?? CHRONICLE_LOGO;
 
   // Instance tenant info — use placeholder until tenants have logos
   // TODO: When tenant branding is available on the instance response, use it here.

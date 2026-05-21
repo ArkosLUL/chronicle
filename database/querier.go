@@ -16,6 +16,7 @@ type sqlcQuerier interface {
 	AdminListOutdatedParserVersionInstances(ctx context.Context, arg AdminListOutdatedParserVersionInstancesParams) ([]AdminListOutdatedParserVersionInstancesRow, error)
 	AssignWorldToServer(ctx context.Context, arg AssignWorldToServerParams) error
 	BulkUpsertGuildPagePanels(ctx context.Context, dollar_1 []byte) error
+	// JOINs wow_server_realms so RLS tenant filtering cascades.
 	CensusPlayerCounts(ctx context.Context, arg CensusPlayerCountsParams) ([]CensusPlayerCountsRow, error)
 	ClearDuplicateGroupID(ctx context.Context, id uuid.UUID) error
 	ClearResetToken(ctx context.Context, userAuthID uuid.UUID) error
@@ -255,7 +256,7 @@ type sqlcQuerier interface {
 	UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
 	UpdateRetentionPolicyStats(ctx context.Context, arg UpdateRetentionPolicyStatsParams) error
-	UpdateSiteConfig(ctx context.Context, signupsEnabled bool) (SiteConfig, error)
+	UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) (SiteConfig, error)
 	UpdateTelemetryHeartbeat(ctx context.Context) error
 	// Only non-null params are applied; NULL means "keep existing value".
 	UpdateTenant(ctx context.Context, arg UpdateTenantParams) (Tenant, error)

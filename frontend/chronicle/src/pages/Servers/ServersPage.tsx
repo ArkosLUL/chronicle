@@ -120,8 +120,16 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
   const [includeInAll, setIncludeInAll] = useState(tenant?.include_in_all ?? true);
   const [disableUpload, setDisableUpload] = useState(tenant?.disable_client_upload ?? false);
 
+  // Branding fields
+  const [squareLogo, setSquareLogo] = useState(tenant?.branding?.square_logo ?? "");
+  const [displayName, setDisplayName] = useState(tenant?.branding?.display_name ?? "");
+  const [tagline, setTagline] = useState(tenant?.branding?.tagline ?? "");
+  const [description, setDescription] = useState(tenant?.branding?.description ?? "");
+  const [backgroundBanner, setBackgroundBanner] = useState(tenant?.branding?.background_banner ?? "");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const hasBranding = squareLogo || displayName || tagline || description || backgroundBanner;
     upsertTenant.mutate(
       {
         id: tenant?.id ?? "",
@@ -129,23 +137,27 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         slug: slug || null,
         include_in_all: includeInAll,
         disable_client_upload: disableUpload,
-        branding: tenant?.branding ?? null,
+        branding: hasBranding
+          ? {
+              square_logo: squareLogo || undefined,
+              display_name: displayName || undefined,
+              tagline: tagline || undefined,
+              description: description || undefined,
+              background_banner: backgroundBanner || undefined,
+            }
+          : null,
       },
       { onSuccess: onDone },
     );
   };
 
+  const inputClass = "w-full rounded-md border bg-background px-3 py-1.5 text-sm";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-2 rounded-md border p-3">
+      <input className={inputClass} placeholder="Tenant name" value={name} onChange={(e) => setName(e.target.value)} required />
       <input
-        className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
-        placeholder="Tenant name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <input
-        className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+        className={inputClass}
         placeholder="Slug (optional, e.g. epoch)"
         value={slug}
         onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
@@ -158,6 +170,14 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         <input type="checkbox" checked={disableUpload} onChange={(e) => setDisableUpload(e.target.checked)} />
         Disable client uploads
       </label>
+      <div className="pt-2 border-t space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">Branding</p>
+        <input className={inputClass} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        <input className={inputClass} placeholder="Tagline" value={tagline} onChange={(e) => setTagline(e.target.value)} />
+        <input className={inputClass} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <input className={inputClass} placeholder="Square logo URL" value={squareLogo} onChange={(e) => setSquareLogo(e.target.value)} />
+        <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
+      </div>
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={upsertTenant.isPending}>
           {upsertTenant.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : tenant ? "Save" : "Create"}

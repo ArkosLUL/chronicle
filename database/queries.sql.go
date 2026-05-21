@@ -14,14 +14,15 @@ import (
 
 const censusPlayerCounts = `-- name: CensusPlayerCounts :many
 SELECT
-  class,
-  race,
+  gp.class,
+  gp.race,
   COUNT(*) AS count
-FROM game_players
-WHERE updated_at >= $1::timestamptz
-  AND (cardinality($2::uuid[]) = 0 OR realm_id = ANY($2::uuid[]))
-GROUP BY class, race
-ORDER BY class, race
+FROM game_players gp
+JOIN wow_server_realms wsr ON wsr.id = gp.realm_id
+WHERE gp.updated_at >= $1::timestamptz
+  AND (cardinality($2::uuid[]) = 0 OR gp.realm_id = ANY($2::uuid[]))
+GROUP BY gp.class, gp.race
+ORDER BY gp.class, gp.race
 `
 
 type CensusPlayerCountsParams struct {
@@ -35,6 +36,7 @@ type CensusPlayerCountsRow struct {
 	Count int64            `db:"count" json:"count"`
 }
 
+// JOINs wow_server_realms so RLS tenant filtering cascades.
 func (q *sqlQuerier) CensusPlayerCounts(ctx context.Context, arg CensusPlayerCountsParams) ([]CensusPlayerCountsRow, error) {
 	rows, err := q.db.Query(ctx, censusPlayerCounts, arg.UpdatedAfter, arg.RealmIds)
 	if err != nil {
@@ -4757,28 +4759,44 @@ func (q *sqlQuerier) GetSharedViewByInstanceAndHash(ctx context.Context, arg Get
 }
 
 const getSiteConfig = `-- name: GetSiteConfig :one
-SELECT id, signups_enabled, updated_at FROM site_config WHERE id = TRUE
+SELECT id, signups_enabled, updated_at, branding FROM site_config WHERE id = TRUE
 `
 
 func (q *sqlQuerier) GetSiteConfig(ctx context.Context) (SiteConfig, error) {
 	row := q.db.QueryRow(ctx, getSiteConfig)
 	var i SiteConfig
-	err := row.Scan(&i.ID, &i.SignupsEnabled, &i.UpdatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.SignupsEnabled,
+		&i.UpdatedAt,
+		&i.Branding,
+	)
 	return i, err
 }
 
 const updateSiteConfig = `-- name: UpdateSiteConfig :one
 UPDATE site_config SET
-    signups_enabled = $1,
+    signups_enabled = COALESCE($1, signups_enabled),
+    branding = COALESCE($2, branding),
     updated_at = now()
 WHERE id = TRUE
-RETURNING id, signups_enabled, updated_at
+RETURNING id, signups_enabled, updated_at, branding
 `
 
-func (q *sqlQuerier) UpdateSiteConfig(ctx context.Context, signupsEnabled bool) (SiteConfig, error) {
-	row := q.db.QueryRow(ctx, updateSiteConfig, signupsEnabled)
+type UpdateSiteConfigParams struct {
+	SignupsEnabled pgtype.Bool `db:"signups_enabled" json:"signups_enabled"`
+	Branding       []byte      `db:"branding" json:"branding"`
+}
+
+func (q *sqlQuerier) UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) (SiteConfig, error) {
+	row := q.db.QueryRow(ctx, updateSiteConfig, arg.SignupsEnabled, arg.Branding)
 	var i SiteConfig
-	err := row.Scan(&i.ID, &i.SignupsEnabled, &i.UpdatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.SignupsEnabled,
+		&i.UpdatedAt,
+		&i.Branding,
+	)
 	return i, err
 }
 

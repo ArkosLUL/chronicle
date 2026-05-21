@@ -98,12 +98,14 @@ OFFSET @result_offset
 ;
 
 -- name: CensusPlayerCounts :many
+-- JOINs wow_server_realms so RLS tenant filtering cascades.
 SELECT
-  class,
-  race,
+  gp.class,
+  gp.race,
   COUNT(*) AS count
-FROM game_players
-WHERE updated_at >= @updated_after::timestamptz
-  AND (cardinality(@realm_ids::uuid[]) = 0 OR realm_id = ANY(@realm_ids::uuid[]))
-GROUP BY class, race
-ORDER BY class, race;
+FROM game_players gp
+JOIN wow_server_realms wsr ON wsr.id = gp.realm_id
+WHERE gp.updated_at >= @updated_after::timestamptz
+  AND (cardinality(@realm_ids::uuid[]) = 0 OR gp.realm_id = ANY(@realm_ids::uuid[]))
+GROUP BY gp.class, gp.race
+ORDER BY gp.class, gp.race;

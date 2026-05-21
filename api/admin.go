@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -713,6 +714,7 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 	if a.Opts.AccessURL != nil {
 		resp.AccessURL = a.Opts.AccessURL.String()
 	}
+	resp.Branding = unmarshalBranding(config.Branding)
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
@@ -723,13 +725,16 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var config database.SiteConfig
-	var err error
+	var params database.UpdateSiteConfigParams
 	if req.SignupsEnabled != nil {
-		config, err = a.Opts.Zed.UpdateSiteConfig(ctx, *req.SignupsEnabled)
-	} else {
-		config, err = a.Opts.Zed.GetSiteConfig(ctx)
+		params.SignupsEnabled = pgtype.Bool{Bool: *req.SignupsEnabled, Valid: true}
 	}
+	if req.Branding != nil {
+		b, _ := json.Marshal(req.Branding)
+		params.Branding = b
+	}
+
+	config, err := a.Opts.Zed.UpdateSiteConfig(ctx, params)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -738,5 +743,18 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 		SignupsEnabled:        config.SignupsEnabled,
 		ShortLinkDomain:       a.Opts.ShortLinkDomain,
 		ClientUploadsDisabled: a.Opts.ClientUploadsDisabled,
+		Branding:              unmarshalBranding(config.Branding),
 	})
+}
+
+// unmarshalBranding converts raw JSONB bytes into a Branding pointer.
+func unmarshalBranding(data []byte) *chroniclesdk.Branding {
+	if len(data) == 0 {
+		return nil
+	}
+	var b chroniclesdk.Branding
+	if err := json.Unmarshal(data, &b); err != nil {
+		return nil
+	}
+	return &b
 }

@@ -16,16 +16,18 @@ type Tenant struct {
 	Name                string          `json:"name"`
 	DisableClientUpload bool            `json:"disable_client_upload"`
 	IncludeInAll        bool            `json:"include_in_all"`
-	Branding            *TenantBranding `json:"branding"`
-	CreatedAt           time.Time       `json:"created_at"`
+	Branding            *Branding `json:"branding"`
+	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
 }
 
-// TenantBranding holds the visual identity for a tenant's subdomain.
-type TenantBranding struct {
-	Logo     string `json:"logo"`
-	Banner   string `json:"banner"`
-	WideLogo string `json:"wide_logo"`
+// Branding holds the visual identity for a tenant subdomain or the primary domain.
+type Branding struct {
+	SquareLogo       string `json:"square_logo,omitempty"`
+	DisplayName      string `json:"display_name,omitempty"`
+	Tagline          string `json:"tagline,omitempty"`
+	Description      string `json:"description,omitempty"`
+	BackgroundBanner string `json:"background_banner,omitempty"`
 }
 
 // TenantFromDB converts a database.Tenant to the SDK type.
@@ -42,7 +44,7 @@ func TenantFromDB(t database.Tenant) Tenant {
 		out.Slug = &t.Slug.String
 	}
 	if len(t.Branding) > 0 {
-		var b TenantBranding
+		var b Branding
 		if err := json.Unmarshal(t.Branding, &b); err == nil {
 			out.Branding = &b
 		}
@@ -66,7 +68,7 @@ type UpsertTenantRequest struct {
 	Name                string          `json:"name"`
 	DisableClientUpload *bool           `json:"disable_client_upload"`
 	IncludeInAll        *bool           `json:"include_in_all"`
-	Branding            *TenantBranding `json:"branding"`
+	Branding            *Branding `json:"branding"`
 }
 
 // IsCreate returns true when the request should insert a new tenant.

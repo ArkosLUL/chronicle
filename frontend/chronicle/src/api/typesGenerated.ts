@@ -205,6 +205,18 @@ export interface AzerothCorePingResponse {
     readonly status: string;
 }
 
+// From chroniclesdk/tenant.go
+/**
+ * Branding holds the visual identity for a tenant subdomain or the primary domain.
+ */
+export interface Branding {
+    readonly square_logo?: string;
+    readonly display_name?: string;
+    readonly tagline?: string;
+    readonly description?: string;
+    readonly background_banner?: string;
+}
+
 // From chroniclesdk/census.go
 /**
  * CensusEntry represents a count of unique players for a given class/race pair.
@@ -1273,6 +1285,11 @@ export interface SiteConfig {
      * On tenant subdomains the frontend redirects OAuth to this origin.
      */
     readonly access_url?: string;
+    /**
+     * Branding is the visual identity for the primary domain.
+     * On tenant subdomains, use Tenant.Branding instead.
+     */
+    readonly branding: Branding | null;
 }
 
 // From chroniclesdk/constants.go
@@ -1398,19 +1415,9 @@ export interface Tenant {
     readonly name: string;
     readonly disable_client_upload: boolean;
     readonly include_in_all: boolean;
-    readonly branding: TenantBranding | null;
+    readonly branding: Branding | null;
     readonly created_at: string;
     readonly updated_at: string;
-}
-
-// From chroniclesdk/tenant.go
-/**
- * TenantBranding holds the visual identity for a tenant's subdomain.
- */
-export interface TenantBranding {
-    readonly logo: string;
-    readonly banner: string;
-    readonly wide_logo: string;
 }
 
 // From chroniclesdk/panel_layout.go
@@ -1488,6 +1495,7 @@ export interface UpdateRegressionFixtureNoteRequest {
  */
 export interface UpdateSiteConfigRequest {
     readonly signups_enabled?: boolean;
+    readonly branding?: Branding;
 }
 
 // From chroniclesdk/guild_page.go
@@ -1563,7 +1571,7 @@ export interface UpsertTenantRequest {
     readonly name: string;
     readonly disable_client_upload: boolean | null;
     readonly include_in_all: boolean | null;
-    readonly branding: TenantBranding | null;
+    readonly branding: Branding | null;
 }
 
 // From chroniclesdk/user.go

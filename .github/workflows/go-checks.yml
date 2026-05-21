@@ -164,9 +164,9 @@ jobs:
           - server: octowow
             railway_service: chronicled
             railway_token_secret: RAILWAY_TOKEN_OCTOWOW
-          - server: chromiecraft
+          - server: legacy
             railway_service: chronicled
-            railway_token_secret: RAILWAY_TOKEN_CHROMIE
+            railway_token_secret: RAILWAY_TOKEN_LEGACY
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli

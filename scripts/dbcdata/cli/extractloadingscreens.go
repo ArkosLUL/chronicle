@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/Gophercraft/core/format/dbc/dbdefs"
-	"github.com/Gophercraft/core/format/mpq"
 	"github.com/HugoSmits86/nativewebp"
 
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
@@ -73,6 +72,8 @@ func extractLoadingScreens(wc *dbcdb.WoWClient, clientPath, outDir string, stdou
 	fallback, err := newMPQFallback(clientPath)
 	if err != nil {
 		_, _ = fmt.Fprintf(stdout, "  Warning: MPQ fallback unavailable: %v\n", err)
+	} else {
+		defer fallback.Close()
 	}
 
 	readFile := func(path string) ([]byte, error) {
@@ -160,53 +161,4 @@ func extractBLPToWebP(readFile func(string) ([]byte, error), blpPath, outDir str
 	}
 	_ = out.Close()
 	return true
-}
-
-// mpqFallback provides direct hash-based MPQ file lookups, bypassing the Pool
-// which only finds files indexed in MPQ listfiles.
-type mpqFallback struct {
-	archives []string
-}
-
-func newMPQFallback(clientPath string) (*mpqFallback, error) {
-	dataDir := filepath.Join(clientPath, "Data")
-	entries, err := os.ReadDir(dataDir)
-	if err != nil {
-		return nil, fmt.Errorf("read Data dir: %w", err)
-	}
-
-	var archives []string
-	for _, e := range entries {
-		if strings.EqualFold(filepath.Ext(e.Name()), ".mpq") {
-			archives = append(archives, filepath.Join(dataDir, e.Name()))
-		}
-	}
-	if len(archives) == 0 {
-		return nil, fmt.Errorf("no MPQ files in %s", dataDir)
-	}
-	return &mpqFallback{archives: archives}, nil
-}
-
-func (f *mpqFallback) ReadFile(name string) ([]byte, error) {
-	for _, archivePath := range f.archives {
-		m, err := mpq.Open(archivePath)
-		if err != nil {
-			continue
-		}
-
-		file, err := m.OpenFile(name)
-		if err != nil {
-			_ = m.Close()
-			continue
-		}
-
-		data, err := file.ReadBlock()
-		_ = file.Close()
-		_ = m.Close()
-		if err != nil {
-			continue
-		}
-		return data, nil
-	}
-	return nil, fmt.Errorf("file not found in any MPQ: %s", name)
 }

@@ -43,6 +43,7 @@ import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceAction
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+import { HeroicBadge } from "@/components/HeroicBadge";
 import { DuplicatesBadge } from "./DuplicatesBadge";
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
 import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/CharacterHeader";
@@ -2596,7 +2597,7 @@ export function InstancePageView({
         )}
         {/* Content */}
         <div className={cn("relative z-10", isMobile ? "p-3" : "p-4")}>
-        {/* Row 1: Title (+ mobile menu only) */}
+        {/* Row 1: Title (+ mobile menu / desktop difficulty) */}
         <div className="flex items-start justify-between gap-4 mb-1">
           <h1 className={cn("font-bold flex items-center gap-2", isMobile ? "text-xl" : "text-2xl")}>
             {instance.name}
@@ -2604,8 +2605,17 @@ export function InstancePageView({
               <DuplicatesBadge instanceId={instance.id} duplicateGroupId={duplicateGroupId} />
             )}
           </h1>
+          {!isMobile && instance.maxPlayers != null && instance.maxPlayers > 0 && (
+            <div className="flex items-center gap-1.5 shrink-0 mt-1">
+              <span className="text-sm text-muted-foreground font-medium">{instance.maxPlayers} Player</span>
+              {instance.dynamicDifficulty != null && instance.dynamicDifficulty > 0 && (
+                <HeroicBadge />
+              )}
+            </div>
+          )}
           {isMobile && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <div className="flex items-center gap-2">
               <InstanceMenu
                 onImportLayout={handleImportLayout}
                 onExportLayout={handleExportLayout}
@@ -2627,6 +2637,7 @@ export function InstancePageView({
               {showHints && (
                 <InstanceHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
               )}
+              </div>
             </div>
           )}
         </div>
@@ -2685,6 +2696,14 @@ export function InstancePageView({
               </Tooltip>
             )}
           </div>
+          {isMobile && instance.maxPlayers != null && instance.maxPlayers > 0 && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-xs text-muted-foreground font-medium">{instance.maxPlayers} Player</span>
+              {instance.dynamicDifficulty != null && instance.dynamicDifficulty > 0 && (
+                <HeroicBadge />
+              )}
+            </div>
+          )}
           {!isMobile && (
             <div className="flex items-center gap-2 shrink-0">
               <DropdownMenu modal={false}>
@@ -2763,6 +2782,7 @@ export function InstancePageView({
             </div>
           )}
         </div>
+
         </div>
       </div>
 

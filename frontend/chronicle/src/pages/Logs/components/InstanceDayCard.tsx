@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getInstanceBackground, getInstanceAbbrev } from "../utils/instanceImages";
+import { HeroicBadge } from "@/components/HeroicBadge";
 import { formatDuration, type InstanceWithMeta } from "../utils/calendarUtils";
 
 interface InstanceDayCardProps {
@@ -46,12 +47,22 @@ export function InstanceDayCard({ instance, showDuration = true }: InstanceDayCa
           <span className="text-xs font-medium text-white truncate drop-shadow-lg group-hover:text-amber-300 transition-colors">
             <span className="sm:hidden">{abbrev}</span>
             <span className="hidden sm:inline">{instance.name}</span>
+            {instance.max_players > 0 && (
+              <span className="ml-1.5 text-[10px] text-white/80 font-semibold">
+                {instance.max_players}P
+              </span>
+            )}
           </span>
-          {showDuration && duration && (
-            <span className="hidden sm:inline text-[10px] text-white/80 bg-black/40 px-1.5 py-0.5 rounded ml-1 flex-shrink-0">
-              {duration}
-            </span>
-          )}
+          <span className="flex items-center gap-1 ml-1 flex-shrink-0">
+            {instance.dynamic_difficulty > 0 && (
+              <HeroicBadge size="sm" />
+            )}
+            {showDuration && duration && (
+              <span className={`hidden sm:inline text-[10px] text-white/80 px-1.5 py-0.5 rounded ${instance.dynamic_difficulty > 0 ? 'bg-purple-600/40' : 'bg-black/40'}`}>
+                {duration}
+              </span>
+            )}
+          </span>
         </div>
       </div>
     </Link>

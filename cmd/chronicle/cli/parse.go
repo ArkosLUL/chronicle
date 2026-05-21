@@ -19,6 +19,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/consumeeach"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/internal/services"
@@ -342,7 +343,7 @@ func Zoner() *serpent.Command {
 				switch ty := m.(type) {
 				case *messages.Zone:
 					was := z.Name
-					if z.Process(*ty) {
+					if result := z.Process(*ty); result != zone.NoChange {
 						if last.IsZero() {
 							last = ty.Timestamp
 						}

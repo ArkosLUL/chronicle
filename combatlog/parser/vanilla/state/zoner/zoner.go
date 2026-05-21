@@ -15,17 +15,33 @@ func NewLocation() *Location {
 	}
 }
 
-func (l *Location) Process(z messages.Zone) bool {
+func (l *Location) Process(z messages.Zone) zone.ZoneChangeResult {
 	if z.Name == "" {
 		// Ignore empty zones
-		return false
+		return zone.NoChange
 	}
 
-	//nolint: staticcheck
-	if l.Zone.Equal(z.Zone) {
-		// Zone unchanged
-		return false
+	if !l.Equal(z.Zone) {
+		l.Zone = z.Zone
+		return zone.ZoneChanged
 	}
-	l.Zone = z.Zone
-	return true
+
+	// Same zone (name + instanceID match). Check for difficulty changes.
+	if z.HasDifficulty() {
+		if l.HasDifficulty() && !l.DifficultyEquals(z.Zone) {
+			// Difficulty was already set and now differs → new instance needed.
+			l.Zone = z.Zone
+			return zone.DifficultyChanged
+		}
+		if !l.HasDifficulty() {
+			// Adopt late-arriving difficulty info in place.
+			l.DifficultyIndex = z.DifficultyIndex
+			l.DifficultyName = z.DifficultyName
+			l.MaxPlayers = z.MaxPlayers
+			l.DynamicDifficulty = z.DynamicDifficulty
+			l.SubZone = z.SubZone
+			return zone.InfoUpdated
+		}
+	}
+	return zone.NoChange
 }

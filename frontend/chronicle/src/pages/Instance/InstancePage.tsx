@@ -56,6 +56,10 @@ export interface Instance {
   recorderName?: string;
   // GUID of the player who recorded the combat log
   recorderGuid?: string;
+  // Difficulty info
+  difficultyName?: string;
+  maxPlayers?: number;
+  dynamicDifficulty?: number;
 }
 
 // Helper to get unit name from lookup, with fallback
@@ -93,6 +97,9 @@ function transformToInstance(
     versions?: Record<string, string>;
     recorder_name?: string;
     recorder_guid?: string;
+    difficulty_name?: string;
+    max_players?: number;
+    dynamic_difficulty?: number;
   },
 ): Instance {
   const players = normalizeRecord(apiInstance.players);
@@ -150,7 +157,9 @@ function transformToInstance(
     versions: apiInstance.versions,
     recorderName: apiInstance.recorder_name,
     recorderGuid: apiInstance.recorder_guid,
-
+    difficultyName: apiInstance.difficulty_name,
+    maxPlayers: apiInstance.max_players,
+    dynamicDifficulty: apiInstance.dynamic_difficulty,
   };
 }
 

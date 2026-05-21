@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Clock, Users, CheckCircle, XCircle, Youtube } from "lucide-react";
 import type { RecentInstance } from "@/api/typesGenerated";
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
+import { HeroicBadge } from "@/components/HeroicBadge";
 
 function formatDuration(ms: number | null): string {
   if (ms === null || ms === 0) return "—";
@@ -90,6 +91,16 @@ export function RaidCard({ instance }: RaidCardProps) {
             <span className="text-xs font-semibold">Video</span>
           </div>
         )}
+
+        {/* Heroic badge - below YouTube badge on right */}
+        {instance.dynamic_difficulty > 0 && (
+          <div
+            className="absolute z-20"
+            style={{ top: instance.has_youtube_video ? '2.75rem' : '0.5rem', right: '0.5rem' }}
+          >
+            <HeroicBadge />
+          </div>
+        )}
         
         {/* Animated DPS bars - only shown on hover for cards with video */}
         {instance.has_youtube_video && isHovered && (
@@ -156,6 +167,11 @@ export function RaidCard({ instance }: RaidCardProps) {
                 <>by {instance.uploader_name}</>
               )}
             </p>
+            {instance.max_players > 0 && (
+              <p className="text-xs text-white/70 font-medium drop-shadow">
+                {instance.max_players} Player
+              </p>
+            )}
           </div>
 
           {/* Spacer */}

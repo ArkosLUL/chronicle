@@ -556,9 +556,12 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				EndTime:       instanceEnd,
 				Capabilities:  logCapabilities,
 				Versions:      database.VersionsMap(finalized.Versions),
-				RecorderName:  recorderName,
-				RecorderGuid:  recorderGUID,
-				ParserVersion: version.GitTag + "+" + version.GitCommit,
+				RecorderName:   recorderName,
+				RecorderGuid:   recorderGUID,
+				ParserVersion:  version.GitTag + "+" + version.GitCommit,
+				DifficultyName:    inst.CurrentZone.DifficultyName,
+				MaxPlayers:        int32(inst.CurrentZone.MaxPlayers),
+				DynamicDifficulty: int32(inst.CurrentZone.DynamicDifficulty),
 			}
 
 			// Handling colliding slugs
@@ -647,7 +650,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			// Duplicate instance detection: find other instances in the same
 			// realm+zone with overlapping time, then check player overlap.
 			if instanceStart.Valid {
-				if dupErr := detectAndLinkDuplicate(ctx, tx, dbinstance.ID, dbinstance.RealmID, dbinstance.Name, instanceStart, builder.participants); dupErr != nil {
+				if dupErr := detectAndLinkDuplicate(ctx, tx, dbinstance.ID, dbinstance.RealmID, dbinstance.Name, dbinstance.MaxPlayers, dbinstance.DynamicDifficulty, instanceStart, builder.participants); dupErr != nil {
 					slog.WarnContext(ctx, "duplicate detection failed", slog.String("err", dupErr.Error()))
 				}
 			}
@@ -974,6 +977,8 @@ func detectAndLinkDuplicate(
 	instanceID uuid.UUID,
 	realmID uuid.UUID,
 	name string,
+	maxPlayers int32,
+	dynamicDifficulty int32,
 	startTime pgtype.Timestamptz,
 	players []database.InsertInstancePlayersParams,
 ) error {
@@ -981,11 +986,13 @@ func detectAndLinkDuplicate(
 	windowEnd := database.Timestamptz(startTime.Time.Add(30 * time.Minute))
 
 	candidates, err := tx.FindDuplicateInstanceCandidates(ctx, database.FindDuplicateInstanceCandidatesParams{
-		RealmID:     realmID,
-		Name:        name,
-		WindowStart: windowStart,
-		WindowEnd:   windowEnd,
-		ExcludeID:   instanceID,
+		RealmID:           realmID,
+		Name:              name,
+		MaxPlayers:        maxPlayers,
+		DynamicDifficulty: dynamicDifficulty,
+		WindowStart:       windowStart,
+		WindowEnd:         windowEnd,
+		ExcludeID:         instanceID,
 	})
 	if err != nil {
 		return fmt.Errorf("find duplicate candidates: %w", err)

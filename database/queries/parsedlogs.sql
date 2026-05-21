@@ -49,9 +49,9 @@ VALUES
 
 -- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, difficulty_name, max_players, dynamic_difficulty)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 RETURNING *
 ;
 
@@ -169,7 +169,10 @@ SELECT
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
     li.duplicate_group_id,
-    li.recorder_name
+    li.recorder_name,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -237,7 +240,10 @@ SELECT
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
     li.duplicate_group_id,
-    li.recorder_name
+    li.recorder_name,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -317,7 +323,10 @@ SELECT DISTINCT ON (
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
     li.duplicate_group_id,
-    li.recorder_name
+    li.recorder_name,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
@@ -389,6 +398,8 @@ SELECT li.id, li.duplicate_group_id
 FROM log_instances li
 WHERE li.realm_id = @realm_id
   AND li.name = @name
+  AND li.max_players = @max_players
+  AND li.dynamic_difficulty = @dynamic_difficulty
   AND li.start_time >= @window_start
   AND li.start_time <= @window_end
   AND li.id != @exclude_id

@@ -16,7 +16,8 @@ import { CompanionStatsSchema } from "@/api/proto/chronicle_pb";
 
 /** A single decoded CompanionStats snapshot. */
 interface StatsSnapshot {
-  offsetMilli: number;
+  /** Absolute timestamp (ms since epoch) of this snapshot. */
+  timestampMs: number;
   dirty: number;
   buckets: number[];
 }
@@ -61,13 +62,17 @@ function CompanionStatsContent({ context }: PanelRenderProps<CompanionStatsResul
         // StreamCursor: peek()/advance() to read, nextEncounter() to move between encounters.
         // The first encounter is loaded by the constructor, so enter the read loop directly.
         do {
+          const header = cursor.currentHeader;
+          const encounterStartMs = header ? header.firstTimestamp.getTime() : 0;
+
           while (cursor.hasMoreInEncounter) {
             const peeked = cursor.peek();
             if (!peeked) break;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const m = peeked.message as any;
+            const offsetMs = Number(m.meta?.offsetMilli ?? 0);
             results.push({
-              offsetMilli: m.meta?.offsetMilli ?? 0,
+              timestampMs: encounterStartMs + offsetMs,
               dirty: Number(m.dirty ?? 0),
               buckets: Array.isArray(m.buckets) ? m.buckets.map(Number) : [],
             });
@@ -105,53 +110,86 @@ function CompanionStatsContent({ context }: PanelRenderProps<CompanionStatsResul
     );
   }
 
-  return <BucketChart snapshots={snapshots} />;
+  return <SnapshotBrowser snapshots={snapshots} />;
 }
 
-/** Show the latest snapshot's buckets as a bar chart. */
-function BucketChart({ snapshots }: { snapshots: StatsSnapshot[] }) {
-  const latest = snapshots[snapshots.length - 1];
-  const aggregated = latest.buckets.length > 0 ? latest.buckets : [];
+/** Format a timestamp as HH:MM:SS. */
+function formatTime(ms: number): string {
+  const d = new Date(ms);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
 
-  if (aggregated.length === 0) return null;
+/** Browse individual snapshots with Previous / Next navigation. */
+function SnapshotBrowser({ snapshots }: { snapshots: StatsSnapshot[] }) {
+  const [idx, setIdx] = useState(snapshots.length - 1);
+  const snap = snapshots[idx];
+  const buckets = snap.buckets.length > 0 ? snap.buckets : [];
+  const total = buckets.reduce((a, b) => a + b, 0);
+  const maxVal = Math.max(...buckets, 1);
 
-  const maxVal = Math.max(...aggregated, 1);
-  const total = aggregated.reduce((a, b) => a + b, 0);
-
-  // Labels: "now", "1m ago", ..., "9m ago"
-  const labels = aggregated.map((_, i) => (i === 0 ? "now" : `${i}m`));
+  // Labels: bucket[0] = "now", bucket[1] = "1m ago", etc.
+  const labels = buckets.map((_, i) => (i === 0 ? "now" : `${i}m`));
 
   return (
     <div className="px-3 py-2 space-y-2">
+      {/* Header: nav + stats */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Addon message chunks landed per minute</span>
+        <div className="flex items-center gap-2">
+          {snapshots.length > 1 && (
+            <>
+              <button
+                className="px-1.5 py-0.5 rounded border border-border text-[11px] hover:bg-muted disabled:opacity-30"
+                disabled={idx === 0}
+                onClick={() => setIdx((i) => i - 1)}
+              >
+                ← Prev
+              </button>
+              <button
+                className="px-1.5 py-0.5 rounded border border-border text-[11px] hover:bg-muted disabled:opacity-30"
+                disabled={idx === snapshots.length - 1}
+                onClick={() => setIdx((i) => i + 1)}
+              >
+                Next →
+              </button>
+            </>
+          )}
+          <span className="font-mono">
+            Snapshot {idx + 1}/{snapshots.length}
+          </span>
+          {snap.timestampMs > 0 && (
+            <span className="text-muted-foreground">{formatTime(snap.timestampMs)}</span>
+          )}
+        </div>
         <div className="flex gap-3 font-mono">
           <span>{total} landed</span>
-          <span className={latest.dirty > 0 ? "text-yellow-500" : ""}>{latest.dirty} pending</span>
+          <span className={snap.dirty > 0 ? "text-yellow-500" : ""}>{snap.dirty} pending</span>
         </div>
       </div>
-      <div className="flex items-end gap-1" style={{ height: 120 }}>
-        {aggregated.map((val, i) => {
-          const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-              <span className="text-[10px] text-muted-foreground font-mono">{val}</span>
-              <div
-                className="w-full rounded-sm transition-all"
-                style={{
-                  height: `${Math.max(pct, 2)}%`,
-                  backgroundColor: val > 0 ? "var(--color-chart-1)" : "var(--color-muted)",
-                  opacity: val > 0 ? 1 : 0.3,
-                }}
-              />
-              <span className="text-[9px] text-muted-foreground">{labels[i]}</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="text-[10px] text-muted-foreground text-center">
-        {snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""} recorded
-      </div>
+
+      {/* Bar chart for this snapshot's buckets */}
+      {buckets.length > 0 ? (
+        <div className="flex items-end gap-1" style={{ height: 120 }}>
+          {buckets.map((val, i) => {
+            const barH = maxVal > 0 ? (val / maxVal) * 90 : 0; // max 90px for bars, leave room for labels
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-0.5" style={{ height: "100%", justifyContent: "flex-end" }}>
+                <span className="text-[10px] text-muted-foreground font-mono">{val}</span>
+                <div
+                  className="w-full rounded-sm"
+                  style={{
+                    height: Math.max(barH, 2),
+                    backgroundColor: val > 0 ? "var(--color-chart-1)" : "var(--color-muted)",
+                    opacity: val > 0 ? 1 : 0.3,
+                  }}
+                />
+                <span className="text-[9px] text-muted-foreground">{labels[i]}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-4 text-muted-foreground text-sm">No buckets in this snapshot.</div>
+      )}
     </div>
   );
 }

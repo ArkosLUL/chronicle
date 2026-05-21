@@ -151,7 +151,7 @@ function ActivityDayCard({ group }: { group: RecentInstance[] }) {
             </span>
           )}
           {duration && (
-            <span className="text-[10px] text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+            <span className={`text-[10px] text-white/80 px-1.5 py-0.5 rounded ${instance.dynamic_difficulty > 0 ? 'bg-purple-600/40' : 'bg-black/40'}`}>
               {duration}
             </span>
           )}

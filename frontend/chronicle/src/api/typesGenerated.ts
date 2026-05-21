@@ -953,6 +953,9 @@ export interface RecentInstance {
     readonly has_youtube_video: boolean;
     readonly duplicate_group_id?: string;
     readonly recorder_name: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly dynamic_difficulty: number;
 }
 
 // From chroniclesdk/log.go
@@ -1715,6 +1718,9 @@ export interface WoWInstance {
     readonly recorder_name: string;
     readonly recorder_guid: string;
     readonly duplicate_group_id?: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+    readonly dynamic_difficulty: number;
 }
 
 // From chroniclesdk/log.go

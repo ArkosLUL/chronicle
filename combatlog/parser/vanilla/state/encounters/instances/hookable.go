@@ -227,6 +227,16 @@ func (h *Hookable) SetVersions(versions map[string]string, player *guid.GUID) {
 // TODO: Should we care about the instance ID here?
 func (h *Hookable) MatchesZone(z zone.Zone) bool { return h.MatchesZoneF(z) }
 
+// UpdateZoneDifficulty propagates late-arriving difficulty information to this
+// instance's CurrentZone without triggering a new hookable instance.
+func (h *Hookable) UpdateZoneDifficulty(z zone.Zone) {
+	h.CurrentZone.DifficultyIndex = z.DifficultyIndex
+	h.CurrentZone.DifficultyName = z.DifficultyName
+	h.CurrentZone.MaxPlayers = z.MaxPlayers
+	h.CurrentZone.DynamicDifficulty = z.DynamicDifficulty
+	h.CurrentZone.SubZone = z.SubZone
+}
+
 func (h *Hookable) Process(m messages.Message) (finalError error) {
 	err := h.units.ProcessMessage(m)
 	if err != nil {

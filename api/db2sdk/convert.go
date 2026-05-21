@@ -122,16 +122,19 @@ func WoWInstanceWithGuild(instance database.LogInstance, dbG *database.Guild) ch
 		}
 	}
 	ret := chroniclesdk.WoWInstance{
-		ID:           instance.ID,
-		RealmID:      instance.RealmID,
-		LogGroupID:   instance.LogGroupID,
-		Name:         instance.Name,
-		Slug:         instance.HashedSlug.String,
-		Guild:        g,
-		Capabilities: instance.Capabilities,
-		Versions:     map[string]string(instance.Versions),
-		RecorderName: instance.RecorderName,
-		RecorderGUID: instance.RecorderGuid,
+		ID:             instance.ID,
+		RealmID:        instance.RealmID,
+		LogGroupID:     instance.LogGroupID,
+		Name:           instance.Name,
+		Slug:           instance.HashedSlug.String,
+		Guild:          g,
+		Capabilities:   instance.Capabilities,
+		Versions:       map[string]string(instance.Versions),
+		RecorderName:   instance.RecorderName,
+		RecorderGUID:   instance.RecorderGuid,
+		DifficultyName:    instance.DifficultyName,
+		MaxPlayers:        int(instance.MaxPlayers),
+		DynamicDifficulty: int(instance.DynamicDifficulty),
 	}
 	if instance.StartTime.Valid {
 		ret.StartTime = &instance.StartTime.Time
@@ -155,16 +158,19 @@ func WoWInstance(instance database.LogInstancesGuild) chroniclesdk.WoWInstance {
 		}
 	}
 	ret := chroniclesdk.WoWInstance{
-		ID:           instance.ID,
-		RealmID:      instance.RealmID,
-		LogGroupID:   instance.LogGroupID,
-		Name:         instance.Name,
-		Slug:         instance.HashedSlug.String,
-		Guild:        g,
-		Capabilities: instance.Capabilities,
-		Versions:     map[string]string(instance.Versions),
-		RecorderName: instance.RecorderName,
-		RecorderGUID: instance.RecorderGuid,
+		ID:             instance.ID,
+		RealmID:        instance.RealmID,
+		LogGroupID:     instance.LogGroupID,
+		Name:           instance.Name,
+		Slug:           instance.HashedSlug.String,
+		Guild:          g,
+		Capabilities:   instance.Capabilities,
+		Versions:       map[string]string(instance.Versions),
+		RecorderName:   instance.RecorderName,
+		RecorderGUID:   instance.RecorderGuid,
+		DifficultyName:    instance.DifficultyName,
+		MaxPlayers:        int(instance.MaxPlayers),
+		DynamicDifficulty: int(instance.DynamicDifficulty),
 	}
 	if instance.DuplicateGroupID.Valid {
 		ret.DuplicateGroupID = &instance.DuplicateGroupID.UUID

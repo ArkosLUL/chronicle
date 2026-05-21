@@ -140,20 +140,53 @@ func (s *State) DetailedTimes() map[string]time.Duration {
 }
 
 func (s *State) Zone(z messages.Zone) {
-	changed := s.CurrentZone.Process(z)
-	if !changed {
+	result := s.CurrentZone.Process(z)
+	switch result {
+	case zone.NoChange:
 		return
-	}
-
-	matched := false
-	for _, inst := range s.Instances {
-		if inst.MatchesZone(z.Zone) {
-			s.CurrentInstance = inst
-			matched = true
-			s.logger.Info("Matched existing instance",
-				slog.String("name", inst.Name()),
+	case zone.InfoUpdated:
+		// Late-arriving difficulty info: propagate to current instance without
+		// creating a new hookable.
+		if s.CurrentInstance != nil {
+			s.CurrentInstance.UpdateZoneDifficulty(s.CurrentZone.Zone)
+			s.logger.Info("Updated zone difficulty info",
+				slog.String("zone_name", z.Name),
+				slog.String("difficulty", s.CurrentZone.DifficultyName),
+				slog.Int("max_players", s.CurrentZone.MaxPlayers),
 			)
 		}
+		return
+	case zone.DifficultyChanged:
+		// Difficulty changed within the same zone: match only an existing
+		// instance that has the same difficulty, otherwise create a new one.
+		// This lets 10N → 25H → 10N reuse the original 10N hookable.
+		s.matchOrCreateInstance(z, true)
+		return
+	case zone.ZoneChanged:
+		// Different zone entirely: match by name/mapID only.
+	}
+
+	s.matchOrCreateInstance(z, false)
+}
+
+// matchOrCreateInstance looks for an existing hookable that matches z. When
+// requireDifficultyMatch is true the candidate must also have the same
+// difficulty settings (used for DifficultyChanged). If no match is found a
+// new hookable is created via the instance resolver.
+func (s *State) matchOrCreateInstance(z messages.Zone, requireDifficultyMatch bool) {
+	matched := false
+	for _, inst := range s.Instances {
+		if !inst.MatchesZone(z.Zone) {
+			continue
+		}
+		if requireDifficultyMatch && !inst.CurrentZone.DifficultyEquals(z.Zone) {
+			continue
+		}
+		s.CurrentInstance = inst
+		matched = true
+		s.logger.Info("Matched existing instance",
+			slog.String("name", inst.Name()),
+		)
 	}
 
 	if !matched {

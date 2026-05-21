@@ -2,6 +2,7 @@ package synthetic
 
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 )
@@ -21,8 +22,7 @@ func newSlainDetective() *slainDetective {
 func (s *slainDetective) ProcessMessage(msg messages.Message) messages.Message{
 	switch m := msg.(type) {
 	case *messages.Zone:
-		changed := s.currentZone.Process(*m)
-		if changed {
+		if result := s.currentZone.Process(*m); result != zone.NoChange {
 			// Clear last damage on zone change
 			s.lastDamage = make(map[guid.GUID]*messages.Damage)
 		}

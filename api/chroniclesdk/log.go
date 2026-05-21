@@ -80,6 +80,9 @@ type WoWInstance struct {
 	RecorderName     string            `json:"recorder_name"`
 	RecorderGUID     string            `json:"recorder_guid"`
 	DuplicateGroupID *uuid.UUID        `json:"duplicate_group_id,omitempty"`
+	DifficultyName    string            `json:"difficulty_name"`
+	MaxPlayers        int               `json:"max_players"`
+	DynamicDifficulty int               `json:"dynamic_difficulty"`
 }
 
 // KillType represents the outcome of an encounter.
@@ -338,6 +341,9 @@ type RecentInstance struct {
 	HasYoutubeVideo    bool              `json:"has_youtube_video"`
 	DuplicateGroupID   *uuid.UUID        `json:"duplicate_group_id,omitempty"`
 	RecorderName       string            `json:"recorder_name"`
+	DifficultyName     string            `json:"difficulty_name"`
+	MaxPlayers         int               `json:"max_players"`
+	DynamicDifficulty  int               `json:"dynamic_difficulty"`
 }
 
 // RecentEncounter is a simplified encounter summary for the recent raids list.

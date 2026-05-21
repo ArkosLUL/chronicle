@@ -23,6 +23,13 @@
 @plugin "@tailwindcss/typography";
 
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); opacity: 0; }
+  40% { opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
 /* Magic particle effect for login logo */
 @keyframes float-up {
   0% {

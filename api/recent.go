@@ -187,6 +187,9 @@ func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 			HasYoutubeVideo:    row.HasYoutubeVideo,
 			Encounters:         encountersByInstance[row.ID],
 			RecorderName:       row.RecorderName,
+			DifficultyName:     row.DifficultyName,
+			MaxPlayers:         int(row.MaxPlayers),
+			DynamicDifficulty:  int(row.DynamicDifficulty),
 		}
 		if row.DuplicateGroupID.Valid {
 			inst.DuplicateGroupID = &row.DuplicateGroupID.UUID

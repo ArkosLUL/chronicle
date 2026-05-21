@@ -33,7 +33,8 @@ CREATE TYPE log_instance_event_type AS ENUM (
     'dispel',
     'combatant_info',
     'interrupt',
-    'absorbed'
+    'absorbed',
+    'companion_stats'
 );
 
 CREATE TYPE log_type AS ENUM (
@@ -526,7 +527,10 @@ CREATE TABLE log_instances (
     recorder_name text DEFAULT ''::text NOT NULL,
     recorder_guid text DEFAULT ''::text NOT NULL,
     parser_version text DEFAULT '0.0'::text NOT NULL,
-    duplicate_group_id uuid
+    duplicate_group_id uuid,
+    difficulty_name text DEFAULT ''::text NOT NULL,
+    max_players integer DEFAULT 0 NOT NULL,
+    dynamic_difficulty integer DEFAULT 0 NOT NULL
 );
 
 COMMENT ON COLUMN log_instances.guild_id IS 'If set, that means it was a guild run.';
@@ -554,6 +558,9 @@ CREATE VIEW log_instances_guild AS
     li.duplicate_group_id,
     li.start_time,
     li.end_time,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty,
     COALESCE(wsr.name, 'Unknown'::text) AS realm_name,
     g.name AS guild_name,
     g.realm_id AS guild_realm_id,

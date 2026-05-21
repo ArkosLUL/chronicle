@@ -2609,19 +2609,23 @@ SELECT li.id, li.duplicate_group_id
 FROM log_instances li
 WHERE li.realm_id = $1
   AND li.name = $2
-  AND li.start_time >= $3
-  AND li.start_time <= $4
-  AND li.id != $5
+  AND li.max_players = $3
+  AND li.dynamic_difficulty = $4
+  AND li.start_time >= $5
+  AND li.start_time <= $6
+  AND li.id != $7
 ORDER BY li.start_time ASC
 LIMIT 40
 `
 
 type FindDuplicateInstanceCandidatesParams struct {
-	RealmID     uuid.UUID          `db:"realm_id" json:"realm_id"`
-	Name        string             `db:"name" json:"name"`
-	WindowStart pgtype.Timestamptz `db:"window_start" json:"window_start"`
-	WindowEnd   pgtype.Timestamptz `db:"window_end" json:"window_end"`
-	ExcludeID   uuid.UUID          `db:"exclude_id" json:"exclude_id"`
+	RealmID           uuid.UUID          `db:"realm_id" json:"realm_id"`
+	Name              string             `db:"name" json:"name"`
+	MaxPlayers        int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
+	WindowStart       pgtype.Timestamptz `db:"window_start" json:"window_start"`
+	WindowEnd         pgtype.Timestamptz `db:"window_end" json:"window_end"`
+	ExcludeID         uuid.UUID          `db:"exclude_id" json:"exclude_id"`
 }
 
 type FindDuplicateInstanceCandidatesRow struct {
@@ -2633,6 +2637,8 @@ func (q *sqlQuerier) FindDuplicateInstanceCandidates(ctx context.Context, arg Fi
 	rows, err := q.db.Query(ctx, findDuplicateInstanceCandidates,
 		arg.RealmID,
 		arg.Name,
+		arg.MaxPlayers,
+		arg.DynamicDifficulty,
 		arg.WindowStart,
 		arg.WindowEnd,
 		arg.ExcludeID,
@@ -2780,7 +2786,7 @@ func (q *sqlQuerier) GetInstanceEncounterCharacterFights(ctx context.Context, in
 
 const getInstancesByLogGroupID = `-- name: GetInstancesByLogGroupID :many
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -2810,6 +2816,9 @@ func (q *sqlQuerier) GetInstancesByLogGroupID(ctx context.Context, logGroupID uu
 			&i.DuplicateGroupID,
 			&i.StartTime,
 			&i.EndTime,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.DynamicDifficulty,
 			&i.RealmName,
 			&i.GuildName,
 			&i.GuildRealmID,
@@ -2871,26 +2880,29 @@ func (q *sqlQuerier) InsertEncounter(ctx context.Context, arg InsertEncounterPar
 
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO
-  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version)
+  log_instances (id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, difficulty_name, max_players, dynamic_difficulty)
 VALUES
-  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, duplicate_group_id
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+RETURNING id, realm_id, log_group_id, name, hashed_slug, guild_id, start_time, end_time, capabilities, versions, recorder_name, recorder_guid, parser_version, duplicate_group_id, difficulty_name, max_players, dynamic_difficulty
 `
 
 type InsertInstanceParams struct {
-	ID            uuid.UUID          `db:"id" json:"id"`
-	RealmID       uuid.UUID          `db:"realm_id" json:"realm_id"`
-	LogGroupID    uuid.UUID          `db:"log_group_id" json:"log_group_id"`
-	Name          string             `db:"name" json:"name"`
-	HashedSlug    pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
-	GuildID       uuid.NullUUID      `db:"guild_id" json:"guild_id"`
-	StartTime     pgtype.Timestamptz `db:"start_time" json:"start_time"`
-	EndTime       pgtype.Timestamptz `db:"end_time" json:"end_time"`
-	Capabilities  []string           `db:"capabilities" json:"capabilities"`
-	Versions      VersionsMap        `db:"versions" json:"versions"`
-	RecorderName  string             `db:"recorder_name" json:"recorder_name"`
-	RecorderGuid  string             `db:"recorder_guid" json:"recorder_guid"`
-	ParserVersion string             `db:"parser_version" json:"parser_version"`
+	ID                uuid.UUID          `db:"id" json:"id"`
+	RealmID           uuid.UUID          `db:"realm_id" json:"realm_id"`
+	LogGroupID        uuid.UUID          `db:"log_group_id" json:"log_group_id"`
+	Name              string             `db:"name" json:"name"`
+	HashedSlug        pgtype.Text        `db:"hashed_slug" json:"hashed_slug"`
+	GuildID           uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	StartTime         pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	EndTime           pgtype.Timestamptz `db:"end_time" json:"end_time"`
+	Capabilities      []string           `db:"capabilities" json:"capabilities"`
+	Versions          VersionsMap        `db:"versions" json:"versions"`
+	RecorderName      string             `db:"recorder_name" json:"recorder_name"`
+	RecorderGuid      string             `db:"recorder_guid" json:"recorder_guid"`
+	ParserVersion     string             `db:"parser_version" json:"parser_version"`
+	DifficultyName    string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers        int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
 }
 
 func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error) {
@@ -2908,6 +2920,9 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		arg.RecorderName,
 		arg.RecorderGuid,
 		arg.ParserVersion,
+		arg.DifficultyName,
+		arg.MaxPlayers,
+		arg.DynamicDifficulty,
 	)
 	var i LogInstance
 	err := row.Scan(
@@ -2925,6 +2940,9 @@ func (q *sqlQuerier) InsertInstance(ctx context.Context, arg InsertInstanceParam
 		&i.RecorderGuid,
 		&i.ParserVersion,
 		&i.DuplicateGroupID,
+		&i.DifficultyName,
+		&i.MaxPlayers,
+		&i.DynamicDifficulty,
 	)
 	return i, err
 }
@@ -2943,7 +2961,7 @@ func (q *sqlQuerier) InsertParsedLogGroup(ctx context.Context, id uuid.UUID) err
 
 const instance = `-- name: Instance :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -2967,6 +2985,9 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 		&i.DuplicateGroupID,
 		&i.StartTime,
 		&i.EndTime,
+		&i.DifficultyName,
+		&i.MaxPlayers,
+		&i.DynamicDifficulty,
 		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
@@ -2977,7 +2998,7 @@ func (q *sqlQuerier) Instance(ctx context.Context, id uuid.UUID) (LogInstancesGu
 
 const instanceBySlug = `-- name: InstanceBySlug :one
 SELECT
-  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, realm_name, guild_name, guild_realm_id, guild_created_at
+  id, realm_id, log_group_id, name, hashed_slug, guild_id, capabilities, versions, recorder_name, recorder_guid, duplicate_group_id, start_time, end_time, difficulty_name, max_players, dynamic_difficulty, realm_name, guild_name, guild_realm_id, guild_created_at
 FROM
   log_instances_guild
 WHERE
@@ -3001,6 +3022,9 @@ func (q *sqlQuerier) InstanceBySlug(ctx context.Context, hashedSlug pgtype.Text)
 		&i.DuplicateGroupID,
 		&i.StartTime,
 		&i.EndTime,
+		&i.DifficultyName,
+		&i.MaxPlayers,
+		&i.DynamicDifficulty,
 		&i.RealmName,
 		&i.GuildName,
 		&i.GuildRealmID,
@@ -3187,7 +3211,10 @@ SELECT
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
     li.duplicate_group_id,
-    li.recorder_name
+    li.recorder_name,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -3273,6 +3300,9 @@ type ListInstancesByTimeRangeRow struct {
 	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
 	DuplicateGroupID   uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
 	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
+	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers         int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty  int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
 }
 
 func (q *sqlQuerier) ListInstancesByTimeRange(ctx context.Context, arg ListInstancesByTimeRangeParams) ([]ListInstancesByTimeRangeRow, error) {
@@ -3313,6 +3343,9 @@ func (q *sqlQuerier) ListInstancesByTimeRange(ctx context.Context, arg ListInsta
 			&i.HasYoutubeVideo,
 			&i.DuplicateGroupID,
 			&i.RecorderName,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.DynamicDifficulty,
 		); err != nil {
 			return nil, err
 		}
@@ -3347,7 +3380,10 @@ SELECT
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
     li.duplicate_group_id,
-    li.recorder_name
+    li.recorder_name,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty
 FROM log_instances li
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
 JOIN wow_log_groups wlg ON wlg.id = plg.id
@@ -3422,6 +3458,9 @@ type ListRecentInstancesRow struct {
 	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
 	DuplicateGroupID   uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
 	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
+	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers         int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty  int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
 }
 
 func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error) {
@@ -3460,6 +3499,9 @@ func (q *sqlQuerier) ListRecentInstances(ctx context.Context, arg ListRecentInst
 			&i.HasYoutubeVideo,
 			&i.DuplicateGroupID,
 			&i.RecorderName,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.DynamicDifficulty,
 		); err != nil {
 			return nil, err
 		}
@@ -3497,7 +3539,10 @@ SELECT DISTINCT ON (
     g.name as guild_name,
     EXISTS (SELECT 1 FROM log_instance_youtube_timestamped yt WHERE yt.log_instance_id = li.id OR yt.instance_slug = li.hashed_slug) as has_youtube_video,
     li.duplicate_group_id,
-    li.recorder_name
+    li.recorder_name,
+    li.difficulty_name,
+    li.max_players,
+    li.dynamic_difficulty
 FROM log_instances li
 JOIN log_instance_players lip ON lip.instance_id = li.id
 JOIN parsed_log_group plg ON plg.id = li.log_group_id
@@ -3574,6 +3619,9 @@ type ListRecentInstancesByPlayerRow struct {
 	HasYoutubeVideo    bool               `db:"has_youtube_video" json:"has_youtube_video"`
 	DuplicateGroupID   uuid.NullUUID      `db:"duplicate_group_id" json:"duplicate_group_id"`
 	RecorderName       string             `db:"recorder_name" json:"recorder_name"`
+	DifficultyName     string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers         int32              `db:"max_players" json:"max_players"`
+	DynamicDifficulty  int32              `db:"dynamic_difficulty" json:"dynamic_difficulty"`
 }
 
 func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error) {
@@ -3613,6 +3661,9 @@ func (q *sqlQuerier) ListRecentInstancesByPlayer(ctx context.Context, arg ListRe
 			&i.HasYoutubeVideo,
 			&i.DuplicateGroupID,
 			&i.RecorderName,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.DynamicDifficulty,
 		); err != nil {
 			return nil, err
 		}

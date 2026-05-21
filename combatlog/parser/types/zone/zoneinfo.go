@@ -72,3 +72,32 @@ func ParseZoneInfo(ri *realmclock.Info, content string) (Zone, error) {
 func (z Zone) Equal(b Zone) bool {
 	return z.InstanceID == b.InstanceID && z.Name == b.Name
 }
+
+// ZoneChangeResult describes what changed when processing a new zone message.
+type ZoneChangeResult int
+
+const (
+	// NoChange means the zone message carried no new information.
+	NoChange ZoneChangeResult = iota
+	// ZoneChanged means the player moved to a different zone (name or instanceID differs).
+	ZoneChanged
+	// DifficultyChanged means the zone is the same but difficulty/size changed
+	// (e.g. switching from 10-man to 25-man). This should trigger a new hookable instance.
+	DifficultyChanged
+	// InfoUpdated means the zone is the same and difficulty info was previously
+	// absent but is now provided (late-arriving info). The current instance should
+	// adopt the new info without creating a new hookable.
+	InfoUpdated
+)
+
+// HasDifficulty returns true if difficulty/size information has been set.
+func (z Zone) HasDifficulty() bool {
+	return z.MaxPlayers > 0 || z.DifficultyName != ""
+}
+
+// DifficultyEquals returns true if z and b have identical difficulty settings.
+func (z Zone) DifficultyEquals(b Zone) bool {
+	return z.DifficultyIndex == b.DifficultyIndex &&
+		z.MaxPlayers == b.MaxPlayers &&
+		z.DynamicDifficulty == b.DynamicDifficulty
+}

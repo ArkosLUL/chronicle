@@ -16,6 +16,7 @@ export function Login() {
   const { data: providers = [], isLoading: providersLoading, isError: providersError, error: providersErrorMsg } = useAuthProviders()
   const { data: siteConfig } = useSiteConfig()
   const signupsDisabled = siteConfig?.signups_enabled === false
+  const branding = siteConfig?.tenant?.branding ?? siteConfig?.branding ?? null
   const loading = (authLoading || providersLoading) && !providersError
   const authError = searchParams.get("error")
 
@@ -207,6 +208,22 @@ export function Login() {
             className="mx-auto h-80 w-80"
           />
         </div>
+
+        {branding && (branding.display_name || branding.square_logo) && (
+          <div className="flex flex-col items-center gap-1 -mt-4">
+            <div className="flex items-center gap-2">
+              {branding.square_logo && (
+                <img src={branding.square_logo} alt="" className="h-7 w-7 rounded object-contain" />
+              )}
+              {branding.display_name && (
+                <span className="text-lg font-semibold">{branding.display_name}</span>
+              )}
+            </div>
+            {branding.tagline && (
+              <p className="text-sm text-muted-foreground">{branding.tagline}</p>
+            )}
+          </div>
+        )}
 
         <Card className="p-8">
           {searchParams.get("verified") === "1" && (

@@ -37,14 +37,25 @@ type ogResult struct {
 	data *OGData
 }
 
+// HTMLBranding carries per-request branding overrides for the HTML template.
+type HTMLBranding struct {
+	Title   string // Page title. Empty = default "Chronicle".
+	Favicon string // Favicon URL. Empty = default /c/chronicle/favicon.ico.
+}
+
+// BrandingResolver is an optional callback that returns per-request branding
+// from the request context (e.g. tenant branding for title/favicon).
+type BrandingResolver func(r *http.Request) *HTMLBranding
+
 type handler struct {
 	fs            fs.FS
 	mux           *http.ServeMux
 	htmlTemplates *template.Template
-	ogRouter      chi.Router
+	ogRouter         chi.Router
+	brandingResolver BrandingResolver
 }
 
-func Handler(siteFS fs.FS, ogRoutes []OGRoute) http.Handler {
+func Handler(siteFS fs.FS, ogRoutes []OGRoute, resolvers ...BrandingResolver) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", etagMiddleware(http.FileServer(http.FS(siteFS))))
 
@@ -65,11 +76,17 @@ func Handler(siteFS fs.FS, ogRoutes []OGRoute) http.Handler {
 		}))
 	}
 
+	var brandingResolver BrandingResolver
+	if len(resolvers) > 0 {
+		brandingResolver = resolvers[0]
+	}
+
 	return &handler{
-		fs:            siteFS,
-		mux:           mux,
-		htmlTemplates: tmpls,
-		ogRouter:      ogRouter,
+		fs:               siteFS,
+		mux:              mux,
+		htmlTemplates:    tmpls,
+		ogRouter:         ogRouter,
+		brandingResolver: brandingResolver,
 	}
 }
 
@@ -110,6 +127,14 @@ func (h *handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		state.OGTitle = og.Title
 		state.OGDescription = og.Description
 		state.OGURL = og.URL
+	}
+
+	// Enrich from request context (e.g. tenant branding).
+	if h.brandingResolver != nil {
+		if b := h.brandingResolver(req); b != nil {
+			state.Title = b.Title
+			state.Favicon = b.Favicon
+		}
 	}
 
 	if h.serveHTML(resp, req, reqFile, state) {
@@ -162,6 +187,10 @@ type htmlState struct {
 	OGTitle       string
 	OGDescription string
 	OGURL         string
+
+	// Branding overrides (populated by StateEnricher from tenant context).
+	Title   string // Page title. Empty = default "Chronicle".
+	Favicon string // Favicon URL. Empty = default /c/chronicle/favicon.ico.
 }
 
 func (h *handler) serveHTML(resp http.ResponseWriter, request *http.Request, reqPath string, state htmlState) bool {

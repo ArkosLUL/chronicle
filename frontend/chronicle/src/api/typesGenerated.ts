@@ -212,6 +212,7 @@ export interface AzerothCorePingResponse {
 export interface Branding {
     readonly square_logo?: string;
     readonly logo_wide?: string;
+    readonly favicon?: string;
     readonly display_name?: string;
     readonly tagline?: string;
     readonly description?: string;

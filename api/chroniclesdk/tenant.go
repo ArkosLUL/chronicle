@@ -25,6 +25,7 @@ type Tenant struct {
 type Branding struct {
 	SquareLogo       string `json:"square_logo,omitempty"`
 	LogoWide         string `json:"logo_wide,omitempty"`
+	Favicon          string `json:"favicon,omitempty"`
 	DisplayName      string `json:"display_name,omitempty"`
 	Tagline          string `json:"tagline,omitempty"`
 	Description      string `json:"description,omitempty"`

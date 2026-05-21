@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
+	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/gamedataapi"
 	"github.com/Emyrk/chronicle/api/guildapi"
 	"github.com/Emyrk/chronicle/api/httpapi"
@@ -458,9 +459,45 @@ func (api *API) Routes() chi.Router {
 		}
 	})
 
-	r.NotFound(frontend.Handler(frontend.FS(), api.OGRoutes()).ServeHTTP)
+	r.NotFound(frontend.Handler(frontend.FS(), api.OGRoutes(), api.brandingResolver).ServeHTTP)
 
 	return r
+}
+
+// brandingResolver returns per-request branding for the HTML template
+// (title + favicon) based on tenant context or site-level branding.
+func (api *API) brandingResolver(r *http.Request) *frontend.HTMLBranding {
+	// Tenant branding takes priority.
+	if t := servicetenant.TenantFromContext(r.Context()); t != nil {
+		branding := chroniclesdk.TenantFromDB(*t).Branding
+		if branding != nil && branding.DisplayName != "" {
+			b := &frontend.HTMLBranding{
+				Title: branding.DisplayName + " by Chronicle",
+			}
+			if branding.Favicon != "" {
+				b.Favicon = branding.Favicon
+			}
+			return b
+		}
+	}
+
+	// Fall back to site-level branding.
+	config, err := api.Opts.Zed.GetSiteConfig(r.Context())
+	if err != nil {
+		return nil
+	}
+	branding := unmarshalBranding(config.Branding)
+	if branding != nil && branding.DisplayName != "" {
+		b := &frontend.HTMLBranding{
+			Title: branding.DisplayName + " by Chronicle",
+		}
+		if branding.Favicon != "" {
+			b.Favicon = branding.Favicon
+		}
+		return b
+	}
+
+	return nil
 }
 
 func (api *API) Close() error {

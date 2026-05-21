@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { serverCapabilities } from "@/config/serverCapabilities";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthorizationCheck, useSiteConfig } from "@/api/queries";
+import type { Branding } from "@/api/typesGenerated";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -48,6 +49,10 @@ export function NavBar() {
 
   const { data: siteConfig } = useSiteConfig();
   const uploadsEnabled = !siteConfig?.client_uploads_disabled || hasAdminLogs;
+
+  // Resolve branding: tenant overrides site-level.
+  const branding: Branding | null = siteConfig?.tenant?.branding ?? siteConfig?.branding ?? null;
+  const hasBranding = !!(branding?.logo_wide || branding?.square_logo || branding?.display_name);
 
   const accountMenuItems: NavItem[] = [
     ...(uploadsEnabled ? [{ title: "My Logs", href: "/logs", icon: FileText } as NavItem] : []),
@@ -164,13 +169,32 @@ export function NavBar() {
         </Sheet>
       </div>
 
-      {/* Left spacer for desktop to balance layout */}
-      <div className="hidden md:block w-10" />
+      {/* Left: Chronicle icon when custom branding is active, otherwise spacer */}
+      <div className="hidden md:flex items-center w-10">
+        {hasBranding && (
+          <img src="/c/chronicle/ChronicleIcon.png" alt="Chronicle" className="h-10 w-10" />
+        )}
+      </div>
 
       {/* Center: Logo (hidden on guild pages) */}
       {!location.pathname.startsWith("/g/") && (
         <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
-          <img src="/c/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+          {hasBranding ? (
+            branding?.logo_wide ? (
+              <img src={branding.logo_wide} alt={branding?.display_name ?? ""} className="h-10 -my-1 object-contain" />
+            ) : (
+              <div className="flex items-center gap-2">
+                {branding?.square_logo && (
+                  <img src={branding.square_logo} alt="" className="h-8 w-8 rounded object-contain" />
+                )}
+                {branding?.display_name && (
+                  <span className="text-lg font-semibold text-foreground">{branding.display_name}</span>
+                )}
+              </div>
+            )
+          ) : (
+            <img src="/c/chronicle/ChronicleLogoCenter.svg" alt="Chronicle" className="h-15 -my-2" />
+          )}
         </Link>
       )}
 

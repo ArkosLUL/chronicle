@@ -11,6 +11,13 @@ import (
 // into the context. Lightweight — no DB calls, uses the cached slug map.
 func (s *Service) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The access URL host (e.g. legacy.chronicleclassic.com) is the primary
+		// deployment, not a tenant — skip slug extraction for it.
+		if s.accessURL.Host != "" && stripPort(r.Host) == s.accessURL.Hostname() {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		slug := s.extractSlug(r.Host)
 		if slug == "" {
 			// Root domain or unrecognized host — no tenant context.
@@ -134,4 +141,12 @@ func (s *Service) extractSlug(host string) string {
 		return ""
 	}
 	return slug
+}
+
+// stripPort removes the port from a host string (e.g. "foo.com:4000" → "foo.com").
+func stripPort(host string) string {
+	if idx := strings.LastIndex(host, ":"); idx != -1 {
+		return strings.ToLower(host[:idx])
+	}
+	return strings.ToLower(host)
 }

@@ -230,6 +230,7 @@ type sqlcQuerier interface {
 	SetServerTenant(ctx context.Context, arg SetServerTenantParams) error
 	SetVerificationToken(ctx context.Context, arg SetVerificationTokenParams) error
 	// Returns distinct instance names that have at least one qualified speedrun.
+	// JOINs wow_server_realms so RLS tenant filtering cascades.
 	SpeedrunInstanceNames(ctx context.Context) ([]string, error)
 	// Returns the leaderboard for a given instance name.
 	// Deduplicates by duplicate_group, then by guild (best per guild unless guild_id filter is set).

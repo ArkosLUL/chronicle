@@ -33,7 +33,7 @@ WITH deduped AS (
     JOIN log_instances li ON li.id = sr.instance_id
     JOIN guilds g ON sr.guild_id = g.id
     LEFT JOIN guild_pages gp ON gp.guild_id = sr.guild_id
-    LEFT JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
+    JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
     LEFT JOIN leaderboard_version_requirements lvr ON lvr.instance_name = sr.instance_name
     WHERE sr.instance_name = @instance_name
       AND sr.qualified = true
@@ -74,10 +74,12 @@ LIMIT 50;
 
 -- name: SpeedrunInstanceNames :many
 -- Returns distinct instance names that have at least one qualified speedrun.
-SELECT DISTINCT instance_name
-FROM instance_speedruns
-WHERE qualified = true
-ORDER BY instance_name;
+-- JOINs wow_server_realms so RLS tenant filtering cascades.
+SELECT DISTINCT sr.instance_name
+FROM instance_speedruns sr
+JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
+WHERE sr.qualified = true
+ORDER BY sr.instance_name;
 
 -- name: SpeedrunRealmNames :many
 -- Returns distinct realm names that have at least one qualified speedrun.

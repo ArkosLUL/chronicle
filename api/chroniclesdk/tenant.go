@@ -24,6 +24,7 @@ type Tenant struct {
 // Branding holds the visual identity for a tenant subdomain or the primary domain.
 type Branding struct {
 	SquareLogo       string `json:"square_logo,omitempty"`
+	LogoWide         string `json:"logo_wide,omitempty"`
 	DisplayName      string `json:"display_name,omitempty"`
 	Tagline          string `json:"tagline,omitempty"`
 	Description      string `json:"description,omitempty"`

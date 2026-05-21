@@ -122,6 +122,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
 
   // Branding fields
   const [squareLogo, setSquareLogo] = useState(tenant?.branding?.square_logo ?? "");
+  const [logoWide, setLogoWide] = useState(tenant?.branding?.logo_wide ?? "");
   const [displayName, setDisplayName] = useState(tenant?.branding?.display_name ?? "");
   const [tagline, setTagline] = useState(tenant?.branding?.tagline ?? "");
   const [description, setDescription] = useState(tenant?.branding?.description ?? "");
@@ -129,7 +130,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const hasBranding = squareLogo || displayName || tagline || description || backgroundBanner;
+    const hasBranding = squareLogo || logoWide || displayName || tagline || description || backgroundBanner;
     upsertTenant.mutate(
       {
         id: tenant?.id ?? "",
@@ -140,6 +141,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         branding: hasBranding
           ? {
               square_logo: squareLogo || undefined,
+              logo_wide: logoWide || undefined,
               display_name: displayName || undefined,
               tagline: tagline || undefined,
               description: description || undefined,
@@ -176,6 +178,7 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         <input className={inputClass} placeholder="Tagline" value={tagline} onChange={(e) => setTagline(e.target.value)} />
         <input className={inputClass} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
         <input className={inputClass} placeholder="Square logo URL" value={squareLogo} onChange={(e) => setSquareLogo(e.target.value)} />
+        <input className={inputClass} placeholder="Wide logo URL" value={logoWide} onChange={(e) => setLogoWide(e.target.value)} />
         <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
       </div>
       <div className="flex gap-2">

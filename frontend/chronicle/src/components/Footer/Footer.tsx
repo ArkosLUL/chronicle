@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
 import { CryptoTipModal } from "./CryptoTipModal";
 import { useSiteConfig } from "@/api/queries";
+import type { Branding, SiteConfig } from "@/api/typesGenerated";
 
 const SERVER_NAME = import.meta.env.VITE_SERVER_NAME ?? "turtle";
 
@@ -151,6 +152,7 @@ export function Footer() {
 
           {/* Legal/Build */}
           <div className="text-sm text-muted-foreground">
+            <FooterBranding siteConfig={siteConfig ?? undefined} isTenant={!!tenant} />
             <p>© {new Date().getFullYear()} Chronicle</p>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
               <Link
@@ -174,7 +176,6 @@ export function Footer() {
             </div>
             <p className="text-xs mt-2">
               {gitTag} ({gitCommit}) • Built {buildTime} • Server: {SERVER_NAME}
-              {tenant && <> • Tenant: {tenant.name}</>}
             </p>
           </div>
         </div>
@@ -186,5 +187,46 @@ export function Footer() {
         />
       )}
     </footer>
+  );
+}
+
+const CHRONICLE_LOGO = "/c/chronicle/ChronicleLogoCenter.svg";
+
+/**
+ * FooterBranding renders above the copyright line in the Legal/Build column.
+ * Shows the wide logo (or square logo + display name fallback) with
+ * "Powered by Chronicle" underneath.
+ * If no branding exists, renders nothing.
+ */
+function FooterBranding({ siteConfig, isTenant }: { siteConfig?: SiteConfig; isTenant: boolean }) {
+  const branding: Branding | null | undefined = isTenant
+    ? siteConfig?.tenant?.branding
+    : siteConfig?.branding;
+
+  if (!branding) return null;
+
+  const { logo_wide, square_logo, display_name } = branding;
+  // Need at least one visual element to render.
+  if (!logo_wide && !square_logo && !display_name) return null;
+
+  return (
+    <div className="mb-3 space-y-1.5">
+      {logo_wide ? (
+        <img src={logo_wide} alt={display_name ?? ""} className="h-8 object-contain object-left" />
+      ) : (
+        <div className="flex items-center gap-2">
+          {square_logo && (
+            <img src={square_logo} alt="" className="h-7 w-7 rounded object-contain" />
+          )}
+          {display_name && (
+            <span className="font-semibold text-foreground">{display_name}</span>
+          )}
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span>Powered by</span>
+        <img src={CHRONICLE_LOGO} alt="Chronicle" className="h-4 object-contain" />
+      </div>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ export function AdminSiteSettingsPage() {
 
   // Branding state — synced from server data.
   const [squareLogo, setSquareLogo] = useState("");
+  const [logoWide, setLogoWide] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
@@ -18,6 +19,7 @@ export function AdminSiteSettingsPage() {
   useEffect(() => {
     if (config?.branding) {
       setSquareLogo(config.branding.square_logo ?? "");
+      setLogoWide(config.branding.logo_wide ?? "");
       setDisplayName(config.branding.display_name ?? "");
       setTagline(config.branding.tagline ?? "");
       setDescription(config.branding.description ?? "");
@@ -26,11 +28,12 @@ export function AdminSiteSettingsPage() {
   }, [config?.branding]);
 
   const saveBranding = () => {
-    const hasBranding = squareLogo || displayName || tagline || description || backgroundBanner;
+    const hasBranding = squareLogo || logoWide || displayName || tagline || description || backgroundBanner;
     updateConfig.mutate({
       branding: hasBranding
         ? {
             square_logo: squareLogo || undefined,
+            logo_wide: logoWide || undefined,
             display_name: displayName || undefined,
             tagline: tagline || undefined,
             description: description || undefined,
@@ -99,6 +102,7 @@ export function AdminSiteSettingsPage() {
           <input className={inputClass} placeholder="Tagline" value={tagline} onChange={(e) => setTagline(e.target.value)} />
           <input className={inputClass} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
           <input className={inputClass} placeholder="Square logo URL" value={squareLogo} onChange={(e) => setSquareLogo(e.target.value)} />
+          <input className={inputClass} placeholder="Wide logo URL" value={logoWide} onChange={(e) => setLogoWide(e.target.value)} />
           <input className={inputClass} placeholder="Background banner URL" value={backgroundBanner} onChange={(e) => setBackgroundBanner(e.target.value)} />
         </div>
         <Button size="sm" disabled={updateConfig.isPending} onClick={saveBranding}>

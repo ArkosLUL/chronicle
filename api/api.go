@@ -150,268 +150,275 @@ func (api *API) Routes() chi.Router {
 	)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(
-			httpmw.BrowserOnly(api.Opts.AccessURL),
-			api.Auth.AuthenticationMiddleware,
-		//authMW.Trace,
-		)
+		r.Group(func(r chi.Router) {
+			// Not browser-only
+			r.Get("/discovery", api.Discovery)
+		})
 
 		r.Group(func(r chi.Router) {
+
 			r.Use(
-				api.Auth.Authenticated(false),
+				httpmw.BrowserOnly(api.Opts.AccessURL),
+				api.Auth.AuthenticationMiddleware,
 			)
-			r.Get("/whoami", api.WhoAmI)
-			r.Post("/authcheck", api.checkAuthorization)
-			r.Get("/me/storage", api.GetMyStorage)
-			r.Patch("/me/preferences", api.UpdateMyPreferences)
-			r.Post("/share", api.CreateShare)
-		})
-		r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
-		gameDataHandler := gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool)
-		r.Mount("/game-data", gameDataHandler.Routes())
-		r.Mount("/azerothcore", serviceazerothcore.New(api.Opts.Logger, api.Opts.Zed, api.Auth, api.Chronicle).Routes())
-		r.Get("/share/{code}", api.GetShare)
-		r.Get("/site-config", api.AdminGetSiteConfig)
-		r.Get("/discovery", api.Discovery)
-
-		// Admin routes - require admin or technical_admin role
-		r.Route("/admin", func(r chi.Router) {
-			r.Use(api.Auth.Authenticated(false))
-			r.Route("/users", func(r chi.Router) {
-				r.Use(
-					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
-				)
-
-				r.Get("/", api.AdminListUsers)
-				r.Post("/{userID}/resync", api.AdminResyncUserRoles)
-				r.Put("/{userID}/roles", api.AdminSetUserRoles)
-				r.Put("/{userID}/retention", api.AdminSetUserRetention)
-				r.Get("/{userID}/grants", api.GetUserGrants)
-				r.Put("/{userID}/grants", api.UpsertUserGrant)
-				r.Delete("/{userID}/grants/{source}", api.DeleteUserGrant)
-			})
-
-			r.Route("/logs", func(r chi.Router) {
-				r.Use(
-					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User),
-				)
-				r.Get("/", api.AdminListLogs)
-				r.Post("/delete", api.AdminBulkDeleteLogs)
-				r.Post("/reparse", api.AdminBulkReparseLogs)
-			})
-
-			r.Group(func(r chi.Router) {
-				r.Route("/leaderboard", func(r chi.Router) {
-					r.Get("/version-requirements", api.AdminListLeaderboardVersionRequirements)
-					r.Group(func(r chi.Router) {
-						r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_speedrun_requirements_User))
-						r.Put("/version-requirements", api.AdminUpsertLeaderboardVersionRequirements)
-					})
-				})
-			})
-
-			// Tenant management — routes owned by servicetenant
-			r.Route("/tenants", func(r chi.Router) {
-				r.Use(
-					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_tenants_User),
-				)
-				r.Mount("/", api.Opts.Tenant.Routes())
-			})
-			r.Put("/servers/{serverID}/tenant", api.Opts.Tenant.SetServerTenant)
 
 			r.Group(func(r chi.Router) {
 				r.Use(
-					// TODO: Determine right authz
-					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
+					api.Auth.Authenticated(false),
 				)
-				r.Get("/instance-names", api.AdminListInstanceNames)
-				r.Get("/outdated-instances", api.AdminListOutdatedInstances)
-				r.Post("/outdated-instances/reparse", api.AdminBulkReparseOutdatedInstances)
-				r.Get("/site-config", api.AdminGetSiteConfig)
-				r.Put("/site-config", api.AdminUpdateSiteConfig)
-
-				r.Mount("/retention", retentionapi.New(api.Zed, api.Queues).Routes())
+				r.Get("/whoami", api.WhoAmI)
+				r.Post("/authcheck", api.checkAuthorization)
+				r.Get("/me/storage", api.GetMyStorage)
+				r.Patch("/me/preferences", api.UpdateMyPreferences)
+				r.Post("/share", api.CreateShare)
 			})
-		})
+			r.Mount("/panel-layout", panellayoutapi.New(api.Opts.Zed, api.Auth).Routes())
+			gameDataHandler := gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool)
+			r.Mount("/game-data", gameDataHandler.Routes())
+			r.Mount("/azerothcore", serviceazerothcore.New(api.Opts.Logger, api.Opts.Zed, api.Auth, api.Chronicle).Routes())
+			r.Get("/share/{code}", api.GetShare)
+			r.Get("/site-config", api.AdminGetSiteConfig)
+			r.Get("/discovery", api.Discovery)
 
-		// Regression testing routes (under admin auth)
-		r.Route("/regression", func(r chi.Router) {
-			r.Use(
-				api.Auth.Authenticated(false),
-				httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_regressions_User),
-			)
-			r.Get("/fixtures", api.RegressionListFixtures)
-			r.Post("/fixtures", api.RegressionCreateFixture)
-			r.Put("/fixtures/{fixtureID}", api.RegressionUpdateFixtureNote)
-			r.Delete("/fixtures/{fixtureID}", api.RegressionDeleteFixture)
-			r.Post("/fixtures/{fixtureID}/snapshot", api.RegressionTakeSnapshot)
-			r.Post("/snapshot-all", api.RegressionSnapshotAll)
-			r.Get("/fixtures/{fixtureID}/snapshots", api.RegressionListSnapshots)
-			r.Get("/snapshots/{snapshotID}", api.RegressionGetSnapshot)
-			r.Delete("/snapshots/{snapshotID}", api.RegressionDeleteSnapshot)
-			r.Get("/jobs", api.RegressionJobStatus)
-			r.Post("/requeue-version", api.RegressionRequeueVersion)
-		})
-
-		r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
-		if api.Opts.WoWDB != nil {
-			r.Mount("/wowdb", api.Opts.WoWDB)
-		}
-		if api.Opts.Assets != nil {
-			r.Mount("/assets", api.Opts.Assets)
-		}
-		// Guild routes
-		r.Route("/guilds", func(r chi.Router) {
-			r.Get("/config", api.GuildPageOptions)
-			r.Get("/", api.ListGuilds)
-			r.Route("/{guildID}", func(r chi.Router) {
-				r.Use(
-					httpmw.GuildIDMiddleware(api.Zed),
-					api.Auth.Authenticated(true),
-				)
-				r.Get("/", api.GetGuild)
-				r.Get("/page", api.GetGuildPage)
-				r.Get("/settings", api.GetGuildSettings)
-
-				// Authenticated routes (non-admin)
-				r.Group(func(r chi.Router) {
-					r.Use(api.Auth.Authenticated(false))
-					r.Post("/join-requests", api.CreateJoinRequest)
-					r.Get("/join-requests/me", api.MyJoinRequest)
-				})
-
-				// Protected guild page editing routes
-				r.Group(func(r chi.Router) {
+			// Admin routes - require admin or technical_admin role
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(api.Auth.Authenticated(false))
+				r.Route("/users", func(r chi.Router) {
 					r.Use(
-						api.Auth.Authenticated(false),
-						// TODO: Make different perms for managing members vs editing page content
-						guildapi.Can(api.Zed, func(on *policy.ObjGuild) func(sub *policy.ObjUser) rel.Relationship {
-							return on.CanAdmin_guild_User
-						}),
+						httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
 					)
-					r.Route("/members", func(r chi.Router) {
-						// Guild member management (admin only)
-						r.Post("/", api.AdminAddGuildMember)
-						r.Put("/{userID}/role", api.AdminUpdateGuildMemberRole)
-						r.Delete("/{userID}", api.AdminRemoveGuildMember)
-					})
-					r.Put("/settings", api.UpdateGuildSettings)
-					r.Get("/join-requests", api.ListJoinRequests)
-					r.Post("/join-requests/{requestID}/accept", api.AcceptJoinRequest)
-					r.Delete("/join-requests/{requestID}", api.DenyJoinRequest)
 
-					r.Put("/page", api.UpsertGuildPage)
-					r.Post("/page/tabs", api.CreateGuildPageTab)
-					r.Put("/page/tabs/reorder", api.ReorderGuildPageTabs)
-					r.Put("/page/tabs/{tabID}", api.UpdateGuildPageTab)
-					r.Delete("/page/tabs/{tabID}", api.DeleteGuildPageTab)
+					r.Get("/", api.AdminListUsers)
+					r.Post("/{userID}/resync", api.AdminResyncUserRoles)
+					r.Put("/{userID}/roles", api.AdminSetUserRoles)
+					r.Put("/{userID}/retention", api.AdminSetUserRetention)
+					r.Get("/{userID}/grants", api.GetUserGrants)
+					r.Put("/{userID}/grants", api.UpsertUserGrant)
+					r.Delete("/{userID}/grants/{source}", api.DeleteUserGrant)
 				})
 
-				// Guild roster route (viewable by members, leaders, and admins)
-				r.Group(func(r chi.Router) {
-					r.Use(
-						api.Auth.Authenticated(false),
-						guildapi.Can(api.Zed, func(on *policy.ObjGuild) func(sub *policy.ObjUser) rel.Relationship {
-							return on.CanView_chronicle_roster_User
-						}),
-					)
-					r.Get("/roster", api.GuildRoster)
-				})
-			})
-		})
-
-		// Public guild page route
-		r.Get("/g/{guildID}", api.GetPublicGuildPage)
-		// Public armory routes
-		r.Get("/armory/search", api.SearchArmoryPlayers)
-		r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)
-
-		// Public realm listing
-		r.Get("/realms", api.ListPublicRealms)
-
-		// Public census data
-		r.Get("/census", api.Census)
-
-		r.Group(func(r chi.Router) {
-			r.Route("/raidlogs", func(r chi.Router) {
-				r.Get("/supported", api.SupportedInstances)
-				r.Get("/recent", api.RecentInstances)
-				r.Get("/range", api.InstancesByTimeRange)
 				r.Route("/logs", func(r chi.Router) {
+					r.Use(
+						httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User),
+					)
+					r.Get("/", api.AdminListLogs)
+					r.Post("/delete", api.AdminBulkDeleteLogs)
+					r.Post("/reparse", api.AdminBulkReparseLogs)
+				})
+
+				r.Group(func(r chi.Router) {
+					r.Route("/leaderboard", func(r chi.Router) {
+						r.Get("/version-requirements", api.AdminListLeaderboardVersionRequirements)
+						r.Group(func(r chi.Router) {
+							r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_speedrun_requirements_User))
+							r.Put("/version-requirements", api.AdminUpsertLeaderboardVersionRequirements)
+						})
+					})
+				})
+
+				// Tenant management — routes owned by servicetenant
+				r.Route("/tenants", func(r chi.Router) {
+					r.Use(
+						httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_tenants_User),
+					)
+					r.Mount("/", api.Opts.Tenant.Routes())
+				})
+				r.Put("/servers/{serverID}/tenant", api.Opts.Tenant.SetServerTenant)
+
+				r.Group(func(r chi.Router) {
+					r.Use(
+						// TODO: Determine right authz
+						httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_users_User),
+					)
+					r.Get("/instance-names", api.AdminListInstanceNames)
+					r.Get("/outdated-instances", api.AdminListOutdatedInstances)
+					r.Post("/outdated-instances/reparse", api.AdminBulkReparseOutdatedInstances)
+					r.Get("/site-config", api.AdminGetSiteConfig)
+					r.Put("/site-config", api.AdminUpdateSiteConfig)
+
+					r.Mount("/retention", retentionapi.New(api.Zed, api.Queues).Routes())
+				})
+			})
+
+			// Regression testing routes (under admin auth)
+			r.Route("/regression", func(r chi.Router) {
+				r.Use(
+					api.Auth.Authenticated(false),
+					httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_regressions_User),
+				)
+				r.Get("/fixtures", api.RegressionListFixtures)
+				r.Post("/fixtures", api.RegressionCreateFixture)
+				r.Put("/fixtures/{fixtureID}", api.RegressionUpdateFixtureNote)
+				r.Delete("/fixtures/{fixtureID}", api.RegressionDeleteFixture)
+				r.Post("/fixtures/{fixtureID}/snapshot", api.RegressionTakeSnapshot)
+				r.Post("/snapshot-all", api.RegressionSnapshotAll)
+				r.Get("/fixtures/{fixtureID}/snapshots", api.RegressionListSnapshots)
+				r.Get("/snapshots/{snapshotID}", api.RegressionGetSnapshot)
+				r.Delete("/snapshots/{snapshotID}", api.RegressionDeleteSnapshot)
+				r.Get("/jobs", api.RegressionJobStatus)
+				r.Post("/requeue-version", api.RegressionRequeueVersion)
+			})
+
+			r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) { httpapi.Write(r.Context(), w, http.StatusOK, "OK") })
+			if api.Opts.WoWDB != nil {
+				r.Mount("/wowdb", api.Opts.WoWDB)
+			}
+			if api.Opts.Assets != nil {
+				r.Mount("/assets", api.Opts.Assets)
+			}
+			// Guild routes
+			r.Route("/guilds", func(r chi.Router) {
+				r.Get("/config", api.GuildPageOptions)
+				r.Get("/", api.ListGuilds)
+				r.Route("/{guildID}", func(r chi.Router) {
+					r.Use(
+						httpmw.GuildIDMiddleware(api.Zed),
+						api.Auth.Authenticated(true),
+					)
+					r.Get("/", api.GetGuild)
+					r.Get("/page", api.GetGuildPage)
+					r.Get("/settings", api.GetGuildSettings)
+
+					// Authenticated routes (non-admin)
+					r.Group(func(r chi.Router) {
+						r.Use(api.Auth.Authenticated(false))
+						r.Post("/join-requests", api.CreateJoinRequest)
+						r.Get("/join-requests/me", api.MyJoinRequest)
+					})
+
+					// Protected guild page editing routes
 					r.Group(func(r chi.Router) {
 						r.Use(
 							api.Auth.Authenticated(false),
+							// TODO: Make different perms for managing members vs editing page content
+							guildapi.Can(api.Zed, func(on *policy.ObjGuild) func(sub *policy.ObjUser) rel.Relationship {
+								return on.CanAdmin_guild_User
+							}),
 						)
-						r.Group(func(r chi.Router) {
-							r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_log_User))
-							r.Post("/upload", api.WoWLogUpload)
-							r.Post("/upload-v2", api.WoWLogUploadV2)
+						r.Route("/members", func(r chi.Router) {
+							// Guild member management (admin only)
+							r.Post("/", api.AdminAddGuildMember)
+							r.Put("/{userID}/role", api.AdminUpdateGuildMemberRole)
+							r.Delete("/{userID}", api.AdminRemoveGuildMember)
 						})
-						r.Get("/", api.WoWLogGroups)
-						r.Get("/by-file-hash/{file-hash}", api.WoWLogGroupByFile)
-						r.Route("/{logID}", func(r chi.Router) {
-							r.Use(httpmw.LogIDMiddleware)
-							r.Group(func(r chi.Router) {
-								r.Post("/reparse", api.WoWLogReparse)
-								r.Delete("/delete-files", api.DeleteWoWLogFiles)
-								r.Delete("/instances/{instance_id}", api.WoWLogDeleteInstance)
-							})
-							r.Get("/", api.WoWLogGroup)
-							r.Get("/files/{fileID}/download", api.WoWLogFileDownload)
-							r.Group(func(r chi.Router) {
-								r.Delete("/", api.WoWLogDeleteGroup)
-							})
-						})
+						r.Put("/settings", api.UpdateGuildSettings)
+						r.Get("/join-requests", api.ListJoinRequests)
+						r.Post("/join-requests/{requestID}/accept", api.AcceptJoinRequest)
+						r.Delete("/join-requests/{requestID}", api.DenyJoinRequest)
+
+						r.Put("/page", api.UpsertGuildPage)
+						r.Post("/page/tabs", api.CreateGuildPageTab)
+						r.Put("/page/tabs/reorder", api.ReorderGuildPageTabs)
+						r.Put("/page/tabs/{tabID}", api.UpdateGuildPageTab)
+						r.Delete("/page/tabs/{tabID}", api.DeleteGuildPageTab)
 					})
-				})
 
-				r.Group(func(r chi.Router) {
-					r.Route("/instances", func(r chi.Router) {
-						r.Route("/{instance_id}", func(r chi.Router) {
-							r.Use(httpmw.InstanceIDMiddleware(api.Opts.Zed))
-							r.Get("/events/{type}", api.InstanceEvents)
-							r.Get("/", api.Instance)
-
-							r.Get("/youtube", api.GetInstanceYoutube)
-							r.Get("/loot", api.GetInstanceLoot)
-							r.Get("/speedrun", api.InstanceSpeedrun)
-							r.Get("/duplicates", api.ListDuplicateInstances)
-
-							r.Group(func(r chi.Router) {
-								r.Use(
-									api.Auth.Authenticated(false),
-								)
-								r.Post("/youtube", api.PostInstanceYoutube)
-							})
-
-							r.Group(func(r chi.Router) {
-								r.Use(
-									api.Auth.Authenticated(false),
-									httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User),
-								)
-								r.Delete("/duplicate-group", api.UngroupInstance)
-							})
-						})
+					// Guild roster route (viewable by members, leaders, and admins)
+					r.Group(func(r chi.Router) {
+						r.Use(
+							api.Auth.Authenticated(false),
+							guildapi.Can(api.Zed, func(on *policy.ObjGuild) func(sub *policy.ObjUser) rel.Relationship {
+								return on.CanView_chronicle_roster_User
+							}),
+						)
+						r.Get("/roster", api.GuildRoster)
 					})
 				})
 			})
-		})
 
-		r.Route("/leaderboard", func(r chi.Router) {
-			r.Get("/speedrun", api.SpeedrunLeaderboard)
-			r.Get("/speedrun/instances", api.SpeedrunInstances)
-			r.Get("/speedrun/realms", api.SpeedrunRealms)
-			r.Get("/speedrun/rules", api.SpeedrunRules)
-		})
+			// Public guild page route
+			r.Get("/g/{guildID}", api.GetPublicGuildPage)
+			// Public armory routes
+			r.Get("/armory/search", api.SearchArmoryPlayers)
+			r.Get("/armory/{realm}/{player}", api.GetArmoryPlayer)
 
-		if api.Opts.InternalGameData != nil {
+			// Public realm listing
+			r.Get("/realms", api.ListPublicRealms)
+
+			// Public census data
+			r.Get("/census", api.Census)
+
 			r.Group(func(r chi.Router) {
-				r.Use(api.Auth.Authenticated(true))
-				r.Mount("/internal/gamedata", api.Opts.InternalGameData)
-			})
-		}
+				r.Route("/raidlogs", func(r chi.Router) {
+					r.Get("/supported", api.SupportedInstances)
+					r.Get("/recent", api.RecentInstances)
+					r.Get("/range", api.InstancesByTimeRange)
+					r.Route("/logs", func(r chi.Router) {
+						r.Group(func(r chi.Router) {
+							r.Use(
+								api.Auth.Authenticated(false),
+							)
+							r.Group(func(r chi.Router) {
+								r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanUpload_log_User))
+								r.Post("/upload", api.WoWLogUpload)
+								r.Post("/upload-v2", api.WoWLogUploadV2)
+							})
+							r.Get("/", api.WoWLogGroups)
+							r.Get("/by-file-hash/{file-hash}", api.WoWLogGroupByFile)
+							r.Route("/{logID}", func(r chi.Router) {
+								r.Use(httpmw.LogIDMiddleware)
+								r.Group(func(r chi.Router) {
+									r.Post("/reparse", api.WoWLogReparse)
+									r.Delete("/delete-files", api.DeleteWoWLogFiles)
+									r.Delete("/instances/{instance_id}", api.WoWLogDeleteInstance)
+								})
+								r.Get("/", api.WoWLogGroup)
+								r.Get("/files/{fileID}/download", api.WoWLogFileDownload)
+								r.Group(func(r chi.Router) {
+									r.Delete("/", api.WoWLogDeleteGroup)
+								})
+							})
+						})
+					})
 
-		r.NotFound(http.NotFound)
+					r.Group(func(r chi.Router) {
+						r.Route("/instances", func(r chi.Router) {
+							r.Route("/{instance_id}", func(r chi.Router) {
+								r.Use(httpmw.InstanceIDMiddleware(api.Opts.Zed))
+								r.Get("/events/{type}", api.InstanceEvents)
+								r.Get("/", api.Instance)
+
+								r.Get("/youtube", api.GetInstanceYoutube)
+								r.Get("/loot", api.GetInstanceLoot)
+								r.Get("/speedrun", api.InstanceSpeedrun)
+								r.Get("/duplicates", api.ListDuplicateInstances)
+
+								r.Group(func(r chi.Router) {
+									r.Use(
+										api.Auth.Authenticated(false),
+									)
+									r.Post("/youtube", api.PostInstanceYoutube)
+								})
+
+								r.Group(func(r chi.Router) {
+									r.Use(
+										api.Auth.Authenticated(false),
+										httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_logs_User),
+									)
+									r.Delete("/duplicate-group", api.UngroupInstance)
+								})
+							})
+						})
+					})
+				})
+			})
+
+			r.Route("/leaderboard", func(r chi.Router) {
+				r.Get("/speedrun", api.SpeedrunLeaderboard)
+				r.Get("/speedrun/instances", api.SpeedrunInstances)
+				r.Get("/speedrun/realms", api.SpeedrunRealms)
+				r.Get("/speedrun/rules", api.SpeedrunRules)
+			})
+
+			if api.Opts.InternalGameData != nil {
+				r.Group(func(r chi.Router) {
+					r.Use(api.Auth.Authenticated(true))
+					r.Mount("/internal/gamedata", api.Opts.InternalGameData)
+				})
+			}
+
+			r.NotFound(http.NotFound)
+		})
 	})
 
 	// Auth routes

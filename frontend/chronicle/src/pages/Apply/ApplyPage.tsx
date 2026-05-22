@@ -45,7 +45,6 @@ function CreateApplicationForm() {
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [tagline, setTagline] = useState("");
-  const [tagsInput, setTagsInput] = useState("");
   const [servers, setServers] = useState<ServerFormData[]>([
     { name: "", description: "", url: "", realms: [{ name: "", description: "", url: "" }] },
   ]);
@@ -86,11 +85,6 @@ function CreateApplicationForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const tags = tagsInput
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
     const serverRequests: CreateServerRequest[] = servers.map((s) => ({
       name: s.name,
       description: s.description,
@@ -108,7 +102,7 @@ function CreateApplicationForm() {
       name,
       display_name: displayName,
       tagline,
-      tags,
+      tags: [],
       servers: serverRequests,
     };
 
@@ -182,15 +176,7 @@ function CreateApplicationForm() {
                 placeholder="A brief description of your server"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Tags (comma-separated)</label>
-              <input
-                className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="vanilla, pvp, hardcore"
-              />
-            </div>
+
           </div>
         </Card>
 

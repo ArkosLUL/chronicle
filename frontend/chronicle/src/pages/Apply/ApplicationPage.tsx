@@ -233,8 +233,9 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 // Section: Branding field card (core, slug, description, logos)
 // ---------------------------------------------------------------------------
 
-function parseTags(raw: string | undefined): string[] {
+function parseTags(raw: string | string[] | undefined): string[] {
   if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean);
   return raw.split(",").map((t) => t.trim()).filter(Boolean);
 }
 

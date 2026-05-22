@@ -541,6 +541,87 @@ function BossEncounterRow({ encounter }: { encounter: WoWEncounter }) {
   );
 }
 
+interface RealmRejection {
+  type: "realm_rejection";
+  realm?: string;
+  message: string;
+  upload_url?: string;
+  addon_url?: string;
+}
+
+function tryParseRealmRejection(error: string): RealmRejection | null {
+  if (!error.startsWith("{")) return null;
+  try {
+    const parsed = JSON.parse(error);
+    if (parsed.type === "realm_rejection") return parsed as RealmRejection;
+  } catch { /* not JSON, fall through */ }
+  return null;
+}
+
+function InstanceFailureCard({ name, error }: { name: string; error: string }) {
+  const rejection = tryParseRealmRejection(error);
+
+  // Plain string error — legacy/non-realm failures
+  if (!rejection) {
+    return (
+      <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+        <p className="text-sm">
+          <span className="font-medium text-destructive">{name}</span>
+          <span className="text-muted-foreground ml-1.5">{error}</span>
+        </p>
+      </div>
+    );
+  }
+
+  // Structured realm rejection
+  const displayName = name.replace(/_\d+$/, "");
+  return (
+    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg space-y-2">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-destructive">{displayName}</p>
+          <p className="text-sm text-muted-foreground">{rejection.message}</p>
+        </div>
+      </div>
+
+      <div className="pl-6 space-y-1.5 text-sm">
+        {rejection.upload_url && (
+          <p className="text-muted-foreground">
+            Try uploading at{" "}
+            <a
+              href={`https://${rejection.upload_url}`}
+              className="text-link underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {rejection.upload_url}
+            </a>{" "}
+            instead.
+          </p>
+        )}
+        {rejection.addon_url && (
+          <p className="text-muted-foreground">
+            Make sure you are using the latest{" "}
+            <a
+              href={rejection.addon_url}
+              className="text-link underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ChronicleCompanion addon
+            </a>
+            .
+          </p>
+        )}
+        <p className="text-muted-foreground">
+          Try deleting your <span className="font-mono text-xs">WoWCombatLog.txt</span> and recording a fresh log.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function InstanceCard({ 
   instance, 
   canUploadYoutube,
@@ -593,6 +674,9 @@ function InstanceCard({
           <div className="flex items-center gap-2 min-w-0">
             <Castle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <h3 className="font-semibold truncate">{instance.name}</h3>
+            {instance.realm_name && instance.realm_name !== "Unknown" && (
+              <span className="text-xs text-muted-foreground shrink-0">{instance.realm_name}</span>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
             {canUploadYoutube && (
@@ -743,17 +827,10 @@ function ParsedInstancesSection({
           ))}
           
           {hasFailures && (
-            <div className="p-4 bg-destructive/10 rounded-lg">
-              <p className="text-sm font-medium text-destructive mb-2">
-                Some instances failed to parse
-              </p>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {Object.entries(instanceFailures || {}).map(([name, error]) => (
-                  <li key={name}>
-                    <span className="font-mono">{name}</span>: {error}
-                  </li>
-                ))}
-              </ul>
+            <div className="space-y-2">
+              {Object.entries(instanceFailures || {}).map(([name, error]) => (
+                <InstanceFailureCard key={name} name={name} error={error} />
+              ))}
             </div>
           )}
         </div>

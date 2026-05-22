@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/google/uuid"
 )
 
@@ -163,6 +164,17 @@ func (api *API) WoWLogUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if t := servicetenant.TenantFromContext(ctx); t != nil && t.DisableClientUpload {
+		actor, _ := authz.ActorFromContext(ctx)
+		isAdmin, err := api.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_logs_User(actor))
+		if err != nil || !isAdmin {
+			httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
+				Message: "Client-side uploads are disabled for this server.",
+			})
+			return
+		}
+	}
+
 	first, firstHeader, err := r.FormFile("combat_log_1")
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
@@ -248,6 +260,17 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 		if err != nil || !isAdmin {
 			httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
 				Message: "Client-side uploads are disabled on this server.",
+			})
+			return
+		}
+	}
+
+	if t := servicetenant.TenantFromContext(ctx); t != nil && t.DisableClientUpload {
+		actor, _ := authz.ActorFromContext(ctx)
+		isAdmin, err := api.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_logs_User(actor))
+		if err != nil || !isAdmin {
+			httpapi.Write(ctx, w, http.StatusForbidden, chroniclesdk.Response{
+				Message: "Client-side uploads are disabled for this server.",
 			})
 			return
 		}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
@@ -17,6 +18,7 @@ const KindLogReparse = "log-reparse"
 type ArgsLogReparse struct {
 	LogID        uuid.UUID `json:"log_group_id"`
 	RealmID      uuid.UUID `json:"realm_id,omitempty"`
+	TenantID     uuid.UUID `json:"tenant_id,omitempty"`
 	Verbose      bool      `json:"verbose,omitempty"`
 	IdentityMode bool      `json:"identity_mode,omitempty"`
 }
@@ -93,7 +95,12 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 		}
 	}
 
-	res, err := w.parent.EnqueueParseLog(ctx, logGroup.WoWLogGroup, job.Args.Verbose, job.Args.IdentityMode, job.Args.RealmID)
+	// Inject tenant context so EnqueueParseLog preserves the TenantID.
+	parseCtx := ctx
+	if job.Args.TenantID != uuid.Nil {
+		parseCtx = servicetenant.WithTenantID(ctx, job.Args.TenantID)
+	}
+	res, err := w.parent.EnqueueParseLog(parseCtx, logGroup.WoWLogGroup, job.Args.Verbose, job.Args.IdentityMode, job.Args.RealmID)
 	if err != nil {
 		return fmt.Errorf("enqueue log parse job: %w", err)
 	}
@@ -105,9 +112,11 @@ func (w *WorkerLogReparse) Work(ctx context.Context, job *river.Job[ArgsLogRepar
 }
 
 func (c *Chronicle) EnqueueReParseLog(ctx context.Context, logID uuid.UUID, verbose bool, identityMode bool, realmID uuid.UUID) (*rivertype.JobInsertResult, error) {
+	t := servicetenant.TenantIDFromContext(ctx)
 	res, err := c.queue.Insert(ctx, ArgsLogReparse{
 		LogID:        logID,
 		RealmID:      realmID,
+		TenantID:     t,
 		Verbose:      verbose,
 		IdentityMode: identityMode,
 	}, &river.InsertOpts{

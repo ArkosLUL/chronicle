@@ -65,6 +65,7 @@ type Chronicle struct {
 	metrics            *logParseMetrics
 	emitParsingLogs  bool
 	instanceRegistry *registry.Registry
+	primaryDomain    string
 
 	mu                     sync.Mutex
 	insertParsedInstanceMu sync.Mutex
@@ -77,11 +78,15 @@ type Options struct {
 	WoWDB           *gamedb.WoWDB
 	Registry        prometheus.Registerer
 	EmitParsingLogs bool
+	// PrimaryDomain is the root domain (e.g. "chronicleclassic.com") used to
+	// build tenant upload URLs in rejection messages.
+	PrimaryDomain string
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
 	c := &Chronicle{
-		AppContext:         ctx,
+		AppContext:     ctx,
+		primaryDomain: opts.PrimaryDomain,
 		Storage:            opts.Storage,
 		Zed:                opts.Zed,
 		ps:                 opts.Ps,

@@ -25,6 +25,12 @@ func TenantFromContext(ctx context.Context) *database.Tenant {
 	return &v
 }
 
+// WithTenantID injects a minimal tenant with only the ID set. Use when only
+// the tenant UUID is available (e.g. restoring tenant context from job args).
+func WithTenantID(ctx context.Context, id uuid.UUID) context.Context {
+	return WithTenant(ctx, database.Tenant{ID: id})
+}
+
 // TenantIDFromContext returns the tenant UUID from context, or uuid.Nil if unset.
 func TenantIDFromContext(ctx context.Context) uuid.UUID {
 	t := TenantFromContext(ctx)

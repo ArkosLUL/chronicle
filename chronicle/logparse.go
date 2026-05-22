@@ -46,6 +46,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/semverenc"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/Emyrk/chronicle/internal/version"
 	"github.com/google/uuid"
@@ -65,6 +66,7 @@ type ArgsLogParse struct {
 	LogID uuid.UUID `json:"log_group_id"`
 	// RealmID is optional
 	RealmID      uuid.UUID `json:"realm_id,omitempty"`
+	TenantID     uuid.UUID `json:"tenant_id,omitempty"`
 	Verbose      bool      `json:"verbose,omitempty"`
 	IdentityMode bool      `json:"identity_mode,omitempty"`
 }
@@ -462,9 +464,15 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			}
 		}
 
+		// Use bypass context for realm lookups so we can see all realms
+		// regardless of tenant RLS. We validate ownership explicitly below.
+		bypassCtx := servicetenant.AdminBypass(ctx)
+
 		var realmID uuid.UUID
+		var realmName string
 		if finalized.Realm != nil {
-			realm, err := db.GetWoWServerRealmByName(ctx, finalized.Realm.RealmName)
+			realmName = finalized.Realm.RealmName
+			realm, err := db.GetWoWServerRealmByName(bypassCtx, realmName)
 			if err == nil {
 				realmID = realm.ID
 			}
@@ -473,23 +481,54 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// where REALM_INFO is not present in the combat log).
 		if realmID == uuid.Nil && job.Args.RealmID != uuid.Nil {
 			realmID = job.Args.RealmID
+			// Populate realmName from DB if we only had the ID.
+			if realmName == "" {
+				if r, err := db.GetWoWServerRealm(bypassCtx, realmID); err == nil {
+					realmName = r.Name
+				}
+			}
 		}
 		// Final fallback: use the "Unknown" realm so FK constraints are
 		// satisfied. If it doesn't exist yet, create it with the well-known
 		// UUIDs from dbstatic.
 		if realmID == uuid.Nil {
 			realmID = dbstatic.RealmUnknown()
-			_, err := db.GetWoWServerRealm(ctx, realmID)
+			_, err := db.GetWoWServerRealm(bypassCtx, realmID)
 			if err != nil {
-				_, _ = db.InsertWoWServer(ctx, database.InsertWoWServerParams{
+				_, _ = db.InsertWoWServer(bypassCtx, database.InsertWoWServerParams{
 					ID:   dbstatic.ServerUnknown(),
 					Name: "Unknown",
 				})
-				_, _ = db.InsertWoWServerRealm(ctx, database.InsertWoWServerRealmParams{
+				_, _ = db.InsertWoWServerRealm(bypassCtx, database.InsertWoWServerRealmParams{
 					ID:       realmID,
 					ServerID: dbstatic.ServerUnknown(),
 					Name:     "Unknown",
 				})
+			}
+		}
+
+		// Tenant realm validation: skip (don't insert) instances whose
+		// realm doesn't belong to the uploading tenant. Record the
+		// instance in InstanceFailures so the UI can show what was
+		// detected and why it was rejected.
+		if job.Args.TenantID != uuid.Nil {
+			reject := false
+			realmRow, err := db.GetWoWServerRealm(bypassCtx, realmID)
+			if err != nil {
+				jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] =
+					w.realmRejectionMessage(bypassCtx, db, realmName, uuid.Nil, logGroup.WoWLogGroup.LogType)
+				reject = true
+			} else {
+				server, sErr := db.GetWoWServer(bypassCtx, realmRow.ServerID)
+				if sErr != nil || !server.TenantID.Valid || server.TenantID.UUID != job.Args.TenantID {
+					jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] =
+						w.realmRejectionMessage(bypassCtx, db, realmRow.Name, realmRow.ServerID, logGroup.WoWLogGroup.LogType)
+					reject = true
+				}
+			}
+			if reject {
+				report.Instances = append(report.Instances, instReport)
+				continue
 			}
 		}
 
@@ -552,13 +591,13 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					UUID:  guildID,
 					Valid: guildID != uuid.Nil,
 				},
-				StartTime:     instanceStart,
-				EndTime:       instanceEnd,
-				Capabilities:  logCapabilities,
-				Versions:      database.VersionsMap(finalized.Versions),
-				RecorderName:   recorderName,
-				RecorderGuid:   recorderGUID,
-				ParserVersion:  version.GitTag + "+" + version.GitCommit,
+				StartTime:         instanceStart,
+				EndTime:           instanceEnd,
+				Capabilities:      logCapabilities,
+				Versions:          database.VersionsMap(finalized.Versions),
+				RecorderName:      recorderName,
+				RecorderGuid:      recorderGUID,
+				ParserVersion:     version.GitTag + "+" + version.GitCommit,
 				DifficultyName:    inst.CurrentZone.DifficultyName,
 				MaxPlayers:        int32(inst.CurrentZone.MaxPlayers),
 				DynamicDifficulty: int32(inst.CurrentZone.DynamicDifficulty),
@@ -689,8 +728,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				}
 			}
 
+			inst := db2sdk.WoWInstanceWithGuild(dbinstance, guild)
+			inst.RealmName = realmName
 			jobOut.Instances = append(jobOut.Instances, chroniclesdk.WoWSimpleParsedInstance{
-				WoWInstance: db2sdk.WoWInstanceWithGuild(dbinstance, guild),
+				WoWInstance: inst,
 				Encounters:  sdkEncounters,
 			})
 
@@ -937,10 +978,60 @@ func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
 	return rpt
 }
 
+// realmRejection is JSON-encoded into InstanceFailures values so the frontend
+// can render a rich error UI instead of a plain string.
+type realmRejection struct {
+	Type      string `json:"type"`                 // always "realm_rejection"
+	Realm     string `json:"realm,omitempty"`       // detected realm name
+	Message   string `json:"message"`               // headline
+	UploadURL string `json:"upload_url,omitempty"`   // suggested upload domain
+	AddonURL  string `json:"addon_url,omitempty"`    // companion addon link
+}
+
+// realmRejectionMessage builds a JSON-encoded rejection string for InstanceFailures.
+func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Authz, realmName string, serverID uuid.UUID, logType database.LogType) string {
+	r := realmRejection{
+		Type:  "realm_rejection",
+		Realm: realmName,
+	}
+
+	if realmName == "" || realmName == "Unknown" {
+		r.Message = "Realm not found for this server."
+	} else {
+		r.Message = fmt.Sprintf("Realm %q does not belong to this server.", realmName)
+	}
+
+	// If we know which realm this is (not Unknown/empty), trace it back to
+	// its owning tenant and suggest the correct upload URL.
+	primaryDomain := w.parent.primaryDomain
+	if realmName != "" && realmName != "Unknown" && serverID != uuid.Nil && primaryDomain != "" {
+		if server, err := db.GetWoWServer(ctx, serverID); err == nil {
+			if server.TenantID.Valid {
+				if tenant, tErr := db.GetTenantByID(ctx, server.TenantID.UUID); tErr == nil && tenant.Slug.Valid {
+					r.UploadURL = tenant.Slug.String + "." + primaryDomain
+				}
+			} else {
+				r.UploadURL = primaryDomain
+			}
+		}
+	}
+
+	// If this is an AzerothCore log type, the companion addon might be
+	// outdated and not sending REALM_INFO correctly.
+	if logType == database.LogTypeAzerothcoreClientside || logType == database.LogTypeAzerothcore {
+		r.AddonURL = "https://github.com/Emyrk/ChronicleCompanionWoTLK"
+	}
+
+	b, _ := json.Marshal(r)
+	return string(b)
+}
+
 func (c *Chronicle) EnqueueParseLog(ctx context.Context, log database.WoWLogGroup, verbose bool, identityMode bool, realmID uuid.UUID) (*rivertype.JobInsertResult, error) {
+	t := servicetenant.TenantIDFromContext(ctx)
 	res, err := c.queue.Insert(ctx, ArgsLogParse{
 		LogID:        log.ID,
 		RealmID:      realmID,
+		TenantID:     t,
 		Verbose:      verbose,
 		IdentityMode: identityMode,
 	}, &river.InsertOpts{

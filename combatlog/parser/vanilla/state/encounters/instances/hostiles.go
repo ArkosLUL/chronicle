@@ -462,6 +462,7 @@ func ZulGurubHostiles() map[uint32]Identity {
 		14987: "Powerful Healing Ward",
 		15101: "Zulian Prowler",
 		15043: "Zulian Crocolisk",
+		15067: "Zulian Stalker",
 		11387: "Sandfury Speaker",
 		11830: "Hakkari Priest",
 		11353: "Gurubashi Blood Drinker",
@@ -472,12 +473,21 @@ func ZulGurubHostiles() map[uint32]Identity {
 		11365: "Zulian Panther",
 		11359: "Soulflayer",
 		11831: "Hakkari Witch Doctor",
+		15068: "Zulian Guardian",
+		15009: "Voodoo Spirit",
+		14965: "Bloodseeker Batrider",
+		11390: "Skullsplitter Speaker",
+		11389: "Bloodscalp Speaker",
+		15117: "Chained Spirit",
 	})
 
 	LoadBosses(hostile, map[uint32]string{
 		11348: "High Priest Thekal", // "Zealot Zath"
 		11347: "High Priest Thekal", // "Zealot Lor'Khan"
+		// Idk why, but TWoW has the first entry ID.
+		// V+ has the second.
 		14599: "High Priest Thekal",
+		14509: "High Priest Thekal",
 
 		14507: "High Priest Venoxis",
 
@@ -497,6 +507,15 @@ func ZulGurubHostiles() map[uint32]Identity {
 		15085: "Wushoolay",
 		15082: "Gri'lek",
 	})
+
+	switch services.ServerName {
+	case services.ServerIdentityVanillaPlus:
+		LoadAdds(hostile, map[uint32]string{})
+		LoadBosses(hostile, map[uint32]string{
+			25031: "Azus the Bloodseeker",
+		})
+	}
+
 	return hostile
 }
 

@@ -185,7 +185,7 @@ func NaxxramasSpeedrunRequirements() []rankings.SpeedrunRequirement {
 // ZulGurubSpeedrunRequirements returns the boss kills required for a
 // valid Zul'Gurub speedrun.
 func ZulGurubSpeedrunRequirements() []rankings.SpeedrunRequirement {
-	return []rankings.SpeedrunRequirement{
+	base := []rankings.SpeedrunRequirement{
 		{Name: "High Priestess Jeklik", EntryIDs: []uint32{14517}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "High Priest Venoxis", EntryIDs: []uint32{14507}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "High Priestess Mar'li", EntryIDs: []uint32{14510}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
@@ -197,6 +197,12 @@ func ZulGurubSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Gahz'ranka", EntryIDs: []uint32{15114}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Edge of Madness", EntryIDs: []uint32{15083, 15084, 15085, 15082}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 	}
+
+	if services.ServerName == services.ServerIdentityVanillaPlus {
+		base = append(base, rankings.SpeedrunRequirement{Name: "Azus the Bloodseeker", EntryIDs: []uint32{25031}, Count: 1, Category: rankings.SpeedrunCategoryBosses})
+	}
+
+	return base
 }
 
 // TempleOfAhnQirajSpeedrunRequirements returns the boss kills required for a

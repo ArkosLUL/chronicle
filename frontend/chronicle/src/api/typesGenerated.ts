@@ -398,6 +398,24 @@ export interface DataGrant {
 }
 
 // From chroniclesdk/server_application.go
+/**
+ * DeleteRealmPayload requests removal of a realm.
+ */
+export interface DeleteRealmPayload {
+    readonly resource_id: string;
+    readonly name: string; // For display purposes.
+}
+
+// From chroniclesdk/server_application.go
+/**
+ * DeleteServerPayload requests removal of a server from the tenant.
+ */
+export interface DeleteServerPayload {
+    readonly resource_id: string;
+    readonly name: string; // For display purposes.
+}
+
+// From chroniclesdk/server_application.go
 export interface DescriptionPayload {
     readonly description: string;
     readonly website_url: string;
@@ -1052,6 +1070,11 @@ export interface RealmPayload {
     readonly name: string;
     readonly description: string;
     readonly url: string | null;
+    /**
+     * ResourceID is set when editing an existing realm (the wow_server_realm UUID).
+     * If nil, a new realm is created on approval.
+     */
+    readonly resource_id?: string;
 }
 
 // From chroniclesdk/log.go
@@ -1314,6 +1337,11 @@ export interface ServerPayload {
     readonly name: string;
     readonly description: string;
     readonly url: string | null;
+    /**
+     * ResourceID is set when editing an existing server (the wow_server UUID).
+     * If nil, a new server is created on approval.
+     */
+    readonly resource_id?: string;
 }
 
 // From chroniclesdk/user.go
@@ -1354,6 +1382,16 @@ export interface SetServerTenantRequest {
  */
 export interface SetUserRolesRequest {
     readonly roles: readonly string[];
+}
+
+// From chroniclesdk/server_application.go
+/**
+ * SettingsPayload contains tenant boolean settings.
+ */
+export interface SettingsPayload {
+    readonly include_in_all: boolean;
+    readonly disable_client_upload: boolean;
+    readonly discoverable: boolean;
 }
 
 // From chroniclesdk/share.go

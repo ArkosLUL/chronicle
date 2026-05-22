@@ -2,6 +2,9 @@
 
 -- name: ListWoWServers :many
 SELECT * FROM wow_servers ORDER BY name;
+-- name: ListWoWServersByTenantID :many
+SELECT * FROM wow_servers WHERE tenant_id = $1 ORDER BY name;
+
 
 -- name: GetWoWServer :one
 SELECT * FROM wow_servers WHERE id = $1;
@@ -12,6 +15,14 @@ SELECT * FROM wow_servers WHERE name = $1;
 -- name: InsertWoWServer :one
 INSERT INTO wow_servers (id, name, description, url, created_by)
 VALUES ($1, $2, $3, $4, $5) RETURNING *;
+-- name: UpdateWoWServer :one
+UPDATE wow_servers SET
+    name = @name,
+    description = @description,
+    url = @url
+WHERE id = @id
+RETURNING *;
+
 
 -- name: DeleteWoWServer :exec
 DELETE FROM wow_servers WHERE id = $1;
@@ -35,6 +46,14 @@ SELECT * FROM wow_server_realms WHERE lower(name) = lower(@name) LIMIT 1;
 -- name: InsertWoWServerRealm :one
 INSERT INTO wow_server_realms (id, server_id, name, description, url, created_by)
 VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+-- name: UpdateWoWServerRealm :one
+UPDATE wow_server_realms SET
+    name = @name,
+    description = @description,
+    url = @url
+WHERE id = @id
+RETURNING *;
+
 
 -- name: DeleteWoWServerRealm :exec
 DELETE FROM wow_server_realms WHERE id = $1;

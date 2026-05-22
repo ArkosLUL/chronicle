@@ -672,6 +672,37 @@ func (q *sqlQuerier) ListWoWServers(ctx context.Context) ([]WowServer, error) {
 	return items, nil
 }
 
+const listWoWServersByTenantID = `-- name: ListWoWServersByTenantID :many
+SELECT id, name, created_by, url, description, tenant_id FROM wow_servers WHERE tenant_id = $1 ORDER BY name
+`
+
+func (q *sqlQuerier) ListWoWServersByTenantID(ctx context.Context, tenantID uuid.NullUUID) ([]WowServer, error) {
+	rows, err := q.db.Query(ctx, listWoWServersByTenantID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WowServer
+	for rows.Next() {
+		var i WowServer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedBy,
+			&i.Url,
+			&i.Description,
+			&i.TenantID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const touchUploadKeyLastUsed = `-- name: TouchUploadKeyLastUsed :exec
 UPDATE wow_server_upload_keys SET last_used_at = now() WHERE id = $1
 `
@@ -679,6 +710,76 @@ UPDATE wow_server_upload_keys SET last_used_at = now() WHERE id = $1
 func (q *sqlQuerier) TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, touchUploadKeyLastUsed, id)
 	return err
+}
+
+const updateWoWServer = `-- name: UpdateWoWServer :one
+UPDATE wow_servers SET
+    name = $1,
+    description = $2,
+    url = $3
+WHERE id = $4
+RETURNING id, name, created_by, url, description, tenant_id
+`
+
+type UpdateWoWServerParams struct {
+	Name        string      `db:"name" json:"name"`
+	Description string      `db:"description" json:"description"`
+	Url         pgtype.Text `db:"url" json:"url"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateWoWServer(ctx context.Context, arg UpdateWoWServerParams) (WowServer, error) {
+	row := q.db.QueryRow(ctx, updateWoWServer,
+		arg.Name,
+		arg.Description,
+		arg.Url,
+		arg.ID,
+	)
+	var i WowServer
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+		&i.TenantID,
+	)
+	return i, err
+}
+
+const updateWoWServerRealm = `-- name: UpdateWoWServerRealm :one
+UPDATE wow_server_realms SET
+    name = $1,
+    description = $2,
+    url = $3
+WHERE id = $4
+RETURNING id, server_id, name, created_by, url, description
+`
+
+type UpdateWoWServerRealmParams struct {
+	Name        string      `db:"name" json:"name"`
+	Description string      `db:"description" json:"description"`
+	Url         pgtype.Text `db:"url" json:"url"`
+	ID          uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *sqlQuerier) UpdateWoWServerRealm(ctx context.Context, arg UpdateWoWServerRealmParams) (WowServerRealm, error) {
+	row := q.db.QueryRow(ctx, updateWoWServerRealm,
+		arg.Name,
+		arg.Description,
+		arg.Url,
+		arg.ID,
+	)
+	var i WowServerRealm
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.Name,
+		&i.CreatedBy,
+		&i.Url,
+		&i.Description,
+	)
+	return i, err
 }
 
 const deleteDataGrant = `-- name: DeleteDataGrant :exec

@@ -7,6 +7,7 @@ import (
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/chronicle"
 	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -35,7 +36,10 @@ func (h *Handler) Routes() http.Handler {
 
 	// Admin CRUD: session auth required, per-resource permission checks in handlers.
 	r.Group(func(r chi.Router) {
-		r.Use(h.auth.Authenticated(false))
+		r.Use(
+			h.auth.Authenticated(false),
+			servicetenant.AdminBypassMW,
+		)
 
 		// Server management
 		r.Get("/servers", h.ListServers)                    // filtered by wow_server#administer

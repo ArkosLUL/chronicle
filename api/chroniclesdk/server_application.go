@@ -114,13 +114,38 @@ type ThemePayload struct {
 }
 
 type ServerPayload struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	URL         *string `json:"url"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	URL         *string    `json:"url"`
+	// ResourceID is set when editing an existing server (the wow_server UUID).
+	// If nil, a new server is created on approval.
+	ResourceID  *uuid.UUID `json:"resource_id,omitempty"`
 }
 
 type RealmPayload struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	URL         *string `json:"url"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	URL         *string    `json:"url"`
+	// ResourceID is set when editing an existing realm (the wow_server_realm UUID).
+	// If nil, a new realm is created on approval.
+	ResourceID  *uuid.UUID `json:"resource_id,omitempty"`
+}
+
+// SettingsPayload contains tenant boolean settings.
+type SettingsPayload struct {
+	IncludeInAll        bool `json:"include_in_all"`
+	DisableClientUpload bool `json:"disable_client_upload"`
+	Discoverable        bool `json:"discoverable"`
+}
+
+// DeleteServerPayload requests removal of a server from the tenant.
+type DeleteServerPayload struct {
+	ResourceID uuid.UUID `json:"resource_id"`
+	Name       string    `json:"name"` // For display purposes.
+}
+
+// DeleteRealmPayload requests removal of a realm.
+type DeleteRealmPayload struct {
+	ResourceID uuid.UUID `json:"resource_id"`
+	Name       string    `json:"name"` // For display purposes.
 }

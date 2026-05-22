@@ -9,6 +9,7 @@ import {
   useApplicationAdmins,
   useAddApplicationAdmin,
   useRemoveApplicationAdmin,
+  useSyncServers,
 } from "@/api/queries";
 import type {
   ServerApplication,
@@ -29,9 +30,11 @@ import {
   Globe,
   Pencil,
   Plus,
+  RefreshCw,
   X,
   Users,
   Trash2,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -229,15 +232,72 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 // Section: Branding field card (core, slug, description, logos)
 // ---------------------------------------------------------------------------
 
+function parseTags(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+function TagDisplay({ tags }: { tags: string[] }) {
+  if (tags.length === 0) return <span className="text-xs italic text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {tags.map((t) => (
+        <span key={t} className="rounded-full border border-primary/50 bg-primary/15 text-primary px-2 py-0.5 text-xs font-medium">
+          {t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const BRANDING_TAGS = [
+  { category: "Client", values: ["1.12", "2.4.3", "2.5.3", "3.3.5a"] },
+  { category: "Version", values: ["Vanilla", "TBC", "Wrath"] },
+  { category: "Style", values: ["Progression", "PvP"] },
+  { category: "Extra", values: ["Custom Content"] },
+  { category: "Core", values: ["Azeroth Core"] },
+  { category: "Logging", values: ["Client Side", "Server Side"] },
+];
+
+function TagPicker({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const toggle = (tag: string) => {
+    onChange(tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]);
+  };
+  return (
+    <div className="space-y-1.5">
+      {BRANDING_TAGS.map((group) => (
+        <div key={group.category} className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground w-14 shrink-0">{group.category}</span>
+          {group.values.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => toggle(v)}
+              className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                tags.includes(v)
+                  ? "border-primary/50 bg-primary/15 text-primary font-medium"
+                  : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const BRANDING_SECTIONS = [
   {
     type: "core" as const,
     label: "Core Info",
+    description: "A universal name for you or your team. This identifies your group to other players. If you only have one server, this name is likely to be the same as the server name.",
     fields: [
       { key: "name", label: "Server Name" },
       { key: "display_name", label: "Display Name" },
       { key: "tagline", label: "Tagline" },
-      { key: "tags", label: "Tags (comma-separated)" },
+      { key: "tags", label: "Tags", tags: true },
     ],
     getLive: (tenant: { name?: string; branding?: { display_name?: string; tagline?: string; tags?: readonly string[] } | null }) => ({
       name: tenant.name ?? "",
@@ -249,6 +309,7 @@ const BRANDING_SECTIONS = [
   {
     type: "slug" as const,
     label: "Slug",
+    description: "Applying for a slug generates a URL specific to your server. Your slug becomes your subdomain — for example, your-slug.chronicleclassic.com. This domain will serve only your logs, your armory, etc.",
     fields: [{ key: "slug", label: "URL Slug" }],
     getLive: (tenant: { slug?: string | null }) => ({
       slug: tenant.slug ?? "",
@@ -269,6 +330,7 @@ const BRANDING_SECTIONS = [
   {
     type: "logos" as const,
     label: "Logos",
+    description: "Logos bring your own branding to your logs. Requires an approved slug to take effect.",
     fields: [
       { key: "square_logo", label: "Square Logo URL", image: true },
       { key: "logo_wide", label: "Wide Logo URL", image: true },
@@ -326,28 +388,37 @@ function BrandingSectionCard({
         <h3 className="text-sm font-semibold">{section.label}</h3>
         {req && <RequestBadge req={req} />}
       </div>
+      {"description" in section && section.description && (
+        <p className="text-xs text-muted-foreground">{section.description}</p>
+      )}
 
       {/* Live values */}
       <div className="space-y-1">
         <p className="text-xs text-muted-foreground font-medium">Current (live)</p>
         {section.fields.map((f) => (
-          <div key={f.key} className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground w-32 shrink-0">{f.label}:</span>
-            <span className="truncate">{live[f.key] || <span className="italic text-muted-foreground">—</span>}</span>
+          <div key={f.key} className="flex items-start gap-2 text-xs">
+            <span className="text-muted-foreground w-32 shrink-0 pt-0.5">{f.label}:</span>
+            {"tags" in f && f.tags
+              ? <TagDisplay tags={parseTags(live[f.key])} />
+              : <span className="truncate">{live[f.key] || <span className="italic text-muted-foreground">—</span>}</span>
+            }
           </div>
         ))}
       </div>
 
-      {/* Pending request or edit form */}
-      {req && !editing && (
+      {/* Pending/rejected request details */}
+      {req && req.status !== "approved" && !editing && (
         <div className="space-y-1 border-t pt-2">
           <p className="text-xs text-muted-foreground font-medium">Requested changes</p>
           {section.fields.map((f) => {
             const val = req.payload[f.key] ?? "";
             return (
               <div key={f.key} className="flex items-start gap-2 text-xs">
-                <span className="text-muted-foreground w-32 shrink-0">{f.label}:</span>
-                <span className="truncate">{val || "—"}</span>
+                <span className="text-muted-foreground w-32 shrink-0 pt-0.5">{f.label}:</span>
+                {"tags" in f && f.tags
+                  ? <TagDisplay tags={parseTags(val)} />
+                  : <span className="truncate">{val || "—"}</span>
+                }
                 {"image" in f && f.image && <ImagePreview url={val} alt={f.label} />}
               </div>
             );
@@ -370,7 +441,12 @@ function BrandingSectionCard({
           {section.fields.map((f) => (
             <div key={f.key}>
               <label className="text-xs text-muted-foreground">{f.label}</label>
-              {"multiline" in f && f.multiline ? (
+              {"tags" in f && f.tags ? (
+                <TagPicker
+                  tags={parseTags(draft[f.key])}
+                  onChange={(tags) => setDraft({ ...draft, [f.key]: tags.join(",") })}
+                />
+              ) : "multiline" in f && f.multiline ? (
                 <textarea
                   className="w-full rounded-md border bg-background px-2 py-1 text-sm mt-0.5 min-h-[60px]"
                   value={draft[f.key] ?? ""}
@@ -399,7 +475,7 @@ function BrandingSectionCard({
         </div>
       )}
 
-      {!req && !editing && (
+      {(!req || req.status === "approved") && !editing && (
         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setDraft({ ...live }); setEditing(true); }}>
           <Plus className="h-3 w-3 mr-1" /> Request change
         </Button>
@@ -496,6 +572,9 @@ function ThemeSectionCard({
         <h3 className="text-sm font-semibold">Theme</h3>
         {req && <RequestBadge req={req} />}
       </div>
+      <p className="text-xs text-muted-foreground">
+        Theming creates a custom color palette for your site. Requires an approved slug to take effect.
+      </p>
 
       {editing ? (
         <div>
@@ -548,8 +627,192 @@ function ThemeSectionCard({
 }
 
 // ---------------------------------------------------------------------------
+// Settings section (boolean toggles)
+// ---------------------------------------------------------------------------
+
+function SettingsSectionCard({
+  appId,
+  requests,
+  tenant,
+  canReview,
+}: {
+  appId: string;
+  requests: readonly ModificationRequest[];
+  tenant: Tenant;
+  canReview: boolean;
+}) {
+  const req = findRequest(requests, "settings");
+  const createReq = useCreateModificationRequest(appId);
+  const [editing, setEditing] = useState(false);
+  const [includeInAll, setIncludeInAll] = useState(tenant.include_in_all);
+  const [disableClientUpload, setDisableClientUpload] = useState(tenant.disable_client_upload);
+  const [discoverable, setDiscoverable] = useState(tenant.discoverable);
+
+  const handleSave = () => {
+    createReq.mutate(
+      {
+        type: "settings",
+        payload: {
+          include_in_all: includeInAll,
+          disable_client_upload: disableClientUpload,
+          discoverable: discoverable,
+        } as never,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Settings change requested");
+          setEditing(false);
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  };
+
+  const SETTINGS = [
+    { key: "include_in_all", label: "Include in root domain listing", description: "Show this server's logs on the main chronicleclassic.com domain" },
+    { key: "disable_client_upload", label: "Disable client uploads", description: "Only allow server-side log uploads" },
+    { key: "discoverable", label: "Discoverable", description: "Appear on chronicleclassic.com for other players to find" },
+  ] as const;
+
+  const liveValues: Record<string, boolean> = {
+    include_in_all: tenant.include_in_all,
+    disable_client_upload: tenant.disable_client_upload,
+    discoverable: tenant.discoverable,
+  };
+
+  const editValues: Record<string, boolean> = {
+    include_in_all: includeInAll,
+    disable_client_upload: disableClientUpload,
+    discoverable: discoverable,
+  };
+
+  const setters: Record<string, (v: boolean) => void> = {
+    include_in_all: setIncludeInAll,
+    disable_client_upload: setDisableClientUpload,
+    discoverable: setDiscoverable,
+  };
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Settings</h3>
+        {req && <RequestBadge req={req} />}
+      </div>
+
+      {/* Live values */}
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground font-medium">Current (live)</p>
+        {SETTINGS.map((s) => (
+          <div key={s.key} className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground w-56 shrink-0">{s.label}:</span>
+            <span className={liveValues[s.key] ? "text-green-400" : "text-muted-foreground"}>{liveValues[s.key] ? "Yes" : "No"}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pending request */}
+      {req && req.status !== "approved" && !editing && (
+        <div className="space-y-1 border-t pt-2">
+          <p className="text-xs text-muted-foreground font-medium">Requested changes</p>
+          {SETTINGS.map((s) => {
+            const val = req.payload[s.key];
+            return (
+              <div key={s.key} className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground w-56 shrink-0">{s.label}:</span>
+                <span className={val === "true" || val === true ? "text-green-400" : "text-muted-foreground"}>
+                  {val === "true" || val === true ? "Yes" : "No"}
+                </span>
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-2 pt-1">
+            {req.status === "pending" && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
+                setIncludeInAll(req.payload.include_in_all === "true" || req.payload.include_in_all === true);
+                setDisableClientUpload(req.payload.disable_client_upload === "true" || req.payload.disable_client_upload === true);
+                setDiscoverable(req.payload.discoverable === "true" || req.payload.discoverable === true);
+                setEditing(true);
+              }}>
+                Edit
+              </Button>
+            )}
+            {req.status === "rejected" && <DeleteRequestButton appId={appId} reqId={req.id} />}
+            {canReview && <AdminReviewControls appId={appId} reqId={req.id} status={req.status} />}
+          </div>
+        </div>
+      )}
+
+      {/* Edit form */}
+      {editing && (
+        <div className="space-y-2 border-t pt-2">
+          <p className="text-xs text-muted-foreground font-medium">Edit settings</p>
+          {SETTINGS.map((s) => (
+            <label key={s.key} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editValues[s.key]}
+                onChange={(e) => setters[s.key](e.target.checked)}
+                className="rounded border-border"
+              />
+              <div>
+                <span className="text-sm">{s.label}</span>
+                <p className="text-xs text-muted-foreground">{s.description}</p>
+              </div>
+            </label>
+          ))}
+          <div className="flex gap-2">
+            <Button size="sm" className="text-xs h-7" disabled={createReq.isPending} onClick={handleSave}>
+              {createReq.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+            </Button>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {(!req || req.status === "approved") && !editing && (
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
+          setIncludeInAll(tenant.include_in_all);
+          setDisableClientUpload(tenant.disable_client_upload);
+          setDiscoverable(tenant.discoverable);
+          setEditing(true);
+        }}>
+          <Plus className="h-3 w-3 mr-1" /> Request settings change
+        </Button>
+      )}
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Server / Realm cards
 // ---------------------------------------------------------------------------
+
+function SyncServersButton({ appId }: { appId: string }) {
+  const sync = useSyncServers(appId);
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-1 text-xs"
+      disabled={sync.isPending}
+      onClick={() =>
+        sync.mutate(undefined, {
+          onSuccess: () => toast.success("Servers synced"),
+          onError: (err) => toast.error(err.message),
+        })
+      }
+    >
+      {sync.isPending ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <RefreshCw className="h-3 w-3" />
+      )}
+      Sync Servers
+    </Button>
+  );
+}
 
 function AddServerForm({ appId }: { appId: string }) {
   const createReq = useCreateModificationRequest(appId);
@@ -740,7 +1003,7 @@ function ServerRequestCard({
           isPending={createReq.isPending}
           onSave={(p) =>
             createReq.mutate(
-              { type: "server", payload: p as never },
+              { type: "server", payload: { ...p, resource_id: req.resource_id } as never },
               {
                 onSuccess: () => toast.success("Server change requested"),
                 onError: (err) => toast.error(err.message),
@@ -782,7 +1045,7 @@ function ServerRequestCard({
                   isPending={createReq.isPending}
                   onSave={(p) =>
                     createReq.mutate(
-                      { type: "realm", parent_id: req.id, payload: p as never },
+                      { type: "realm", parent_id: req.id, payload: { ...p, resource_id: realm.resource_id } as never },
                       {
                         onSuccess: () => toast.success("Realm change requested"),
                         onError: (err) => toast.error(err.message),
@@ -926,6 +1189,25 @@ function ApplicationPageContent({ app }: { app: ServerApplication }) {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
+      {/* Beta notice */}
+      <Card className="p-4 border-blue-500/30 bg-blue-500/5">
+        <div className="flex gap-3">
+          <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>
+              You are applying to have your realm logs recognized by Chronicle.
+              Many of the fields below relate to discoverability on{" "}
+              <a href="https://chronicleclassic.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+                chronicleclassic.com
+              </a>.
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              This feature is in beta — please be patient and report any bugs or feedback.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold">{app.name}</h1>
@@ -963,11 +1245,26 @@ function ApplicationPageContent({ app }: { app: ServerApplication }) {
         />
       </div>
 
+      <SettingsSectionCard
+        appId={app.id}
+        requests={app.requests}
+        tenant={app.tenant}
+        canReview={app.can_review}
+      />
+
       {/* Servers & Realms */}
       <div className="space-y-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Servers & Realms
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Servers & Realms
+          </h2>
+          <SyncServersButton appId={app.id} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Match your <code className="bg-muted px-1 py-0.5 rounded">realmlist.wtf</code>.
+          A <strong>server</strong> is an auth server and a <strong>realm</strong> is a playable realm.
+          Match the name of the realm <strong>exactly</strong> as it appears in-game — this is string-matched in the combat logs.
+        </p>
         {serverRequests.map((srv) => (
           <ServerRequestCard
             key={srv.id}

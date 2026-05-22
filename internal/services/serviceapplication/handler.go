@@ -30,7 +30,9 @@ func isUniqueViolation(err error) bool {
 
 var validModTypes = map[string]bool{
 	"core": true, "slug": true, "description": true,
-	"logos": true, "theme": true, "server": true, "realm": true,
+	"logos": true, "theme": true, "settings": true,
+	"server": true, "realm": true,
+	"delete_server": true, "delete_realm": true,
 }
 
 // requireApplicationAdminister checks wow_tenant_application#administer.
@@ -68,6 +70,7 @@ func (s *Service) Routes(zed *authz.Authz) http.Handler {
 
 	r.With(
 		httpmw.Can(zed, policy.New().GlobalChronicle().CanCreate_tenant_application_User),
+		servicetenant.AdminBypassMW,
 	).Post("/", s.Create)
 
 	r.Get("/", s.GetMine)
@@ -79,6 +82,7 @@ func (s *Service) Routes(zed *authz.Authz) http.Handler {
 		r.Post("/requests", s.CreateRequest)
 		r.Put("/requests/{reqID}", s.UpdateRequest)
 		r.Delete("/requests/{reqID}", s.DeleteRequest)
+		r.Post("/sync-servers", s.SyncServers)
 
 		r.With(httpmw.Can(zed, policy.New().GlobalChronicle().CanAdmin_tenants_User)).Group(func(r chi.Router) {
 			r.Post("/requests/{reqID}/approve", s.ApproveRequest)
@@ -193,7 +197,9 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, realm := range srv.Realms {
-			realmPayload, _ := json.Marshal(chroniclesdk.RealmPayload(realm))
+			realmPayload, _ := json.Marshal(chroniclesdk.RealmPayload{
+				Name: realm.Name, Description: realm.Description, URL: realm.URL,
+			})
 			_, err := s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
 				ID:            uuid.New(),
 				ApplicationID: appID,
@@ -591,6 +597,151 @@ func (s *Service) RejectRequest(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
+	}
+
+	resp, err := s.buildApplicationResponse(ctx, appID, actor)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+// SyncServers reads all wow_servers and realms under the application's tenant
+// and creates approved modification requests for any that don't already have one.
+// This lets the user see and request changes to servers/realms that were provisioned
+// outside the mod request system.
+func (s *Service) SyncServers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	actor, ok := authz.ActorFromContext(ctx)
+	if !ok {
+		httpapi.Forbidden(w, nil)
+		return
+	}
+
+	appID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
+		return
+	}
+
+	app, err := s.DB.GetServerApplicationByID(ctx, appID)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
+		return
+	}
+
+	bypassCtx := servicetenant.AdminBypass(ctx)
+
+	// Get existing mod requests to avoid duplicates.
+	existingReqs, err := s.DB.ListModificationRequestsByApplicationID(ctx, appID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	// Build set of resource_ids already tracked.
+	trackedResources := make(map[uuid.UUID]bool)
+	for _, mr := range existingReqs {
+		if mr.ResourceID.Valid {
+			trackedResources[mr.ResourceID.UUID] = true
+		}
+	}
+
+	// List all servers under this tenant.
+	servers, err := s.DB.ListWoWServersByTenantID(bypassCtx, uuid.NullUUID{UUID: app.TenantID, Valid: true})
+	if err != nil {
+		httpapi.InternalServerError(w, fmt.Errorf("list servers: %w", err))
+		return
+	}
+
+	now := time.Now()
+	for _, srv := range servers {
+		// Sync the server itself if not already tracked.
+		if !trackedResources[srv.ID] {
+			var srvURL *string
+			if srv.Url.Valid {
+				srvURL = &srv.Url.String
+			}
+			payload, _ := json.Marshal(chroniclesdk.ServerPayload{
+				Name: srv.Name, Description: srv.Description, URL: srvURL, ResourceID: &srv.ID,
+			})
+			srvReq, err := s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
+				ID: uuid.New(), ApplicationID: appID, Type: "server", Payload: payload,
+			})
+			if err == nil {
+				_ = s.DB.UpdateModificationRequestStatus(ctx, database.UpdateModificationRequestStatusParams{
+					ID: srvReq.ID, Status: "approved",
+					ResourceID: uuid.NullUUID{UUID: srv.ID, Valid: true},
+					ReviewedAt: pgTimestamptz(now),
+				})
+			}
+		}
+
+		// Always sync realms for every server.
+		realms, err := s.DB.ListWoWServerRealms(bypassCtx, srv.ID)
+		if err != nil {
+			continue
+		}
+		for _, realm := range realms {
+			if trackedResources[realm.ID] {
+				continue
+			}
+			var realmURL *string
+			if realm.Url.Valid {
+				realmURL = &realm.Url.String
+			}
+			realmPayload, _ := json.Marshal(chroniclesdk.RealmPayload{
+				Name: realm.Name, Description: realm.Description, URL: realmURL, ResourceID: &realm.ID,
+			})
+			realmReq, err := s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
+				ID: uuid.New(), ApplicationID: appID, Type: "realm", Payload: realmPayload,
+			})
+			if err == nil {
+				_ = s.DB.UpdateModificationRequestStatus(ctx, database.UpdateModificationRequestStatusParams{
+					ID: realmReq.ID, Status: "approved",
+					ResourceID: uuid.NullUUID{UUID: realm.ID, Valid: true},
+					ReviewedAt: pgTimestamptz(now),
+				})
+			}
+		}
+	}
+
+	// Cleanup: delete approved server/realm mod requests whose resource no longer exists.
+	liveResources := make(map[uuid.UUID]bool)
+	for _, srv := range servers {
+		liveResources[srv.ID] = true
+		realms, _ := s.DB.ListWoWServerRealms(bypassCtx, srv.ID)
+		for _, r := range realms {
+			liveResources[r.ID] = true
+		}
+	}
+	// Re-fetch mod requests (may have new ones from the sync above).
+	updatedReqs, _ := s.DB.ListModificationRequestsByApplicationID(ctx, appID)
+
+	// Pass 1: delete approved server/realm requests whose resource no longer exists.
+	// Track which request IDs we delete so we can cascade to children.
+	deletedReqIDs := make(map[uuid.UUID]bool)
+	for _, mr := range updatedReqs {
+		if mr.Type != "server" && mr.Type != "realm" {
+			continue
+		}
+		if mr.ResourceID.Valid && !liveResources[mr.ResourceID.UUID] {
+			_ = s.DB.DeleteModificationRequest(ctx, mr.ID)
+			deletedReqIDs[mr.ID] = true
+		}
+	}
+
+	// Pass 2: delete any request whose parent was deleted (orphaned realm requests).
+	if len(deletedReqIDs) > 0 {
+		for _, mr := range updatedReqs {
+			if deletedReqIDs[mr.ID] {
+				continue // already deleted
+			}
+			if mr.ParentID.Valid && deletedReqIDs[mr.ParentID.UUID] {
+				_ = s.DB.DeleteModificationRequest(ctx, mr.ID)
+			}
+		}
 	}
 
 	resp, err := s.buildApplicationResponse(ctx, appID, actor)

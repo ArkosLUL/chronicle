@@ -5,7 +5,7 @@ import { useAuthorizationCheck, useMyServerApplications, useCreateServerApplicat
 import type { CreateServerApplicationRequest, CreateServerRequest, CreateRealmRequest, ServerApplication } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
-import { Loader2, LogIn, CheckCircle2, XCircle, Plus, Trash2, Server, Globe } from "lucide-react";
+import { Loader2, LogIn, CheckCircle2, XCircle, Plus, Trash2, Server, Globe, Info } from "lucide-react";
 import { toast } from "sonner";
 
 function RequirementsChecklist() {
@@ -126,9 +126,32 @@ function CreateApplicationForm() {
   return (
     <div className="max-w-3xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Apply to Host a Server</h1>
+
+      <Card className="p-4 mb-6 border-blue-500/30 bg-blue-500/5">
+        <div className="flex gap-3">
+          <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>
+              You are applying to have your realm logs recognized by Chronicle.
+              Many of the fields below relate to discoverability on{" "}
+              <a href="https://chronicleclassic.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+                chronicleclassic.com
+              </a>.
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              This feature is in beta — please be patient and report any bugs or feedback.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="p-6 space-y-4">
           <h2 className="text-lg font-semibold">Tenant Details</h2>
+          <p className="text-sm text-muted-foreground">
+            A universal name for you or your team is required. This identifies your group to other players.
+            If you only have one server, this name is likely to be the same as the server name.
+          </p>
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium mb-1 block">Name (unique identifier)</label>
@@ -168,6 +191,17 @@ function CreateApplicationForm() {
                 placeholder="vanilla, pvp, hardcore"
               />
             </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-muted bg-muted/30">
+          <div className="flex gap-3">
+            <Server className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-muted-foreground">
+              Match your <code className="text-xs bg-muted px-1 py-0.5 rounded">realmlist.wtf</code>.
+              A <strong>server</strong> is an auth server and a <strong>realm</strong> is a playable realm.
+              Match the name of the realm <strong>exactly</strong> as it appears in-game — this is string-matched in the combat logs.
+            </p>
           </div>
         </Card>
 

@@ -113,7 +113,8 @@ func (h *Handler) canAdministerServer(w http.ResponseWriter, r *http.Request, se
 // wow_server->administer, we look up the realm's server and check there.
 func (h *Handler) canAdministerRealm(w http.ResponseWriter, r *http.Request, realmID uuid.UUID) bool {
 	ctx := r.Context()
-	realm, err := h.zed.GetWoWServerRealm(ctx, realmID)
+	bypassCtx := servicetenant.AdminBypass(ctx)
+	realm, err := h.zed.GetWoWServerRealm(bypassCtx, realmID)
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
 			Message: "Realm not found",

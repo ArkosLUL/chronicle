@@ -2,6 +2,7 @@ package servicetenant
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/Emyrk/chronicle/database"
 	"github.com/google/uuid"
@@ -45,6 +46,13 @@ func TenantIDFromContext(ctx context.Context) uuid.UUID {
 // Use for admin endpoints, background jobs, and migrations.
 func AdminBypass(ctx context.Context) context.Context {
 	return context.WithValue(ctx, tenantBypassKey{}, true)
+}
+
+func AdminBypassMW(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := AdminBypass(r.Context())
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func isBypass(ctx context.Context) bool {

@@ -48,10 +48,16 @@ func (s *Service) ApplyModification(ctx context.Context, app database.GetServerA
 		return nil, s.applyLogos(ctx, app, req.Payload)
 	case "theme":
 		return nil, s.applyTheme(ctx, app, req.Payload)
+	case "settings":
+		return nil, s.applySettings(ctx, app, req.Payload)
 	case "server":
-		return s.applyServer(ctx, app, req.Payload)
+		return s.applyServer(ctx, app, req)
 	case "realm":
 		return s.applyRealm(ctx, app, req)
+	case "delete_server":
+		return nil, s.applyDeleteServer(ctx, app, req.Payload)
+	case "delete_realm":
+		return nil, s.applyDeleteRealm(ctx, req.Payload)
 	default:
 		return nil, fmt.Errorf("unknown modification type: %s", req.Type)
 	}
@@ -225,19 +231,40 @@ func (s *Service) applyTheme(ctx context.Context, app database.GetServerApplicat
 	return nil
 }
 
-func (s *Service) applyServer(ctx context.Context, app database.GetServerApplicationByIDRow, payload []byte) (*uuid.UUID, error) {
+func (s *Service) applyServer(ctx context.Context, app database.GetServerApplicationByIDRow, req database.ApplicationModificationRequest) (*uuid.UUID, error) {
 	var p chroniclesdk.ServerPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
+	if err := json.Unmarshal(req.Payload, &p); err != nil {
 		return nil, fmt.Errorf("unmarshal server payload: %w", err)
 	}
 
+	// Determine the resource ID: prefer payload, fall back to mod request's resource_id.
+	resourceID := p.ResourceID
+	if resourceID == nil && req.ResourceID.Valid {
+		resourceID = &req.ResourceID.UUID
+	}
+
 	bypassCtx := servicetenant.AdminBypass(ctx)
-	serverID := uuid.New()
 	var srvURL pgtype.Text
 	if p.URL != nil {
 		srvURL = pgtype.Text{String: *p.URL, Valid: true}
 	}
 
+	// Edit existing server.
+	if resourceID != nil {
+		_, err := s.DB.UpdateWoWServer(bypassCtx, database.UpdateWoWServerParams{
+			ID:          *resourceID,
+			Name:        p.Name,
+			Description: p.Description,
+			Url:         srvURL,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("update wow server: %w", err)
+		}
+		return resourceID, nil
+	}
+
+	// Create new server.
+	serverID := uuid.New()
 	_, err := s.Zed.InsertWoWServer(bypassCtx, database.InsertWoWServerParams{
 		ID:          serverID,
 		Name:        p.Name,
@@ -266,11 +293,37 @@ func (s *Service) applyRealm(ctx context.Context, app database.GetServerApplicat
 		return nil, fmt.Errorf("unmarshal realm payload: %w", err)
 	}
 
+	bypassCtx := servicetenant.AdminBypass(ctx)
+	// Determine the resource ID: prefer payload, fall back to mod request's resource_id.
+	resourceID := p.ResourceID
+	if resourceID == nil && req.ResourceID.Valid {
+		resourceID = &req.ResourceID.UUID
+	}
+
+	var realmURL pgtype.Text
+	if p.URL != nil {
+		realmURL = pgtype.Text{String: *p.URL, Valid: true}
+	}
+
+	// Edit existing realm.
+	if resourceID != nil {
+		_, err := s.DB.UpdateWoWServerRealm(bypassCtx, database.UpdateWoWServerRealmParams{
+			ID:          *resourceID,
+			Name:        p.Name,
+			Description: p.Description,
+			Url:         realmURL,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("update realm: %w", err)
+		}
+		return resourceID, nil
+	}
+
+	// Create new realm — parent server must be approved.
 	if !req.ParentID.Valid {
 		return nil, fmt.Errorf("realm request must have a parent server request")
 	}
 
-	// Look up the parent server's resource_id.
 	parentReq, err := s.DB.GetModificationRequestByID(ctx, req.ParentID.UUID)
 	if err != nil {
 		return nil, fmt.Errorf("get parent server request: %w", err)
@@ -279,13 +332,7 @@ func (s *Service) applyRealm(ctx context.Context, app database.GetServerApplicat
 		return nil, fmt.Errorf("parent server must be approved before realms")
 	}
 
-	bypassCtx := servicetenant.AdminBypass(ctx)
 	realmID := uuid.New()
-	var realmURL pgtype.Text
-	if p.URL != nil {
-		realmURL = pgtype.Text{String: *p.URL, Valid: true}
-	}
-
 	_, err = s.Zed.InsertWoWServerRealm(bypassCtx, database.InsertWoWServerRealmParams{
 		ID:        realmID,
 		ServerID:  parentReq.ResourceID.UUID,
@@ -298,4 +345,58 @@ func (s *Service) applyRealm(ctx context.Context, app database.GetServerApplicat
 	}
 
 	return &realmID, nil
+}
+
+func (s *Service) applySettings(ctx context.Context, app database.GetServerApplicationByIDRow, payload []byte) error {
+	var p chroniclesdk.SettingsPayload
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return fmt.Errorf("unmarshal settings payload: %w", err)
+	}
+
+	bypassCtx := servicetenant.AdminBypass(ctx)
+	_, err := s.DB.UpdateTenant(bypassCtx, database.UpdateTenantParams{
+		ID:                  app.TenantID,
+		IncludeInAll:        pgtype.Bool{Bool: p.IncludeInAll, Valid: true},
+		DisableClientUpload: pgtype.Bool{Bool: p.DisableClientUpload, Valid: true},
+		Discoverable:        pgtype.Bool{Bool: p.Discoverable, Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("update tenant settings: %w", err)
+	}
+	s.Tenant.InvalidateCache()
+	return nil
+}
+
+func (s *Service) applyDeleteServer(ctx context.Context, app database.GetServerApplicationByIDRow, payload []byte) error {
+	var p chroniclesdk.DeleteServerPayload
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return fmt.Errorf("unmarshal delete_server payload: %w", err)
+	}
+
+	bypassCtx := servicetenant.AdminBypass(ctx)
+
+	// Unassign the server from the tenant (set tenant_id = NULL).
+	err := s.Zed.SetServerTenant(bypassCtx, database.SetServerTenantParams{
+		ID:       p.ResourceID,
+		TenantID: uuid.NullUUID{}, // NULL = unassign
+	})
+	if err != nil {
+		return fmt.Errorf("unassign server from tenant: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) applyDeleteRealm(ctx context.Context, payload []byte) error {
+	var p chroniclesdk.DeleteRealmPayload
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return fmt.Errorf("unmarshal delete_realm payload: %w", err)
+	}
+
+	bypassCtx := servicetenant.AdminBypass(ctx)
+
+	err := s.Zed.DeleteWoWServerRealm(bypassCtx, p.ResourceID)
+	if err != nil {
+		return fmt.Errorf("delete realm: %w", err)
+	}
+	return nil
 }

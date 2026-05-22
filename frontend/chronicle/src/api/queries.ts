@@ -2062,6 +2062,7 @@ export function useCreateServerApplication() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }
@@ -2099,6 +2100,7 @@ export function useCreateModificationRequest(appId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }
@@ -2122,6 +2124,7 @@ export function useUpdateModificationRequest(appId: string, reqId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }
@@ -2140,6 +2143,7 @@ export function useDeleteModificationRequest(appId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }
@@ -2158,6 +2162,7 @@ export function useApproveModificationRequest(appId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }
@@ -2181,6 +2186,7 @@ export function useRejectModificationRequest(appId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }
@@ -2236,6 +2242,25 @@ export function useRemoveApplicationAdmin(appId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["server-application", appId, "admins"] });
+    },
+  });
+}
+
+export function useSyncServers(appId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/sync-servers`,
+        { method: "POST", credentials: "include" }
+      );
+      if (!response.ok)
+        throw buildAPIError("Failed to sync servers", await response.json());
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+      queryClient.invalidateQueries({ queryKey: ["azerothcore"] });
     },
   });
 }

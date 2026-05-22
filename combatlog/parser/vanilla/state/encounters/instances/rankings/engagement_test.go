@@ -270,7 +270,7 @@ func TestSpeedrunTracker_LevelRange_AllPlayersInRange(t *testing.T) {
 		Target:      boss,
 		Amount:      100,
 	}
-	engagement.ProcessMessage(true, eid, dmg)
+	_ = engagement.ProcessMessage(true, eid, dmg)
 
 	// Boss killed.
 	c := &stubChar{id: boss, active: false, endState: period.EndStateSlain, hasPeriod: true}
@@ -315,7 +315,7 @@ func TestSpeedrunTracker_LevelRange_ViolatorDisqualifies(t *testing.T) {
 	// Both players damage boss.
 	for _, p := range []guid.GUID{player60, player55} {
 		p := p
-		engagement.ProcessMessage(true, eid, &messages.Damage{
+		_ = engagement.ProcessMessage(true, eid, &messages.Damage{
 			MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 			Caster:      &p,
 			Target:      boss,
@@ -367,7 +367,7 @@ func TestSpeedrunTracker_LevelRange_AFKPlayerNotChecked(t *testing.T) {
 
 	// Only tank damages boss; AFK player does nothing.
 	tank2 := tank
-	engagement.ProcessMessage(true, eid, &messages.Damage{
+	_ = engagement.ProcessMessage(true, eid, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &tank2,
 		Target:      boss,
@@ -413,7 +413,7 @@ func TestSpeedrunTracker_LevelRange_MissingLevelDisqualifies(t *testing.T) {
 	tracker.FightStarted(eid, msg(t0))
 
 	p := player
-	engagement.ProcessMessage(true, eid, &messages.Damage{
+	_ = engagement.ProcessMessage(true, eid, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &p,
 		Target:      boss,

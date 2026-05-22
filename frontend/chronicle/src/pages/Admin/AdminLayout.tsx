@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Loader2,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,6 +36,7 @@ const tabs: Tab[] = [
   { path: "/admin/storage", label: "Storage Grants", icon: HardDrive },
   { path: "/admin/regression", label: "Regression", icon: FlaskConical },
   { path: "/admin/outdated-instances", label: "Outdated Instances", icon: RefreshCw },
+  { path: "/admin/applications", label: "Applications", icon: ClipboardList },
 ];
 
 export function AdminLayout() {

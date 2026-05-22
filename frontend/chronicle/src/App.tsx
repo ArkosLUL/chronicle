@@ -24,6 +24,7 @@ import { AdminStoragePage } from "./pages/Admin/AdminStoragePage"
 import { AdminUsersPage } from "./pages/Admin/AdminUsersPage"
 import { RegressionPage } from "./pages/Admin/RegressionPage"
 import { AdminOutdatedInstancesPage } from "./pages/Admin/AdminOutdatedInstancesPage"
+import { AdminApplicationsListPage } from "./pages/Admin/AdminApplicationsListPage"
 import { ServersLayout, ServersPage, UploadKeysPage, RetentionPage } from "./pages/Servers"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
@@ -57,6 +58,8 @@ import { GuildPage, GuildPageEditor, GuildRoster, GuildSettings } from "./pages/
 import { ArmoryPage } from "./pages/ArmoryPage"
 import { ArmorySearchPage } from "./pages/ArmorySearch"
 import { GuildSearchPage } from "./pages/GuildSearch"
+import { ApplyPage } from "./pages/Apply/ApplyPage"
+import { ApplicationPage } from "./pages/Apply/ApplicationPage"
 import { SimPage } from "./pages/Sim"
 import { GameDataLayout } from "./pages/GameData/GameDataPage"
 import { WDBTab } from "./pages/GameData/WDBTab"
@@ -102,6 +105,8 @@ function App() {
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/sim" element={<SimPage />} />
         <Route path="/leaderboard" element={<SpeedrunLeaderboard />} />
+        <Route path="/apply" element={<ApplyPage />} />
+        <Route path="/apply/:id" element={<ApplicationPage />} />
         <Route path="/census" element={<CensusPage />} />
         <Route path="/debug/proto" element={<ProtoDecode />} />
         <Route path="/admin" element={<AdminLayout />}>
@@ -114,6 +119,7 @@ function App() {
           <Route path="storage" element={<AdminStoragePage />} />
           <Route path="regression" element={<RegressionPage />} />
           <Route path="outdated-instances" element={<AdminOutdatedInstancesPage />} />
+          <Route path="applications" element={<AdminApplicationsListPage />} />
         </Route>
         <Route path="/servers" element={<ServersLayout />}>
           <Route index element={<ServersPage />} />

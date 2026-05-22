@@ -2,23 +2,21 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   useServerApplication,
-  useUpdateServerApplication,
-  useReviewApplicationField,
-  useApproveApplication,
-  useRejectApplication,
-  useApproveServer,
-  useRejectServer,
-  useApproveRealm,
-  useRejectRealm,
-  useAddApplicationServer,
-  useAddApplicationRealm,
+  useCreateModificationRequest,
+  useDeleteModificationRequest,
+  useApproveModificationRequest,
+  useRejectModificationRequest,
+  useApplicationAdmins,
+  useAddApplicationAdmin,
+  useRemoveApplicationAdmin,
 } from "@/api/queries";
 import type {
   ServerApplication,
-  ServerApplicationServer,
-  ServerApplicationRealm,
-  FieldReview,
+  ModificationRequest,
+  CreateModificationRequestPayload,
+  Tenant,
 } from "@/api/typesGenerated";
+import { ThemeEditor } from "@/components/ThemeEditor/ThemeEditor";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +28,38 @@ import {
   Server,
   Globe,
   Plus,
-  Pencil,
   X,
+  Users,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-// --- Status helpers ---
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function findRequest(
+  requests: readonly ModificationRequest[],
+  type: string,
+): ModificationRequest | undefined {
+  // Prefer pending, then rejected, then approved
+  return (
+    requests.find((r) => r.type === type && r.status === "pending") ??
+    requests.find((r) => r.type === type && r.status === "rejected") ??
+    requests.find((r) => r.type === type && r.status === "approved")
+  );
+}
+
+function filterRequests(
+  requests: readonly ModificationRequest[],
+  type: string,
+): ModificationRequest[] {
+  return requests.filter((r) => r.type === type);
+}
+
+// ---------------------------------------------------------------------------
+// StatusBadge
+// ---------------------------------------------------------------------------
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -63,61 +87,58 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
-function FieldReviewBadge({ review }: { review: FieldReview | undefined }) {
-  if (!review) return null;
+// ---------------------------------------------------------------------------
+// RequestBadge – status + optional admin note
+// ---------------------------------------------------------------------------
+
+function RequestBadge({ req }: { req: ModificationRequest }) {
   return (
     <div className="flex items-center gap-2">
-      <StatusBadge status={review.status} />
-      {review.note && <span className="text-xs text-muted-foreground italic">"{review.note}"</span>}
+      <StatusBadge status={req.status} />
+      {req.admin_note && (
+        <span className="text-xs text-muted-foreground italic">
+          &ldquo;{req.admin_note}&rdquo;
+        </span>
+      )}
     </div>
   );
 }
 
-// --- Admin review controls ---
+// ---------------------------------------------------------------------------
+// Admin review controls (per-request approve/reject)
+// ---------------------------------------------------------------------------
 
-function AdminReviewButtons({
-  section,
+function AdminReviewControls({
   appId,
-  currentStatus,
+  reqId,
+  status,
 }: {
-  section: string;
   appId: string;
-  currentStatus: string;
+  reqId: string;
+  status: string;
 }) {
-  const reviewField = useReviewApplicationField(appId);
+  const approve = useApproveModificationRequest(appId);
+  const reject = useRejectModificationRequest(appId);
   const [note, setNote] = useState("");
   const [showNote, setShowNote] = useState(false);
 
-  const handleReview = (status: "approved" | "rejected") => {
-    reviewField.mutate(
-      { section, status, note: note || null },
-      {
-        onSuccess: () => {
-          toast.success(`Section ${status}`);
-          setNote("");
-          setShowNote(false);
-        },
-        onError: (err) => toast.error(err.message),
-      },
-    );
-  };
+  if (status !== "pending") return null;
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {showNote && (
+      {showNote ? (
         <div className="flex items-center gap-2">
           <input
             className="rounded-md border bg-background px-2 py-1 text-xs w-48"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Review note (optional)"
+            placeholder="Rejection note (optional)"
           />
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowNote(false)}>
             <X className="h-3 w-3" />
           </Button>
         </div>
-      )}
-      {!showNote && (
+      ) : (
         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setShowNote(true)}>
           Add note
         </Button>
@@ -126,609 +147,724 @@ function AdminReviewButtons({
         variant="outline"
         size="sm"
         className="text-xs h-7 text-green-400 border-green-400/30"
-        disabled={reviewField.isPending || currentStatus === "approved"}
-        onClick={() => handleReview("approved")}
-      >
-        {reviewField.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-xs h-7 text-red-400 border-red-400/30"
-        disabled={reviewField.isPending || currentStatus === "rejected"}
-        onClick={() => handleReview("rejected")}
-      >
-        {reviewField.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reject"}
-      </Button>
-    </div>
-  );
-}
-
-function ServerReviewButtons({
-  appId,
-  serverReqId,
-  status,
-}: {
-  appId: string;
-  serverReqId: string;
-  status: string;
-}) {
-  const approve = useApproveServer(appId, serverReqId);
-  const reject = useRejectServer(appId, serverReqId);
-  const [note, setNote] = useState("");
-
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        className="rounded-md border bg-background px-2 py-1 text-xs w-32"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Note (optional)"
-      />
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-xs h-7 text-green-400 border-green-400/30"
-        disabled={approve.isPending || status === "approved"}
+        disabled={approve.isPending}
         onClick={() =>
-          approve.mutate(undefined, {
-            onSuccess: () => toast.success("Server approved"),
+          approve.mutate(reqId, {
+            onSuccess: () => toast.success("Request approved"),
             onError: (err) => toast.error(err.message),
           })
         }
       >
-        Approve
+        {approve.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
       </Button>
       <Button
         variant="outline"
         size="sm"
         className="text-xs h-7 text-red-400 border-red-400/30"
-        disabled={reject.isPending || status === "rejected"}
+        disabled={reject.isPending}
         onClick={() =>
           reject.mutate(
-            { admin_note: note || undefined },
+            { reqId, adminNote: note || undefined },
             {
-              onSuccess: () => toast.success("Server rejected"),
+              onSuccess: () => {
+                toast.success("Request rejected");
+                setNote("");
+                setShowNote(false);
+              },
               onError: (err) => toast.error(err.message),
             },
           )
         }
       >
-        Reject
+        {reject.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reject"}
       </Button>
     </div>
   );
 }
 
-function RealmReviewButtons({
-  appId,
-  serverReqId,
-  realmReqId,
-  status,
-}: {
-  appId: string;
-  serverReqId: string;
-  realmReqId: string;
-  status: string;
-}) {
-  const approve = useApproveRealm(appId, serverReqId, realmReqId);
-  const reject = useRejectRealm(appId, serverReqId, realmReqId);
-  const [note, setNote] = useState("");
+// ---------------------------------------------------------------------------
+// Delete rejected request button
+// ---------------------------------------------------------------------------
 
+function DeleteRequestButton({ appId, reqId }: { appId: string; reqId: string }) {
+  const del = useDeleteModificationRequest(appId);
   return (
-    <div className="flex items-center gap-2">
-      <input
-        className="rounded-md border bg-background px-2 py-1 text-xs w-32"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Note (optional)"
-      />
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-xs h-7 text-green-400 border-green-400/30"
-        disabled={approve.isPending || status === "approved"}
-        onClick={() =>
-          approve.mutate(undefined, {
-            onSuccess: () => toast.success("Realm approved"),
-            onError: (err) => toast.error(err.message),
-          })
-        }
-      >
-        Approve
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-xs h-7 text-red-400 border-red-400/30"
-        disabled={reject.isPending || status === "rejected"}
-        onClick={() =>
-          reject.mutate(
-            { admin_note: note || undefined },
-            {
-              onSuccess: () => toast.success("Realm rejected"),
-              onError: (err) => toast.error(err.message),
-            },
-          )
-        }
-      >
-        Reject
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="text-xs h-7 text-red-400"
+      disabled={del.isPending}
+      onClick={() =>
+        del.mutate(reqId, {
+          onSuccess: () => toast.success("Request deleted"),
+          onError: (err) => toast.error(err.message),
+        })
+      }
+    >
+      {del.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Trash2 className="h-3 w-3 mr-1" />Delete</>}
+    </Button>
   );
 }
 
-// --- Applicant edit controls ---
+// ---------------------------------------------------------------------------
+// ImagePreview – shows a small thumbnail when a URL is set
+// ---------------------------------------------------------------------------
 
-function EditableField({
-  value,
-  canEdit,
-  onSave,
-}: {
-  value: string;
-  canEdit: boolean;
-  onSave: (value: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  if (!editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-sm">{value || <span className="text-muted-foreground italic">Not set</span>}</span>
-        {canEdit && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => {
-              setDraft(value);
-              setEditing(true);
-            }}
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
-    );
-  }
-
+function ImagePreview({ url, alt }: { url: string; alt: string }) {
+  if (!url) return null;
   return (
-    <div className="flex items-center gap-2">
-      <input
-        className="rounded-md border bg-background px-2 py-1 text-sm flex-1"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-      />
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-xs h-7"
-        onClick={() => {
-          onSave(draft);
-          setEditing(false);
-        }}
-      >
-        Save
-      </Button>
-      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(false)}>
-        Cancel
-      </Button>
-    </div>
+    <img
+      src={url}
+      alt={alt}
+      className="mt-1 h-10 w-auto rounded border border-border object-contain bg-background"
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = "none";
+      }}
+    />
   );
 }
 
-// --- Add server/realm forms ---
+// ---------------------------------------------------------------------------
+// Section: Branding field card (core, slug, description, logos)
+// ---------------------------------------------------------------------------
 
-function AddServerForm({ appId }: { appId: string }) {
-  const addServer = useAddApplicationServer(appId);
-  const [show, setShow] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("");
-  const [realmName, setRealmName] = useState("");
-  const [realmDesc, setRealmDesc] = useState("");
-
-  if (!show) {
-    return (
-      <Button variant="outline" size="sm" className="gap-1" onClick={() => setShow(true)}>
-        <Plus className="h-3.5 w-3.5" />
-        Add Server
-      </Button>
-    );
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addServer.mutate(
-      {
-        name,
-        description,
-        url: url || null,
-        realms: realmName ? [{ name: realmName, description: realmDesc, url: null }] : [],
-      },
-      {
-        onSuccess: () => {
-          toast.success("Server added");
-          setShow(false);
-          setName("");
-          setDescription("");
-          setUrl("");
-          setRealmName("");
-          setRealmDesc("");
-        },
-        onError: (err) => toast.error(err.message),
-      },
-    );
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-md border p-3">
-      <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Server name" required />
-      <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-      <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL (optional)" />
-      <div className="border-t pt-2 space-y-2">
-        <span className="text-xs font-medium text-muted-foreground">Initial Realm (optional)</span>
-        <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={realmName} onChange={(e) => setRealmName(e.target.value)} placeholder="Realm name" />
-        <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={realmDesc} onChange={(e) => setRealmDesc(e.target.value)} placeholder="Realm description" />
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={addServer.isPending} className="gap-1">
-          {addServer.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-          Add
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setShow(false)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function AddRealmForm({ appId, serverReqId }: { appId: string; serverReqId: string }) {
-  const addRealm = useAddApplicationRealm(appId, serverReqId);
-  const [show, setShow] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("");
-
-  if (!show) {
-    return (
-      <Button variant="outline" size="sm" className="gap-1" onClick={() => setShow(true)}>
-        <Plus className="h-3.5 w-3.5" />
-        Add Realm
-      </Button>
-    );
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addRealm.mutate(
-      { name, description, url: url || null },
-      {
-        onSuccess: () => {
-          toast.success("Realm added");
-          setShow(false);
-          setName("");
-          setDescription("");
-          setUrl("");
-        },
-        onError: (err) => toast.error(err.message),
-      },
-    );
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-md border p-3">
-      <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Realm name" required />
-      <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-      <input className="w-full rounded-md border bg-background px-3 py-1.5 text-sm" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL (optional)" />
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={addRealm.isPending} className="gap-1">
-          {addRealm.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-          Add
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setShow(false)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-// --- Section cards ---
-
-const FIELD_SECTIONS = [
-  { key: "name", label: "Name" },
-  { key: "display_name", label: "Display Name" },
-  { key: "tagline", label: "Tagline" },
-  { key: "slug", label: "Slug" },
-  { key: "description", label: "Description" },
+const BRANDING_SECTIONS = [
+  {
+    type: "core" as const,
+    label: "Core Info",
+    fields: [
+      { key: "name", label: "Server Name" },
+      { key: "display_name", label: "Display Name" },
+      { key: "tagline", label: "Tagline" },
+      { key: "tags", label: "Tags (comma-separated)" },
+    ],
+    getLive: (tenant: { name?: string; branding?: { display_name?: string; tagline?: string; tags?: readonly string[] } | null }) => ({
+      name: tenant.name ?? "",
+      display_name: tenant.branding?.display_name ?? "",
+      tagline: tenant.branding?.tagline ?? "",
+      tags: (tenant.branding?.tags ?? []).join(", "),
+    }),
+  },
+  {
+    type: "slug" as const,
+    label: "Slug",
+    fields: [{ key: "slug", label: "URL Slug" }],
+    getLive: (tenant: { slug?: string | null }) => ({
+      slug: tenant.slug ?? "",
+    }),
+  },
+  {
+    type: "description" as const,
+    label: "Description",
+    fields: [
+      { key: "description", label: "Description", multiline: true },
+      { key: "website_url", label: "Website URL" },
+    ],
+    getLive: (tenant: { branding?: { description?: string } | null }) => ({
+      description: tenant.branding?.description ?? "",
+      website_url: "",
+    }),
+  },
+  {
+    type: "logos" as const,
+    label: "Logos",
+    fields: [
+      { key: "square_logo", label: "Square Logo URL", image: true },
+      { key: "logo_wide", label: "Wide Logo URL", image: true },
+      { key: "favicon", label: "Favicon URL", image: true },
+      { key: "background_banner", label: "Background Banner URL", image: true },
+    ],
+    getLive: (tenant: { branding?: { square_logo?: string; logo_wide?: string; favicon?: string; background_banner?: string } | null }) => ({
+      square_logo: tenant.branding?.square_logo ?? "",
+      logo_wide: tenant.branding?.logo_wide ?? "",
+      favicon: tenant.branding?.favicon ?? "",
+      background_banner: tenant.branding?.background_banner ?? "",
+    }),
+  },
 ] as const;
 
-function TenantFieldsSection({
-  app,
-  canEdit,
+function BrandingSectionCard({
+  section,
+  appId,
+  requests,
+  tenant,
+  canReview,
 }: {
-  app: ServerApplication;
-  canEdit: boolean;
+  section: (typeof BRANDING_SECTIONS)[number];
+  appId: string;
+  requests: readonly ModificationRequest[];
+  tenant: Tenant;
+  canReview: boolean;
 }) {
-  const updateApp = useUpdateServerApplication(app.id);
+  const req = findRequest(requests, section.type);
+  const createReq = useCreateModificationRequest(appId);
+  const [editing, setEditing] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const live = (section.getLive as (t: any) => Record<string, string>)(tenant);
+  const [draft, setDraft] = useState<Record<string, string>>(() =>
+    req ? { ...req.payload } : { ...live },
+  );
 
-  const handleSave = (field: string, value: string) => {
-    const req: Record<string, unknown> = {
-      name: null,
-      display_name: null,
-      tagline: null,
-      description: null,
-      tags: app.tenant.branding?.tags ?? [],
-      slug: null,
-      branding: null,
+  const handleSave = () => {
+    const payload: CreateModificationRequestPayload = {
+      type: section.type,
+      payload: draft,
     };
-    req[field] = value;
-    updateApp.mutate(req as never, {
-      onSuccess: () => toast.success("Updated"),
+    createReq.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Request saved");
+        setEditing(false);
+      },
       onError: (err) => toast.error(err.message),
     });
   };
 
-  const branding = app.tenant.branding;
-  const fieldValues: Record<string, string> = {
-    name: app.name,
-    display_name: branding?.display_name ?? "",
-    tagline: branding?.tagline ?? "",
-    slug: app.tenant.slug ?? "",
-    description: branding?.description ?? "",
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">{section.label}</h3>
+        {req && <RequestBadge req={req} />}
+      </div>
+
+      {/* Live values */}
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground font-medium">Current (live)</p>
+        {section.fields.map((f) => (
+          <div key={f.key} className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground w-32 shrink-0">{f.label}:</span>
+            <span className="truncate">{live[f.key] || <span className="italic text-muted-foreground">—</span>}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pending request or edit form */}
+      {req && !editing && (
+        <div className="space-y-1 border-t pt-2">
+          <p className="text-xs text-muted-foreground font-medium">Requested changes</p>
+          {section.fields.map((f) => {
+            const val = req.payload[f.key] ?? "";
+            return (
+              <div key={f.key} className="flex items-start gap-2 text-xs">
+                <span className="text-muted-foreground w-32 shrink-0">{f.label}:</span>
+                <span className="truncate">{val || "—"}</span>
+                {"image" in f && f.image && <ImagePreview url={val} alt={f.label} />}
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-2 pt-1">
+            {req.status === "pending" && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setDraft({ ...req.payload }); setEditing(true); }}>
+                Edit
+              </Button>
+            )}
+            {req.status === "rejected" && <DeleteRequestButton appId={appId} reqId={req.id} />}
+            {canReview && <AdminReviewControls appId={appId} reqId={req.id} status={req.status} />}
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <div className="space-y-2 border-t pt-2">
+          <p className="text-xs text-muted-foreground font-medium">Edit request</p>
+          {section.fields.map((f) => (
+            <div key={f.key}>
+              <label className="text-xs text-muted-foreground">{f.label}</label>
+              {"multiline" in f && f.multiline ? (
+                <textarea
+                  className="w-full rounded-md border bg-background px-2 py-1 text-sm mt-0.5 min-h-[60px]"
+                  value={draft[f.key] ?? ""}
+                  onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+                />
+              ) : (
+                <>
+                  <input
+                    className="w-full rounded-md border bg-background px-2 py-1 text-sm mt-0.5"
+                    value={draft[f.key] ?? ""}
+                    onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+                  />
+                  {"image" in f && f.image && <ImagePreview url={draft[f.key] ?? ""} alt={f.label} />}
+                </>
+              )}
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <Button size="sm" className="text-xs h-7" disabled={createReq.isPending} onClick={handleSave}>
+              {createReq.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+            </Button>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!req && !editing && (
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setDraft({ ...live }); setEditing(true); }}>
+          <Plus className="h-3 w-3 mr-1" /> Request change
+        </Button>
+      )}
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Theme section (uses ThemeEditor)
+// ---------------------------------------------------------------------------
+
+function ThemeSectionCard({
+  appId,
+  requests,
+  tenant,
+  canReview,
+}: {
+  appId: string;
+  requests: readonly ModificationRequest[];
+  tenant: Tenant;
+  canReview: boolean;
+}) {
+  const req = findRequest(requests, "theme");
+  const createReq = useCreateModificationRequest(appId);
+  const [editing, setEditing] = useState(false);
+  const liveTheme: Record<string, string> = tenant.branding?.theme ?? {};
+  const [draft, setDraft] = useState<Record<string, string>>(() =>
+    req?.payload?.theme ? JSON.parse(JSON.stringify(req.payload.theme)) : { ...liveTheme },
+  );
+
+  const handleSave = () => {
+    createReq.mutate(
+      { type: "theme", payload: { theme: JSON.stringify(draft) } },
+      {
+        onSuccess: () => {
+          toast.success("Theme request saved");
+          setEditing(false);
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
   };
 
   return (
-    <Card className="p-6 space-y-4">
-      <h2 className="text-lg font-semibold">Tenant Details</h2>
-      <div className="space-y-3">
-        {FIELD_SECTIONS.map(({ key, label }) => {
-          const review = app.field_reviews[key];
-          const sectionEditable = canEdit && (!review || review.status !== "approved");
-          return (
-            <div key={key} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground w-28">{label}</span>
-                <FieldReviewBadge review={review} />
-              </div>
-              <EditableField
-                value={fieldValues[key] ?? ""}
-                canEdit={sectionEditable}
-                onSave={(v) => handleSave(key, v)}
-              />
-              {app.can_review && (
-                <AdminReviewButtons section={key} appId={app.id} currentStatus={review?.status ?? "pending"} />
-              )}
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Theme</h3>
+        {req && <RequestBadge req={req} />}
+      </div>
+
+      <div>
+        <p className="text-xs text-muted-foreground font-medium mb-2">
+          {editing ? "Edit theme" : "Current theme"}
+        </p>
+        {editing ? (
+          <>
+            <ThemeEditor value={draft} onChange={setDraft} />
+            <div className="flex gap-2 mt-2">
+              <Button size="sm" className="text-xs h-7" disabled={createReq.isPending} onClick={handleSave}>
+                {createReq.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
             </div>
-          );
-        })}
+          </>
+        ) : (
+          <ThemeEditor value={liveTheme} onChange={() => {}} />
+        )}
+      </div>
+
+      {req && !editing && (
+        <div className="flex items-center gap-2 pt-1 border-t">
+          {req.status === "pending" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-7"
+              onClick={() => {
+                setDraft(req.payload?.theme ? JSON.parse(JSON.stringify(req.payload.theme)) : {});
+                setEditing(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+          {req.status === "rejected" && <DeleteRequestButton appId={appId} reqId={req.id} />}
+          {canReview && <AdminReviewControls appId={appId} reqId={req.id} status={req.status} />}
+        </div>
+      )}
+
+      {!req && !editing && (
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setDraft({ ...liveTheme }); setEditing(true); }}>
+          <Plus className="h-3 w-3 mr-1" /> Request theme change
+        </Button>
+      )}
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Server / Realm cards
+// ---------------------------------------------------------------------------
+
+function AddServerForm({ appId }: { appId: string }) {
+  const createReq = useCreateModificationRequest(appId);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [url, setUrl] = useState("");
+
+  if (!open) {
+    return (
+      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setOpen(true)}>
+        <Plus className="h-3 w-3 mr-1" /> Add Server
+      </Button>
+    );
+  }
+
+  const handleSubmit = () => {
+    createReq.mutate(
+      { type: "server", payload: { name, description, url: url || "" } },
+      {
+        onSuccess: () => {
+          toast.success("Server request created");
+          setOpen(false);
+          setName("");
+          setDescription("");
+          setUrl("");
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  };
+
+  return (
+    <Card className="p-3 space-y-2">
+      <p className="text-xs font-medium">New Server Request</p>
+      <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="URL (optional)" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <div className="flex gap-2">
+        <Button size="sm" className="text-xs h-7" disabled={createReq.isPending || !name} onClick={handleSubmit}>
+          {createReq.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
+        </Button>
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setOpen(false)}>Cancel</Button>
       </div>
     </Card>
   );
 }
 
-function RealmCard({
-  realm,
-  appId,
-  serverReqId,
-  canReview,
-}: {
-  realm: ServerApplicationRealm;
-  appId: string;
-  serverReqId: string;
-  canReview: boolean;
-}) {
+function AddRealmForm({ appId, parentId }: { appId: string; parentId: string }) {
+  const createReq = useCreateModificationRequest(appId);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [url, setUrl] = useState("");
+
+  if (!open) {
+    return (
+      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setOpen(true)}>
+        <Plus className="h-3 w-3 mr-1" /> Add Realm
+      </Button>
+    );
+  }
+
+  const handleSubmit = () => {
+    createReq.mutate(
+      { type: "realm", parent_id: parentId, payload: { name, description, url: url || "" } },
+      {
+        onSuccess: () => {
+          toast.success("Realm request created");
+          setOpen(false);
+          setName("");
+          setDescription("");
+          setUrl("");
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  };
+
   return (
-    <div className="rounded-md border p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm font-medium">{realm.name}</span>
-          <StatusBadge status={realm.status} />
+    <div className="ml-6 mt-2">
+      <Card className="p-3 space-y-2">
+        <p className="text-xs font-medium">New Realm Request</p>
+        <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="URL (optional)" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <div className="flex gap-2">
+          <Button size="sm" className="text-xs h-7" disabled={createReq.isPending || !name} onClick={handleSubmit}>
+            {createReq.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setOpen(false)}>Cancel</Button>
         </div>
-      </div>
-      {realm.description && <p className="text-xs text-muted-foreground">{realm.description}</p>}
-      {realm.url && (
-        <a href={realm.url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">
-          {realm.url}
-        </a>
-      )}
-      {realm.admin_note && <p className="text-xs text-muted-foreground italic">Note: {realm.admin_note}</p>}
-      {canReview && (
-        <RealmReviewButtons appId={appId} serverReqId={serverReqId} realmReqId={realm.id} status={realm.status} />
-      )}
+      </Card>
     </div>
   );
 }
 
-function ServerCard({
-  server,
+function ServerRequestCard({
   appId,
+  req,
+  realmRequests,
   canReview,
-  canEdit,
 }: {
-  server: ServerApplicationServer;
   appId: string;
+  req: ModificationRequest;
+  realmRequests: ModificationRequest[];
   canReview: boolean;
-  canEdit: boolean;
 }) {
+  const isApproved = req.status === "approved" && !!req.resource_id;
+
   return (
-    <Card className="p-6 space-y-4">
+    <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Server className="h-4 w-4" />
-          <h3 className="text-base font-semibold">{server.name}</h3>
-          <StatusBadge status={server.status} />
+          <Server className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold">{req.payload.name || "Unnamed Server"}</h3>
         </div>
-        {canReview && <ServerReviewButtons appId={appId} serverReqId={server.id} status={server.status} />}
+        <RequestBadge req={req} />
       </div>
-      {server.description && <p className="text-sm text-muted-foreground">{server.description}</p>}
-      {server.url && (
-        <a href={server.url} target="_blank" rel="noreferrer" className="text-sm text-blue-500 hover:underline">
-          {server.url}
-        </a>
-      )}
-      {server.admin_note && <p className="text-xs text-muted-foreground italic">Note: {server.admin_note}</p>}
+      <div className="space-y-1 text-xs">
+        {req.payload.description && (
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">Description:</span>
+            <span>{req.payload.description}</span>
+          </div>
+        )}
+        {req.payload.url && (
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">URL:</span>
+            <span>{req.payload.url}</span>
+          </div>
+        )}
+        {req.resource_id && (
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">Resource ID:</span>
+            <span className="font-mono text-[11px]">{req.resource_id}</span>
+          </div>
+        )}
+      </div>
 
-      <div className="border-t pt-4 space-y-3">
-        <h4 className="text-sm font-semibold flex items-center gap-2">
-          <Globe className="h-3.5 w-3.5" />
-          Realms
-        </h4>
-        {server.realms.map((realm) => (
-          <RealmCard key={realm.id} realm={realm} appId={appId} serverReqId={server.id} canReview={canReview} />
-        ))}
-        {canEdit && <AddRealmForm appId={appId} serverReqId={server.id} />}
+      {/* Admin controls */}
+      <div className="flex items-center gap-2">
+        {req.status === "rejected" && <DeleteRequestButton appId={appId} reqId={req.id} />}
+        {canReview && <AdminReviewControls appId={appId} reqId={req.id} status={req.status} />}
       </div>
+
+      {/* Realm requests under this server */}
+      {realmRequests.length > 0 && (
+        <div className="border-t pt-2 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Globe className="h-3 w-3" /> Realms
+          </p>
+          {realmRequests.map((realm) => (
+            <div key={realm.id} className="ml-4 p-2 rounded border border-border space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">{realm.payload.name || "Unnamed Realm"}</span>
+                <RequestBadge req={realm} />
+              </div>
+              {realm.payload.description && (
+                <p className="text-xs text-muted-foreground">{realm.payload.description}</p>
+              )}
+              {realm.payload.url && (
+                <p className="text-xs text-muted-foreground">URL: {realm.payload.url}</p>
+              )}
+              <div className="flex items-center gap-2">
+                {realm.status === "rejected" && <DeleteRequestButton appId={appId} reqId={realm.id} />}
+                {canReview && <AdminReviewControls appId={appId} reqId={realm.id} status={realm.status} />}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add realm – only for approved servers */}
+      {isApproved && <AddRealmForm appId={appId} parentId={req.id} />}
     </Card>
   );
 }
 
-// --- Application-level admin actions ---
+// ---------------------------------------------------------------------------
+// Admins section
+// ---------------------------------------------------------------------------
 
-function ApplicationActions({ app }: { app: ServerApplication }) {
-  const approveApp = useApproveApplication(app.id);
-  const rejectApp = useRejectApplication(app.id);
-  const [rejectNote, setRejectNote] = useState("");
+function AdminsSection({ appId }: { appId: string }) {
+  const adminsQuery = useApplicationAdmins(appId);
+  const addAdmin = useAddApplicationAdmin(appId);
+  const removeAdmin = useRemoveApplicationAdmin(appId);
+  const [userId, setUserId] = useState("");
 
   return (
-    <Card className="p-6 space-y-4 border-dashed border-2">
-      <h2 className="text-lg font-semibold flex items-center gap-2">
-        <AlertCircle className="h-5 w-5" />
-        Admin Actions
-      </h2>
-      <div className="flex items-center gap-3 flex-wrap">
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold">Application Admins</h3>
+      </div>
+
+      {adminsQuery.isLoading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+        </div>
+      )}
+
+      {adminsQuery.data && adminsQuery.data.length > 0 && (
+        <div className="space-y-1">
+          {adminsQuery.data.map((a) => (
+            <div key={a.user_id} className="flex items-center justify-between text-xs">
+              <span>{a.username}{a.discord_id && <span className="text-muted-foreground ml-1">(Discord: {a.discord_id})</span>}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 text-red-400"
+                disabled={removeAdmin.isPending}
+                onClick={() =>
+                  removeAdmin.mutate(a.user_id, {
+                    onSuccess: () => toast.success("Admin removed"),
+                    onError: (err) => toast.error(err.message),
+                  })
+                }
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <input
+          className="rounded-md border bg-background px-2 py-1 text-xs flex-1"
+          placeholder="User ID to add"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+        />
         <Button
-          className="gap-2 bg-green-600 hover:bg-green-700"
-          disabled={approveApp.isPending || app.status === "approved"}
+          variant="outline"
+          size="sm"
+          className="text-xs h-7"
+          disabled={addAdmin.isPending || !userId.trim()}
           onClick={() =>
-            approveApp.mutate(undefined, {
-              onSuccess: () => toast.success("Application approved!"),
+            addAdmin.mutate(userId.trim(), {
+              onSuccess: () => {
+                toast.success("Admin added");
+                setUserId("");
+              },
               onError: (err) => toast.error(err.message),
             })
           }
         >
-          {approveApp.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          <CheckCircle2 className="h-4 w-4" />
-          Approve Application
+          {addAdmin.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
         </Button>
-        <div className="flex items-center gap-2">
-          <input
-            className="rounded-md border bg-background px-3 py-1.5 text-sm w-48"
-            value={rejectNote}
-            onChange={(e) => setRejectNote(e.target.value)}
-            placeholder="Rejection reason (optional)"
-          />
-          <Button
-            variant="destructive"
-            className="gap-2"
-            disabled={rejectApp.isPending || app.status === "rejected"}
-            onClick={() =>
-              rejectApp.mutate(
-                { admin_note: rejectNote || undefined },
-                {
-                  onSuccess: () => toast.success("Application rejected"),
-                  onError: (err) => toast.error(err.message),
-                },
-              )
-            }
-          >
-            {rejectApp.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            <XCircle className="h-4 w-4" />
-            Reject Application
-          </Button>
-        </div>
       </div>
     </Card>
   );
 }
 
-// --- Main page ---
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
 export function ApplicationPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: app, isLoading, error } = useServerApplication(id);
+  const appQuery = useServerApplication(id);
 
-  if (isLoading) {
+  if (!id) {
     return (
-      <div className="max-w-3xl mx-auto p-8">
-        <Card className="p-6">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-muted-foreground">Loading application...</p>
-          </div>
-        </Card>
+      <div className="flex items-center gap-2 p-8 text-muted-foreground">
+        <AlertCircle className="h-4 w-4" /> No application ID provided.
       </div>
     );
   }
 
-  if (error || !app) {
+  if (appQuery.isLoading) {
     return (
-      <div className="max-w-3xl mx-auto p-8">
-        <Card className="p-6">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive" />
-            <div>
-              <h2 className="font-semibold text-lg">Application Not Found</h2>
-              <p className="text-muted-foreground mt-1">
-                {error?.message ?? "This application could not be loaded."}
-              </p>
-            </div>
-          </div>
-        </Card>
+      <div className="flex items-center justify-center p-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  const canEdit = app.status !== "approved";
+  if (appQuery.isError || !appQuery.data) {
+    return (
+      <div className="flex items-center gap-2 p-8 text-red-400">
+        <AlertCircle className="h-4 w-4" />
+        {appQuery.error?.message ?? "Failed to load application."}
+      </div>
+    );
+  }
+
+  const app = appQuery.data;
+
+  return <ApplicationPageContent app={app} />;
+}
+
+function ApplicationPageContent({ app }: { app: ServerApplication }) {
+  const serverRequests = filterRequests(app.requests, "server");
+  const realmRequests = filterRequests(app.requests, "realm");
 
   return (
-    <div className="max-w-3xl mx-auto p-8 space-y-6">
+    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{app.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            Applied by {app.username} on{" "}
-            {new Date(app.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-          </p>
-        </div>
-        <StatusBadge status={app.status} />
+      <div>
+        <h1 className="text-xl font-bold">{app.name}</h1>
+        <p className="text-sm text-muted-foreground">
+          Application by <span className="font-medium text-foreground">{app.username}</span>
+          {" · "}Created {new Date(app.created_at).toLocaleDateString()}
+        </p>
+        {app.can_review && (
+          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-medium rounded bg-blue-500/15 text-blue-400">
+            <Users className="h-3 w-3" /> Admin reviewer
+          </span>
+        )}
       </div>
 
-      {/* Status banner */}
-      {app.status === "rejected" && app.admin_note && (
-        <div className="rounded-md border border-red-400/30 bg-red-500/10 p-4">
-          <p className="text-sm text-red-400">
-            <strong>Rejected:</strong> {app.admin_note}
-          </p>
-        </div>
-      )}
-      {app.status === "approved" && (
-        <div className="rounded-md border border-green-400/30 bg-green-500/10 p-4">
-          <p className="text-sm text-green-400">
-            This application has been approved. Your tenant is being set up.
-          </p>
-        </div>
-      )}
-
-      {/* Admin actions */}
-      {app.can_review && <ApplicationActions app={app} />}
-
-      {/* Tenant fields */}
-      <TenantFieldsSection app={app} canEdit={canEdit} />
-
-      {/* Servers */}
+      {/* Branding sections */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Servers & Realms</h2>
-        {app.servers.map((server) => (
-          <ServerCard key={server.id} server={server} appId={app.id} canReview={app.can_review} canEdit={canEdit} />
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Branding
+        </h2>
+        {BRANDING_SECTIONS.map((section) => (
+          <BrandingSectionCard
+            key={section.type}
+            section={section}
+            appId={app.id}
+            requests={app.requests}
+            tenant={app.tenant}
+            canReview={app.can_review}
+          />
         ))}
-        {canEdit && <AddServerForm appId={app.id} />}
+        <ThemeSectionCard
+          appId={app.id}
+          requests={app.requests}
+          tenant={app.tenant}
+          canReview={app.can_review}
+        />
       </div>
+
+      {/* Servers & Realms */}
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Servers & Realms
+        </h2>
+        {serverRequests.map((srv) => (
+          <ServerRequestCard
+            key={srv.id}
+            appId={app.id}
+            req={srv}
+            realmRequests={realmRequests.filter((r) => r.parent_id === srv.id)}
+            canReview={app.can_review}
+          />
+        ))}
+        <AddServerForm appId={app.id} />
+      </div>
+
+      {/* Admins */}
+      {app.can_review && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Admin Management
+          </h2>
+          <AdminsSection appId={app.id} />
+        </div>
+      )}
     </div>
   );
 }

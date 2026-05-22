@@ -173,9 +173,13 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		Tagline:     req.Tagline,
 		Tags:        req.Tags,
 	})
-	s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
+	_, err = s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
 		ID: uuid.New(), ApplicationID: appID, Type: "core", Payload: corePayload,
 	})
+	if err != nil {
+		httpapi.InternalServerError(w, fmt.Errorf("create core request: %w", err))
+		return
+	}
 
 	for _, srv := range req.Servers {
 		srvPayload, _ := json.Marshal(chroniclesdk.ServerPayload{
@@ -189,9 +193,7 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, realm := range srv.Realms {
-			realmPayload, _ := json.Marshal(chroniclesdk.RealmPayload{
-				Name: realm.Name, Description: realm.Description, URL: realm.URL,
-			})
+			realmPayload, _ := json.Marshal(chroniclesdk.RealmPayload(realm))
 			_, err := s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
 				ID:            uuid.New(),
 				ApplicationID: appID,

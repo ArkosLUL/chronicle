@@ -85,6 +85,7 @@ func (s *Service) Start(ctx context.Context) error {
 	riverqueue.AddWorker(q, chron.NewWorkerReLogParse())
 	riverqueue.AddWorker(q, chron.NewWorkerRegressionSnapshot())
 	riverqueue.AddWorker(q, bot.NewWorkerSyncDiscordUser())
+	riverqueue.AddWorker(q, bot.NewWorkerNotifyApplication())
 
 	// Register retention workers and periodic job.
 	ret := serviceretention.RetentionService(s.broker)

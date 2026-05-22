@@ -29,6 +29,7 @@ import (
 	"github.com/Emyrk/chronicle/database/pubsub"
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
+	"github.com/Emyrk/chronicle/internal/services/serviceapplication"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
@@ -68,6 +69,10 @@ type Options struct {
 	// Tenant is the multi-tenant service for subdomain → tenant resolution.
 	// If nil, tenant middleware is a no-op.
 	Tenant *servicetenant.Service
+
+	// Application is the server application service for onboarding new servers.
+	// If nil, application routes are not registered.
+	Application *serviceapplication.Service
 }
 
 type API struct {
@@ -176,6 +181,12 @@ func (api *API) Routes() chi.Router {
 			gameDataHandler := gamedataapi.New(api.Opts.Zed, api.Auth, api.Opts.Pool)
 			r.Mount("/game-data", gameDataHandler.Routes())
 			r.Mount("/azerothcore", serviceazerothcore.New(api.Opts.Logger, api.Opts.Zed, api.Auth, api.Chronicle).Routes())
+			if api.Opts.Application != nil {
+				r.Group(func(r chi.Router) {
+					r.Use(api.Auth.Authenticated(true))
+					r.Mount("/server-application", api.Opts.Application.Routes(api.Zed))
+				})
+			}
 			r.Get("/share/{code}", api.GetShare)
 			r.Get("/site-config", api.AdminGetSiteConfig)
 			r.Get("/discovery", api.Discovery)

@@ -2,6 +2,7 @@ package chroniclebot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/Emyrk/chronicle/chronicle/riverqueue/riverconst"
@@ -61,11 +62,10 @@ func (w *WorkerSyncDiscordUser) Work(ctx context.Context, job *river.Job[ArgsSyn
 		)
 		return nil // not an error — user just isn't in our system
 	}
-	//
-	//err = b.SyncDiscordUser(ctx, b.config.Zed, job.Args.DiscordID, link.UserID)
-	//if err != nil {
-	//	return fmt.Errorf("sync discord user %s: %w", job.Args.DiscordID, err)
-	//}
+	err = b.SyncDiscordUser(ctx, b.config.Zed, job.Args.DiscordID, link.UserID)
+	if err != nil {
+		return fmt.Errorf("sync discord user %s: %w", job.Args.DiscordID, err)
+	}
 
 	b.logger.Info("synced discord user",
 		slog.String("discord_id", job.Args.DiscordID),

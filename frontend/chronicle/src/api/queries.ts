@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryOptions } from "@tanstack/react-query";
 import type { WoWSpell } from "./wowdb";
-import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest } from "./typesGenerated";
+import type { WoWServer, WoWServerRealm, UploadKey, CreateWoWServerRequest, CreateWoWServerRealmRequest, CreateUploadKeyRequest, RetentionPolicy, RetentionPreviewResponse, RetentionPreviewRequest, SupportedInstance, CensusEntry, Tenant, UpsertTenantRequest, ServerApplication, CreateServerApplicationRequest, UpdateServerApplicationRequest, ReviewFieldRequest, AddServerRequest, AddRealmRequest } from "./typesGenerated";
 import type { 
   WoWLogGroup as WoWLogGroupGenerated, 
   WoWLogFile as WoWLogFileGenerated,
@@ -1987,6 +1987,322 @@ export function useRealms() {
 }
 
 export function useCensus(options?: { days?: number; realmIds?: string[] }) {
+// --- Server Applications ---
+
+export function useMyServerApplication() {
+  return useQuery({
+    queryKey: ["server-application", "mine"],
+    retry: false,
+    queryFn: async () => {
+      const response = await fetch("/api/v1/server-application", {
+        credentials: "include",
+      });
+      if (response.status === 404) return null;
+      if (!response.ok) return null;
+      return response.json() as Promise<ServerApplication>;
+    },
+  });
+}
+
+export function useServerApplication(id: string | undefined) {
+  return useQuery({
+    queryKey: ["server-application", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/server-application/${id}`, {
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to fetch application",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+  });
+}
+
+export function useCreateServerApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: CreateServerApplicationRequest) => {
+      const response = await fetch("/api/v1/server-application", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to create application",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useUpdateServerApplication(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: UpdateServerApplicationRequest) => {
+      const response = await fetch(`/api/v1/server-application/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to update application",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useAdminServerApplications(status?: string) {
+  return useQuery({
+    queryKey: ["server-applications", "admin", status],
+    queryFn: async () => {
+      const params = status ? `?status=${status}` : "";
+      const response = await fetch(
+        `/api/v1/server-application/all${params}`,
+        { credentials: "include" }
+      );
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to fetch applications",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication[]>;
+    },
+  });
+}
+
+export function useReviewApplicationField(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: ReviewFieldRequest) => {
+      const response = await fetch(
+        `/api/v1/server-application/${id}/review`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError("Failed to review field", await response.json());
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useApproveApplication(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `/api/v1/server-application/${id}/approve`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to approve application",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useRejectApplication(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: { admin_note?: string }) => {
+      const response = await fetch(
+        `/api/v1/server-application/${id}/reject`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to reject application",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useApproveServer(appId: string, serverReqId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/servers/${serverReqId}/approve`,
+        { method: "POST", credentials: "include" }
+      );
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to approve server",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useRejectServer(appId: string, serverReqId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: { admin_note?: string }) => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/servers/${serverReqId}/reject`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError(
+          "Failed to reject server",
+          await response.json()
+        );
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useApproveRealm(
+  appId: string,
+  serverReqId: string,
+  realmReqId: string
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/servers/${serverReqId}/realms/${realmReqId}/approve`,
+        { method: "POST", credentials: "include" }
+      );
+      if (!response.ok)
+        throw buildAPIError("Failed to approve realm", await response.json());
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useRejectRealm(
+  appId: string,
+  serverReqId: string,
+  realmReqId: string
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: { admin_note?: string }) => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/servers/${serverReqId}/realms/${realmReqId}/reject`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError("Failed to reject realm", await response.json());
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useAddApplicationServer(appId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: AddServerRequest) => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/servers`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError("Failed to add server", await response.json());
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+export function useAddApplicationRealm(appId: string, serverReqId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: AddRealmRequest) => {
+      const response = await fetch(
+        `/api/v1/server-application/${appId}/servers/${serverReqId}/realms`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw buildAPIError("Failed to add realm", await response.json());
+      return response.json() as Promise<ServerApplication>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["server-application"] });
+    },
+  });
+}
+
+
   const params = new URLSearchParams();
   if (options?.days) params.set("days", String(options.days));
   options?.realmIds?.forEach((id) => params.append("realm_id", id));

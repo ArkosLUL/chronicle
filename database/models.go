@@ -1102,6 +1102,45 @@ type RiverQueue struct {
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type ServerApplication struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	InitiatedBy  uuid.UUID          `db:"initiated_by" json:"initiated_by"`
+	Status       string             `db:"status" json:"status"`
+	Name         string             `db:"name" json:"name"`
+	FieldReviews []byte             `db:"field_reviews" json:"field_reviews"`
+	AdminNote    pgtype.Text        `db:"admin_note" json:"admin_note"`
+	ReviewedBy   uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
+	TenantID     uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type ServerApplicationRealm struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	AppServerID uuid.UUID          `db:"app_server_id" json:"app_server_id"`
+	Name        string             `db:"name" json:"name"`
+	Description string             `db:"description" json:"description"`
+	Url         pgtype.Text        `db:"url" json:"url"`
+	Status      string             `db:"status" json:"status"`
+	AdminNote   pgtype.Text        `db:"admin_note" json:"admin_note"`
+	RealmID     uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type ServerApplicationServer struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	ApplicationID uuid.UUID          `db:"application_id" json:"application_id"`
+	Name          string             `db:"name" json:"name"`
+	Description   string             `db:"description" json:"description"`
+	Url           pgtype.Text        `db:"url" json:"url"`
+	Status        string             `db:"status" json:"status"`
+	AdminNote     pgtype.Text        `db:"admin_note" json:"admin_note"`
+	ServerID      uuid.NullUUID      `db:"server_id" json:"server_id"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type ServerUploadMetum struct {
 	LogGroupID    uuid.UUID          `db:"log_group_id" json:"log_group_id"`
 	InstanceID    string             `db:"instance_id" json:"instance_id"`

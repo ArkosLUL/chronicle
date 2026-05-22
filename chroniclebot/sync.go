@@ -1,68 +1,74 @@
 package chroniclebot
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"log/slog"
+
+	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/storagegrants"
+	"github.com/authzed/gochugaru/rel"
+	"github.com/google/uuid"
 )
 
 var ErrMustJoinDiscordServer = errors.New("must be in the discord server to use chronicle")
 
-//func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorizer, discordID string, userID uuid.UUID) (retErr error) {
-//	if bot.disabled || true {
-//		// TODO: Disabling this for now since discord will not be the source of truth.
-//		// Nothing to do
-//		return nil
-//	}
-//
-//	b := policy.New()
-//	gChron := b.GlobalChronicle()
-//	usr := b.User(userID)
-//
-//	// Create a filter to remove all their existing roles from the global namespace
-//	f := rel.NewFilter(gChron.Object().Typ, gChron.Object().ID, "")
-//	f.WithSubjectFilter(usr.Object().Typ, usr.Object().ID, "")
-//	err := zed.Delete(ctx, rel.NewPreconditionedFilter(f))
-//	if err != nil {
-//		return fmt.Errorf("zed.Delete: %w", err)
-//	}
-//
-//	// Add back roles based on their current discord roles
-//	member, err := bot.GetGuildMember(bot.ChronicleGuildID(), discordID)
-//	if err != nil {
-//		return err
-//	}
-//
-//	gChron.Chronicle_member(usr)
-//	if member != nil {
-//		// User is in the discord
-//		gChron.Chronicle_guild_member(usr)
-//		for _, roleID := range member.Roles {
-//			switch roleID {
-//			case "1468405974506410110": // Alpha tester
-//				gChron.Upload_capable(usr)
-//			case "1467892674743898297": // Owner
-//				gChron.Technical_admin(usr)
-//			case "1467890007854551120": // Admin
-//				gChron.Admin(usr)
-//			case "1475993966041239623": // Technical User
-//				gChron.Technical_user(usr)
-//			case "1476428881677389865", // Booster
-//				"1476558127552790812": // Supporter
-//				gChron.Supporter(usr)
-//				_, err := zed.UpsertDataGrant(ctx, storagegrants.SupportStorageGrant(userID))
-//				if err != nil {
-//					bot.logger.Error("upsert supporter storage grant", slog.String("error", err.Error()))
-//				}
-//			}
-//		}
-//		_ = river.RecordOutput(ctx, map[string]any{
-//			"username": member.User.Username,
-//		})
-//	}
-//
-//	_, err = zed.Write(ctx, *b.Txn())
-//	if err != nil {
-//		return fmt.Errorf("zed.Write: %w", err)
-//	}
-//
-//	return nil
-//}
+// SyncDiscordUser manages only the chronicle_guild_member and supporter
+// relations for a user based on their Discord guild membership and roles.
+// All other roles (admin, technical_admin, etc.) are left untouched.
+func (bot *Bot) SyncDiscordUser(ctx context.Context, zed authz.DatabaseAuthorizer, discordID string, userID uuid.UUID) error {
+	if bot.disabled {
+		return nil
+	}
+
+	member, err := bot.GetGuildMember(bot.ChronicleGuildID(), discordID)
+	if err != nil {
+		return fmt.Errorf("get guild member: %w", err)
+	}
+
+	// --- chronicle_guild_member ---
+	// Targeted delete: remove only chronicle_guild_member for this user.
+	f := rel.NewFilter("chronicle", "chronicle", "chronicle_guild_member")
+	f.WithSubjectFilter("user", userID.String(), "")
+	if err := zed.Delete(ctx, rel.NewPreconditionedFilter(f)); err != nil {
+		return fmt.Errorf("delete chronicle_guild_member: %w", err)
+	}
+
+	if member != nil {
+		// User is in the guild — write chronicle_guild_member.
+		b := policy.New()
+		b.GlobalChronicle().Chronicle_guild_member(b.User(userID))
+		if _, err := zed.Write(ctx, *b.Txn()); err != nil {
+			return fmt.Errorf("write chronicle_guild_member: %w", err)
+		}
+	}
+
+	// --- supporter ---
+	// Targeted delete: remove only supporter for this user.
+	f2 := rel.NewFilter("chronicle", "chronicle", "supporter")
+	f2.WithSubjectFilter("user", userID.String(), "")
+	if err := zed.Delete(ctx, rel.NewPreconditionedFilter(f2)); err != nil {
+		return fmt.Errorf("delete supporter: %w", err)
+	}
+
+	if member != nil {
+		for _, roleID := range member.Roles {
+			if roleID == "1476428881677389865" || // Booster
+				roleID == "1476558127552790812" { // Supporter
+				b := policy.New()
+				b.GlobalChronicle().Supporter(b.User(userID))
+				if _, err := zed.Write(ctx, *b.Txn()); err != nil {
+					return fmt.Errorf("write supporter: %w", err)
+				}
+				if _, err := zed.UpsertDataGrant(ctx, storagegrants.SupportStorageGrant(userID)); err != nil {
+					bot.logger.Error("upsert supporter storage grant", slog.String("error", err.Error()))
+				}
+				break
+			}
+		}
+	}
+
+	return nil
+}

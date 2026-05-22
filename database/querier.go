@@ -120,6 +120,10 @@ type sqlcQuerier interface {
 	// Returns the realm-specific policy if it exists, otherwise the server-level policy.
 	GetRetentionPolicyForRealm(ctx context.Context, realmID uuid.NullUUID) (RetentionPolicy, error)
 	GetRetentionRulesByPolicy(ctx context.Context, policyID uuid.UUID) ([]RetentionRule, error)
+	GetServerApplicationByID(ctx context.Context, id uuid.UUID) (GetServerApplicationByIDRow, error)
+	GetServerApplicationByInitiatedBy(ctx context.Context, initiatedBy uuid.UUID) (GetServerApplicationByInitiatedByRow, error)
+	GetServerApplicationRealm(ctx context.Context, id uuid.UUID) (ServerApplicationRealm, error)
+	GetServerApplicationServer(ctx context.Context, id uuid.UUID) (ServerApplicationServer, error)
 	GetServerUploadMetaRealmID(ctx context.Context, logGroupID uuid.UUID) (uuid.NullUUID, error)
 	GetServersForWorld(ctx context.Context, worldID uuid.UUID) ([]WowServer, error)
 	GetSharedViewByCode(ctx context.Context, code string) (SharedView, error)
@@ -168,6 +172,12 @@ type sqlcQuerier interface {
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
 	InsertRegressionFixture(ctx context.Context, arg InsertRegressionFixtureParams) (RegressionFixture, error)
 	InsertRegressionSnapshot(ctx context.Context, arg InsertRegressionSnapshotParams) (RegressionSnapshot, error)
+	// Server Applications
+	InsertServerApplication(ctx context.Context, arg InsertServerApplicationParams) (ServerApplication, error)
+	// Server Application Realms
+	InsertServerApplicationRealm(ctx context.Context, arg InsertServerApplicationRealmParams) (ServerApplicationRealm, error)
+	// Server Application Servers
+	InsertServerApplicationServer(ctx context.Context, arg InsertServerApplicationServerParams) (ServerApplicationServer, error)
 	InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error
 	InsertStampedYoutubeVideo(ctx context.Context, arg InsertStampedYoutubeVideoParams) error
 	InsertTenant(ctx context.Context, arg InsertTenantParams) (Tenant, error)
@@ -208,6 +218,10 @@ type sqlcQuerier interface {
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	ListRegressionFixtures(ctx context.Context) ([]ListRegressionFixturesRow, error)
 	ListRegressionSnapshots(ctx context.Context, arg ListRegressionSnapshotsParams) ([]ListRegressionSnapshotsRow, error)
+	ListServerApplicationRealms(ctx context.Context, appServerID uuid.UUID) ([]ServerApplicationRealm, error)
+	ListServerApplicationRealmsByApplicationID(ctx context.Context, applicationID uuid.UUID) ([]ServerApplicationRealm, error)
+	ListServerApplicationServers(ctx context.Context, applicationID uuid.UUID) ([]ServerApplicationServer, error)
+	ListServerApplications(ctx context.Context, status pgtype.Text) ([]ListServerApplicationsRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	ListUploadKeysByRealm(ctx context.Context, realmID uuid.UUID) ([]ListUploadKeysByRealmRow, error)
 	ListUserPanelLayouts(ctx context.Context, userID uuid.NullUUID) ([]ListUserPanelLayoutsRow, error)
@@ -256,6 +270,12 @@ type sqlcQuerier interface {
 	UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
 	UpdateRetentionPolicyStats(ctx context.Context, arg UpdateRetentionPolicyStatsParams) error
+	UpdateServerApplicationFieldReviews(ctx context.Context, arg UpdateServerApplicationFieldReviewsParams) error
+	UpdateServerApplicationRealm(ctx context.Context, arg UpdateServerApplicationRealmParams) error
+	UpdateServerApplicationRealmStatus(ctx context.Context, arg UpdateServerApplicationRealmStatusParams) error
+	UpdateServerApplicationServer(ctx context.Context, arg UpdateServerApplicationServerParams) error
+	UpdateServerApplicationServerStatus(ctx context.Context, arg UpdateServerApplicationServerStatusParams) error
+	UpdateServerApplicationStatus(ctx context.Context, arg UpdateServerApplicationStatusParams) error
 	UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) (SiteConfig, error)
 	UpdateTelemetryHeartbeat(ctx context.Context) error
 	// Only non-null params are applied; NULL means "keep existing value".

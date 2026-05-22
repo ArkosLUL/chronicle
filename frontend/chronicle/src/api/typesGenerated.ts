@@ -29,6 +29,21 @@ export interface AddGuildMemberRequest {
     readonly user_id: string;
 }
 
+// From chroniclesdk/server_application.go
+export interface AddRealmRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
+}
+
+// From chroniclesdk/server_application.go
+export interface AddServerRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
+    readonly realms: readonly CreateRealmRequest[];
+}
+
 // From chroniclesdk/user.go
 export interface AdminBulkDeleteResponse {
     readonly requested: number;
@@ -244,10 +259,34 @@ export interface CreateJoinRequestBody {
     readonly message: string;
 }
 
+// From chroniclesdk/server_application.go
+export interface CreateRealmRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
+}
+
 // From chroniclesdk/regression.go
 export interface CreateRegressionFixtureRequest {
     readonly log_group_id: string;
     readonly note: string;
+}
+
+// From chroniclesdk/server_application.go
+export interface CreateServerApplicationRequest {
+    readonly name: string;
+    readonly display_name: string;
+    readonly tagline: string;
+    readonly tags: readonly string[];
+    readonly servers: readonly CreateServerRequest[];
+}
+
+// From chroniclesdk/server_application.go
+export interface CreateServerRequest {
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
+    readonly realms: readonly CreateRealmRequest[];
 }
 
 // From chroniclesdk/share.go
@@ -382,6 +421,13 @@ export type Duration = number;
 export type EndState = "reset" | "slain" | "timeout";
 
 export const EndStates: EndState[] = ["reset", "slain", "timeout"];
+
+// From chroniclesdk/server_application.go
+export interface FieldReview {
+    readonly status: string;
+    readonly note: string | null;
+    readonly reviewed_at: string | null;
+}
 
 // From chroniclesdk/log.go
 export type GUIDString = string;
@@ -1029,6 +1075,11 @@ export interface RegressionSnapshotSummary {
     readonly created_at: string;
 }
 
+// From chroniclesdk/server_application.go
+export interface RejectApplicationRequest {
+    readonly admin_note: string | null;
+}
+
 // From chroniclesdk/guild_page.go
 export interface ReorderTabsRequest {
     readonly tab_ids: readonly string[];
@@ -1147,6 +1198,23 @@ export interface RetentionRunRequest {
     readonly dry_run: boolean;
 }
 
+// From chroniclesdk/server_application.go
+export interface ReviewFieldRequest {
+    readonly section: string;
+    readonly status: string;
+    readonly note: string | null;
+}
+
+// From chroniclesdk/server_application.go
+export interface ReviewRealmRequest {
+    readonly admin_note: string | null;
+}
+
+// From chroniclesdk/server_application.go
+export interface ReviewServerRequest {
+    readonly admin_note: string | null;
+}
+
 // From rivertype/river_type.go
 /**
  * AttemptError is an error from a single job attempt that failed due to an
@@ -1179,6 +1247,48 @@ export interface RiverAttemptError {
 
 // From rivertype/river_type.go
 export type RiverJobState = string;
+
+// From chroniclesdk/server_application.go
+export interface ServerApplication {
+    readonly id: string;
+    readonly initiated_by: string;
+    readonly username: string;
+    readonly status: string;
+    readonly name: string;
+    readonly tenant_id: string;
+    readonly tenant: Tenant;
+    readonly field_reviews: Record<string, FieldReview>;
+    readonly servers: readonly ServerApplicationServer[];
+    readonly admin_note: string | null;
+    readonly can_review: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/server_application.go
+export interface ServerApplicationRealm {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
+    readonly status: string;
+    readonly admin_note: string | null;
+    readonly realm_id: string | null;
+    readonly created_at: string;
+}
+
+// From chroniclesdk/server_application.go
+export interface ServerApplicationServer {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
+    readonly status: string;
+    readonly admin_note: string | null;
+    readonly server_id: string | null;
+    readonly realms: readonly ServerApplicationRealm[];
+    readonly created_at: string;
+}
 
 // From chroniclesdk/user.go
 export interface Session {
@@ -1510,6 +1620,17 @@ export interface UpdatePreferencesRequest {
 // From chroniclesdk/regression.go
 export interface UpdateRegressionFixtureNoteRequest {
     readonly note: string;
+}
+
+// From chroniclesdk/server_application.go
+export interface UpdateServerApplicationRequest {
+    readonly name: string | null;
+    readonly display_name: string | null;
+    readonly tagline: string | null;
+    readonly description: string | null;
+    readonly tags: readonly string[];
+    readonly slug: string | null;
+    readonly branding: Branding | null;
 }
 
 // From chroniclesdk/user.go

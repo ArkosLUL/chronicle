@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/serviceaccessurl"
 	"github.com/Emyrk/chronicle/internal/services/serviceapi"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
+	"github.com/Emyrk/chronicle/internal/services/serviceapplication"
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
@@ -52,6 +53,7 @@ func ServerCmd() *serpent.Command {
 		servicetelemetry.New(srvs),
 		servicebot.New(srvs),
 		servicemail.New(srvs),
+		serviceapplication.New(srvs),
 		serviceapi.New(srvs),
 	)
 	if err != nil {

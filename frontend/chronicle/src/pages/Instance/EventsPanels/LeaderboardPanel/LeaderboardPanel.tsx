@@ -150,6 +150,39 @@ function LeaderboardContent(props: PanelRenderProps<LeaderboardPanelResult>) {
           </div>
         </div>
       )}
+
+      {speedrun.level_range && (
+        <div className="mt-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center gap-1.5 text-xs mb-1">
+            {speedrun.level_range.satisfied ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+            ) : (
+              <XCircle className="h-3 w-3 text-red-500 shrink-0" />
+            )}
+            <span className="font-medium text-zinc-500">
+              Level Requirement:{" "}
+              <span className={speedrun.level_range.satisfied ? "text-zinc-300" : "text-red-400"}>
+                {speedrun.level_range.requirement.min_level === speedrun.level_range.requirement.max_level
+                  ? speedrun.level_range.requirement.min_level
+                  : `${speedrun.level_range.requirement.min_level}–${speedrun.level_range.requirement.max_level}`}
+              </span>
+            </span>
+          </div>
+          {speedrun.level_range.violators.length > 0 && (
+            <div className="ml-5 space-y-0.5">
+              {speedrun.level_range.violators.map((v) => (
+                <div key={v.player_name} className="flex items-center gap-1.5 text-xs text-red-400">
+                  <XCircle className="h-3 w-3 text-red-500 shrink-0" />
+                  {v.player_name}
+                  <span className="text-zinc-500">
+                    — Level {v.level === 0 ? "unknown" : v.level}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

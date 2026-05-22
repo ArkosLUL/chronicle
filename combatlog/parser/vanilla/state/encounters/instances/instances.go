@@ -71,6 +71,7 @@ var (
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: BlackrockSpireSpeedrunRequirements(),
+				LevelRange:   Level60Cap(),
 			},
 		},
 	}
@@ -83,6 +84,7 @@ var (
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: MoltenCoreSpeedrunRequirements(),
+				LevelRange:   Level60Cap(),
 			},
 		},
 	}
@@ -111,6 +113,7 @@ var (
 		Name:      "Ragefire Chasm",
 		ZoneNames: []string{"ragefire chasm", "怒焰裂谷"},
 		Hostiles:  FromMap(RagefireChasmHostiles()),
+		Rankings:  RagefireChasmSpeedrunRequirements(),
 	}
 
 	ZulGurubFactory = &CommonFactory{
@@ -152,6 +155,7 @@ var (
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: TempleOfAhnQirajSpeedrunRequirements(),
+				LevelRange:   Level60Cap(),
 			},
 		},
 	}
@@ -164,6 +168,7 @@ var (
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: RuinsOfAhnQirajSpeedrunRequirements(),
+				LevelRange:   Level60Cap(),
 			},
 		},
 	}
@@ -176,6 +181,7 @@ var (
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: BlackwingLairSpeedrunRequirements(),
+				LevelRange:   Level60Cap(),
 			},
 		},
 	}
@@ -238,6 +244,7 @@ var (
 		Rankings: &rankings.Rankings{
 			Speedrun: &rankings.SpeedrunRules{
 				Requirements: TimbermawHoldSpeedrunRequirements(),
+				LevelRange:   Level60Cap(),
 			},
 		},
 	}

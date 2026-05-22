@@ -36,6 +36,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk"
 	"github.com/Emyrk/chronicle/database"
@@ -697,7 +698,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			// Persist speedrun result if available.
 			if finalized.Rankings != nil && finalized.Rankings.Speedrun != nil {
 				sr := finalized.Rankings.Speedrun
-				proofJSON, err := json.Marshal(sr.Proof)
+				proofJSON, err := json.Marshal(rankings.SpeedrunProofPayload{
+					Proof:      sr.Proof,
+					LevelRange: sr.LevelRange,
+				})
 				if err != nil {
 					return fmt.Errorf("marshal speedrun proof: %w", err)
 				}

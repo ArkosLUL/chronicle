@@ -87,6 +87,13 @@ type SpeedrunResult struct {
 	LevelRange     *LevelRangeResult `json:"level_range,omitempty"`
 }
 
+// SpeedrunProofPayload is the JSON structure stored in the database proof column.
+// It wraps the proof array alongside optional level range data.
+type SpeedrunProofPayload struct {
+	Proof      []SpeedrunProof  `json:"proof"`
+	LevelRange *LevelRangeResult `json:"level_range,omitempty"`
+}
+
 // RankingsResult holds results from all ranking evaluations.
 type RankingsResult struct {
 	Speedrun *SpeedrunResult `json:"speedrun,omitempty"`

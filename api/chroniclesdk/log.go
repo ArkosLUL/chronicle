@@ -280,6 +280,13 @@ type SpeedrunLevelViolation struct {
 	Level      int32     `json:"level"`
 }
 
+// SpeedrunProofPayload is the JSON structure stored in the database proof column.
+// It wraps the proof array alongside optional level range data.
+type SpeedrunProofPayload struct {
+	Proof      []SpeedrunProof        `json:"proof"`
+	LevelRange *SpeedrunLevelRangeResult `json:"level_range,omitempty"`
+}
+
 // SpeedrunLevelRangeResult shows whether the level range was satisfied and who violated it.
 type SpeedrunLevelRangeResult struct {
 	Requirement SpeedrunLevelRangeRequirement `json:"requirement"`

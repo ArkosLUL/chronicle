@@ -220,16 +220,28 @@ func WowDecoratedInstance(instance database.LogInstancesGuild,
 // SpeedrunResult converts a database speedrun row to an SDK SpeedrunResult.
 // The proof column is stored as JSONB and decoded into SDK proof types.
 func SpeedrunResult(sr database.InstanceSpeedrun) *chroniclesdk.SpeedrunResult {
-	var proof []chroniclesdk.SpeedrunProof
-	_ = json.Unmarshal(sr.Proof, &proof)
-
-	return &chroniclesdk.SpeedrunResult{
+	result := &chroniclesdk.SpeedrunResult{
 		Qualified:      sr.Qualified,
 		StartTime:      sr.StartTime.Time,
 		CompletionTime: sr.CompletionTime.Time,
 		DurationMs:     sr.DurationMs,
-		Proof:          proof,
 	}
+
+	// The proof JSONB column may be the new format (object with "proof" +
+	// "level_range" keys) or the legacy format (bare array of proofs).
+	// Try the new format first; fall back to the legacy array.
+	var payload chroniclesdk.SpeedrunProofPayload
+	if err := json.Unmarshal(sr.Proof, &payload); err == nil && payload.Proof != nil {
+		result.Proof = payload.Proof
+		result.LevelRange = payload.LevelRange
+	} else {
+		// Legacy: bare []SpeedrunProof array.
+		var proof []chroniclesdk.SpeedrunProof
+		_ = json.Unmarshal(sr.Proof, &proof)
+		result.Proof = proof
+	}
+
+	return result
 }
 
 // SpeedrunLeaderboardEntry converts a database leaderboard row to an SDK entry.

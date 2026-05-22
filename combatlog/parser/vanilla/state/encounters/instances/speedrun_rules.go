@@ -5,6 +5,30 @@ import (
 	"github.com/Emyrk/chronicle/internal/services"
 )
 
+func Level60Cap() *rankings.LevelRangeRequirement {
+	return &rankings.LevelRangeRequirement{
+		MinLevel: 0,
+		MaxLevel: 60,
+	}
+}
+
+func RagefireChasmSpeedrunRequirements() *rankings.Rankings {
+	return &rankings.Rankings{
+		Speedrun: &rankings.SpeedrunRules{
+			Requirements: []rankings.SpeedrunRequirement{
+				{Name: "Taragaman the Hungerer", EntryIDs: []uint32{11520}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Jergosh the Invoker", EntryIDs: []uint32{11518}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Oggleflint", EntryIDs: []uint32{11517}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Bazzalan", EntryIDs: []uint32{11519}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			},
+			LevelRange: &rankings.LevelRangeRequirement{
+				MinLevel: 0,
+				MaxLevel: 20,
+			},
+		},
+	}
+}
+
 func DeadminesSpeedrunRequirements() *rankings.Rankings {
 	return &rankings.Rankings{
 		Speedrun: &rankings.SpeedrunRules{

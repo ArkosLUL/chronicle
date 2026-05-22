@@ -1569,6 +1569,16 @@ export interface SpeedrunProof {
 
 // From chroniclesdk/log.go
 /**
+ * SpeedrunProofPayload is the JSON structure stored in the database proof column.
+ * It wraps the proof array alongside optional level range data.
+ */
+export interface SpeedrunProofPayload {
+    readonly proof: readonly SpeedrunProof[];
+    readonly level_range?: SpeedrunLevelRangeResult;
+}
+
+// From chroniclesdk/log.go
+/**
  * SpeedrunRequirement describes one rule for a valid speedrun.
  */
 export interface SpeedrunRequirement {

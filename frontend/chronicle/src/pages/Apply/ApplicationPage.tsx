@@ -400,7 +400,19 @@ function BrandingSectionCard({
             <span className="text-muted-foreground w-32 shrink-0 pt-0.5">{f.label}:</span>
             {"tags" in f && f.tags
               ? <TagDisplay tags={parseTags(live[f.key])} />
-              : <span className="truncate">{live[f.key] || <span className="italic text-muted-foreground">—</span>}</span>
+              : f.key === "slug" && live[f.key] ? (
+                <span className="flex items-center gap-2">
+                  <span>{live[f.key]}</span>
+                  <a
+                    href={`https://${live[f.key]}.chronicleclassic.com`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {live[f.key]}.chronicleclassic.com ↗
+                  </a>
+                </span>
+              ) : <span className="truncate">{live[f.key] || <span className="italic text-muted-foreground">—</span>}</span>
             }
           </div>
         ))}
@@ -555,7 +567,7 @@ function ThemeSectionCard({
 
   const handleSave = () => {
     createReq.mutate(
-      { type: "theme", payload: { theme: draft } },
+      { type: "theme", payload: { theme: draft } as never },
       {
         onSuccess: () => {
           toast.success("Theme request saved");
@@ -719,8 +731,8 @@ function SettingsSectionCard({
             return (
               <div key={s.key} className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground w-56 shrink-0">{s.label}:</span>
-                <span className={val === "true" || val === true ? "text-green-400" : "text-muted-foreground"}>
-                  {val === "true" || val === true ? "Yes" : "No"}
+                <span className={val === "true" ? "text-green-400" : "text-muted-foreground"}>
+                  {val === "true" ? "Yes" : "No"}
                 </span>
               </div>
             );
@@ -728,9 +740,9 @@ function SettingsSectionCard({
           <div className="flex items-center gap-2 pt-1">
             {req.status === "pending" && (
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
-                setIncludeInAll(req.payload.include_in_all === "true" || req.payload.include_in_all === true);
-                setDisableClientUpload(req.payload.disable_client_upload === "true" || req.payload.disable_client_upload === true);
-                setDiscoverable(req.payload.discoverable === "true" || req.payload.discoverable === true);
+                setIncludeInAll(req.payload.include_in_all === "true");
+                setDisableClientUpload(req.payload.disable_client_upload === "true");
+                setDiscoverable(req.payload.discoverable === "true");
                 setEditing(true);
               }}>
                 Edit

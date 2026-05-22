@@ -17,6 +17,7 @@ var (
 		Name:      "Deadmines",
 		ZoneNames: []string{"the deadmines", "deadmines", "死亡矿井"},
 		Hostiles:  FromMap(DeadminesHostiles()),
+		Rankings:  DeadminesSpeedrunRequirements(),
 	}
 
 	ShadowfangKeepFactory = &CommonFactory{

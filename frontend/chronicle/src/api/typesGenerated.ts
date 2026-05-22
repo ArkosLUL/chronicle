@@ -1530,6 +1530,35 @@ export interface SpeedrunLeaderboardEntry {
 
 // From chroniclesdk/log.go
 /**
+ * SpeedrunLevelRangeRequirement constrains the player levels allowed in a qualifying speedrun.
+ */
+export interface SpeedrunLevelRangeRequirement {
+    readonly min_level: number;
+    readonly max_level: number;
+}
+
+// From chroniclesdk/log.go
+/**
+ * SpeedrunLevelRangeResult shows whether the level range was satisfied and who violated it.
+ */
+export interface SpeedrunLevelRangeResult {
+    readonly requirement: SpeedrunLevelRangeRequirement;
+    readonly satisfied: boolean;
+    readonly violators: readonly SpeedrunLevelViolation[];
+}
+
+// From chroniclesdk/log.go
+/**
+ * SpeedrunLevelViolation records a single player that violated the level range.
+ */
+export interface SpeedrunLevelViolation {
+    readonly player_guid: GUID;
+    readonly player_name: string;
+    readonly level: number;
+}
+
+// From chroniclesdk/log.go
+/**
  * SpeedrunProof ties a requirement to the kills that satisfied (or failed to satisfy) it.
  */
 export interface SpeedrunProof {
@@ -1560,6 +1589,7 @@ export interface SpeedrunResult {
     readonly duration_ms: number;
     readonly proof: readonly SpeedrunProof[];
     readonly version_status?: SpeedrunVersionStatus;
+    readonly level_range?: SpeedrunLevelRangeResult;
 }
 
 // From chroniclesdk/log.go
@@ -1569,6 +1599,7 @@ export interface SpeedrunResult {
 export interface SpeedrunRulesResponse {
     readonly instance_name: string;
     readonly requirements: readonly SpeedrunRequirement[];
+    readonly level_range?: SpeedrunLevelRangeRequirement;
 }
 
 // From chroniclesdk/log.go

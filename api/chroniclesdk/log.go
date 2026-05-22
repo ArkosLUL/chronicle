@@ -67,24 +67,24 @@ type Guild struct {
 }
 
 type WoWInstance struct {
-	ID               uuid.UUID         `json:"id"`
-	RealmID    uuid.UUID `json:"realm_id"`
-	RealmName  string    `json:"realm_name,omitempty"`
-	ServerName       string `json:"server_name,omitempty"`
-	TenantName       string `json:"tenant_name,omitempty"`
-	TenantSlug       string `json:"tenant_slug,omitempty"`
-	TenantIncludeAll bool   `json:"tenant_include_in_all,omitempty"`
-	LogGroupID       uuid.UUID `json:"log_group_id"`
-	Name             string            `json:"name"`
-	Slug             string            `json:"slug"`
-	StartTime        *time.Time        `json:"start_time,omitempty"`
-	EndTime          *time.Time        `json:"end_time,omitempty"`
-	Guild            *Guild            `json:"guild,omitempty"`
-	Capabilities     []string          `json:"capabilities"`
-	Versions         map[string]string `json:"versions"`
-	RecorderName     string            `json:"recorder_name"`
-	RecorderGUID     string            `json:"recorder_guid"`
-	DuplicateGroupID *uuid.UUID        `json:"duplicate_group_id,omitempty"`
+	ID                uuid.UUID         `json:"id"`
+	RealmID           uuid.UUID         `json:"realm_id"`
+	RealmName         string            `json:"realm_name,omitempty"`
+	ServerName        string            `json:"server_name,omitempty"`
+	TenantName        string            `json:"tenant_name,omitempty"`
+	TenantSlug        string            `json:"tenant_slug,omitempty"`
+	TenantIncludeAll  bool              `json:"tenant_include_in_all,omitempty"`
+	LogGroupID        uuid.UUID         `json:"log_group_id"`
+	Name              string            `json:"name"`
+	Slug              string            `json:"slug"`
+	StartTime         *time.Time        `json:"start_time,omitempty"`
+	EndTime           *time.Time        `json:"end_time,omitempty"`
+	Guild             *Guild            `json:"guild,omitempty"`
+	Capabilities      []string          `json:"capabilities"`
+	Versions          map[string]string `json:"versions"`
+	RecorderName      string            `json:"recorder_name"`
+	RecorderGUID      string            `json:"recorder_guid"`
+	DuplicateGroupID  *uuid.UUID        `json:"duplicate_group_id,omitempty"`
 	DifficultyName    string            `json:"difficulty_name"`
 	MaxPlayers        int               `json:"max_players"`
 	DynamicDifficulty int               `json:"dynamic_difficulty"`
@@ -267,14 +267,35 @@ type SpeedrunProof struct {
 	Satisfied   bool                 `json:"satisfied"`
 }
 
+// SpeedrunLevelRangeRequirement constrains the player levels allowed in a qualifying speedrun.
+type SpeedrunLevelRangeRequirement struct {
+	MinLevel int32 `json:"min_level"`
+	MaxLevel int32 `json:"max_level"`
+}
+
+// SpeedrunLevelViolation records a single player that violated the level range.
+type SpeedrunLevelViolation struct {
+	PlayerGUID guid.GUID `json:"player_guid"`
+	PlayerName string    `json:"player_name"`
+	Level      int32     `json:"level"`
+}
+
+// SpeedrunLevelRangeResult shows whether the level range was satisfied and who violated it.
+type SpeedrunLevelRangeResult struct {
+	Requirement SpeedrunLevelRangeRequirement `json:"requirement"`
+	Satisfied   bool                          `json:"satisfied"`
+	Violators   []SpeedrunLevelViolation      `json:"violators"`
+}
+
 // SpeedrunResult is the outcome of evaluating speedrun rules against an instance.
 type SpeedrunResult struct {
-	Qualified      bool                   `json:"qualified"`
-	StartTime      time.Time              `json:"start_time"`
-	CompletionTime time.Time              `json:"completion_time"`
-	DurationMs     int64                  `json:"duration_ms"`
-	Proof          []SpeedrunProof        `json:"proof"`
-	VersionStatus  *SpeedrunVersionStatus `json:"version_status,omitempty"`
+	Qualified      bool                      `json:"qualified"`
+	StartTime      time.Time                 `json:"start_time"`
+	CompletionTime time.Time                 `json:"completion_time"`
+	DurationMs     int64                     `json:"duration_ms"`
+	Proof          []SpeedrunProof           `json:"proof"`
+	VersionStatus  *SpeedrunVersionStatus    `json:"version_status,omitempty"`
+	LevelRange     *SpeedrunLevelRangeResult `json:"level_range,omitempty"`
 }
 
 // SpeedrunVersionStatus reports whether the instance's tooling versions
@@ -306,8 +327,9 @@ type SpeedrunLeaderboardEntry struct {
 
 // SpeedrunRulesResponse is the response for the speedrun rules endpoint.
 type SpeedrunRulesResponse struct {
-	InstanceName string                `json:"instance_name"`
-	Requirements []SpeedrunRequirement `json:"requirements"`
+	InstanceName string                         `json:"instance_name"`
+	Requirements []SpeedrunRequirement          `json:"requirements"`
+	LevelRange   *SpeedrunLevelRangeRequirement `json:"level_range,omitempty"`
 }
 
 // LeaderboardVersionRequirements holds admin-configured minimum version

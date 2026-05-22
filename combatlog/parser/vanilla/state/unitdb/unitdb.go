@@ -178,6 +178,11 @@ func (us *Units) UpdateUnitName(gid guid.GUID, name string) {
 }
 
 func (us *Units) UpdatePlayer(c combatant.Combatant) {
+	existing, ok := us.Players[c.Guid]
+	if ok {
+		c.MergeExisting(existing)
+	}
+
 	us.Players[c.Guid] = c
 	us.PlayerByName[c.Name] = c.Guid
 }

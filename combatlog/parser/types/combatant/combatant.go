@@ -40,6 +40,37 @@ type Combatant struct {
 	GearSetups []GearItem
 	Talents    *Talents
 	Glyphs     *Glyphs
+	Level      *int32
+}
+
+func (c *Combatant) MergeExisting(existing Combatant) {
+	if c.Name == "" && existing.Name != "" {
+		c.Name = existing.Name
+	}
+	if c.Level == nil {
+		c.Level = existing.Level
+	}
+	if c.Guild == nil && existing.Guild != nil {
+		c.Guild = existing.Guild
+	}
+	if c.GearSetups == nil && existing.GearSetups != nil {
+		c.GearSetups = existing.GearSetups
+	}
+	if c.Talents == nil && existing.Talents != nil {
+		c.Talents = existing.Talents
+	}
+	if c.Glyphs == nil && existing.Glyphs != nil {
+		c.Glyphs = existing.Glyphs
+	}
+	if c.HeroClass == types.HeroClassesUNKNOWN {
+		c.HeroClass = existing.HeroClass
+	}
+	if c.Gender == types.HeroGenderUnknown {
+		c.Gender = existing.Gender
+	}
+	if c.Race == types.HeroRacesUnknown {
+		c.Race = existing.Race
+	}
 }
 
 // Glyphs holds glyph spell IDs for one or two talent specs.

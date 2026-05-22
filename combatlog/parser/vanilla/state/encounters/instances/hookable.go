@@ -56,8 +56,9 @@ type Hookable struct {
 	realm           *realm.Info         // mostly static
 	versions        map[string]string   // addon/dependency versions from HEADER
 	recorderGUID    *guid.GUID          // recording player GUID from HEADER
-	hooks           []instancehook.Hook // TODO: unroll?
-	speedrunTracker *rankings.SpeedrunTracker
+	hooks              []instancehook.Hook // TODO: unroll?
+	engagementTracker  *rankings.EngagementTracker
+	speedrunTracker    *rankings.SpeedrunTracker
 
 	// Live tracking data
 	Auras           *auras.Tracking
@@ -124,9 +125,11 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	}
 	chrs.RegisterHook(cie)
 
+	engagementTracker := rankings.NewEngagementTracker(db)
+
 	var speedrunTracker *rankings.SpeedrunTracker
 	if ip.Rankings != nil && ip.Rankings.Speedrun != nil {
-		speedrunTracker = rankings.NewSpeedrunTracker(*ip.Rankings.Speedrun)
+		speedrunTracker = rankings.NewSpeedrunTracker(*ip.Rankings.Speedrun, db, engagementTracker)
 		chrs.RegisterHook(speedrunTracker)
 	}
 
@@ -140,6 +143,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		ce,
 		cie,
 		lootTracking,
+		engagementTracker,
 		//auraTracking,
 	}...)
 	if speedrunTracker != nil {
@@ -168,8 +172,9 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		g:               g,
 		p:               p,
 		lootTracking:    lootTracking,
-		hooks:           hooks,
-		speedrunTracker: speedrunTracker,
+		hooks:             hooks,
+		engagementTracker: engagementTracker,
+		speedrunTracker:   speedrunTracker,
 		verbose:         parseoptions.IsVerbose(ctx),
 		timings:         timings.New(),
 		completedFights: make([]Fight, 0),

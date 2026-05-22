@@ -7,7 +7,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/db2sdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/semverenc"
 	"github.com/Emyrk/chronicle/internal/slice"
@@ -119,8 +118,8 @@ func (api *API) SpeedrunRules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allRules := instances.SpeedrunRulesByInstance()
-	reqs, ok := allRules[instanceName]
+	allRules := api.Chronicle.Registry().SpeedrunRules()
+	rules, ok := allRules[instanceName]
 	if !ok {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
 			Message: "No speedrun rules found for instance",
@@ -128,8 +127,8 @@ func (api *API) SpeedrunRules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdkReqs := make([]chroniclesdk.SpeedrunRequirement, len(reqs))
-	for i, r := range reqs {
+	sdkReqs := make([]chroniclesdk.SpeedrunRequirement, len(rules.Requirements))
+	for i, r := range rules.Requirements {
 		sdkReqs[i] = chroniclesdk.SpeedrunRequirement{
 			Name:     r.Name,
 			EntryIDs: r.EntryIDs,
@@ -138,10 +137,18 @@ func (api *API) SpeedrunRules(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	httpapi.Write(ctx, w, http.StatusOK, chroniclesdk.SpeedrunRulesResponse{
+	resp := chroniclesdk.SpeedrunRulesResponse{
 		InstanceName: instanceName,
 		Requirements: sdkReqs,
-	})
+	}
+	if rules.LevelRange != nil {
+		resp.LevelRange = &chroniclesdk.SpeedrunLevelRangeRequirement{
+			MinLevel: rules.LevelRange.MinLevel,
+			MaxLevel: rules.LevelRange.MaxLevel,
+		}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
 // AdminListLeaderboardVersionRequirements returns all configured version requirements.

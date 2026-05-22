@@ -9,6 +9,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 	"github.com/Emyrk/chronicle/internal/services"
 )
@@ -29,6 +30,8 @@ type Entry struct {
 	ZoneNames []string
 	// HostileEntries are the creature entry IDs for this instance.
 	HostileEntries map[uint32]instances.Identity
+	// SpeedrunRules holds the speedrun rules captured at registration time.
+	SpeedrunRules *rankings.SpeedrunRules
 }
 
 // WithComment returns a copy of the Entry with Comment set.
@@ -45,11 +48,17 @@ func FromCommonFactory(f *instances.CommonFactory) Entry {
 		hostiles = f.Hostiles().HostileEntries()
 	}
 
+	var speedrun *rankings.SpeedrunRules
+	if f.Rankings != nil {
+		speedrun = f.Rankings.Speedrun
+	}
+
 	return Entry{
 		Name:           f.Name,
 		Factory:        wrap(f.New),
 		ZoneNames:      f.ZoneNames,
 		HostileEntries: hostiles,
+		SpeedrunRules:  speedrun,
 	}
 }
 
@@ -160,6 +169,23 @@ func (r *Registry) Entries() map[string]*Entry {
 func (r *Registry) EntryByName(name string) *Entry {
 	return r.entries[name]
 }
+// SpeedrunRules returns speedrun rules for every registered instance that has
+// them, keyed by instance name. Includes fallback entries.
+func (r *Registry) SpeedrunRules() map[string]*rankings.SpeedrunRules {
+	m := make(map[string]*rankings.SpeedrunRules)
+	if r.fallback != nil {
+		for k, v := range r.fallback.SpeedrunRules() {
+			m[k] = v
+		}
+	}
+	for _, entry := range r.entries {
+		if entry.SpeedrunRules != nil {
+			m[entry.Name] = entry.SpeedrunRules
+		}
+	}
+	return m
+}
+
 
 // AllInstances returns all registered instance names
 func (r *Registry) AllInstances() []string {

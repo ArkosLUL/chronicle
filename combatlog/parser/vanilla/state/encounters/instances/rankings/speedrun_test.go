@@ -58,7 +58,7 @@ func singleBossRules(name string, entryID uint32) SpeedrunRules {
 
 func TestSpeedrunTracker_ActivityChange_SlainSatisfiesRequirement(t *testing.T) {
 	t.Parallel()
-	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100))
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, nil)
 
 	c := &stubChar{
 		id:        makeCreatureGUID(100, 1),
@@ -76,7 +76,7 @@ func TestSpeedrunTracker_ActivityChange_SlainSatisfiesRequirement(t *testing.T) 
 
 func TestSpeedrunTracker_ActivityChange_ResetDoesNotSatisfy(t *testing.T) {
 	t.Parallel()
-	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100))
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, nil)
 
 	c := &stubChar{
 		id:        makeCreatureGUID(100, 1),
@@ -93,7 +93,7 @@ func TestSpeedrunTracker_ActivityChange_ResetDoesNotSatisfy(t *testing.T) {
 
 func TestSpeedrunTracker_ActivityChange_ActiveCharacterIgnored(t *testing.T) {
 	t.Parallel()
-	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100))
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, nil)
 
 	c := &stubChar{
 		id:        makeCreatureGUID(100, 1),
@@ -108,7 +108,7 @@ func TestSpeedrunTracker_ActivityChange_ActiveCharacterIgnored(t *testing.T) {
 
 func TestSpeedrunTracker_ActivityChange_UntrackedEntryIgnored(t *testing.T) {
 	t.Parallel()
-	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100))
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, nil)
 
 	c := &stubChar{
 		id:        makeCreatureGUID(999, 1),
@@ -128,7 +128,7 @@ func TestSpeedrunTracker_ActivityChange_DuplicateGUIDIgnored(t *testing.T) {
 			{Name: "Trolls", EntryIDs: []uint32{100}, Count: 2},
 		},
 	}
-	tracker := NewSpeedrunTracker(rules)
+	tracker := NewSpeedrunTracker(rules, nil, nil)
 
 	c := &stubChar{
 		id:        makeCreatureGUID(100, 1),
@@ -150,7 +150,7 @@ func TestSpeedrunTracker_ActivityChange_CountNRequiresNDistinctGUIDs(t *testing.
 			{Name: "Trolls", EntryIDs: []uint32{100}, Count: 3},
 		},
 	}
-	tracker := NewSpeedrunTracker(rules)
+	tracker := NewSpeedrunTracker(rules, nil, nil)
 
 	for i := uint32(1); i <= 3; i++ {
 		c := &stubChar{
@@ -174,7 +174,7 @@ func TestSpeedrunTracker_ActivityChange_MultipleEntryIDsSameRequirement(t *testi
 			{Name: "Trolls", EntryIDs: []uint32{100, 101}, Count: 2},
 		},
 	}
-	tracker := NewSpeedrunTracker(rules)
+	tracker := NewSpeedrunTracker(rules, nil, nil)
 
 	c1 := &stubChar{id: makeCreatureGUID(100, 1), active: false, endState: period.EndStateSlain, hasPeriod: true}
 	c2 := &stubChar{id: makeCreatureGUID(101, 1), active: false, endState: period.EndStateSlain, hasPeriod: true}
@@ -189,7 +189,7 @@ func TestSpeedrunTracker_ActivityChange_MultipleEntryIDsSameRequirement(t *testi
 
 func TestSpeedrunTracker_FightStarted_RecordsFirstFightOnly(t *testing.T) {
 	t.Parallel()
-	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100))
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, nil)
 
 	first := t0
 	second := t0.Add(5 * time.Minute)
@@ -208,7 +208,7 @@ func TestSpeedrunTracker_FightEnded_QualifiesOnlyWhenAllSatisfied(t *testing.T) 
 			{Name: "B", EntryIDs: []uint32{200}, Count: 1},
 		},
 	}
-	tracker := NewSpeedrunTracker(rules)
+	tracker := NewSpeedrunTracker(rules, nil, nil)
 	tracker.FightStarted(uuid.New(), msg(t0))
 
 	// Kill first boss
@@ -233,7 +233,7 @@ func TestSpeedrunTracker_CompletedIgnoresSubsequentKills(t *testing.T) {
 			{Name: "Extra", EntryIDs: []uint32{200}, Count: 1},
 		},
 	}
-	tracker := NewSpeedrunTracker(rules)
+	tracker := NewSpeedrunTracker(rules, nil, nil)
 	tracker.FightStarted(uuid.New(), msg(t0))
 
 	// Satisfy both
@@ -258,7 +258,7 @@ func TestSpeedrunTracker_Result_ProofForEveryRequirement(t *testing.T) {
 			{Name: "B", EntryIDs: []uint32{200}, Count: 1},
 		},
 	}
-	tracker := NewSpeedrunTracker(rules)
+	tracker := NewSpeedrunTracker(rules, nil, nil)
 	tracker.FightStarted(uuid.New(), msg(t0))
 
 	// Only kill A
@@ -281,7 +281,7 @@ func TestSpeedrunTracker_Result_ProofForEveryRequirement(t *testing.T) {
 
 func TestSpeedrunTracker_Result_QualifiedRun(t *testing.T) {
 	t.Parallel()
-	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100))
+	tracker := NewSpeedrunTracker(singleBossRules("Boss", 100), nil, nil)
 
 	startTime := t0
 	endTime := t0.Add(30 * time.Minute)

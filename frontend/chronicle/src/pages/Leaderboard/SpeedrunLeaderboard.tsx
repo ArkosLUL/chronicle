@@ -129,6 +129,17 @@ function RulesModal({ open, onClose, instanceName, rules }: {
                   </ul>
                 </div>
               )}
+              {rules.level_range && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Level Requirement</h3>
+                  <p className="text-sm">
+                    All engaged players must be level{" "}
+                    {rules.level_range.min_level === rules.level_range.max_level
+                      ? rules.level_range.min_level
+                      : `${rules.level_range.min_level}–${rules.level_range.max_level}`}
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>

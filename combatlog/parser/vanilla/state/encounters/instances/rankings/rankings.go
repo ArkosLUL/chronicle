@@ -26,9 +26,16 @@ type SpeedrunRequirement struct {
 	Category SpeedrunRequirementCategory `json:"category"`
 }
 
+// LevelRangeRequirement constrains the player levels allowed in a qualifying speedrun.
+type LevelRangeRequirement struct {
+	MinLevel int32 `json:"min_level"`
+	MaxLevel int32 `json:"max_level"`
+}
+
 // SpeedrunRules defines all requirements for a valid speedrun.
 type SpeedrunRules struct {
-	Requirements []SpeedrunRequirement `json:"requirements"`
+	Requirements []SpeedrunRequirement  `json:"requirements"`
+	LevelRange   *LevelRangeRequirement `json:"level_range,omitempty"`
 }
 
 // Rankings holds all rule sets for an instance.
@@ -56,13 +63,28 @@ type SpeedrunProof struct {
 	Satisfied   bool                `json:"satisfied"`
 }
 
+// LevelViolation records a single player that violated the level range.
+type LevelViolation struct {
+	PlayerName string    `json:"player_name"`
+	PlayerGUID guid.GUID `json:"player_guid"`
+	Level      int32     `json:"level"`
+}
+
+// LevelRangeResult shows whether the level range was satisfied and who violated it.
+type LevelRangeResult struct {
+	Requirement LevelRangeRequirement `json:"requirement"`
+	Satisfied   bool                  `json:"satisfied"`
+	Violators   []LevelViolation      `json:"violators"`
+}
+
 // SpeedrunResult is the outcome of evaluating speedrun rules against an instance.
 type SpeedrunResult struct {
-	Qualified      bool            `json:"qualified"`
-	StartTime      time.Time       `json:"start_time"`
-	CompletionTime time.Time       `json:"completion_time"`
-	Duration       time.Duration   `json:"duration"`
-	Proof          []SpeedrunProof `json:"proof"`
+	Qualified      bool              `json:"qualified"`
+	StartTime      time.Time         `json:"start_time"`
+	CompletionTime time.Time         `json:"completion_time"`
+	Duration       time.Duration     `json:"duration"`
+	Proof          []SpeedrunProof   `json:"proof"`
+	LevelRange     *LevelRangeResult `json:"level_range,omitempty"`
 }
 
 // RankingsResult holds results from all ranking evaluations.

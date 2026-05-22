@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
 // PlayerData accumulates segment data for a single player.
@@ -46,6 +47,7 @@ func (pd *PlayerData) toCombatantMessage(ts time.Time) *messages.Combatant {
 			GearSetups: pd.Gear,
 			Talents:    pd.Talents,
 			Glyphs:     pd.Glyphs,
+			Level:      ptr.Ref(int32(pd.Level)),
 		},
 	}
 }

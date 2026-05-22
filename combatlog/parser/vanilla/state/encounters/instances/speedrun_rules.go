@@ -5,18 +5,24 @@ import (
 	"github.com/Emyrk/chronicle/internal/services"
 )
 
-// SpeedrunRulesByInstance returns speedrun requirements keyed by instance name.
-// Only instances with speedrun rules are included.
-func SpeedrunRulesByInstance() map[string][]rankings.SpeedrunRequirement {
-	return map[string][]rankings.SpeedrunRequirement{
-		"Molten Core":         MoltenCoreSpeedrunRequirements(),
-		"Blackwing Lair":      BlackwingLairSpeedrunRequirements(),
-		"Onyxia's Lair":       OnyxiasLairSpeedrunRequirements(),
-		"Naxxramas":           NaxxramasSpeedrunRequirements(),
-		"Zul'Gurub":           ZulGurubSpeedrunRequirements(),
-		"Temple of Ahn'Qiraj": TempleOfAhnQirajSpeedrunRequirements(),
-		"Ruins of Ahn'Qiraj":  RuinsOfAhnQirajSpeedrunRequirements(),
-		"Timbermaw Hold":      TimbermawHoldSpeedrunRequirements(),
+func DeadminesSpeedrunRequirements() *rankings.Rankings {
+	return &rankings.Rankings{
+		Speedrun: &rankings.SpeedrunRules{
+			Requirements: []rankings.SpeedrunRequirement{
+				{Name: "Cookie", EntryIDs: []uint32{645}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Rhahk'Zor", EntryIDs: []uint32{644}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Sneed's Shredder", EntryIDs: []uint32{642}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Sneed", EntryIDs: []uint32{643}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Gilnid", EntryIDs: []uint32{1763}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Mr. Smite", EntryIDs: []uint32{646}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Captain Greenskin", EntryIDs: []uint32{647}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+				{Name: "Edwin VanCleef", EntryIDs: []uint32{639}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			},
+			LevelRange: &rankings.LevelRangeRequirement{
+				MinLevel: 0,
+				MaxLevel: 26,
+			},
+		},
 	}
 }
 

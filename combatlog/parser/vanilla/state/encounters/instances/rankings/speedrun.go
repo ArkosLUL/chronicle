@@ -2,6 +2,7 @@ package rankings
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
 )
 
 var (
@@ -36,12 +38,15 @@ type SpeedrunTracker struct {
 	remaining   int // unsatisfied requirements remaining
 	seenGUIDs   map[guid.GUID]struct{}
 
+	units      *unitdb.Units        // may be nil in tests
+	engagement *EngagementTracker   // may be nil in tests
+
 	startTime      time.Time
 	completionTime time.Time
 	completed      bool
 }
 
-func NewSpeedrunTracker(rules SpeedrunRules) *SpeedrunTracker {
+func NewSpeedrunTracker(rules SpeedrunRules, units *unitdb.Units, engagement *EngagementTracker) *SpeedrunTracker {
 	entryToRule := make(map[uint32]int)
 	for i, req := range rules.Requirements {
 		for _, eid := range req.EntryIDs {
@@ -54,6 +59,8 @@ func NewSpeedrunTracker(rules SpeedrunRules) *SpeedrunTracker {
 		state:       make([]requirementState, len(rules.Requirements)),
 		remaining:   len(rules.Requirements),
 		seenGUIDs:   make(map[guid.GUID]struct{}),
+		units:       units,
+		engagement:  engagement,
 	}
 }
 
@@ -154,11 +161,44 @@ func (t *SpeedrunTracker) Result() *SpeedrunResult {
 		}
 	}
 
-	return &SpeedrunResult{
+	result := &SpeedrunResult{
 		Qualified:      t.completed,
 		StartTime:      t.startTime,
 		CompletionTime: t.completionTime,
 		Duration:       t.completionTime.Sub(t.startTime),
 		Proof:          proof,
 	}
+
+	// Check level range against engaged players only.
+	if t.rules.LevelRange != nil && t.units != nil && t.engagement != nil {
+		lr := &LevelRangeResult{
+			Requirement: *t.rules.LevelRange,
+			Satisfied:   true,
+			Violators:   []LevelViolation{},
+		}
+		engagedPlayers := t.engagement.AllEngagedPlayers()
+		for gid := range engagedPlayers {
+			info, ok := t.units.Get(gid)
+			if !ok || !info.IsPlayer {
+				continue
+			}
+			if info.Level == 0 || info.Level < t.rules.LevelRange.MinLevel || info.Level > t.rules.LevelRange.MaxLevel {
+				lr.Satisfied = false
+				lr.Violators = append(lr.Violators, LevelViolation{
+					PlayerName: info.Name,
+					PlayerGUID: gid,
+					Level:      info.Level,
+				})
+			}
+		}
+		sort.Slice(lr.Violators, func(i, j int) bool {
+			return lr.Violators[i].PlayerName < lr.Violators[j].PlayerName
+		})
+		result.LevelRange = lr
+		if !lr.Satisfied {
+			result.Qualified = false
+		}
+	}
+
+	return result
 }

@@ -64,6 +64,31 @@ export function SpeedrunProof({ speedrun }: SpeedrunProofProps) {
           </div>
         ))}
       </div>
+
+      {speedrun.level_range && (
+        <div className="mt-2 border-t border-zinc-800 pt-2">
+          <div className="flex items-center gap-1.5 text-xs mb-1">
+            {speedrun.level_range.satisfied ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+            ) : (
+              <XCircle className="h-3 w-3 text-red-500 shrink-0" />
+            )}
+            <span className="text-zinc-300">
+              Level Range: {speedrun.level_range.requirement.min_level}
+              –{speedrun.level_range.requirement.max_level}
+            </span>
+          </div>
+          {!speedrun.level_range.satisfied &&
+            speedrun.level_range.violators?.map((v) => (
+              <div
+                key={v.player_name}
+                className="ml-5 text-xs text-red-400"
+              >
+                {v.player_name} — Level {v.level}
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -847,12 +847,17 @@ func (w *logParseInstanceBuilder) participate(ids ...guid.GUID) {
 		unitData, _ := w.db.Get(id)
 		playerData, ok := w.db.GetPlayer(id)
 		if ok {
+			level := unitData.Level
+			if playerData.Level != nil && *playerData.Level > 0 {
+				level = *playerData.Level
+			}
+
 			w.participantAccounted[id] = struct{}{}
 			w.participants = append(w.participants, database.InsertInstancePlayersParams{
 				InstanceID: w.instanceID,
 				UnitGuid:   id,
 				Name:       playerData.Name,
-				Level:      int32(unitData.Level),
+				Level:      level,
 				Class:      db2sdk.HeroClassToDB(playerData.HeroClass),
 				Race:       database.WowPlayableRace(playerData.Race),
 			})
@@ -982,10 +987,10 @@ func buildIdentityReport(cs *creatures.Creatures) *chroniclesdk.IdentityReport {
 // can render a rich error UI instead of a plain string.
 type realmRejection struct {
 	Type      string `json:"type"`                 // always "realm_rejection"
-	Realm     string `json:"realm,omitempty"`       // detected realm name
-	Message   string `json:"message"`               // headline
-	UploadURL string `json:"upload_url,omitempty"`   // suggested upload domain
-	AddonURL  string `json:"addon_url,omitempty"`    // companion addon link
+	Realm     string `json:"realm,omitempty"`      // detected realm name
+	Message   string `json:"message"`              // headline
+	UploadURL string `json:"upload_url,omitempty"` // suggested upload domain
+	AddonURL  string `json:"addon_url,omitempty"`  // companion addon link
 }
 
 // realmRejectionMessage builds a JSON-encoded rejection string for InstanceFailures.

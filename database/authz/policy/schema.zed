@@ -46,6 +46,8 @@ definition chronicle {
   permission admin_world_data = technical_admin + is_admin_game_data
 
   permission admin_servers = technical_admin
+
+  permission create_tenant_application = technical_admin + chronicle_guild_member
 }
 
 // An upload key is on a azeroth core world server.
@@ -56,6 +58,14 @@ definition wow_tenant {
   relation admin: user
 
   permission administer = admin + chronicle->admin_tenants
+}
+
+definition wow_tenant_application {
+  // When making an application, we auto create the linked tenant
+  relation wow_tenant: wow_tenant
+
+  // admin can manage the application
+  relation admin: user
 }
 
 definition wow_server {

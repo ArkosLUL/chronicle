@@ -10,6 +10,7 @@ import {
   useAddApplicationAdmin,
   useRemoveApplicationAdmin,
   useSyncServers,
+  useSiteConfig,
 } from "@/api/queries";
 import type {
   ServerApplication,
@@ -352,12 +353,14 @@ function BrandingSectionCard({
   requests,
   tenant,
   canReview,
+  primaryDomain,
 }: {
   section: (typeof BRANDING_SECTIONS)[number];
   appId: string;
   requests: readonly ModificationRequest[];
   tenant: Tenant;
   canReview: boolean;
+  primaryDomain?: string;
 }) {
   const req = findRequest(requests, section.type);
   const createReq = useCreateModificationRequest(appId);
@@ -400,16 +403,16 @@ function BrandingSectionCard({
             <span className="text-muted-foreground w-32 shrink-0 pt-0.5">{f.label}:</span>
             {"tags" in f && f.tags
               ? <TagDisplay tags={parseTags(live[f.key])} />
-              : f.key === "slug" && live[f.key] ? (
+              : f.key === "slug" && live[f.key] && primaryDomain ? (
                 <span className="flex items-center gap-2">
                   <span>{live[f.key]}</span>
                   <a
-                    href={`https://${live[f.key]}.chronicleclassic.com`}
+                    href={`https://${live[f.key]}.${primaryDomain}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline"
                   >
-                    {live[f.key]}.chronicleclassic.com ↗
+                    {live[f.key]}.{primaryDomain} ↗
                   </a>
                 </span>
               ) : <span className="truncate">{live[f.key] || <span className="italic text-muted-foreground">—</span>}</span>
@@ -1196,6 +1199,8 @@ export function ApplicationPage() {
 }
 
 function ApplicationPageContent({ app }: { app: ServerApplication }) {
+  const { data: siteConfig } = useSiteConfig();
+  const primaryDomain = siteConfig?.primary_domain;
   const serverRequests = filterRequests(app.requests, "server");
   const realmRequests = filterRequests(app.requests, "realm");
 
@@ -1247,6 +1252,7 @@ function ApplicationPageContent({ app }: { app: ServerApplication }) {
             requests={app.requests}
             tenant={app.tenant}
             canReview={app.can_review}
+            primaryDomain={primaryDomain}
           />
         ))}
         <ThemeSectionCard

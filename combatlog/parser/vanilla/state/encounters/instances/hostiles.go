@@ -657,13 +657,15 @@ func DeadminesHostiles() map[uint32]Identity {
 		61961: "Jared Voss",
 		645:   "Cookie",
 		646:   "Mr. Smite",
-		642:   "Sneed", // Sneed's Shredder
 		643:   "Sneed",
 		639:   "Edwin VanCleef",
 		647:   "Captain Greenskin",
 		644:   "Rhahk'Zor",
 		1763:  "Gilnid",
 	})
+
+	hostile[642] = Identity{Name: "Sneed's Shredder", Affiliation: types.AffiliationHostile, EncounterName: "Sneed", Boss: true}
+
 	return hostile
 }
 

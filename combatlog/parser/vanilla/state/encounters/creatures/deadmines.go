@@ -29,7 +29,8 @@ func NewSneedShredder(id guid.GUID, all *characters.Characters) (characters.Char
 	}
 
 	switch entry {
-	case sneed, sneedShredder:
+	case sneed:
+	case sneedShredder:
 	default:
 		return nil, false
 	}
@@ -38,6 +39,13 @@ func NewSneedShredder(id guid.GUID, all *characters.Characters) (characters.Char
 		Common: characters.NewCommonCharacter(id, all),
 		all:    all,
 	}, true
+}
+
+func (*SneedShredder) Owner() (guid.GUID, bool) {
+	// For some reason, Sneed in AzerothCore is owned by the shredder. This means
+	// when the shredder dies, Sneed does too. That is incorrect. So break any
+	// ownership logic right here.
+	return 0, false
 }
 
 func (c *SneedShredder) Process(m messages.Message) error {

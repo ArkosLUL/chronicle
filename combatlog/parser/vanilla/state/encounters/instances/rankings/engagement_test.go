@@ -54,7 +54,7 @@ func TestEngagementTracker_BasicEngagement(t *testing.T) {
 	tracker.FightStarted(eid, msg(t0))
 
 	// Tank damages boss.
-	tracker.ProcessMessage(true, eid, &messages.Damage{
+	_ = tracker.ProcessMessage(true, eid, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &tank,
 		Target:      boss,
@@ -89,7 +89,7 @@ func TestEngagementTracker_HealerEngagedTransitively(t *testing.T) {
 	tracker.FightStarted(eid, msg(t0))
 
 	// Tank damages boss.
-	tracker.ProcessMessage(true, eid, &messages.Damage{
+	_ = tracker.ProcessMessage(true, eid, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &tank,
 		Target:      boss,
@@ -97,7 +97,7 @@ func TestEngagementTracker_HealerEngagedTransitively(t *testing.T) {
 	})
 
 	// Healer heals tank.
-	tracker.ProcessMessage(true, eid, &messages.Heal{
+	_ = tracker.ProcessMessage(true, eid, &messages.Heal{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(2 * time.Second)},
 		Caster:      healer,
 		Target:      tank,
@@ -129,7 +129,7 @@ func TestEngagementTracker_AFKPlayerNotEngaged(t *testing.T) {
 	tracker.FightStarted(eid, msg(t0))
 
 	// Only tank damages boss; AFK player does nothing.
-	tracker.ProcessMessage(true, eid, &messages.Damage{
+	_ = tracker.ProcessMessage(true, eid, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &tank,
 		Target:      boss,
@@ -161,7 +161,7 @@ func TestEngagementTracker_PetOwnerEngagedViaOwnership(t *testing.T) {
 	tracker.FightStarted(eid, msg(t0))
 
 	// Pet damages boss (hunter doesn't directly).
-	tracker.ProcessMessage(true, eid, &messages.Damage{
+	_ = tracker.ProcessMessage(true, eid, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &pet,
 		Target:      boss,
@@ -194,7 +194,7 @@ func TestEngagementTracker_AllEngagedPlayers_UnionAcrossEncounters(t *testing.T)
 	// Encounter 1: player1 fights boss1.
 	eid1 := uuid.New()
 	tracker.FightStarted(eid1, msg(t0))
-	tracker.ProcessMessage(true, eid1, &messages.Damage{
+	_ = tracker.ProcessMessage(true, eid1, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(time.Second)},
 		Caster:      &player1,
 		Target:      boss1,
@@ -205,7 +205,7 @@ func TestEngagementTracker_AllEngagedPlayers_UnionAcrossEncounters(t *testing.T)
 	// Encounter 2: player2 fights boss2.
 	eid2 := uuid.New()
 	tracker.FightStarted(eid2, msg(t0.Add(5*time.Minute)))
-	tracker.ProcessMessage(true, eid2, &messages.Damage{
+	_ = tracker.ProcessMessage(true, eid2, &messages.Damage{
 		MessageBase: messages.MessageBase{Timestamp: t0.Add(5*time.Minute + time.Second)},
 		Caster:      &player2,
 		Target:      boss2,

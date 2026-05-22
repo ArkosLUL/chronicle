@@ -1,56 +1,44 @@
 package chroniclesdk
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+// ModificationRequest represents a pending, approved, or rejected change.
+type ModificationRequest struct {
+	ID            uuid.UUID       `json:"id"`
+	ApplicationID uuid.UUID       `json:"application_id"`
+	Type          string          `json:"type"`
+	ParentID      *uuid.UUID      `json:"parent_id,omitempty"`
+	Payload       json.RawMessage `json:"payload"`
+	Status        string          `json:"status"`
+	AdminNote     *string         `json:"admin_note,omitempty"`
+	ReviewedBy    *uuid.UUID      `json:"reviewed_by,omitempty"`
+	ReviewedAt    *time.Time      `json:"reviewed_at,omitempty"`
+	ResourceID    *uuid.UUID      `json:"resource_id,omitempty"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
+}
+
+// ServerApplication response includes all modification requests.
 type ServerApplication struct {
-	ID           uuid.UUID              `json:"id"`
-	InitiatedBy  uuid.UUID              `json:"initiated_by"`
-	Username     string                 `json:"username"`
-	Status       string                 `json:"status"`
-	Name         string                 `json:"name"`
-	TenantID     uuid.UUID              `json:"tenant_id"`
-	Tenant       Tenant                 `json:"tenant"`
-	FieldReviews map[string]FieldReview `json:"field_reviews"`
-	Servers      []ServerApplicationServer `json:"servers"`
-	AdminNote    *string                `json:"admin_note"`
-	CanReview    bool                   `json:"can_review"`
-	CreatedAt    time.Time              `json:"created_at"`
-	UpdatedAt    time.Time              `json:"updated_at"`
+	ID          uuid.UUID             `json:"id"`
+	InitiatedBy uuid.UUID            `json:"initiated_by"`
+	Username    string                `json:"username"`
+	Name        string                `json:"name"`
+	TenantID    uuid.UUID             `json:"tenant_id"`
+	Tenant      Tenant                `json:"tenant"`
+	Requests    []ModificationRequest `json:"requests"`
+	CanReview   bool                  `json:"can_review"`
+	CreatedAt   time.Time             `json:"created_at"`
+	UpdatedAt   time.Time             `json:"updated_at"`
 }
 
-type ServerApplicationServer struct {
-	ID          uuid.UUID                `json:"id"`
-	Name        string                   `json:"name"`
-	Description string                   `json:"description"`
-	URL         *string                  `json:"url"`
-	Status      string                   `json:"status"`
-	AdminNote   *string                  `json:"admin_note"`
-	ServerID    *uuid.UUID               `json:"server_id"`
-	Realms      []ServerApplicationRealm `json:"realms"`
-	CreatedAt   time.Time                `json:"created_at"`
-}
-
-type ServerApplicationRealm struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	URL         *string    `json:"url"`
-	Status      string     `json:"status"`
-	AdminNote   *string    `json:"admin_note"`
-	RealmID     *uuid.UUID `json:"realm_id"`
-	CreatedAt   time.Time  `json:"created_at"`
-}
-
-type FieldReview struct {
-	Status     string     `json:"status"`
-	Note       *string    `json:"note"`
-	ReviewedAt *time.Time `json:"reviewed_at"`
-}
-
+// CreateServerApplicationRequest is sent to create a new application.
+// Initial modification requests are created from the fields here.
 type CreateServerApplicationRequest struct {
 	Name        string                `json:"name"`
 	DisplayName string                `json:"display_name"`
@@ -60,9 +48,9 @@ type CreateServerApplicationRequest struct {
 }
 
 type CreateServerRequest struct {
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	URL         *string             `json:"url"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	URL         *string              `json:"url"`
 	Realms      []CreateRealmRequest `json:"realms"`
 }
 
@@ -72,42 +60,66 @@ type CreateRealmRequest struct {
 	URL         *string `json:"url"`
 }
 
-type UpdateServerApplicationRequest struct {
-	Name        *string   `json:"name"`
-	DisplayName *string   `json:"display_name"`
-	Tagline     *string   `json:"tagline"`
-	Description *string   `json:"description"`
-	Tags        []string  `json:"tags"`
-	Slug        *string   `json:"slug"`
-	Branding    *Branding `json:"branding"`
+// CreateModificationRequestPayload is sent to create/upsert a mod request.
+type CreateModificationRequestPayload struct {
+	Type     string          `json:"type"`
+	ParentID *uuid.UUID      `json:"parent_id,omitempty"`
+	Payload  json.RawMessage `json:"payload"`
 }
 
-type ReviewFieldRequest struct {
-	Section string  `json:"section"`
-	Status  string  `json:"status"`
-	Note    *string `json:"note"`
+// ReviewModificationRequest is sent by the admin to approve/reject.
+type ReviewModificationRequest struct {
+	AdminNote *string `json:"admin_note,omitempty"`
 }
 
-type ReviewServerRequest struct {
-	AdminNote *string `json:"admin_note"`
+// ApplicationAdminEntry is returned when listing application admins.
+type ApplicationAdminEntry struct {
+	UserID    uuid.UUID `json:"user_id"`
+	Username  string    `json:"username"`
+	DiscordID string    `json:"discord_id,omitempty"`
 }
 
-type ReviewRealmRequest struct {
-	AdminNote *string `json:"admin_note"`
+// ModifyApplicationAdminRequest is sent to add an admin.
+type ModifyApplicationAdminRequest struct {
+	UserID uuid.UUID `json:"user_id"`
 }
 
-type RejectApplicationRequest struct {
-	AdminNote *string `json:"admin_note"`
+// --- Payload shapes (used for unmarshalling in apply methods) ---
+
+type CorePayload struct {
+	Name        string   `json:"name"`
+	DisplayName string   `json:"display_name"`
+	Tagline     string   `json:"tagline"`
+	Tags        []string `json:"tags"`
 }
 
-type AddServerRequest struct {
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	URL         *string             `json:"url"`
-	Realms      []CreateRealmRequest `json:"realms"`
+type SlugPayload struct {
+	Slug string `json:"slug"`
 }
 
-type AddRealmRequest struct {
+type DescriptionPayload struct {
+	Description string `json:"description"`
+	WebsiteURL  string `json:"website_url"`
+}
+
+type LogosPayload struct {
+	SquareLogo       string `json:"square_logo"`
+	LogoWide         string `json:"logo_wide"`
+	Favicon          string `json:"favicon"`
+	BackgroundBanner string `json:"background_banner"`
+}
+
+type ThemePayload struct {
+	Theme map[string]string `json:"theme"`
+}
+
+type ServerPayload struct {
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	URL         *string `json:"url"`
+}
+
+type RealmPayload struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
 	URL         *string `json:"url"`

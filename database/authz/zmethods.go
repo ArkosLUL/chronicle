@@ -253,3 +253,59 @@ func (z *Authz) SetUserChronicleRoles(ctx context.Context, userID uuid.UUID, rol
 	_, err := z.Write(ctx, *b.Txn())
 	return err
 }
+
+// UserTenantApplications returns all wow_tenant_application IDs where the user
+// has the admin relation. This is a reverse lookup from user → applications.
+func (z *Authz) UserTenantApplications(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	f := rel.NewFilter("wow_tenant_application", "", "admin")
+	f.WithSubjectFilter("user", userID.String(), "")
+
+	var appIDs []uuid.UUID
+	for r, err := range z.spice.ReadRelationships(ctx, z.DefaultConsistencyStrategy(), f) {
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(r.ResourceID)
+		if err != nil {
+			continue
+		}
+		appIDs = append(appIDs, id)
+	}
+	return appIDs, nil
+}
+
+// TenantApplicationAdmins returns all user IDs that have the admin relation
+// on the given wow_tenant_application resource.
+func (z *Authz) TenantApplicationAdmins(ctx context.Context, applicationID uuid.UUID) ([]uuid.UUID, error) {
+	f := rel.NewFilter("wow_tenant_application", applicationID.String(), "admin")
+	f.WithSubjectFilter("user", "", "")
+
+	var userIDs []uuid.UUID
+	for r, err := range z.spice.ReadRelationships(ctx, z.DefaultConsistencyStrategy(), f) {
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(r.SubjectID)
+		if err != nil {
+			continue
+		}
+		userIDs = append(userIDs, id)
+	}
+	return userIDs, nil
+}
+
+// AddTenantApplicationAdmin writes the admin relation on a wow_tenant_application for a user.
+func (z *Authz) AddTenantApplicationAdmin(ctx context.Context, applicationID, userID uuid.UUID) error {
+	b := policy.New()
+	b.Wow_tenant_application(applicationID).Admin(b.User(userID))
+	_, err := z.Write(ctx, *b.Txn())
+	return err
+}
+
+// RemoveTenantApplicationAdmin removes the admin relation on a wow_tenant_application for a user.
+func (z *Authz) RemoveTenantApplicationAdmin(ctx context.Context, applicationID, userID uuid.UUID) error {
+	f := rel.NewFilter("wow_tenant_application", applicationID.String(), "admin")
+	f.WithSubjectFilter("user", userID.String(), "")
+	return z.Delete(ctx, rel.NewPreconditionedFilter(f))
+}
+

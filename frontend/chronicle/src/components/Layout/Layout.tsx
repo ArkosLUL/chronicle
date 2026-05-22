@@ -11,8 +11,8 @@ export function Layout() {
 
   return (
     <TooltipProvider>
-      <NavBar />
       <BetaBanner />
+      <NavBar />
       <main>
         <Outlet />
       </main>

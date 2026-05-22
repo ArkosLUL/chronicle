@@ -169,6 +169,21 @@ CREATE FUNCTION river_job_state_in_bitmask(bitmask bit, state river_job_state) R
     END = 1;
 $$;
 
+CREATE TABLE application_modification_requests (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    application_id uuid NOT NULL,
+    type text NOT NULL,
+    parent_id uuid,
+    payload jsonb NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    admin_note text,
+    reviewed_by uuid,
+    reviewed_at timestamp with time zone,
+    resource_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE authz_schema_migrations (
     version integer NOT NULL,
     applied_at timestamp with time zone DEFAULT now() NOT NULL
@@ -733,40 +748,10 @@ CREATE TABLE river_queue (
     updated_at timestamp with time zone NOT NULL
 );
 
-CREATE TABLE server_application_realms (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    app_server_id uuid NOT NULL,
-    name text NOT NULL,
-    description text DEFAULT ''::text NOT NULL,
-    url text,
-    status text DEFAULT 'pending'::text NOT NULL,
-    admin_note text,
-    realm_id uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-CREATE TABLE server_application_servers (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    application_id uuid NOT NULL,
-    name text NOT NULL,
-    description text DEFAULT ''::text NOT NULL,
-    url text,
-    status text DEFAULT 'pending'::text NOT NULL,
-    admin_note text,
-    server_id uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
 CREATE TABLE server_applications (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     initiated_by uuid NOT NULL,
-    status text DEFAULT 'pending'::text NOT NULL,
     name text NOT NULL,
-    field_reviews jsonb DEFAULT '{}'::jsonb NOT NULL,
-    admin_note text,
-    reviewed_by uuid,
     tenant_id uuid NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -1138,6 +1123,9 @@ CREATE TABLE wow_server_upload_keys (
 
 ALTER TABLE ONLY river_job ALTER COLUMN id SET DEFAULT nextval('river_job_id_seq'::regclass);
 
+ALTER TABLE ONLY application_modification_requests
+    ADD CONSTRAINT application_modification_requests_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY authz_schema_migrations
     ADD CONSTRAINT authz_schema_migrations_pkey PRIMARY KEY (version);
 
@@ -1276,12 +1264,6 @@ ALTER TABLE ONLY river_migration
 ALTER TABLE ONLY river_queue
     ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
 
-ALTER TABLE ONLY server_application_realms
-    ADD CONSTRAINT server_application_realms_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY server_application_servers
-    ADD CONSTRAINT server_application_servers_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY server_applications
     ADD CONSTRAINT server_applications_pkey PRIMARY KEY (id);
 
@@ -1410,9 +1392,9 @@ CREATE INDEX idx_log_instances_log_group_id ON log_instances USING btree (log_gr
 
 CREATE INDEX idx_log_instances_realm_id ON log_instances USING btree (realm_id);
 
-CREATE INDEX idx_regression_snapshots_fixture ON regression_snapshots USING btree (fixture_id, created_at DESC);
+CREATE UNIQUE INDEX idx_mod_requests_pending ON application_modification_requests USING btree (application_id, type, COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE ((status = 'pending'::text) AND (type <> ALL (ARRAY['server'::text, 'realm'::text])));
 
-CREATE UNIQUE INDEX idx_server_applications_user_active ON server_applications USING btree (initiated_by) WHERE (status = 'pending'::text);
+CREATE INDEX idx_regression_snapshots_fixture ON regression_snapshots USING btree (fixture_id, created_at DESC);
 
 CREATE INDEX idx_server_upload_meta_lookup ON server_upload_meta USING btree (instance_id, instance_name, realm_id);
 
@@ -1465,6 +1447,15 @@ CREATE TRIGGER trg_cleanup_after_untrack AFTER DELETE ON user_tracked_layouts FO
 CREATE TRIGGER trg_reattach_by_slug AFTER INSERT ON log_instances FOR EACH ROW EXECUTE FUNCTION reattach_by_slug();
 
 CREATE TRIGGER trigger_insert_default_data_grant AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION insert_default_data_grant();
+
+ALTER TABLE ONLY application_modification_requests
+    ADD CONSTRAINT application_modification_requests_application_id_fkey FOREIGN KEY (application_id) REFERENCES server_applications(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY application_modification_requests
+    ADD CONSTRAINT application_modification_requests_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES application_modification_requests(id);
+
+ALTER TABLE ONLY application_modification_requests
+    ADD CONSTRAINT application_modification_requests_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES users(id);
 
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -1574,23 +1565,8 @@ ALTER TABLE ONLY retention_rules
 ALTER TABLE ONLY river_client_queue
     ADD CONSTRAINT river_client_queue_river_client_id_fkey FOREIGN KEY (river_client_id) REFERENCES river_client(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY server_application_realms
-    ADD CONSTRAINT server_application_realms_app_server_id_fkey FOREIGN KEY (app_server_id) REFERENCES server_application_servers(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY server_application_realms
-    ADD CONSTRAINT server_application_realms_realm_id_fkey FOREIGN KEY (realm_id) REFERENCES wow_server_realms(id);
-
-ALTER TABLE ONLY server_application_servers
-    ADD CONSTRAINT server_application_servers_application_id_fkey FOREIGN KEY (application_id) REFERENCES server_applications(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY server_application_servers
-    ADD CONSTRAINT server_application_servers_server_id_fkey FOREIGN KEY (server_id) REFERENCES wow_servers(id);
-
 ALTER TABLE ONLY server_applications
     ADD CONSTRAINT server_applications_initiated_by_fkey FOREIGN KEY (initiated_by) REFERENCES users(id);
-
-ALTER TABLE ONLY server_applications
-    ADD CONSTRAINT server_applications_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES users(id);
 
 ALTER TABLE ONLY server_applications
     ADD CONSTRAINT server_applications_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id);

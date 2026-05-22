@@ -131,6 +131,8 @@ go run -C ./scripts/apitypings main.go > frontend/chronicle/src/api/typesGenerat
 
 ### Database Migrations
 
+**Migrations are immutable once deployed.** Never edit an existing migration file — always create a new one. If you are unsure whether a migration has been deployed, ask the user before modifying it.
+
 ```bash
 # Create a new migration
 ./database/migrations/create_migration.sh "description of migration"

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Emyrk/chronicle/database/authz/policy"
 	"github.com/google/uuid"
+
 )
 
 // AuthzMigration is a numbered authz schema migration.
@@ -21,6 +22,8 @@ var migrations = []AuthzMigration{
 	{Version: 1, Run: migration001},
 	{Version: 2, Run: migration002},
 	{Version: 3, Run: migration003},
+	{Version: 4, Run: migration004},
+	{Version: 5, Run: noop},
 }
 
 // RunSchemaMigrations runs any authz migrations not yet recorded in the
@@ -47,6 +50,10 @@ func RunSchemaMigrations(ctx context.Context, az *Authz) error {
 			return fmt.Errorf("record authz migration %d: %w", m.Version, err)
 		}
 	}
+	return nil
+}
+
+func noop(ctx context.Context, az *Authz) error {
 	return nil
 }
 
@@ -139,6 +146,34 @@ func migration003(ctx context.Context, az *Authz) error {
 
 		realm := b.Wow_server_realm(r.ID)
 		realm.Wow_server(srv)
+	}
+
+	// TOUCH is idempotent — safe to run on every startup.
+	_, err = az.Write(ctx, *b.Txn())
+	return err
+}
+
+func migration004(ctx context.Context, az *Authz) error {
+	b := policy.New()
+	chron := b.GlobalChronicle()
+
+	tnts, err := az.ListTenants(ctx)
+	if err != nil {
+		return fmt.Errorf("list tenants: %w", err)
+	}
+
+	for _, tnt := range tnts {
+		b.Wow_tenant(tnt.ID).Chronicle(chron)
+	}
+
+	apps, err := az.ListServerApplications(ctx)
+	if err != nil {
+		return fmt.Errorf("list server applications: %w", err)
+	}
+
+	for _, app := range apps {
+		appObj := b.Wow_tenant_application(app.ID)
+		appObj.Wow_tenant(b.Wow_tenant(app.TenantID))
 	}
 
 	// TOUCH is idempotent — safe to run on every startup.

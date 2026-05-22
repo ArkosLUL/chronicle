@@ -57,7 +57,7 @@ definition wow_tenant {
   relation chronicle: chronicle
   relation admin: user
 
-  permission administer = admin + chronicle->admin_tenants
+  permission administer = admin + chronicle->admin_tenants + chronicle->admin_tenants
 }
 
 definition wow_tenant_application {
@@ -66,6 +66,8 @@ definition wow_tenant_application {
 
   // admin can manage the application
   relation admin: user
+
+  permission administer = admin + wow_tenant->administer
 }
 
 definition wow_server {

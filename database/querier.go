@@ -39,6 +39,7 @@ type sqlcQuerier interface {
 	DeleteGuildPageTabsByPage(ctx context.Context, pageID uuid.UUID) error
 	DeleteLogInstanceByIDAndGroup(ctx context.Context, arg DeleteLogInstanceByIDAndGroupParams) (uuid.UUID, error)
 	DeleteLogInstancesByIDs(ctx context.Context, ids []uuid.UUID) (int64, error)
+	DeleteModificationRequest(ctx context.Context, id uuid.UUID) error
 	DeleteRegressionFixture(ctx context.Context, id uuid.UUID) error
 	DeleteRegressionSnapshot(ctx context.Context, id uuid.UUID) error
 	DeleteRetentionPolicy(ctx context.Context, id uuid.UUID) error
@@ -108,6 +109,7 @@ type sqlcQuerier interface {
 	GetLatestRegressionSnapshot(ctx context.Context, fixtureID uuid.UUID) (RegressionSnapshot, error)
 	GetLeaderboardVersionRequirements(ctx context.Context, instanceName string) (LeaderboardVersionRequirement, error)
 	GetLogFile(ctx context.Context, id uuid.UUID) (LogFile, error)
+	GetModificationRequestByID(ctx context.Context, id uuid.UUID) (ApplicationModificationRequest, error)
 	GetPanelLayoutByCode(ctx context.Context, code pgtype.Text) (GetPanelLayoutByCodeRow, error)
 	GetPanelLayoutByID(ctx context.Context, id uuid.UUID) (GetPanelLayoutByIDRow, error)
 	// Returns all realm IDs that have an applicable retention policy
@@ -121,9 +123,6 @@ type sqlcQuerier interface {
 	GetRetentionPolicyForRealm(ctx context.Context, realmID uuid.NullUUID) (RetentionPolicy, error)
 	GetRetentionRulesByPolicy(ctx context.Context, policyID uuid.UUID) ([]RetentionRule, error)
 	GetServerApplicationByID(ctx context.Context, id uuid.UUID) (GetServerApplicationByIDRow, error)
-	GetServerApplicationByInitiatedBy(ctx context.Context, initiatedBy uuid.UUID) (GetServerApplicationByInitiatedByRow, error)
-	GetServerApplicationRealm(ctx context.Context, id uuid.UUID) (ServerApplicationRealm, error)
-	GetServerApplicationServer(ctx context.Context, id uuid.UUID) (ServerApplicationServer, error)
 	GetServerUploadMetaRealmID(ctx context.Context, logGroupID uuid.UUID) (uuid.NullUUID, error)
 	GetServersForWorld(ctx context.Context, worldID uuid.UUID) ([]WowServer, error)
 	GetSharedViewByCode(ctx context.Context, code string) (SharedView, error)
@@ -169,15 +168,13 @@ type sqlcQuerier interface {
 	InsertInstanceUnits(ctx context.Context, arg []InsertInstanceUnitsParams) *InsertInstanceUnitsBatchResults
 	InsertLogFile(ctx context.Context, arg InsertLogFileParams) (LogFile, error)
 	InsertLogInstanceEvents(ctx context.Context, arg []InsertLogInstanceEventsParams) *InsertLogInstanceEventsBatchResults
+	// Modification Requests
+	InsertModificationRequest(ctx context.Context, arg InsertModificationRequestParams) (ApplicationModificationRequest, error)
 	InsertParsedLogGroup(ctx context.Context, id uuid.UUID) error
 	InsertRegressionFixture(ctx context.Context, arg InsertRegressionFixtureParams) (RegressionFixture, error)
 	InsertRegressionSnapshot(ctx context.Context, arg InsertRegressionSnapshotParams) (RegressionSnapshot, error)
 	// Server Applications
 	InsertServerApplication(ctx context.Context, arg InsertServerApplicationParams) (ServerApplication, error)
-	// Server Application Realms
-	InsertServerApplicationRealm(ctx context.Context, arg InsertServerApplicationRealmParams) (ServerApplicationRealm, error)
-	// Server Application Servers
-	InsertServerApplicationServer(ctx context.Context, arg InsertServerApplicationServerParams) (ServerApplicationServer, error)
 	InsertServerUploadMeta(ctx context.Context, arg InsertServerUploadMetaParams) error
 	InsertStampedYoutubeVideo(ctx context.Context, arg InsertStampedYoutubeVideoParams) error
 	InsertTenant(ctx context.Context, arg InsertTenantParams) (Tenant, error)
@@ -214,14 +211,12 @@ type sqlcQuerier interface {
 	ListInstancesByParserVersion(ctx context.Context, parserVersion string) ([]ListInstancesByParserVersionRow, error)
 	ListInstancesByTimeRange(ctx context.Context, arg ListInstancesByTimeRangeParams) ([]ListInstancesByTimeRangeRow, error)
 	ListLeaderboardVersionRequirements(ctx context.Context) ([]LeaderboardVersionRequirement, error)
+	ListModificationRequestsByApplicationID(ctx context.Context, applicationID uuid.UUID) ([]ApplicationModificationRequest, error)
 	ListRecentInstances(ctx context.Context, arg ListRecentInstancesParams) ([]ListRecentInstancesRow, error)
 	ListRecentInstancesByPlayer(ctx context.Context, arg ListRecentInstancesByPlayerParams) ([]ListRecentInstancesByPlayerRow, error)
 	ListRegressionFixtures(ctx context.Context) ([]ListRegressionFixturesRow, error)
 	ListRegressionSnapshots(ctx context.Context, arg ListRegressionSnapshotsParams) ([]ListRegressionSnapshotsRow, error)
-	ListServerApplicationRealms(ctx context.Context, appServerID uuid.UUID) ([]ServerApplicationRealm, error)
-	ListServerApplicationRealmsByApplicationID(ctx context.Context, applicationID uuid.UUID) ([]ServerApplicationRealm, error)
-	ListServerApplicationServers(ctx context.Context, applicationID uuid.UUID) ([]ServerApplicationServer, error)
-	ListServerApplications(ctx context.Context, status pgtype.Text) ([]ListServerApplicationsRow, error)
+	ListServerApplications(ctx context.Context) ([]ListServerApplicationsRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	ListUploadKeysByRealm(ctx context.Context, realmID uuid.UUID) ([]ListUploadKeysByRealmRow, error)
 	ListUserPanelLayouts(ctx context.Context, userID uuid.NullUUID) ([]ListUserPanelLayoutsRow, error)
@@ -268,14 +263,10 @@ type sqlcQuerier interface {
 	UpdateGuildPagePanel(ctx context.Context, arg UpdateGuildPagePanelParams) (GuildPagePanel, error)
 	UpdateGuildPageTab(ctx context.Context, arg UpdateGuildPageTabParams) (GuildPageTab, error)
 	UpdateLogFileAfterAppend(ctx context.Context, arg UpdateLogFileAfterAppendParams) error
+	UpdateModificationRequestPayload(ctx context.Context, arg UpdateModificationRequestPayloadParams) error
+	UpdateModificationRequestStatus(ctx context.Context, arg UpdateModificationRequestStatusParams) error
 	UpdateRegressionFixtureNote(ctx context.Context, arg UpdateRegressionFixtureNoteParams) error
 	UpdateRetentionPolicyStats(ctx context.Context, arg UpdateRetentionPolicyStatsParams) error
-	UpdateServerApplicationFieldReviews(ctx context.Context, arg UpdateServerApplicationFieldReviewsParams) error
-	UpdateServerApplicationRealm(ctx context.Context, arg UpdateServerApplicationRealmParams) error
-	UpdateServerApplicationRealmStatus(ctx context.Context, arg UpdateServerApplicationRealmStatusParams) error
-	UpdateServerApplicationServer(ctx context.Context, arg UpdateServerApplicationServerParams) error
-	UpdateServerApplicationServerStatus(ctx context.Context, arg UpdateServerApplicationServerStatusParams) error
-	UpdateServerApplicationStatus(ctx context.Context, arg UpdateServerApplicationStatusParams) error
 	UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) (SiteConfig, error)
 	UpdateTelemetryHeartbeat(ctx context.Context) error
 	// Only non-null params are applied; NULL means "keep existing value".
@@ -291,6 +282,7 @@ type sqlcQuerier interface {
 	UpsertGuildPage(ctx context.Context, arg UpsertGuildPageParams) (GuildPage, error)
 	UpsertGuildSettings(ctx context.Context, arg UpsertGuildSettingsParams) (GuildSetting, error)
 	UpsertLeaderboardVersionRequirements(ctx context.Context, arg UpsertLeaderboardVersionRequirementsParams) (LeaderboardVersionRequirement, error)
+	UpsertPendingModificationRequest(ctx context.Context, arg UpsertPendingModificationRequestParams) (ApplicationModificationRequest, error)
 	UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults
 	UpsertRetentionPolicy(ctx context.Context, arg UpsertRetentionPolicyParams) (RetentionPolicy, error)
 	UpsertRetentionPolicyByRealm(ctx context.Context, arg UpsertRetentionPolicyByRealmParams) (RetentionPolicy, error)

@@ -169,6 +169,24 @@ func (z *interceptor) InsertTenant(ctx context.Context, arg database.InsertTenan
 	return z.Store.InsertTenant(ctx, arg)
 }
 
+func (z *interceptor) InsertServerApplication(ctx context.Context, arg database.InsertServerApplicationParams) (database.ServerApplication, error) {
+	b := policy.New()
+	usr := b.User(arg.InitiatedBy)
+	tnt := b.Wow_tenant(arg.TenantID)
+
+	app := b.Wow_tenant_application(arg.ID)
+	app.Wow_tenant(tnt).
+		Admin(usr)
+
+	tnt.Chronicle(b.GlobalChronicle())
+
+	_, err := z.Write(ctx, *b.Txn())
+	if err != nil {
+		return database.ServerApplication{}, err
+	}
+	return z.Store.InsertServerApplication(ctx, arg)
+}
+
 func (z *interceptor) DeleteTenant(ctx context.Context, id uuid.UUID) error {
 	obj := policy.New().Wow_tenant(id).Object()
 	f := rel.NewFilter(obj.Typ, obj.ID, "")
@@ -202,7 +220,6 @@ func (z *interceptor) SetServerTenant(ctx context.Context, arg database.SetServe
 
 	return z.Store.SetServerTenant(ctx, arg)
 }
-
 
 func (z *interceptor) InsertUploadKey(ctx context.Context, arg database.InsertUploadKeyParams) (database.WowServerUploadKey, error) {
 	b := policy.New()

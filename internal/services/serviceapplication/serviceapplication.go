@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicebot"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 	"github.com/Emyrk/chronicle/internal/services/serviceriver"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 
 	"github.com/coder/serpent"
 )
@@ -39,6 +40,7 @@ type Service struct {
 	Zed                   *authz.Authz
 	Bot                   *chroniclebot.Bot
 	Queue                 *riverqueue.Queues
+	Tenant                *servicetenant.Service
 	accessURL             string
 }
 
@@ -66,6 +68,7 @@ func (s *Service) DependsOn() []string {
 		servicebot.OnDiscordBot(),
 		serviceriver.OnRiverQueue(),
 		serviceaccessurl.OnAccessURL(),
+		servicetenant.OnTenant(),
 	}
 }
 
@@ -97,6 +100,7 @@ func (s *Service) Start(_ context.Context) error {
 	s.Zed = serviceauthz.Authz(s.broker)
 	s.Bot = servicebot.DiscordBot(s.broker)
 	s.Queue = serviceriver.RiverQueue(s.broker)
+	s.Tenant = servicetenant.Tenant(s.broker)
 	s.accessURL = serviceaccessurl.AccessURL(s.broker)
 	return nil
 }

@@ -29,21 +29,6 @@ export interface AddGuildMemberRequest {
     readonly user_id: string;
 }
 
-// From chroniclesdk/server_application.go
-export interface AddRealmRequest {
-    readonly name: string;
-    readonly description: string;
-    readonly url: string | null;
-}
-
-// From chroniclesdk/server_application.go
-export interface AddServerRequest {
-    readonly name: string;
-    readonly description: string;
-    readonly url: string | null;
-    readonly realms: readonly CreateRealmRequest[];
-}
-
 // From chroniclesdk/user.go
 export interface AdminBulkDeleteResponse {
     readonly requested: number;
@@ -143,6 +128,16 @@ export interface AdminSetUserRetentionRequest {
 // From chroniclesdk/user.go
 export interface AdminUsersResponse {
     readonly users: readonly User[];
+}
+
+// From chroniclesdk/server_application.go
+/**
+ * ApplicationAdminEntry is returned when listing application admins.
+ */
+export interface ApplicationAdminEntry {
+    readonly user_id: string;
+    readonly username: string;
+    readonly discord_id?: string;
 }
 
 // From chroniclesdk/armory.go
@@ -254,9 +249,27 @@ export interface ChronicleEncounterEvents {
     readonly start_time: string;
 }
 
+// From chroniclesdk/server_application.go
+export interface CorePayload {
+    readonly name: string;
+    readonly display_name: string;
+    readonly tagline: string;
+    readonly tags: readonly string[];
+}
+
 // From chroniclesdk/guild_page.go
 export interface CreateJoinRequestBody {
     readonly message: string;
+}
+
+// From chroniclesdk/server_application.go
+/**
+ * CreateModificationRequestPayload is sent to create/upsert a mod request.
+ */
+export interface CreateModificationRequestPayload {
+    readonly type: string;
+    readonly parent_id?: string;
+    readonly payload: Record<string, string>;
 }
 
 // From chroniclesdk/server_application.go
@@ -273,6 +286,10 @@ export interface CreateRegressionFixtureRequest {
 }
 
 // From chroniclesdk/server_application.go
+/**
+ * CreateServerApplicationRequest is sent to create a new application.
+ * Initial modification requests are created from the fields here.
+ */
 export interface CreateServerApplicationRequest {
     readonly name: string;
     readonly display_name: string;
@@ -380,6 +397,12 @@ export interface DataGrant {
     readonly expires_at?: string;
 }
 
+// From chroniclesdk/server_application.go
+export interface DescriptionPayload {
+    readonly description: string;
+    readonly website_url: string;
+}
+
 // From chroniclesdk/guild_page.go
 export type DeviceVisibility = "all" | "desktop" | "mobile";
 
@@ -421,13 +444,6 @@ export type Duration = number;
 export type EndState = "reset" | "slain" | "timeout";
 
 export const EndStates: EndState[] = ["reset", "slain", "timeout"];
-
-// From chroniclesdk/server_application.go
-export interface FieldReview {
-    readonly status: string;
-    readonly note: string | null;
-    readonly reviewed_at: string | null;
-}
 
 // From chroniclesdk/log.go
 export type GUIDString = string;
@@ -908,6 +924,14 @@ export interface LogUploadResponse {
     readonly file_ids: readonly string[];
 }
 
+// From chroniclesdk/server_application.go
+export interface LogosPayload {
+    readonly square_logo: string;
+    readonly logo_wide: string;
+    readonly favicon: string;
+    readonly background_banner: string;
+}
+
 // From chroniclesdk/guild_page.go
 export const MaxDescriptionLength = 500;
 
@@ -921,6 +945,33 @@ export const MaxTags = 10;
 export interface MissedSpell {
     readonly count: number;
     readonly name?: string;
+}
+
+// From chroniclesdk/server_application.go
+/**
+ * ModificationRequest represents a pending, approved, or rejected change.
+ */
+export interface ModificationRequest {
+    readonly id: string;
+    readonly application_id: string;
+    readonly type: string;
+    readonly parent_id?: string;
+    readonly payload: Record<string, string>;
+    readonly status: string;
+    readonly admin_note?: string;
+    readonly reviewed_by?: string;
+    readonly reviewed_at?: string;
+    readonly resource_id?: string;
+    readonly created_at: string;
+    readonly updated_at: string;
+}
+
+// From chroniclesdk/server_application.go
+/**
+ * ModifyApplicationAdminRequest is sent to add an admin.
+ */
+export interface ModifyApplicationAdminRequest {
+    readonly user_id: string;
 }
 
 // From chroniclesdk/log.go
@@ -994,6 +1045,13 @@ export interface Preferences {
      * after upload. nil means keep forever.
      */
     readonly raw_log_retention_hours: number | null;
+}
+
+// From chroniclesdk/server_application.go
+export interface RealmPayload {
+    readonly name: string;
+    readonly description: string;
+    readonly url: string | null;
 }
 
 // From chroniclesdk/log.go
@@ -1073,11 +1131,6 @@ export interface RegressionSnapshotSummary {
     readonly matches_previous: boolean | null;
     readonly previous_snapshot_id: string | null;
     readonly created_at: string;
-}
-
-// From chroniclesdk/server_application.go
-export interface RejectApplicationRequest {
-    readonly admin_note: string | null;
 }
 
 // From chroniclesdk/guild_page.go
@@ -1199,20 +1252,11 @@ export interface RetentionRunRequest {
 }
 
 // From chroniclesdk/server_application.go
-export interface ReviewFieldRequest {
-    readonly section: string;
-    readonly status: string;
-    readonly note: string | null;
-}
-
-// From chroniclesdk/server_application.go
-export interface ReviewRealmRequest {
-    readonly admin_note: string | null;
-}
-
-// From chroniclesdk/server_application.go
-export interface ReviewServerRequest {
-    readonly admin_note: string | null;
+/**
+ * ReviewModificationRequest is sent by the admin to approve/reject.
+ */
+export interface ReviewModificationRequest {
+    readonly admin_note?: string;
 }
 
 // From rivertype/river_type.go
@@ -1249,45 +1293,27 @@ export interface RiverAttemptError {
 export type RiverJobState = string;
 
 // From chroniclesdk/server_application.go
+/**
+ * ServerApplication response includes all modification requests.
+ */
 export interface ServerApplication {
     readonly id: string;
     readonly initiated_by: string;
     readonly username: string;
-    readonly status: string;
     readonly name: string;
     readonly tenant_id: string;
     readonly tenant: Tenant;
-    readonly field_reviews: Record<string, FieldReview>;
-    readonly servers: readonly ServerApplicationServer[];
-    readonly admin_note: string | null;
+    readonly requests: readonly ModificationRequest[];
     readonly can_review: boolean;
     readonly created_at: string;
     readonly updated_at: string;
 }
 
 // From chroniclesdk/server_application.go
-export interface ServerApplicationRealm {
-    readonly id: string;
+export interface ServerPayload {
     readonly name: string;
     readonly description: string;
     readonly url: string | null;
-    readonly status: string;
-    readonly admin_note: string | null;
-    readonly realm_id: string | null;
-    readonly created_at: string;
-}
-
-// From chroniclesdk/server_application.go
-export interface ServerApplicationServer {
-    readonly id: string;
-    readonly name: string;
-    readonly description: string;
-    readonly url: string | null;
-    readonly status: string;
-    readonly admin_note: string | null;
-    readonly server_id: string | null;
-    readonly realms: readonly ServerApplicationRealm[];
-    readonly created_at: string;
 }
 
 // From chroniclesdk/user.go
@@ -1425,6 +1451,11 @@ export interface SiteConfig {
     readonly discoverable: boolean;
 }
 
+// From chroniclesdk/server_application.go
+export interface SlugPayload {
+    readonly slug: string;
+}
+
 // From chroniclesdk/constants.go
 export type SocialPlatform = "discord" | "twitch" | "twitter" | "website" | "youtube";
 
@@ -1554,6 +1585,11 @@ export interface Tenant {
     readonly updated_at: string;
 }
 
+// From chroniclesdk/server_application.go
+export interface ThemePayload {
+    readonly theme: Record<string, string>;
+}
+
 // From chroniclesdk/panel_layout.go
 /**
  * TrackLayoutRequest identifies a layout to track.
@@ -1620,17 +1656,6 @@ export interface UpdatePreferencesRequest {
 // From chroniclesdk/regression.go
 export interface UpdateRegressionFixtureNoteRequest {
     readonly note: string;
-}
-
-// From chroniclesdk/server_application.go
-export interface UpdateServerApplicationRequest {
-    readonly name: string | null;
-    readonly display_name: string | null;
-    readonly tagline: string | null;
-    readonly description: string | null;
-    readonly tags: readonly string[];
-    readonly slug: string | null;
-    readonly branding: Branding | null;
 }
 
 // From chroniclesdk/user.go

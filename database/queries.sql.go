@@ -4584,25 +4584,55 @@ func (q *sqlQuerier) UpsertRetentionRule(ctx context.Context, arg UpsertRetentio
 	return i, err
 }
 
+const deleteModificationRequest = `-- name: DeleteModificationRequest :exec
+DELETE FROM application_modification_requests WHERE id = $1
+`
+
+func (q *sqlQuerier) DeleteModificationRequest(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteModificationRequest, id)
+	return err
+}
+
+const getModificationRequestByID = `-- name: GetModificationRequestByID :one
+SELECT id, application_id, type, parent_id, payload, status, admin_note, reviewed_by, reviewed_at, resource_id, created_at, updated_at FROM application_modification_requests
+WHERE id = $1
+`
+
+func (q *sqlQuerier) GetModificationRequestByID(ctx context.Context, id uuid.UUID) (ApplicationModificationRequest, error) {
+	row := q.db.QueryRow(ctx, getModificationRequestByID, id)
+	var i ApplicationModificationRequest
+	err := row.Scan(
+		&i.ID,
+		&i.ApplicationID,
+		&i.Type,
+		&i.ParentID,
+		&i.Payload,
+		&i.Status,
+		&i.AdminNote,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ResourceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getServerApplicationByID = `-- name: GetServerApplicationByID :one
-SELECT sa.id, sa.initiated_by, sa.status, sa.name, sa.field_reviews, sa.admin_note, sa.reviewed_by, sa.tenant_id, sa.created_at, sa.updated_at, u.username
+SELECT sa.id, sa.initiated_by, sa.name, sa.tenant_id, sa.created_at, sa.updated_at, u.username
 FROM server_applications sa
 JOIN users u ON u.id = sa.initiated_by
 WHERE sa.id = $1
 `
 
 type GetServerApplicationByIDRow struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	InitiatedBy  uuid.UUID          `db:"initiated_by" json:"initiated_by"`
-	Status       string             `db:"status" json:"status"`
-	Name         string             `db:"name" json:"name"`
-	FieldReviews []byte             `db:"field_reviews" json:"field_reviews"`
-	AdminNote    pgtype.Text        `db:"admin_note" json:"admin_note"`
-	ReviewedBy   uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
-	TenantID     uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	Username     string             `db:"username" json:"username"`
+	ID          uuid.UUID          `db:"id" json:"id"`
+	InitiatedBy uuid.UUID          `db:"initiated_by" json:"initiated_by"`
+	Name        string             `db:"name" json:"name"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Username    string             `db:"username" json:"username"`
 }
 
 func (q *sqlQuerier) GetServerApplicationByID(ctx context.Context, id uuid.UUID) (GetServerApplicationByIDRow, error) {
@@ -4611,11 +4641,7 @@ func (q *sqlQuerier) GetServerApplicationByID(ctx context.Context, id uuid.UUID)
 	err := row.Scan(
 		&i.ID,
 		&i.InitiatedBy,
-		&i.Status,
 		&i.Name,
-		&i.FieldReviews,
-		&i.AdminNote,
-		&i.ReviewedBy,
 		&i.TenantID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -4624,88 +4650,43 @@ func (q *sqlQuerier) GetServerApplicationByID(ctx context.Context, id uuid.UUID)
 	return i, err
 }
 
-const getServerApplicationByInitiatedBy = `-- name: GetServerApplicationByInitiatedBy :one
-SELECT sa.id, sa.initiated_by, sa.status, sa.name, sa.field_reviews, sa.admin_note, sa.reviewed_by, sa.tenant_id, sa.created_at, sa.updated_at, u.username
-FROM server_applications sa
-JOIN users u ON u.id = sa.initiated_by
-WHERE sa.initiated_by = $1
-ORDER BY sa.created_at DESC
-LIMIT 1
+const insertModificationRequest = `-- name: InsertModificationRequest :one
+
+INSERT INTO application_modification_requests
+  (id, application_id, type, parent_id, payload)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, application_id, type, parent_id, payload, status, admin_note, reviewed_by, reviewed_at, resource_id, created_at, updated_at
 `
 
-type GetServerApplicationByInitiatedByRow struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	InitiatedBy  uuid.UUID          `db:"initiated_by" json:"initiated_by"`
-	Status       string             `db:"status" json:"status"`
-	Name         string             `db:"name" json:"name"`
-	FieldReviews []byte             `db:"field_reviews" json:"field_reviews"`
-	AdminNote    pgtype.Text        `db:"admin_note" json:"admin_note"`
-	ReviewedBy   uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
-	TenantID     uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	Username     string             `db:"username" json:"username"`
+type InsertModificationRequestParams struct {
+	ID            uuid.UUID     `db:"id" json:"id"`
+	ApplicationID uuid.UUID     `db:"application_id" json:"application_id"`
+	Type          string        `db:"type" json:"type"`
+	ParentID      uuid.NullUUID `db:"parent_id" json:"parent_id"`
+	Payload       []byte        `db:"payload" json:"payload"`
 }
 
-func (q *sqlQuerier) GetServerApplicationByInitiatedBy(ctx context.Context, initiatedBy uuid.UUID) (GetServerApplicationByInitiatedByRow, error) {
-	row := q.db.QueryRow(ctx, getServerApplicationByInitiatedBy, initiatedBy)
-	var i GetServerApplicationByInitiatedByRow
-	err := row.Scan(
-		&i.ID,
-		&i.InitiatedBy,
-		&i.Status,
-		&i.Name,
-		&i.FieldReviews,
-		&i.AdminNote,
-		&i.ReviewedBy,
-		&i.TenantID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Username,
+// Modification Requests
+func (q *sqlQuerier) InsertModificationRequest(ctx context.Context, arg InsertModificationRequestParams) (ApplicationModificationRequest, error) {
+	row := q.db.QueryRow(ctx, insertModificationRequest,
+		arg.ID,
+		arg.ApplicationID,
+		arg.Type,
+		arg.ParentID,
+		arg.Payload,
 	)
-	return i, err
-}
-
-const getServerApplicationRealm = `-- name: GetServerApplicationRealm :one
-SELECT id, app_server_id, name, description, url, status, admin_note, realm_id, created_at, updated_at FROM server_application_realms
-WHERE id = $1
-`
-
-func (q *sqlQuerier) GetServerApplicationRealm(ctx context.Context, id uuid.UUID) (ServerApplicationRealm, error) {
-	row := q.db.QueryRow(ctx, getServerApplicationRealm, id)
-	var i ServerApplicationRealm
-	err := row.Scan(
-		&i.ID,
-		&i.AppServerID,
-		&i.Name,
-		&i.Description,
-		&i.Url,
-		&i.Status,
-		&i.AdminNote,
-		&i.RealmID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getServerApplicationServer = `-- name: GetServerApplicationServer :one
-SELECT id, application_id, name, description, url, status, admin_note, server_id, created_at, updated_at FROM server_application_servers
-WHERE id = $1
-`
-
-func (q *sqlQuerier) GetServerApplicationServer(ctx context.Context, id uuid.UUID) (ServerApplicationServer, error) {
-	row := q.db.QueryRow(ctx, getServerApplicationServer, id)
-	var i ServerApplicationServer
+	var i ApplicationModificationRequest
 	err := row.Scan(
 		&i.ID,
 		&i.ApplicationID,
-		&i.Name,
-		&i.Description,
-		&i.Url,
+		&i.Type,
+		&i.ParentID,
+		&i.Payload,
 		&i.Status,
 		&i.AdminNote,
-		&i.ServerID,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ResourceID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -4716,7 +4697,7 @@ const insertServerApplication = `-- name: InsertServerApplication :one
 
 INSERT INTO server_applications (id, initiated_by, name, tenant_id)
 VALUES ($1, $2, $3, $4)
-RETURNING id, initiated_by, status, name, field_reviews, admin_note, reviewed_by, tenant_id, created_at, updated_at
+RETURNING id, initiated_by, name, tenant_id, created_at, updated_at
 `
 
 type InsertServerApplicationParams struct {
@@ -4738,11 +4719,7 @@ func (q *sqlQuerier) InsertServerApplication(ctx context.Context, arg InsertServ
 	err := row.Scan(
 		&i.ID,
 		&i.InitiatedBy,
-		&i.Status,
 		&i.Name,
-		&i.FieldReviews,
-		&i.AdminNote,
-		&i.ReviewedBy,
 		&i.TenantID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -4750,186 +4727,32 @@ func (q *sqlQuerier) InsertServerApplication(ctx context.Context, arg InsertServ
 	return i, err
 }
 
-const insertServerApplicationRealm = `-- name: InsertServerApplicationRealm :one
-
-INSERT INTO server_application_realms (id, app_server_id, name, description, url)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, app_server_id, name, description, url, status, admin_note, realm_id, created_at, updated_at
-`
-
-type InsertServerApplicationRealmParams struct {
-	ID          uuid.UUID   `db:"id" json:"id"`
-	AppServerID uuid.UUID   `db:"app_server_id" json:"app_server_id"`
-	Name        string      `db:"name" json:"name"`
-	Description string      `db:"description" json:"description"`
-	Url         pgtype.Text `db:"url" json:"url"`
-}
-
-// Server Application Realms
-func (q *sqlQuerier) InsertServerApplicationRealm(ctx context.Context, arg InsertServerApplicationRealmParams) (ServerApplicationRealm, error) {
-	row := q.db.QueryRow(ctx, insertServerApplicationRealm,
-		arg.ID,
-		arg.AppServerID,
-		arg.Name,
-		arg.Description,
-		arg.Url,
-	)
-	var i ServerApplicationRealm
-	err := row.Scan(
-		&i.ID,
-		&i.AppServerID,
-		&i.Name,
-		&i.Description,
-		&i.Url,
-		&i.Status,
-		&i.AdminNote,
-		&i.RealmID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const insertServerApplicationServer = `-- name: InsertServerApplicationServer :one
-
-INSERT INTO server_application_servers (id, application_id, name, description, url)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, application_id, name, description, url, status, admin_note, server_id, created_at, updated_at
-`
-
-type InsertServerApplicationServerParams struct {
-	ID            uuid.UUID   `db:"id" json:"id"`
-	ApplicationID uuid.UUID   `db:"application_id" json:"application_id"`
-	Name          string      `db:"name" json:"name"`
-	Description   string      `db:"description" json:"description"`
-	Url           pgtype.Text `db:"url" json:"url"`
-}
-
-// Server Application Servers
-func (q *sqlQuerier) InsertServerApplicationServer(ctx context.Context, arg InsertServerApplicationServerParams) (ServerApplicationServer, error) {
-	row := q.db.QueryRow(ctx, insertServerApplicationServer,
-		arg.ID,
-		arg.ApplicationID,
-		arg.Name,
-		arg.Description,
-		arg.Url,
-	)
-	var i ServerApplicationServer
-	err := row.Scan(
-		&i.ID,
-		&i.ApplicationID,
-		&i.Name,
-		&i.Description,
-		&i.Url,
-		&i.Status,
-		&i.AdminNote,
-		&i.ServerID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const listServerApplicationRealms = `-- name: ListServerApplicationRealms :many
-SELECT id, app_server_id, name, description, url, status, admin_note, realm_id, created_at, updated_at FROM server_application_realms
-WHERE app_server_id = $1
-ORDER BY created_at
-`
-
-func (q *sqlQuerier) ListServerApplicationRealms(ctx context.Context, appServerID uuid.UUID) ([]ServerApplicationRealm, error) {
-	rows, err := q.db.Query(ctx, listServerApplicationRealms, appServerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ServerApplicationRealm
-	for rows.Next() {
-		var i ServerApplicationRealm
-		if err := rows.Scan(
-			&i.ID,
-			&i.AppServerID,
-			&i.Name,
-			&i.Description,
-			&i.Url,
-			&i.Status,
-			&i.AdminNote,
-			&i.RealmID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listServerApplicationRealmsByApplicationID = `-- name: ListServerApplicationRealmsByApplicationID :many
-SELECT sar.id, sar.app_server_id, sar.name, sar.description, sar.url, sar.status, sar.admin_note, sar.realm_id, sar.created_at, sar.updated_at
-FROM server_application_realms sar
-JOIN server_application_servers sas ON sas.id = sar.app_server_id
-WHERE sas.application_id = $1
-ORDER BY sar.created_at
-`
-
-func (q *sqlQuerier) ListServerApplicationRealmsByApplicationID(ctx context.Context, applicationID uuid.UUID) ([]ServerApplicationRealm, error) {
-	rows, err := q.db.Query(ctx, listServerApplicationRealmsByApplicationID, applicationID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ServerApplicationRealm
-	for rows.Next() {
-		var i ServerApplicationRealm
-		if err := rows.Scan(
-			&i.ID,
-			&i.AppServerID,
-			&i.Name,
-			&i.Description,
-			&i.Url,
-			&i.Status,
-			&i.AdminNote,
-			&i.RealmID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listServerApplicationServers = `-- name: ListServerApplicationServers :many
-SELECT id, application_id, name, description, url, status, admin_note, server_id, created_at, updated_at FROM server_application_servers
+const listModificationRequestsByApplicationID = `-- name: ListModificationRequestsByApplicationID :many
+SELECT id, application_id, type, parent_id, payload, status, admin_note, reviewed_by, reviewed_at, resource_id, created_at, updated_at FROM application_modification_requests
 WHERE application_id = $1
 ORDER BY created_at
 `
 
-func (q *sqlQuerier) ListServerApplicationServers(ctx context.Context, applicationID uuid.UUID) ([]ServerApplicationServer, error) {
-	rows, err := q.db.Query(ctx, listServerApplicationServers, applicationID)
+func (q *sqlQuerier) ListModificationRequestsByApplicationID(ctx context.Context, applicationID uuid.UUID) ([]ApplicationModificationRequest, error) {
+	rows, err := q.db.Query(ctx, listModificationRequestsByApplicationID, applicationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ServerApplicationServer
+	var items []ApplicationModificationRequest
 	for rows.Next() {
-		var i ServerApplicationServer
+		var i ApplicationModificationRequest
 		if err := rows.Scan(
 			&i.ID,
 			&i.ApplicationID,
-			&i.Name,
-			&i.Description,
-			&i.Url,
+			&i.Type,
+			&i.ParentID,
+			&i.Payload,
 			&i.Status,
 			&i.AdminNote,
-			&i.ServerID,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.ResourceID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -4944,29 +4767,24 @@ func (q *sqlQuerier) ListServerApplicationServers(ctx context.Context, applicati
 }
 
 const listServerApplications = `-- name: ListServerApplications :many
-SELECT sa.id, sa.initiated_by, sa.status, sa.name, sa.field_reviews, sa.admin_note, sa.reviewed_by, sa.tenant_id, sa.created_at, sa.updated_at, u.username
+SELECT sa.id, sa.initiated_by, sa.name, sa.tenant_id, sa.created_at, sa.updated_at, u.username
 FROM server_applications sa
 JOIN users u ON u.id = sa.initiated_by
-WHERE ($1::text IS NULL OR sa.status = $1)
 ORDER BY sa.created_at DESC
 `
 
 type ListServerApplicationsRow struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	InitiatedBy  uuid.UUID          `db:"initiated_by" json:"initiated_by"`
-	Status       string             `db:"status" json:"status"`
-	Name         string             `db:"name" json:"name"`
-	FieldReviews []byte             `db:"field_reviews" json:"field_reviews"`
-	AdminNote    pgtype.Text        `db:"admin_note" json:"admin_note"`
-	ReviewedBy   uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
-	TenantID     uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	Username     string             `db:"username" json:"username"`
+	ID          uuid.UUID          `db:"id" json:"id"`
+	InitiatedBy uuid.UUID          `db:"initiated_by" json:"initiated_by"`
+	Name        string             `db:"name" json:"name"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Username    string             `db:"username" json:"username"`
 }
 
-func (q *sqlQuerier) ListServerApplications(ctx context.Context, status pgtype.Text) ([]ListServerApplicationsRow, error) {
-	rows, err := q.db.Query(ctx, listServerApplications, status)
+func (q *sqlQuerier) ListServerApplications(ctx context.Context) ([]ListServerApplicationsRow, error) {
+	rows, err := q.db.Query(ctx, listServerApplications)
 	if err != nil {
 		return nil, err
 	}
@@ -4977,11 +4795,7 @@ func (q *sqlQuerier) ListServerApplications(ctx context.Context, status pgtype.T
 		if err := rows.Scan(
 			&i.ID,
 			&i.InitiatedBy,
-			&i.Status,
 			&i.Name,
-			&i.FieldReviews,
-			&i.AdminNote,
-			&i.ReviewedBy,
 			&i.TenantID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -4997,151 +4811,99 @@ func (q *sqlQuerier) ListServerApplications(ctx context.Context, status pgtype.T
 	return items, nil
 }
 
-const updateServerApplicationFieldReviews = `-- name: UpdateServerApplicationFieldReviews :exec
-UPDATE server_applications SET
-    field_reviews = $1,
+const updateModificationRequestPayload = `-- name: UpdateModificationRequestPayload :exec
+UPDATE application_modification_requests SET
+    payload = $1,
     updated_at = now()
 WHERE id = $2
 `
 
-type UpdateServerApplicationFieldReviewsParams struct {
-	FieldReviews []byte    `db:"field_reviews" json:"field_reviews"`
-	ID           uuid.UUID `db:"id" json:"id"`
+type UpdateModificationRequestPayloadParams struct {
+	Payload []byte    `db:"payload" json:"payload"`
+	ID      uuid.UUID `db:"id" json:"id"`
 }
 
-func (q *sqlQuerier) UpdateServerApplicationFieldReviews(ctx context.Context, arg UpdateServerApplicationFieldReviewsParams) error {
-	_, err := q.db.Exec(ctx, updateServerApplicationFieldReviews, arg.FieldReviews, arg.ID)
+func (q *sqlQuerier) UpdateModificationRequestPayload(ctx context.Context, arg UpdateModificationRequestPayloadParams) error {
+	_, err := q.db.Exec(ctx, updateModificationRequestPayload, arg.Payload, arg.ID)
 	return err
 }
 
-const updateServerApplicationRealm = `-- name: UpdateServerApplicationRealm :exec
-UPDATE server_application_realms SET
-    name = $1,
-    description = $2,
-    url = $3,
-    updated_at = now()
-WHERE id = $4
-`
-
-type UpdateServerApplicationRealmParams struct {
-	Name        string      `db:"name" json:"name"`
-	Description string      `db:"description" json:"description"`
-	Url         pgtype.Text `db:"url" json:"url"`
-	ID          uuid.UUID   `db:"id" json:"id"`
-}
-
-func (q *sqlQuerier) UpdateServerApplicationRealm(ctx context.Context, arg UpdateServerApplicationRealmParams) error {
-	_, err := q.db.Exec(ctx, updateServerApplicationRealm,
-		arg.Name,
-		arg.Description,
-		arg.Url,
-		arg.ID,
-	)
-	return err
-}
-
-const updateServerApplicationRealmStatus = `-- name: UpdateServerApplicationRealmStatus :exec
-UPDATE server_application_realms SET
-    status = $1,
-    admin_note = $2,
-    realm_id = $3,
-    updated_at = now()
-WHERE id = $4
-`
-
-type UpdateServerApplicationRealmStatusParams struct {
-	Status    string        `db:"status" json:"status"`
-	AdminNote pgtype.Text   `db:"admin_note" json:"admin_note"`
-	RealmID   uuid.NullUUID `db:"realm_id" json:"realm_id"`
-	ID        uuid.UUID     `db:"id" json:"id"`
-}
-
-func (q *sqlQuerier) UpdateServerApplicationRealmStatus(ctx context.Context, arg UpdateServerApplicationRealmStatusParams) error {
-	_, err := q.db.Exec(ctx, updateServerApplicationRealmStatus,
-		arg.Status,
-		arg.AdminNote,
-		arg.RealmID,
-		arg.ID,
-	)
-	return err
-}
-
-const updateServerApplicationServer = `-- name: UpdateServerApplicationServer :exec
-UPDATE server_application_servers SET
-    name = $1,
-    description = $2,
-    url = $3,
-    updated_at = now()
-WHERE id = $4
-`
-
-type UpdateServerApplicationServerParams struct {
-	Name        string      `db:"name" json:"name"`
-	Description string      `db:"description" json:"description"`
-	Url         pgtype.Text `db:"url" json:"url"`
-	ID          uuid.UUID   `db:"id" json:"id"`
-}
-
-func (q *sqlQuerier) UpdateServerApplicationServer(ctx context.Context, arg UpdateServerApplicationServerParams) error {
-	_, err := q.db.Exec(ctx, updateServerApplicationServer,
-		arg.Name,
-		arg.Description,
-		arg.Url,
-		arg.ID,
-	)
-	return err
-}
-
-const updateServerApplicationServerStatus = `-- name: UpdateServerApplicationServerStatus :exec
-UPDATE server_application_servers SET
-    status = $1,
-    admin_note = $2,
-    server_id = $3,
-    updated_at = now()
-WHERE id = $4
-`
-
-type UpdateServerApplicationServerStatusParams struct {
-	Status    string        `db:"status" json:"status"`
-	AdminNote pgtype.Text   `db:"admin_note" json:"admin_note"`
-	ServerID  uuid.NullUUID `db:"server_id" json:"server_id"`
-	ID        uuid.UUID     `db:"id" json:"id"`
-}
-
-func (q *sqlQuerier) UpdateServerApplicationServerStatus(ctx context.Context, arg UpdateServerApplicationServerStatusParams) error {
-	_, err := q.db.Exec(ctx, updateServerApplicationServerStatus,
-		arg.Status,
-		arg.AdminNote,
-		arg.ServerID,
-		arg.ID,
-	)
-	return err
-}
-
-const updateServerApplicationStatus = `-- name: UpdateServerApplicationStatus :exec
-UPDATE server_applications SET
+const updateModificationRequestStatus = `-- name: UpdateModificationRequestStatus :exec
+UPDATE application_modification_requests SET
     status = $1,
     admin_note = $2,
     reviewed_by = $3,
+    reviewed_at = $4,
+    resource_id = $5,
     updated_at = now()
-WHERE id = $4
+WHERE id = $6
 `
 
-type UpdateServerApplicationStatusParams struct {
-	Status     string        `db:"status" json:"status"`
-	AdminNote  pgtype.Text   `db:"admin_note" json:"admin_note"`
-	ReviewedBy uuid.NullUUID `db:"reviewed_by" json:"reviewed_by"`
-	ID         uuid.UUID     `db:"id" json:"id"`
+type UpdateModificationRequestStatusParams struct {
+	Status     string             `db:"status" json:"status"`
+	AdminNote  pgtype.Text        `db:"admin_note" json:"admin_note"`
+	ReviewedBy uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
+	ReviewedAt pgtype.Timestamptz `db:"reviewed_at" json:"reviewed_at"`
+	ResourceID uuid.NullUUID      `db:"resource_id" json:"resource_id"`
+	ID         uuid.UUID          `db:"id" json:"id"`
 }
 
-func (q *sqlQuerier) UpdateServerApplicationStatus(ctx context.Context, arg UpdateServerApplicationStatusParams) error {
-	_, err := q.db.Exec(ctx, updateServerApplicationStatus,
+func (q *sqlQuerier) UpdateModificationRequestStatus(ctx context.Context, arg UpdateModificationRequestStatusParams) error {
+	_, err := q.db.Exec(ctx, updateModificationRequestStatus,
 		arg.Status,
 		arg.AdminNote,
 		arg.ReviewedBy,
+		arg.ReviewedAt,
+		arg.ResourceID,
 		arg.ID,
 	)
 	return err
+}
+
+const upsertPendingModificationRequest = `-- name: UpsertPendingModificationRequest :one
+INSERT INTO application_modification_requests
+  (id, application_id, type, parent_id, payload)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (application_id, type, COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'))
+  WHERE status = 'pending' AND type NOT IN ('server', 'realm')
+DO UPDATE SET
+  payload = EXCLUDED.payload,
+  updated_at = now()
+RETURNING id, application_id, type, parent_id, payload, status, admin_note, reviewed_by, reviewed_at, resource_id, created_at, updated_at
+`
+
+type UpsertPendingModificationRequestParams struct {
+	ID            uuid.UUID     `db:"id" json:"id"`
+	ApplicationID uuid.UUID     `db:"application_id" json:"application_id"`
+	Type          string        `db:"type" json:"type"`
+	ParentID      uuid.NullUUID `db:"parent_id" json:"parent_id"`
+	Payload       []byte        `db:"payload" json:"payload"`
+}
+
+func (q *sqlQuerier) UpsertPendingModificationRequest(ctx context.Context, arg UpsertPendingModificationRequestParams) (ApplicationModificationRequest, error) {
+	row := q.db.QueryRow(ctx, upsertPendingModificationRequest,
+		arg.ID,
+		arg.ApplicationID,
+		arg.Type,
+		arg.ParentID,
+		arg.Payload,
+	)
+	var i ApplicationModificationRequest
+	err := row.Scan(
+		&i.ID,
+		&i.ApplicationID,
+		&i.Type,
+		&i.ParentID,
+		&i.Payload,
+		&i.Status,
+		&i.AdminNote,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ResourceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const findMatchingServerUpload = `-- name: FindMatchingServerUpload :one

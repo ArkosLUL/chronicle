@@ -186,6 +186,9 @@ func (api *API) Routes() chi.Router {
 					r.Use(api.Auth.Authenticated(true))
 					r.Mount("/server-application", api.Opts.Application.Routes(api.Zed))
 				})
+			} else {
+				r.Handle("/server-application", http.NotFoundHandler())
+				r.Handle("/server-application/*", http.NotFoundHandler())
 			}
 			r.Get("/share/{code}", api.GetShare)
 			r.Get("/site-config", api.AdminGetSiteConfig)

@@ -3,6 +3,7 @@ package serviceapplication
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,42 +19,86 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
+var validModTypes = map[string]bool{
+	"core": true, "slug": true, "description": true,
+	"logos": true, "theme": true, "server": true, "realm": true,
+}
+
+// requireApplicationAdminister checks wow_tenant_application#administer.
+func (s *Service) requireApplicationAdminister(zed *authz.Authz) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			actor, ok := authz.ActorFromContext(ctx)
+			if !ok {
+				httpapi.Forbidden(w, nil)
+				return
+			}
+			appID, err := uuid.Parse(chi.URLParam(r, "id"))
+			if err != nil {
+				httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
+				return
+			}
+			can, err := zed.CheckOne(ctx, nil, policy.New().Wow_tenant_application(appID).CanAdminister_User(actor))
+			if err != nil {
+				httpapi.InternalServerError(w, err)
+				return
+			}
+			if !can {
+				httpapi.Forbidden(w, nil)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 // Routes returns the chi router for server application endpoints.
 func (s *Service) Routes(zed *authz.Authz) http.Handler {
 	r := chi.NewRouter()
 
-	// Applicant endpoints (authenticated)
 	r.With(
 		httpmw.Can(zed, policy.New().GlobalChronicle().CanCreate_tenant_application_User),
 	).Post("/", s.Create)
 
 	r.Get("/", s.GetMine)
-	r.Get("/{id}", s.Get)
-	r.Put("/{id}", s.Update)
-	r.Post("/{id}/servers", s.AddServer)
-	r.Put("/{id}/servers/{serverReqID}", s.UpdateServer)
-	r.Post("/{id}/servers/{serverReqID}/realms", s.AddRealm)
-	r.Put("/{id}/servers/{serverReqID}/realms/{realmReqID}", s.UpdateRealm)
 
-	// Admin endpoints
-	r.With(httpmw.Can(zed, policy.New().GlobalChronicle().CanAdmin_tenants_User)).Group(func(r chi.Router) {
-		r.Get("/all", s.List)
-		r.Put("/{id}/review", s.ReviewField)
-		r.Post("/{id}/approve", s.Approve)
-		r.Post("/{id}/reject", s.Reject)
-		r.Post("/{id}/servers/{serverReqID}/approve", s.ApproveServer)
-		r.Post("/{id}/servers/{serverReqID}/reject", s.RejectServer)
-		r.Post("/{id}/servers/{serverReqID}/realms/{realmReqID}/approve", s.ApproveRealm)
-		r.Post("/{id}/servers/{serverReqID}/realms/{realmReqID}/reject", s.RejectRealm)
+	r.Route("/{id}", func(r chi.Router) {
+		r.Use(s.requireApplicationAdminister(zed))
+
+		r.Get("/", s.Get)
+		r.Post("/requests", s.CreateRequest)
+		r.Put("/requests/{reqID}", s.UpdateRequest)
+		r.Delete("/requests/{reqID}", s.DeleteRequest)
+
+		r.With(httpmw.Can(zed, policy.New().GlobalChronicle().CanAdmin_tenants_User)).Group(func(r chi.Router) {
+			r.Post("/requests/{reqID}/approve", s.ApproveRequest)
+			r.Post("/requests/{reqID}/reject", s.RejectRequest)
+		})
+
+		r.With(httpmw.Can(zed, policy.New().GlobalChronicle().CanAdmin_users_User)).Group(func(r chi.Router) {
+			r.Get("/admins", s.ListApplicationAdmins)
+			r.Post("/admins", s.AddApplicationAdmin)
+			r.Delete("/admins/{userID}", s.RemoveApplicationAdmin)
+		})
 	})
+
+	r.With(httpmw.Can(zed, policy.New().GlobalChronicle().CanAdmin_tenants_User)).
+		Get("/all", s.List)
 
 	return r
 }
 
-// Create creates a new server application, auto-provisioning a tenant.
+// Create creates a new application, auto-provisioning a tenant and initial mod requests.
 func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	actor, ok := authz.ActorFromContext(ctx)
@@ -69,12 +114,8 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Name == "" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "name is required"})
-		return
-	}
-	if req.DisplayName == "" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "display_name is required"})
+	if req.Name == "" || req.DisplayName == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "name and display_name are required"})
 		return
 	}
 	if len(req.Servers) == 0 {
@@ -83,109 +124,80 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	for i, srv := range req.Servers {
 		if srv.Name == "" {
-			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-				Message: fmt.Sprintf("servers[%d].name is required", i),
-			})
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: fmt.Sprintf("servers[%d].name is required", i)})
 			return
 		}
 		if len(srv.Realms) == 0 {
-			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-				Message: fmt.Sprintf("servers[%d] must have at least one realm", i),
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: fmt.Sprintf("servers[%d] must have at least one realm", i)})
+			return
+		}
+	}
+
+	// Create tenant (non-discoverable, branding empty — populated via approved mod requests).
+	bypassCtx := servicetenant.AdminBypass(ctx)
+	tenantID := uuid.New()
+	_, err := s.Zed.InsertTenant(bypassCtx, database.InsertTenantParams{
+		ID:           tenantID,
+		Name:         req.Name,
+		IncludeInAll: false,
+		Discoverable: false,
+	})
+	if err != nil {
+		if isUniqueViolation(err) {
+			httpapi.Write(ctx, w, http.StatusConflict, chroniclesdk.Response{
+				Message: fmt.Sprintf("A server with the name %q already exists.", req.Name),
 			})
 			return
 		}
-		for j, realm := range srv.Realms {
-			if realm.Name == "" {
-				httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-					Message: fmt.Sprintf("servers[%d].realms[%d].name is required", i, j),
-				})
-				return
-			}
-		}
-	}
-
-	// Check no existing pending application.
-	existing, err := s.DB.GetServerApplicationByInitiatedBy(ctx, userID)
-	if err == nil && existing.Status == "pending" {
-		httpapi.Write(ctx, w, http.StatusConflict, chroniclesdk.Response{
-			Message: "you already have a pending application",
-		})
-		return
-	}
-
-	// Auto-provision tenant (non-discoverable).
-	branding := chroniclesdk.Branding{
-		DisplayName: req.DisplayName,
-		Tagline:     req.Tagline,
-		Tags:        req.Tags,
-	}
-	brandingJSON, err := json.Marshal(branding)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-
-	tenantID := uuid.New()
-	// Use admin bypass context for tenant creation (tenants table isn't behind RLS,
-	// but the interceptor needs it for SpiceDB writes).
-	bypassCtx := servicetenant.AdminBypass(ctx)
-	_, err = s.DB.InsertTenant(bypassCtx, database.InsertTenantParams{
-		ID:                  tenantID,
-		Name:                req.Name,
-		DisableClientUpload: false,
-		IncludeInAll:        false,
-		Discoverable:        false,
-		Branding:            brandingJSON,
-	})
-	if err != nil {
 		httpapi.InternalServerError(w, fmt.Errorf("create tenant: %w", err))
 		return
 	}
+	s.Tenant.InvalidateCache()
 
-	// Insert application row.
 	appID := uuid.New()
-	app, err := s.DB.InsertServerApplication(bypassCtx, database.InsertServerApplicationParams{
-		ID:       appID,
+	_, err = s.Zed.InsertServerApplication(bypassCtx, database.InsertServerApplicationParams{
+		ID:          appID,
 		InitiatedBy: userID,
-		Name:     req.Name,
-		TenantID: tenantID,
+		Name:        req.Name,
+		TenantID:    tenantID,
 	})
 	if err != nil {
 		httpapi.InternalServerError(w, fmt.Errorf("create application: %w", err))
 		return
 	}
 
-	// Insert server + realm requests.
+	// Create initial mod requests: core + servers + realms.
+	corePayload, _ := json.Marshal(chroniclesdk.CorePayload{
+		Name:        req.Name,
+		DisplayName: req.DisplayName,
+		Tagline:     req.Tagline,
+		Tags:        req.Tags,
+	})
+	s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
+		ID: uuid.New(), ApplicationID: appID, Type: "core", Payload: corePayload,
+	})
+
 	for _, srv := range req.Servers {
-		srvID := uuid.New()
-		var srvURL pgtype.Text
-		if srv.URL != nil {
-			srvURL = pgtype.Text{String: *srv.URL, Valid: true}
-		}
-		_, err := s.DB.InsertServerApplicationServer(bypassCtx, database.InsertServerApplicationServerParams{
-			ID:            srvID,
-			ApplicationID: appID,
-			Name:          srv.Name,
-			Description:   srv.Description,
-			Url:           srvURL,
+		srvPayload, _ := json.Marshal(chroniclesdk.ServerPayload{
+			Name: srv.Name, Description: srv.Description, URL: srv.URL,
+		})
+		srvReq, err := s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
+			ID: uuid.New(), ApplicationID: appID, Type: "server", Payload: srvPayload,
 		})
 		if err != nil {
 			httpapi.InternalServerError(w, fmt.Errorf("create server request: %w", err))
 			return
 		}
-
 		for _, realm := range srv.Realms {
-			realmID := uuid.New()
-			var realmURL pgtype.Text
-			if realm.URL != nil {
-				realmURL = pgtype.Text{String: *realm.URL, Valid: true}
-			}
-			_, err := s.DB.InsertServerApplicationRealm(bypassCtx, database.InsertServerApplicationRealmParams{
-				ID:          realmID,
-				AppServerID: srvID,
-				Name:        realm.Name,
-				Description: realm.Description,
-				Url:         realmURL,
+			realmPayload, _ := json.Marshal(chroniclesdk.RealmPayload{
+				Name: realm.Name, Description: realm.Description, URL: realm.URL,
+			})
+			_, err := s.DB.InsertModificationRequest(ctx, database.InsertModificationRequestParams{
+				ID:            uuid.New(),
+				ApplicationID: appID,
+				Type:          "realm",
+				ParentID:      uuid.NullUUID{UUID: srvReq.ID, Valid: true},
+				Payload:       realmPayload,
 			})
 			if err != nil {
 				httpapi.InternalServerError(w, fmt.Errorf("create realm request: %w", err))
@@ -194,22 +206,8 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Write SpiceDB relations.
-	b := policy.New()
-	usr := b.User(userID)
-	b.Wow_tenant(tenantID).Admin(usr)
-	b.Wow_tenant_application(appID).
-		Wow_tenant(b.Wow_tenant(tenantID)).
-		Admin(usr)
-	_, err = s.Zed.Write(ctx, *b.Txn())
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("write authz relations: %w", err))
-		return
-	}
-
-	// Enqueue Discord notification (fire-and-forget).
+	// Discord notification.
 	if s.Queue != nil {
-		// Get username for the notification.
 		user, _ := s.DB.GetUserByID(ctx, userID)
 		applicantName := user.Username
 		if applicantName == "" {
@@ -225,8 +223,7 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		}, nil)
 	}
 
-	// Return the full application response.
-	resp, err := s.buildApplicationResponse(ctx, app.ID, actor)
+	resp, err := s.buildApplicationResponse(ctx, appID, actor)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -234,7 +231,7 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusCreated, resp)
 }
 
-// GetMine returns the current user's most recent application.
+// GetMine returns all applications the current user can administer.
 func (s *Service) GetMine(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claims := chronauth.MustAuthenticatedClaims(ctx)
@@ -244,21 +241,28 @@ func (s *Service) GetMine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := s.DB.GetServerApplicationByInitiatedBy(ctx, claims.Subject)
+	appIDs, err := s.Zed.UserTenantApplications(ctx, claims.Subject)
 	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "no application found"})
+		httpapi.InternalServerError(w, fmt.Errorf("lookup user applications: %w", err))
+		return
+	}
+	if len(appIDs) == 0 {
+		httpapi.Write(ctx, w, http.StatusOK, []chroniclesdk.ServerApplication{})
 		return
 	}
 
-	resp, err := s.buildApplicationResponse(ctx, row.ID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
+	apps := make([]chroniclesdk.ServerApplication, 0, len(appIDs))
+	for _, appID := range appIDs {
+		resp, err := s.buildApplicationResponse(ctx, appID, actor)
+		if err != nil {
+			continue
+		}
+		apps = append(apps, resp)
 	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
+	httpapi.Write(ctx, w, http.StatusOK, apps)
 }
 
-// Get returns an application by ID. Accessible by the applicant or admins.
+// Get returns an application by ID.
 func (s *Service) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	actor, ok := authz.ActorFromContext(ctx)
@@ -273,406 +277,6 @@ func (s *Service) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check access: either the applicant (owns the row) or site admin.
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
-		return
-	}
-	isOwner := row.InitiatedBy == claims.Subject
-	isAdmin, _ := s.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_tenants_User(actor))
-	if !isOwner && !isAdmin {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
-}
-
-// Update updates the tenant branding for a pending application.
-func (s *Service) Update(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	appID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
-		return
-	}
-
-	// Verify ownership.
-	if !s.isApplicationOwner(ctx, appID) {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
-		return
-	}
-	if row.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only update pending applications"})
-		return
-	}
-
-	var req chroniclesdk.UpdateServerApplicationRequest
-	if !httpapi.Read(ctx, w, r, &req) {
-		return
-	}
-
-	// Build tenant update params — only non-nil fields.
-	updateParams := database.UpdateTenantParams{
-		ID: row.TenantID,
-	}
-	if req.Name != nil {
-		updateParams.Name = pgtype.Text{String: *req.Name, Valid: true}
-	}
-	if req.Slug != nil {
-		updateParams.Slug = pgtype.Text{String: *req.Slug, Valid: true}
-	}
-	if req.Branding != nil {
-		brandingJSON, err := json.Marshal(req.Branding)
-		if err != nil {
-			httpapi.InternalServerError(w, err)
-			return
-		}
-		updateParams.Branding = brandingJSON
-	} else {
-		// Build partial branding update from individual fields.
-		tenant, err := s.DB.GetTenantByID(servicetenant.AdminBypass(ctx), row.TenantID)
-		if err != nil {
-			httpapi.InternalServerError(w, err)
-			return
-		}
-		var existingBranding chroniclesdk.Branding
-		if len(tenant.Branding) > 0 {
-			_ = json.Unmarshal(tenant.Branding, &existingBranding)
-		}
-		changed := false
-		if req.DisplayName != nil {
-			existingBranding.DisplayName = *req.DisplayName
-			changed = true
-		}
-		if req.Tagline != nil {
-			existingBranding.Tagline = *req.Tagline
-			changed = true
-		}
-		if req.Description != nil {
-			existingBranding.Description = *req.Description
-			changed = true
-		}
-		if req.Tags != nil {
-			existingBranding.Tags = req.Tags
-			changed = true
-		}
-		if changed {
-			brandingJSON, err := json.Marshal(existingBranding)
-			if err != nil {
-				httpapi.InternalServerError(w, err)
-				return
-			}
-			updateParams.Branding = brandingJSON
-		}
-	}
-
-	bypassCtx := servicetenant.AdminBypass(ctx)
-	_, err = s.DB.UpdateTenant(bypassCtx, updateParams)
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("update tenant: %w", err))
-		return
-	}
-
-	// Reset review status for affected sections.
-	s.resetAffectedReviews(ctx, row, req)
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
-}
-
-// AddServer adds a new server request to a pending application.
-func (s *Service) AddServer(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	appID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
-		return
-	}
-
-	if !s.isApplicationOwner(ctx, appID) {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
-		return
-	}
-	if row.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only modify pending applications"})
-		return
-	}
-
-	var req chroniclesdk.AddServerRequest
-	if !httpapi.Read(ctx, w, r, &req) {
-		return
-	}
-	if req.Name == "" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "name is required"})
-		return
-	}
-
-	srvID := uuid.New()
-	var srvURL pgtype.Text
-	if req.URL != nil {
-		srvURL = pgtype.Text{String: *req.URL, Valid: true}
-	}
-	_, err = s.DB.InsertServerApplicationServer(ctx, database.InsertServerApplicationServerParams{
-		ID:            srvID,
-		ApplicationID: appID,
-		Name:          req.Name,
-		Description:   req.Description,
-		Url:           srvURL,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("create server request: %w", err))
-		return
-	}
-
-	// Insert realms for this server.
-	for _, realm := range req.Realms {
-		realmID := uuid.New()
-		var realmURL pgtype.Text
-		if realm.URL != nil {
-			realmURL = pgtype.Text{String: *realm.URL, Valid: true}
-		}
-		_, err := s.DB.InsertServerApplicationRealm(ctx, database.InsertServerApplicationRealmParams{
-			ID:          realmID,
-			AppServerID: srvID,
-			Name:        realm.Name,
-			Description: realm.Description,
-			Url:         realmURL,
-		})
-		if err != nil {
-			httpapi.InternalServerError(w, fmt.Errorf("create realm request: %w", err))
-			return
-		}
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusCreated, resp)
-}
-
-// UpdateServer updates a server request within an application.
-func (s *Service) UpdateServer(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	appID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
-		return
-	}
-	serverReqID, err := uuid.Parse(chi.URLParam(r, "serverReqID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid server request ID"})
-		return
-	}
-
-	if !s.isApplicationOwner(ctx, appID) {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, serverReqID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "server request not found"})
-		return
-	}
-	if srvReq.Status != "pending" && srvReq.Status != "rejected" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only update pending or rejected server requests"})
-		return
-	}
-
-	var req chroniclesdk.AddServerRequest
-	if !httpapi.Read(ctx, w, r, &req) {
-		return
-	}
-
-	var srvURL pgtype.Text
-	if req.URL != nil {
-		srvURL = pgtype.Text{String: *req.URL, Valid: true}
-	}
-	err = s.DB.UpdateServerApplicationServer(ctx, database.UpdateServerApplicationServerParams{
-		ID:          serverReqID,
-		Name:        req.Name,
-		Description: req.Description,
-		Url:         srvURL,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("update server request: %w", err))
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
-}
-
-// AddRealm adds a realm request to a server request.
-func (s *Service) AddRealm(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	appID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
-		return
-	}
-	serverReqID, err := uuid.Parse(chi.URLParam(r, "serverReqID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid server request ID"})
-		return
-	}
-
-	if !s.isApplicationOwner(ctx, appID) {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, serverReqID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "server request not found"})
-		return
-	}
-
-	var req chroniclesdk.AddRealmRequest
-	if !httpapi.Read(ctx, w, r, &req) {
-		return
-	}
-	if req.Name == "" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "name is required"})
-		return
-	}
-
-	realmID := uuid.New()
-	var realmURL pgtype.Text
-	if req.URL != nil {
-		realmURL = pgtype.Text{String: *req.URL, Valid: true}
-	}
-	_, err = s.DB.InsertServerApplicationRealm(ctx, database.InsertServerApplicationRealmParams{
-		ID:          realmID,
-		AppServerID: serverReqID,
-		Name:        req.Name,
-		Description: req.Description,
-		Url:         realmURL,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("create realm request: %w", err))
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusCreated, resp)
-}
-
-// UpdateRealm updates a realm request.
-func (s *Service) UpdateRealm(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	appID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
-		return
-	}
-	realmReqID, err := uuid.Parse(chi.URLParam(r, "realmReqID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid realm request ID"})
-		return
-	}
-
-	if !s.isApplicationOwner(ctx, appID) {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	realmReq, err := s.DB.GetServerApplicationRealm(ctx, realmReqID)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "realm request not found"})
-		return
-	}
-	// Verify the realm belongs to this application via its server.
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, realmReq.AppServerID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "realm request not found"})
-		return
-	}
-
-	var req chroniclesdk.AddRealmRequest
-	if !httpapi.Read(ctx, w, r, &req) {
-		return
-	}
-
-	var realmURL pgtype.Text
-	if req.URL != nil {
-		realmURL = pgtype.Text{String: *req.URL, Valid: true}
-	}
-	err = s.DB.UpdateServerApplicationRealm(ctx, database.UpdateServerApplicationRealmParams{
-		ID:          realmReqID,
-		Name:        req.Name,
-		Description: req.Description,
-		Url:         realmURL,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("update realm request: %w", err))
-		return
-	}
-
 	resp, err := s.buildApplicationResponse(ctx, appID, actor)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
@@ -684,14 +288,7 @@ func (s *Service) UpdateRealm(w http.ResponseWriter, r *http.Request) {
 // List returns all applications (admin only).
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	statusFilter := r.URL.Query().Get("status")
-
-	var status pgtype.Text
-	if statusFilter != "" {
-		status = pgtype.Text{String: statusFilter, Valid: true}
-	}
-
-	rows, err := s.DB.ListServerApplications(ctx, status)
+	rows, err := s.DB.ListServerApplications(ctx)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -699,29 +296,22 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 	out := make([]chroniclesdk.ServerApplication, 0, len(rows))
 	for _, row := range rows {
-		app := chroniclesdk.ServerApplication{
-			ID:        row.ID,
+		out = append(out, chroniclesdk.ServerApplication{
+			ID:          row.ID,
 			InitiatedBy: row.InitiatedBy,
 			Username:    row.Username,
-			Status:      row.Status,
 			Name:        row.Name,
 			TenantID:    row.TenantID,
-			CanReview: true,
-			CreatedAt: row.CreatedAt.Time,
-			UpdatedAt: row.UpdatedAt.Time,
-		}
-		if row.AdminNote.Valid {
-			app.AdminNote = &row.AdminNote.String
-		}
-		app.FieldReviews = parseFieldReviews(row.FieldReviews)
-		out = append(out, app)
+			CanReview:   true,
+			CreatedAt:   row.CreatedAt.Time,
+			UpdatedAt:   row.UpdatedAt.Time,
+		})
 	}
-
 	httpapi.Write(ctx, w, http.StatusOK, out)
 }
 
-// ReviewField sets the review status for a tenant branding section.
-func (s *Service) ReviewField(w http.ResponseWriter, r *http.Request) {
+// CreateRequest creates or upserts a pending modification request.
+func (s *Service) CreateRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	actor, ok := authz.ActorFromContext(ctx)
 	if !ok {
@@ -735,47 +325,80 @@ func (s *Service) ReviewField(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req chroniclesdk.ReviewFieldRequest
+	var req chroniclesdk.CreateModificationRequestPayload
 	if !httpapi.Read(ctx, w, r, &req) {
 		return
 	}
-
-	validSections := map[string]bool{"core": true, "slug": true, "description": true, "logos": true, "theme": true}
-	if !validSections[req.Section] {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid section"})
-		return
-	}
-	if req.Status != "approved" && req.Status != "rejected" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "status must be 'approved' or 'rejected'"})
+	if !validModTypes[req.Type] {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid modification type"})
 		return
 	}
 
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
+	var parentID uuid.NullUUID
+	if req.ParentID != nil {
+		parentID = uuid.NullUUID{UUID: *req.ParentID, Valid: true}
+	}
+
+	_, err = s.DB.UpsertPendingModificationRequest(ctx, database.UpsertPendingModificationRequestParams{
+		ID:            uuid.New(),
+		ApplicationID: appID,
+		Type:          req.Type,
+		ParentID:      parentID,
+		Payload:       req.Payload,
+	})
 	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
-		return
-	}
-	if row.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only review pending applications"})
+		httpapi.InternalServerError(w, fmt.Errorf("upsert mod request: %w", err))
 		return
 	}
 
-	reviews := parseFieldReviews(row.FieldReviews)
-	now := time.Now()
-	reviews[req.Section] = chroniclesdk.FieldReview{
-		Status:     req.Status,
-		Note:       req.Note,
-		ReviewedAt: &now,
-	}
-
-	reviewsJSON, err := json.Marshal(reviews)
+	resp, err := s.buildApplicationResponse(ctx, appID, actor)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
-	err = s.DB.UpdateServerApplicationFieldReviews(ctx, database.UpdateServerApplicationFieldReviewsParams{
-		ID:           appID,
-		FieldReviews: reviewsJSON,
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+// UpdateRequest updates a pending modification request's payload.
+func (s *Service) UpdateRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	actor, ok := authz.ActorFromContext(ctx)
+	if !ok {
+		httpapi.Forbidden(w, nil)
+		return
+	}
+
+	appID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
+		return
+	}
+	reqID, err := uuid.Parse(chi.URLParam(r, "reqID"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid request ID"})
+		return
+	}
+
+	modReq, err := s.DB.GetModificationRequestByID(ctx, reqID)
+	if err != nil || modReq.ApplicationID != appID {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "request not found"})
+		return
+	}
+	if modReq.Status != "pending" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only update pending requests"})
+		return
+	}
+
+	var body struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if !httpapi.Read(ctx, w, r, &body) {
+		return
+	}
+
+	err = s.DB.UpdateModificationRequestPayload(ctx, database.UpdateModificationRequestPayloadParams{
+		ID:      reqID,
+		Payload: body.Payload,
 	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
@@ -790,8 +413,52 @@ func (s *Service) ReviewField(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-// Approve finalizes the application approval.
-func (s *Service) Approve(w http.ResponseWriter, r *http.Request) {
+// DeleteRequest deletes a rejected modification request.
+func (s *Service) DeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	actor, ok := authz.ActorFromContext(ctx)
+	if !ok {
+		httpapi.Forbidden(w, nil)
+		return
+	}
+
+	appID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
+		return
+	}
+	reqID, err := uuid.Parse(chi.URLParam(r, "reqID"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid request ID"})
+		return
+	}
+
+	modReq, err := s.DB.GetModificationRequestByID(ctx, reqID)
+	if err != nil || modReq.ApplicationID != appID {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "request not found"})
+		return
+	}
+	if modReq.Status != "rejected" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only delete rejected requests"})
+		return
+	}
+
+	err = s.DB.DeleteModificationRequest(ctx, reqID)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	resp, err := s.buildApplicationResponse(ctx, appID, actor)
+	if err != nil {
+		httpapi.InternalServerError(w, err)
+		return
+	}
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}
+
+// ApproveRequest approves a pending modification request, applying its changes.
+func (s *Service) ApproveRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claims := chronauth.MustAuthenticatedClaims(ctx)
 	actor, ok := authz.ActorFromContext(ctx)
@@ -805,66 +472,49 @@ func (s *Service) Approve(w http.ResponseWriter, r *http.Request) {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
 		return
 	}
+	reqID, err := uuid.Parse(chi.URLParam(r, "reqID"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid request ID"})
+		return
+	}
 
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
+	app, err := s.DB.GetServerApplicationByID(ctx, appID)
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
 		return
 	}
-	if row.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only approve pending applications"})
+
+	modReq, err := s.DB.GetModificationRequestByID(ctx, reqID)
+	if err != nil || modReq.ApplicationID != appID {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "request not found"})
+		return
+	}
+	if modReq.Status != "pending" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only approve pending requests"})
 		return
 	}
 
-	reviews := parseFieldReviews(row.FieldReviews)
-	for _, section := range []string{"core", "slug"} {
-		review, exists := reviews[section]
-		if !exists || review.Status != "approved" {
-			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-				Message: fmt.Sprintf("required section '%s' must be approved first", section),
-			})
+	resourceID, err := s.ApplyModification(ctx, app, modReq)
+	if err != nil {
+		if isUniqueViolation(err) {
+			httpapi.Write(ctx, w, http.StatusConflict, chroniclesdk.Response{Message: "resource already exists with that name"})
 			return
 		}
-	}
-
-	// Verify at least one server+realm is approved.
-	servers, err := s.DB.ListServerApplicationServers(ctx, appID)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	hasApprovedServerWithRealm := false
-	for _, srv := range servers {
-		if srv.Status == "approved" && srv.ServerID.Valid {
-			realms, err := s.DB.ListServerApplicationRealms(ctx, srv.ID)
-			if err != nil {
-				httpapi.InternalServerError(w, err)
-				return
-			}
-			for _, realm := range realms {
-				if realm.Status == "approved" && realm.RealmID.Valid {
-					hasApprovedServerWithRealm = true
-					break
-				}
-			}
-		}
-		if hasApprovedServerWithRealm {
-			break
-		}
-	}
-	if !hasApprovedServerWithRealm {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "at least one server with an approved realm is required",
-		})
+		httpapi.InternalServerError(w, fmt.Errorf("apply modification: %w", err))
 		return
 	}
 
-	reviewedBy := uuid.NullUUID{UUID: claims.Subject, Valid: true}
-	err = s.DB.UpdateServerApplicationStatus(ctx, database.UpdateServerApplicationStatusParams{
-		ID:         appID,
+	now := time.Now()
+	updateParams := database.UpdateModificationRequestStatusParams{
+		ID:         reqID,
 		Status:     "approved",
-		ReviewedBy: reviewedBy,
-	})
+		ReviewedBy: uuid.NullUUID{UUID: claims.Subject, Valid: true},
+		ReviewedAt: pgTimestamptz(now),
+	}
+	if resourceID != nil {
+		updateParams.ResourceID = uuid.NullUUID{UUID: *resourceID, Valid: true}
+	}
+	err = s.DB.UpdateModificationRequestStatus(ctx, updateParams)
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -878,8 +528,8 @@ func (s *Service) Approve(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-// Reject rejects an application.
-func (s *Service) Reject(w http.ResponseWriter, r *http.Request) {
+// RejectRequest rejects a pending modification request.
+func (s *Service) RejectRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claims := chronauth.MustAuthenticatedClaims(ctx)
 	actor, ok := authz.ActorFromContext(ctx)
@@ -893,32 +543,48 @@ func (s *Service) Reject(w http.ResponseWriter, r *http.Request) {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
 		return
 	}
-
-	var req chroniclesdk.RejectApplicationRequest
-	if !httpapi.Read(ctx, w, r, &req) {
+	reqID, err := uuid.Parse(chi.URLParam(r, "reqID"))
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid request ID"})
 		return
 	}
 
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
+	app, err := s.DB.GetServerApplicationByID(ctx, appID)
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
 		return
 	}
-	if row.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "can only reject pending applications"})
+
+	modReq, err := s.DB.GetModificationRequestByID(ctx, reqID)
+	if err != nil || modReq.ApplicationID != appID {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "request not found"})
+		return
+	}
+	if modReq.Status == "approved" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "cannot reject an approved request"})
 		return
 	}
 
-	var adminNote pgtype.Text
-	if req.AdminNote != nil {
-		adminNote = pgtype.Text{String: *req.AdminNote, Valid: true}
+	var body chroniclesdk.ReviewModificationRequest
+	// Body is optional for reject.
+	_ = httpapi.Read(ctx, w, r, &body)
+
+	if err := s.RejectModification(ctx, app, modReq); err != nil {
+		httpapi.InternalServerError(w, fmt.Errorf("reject modification: %w", err))
+		return
 	}
-	reviewedBy := uuid.NullUUID{UUID: claims.Subject, Valid: true}
-	err = s.DB.UpdateServerApplicationStatus(ctx, database.UpdateServerApplicationStatusParams{
-		ID:         appID,
+
+	now := time.Now()
+	var adminNote pgtype.Text
+	if body.AdminNote != nil {
+		adminNote = pgtype.Text{String: *body.AdminNote, Valid: true}
+	}
+	err = s.DB.UpdateModificationRequestStatus(ctx, database.UpdateModificationRequestStatusParams{
+		ID:         reqID,
 		Status:     "rejected",
 		AdminNote:  adminNote,
-		ReviewedBy: reviewedBy,
+		ReviewedBy: uuid.NullUUID{UUID: claims.Subject, Valid: true},
+		ReviewedAt: pgTimestamptz(now),
 	})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
@@ -933,446 +599,170 @@ func (s *Service) Reject(w http.ResponseWriter, r *http.Request) {
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
-// ApproveServer approves a server request, creating the actual wow_server.
-func (s *Service) ApproveServer(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
+// --- Application admins ---
 
+func (s *Service) ListApplicationAdmins(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	appID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
 		return
 	}
-	serverReqID, err := uuid.Parse(chi.URLParam(r, "serverReqID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid server request ID"})
-		return
-	}
 
-	app, err := s.DB.GetServerApplicationByID(ctx, appID)
-	if err != nil {
+	if _, err := s.DB.GetServerApplicationByID(ctx, appID); err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
 		return
 	}
 
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, serverReqID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "server request not found"})
-		return
-	}
-	if srvReq.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "server request is not pending"})
+	userIDs, err := s.Zed.TenantApplicationAdmins(ctx, appID)
+	if err != nil {
+		httpapi.InternalServerError(w, fmt.Errorf("list application admins: %w", err))
 		return
 	}
 
-	// Create actual wow_server (interceptor writes wow_server#chronicle).
-	bypassCtx := servicetenant.AdminBypass(ctx)
-	serverID := uuid.New()
-	var srvURL pgtype.Text
-	if srvReq.Url.Valid {
-		srvURL = srvReq.Url
+	entries := make([]chroniclesdk.ApplicationAdminEntry, 0, len(userIDs))
+	for _, uid := range userIDs {
+		entry := chroniclesdk.ApplicationAdminEntry{UserID: uid}
+		user, err := s.DB.GetUserByID(ctx, uid)
+		if err == nil {
+			entry.Username = user.Username
+		}
+		link, err := s.DB.GetUserAuthLinkByUserID(ctx, uid)
+		if err == nil && link.Provider == "discord" {
+			entry.DiscordID = link.LinkedID
+		}
+		entries = append(entries, entry)
 	}
-	_, err = s.DB.InsertWoWServer(bypassCtx, database.InsertWoWServerParams{
-		ID:          serverID,
-		Name:        srvReq.Name,
-		Description: srvReq.Description,
-		Url:         srvURL,
-		CreatedBy:   uuid.NullUUID{UUID: app.InitiatedBy, Valid: true},
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("create wow server: %w", err))
-		return
-	}
-
-	// Assign server to tenant (interceptor writes wow_server#tenant).
-	err = s.DB.SetServerTenant(bypassCtx, database.SetServerTenantParams{
-		ID:       serverID,
-		TenantID: uuid.NullUUID{UUID: app.TenantID, Valid: true},
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("set server tenant: %w", err))
-		return
-	}
-
-	// Update the server request status.
-	err = s.DB.UpdateServerApplicationServerStatus(ctx, database.UpdateServerApplicationServerStatusParams{
-		ID:       serverReqID,
-		Status:   "approved",
-		ServerID: uuid.NullUUID{UUID: serverID, Valid: true},
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
+	httpapi.Write(ctx, w, http.StatusOK, entries)
 }
 
-// RejectServer rejects a server request.
-func (s *Service) RejectServer(w http.ResponseWriter, r *http.Request) {
+func (s *Service) AddApplicationAdmin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
 	appID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
 		return
 	}
-	serverReqID, err := uuid.Parse(chi.URLParam(r, "serverReqID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid server request ID"})
-		return
-	}
 
-	var req chroniclesdk.ReviewServerRequest
+	var req chroniclesdk.ModifyApplicationAdminRequest
 	if !httpapi.Read(ctx, w, r, &req) {
 		return
 	}
-
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, serverReqID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "server request not found"})
-		return
-	}
-
-	var adminNote pgtype.Text
-	if req.AdminNote != nil {
-		adminNote = pgtype.Text{String: *req.AdminNote, Valid: true}
-	}
-	err = s.DB.UpdateServerApplicationServerStatus(ctx, database.UpdateServerApplicationServerStatusParams{
-		ID:        serverReqID,
-		Status:    "rejected",
-		AdminNote: adminNote,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
-}
-
-// ApproveRealm approves a realm request, creating the actual wow_server_realm.
-func (s *Service) ApproveRealm(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
-	appID, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
-		return
-	}
-	realmReqID, err := uuid.Parse(chi.URLParam(r, "realmReqID"))
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid realm request ID"})
-		return
-	}
-
-	app, err := s.DB.GetServerApplicationByID(ctx, appID)
-	if err != nil {
+	if _, err := s.DB.GetServerApplicationByID(ctx, appID); err != nil {
 		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
 		return
 	}
-
-	realmReq, err := s.DB.GetServerApplicationRealm(ctx, realmReqID)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "realm request not found"})
+	if _, err := s.DB.GetUserByID(ctx, req.UserID); err != nil {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "user not found"})
 		return
 	}
 
-	// Verify the parent server is approved.
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, realmReq.AppServerID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "realm request not found"})
+	if err := s.Zed.AddTenantApplicationAdmin(ctx, appID, req.UserID); err != nil {
+		httpapi.InternalServerError(w, fmt.Errorf("add application admin: %w", err))
 		return
 	}
-	if !srvReq.ServerID.Valid {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
-			Message: "parent server must be approved before approving realms",
-		})
-		return
-	}
-	if realmReq.Status != "pending" {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "realm request is not pending"})
-		return
-	}
-
-	// Create actual realm (interceptor writes wow_server_realm#wow_server).
-	bypassCtx := servicetenant.AdminBypass(ctx)
-	realmID := uuid.New()
-	var realmURL pgtype.Text
-	if realmReq.Url.Valid {
-		realmURL = realmReq.Url
-	}
-	_, err = s.DB.InsertWoWServerRealm(bypassCtx, database.InsertWoWServerRealmParams{
-		ID:        realmID,
-		ServerID:  srvReq.ServerID.UUID,
-		Name:      realmReq.Name,
-		Url:       realmURL,
-		CreatedBy: uuid.NullUUID{UUID: app.InitiatedBy, Valid: true},
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, fmt.Errorf("create realm: %w", err))
-		return
-	}
-
-	err = s.DB.UpdateServerApplicationRealmStatus(ctx, database.UpdateServerApplicationRealmStatusParams{
-		ID:      realmReqID,
-		Status:  "approved",
-		RealmID: uuid.NullUUID{UUID: realmID, Valid: true},
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
+	httpapi.Write(ctx, w, http.StatusNoContent, nil)
 }
 
-// RejectRealm rejects a realm request.
-func (s *Service) RejectRealm(w http.ResponseWriter, r *http.Request) {
+func (s *Service) RemoveApplicationAdmin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	actor, ok := authz.ActorFromContext(ctx)
-	if !ok {
-		httpapi.Forbidden(w, nil)
-		return
-	}
-
 	appID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid application ID"})
 		return
 	}
-	realmReqID, err := uuid.Parse(chi.URLParam(r, "realmReqID"))
+	userID, err := uuid.Parse(chi.URLParam(r, "userID"))
 	if err != nil {
-		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid realm request ID"})
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid user ID"})
 		return
 	}
-
-	var req chroniclesdk.ReviewRealmRequest
-	if !httpapi.Read(ctx, w, r, &req) {
+	if _, err := s.DB.GetServerApplicationByID(ctx, appID); err != nil {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "application not found"})
 		return
 	}
-
-	realmReq, err := s.DB.GetServerApplicationRealm(ctx, realmReqID)
-	if err != nil {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "realm request not found"})
+	if err := s.Zed.RemoveTenantApplicationAdmin(ctx, appID, userID); err != nil {
+		httpapi.InternalServerError(w, fmt.Errorf("remove application admin: %w", err))
 		return
 	}
-	srvReq, err := s.DB.GetServerApplicationServer(ctx, realmReq.AppServerID)
-	if err != nil || srvReq.ApplicationID != appID {
-		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{Message: "realm request not found"})
-		return
-	}
-
-	var adminNote pgtype.Text
-	if req.AdminNote != nil {
-		adminNote = pgtype.Text{String: *req.AdminNote, Valid: true}
-	}
-	err = s.DB.UpdateServerApplicationRealmStatus(ctx, database.UpdateServerApplicationRealmStatusParams{
-		ID:        realmReqID,
-		Status:    "rejected",
-		AdminNote: adminNote,
-	})
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-
-	resp, err := s.buildApplicationResponse(ctx, appID, actor)
-	if err != nil {
-		httpapi.InternalServerError(w, err)
-		return
-	}
-	httpapi.Write(ctx, w, http.StatusOK, resp)
+	httpapi.Write(ctx, w, http.StatusNoContent, nil)
 }
 
-// buildApplicationResponse assembles the full application response from DB rows.
+// --- Response builder ---
+
 func (s *Service) buildApplicationResponse(ctx context.Context, appID uuid.UUID, actor *policy.ObjUser) (chroniclesdk.ServerApplication, error) {
 	row, err := s.DB.GetServerApplicationByID(ctx, appID)
 	if err != nil {
 		return chroniclesdk.ServerApplication{}, fmt.Errorf("get application: %w", err)
 	}
 
-	// Load tenant.
 	tenant, err := s.DB.GetTenantByID(servicetenant.AdminBypass(ctx), row.TenantID)
 	if err != nil {
 		return chroniclesdk.ServerApplication{}, fmt.Errorf("get tenant: %w", err)
 	}
 
-	// Load servers and realms.
-	srvRows, err := s.DB.ListServerApplicationServers(ctx, appID)
+	modReqs, err := s.DB.ListModificationRequestsByApplicationID(ctx, appID)
 	if err != nil {
-		return chroniclesdk.ServerApplication{}, fmt.Errorf("list servers: %w", err)
-	}
-	realmRows, err := s.DB.ListServerApplicationRealmsByApplicationID(ctx, appID)
-	if err != nil {
-		return chroniclesdk.ServerApplication{}, fmt.Errorf("list realms: %w", err)
+		return chroniclesdk.ServerApplication{}, fmt.Errorf("list mod requests: %w", err)
 	}
 
-	// Group realms by server.
-	realmsByServer := make(map[uuid.UUID][]chroniclesdk.ServerApplicationRealm)
-	for _, realm := range realmRows {
-		r := chroniclesdk.ServerApplicationRealm{
-			ID:          realm.ID,
-			Name:        realm.Name,
-			Description: realm.Description,
-			Status:      realm.Status,
-			CreatedAt:   realm.CreatedAt.Time,
+	requests := make([]chroniclesdk.ModificationRequest, 0, len(modReqs))
+	for _, mr := range modReqs {
+		payload := mr.Payload
+		// Clean corrupted theme payloads before sending to the frontend.
+		if mr.Type == "theme" {
+			var tp chroniclesdk.ThemePayload
+			if err := json.Unmarshal(mr.Payload, &tp); err == nil {
+				tp.Theme = cleanThemeMap(tp.Theme)
+				if cleaned, err := json.Marshal(tp); err == nil {
+					payload = cleaned
+				}
+			}
 		}
-		if realm.Url.Valid {
-			r.URL = &realm.Url.String
+		req := chroniclesdk.ModificationRequest{
+			ID:            mr.ID,
+			ApplicationID: mr.ApplicationID,
+			Type:          mr.Type,
+			Payload:       payload,
+			Status:        mr.Status,
+			CreatedAt:     mr.CreatedAt.Time,
+			UpdatedAt:     mr.UpdatedAt.Time,
 		}
-		if realm.AdminNote.Valid {
-			r.AdminNote = &realm.AdminNote.String
+		if mr.ParentID.Valid {
+			req.ParentID = &mr.ParentID.UUID
 		}
-		if realm.RealmID.Valid {
-			r.RealmID = &realm.RealmID.UUID
+		if mr.AdminNote.Valid {
+			req.AdminNote = &mr.AdminNote.String
 		}
-		realmsByServer[realm.AppServerID] = append(realmsByServer[realm.AppServerID], r)
+		if mr.ReviewedBy.Valid {
+			req.ReviewedBy = &mr.ReviewedBy.UUID
+		}
+		if mr.ReviewedAt.Valid {
+			t := mr.ReviewedAt.Time
+			req.ReviewedAt = &t
+		}
+		if mr.ResourceID.Valid {
+			req.ResourceID = &mr.ResourceID.UUID
+		}
+		requests = append(requests, req)
 	}
 
-	servers := make([]chroniclesdk.ServerApplicationServer, 0, len(srvRows))
-	for _, srv := range srvRows {
-		s := chroniclesdk.ServerApplicationServer{
-			ID:          srv.ID,
-			Name:        srv.Name,
-			Description: srv.Description,
-			Status:      srv.Status,
-			Realms:      realmsByServer[srv.ID],
-			CreatedAt:   srv.CreatedAt.Time,
-		}
-		if s.Realms == nil {
-			s.Realms = []chroniclesdk.ServerApplicationRealm{}
-		}
-		if srv.Url.Valid {
-			s.URL = &srv.Url.String
-		}
-		if srv.AdminNote.Valid {
-			s.AdminNote = &srv.AdminNote.String
-		}
-		if srv.ServerID.Valid {
-			s.ServerID = &srv.ServerID.UUID
-		}
-		servers = append(servers, s)
-	}
-
-	// Check if the caller can review.
 	canReview, _ := s.Zed.CheckOne(ctx, nil, policy.New().GlobalChronicle().CanAdmin_tenants_User(actor))
 
-	app := chroniclesdk.ServerApplication{
-		ID:           row.ID,
-		InitiatedBy:  row.InitiatedBy,
-		Username:     row.Username,
-		Status:       row.Status,
-		Name:         row.Name,
-		TenantID:     row.TenantID,
-		Tenant:       chroniclesdk.TenantFromDB(tenant),
-		FieldReviews: parseFieldReviews(row.FieldReviews),
-		Servers:      servers,
-		CanReview:    canReview,
-		CreatedAt:    row.CreatedAt.Time,
-		UpdatedAt:    row.UpdatedAt.Time,
-	}
-	if row.AdminNote.Valid {
-		app.AdminNote = &row.AdminNote.String
-	}
-
-	return app, nil
+	return chroniclesdk.ServerApplication{
+		ID:          row.ID,
+		InitiatedBy: row.InitiatedBy,
+		Username:    row.Username,
+		Name:        row.Name,
+		TenantID:    row.TenantID,
+		Tenant:      chroniclesdk.TenantFromDB(tenant),
+		Requests:    requests,
+		CanReview:   canReview,
+		CreatedAt:   row.CreatedAt.Time,
+		UpdatedAt:   row.UpdatedAt.Time,
+	}, nil
 }
 
-// isApplicationOwner checks if the given user owns the application.
-func (s *Service) isApplicationOwner(ctx context.Context, appID uuid.UUID) bool {
-	claims := chronauth.MustAuthenticatedClaims(ctx)
-	row, err := s.DB.GetServerApplicationByID(ctx, appID)
-	if err != nil {
-		return false
-	}
-	return row.InitiatedBy == claims.Subject
-}
-
-// parseFieldReviews deserializes the JSONB field_reviews column.
-func parseFieldReviews(data []byte) map[string]chroniclesdk.FieldReview {
-	reviews := make(map[string]chroniclesdk.FieldReview)
-	if len(data) > 0 {
-		_ = json.Unmarshal(data, &reviews)
-	}
-	return reviews
-}
-
-// resetAffectedReviews resets review status to "pending" for sections whose fields changed.
-func (s *Service) resetAffectedReviews(ctx context.Context, row database.GetServerApplicationByIDRow, req chroniclesdk.UpdateServerApplicationRequest) {
-	reviews := parseFieldReviews(row.FieldReviews)
-	changed := false
-
-	if req.Name != nil || req.DisplayName != nil || req.Tagline != nil || req.Tags != nil {
-		if review, ok := reviews["core"]; ok && review.Status == "rejected" {
-			reviews["core"] = chroniclesdk.FieldReview{Status: "pending"}
-			changed = true
-		}
-	}
-	if req.Slug != nil {
-		if review, ok := reviews["slug"]; ok && review.Status == "rejected" {
-			reviews["slug"] = chroniclesdk.FieldReview{Status: "pending"}
-			changed = true
-		}
-	}
-	if req.Description != nil {
-		if review, ok := reviews["description"]; ok && review.Status == "rejected" {
-			reviews["description"] = chroniclesdk.FieldReview{Status: "pending"}
-			changed = true
-		}
-	}
-	if req.Branding != nil {
-		if req.Branding.SquareLogo != "" || req.Branding.LogoWide != "" || req.Branding.Favicon != "" || req.Branding.BackgroundBanner != "" {
-			if review, ok := reviews["logos"]; ok && review.Status == "rejected" {
-				reviews["logos"] = chroniclesdk.FieldReview{Status: "pending"}
-				changed = true
-			}
-		}
-		if len(req.Branding.Theme) > 0 {
-			if review, ok := reviews["theme"]; ok && review.Status == "rejected" {
-				reviews["theme"] = chroniclesdk.FieldReview{Status: "pending"}
-				changed = true
-			}
-		}
-	}
-
-	if changed {
-		reviewsJSON, err := json.Marshal(reviews)
-		if err != nil {
-			return
-		}
-		_ = s.DB.UpdateServerApplicationFieldReviews(ctx, database.UpdateServerApplicationFieldReviewsParams{
-			ID:           row.ID,
-			FieldReviews: reviewsJSON,
-		})
-	}
+// pgTimestamptz converts a time.Time to pgtype.Timestamptz.
+func pgTimestamptz(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Valid: true}
 }

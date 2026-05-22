@@ -636,6 +636,21 @@ func AllWowPlayableRaceValues() []WowPlayableRace {
 	}
 }
 
+type ApplicationModificationRequest struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	ApplicationID uuid.UUID          `db:"application_id" json:"application_id"`
+	Type          string             `db:"type" json:"type"`
+	ParentID      uuid.NullUUID      `db:"parent_id" json:"parent_id"`
+	Payload       []byte             `db:"payload" json:"payload"`
+	Status        string             `db:"status" json:"status"`
+	AdminNote     pgtype.Text        `db:"admin_note" json:"admin_note"`
+	ReviewedBy    uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
+	ReviewedAt    pgtype.Timestamptz `db:"reviewed_at" json:"reviewed_at"`
+	ResourceID    uuid.NullUUID      `db:"resource_id" json:"resource_id"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type AuthzSchemaMigration struct {
 	Version   int32              `db:"version" json:"version"`
 	AppliedAt pgtype.Timestamptz `db:"applied_at" json:"applied_at"`
@@ -1103,42 +1118,12 @@ type RiverQueue struct {
 }
 
 type ServerApplication struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	InitiatedBy  uuid.UUID          `db:"initiated_by" json:"initiated_by"`
-	Status       string             `db:"status" json:"status"`
-	Name         string             `db:"name" json:"name"`
-	FieldReviews []byte             `db:"field_reviews" json:"field_reviews"`
-	AdminNote    pgtype.Text        `db:"admin_note" json:"admin_note"`
-	ReviewedBy   uuid.NullUUID      `db:"reviewed_by" json:"reviewed_by"`
-	TenantID     uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
-type ServerApplicationRealm struct {
 	ID          uuid.UUID          `db:"id" json:"id"`
-	AppServerID uuid.UUID          `db:"app_server_id" json:"app_server_id"`
+	InitiatedBy uuid.UUID          `db:"initiated_by" json:"initiated_by"`
 	Name        string             `db:"name" json:"name"`
-	Description string             `db:"description" json:"description"`
-	Url         pgtype.Text        `db:"url" json:"url"`
-	Status      string             `db:"status" json:"status"`
-	AdminNote   pgtype.Text        `db:"admin_note" json:"admin_note"`
-	RealmID     uuid.NullUUID      `db:"realm_id" json:"realm_id"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
 	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
-type ServerApplicationServer struct {
-	ID            uuid.UUID          `db:"id" json:"id"`
-	ApplicationID uuid.UUID          `db:"application_id" json:"application_id"`
-	Name          string             `db:"name" json:"name"`
-	Description   string             `db:"description" json:"description"`
-	Url           pgtype.Text        `db:"url" json:"url"`
-	Status        string             `db:"status" json:"status"`
-	AdminNote     pgtype.Text        `db:"admin_note" json:"admin_note"`
-	ServerID      uuid.NullUUID      `db:"server_id" json:"server_id"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type ServerUploadMetum struct {

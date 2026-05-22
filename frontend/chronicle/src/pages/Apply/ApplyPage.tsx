@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthorizationCheck, useMyServerApplication, useCreateServerApplication } from "@/api/queries";
-import type { CreateServerApplicationRequest, CreateServerRequest, CreateRealmRequest } from "@/api/typesGenerated";
+import { useAuthorizationCheck, useMyServerApplications, useCreateServerApplication } from "@/api/queries";
+import type { CreateServerApplicationRequest, CreateServerRequest, CreateRealmRequest, ServerApplication } from "@/api/typesGenerated";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn, CheckCircle2, XCircle, Plus, Trash2, Server, Globe } from "lucide-react";
@@ -274,13 +274,43 @@ function CreateApplicationForm() {
   );
 }
 
+function ApplicationSelector({ apps }: { apps: ServerApplication[] }) {
+  return (
+    <div className="max-w-2xl mx-auto p-8">
+      <Card className="p-6 space-y-4">
+        <h2 className="text-lg font-semibold">Your Applications</h2>
+        <p className="text-sm text-muted-foreground">
+          You have access to multiple server applications. Select one to view.
+        </p>
+        <div className="space-y-2">
+          {apps.map((app) => (
+            <Link
+              key={app.id}
+              to={`/apply/${app.id}`}
+              className="flex items-center justify-between rounded-md border px-4 py-3 hover:bg-accent transition-colors"
+            >
+              <div>
+                <p className="font-medium">{app.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {app.tenant?.branding?.display_name || app.name}
+                  {app.requests && ` · ${app.requests.filter((r) => r.status === "pending").length} pending`}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 export function ApplyPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const authzChecks = useMemo(() => ({ canApply: "chronicle:chronicle#create_tenant_application" }), []);
   const { data: authz, isLoading: authzLoading } = useAuthorizationCheck(authzChecks, {
     enabled: isAuthenticated,
   });
-  const { data: existingApp, isLoading: appLoading } = useMyServerApplication();
+  const { data: existingApps, isLoading: appLoading } = useMyServerApplications();
 
   const isLoading = authLoading || (isAuthenticated && (authzLoading || appLoading));
 
@@ -325,8 +355,12 @@ export function ApplyPage() {
     return <RequirementsChecklist />;
   }
 
-  if (existingApp) {
-    return <Navigate to={`/apply/${existingApp.id}`} replace />;
+  if (existingApps && existingApps.length === 1) {
+    return <Navigate to={`/apply/${existingApps[0].id}`} replace />;
+  }
+
+  if (existingApps && existingApps.length > 1) {
+    return <ApplicationSelector apps={existingApps} />;
   }
 
   return <CreateApplicationForm />;

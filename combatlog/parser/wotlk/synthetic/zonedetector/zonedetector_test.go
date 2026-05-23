@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -31,7 +32,7 @@ func TestZoneDetector_EmitsZoneOnNexusCreature(t *testing.T) {
 	t.Parallel()
 
 	reg := registry.AzerothcoreStaticRegistry(slog.Default())
-	zd := zonedetector.New(reg)
+	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	msg := unitMsg(ts, creatureGUID(26763)) // Anomalus
@@ -50,7 +51,7 @@ func TestZoneDetector_NoDuplicateZone(t *testing.T) {
 	t.Parallel()
 
 	reg := registry.AzerothcoreStaticRegistry(slog.Default())
-	zd := zonedetector.New(reg)
+	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	msg := unitMsg(ts, creatureGUID(26731)) // Grand Magus Telestra
@@ -68,7 +69,7 @@ func TestZoneDetector_IgnoresPlayerGUID(t *testing.T) {
 	t.Parallel()
 
 	reg := registry.AzerothcoreStaticRegistry(slog.Default())
-	zd := zonedetector.New(reg)
+	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	msg := unitMsg(ts, guid.GUID(0x0000000000000001)) // player

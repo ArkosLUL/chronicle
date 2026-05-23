@@ -29,6 +29,12 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Gilneas City": { background: "/c/images/loadingscreens/LoadScreenGilneasCity.webp", bossCount: 3, abbrev: "Gilneas", },
   "Icecrown Citadel": { background: "/c/images/loadingscreens/loadscreenicecrowncitadel.webp", bossCount: 12, abbrev: "ICC", category: "raid" },
   "Ruby Sanctum": { background: "/c/images/loadingscreens/loadscreenrubysanctum.webp", bossCount: 1, abbrev: "RS", category: "raid" },
+  "Vault of Archavon": { background: "/c/images/loadingscreens/LoadScreenVaultofArchavon.webp", bossCount: 4, abbrev: "VoA", category: "raid" },
+  "Obsidian Sanctum": { background: "/c/images/loadingscreens/LoadScreenObsidianSanctum.webp", bossCount: 1, abbrev: "OS", category: "raid" },
+  "Eye of Eternity": { background: "/c/images/loadingscreens/LoadScreenEyeofEternity.webp", bossCount: 1, abbrev: "EoE", category: "raid" },
+  "Trial of the Crusader": { background: "/c/images/loadingscreens/LoadScreenTrialoftheCrusader.webp", bossCount: 5, abbrev: "ToC", category: "raid" },
+  "Ulduar": { background: "/c/images/loadingscreens/LoadScreenUlduar.webp", bossCount: 14, abbrev: "Uld", category: "raid" },
+
   // TBC Raids
   "Zul'Aman": { background: "/c/images/loadingscreens/LOADSCREENZULAMAN.webp", bossCount: 6, abbrev: "ZA", category: "raid" },
   "Black Temple": { background: "/c/images/loadingscreens/LoadScreenBlackTemple.webp", bossCount: 9, abbrev: "BT", category: "raid" },
@@ -67,6 +73,8 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Gnomeregan": { background: "/c/images/loadingscreens/LoadScreenGnomeregan.webp", abbrev: "Gnomer" },
   "Ragefire Chasm": { background: "/c/images/loadingscreens/LoadScreenRagefireChasm.webp", bossCount: 4, abbrev: "RFC" },
   "Stormwind Stockade": { background: "/c/images/loadingscreens/LoadScreenStormwindStockade.webp", abbrev: "Stocks" },
+  "Stormwind Vault": { background: "/c/images/loadingscreens/LoadScreenStormwindStockade.webp", abbrev: "SV" },
+
   "Stockade": { background: "/c/images/loadingscreens/LoadScreenStormwindStockade.webp", abbrev: "Stocks" },
   "Caverns of Time": { background: "/c/images/loadingscreens/LoadScreenCavernsTime.webp", abbrev: "CoT" },
   // TBC Dungeons
@@ -86,6 +94,19 @@ export const INSTANCE_CONFIG: Record<string, InstanceConfig> = {
   "Forge of Souls": { background: "/c/images/loadingscreens/loadscreenicecrown5man.webp", abbrev: "FoS" },
   "Pit of Saron": { background: "/c/images/loadingscreens/loadscreenpitofsaron.webp", abbrev: "PoS" },
   "Halls of Reflection": { background: "/c/images/loadingscreens/loadscreenhallsofreflection.webp", abbrev: "HoR" },
+  "The Oculus": { background: "/c/images/loadingscreens/LoadScreenTheOculus.webp", abbrev: "Ocu" },
+  "Utgarde Keep": { background: "/c/images/loadingscreens/LoadScreenUtgardeKeep.webp", abbrev: "UK" },
+  "Utgarde Pinnacle": { background: "/c/images/loadingscreens/LoadScreenUtgardePinnacle.webp", abbrev: "UP" },
+  "Culling of Stratholme": { background: "/c/images/loadingscreens/LoadScreenCullingofStratholme.webp", abbrev: "CoS" },
+  "Halls of Stone": { background: "/c/images/loadingscreens/LoadScreenHallsofStone.webp", abbrev: "HoS" },
+  "Halls of Lightning": { background: "/c/images/loadingscreens/LoadScreenHallsofLightning.webp", abbrev: "HoL" },
+  "Drak'Tharon Keep": { background: "/c/images/loadingscreens/LoadScreenDrakTharonKeep.webp", abbrev: "DTK" },
+  "Azjol-Nerub": { background: "/c/images/loadingscreens/LoadScreenAzjolNerub.webp", abbrev: "AN" },
+  "Gundrak": { background: "/c/images/loadingscreens/LoadScreenGundrak.webp", abbrev: "GD" },
+  "Violet Hold": { background: "/c/images/loadingscreens/LoadScreenVioletHold.webp", abbrev: "VH" },
+  "Ahn'kahet: The Old Kingdom": { background: "/c/images/loadingscreens/LoadScreenAhnkahet.webp", abbrev: "OK" },
+  "Trial of the Champion": { background: "/c/images/loadingscreens/LoadScreenTrialoftheChampion.webp", abbrev: "ToC5" },
+
 };
 
 export const DEFAULT_BACKGROUND = "/c/images/loadingscreens/LoadScreenDungeon.webp";

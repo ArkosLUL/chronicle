@@ -233,7 +233,7 @@ var (
 
 	SunkenTempleFactory = &CommonFactory{
 		Name:      "Sunken Temple",
-		ZoneNames: []string{"the temple of atal'hakkar", "阿塔哈卡神庙"},
+		ZoneNames: []string{"subken temple", "the temple of atal'hakkar", "阿塔哈卡神庙"},
 		Hostiles:  FromMap(SunkenTempleHostiles()),
 	}
 

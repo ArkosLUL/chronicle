@@ -423,7 +423,7 @@ export function InstancePage() {
   );
 }
 
-function AddonMissingBanner({ instance }: { instance: InstanceData }) {
+function AddonMissingBanner({ instance }: { instance: Instance }) {
   const hasAddon = !!instance.versions?.["addon"];
   const isServerSide = instance.capabilities?.includes("server-side");
 

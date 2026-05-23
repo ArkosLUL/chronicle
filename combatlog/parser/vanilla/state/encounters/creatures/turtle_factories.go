@@ -11,6 +11,8 @@ func TurtleCharacterFactories() []characters.CharacterFactory {
 		NewTotemCharacter,
 		NewCritterCharacter,
 		NewObject,
+		// Sunken Temple
+		NewAtalalDeathwalkerSpirit,
 		// Wailing Caverns
 		NewDiscipleOfNaralex,
 		// Deadmines

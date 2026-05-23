@@ -1586,17 +1586,6 @@ func ZulFarrakHostiles() map[uint32]Identity {
 		7795: "Hydromancer Velratha",
 	})
 
-	// Known event helpers and triggers in the dungeon should not be reported as
-	// unknown units, but they also should not drive encounter classification.
-	hostile[7604] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[7605] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[7606] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[7607] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[7608] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[10081] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[12999] = Identity{Affiliation: types.AffiliationUnknown}
-	hostile[141612] = Identity{Affiliation: types.AffiliationUnknown}
-
 	return hostile
 }
 

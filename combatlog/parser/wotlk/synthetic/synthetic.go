@@ -35,7 +35,7 @@ type Synthetic struct {
 func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB, reg *registry.Registry, names NameResolver) *Synthetic {
 	var zd *zonedetector.ZoneDetector
 	if reg != nil {
-		zonedetector.New(reg)
+		zd = zonedetector.New(logger, reg)
 	}
 
 	return &Synthetic{

@@ -1,6 +1,8 @@
 package zonedetector
 
 import (
+	"log/slog"
+
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
@@ -13,15 +15,32 @@ type ZoneDetector struct {
 	// entryToZone maps creature entry ID → zone name (lowercase).
 	entryToZone map[uint32]string
 	currentZone string
+	logger      *slog.Logger
+
+	sawReal bool
 }
 
 // New builds a ZoneDetector from a registry, indexing all hostile entries
 // across all registered instances.
-func New(reg *registry.Registry) *ZoneDetector {
+func New(logger *slog.Logger, reg *registry.Registry) *ZoneDetector {
 	lookup := make(map[uint32]string)
+	notUnique := make(map[uint32]struct{})
+
 	for _, entry := range reg.Entries() {
 		for entryID := range entry.HostileEntries {
 			for _, zn := range entry.ZoneNames {
+				_, exists := notUnique[entryID]
+				if exists {
+					continue
+				}
+
+				_, exists = lookup[entryID]
+				if exists {
+					delete(lookup, entryID)
+					notUnique[entryID] = struct{}{}
+					continue
+				}
+
 				lookup[entryID] = zn
 				break // one zone name per entry is sufficient
 			}
@@ -29,16 +48,29 @@ func New(reg *registry.Registry) *ZoneDetector {
 	}
 	return &ZoneDetector{
 		entryToZone: lookup,
+		logger:      logger,
 	}
 }
+
+var c int
 
 // ProcessMessages scans messages for creature GUIDs that belong to a known
 // instance. When a new zone is detected, a synthetic Zone message is prepended.
 func (zd *ZoneDetector) ProcessMessages(msgs []messages.Message) []messages.Message {
-	if zd == nil {
-    return msgs
-  }
-  for _, msg := range msgs {
+	if zd == nil || zd.sawReal {
+		return msgs
+	}
+
+	for _, msg := range msgs {
+		switch ty := msg.(type) {
+		case *messages.Zone:
+			if !ty.Synthetic {
+				// If we see a real zone message, we don't need this logic anymore.
+				zd.sawReal = true
+				return msgs
+			}
+		}
+
 		for _, g := range msg.Affects() {
 			entry, ok := g.GetEntry()
 			if !ok {
@@ -52,14 +84,20 @@ func (zd *ZoneDetector) ProcessMessages(msgs []messages.Message) []messages.Mess
 				continue
 			}
 			zd.currentZone = zoneName
+
 			synthetic := &messages.Zone{
-				MessageBase: messages.Base(msg.Date()),
+				MessageBase: messages.Base(msg.Date(), messages.WithSynthetic()),
 				Zone: zone.Zone{
 					Seen:       msg.Date(),
 					Name:       zoneName,
 					IsInstance: true,
 				},
 			}
+			zd.logger.Info("detected zone change",
+				slog.String("zone", zoneName),
+				slog.Time("timestamp", msg.Date()),
+				slog.Uint64("unit", uint64(entry)),
+			)
 			return append([]messages.Message{synthetic}, msgs...)
 		}
 	}

@@ -3,9 +3,11 @@ package zoner
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
+	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
 type Location struct {
+	synthetic *bool
 	zone.Zone
 }
 
@@ -20,6 +22,14 @@ func (l *Location) Process(z messages.Zone) zone.ZoneChangeResult {
 		// Ignore empty zones
 		return zone.NoChange
 	}
+
+	if l.synthetic != nil && !*l.synthetic && z.Synthetic {
+		// Synthetic zones cant override non-synthetic zones.
+		return zone.NoChange
+	}
+
+	// At this point we track the "synthetic" property and propagate it properly
+	l.setSynthetic(z.Synthetic)
 
 	if !l.Equal(z.Zone) {
 		l.Zone = z.Zone
@@ -44,4 +54,15 @@ func (l *Location) Process(z messages.Zone) zone.ZoneChangeResult {
 		}
 	}
 	return zone.NoChange
+}
+
+func (l *Location) setSynthetic(synthetic bool) {
+	if l.synthetic == nil {
+		l.synthetic = &synthetic
+		return
+	}
+
+	// Once set to false, it should never become true again. Synthetic zones should
+	// never override a real zone.
+	l.synthetic = ptr.Ref(*l.synthetic && synthetic)
 }

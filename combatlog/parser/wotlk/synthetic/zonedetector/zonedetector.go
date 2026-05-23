@@ -52,8 +52,6 @@ func New(logger *slog.Logger, reg *registry.Registry) *ZoneDetector {
 	}
 }
 
-var c int
-
 // ProcessMessages scans messages for creature GUIDs that belong to a known
 // instance. When a new zone is detected, a synthetic Zone message is prepended.
 func (zd *ZoneDetector) ProcessMessages(msgs []messages.Message) []messages.Message {

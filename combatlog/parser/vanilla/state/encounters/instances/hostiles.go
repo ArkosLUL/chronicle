@@ -1428,7 +1428,6 @@ func SunkenTempleHostiles() map[uint32]Identity {
 		5267:  "Unliving Atal'ai",
 		8257:  "Oozeling",
 		5256:  "Atal'ai Warrior",
-		5720:  "Weaver",
 		5712:  "Zolo",
 		5271:  "Atal'ai Deathwalker",
 		5259:  "Atal'ai Witch Doctor",
@@ -1441,9 +1440,13 @@ func SunkenTempleHostiles() map[uint32]Identity {
 		5708:  "Spawn of Hakkar",
 		5711:  "Ogom the Wretched",
 		15593: "Elder Starsong",
+		510:   "Water Elemental",
+		8324:  "Atal'ai Skeleton",
+		8656:  "Hukku's Voidwalker",
+		8657:  "Hukku's Succubus",
+		8658:  "Hukku's Imp",
 	})
 	LoadBosses(hostile, map[uint32]string{
-		5708: "Spawn of Hakkar",
 		5710: "Jammal'an the Prophet",
 		5711: "Ogom the Wretched",
 		5721: "Dreamscythe",

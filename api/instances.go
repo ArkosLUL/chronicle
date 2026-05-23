@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -155,6 +156,15 @@ func (api *API) InstanceSpeedrun(w http.ResponseWriter, r *http.Request) {
 			MinAddonVersion:  req.MinAddonVersion,
 			AddonQualified:   sr.AddonVersionNum >= req.MinAddonVersionNum,
 		}
+	}
+
+	// Attach data source eligibility status.
+	hasServerSide := slices.Contains(sr.Capabilities, "server-side")
+	hasAddonVersion := sr.AddonVersion != ""
+	result.DataSourceStatus = &chroniclesdk.SpeedrunDataSourceStatus{
+		HasServerSide:   hasServerSide,
+		HasAddonVersion: hasAddonVersion,
+		Eligible:        hasServerSide || hasAddonVersion,
 	}
 
 	httpapi.Write(ctx, w, http.StatusOK, result)

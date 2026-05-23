@@ -5228,12 +5228,32 @@ func (q *sqlQuerier) UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigP
 }
 
 const getInstanceSpeedrun = `-- name: GetInstanceSpeedrun :one
-SELECT instance_id, instance_name, realm_id, guild_id, qualified, start_time, completion_time, duration_ms, proof, created_at, addon_version, parser_version_num, addon_version_num FROM instance_speedruns WHERE instance_id = $1
+SELECT sr.instance_id, sr.instance_name, sr.realm_id, sr.guild_id, sr.qualified, sr.start_time, sr.completion_time, sr.duration_ms, sr.proof, sr.created_at, sr.addon_version, sr.parser_version_num, sr.addon_version_num, li.capabilities
+FROM instance_speedruns sr
+JOIN log_instances li ON li.id = sr.instance_id
+WHERE sr.instance_id = $1
 `
 
-func (q *sqlQuerier) GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UUID) (InstanceSpeedrun, error) {
+type GetInstanceSpeedrunRow struct {
+	InstanceID       uuid.UUID          `db:"instance_id" json:"instance_id"`
+	InstanceName     string             `db:"instance_name" json:"instance_name"`
+	RealmID          uuid.UUID          `db:"realm_id" json:"realm_id"`
+	GuildID          uuid.NullUUID      `db:"guild_id" json:"guild_id"`
+	Qualified        bool               `db:"qualified" json:"qualified"`
+	StartTime        pgtype.Timestamptz `db:"start_time" json:"start_time"`
+	CompletionTime   pgtype.Timestamptz `db:"completion_time" json:"completion_time"`
+	DurationMs       int64              `db:"duration_ms" json:"duration_ms"`
+	Proof            []byte             `db:"proof" json:"proof"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	AddonVersion     string             `db:"addon_version" json:"addon_version"`
+	ParserVersionNum int64              `db:"parser_version_num" json:"parser_version_num"`
+	AddonVersionNum  int64              `db:"addon_version_num" json:"addon_version_num"`
+	Capabilities     []string           `db:"capabilities" json:"capabilities"`
+}
+
+func (q *sqlQuerier) GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UUID) (GetInstanceSpeedrunRow, error) {
 	row := q.db.QueryRow(ctx, getInstanceSpeedrun, instanceID)
-	var i InstanceSpeedrun
+	var i GetInstanceSpeedrunRow
 	err := row.Scan(
 		&i.InstanceID,
 		&i.InstanceName,
@@ -5248,6 +5268,7 @@ func (q *sqlQuerier) GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UU
 		&i.AddonVersion,
 		&i.ParserVersionNum,
 		&i.AddonVersionNum,
+		&i.Capabilities,
 	)
 	return i, err
 }

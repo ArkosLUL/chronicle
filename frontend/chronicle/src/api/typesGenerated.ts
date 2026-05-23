@@ -1501,6 +1501,17 @@ export const SocialPlatforms: SocialPlatform[] = ["discord", "twitch", "twitter"
 
 // From chroniclesdk/log.go
 /**
+ * SpeedrunDataSourceStatus reports whether the instance has a valid data source
+ * (server-side capability or addon version) required for speedrun eligibility.
+ */
+export interface SpeedrunDataSourceStatus {
+    readonly has_server_side: boolean;
+    readonly has_addon_version: boolean;
+    readonly eligible: boolean;
+}
+
+// From chroniclesdk/log.go
+/**
  * SpeedrunKillRecord captures a single kill contributing to a requirement.
  */
 export interface SpeedrunKillRecord {
@@ -1600,6 +1611,7 @@ export interface SpeedrunResult {
     readonly proof: readonly SpeedrunProof[];
     readonly version_status?: SpeedrunVersionStatus;
     readonly level_range?: SpeedrunLevelRangeResult;
+    readonly data_source?: SpeedrunDataSourceStatus;
 }
 
 // From chroniclesdk/log.go

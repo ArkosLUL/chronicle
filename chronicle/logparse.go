@@ -710,6 +710,14 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 					addonVersion = finalized.Versions["chronicle_companion"]
 				}
 				parserVer := version.GitTag + "+" + version.GitCommit
+
+				// Data source rule: require server-side capability or addon version
+				// for a speedrun to be eligible.
+				qualified := sr.Qualified
+				if !slices.Contains(logCapabilities, "server-side") && addonVersion == "" {
+					qualified = false
+				}
+
 				err = tx.InsertInstanceSpeedrun(ctx, database.InsertInstanceSpeedrunParams{
 					InstanceID:   dbinstance.ID,
 					InstanceName: inst.Name(),
@@ -718,7 +726,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 						UUID:  guildID,
 						Valid: guildID != uuid.Nil,
 					},
-					Qualified:        sr.Qualified,
+					Qualified:        qualified,
 					StartTime:        database.Timestamptz(sr.StartTime),
 					CompletionTime:   database.Timestamptz(sr.CompletionTime),
 					DurationMs:       sr.Duration.Milliseconds(),

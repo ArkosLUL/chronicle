@@ -151,6 +151,28 @@ function LeaderboardContent(props: PanelRenderProps<LeaderboardPanelResult>) {
         </div>
       )}
 
+      {speedrun.data_source && (
+        <div className="mt-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center gap-1.5 text-xs mb-1">
+            {speedrun.data_source.eligible ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+            ) : (
+              <XCircle className="h-3 w-3 text-red-500 shrink-0" />
+            )}
+            <span className="font-medium text-zinc-500">
+              Data Source:{" "}
+              <span className={speedrun.data_source.eligible ? "text-zinc-300" : "text-red-400"}>
+                {speedrun.data_source.has_server_side
+                  ? "Server-side"
+                  : speedrun.data_source.has_addon_version
+                    ? "Addon"
+                    : "No server-side capability or addon version detected"}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {speedrun.level_range && (
         <div className="mt-3 pt-3 border-t border-zinc-800">
           <div className="flex items-center gap-1.5 text-xs mb-1">

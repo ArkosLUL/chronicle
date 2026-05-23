@@ -6,7 +6,10 @@ INSERT INTO instance_speedruns (
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
 
 -- name: GetInstanceSpeedrun :one
-SELECT * FROM instance_speedruns WHERE instance_id = $1;
+SELECT sr.*, li.capabilities
+FROM instance_speedruns sr
+JOIN log_instances li ON li.id = sr.instance_id
+WHERE sr.instance_id = $1;
 
 -- name: SpeedrunLeaderboard :many
 -- Returns the leaderboard for a given instance name.

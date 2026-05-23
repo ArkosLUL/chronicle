@@ -301,8 +301,17 @@ type SpeedrunResult struct {
 	CompletionTime time.Time                 `json:"completion_time"`
 	DurationMs     int64                     `json:"duration_ms"`
 	Proof          []SpeedrunProof           `json:"proof"`
-	VersionStatus  *SpeedrunVersionStatus    `json:"version_status,omitempty"`
-	LevelRange     *SpeedrunLevelRangeResult `json:"level_range,omitempty"`
+	VersionStatus    *SpeedrunVersionStatus      `json:"version_status,omitempty"`
+	LevelRange       *SpeedrunLevelRangeResult   `json:"level_range,omitempty"`
+	DataSourceStatus *SpeedrunDataSourceStatus   `json:"data_source,omitempty"`
+}
+
+// SpeedrunDataSourceStatus reports whether the instance has a valid data source
+// (server-side capability or addon version) required for speedrun eligibility.
+type SpeedrunDataSourceStatus struct {
+	HasServerSide   bool `json:"has_server_side"`
+	HasAddonVersion bool `json:"has_addon_version"`
+	Eligible        bool `json:"eligible"`
 }
 
 // SpeedrunVersionStatus reports whether the instance's tooling versions

@@ -219,7 +219,7 @@ func WowDecoratedInstance(instance database.LogInstancesGuild,
 
 // SpeedrunResult converts a database speedrun row to an SDK SpeedrunResult.
 // The proof column is stored as JSONB and decoded into SDK proof types.
-func SpeedrunResult(sr database.InstanceSpeedrun) *chroniclesdk.SpeedrunResult {
+func SpeedrunResult(sr database.GetInstanceSpeedrunRow) *chroniclesdk.SpeedrunResult {
 	result := &chroniclesdk.SpeedrunResult{
 		Qualified:      sr.Qualified,
 		StartTime:      sr.StartTime.Time,

@@ -115,6 +115,7 @@ func (p *Parser) parseHeader(ts time.Time, data string) ([]messages.Message, err
 		&messages.Versions{
 			MessageBase: messages.Base(ts),
 			Versions: map[string]string{
+				"addon":                     addonVersion,
 				"chronicle_companion_wotlk": addonVersion,
 				"wow":                       wowVersion,
 			},

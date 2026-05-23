@@ -52,13 +52,13 @@ type Hookable struct {
 	MatchesZoneF func(z zone.Zone) bool
 	CurrentZone  zone.Zone
 	*Identifier
-	verbose         bool
-	realm           *realm.Info         // mostly static
-	versions        map[string]string   // addon/dependency versions from HEADER
-	recorderGUID    *guid.GUID          // recording player GUID from HEADER
-	hooks              []instancehook.Hook // TODO: unroll?
-	engagementTracker  *rankings.EngagementTracker
-	speedrunTracker    *rankings.SpeedrunTracker
+	verbose           bool
+	realm             *realm.Info         // mostly static
+	versions          map[string]string   // addon/dependency versions from HEADER
+	recorderGUID      *guid.GUID          // recording player GUID from HEADER
+	hooks             []instancehook.Hook // TODO: unroll?
+	engagementTracker *rankings.EngagementTracker
+	speedrunTracker   *rankings.SpeedrunTracker
 
 	// Live tracking data
 	Auras           *auras.Tracking
@@ -166,18 +166,18 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		CurrentZone:  z,
 		MatchesZoneF: ip.MatchesZone,
 		//Auras:           auraTracking,
-		Characters:      chrs,
-		Identifier:      ip.Idf,
-		events:          encounterevents.NewEvents(),
-		g:               g,
-		p:               p,
-		lootTracking:    lootTracking,
+		Characters:        chrs,
+		Identifier:        ip.Idf,
+		events:            encounterevents.NewEvents(),
+		g:                 g,
+		p:                 p,
+		lootTracking:      lootTracking,
 		hooks:             hooks,
 		engagementTracker: engagementTracker,
 		speedrunTracker:   speedrunTracker,
-		verbose:         parseoptions.IsVerbose(ctx),
-		timings:         timings.New(),
-		completedFights: make([]Fight, 0),
+		verbose:           parseoptions.IsVerbose(ctx),
+		timings:           timings.New(),
+		completedFights:   make([]Fight, 0),
 	}
 
 	cie.emit = func(evt *messages.Combatant) {
@@ -249,6 +249,8 @@ func (h *Hookable) Process(m messages.Message) (finalError error) {
 	}
 
 	switch msg := m.(type) {
+	case *messages.Versions:
+		h.SetVersions(msg.Versions, msg.Player)
 	case *messages.Realm:
 		if h.realm != nil {
 			if h.realm.RealmName != msg.RealmName {

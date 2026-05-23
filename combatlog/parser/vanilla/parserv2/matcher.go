@@ -74,6 +74,7 @@ func (p *Parser) header(ctx context.Context, ts time.Time, m *Matched) ([]messag
 	versions := make(map[string]string)
 	if addonVersion != "" {
 		versions["chronicle_companion"] = addonVersion
+		versions["addon"] = addonVersion
 	}
 	if superWoWVersion != "" {
 		versions["superwow"] = superWoWVersion

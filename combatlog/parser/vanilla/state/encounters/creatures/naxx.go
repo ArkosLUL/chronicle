@@ -26,7 +26,8 @@ func NewGrobbulus(id guid.GUID, all *characters.Characters) (characters.Characte
 		return nil, false
 	}
 
-	return characters.NewPermanentDeath(characters.NewCommonCharacter(id, all)), true
+	c := characters.NewPermanentDeath(characters.NewCommonCharacter(id, all))
+	return characters.NewAdsGoWithBossCustomCharacter(c, all, 15931, 16290), true
 }
 
 func NewAnubRekhan(id guid.GUID, all *characters.Characters) (characters.Character, bool) {

@@ -337,7 +337,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		metrics.linesProcessed.Add(float64(parserMetrics.TotalLinesParsed))
 
 	case database.LogTypeAzerothcore:
-		logCapabilities = append(logCapabilities, "interrupt", "absorb")
+		logCapabilities = append(logCapabilities, "interrupt", "absorb", "server-side")
 		// Load single file and normalize concatenated server chunks by unix timestamp.
 		loadStart := time.Now()
 		rdr, err := w.loadFile(ctx, files[0])

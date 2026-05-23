@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Youtube, Timer } from "lucide-react";
+import { ArrowLeft, Loader2, Youtube, Timer, TriangleAlert } from "lucide-react";
 import { useInstance, useInstanceYoutube, useAuthorizationCheck } from "@/api/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { InstanceEventsProvider } from "@/hooks/instanceEvents";
@@ -405,6 +405,7 @@ export function InstancePage() {
               {tenantGate.banner}
             </div>
           )}
+          <AddonMissingBanner instance={instance} />
           <InstancePageInner
             instance={instance}
             selectedEncounterIds={selectedEncounterIds}
@@ -419,5 +420,24 @@ export function InstancePage() {
         </InstanceEventsProvider>
       </TimeRangeProvider>
     </SyncModeProvider>
+  );
+}
+
+function AddonMissingBanner({ instance }: { instance: InstanceData }) {
+  const hasAddon = !!instance.versions?.["addon"];
+  const isServerSide = instance.capabilities?.includes("server-side");
+
+  if (hasAddon || isServerSide) return null;
+
+  return (
+    <div className="w-full px-4 pt-4">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center gap-3 text-sm">
+        <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0" />
+        <span>
+          This log was recorded without the ChronicleCompanion addon. The addon
+          improves accuracy and removes guesswork. Data is not guaranteed.
+        </span>
+      </div>
+    </div>
   );
 }

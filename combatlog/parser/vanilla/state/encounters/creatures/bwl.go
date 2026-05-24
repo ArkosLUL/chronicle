@@ -1,6 +1,8 @@
 package creatures
 
 import (
+	"time"
+
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -44,7 +46,9 @@ func NewRazorgore(id guid.GUID, all *characters.Characters) (characters.Characte
 		return nil, false
 	}
 
-	c := &razorgore{Common: characters.NewCommonCharacter(id, all)}
+	base := characters.NewCommonCharacter(id, all)
+	base.SetRecentlySlainDuration(time.Second * 30)
+	c := &razorgore{Common: base}
 	return characters.NewAdsGoWithBossCustomCharacter(c, all, 12435,
 		12420,
 		12416,

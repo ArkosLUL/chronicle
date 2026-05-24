@@ -7,19 +7,25 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/zoner"
 )
 
-type slainDetective struct {
+type SlainDetective struct {
 	currentZone *zoner.Location
 	lastDamage  map[guid.GUID]*messages.Damage
 }
 
-func newSlainDetective() *slainDetective {
-	return &slainDetective{
+func NewSlainDetective() *SlainDetective {
+	return &SlainDetective{
 		currentZone: zoner.NewLocation(),
 		lastDamage:  make(map[guid.GUID]*messages.Damage),
 	}
 }
 
-func (s *slainDetective) ProcessMessage(msg messages.Message) messages.Message{
+func (s *SlainDetective) ProcessMessages(msg []messages.Message) {
+	for _, m := range msg {
+		s.ProcessMessage(m)
+	}
+}
+
+func (s *SlainDetective) ProcessMessage(msg messages.Message) {
 	switch m := msg.(type) {
 	case *messages.Zone:
 		if result := s.currentZone.Process(*m); result != zone.NoChange {
@@ -39,7 +45,5 @@ func (s *slainDetective) ProcessMessage(msg messages.Message) messages.Message{
 				m.Attribution = lastDamage
 			}
 		}
-    return m
 	}
-  return msg
 }

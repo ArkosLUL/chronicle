@@ -13,7 +13,7 @@ import (
 // or mutate synthetic events to help downstream consumers.
 type Synthetic struct {
 	logger       *slog.Logger
-	slain        *slainDetective
+	slain        *SlainDetective
 	mitigation   *mitigator
 	extraAttack  *extraAttack
 	demons       *enslaveDemon
@@ -37,7 +37,7 @@ type Synthetic struct {
 func New(logger *slog.Logger, wowDB gamedb.SpellFetcher) *Synthetic {
 	return &Synthetic{
 		logger:       logger,
-		slain:        newSlainDetective(),
+		slain:        NewSlainDetective(),
 		mitigation:   newMitigator(logger, wowDB),
 		extraAttack:  newExtraAttack(logger, wowDB),
 		demons:       newEnslaveDemon(logger),
@@ -65,9 +65,7 @@ func (s *Synthetic) DetailedTimes() map[string]time.Duration {
 
 func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message, error) {
 	now := time.Now()
-	for i, msg := range msgs {
-		msgs[i] = s.slain.ProcessMessage(msg)
-	}
+	s.slain.ProcessMessages(msgs)
 	s.slainDur += time.Since(now)
 
 	now = time.Now()

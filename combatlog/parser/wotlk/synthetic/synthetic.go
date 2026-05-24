@@ -8,6 +8,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/synthetic/zonedetector"
 	"github.com/Emyrk/chronicle/database/gamedb"
 )
@@ -25,6 +26,7 @@ type Synthetic struct {
 
 	unitInfo     *unitInfo
 	zoneDetector *zonedetector.ZoneDetector
+	slain        *synthetic.SlainDetective
 
 	wowDB gamedb.GameDB
 
@@ -39,6 +41,7 @@ func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB, reg *reg
 	}
 
 	return &Synthetic{
+		slain:        synthetic.NewSlainDetective(),
 		logger:       logger,
 		wowDB:        wowDB,
 		unitInfo:     newUnitInfo(ctx, logger, wowDB, names, wowDB),
@@ -63,6 +66,8 @@ func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message
 		msgs = s.zoneDetector.ProcessMessages(msgs)
 		s.zoneDetectorDur += time.Since(now)
 	}
+
+	s.slain.ProcessMessages(msgs)
 
 	return msgs, nil
 }

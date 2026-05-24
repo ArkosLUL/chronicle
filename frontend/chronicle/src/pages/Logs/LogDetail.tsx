@@ -586,23 +586,28 @@ function InstanceFailureCard({ name, error }: { name: string; error: string }) {
       </div>
 
       <div className="pl-6 space-y-1.5 text-sm">
-        {rejection.upload_url && (
-          <p className="text-muted-foreground">
-            Try uploading at{" "}
-            <a
-              href={`https://${rejection.upload_url}`}
-              className="text-link underline underline-offset-2"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {rejection.upload_url}
-            </a>{" "}
-            instead.
-          </p>
-        )}
+        {rejection.upload_url && (() => {
+          // Show just the hostname in the link text, but keep the
+          // full path (e.g. /logs/<id>) in the href.
+          const displayHost = rejection.upload_url.replace(/\/.*$/, "");
+          return (
+            <p className="text-muted-foreground">
+              You can try parsing this log on{" "}
+              <a
+                href={`https://${rejection.upload_url}`}
+                className="text-link underline underline-offset-2"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {displayHost}
+              </a>
+              . Logs parsed there will only appear on that server&apos;s site.
+            </p>
+          );
+        })()}
         {rejection.addon_url && (
           <p className="text-muted-foreground">
-            Make sure you are using the latest{" "}
+            A common issue is not using the latest{" "}
             <a
               href={rejection.addon_url}
               className="text-link underline underline-offset-2"

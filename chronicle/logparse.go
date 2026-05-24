@@ -517,13 +517,13 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			realmRow, err := db.GetWoWServerRealm(bypassCtx, realmID)
 			if err != nil {
 				jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] =
-					w.realmRejectionMessage(bypassCtx, db, realmName, uuid.Nil, logGroup.WoWLogGroup.LogType)
+					w.realmRejectionMessage(bypassCtx, db, realmName, uuid.Nil, logGroup.WoWLogGroup.LogType, job.Args.LogID)
 				reject = true
 			} else {
 				server, sErr := db.GetWoWServer(bypassCtx, realmRow.ServerID)
 				if sErr != nil || !server.TenantID.Valid || server.TenantID.UUID != job.Args.TenantID {
 					jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] =
-						w.realmRejectionMessage(bypassCtx, db, realmRow.Name, realmRow.ServerID, logGroup.WoWLogGroup.LogType)
+						w.realmRejectionMessage(bypassCtx, db, realmRow.Name, realmRow.ServerID, logGroup.WoWLogGroup.LogType, job.Args.LogID)
 					reject = true
 				}
 			}
@@ -1006,7 +1006,7 @@ type realmRejection struct {
 }
 
 // realmRejectionMessage builds a JSON-encoded rejection string for InstanceFailures.
-func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Authz, realmName string, serverID uuid.UUID, logType database.LogType) string {
+func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Authz, realmName string, serverID uuid.UUID, logType database.LogType, logGroupID uuid.UUID) string {
 	r := realmRejection{
 		Type:  "realm_rejection",
 		Realm: realmName,
@@ -1018,18 +1018,26 @@ func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Au
 		r.Message = fmt.Sprintf("Realm %q does not belong to this server.", realmName)
 	}
 
-	// If we know which realm this is (not Unknown/empty), trace it back to
-	// its owning tenant and suggest the correct upload URL.
+	// Build a suggested URL so the user can parse the same log on the
+	// correct site. For known realms we trace back to the owning tenant;
+	// for unknown/empty realms we fall back to the primary domain.
 	primaryDomain := w.parent.primaryDomain
-	if realmName != "" && realmName != "Unknown" && serverID != uuid.Nil && primaryDomain != "" {
-		if server, err := db.GetWoWServer(ctx, serverID); err == nil {
-			if server.TenantID.Valid {
-				if tenant, tErr := db.GetTenantByID(ctx, server.TenantID.UUID); tErr == nil && tenant.Slug.Valid {
-					r.UploadURL = tenant.Slug.String + "." + primaryDomain
+	logPath := "/logs/" + logGroupID.String()
+
+	if primaryDomain != "" {
+		if realmName != "" && realmName != "Unknown" && serverID != uuid.Nil {
+			if server, err := db.GetWoWServer(ctx, serverID); err == nil {
+				if server.TenantID.Valid {
+					if tenant, tErr := db.GetTenantByID(ctx, server.TenantID.UUID); tErr == nil && tenant.Slug.Valid {
+						r.UploadURL = tenant.Slug.String + "." + primaryDomain + logPath
+					}
+				} else {
+					r.UploadURL = primaryDomain + logPath
 				}
-			} else {
-				r.UploadURL = primaryDomain
 			}
+		} else {
+			// Unknown realm — suggest the primary domain.
+			r.UploadURL = primaryDomain + logPath
 		}
 	}
 
@@ -1037,6 +1045,10 @@ func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Au
 	// outdated and not sending REALM_INFO correctly.
 	if logType == database.LogTypeAzerothcoreClientside || logType == database.LogTypeAzerothcore {
 		r.AddonURL = "https://github.com/Emyrk/ChronicleCompanionWoTLK"
+	}
+
+	if logType == database.LogTypeV2 {
+		r.AddonURL = "https://github.com/Emyrk/ChronicleCompanion"
 	}
 
 	b, _ := json.Marshal(r)

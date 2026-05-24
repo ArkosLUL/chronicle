@@ -55,7 +55,7 @@ func (s School) MarshalJSON() ([]byte, error) {
 }
 
 func (p Power) MarshalJSON() ([]byte, error) {
-	return json.Marshal(EnumJSON{Value: int(p), String: p.String()})
+	return json.Marshal(EnumJSON{Value: int(p), String: p.DisplayString()})
 }
 
 func (s SpellClassSet) MarshalJSON() ([]byte, error) {

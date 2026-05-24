@@ -17,6 +17,8 @@ type ItemTooltip struct {
 	Delay         int32            `json:"delay,omitempty"`
 	Resistances   []ItemResistance `json:"resistances,omitempty"`
 	Spells        []ItemSpell      `json:"spells,omitempty"`
+	Sockets       []ItemSocket     `json:"sockets,omitempty"`
+	SocketBonus   *SocketBonus     `json:"socket_bonus,omitempty"`
 
 	// Item set info (if item belongs to a set).
 	Set *ItemSetInfo `json:"set,omitempty"`
@@ -77,4 +79,12 @@ type ItemSpell struct {
 	SpellID int32 `json:"spell_id"`
 	Trigger int32 `json:"trigger"`
 	Charges int32 `json:"charges,omitempty"`
+}
+
+type ItemSocket struct {
+	Color int32 `json:"color"` // Bitmask: 1=Red, 2=Yellow, 4=Blue, 8=Meta
+}
+
+type SocketBonus struct {
+	SpellID int32 `json:"spell_id"`
 }

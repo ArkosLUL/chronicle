@@ -168,6 +168,17 @@ func buildBaseTooltip(ctx context.Context, db database.Store, item database.Worl
 		}
 	}
 
+	// Sockets (only non-zero colors)
+	socketColors := []int32{item.SocketColor1, item.SocketColor2, item.SocketColor3}
+	for _, color := range socketColors {
+		if color != 0 {
+			tooltip.Sockets = append(tooltip.Sockets, chroniclesdk.ItemSocket{Color: color})
+		}
+	}
+	if item.SocketBonus != 0 {
+		tooltip.SocketBonus = &chroniclesdk.SocketBonus{SpellID: item.SocketBonus}
+	}
+
 	return tooltip
 }
 

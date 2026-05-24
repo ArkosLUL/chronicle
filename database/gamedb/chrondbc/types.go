@@ -103,11 +103,25 @@ func (s School) ToType() types.School {
 type Power int32
 
 const (
-	PowerMana   Power = 0x00
-	PowerRage   Power = 1
-	PowerFocus  Power = 2
-	PowerEnergy Power = 3
+	PowerMana       Power = 0x00
+	PowerRage       Power = 1
+	PowerFocus      Power = 2
+	PowerEnergy     Power = 3
+	PowerHappiness  Power = 4
+	PowerRunes      Power = 5
+	PowerRunicPower Power = 6
 )
+
+// DisplayString returns the human-readable name for the power type.
+// The stringer-generated String() omits spaces; this provides WoW-accurate display names.
+func (p Power) DisplayString() string {
+	switch p {
+	case PowerRunicPower:
+		return "Runic Power"
+	default:
+		return p.String()
+	}
+}
 
 type SpellClassMask uint64
 

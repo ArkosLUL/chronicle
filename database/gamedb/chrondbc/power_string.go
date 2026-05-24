@@ -12,11 +12,14 @@ func _() {
 	_ = x[PowerRage-1]
 	_ = x[PowerFocus-2]
 	_ = x[PowerEnergy-3]
+	_ = x[PowerHappiness-4]
+	_ = x[PowerRunes-5]
+	_ = x[PowerRunicPower-6]
 }
 
-const _Power_name = "ManaRageFocusEnergy"
+const _Power_name = "ManaRageFocusEnergyHappinessRunesRunicPower"
 
-var _Power_index = [...]uint8{0, 4, 8, 13, 19}
+var _Power_index = [...]uint8{0, 4, 8, 13, 19, 28, 33, 43}
 
 func (i Power) String() string {
 	if i < 0 || i >= Power(len(_Power_index)-1) {

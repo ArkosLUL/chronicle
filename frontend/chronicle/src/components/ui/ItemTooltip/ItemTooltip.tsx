@@ -69,11 +69,53 @@ const ITEM_CLASS_TEXT: Record<string, string> = {
   "2-20": "Fishing Pole",
   "4-0": "Miscellaneous", "4-1": "Cloth", "4-2": "Leather",
   "4-3": "Mail", "4-4": "Plate", "4-6": "Shield",
+  "4-7": "Libram", "4-8": "Idol", "4-9": "Totem", "4-10": "Sigil",
 };
 
-const STAT_TYPE_TEXT: Record<number, string> = {
-  0: "Mana", 1: "Health", 3: "Agility", 4: "Strength",
-  5: "Intellect", 6: "Spirit", 7: "Stamina",
+// WoW item stat display: base attributes are white "+X Stat",
+// combat ratings and equip effects are green "Equip: ..." sentences.
+type StatDisplay = {
+  format: (value: number) => string;
+  green: boolean;
+};
+
+const STAT_DISPLAY: Record<number, StatDisplay> = {
+  // White text — base attributes
+  0:  { format: (v) => `+${v} Mana`, green: false },
+  1:  { format: (v) => `+${v} Health`, green: false },
+  3:  { format: (v) => `+${v} Agility`, green: false },
+  4:  { format: (v) => `+${v} Strength`, green: false },
+  5:  { format: (v) => `+${v} Intellect`, green: false },
+  6:  { format: (v) => `+${v} Spirit`, green: false },
+  7:  { format: (v) => `+${v} Stamina`, green: false },
+  // Green text — combat ratings (WoTLK)
+  12: { format: (v) => `Equip: Increases defense rating by ${v}.`, green: true },
+  13: { format: (v) => `Equip: Increases your dodge rating by ${v}.`, green: true },
+  14: { format: (v) => `Equip: Increases your parry rating by ${v}.`, green: true },
+  15: { format: (v) => `Equip: Increases your shield block rating by ${v}.`, green: true },
+  31: { format: (v) => `Equip: Improves hit rating by ${v}.`, green: true },
+  32: { format: (v) => `Equip: Improves critical strike rating by ${v}.`, green: true },
+  35: { format: (v) => `Equip: Improves your resilience rating by ${v}.`, green: true },
+  36: { format: (v) => `Equip: Improves haste rating by ${v}.`, green: true },
+  37: { format: (v) => `Equip: Increases your expertise rating by ${v}.`, green: true },
+  38: { format: (v) => `Equip: Increases attack power by ${v}.`, green: true },
+  39: { format: (v) => `Equip: Increases ranged attack power by ${v}.`, green: true },
+  41: { format: (v) => `Equip: Increases healing done by spells and effects by up to ${v}.`, green: true },
+  42: { format: (v) => `Equip: Increases damage and healing done by magical spells and effects by up to ${v}.`, green: true },
+  43: { format: (v) => `Equip: Restores ${v} mana per 5 sec.`, green: true },
+  44: { format: (v) => `Equip: Increases armor penetration rating by ${v}.`, green: true },
+  45: { format: (v) => `Equip: Increases spell power by ${v}.`, green: true },
+  46: { format: (v) => `Equip: Restores ${v} health per 5 sec.`, green: true },
+  47: { format: (v) => `Equip: Increases spell penetration by ${v}.`, green: true },
+  48: { format: (v) => `Equip: Increases the block value of your shield by ${v}.`, green: true },
+};
+
+// Socket color → image path + display label for gem socket rendering.
+const SOCKET_INFO: Record<number, { label: string; image: string }> = {
+  1: { label: "Red Socket",    image: "/c/images/socket-red.gif" },
+  2: { label: "Yellow Socket", image: "/c/images/socket-yellow.gif" },
+  4: { label: "Blue Socket",   image: "/c/images/socket-blue.gif" },
+  8: { label: "Meta Socket",   image: "/c/images/socket-meta.gif" },
 };
 
 const SCHOOL_TEXT: Record<number, string> = {
@@ -194,12 +236,16 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
           <div className="text-white">{item.block} Block</div>
         )}
 
-        {/* Stats */}
-        {item.stats?.map((stat, i) => (
-          <div key={i} className="text-white">
-            +{stat.value} {STAT_TYPE_TEXT[stat.type] ?? `Stat ${stat.type}`}
-          </div>
-        ))}
+        {/* White stats (base attributes: +X Stamina, etc.) */}
+        {item.stats?.filter((stat) => !(STAT_DISPLAY[stat.type]?.green)).map((stat, i) => {
+          const display = STAT_DISPLAY[stat.type];
+          const text = display ? display.format(stat.value) : `+${stat.value} Unknown Stat ${stat.type}`;
+          return (
+            <div key={i} className="text-white">
+              {text}
+            </div>
+          );
+        })}
 
         {/* Resistances */}
         {item.resistances?.map((res, i) => (
@@ -207,6 +253,20 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
             +{res.value} {SCHOOL_TEXT[res.school] ?? "Unknown"} Resistance
           </div>
         ))}
+
+        {/* Gem Sockets */}
+        {item.sockets?.map((socket, i) => {
+          const info = SOCKET_INFO[socket.color];
+          return info ? (
+            <div key={i} className="flex items-center gap-1.5 text-gray-400">
+              <img src={info.image} alt="" width={12} height={12} className="inline-block" />
+              {info.label}
+            </div>
+          ) : null;
+        })}
+        {item.socket_bonus && (
+          <SocketBonusLine spellId={item.socket_bonus.spell_id} />
+        )}
 
         {/* Enchantment (green text) */}
         {item.enchantment && (
@@ -227,6 +287,16 @@ export function ItemTooltip({ item, className, includeReferenceLinks = false, sh
         {!!item.required_level && item.required_level > 1 && (
           <div className="text-white">Requires Level {item.required_level}</div>
         )}
+
+        {/* Green stats (combat ratings: Equip: Improves...) */}
+        {item.stats?.filter((stat) => STAT_DISPLAY[stat.type]?.green).map((stat, i) => {
+          const display = STAT_DISPLAY[stat.type]!;
+          return (
+            <div key={i} className="text-quality-uncommon">
+              {display.format(stat.value)}
+            </div>
+          );
+        })}
 
         {/* Spells */}
         {item.spells?.map((spell, i) => (
@@ -385,6 +455,13 @@ function SetBonusLine({ threshold, spellId, includeReferenceLinks, active = fals
         text
       )}
     </div>
+  );
+}
+
+function SocketBonusLine({ spellId }: { spellId: number }) {
+  const text = useResolvedSpellText(spellId);
+  return (
+    <div className="text-gray-500">Socket Bonus: {text}</div>
   );
 }
 

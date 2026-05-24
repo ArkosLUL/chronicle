@@ -802,6 +802,11 @@ export interface ItemSetSearchResult {
 }
 
 // From chroniclesdk/tooltip.go
+export interface ItemSocket {
+    readonly color: number; // Bitmask: 1=Red, 2=Yellow, 4=Blue, 8=Meta
+}
+
+// From chroniclesdk/tooltip.go
 export interface ItemSpell {
     readonly spell_id: number;
     readonly trigger: number;
@@ -832,6 +837,8 @@ export interface ItemTooltip {
     readonly delay?: number;
     readonly resistances?: readonly ItemResistance[];
     readonly spells?: readonly ItemSpell[];
+    readonly sockets?: readonly ItemSocket[];
+    readonly socket_bonus?: SocketBonus;
     /**
      * Item set info (if item belongs to a set).
      */
@@ -1498,6 +1505,11 @@ export interface SlugPayload {
 export type SocialPlatform = "discord" | "twitch" | "twitter" | "website" | "youtube";
 
 export const SocialPlatforms: SocialPlatform[] = ["discord", "twitch", "twitter", "website", "youtube"];
+
+// From chroniclesdk/tooltip.go
+export interface SocketBonus {
+    readonly spell_id: number;
+}
 
 // From chroniclesdk/log.go
 /**

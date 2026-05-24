@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   FileText, 
@@ -903,6 +903,7 @@ export function LogDetailView({
   onRefresh,
   isRefreshing,
 }: LogDetailViewProps) {
+  const location = useLocation();
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
       {/* Back link */}
@@ -924,7 +925,7 @@ export function LogDetailView({
                 You must be logged in to view log details.
               </p>
             </div>
-            <Link to="/login?from=/logs">
+            <Link to={`/login?from=${encodeURIComponent(location.pathname)}`}>
               <Button>
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In

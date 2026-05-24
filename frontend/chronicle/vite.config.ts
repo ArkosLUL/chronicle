@@ -14,16 +14,24 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 // while targeting the backend port. e.g. epoch.localhost:5173 → epoch.localhost:4000
 function backendProxy(): ProxyOptions {
   const target = process.env.HOST || "http://localhost:4000";
-  const isRemote = target.startsWith("https://");
+  const isRemote = !target.includes("localhost");
+  const targetUrl = new URL(target);
   return {
     target,
-    secure: !isRemote,
+    secure: false,
     changeOrigin: isRemote,
     configure: (proxy) => {
       proxy.on('proxyReq', (proxyReq, req) => {
-        const host = req.headers.host;
-        if (host) {
-          proxyReq.setHeader('Host', host.replace(/:\d+$/, ':4000'));
+        if (isRemote) {
+          // Fake browser headers to bypass "only browser connections allowed"
+          proxyReq.setHeader('Host', targetUrl.host);
+          proxyReq.setHeader('Origin', target.replace(/\/$/, ''));
+          proxyReq.setHeader('Referer', target);
+        } else {
+          const host = req.headers.host;
+          if (host) {
+            proxyReq.setHeader('Host', host.replace(/:\d+$/, ':4000'));
+          }
         }
       });
     },

@@ -53,11 +53,13 @@ func TestFeed_MultiSlotMessage(t *testing.T) {
 
 	c, ok := msgs[0].(*messages.Combatant)
 	require.True(t, ok, "expected *messages.Combatant, got %T", msgs[0])
-	// Should have 3 gear slots (from slot 1, 2, 5).
-	require.Len(t, c.GearSetups, 3)
-	assert.Equal(t, 51396, c.GearSetups[0].ItemID)
-	assert.Equal(t, 50633, c.GearSetups[1].ItemID)
-	assert.Equal(t, 51398, c.GearSetups[2].ItemID)
+	// Should have 19 gear slots with items at correct positions (1-indexed → 0-indexed).
+	require.Len(t, c.GearSetups, 19)
+	assert.Equal(t, 51396, c.GearSetups[0].ItemID)  // slot 1 = Head
+	assert.Equal(t, 50633, c.GearSetups[1].ItemID)  // slot 2 = Neck
+	assert.Equal(t, 0, c.GearSetups[2].ItemID)      // slot 3 = Shoulder (empty)
+	assert.Equal(t, 0, c.GearSetups[3].ItemID)      // slot 4 = Shirt (empty)
+	assert.Equal(t, 51398, c.GearSetups[4].ItemID)  // slot 5 = Chest
 }
 
 func TestFeed_BinPackedMessages(t *testing.T) {
@@ -275,9 +277,9 @@ func TestParsePlayer_Gear(t *testing.T) {
 	require.Len(t, msgs, 1)
 
 	c := msgs[0].(*messages.Combatant)
-	require.Len(t, c.GearSetups, 2)
+	require.Len(t, c.GearSetups, 19)
 
-	// First slot
+	// Slot 1 = Head (index 0)
 	g0 := c.GearSetups[0]
 	assert.Equal(t, 51396, g0.ItemID)
 	require.NotNil(t, g0.EnchantID)
@@ -285,11 +287,16 @@ func TestParsePlayer_Gear(t *testing.T) {
 	assert.Equal(t, [4]int{41398, 40014, 0, 0}, g0.Gems)
 	assert.Equal(t, 264, g0.ItemLevel)
 
-	// Second slot
+	// Slot 2 = Neck (index 1)
 	g1 := c.GearSetups[1]
 	assert.Equal(t, 50633, g1.ItemID)
 	assert.Nil(t, g1.EnchantID)
 	assert.Equal(t, 245, g1.ItemLevel)
+
+	// Remaining slots should be empty (zero-value GearItem)
+	for i := 2; i < 19; i++ {
+		assert.Equal(t, 0, c.GearSetups[i].ItemID, "slot %d should be empty", i+1)
+	}
 }
 
 // --- Player Talents tests ---

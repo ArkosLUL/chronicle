@@ -148,13 +148,15 @@ func (p *Parser) parseIdentity(ts time.Time, pd *PlayerData, data string) ([]mes
 }
 
 // parseGear parses: G<slot>.<itemId>.<enchant>.<gem1>.<gem2>.<gem3>.<gem4>.<suffix>.<itemLevel>:<next slot>:...
+// The slot index (fields[0]) is 1-based (1=Head, 2=Neck, ... 19=Tabard) and maps to a
+// fixed 19-element array so items land in the correct equipment slot positions.
 func (p *Parser) parseGear(ts time.Time, pd *PlayerData, data string) ([]messages.Message, error) {
 	if data == "" {
 		return nil, fmt.Errorf("gear: empty data")
 	}
 
 	slots := strings.Split(data, ":")
-	gear := make([]combatant.GearItem, 0, len(slots))
+	gear := make([]combatant.GearItem, 19)
 
 	for _, slot := range slots {
 		if slot == "" {
@@ -166,6 +168,11 @@ func (p *Parser) parseGear(ts time.Time, pd *PlayerData, data string) ([]message
 		}
 
 		// Fields: slot, itemId, enchant, gem1, gem2, gem3, gem4, suffix, itemLevel
+		slotIndex, err := strconv.Atoi(fields[0])
+		if err != nil || slotIndex < 1 || slotIndex > 19 {
+			return nil, fmt.Errorf("gear: invalid slot index %q", fields[0])
+		}
+
 		itemID, err := strconv.Atoi(fields[1])
 		if err != nil {
 			return nil, fmt.Errorf("gear: invalid itemId %q: %w", fields[1], err)
@@ -187,7 +194,7 @@ func (p *Parser) parseGear(ts time.Time, pd *PlayerData, data string) ([]message
 		if enchantID != 0 {
 			item.EnchantID = &enchantID
 		}
-		gear = append(gear, item)
+		gear[slotIndex-1] = item
 	}
 
 	pd.Gear = gear

@@ -6,7 +6,7 @@
 
 import type { DamageProcessorEvent, PanelProcessor, ProcessorContext } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
-import { accumulateAbilityBreakout, type DamageAbilityBreakout } from "../processors/abilityBreakout";
+import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, type GuidCache } from "../processors/guidCache";
 import { resolveEntity, extractGroupingFromPanelOption, extractPetModeFromPanelOption } from "../processors/resolveEntity";
 
@@ -37,6 +37,8 @@ export type DamageTakenResult = {
   EncounterDamage: Map<string, UnitDamageTaken>;
   // Value is unitID -> abilityID -> DamageAbilityBreakout
   ByAbility: Map<string, Map<string, DamageAbilityBreakout>>;
+  // Value is unitID -> spellId -> SpellIdAbilityBreakout (for rank display)
+  ByAbilityBySpellId: Map<string, Map<number, SpellIdAbilityBreakout>>;
   BySource: Map<string, Map<string, number>>;
   // GUID cache for performance (avoids repeated parsing)
   GuidCache: GuidCache;
@@ -57,6 +59,7 @@ export function createDamageTakenProcessor(
     createState: () => ({
       EncounterDamage: new Map<string, UnitDamageTaken>(),
       ByAbility: new Map<string, Map<string, DamageAbilityBreakout>>(),
+      ByAbilityBySpellId: new Map<string, Map<number, SpellIdAbilityBreakout>>(),
       BySource: new Map<string, Map<string, number>>(),
       GuidCache: createGuidCache(),
     }),
@@ -122,6 +125,10 @@ export function createDamageTakenProcessor(
         }
 
         accumulateAbilityBreakout(state.ByAbility, damageReceiver, abilityName, effectiveAmount, event.hitType, event.amount);
+
+        if (event.spellId != null) {
+          accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageReceiver, event.spellId, abilityName, effectiveAmount, event.hitType, event.amount);
+        }
 
         const existingSourceBreakout = state.BySource.get(damageReceiver) || new Map<string, number>();
         existingSourceBreakout.set(event.caster, (existingSourceBreakout.get(event.caster) || 0) + effectiveAmount);

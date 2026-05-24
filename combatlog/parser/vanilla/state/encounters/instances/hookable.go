@@ -103,7 +103,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 	switch logType {
 	case database.LogTypeAzerothcore:
-		cres = wotlkcreatures.AzerothCoreCharacterFactories()
+		cres = wotlkcreatures.AzerothServersideCoreCharacterFactories()
 		combatantStrategy = EmitAllPlayers
 	}
 

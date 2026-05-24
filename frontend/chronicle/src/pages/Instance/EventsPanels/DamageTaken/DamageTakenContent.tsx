@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Layers } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
+import { cn } from "@/lib/utils";
 import { PlayerMetricChart, type PlayerMetricChartData } from "@/components/ui/PlayerMetricChart/PlayerMetricChart";
 import { RowContextMenu, getArmoryUrl } from "@/components/ui/PlayerMetricChart/RowContextMenu";
 import { GenericPanel } from "../GenericPanel";
@@ -97,6 +99,7 @@ export function hasDamageTakenEncounterData(result: unknown): result is DamageTa
 export const DamageTakenContent = (props: DamageTakenContentProps) => {
   const { targetType = "players" } = props;
   const { result, context } = props;
+  const [showRanks, setShowRanks] = useState(true);
 
   // Ctrl+click context menu
   const [contextMenu, setContextMenu] = useState<{
@@ -185,6 +188,7 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
     durationMs: props.durationMs,
     loading: props.loading,
     processing: props.processing,
+    showRanks,
   });
 
   // Once we have cached data, never show loading/processing states
@@ -208,7 +212,31 @@ export const DamageTakenContent = (props: DamageTakenContentProps) => {
           Total: <span className="font-medium font-mono text-foreground">{displayTotal}{props.perSecond ? '/s' : ''}</span>
         </div>
 
-
+        <div className="flex items-center gap-2">
+          {/* Show ranks toggle */}
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setShowRanks(!showRanks)}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-0.5 text-2xs rounded transition-colors cursor-pointer",
+                    showRanks
+                      ? "bg-[color:var(--tertiary)]/20 text-[color:var(--tertiary)] border border-[color:var(--tertiary)]/30"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Layers className="h-3 w-3" />
+                  Ranks
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px]">
+                <p className="text-xs">Show spells separated by rank in the ability breakdown (e.g., Frostbolt Rank 4 vs Rank 11)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
       {/* Focus header with back button */}
       {focusedPlayerId && focusedAbilityData && (

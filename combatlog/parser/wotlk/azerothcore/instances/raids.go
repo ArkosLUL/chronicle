@@ -101,6 +101,9 @@ func EyeOfEternityHostiles() map[uint32]instances.Identity {
 	hostile := make(map[uint32]instances.Identity)
 	instances.LoadAdds(hostile, map[uint32]string{
 		30090: "Vortex",
+		30249: "Scion of Eternity",
+		30245: "Nexus Lord",
+		30084: "Power Spark",
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		28859: "Malygos",

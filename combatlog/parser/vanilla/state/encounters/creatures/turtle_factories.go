@@ -93,5 +93,9 @@ func TurtleCharacterFactories() []characters.CharacterFactory {
 		// L/UBRS
 		NewMotherSmolderweb,
 		NewBloodaxeWorgPup,
+
+		// Eye of Eternity
+		NewMalygos,
+    NewPowerSpark,
 	}
 }

@@ -82,7 +82,7 @@ type ItemSpell struct {
 }
 
 type ItemSocket struct {
-	Color int32 `json:"color"` // Bitmask: 1=Red, 2=Yellow, 4=Blue, 8=Meta
+	Color int32 `json:"color"` // Bitmask: 1=Meta, 2=Red, 4=Yellow, 8=Blue
 }
 
 type SocketBonus struct {

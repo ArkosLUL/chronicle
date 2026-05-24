@@ -111,11 +111,12 @@ const STAT_DISPLAY: Record<number, StatDisplay> = {
 };
 
 // Socket color → image path + display label for gem socket rendering.
+// Values match WoW's socket color bitmask from ItemSocket.dbc.
 const SOCKET_INFO: Record<number, { label: string; image: string }> = {
-  1: { label: "Red Socket",    image: "/c/images/socket-red.gif" },
-  2: { label: "Yellow Socket", image: "/c/images/socket-yellow.gif" },
-  4: { label: "Blue Socket",   image: "/c/images/socket-blue.gif" },
-  8: { label: "Meta Socket",   image: "/c/images/socket-meta.gif" },
+  1: { label: "Meta Socket",   image: "/c/images/socket-meta.gif" },
+  2: { label: "Red Socket",    image: "/c/images/socket-red.gif" },
+  4: { label: "Yellow Socket", image: "/c/images/socket-yellow.gif" },
+  8: { label: "Blue Socket",   image: "/c/images/socket-blue.gif" },
 };
 
 const SCHOOL_TEXT: Record<number, string> = {

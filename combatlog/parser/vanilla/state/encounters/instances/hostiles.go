@@ -1062,6 +1062,18 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		14601: "Ebonroc",
 		65148: "Ezzel Darkbrewer",
 	})
+
+	switch services.ServerName {
+	case services.ServerIdentityVanillaPlus:
+		delete(hostile, 13020) // "Vaelastrasz the Corrupt"
+		hostile[25123] = Identity{
+			Affiliation:   types.AffiliationHostile,
+			Name:          "Vaelastrasz the Chained",
+			EncounterName: "",
+			Boss:          true,
+		}
+	}
+
 	return hostile
 }
 

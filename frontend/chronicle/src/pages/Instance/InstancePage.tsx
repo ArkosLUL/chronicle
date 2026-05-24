@@ -424,7 +424,7 @@ export function InstancePage() {
 }
 
 function AddonMissingBanner({ instance }: { instance: Instance }) {
-  const hasAddon = !!instance.versions?.["addon"];
+  const hasAddon = !!instance.versions?.["addon"] || !!instance.versions?.["chronicle_companion"];
   const isServerSide = instance.capabilities?.includes("server-side");
 
   if (hasAddon || isServerSide) return null;

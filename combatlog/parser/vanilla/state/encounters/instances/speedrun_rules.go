@@ -108,7 +108,6 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 		{Name: "Vaelastrasz the Corrupt", EntryIDs: []uint32{13020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Broodlord Lashlayer", EntryIDs: []uint32{12017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Firemaw", EntryIDs: []uint32{11983}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
-		{Name: "Ezzel Darkbrewer", EntryIDs: []uint32{65148}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Ebonroc", EntryIDs: []uint32{14601}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Flamegor", EntryIDs: []uint32{11981}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		{Name: "Chromaggus", EntryIDs: []uint32{14020}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
@@ -118,6 +117,11 @@ func BlackwingLairSpeedrunRequirements() []rankings.SpeedrunRequirement {
 	case services.ServerIdentityTurtle, services.ServerIdentityOctoWoW:
 		bwl = append(bwl, []rankings.SpeedrunRequirement{
 			{Name: "Flameweaver Koegler", EntryIDs: []uint32{49017}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+			{Name: "Ezzel Darkbrewer", EntryIDs: []uint32{65148}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
+		}...)
+	case services.ServerIdentityVanillaPlus:
+		bwl = append(bwl, []rankings.SpeedrunRequirement{
+			{Name: "Master Elemental Shaper Krixix", EntryIDs: []uint32{14401}, Count: 1, Category: rankings.SpeedrunCategoryBosses},
 		}...)
 	}
 	return bwl

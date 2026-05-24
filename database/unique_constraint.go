@@ -6,6 +6,7 @@ type UniqueConstraint string
 
 // UniqueConstraint enums.
 const (
+	UniqueApplicationModificationRequestsPkey          UniqueConstraint = "application_modification_requests_pkey"           // ALTER TABLE ONLY application_modification_requests ADD CONSTRAINT application_modification_requests_pkey PRIMARY KEY (id);
 	UniqueAuthzSchemaMigrationsPkey                    UniqueConstraint = "authz_schema_migrations_pkey"                     // ALTER TABLE ONLY authz_schema_migrations ADD CONSTRAINT authz_schema_migrations_pkey PRIMARY KEY (version);
 	UniqueDataGrantsPkey                               UniqueConstraint = "data_grants_pkey"                                 // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_pkey PRIMARY KEY (id);
 	UniqueDataGrantsUserIDSourceKey                    UniqueConstraint = "data_grants_user_id_source_key"                   // ALTER TABLE ONLY data_grants ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
@@ -52,6 +53,7 @@ const (
 	UniqueRiverLeaderPkey                              UniqueConstraint = "river_leader_pkey"                                // ALTER TABLE ONLY river_leader ADD CONSTRAINT river_leader_pkey PRIMARY KEY (name);
 	UniqueRiverMigrationPkey1                          UniqueConstraint = "river_migration_pkey1"                            // ALTER TABLE ONLY river_migration ADD CONSTRAINT river_migration_pkey1 PRIMARY KEY (line, version);
 	UniqueRiverQueuePkey                               UniqueConstraint = "river_queue_pkey"                                 // ALTER TABLE ONLY river_queue ADD CONSTRAINT river_queue_pkey PRIMARY KEY (name);
+	UniqueServerApplicationsPkey                       UniqueConstraint = "server_applications_pkey"                         // ALTER TABLE ONLY server_applications ADD CONSTRAINT server_applications_pkey PRIMARY KEY (id);
 	UniqueServerUploadMetaPkey                         UniqueConstraint = "server_upload_meta_pkey"                          // ALTER TABLE ONLY server_upload_meta ADD CONSTRAINT server_upload_meta_pkey PRIMARY KEY (log_group_id);
 	UniqueSharedViewsCodeKey                           UniqueConstraint = "shared_views_code_key"                            // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_code_key UNIQUE (code);
 	UniqueSharedViewsInstanceHashUnique                UniqueConstraint = "shared_views_instance_hash_unique"                // ALTER TABLE ONLY shared_views ADD CONSTRAINT shared_views_instance_hash_unique UNIQUE (instance_id, hash);
@@ -84,6 +86,7 @@ const (
 	UniqueWowServerUploadKeysPkey                      UniqueConstraint = "wow_server_upload_keys_pkey"                      // ALTER TABLE ONLY wow_server_upload_keys ADD CONSTRAINT wow_server_upload_keys_pkey PRIMARY KEY (id);
 	UniqueWowServersPkey                               UniqueConstraint = "wow_servers_pkey"                                 // ALTER TABLE ONLY wow_servers ADD CONSTRAINT wow_servers_pkey PRIMARY KEY (id);
 	UniqueFilesUniqueOwnerHash                         UniqueConstraint = "files_unique_owner_hash"                          // CREATE UNIQUE INDEX files_unique_owner_hash ON log_file USING btree (owner, hash);
+	UniqueIndexModRequestsPending                      UniqueConstraint = "idx_mod_requests_pending"                         // CREATE UNIQUE INDEX idx_mod_requests_pending ON application_modification_requests USING btree (application_id, type, COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE ((status = 'pending'::text) AND (type <> ALL (ARRAY['server'::text, 'realm'::text])));
 	UniqueIndexTenantsNameUnique                       UniqueConstraint = "idx_tenants_name_unique"                          // CREATE UNIQUE INDEX idx_tenants_name_unique ON tenants USING btree (lower(name));
 	UniqueIndexWowServerRealmsNameUnique               UniqueConstraint = "idx_wow_server_realms_name_unique"                // CREATE UNIQUE INDEX idx_wow_server_realms_name_unique ON wow_server_realms USING btree (lower(name));
 	UniqueIndexWowServersNameUnique                    UniqueConstraint = "idx_wow_servers_name_unique"                      // CREATE UNIQUE INDEX idx_wow_servers_name_unique ON wow_servers USING btree (lower(name));

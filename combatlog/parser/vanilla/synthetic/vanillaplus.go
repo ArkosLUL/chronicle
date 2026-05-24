@@ -8,10 +8,27 @@ import (
 type vanillaplus struct {
 	rag guid.GUID
 	mag guid.GUID
+
+	// shadow -> primary
+	shadowBoss map[uint32]uint32
+	boss       map[uint32]*guid.GUID
 }
 
 func newVanillaPlus() *vanillaplus {
-	return &vanillaplus{}
+	return (&vanillaplus{
+		shadowBoss: make(map[uint32]uint32),
+		boss:       make(map[uint32]*guid.GUID),
+	}).
+		shadowed(11502, "Ragnaros", 40004).
+		shadowed(11982, "Magmadar", 20006).
+		shadowed(11983, "Firemaw", 25122).
+		shadowed(14401, "Master Elemental Shaper Krixix", 25118)
+}
+
+func (v *vanillaplus) shadowed(boss uint32, name string, shadow uint32) *vanillaplus {
+	v.shadowBoss[shadow] = boss
+	v.boss[boss] = nil
+	return v
 }
 
 func (v *vanillaplus) ProcessMessages(msg []messages.Message) {
@@ -22,26 +39,32 @@ func (v *vanillaplus) ProcessMessages(msg []messages.Message) {
 			if !ok {
 				continue
 			}
-			switch entry {
-			case 11502: // Ragnaros
-				v.rag = ty.Guid
-			case 11982:
-				v.mag = ty.Guid
+
+			_, ok = v.boss[entry]
+			if !ok {
+				continue
 			}
+			v.boss[entry] = &ty.Guid
 		case *messages.Damage:
 			if ty.Caster == nil {
 				continue
 			}
-			if ent, ok := ty.Caster.GetEntry(); ent == 40004 && ok {
-				switch ent {
-				case 40004:
-					// Fake Rag that casts spells for mag
-					ty.Caster = &v.rag
-				case 20006:
-					// Fake Magmadar
-					ty.Caster = &v.mag
-				}
+
+			ent, ok := ty.Caster.GetEntry()
+			if !ok {
+				continue
 			}
+
+			shadowOf, ok := v.shadowBoss[ent]
+			if !ok {
+				continue
+			}
+
+			boss, ok := v.boss[shadowOf]
+			if !ok || boss == nil {
+				continue
+			}
+			ty.Caster = &(*boss)
 		}
 	}
 }

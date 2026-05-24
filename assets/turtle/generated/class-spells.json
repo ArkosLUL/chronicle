@@ -33,7 +33,7 @@
     {
       "id": 23467,
       "name": "Tower Buff",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25848,
@@ -198,7 +198,7 @@
     {
       "id": 28469,
       "name": "Ghost Vision",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29241,
@@ -1520,7 +1520,7 @@
     {
       "id": 17007,
       "name": "Leader of the Pack",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17050,
@@ -1550,27 +1550,27 @@
     {
       "id": 17056,
       "name": "Furor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17058,
       "name": "Furor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17059,
       "name": "Furor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17060,
       "name": "Furor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17061,
       "name": "Furor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17063,
@@ -2450,7 +2450,7 @@
     {
       "id": 28719,
       "name": "Healing Touch",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28743,
@@ -2510,7 +2510,7 @@
     {
       "id": 28847,
       "name": "Healing Touch Refund",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28854,
@@ -2660,7 +2660,7 @@
     {
       "id": 45741,
       "name": "Storm Crow Form (Passive)",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45743,
@@ -2680,7 +2680,7 @@
     {
       "id": 45851,
       "name": "Moonclaw",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45967,
@@ -2765,7 +2765,7 @@
     {
       "id": 51397,
       "name": "Efflorescence",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51398,
@@ -2780,17 +2780,17 @@
     {
       "id": 51402,
       "name": "Open Wounds",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51403,
       "name": "Open Wounds",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51404,
       "name": "Open Wounds",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51406,
@@ -3025,7 +3025,7 @@
     {
       "id": 52325,
       "name": "Cenarion Blessing Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52326,
@@ -3085,7 +3085,7 @@
     {
       "id": 52337,
       "name": "Rapid Solstice Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52338,
@@ -3125,7 +3125,7 @@
     {
       "id": 52345,
       "name": "Resto T2.5 5p Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52346,
@@ -3240,7 +3240,7 @@
     {
       "id": 52369,
       "name": "Primal Ferocity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52370,
@@ -3255,7 +3255,7 @@
     {
       "id": 52372,
       "name": "Primal Ferocity",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52399,
@@ -3355,7 +3355,7 @@
     {
       "id": 58035,
       "name": "Ride of the Wild",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 58037,
@@ -3387,12 +3387,12 @@
     {
       "id": 1002,
       "name": "Eyes of the Beast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1130,
       "name": "Hunter's Mark",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 1495,
@@ -3927,17 +3927,17 @@
     {
       "id": 14323,
       "name": "Hunter's Mark",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 14324,
       "name": "Hunter's Mark",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 14325,
       "name": "Hunter's Mark",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 14824,
@@ -4147,17 +4147,17 @@
     {
       "id": 19168,
       "name": "Lightning Reflexes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19180,
       "name": "Lightning Reflexes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19181,
       "name": "Lightning Reflexes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19184,
@@ -4562,17 +4562,17 @@
     {
       "id": 19549,
       "name": "Improved Primal Aspects",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19550,
       "name": "Improved Primal Aspects",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19551,
       "name": "Improved Primal Aspects",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19552,
@@ -5232,12 +5232,12 @@
     {
       "id": 24296,
       "name": "Lightning Reflexes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24297,
       "name": "Lightning Reflexes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 24298,
@@ -5592,7 +5592,7 @@
     {
       "id": 29218,
       "name": "Server Spell",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29233,
@@ -6107,7 +6107,7 @@
     {
       "id": 46321,
       "name": "[Deprecated] Baited Shot",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46701,
@@ -6382,17 +6382,17 @@
     {
       "id": 51578,
       "name": "Planning Ahead Dummy",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51579,
       "name": "Stinging Nettle",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51580,
       "name": "Stinging Nettle",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51581,
@@ -6462,12 +6462,12 @@
     {
       "id": 52891,
       "name": "Alone Against the World",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52892,
       "name": "Alone Against the World",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52920,
@@ -7374,7 +7374,7 @@
     {
       "id": 11094,
       "name": "Improved Fire Ward",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11095,
@@ -7409,12 +7409,12 @@
     {
       "id": 11119,
       "name": "Ignite",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11120,
       "name": "Ignite",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11124,
@@ -7424,7 +7424,7 @@
     {
       "id": 11129,
       "name": "Combustion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11151,
@@ -7464,7 +7464,7 @@
     {
       "id": 11189,
       "name": "Frost Warding",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 11190,
@@ -8024,17 +8024,17 @@
     {
       "id": 12846,
       "name": "Ignite",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 12847,
       "name": "Ignite",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 12848,
       "name": "Ignite",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 12871,
@@ -8139,7 +8139,7 @@
     {
       "id": 13043,
       "name": "Improved Fire Ward",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 13326,
@@ -8604,17 +8604,17 @@
     {
       "id": 18462,
       "name": "Arcane Meditation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18463,
       "name": "Arcane Meditation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18464,
       "name": "Arcane Meditation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18467,
@@ -9139,7 +9139,7 @@
     {
       "id": 28332,
       "name": "Frost Warding",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28391,
@@ -9179,7 +9179,7 @@
     {
       "id": 28436,
       "name": "Hot Blooded",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28592,
@@ -9239,17 +9239,17 @@
     {
       "id": 29074,
       "name": "Master of Elements",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29075,
       "name": "Master of Elements",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29076,
       "name": "Master of Elements",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29124,
@@ -9309,7 +9309,7 @@
     {
       "id": 29441,
       "name": "Magic Absorption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29443,
@@ -9319,22 +9319,22 @@
     {
       "id": 29444,
       "name": "Magic Absorption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29445,
       "name": "Magic Absorption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29446,
       "name": "Magic Absorption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29447,
       "name": "Magic Absorption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29515,
@@ -9534,7 +9534,7 @@
     {
       "id": 51262,
       "name": "Resonance Cascade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51277,
@@ -9679,22 +9679,22 @@
     {
       "id": 51987,
       "name": "Resonance Cascade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51988,
       "name": "Resonance Cascade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51989,
       "name": "Resonance Cascade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51990,
       "name": "Resonance Cascade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51991,
@@ -9774,7 +9774,7 @@
     {
       "id": 52566,
       "name": "Improved Presence of Mind",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52568,
@@ -9804,7 +9804,7 @@
     {
       "id": 52582,
       "name": "Erupting Shield",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52584,
@@ -9819,7 +9819,7 @@
     {
       "id": 52587,
       "name": "Improved Arcane Rupture",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52588,
@@ -9854,7 +9854,7 @@
     {
       "id": 52594,
       "name": "Nether Overcharge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52595,
@@ -10271,7 +10271,7 @@
     {
       "id": 19744,
       "name": "Seal of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19746,
@@ -10411,22 +10411,22 @@
     {
       "id": 19976,
       "name": "Seal of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19977,
       "name": "Blessing of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19978,
       "name": "Blessing of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19979,
       "name": "Blessing of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19980,
@@ -10611,27 +10611,27 @@
     {
       "id": 20162,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20163,
       "name": "Seal of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20164,
       "name": "Seal of Justice",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20165,
       "name": "Seal of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20166,
       "name": "Seal of Wisdom",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20167,
@@ -10661,7 +10661,7 @@
     {
       "id": 20183,
       "name": "Judgement of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20184,
@@ -10926,37 +10926,37 @@
     {
       "id": 20287,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20288,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20289,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20290,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20291,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20292,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20293,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20300,
@@ -10986,27 +10986,27 @@
     {
       "id": 20305,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20306,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20307,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20308,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20309,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20330,
@@ -11096,17 +11096,17 @@
     {
       "id": 20347,
       "name": "Seal of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20348,
       "name": "Seal of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20349,
       "name": "Seal of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20350,
@@ -11131,12 +11131,12 @@
     {
       "id": 20356,
       "name": "Seal of Wisdom",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20357,
       "name": "Seal of Wisdom",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20359,
@@ -11166,27 +11166,27 @@
     {
       "id": 20375,
       "name": "Seal of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20411,
       "name": "Judgement of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20412,
       "name": "Judgement of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20413,
       "name": "Judgement of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20414,
       "name": "Judgement of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20415,
@@ -11211,22 +11211,22 @@
     {
       "id": 20419,
       "name": "Seal of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20421,
       "name": "Seal of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20422,
       "name": "Seal of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20423,
       "name": "Seal of Fury",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20424,
@@ -11326,22 +11326,22 @@
     {
       "id": 20915,
       "name": "Seal of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20918,
       "name": "Seal of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20919,
       "name": "Seal of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20920,
       "name": "Seal of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20922,
@@ -11426,12 +11426,12 @@
     {
       "id": 21082,
       "name": "Seal of the Crusader",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 21084,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 21183,
@@ -11551,42 +11551,42 @@
     {
       "id": 25715,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25727,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25728,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25729,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25730,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25731,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25732,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25733,
       "name": "Seal of Righteousness",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25734,
@@ -11636,7 +11636,7 @@
     {
       "id": 25745,
       "name": " Judgement of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25751,
@@ -11666,22 +11666,22 @@
     {
       "id": 25759,
       "name": " Judgement of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25760,
       "name": " Judgement of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25761,
       "name": " Judgement of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25762,
       "name": " Judgement of Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25771,
@@ -11706,7 +11706,7 @@
     {
       "id": 25890,
       "name": "Greater Blessing of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 25894,
@@ -11831,7 +11831,7 @@
     {
       "id": 26650,
       "name": "Blessing of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27498,
@@ -11881,7 +11881,7 @@
     {
       "id": 27850,
       "name": "Devotion Armor Increased",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28774,
@@ -11891,7 +11891,7 @@
     {
       "id": 28775,
       "name": "Judgement of Light",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28787,
@@ -11901,12 +11901,12 @@
     {
       "id": 28789,
       "name": "Holy Power",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28851,
       "name": "Increased Flash of Light Healing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28852,
@@ -11916,7 +11916,7 @@
     {
       "id": 28853,
       "name": "Increased Flash of Light Healing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29196,
@@ -11961,7 +11961,7 @@
     {
       "id": 44098,
       "name": "Final Judgement Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45409,
@@ -12026,7 +12026,7 @@
     {
       "id": 45802,
       "name": "Seal of the Martyr",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45803,
@@ -12081,12 +12081,12 @@
     {
       "id": 45954,
       "name": "Sanctified Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45955,
       "name": "Sanctified Command",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45959,
@@ -12241,17 +12241,17 @@
     {
       "id": 51325,
       "name": "Righteous Defense",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51326,
       "name": "Righteous Defense",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51327,
       "name": "Righteous Defense",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51328,
@@ -12461,12 +12461,12 @@
     {
       "id": 51745,
       "name": "Seal of Wisdom",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51746,
       "name": "Seal of Wisdom",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51747,
@@ -12541,12 +12541,12 @@
     {
       "id": 51820,
       "name": "JoL FoL Healing Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51821,
       "name": "Holy Power",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51822,
@@ -12723,7 +12723,7 @@
     {
       "id": 586,
       "name": "Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 588,
@@ -12888,7 +12888,7 @@
     {
       "id": 2096,
       "name": "Mind Vision",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 2146,
@@ -13088,17 +13088,17 @@
     {
       "id": 9578,
       "name": "Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 9579,
       "name": "Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 9592,
       "name": "Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10060,
@@ -13183,7 +13183,7 @@
     {
       "id": 10909,
       "name": "Mind Vision",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10911,
@@ -13248,12 +13248,12 @@
     {
       "id": 10941,
       "name": "Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10942,
       "name": "Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 10945,
@@ -13798,7 +13798,7 @@
     {
       "id": 15274,
       "name": "Improved Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15275,
@@ -13808,7 +13808,7 @@
     {
       "id": 15286,
       "name": "Vampiric Embrace",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15307,
@@ -13833,7 +13833,7 @@
     {
       "id": 15311,
       "name": "Improved Fade",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 15312,
@@ -14583,7 +14583,7 @@
     {
       "id": 22203,
       "name": "Blue Beam",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 22205,
@@ -14698,7 +14698,7 @@
     {
       "id": 23642,
       "name": "Corruption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23693,
@@ -14818,7 +14818,7 @@
     {
       "id": 26169,
       "name": "Oracle Healing Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 26171,
@@ -15058,7 +15058,7 @@
     {
       "id": 28309,
       "name": "Copy of Corruption",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28310,
@@ -15138,7 +15138,7 @@
     {
       "id": 28809,
       "name": "Greater Heal",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28883,
@@ -15178,7 +15178,7 @@
     {
       "id": 30238,
       "name": "Lordaeron's Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 36601,
@@ -15288,7 +15288,7 @@
     {
       "id": 45560,
       "name": "Resurgent Shield",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45561,
@@ -15323,7 +15323,7 @@
     {
       "id": 45568,
       "name": "Holy Champion",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45569,
@@ -15498,12 +15498,12 @@
     {
       "id": 51475,
       "name": "Enlighten Dummy",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51476,
       "name": "Enlighten",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51478,
@@ -15718,7 +15718,7 @@
     {
       "id": 52699,
       "name": "T2.5 Set Bonus - Pain Spike",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52880,
@@ -15863,7 +15863,7 @@
     {
       "id": 52961,
       "name": "Holy Attenuation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52962,
@@ -15943,7 +15943,7 @@
     {
       "id": 58136,
       "name": "Shadow Weaving",
-      "spellDamageType": 0
+      "spellDamageType": 16
     }
   ],
   "Rogue": [
@@ -16675,7 +16675,7 @@
     {
       "id": 13877,
       "name": "Blade Flurry",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 13974,
@@ -17335,7 +17335,7 @@
     {
       "id": 23582,
       "name": "Clean Escape",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23583,
@@ -18317,7 +18317,7 @@
     {
       "id": 6495,
       "name": "Sentry Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 8004,
@@ -20027,7 +20027,7 @@
     {
       "id": 20608,
       "name": "Reincarnation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20609,
@@ -20182,7 +20182,7 @@
     {
       "id": 23683,
       "name": "Twisting Nether",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23789,
@@ -20397,12 +20397,12 @@
     {
       "id": 28823,
       "name": "Totemic Power",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28849,
       "name": "Lesser Healing Wave",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28856,
@@ -20537,7 +20537,7 @@
     {
       "id": 29203,
       "name": "Healing Way",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 29205,
@@ -20632,27 +20632,27 @@
     {
       "id": 30867,
       "name": "Nature's Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30868,
       "name": "Nature's Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30869,
       "name": "Nature's Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30870,
       "name": "Nature's Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30871,
       "name": "Nature's Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 30872,
@@ -20737,7 +20737,7 @@
     {
       "id": 41826,
       "name": "Tidal Wave Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 44079,
@@ -20777,7 +20777,7 @@
     {
       "id": 45508,
       "name": "Thunderhead",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45509,
@@ -20892,27 +20892,27 @@
     {
       "id": 45951,
       "name": "Spirit Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45952,
       "name": "Spirit Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45953,
       "name": "[Deprecated] Spirit Armor",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46107,
       "name": "Improved Molten Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46108,
       "name": "Improved Molten Blast",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46109,
@@ -20922,7 +20922,7 @@
     {
       "id": 46110,
       "name": "Molten Core",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 46111,
@@ -20957,7 +20957,7 @@
     {
       "id": 46762,
       "name": "Improved Clearcasting",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 47357,
@@ -21022,32 +21022,32 @@
     {
       "id": 51368,
       "name": "Windfury Totem",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51369,
       "name": "Improved Water Shield",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51370,
       "name": "Improved Water Shield",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51371,
       "name": "Improved Water Shield",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51372,
       "name": "Undertow",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51373,
       "name": "Undertow",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51374,
@@ -21147,7 +21147,7 @@
     {
       "id": 51396,
       "name": "Flame Guidance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51489,
@@ -21242,7 +21242,7 @@
     {
       "id": 51838,
       "name": "Flametongue Damage Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51840,
@@ -21282,22 +21282,22 @@
     {
       "id": 51847,
       "name": "Elemental Shell",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51848,
       "name": "Elemental Shell Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51849,
       "name": "Earthmother's Attunement",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51850,
       "name": "Lightning Strike Shield Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51851,
@@ -21327,7 +21327,7 @@
     {
       "id": 51856,
       "name": "Shaman Strikes Cooldown Reset",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51857,
@@ -21337,7 +21337,7 @@
     {
       "id": 51858,
       "name": "Howling Wind Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51859,
@@ -21372,7 +21372,7 @@
     {
       "id": 51868,
       "name": "Lightning Shield Trigger Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51869,
@@ -21417,12 +21417,12 @@
     {
       "id": 51890,
       "name": "Stormwolf's Cunning",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51891,
       "name": "Stormwolf's Cunning Passive",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51892,
@@ -21432,7 +21432,7 @@
     {
       "id": 51893,
       "name": "Reincarnation Mana Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51894,
@@ -22301,7 +22301,7 @@
     {
       "id": 17619,
       "name": "Alchemists Stone",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 17624,
@@ -24070,12 +24070,12 @@
     {
       "id": 18182,
       "name": "Improved Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18183,
       "name": "Improved Life Tap",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18213,
@@ -24225,12 +24225,12 @@
     {
       "id": 18692,
       "name": "[Deprecated] REUSE",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18693,
       "name": "[Deprecated] REUSE",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18694,
@@ -24250,12 +24250,12 @@
     {
       "id": 18703,
       "name": "Soul Funnel",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18704,
       "name": "Soul Funnel",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 18705,
@@ -24600,7 +24600,7 @@
     {
       "id": 19028,
       "name": "Soul Link",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 19244,
@@ -25055,7 +25055,7 @@
     {
       "id": 26385,
       "name": "Shadowburn",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 28023,
@@ -25325,7 +25325,7 @@
     {
       "id": 51697,
       "name": "Felstone",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51698,
@@ -25335,7 +25335,7 @@
     {
       "id": 51700,
       "name": "Wrathstone",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51701,
@@ -25350,17 +25350,17 @@
     {
       "id": 51706,
       "name": "Soul Entrapment",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51707,
       "name": "Soul Entrapment",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51708,
       "name": "Soul Entrapment",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51709,
@@ -25440,7 +25440,7 @@
     {
       "id": 52546,
       "name": "Malediction",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52547,
@@ -25490,17 +25490,17 @@
     {
       "id": 52558,
       "name": "Soul Siphon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52559,
       "name": "Soul Siphon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52560,
       "name": "Soul Siphon",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52599,
@@ -25530,7 +25530,7 @@
     {
       "id": 52606,
       "name": "Curse of Agony Bonus Damage",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52607,
@@ -25620,7 +25620,7 @@
     {
       "id": 52656,
       "name": "Dark Harvest Doomguard",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52657,
@@ -25650,7 +25650,7 @@
     {
       "id": 52682,
       "name": "Conflagrate Tick Bonus",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 52737,
@@ -25685,7 +25685,7 @@
     {
       "id": 52965,
       "name": "Unleashed Potential",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53222,
@@ -26222,7 +26222,7 @@
     {
       "id": 12292,
       "name": "Sweeping Strikes",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 12294,
@@ -26852,7 +26852,7 @@
     {
       "id": 20230,
       "name": "Retaliation",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20240,
@@ -26917,7 +26917,7 @@
     {
       "id": 20508,
       "name": "Charge",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 20511,
@@ -27112,7 +27112,7 @@
     {
       "id": 23418,
       "name": "Siphon Blessing",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23424,
@@ -27127,7 +27127,7 @@
     {
       "id": 23427,
       "name": "Summon Infernals",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 23436,
@@ -27442,7 +27442,7 @@
     {
       "id": 26651,
       "name": "Execute",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 26652,
@@ -27482,7 +27482,7 @@
     {
       "id": 27825,
       "name": "Shadow Mark",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 27826,
@@ -27727,7 +27727,7 @@
     {
       "id": 45606,
       "name": "Shadow Dance",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 45806,
@@ -27802,12 +27802,12 @@
     {
       "id": 51593,
       "name": "Reprisal",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51594,
       "name": "Reprisal",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51595,
@@ -27852,17 +27852,17 @@
     {
       "id": 51606,
       "name": "Defensive Tactics",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51607,
       "name": "Defensive Tactics",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51608,
       "name": "Defensive Tactics",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51609,
@@ -27992,27 +27992,27 @@
     {
       "id": 51644,
       "name": "Master of Arms",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51655,
       "name": "Master of Arms",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51656,
       "name": "Master of Arms",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51657,
       "name": "Master of Arms",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51658,
       "name": "Master of Arms",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 51898,
@@ -28072,7 +28072,7 @@
     {
       "id": 53201,
       "name": "Charge in Combat",
-      "spellDamageType": 0
+      "spellDamageType": 16
     },
     {
       "id": 53202,

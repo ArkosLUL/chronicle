@@ -65,7 +65,7 @@ SELECT
 FROM
   game_players gp
 LEFT JOIN guilds g ON g.id = gp.guild_id
-LEFT JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
+JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
 WHERE
   gp.realm_id = $1
   AND (gp.id = $2::wow_guid OR lower(gp.name) = lower($3))
@@ -134,7 +134,7 @@ SELECT
 FROM
   game_players gp
 LEFT JOIN guilds g ON g.id = gp.guild_id
-LEFT JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
+JOIN wow_server_realms ON gp.realm_id = wow_server_realms.id
 WHERE
   gp.name ILIKE $1 || '%'
   AND CASE

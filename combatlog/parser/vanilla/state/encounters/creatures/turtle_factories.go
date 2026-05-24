@@ -36,6 +36,7 @@ func TurtleCharacterFactories() []characters.CharacterFactory {
 		NewRazorgore,
 		NewShadowflameSpark,
 		NewNefarian,
+		NewVaelChained,
 		// Onyxia
 		NewOnyxiaCharacter,
 		// Zul'Gurub

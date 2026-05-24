@@ -30,7 +30,7 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 		q.Set("start", time.Now().AddDate(0, 0, -365).UTC().Format(time.RFC3339))
 	}
 	if q.Get("end") == "" {
-		q.Set("end", time.Now().UTC().Format(time.RFC3339))
+		q.Set("end", time.Now().Add(24*time.Hour).UTC().Format(time.RFC3339))
 	}
 	if q.Get("limit") == "" {
 		q.Set("limit", "25")

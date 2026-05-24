@@ -742,8 +742,8 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 		}
 		return nil
 	}
-	hostile[60747] = Identity{Affiliation: types.AffiliationHostile, EncounterName: "Erennius", Boss: true, EncounterNameFn: hardMode}
-	hostile[60748] = Identity{Affiliation: types.AffiliationHostile, EncounterName: "Solnius", Boss: true, EncounterNameFn: hardMode}
+	hostile[60747] = Identity{Affiliation: types.AffiliationHostile, Name: "Erennius", Boss: true, EncounterNameFn: hardMode}
+	hostile[60748] = Identity{Affiliation: types.AffiliationHostile, Name: "Solnius", Boss: true, EncounterNameFn: hardMode}
 
 	return hostile
 }
@@ -1056,12 +1056,33 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		12435: "Razorgore the Untamed",
 		12017: "Broodlord Lashlayer",
 		11983: "Firemaw",
-		11981: "Flamegor",
 		14020: "Chromaggus",
 		13020: "Vaelastrasz the Corrupt",
-		14601: "Ebonroc",
 		65148: "Ezzel Darkbrewer",
 	})
+
+	ebonrocAndFlamegor := func(f Fight) *EncounterFuncResult {
+		hasEbonroc := false
+		hasFlamegor := false
+		for _, host := range f.Hostiles {
+			entry, _ := host.ID.GetEntry()
+			if entry == 11981 {
+				hasFlamegor = true
+			}
+			if entry == 14601 {
+				hasEbonroc = true
+			}
+		}
+		if hasFlamegor && hasEbonroc {
+			return &EncounterFuncResult{
+				EncounterName: "Flamegor & Ebonroc",
+			}
+		}
+		return nil
+	}
+
+	hostile[14601] = Identity{Affiliation: types.AffiliationHostile, Name: "Ebonroc", Boss: true, EncounterNameFn: ebonrocAndFlamegor}
+	hostile[11981] = Identity{Affiliation: types.AffiliationHostile, Name: "Flamegor", Boss: true, EncounterNameFn: ebonrocAndFlamegor}
 
 	switch services.ServerName {
 	case services.ServerIdentityVanillaPlus:
@@ -1069,6 +1090,12 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		hostile[25123] = Identity{
 			Affiliation:   types.AffiliationHostile,
 			Name:          "Vaelastrasz the Chained",
+			EncounterName: "",
+			Boss:          true,
+		}
+		hostile[25100] = Identity{
+			Affiliation:   types.AffiliationHostile,
+			Name:          "Elementium Decapitator Mk III",
 			EncounterName: "",
 			Boss:          true,
 		}

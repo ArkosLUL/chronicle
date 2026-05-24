@@ -112,3 +112,14 @@ func (c *shadowflameSpark) Process(m messages.Message) error {
 	return c.Common.Process(m)
 
 }
+
+func NewVaelChained(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	// V+ only
+	if entry, ok := id.GetEntry(); !ok || entry != 25123 {
+		return nil, false
+	}
+
+	base := characters.NewCommonCharacter(id, all)
+	base.SetRecentlySlainDuration(time.Second * 45)
+	return base, true
+}

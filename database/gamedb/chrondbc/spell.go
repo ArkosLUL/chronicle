@@ -280,6 +280,11 @@ func (s Spell) SpellDamageType() SpellDamageType {
 				AuraEffectPeriodicDamagePercent,
 				AuraEffectPowerBurn:
 				base |= SpellDamagePeriodic
+			case AuraEffectDummy:
+				base |= SpellDamageNoEngageCombat
+			case AuraEffectBindSight, AuraEffectModStalked:
+				// Mind vision type effects
+				base |= SpellDamageNoEngageCombat
 			case AuraEffectModMeleeHaste, AuraEffectModIncreaseSpeed, AuraEffectModScale:
 				// Auras that modify these attributes do not indicate combat activity.
 				base |= SpellDamageNoEngageCombat

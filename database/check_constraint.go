@@ -6,6 +6,8 @@ type CheckConstraint string
 
 // CheckConstraint enums.
 const (
+	CheckTenantsSlugFormat              CheckConstraint = "tenants_slug_format"                 // tenants
+	CheckTenantsSlugReserved            CheckConstraint = "tenants_slug_reserved"               // tenants
 	CheckRetentionPoliciesScope         CheckConstraint = "retention_policies_scope"            // retention_policies
 	CheckRetentionRulesActionCheck      CheckConstraint = "retention_rules_action_check"        // retention_rules
 	CheckFinalizedOrFinalizedAtNull     CheckConstraint = "finalized_or_finalized_at_null"      // river_job
@@ -17,8 +19,6 @@ const (
 	CheckVersionGte1                    CheckConstraint = "version_gte_1"                       // river_migration
 	CheckSharedViewsPayloadMax10Kb      CheckConstraint = "shared_views_payload_max_10kb"       // shared_views
 	CheckSiteConfigIDCheck              CheckConstraint = "site_config_id_check"                // site_config
-	CheckTenantsSlugFormat              CheckConstraint = "tenants_slug_format"                 // tenants
-	CheckTenantsSlugReserved            CheckConstraint = "tenants_slug_reserved"               // tenants
 	CheckUserPanelLayoutsPayloadSizeChk CheckConstraint = "user_panel_layouts_payload_size_chk" // user_panel_layouts
 	CheckUserPanelLayoutsTitleFormatChk CheckConstraint = "user_panel_layouts_title_format_chk" // user_panel_layouts
 )

@@ -6,9 +6,6 @@ import (
 )
 
 type vanillaplus struct {
-	rag guid.GUID
-	mag guid.GUID
-
 	// shadow -> primary
 	shadowBoss map[uint32]uint32
 	boss       map[uint32]*guid.GUID
@@ -64,7 +61,8 @@ func (v *vanillaplus) ProcessMessages(msg []messages.Message) {
 			if !ok || boss == nil {
 				continue
 			}
-			ty.Caster = &(*boss)
+			cpy := *boss
+			ty.Caster = &cpy
 		}
 	}
 }

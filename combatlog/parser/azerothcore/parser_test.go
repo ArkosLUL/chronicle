@@ -206,7 +206,7 @@ func TestMetricsTotalLinesParsed(t *testing.T) {
 func TestZulFarrakBossEncounterRegression(t *testing.T) {
 	t.Parallel()
 
-	ctx := parsectx.WithType(context.Background(), database.LogTypeAzerothcore)
+	ctx := parsectx.WithType(context.Background(), database.LogTypeAzerothcoreClientside)
 	reg := registry.AzerothcoreStaticRegistry(slog.Default())
 	bossGUID := creatureGUID(7272, 1)
 	logData := strings.Join([]string{

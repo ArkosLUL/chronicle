@@ -53,13 +53,13 @@ var (
 
 	ScarletMonasteryGraveyardFactory = &CommonFactory{
 		Name:      "Scarlet Monastery Graveyard",
-		ZoneNames: []string{"scarlet monastery graveyard"},
+		ZoneNames: []string{"scarlet monastery graveyard", "血色修道院-墓地"},
 		Hostiles:  FromMap(SMGraveyardHostiles()),
 	}
 
 	ScarletMonasteryArmoryFactory = &CommonFactory{
 		Name:      "Scarlet Monastery Armory",
-		ZoneNames: []string{"scarlet monastery armory"},
+		ZoneNames: []string{"scarlet monastery armory", "血色修道院-军械库"},
 		Hostiles:  FromMap(SMArmoryHostiles()),
 	}
 
@@ -67,7 +67,13 @@ var (
 		MultiZone: true,
 		Name:      "Scarlet Monastery",
 		ZoneNames: []string{"scarlet monastery"},
-		Hostiles:  FromMaps(SMLibraryHostiles(), CathedralHostiles()),
+    DerivedName: NewMultiInstanceZone(map[string][]uint32{
+      "Scarlet Monastery Cathedral": {3976,3977,4542 },
+      "Scarlet Monastery Library":   {3974, 61983, 6487 },
+      "Scarlet Monastery Armory":    {3975},
+      "Scarlet Monastery Graveyard": {3983,4543 },
+    }),
+		Hostiles:  FromMaps(SMGraveyardHostiles(), SMLibraryHostiles(), SMArmoryHostiles(), CathedralHostiles()),
 	}
 
 	BlackrockSpireFactory = &CommonFactory{
@@ -330,8 +336,6 @@ var (
 //["Lower Karazhan Halls"] = "卡拉赞下层大厅", -- TurtleWOW
 //["Maraudon"] = "玛拉顿",
 //["Razorfen Downs"] = "剃刀高地",
-//["Scarlet Monastery Graveyard"] = "血色修道院-墓地", -- TurtleWOW
-//["Scarlet Monastery Armory"] = "血色修道院-军械库", -- TurtleWOW
 //["Uldaman"] = "奥达曼",
 //["Winterspring"] = "冬泉谷",
 //["Zul'Farrak"] = "祖尔法拉克",

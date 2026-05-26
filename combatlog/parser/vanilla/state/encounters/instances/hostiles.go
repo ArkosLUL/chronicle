@@ -86,8 +86,8 @@ func SMLibraryHostiles() map[uint32]Identity {
 	})
 	LoadBosses(hostile, map[uint32]string{
 		3974:  "Houndmaster Loksey",
-		61983: "Brother Wystan",
 		6487:  "Arcanist Doan",
+		61983: "Brother Wystan", // TWoW
 	})
 
 	return hostile

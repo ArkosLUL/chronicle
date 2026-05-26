@@ -237,6 +237,10 @@ func (s Spell) SpellDamageType() SpellDamageType {
 	var base SpellDamageType
 
 	switch s.ID {
+	case 47790: // Arcane Trap Effect
+		// Async trap.
+		// TODO: Can we infer traps from the dbc?
+		return SpellDamageNoEngageCombat
 	case 2070, 6770, 11297:
 		// Sap is a special case. Unsure how to deduce from spell attributes right now.
 		return SpellDamageNoEngageCombat

@@ -146,10 +146,10 @@ func (r *Registry) Register(factory InstanceFactory) {
 }
 
 // GetInstance returns an instance for the given zone, or nil if none match
-func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
+func (r *Registry) GetInstance(ctx context.Context, verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
 	for _, entry := range r.entries {
 		// Create a temporary instance to check if it matches
-		inst := entry.Factory(parseoptions.WithVerbose(context.Background(), verbose), r.logger, db, z)
+		inst := entry.Factory(parseoptions.WithVerbose(ctx, verbose), r.logger, db, z)
 		if inst.MatchesZone(z) {
 			r.logger.Debug("matched instance",
 				slog.String("zone", z.Name),
@@ -159,7 +159,7 @@ func (r *Registry) GetInstance(verbose bool, z zone.Zone, db *unitdb.Units) *ins
 		}
 	}
 	if r.fallback != nil {
-		return r.fallback.GetInstance(verbose, z, db)
+		return r.fallback.GetInstance(ctx, verbose, z, db)
 	}
 	return nil
 }

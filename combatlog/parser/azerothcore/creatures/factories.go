@@ -18,3 +18,17 @@ func AzerothServersideCoreCharacterFactories() []characters.CharacterFactory {
 		},
 	}
 }
+
+func NewAzerothCoreCharacterFactories() []characters.CharacterFactory {
+	cres := creatures.TurtleCharacterFactories()
+
+	cres = append([]characters.CharacterFactory{
+		// The Nexus
+		NewAzureEnforcer,
+		NewCrazedManaWraith,
+		NewMageHunterAscendant,
+		NewCrystallineFrayer,
+	}, cres...)
+
+	return cres
+}

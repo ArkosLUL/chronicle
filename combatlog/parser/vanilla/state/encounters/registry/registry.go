@@ -25,6 +25,9 @@ type Entry struct {
 	Comment string
 	// Factory creates a Hookable for this instance.
 	Factory InstanceFactory
+	// MultiZone means this is a registry of more than 1 unique instance sharing the same zone.
+	// AKA: Scarlet Monastery
+	MultiZone bool
 
 	// ZoneNames are the lowercase zone name(s) this instance matches.
 	ZoneNames []string
@@ -55,6 +58,7 @@ func FromCommonFactory(f *instances.CommonFactory) Entry {
 
 	return Entry{
 		Name:           f.Name,
+		MultiZone:      f.MultiZone,
 		Factory:        wrap(f.New),
 		ZoneNames:      f.ZoneNames,
 		HostileEntries: hostiles,
@@ -169,6 +173,7 @@ func (r *Registry) Entries() map[string]*Entry {
 func (r *Registry) EntryByName(name string) *Entry {
 	return r.entries[name]
 }
+
 // SpeedrunRules returns speedrun rules for every registered instance that has
 // them, keyed by instance name. Includes fallback entries.
 func (r *Registry) SpeedrunRules() map[string]*rankings.SpeedrunRules {
@@ -185,7 +190,6 @@ func (r *Registry) SpeedrunRules() map[string]*rankings.SpeedrunRules {
 	}
 	return m
 }
-
 
 // AllInstances returns all registered instance names
 func (r *Registry) AllInstances() []string {

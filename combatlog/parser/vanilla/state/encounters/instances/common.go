@@ -35,7 +35,9 @@ type FinalizedInstance struct {
 }
 
 type CommonFactory struct {
-	Name string
+	Name      string
+	MultiZone bool
+
 	// DerivedName allows changing the name dynamically based on the fight data.
 	// If 2 or more instances share the same zone.
 	DerivedName *MultiInstanceZone

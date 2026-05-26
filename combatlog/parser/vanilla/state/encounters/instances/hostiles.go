@@ -17,6 +17,18 @@ func LoadBosses(src map[uint32]Identity, bosses map[uint32]string) {
 	}
 }
 
+func FromMaps(m ...map[uint32]Identity) func() *Identifier {
+	merged := make(map[uint32]Identity)
+	for _, mm := range m {
+		for k, v := range mm {
+			merged[k] = v
+		}
+	}
+	return func() *Identifier {
+		return NewIdentifier(merged)
+	}
+}
+
 func FromMap(m map[uint32]Identity) func() *Identifier {
 	return func() *Identifier {
 		return NewIdentifier(m)
@@ -45,6 +57,22 @@ func CathedralHostiles() map[uint32]Identity {
 	return hostile
 }
 
+func SMGraveyardHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		4283: "Scarlet Sentry",
+		4306: "Scarlet Torturer",
+		4308: "Unfettered Spirit",
+		6427: "Haunting Phantasm",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		3983: "Interrogator Vishas",
+		4543: "Bloodmage Thalnos",
+	})
+
+	return hostile
+}
+
 func SMLibraryHostiles() map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
@@ -60,6 +88,24 @@ func SMLibraryHostiles() map[uint32]Identity {
 		3974:  "Houndmaster Loksey",
 		61983: "Brother Wystan",
 		6487:  "Arcanist Doan",
+	})
+
+	return hostile
+}
+
+func SMArmoryHostiles() map[uint32]Identity {
+	hostile := make(map[uint32]Identity)
+	LoadAdds(hostile, map[uint32]string{
+		4298: "Scarlet Defender",
+		4297: "Scarlet Conjuror",
+		4289: "Scarlet Evoker",
+		4290: "Scarlet Guardsman",
+		4295: "Scarlet Myrmidon",
+		4292: "Scarlet Protector",
+		4286: "Scarlet Soldier",
+	})
+	LoadBosses(hostile, map[uint32]string{
+		3975: "Herod",
 	})
 
 	return hostile

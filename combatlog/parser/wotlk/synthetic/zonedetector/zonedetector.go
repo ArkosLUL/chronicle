@@ -27,6 +27,9 @@ func New(logger *slog.Logger, reg *registry.Registry) *ZoneDetector {
 	notUnique := make(map[uint32]struct{})
 
 	for _, entry := range reg.Entries() {
+		if entry.MultiZone {
+			continue
+		}
 		for entryID := range entry.HostileEntries {
 			for _, zn := range entry.ZoneNames {
 				_, exists := notUnique[entryID]

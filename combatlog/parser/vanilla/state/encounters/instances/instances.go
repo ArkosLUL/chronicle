@@ -51,6 +51,25 @@ var (
 		Hostiles:  FromMap(SMLibraryHostiles()),
 	}
 
+	ScarletMonasteryGraveyardFactory = &CommonFactory{
+		Name:      "Scarlet Monastery Graveyard",
+		ZoneNames: []string{"scarlet monastery graveyard"},
+		Hostiles:  FromMap(SMGraveyardHostiles()),
+	}
+
+	ScarletMonasteryArmoryFactory = &CommonFactory{
+		Name:      "Scarlet Monastery Armory",
+		ZoneNames: []string{"scarlet monastery armory"},
+		Hostiles:  FromMap(SMArmoryHostiles()),
+	}
+
+	AllScarletMonasteryFactory = &CommonFactory{
+		MultiZone: true,
+		Name:      "Scarlet Monastery",
+		ZoneNames: []string{"scarlet monastery"},
+		Hostiles:  FromMaps(SMLibraryHostiles(), CathedralHostiles()),
+	}
+
 	BlackrockSpireFactory = &CommonFactory{
 		Name: "Blackrock Spire",
 		DerivedName: NewMultiInstanceZone(map[string][]uint32{

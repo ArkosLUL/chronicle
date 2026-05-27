@@ -9,10 +9,12 @@ import (
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/registry"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
+	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
@@ -33,12 +35,13 @@ func OnRankings() string {
 	return (&Service{}).Name()
 }
 
-// Service provides DPS performance rankings queries and (future) population.
+// Service provides DPS rankings, speedrun leaderboard, and related queries.
 type Service struct {
-	broker *services.Services
-	router chi.Router
-	logger *slog.Logger
-	store  *authz.Authz
+	broker   *services.Services
+	router   chi.Router
+	logger   *slog.Logger
+	store    *authz.Authz
+	registry *registry.Registry
 
 	// SummaryDispatchWorker fans out per-tenant refresh jobs.
 	SummaryDispatchWorker *WorkerRefreshRankingsSummaries
@@ -61,6 +64,7 @@ func (s *Service) DependsOn() []string {
 		servicelogger.OnLogger(),
 		serviceauthz.OnAuthz(),
 		servicedbstore.OnDatabaseStore(),
+		servicechronicle.OnChronicle(),
 	}
 }
 
@@ -72,6 +76,7 @@ func (s *Service) Options() serpent.OptionSet {
 func (s *Service) Start(_ context.Context) error {
 	s.logger = servicelogger.Logger(s.broker)
 	s.store = serviceauthz.Authz(s.broker)
+	s.registry = servicechronicle.Chronicle(s.broker).Registry()
 
 	namedLogger := services.NamedLogger(s.logger, s.Name())
 	store := servicedbstore.DatabaseStore(s.broker)
@@ -101,12 +106,30 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) setupRoutes() {
+	// All rankings/leaderboard data is public and changes infrequently.
+	// Cache for 5 minutes to reduce load on repeat visits.
+	s.router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				w.Header().Set("Cache-Control", "public, max-age=300")
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// DPS rankings
 	s.router.Get("/instances", s.handleInstances)
 	s.router.Get("/encounters", s.handleEncounters)
 	s.router.Get("/leaderboard", s.handleLeaderboard)
 	s.router.Get("/stats", s.handleStats)
 	s.router.Get("/kill-times", s.handleKillTimes)
 	s.router.Get("/success-rates", s.handleSuccessRates)
+
+	// Speedrun leaderboard
+	s.router.Get("/speedrun", s.handleSpeedrunLeaderboard)
+	s.router.Get("/speedrun/instances", s.handleSpeedrunInstances)
+	s.router.Get("/speedrun/realms", s.handleSpeedrunRealms)
+	s.router.Get("/speedrun/rules", s.handleSpeedrunRules)
 }
 
 // handleInstances returns per-instance summaries with top 3 players.

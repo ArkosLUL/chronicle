@@ -1,0 +1,152 @@
+package servicerankings
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/db2sdk"
+	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/slice"
+)
+
+// handleSpeedrunLeaderboard returns the best qualified speedrun per duplicate
+// group for a given instance name.
+//
+//	GET /speedrun?instance_name=Molten+Core&realm_name=Turtle+WoW
+func (s *Service) handleSpeedrunLeaderboard(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	instanceName := r.URL.Query().Get("instance_name")
+	if instanceName == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "instance_name query parameter is required",
+		})
+		return
+	}
+
+	realmNames := r.URL.Query()["realm_name"]
+
+	var minPlayers, maxPlayers int64
+	if v := r.URL.Query().Get("min_players"); v != "" {
+		minPlayers, _ = strconv.ParseInt(v, 10, 64)
+	}
+	if v := r.URL.Query().Get("max_players"); v != "" {
+		maxPlayers, _ = strconv.ParseInt(v, 10, 64)
+	}
+
+	guildID := r.URL.Query().Get("guild_id")
+
+	var sinceDays int64
+	if v := r.URL.Query().Get("since_days"); v != "" {
+		sinceDays, _ = strconv.ParseInt(v, 10, 64)
+	}
+
+	rows, err := s.store.SpeedrunLeaderboard(ctx, database.SpeedrunLeaderboardParams{
+		InstanceName: instanceName,
+		RealmNames:   realmNames,
+		MinPlayers:   minPlayers,
+		MaxPlayers:   maxPlayers,
+		GuildID:      guildID,
+		SinceDays:    sinceDays,
+	})
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch speedrun leaderboard",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, slice.List(rows, db2sdk.SpeedrunLeaderboardEntry))
+}
+
+// handleSpeedrunInstances returns the list of instance names that have
+// qualified speedruns.
+//
+//	GET /speedrun/instances
+func (s *Service) handleSpeedrunInstances(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	names, err := s.store.SpeedrunInstanceNames(ctx)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch speedrun instance names",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, names)
+}
+
+// handleSpeedrunRealms returns the list of realm names that have qualified speedruns.
+//
+//	GET /speedrun/realms
+func (s *Service) handleSpeedrunRealms(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	names, err := s.store.SpeedrunRealmNames(ctx)
+	if err != nil {
+		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
+			Response: chroniclesdk.Response{
+				Message: "Failed to fetch speedrun realm names",
+				Detail:  err.Error(),
+			},
+		})
+		return
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, names)
+}
+
+// handleSpeedrunRules returns the speedrun requirements for a given instance.
+//
+//	GET /speedrun/rules?instance_name=...
+func (s *Service) handleSpeedrunRules(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	instanceName := r.URL.Query().Get("instance_name")
+	if instanceName == "" {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+			Message: "instance_name query parameter is required",
+		})
+		return
+	}
+
+	allRules := s.registry.SpeedrunRules()
+	rules, ok := allRules[instanceName]
+	if !ok {
+		httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
+			Message: "No speedrun rules found for instance",
+		})
+		return
+	}
+
+	sdkReqs := make([]chroniclesdk.SpeedrunRequirement, len(rules.Requirements))
+	for i, req := range rules.Requirements {
+		sdkReqs[i] = chroniclesdk.SpeedrunRequirement{
+			Name:     req.Name,
+			EntryIDs: req.EntryIDs,
+			Count:    req.Count,
+			Category: string(req.Category),
+		}
+	}
+
+	resp := chroniclesdk.SpeedrunRulesResponse{
+		InstanceName: instanceName,
+		Requirements: sdkReqs,
+	}
+	if rules.LevelRange != nil {
+		resp.LevelRange = &chroniclesdk.SpeedrunLevelRangeRequirement{
+			MinLevel: rules.LevelRange.MinLevel,
+			MaxLevel: rules.LevelRange.MaxLevel,
+		}
+	}
+
+	httpapi.Write(ctx, w, http.StatusOK, resp)
+}

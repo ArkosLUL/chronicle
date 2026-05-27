@@ -418,15 +418,16 @@ func (api *API) Routes() chi.Router {
 				})
 			})
 
-			r.Route("/leaderboard", func(r chi.Router) {
-				r.Get("/speedrun", api.SpeedrunLeaderboard)
-				r.Get("/speedrun/instances", api.SpeedrunInstances)
-				r.Get("/speedrun/realms", api.SpeedrunRealms)
-				r.Get("/speedrun/rules", api.SpeedrunRules)
-			})
-
 			if api.Opts.Rankings != nil {
 				r.Mount("/rankings", api.Opts.Rankings)
+
+				// Backward-compat: old /leaderboard/speedrun/* → /rankings/speedrun/*
+				r.Route("/leaderboard", func(r chi.Router) {
+					r.Get("/speedrun", api.redirectToRankings("/rankings/speedrun"))
+					r.Get("/speedrun/instances", api.redirectToRankings("/rankings/speedrun/instances"))
+					r.Get("/speedrun/realms", api.redirectToRankings("/rankings/speedrun/realms"))
+					r.Get("/speedrun/rules", api.redirectToRankings("/rankings/speedrun/rules"))
+				})
 			}
 
 			if api.Opts.InternalGameData != nil {
@@ -616,6 +617,19 @@ func buildThemeCSS(branding *chroniclesdk.Branding) string {
 		}
 	}
 	return b.String()
+}
+
+// redirectToRankings returns a handler that redirects to a /rankings/* path,
+// preserving the original query string. Used for backward compat with old
+// /leaderboard/speedrun/* URLs.
+func (api *API) redirectToRankings(target string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u := target
+		if r.URL.RawQuery != "" {
+			u += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, u, http.StatusTemporaryRedirect)
+	}
 }
 
 func (api *API) Close() error {

@@ -1,20 +1,23 @@
 import { useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Trophy, Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown, Info, ArrowLeft, Castle, Swords } from "lucide-react"
+import { Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown, Info, ArrowLeft } from "lucide-react"
 import { getInstanceConfig, getInstanceCategory, getInstanceBackground } from "../Logs/utils/instanceImages"
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { SpeedrunLeaderboardEntry, SpeedrunRulesResponse } from "../../api/typesGenerated"
 import { Podium } from "./Podium"
 import { LeaderboardTable } from "./LeaderboardTable"
 
+const SPEEDRUN_STALE_TIME = 5 * 60 * 1000 // 5 minutes
+
 function useSpeedrunInstances() {
   return useQuery<string[]>({
     queryKey: ["leaderboard", "speedrun", "instances"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/leaderboard/speedrun/instances")
+      const res = await fetch("/api/v1/rankings/speedrun/instances")
       if (!res.ok) throw new Error("Failed to fetch instances")
       return res.json()
     },
+    staleTime: SPEEDRUN_STALE_TIME,
   })
 }
 
@@ -22,10 +25,11 @@ function useSpeedrunRealms() {
   return useQuery<string[]>({
     queryKey: ["leaderboard", "speedrun", "realms"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/leaderboard/speedrun/realms")
+      const res = await fetch("/api/v1/rankings/speedrun/realms")
       if (!res.ok) throw new Error("Failed to fetch realms")
       return res.json()
     },
+    staleTime: SPEEDRUN_STALE_TIME,
   })
 }
 
@@ -47,11 +51,12 @@ function useSpeedrunLeaderboard(
       if (minPlayers) params.set("min_players", minPlayers)
       if (maxPlayers) params.set("max_players", maxPlayers)
       if (sinceDays) params.set("since_days", sinceDays)
-      const res = await fetch(`/api/v1/leaderboard/speedrun?${params.toString()}`)
+      const res = await fetch(`/api/v1/rankings/speedrun?${params.toString()}`)
       if (!res.ok) throw new Error("Failed to fetch leaderboard")
       return res.json()
     },
     enabled: !!instanceName,
+    staleTime: SPEEDRUN_STALE_TIME,
   })
 }
 
@@ -59,11 +64,12 @@ function useSpeedrunRules(instanceName: string) {
   return useQuery<SpeedrunRulesResponse>({
     queryKey: ["leaderboard", "speedrun", "rules", instanceName],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/leaderboard/speedrun/rules?instance_name=${encodeURIComponent(instanceName)}`)
+      const res = await fetch(`/api/v1/rankings/speedrun/rules?instance_name=${encodeURIComponent(instanceName)}`)
       if (!res.ok) throw new Error("Failed to fetch rules")
       return res.json()
     },
     enabled: !!instanceName,
+    staleTime: SPEEDRUN_STALE_TIME,
   })
 }
 
@@ -399,22 +405,54 @@ function CriteriaModal({
   )
 }
 
+function formatDuration(ms: number): string {
+  const totalSecs = Math.floor(ms / 1000)
+  const mins = Math.floor(totalSecs / 60)
+  const secs = totalSecs % 60
+  return `${mins}:${secs.toString().padStart(2, "0")}`
+}
+
 function InstanceCard({ name, onSelect }: { name: string; onSelect: (name: string) => void }) {
   const bg = getInstanceBackground(name)
+  const { data: entries } = useSpeedrunLeaderboard(name, [], "", "", "")
+  const top3 = entries?.slice(0, 3) ?? []
+
   return (
     <button
       type="button"
       onClick={() => onSelect(name)}
-      className="relative h-40 rounded-lg overflow-hidden group cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg w-full text-left"
+      className="group relative overflow-hidden rounded-xl border bg-card text-left transition-all hover:border-white/20 hover:shadow-lg aspect-[16/7] w-full"
     >
       <img
         src={bg}
         alt={name}
-        className="absolute inset-0 w-full h-full object-cover object-[center_35%] transition-transform duration-300 group-hover:scale-105"
+        className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
-      <div className="relative h-full flex items-end p-4">
-        <h3 className="text-base font-bold text-white drop-shadow-md">{name}</h3>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
+      <div className="relative flex h-full flex-col justify-end p-4">
+        <div className="mb-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {getInstanceConfig(name)?.abbrev ?? ""}
+          </span>
+          <h3 className="text-lg font-bold leading-tight text-white">{name}</h3>
+        </div>
+
+        {top3.length > 0 && (
+          <div className="mb-2 space-y-0.5">
+            {top3.map((entry, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span
+                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: ["#FFD700", "#C0C0C0", "#CD7F32"][i] }}
+                />
+                <span className="truncate text-foreground/90">{entry.guild_name}</span>
+                <span className="ml-auto font-mono font-semibold text-foreground/80">
+                  {formatDuration(entry.duration_ms)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </button>
   )
@@ -433,14 +471,14 @@ function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelec
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10 space-y-10">
+    <div className="space-y-6">
       {raids.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Swords className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Raids</h2>
+        <section className="space-y-3">
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-lg font-semibold text-muted-foreground">Raids</h2>
+            <span className="text-sm text-muted-foreground/60">Chronicle of fastest guild clears</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {raids.map((name) => (
               <InstanceCard key={name} name={name} onSelect={onSelect} />
             ))}
@@ -448,12 +486,9 @@ function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelec
         </section>
       )}
       {dungeons.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Castle className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Dungeons</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-muted-foreground">Dungeons</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {dungeons.map((name) => (
               <InstanceCard key={name} name={name} onSelect={onSelect} />
             ))}
@@ -464,14 +499,14 @@ function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelec
   )
 }
 
-export function SpeedrunLeaderboard() {
+export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: string } = {}) {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: instances, isLoading: instancesLoading } = useSpeedrunInstances()
   const { data: realms } = useSpeedrunRealms()
   const [criteriaOpen, setCriteriaOpen] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
 
-  const selectedInstance = searchParams.get("instance") || ""
+  const selectedInstance = overrideInstance || searchParams.get("instance") || ""
   const { data: rulesData } = useSpeedrunRules(selectedInstance)
   const selectedRealms = searchParams.getAll("realm")
   const minPlayers = searchParams.get("min_players") || ""
@@ -520,20 +555,13 @@ export function SpeedrunLeaderboard() {
   if (!selectedInstance && !instancesLoading) {
     return (
       <div className="w-full">
-        <div className="px-4 md:px-8 pt-6 md:pt-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Trophy className="h-7 w-7 text-yellow-500" />
-            <div>
-              <h1 className="text-2xl font-bold">Speedrun Leaderboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Chronicle of fastest guild clears
-              </p>
-            </div>
-          </div>
-        </div>
         <InstanceBrowser
           instances={instances ?? []}
-          onSelect={(name) => setSearchParams({ instance: name })}
+          onSelect={(name) => setSearchParams((prev) => {
+            const next = new URLSearchParams(prev)
+            next.set("instance", name)
+            return next
+          })}
         />
       </div>
     )
@@ -572,16 +600,7 @@ export function SpeedrunLeaderboard() {
             All Leaderboards
           </button>
 
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6 justify-center md:justify-start">
-            <Trophy className="h-7 w-7 text-yellow-500" />
-            <div>
-              <h1 className="text-2xl font-bold">Speedrun Leaderboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Chronicle of fastest guild clears
-              </p>
-            </div>
-          </div>
+
 
           {/* Filters Bar */}
           <div className="flex items-center gap-3 mb-6">

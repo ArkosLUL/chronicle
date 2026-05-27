@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom"
-import { Trophy, Skull, Loader2 } from "lucide-react"
+import { Skull, Loader2 } from "lucide-react"
 import { CLASS_CSS_VAR } from "./classDisplay"
 import { useRankingsInstances } from "@/api/rankingsQueries"
 import {
@@ -32,10 +32,6 @@ export function RankingsLanding() {
   if (!summaries || summaries.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-6 w-6 text-[#5F8FA6]" />
-          <h1 className="text-2xl font-bold">Rankings</h1>
-        </div>
         <div className="rounded-xl border p-8 text-center text-muted-foreground">
           No rankings data yet.
         </div>
@@ -87,7 +83,7 @@ export function RankingsLanding() {
                   />
                   <span className="truncate text-foreground/90">{p.player_name}</span>
                   <span className="ml-auto font-mono font-semibold text-foreground/80">
-                    {Math.round(p.dps).toLocaleString()}/s
+                    {Math.round(p.dps).toLocaleString()} dps
                   </span>
                 </div>
               ))}
@@ -106,11 +102,6 @@ export function RankingsLanding() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Trophy className="h-6 w-6 text-[#5F8FA6]" />
-        <h1 className="text-2xl font-bold">Rankings</h1>
-      </div>
-
       {raids.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-muted-foreground">Raids</h2>

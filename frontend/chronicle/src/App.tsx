@@ -65,8 +65,7 @@ import { GameDataLayout } from "./pages/GameData/GameDataPage"
 import { WDBTab } from "./pages/GameData/WDBTab"
 import { ImportSQLTab } from "./pages/GameData/ImportSQLTab"
 import { DBCTab } from "./pages/GameData/DBCTab"
-import { SpeedrunLeaderboard } from "./pages/Leaderboard/SpeedrunLeaderboard"
-import { RankingsPage } from "./pages/Rankings"
+import { LeaderboardsPage, LeaderboardRedirect, RankingsRedirect } from "./pages/Leaderboards/LeaderboardsPage"
 import { CensusPage } from "./pages/Census/CensusPage"
 import { Layout } from "./components/Layout/Layout"
 
@@ -105,8 +104,9 @@ function App() {
         <Route path="/armory" element={<ArmorySearchPage />} />
         <Route path="/armory/:realmName/:playerIdentifier" element={<ArmoryPage />} />
         <Route path="/sim" element={<SimPage />} />
-        <Route path="/leaderboard" element={<SpeedrunLeaderboard />} />
-        <Route path="/rankings" element={<RankingsPage />} />
+        <Route path="/leaderboards" element={<LeaderboardsPage />} />
+        <Route path="/leaderboard" element={<LeaderboardRedirect />} />
+        <Route path="/rankings" element={<RankingsRedirect />} />
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/apply/:id" element={<ApplicationPage />} />
         <Route path="/census" element={<CensusPage />} />

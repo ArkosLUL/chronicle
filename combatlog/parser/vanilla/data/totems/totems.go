@@ -34,8 +34,8 @@ func IsTotem(id guid.GUID) (Totem, bool) {
 }
 
 func EntryIsTotem(entry uint32) (Totem, bool) {
-  totem, exists := totems[entry]
-  return totem, exists
+	totem, exists := totems[entry]
+	return totem, exists
 }
 
 var totems = make(map[uint32]Totem)
@@ -95,6 +95,7 @@ func init() {
 		variant{id: 7414, duration: 60 * time.Second},
 		variant{id: 7415, duration: 60 * time.Second},
 		variant{id: 7416, duration: 60 * time.Second},
+		variant{id: 15489, duration: 60 * time.Second},
 	)
 
 	register("Strength of Earth Totem",
@@ -104,6 +105,7 @@ func init() {
 		variant{id: 5922, duration: 120 * time.Second},
 		variant{id: 7403, duration: 120 * time.Second},
 		variant{id: 15464, duration: 120 * time.Second},
+		variant{id: 15479, duration: 120 * time.Second},
 	)
 
 	register("Magma Totem",

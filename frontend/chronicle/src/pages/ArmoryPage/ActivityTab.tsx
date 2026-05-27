@@ -21,6 +21,7 @@ import {
   getInstanceAbbrev,
 } from "@/pages/Logs/utils/instanceImages";
 import { groupDuplicateInstances } from "@/utils/groupDuplicates";
+import { isHeroic } from "@/lib/wowUtils";
 import { DuplicateInstanceModal } from "@/components/DuplicateInstanceModal";
 
 interface ActivityTabProps {
@@ -151,7 +152,7 @@ function ActivityDayCard({ group }: { group: RecentInstance[] }) {
             </span>
           )}
           {duration && (
-            <span className={`text-[10px] text-white/80 px-1.5 py-0.5 rounded ${instance.dynamic_difficulty > 0 ? 'bg-purple-600/40' : 'bg-black/40'}`}>
+            <span className={`text-[10px] text-white/80 px-1.5 py-0.5 rounded ${isHeroic(instance) ? 'bg-purple-600/40' : 'bg-black/40'}`}>
               {duration}
             </span>
           )}

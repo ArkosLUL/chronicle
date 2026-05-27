@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getInstanceBackground, getInstanceAbbrev } from "../utils/instanceImages";
 import { HeroicBadge } from "@/components/HeroicBadge";
+import { isHeroic } from "@/lib/wowUtils";
 import { formatDuration, type InstanceWithMeta } from "../utils/calendarUtils";
 
 interface InstanceDayCardProps {
@@ -54,11 +55,11 @@ export function InstanceDayCard({ instance, showDuration = true }: InstanceDayCa
             )}
           </span>
           <span className="flex items-center gap-1 ml-1 flex-shrink-0">
-            {instance.dynamic_difficulty > 0 && (
+            {isHeroic(instance) && (
               <HeroicBadge size="sm" />
             )}
             {showDuration && duration && (
-              <span className={`hidden sm:inline text-[10px] text-white/80 px-1.5 py-0.5 rounded ${instance.dynamic_difficulty > 0 ? 'bg-purple-600/40' : 'bg-black/40'}`}>
+              <span className={`hidden sm:inline text-[10px] text-white/80 px-1.5 py-0.5 rounded ${isHeroic(instance) ? 'bg-purple-600/40' : 'bg-black/40'}`}>
                 {duration}
               </span>
             )}

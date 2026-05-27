@@ -1,6 +1,8 @@
 package instances
 
-import "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+import (
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+)
 
 // MagtheridonsLairHostiles returns creature entry IDs for Magtheridon's Lair (map 544).
 func MagtheridonsLairHostiles() map[uint32]instances.Identity {
@@ -172,12 +174,22 @@ func HellfireRampartsHostiles() map[uint32]instances.Identity {
 		17309: "Hellfire Watcher",
 		17455: "Bonechewer Beastmaster",
 		17478: "Bleeding Hollow Scryer",
+		17517: "Hellfire Sentry",
+
+		17536: "Nazan",
+
+		// ?? Unsure
+		//
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		17306: "Watchkeeper Gargolmar",
-		17307: "Vazruden the Herald",
 		17308: "Omor the Unscarred",
+
+		// 17537 from logs, and 17307 from az core data dump
+		17307: "Vazruden the Herald",
+		17537: "Vazruden",
 	})
+
 	return hostile
 }
 

@@ -44,6 +44,7 @@ import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
 import { HeroicBadge } from "@/components/HeroicBadge";
+import { isHeroic } from "@/lib/wowUtils";
 import { DuplicatesBadge } from "./DuplicatesBadge";
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
 import { formatClassLabel, formatRaceLabel } from "../ArmoryPage/CharacterHeader";
@@ -2527,7 +2528,7 @@ export function InstancePageView({
   const trashGroups = groupTrashEncounters(instance.encounters);
 
   const headerBg = getInstanceBackground(instance.name);
-  const isHeroic = (instance.dynamicDifficulty ?? 0) > 0;
+  const heroic = isHeroic(instance);
 
   const elapsedDurationMs = instance.endTime
     ? new Date(instance.endTime).getTime() - new Date(instance.startTime).getTime()
@@ -2585,7 +2586,7 @@ export function InstancePageView({
 
     )}>
       {/* Header */}
-      <div className={cn("mb-6 rounded-lg border relative", isHeroic && "border-purple-500/30")}>
+      <div className={cn("mb-6 rounded-lg border relative", heroic && "border-purple-500/30")}>
         {/* Background image */}
         {headerBg && (
           <div className="absolute inset-0 z-0 rounded-lg overflow-hidden">
@@ -2595,7 +2596,7 @@ export function InstancePageView({
               className="h-full w-full object-cover opacity-70"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/50" />
-            {isHeroic && (
+            {heroic && (
               <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 via-purple-900/5 to-transparent" />
             )}
           </div>
@@ -2604,7 +2605,7 @@ export function InstancePageView({
         <div className={cn("relative z-10", isMobile ? "p-3" : "p-4")}>
         {/* Row 1: Title (+ mobile menu / desktop difficulty) */}
         <div className="flex items-start justify-between gap-4 mb-1">
-          <h1 className={cn("font-bold flex items-center gap-2", isMobile ? "text-xl" : "text-2xl", isHeroic && "drop-shadow-[0_0_8px_rgba(147,51,234,0.3)]")}>
+          <h1 className={cn("font-bold flex items-center gap-2", isMobile ? "text-xl" : "text-2xl", heroic && "drop-shadow-[0_0_8px_rgba(147,51,234,0.3)]")}>
             {instance.name}
             {duplicateGroupId && (
               <DuplicatesBadge instanceId={instance.id} duplicateGroupId={duplicateGroupId} />
@@ -2613,7 +2614,7 @@ export function InstancePageView({
           {!isMobile && instance.maxPlayers != null && instance.maxPlayers > 0 && (
             <div className="flex items-center gap-1.5 shrink-0 mt-1">
               <span className="text-sm text-muted-foreground font-medium">{instance.maxPlayers} Player</span>
-              {instance.dynamicDifficulty != null && instance.dynamicDifficulty > 0 && (
+              {heroic && (
                 <HeroicBadge />
               )}
             </div>
@@ -2704,7 +2705,7 @@ export function InstancePageView({
           {isMobile && instance.maxPlayers != null && instance.maxPlayers > 0 && (
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="text-xs text-muted-foreground font-medium">{instance.maxPlayers} Player</span>
-              {instance.dynamicDifficulty != null && instance.dynamicDifficulty > 0 && (
+              {heroic && (
                 <HeroicBadge />
               )}
             </div>

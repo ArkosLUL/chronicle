@@ -4,6 +4,7 @@ import { Clock, Users, CheckCircle, XCircle, Youtube } from "lucide-react";
 import type { RecentInstance } from "@/api/typesGenerated";
 import { getInstanceBackground } from "@/pages/Logs/utils/instanceImages";
 import { HeroicBadge } from "@/components/HeroicBadge";
+import { isHeroic } from "@/lib/wowUtils";
 
 function formatDuration(ms: number | null): string {
   if (ms === null || ms === 0) return "—";
@@ -93,7 +94,7 @@ export function RaidCard({ instance }: RaidCardProps) {
         )}
 
         {/* Heroic badge - below YouTube badge on right */}
-        {instance.dynamic_difficulty > 0 && (
+        {isHeroic(instance) && (
           <div
             className="absolute z-20"
             style={{ top: instance.has_youtube_video ? '2.75rem' : '0.5rem', right: '0.5rem' }}

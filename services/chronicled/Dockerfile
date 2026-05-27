@@ -36,7 +36,7 @@ RUN touch frontend/chronicle/dist && \
     GIT_TAG=${GIT_TAG} GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} SERVER=${SERVER} make build-backend-static
 
 # Stage 3: Final minimal image
-FROM alpine:latest
+FROM alpine:3.22
 
 RUN apk --no-cache add ca-certificates
 WORKDIR /app

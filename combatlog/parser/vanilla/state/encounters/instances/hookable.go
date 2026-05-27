@@ -725,7 +725,7 @@ func (e *encounterName) applyState(ch CharacterFight, id Identity, f Fight) {
 
 	if id.EncounterNameFn != nil {
 		res := id.EncounterNameFn(f)
-		if res.EncounterName != "" || len(res.Bosses) > 0 {
+		if res != nil && res.EncounterName != "" || len(res.Bosses) > 0 {
 			e.encounterType = types.EncounterTypeBOSS
 		}
 		for _, r := range res.Bosses {

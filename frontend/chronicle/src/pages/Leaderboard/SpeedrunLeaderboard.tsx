@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown, Info, ArrowLeft } from "lucide-react"
+import { Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown, Info, ArrowLeft, Trophy } from "lucide-react"
 import { getInstanceConfig, getInstanceCategory, getInstanceBackground } from "../Logs/utils/instanceImages"
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { SpeedrunLeaderboardEntry, SpeedrunRulesResponse } from "../../api/typesGenerated"

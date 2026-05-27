@@ -750,6 +750,8 @@ func (e *encounterName) applyName(id Identity, f Fight) {
 
 	if e.byEncounterName == "" && id.EncounterNameFn != nil {
 		res := id.EncounterNameFn(f)
-		e.byEncounterFnName = res.EncounterName
+		if res != nil {
+			e.byEncounterFnName = res.EncounterName
+		}
 	}
 }

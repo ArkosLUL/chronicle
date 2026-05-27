@@ -232,19 +232,8 @@ FROM (
         PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.dps) AS q1_dps,
         PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY d.dps) AS median_dps,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.dps) AS q3_dps,
-        -- Whiskers capped at 1.5×IQR from Q1/Q3 (standard box plot convention).
-        -- min_dps = lowest value >= Q1 - 1.5*IQR (or actual min if none below).
-        -- max_dps = highest value <= Q3 + 1.5*IQR (or actual max if none above).
-        GREATEST(
-            MIN(d.dps),
-            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.dps)
-                - 1.5 * (PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.dps) - PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.dps))
-        )::double precision AS min_dps,
-        LEAST(
-            MAX(d.dps),
-            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.dps)
-                + 1.5 * (PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.dps) - PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.dps))
-        )::double precision AS max_dps,
+        MIN(d.dps)::double precision AS min_dps,
+        MAX(d.dps)::double precision AS max_dps,
         COUNT(*)::bigint AS count
     FROM deduped d
     WHERE d.dps > 0
@@ -316,16 +305,8 @@ FROM (
         PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.duration_secs) AS q1_secs,
         PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY d.duration_secs) AS median_secs,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.duration_secs) AS q3_secs,
-        GREATEST(
-            MIN(d.duration_secs),
-            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.duration_secs)
-                - 1.5 * (PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.duration_secs) - PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.duration_secs))
-        )::double precision AS min_secs,
-        LEAST(
-            MAX(d.duration_secs),
-            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.duration_secs)
-                + 1.5 * (PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.duration_secs) - PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.duration_secs))
-        )::double precision AS max_secs,
+        MIN(d.duration_secs)::double precision AS min_secs,
+        MAX(d.duration_secs)::double precision AS max_secs,
         COUNT(*)::bigint AS count
     FROM deduped d
     WHERE d.duration_secs > 0

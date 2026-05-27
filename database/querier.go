@@ -231,12 +231,16 @@ type sqlcQuerier interface {
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
 	// Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
 	// Deduplicated and filtered same as leaderboard.
+	// When multiple encounters are selected, only include a player's DPS for a
+	// spec if they played ALL selected encounters as that spec. Prevents spec
+	// switchers from inflating stats with partial encounter data.
 	RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPlotStatsParams) ([]RankingsBoxPlotStatsRow, error)
 	// Returns encounters available in rankings for a given instance.
 	RankingsEncounterList(ctx context.Context, instanceName string) ([]RankingsEncounterListRow, error)
 	// Returns per-instance summary with top 3 players by aggregated DPS.
 	// DPS is computed as total damage / total duration across all encounters per player.
 	// Deduplicates by (player_guid, encounter_name, duplicate_group) before aggregating.
+	// Count distinct encounters per instance to enforce all-encounters requirement.
 	// Aggregate per player per instance: sum damage across encounters.
 	RankingsInstanceSummaries(ctx context.Context) ([]RankingsInstanceSummariesRow, error)
 	// Box plot stats on encounter duration (seconds) per encounter name.

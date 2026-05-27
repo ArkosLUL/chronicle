@@ -202,6 +202,7 @@ func (s *Service) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 		Spec:           q.Get("spec"),
 		Role:           q.Get("role"),
 		SinceDays:      sinceDays,
+		HideUnknowns:   q.Get("hide_unknowns") == "true",
 		QueryLimit:     limit,
 		QueryOffset:    offset,
 	})
@@ -273,6 +274,7 @@ func (s *Service) handleStats(w http.ResponseWriter, r *http.Request) {
 		RealmID:        q.Get("realm_id"),
 		Role:           q.Get("role"),
 		SinceDays:      sinceDays,
+		GroupByClass:    q.Get("group_by_class") == "true",
 	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{

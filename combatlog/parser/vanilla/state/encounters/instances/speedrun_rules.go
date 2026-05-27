@@ -6,6 +6,12 @@ import (
 )
 
 func Level60Cap() *rankings.LevelRangeRequirement {
+	if services.ServerName == services.ServerIdentityTurtle ||
+		services.ServerName == services.ServerIdentityKronos ||
+		services.ServerName == services.ServerIdentityOctoWoW {
+		return nil
+	}
+
 	return &rankings.LevelRangeRequirement{
 		MinLevel: 0,
 		MaxLevel: 60,

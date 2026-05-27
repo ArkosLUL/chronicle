@@ -26,9 +26,9 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
@@ -49,10 +49,10 @@ import (
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/semverenc"
-	"github.com/Emyrk/chronicle/internal/wowspec"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/Emyrk/chronicle/internal/version"
+	"github.com/Emyrk/chronicle/internal/wowspec"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -1221,13 +1221,10 @@ func insertDPSRankings(
 		if !enc.Boss {
 			continue // non-boss encounters go to trash aggregation
 		}
-		if enc.KillType != instances.KillTypeClean {
+		if enc.KillType != instances.KillTypeClean && enc.KillType != instances.KillTypePartial {
 			continue
 		}
 		durationSecs := enc.Combat.End.Sub(enc.Combat.Start).Seconds()
-		if durationSecs < 15 {
-			continue
-		}
 
 		// Enforce level range: ALL players must be within the level cap.
 		// If any player violates the range, skip the entire encounter.
@@ -1241,12 +1238,14 @@ func insertDPSRankings(
 				if !ok {
 					continue
 				}
-				if player.Level != nil {
-					lvl := int32(*player.Level)
-					if lvl < levelRange.MinLevel || lvl > levelRange.MaxLevel {
-						levelViolation = true
-						break
-					}
+				if player.Level == nil {
+					levelViolation = true
+					break
+				}
+				lvl := int32(*player.Level)
+				if lvl < levelRange.MinLevel || lvl > levelRange.MaxLevel {
+					levelViolation = true
+					break
 				}
 			}
 			if levelViolation {
@@ -1345,13 +1344,13 @@ func insertDPSRankings(
 				MaxPlayers:     int16(dbinstance.MaxPlayers),
 				RealmID:        dbinstance.RealmID,
 				RealmName:      realmName,
-				GuildID:       uuid.NullUUID{}, // guild_name is sufficient; avoid FK constraint issues
-				GuildName:     playerGuildName,
-				DamageDone:    totalDamage,
-				DurationSecs:  durationSecs,
-				Dps:           dps,
-				LogHashedSlug: dbinstance.HashedSlug.String,
-				KilledAt:      database.Timestamptz(enc.Combat.End),
+				GuildID:        uuid.NullUUID{}, // guild_name is sufficient; avoid FK constraint issues
+				GuildName:      playerGuildName,
+				DamageDone:     totalDamage,
+				DurationSecs:   durationSecs,
+				Dps:            dps,
+				LogHashedSlug:  dbinstance.HashedSlug.String,
+				KilledAt:       database.Timestamptz(enc.Combat.End),
 			})
 			if err != nil {
 				slog.WarnContext(ctx, "insert dps ranking",
@@ -1424,12 +1423,14 @@ func insertTrashRankings(
 				if !ok {
 					continue
 				}
-				if player.Level != nil {
-					lvl := int32(*player.Level)
-					if lvl < levelRange.MinLevel || lvl > levelRange.MaxLevel {
-						levelViolation = true
-						break
-					}
+				if player.Level == nil {
+					levelViolation = true
+					break
+				}
+				lvl := int32(*player.Level)
+				if lvl < levelRange.MinLevel || lvl > levelRange.MaxLevel {
+					levelViolation = true
+					break
 				}
 			}
 			if levelViolation {
@@ -1543,13 +1544,13 @@ func insertTrashRankings(
 			MaxPlayers:     int16(dbinstance.MaxPlayers),
 			RealmID:        dbinstance.RealmID,
 			RealmName:      realmName,
-			GuildID:       uuid.NullUUID{}, // guild_name is sufficient; avoid FK constraint issues
-			GuildName:     playerGuildName,
-			DamageDone:    a.DamageDone,
-			DurationSecs:  a.DurationSecs,
-			Dps:           dps,
-			LogHashedSlug: dbinstance.HashedSlug.String,
-			KilledAt:      database.Timestamptz(a.LastKilledAt),
+			GuildID:        uuid.NullUUID{}, // guild_name is sufficient; avoid FK constraint issues
+			GuildName:      playerGuildName,
+			DamageDone:     a.DamageDone,
+			DurationSecs:   a.DurationSecs,
+			Dps:            dps,
+			LogHashedSlug:  dbinstance.HashedSlug.String,
+			KilledAt:       database.Timestamptz(a.LastKilledAt),
 		})
 		if err != nil {
 			slog.WarnContext(ctx, "insert trash ranking",
@@ -1593,5 +1594,3 @@ func findPlayerGuild(guilds map[string]map[guid.GUID]struct{}, playerGUID guid.G
 	}
 	return ""
 }
-
-

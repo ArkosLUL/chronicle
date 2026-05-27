@@ -3928,6 +3928,8 @@ func (q *sqlQuerier) InsertEncounterDpsRanking(ctx context.Context, arg InsertEn
 const rankingsBoxPlotStats = `-- name: RankingsBoxPlotStats :many
 WITH deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id))
+        edr.player_guid,
+        edr.encounter_name,
         edr.player_class,
         edr.player_spec,
         edr.dps
@@ -3935,26 +3937,45 @@ WITH deduped AS (
     JOIN log_instances li ON li.id = edr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
     WHERE CASE
-        WHEN cardinality($1 :: text[]) > 0 THEN edr.instance_name = ANY($1 :: text[])
+        WHEN cardinality($2 :: text[]) > 0 THEN edr.instance_name = ANY($2 :: text[])
         ELSE true
     END
     AND CASE
-        WHEN cardinality($2 :: text[]) > 0 THEN edr.encounter_name = ANY($2 :: text[])
+        WHEN cardinality($3 :: text[]) > 0 THEN edr.encounter_name = ANY($3 :: text[])
         ELSE true
     END
     AND CASE
-        WHEN $3 :: text != '' THEN edr.realm_id = $3 :: uuid
+        WHEN $4 :: text != '' THEN edr.realm_id = $4 :: uuid
         ELSE true
     END
     AND CASE
-        WHEN $4 :: text != '' THEN edr.player_role = $4
+        WHEN $5 :: text != '' THEN edr.player_role = $5
         ELSE true
     END
     AND CASE
-        WHEN $5 :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => $5::int)
+        WHEN $6 :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => $6::int)
         ELSE true
     END
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
+),
+encounter_counts AS (
+    SELECT d.player_guid, d.player_class, d.player_spec,
+           COUNT(DISTINCT d.encounter_name) AS enc_count
+    FROM deduped d
+    GROUP BY d.player_guid, d.player_class, d.player_spec
+),
+total_encounters AS (
+    SELECT COUNT(DISTINCT d.encounter_name) AS cnt FROM deduped d
+),
+qualified AS (
+    SELECT d.player_class, d.player_spec, d.dps
+    FROM deduped d
+    JOIN encounter_counts ec
+        ON ec.player_guid = d.player_guid
+        AND ec.player_class = d.player_class
+        AND ec.player_spec = d.player_spec
+    -- Only include a player's spec data if they played ALL encounters as that spec.
+    WHERE ec.enc_count = (SELECT cnt FROM total_encounters)
 )
 SELECT
     s.player_class,
@@ -3968,21 +3989,27 @@ SELECT
 FROM (
     SELECT
         d.player_class,
-        d.player_spec,
+        (CASE WHEN $1 :: bool THEN '' ELSE d.player_spec END)::text AS player_spec,
         PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY d.dps) AS q1_dps,
         PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY d.dps) AS median_dps,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY d.dps) AS q3_dps,
-        MIN(d.dps)::double precision AS min_dps,
+        -- When we have enough samples, trim the bottom 5% to exclude
+        -- outliers (e.g. early deaths). Otherwise show the true minimum.
+        CASE WHEN COUNT(*) > 100
+            THEN PERCENTILE_CONT(0.05) WITHIN GROUP (ORDER BY d.dps)
+            ELSE MIN(d.dps)
+        END::double precision AS min_dps,
         MAX(d.dps)::double precision AS max_dps,
         COUNT(*)::bigint AS count
-    FROM deduped d
+    FROM qualified d
     WHERE d.dps > 0
-    GROUP BY d.player_class, d.player_spec
+    GROUP BY d.player_class, (CASE WHEN $1 :: bool THEN '' ELSE d.player_spec END)::text
 ) s
 ORDER BY s.median_dps DESC
 `
 
 type RankingsBoxPlotStatsParams struct {
+	GroupByClass   bool     `db:"group_by_class" json:"group_by_class"`
 	InstanceNames  []string `db:"instance_names" json:"instance_names"`
 	EncounterNames []string `db:"encounter_names" json:"encounter_names"`
 	RealmID        string   `db:"realm_id" json:"realm_id"`
@@ -4003,8 +4030,12 @@ type RankingsBoxPlotStatsRow struct {
 
 // Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
 // Deduplicated and filtered same as leaderboard.
+// When multiple encounters are selected, only include a player's DPS for a
+// spec if they played ALL selected encounters as that spec. Prevents spec
+// switchers from inflating stats with partial encounter data.
 func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPlotStatsParams) ([]RankingsBoxPlotStatsRow, error) {
 	rows, err := q.db.Query(ctx, rankingsBoxPlotStats,
+		arg.GroupByClass,
 		arg.InstanceNames,
 		arg.EncounterNames,
 		arg.RealmID,
@@ -4088,6 +4119,7 @@ const rankingsInstanceSummaries = `-- name: RankingsInstanceSummaries :many
 WITH deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id))
         edr.instance_name,
+        edr.encounter_name,
         edr.player_guid,
         edr.player_name,
         edr.realm_name,
@@ -4102,6 +4134,11 @@ WITH deduped AS (
     WHERE edr.dps > 0
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
+instance_encounter_counts AS (
+    SELECT d.instance_name, COUNT(DISTINCT d.encounter_name) AS cnt
+    FROM deduped d
+    GROUP BY d.instance_name
+),
 per_player AS (
     SELECT
         d.instance_name,
@@ -4111,8 +4148,12 @@ per_player AS (
         (array_agg(d.player_class ORDER BY d.damage_done DESC))[1] AS player_class,
         (SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0)) AS dps
     FROM deduped d
-    WHERE d.player_role = 'dps'
     GROUP BY d.instance_name, d.player_guid
+    -- Only include players who have data for ALL encounters in the instance.
+    HAVING COUNT(DISTINCT d.encounter_name) = (
+        SELECT iec.cnt FROM instance_encounter_counts iec
+        WHERE iec.instance_name = d.instance_name
+    )
 ),
 instance_stats AS (
     SELECT
@@ -4159,6 +4200,7 @@ type RankingsInstanceSummariesRow struct {
 // Returns per-instance summary with top 3 players by aggregated DPS.
 // DPS is computed as total damage / total duration across all encounters per player.
 // Deduplicates by (player_guid, encounter_name, duplicate_group) before aggregating.
+// Count distinct encounters per instance to enforce all-encounters requirement.
 // Aggregate per player per instance: sum damage across encounters.
 func (q *sqlQuerier) RankingsInstanceSummaries(ctx context.Context) ([]RankingsInstanceSummariesRow, error) {
 	rows, err := q.db.Query(ctx, rankingsInstanceSummaries)
@@ -4320,6 +4362,10 @@ WITH deduped AS (
         WHEN $9 :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => $9::int)
         ELSE true
     END
+    AND CASE
+        WHEN $10 :: bool THEN edr.player_class != 'Unknown' AND edr.player_spec != 'Unknown'
+        ELSE true
+    END
     AND edr.dps > 0
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
@@ -4329,7 +4375,7 @@ aggregated AS (
         -- Use the values from the row with highest damage for display fields.
         ((array_agg(d.player_name ORDER BY d.damage_done DESC))[1])::text AS player_name,
         ((array_agg(d.player_class ORDER BY d.damage_done DESC))[1])::text AS player_class,
-        ((array_agg(d.player_spec ORDER BY d.damage_done DESC))[1])::text AS player_spec,
+        (string_agg(DISTINCT d.player_spec, '/' ORDER BY d.player_spec))::text AS player_spec,
         ((array_agg(d.player_role ORDER BY d.damage_done DESC))[1])::text AS player_role,
         MAX(d.player_level)::smallint AS player_level,
         ((array_agg(d.instance_name ORDER BY d.damage_done DESC))[1])::text AS instance_name,
@@ -4348,6 +4394,11 @@ aggregated AS (
         COALESCE((array_agg(d.talent_sub_spec ORDER BY d.damage_done DESC))[1], '')::text AS talent_sub_spec
     FROM deduped d
     GROUP BY d.player_guid
+    -- Only include players who have data for ALL encounters (selected or all
+    -- available). Prevents partial-encounter players from ranking.
+    HAVING COUNT(DISTINCT d.encounter_name) = (
+        SELECT COUNT(DISTINCT d2.encounter_name) FROM deduped d2
+    )
 )
 SELECT
     a.player_guid, a.player_name, a.player_class, a.player_spec, a.player_role, a.player_level, a.instance_name, a.encounter_name, a.difficulty_name, a.max_players, a.realm_id, a.realm_name, a.guild_name, a.damage_done, a.duration_secs, a.dps, a.avg_ilvl, a.log_hashed_slug, a.killed_at, a.talent_sub_spec,
@@ -4369,6 +4420,7 @@ type RankingsLeaderboardParams struct {
 	Spec           string   `db:"spec" json:"spec"`
 	Role           string   `db:"role" json:"role"`
 	SinceDays      int64    `db:"since_days" json:"since_days"`
+	HideUnknowns   bool     `db:"hide_unknowns" json:"hide_unknowns"`
 }
 
 type RankingsLeaderboardRow struct {
@@ -4411,6 +4463,7 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 		arg.Spec,
 		arg.Role,
 		arg.SinceDays,
+		arg.HideUnknowns,
 	)
 	if err != nil {
 		return nil, err

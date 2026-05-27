@@ -108,6 +108,18 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     })
   }, [setParams])
 
+  // Group box plot by class (merge specs)
+  const groupByClass = params.get("group_by") === "class"
+
+  const handleToggleGroupByClass = useCallback(() => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (prev.get("group_by") === "class") next.delete("group_by")
+      else next.set("group_by", "class")
+      return next
+    })
+  }, [setParams])
+
   // Difficulty filter — kept in URL state but not yet a backend param
   const selectedDifficulties: Set<string> = useMemo(() => {
     const raw = params.get("diff")
@@ -305,6 +317,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     encounter_names: encounterNamesParam,
     period: periodParam,
     role: filterRole,
+    group_by_class: groupByClass,
   })
 
   const boxPlotStats = useMemo(() => {
@@ -319,6 +332,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     class: filterClass,
     spec: filterSpec,
     role: filterRole,
+    hide_unknowns: hideUnknowns,
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
   })
@@ -360,12 +374,9 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     if (selectedDifficulties.size > 0) {
       filtered = filtered.filter((e) => selectedDifficulties.has(e.difficulty_name))
     }
-    if (hideUnknowns) {
-      filtered = filtered.filter((e) => e.player_class !== "Unknown" && e.player_spec !== "Unknown")
-    }
     const offset = (page - 1) * PAGE_SIZE
     return filtered.map((e, i) => ({ ...e, rank: offset + i + 1 }))
-  }, [leaderboardData, selectedDifficulties, hideUnknowns, page])
+  }, [leaderboardData, selectedDifficulties, page])
 
   const { data: killTimeStats = [] } = useRankingsKillTimes(instanceName, periodParam)
   const { data: successRates = [] } = useRankingsSuccessRates(instanceName, periodParam)
@@ -589,6 +600,17 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                   />
                   Hide unknowns
                 </label>
+
+                {metric === "dps" && dpsSubTab === "boxplot" && (
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                    <Checkbox
+                      checked={groupByClass}
+                      onCheckedChange={() => handleToggleGroupByClass()}
+                      className="size-3.5"
+                    />
+                    Merge specs
+                  </label>
+                )}
               </div>
             </div>
 

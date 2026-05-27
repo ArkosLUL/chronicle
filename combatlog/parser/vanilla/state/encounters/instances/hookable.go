@@ -59,6 +59,8 @@ type Hookable struct {
 	hooks             []instancehook.Hook // TODO: unroll?
 	engagementTracker *rankings.EngagementTracker
 	speedrunTracker   *rankings.SpeedrunTracker
+	dpsTracker        *rankings.DPSTracker
+	rankingRules      *rankings.Rankings
 
 	// Live tracking data
 	Auras           *auras.Tracking
@@ -129,10 +131,14 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 	engagementTracker := rankings.NewEngagementTracker(db)
 
+	var dpsTracker *rankings.DPSTracker
 	var speedrunTracker *rankings.SpeedrunTracker
-	if ip.Rankings != nil && ip.Rankings.Speedrun != nil {
-		speedrunTracker = rankings.NewSpeedrunTracker(*ip.Rankings.Speedrun, db, engagementTracker)
-		chrs.RegisterHook(speedrunTracker)
+	if ip.Rankings != nil {
+		dpsTracker = rankings.NewDPSTracker(db)
+		if ip.Rankings.Speedrun != nil {
+			speedrunTracker = rankings.NewSpeedrunTracker(*ip.Rankings.Speedrun, db, engagementTracker)
+			chrs.RegisterHook(speedrunTracker)
+		}
 	}
 
 	//auraTracking := auras.New()
@@ -148,6 +154,9 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		engagementTracker,
 		//auraTracking,
 	}...)
+	if dpsTracker != nil {
+		hooks = append(hooks, dpsTracker)
+	}
 	if speedrunTracker != nil {
 		hooks = append(hooks, speedrunTracker)
 	}
@@ -177,6 +186,8 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		hooks:             hooks,
 		engagementTracker: engagementTracker,
 		speedrunTracker:   speedrunTracker,
+		dpsTracker:        dpsTracker,
+		rankingRules:      ip.Rankings,
 		verbose:           parseoptions.IsVerbose(ctx),
 		timings:           timings.New(),
 		completedFights:   make([]Fight, 0),
@@ -558,9 +569,13 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	}
 
 	var rankingsResult *rankings.RankingsResult
-	if h.speedrunTracker != nil {
-		rankingsResult = &rankings.RankingsResult{
-			Speedrun: h.speedrunTracker.Result(),
+	if h.dpsTracker != nil || h.speedrunTracker != nil {
+		rankingsResult = &rankings.RankingsResult{}
+		if h.dpsTracker != nil {
+			rankingsResult.DPS = h.dpsTracker.Result()
+		}
+		if h.speedrunTracker != nil {
+			rankingsResult.Speedrun = h.speedrunTracker.Result()
 		}
 	}
 
@@ -574,6 +589,7 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 		Loot:         h.lootTracking,
 		Participants: h.p,
 		Rankings:     rankingsResult,
+		RankingRules: h.rankingRules,
 		UnknownUnits: h.resolveUnknownUnits(),
 
 		//SpellBook:  c.SpellBook,

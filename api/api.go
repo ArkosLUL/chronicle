@@ -53,6 +53,7 @@ type Options struct {
 	WoWDB            http.Handler
 	Assets           http.Handler
 	InternalGameData http.Handler
+	Rankings         http.Handler
 	Mailer           *chroniclemail.Mailer
 
 	Registry  *prometheus.Registry
@@ -423,6 +424,10 @@ func (api *API) Routes() chi.Router {
 				r.Get("/speedrun/realms", api.SpeedrunRealms)
 				r.Get("/speedrun/rules", api.SpeedrunRules)
 			})
+
+			if api.Opts.Rankings != nil {
+				r.Mount("/rankings", api.Opts.Rankings)
+			}
 
 			if api.Opts.InternalGameData != nil {
 				r.Group(func(r chi.Router) {

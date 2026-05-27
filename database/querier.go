@@ -159,6 +159,7 @@ type sqlcQuerier interface {
 	GetWorldsByServer(ctx context.Context, serverID uuid.UUID) ([]World, error)
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error)
 	InsertEncounterCharacterFights(ctx context.Context, arg []InsertEncounterCharacterFightsParams) *InsertEncounterCharacterFightsBatchResults
+	InsertEncounterDpsRanking(ctx context.Context, arg InsertEncounterDpsRankingParams) error
 	InsertGuildPagePanel(ctx context.Context, arg InsertGuildPagePanelParams) (GuildPagePanel, error)
 	InsertGuildPageTab(ctx context.Context, arg InsertGuildPageTabParams) (GuildPageTab, error)
 	InsertInstance(ctx context.Context, arg InsertInstanceParams) (LogInstance, error)
@@ -228,6 +229,28 @@ type sqlcQuerier interface {
 	ListWorlds(ctx context.Context) ([]World, error)
 	MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
+	// Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
+	// Deduplicated and filtered same as leaderboard.
+	RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPlotStatsParams) ([]RankingsBoxPlotStatsRow, error)
+	// Returns encounters available in rankings for a given instance.
+	RankingsEncounterList(ctx context.Context, instanceName string) ([]RankingsEncounterListRow, error)
+	// Returns per-instance summary with top 3 players by aggregated DPS.
+	// DPS is computed as total damage / total duration across all encounters per player.
+	// Deduplicates by (player_guid, encounter_name, duplicate_group) before aggregating.
+	// Aggregate per player per instance: sum damage across encounters.
+	RankingsInstanceSummaries(ctx context.Context) ([]RankingsInstanceSummariesRow, error)
+	// Box plot stats on encounter duration (seconds) per encounter name.
+	// Deduplicates encounters across duplicate log groups.
+	RankingsKillTimeStats(ctx context.Context, arg RankingsKillTimeStatsParams) ([]RankingsKillTimeStatsRow, error)
+	// Returns paginated DPS rankings aggregated per player across selected encounters.
+	// When multiple encounters are selected, damage and duration are summed per player
+	// and DPS is recomputed as total_damage / total_duration.
+	// Deduplicates by (player, encounter, duplicate_group) before aggregating.
+	// Aggregate per player: sum damage and duration across encounters, recompute DPS.
+	RankingsLeaderboard(ctx context.Context, arg RankingsLeaderboardParams) ([]RankingsLeaderboardRow, error)
+	// Kill/wipe/total counts per encounter name within an instance.
+	// Deduplicates across duplicate log groups.
+	RankingsSuccessRates(ctx context.Context, arg RankingsSuccessRatesParams) ([]RankingsSuccessRatesRow, error)
 	RecordAuthzMigration(ctx context.Context, version int32) error
 	SearchCreatureTemplates(ctx context.Context, arg SearchCreatureTemplatesParams) ([]SearchCreatureTemplatesRow, error)
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
@@ -290,6 +313,9 @@ type sqlcQuerier interface {
 	UpsertRetentionPolicy(ctx context.Context, arg UpsertRetentionPolicyParams) (RetentionPolicy, error)
 	UpsertRetentionPolicyByRealm(ctx context.Context, arg UpsertRetentionPolicyByRealmParams) (RetentionPolicy, error)
 	UpsertRetentionRule(ctx context.Context, arg UpsertRetentionRuleParams) (RetentionRule, error)
+	// Insert a unique talent build, returning its ID. If the build already exists,
+	// return the existing row's ID.
+	UpsertTalentBuild(ctx context.Context, arg UpsertTalentBuildParams) (uuid.UUID, error)
 	UpsertUserActionBarSlots(ctx context.Context, arg UpsertUserActionBarSlotsParams) (UpsertUserActionBarSlotsRow, error)
 }
 

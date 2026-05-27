@@ -1044,6 +1044,17 @@ type ParsedLogGroup struct {
 	ID uuid.UUID `db:"id" json:"id"`
 }
 
+type RankingsInstanceSummary struct {
+	InstanceName   string             `db:"instance_name" json:"instance_name"`
+	DifficultyName string             `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16              `db:"max_players" json:"max_players"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	TotalKills     int64              `db:"total_kills" json:"total_kills"`
+	TopPlayers     []byte             `db:"top_players" json:"top_players"`
+	LastRowCount   int64              `db:"last_row_count" json:"last_row_count"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type RegressionFixture struct {
 	ID         uuid.UUID          `db:"id" json:"id"`
 	LogGroupID uuid.UUID          `db:"log_group_id" json:"log_group_id"`

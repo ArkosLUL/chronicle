@@ -9,9 +9,11 @@ import (
 
 // RankingsInstanceSummary is a summary of DPS rankings for a single instance.
 type RankingsInstanceSummary struct {
-	InstanceName string                        `json:"instance_name"`
-	TotalKills   int64                         `json:"total_kills"`
-	TopPlayers   []RankingsInstanceTopPlayer    `json:"top_players"`
+	InstanceName   string                     `json:"instance_name"`
+	DifficultyName string                     `json:"difficulty_name"`
+	MaxPlayers     int16                      `json:"max_players"`
+	TotalKills     int64                      `json:"total_kills"`
+	TopPlayers     []RankingsInstanceTopPlayer `json:"top_players"`
 }
 
 // RankingsInstanceTopPlayer is a top-performing player for an instance summary.

@@ -3,6 +3,7 @@ package serviceriver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Emyrk/chronicle/chronicle/retention"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
@@ -11,6 +12,7 @@ import (
 	"github.com/Emyrk/chronicle/internal/services/servicechronicle"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
 	"github.com/Emyrk/chronicle/internal/services/servicepgxpool"
+	"github.com/Emyrk/chronicle/internal/services/servicerankings"
 	"github.com/Emyrk/chronicle/internal/services/serviceretention"
 	"github.com/Emyrk/chronicle/internal/services/servicetelemetry"
 	"github.com/riverqueue/river"
@@ -54,6 +56,7 @@ func (s *Service) DependsOn() []string {
 		servicebot.OnDiscordBot(),
 		serviceretention.OnRetention(),
 		servicetelemetry.OnTelemetry(),
+		servicerankings.OnRankings(),
 	}
 }
 
@@ -132,6 +135,24 @@ func (s *Service) Start(ctx context.Context) error {
 			),
 		)
 	}
+
+	// Register rankings summary refresh workers and periodic job (hourly).
+	rank := servicerankings.Rankings(s.broker)
+	rank.SummaryDispatchWorker.Queue = q
+	riverqueue.AddWorker(q, rank.SummaryDispatchWorker)
+	riverqueue.AddWorker(q, rank.SummaryTenantWorker)
+	q.AddQueue(riverqueue.QueueRankings, river.QueueConfig{
+		MaxWorkers: 1,
+	})
+	q.AddPeriodicJob(
+		river.NewPeriodicJob(
+			river.PeriodicInterval(1*time.Hour),
+			func() (river.JobArgs, *river.InsertOpts) {
+				return servicerankings.ArgsRefreshRankingsSummaries{}, nil
+			},
+			&river.PeriodicJobOpts{RunOnStart: true},
+		),
+	)
 
 	err = q.Start(ctx)
 	if err != nil {

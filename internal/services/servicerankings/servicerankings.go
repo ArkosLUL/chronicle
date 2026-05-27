@@ -2,7 +2,6 @@ package servicerankings
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -14,7 +13,9 @@ import (
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
+	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/coder/serpent"
@@ -38,6 +39,11 @@ type Service struct {
 	router chi.Router
 	logger *slog.Logger
 	store  *authz.Authz
+
+	// SummaryDispatchWorker fans out per-tenant refresh jobs.
+	SummaryDispatchWorker *WorkerRefreshRankingsSummaries
+	// SummaryTenantWorker refreshes summaries for a single tenant.
+	SummaryTenantWorker *WorkerRefreshRankingsSummaryTenant
 }
 
 func New(broker *services.Services) *Service {
@@ -54,6 +60,7 @@ func (s *Service) DependsOn() []string {
 	return []string{
 		servicelogger.OnLogger(),
 		serviceauthz.OnAuthz(),
+		servicedbstore.OnDatabaseStore(),
 	}
 }
 
@@ -65,6 +72,18 @@ func (s *Service) Options() serpent.OptionSet {
 func (s *Service) Start(_ context.Context) error {
 	s.logger = servicelogger.Logger(s.broker)
 	s.store = serviceauthz.Authz(s.broker)
+
+	namedLogger := services.NamedLogger(s.logger, s.Name())
+	store := servicedbstore.DatabaseStore(s.broker)
+	s.SummaryDispatchWorker = &WorkerRefreshRankingsSummaries{
+		Store:  store,
+		Logger: namedLogger,
+		// Queue is set by serviceriver after queue creation.
+	}
+	s.SummaryTenantWorker = &WorkerRefreshRankingsSummaryTenant{
+		Store:  store,
+		Logger: namedLogger,
+	}
 
 	s.router = chi.NewRouter()
 	s.setupRoutes()
@@ -96,7 +115,8 @@ func (s *Service) setupRoutes() {
 func (s *Service) handleInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	rows, err := s.store.RankingsInstanceSummaries(ctx)
+	tid := servicetenant.TenantIDFromContext(ctx)
+	rows, err := s.store.RankingsInstanceSummaries(ctx, tid)
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{
@@ -110,15 +130,15 @@ func (s *Service) handleInstances(w http.ResponseWriter, r *http.Request) {
 	out := make([]chroniclesdk.RankingsInstanceSummary, 0, len(rows))
 	for _, row := range rows {
 		summary := chroniclesdk.RankingsInstanceSummary{
-			InstanceName: row.InstanceName,
-			TotalKills:   row.TotalKills,
+			InstanceName:   row.InstanceName,
+			DifficultyName: row.DifficultyName,
+			MaxPlayers:     row.MaxPlayers,
+			TotalKills:     row.TotalKills,
 		}
 
-		// TopPlayers comes as interface{} (json type) — parse it.
-		if row.TopPlayers != nil {
-			if data, err := json.Marshal(row.TopPlayers); err == nil {
-				summary.TopPlayers = chroniclesdk.TopPlayersFromJSON(data)
-			}
+		// TopPlayers is JSONB ([]byte) from the summary table.
+		if len(row.TopPlayers) > 0 {
+			summary.TopPlayers = chroniclesdk.TopPlayersFromJSON(row.TopPlayers)
 		}
 		if summary.TopPlayers == nil {
 			summary.TopPlayers = []chroniclesdk.RankingsInstanceTopPlayer{}

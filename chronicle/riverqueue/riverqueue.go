@@ -23,6 +23,7 @@ const (
 	QueueLogParsing  = riverconst.QueueLogParsing
 	QueueDiscordSync = riverconst.QueueDiscordSync
 	QueueRetention   = riverconst.QueueRetention
+	QueueRankings    = riverconst.QueueRankings
 	PriorityHighest  = riverconst.PriorityHighest
 	PriorityHigh     = riverconst.PriorityHigh
 	PriorityDefault  = riverconst.PriorityDefault

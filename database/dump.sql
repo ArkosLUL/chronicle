@@ -653,6 +653,17 @@ CREATE TABLE parsed_log_group (
 
 COMMENT ON TABLE parsed_log_group IS 'A parsed_log_group is a wow_log_group that has been processed and contains parsed logs. A duplicate allows deleting this one row to clear all parsed logs for a given wow_log_group.';
 
+CREATE TABLE rankings_instance_summaries (
+    instance_name text NOT NULL,
+    difficulty_name text DEFAULT ''::text NOT NULL,
+    max_players smallint DEFAULT 0 NOT NULL,
+    tenant_id uuid DEFAULT '00000000-0000-0000-0000-000000000000'::uuid NOT NULL,
+    total_kills bigint DEFAULT 0 NOT NULL,
+    top_players jsonb DEFAULT '[]'::jsonb NOT NULL,
+    last_row_count bigint DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE regression_fixtures (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     log_group_id uuid NOT NULL,
@@ -1267,6 +1278,9 @@ ALTER TABLE ONLY log_instances
 
 ALTER TABLE ONLY parsed_log_group
     ADD CONSTRAINT parsed_log_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY rankings_instance_summaries
+    ADD CONSTRAINT rankings_instance_summaries_pkey PRIMARY KEY (instance_name, difficulty_name, max_players, tenant_id);
 
 ALTER TABLE ONLY regression_fixtures
     ADD CONSTRAINT regression_fixtures_log_group_id_key UNIQUE (log_group_id);

@@ -4069,6 +4069,40 @@ func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPl
 	return items, nil
 }
 
+const rankingsDistinctSummaryKeys = `-- name: RankingsDistinctSummaryKeys :many
+SELECT DISTINCT instance_name, difficulty_name, max_players
+FROM encounter_dps_rankings
+ORDER BY instance_name, difficulty_name, max_players
+`
+
+type RankingsDistinctSummaryKeysRow struct {
+	InstanceName   string `db:"instance_name" json:"instance_name"`
+	DifficultyName string `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16  `db:"max_players" json:"max_players"`
+}
+
+// Returns distinct (instance, difficulty, max_players) combos visible to the
+// current tenant context (RLS on encounter_dps_rankings does the filtering).
+func (q *sqlQuerier) RankingsDistinctSummaryKeys(ctx context.Context) ([]RankingsDistinctSummaryKeysRow, error) {
+	rows, err := q.db.Query(ctx, rankingsDistinctSummaryKeys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RankingsDistinctSummaryKeysRow
+	for rows.Next() {
+		var i RankingsDistinctSummaryKeysRow
+		if err := rows.Scan(&i.InstanceName, &i.DifficultyName, &i.MaxPlayers); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const rankingsEncounterList = `-- name: RankingsEncounterList :many
 WITH deduped AS (
     SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id))
@@ -4116,94 +4150,24 @@ func (q *sqlQuerier) RankingsEncounterList(ctx context.Context, instanceName str
 }
 
 const rankingsInstanceSummaries = `-- name: RankingsInstanceSummaries :many
-WITH deduped AS (
-    SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id))
-        edr.instance_name,
-        edr.encounter_name,
-        edr.player_guid,
-        edr.player_name,
-        edr.realm_name,
-        edr.player_class,
-        edr.player_role,
-        edr.damage_done,
-        edr.duration_secs,
-        edr.dps
-    FROM encounter_dps_rankings edr
-    JOIN log_instances li ON li.id = edr.instance_id
-    JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
-    WHERE edr.dps > 0
-    ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
-),
-instance_encounter_counts AS (
-    SELECT d.instance_name, COUNT(DISTINCT d.encounter_name) AS cnt
-    FROM deduped d
-    GROUP BY d.instance_name
-),
-per_player AS (
-    SELECT
-        d.instance_name,
-        d.player_guid,
-        (array_agg(d.player_name ORDER BY d.damage_done DESC))[1] AS player_name,
-        (array_agg(d.realm_name ORDER BY d.damage_done DESC))[1] AS realm_name,
-        (array_agg(d.player_class ORDER BY d.damage_done DESC))[1] AS player_class,
-        (SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0)) AS dps
-    FROM deduped d
-    GROUP BY d.instance_name, d.player_guid
-    -- Only include players who have data for ALL encounters in the instance.
-    HAVING COUNT(DISTINCT d.encounter_name) = (
-        SELECT iec.cnt FROM instance_encounter_counts iec
-        WHERE iec.instance_name = d.instance_name
-    )
-),
-instance_stats AS (
-    SELECT
-        d.instance_name,
-        COUNT(DISTINCT d.player_guid)::bigint AS total_kills
-    FROM deduped d
-    GROUP BY d.instance_name
-),
-top_players AS (
-    SELECT
-        p.instance_name,
-        p.player_name,
-        p.realm_name,
-        p.player_class,
-        p.dps,
-        ROW_NUMBER() OVER (PARTITION BY p.instance_name ORDER BY p.dps DESC) AS rank_num
-    FROM per_player p
-    WHERE p.dps > 0
-)
-SELECT
-    s.instance_name,
-    s.total_kills,
-    COALESCE(
-        (SELECT json_agg(json_build_object(
-            'player_name', tp.player_name,
-            'realm_name', tp.realm_name,
-            'player_class', tp.player_class,
-            'dps', tp.dps
-        ) ORDER BY tp.rank_num)
-        FROM top_players tp
-        WHERE tp.instance_name = s.instance_name AND tp.rank_num <= 3),
-        '[]'::json
-    ) AS top_players
-FROM instance_stats s
-ORDER BY s.instance_name
+SELECT instance_name, difficulty_name, max_players, total_kills, top_players
+FROM rankings_instance_summaries
+WHERE tenant_id = $1
+ORDER BY instance_name, difficulty_name, max_players
 `
 
 type RankingsInstanceSummariesRow struct {
-	InstanceName string      `db:"instance_name" json:"instance_name"`
-	TotalKills   int64       `db:"total_kills" json:"total_kills"`
-	TopPlayers   interface{} `db:"top_players" json:"top_players"`
+	InstanceName   string `db:"instance_name" json:"instance_name"`
+	DifficultyName string `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16  `db:"max_players" json:"max_players"`
+	TotalKills     int64  `db:"total_kills" json:"total_kills"`
+	TopPlayers     []byte `db:"top_players" json:"top_players"`
 }
 
-// Returns per-instance summary with top 3 players by aggregated DPS.
-// DPS is computed as total damage / total duration across all encounters per player.
-// Deduplicates by (player_guid, encounter_name, duplicate_group) before aggregating.
-// Count distinct encounters per instance to enforce all-encounters requirement.
-// Aggregate per player per instance: sum damage across encounters.
-func (q *sqlQuerier) RankingsInstanceSummaries(ctx context.Context) ([]RankingsInstanceSummariesRow, error) {
-	rows, err := q.db.Query(ctx, rankingsInstanceSummaries)
+// Reads pre-computed per-instance summaries for a specific tenant.
+// The table has no RLS; filtering is done explicitly by tenant_id.
+func (q *sqlQuerier) RankingsInstanceSummaries(ctx context.Context, tenantID uuid.UUID) ([]RankingsInstanceSummariesRow, error) {
+	rows, err := q.db.Query(ctx, rankingsInstanceSummaries, tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -4211,7 +4175,13 @@ func (q *sqlQuerier) RankingsInstanceSummaries(ctx context.Context) ([]RankingsI
 	var items []RankingsInstanceSummariesRow
 	for rows.Next() {
 		var i RankingsInstanceSummariesRow
-		if err := rows.Scan(&i.InstanceName, &i.TotalKills, &i.TopPlayers); err != nil {
+		if err := rows.Scan(
+			&i.InstanceName,
+			&i.DifficultyName,
+			&i.MaxPlayers,
+			&i.TotalKills,
+			&i.TopPlayers,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -4505,6 +4475,20 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 	return items, nil
 }
 
+const rankingsRowCount = `-- name: RankingsRowCount :one
+SELECT COUNT(*)::bigint AS row_count
+FROM encounter_dps_rankings
+`
+
+// Total row count in encounter_dps_rankings (scoped by tenant RLS).
+// Used as a staleness guard — if count hasn't changed, skip refresh.
+func (q *sqlQuerier) RankingsRowCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, rankingsRowCount)
+	var row_count int64
+	err := row.Scan(&row_count)
+	return row_count, err
+}
+
 const rankingsSuccessRates = `-- name: RankingsSuccessRates :many
 WITH deduped AS (
     SELECT DISTINCT ON (lie.name, lie.kill_type, COALESCE(li.duplicate_group_id, li.id))
@@ -4569,6 +4553,119 @@ func (q *sqlQuerier) RankingsSuccessRates(ctx context.Context, arg RankingsSucce
 		return nil, err
 	}
 	return items, nil
+}
+
+const rankingsSummaryLastRowCount = `-- name: RankingsSummaryLastRowCount :one
+SELECT COALESCE(MAX(last_row_count), 0)::bigint AS last_row_count
+FROM rankings_instance_summaries
+WHERE tenant_id = $1
+`
+
+// Returns the last_row_count stored in the summary table for a tenant.
+// If no summaries exist yet, returns 0 (forcing a refresh).
+func (q *sqlQuerier) RankingsSummaryLastRowCount(ctx context.Context, tenantID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, rankingsSummaryLastRowCount, tenantID)
+	var last_row_count int64
+	err := row.Scan(&last_row_count)
+	return last_row_count, err
+}
+
+const rankingsSummaryMaxUpdatedAt = `-- name: RankingsSummaryMaxUpdatedAt :one
+SELECT COALESCE(MAX(updated_at), '1970-01-01'::timestamptz)::timestamptz AS max_updated_at
+FROM rankings_instance_summaries
+WHERE tenant_id = $1
+`
+
+// Most recent updated_at among summaries for a given tenant.
+// Used by the dispatch worker to skip if refreshed recently.
+func (q *sqlQuerier) RankingsSummaryMaxUpdatedAt(ctx context.Context, tenantID uuid.UUID) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, rankingsSummaryMaxUpdatedAt, tenantID)
+	var max_updated_at pgtype.Timestamptz
+	err := row.Scan(&max_updated_at)
+	return max_updated_at, err
+}
+
+const upsertRankingsInstanceSummary = `-- name: UpsertRankingsInstanceSummary :exec
+WITH deduped AS (
+    SELECT DISTINCT ON (edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id))
+        edr.player_guid, edr.player_name, edr.realm_name,
+        edr.player_class, edr.encounter_name,
+        edr.damage_done, edr.duration_secs, edr.dps
+    FROM encounter_dps_rankings edr
+    JOIN log_instances li ON li.id = edr.instance_id
+    JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
+    WHERE edr.instance_name = $1
+      AND edr.difficulty_name = $2
+      AND edr.max_players = $3
+      AND edr.dps > 0
+    ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
+),
+instance_encounter_count AS (
+    SELECT COUNT(DISTINCT d.encounter_name) AS cnt FROM deduped d
+),
+per_player AS (
+    SELECT
+        d.player_guid,
+        (array_agg(d.player_name ORDER BY d.damage_done DESC))[1] AS player_name,
+        (array_agg(d.realm_name ORDER BY d.damage_done DESC))[1] AS realm_name,
+        (array_agg(d.player_class ORDER BY d.damage_done DESC))[1] AS player_class,
+        (SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0)) AS dps
+    FROM deduped d
+    GROUP BY d.player_guid
+    HAVING COUNT(DISTINCT d.encounter_name) = (SELECT cnt FROM instance_encounter_count)
+),
+stats AS (
+    SELECT COUNT(DISTINCT player_guid)::bigint AS total_kills FROM deduped
+),
+top3 AS (
+    SELECT player_name, realm_name, player_class, dps
+    FROM per_player WHERE dps > 0
+    ORDER BY dps DESC LIMIT 3
+)
+INSERT INTO rankings_instance_summaries (instance_name, difficulty_name, max_players, tenant_id, total_kills, top_players, last_row_count, updated_at)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    (SELECT total_kills FROM stats),
+    COALESCE((SELECT json_agg(json_build_object(
+        'player_name', t.player_name,
+        'realm_name', t.realm_name,
+        'player_class', t.player_class,
+        'dps', t.dps
+    )) FROM top3 t), '[]'::json),
+    $5,
+    now()
+)
+ON CONFLICT (instance_name, difficulty_name, max_players, tenant_id) DO UPDATE SET
+    total_kills = EXCLUDED.total_kills,
+    top_players = EXCLUDED.top_players,
+    last_row_count = EXCLUDED.last_row_count,
+    updated_at = EXCLUDED.updated_at
+`
+
+type UpsertRankingsInstanceSummaryParams struct {
+	InstanceName   string    `db:"instance_name" json:"instance_name"`
+	DifficultyName string    `db:"difficulty_name" json:"difficulty_name"`
+	MaxPlayers     int16     `db:"max_players" json:"max_players"`
+	TenantID       uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	LastRowCount   int64     `db:"last_row_count" json:"last_row_count"`
+}
+
+// Recompute and upsert the rankings summary for a single
+// (instance, difficulty, max_players, tenant) combo.
+// The caller sets tenant context so RLS on encounter_dps_rankings
+// scopes to the correct realms automatically.
+func (q *sqlQuerier) UpsertRankingsInstanceSummary(ctx context.Context, arg UpsertRankingsInstanceSummaryParams) error {
+	_, err := q.db.Exec(ctx, upsertRankingsInstanceSummary,
+		arg.InstanceName,
+		arg.DifficultyName,
+		arg.MaxPlayers,
+		arg.TenantID,
+		arg.LastRowCount,
+	)
+	return err
 }
 
 const upsertTalentBuild = `-- name: UpsertTalentBuild :one

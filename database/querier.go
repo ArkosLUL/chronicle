@@ -235,14 +235,14 @@ type sqlcQuerier interface {
 	// spec if they played ALL selected encounters as that spec. Prevents spec
 	// switchers from inflating stats with partial encounter data.
 	RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPlotStatsParams) ([]RankingsBoxPlotStatsRow, error)
+	// Returns distinct (instance, difficulty, max_players) combos visible to the
+	// current tenant context (RLS on encounter_dps_rankings does the filtering).
+	RankingsDistinctSummaryKeys(ctx context.Context) ([]RankingsDistinctSummaryKeysRow, error)
 	// Returns encounters available in rankings for a given instance.
 	RankingsEncounterList(ctx context.Context, instanceName string) ([]RankingsEncounterListRow, error)
-	// Returns per-instance summary with top 3 players by aggregated DPS.
-	// DPS is computed as total damage / total duration across all encounters per player.
-	// Deduplicates by (player_guid, encounter_name, duplicate_group) before aggregating.
-	// Count distinct encounters per instance to enforce all-encounters requirement.
-	// Aggregate per player per instance: sum damage across encounters.
-	RankingsInstanceSummaries(ctx context.Context) ([]RankingsInstanceSummariesRow, error)
+	// Reads pre-computed per-instance summaries for a specific tenant.
+	// The table has no RLS; filtering is done explicitly by tenant_id.
+	RankingsInstanceSummaries(ctx context.Context, tenantID uuid.UUID) ([]RankingsInstanceSummariesRow, error)
 	// Box plot stats on encounter duration (seconds) per encounter name.
 	// Deduplicates encounters across duplicate log groups.
 	RankingsKillTimeStats(ctx context.Context, arg RankingsKillTimeStatsParams) ([]RankingsKillTimeStatsRow, error)
@@ -252,9 +252,18 @@ type sqlcQuerier interface {
 	// Deduplicates by (player, encounter, duplicate_group) before aggregating.
 	// Aggregate per player: sum damage and duration across encounters, recompute DPS.
 	RankingsLeaderboard(ctx context.Context, arg RankingsLeaderboardParams) ([]RankingsLeaderboardRow, error)
+	// Total row count in encounter_dps_rankings (scoped by tenant RLS).
+	// Used as a staleness guard — if count hasn't changed, skip refresh.
+	RankingsRowCount(ctx context.Context) (int64, error)
 	// Kill/wipe/total counts per encounter name within an instance.
 	// Deduplicates across duplicate log groups.
 	RankingsSuccessRates(ctx context.Context, arg RankingsSuccessRatesParams) ([]RankingsSuccessRatesRow, error)
+	// Returns the last_row_count stored in the summary table for a tenant.
+	// If no summaries exist yet, returns 0 (forcing a refresh).
+	RankingsSummaryLastRowCount(ctx context.Context, tenantID uuid.UUID) (int64, error)
+	// Most recent updated_at among summaries for a given tenant.
+	// Used by the dispatch worker to skip if refreshed recently.
+	RankingsSummaryMaxUpdatedAt(ctx context.Context, tenantID uuid.UUID) (pgtype.Timestamptz, error)
 	RecordAuthzMigration(ctx context.Context, version int32) error
 	SearchCreatureTemplates(ctx context.Context, arg SearchCreatureTemplatesParams) ([]SearchCreatureTemplatesRow, error)
 	SearchGamePlayers(ctx context.Context, arg SearchGamePlayersParams) ([]SearchGamePlayersRow, error)
@@ -314,6 +323,11 @@ type sqlcQuerier interface {
 	UpsertLeaderboardVersionRequirements(ctx context.Context, arg UpsertLeaderboardVersionRequirementsParams) (LeaderboardVersionRequirement, error)
 	UpsertPendingModificationRequest(ctx context.Context, arg UpsertPendingModificationRequestParams) (ApplicationModificationRequest, error)
 	UpsertPlayers(ctx context.Context, arg []UpsertPlayersParams) *UpsertPlayersBatchResults
+	// Recompute and upsert the rankings summary for a single
+	// (instance, difficulty, max_players, tenant) combo.
+	// The caller sets tenant context so RLS on encounter_dps_rankings
+	// scopes to the correct realms automatically.
+	UpsertRankingsInstanceSummary(ctx context.Context, arg UpsertRankingsInstanceSummaryParams) error
 	UpsertRetentionPolicy(ctx context.Context, arg UpsertRetentionPolicyParams) (RetentionPolicy, error)
 	UpsertRetentionPolicyByRealm(ctx context.Context, arg UpsertRetentionPolicyByRealmParams) (RetentionPolicy, error)
 	UpsertRetentionRule(ctx context.Context, arg UpsertRetentionRuleParams) (RetentionRule, error)

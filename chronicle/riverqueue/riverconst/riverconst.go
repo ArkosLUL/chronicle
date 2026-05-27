@@ -6,6 +6,7 @@ const (
 	QueueLogParsing  = "log-parsing"
 	QueueDiscordSync = "discord-sync"
 	QueueRetention   = "retention"
+	QueueRankings    = "rankings"
 )
 
 const (

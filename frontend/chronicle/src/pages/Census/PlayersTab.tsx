@@ -4,7 +4,7 @@ import type { CensusEntry } from "@/api/typesGenerated";
 import { getClassColorVar } from "@/pages/ArmoryPage/types";
 import { serverCapabilities } from "@/config/serverCapabilities";
 
-const RACE_TO_FACTION: Record<string, "Horde" | "Alliance"> = {
+const RACE_TO_FACTION: Record<string, "Horde" | "Alliance" | "Unknown"> = {
   Orc: "Horde",
   Troll: "Horde",
   Tauren: "Horde",
@@ -16,6 +16,7 @@ const RACE_TO_FACTION: Record<string, "Horde" | "Alliance"> = {
   NightElf: "Alliance",
   BloodElf: serverCapabilities.bloodElfFaction,
   Draenei: "Alliance",
+  Unknown: "Unknown",
 };
 
 // Display-friendly names
@@ -45,14 +46,16 @@ export function PlayersTab({ data, isLoading }: PlayersTabProps) {
     let total = 0;
     let horde = 0;
     let alliance = 0;
+    let unknown = 0;
     const byClass = new Map<string, number>();
     const byRace = new Map<string, number>();
 
     for (const entry of data) {
       total += entry.count;
-      const faction = RACE_TO_FACTION[entry.race];
+      const faction = RACE_TO_FACTION[entry.race] ?? "Unknown";
       if (faction === "Horde") horde += entry.count;
       else if (faction === "Alliance") alliance += entry.count;
+      else unknown += entry.count;
 
       byClass.set(entry.class, (byClass.get(entry.class) ?? 0) + entry.count);
       byRace.set(entry.race, (byRace.get(entry.race) ?? 0) + entry.count);
@@ -75,7 +78,7 @@ export function PlayersTab({ data, isLoading }: PlayersTabProps) {
     const classNames = classSorted.map(([c]) => c);
     const raceNames = raceSorted.map(([r]) => r);
 
-    return { total, horde, alliance, classSorted, raceSorted, classMax, raceMax, comboMap, comboMax, classNames, raceNames };
+    return { total, horde, alliance, unknown, classSorted, raceSorted, classMax, raceMax, comboMap, comboMax, classNames, raceNames };
   }, [data]);
 
   if (isLoading) {
@@ -88,12 +91,14 @@ export function PlayersTab({ data, isLoading }: PlayersTabProps) {
 
   if (!stats) return null;
 
-  const hordePercent = stats.total > 0 ? (stats.horde / stats.total) * 100 : 50;
+  const knownTotal = stats.horde + stats.alliance;
+  const hordePercent = knownTotal > 0 ? (stats.horde / knownTotal) * 100 : 50;
+  const alliancePercent = knownTotal > 0 ? (stats.alliance / knownTotal) * 100 : 50;
 
   return (
     <div className="space-y-8">
       {/* Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${stats.unknown > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         <div className="rounded-lg border bg-card p-4 text-center">
           <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
           <div className="text-sm text-muted-foreground">Total Players</div>
@@ -106,14 +111,20 @@ export function PlayersTab({ data, isLoading }: PlayersTabProps) {
           <div className="text-2xl font-bold text-blue-400">{stats.alliance.toLocaleString()}</div>
           <div className="text-sm text-muted-foreground">Alliance</div>
         </div>
+        {stats.unknown > 0 && (
+          <div className="rounded-lg border bg-card p-4 text-center">
+            <div className="text-2xl font-bold text-muted-foreground">{stats.unknown.toLocaleString()}</div>
+            <div className="text-sm text-muted-foreground">Unknown</div>
+          </div>
+        )}
       </div>
 
       {/* Faction bar */}
-      {stats.total > 0 && (
+      {knownTotal > 0 && (
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span className="text-red-500 font-medium">Horde — {hordePercent.toFixed(1)}%</span>
-            <span className="text-blue-400 font-medium">Alliance — {(100 - hordePercent).toFixed(1)}%</span>
+            <span className="text-blue-400 font-medium">Alliance — {alliancePercent.toFixed(1)}%</span>
           </div>
           <div className="flex h-4 rounded-full overflow-hidden border">
             <div
@@ -122,7 +133,7 @@ export function PlayersTab({ data, isLoading }: PlayersTabProps) {
             />
             <div
               className="bg-blue-400/80 transition-all duration-500"
-              style={{ width: `${100 - hordePercent}%` }}
+              style={{ width: `${alliancePercent}%` }}
             />
           </div>
         </div>
@@ -161,9 +172,9 @@ export function PlayersTab({ data, isLoading }: PlayersTabProps) {
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">By Race</h3>
           <div className="space-y-2">
             {stats.raceSorted.map(([race, count]) => {
-              const faction = RACE_TO_FACTION[race];
-              const barColor = faction === "Horde" ? "rgb(239 68 68 / 0.6)" : "rgb(96 165 250 / 0.6)";
-              const textColor = faction === "Horde" ? "text-red-400" : "text-blue-400";
+              const faction = RACE_TO_FACTION[race] ?? "Unknown";
+              const barColor = faction === "Horde" ? "rgb(239 68 68 / 0.6)" : faction === "Alliance" ? "rgb(96 165 250 / 0.6)" : "rgb(163 163 163 / 0.6)";
+              const textColor = faction === "Horde" ? "text-red-400" : faction === "Alliance" ? "text-blue-400" : "text-muted-foreground";
               return (
                 <div key={race} className="flex items-center gap-3">
                   <div className={`w-24 text-sm font-medium truncate ${textColor}`}>
@@ -263,8 +274,8 @@ function ComboMatrix({
             <tr className="border-b bg-muted/30">
               <th className="text-left px-3 py-2 font-medium text-muted-foreground sticky left-0 bg-muted/30">Class</th>
               {sortedRaceNames.map((race) => {
-                const faction = RACE_TO_FACTION[race];
-                const textColor = faction === "Horde" ? "text-red-400" : "text-blue-400";
+                const faction = RACE_TO_FACTION[race] ?? "Unknown";
+                const textColor = faction === "Horde" ? "text-red-400" : faction === "Alliance" ? "text-blue-400" : "text-muted-foreground";
                 const isActive = sortByRace === race;
                 return (
                   <th

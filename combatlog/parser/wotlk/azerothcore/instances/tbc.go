@@ -77,10 +77,20 @@ func SethekkHallsHostiles() map[uint32]instances.Identity {
 		19428: "Cobalt Serpent",
 		19429: "Avian Darkhawk",
 		23058: "Invis Raven God Caster",
+
+		19203: "Syth Fire Elemental",
+		19204: "Syth Frost Elemental",
+		19205: "Syth Arcane Elemental",
+		19206: "Syth Shadow Elemental",
+
+		21891: "Avian Ripper",
+		21904: "Avian Warhawk",
+		23132: "Brood of Anzu",
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		18472: "Darkweaver Syth",
 		18473: "Talon King Ikiss",
+		23035: "Anzu",
 	})
 	return hostile
 }

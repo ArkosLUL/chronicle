@@ -24,6 +24,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/azerothcore"
 	azencounters "github.com/Emyrk/chronicle/combatlog/parser/azerothcore/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
@@ -711,7 +712,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 				}
 				addonVersion := ""
 				if finalized.Versions != nil {
-					addonVersion = finalized.Versions["chronicle_companion"]
+					addonVersion = finalized.Versions["addon"]
 				}
 				parserVer := version.GitTag + "+" + version.GitCommit
 
@@ -1232,7 +1233,7 @@ func insertDPSRankings(
 		if !enc.Boss {
 			continue // non-boss encounters go to trash aggregation
 		}
-		if enc.KillType != instances.KillTypeClean && enc.KillType != instances.KillTypePartial {
+		if enc.KillType != encounter.KillTypeClean && enc.KillType != encounter.KillTypePartial {
 			continue
 		}
 		durationSecs := enc.Combat.End.Sub(enc.Combat.Start).Seconds()
@@ -1411,7 +1412,7 @@ func insertTrashRankings(
 		if enc.Boss {
 			continue // only trash
 		}
-		if enc.KillType != instances.KillTypeClean {
+		if enc.KillType != encounter.KillTypeClean {
 			continue
 		}
 		dpsResult, ok := finalized.Rankings.DPS[enc.Combat.EncounterID]

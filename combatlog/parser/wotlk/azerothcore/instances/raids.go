@@ -3,6 +3,7 @@ package instances
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
 )
 
 // VoAHostiles returns creature entry IDs for Vault of Archavon (map 4603).
@@ -88,11 +89,27 @@ func NaxxramasHostiles() map[uint32]instances.Identity {
 	return hostile
 }
 
+func NaxxramasSpeedrunRequirements() []rankings.SpeedrunRequirement {
+	reqs := instances.NaxxramasSpeedrunRequirements()
+	for i := range reqs {
+		if len(reqs[i].EntryIDs) > 0 && reqs[i].EntryIDs[0] == 16062 {
+			reqs[i].EntryIDs[0] = 30549 // Baron Rivendare replaces Highlord Mograine for the Four Horsemen encounter
+			reqs[i].Name = "Four Horsemen: Baron Rivendare"
+		}
+	}
+	return reqs
+}
+
 var NaxxramasFactory = &instances.CommonFactory{
 	Name:      "Naxxramas",
 	ZoneNames: []string{"naxxramas", "the upper necropolis"},
 	MapIDs:    []uint32{533},
 	Hostiles:  instances.FromMap(NaxxramasHostiles()),
+	Rankings: &rankings.Rankings{
+		Speedrun: &rankings.SpeedrunRules{
+			Requirements: NaxxramasSpeedrunRequirements(),
+		},
+	},
 }
 
 // EyeOfEternityHostiles returns creature entry IDs for The Eye of Eternity (map 616).

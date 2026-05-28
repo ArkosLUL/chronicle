@@ -1,5 +1,7 @@
 package instances
 
+import "github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+
 type MultiInstanceZone struct {
 	cachedOverride string
 	config         map[uint32]string
@@ -16,7 +18,7 @@ func NewMultiInstanceZone(config map[string][]uint32) *MultiInstanceZone {
 	return &MultiInstanceZone{config: lookup}
 }
 
-func (m *MultiInstanceZone) Name(fights []Fight) (string, bool) {
+func (m *MultiInstanceZone) Name(fights []encounter.Fight) (string, bool) {
 	if m.cachedOverride != "" {
 		return m.cachedOverride, true
 	}

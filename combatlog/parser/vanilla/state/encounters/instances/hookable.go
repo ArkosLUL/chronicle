@@ -11,6 +11,8 @@ import (
 	wotlkcreatures "github.com/Emyrk/chronicle/combatlog/parser/azerothcore/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
@@ -51,7 +53,7 @@ type Hookable struct {
 	// Static
 	MatchesZoneF func(z zone.Zone) bool
 	CurrentZone  zone.Zone
-	*Identifier
+	*identifier.Identifier
 	verbose           bool
 	realm             *realm.Info         // mostly static
 	versions          map[string]string   // addon/dependency versions from HEADER
@@ -67,7 +69,7 @@ type Hookable struct {
 	Characters      *characters.Characters
 	currentFight    *ongoingFight
 	events          *encounterevents.Events
-	completedFights []Fight
+	completedFights []encounter.Fight
 
 	// finalized references
 	g            *armory.Tracker
@@ -78,7 +80,7 @@ type Hookable struct {
 type InstanceParams struct {
 	Name        string
 	MatchesZone func(z zone.Zone) bool
-	Idf         *Identifier
+	Idf         *identifier.Identifier
 	Rankings    *rankings.Rankings
 	ExtraHooks  []instancehook.Hook
 }
@@ -111,7 +113,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		cres = wotlkcreatures.NewAzerothCoreCharacterFactories()
 	}
 
-	chrs := characters.NewCharacters(db, cres)
+	chrs := characters.NewCharacters(db, cres, ip.Idf)
 	chrs.RegisterHook(p)
 
 	// ClassificationEmitter needs a forward reference to the hookable for the emit callback.
@@ -190,7 +192,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		rankingRules:      ip.Rankings,
 		verbose:           parseoptions.IsVerbose(ctx),
 		timings:           timings.New(),
-		completedFights:   make([]Fight, 0),
+		completedFights:   make([]encounter.Fight, 0),
 	}
 
 	cie.emit = func(evt *messages.Combatant) {
@@ -400,8 +402,8 @@ func (h *Hookable) FightDetectionHandler(m messages.Message) (func() error, erro
 }
 
 func (h *Hookable) finalizeFight() error {
-	fight := Fight{
-		Hostiles:     map[guid.GUID]CharacterFight{},
+	fight := encounter.Fight{
+		Hostiles:     map[guid.GUID]encounter.CharacterFight{},
 		Start:        h.currentFight.Start.Timestamp.Date(),
 		End:          h.currentFight.End.Timestamp.Date(),
 		EncounterID:  h.currentFight.EncounterID,
@@ -419,7 +421,7 @@ func (h *Hookable) finalizeFight() error {
 			return fmt.Errorf("getting periods during fight for character %s: %w", id, err)
 		}
 
-		fight.Hostiles[id] = CharacterFight{
+		fight.Hostiles[id] = encounter.CharacterFight{
 			ID:       id,
 			Activity: during,
 		}
@@ -436,8 +438,8 @@ func (h *Hookable) finalizeFight() error {
 	return nil
 }
 
-func (h *Hookable) Fights() []Fight {
-	fights := make([]Fight, len(h.completedFights))
+func (h *Hookable) Fights() []encounter.Fight {
+	fights := make([]encounter.Fight, len(h.completedFights))
 	copy(fights, h.completedFights)
 	return fights
 }
@@ -448,7 +450,7 @@ func (h *Hookable) Events() *encounterevents.Events {
 
 // fightEncounter resolves the encounter name, type, boss status, and kill
 // classification for a single completed fight.
-func (h *Hookable) fightEncounter(fight Fight) (Encounter, error) {
+func (h *Hookable) fightEncounter(fight encounter.Fight) (encounter.Encounter, error) {
 	encName := &encounterName{
 		byCharacterName: "",
 		byBossName:      "",
@@ -457,16 +459,16 @@ func (h *Hookable) fightEncounter(fight Fight) (Encounter, error) {
 		killed:          make(map[uint32]int),
 	}
 
-	chf := make([]CharacterFight, 0, len(fight.Hostiles))
+	chf := make([]encounter.CharacterFight, 0, len(fight.Hostiles))
 	for hid, hostile := range fight.Hostiles {
 		if hid != hostile.ID {
-			return Encounter{}, fmt.Errorf("inconsistent hostile ID mapping: key=%v hostile=%v", hid, hostile.ID)
+			return encounter.Encounter{}, fmt.Errorf("inconsistent hostile ID mapping: key=%v hostile=%v", hid, hostile.ID)
 		}
 		chf = append(chf, hostile)
 	}
 
 	// Deterministic ordering
-	slices.SortFunc(chf, func(a, b CharacterFight) int {
+	slices.SortFunc(chf, func(a, b encounter.CharacterFight) int {
 		if len(a.Activity) == 0 && len(b.Activity) == 0 {
 			return 0
 		}
@@ -492,37 +494,37 @@ func (h *Hookable) fightEncounter(fight Fight) (Encounter, error) {
 	aBossRemains := encName.BossRemains()
 
 	// Determine kill type based on remaining enemies and boss status
-	var killType KillType
+	var killType encounter.KillType
 	if len(rr.Timeouts) == 0 {
-		killType = KillTypeClean
+		killType = encounter.KillTypeClean
 		if aBossRemains {
 			// All present hostiles resolved, but a required boss
 			// never appeared (e.g. King chess fight adds killed
 			// without the King). This is not a clean kill.
 			if len(fight.PlayerDeaths) == 0 {
-				killType = KillTypeReset
+				killType = encounter.KillTypeReset
 			} else {
-				killType = KillTypeWipe
+				killType = encounter.KillTypeWipe
 			}
 		} else if rr.Slain == 0 && rr.Reset > 0 {
-			killType = KillTypeReset
+			killType = encounter.KillTypeReset
 			if encName.IsBossFight() && !aBossRemains {
-				killType = KillTypePartial
+				killType = encounter.KillTypePartial
 			}
 		}
 	} else if encName.IsBossFight() && !aBossRemains {
 		// No bosses remain, but it was a boss fight.
 		// An add probably lived
-		killType = KillTypePartial
+		killType = encounter.KillTypePartial
 	} else {
 		if len(fight.PlayerDeaths) == 0 {
-			killType = KillTypeReset
+			killType = encounter.KillTypeReset
 		} else {
-			killType = KillTypeWipe
+			killType = encounter.KillTypeWipe
 		}
 	}
 
-	return Encounter{
+	return encounter.Encounter{
 		Name:      encName.Name(),
 		Type:      encName.Type(),
 		Combat:    fight,
@@ -549,7 +551,7 @@ func (h *Hookable) Finalize(ctx context.Context) (*FinalizedInstance, error) {
 	//  }
 	//}
 
-	encounters := make([]Encounter, 0, len(h.completedFights))
+	encounters := make([]encounter.Encounter, 0, len(h.completedFights))
 	for _, fight := range h.completedFights {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -669,7 +671,7 @@ type encounterName struct {
 	killed map[uint32]int
 }
 
-func (e *encounterName) Apply(ch CharacterFight, id Identity, f Fight) {
+func (e *encounterName) Apply(ch encounter.CharacterFight, id identifier.Identity, f encounter.Fight) {
 	e.applyState(ch, id, f)
 	e.applyName(id, f)
 }
@@ -711,7 +713,7 @@ func (e *encounterName) IsBossFight() bool {
 	return e.encounterType == types.EncounterTypeBOSS
 }
 
-func (e *encounterName) applyState(ch CharacterFight, id Identity, f Fight) {
+func (e *encounterName) applyState(ch encounter.CharacterFight, id identifier.Identity, f encounter.Fight) {
 	entry, hasEntry := ch.ID.GetEntry()
 	lastPeriod := ch.Activity[len(ch.Activity)-1]
 	if id.Boss {
@@ -736,7 +738,7 @@ func (e *encounterName) applyState(ch CharacterFight, id Identity, f Fight) {
 	}
 }
 
-func (e *encounterName) applyName(id Identity, f Fight) {
+func (e *encounterName) applyName(id identifier.Identity, f encounter.Fight) {
 	if e.byCharacterName == "" {
 		e.byCharacterName = id.Name
 	}

@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 )
 
@@ -63,7 +64,7 @@ func BuildSnapshot(finalized []*instances.FinalizedInstance, instanceNames []str
 		}
 
 		// Sort encounters by start time for determinism
-		encs := make([]instances.Encounter, len(fin.Encounters))
+		encs := make([]encounter.Encounter, len(fin.Encounters))
 		copy(encs, fin.Encounters)
 		sort.Slice(encs, func(i, j int) bool {
 			return encs[i].Combat.Start.Before(encs[j].Combat.Start)
@@ -86,7 +87,7 @@ func BuildSnapshot(finalized []*instances.FinalizedInstance, instanceNames []str
 	return snap
 }
 
-func buildHostiles(enc instances.Encounter) []HostileSnapshot {
+func buildHostiles(enc encounter.Encounter) []HostileSnapshot {
 	hostiles := make([]HostileSnapshot, 0, len(enc.Combat.Hostiles))
 
 	for gid, cf := range enc.Combat.Hostiles {
@@ -108,7 +109,7 @@ func buildHostiles(enc instances.Encounter) []HostileSnapshot {
 	return hostiles
 }
 
-func buildPeriod(p period.Period, enc instances.Encounter) PeriodSnapshot {
+func buildPeriod(p period.Period, enc encounter.Encounter) PeriodSnapshot {
 	ps := PeriodSnapshot{
 		EndState: string(p.EndState),
 	}

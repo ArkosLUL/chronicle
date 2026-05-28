@@ -1,6 +1,8 @@
 package instances
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 )
@@ -204,11 +206,11 @@ func HellfireRampartsHostiles() map[uint32]instances.Identity {
 		Name:          "Nazan",
 		EncounterName: "",
 		Boss:          true,
-		EncounterNameFn: func(f instances.Fight) *instances.EncounterFuncResult {
+		EncounterNameFn: func(f encounter.Fight) *identifier.EncounterFuncResult {
 			for _, host := range f.Hostiles {
 				entry, _ := host.ID.GetEntry()
 				if entry == 17537 || entry == 17307 {
-					return &instances.EncounterFuncResult{
+					return &identifier.EncounterFuncResult{
 						EncounterName: "Vazruden",
 						Bosses:        nil,
 					}

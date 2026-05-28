@@ -1,6 +1,7 @@
-package instances
+package identifier
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 )
@@ -23,7 +24,7 @@ type Identity struct {
 	// Boss indicates if the unit is considered a boss for encounter purposes.
 	Boss bool
 
-	EncounterNameFn func(f Fight) *EncounterFuncResult
+	EncounterNameFn func(f encounter.Fight) *EncounterFuncResult
 }
 
 func (id Identity) CanBattle() bool {

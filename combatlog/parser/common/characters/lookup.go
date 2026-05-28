@@ -6,7 +6,9 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/characterset"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/unitdb"
@@ -30,6 +32,7 @@ type Characters struct {
 	ByEntry   map[uint32][]Character
 	db        *unitdb.Units
 	factories []CharacterFactory
+	idf       *identifier.Identifier
 
 	sharedState map[string]any
 
@@ -38,10 +41,11 @@ type Characters struct {
 	activityChanged map[Character]struct{}
 }
 
-func NewCharacters(db *unitdb.Units, factories []CharacterFactory) *Characters {
+func NewCharacters(db *unitdb.Units, factories []CharacterFactory, id *identifier.Identifier) *Characters {
 	return &Characters{
 		db:          db,
 		factories:   factories,
+		idf:         id,
 		All:         characterset.New[Character](),
 		ByEntry:     make(map[uint32][]Character),
 		sharedState: make(map[string]any),
@@ -91,7 +95,13 @@ func (c *Characters) Add(id guid.GUID, now time.Time) (_ Character, newChar bool
 
 		if char == nil {
 			// Just assume they are a normal character then
-			char = NewCommonCharacter(id, c)
+			cc := NewCommonCharacter(id, c)
+			dent := c.idf.IdentifyUnit(id)
+			if dent.Affiliation == types.AffiliationHostile && dent.Boss {
+				// Bosses tend to have lingering effects.
+				cc.SetRecentlySlainDuration(time.Second * 45)
+			}
+			char = cc
 		}
 
 		if entry, ok := id.GetEntry(); ok {

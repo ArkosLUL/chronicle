@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters"
@@ -22,7 +23,7 @@ func New(ctx context.Context, logger *slog.Logger) *encounters.State {
 }
 
 func NewAzeorthCoreInstance(ctx context.Context, logger *slog.Logger, db *unitdb.Units, firstZone zone.Zone) *instances.Hookable {
-	idf := instances.NewIdentifier(map[uint32]instances.Identity{})
+	idf := identifier.NewIdentifier(map[uint32]instances.Identity{})
 
 	return instances.NewHookable(ctx, logger, db, firstZone, instances.InstanceParams{
 		Name: firstZone.Name,
@@ -42,7 +43,7 @@ func NewAzeorthCoreInstance(ctx context.Context, logger *slog.Logger, db *unitdb
 var _ instancehook.Hook = (*AzerothCoreInstanceHook)(nil)
 
 type AzerothCoreInstanceHook struct {
-	ID *instances.Identifier
+	ID *identifier.Identifier
 }
 
 func (a AzerothCoreInstanceHook) ProcessMessage(active bool, encounterID uuid.UUID, m messages.Message) error {

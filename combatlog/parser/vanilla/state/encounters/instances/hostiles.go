@@ -1,41 +1,45 @@
 package instances
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/internal/services"
 )
 
-func LoadAdds(src map[uint32]Identity, adds map[uint32]string) {
+type Identity = identifier.Identity
+
+func LoadAdds(src map[uint32]identifier.Identity, adds map[uint32]string) {
 	for k, name := range adds {
-		src[k] = Identity{Affiliation: types.AffiliationHostile, Name: name}
+		src[k] = identifier.Identity{Affiliation: types.AffiliationHostile, Name: name}
 	}
 }
 
-func LoadBosses(src map[uint32]Identity, bosses map[uint32]string) {
+func LoadBosses(src map[uint32]identifier.Identity, bosses map[uint32]string) {
 	for k, name := range bosses {
-		src[k] = Identity{Affiliation: types.AffiliationHostile, Name: name, EncounterName: name, Boss: true}
+		src[k] = identifier.Identity{Affiliation: types.AffiliationHostile, Name: name, EncounterName: name, Boss: true}
 	}
 }
 
-func FromMaps(m ...map[uint32]Identity) func() *Identifier {
-	merged := make(map[uint32]Identity)
+func FromMaps(m ...map[uint32]identifier.Identity) func() *identifier.Identifier {
+	merged := make(map[uint32]identifier.Identity)
 	for _, mm := range m {
 		for k, v := range mm {
 			merged[k] = v
 		}
 	}
-	return func() *Identifier {
-		return NewIdentifier(merged)
+	return func() *identifier.Identifier {
+		return identifier.NewIdentifier(merged)
 	}
 }
 
-func FromMap(m map[uint32]Identity) func() *Identifier {
-	return func() *Identifier {
-		return NewIdentifier(m)
+func FromMap(m map[uint32]identifier.Identity) func() *identifier.Identifier {
+	return func() *identifier.Identifier {
+		return identifier.NewIdentifier(m)
 	}
 }
 
-func CathedralHostiles() map[uint32]Identity {
+func CathedralHostiles() map[uint32]identifier.Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		4540: "Scarlet Monk",
@@ -391,8 +395,8 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 		61225: "Moroes",
 	})
 
-	kingAds := func(f Fight) *EncounterFuncResult {
-		return &EncounterFuncResult{
+	kingAds := func(f encounter.Fight) *identifier.EncounterFuncResult {
+		return &identifier.EncounterFuncResult{
 			EncounterName: "King",
 			Bosses:        []uint32{59967},
 		}
@@ -769,7 +773,7 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 		60748: "Solnius",
 	})
 
-	hardMode := func(f Fight) *EncounterFuncResult {
+	hardMode := func(f encounter.Fight) *identifier.EncounterFuncResult {
 		hasErennius := false
 		hasSolnius := false
 		for _, host := range f.Hostiles {
@@ -782,7 +786,7 @@ func EmeraldSanctumHostiles() map[uint32]Identity {
 			}
 		}
 		if hasErennius && hasSolnius {
-			return &EncounterFuncResult{
+			return &identifier.EncounterFuncResult{
 				EncounterName: "Solnius (Hard Mode)",
 			}
 		}
@@ -1107,7 +1111,7 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		65148: "Ezzel Darkbrewer",
 	})
 
-	ebonrocAndFlamegor := func(f Fight) *EncounterFuncResult {
+	ebonrocAndFlamegor := func(f encounter.Fight) *identifier.EncounterFuncResult {
 		hasEbonroc := false
 		hasFlamegor := false
 		for _, host := range f.Hostiles {
@@ -1120,7 +1124,7 @@ func BlackwingLairHostiles() map[uint32]Identity {
 			}
 		}
 		if hasFlamegor && hasEbonroc {
-			return &EncounterFuncResult{
+			return &identifier.EncounterFuncResult{
 				EncounterName: "Flamegor & Ebonroc",
 			}
 		}

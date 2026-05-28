@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -57,9 +59,9 @@ func TestFinalize_King_AllAddsKilled_BossAbsent_IsWipe(t *testing.T) {
 
 	startMoment := &period.Moment{Timestamp: startMsg, Reason: "damage"}
 
-	fight := Fight{
+	fight := encounter.Fight{
 		EncounterID: uuid.New(),
-		Hostiles: map[guid.GUID]CharacterFight{
+		Hostiles: map[guid.GUID]encounter.CharacterFight{
 			pawnGUID: {
 				ID: pawnGUID,
 				Activity: []period.Period{{
@@ -84,9 +86,9 @@ func TestFinalize_King_AllAddsKilled_BossAbsent_IsWipe(t *testing.T) {
 
 	hostiles := TowerOfKarazhanHostiles()
 	h := &Hookable{
-		Identifier:      NewIdentifier(hostiles),
+		Identifier:      identifier.NewIdentifier(hostiles),
 		units:           unitdb.New(),
-		completedFights: []Fight{fight},
+		completedFights: []encounter.Fight{fight},
 	}
 
 	result, err := h.Finalize(context.Background())
@@ -96,7 +98,7 @@ func TestFinalize_King_AllAddsKilled_BossAbsent_IsWipe(t *testing.T) {
 	enc := result.Encounters[0]
 	require.Equal(t, "King", enc.Name)
 	require.True(t, enc.Boss, "EncounterNameFn marks this as a boss fight")
-	require.Equal(t, KillTypeWipe, enc.KillType,
+	require.Equal(t, encounter.KillTypeWipe, enc.KillType,
 		"adds dead + boss required but absent + player deaths = wipe")
 }
 
@@ -112,11 +114,11 @@ func TestFinalize_InconsistentHostileIDMapping_ReturnsError(t *testing.T) {
 	}
 
 	h := &Hookable{
-		Identifier: NewIdentifier(TowerOfKarazhanHostiles()),
+		Identifier: identifier.NewIdentifier(TowerOfKarazhanHostiles()),
 		units:      unitdb.New(),
-		completedFights: []Fight{{
+		completedFights: []encounter.Fight{{
 			EncounterID: uuid.New(),
-			Hostiles: map[guid.GUID]CharacterFight{
+			Hostiles: map[guid.GUID]encounter.CharacterFight{
 				wrongGUID: {
 					ID: realGUID,
 					Activity: []period.Period{{
@@ -152,11 +154,11 @@ func TestFinalize_AQ40OuroSpawnerNamesOuro(t *testing.T) {
 	}
 
 	h := &Hookable{
-		Identifier: NewIdentifier(TempleOfAhnQirajHostiles()),
+		Identifier: identifier.NewIdentifier(TempleOfAhnQirajHostiles()),
 		units:      unitdb.New(),
-		completedFights: []Fight{{
+		completedFights: []encounter.Fight{{
 			EncounterID: uuid.New(),
-			Hostiles: map[guid.GUID]CharacterFight{
+			Hostiles: map[guid.GUID]encounter.CharacterFight{
 				spawnerGUID: {
 					ID: spawnerGUID,
 					Activity: []period.Period{{
@@ -202,11 +204,11 @@ func TestFinalize_AQ40PrefersEarliestNamedHostile(t *testing.T) {
 	}
 
 	h := &Hookable{
-		Identifier: NewIdentifier(TempleOfAhnQirajHostiles()),
+		Identifier: identifier.NewIdentifier(TempleOfAhnQirajHostiles()),
 		units:      unitdb.New(),
-		completedFights: []Fight{{
+		completedFights: []encounter.Fight{{
 			EncounterID: uuid.New(),
-			Hostiles: map[guid.GUID]CharacterFight{
+			Hostiles: map[guid.GUID]encounter.CharacterFight{
 				ouroGUID: {
 					ID: ouroGUID,
 					Activity: []period.Period{{

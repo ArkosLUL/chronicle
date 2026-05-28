@@ -10,6 +10,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/messages"
@@ -22,7 +23,7 @@ func TestCharacters(t *testing.T) {
 	t.Parallel()
 
 	t.Run("BasicActivity", func(t *testing.T) {
-		cars := characters.NewCharacters(unitdb.New(), creatures.TurtleCharacterFactories())
+		cars := characters.NewCharacters(unitdb.New(), creatures.TurtleCharacterFactories(), identifier.NewIdentifier(map[uint32]identifier.Identity{}))
 
 		// 0xF1300010C7009C09(Scarlet Myrmidon)
 		// 0x000000000001C7AC(Doyd)

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
@@ -32,7 +33,7 @@ func TestTotemicRecall(t *testing.T) {
 	p := vanilla.NewFromScanner(logger, liner, merge.FromIOReader(liner, strings.NewReader(logs)), nil)
 
 	db := unitdb.New()
-	c := characters.NewCharacters(db, creatures.TurtleCharacterFactories())
+	c := characters.NewCharacters(db, creatures.TurtleCharacterFactories(), identifier.NewIdentifier(map[uint32]identifier.Identity{}))
 	for {
 		msgs, err := p.Advance(context.Background())
 		if errors.Is(err, io.EOF) {

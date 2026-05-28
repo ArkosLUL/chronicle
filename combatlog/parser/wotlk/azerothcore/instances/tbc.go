@@ -1,6 +1,7 @@
 package instances
 
 import (
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances"
 )
 
@@ -186,8 +187,6 @@ func HellfireRampartsHostiles() map[uint32]instances.Identity {
 		17478: "Bleeding Hollow Scryer",
 		17517: "Hellfire Sentry",
 
-		17536: "Nazan",
-
 		// ?? Unsure
 		//
 	})
@@ -199,6 +198,25 @@ func HellfireRampartsHostiles() map[uint32]instances.Identity {
 		17307: "Vazruden the Herald",
 		17537: "Vazruden",
 	})
+
+	hostile[17536] = instances.Identity{
+		Affiliation:   types.AffiliationHostile,
+		Name:          "Nazan",
+		EncounterName: "",
+		Boss:          true,
+		EncounterNameFn: func(f instances.Fight) *instances.EncounterFuncResult {
+			for _, host := range f.Hostiles {
+				entry, _ := host.ID.GetEntry()
+				if entry == 17537 || entry == 17307 {
+					return &instances.EncounterFuncResult{
+						EncounterName: "Vazruden",
+						Bosses:        nil,
+					}
+				}
+			}
+			return nil
+		},
+	}
 
 	return hostile
 }

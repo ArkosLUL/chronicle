@@ -28,6 +28,9 @@ func NewAzerothCoreCharacterFactories() []characters.CharacterFactory {
 		NewCrazedManaWraith,
 		NewMageHunterAscendant,
 		NewCrystallineFrayer,
+
+		// Hellfire Ramparts
+		NewOmarTheUnscarred,
 	}, cres...)
 
 	return cres

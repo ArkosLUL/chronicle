@@ -62,13 +62,13 @@ func (c *Combatant) MergeExisting(existing Combatant) {
 	if c.Glyphs == nil && existing.Glyphs != nil {
 		c.Glyphs = existing.Glyphs
 	}
-	if c.HeroClass == types.HeroClassesUNKNOWN {
+	if c.HeroClass == types.HeroClassesUNKNOWN || c.HeroClass == "" {
 		c.HeroClass = existing.HeroClass
 	}
-	if c.Gender == types.HeroGenderUnknown {
+	if c.Gender == types.HeroGenderUnknown || c.Gender < 0 {
 		c.Gender = existing.Gender
 	}
-	if c.Race == types.HeroRacesUnknown {
+	if c.Race == types.HeroRacesUnknown || c.Race == "" {
 		c.Race = existing.Race
 	}
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/sorter"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
@@ -879,11 +880,21 @@ func (w *logParseInstanceBuilder) participate(ids ...guid.GUID) {
 				Name:       playerData.Name,
 				Level:      level,
 				Class:      db2sdk.HeroClassToDB(playerData.HeroClass),
-				Race:       database.WowPlayableRace(playerData.Race),
+				Race:       validRaceOrUnknown(playerData.Race),
 			})
 			continue
 		}
 	}
+}
+
+// validRaceOrUnknown converts a parsed race to a database enum value,
+// falling back to "Unknown" if the race string is empty or invalid.
+func validRaceOrUnknown(race types.HeroRaces) database.WowPlayableRace {
+	r := database.WowPlayableRace(race)
+	if !r.Valid() {
+		return database.WowPlayableRaceUnknown
+	}
+	return r
 }
 
 func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
@@ -905,7 +916,7 @@ func (w *logParseInstanceBuilder) seen(ids ...guid.GUID) {
 					Name:       playerData.Name,
 					Level:      -1,
 					Class:      db2sdk.HeroClassToDB(playerData.HeroClass),
-					Race:       database.WowPlayableRace(playerData.Race),
+					Race:       validRaceOrUnknown(playerData.Race),
 				})
 				continue
 			}

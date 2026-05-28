@@ -43,7 +43,7 @@ type Combatant struct {
 	Level      *int32
 }
 
-func (c *Combatant) MergeExisting(existing Combatant) {
+func (c *Combatant) SafeMergeExisting(existing Combatant) {
 	if c.Name == "" && existing.Name != "" {
 		c.Name = existing.Name
 	}
@@ -53,15 +53,6 @@ func (c *Combatant) MergeExisting(existing Combatant) {
 	if c.Guild == nil && existing.Guild != nil {
 		c.Guild = existing.Guild
 	}
-	if c.GearSetups == nil && existing.GearSetups != nil {
-		c.GearSetups = existing.GearSetups
-	}
-	if c.Talents == nil && existing.Talents != nil {
-		c.Talents = existing.Talents
-	}
-	if c.Glyphs == nil && existing.Glyphs != nil {
-		c.Glyphs = existing.Glyphs
-	}
 	if c.HeroClass == types.HeroClassesUNKNOWN || c.HeroClass == "" {
 		c.HeroClass = existing.HeroClass
 	}
@@ -70,6 +61,19 @@ func (c *Combatant) MergeExisting(existing Combatant) {
 	}
 	if c.Race == types.HeroRacesUnknown || c.Race == "" {
 		c.Race = existing.Race
+	}
+}
+
+func (c *Combatant) MergeExisting(existing Combatant) {
+	c.SafeMergeExisting(existing)
+	if c.GearSetups == nil && existing.GearSetups != nil {
+		c.GearSetups = existing.GearSetups
+	}
+	if c.Talents == nil && existing.Talents != nil {
+		c.Talents = existing.Talents
+	}
+	if c.Glyphs == nil && existing.Glyphs != nil {
+		c.Glyphs = existing.Glyphs
 	}
 }
 

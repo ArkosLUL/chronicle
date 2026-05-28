@@ -285,6 +285,7 @@ func (g *Tracker) Player(msg *messages.Combatant) {
 
 	previous, ok := g.Players[gid]
 	if ok {
+		c.MergeExisting(previous)
 		gearExists := false
 		for _, item := range c.GearSetups {
 			if item.ItemID != 0 {

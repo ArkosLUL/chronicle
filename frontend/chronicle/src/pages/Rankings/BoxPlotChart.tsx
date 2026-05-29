@@ -109,7 +109,7 @@ function BoxPlotRow({ stats, scaleMax, onClick }: BoxPlotRowProps) {
           />
           <span className="text-xs font-semibold">{label}</span>
           <span className="ml-auto text-[10px] text-muted-foreground">
-            {stats.count.toLocaleString()} parses
+            {stats.count.toLocaleString()} runs
           </span>
         </div>
         {/* Stats */}
@@ -147,10 +147,11 @@ function DpsStatLine({ label, desc, value, highlight }: { label: string; desc?: 
 interface BoxPlotChartProps {
   stats: RankingsBoxPlotStats[]
   title?: string
+  subtitle?: string
   onRowClick?: (playerClass: string, playerSpec: string) => void
 }
 
-export function BoxPlotChart({ stats, title = "DPS Distribution by Class", onRowClick }: BoxPlotChartProps) {
+export function BoxPlotChart({ stats, title = "DPS Distribution by Class", subtitle, onRowClick }: BoxPlotChartProps) {
   const scaleMax = useMemo(() => {
     if (stats.length === 0) return 1200
     return Math.max(...stats.map((s) => s.max_dps))
@@ -169,7 +170,12 @@ export function BoxPlotChart({ stats, title = "DPS Distribution by Class", onRow
 
   return (
     <div className="rounded-xl border bg-card p-5">
-      <h3 className="mb-5 text-sm font-medium text-muted-foreground">{title}</h3>
+      <div className="mb-5 flex items-baseline justify-between gap-4">
+        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        {subtitle && (
+          <span className="text-xs text-muted-foreground/70">{subtitle}</span>
+        )}
+      </div>
 
       {stats.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">

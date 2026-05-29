@@ -3932,7 +3932,9 @@ WITH deduped AS (
         edr.encounter_name,
         edr.player_class,
         edr.player_spec,
-        edr.dps
+        edr.damage_done,
+        edr.duration_secs,
+        COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM encounter_dps_rankings edr
     JOIN log_instances li ON li.id = edr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
@@ -3958,24 +3960,17 @@ WITH deduped AS (
     END
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
-encounter_counts AS (
-    SELECT d.player_guid, d.player_class, d.player_spec,
-           COUNT(DISTINCT d.encounter_name) AS enc_count
-    FROM deduped d
-    GROUP BY d.player_guid, d.player_class, d.player_spec
-),
 total_encounters AS (
     SELECT COUNT(DISTINCT d.encounter_name) AS cnt FROM deduped d
 ),
-qualified AS (
-    SELECT d.player_class, d.player_spec, d.dps
+per_run AS (
+    SELECT
+        d.player_class,
+        d.player_spec,
+        (SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0))::double precision AS dps
     FROM deduped d
-    JOIN encounter_counts ec
-        ON ec.player_guid = d.player_guid
-        AND ec.player_class = d.player_class
-        AND ec.player_spec = d.player_spec
-    -- Only include a player's spec data if they played ALL encounters as that spec.
-    WHERE ec.enc_count = (SELECT cnt FROM total_encounters)
+    GROUP BY d.player_guid, d.run_id, d.player_class, d.player_spec
+    HAVING COUNT(DISTINCT d.encounter_name) = (SELECT cnt FROM total_encounters)
 )
 SELECT
     s.player_class,
@@ -4001,7 +3996,7 @@ FROM (
         END::double precision AS min_dps,
         MAX(d.dps)::double precision AS max_dps,
         COUNT(*)::bigint AS count
-    FROM qualified d
+    FROM per_run d
     WHERE d.dps > 0
     GROUP BY d.player_class, (CASE WHEN $1 :: bool THEN '' ELSE d.player_spec END)::text
 ) s
@@ -4029,10 +4024,11 @@ type RankingsBoxPlotStatsRow struct {
 }
 
 // Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
-// Deduplicated and filtered same as leaderboard.
-// When multiple encounters are selected, only include a player's DPS for a
-// spec if they played ALL selected encounters as that spec. Prevents spec
-// switchers from inflating stats with partial encounter data.
+// DPS is aggregated per run (sum damage / sum duration across encounters in one
+// instance run), so each run is one data point. Matches leaderboard aggregation.
+// Aggregate per player per run: sum damage/duration across encounters in one run.
+// Each run becomes one data point for percentile computation.
+// Only include runs where the player completed ALL encounters as the same spec.
 func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPlotStatsParams) ([]RankingsBoxPlotStatsRow, error) {
 	rows, err := q.db.Query(ctx, rankingsBoxPlotStats,
 		arg.GroupByClass,
@@ -4299,7 +4295,8 @@ WITH deduped AS (
         edr.avg_ilvl,
         edr.log_hashed_slug,
         edr.killed_at,
-        tb.sub_spec AS talent_sub_spec
+        tb.sub_spec AS talent_sub_spec,
+        COALESCE(li.duplicate_group_id, li.id) AS run_id
     FROM encounter_dps_rankings edr
     JOIN log_instances li ON li.id = edr.instance_id
     JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
@@ -4339,10 +4336,10 @@ WITH deduped AS (
     AND edr.dps > 0
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
-aggregated AS (
+per_run AS (
     SELECT
         d.player_guid,
-        -- Use the values from the row with highest damage for display fields.
+        d.run_id,
         ((array_agg(d.player_name ORDER BY d.damage_done DESC))[1])::text AS player_name,
         ((array_agg(d.player_class ORDER BY d.damage_done DESC))[1])::text AS player_class,
         (string_agg(DISTINCT d.player_spec, '/' ORDER BY d.player_spec))::text AS player_spec,
@@ -4363,12 +4360,36 @@ aggregated AS (
         MAX(d.killed_at)::timestamptz AS killed_at,
         COALESCE((array_agg(d.talent_sub_spec ORDER BY d.damage_done DESC))[1], '')::text AS talent_sub_spec
     FROM deduped d
-    GROUP BY d.player_guid
-    -- Only include players who have data for ALL encounters (selected or all
-    -- available). Prevents partial-encounter players from ranking.
+    GROUP BY d.player_guid, d.run_id
+    -- Only include runs where player has data for ALL encounters.
     HAVING COUNT(DISTINCT d.encounter_name) = (
         SELECT COUNT(DISTINCT d2.encounter_name) FROM deduped d2
     )
+),
+aggregated AS (
+    SELECT DISTINCT ON (pr.player_guid)
+        pr.player_guid,
+        pr.player_name,
+        pr.player_class,
+        pr.player_spec,
+        pr.player_role,
+        pr.player_level,
+        pr.instance_name,
+        pr.encounter_name,
+        pr.difficulty_name,
+        pr.max_players,
+        pr.realm_id,
+        pr.realm_name,
+        pr.guild_name,
+        pr.damage_done,
+        pr.duration_secs,
+        pr.dps,
+        pr.avg_ilvl,
+        pr.log_hashed_slug,
+        pr.killed_at,
+        pr.talent_sub_spec
+    FROM per_run pr
+    ORDER BY pr.player_guid, pr.dps DESC
 )
 SELECT
     a.player_guid, a.player_name, a.player_class, a.player_spec, a.player_role, a.player_level, a.instance_name, a.encounter_name, a.difficulty_name, a.max_players, a.realm_id, a.realm_name, a.guild_name, a.damage_done, a.duration_secs, a.dps, a.avg_ilvl, a.log_hashed_slug, a.killed_at, a.talent_sub_spec,
@@ -4417,11 +4438,13 @@ type RankingsLeaderboardRow struct {
 	TotalCount     int64              `db:"total_count" json:"total_count"`
 }
 
-// Returns paginated DPS rankings aggregated per player across selected encounters.
-// When multiple encounters are selected, damage and duration are summed per player
-// and DPS is recomputed as total_damage / total_duration.
+// Returns paginated DPS rankings showing each player's best single run.
+// A "run" is one instance_id (deduplicated by duplicate_group_id).
+// Within a run, damage and duration are summed across encounters to get run DPS.
+// Each player appears once with their highest-DPS run.
 // Deduplicates by (player, encounter, duplicate_group) before aggregating.
-// Aggregate per player: sum damage and duration across encounters, recompute DPS.
+// Step 1: aggregate per player per run (sum encounters within a single instance run).
+// Step 2: pick each player's best run.
 func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeaderboardParams) ([]RankingsLeaderboardRow, error) {
 	rows, err := q.db.Query(ctx, rankingsLeaderboard,
 		arg.QueryOffset,

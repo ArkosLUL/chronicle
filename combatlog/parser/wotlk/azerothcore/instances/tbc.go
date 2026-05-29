@@ -294,7 +294,7 @@ func UnderbogHostiles() map[uint32]instances.Identity {
 
 var UnderbogFactory = &instances.CommonFactory{
 	Name:      "The Underbog",
-	ZoneNames: []string{"the underbog"},
+	ZoneNames: []string{"the underbog", "coilfang: the underbog"},
 	MapIDs:    []uint32{546},
 	Hostiles:  instances.FromMap(UnderbogHostiles()),
 }

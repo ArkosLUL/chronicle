@@ -230,10 +230,11 @@ type sqlcQuerier interface {
 	MarkEmailVerified(ctx context.Context, userAuthID uuid.UUID) error
 	PruneParsedInstanceFromLogOutput(ctx context.Context, arg PruneParsedInstanceFromLogOutputParams) error
 	// Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
-	// Deduplicated and filtered same as leaderboard.
-	// When multiple encounters are selected, only include a player's DPS for a
-	// spec if they played ALL selected encounters as that spec. Prevents spec
-	// switchers from inflating stats with partial encounter data.
+	// DPS is aggregated per run (sum damage / sum duration across encounters in one
+	// instance run), so each run is one data point. Matches leaderboard aggregation.
+	// Aggregate per player per run: sum damage/duration across encounters in one run.
+	// Each run becomes one data point for percentile computation.
+	// Only include runs where the player completed ALL encounters as the same spec.
 	RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPlotStatsParams) ([]RankingsBoxPlotStatsRow, error)
 	// Returns distinct (instance, difficulty, max_players) combos visible to the
 	// current tenant context (RLS on encounter_dps_rankings does the filtering).
@@ -246,11 +247,13 @@ type sqlcQuerier interface {
 	// Box plot stats on encounter duration (seconds) per encounter name.
 	// Deduplicates encounters across duplicate log groups.
 	RankingsKillTimeStats(ctx context.Context, arg RankingsKillTimeStatsParams) ([]RankingsKillTimeStatsRow, error)
-	// Returns paginated DPS rankings aggregated per player across selected encounters.
-	// When multiple encounters are selected, damage and duration are summed per player
-	// and DPS is recomputed as total_damage / total_duration.
+	// Returns paginated DPS rankings showing each player's best single run.
+	// A "run" is one instance_id (deduplicated by duplicate_group_id).
+	// Within a run, damage and duration are summed across encounters to get run DPS.
+	// Each player appears once with their highest-DPS run.
 	// Deduplicates by (player, encounter, duplicate_group) before aggregating.
-	// Aggregate per player: sum damage and duration across encounters, recompute DPS.
+	// Step 1: aggregate per player per run (sum encounters within a single instance run).
+	// Step 2: pick each player's best run.
 	RankingsLeaderboard(ctx context.Context, arg RankingsLeaderboardParams) ([]RankingsLeaderboardRow, error)
 	// Total row count in encounter_dps_rankings (scoped by tenant RLS).
 	// Used as a staleness guard — if count hasn't changed, skip refresh.

@@ -660,12 +660,21 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
           </div>
         </div>
 
+        {/* Multi-encounter notice */}
+        {metric === "dps" && selectedEncounters.size > 1 && (
+          <p className="text-xs text-muted-foreground/70 italic">
+            Showing combined DPS across {selectedEncounters.size} encounters per run.
+            Runs missing any selected encounter are excluded.
+          </p>
+        )}
+
         {/* Content */}
         {metric === "dps" && (
           dpsSubTab === "boxplot" ? (
             <BoxPlotChart
               stats={boxPlotStats}
               title="DPS Distribution by Class & Spec"
+              subtitle={`${boxPlotStats.reduce((sum, s) => sum + s.count, 0).toLocaleString()} total runs`}
               onRowClick={handleBoxPlotRowClick}
             />
           ) : (
@@ -692,7 +701,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs text-muted-foreground">
-                    {totalCount.toLocaleString()} results
+                    {totalCount.toLocaleString()} players
                   </span>
                   <div className="flex items-center gap-2">
                     <Button

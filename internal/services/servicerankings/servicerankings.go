@@ -238,16 +238,17 @@ func (s *Service) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := s.store.RankingsLeaderboard(ctx, database.RankingsLeaderboardParams{
-		InstanceNames:  splitCSV(q.Get("instance_names")),
-		EncounterNames: splitCSV(q.Get("encounter_names")),
-		RealmID:        q.Get("realm_id"),
-		Class:          q.Get("class"),
-		Spec:           q.Get("spec"),
-		Role:           q.Get("role"),
-		SinceDays:      sinceDays,
-		HideUnknowns:   q.Get("hide_unknowns") == "true",
-		QueryLimit:     limit,
-		QueryOffset:    offset,
+		InstanceNames:   splitCSV(q.Get("instance_names")),
+		EncounterNames:  splitCSV(q.Get("encounter_names")),
+		DifficultyNames: splitCSV(q.Get("difficulty_names")),
+		RealmID:         q.Get("realm_id"),
+		Class:           q.Get("class"),
+		Spec:            q.Get("spec"),
+		Role:            q.Get("role"),
+		SinceDays:       sinceDays,
+		HideUnknowns:    q.Get("hide_unknowns") == "true",
+		QueryLimit:      limit,
+		QueryOffset:     offset,
 	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
@@ -312,12 +313,13 @@ func (s *Service) handleStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := s.store.RankingsBoxPlotStats(ctx, database.RankingsBoxPlotStatsParams{
-		InstanceNames:  splitCSV(q.Get("instance_names")),
-		EncounterNames: splitCSV(q.Get("encounter_names")),
-		RealmID:        q.Get("realm_id"),
-		Role:           q.Get("role"),
-		SinceDays:      sinceDays,
-		GroupByClass:    q.Get("group_by_class") == "true",
+		InstanceNames:   splitCSV(q.Get("instance_names")),
+		EncounterNames:  splitCSV(q.Get("encounter_names")),
+		DifficultyNames: splitCSV(q.Get("difficulty_names")),
+		RealmID:         q.Get("realm_id"),
+		Role:            q.Get("role"),
+		SinceDays:       sinceDays,
+		GroupByClass:     q.Get("group_by_class") == "true",
 	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{

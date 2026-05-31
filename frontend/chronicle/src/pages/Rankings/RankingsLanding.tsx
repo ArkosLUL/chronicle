@@ -13,10 +13,15 @@ export function RankingsLanding() {
   const [, setParams] = useSearchParams()
   const { data: summaries, isLoading } = useRankingsInstances()
 
-  const handleSelectInstance = (name: string) => {
+  const handleSelectInstance = (name: string, difficultyName?: string) => {
     setParams((prev) => {
       const next = new URLSearchParams(prev)
       next.set("instance", name)
+      if (difficultyName) {
+        next.set("diff", difficultyName)
+      } else {
+        next.delete("diff")
+      }
       return next
     })
   }
@@ -50,8 +55,8 @@ export function RankingsLanding() {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {items.map((s) => (
         <button
-          key={s.instance_name}
-          onClick={() => handleSelectInstance(s.instance_name)}
+          key={`${s.instance_name}-${s.difficulty_name}-${s.max_players}`}
+          onClick={() => handleSelectInstance(s.instance_name, s.difficulty_name)}
           className="group relative overflow-hidden rounded-xl border bg-card text-left transition-all hover:border-white/20 hover:shadow-lg aspect-[16/7]"
         >
           {/* Background image */}
@@ -62,6 +67,16 @@ export function RankingsLanding() {
           />
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
+
+          {/* Difficulty badge — top-right corner */}
+          {s.difficulty_name && (
+            <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs font-semibold text-white backdrop-blur-sm border border-white/10">
+              {s.difficulty_name}
+              {s.max_players > 0 && (
+                <span className="text-white/50 font-normal">{s.max_players}-man</span>
+              )}
+            </div>
+          )}
 
           {/* Content */}
           <div className="relative flex h-full flex-col justify-end p-4">

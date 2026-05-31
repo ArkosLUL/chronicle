@@ -36,11 +36,15 @@ function BoxPlotRow({ stats, scaleMax, onClick }: BoxPlotRowProps) {
         >
           {/* Class label */}
           <div className="flex w-32 shrink-0 items-center gap-1.5 text-xs">
-            <span
-              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: color }}
+            <img
+              src={`/c/icons/class_${stats.player_class.toLowerCase()}.png`}
+              alt={CLASS_DISPLAY[stats.player_class] ?? stats.player_class}
+              className="h-4 w-4 shrink-0 rounded-sm"
+              onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
             />
-            <span className="truncate font-medium">{label}</span>
+            <span className="truncate font-medium" style={{ color }}>
+              {stats.player_spec || CLASS_DISPLAY[stats.player_class]}
+            </span>
           </div>
 
           {/* Box plot */}

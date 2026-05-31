@@ -179,6 +179,10 @@ WITH deduped AS (
         WHEN @hide_unknowns :: bool THEN edr.player_class != 'Unknown' AND edr.player_spec != 'Unknown'
         ELSE true
     END
+    AND CASE
+        WHEN cardinality(@difficulty_names :: text[]) > 0 THEN edr.difficulty_name = ANY(@difficulty_names :: text[])
+        ELSE true
+    END
     AND edr.dps > 0
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
@@ -282,6 +286,10 @@ WITH deduped AS (
     END
     AND CASE
         WHEN @since_days :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => @since_days::int)
+        ELSE true
+    END
+    AND CASE
+        WHEN cardinality(@difficulty_names :: text[]) > 0 THEN edr.difficulty_name = ANY(@difficulty_names :: text[])
         ELSE true
     END
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC

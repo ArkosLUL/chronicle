@@ -3958,6 +3958,10 @@ WITH deduped AS (
         WHEN $6 :: bigint > 0 THEN edr.killed_at >= now() - make_interval(days => $6::int)
         ELSE true
     END
+    AND CASE
+        WHEN cardinality($7 :: text[]) > 0 THEN edr.difficulty_name = ANY($7 :: text[])
+        ELSE true
+    END
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
 total_encounters AS (
@@ -4004,12 +4008,13 @@ ORDER BY s.median_dps DESC
 `
 
 type RankingsBoxPlotStatsParams struct {
-	GroupByClass   bool     `db:"group_by_class" json:"group_by_class"`
-	InstanceNames  []string `db:"instance_names" json:"instance_names"`
-	EncounterNames []string `db:"encounter_names" json:"encounter_names"`
-	RealmID        string   `db:"realm_id" json:"realm_id"`
-	Role           string   `db:"role" json:"role"`
-	SinceDays      int64    `db:"since_days" json:"since_days"`
+	GroupByClass    bool     `db:"group_by_class" json:"group_by_class"`
+	InstanceNames   []string `db:"instance_names" json:"instance_names"`
+	EncounterNames  []string `db:"encounter_names" json:"encounter_names"`
+	RealmID         string   `db:"realm_id" json:"realm_id"`
+	Role            string   `db:"role" json:"role"`
+	SinceDays       int64    `db:"since_days" json:"since_days"`
+	DifficultyNames []string `db:"difficulty_names" json:"difficulty_names"`
 }
 
 type RankingsBoxPlotStatsRow struct {
@@ -4037,6 +4042,7 @@ func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPl
 		arg.RealmID,
 		arg.Role,
 		arg.SinceDays,
+		arg.DifficultyNames,
 	)
 	if err != nil {
 		return nil, err
@@ -4333,6 +4339,10 @@ WITH deduped AS (
         WHEN $10 :: bool THEN edr.player_class != 'Unknown' AND edr.player_spec != 'Unknown'
         ELSE true
     END
+    AND CASE
+        WHEN cardinality($11 :: text[]) > 0 THEN edr.difficulty_name = ANY($11 :: text[])
+        ELSE true
+    END
     AND edr.dps > 0
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id), edr.dps DESC
 ),
@@ -4402,16 +4412,17 @@ OFFSET $1::bigint
 `
 
 type RankingsLeaderboardParams struct {
-	QueryOffset    int64    `db:"query_offset" json:"query_offset"`
-	QueryLimit     int64    `db:"query_limit" json:"query_limit"`
-	InstanceNames  []string `db:"instance_names" json:"instance_names"`
-	EncounterNames []string `db:"encounter_names" json:"encounter_names"`
-	RealmID        string   `db:"realm_id" json:"realm_id"`
-	Class          string   `db:"class" json:"class"`
-	Spec           string   `db:"spec" json:"spec"`
-	Role           string   `db:"role" json:"role"`
-	SinceDays      int64    `db:"since_days" json:"since_days"`
-	HideUnknowns   bool     `db:"hide_unknowns" json:"hide_unknowns"`
+	QueryOffset     int64    `db:"query_offset" json:"query_offset"`
+	QueryLimit      int64    `db:"query_limit" json:"query_limit"`
+	InstanceNames   []string `db:"instance_names" json:"instance_names"`
+	EncounterNames  []string `db:"encounter_names" json:"encounter_names"`
+	RealmID         string   `db:"realm_id" json:"realm_id"`
+	Class           string   `db:"class" json:"class"`
+	Spec            string   `db:"spec" json:"spec"`
+	Role            string   `db:"role" json:"role"`
+	SinceDays       int64    `db:"since_days" json:"since_days"`
+	HideUnknowns    bool     `db:"hide_unknowns" json:"hide_unknowns"`
+	DifficultyNames []string `db:"difficulty_names" json:"difficulty_names"`
 }
 
 type RankingsLeaderboardRow struct {
@@ -4457,6 +4468,7 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 		arg.Role,
 		arg.SinceDays,
 		arg.HideUnknowns,
+		arg.DifficultyNames,
 	)
 	if err != nil {
 		return nil, err

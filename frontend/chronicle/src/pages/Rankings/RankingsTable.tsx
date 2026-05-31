@@ -50,9 +50,11 @@ export function RankingsTable({ entries }: RankingsTableProps) {
                 <span className="text-sm font-medium text-muted-foreground">{entry.rank}</span>
               )}
             </div>
-            <span
-              className="h-full w-0.5 shrink-0 self-stretch rounded-full"
-              style={{ backgroundColor: CLASS_CSS_VAR[entry.player_class] }}
+            <img
+              src={`/c/icons/class_${entry.player_class.toLowerCase()}.png`}
+              alt={CLASS_DISPLAY[entry.player_class] ?? entry.player_class}
+              className="h-5 w-5 shrink-0 rounded-sm"
+              onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
@@ -62,14 +64,7 @@ export function RankingsTable({ entries }: RankingsTableProps) {
                 </span>
               </div>
               <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{ backgroundColor: CLASS_CSS_VAR[entry.player_class] }}
-                  />
-                  {CLASS_DISPLAY[entry.player_class]}
-                </span>
-                <span>{entry.player_spec}</span>
+                <span style={{ color: CLASS_CSS_VAR[entry.player_class] }}>{entry.player_spec}</span>
                 <span>{entry.realm_name}</span>
                 <span className="font-mono">{formatDuration(entry.duration_secs)}</span>
                 <span className="ml-auto">{formatDate(entry.killed_at)}</span>
@@ -87,7 +82,6 @@ export function RankingsTable({ entries }: RankingsTableProps) {
               <th className="w-16 px-4 py-3 text-center">Rank</th>
               <th className="px-4 py-3">Player</th>
               <th className="px-4 py-3">Realm</th>
-              <th className="px-4 py-3">Class</th>
               <th className="px-4 py-3">Spec</th>
               <th className="px-4 py-3 text-right">DPS</th>
               <th className="px-4 py-3 text-right">Duration</th>
@@ -121,14 +115,15 @@ export function RankingsTable({ entries }: RankingsTableProps) {
                 <td className="px-4 py-3 text-muted-foreground">{entry.realm_name}</td>
                 <td className="px-4 py-3">
                   <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <span
-                      className="inline-block h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: CLASS_CSS_VAR[entry.player_class] }}
+                    <img
+                      src={`/c/icons/class_${entry.player_class.toLowerCase()}.png`}
+                      alt={CLASS_DISPLAY[entry.player_class] ?? entry.player_class}
+                      className="h-4 w-4 shrink-0 rounded-sm"
+                      onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
                     />
-                    {CLASS_DISPLAY[entry.player_class]}
+                    <span style={{ color: CLASS_CSS_VAR[entry.player_class] }}>{entry.player_spec}</span>
                   </span>
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">{entry.player_spec}</td>
                 <td className="px-4 py-3 text-right font-mono font-semibold">
                   {Math.round(entry.dps).toLocaleString()}
                 </td>

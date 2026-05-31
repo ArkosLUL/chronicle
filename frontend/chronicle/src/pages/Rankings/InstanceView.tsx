@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils"
 import type { RankingsKillTimeStats, RankingsSuccessRate } from "@/api/typesGenerated"
 import {
   useRankingsEncounters,
+  useRankingsInstances,
   useRankingsStats,
   useRankingsLeaderboard,
   useRankingsKillTimes,
@@ -312,9 +313,15 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
   // ── Data hooks ─────────────────────────────────────────────────────
 
+  // Build difficulty_names CSV for server-side filtering
+  const difficultyNamesParam = selectedDifficulties.size > 0
+    ? [...selectedDifficulties].join(",")
+    : undefined
+
   const { data: rawBoxPlotStats = [] } = useRankingsStats({
     instance_names: instanceName,
     encounter_names: encounterNamesParam,
+    difficulty_names: difficultyNamesParam,
     period: periodParam,
     role: filterRole,
     group_by_class: groupByClass,
@@ -328,6 +335,7 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
   const { data: leaderboardData } = useRankingsLeaderboard({
     instance_names: instanceName,
     encounter_names: encounterNamesParam,
+    difficulty_names: difficultyNamesParam,
     period: periodParam,
     class: filterClass,
     spec: filterSpec,
@@ -337,13 +345,17 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     offset: (page - 1) * PAGE_SIZE,
   })
 
-  // Derive available difficulties from leaderboard entries
+  // Derive available difficulties from instance summaries (unaffected by difficulty filter)
+  const { data: instanceSummaries } = useRankingsInstances()
   const availableDifficulties = useMemo(() => {
-    const entries = leaderboardData?.entries ?? []
     const seen = new Set<string>()
-    for (const e of entries) if (e.difficulty_name) seen.add(e.difficulty_name)
+    for (const s of instanceSummaries ?? []) {
+      if (s.instance_name === instanceName && s.difficulty_name) {
+        seen.add(s.difficulty_name)
+      }
+    }
     return [...seen].sort()
-  }, [leaderboardData])
+  }, [instanceSummaries, instanceName])
 
   const handleToggleDifficulty = useCallback(
     (diff: string) => {
@@ -369,14 +381,9 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
 
   const leaderboardEntries: RankedEntry[] = useMemo(() => {
     const entries = leaderboardData?.entries ?? []
-    // Client-side filters
-    let filtered = [...entries]
-    if (selectedDifficulties.size > 0) {
-      filtered = filtered.filter((e) => selectedDifficulties.has(e.difficulty_name))
-    }
     const offset = (page - 1) * PAGE_SIZE
-    return filtered.map((e, i) => ({ ...e, rank: offset + i + 1 }))
-  }, [leaderboardData, selectedDifficulties, page])
+    return entries.map((e, i) => ({ ...e, rank: offset + i + 1 }))
+  }, [leaderboardData, page])
 
   const { data: killTimeStats = [] } = useRankingsKillTimes(instanceName, periodParam)
   const { data: successRates = [] } = useRankingsSuccessRates(instanceName, periodParam)
@@ -579,15 +586,22 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                      {availableDifficulties.map((diff) => (
-                        <DropdownMenuCheckboxItem
-                          key={diff}
-                          checked={selectedDifficulties.size === 0 || selectedDifficulties.has(diff)}
-                          onCheckedChange={() => handleToggleDifficulty(diff)}
-                        >
-                          {diff}
-                        </DropdownMenuCheckboxItem>
-                      ))}
+                      {availableDifficulties.map((diff) => {
+                        const checked = selectedDifficulties.size === 0 || selectedDifficulties.has(diff)
+                        return (
+                          <DropdownMenuItem
+                            key={diff}
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              handleToggleDifficulty(diff)
+                            }}
+                            className="gap-2"
+                          >
+                            <Checkbox checked={checked} className="pointer-events-none" />
+                            {diff}
+                          </DropdownMenuItem>
+                        )
+                      })}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}

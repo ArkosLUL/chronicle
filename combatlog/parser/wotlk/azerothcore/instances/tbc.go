@@ -540,7 +540,7 @@ func ManaTombsHostiles() map[uint32]instances.Identity {
 
 var ManaTombsFactory = &instances.CommonFactory{
 	Name:      "Mana-Tombs",
-	ZoneNames: []string{"mana-tombs"},
+	ZoneNames: []string{"mana-tombs", "auchindoun: mana-tombs"},
 	MapIDs:    []uint32{557},
 	Hostiles:  instances.FromMap(ManaTombsHostiles()),
 }
@@ -702,7 +702,7 @@ func MagistersTerraceHostiles() map[uint32]instances.Identity {
 
 var MagistersTerraceFactory = &instances.CommonFactory{
 	Name:      "Magisters' Terrace",
-	ZoneNames: []string{"magisters' terrace"},
+	ZoneNames: []string{"magisters' terrace", "magister's terrace"},
 	MapIDs:    []uint32{585},
 	Hostiles:  instances.FromMap(MagistersTerraceHostiles()),
 }

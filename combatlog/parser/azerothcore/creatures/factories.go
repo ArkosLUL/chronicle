@@ -31,6 +31,14 @@ func NewAzerothCoreCharacterFactories() []characters.CharacterFactory {
 
 		// Hellfire Ramparts
 		NewOmarTheUnscarred,
+
+		// Gundrak
+		NewDrakkariFrenzy,
+
+		// TBC
+
+		// Underbog
+		NewClaw,
 	}, cres...)
 
 	return cres

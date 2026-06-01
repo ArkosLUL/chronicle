@@ -39,6 +39,9 @@ func NewAzerothCoreCharacterFactories() []characters.CharacterFactory {
 
 		// Underbog
 		NewClaw,
+
+		// Obsidian Sanctum
+		NewSarthrion,
 	}, cres...)
 
 	return cres

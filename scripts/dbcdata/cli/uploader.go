@@ -86,6 +86,7 @@ func (u *uploader) uploadTalentTrees(art Artifact) error {
 // do attaches auth headers, executes the request, and checks the status.
 func (u *uploader) do(req *http.Request) error {
 	req.Header.Set("Authorization", "Bearer "+u.token)
+	setBrowserHeaders(req)
 	resp, err := u.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)

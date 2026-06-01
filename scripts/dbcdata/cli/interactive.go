@@ -10,6 +10,14 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 )
 
+// setBrowserHeaders makes a CLI request look like a same-origin browser request
+// so it passes the server's BrowserOnly middleware. BrowserOnly rejects
+// requests whose Sec-Fetch-Site is empty or "cross-site"; a real same-origin
+// fetch sends "same-origin", which the CLI emulates here.
+func setBrowserHeaders(req *http.Request) {
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+}
+
 // resolveToken returns a Bearer token. If token is already set it is returned
 // as-is. Otherwise, if a session cookie is provided, it calls /whoami/dump to
 // exchange the cookie for the raw JWT.
@@ -37,6 +45,7 @@ func resolveToken(baseURL, token, cookie string) (string, error) {
 		req.Header.Set("Cookie", cookieName+"="+cookie)
 	}
 	req.Header.Set("X-Chronicle-Token-Dump", "1")
+	setBrowserHeaders(req)
 
 	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
@@ -66,6 +75,7 @@ func apiGet(baseURL, token, path string, v any) error {
 		return fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
+	setBrowserHeaders(req)
 
 	resp, err := (&http.Client{}).Do(req)
 	if err != nil {

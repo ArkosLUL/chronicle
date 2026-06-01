@@ -260,6 +260,24 @@ CREATE VIEW chronicle_users AS
           WHERE (log_file.storage_deleted_at IS NULL)
           GROUP BY log_file.owner) lf ON ((lf.owner = u.id)));
 
+CREATE TABLE dataset_talent_trees (
+    dataset_id uuid NOT NULL,
+    data jsonb NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE datasets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    wow_version text NOT NULL,
+    build_version integer DEFAULT 5875 NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT datasets_slug_format CHECK ((slug ~ '^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$'::text))
+);
+
 CREATE TABLE dbc_item_display_info (
     id integer NOT NULL,
     model_name jsonb DEFAULT '[]'::jsonb NOT NULL,
@@ -285,7 +303,8 @@ CREATE TABLE dbc_item_display_info (
     group_sound_index integer DEFAULT 0 NOT NULL,
     ground_model text DEFAULT ''::text NOT NULL,
     item_size integer DEFAULT 0 NOT NULL,
-    helmet_geoset_vis_id jsonb DEFAULT '[]'::jsonb NOT NULL
+    helmet_geoset_vis_id jsonb DEFAULT '[]'::jsonb NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE dbc_item_random_properties (
@@ -296,7 +315,8 @@ CREATE TABLE dbc_item_random_properties (
     enchantment_2 integer DEFAULT 0 NOT NULL,
     enchantment_3 integer DEFAULT 0 NOT NULL,
     enchantment_4 integer DEFAULT 0 NOT NULL,
-    enchantment_5 integer DEFAULT 0 NOT NULL
+    enchantment_5 integer DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE dbc_item_set (
@@ -304,18 +324,21 @@ CREATE TABLE dbc_item_set (
     name_lang text DEFAULT ''::text NOT NULL,
     required_skill integer DEFAULT 0 NOT NULL,
     required_skill_rank integer DEFAULT 0 NOT NULL,
-    item_ids integer[] DEFAULT '{}'::integer[] NOT NULL
+    item_ids integer[] DEFAULT '{}'::integer[] NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE dbc_item_set_bonus (
     set_id integer NOT NULL,
     threshold integer NOT NULL,
-    spell_id integer NOT NULL
+    spell_id integer NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE dbc_item_set_item (
     set_id integer NOT NULL,
-    item_entry integer NOT NULL
+    item_entry integer NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE dbc_spell_item_enchantment (
@@ -338,7 +361,8 @@ CREATE TABLE dbc_spell_item_enchantment (
     required_skill_id integer DEFAULT 0 NOT NULL,
     required_skill_rank integer DEFAULT 0 NOT NULL,
     min_level integer DEFAULT 0 NOT NULL,
-    max_level integer DEFAULT 0 NOT NULL
+    max_level integer DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE deployment_info (
@@ -590,6 +614,7 @@ CREATE TABLE tenants (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     discoverable boolean DEFAULT false NOT NULL,
+    default_dataset_id uuid,
     CONSTRAINT tenants_slug_format CHECK (((slug IS NULL) OR (slug ~ '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'::text))),
     CONSTRAINT tenants_slug_reserved CHECK ((slug <> ALL (ARRAY['www'::text, 'api'::text, 'auth'::text, 'admin'::text, 'legacy'::text, 'app'::text, 'mail'::text, 'staging'::text])))
 );
@@ -611,7 +636,8 @@ CREATE TABLE wow_servers (
     created_by uuid,
     url text,
     description text DEFAULT ''::text NOT NULL,
-    tenant_id uuid
+    tenant_id uuid,
+    default_dataset_id uuid
 );
 
 ALTER TABLE ONLY wow_servers FORCE ROW LEVEL SECURITY;
@@ -951,18 +977,21 @@ CREATE TABLE world_creature_template (
     arcane_res integer DEFAULT 0 NOT NULL,
     mechanic_immune_mask bigint DEFAULT 0 NOT NULL,
     school_immune_mask integer DEFAULT 0 NOT NULL,
-    immunity_flags integer DEFAULT 0 NOT NULL
+    immunity_flags integer DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_display_info (
     id integer NOT NULL,
-    icon text DEFAULT ''::text NOT NULL
+    icon text DEFAULT ''::text NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_item_enchantment (
     entry integer NOT NULL,
     ench integer NOT NULL,
-    chance double precision DEFAULT 0 NOT NULL
+    chance double precision DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_item_template (
@@ -1113,12 +1142,14 @@ CREATE TABLE world_item_template (
     scaling_stat_distribution integer DEFAULT 0 NOT NULL,
     scaling_stat_value integer DEFAULT 0 NOT NULL,
     item_limit_category integer DEFAULT 0 NOT NULL,
-    holiday_id integer DEFAULT 0 NOT NULL
+    holiday_id integer DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_server (
     server_id uuid NOT NULL,
-    world_id uuid NOT NULL
+    world_id uuid NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_spell_area (
@@ -1130,7 +1161,8 @@ CREATE TABLE world_spell_area (
     aura_spell integer DEFAULT 0 NOT NULL,
     racemask integer DEFAULT 0 NOT NULL,
     gender integer DEFAULT 2 NOT NULL,
-    autocast integer DEFAULT 0 NOT NULL
+    autocast integer DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_spell_chain (
@@ -1138,20 +1170,23 @@ CREATE TABLE world_spell_chain (
     prev_spell integer DEFAULT 0 NOT NULL,
     first_spell integer DEFAULT 0 NOT NULL,
     rank integer DEFAULT 0 NOT NULL,
-    req_spell integer DEFAULT 0 NOT NULL
+    req_spell integer DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_spell_group (
     group_id integer NOT NULL,
     group_spell_id integer DEFAULT 0 NOT NULL,
-    spell_id integer NOT NULL
+    spell_id integer NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE world_spell_threat (
     entry integer NOT NULL,
     threat integer DEFAULT 0 NOT NULL,
     multiplier double precision DEFAULT 1 NOT NULL,
-    ap_bonus double precision DEFAULT 0 NOT NULL
+    ap_bonus double precision DEFAULT 0 NOT NULL,
+    dataset_id uuid NOT NULL
 );
 
 CREATE TABLE wow_log_groups (
@@ -1186,23 +1221,32 @@ ALTER TABLE ONLY data_grants
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_user_id_source_key UNIQUE (user_id, source);
 
+ALTER TABLE ONLY dataset_talent_trees
+    ADD CONSTRAINT dataset_talent_trees_pkey PRIMARY KEY (dataset_id);
+
+ALTER TABLE ONLY datasets
+    ADD CONSTRAINT datasets_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY datasets
+    ADD CONSTRAINT datasets_slug_key UNIQUE (slug);
+
 ALTER TABLE ONLY dbc_item_display_info
-    ADD CONSTRAINT dbc_item_display_info_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT dbc_item_display_info_pkey PRIMARY KEY (dataset_id, id);
 
 ALTER TABLE ONLY dbc_item_random_properties
-    ADD CONSTRAINT dbc_item_random_properties_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT dbc_item_random_properties_pkey PRIMARY KEY (dataset_id, id);
 
 ALTER TABLE ONLY dbc_item_set_bonus
-    ADD CONSTRAINT dbc_item_set_bonus_pkey PRIMARY KEY (set_id, threshold, spell_id);
+    ADD CONSTRAINT dbc_item_set_bonus_pkey PRIMARY KEY (dataset_id, set_id, threshold, spell_id);
 
 ALTER TABLE ONLY dbc_item_set_item
-    ADD CONSTRAINT dbc_item_set_item_pkey PRIMARY KEY (set_id, item_entry);
+    ADD CONSTRAINT dbc_item_set_item_pkey PRIMARY KEY (dataset_id, set_id, item_entry);
 
 ALTER TABLE ONLY dbc_item_set
-    ADD CONSTRAINT dbc_item_set_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT dbc_item_set_pkey PRIMARY KEY (dataset_id, id);
 
 ALTER TABLE ONLY dbc_spell_item_enchantment
-    ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT dbc_spell_item_enchantment_pkey PRIMARY KEY (dataset_id, id);
 
 ALTER TABLE ONLY deployment_info
     ADD CONSTRAINT deployment_info_pkey PRIMARY KEY (id);
@@ -1382,16 +1426,16 @@ ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY world_creature_template
-    ADD CONSTRAINT world_creature_template_pkey PRIMARY KEY (entry);
+    ADD CONSTRAINT world_creature_template_pkey PRIMARY KEY (dataset_id, entry);
 
 ALTER TABLE ONLY world_display_info
-    ADD CONSTRAINT world_display_info_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT world_display_info_pkey PRIMARY KEY (dataset_id, id);
 
 ALTER TABLE ONLY world_item_enchantment
-    ADD CONSTRAINT world_item_enchantment_pkey PRIMARY KEY (entry, ench);
+    ADD CONSTRAINT world_item_enchantment_pkey PRIMARY KEY (dataset_id, entry, ench);
 
 ALTER TABLE ONLY world_item_template
-    ADD CONSTRAINT world_item_template_pkey PRIMARY KEY (entry);
+    ADD CONSTRAINT world_item_template_pkey PRIMARY KEY (dataset_id, entry);
 
 ALTER TABLE ONLY world
     ADD CONSTRAINT world_name_key UNIQUE (name);
@@ -1400,19 +1444,19 @@ ALTER TABLE ONLY world
     ADD CONSTRAINT world_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY world_server
-    ADD CONSTRAINT world_server_pkey PRIMARY KEY (server_id, world_id);
+    ADD CONSTRAINT world_server_pkey PRIMARY KEY (dataset_id, server_id, world_id);
 
 ALTER TABLE ONLY world_spell_area
-    ADD CONSTRAINT world_spell_area_pkey PRIMARY KEY (spell, area);
+    ADD CONSTRAINT world_spell_area_pkey PRIMARY KEY (dataset_id, spell, area);
 
 ALTER TABLE ONLY world_spell_chain
-    ADD CONSTRAINT world_spell_chain_pkey PRIMARY KEY (spell_id);
+    ADD CONSTRAINT world_spell_chain_pkey PRIMARY KEY (dataset_id, spell_id);
 
 ALTER TABLE ONLY world_spell_group
-    ADD CONSTRAINT world_spell_group_pkey PRIMARY KEY (group_id, spell_id);
+    ADD CONSTRAINT world_spell_group_pkey PRIMARY KEY (dataset_id, group_id, spell_id);
 
 ALTER TABLE ONLY world_spell_threat
-    ADD CONSTRAINT world_spell_threat_pkey PRIMARY KEY (entry);
+    ADD CONSTRAINT world_spell_threat_pkey PRIMARY KEY (dataset_id, entry);
 
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_pkey PRIMARY KEY (id);
@@ -1494,9 +1538,9 @@ CREATE INDEX idx_upload_keys_realm ON wow_server_upload_keys USING btree (realm_
 
 CREATE INDEX idx_user_panel_layouts_code ON user_panel_layouts USING btree (code);
 
-CREATE INDEX idx_world_creature_template_name ON world_creature_template USING btree (name);
+CREATE INDEX idx_world_creature_template_name ON world_creature_template USING btree (dataset_id, name);
 
-CREATE INDEX idx_world_item_template_name ON world_item_template USING btree (name);
+CREATE INDEX idx_world_item_template_name ON world_item_template USING btree (dataset_id, name);
 
 CREATE UNIQUE INDEX idx_wow_server_realms_name_unique ON wow_server_realms USING btree (lower(name));
 
@@ -1543,6 +1587,27 @@ ALTER TABLE ONLY application_modification_requests
 
 ALTER TABLE ONLY data_grants
     ADD CONSTRAINT data_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY dataset_talent_trees
+    ADD CONSTRAINT dataset_talent_trees_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY dbc_item_display_info
+    ADD CONSTRAINT dbc_item_display_info_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY dbc_item_random_properties
+    ADD CONSTRAINT dbc_item_random_properties_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY dbc_item_set_bonus
+    ADD CONSTRAINT dbc_item_set_bonus_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY dbc_item_set
+    ADD CONSTRAINT dbc_item_set_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY dbc_item_set_item
+    ADD CONSTRAINT dbc_item_set_item_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY dbc_spell_item_enchantment
+    ADD CONSTRAINT dbc_spell_item_enchantment_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
 
 ALTER TABLE ONLY encounter_dps_rankings
     ADD CONSTRAINT encounter_dps_rankings_encounter_id_fkey FOREIGN KEY (encounter_id) REFERENCES log_instance_encounters(id) ON DELETE CASCADE;
@@ -1682,6 +1747,9 @@ ALTER TABLE ONLY shared_views
 ALTER TABLE ONLY shared_views
     ADD CONSTRAINT shared_views_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES log_instances(id) ON DELETE SET NULL;
 
+ALTER TABLE ONLY tenants
+    ADD CONSTRAINT tenants_default_dataset_id_fkey FOREIGN KEY (default_dataset_id) REFERENCES datasets(id);
+
 ALTER TABLE ONLY user_action_bar_slots
     ADD CONSTRAINT user_action_bar_slots_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
@@ -1712,11 +1780,38 @@ ALTER TABLE ONLY users
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_default_mobile_layout_id_fkey FOREIGN KEY (default_mobile_layout_id) REFERENCES user_panel_layouts(id) ON DELETE SET NULL;
 
+ALTER TABLE ONLY world_creature_template
+    ADD CONSTRAINT world_creature_template_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_display_info
+    ADD CONSTRAINT world_display_info_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_item_enchantment
+    ADD CONSTRAINT world_item_enchantment_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_item_template
+    ADD CONSTRAINT world_item_template_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_server
+    ADD CONSTRAINT world_server_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
 ALTER TABLE ONLY world_server
     ADD CONSTRAINT world_server_server_id_fkey FOREIGN KEY (server_id) REFERENCES wow_servers(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY world_server
     ADD CONSTRAINT world_server_world_id_fkey FOREIGN KEY (world_id) REFERENCES world(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY world_spell_area
+    ADD CONSTRAINT world_spell_area_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_spell_chain
+    ADD CONSTRAINT world_spell_chain_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_spell_group
+    ADD CONSTRAINT world_spell_group_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
+
+ALTER TABLE ONLY world_spell_threat
+    ADD CONSTRAINT world_spell_threat_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES datasets(id);
 
 ALTER TABLE ONLY wow_log_groups
     ADD CONSTRAINT wow_log_groups_owner_fkey FOREIGN KEY (owner) REFERENCES users(id);
@@ -1735,6 +1830,9 @@ ALTER TABLE ONLY wow_server_upload_keys
 
 ALTER TABLE ONLY wow_servers
     ADD CONSTRAINT wow_servers_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id);
+
+ALTER TABLE ONLY wow_servers
+    ADD CONSTRAINT wow_servers_default_dataset_id_fkey FOREIGN KEY (default_dataset_id) REFERENCES datasets(id);
 
 ALTER TABLE ONLY wow_servers
     ADD CONSTRAINT wow_servers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id);

@@ -3,16 +3,24 @@ package servicewowdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 
+	"github.com/Emyrk/chronicle/api/chroniclesdk"
+	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem"
+	"github.com/Emyrk/chronicle/database/gamedb/talents"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
+	"github.com/Emyrk/chronicle/internal/services/servicedataset"
+	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/internal/services"
@@ -57,15 +65,20 @@ func (s *Service) DependsOn() []string {
 	return []string{
 		servicelogger.OnLogger(),
 		serviceauthz.OnAuthz(),
+		servicedbstore.OnDatabaseStore(),
 	}
 }
 
 func (s *Service) Start(ctx context.Context) error {
 	logger := servicelogger.Logger(s.broker)
 	az := serviceauthz.Authz(s.broker)
+	store := servicedbstore.DatabaseStore(s.broker)
+	talentFetcher := talents.NewFetcher(store, 16)
 	db, err := gamedb.New(ctx, gamedb.Options{
 		SpellsDBCPath: s.spellDBCPath,
 		DB:            az,
+		DatasetID:     servicedataset.DefaultDatasetID,
+		Talents:       talentFetcher,
 	})
 	if err != nil {
 		return err
@@ -85,6 +98,7 @@ func (s *Service) setupRoutes() {
 	s.router.Get("/spell/{id}", s.handleGetSpell)
 	s.router.Get("/spell-by-name/{name}", s.handleGetSpellByName)
 	s.router.Get("/periodic-spells", s.handleGetPeriodicSpells)
+	s.router.Get("/talent-trees", s.handleGetTalentTrees)
 }
 
 type SpellResponse struct {
@@ -178,6 +192,51 @@ func (s *Service) handleGetPeriodicSpells(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(spells)
+}
+
+func (s *Service) handleGetTalentTrees(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// dataset_id is optional. Resolution order:
+	//   1. explicit ?dataset_id= query param
+	//   2. the request tenant's default dataset (from tenant context)
+	//   3. the server's compiled-in default dataset
+	datasetID := servicedataset.DefaultDatasetID
+	if t := servicetenant.TenantFromContext(ctx); t != nil && t.DefaultDatasetID.Valid {
+		datasetID = t.DefaultDatasetID.UUID
+	}
+	if q := r.URL.Query().Get("dataset_id"); q != "" {
+		parsed, err := uuid.Parse(q)
+		if err != nil {
+			httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{
+				Message: "invalid dataset_id",
+			})
+			return
+		}
+		datasetID = parsed
+	}
+
+	// Surface the resolved dataset for debugging. Set before any Write so it
+	// is present on the 404 path too (helps diagnose "wrong dataset" issues).
+	w.Header().Set(httpapi.DatasetHeader, datasetID.String())
+
+	data, err := s.db.TalentTrees(ctx, datasetID)
+	if err != nil {
+		// No talent data imported for this dataset yet → 404 so the UI can
+		// degrade gracefully (e.g. show an "import talents" hint) instead of
+		// surfacing a server error.
+		if errors.Is(err, talents.ErrNoTalentData) {
+			httpapi.Write(ctx, w, http.StatusNotFound, chroniclesdk.Response{
+				Message: "no talent data for this dataset",
+			})
+			return
+		}
+		httpapi.InternalServerError(w, err)
+		return
+	}
+
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	httpapi.Write(ctx, w, http.StatusOK, data)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

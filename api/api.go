@@ -30,6 +30,7 @@ import (
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/Emyrk/chronicle/internal/services/serviceapplication"
+	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
@@ -74,6 +75,9 @@ type Options struct {
 	// Application is the server application service for onboarding new servers.
 	// If nil, application routes are not registered.
 	Application *serviceapplication.Service
+
+	// Dataset is the dataset CRUD service for managing game-data payloads.
+	Dataset *servicedataset.Service
 }
 
 type API struct {
@@ -173,6 +177,7 @@ func (api *API) Routes() chi.Router {
 					api.Auth.Authenticated(false),
 				)
 				r.Get("/whoami", api.WhoAmI)
+				r.Get("/whoami/dump", api.DumpToken)
 				r.Post("/authcheck", api.checkAuthorization)
 				r.Get("/me/storage", api.GetMyStorage)
 				r.Patch("/me/preferences", api.UpdateMyPreferences)
@@ -194,6 +199,8 @@ func (api *API) Routes() chi.Router {
 			r.Get("/share/{code}", api.GetShare)
 			r.Get("/site-config", api.AdminGetSiteConfig)
 			r.Get("/discovery", api.Discovery)
+			// Public read-only dataset list for the talent-tree dataset selector.
+			r.Get("/datasets", api.Opts.Dataset.List)
 
 			// Admin routes - require admin or technical_admin role
 			r.Route("/admin", func(r chi.Router) {
@@ -239,6 +246,14 @@ func (api *API) Routes() chi.Router {
 					r.Mount("/", api.Opts.Tenant.Routes())
 				})
 				r.Put("/servers/{serverID}/tenant", api.Opts.Tenant.SetServerTenant)
+
+				// Dataset management — routes owned by servicedataset
+				r.Route("/datasets", func(r chi.Router) {
+					r.Use(
+						httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_tenants_User),
+					)
+					r.Mount("/", api.Opts.Dataset.Routes())
+				})
 
 				r.Group(func(r chi.Router) {
 					r.Use(

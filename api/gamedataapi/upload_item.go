@@ -9,7 +9,9 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
+	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/wdb"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -34,7 +36,7 @@ func (h *Handler) handleItemUpload(ctx context.Context, w http.ResponseWriter, m
 	for i, it := range items {
 		entries[i] = int32(it.Entry)
 	}
-	existingRows, err := h.zed.GetItemTemplatesByEntries(ctx, entries)
+	existingRows, err := h.zed.GetItemTemplatesByEntries(ctx, database.GetItemTemplatesByEntriesParams{DatasetID: servicedataset.DefaultDatasetID, Entries: entries})
 	if err != nil {
 		httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
 			Message: "Failed to fetch existing items from database",
@@ -118,7 +120,7 @@ func (h *Handler) handleItemUpload(ctx context.Context, w http.ResponseWriter, m
 
 	// Perform upserts if requested.
 	if (mode == "upsert" || mode == "insert") && len(toUpsert) > 0 {
-		if err := upsertItems(ctx, h.pool, toUpsert); err != nil {
+		if err := upsertItems(ctx, h.pool, servicedataset.DefaultDatasetID, toUpsert); err != nil {
 			httpapi.Write(ctx, w, http.StatusInternalServerError, chroniclesdk.Response{
 				Message: "Failed to upsert items",
 				Detail:  err.Error(),
@@ -144,7 +146,7 @@ func (h *Handler) handleItemUpload(ctx context.Context, w http.ResponseWriter, m
 // min/max_money_loot, wrapped_gift, extra_flags, other_team_entry,
 // script_name, patch) are intentionally excluded to avoid clobbering.
 var wdbUpsertColumns = []string{
-	"entry", "class", "subclass", "name", "description", "display_id",
+	"dataset_id", "entry", "class", "subclass", "name", "description", "display_id",
 	"quality", "flags", "buy_price", "sell_price",
 	"inventory_type", "allowable_class", "allowable_race", "item_level",
 	"required_level", "required_skill", "required_skill_rank",
@@ -184,12 +186,12 @@ func init() {
 	}
 
 	var setClauses []string
-	for _, col := range wdbUpsertColumns[1:] { // skip "entry" (PK)
+	for _, col := range wdbUpsertColumns[2:] { // skip "dataset_id" and "entry" (composite PK)
 		setClauses = append(setClauses, fmt.Sprintf("%s = EXCLUDED.%s", col, col))
 	}
 
 	upsertItemSQL = fmt.Sprintf(
-		"INSERT INTO world_item_template (%s) VALUES (%s) ON CONFLICT (entry) DO UPDATE SET %s",
+		"INSERT INTO world_item_template (%s) VALUES (%s) ON CONFLICT (dataset_id, entry) DO UPDATE SET %s",
 		strings.Join(wdbUpsertColumns, ", "),
 		strings.Join(placeholders, ", "),
 		strings.Join(setClauses, ", "),
@@ -198,8 +200,9 @@ func init() {
 
 // rowArgs returns the parameter values for a WorldItemTemplate in the same
 // order as wdbUpsertColumns.
-func itemRowArgs(r database.WorldItemTemplate) []any {
+func itemRowArgs(datasetID uuid.UUID, r database.WorldItemTemplate) []any {
 	return []any{
+		datasetID,
 		r.Entry, r.Class, r.Subclass, r.Name, r.Description, r.DisplayID,
 		r.Quality, r.Flags, r.BuyPrice, r.SellPrice,
 		r.InventoryType, r.AllowableClass, r.AllowableRace, r.ItemLevel,
@@ -233,13 +236,13 @@ func itemRowArgs(r database.WorldItemTemplate) []any {
 }
 
 // upsertItems batch-upserts WorldItemTemplate rows using pgx batch.
-func upsertItems(ctx context.Context, pool *pgxpool.Pool, rows []database.WorldItemTemplate) error {
+func upsertItems(ctx context.Context, pool *pgxpool.Pool, datasetID uuid.UUID, rows []database.WorldItemTemplate) error {
 	const batchSize = 500
 	for i := 0; i < len(rows); i += batchSize {
 		end := min(i+batchSize, len(rows))
 		batch := &pgx.Batch{}
 		for _, r := range rows[i:end] {
-			batch.Queue(upsertItemSQL, itemRowArgs(r)...)
+			batch.Queue(upsertItemSQL, itemRowArgs(datasetID, r)...)
 		}
 		br := pool.SendBatch(ctx, batch)
 		for range rows[i:end] {

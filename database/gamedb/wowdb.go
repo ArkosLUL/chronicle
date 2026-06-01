@@ -12,6 +12,8 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
+	"github.com/Emyrk/chronicle/database/gamedb/talents"
+	"github.com/google/uuid"
 	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Gophercraft/core/format/dbc"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -21,6 +23,12 @@ type GameDB interface {
 	SpellFetcher
 	GearResolver
 	CreatureFetcher
+	TalentTreeFetcher
+}
+
+// TalentTreeFetcher loads pre-computed talent tree data per dataset.
+type TalentTreeFetcher interface {
+	TalentTrees(ctx context.Context, datasetID uuid.UUID) (*talents.TalentTreeData, error)
 }
 
 type SpellFetcher interface {
@@ -40,6 +48,8 @@ type WorldQuerier interface {
 type Options struct {
 	SpellsDBCPath string
 	DB            WorldQuerier
+	DatasetID     uuid.UUID // Dataset for item/creature lookups. Defaults to DefaultDatasetID.
+	Talents       talents.TalentFetcher
 }
 
 type SpellEntry struct {
@@ -58,6 +68,7 @@ type WoWDB struct {
 
 	itemFetcher     *itemFetcher
 	creatureFetcher *creatureFetcher
+	talents         talents.TalentFetcher
 }
 
 func New(ctx context.Context, opts Options) (*WoWDB, error) {
@@ -91,8 +102,9 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 		spellLRU:        c,
 		spellFiles:      sf,
 		spells:          spDBC,
-		itemFetcher:     newItemFetcher(ctx, opts.DB, 400),
-		creatureFetcher: newCreatureFetcher(ctx, opts.DB, 500),
+		itemFetcher:     newItemFetcher(ctx, opts.DB, opts.DatasetID, 400),
+		creatureFetcher: newCreatureFetcher(ctx, opts.DB, opts.DatasetID, 500),
+		talents:         opts.Talents,
 	}
 	go func() {
 		spNames, err := loadSpellName(ctx, spDBC)
@@ -172,6 +184,13 @@ func (w *WoWDB) ResolveGear(gear []combatant.GearItem) {
 }
 func (w *WoWDB) Creature(entry int32) (*database.WorldCreatureTemplate, bool) {
 	return w.creatureFetcher.Creature(entry)
+}
+
+func (w *WoWDB) TalentTrees(ctx context.Context, datasetID uuid.UUID) (*talents.TalentTreeData, error) {
+	if w.talents == nil {
+		return nil, fmt.Errorf("talent fetcher not configured")
+	}
+	return w.talents.TalentTrees(ctx, datasetID)
 }
 
 func (w *WoWDB) Close() error {

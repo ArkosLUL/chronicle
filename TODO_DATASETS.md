@@ -1,13 +1,54 @@
-# Tenant Datasets — Per-Tenant Game Data & Log Types
+# Tenant Datasets: Per-Tenant Game Data
 
-Move WoW game data (spells, cast times, icons, etc.) from compiled-in build tags
-to database-backed **datasets**. Each tenant picks a dataset and a set of
-supported log types.
+Move WoW game data (spells, cast times, icons, talents, etc.) from compiled-in
+build tags to database-backed **datasets**, so a single binary can serve
+multiple WoW versions/flavors. Game data is scoped per dataset; user data stays
+scoped per tenant.
 
 ## Status Key
 - [ ] Not started
 - [x] Done
 - [~] In progress
+
+---
+
+## Shipped (PR #114)
+
+The foundation plus the first end-to-end data type (talents) shipped. The plan
+below has been reconciled against what was actually built; some original
+decisions changed during implementation (notably: explicit `WHERE` instead of
+RLS, and JSONB is allowed for document-shaped data). Durable architecture is
+captured in the vault entry `chronicle-dataset-architecture`.
+
+**Datasets entity + scoping**
+- [x] `datasets` table, `servicedataset` CRUD service, admin routes (Tasks A–C)
+- [x] `default_dataset_id` on `tenants` and `wow_servers`
+- [x] **Well-known default dataset** (`00000000-0000-0000-0000-000000000001`)
+  inserted by migration; `wow_version`/`build_version` upserted at startup from
+  build tags (`servicedataset.ensureDefaultDataset`)
+- [x] `dataset_id` added to all 15 `world_*`/`dbc_*` tables as part of a
+  **composite PK** `(dataset_id, <orig pk>)`; existing rows backfilled to default
+- [x] All `world_data.sql` queries + gamedataapi raw-SQL upserts scoped by
+  explicit `dataset_id` (NOT RLS — see Architecture Decisions)
+
+**Talents (the proof-of-pattern, fully migrated)**
+- [x] `dataset_talent_trees` JSONB table + `gamedb/talents.TalentFetcher`
+  (per-dataset LRU cache)
+- [x] `GET /wowdb/talent-trees` — optional `dataset_id`; resolves explicit param
+  > tenant default > server default; **404 → graceful empty state** when no data
+- [x] Static `assets/*/generated/talent-trees.json` + `generateTalentTrees` removed
+
+**Cross-tenant dataset resolution**
+- [x] `ResolveDatasetByRealm` query (realm → server → COALESCE(server, tenant) → default)
+- [x] `dataset_id` stamped onto instance + armory API responses; frontend forwards
+  it to `TalentTreeViewer` (armory tab, equipment panel, standalone selector)
+- [x] `X-Chronicle-Dataset` response header for debugging
+
+**Import tooling + auth**
+- [x] `dbcdata import` CLI: importer registry (dedup DBC extraction), bubbletea
+  TUI (dataset selector + molly guard), `--export-as=files`, `--api-url` upload
+- [x] Bearer token auth in `AuthenticationMiddleware`; `GET /whoami/dump`
+  (custom-header CSRF guard); `--cookie` exchange in the CLI
 
 ---
 
@@ -24,12 +65,14 @@ independent and self-contained. Dependencies between tasks are explicit.
   migration number (do NOT hardcode a number — it may have advanced)
 - Follow the `database/queries/tenants.sql` `COALESCE(sqlc.narg(...), col)` pattern for updates
 - `servicedataset` gets its DB store via `servicedbstore.DatabaseStore(broker)` (NOT direct pool)
-- `servicetenant` owns the `PrepareConn`/`ResetConn` hooks — dataset context additions
-  go there (it already manages all session variable lifecycle)
-- Creatures and gear come from the world DB, not DBC — they are NOT dataset-scoped
-- The `GameDB` interface has `SpellFetcher`, `GearResolver`, `CreatureFetcher`.
-  Only `SpellFetcher` + `DBCMem()` are dataset-specific. `GearResolver` and
-  `CreatureFetcher` are shared/world-scoped.
+- Dataset scoping is **explicit `WHERE dataset_id = $n`**, NOT RLS. RLS is
+  tenant-only. Do not add dataset logic to `servicetenant`'s `PrepareConn` hooks.
+- All `world_*`/`dbc_*` tables now carry `dataset_id` in their composite PK
+  (including creatures and items — the original "creatures not dataset-scoped"
+  note no longer holds; everything game-data is dataset-scoped, currently all on
+  the default dataset until each type is migrated).
+- The `GameDB` interface composes per-type `Fetcher`s (see `gamedb/talents` for
+  the pattern). New fetchers are dataset-scoped and injected via `Options`.
 - REALM_INFO extraction happens during parsing (not pre-scanned). The future
   pre-scan solution should be a separate lightweight pass OUTSIDE the parser,
   not added to `parsectx` (keep it minimal).
@@ -110,7 +153,7 @@ ALTER TABLE wow_servers ADD COLUMN default_dataset_id UUID REFERENCES datasets(i
   - Update `TenantFromDB` — read `t.DefaultDatasetID` (it's `uuid.NullUUID`)
   - Add `DefaultDatasetID *uuid.UUID` to `UpsertTenantRequest`
   - Update `ToInsertParams`/`ToUpdateParams` to handle it
-- [ ] Run `make gen` to regenerate TypeScript types (deferred — frontend build not yet validated)
+- [x] Run `make gen` to regenerate TypeScript types
 - [x] Verify: `go build -tags turtle ./...` passes
 
 **Acceptance:** Types compile; frontend types regenerated; no existing tests break.
@@ -177,72 +220,59 @@ tests pass. `make lint` clean.
 
 ---
 
-## Task D: Dataset Context in PrepareConn
+## Task D: Dataset Scoping (DONE — but NOT the way originally planned)
 
-**Dependencies:** Task C (needs context helpers)
-**Scope:** Extend the existing tenant connection hooks to also propagate dataset_id.
+**Original plan (REJECTED):** propagate `dataset_id` via an `app.dataset_id`
+session variable and RLS, mirroring tenant RLS.
 
-- [ ] In `servicetenant/conn.go` `PrepareConn()`:
-  - After tenant_id logic, add:
-    ```go
-    datasetID := servicedataset.DatasetIDFromContext(ctx)
-    if datasetID != uuid.Nil {
-        _, err := conn.Exec(ctx, fmt.Sprintf("SET app.dataset_id = '%s'", datasetID.String()))
-        if err != nil { return err }
-    }
-    ```
-  - **Import:** `servicedataset` package. This creates a dependency from
-    `servicetenant` → `servicedataset` for the context helper only. If this
-    creates an import cycle, move `WithDatasetID`/`DatasetIDFromContext` into a
-    shared package (e.g. `internal/services/servicecontext/`).
+**What shipped instead:** **explicit `WHERE dataset_id = $n`** on every
+game-data query. RLS is reserved for `tenant_id` (user data). Datasets are plain
+foreign-key scoping. This is the deliberate, load-bearing decision — do not
+reintroduce `app.dataset_id` / RLS for datasets. See Architecture Decisions.
 
-- [ ] In `servicetenant/conn.go` `ResetConn()`:
-  - Add: `_, _ = conn.Exec(context.Background(), "RESET app.dataset_id")`
+How the dataset is chosen per request/operation:
 
-- [ ] In `servicetenant/conn.go` `CheckNestedTx()`:
-  - Add dataset_id check:
-    ```go
-    outerDataset := servicedataset.DatasetIDFromContext(outerCtx)
-    innerDataset := servicedataset.DatasetIDFromContext(innerCtx)
-    if outerDataset != innerDataset {
-        return fmt.Errorf("outer tx dataset=%s but nested InTx dataset=%s", outerDataset, innerDataset)
-    }
-    ```
+- [x] **Read endpoints that resolve from data:** instance/armory call
+  `servicedataset.ResolveDatasetForRealm(ctx, realmID)` (realm → server →
+  tenant → default) and stamp `dataset_id` on the response.
+- [x] **WoWDB talent endpoint:** optional `?dataset_id`, else tenant-context
+  default, else compiled default.
+- [x] **Item/creature fetchers + gamedataapi:** carry an explicit `datasetID`,
+  currently `DefaultDatasetID` until each type is migrated.
+- [x] Context helpers `WithDatasetID`/`DatasetIDFromContext` exist in
+  `servicedataset` for handlers that need to pass a resolved dataset down.
 
-- [ ] Wire dataset_id into context during request lifecycle. In the tenant
-  middleware or a new middleware, after tenant is resolved:
-  ```go
-  if tenant != nil && tenant.DefaultDatasetID.Valid {
-      ctx = servicedataset.WithDatasetID(ctx, tenant.DefaultDatasetID.UUID)
-  }
-  ```
-  **Note:** Check where `servicetenant.Middleware()` runs and whether
-  `tenant.DefaultDatasetID` is available there (the column must be loaded in
-  the tenant cache refresh).
-
-- [ ] Verify: `make test -tags turtle`, check that existing tenant tests still pass
-
-**Acceptance:** `app.dataset_id` is set/reset on every connection; nested tx
-validation works; no regressions.
-
-**⚠️ Import cycle risk:** If `servicetenant` → `servicedataset` creates a cycle,
-extract the context key functions into `internal/services/servicecontext/dataset.go`
-(a tiny package with no imports of other services). Both packages can then import it.
+**Acceptance:** met. No `app.dataset_id` session variable exists; scoping is
+explicit and tested via the migration round-trip + build/lint.
 
 ---
 
 ## Architecture Decisions
 
-### Dataset Resolution via `app.dataset_id` Session Variable
+### Dataset Scoping: Explicit `WHERE`, NOT RLS (changed from original plan)
 
-Same strategy as tenant RLS. When a connection is acquired from the pool:
+Datasets and tenants use **different** mechanisms on purpose:
+
+- **Tenants** scope user-generated data (logs, armory, guild pages) via Postgres
+  **RLS** + the `app.tenant_id` session variable.
+- **Datasets** scope game reference data (spells, items, talents) via **explicit
+  `WHERE dataset_id = $n`** in every query. No session variable, no RLS.
+
+The original plan proposed an `app.dataset_id` session variable mirroring tenant
+RLS. That was rejected: game data is not a security boundary, so RLS adds
+complexity for no benefit, and explicit scoping is easier to read and test.
+
+How the dataset is resolved per request:
 
 ```
-Request arrives
-  → tenant middleware: ctx = WithTenantID(ctx, tenant.ID)
-  → dataset context:   tenant.DefaultDatasetID → ctx = WithDatasetID(ctx, datasetID)
-  → PrepareConn:       SET app.tenant_id = '...', SET app.dataset_id = '...'
-  → future dbcmem tables can use WHERE dataset_id = current_setting('app.dataset_id')::uuid
+Request that references game data (instance / armory)
+  → ResolveDatasetForRealm(realmID): realm → server.default_dataset_id
+                                     → tenant.default_dataset_id → compiled default
+  → dataset_id stamped on the response body + X-Chronicle-Dataset header
+  → frontend forwards dataset_id to game-data fetches (e.g. talent trees)
+
+Direct game-data endpoint (e.g. /wowdb/talent-trees)
+  → explicit ?dataset_id, else request tenant's default, else compiled default
 ```
 
 ### Primary Domain Problem (No Tenant → No Dataset)
@@ -279,13 +309,24 @@ GameDB interface
 `DatasetGameDB` only replaces `SpellFetcher` + `DBCMem()`. Gear and creature
 lookups remain on the shared `WoWDB` regardless of dataset.
 
-### Why Separate Tables for dbcmem (Not JSONB)
+### JSONB vs Separate Tables: Pick by Shape (refined during implementation)
 
-- Vanilla SpellIcons alone has ~4,000 entries; WotLK has ~10,000+
-- Full dbcmem JSON blob estimated 2–5 MB per dataset
-- Separate tables allow incremental writes, individual row queries, and future
-  auto-scoping via `app.dataset_id` in WHERE clauses
-- Avoids PostgreSQL TOAST overhead on frequent reads
+The original plan said "never JSONB, always separate tables." Implementation
+refined this: **choose by data shape.**
+
+- **Document-shaped, read as a whole, never queried per-row → JSONB.**
+  Talents shipped this way: `dataset_talent_trees(dataset_id PK, data JSONB)`.
+  The frontend always fetches the entire tree blob; there is no "find talent #56
+  across datasets" query. One row per dataset, one fetch, cached. Simple.
+
+- **Row-queryable, individually looked up by ID → separate table.**
+  Spells/icons/items: looked up by `entry_id` on hot paths, written
+  incrementally, large (Vanilla SpellIcons ~4,000 entries; WotLK ~10,000+).
+  A `(dataset_id, entry_id)` table avoids TOAST overhead on frequent reads and
+  supports per-row queries. Use the per-type tables listed under Future Tasks.
+
+Rule of thumb: if the consumer always loads the whole thing, JSONB; if it looks
+up individual entries, a table.
 
 ### DBC File Storage
 
@@ -309,9 +350,41 @@ Reload/re-process a dataset by reading its DBC files back from storage.
 
 ---
 
-## Future Tasks (Not for this round)
+## Future Tasks (remaining data-type migrations)
 
-These tasks depend on Tasks A–D and are documented here for context.
+The foundation is shipped. Each remaining game-data type is migrated
+**independently, end-to-end**, following the recipe that talents proved.
+
+### Per-data-type migration recipe (proven by talents)
+
+For each data type, in one PR:
+
+1. **Storage** — pick JSONB (document-shaped) or a `(dataset_id, entry_id)`
+   table (row-queryable). See the JSONB-vs-tables decision above.
+2. **Fetcher** — a `gamedb/<type>` package with a narrow `Fetcher` interface +
+   per-dataset LRU cache; `database.Store` satisfies the narrow querier
+   implicitly. Define a sentinel `ErrNo<Type>Data` for the empty case.
+3. **WoWDB wiring** — add the fetcher to the `GameDB` interface + `Options`,
+   inject at startup.
+4. **Endpoint** — serve via WoWDB; `dataset_id` optional (resolve from context);
+   **404 → graceful empty state** when not imported.
+5. **Importer** — add an `Importer` to the `dbcdata import` registry
+   (declare `RequiredFiles()`; raw-DBC passthrough or compute-then-upload).
+6. **Frontend** — fetch with the resolved `dataset_id` (already on instance/
+   armory responses); handle 404 gracefully.
+7. **Cleanup** — once populated in prod, delete the static asset + its
+   `generate*` step (do this only after the import has run in prod).
+
+Keep each type a separate PR so behavior changes are isolated and reviewable.
+
+### Future: class-spells (next up — direct sibling of talents)
+
+`class-spells.json` is still generated by `derived-statics` into
+`assets/*/generated/`. It is document-shaped (frontend loads the whole map), so
+it follows the talents recipe almost verbatim: JSONB table
+`dataset_class_spells`, a `gamedb/classspells` fetcher, a `/wowdb/class-spells`
+endpoint, a `class-spells` importer, then remove the static asset + generation.
+This is the lowest-risk next migration.
 
 ### Future: DBC Upload Endpoints
 - [ ] `PUT /api/v1/datasets/{id}/dbc/{filename}` — upload any DBC file
@@ -450,16 +523,24 @@ WoWDB
 - Existing binaries → unchanged until compiled-in data is removed
 
 ### Execution Order
-1. **Tasks A–D** (this round) — datasets table, SDK, CRUD service, PrepareConn plumbing
-2. DBC upload endpoints + object storage bucket
-3. dbcmem lookup tables (12 new tables + bulk queries)
-4. DBCMemProvider interface + GlobalProvider refactor
-5. DatasetLoader + DatasetGameDB + servicewowdb integration
-6. Parser integration (dataset resolution + pre-scan REALM_INFO)
-7. Population tooling (export, seed)
-8. Frontend asset resolution
-9. Prometheus metrics
-10. Remove compiled-in data
+1. ✅ **Foundation (shipped, PR #114)** — datasets table, SDK, CRUD service,
+   composite-PK migration, explicit `dataset_id` scoping, realm resolver,
+   import CLI + auth. (Tasks A–C done; Task D done via explicit scoping, not RLS.)
+2. ✅ **Talents** — first data type migrated end-to-end (the recipe).
+3. **class-spells** — next, direct sibling of talents (document-shaped/JSONB).
+4. dbcmem lookup tables (row-queryable types: spells, icons, cast times, …),
+   one type at a time via the recipe.
+5. DBCMemProvider interface + GlobalProvider refactor (decouple consumers from
+   `dbcmem` globals so dataset-specific data can be threaded through).
+6. DatasetLoader + DatasetGameDB + servicewowdb integration.
+7. Parser integration (resolve dataset: log group → server → tenant → default;
+   pre-scan REALM_INFO for primary-domain uploads).
+8. DBC upload endpoints + object storage bucket (if raw-file storage is needed).
+9. Population tooling (export, seed from compiled).
+10. Frontend asset resolution (icons CDN dataset-aware).
+11. Prometheus metrics (drive caching strategy).
+12. Remove compiled-in data (delete `dbcmem` globals, build-tag wiring,
+    `assets/{server}/`).
 
 ### Memory Budget
 - Each loaded dataset: DBC files (~2–7 MB) + 12 lookup maps (~1–3 MB) ≈ 3–10 MB

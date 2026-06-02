@@ -12,238 +12,49 @@ scoped per tenant.
 
 ---
 
-## Shipped (PR #114)
+## Shipped & deployed
 
-The foundation plus the first end-to-end data type (talents) shipped. The plan
-below has been reconciled against what was actually built; some original
-decisions changed during implementation (notably: explicit `WHERE` instead of
-RLS, and JSONB is allowed for document-shaped data). Durable architecture is
-captured in the vault entry `chronicle-dataset-architecture`.
+The foundation plus the first end-to-end data type (**talents**) shipped in
+PR #114 and is **deployed to production**. The completed task breakdown has been
+removed from this plan; the durable record lives in the vault:
 
-**Datasets entity + scoping**
-- [x] `datasets` table, `servicedataset` CRUD service, admin routes (Tasks A–C)
-- [x] `default_dataset_id` on `tenants` and `wow_servers`
-- [x] **Well-known default dataset** (`00000000-0000-0000-0000-000000000001`)
-  inserted by migration; `wow_version`/`build_version` upserted at startup from
-  build tags (`servicedataset.ensureDefaultDataset`)
-- [x] `dataset_id` added to all 15 `world_*`/`dbc_*` tables as part of a
-  **composite PK** `(dataset_id, <orig pk>)`; existing rows backfilled to default
-- [x] All `world_data.sql` queries + gamedataapi raw-SQL upserts scoped by
-  explicit `dataset_id` (NOT RLS — see Architecture Decisions)
+- `chronicle-dataset-architecture` — dataset-vs-tenant scoping, default dataset,
+  composite PKs, resolution order.
+- `chronicle-dataset-loader` — the `dbcdata import` loader, the per-type
+  migration recipe, and this remaining roadmap.
+- `.mux/skills/dataset-import/` — repo skill: how to add a new importer.
 
-**Talents (the proof-of-pattern, fully migrated)**
-- [x] `dataset_talent_trees` JSONB table + `gamedb/talents.TalentFetcher`
-  (per-dataset LRU cache)
-- [x] `GET /wowdb/talent-trees` — optional `dataset_id`; resolves explicit param
-  > tenant default > server default; **404 → graceful empty state** when no data
-- [x] Static `assets/*/generated/talent-trees.json` + `generateTalentTrees` removed
+What's live now: the `datasets` table + `servicedataset` CRUD, `default_dataset_id`
+on tenants/servers, the well-known default dataset
+(`00000000-0000-0000-0000-000000000001`), `dataset_id` on every `world_*`/`dbc_*`
+table (composite PK, backfilled to default), `ResolveDatasetByRealm`, the talents
+JSONB pipeline (`/wowdb/talent-trees`), and the `dbcdata import` CLI with Bearer
+auth.
 
-**Cross-tenant dataset resolution**
-- [x] `ResolveDatasetByRealm` query (realm → server → COALESCE(server, tenant) → default)
-- [x] `dataset_id` stamped onto instance + armory API responses; frontend forwards
-  it to `TalentTreeViewer` (armory tab, equipment panel, standalone selector)
-- [x] `X-Chronicle-Dataset` response header for debugging
-
-**Import tooling + auth**
-- [x] `dbcdata import` CLI: importer registry (dedup DBC extraction), bubbletea
-  TUI (dataset selector + molly guard), `--export-as=files`, `--api-url` upload
-- [x] Bearer token auth in `AuthenticationMiddleware`; `GET /whoami/dump`
-  (custom-header CSRF guard); `--cookie` exchange in the CLI
+> **Migrations 000119–000121 are deployed and therefore immutable.** Any schema
+> change for the remaining work needs a NEW migration.
 
 ---
 
-## Agent Task Guide
+## Conventions (for the remaining work)
 
-This plan is structured for parallel agent execution. Each **Task** below is
-independent and self-contained. Dependencies between tasks are explicit.
-
-**Key conventions every agent must follow:**
-- Read `AGENTS.md` at repo root before writing any code
-- Run `make gen/db` after changing migrations or queries
-- Run `make lint` and `make test` (with `-tags turtle`) before claiming done
-- Use `./database/migrations/create_migration.sh "description"` to get the next
-  migration number (do NOT hardcode a number — it may have advanced)
-- Follow the `database/queries/tenants.sql` `COALESCE(sqlc.narg(...), col)` pattern for updates
-- `servicedataset` gets its DB store via `servicedbstore.DatabaseStore(broker)` (NOT direct pool)
+- Run `make gen/db` after changing migrations or queries; `make lint` and
+  `make test` (with `-tags turtle`) before claiming done.
+- Use `./database/migrations/create_migration.sh "description"` for the next
+  migration number (do NOT hardcode — and never edit a deployed migration).
+- Follow the `database/queries/tenants.sql` `COALESCE(sqlc.narg(...), col)`
+  pattern for updates.
 - Dataset scoping is **explicit `WHERE dataset_id = $n`**, NOT RLS. RLS is
   tenant-only. Do not add dataset logic to `servicetenant`'s `PrepareConn` hooks.
-- All `world_*`/`dbc_*` tables now carry `dataset_id` in their composite PK
-  (including creatures and items — the original "creatures not dataset-scoped"
-  note no longer holds; everything game-data is dataset-scoped, currently all on
-  the default dataset until each type is migrated).
+- All `world_*`/`dbc_*` tables carry `dataset_id` in their composite PK
+  (everything game-data is dataset-scoped, currently all on the default dataset
+  until each type is migrated).
 - The `GameDB` interface composes per-type `Fetcher`s (see `gamedb/talents` for
   the pattern). New fetchers are dataset-scoped and injected via `Options`.
-- REALM_INFO extraction happens during parsing (not pre-scanned). The future
-  pre-scan solution should be a separate lightweight pass OUTSIDE the parser,
-  not added to `parsectx` (keep it minimal).
-- Object storage uses buckets. Combat logs are in bucket `raidlogs` with key
-  pattern `logs/{fileID}`. DBC files go in a new bucket (e.g. `datasets`) with
-  key pattern `datasets/{datasetID}/{filename}`.
-
----
-
-## Task A: Migration + sqlc Queries
-
-**Dependencies:** None
-**Scope:** Database schema only. No Go service code.
-
-- [x] Run `./database/migrations/create_migration.sh "add_datasets"` to get next number
-- [x] Write the up migration:
-
-```sql
-CREATE TABLE datasets (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name          TEXT NOT NULL,
-    slug          TEXT UNIQUE NOT NULL,
-    wow_version   TEXT NOT NULL,
-    build_version INT  NOT NULL DEFAULT 5875,
-    description   TEXT NOT NULL DEFAULT '',
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-ALTER TABLE datasets ADD CONSTRAINT datasets_slug_format
-    CHECK (slug ~ '^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$');
-
-ALTER TABLE tenants ADD COLUMN default_dataset_id UUID REFERENCES datasets(id);
-ALTER TABLE wow_servers ADD COLUMN default_dataset_id UUID REFERENCES datasets(id);
-```
-
-- [x] Write down migration: drop columns first (order matters for FK), then table
-- [x] New `database/queries/datasets.sql`:
-  - `GetDataset :one` — `SELECT * FROM datasets WHERE id = $1`
-  - `GetDatasetBySlug :one` — `SELECT * FROM datasets WHERE slug = $1`
-  - `ListDatasets :many` — `SELECT * FROM datasets ORDER BY name`
-  - `InsertDataset :one` — all fields, `RETURNING *`
-  - `UpdateDataset :one` — COALESCE pattern (match `UpdateTenant` in `tenants.sql`)
-  - `DeleteDataset :exec` — `DELETE FROM datasets WHERE id = $1`
-- [x] Add to `database/queries/tenants.sql`:
-  - `SetTenantDataset :exec` — `UPDATE tenants SET default_dataset_id = $2, updated_at = now() WHERE id = $1`
-- [x] Add to `database/queries/azerothcore.sql`:
-  - `SetServerDataset :exec` — `UPDATE wow_servers SET default_dataset_id = $2 WHERE id = $1`
-- [x] `make gen/db`
-- [x] Verify: `go build -tags turtle ./...` passes
-
-**Acceptance:** Migration applies cleanly; sqlc generates without errors; build passes.
-
----
-
-## Task B: SDK Types
-
-**Dependencies:** Task A (needs generated DB types)
-**Scope:** SDK types + conversion functions only. No handlers, no service.
-
-- [x] New `api/chroniclesdk/dataset.go`:
-  ```go
-  type Dataset struct {
-      ID           uuid.UUID `json:"id"`
-      Name         string    `json:"name"`
-      Slug         string    `json:"slug"`
-      WoWVersion   string    `json:"wow_version"`
-      BuildVersion int       `json:"build_version"`
-      Description  string    `json:"description"`
-      CreatedAt    time.Time `json:"created_at"`
-      UpdatedAt    time.Time `json:"updated_at"`
-  }
-  ```
-  - `DatasetFromDB(database.Dataset) Dataset`
-  - `UpsertDatasetRequest` struct with pointer fields for optional update
-  - `ToInsertParams()` / `ToUpdateParams()` methods (match `UpsertTenantRequest` pattern)
-- [x] Extend `api/chroniclesdk/tenant.go`:
-  - Add `DefaultDatasetID *uuid.UUID `json:"default_dataset_id"`` to `Tenant`
-  - Update `TenantFromDB` — read `t.DefaultDatasetID` (it's `uuid.NullUUID`)
-  - Add `DefaultDatasetID *uuid.UUID` to `UpsertTenantRequest`
-  - Update `ToInsertParams`/`ToUpdateParams` to handle it
-- [x] Run `make gen` to regenerate TypeScript types
-- [x] Verify: `go build -tags turtle ./...` passes
-
-**Acceptance:** Types compile; frontend types regenerated; no existing tests break.
-
----
-
-## Task C: `servicedataset` Service + Wiring
-
-**Dependencies:** Task A, Task B
-**Scope:** New service package, registration, route mounting. The service handles
-dataset CRUD only (no DBC upload, no dataset-aware WoWDB).
-
-### C1: Service scaffold
-- [x] Add `ServiceDataset = "dataset"` to `internal/services/servicenames.go`
-- [x] Create `internal/services/servicedataset/servicedataset.go`:
-  - `Service` struct with `broker *services.Services`, `db database.Store`
-  - `New(broker) *Service`
-  - `Name() → services.ServiceDataset`
-  - `DependsOn() → [servicelogger.OnLogger(), servicedbstore.OnDatabaseStore()]`
-  - `Configures() → nil`
-  - `Options() → nil` (no CLI flags needed yet)
-  - `Start()` — get DB from `servicedbstore.DatabaseStore(s.broker)`
-  - `Close() → nil`
-  - Export helpers: `OnDataset()`, `Dataset(broker)`
-
-### C2: Handlers
-- [x] Create `internal/services/servicedataset/handler.go`:
-  - `Routes() http.Handler` — chi router
-    - `GET /` → List
-    - `POST /` → Upsert (create)
-    - `GET /{datasetID}` → Get
-    - `PUT /{datasetID}` → Upsert (update)
-    - `DELETE /{datasetID}` → Delete
-  - All handlers use `servicetenant.AdminBypass(ctx)` for DB queries (datasets
-    table is not behind RLS)
-  - Follow `servicetenant/handler.go` patterns exactly
-
-### C3: Context helpers
-- [x] Create `internal/services/servicedataset/context.go`:
-  - `WithDatasetID(ctx, uuid.UUID) context.Context`
-  - `DatasetIDFromContext(ctx) uuid.UUID` (returns `uuid.Nil` if unset)
-
-### C4: Wiring
-- [x] `cmd/chronicled/cli/server.go` — add `servicedataset.New(srvs)` to `srvs.Register()`
-  (place after `serviceassets`, before `servicechronicle`)
-- [x] `api/api.go` — add `Dataset *servicedataset.Service` to `Options` struct
-- [x] `api/api.go` `Routes()` — mount under admin:
-  ```go
-  r.Route("/datasets", func(r chi.Router) {
-      r.Use(httpmw.Can(api.Zed, policy.New().GlobalChronicle().CanAdmin_tenants_User))
-      r.Mount("/", api.Opts.Dataset.Routes())
-  })
-  ```
-- [x] `internal/services/serviceapi/serviceapi.go` — retrieve and pass dataset service:
-  ```go
-  datasetSvc := servicedataset.Dataset(s.broker)
-  // add to api.Options{Dataset: datasetSvc}
-  ```
-
-- [x] Verify: `make lint`, `make build`, endpoints reachable (manual or test)
-
-**Acceptance:** Service starts, routes registered, CRUD operations work. Existing
-tests pass. `make lint` clean.
-
----
-
-## Task D: Dataset Scoping (DONE — but NOT the way originally planned)
-
-**Original plan (REJECTED):** propagate `dataset_id` via an `app.dataset_id`
-session variable and RLS, mirroring tenant RLS.
-
-**What shipped instead:** **explicit `WHERE dataset_id = $n`** on every
-game-data query. RLS is reserved for `tenant_id` (user data). Datasets are plain
-foreign-key scoping. This is the deliberate, load-bearing decision — do not
-reintroduce `app.dataset_id` / RLS for datasets. See Architecture Decisions.
-
-How the dataset is chosen per request/operation:
-
-- [x] **Read endpoints that resolve from data:** instance/armory call
-  `servicedataset.ResolveDatasetForRealm(ctx, realmID)` (realm → server →
-  tenant → default) and stamp `dataset_id` on the response.
-- [x] **WoWDB talent endpoint:** optional `?dataset_id`, else tenant-context
-  default, else compiled default.
-- [x] **Item/creature fetchers + gamedataapi:** carry an explicit `datasetID`,
-  currently `DefaultDatasetID` until each type is migrated.
-- [x] Context helpers `WithDatasetID`/`DatasetIDFromContext` exist in
-  `servicedataset` for handlers that need to pass a resolved dataset down.
-
-**Acceptance:** met. No `app.dataset_id` session variable exists; scoping is
-explicit and tested via the migration round-trip + build/lint.
+- REALM_INFO extraction happens during parsing. The future pre-scan should be a
+  separate lightweight pass OUTSIDE the parser, not added to `parsectx`.
+- Object storage uses buckets. Combat logs are in `raidlogs` (`logs/{fileID}`).
+  DBC files go in a new bucket (`datasets`) with key `datasets/{datasetID}/{filename}`.
 
 ---
 
@@ -525,7 +336,7 @@ WoWDB
 ### Execution Order
 1. ✅ **Foundation (shipped, PR #114)** — datasets table, SDK, CRUD service,
    composite-PK migration, explicit `dataset_id` scoping, realm resolver,
-   import CLI + auth. (Tasks A–C done; Task D done via explicit scoping, not RLS.)
+   import CLI + auth. **Deployed to production.**
 2. ✅ **Talents** — first data type migrated end-to-end (the recipe).
 3. **class-spells** — next, direct sibling of talents (document-shaped/JSONB).
 4. dbcmem lookup tables (row-queryable types: spells, icons, cast times, …),

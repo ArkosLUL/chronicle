@@ -51,8 +51,11 @@ auth.
   until each type is migrated).
 - The `GameDB` interface composes per-type `Fetcher`s (see `gamedb/talents` for
   the pattern). New fetchers are dataset-scoped and injected via `Options`.
-- REALM_INFO extraction happens during parsing. The future pre-scan should be a
-  separate lightweight pass OUTSIDE the parser, not added to `parsectx`.
+- **`parsectx` now carries resolution metadata** (realm, tenant_id, dataset_id,
+  flavor, format), populated by the pre-scan before full parse. This **reverses**
+  the earlier "keep `parsectx` minimal / resolve outside the parser" guidance —
+  see the Log Format / Flavor Split section for why. Today `parsectx.Context`
+  holds only `Type database.LogType`.
 - Object storage uses buckets. Combat logs are in `raidlogs` (`logs/{fileID}`).
   DBC files go in a new bucket (`datasets`) with key `datasets/{datasetID}/{filename}`.
 
@@ -88,14 +91,16 @@ Direct game-data endpoint (e.g. /wowdb/talent-trees)
 
 ### Primary Domain Problem (No Tenant → No Dataset)
 
-Realm is detected **during** parsing from `REALM_INFO` in the combat log, but
-WoWDB is needed **before** parsing starts. REALM_INFO is processed by the line
-matcher during full parse (not pre-scanned). The `parsectx` package only carries
-`LogType` — keep it minimal.
+Realm is detected from `REALM_INFO` in the combat log, but WoWDB (and the
+dataset/flavor) are needed **before** full parse. Today `parsectx` only carries
+`LogType`.
 
-**Future solution (decided):** Pre-scan REALM_INFO before full parse. This is a
-separate lightweight pass **outside** the parser (do NOT add fields to `parsectx`).
-Resolve `realm → server → dataset`, then parse with the correct WoWDB.
+**Decided solution (revised):** A lightweight **pre-scan** runs before full
+parse. It detects the log **format**, validates it against the
+selected/expected flavor, resolves `realm → server → tenant → dataset + flavor`,
+and **stamps all of it onto `parsectx`** so the parser reads metadata from one
+place. See the Log Format / Flavor Split section. (This supersedes the earlier
+"resolve outside the parser, keep `parsectx` minimal" note.)
 
 **Current fallback:** No dataset in context → compiled-in data via build tags.
 
@@ -158,6 +163,107 @@ datasets/{dataset_id}/
 No DB column needed — the prefix is derived from `datasets/{id}/`. Different
 datasets can have different sets of DBC files (Vanilla has fewer than WotLK).
 Reload/re-process a dataset by reading its DBC files back from storage.
+
+---
+
+## Log Format / Flavor Split (the "seam" — do this FIRST)
+
+`database.LogType` currently smears **three orthogonal concerns** into one enum.
+Splitting them is the prerequisite for runtime dataset selection and for clean
+server-specific mechanics. The three axes:
+
+| Axis | Answers | Source of truth | Cardinality |
+|---|---|---|---|
+| **Format** | How do I parse these bytes? | Pre-scan content detection (validated) | 4 values |
+| **Flavor** | Which server mechanics apply? | Runtime-configured tag set (server > tenant) | a set of tags |
+| **Dataset** | Which spells/items/talents to resolve? | server > tenant default > compiled | per server |
+
+These are **independent**: flavor = behavior, dataset = data, format = parsing.
+A server accepts multiple formats (e.g. Turtle logs arrive as `v1` and `v2`).
+The same client build can have multiple formats (both 1.12a formats below produce
+vanilla data but parse differently). AzerothCore logs span two formats (client
+addon vs serverside mod).
+
+### Flavor = a capability tag set (NOT a scalar)
+
+Flavor is **not** a single name — it's a **set of behavior tags**. Servers
+overlap and split on the edges (Turtle, Kronos, VanillaPlus share ~90% but
+differ at the margins), so an inheritance tree doesn't fit; overlapping sets do.
+
+- A **mechanic** is tagged with the broadest tag it needs. Shared logic →
+  `vanilla`; a Turtle-only quirk → `turtle`.
+- A **server's** flavor is the set of tags it satisfies, e.g.
+  Turtle = `{vanilla, turtle}`, Kronos = `{vanilla, kronos}`,
+  VanillaPlus = `{vanilla, vanillaplus}`, Epoch = `{wotlk, epoch}`.
+- Matching is **membership only — `flavor.Has(tag)`**. No boolean expressions,
+  no precedence machinery.
+- **Overrides are handled in code at the mechanic site**, by checking the edge
+  tag *before* the base tag:
+  ```go
+  if f.Has("turtle") {
+      // edge behavior
+  } else if f.Has("vanilla") {
+      // shared base behavior (Turtle, Kronos, VanillaPlus)
+  }
+  ```
+- **Tag sets are runtime config**, owned by the server owner per tenant (like
+  datasets — NOT a compile-time code registry). Default tags are the base set
+  (`vanilla`, `tbc`, `wotlk`). This means flavor identity *and* its tag set live
+  in the DB / runtime config, resolved server > tenant.
+
+### The 4 formats (collapse of the 7 `LogType`s)
+
+| New `LogFormat` | Old `LogType`(s) | Source tool | Build |
+|---|---|---|---|
+| 1.12a + SuperWoW | `v1` | [SuperWoWCombatLogger](https://github.com/pepopo978/SuperWowCombatLogger) | 1.12a |
+| 1.12a + addon | `v2`, `kronos` | [ChronicleCompanion](https://github.com/Emyrk/ChronicleCompanion) | 1.12a |
+| 3.3.5a + addon | `warmane`, `epoch`, `azerothcore-clientside` | [ChronicleCompanionWoTLK](https://github.com/Emyrk/ChronicleCompanionWoTLK) | 3.3.5a |
+| AzerothCore serverside | `azerothcore` | [mod-chronicle](https://github.com/Emyrk/mod-chronicle) | 3.3.5a |
+
+(Final format identifier names TBD.)
+
+### Resolution & selection rules
+
+- **Format is content-detected, not trusted.** The pre-scan sniffs lines to
+  determine the format, then **validates** it against what the selected
+  flavor/game expects, and **rejects on mismatch** with a clear error. An
+  uploader's declared type is a hint, not the truth.
+- **Flavor (tag set) is selected, then persisted.** Tenant default if on a
+  tenant; user-selected otherwise. On a **primary domain**, if more than one
+  flavor is allowed, the upload UI must present a **"Game" selector** so the user
+  knows which server they're uploading to (a primary can host, e.g., one v2
+  tenant and one azerothcore tenant). Resolution mirrors dataset: server >
+  tenant default. The resolved tag set is what the parser checks via `.Has()`.
+- **Format and flavor are persisted per-instance** for deterministic reparse
+  (persist-but-revalidate on reparse). Keep the old `log_type` column during
+  transition for backfill/comparison.
+
+### Migration is an audit, not a rename
+
+Every `switch logType` / `if logType ==` site must be re-homed onto the correct
+axis (parse→format, mechanics→`flavor.Has(tag)`, data→dataset), **case by
+case**. Known
+non-generated consumers today: `api/upload.go`, `api/serviceazerothcore/upload.go`,
+`chronicle/logparse.go`, `chronicle/regression.go`,
+`combatlog/parser/vanilla/state/encounters/instances/hookable.go`,
+`database/models.go` (~6 files). Compare each instance's new vs old type during
+backfill and handle discrepancies individually.
+
+### The seam, as two PRs (FIRST in the order)
+
+1. **`LogFormat` enum + flavor tag set** — introduce the 4-value `LogFormat`
+   enum and a flavor tag-set type with `.Has(tag)`. Decompose the 7 `LogType`s;
+   migration adds a per-instance `format` column + flavor tag config (keep
+   `log_type`), backfilled per the table above. Default tag sets:
+   `vanilla`/`tbc`/`wotlk`. Audit & re-home every consumer onto the right axis
+   (parse→format, mechanics→`flavor.Has(tag)`, data→dataset). No behavior change.
+2. **Pre-scan + `parsectx` metadata** — content-based format detection with
+   mismatch rejection; resolve `realm → server → tenant → dataset + flavor`;
+   stamp realm/tenant/dataset/flavor/format onto `parsectx.Context`; add the
+   primary-domain "Game" selector. Dataset still resolves to default; flavor
+   mechanics unchanged. This is the no-op plumbing that makes every later swap a
+   one-line "stop ignoring the field that's already here" behind a default
+   fallback.
 
 ---
 
@@ -338,19 +444,27 @@ WoWDB
    composite-PK migration, explicit `dataset_id` scoping, realm resolver,
    import CLI + auth. **Deployed to production.**
 2. ✅ **Talents** — first data type migrated end-to-end (the recipe).
-3. **class-spells** — next, direct sibling of talents (document-shaped/JSONB).
-4. dbcmem lookup tables (row-queryable types: spells, icons, cast times, …),
+3. **Seam PR 1 — `LogFormat` enum + flavor tag set** (branch `seam`). Decompose
+   the 7 `LogType`s into 4 formats; flavor becomes a runtime-config tag set with
+   `.Has()`; column + backfill; re-home consumers. No behavior change. (See Log
+   Format / Flavor Split.)
+4. **Seam PR 2 — pre-scan + `parsectx` metadata.** Detect+validate format,
+   resolve realm→server→tenant→dataset+flavor, stamp onto `parsectx`,
+   primary-domain Game selector. Dataset still defaults. Makes every later swap a
+   one-liner.
+5. **class-spells** — direct sibling of talents (document-shaped/JSONB).
+6. dbcmem lookup tables (row-queryable types: spells, icons, cast times, …),
    one type at a time via the recipe.
-5. DBCMemProvider interface + GlobalProvider refactor (decouple consumers from
+7. DBCMemProvider interface + GlobalProvider refactor (decouple consumers from
    `dbcmem` globals so dataset-specific data can be threaded through).
-6. DatasetLoader + DatasetGameDB + servicewowdb integration.
-7. Parser integration (resolve dataset: log group → server → tenant → default;
-   pre-scan REALM_INFO for primary-domain uploads).
-8. DBC upload endpoints + object storage bucket (if raw-file storage is needed).
-9. Population tooling (export, seed from compiled).
-10. Frontend asset resolution (icons CDN dataset-aware).
-11. Prometheus metrics (drive caching strategy).
-12. Remove compiled-in data (delete `dbcmem` globals, build-tag wiring,
+8. DatasetLoader + DatasetGameDB + servicewowdb integration.
+9. Parser **consumes** dataset/flavor from `parsectx` (the field is already there
+   from step 4 — stop defaulting, honor the resolved values).
+10. DBC upload endpoints + object storage bucket (if raw-file storage is needed).
+11. Population tooling (export, seed from compiled).
+12. Frontend asset resolution (icons CDN dataset-aware).
+13. Prometheus metrics (drive caching strategy).
+14. Remove compiled-in data (delete `dbcmem` globals, build-tag wiring,
     `assets/{server}/`).
 
 ### Memory Budget

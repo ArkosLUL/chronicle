@@ -240,6 +240,8 @@ func (s Spell) SpellDamageType() SpellDamageType {
 	case 64205: // Divine Sacrifice
 		// Seems to consistently affect mobs post-death.
 		return SpellDamageNoEngageCombat
+	case 20729: // V+ Blessing of Sacrifice seems to damagen after death
+		return SpellDamageNoEngageCombat
 	case 47790: // Arcane Trap Effect
 		// Async trap.
 		// TODO: Can we infer traps from the dbc?

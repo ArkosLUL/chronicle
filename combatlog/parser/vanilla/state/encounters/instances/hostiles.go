@@ -560,9 +560,14 @@ func ZulGurubHostiles() map[uint32]Identity {
 
 	switch services.ServerName {
 	case services.ServerIdentityVanillaPlus:
-		LoadAdds(hostile, map[uint32]string{})
+		LoadAdds(hostile, map[uint32]string{
+			15111: "Mad Servant",
+			15146: "Mad Voidwalker",
+			25040: "Caverngloom Crocolisk",
+		})
 		LoadBosses(hostile, map[uint32]string{
 			25031: "Azus the Bloodseeker",
+			25030: "The Nameless Hermit",
 		})
 	}
 

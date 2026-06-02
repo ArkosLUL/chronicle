@@ -210,6 +210,7 @@ func ZulGurubSpeedrunRequirements() []rankings.SpeedrunRequirement {
 
 	if services.ServerName == services.ServerIdentityVanillaPlus {
 		base = append(base, rankings.SpeedrunRequirement{Name: "Azus the Bloodseeker", EntryIDs: []uint32{25031}, Count: 1, Category: rankings.SpeedrunCategoryBosses})
+		base = append(base, rankings.SpeedrunRequirement{Name: "The Nameless Hermit", EntryIDs: []uint32{25030}, Count: 1, Category: rankings.SpeedrunCategoryBosses})
 	}
 
 	return base

@@ -24,7 +24,9 @@ export function wowSpellToSpellData(ws: WoWSpell): SpellData {
     manaCost: ws.mana_cost ?? 0,
     manaCostPct: ws.mana_cost_pct ?? 0,
     castTimeMs: ws.casting_time?.Base ?? 0,
-    cooldownMs: (ws.recovery_time ?? 0) / 1_000_000, // nanoseconds → ms
+    // recovery_time / category_recovery_time / start_recovery_time are
+    // nanoseconds (Go time.Duration serializes as int64 nanoseconds).
+    cooldownMs: (ws.recovery_time ?? 0) / 1_000_000,
     categoryCooldownMs: (ws.category_recovery_time ?? 0) / 1_000_000,
     gcdMs: (ws.start_recovery_time ?? 0) / 1_000_000,
     durationMs: ws.duration?.Duration ?? 0,

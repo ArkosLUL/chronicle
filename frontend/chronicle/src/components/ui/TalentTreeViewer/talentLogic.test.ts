@@ -311,19 +311,21 @@ describe("TalentTreeViewer prerequisite arrows", () => {
     expect(prerequisiteArrowPolylinePoints(source, target)).toBe("90,48 90,68");
   });
 
-  it("routes one-column-right and two-row-down prerequisites through the gap above the target row", () => {
+  it("routes one-column-right and two-row-down prerequisites side-exit horizontal-first then down", () => {
     const source = talent({ id: 30, tierID: 0, columnIndex: 1 });
     const target = talent({ id: 31, tierID: 2, columnIndex: 2, prereqTalent: [30] });
 
-    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("90,48 90,128 158,128 158,142");
+    // Exits right side of source, goes right to target column, then down to target.
+    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("116,22 158,22 158,142");
   });
 
-  it("routes VanillaPlus Fire Mage prerequisite arrows around intervening talent icons", () => {
+  it("routes VanillaPlus Fire Mage prerequisite arrows side-exit horizontal-first past blocker", () => {
     const source = talent({ id: 32, tierID: 2, columnIndex: 1, tabIndex: 8, spellRanks: [11113] });
     const blocker = talent({ id: 31, tierID: 3, columnIndex: 1, tabIndex: 10, spellRanks: [33897, 33898] });
     const target = talent({ id: 1766, tierID: 4, columnIndex: 2, tabIndex: 14, spellRanks: [34125], prereqTalent: [32], prereqRank: [0] });
 
-    expect(prerequisiteArrowPolylinePoints(source, target, [source, blocker, target])).toBe("90,196 130,196 130,276 158,276 158,290");
+    // Exits right side of source, goes right to target column, then down (avoids blocker below source).
+    expect(prerequisiteArrowPolylinePoints(source, target, [source, blocker, target])).toBe("116,170 158,170 158,290");
   });
 
   it("softens kinked prerequisite paths so turns do not read like flowchart elbows", () => {

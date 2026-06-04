@@ -307,6 +307,13 @@ function verticalSegmentCrossesTalent(x: number, startY: number, endY: number, t
   return x >= bounds.left && x <= bounds.right && bottom >= bounds.top && top <= bounds.bottom;
 }
 
+function horizontalSegmentCrossesTalent(y: number, startX: number, endX: number, talent: Pick<TalentEntry, "tierID" | "columnIndex">) {
+  const bounds = talentButtonBounds(talent);
+  const left = Math.min(startX, endX);
+  const right = Math.max(startX, endX);
+  return y >= bounds.top && y <= bounds.bottom && right >= bounds.left && left <= bounds.right;
+}
+
 export function prerequisiteArrowPolylinePoints(
   from: Pick<TalentEntry, "tierID" | "columnIndex">,
   to: Pick<TalentEntry, "tierID" | "columnIndex">,
@@ -321,21 +328,39 @@ export function prerequisiteArrowPolylinePoints(
     return `${fromPoint.x + direction * (buttonEdge + TALENT_ARROW_SOURCE_CLEARANCE)},${fromPoint.y} ${toPoint.x - direction * (buttonEdge + TALENT_ARROW_TARGET_CLEARANCE)},${toPoint.y}`;
   }
 
-  const startY = fromPoint.y + buttonEdge + TALENT_ARROW_SOURCE_CLEARANCE;
   const endY = toPoint.y - buttonEdge - TALENT_ARROW_TARGET_CLEARANCE;
-  if (fromPoint.x === toPoint.x) return `${fromPoint.x},${startY} ${toPoint.x},${endY}`;
 
-  const elbowY = endY > startY ? endY - TALENT_ARROW_ELBOW_CLEARANCE : startY + TALENT_ARROW_ELBOW_CLEARANCE;
-  const blockers = talents.filter((talent) => talent !== from && talent !== to && verticalSegmentCrossesTalent(fromPoint.x, startY, elbowY, talent));
-  if (blockers.length > 0) {
-    const direction = toPoint.x >= fromPoint.x ? 1 : -1;
-    const detourX = direction > 0
-      ? Math.max(...blockers.map((talent) => talentButtonBounds(talent).right)) + TALENT_ARROW_ELBOW_CLEARANCE + TALENT_ARROW_SOURCE_CLEARANCE
-      : Math.min(...blockers.map((talent) => talentButtonBounds(talent).left)) - TALENT_ARROW_ELBOW_CLEARANCE - TALENT_ARROW_SOURCE_CLEARANCE;
-    return `${fromPoint.x},${startY} ${detourX},${startY} ${detourX},${elbowY} ${toPoint.x},${elbowY} ${toPoint.x},${endY}`;
+  // Same column: straight vertical line.
+  if (fromPoint.x === toPoint.x) {
+    const startY = fromPoint.y + buttonEdge + TALENT_ARROW_SOURCE_CLEARANCE;
+    return `${fromPoint.x},${startY} ${toPoint.x},${endY}`;
   }
 
-  return `${fromPoint.x},${startY} ${fromPoint.x},${elbowY} ${toPoint.x},${elbowY} ${toPoint.x},${endY}`;
+  const others = talents.filter((talent) => talent !== from && talent !== to);
+  const direction = toPoint.x >= fromPoint.x ? 1 : -1;
+
+  // Horizontal-first: exit from the side of source, go horizontal to target's column, then down.
+  const startX = fromPoint.x + direction * (buttonEdge + TALENT_ARROW_SOURCE_CLEARANCE);
+  const hBlockers = others.filter((t) => horizontalSegmentCrossesTalent(fromPoint.y, startX, toPoint.x, t));
+  const vBlockers = others.filter((t) => verticalSegmentCrossesTalent(toPoint.x, fromPoint.y, endY, t));
+
+  if (hBlockers.length === 0 && vBlockers.length === 0) {
+    return `${startX},${fromPoint.y} ${toPoint.x},${fromPoint.y} ${toPoint.x},${endY}`;
+  }
+
+  // Fallback: exit bottom, go down near target row, then horizontal, then down to target.
+  const startY = fromPoint.y + buttonEdge + TALENT_ARROW_SOURCE_CLEARANCE;
+  const elbowY = endY > startY ? endY - TALENT_ARROW_ELBOW_CLEARANCE : startY + TALENT_ARROW_ELBOW_CLEARANCE;
+  const downBlockers = others.filter((t) => verticalSegmentCrossesTalent(fromPoint.x, startY, elbowY, t));
+  if (downBlockers.length === 0) {
+    return `${fromPoint.x},${startY} ${fromPoint.x},${elbowY} ${toPoint.x},${elbowY} ${toPoint.x},${endY}`;
+  }
+
+  // Detour: route around vertical blockers.
+  const detourX = direction > 0
+    ? Math.max(...downBlockers.map((t) => talentButtonBounds(t).right)) + TALENT_ARROW_ELBOW_CLEARANCE + TALENT_ARROW_SOURCE_CLEARANCE
+    : Math.min(...downBlockers.map((t) => talentButtonBounds(t).left)) - TALENT_ARROW_ELBOW_CLEARANCE - TALENT_ARROW_SOURCE_CLEARANCE;
+  return `${fromPoint.x},${startY} ${detourX},${startY} ${detourX},${elbowY} ${toPoint.x},${elbowY} ${toPoint.x},${endY}`;
 }
 
 function parseArrowPoint(point: string) {

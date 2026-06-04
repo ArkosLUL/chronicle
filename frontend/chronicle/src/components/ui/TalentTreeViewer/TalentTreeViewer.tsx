@@ -536,7 +536,7 @@ function TalentTab({
           </button>
         )}
       </div>
-      <div className="-mx-4 overflow-x-auto overscroll-x-contain px-4 pb-3 touch-pan-x sm:mx-0 sm:px-0" aria-label="Scrollable talent tree grid">
+      <div className="-mx-4 overflow-x-auto overscroll-x-contain px-4 pb-3 touch-manipulation sm:mx-0 sm:px-0" aria-label="Scrollable talent tree grid">
         <div
           className="relative mx-auto min-w-max rounded-lg border border-white/5 bg-black/25 p-3"
           style={{ width: `${TALENT_GRID_WIDTH + TALENT_GRID_GAP * 2}px` }}

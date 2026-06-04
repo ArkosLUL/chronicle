@@ -39,8 +39,7 @@ func (h *Handler) UploadTalentTrees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	store := database.New(h.pool)
-	err = store.UpsertDatasetTalentTrees(ctx, database.UpsertDatasetTalentTreesParams{
+	err = h.zed.UpsertDatasetTalentTrees(ctx, database.UpsertDatasetTalentTreesParams{
 		DatasetID: datasetID,
 		Data:      body,
 	})

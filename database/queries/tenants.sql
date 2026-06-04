@@ -41,3 +41,19 @@ UPDATE wow_servers SET tenant_id = $2 WHERE id = $1;
 -- Pass NULL to remove the assignment.
 UPDATE tenants SET default_dataset_id = $2, updated_at = now() WHERE id = $1;
 
+-- name: TenantDiscoveryStats :many
+-- Returns instance and unique player counts per discoverable tenant within a
+-- time window. Used by the discovery endpoint to surface activity metrics.
+SELECT
+  t.id AS tenant_id,
+  COUNT(DISTINCT li.id)::bigint AS instance_count,
+  COUNT(DISTINCT lip.unit_guid)::bigint AS unique_player_count
+FROM tenants t
+JOIN wow_servers ws ON ws.tenant_id = t.id
+JOIN wow_server_realms wsr ON wsr.server_id = ws.id
+JOIN log_instances li ON li.realm_id = wsr.id
+  AND li.start_time >= @since::timestamptz
+LEFT JOIN log_instance_players lip ON lip.instance_id = li.id
+WHERE t.discoverable = true
+GROUP BY t.id;
+

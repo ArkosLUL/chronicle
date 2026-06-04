@@ -87,7 +87,8 @@ type API struct {
 	Chronicle   *chronicle.Chronicle
 	Queues      *riverqueue.Queues
 	Zed         *authz.Authz
-	recentCache *recentRaidsCache
+	recentCache    *recentRaidsCache
+	discoveryStats discoveryStatsCache
 }
 
 func New(ctx context.Context, opts Options) (*API, error) {

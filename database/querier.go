@@ -324,6 +324,9 @@ type sqlcQuerier interface {
 	TelemetryGetLogFileCount(ctx context.Context) (int64, error)
 	TelemetryGetTotalParsedBytes(ctx context.Context) (int64, error)
 	TelemetryGetUserCount(ctx context.Context) (int64, error)
+	// Returns instance and unique player counts per discoverable tenant within a
+	// time window. Used by the discovery endpoint to surface activity metrics.
+	TenantDiscoveryStats(ctx context.Context, since pgtype.Timestamptz) ([]TenantDiscoveryStatsRow, error)
 	TouchUploadKeyLastUsed(ctx context.Context, id uuid.UUID) error
 	TrackUserPanelLayout(ctx context.Context, arg TrackUserPanelLayoutParams) (UserTrackedLayout, error)
 	UnassignWorldFromServer(ctx context.Context, arg UnassignWorldFromServerParams) error

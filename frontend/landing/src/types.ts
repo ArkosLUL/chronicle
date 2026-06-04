@@ -48,12 +48,20 @@ export interface ServerEntry {
 
   /** Reserved for future sponsorship tier; ignored for now. */
   sponsored?: boolean;
+
+  // Discovery metrics (populated from /api/v1/discovery)
+  /** Number of instances uploaded in the last 14 days. */
+  instances14d?: number;
+  /** Distinct players across instances in the last 14 days. */
+  uniquePlayers14d?: number;
 }
 
 /** Single entry from GET /api/v1/discovery on a Chronicle deployment. */
 export interface DiscoveryEntry {
   branding: DiscoveryBranding | null;
   url: string;
+  instances_14d?: number;
+  unique_players_14d?: number;
 }
 
 export interface DiscoveryBranding {

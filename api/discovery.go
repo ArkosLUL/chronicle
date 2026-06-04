@@ -1,12 +1,55 @@
 package api
 
 import (
+	"context"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// discoveryStatsCache is a lazy in-memory cache for tenant activity metrics
+// used by the discovery endpoint. The underlying SQL query is expensive so
+// we cache results for 6 hours.
+type discoveryStatsCache struct {
+	mu      sync.Mutex
+	stats   map[uuid.UUID]database.TenantDiscoveryStatsRow
+	expires time.Time
+}
+
+type discoveryStatsQuerier interface {
+	TenantDiscoveryStats(ctx context.Context, since pgtype.Timestamptz) ([]database.TenantDiscoveryStatsRow, error)
+}
+
+func (c *discoveryStatsCache) get(ctx context.Context, q discoveryStatsQuerier) map[uuid.UUID]database.TenantDiscoveryStatsRow {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if time.Now().Before(c.expires) && c.stats != nil {
+		return c.stats
+	}
+
+	since := pgtype.Timestamptz{Time: time.Now().AddDate(0, 0, -14), Valid: true}
+	rows, err := q.TenantDiscoveryStats(ctx, since)
+	if err != nil {
+		// Return stale data on error (graceful degradation).
+		return c.stats
+	}
+
+	m := make(map[uuid.UUID]database.TenantDiscoveryStatsRow, len(rows))
+	for _, r := range rows {
+		m[r.TenantID] = r
+	}
+	c.stats = m
+	c.expires = time.Now().Add(6 * time.Hour)
+	return m
+}
 
 // Discovery returns branding for this deployment and all its tenants.
 // On a tenant subdomain: returns a single-element array for that tenant.
@@ -65,6 +108,7 @@ func (a *API) Discovery(w http.ResponseWriter, r *http.Request) {
 	if a.Opts.Tenant != nil {
 		tenants, err := a.Opts.Zed.ListTenants(servicetenant.AdminBypass(ctx))
 		if err == nil {
+			stats := a.discoveryStats.get(servicetenant.AdminBypass(ctx), a.Opts.Zed)
 			primaryDomain := a.Opts.Tenant.PrimaryDomain()
 			scheme := "https"
 			if a.Opts.AccessURL != nil {
@@ -82,10 +126,15 @@ func (a *API) Discovery(w http.ResponseWriter, r *http.Request) {
 				if t.Slug.Valid && primaryDomain != "" {
 					url = scheme + "://" + t.Slug.String + "." + primaryDomain
 				}
-				entries = append(entries, chroniclesdk.DiscoveryEntry{
+				entry := chroniclesdk.DiscoveryEntry{
 					Branding: sdkTenant.Branding,
 					URL:      url,
-				})
+				}
+				if s, ok := stats[t.ID]; ok {
+					entry.Instances14d = &s.InstanceCount
+					entry.UniquePlayers14d = &s.UniquePlayerCount
+				}
+				entries = append(entries, entry)
 			}
 		}
 	}

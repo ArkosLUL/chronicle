@@ -7034,6 +7034,49 @@ func (q *sqlQuerier) SetTenantDataset(ctx context.Context, arg SetTenantDatasetP
 	return err
 }
 
+const tenantDiscoveryStats = `-- name: TenantDiscoveryStats :many
+SELECT
+  t.id AS tenant_id,
+  COUNT(DISTINCT li.id)::bigint AS instance_count,
+  COUNT(DISTINCT lip.unit_guid)::bigint AS unique_player_count
+FROM tenants t
+JOIN wow_servers ws ON ws.tenant_id = t.id
+JOIN wow_server_realms wsr ON wsr.server_id = ws.id
+JOIN log_instances li ON li.realm_id = wsr.id
+  AND li.start_time >= $1::timestamptz
+LEFT JOIN log_instance_players lip ON lip.instance_id = li.id
+WHERE t.discoverable = true
+GROUP BY t.id
+`
+
+type TenantDiscoveryStatsRow struct {
+	TenantID          uuid.UUID `db:"tenant_id" json:"tenant_id"`
+	InstanceCount     int64     `db:"instance_count" json:"instance_count"`
+	UniquePlayerCount int64     `db:"unique_player_count" json:"unique_player_count"`
+}
+
+// Returns instance and unique player counts per discoverable tenant within a
+// time window. Used by the discovery endpoint to surface activity metrics.
+func (q *sqlQuerier) TenantDiscoveryStats(ctx context.Context, since pgtype.Timestamptz) ([]TenantDiscoveryStatsRow, error) {
+	rows, err := q.db.Query(ctx, tenantDiscoveryStats, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TenantDiscoveryStatsRow
+	for rows.Next() {
+		var i TenantDiscoveryStatsRow
+		if err := rows.Scan(&i.TenantID, &i.InstanceCount, &i.UniquePlayerCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateTenant = `-- name: UpdateTenant :one
 UPDATE tenants SET
     slug = COALESCE($1, slug),

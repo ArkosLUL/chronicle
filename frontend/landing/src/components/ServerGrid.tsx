@@ -72,12 +72,12 @@ function GetInTouchModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Preserve the order from the registry (sponsored entries float to top). */
+/** Sort servers: sponsored first, then by unique player count (14d) descending. */
 function sortServers(servers: ServerEntry[]): ServerEntry[] {
   return [...servers].sort((a, b) => {
     if (a.sponsored && !b.sponsored) return -1;
     if (!a.sponsored && b.sponsored) return 1;
-    return 0; // stable: keep registry order
+    return (b.uniquePlayers14d ?? 0) - (a.uniquePlayers14d ?? 0);
   });
 }
 

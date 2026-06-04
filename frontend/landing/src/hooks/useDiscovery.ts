@@ -100,6 +100,8 @@ function discoveryToServer(
     engine,
     chronicleUrl: entry.url,
     status: status.length > 0 ? status : undefined,
+    instances14d: entry.instances_14d,
+    uniquePlayers14d: entry.unique_players_14d,
   };
 }
 
@@ -236,5 +238,8 @@ function enrichServer(server: ServerEntry, entry: DiscoveryEntry): ServerEntry {
   if (b.description) enriched.description = b.description;
   if (b.square_logo) enriched.logo = b.square_logo;
   if (b.background_banner) enriched.banner = b.background_banner;
+  // Activity metrics from discovery.
+  if (entry.instances_14d != null) enriched.instances14d = entry.instances_14d;
+  if (entry.unique_players_14d != null) enriched.uniquePlayers14d = entry.unique_players_14d;
   return enriched;
 }

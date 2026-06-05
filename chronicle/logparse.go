@@ -62,7 +62,10 @@ import (
 	"github.com/riverqueue/river/rivertype"
 )
 
-const KindLogParse = "log-parse"
+const (
+	KindLogParse                 = "log-parse"
+	MinimumCombatTimeForRankings = 3
+)
 
 type OutputLogParse struct {
 	InstanceFailures map[string]string
@@ -1237,10 +1240,16 @@ func insertDPSRankings(
 	instanceName string,
 	realmName string,
 ) {
-	// Level range from speedrun rules (if configured).
-	var levelRange *rankings.LevelRangeRequirement
-	if finalized.RankingRules != nil && finalized.RankingRules.Speedrun != nil {
-		levelRange = finalized.RankingRules.Speedrun.LevelRange
+	// Build a set of player GUIDs that violate the level range, reusing the
+	// speedrun proof which has already checked every engaged player.
+	var levelViolators map[guid.GUID]struct{}
+	if finalized.Rankings.Speedrun != nil {
+		if lr := finalized.Rankings.Speedrun.LevelRange; lr != nil && !lr.Satisfied {
+			levelViolators = make(map[guid.GUID]struct{}, len(lr.Violators))
+			for _, v := range lr.Violators {
+				levelViolators[v.PlayerGUID] = struct{}{}
+			}
+		}
 	}
 
 	for _, enc := range finalized.Encounters {
@@ -1256,30 +1265,18 @@ func insertDPSRankings(
 		}
 		durationSecs := enc.Combat.End.Sub(enc.Combat.Start).Seconds()
 
-		// Enforce level range: ALL players must be within the level cap.
-		// If any player violates the range, skip the entire encounter.
-		if levelRange != nil {
-			levelViolation := false
-			for unitGUID, stats := range dpsResult.Units {
-				if !stats.IsPlayer {
-					continue
-				}
-				player, ok := finalized.Guilds.Players[unitGUID]
-				if !ok {
-					continue
-				}
-				if player.Level == nil {
-					levelViolation = true
-					break
-				}
-				lvl := int32(*player.Level)
-				if lvl < levelRange.MinLevel || lvl > levelRange.MaxLevel {
-					levelViolation = true
+		// If any player in this encounter violated the level range (detected
+		// by the speedrun proof), skip the entire encounter.
+		if levelViolators != nil {
+			violation := false
+			for unitGUID := range dpsResult.Units {
+				if _, bad := levelViolators[unitGUID]; bad {
+					violation = true
 					break
 				}
 			}
-			if levelViolation {
-				continue // skip entire encounter
+			if violation {
+				continue
 			}
 		}
 
@@ -1393,7 +1390,7 @@ func insertDPSRankings(
 	}
 
 	// Aggregate trash (non-boss) encounters into per-(player, spec) ranking rows.
-	insertTrashRankings(ctx, tx, finalized, dbinstance, instanceName, realmName, levelRange)
+	insertTrashRankings(ctx, tx, finalized, dbinstance, instanceName, realmName, levelViolators)
 }
 
 // trashPlayerKey groups trash damage by player GUID + spec.
@@ -1422,7 +1419,7 @@ func insertTrashRankings(
 	dbinstance database.LogInstance,
 	instanceName string,
 	realmName string,
-	levelRange *rankings.LevelRangeRequirement,
+	levelViolators map[guid.GUID]struct{},
 ) {
 	accum := make(map[trashPlayerKey]*trashPlayerAccum)
 
@@ -1438,32 +1435,20 @@ func insertTrashRankings(
 			continue
 		}
 		durationSecs := enc.Combat.End.Sub(enc.Combat.Start).Seconds()
-		if durationSecs < 5 {
+		if durationSecs < MinimumCombatTimeForRankings {
 			continue
 		}
 
-		// Enforce level range on the encounter.
-		if levelRange != nil {
-			levelViolation := false
-			for unitGUID, stats := range dpsResult.Units {
-				if !stats.IsPlayer {
-					continue
-				}
-				player, ok := finalized.Guilds.Players[unitGUID]
-				if !ok {
-					continue
-				}
-				if player.Level == nil {
-					levelViolation = true
-					break
-				}
-				lvl := int32(*player.Level)
-				if lvl < levelRange.MinLevel || lvl > levelRange.MaxLevel {
-					levelViolation = true
+		// If any player in this encounter violated the level range, skip it.
+		if levelViolators != nil {
+			violation := false
+			for unitGUID := range dpsResult.Units {
+				if _, bad := levelViolators[unitGUID]; bad {
+					violation = true
 					break
 				}
 			}
-			if levelViolation {
+			if violation {
 				continue
 			}
 		}
@@ -1529,7 +1514,7 @@ func insertTrashRankings(
 		if !ok {
 			continue
 		}
-		if a.DurationSecs < 15 {
+		if a.DurationSecs < MinimumCombatTimeForRankings {
 			continue
 		}
 

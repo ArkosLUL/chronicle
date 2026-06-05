@@ -41,6 +41,8 @@ type Tracker struct {
 	// received a fresh COMBATANT_INFO. Their Talents field is set to nil
 	// so downstream consumers (DPS rankings) see "Unknown" spec.
 	InvalidatedTalents map[guid.GUID]struct{}
+
+	PlayerLevel map[guid.GUID]int32
 }
 
 func New() *Tracker {
@@ -51,6 +53,7 @@ func New() *Tracker {
 		ByName:             make(map[string]guid.GUID),
 		PendingTalents:     make(map[guid.GUID]pendingTalent),
 		InvalidatedTalents: make(map[guid.GUID]struct{}),
+		PlayerLevel:        make(map[guid.GUID]int32),
 	}
 }
 
@@ -226,6 +229,8 @@ func (g *Tracker) ProcessMessage(active bool, encounterID uuid.UUID, msg message
 		if ty.Caster.IsPlayer() {
 			g.Participant[ty.Caster] = struct{}{}
 		}
+	case *messages.Unit:
+		g.Unit(ty)
 	case *messages.Combatant:
 		g.Guild(ty)
 		g.Player(ty)
@@ -269,6 +274,19 @@ func (g *Tracker) Guild(msg *messages.Combatant) {
 	g.Guilds[msg.Guild.Name][msg.Guid] = struct{}{}
 }
 
+func (g *Tracker) Unit(unit *messages.Unit) {
+	if !unit.Guid.IsPlayer() || unit.Level <= 0 {
+		return
+	}
+
+	g.PlayerLevel[unit.Guid] = unit.Level
+	exists, ok := g.Players[unit.Guid]
+	if ok && (exists.Level == nil || *exists.Level <= 0) {
+		exists.Level = &unit.Level
+		g.Players[unit.Guid] = exists
+	}
+}
+
 func (g *Tracker) Player(msg *messages.Combatant) {
 	gid := msg.Guid
 	if gid.IsZero() || !gid.IsPlayer() {
@@ -295,6 +313,13 @@ func (g *Tracker) Player(msg *messages.Combatant) {
 		}
 		if !gearExists {
 			c.GearSetups = previous.GearSetups
+		}
+	}
+
+	if c.Level == nil || *c.Level <= 0 {
+		lvl, uok := g.PlayerLevel[gid]
+		if uok {
+			c.Level = &lvl
 		}
 	}
 

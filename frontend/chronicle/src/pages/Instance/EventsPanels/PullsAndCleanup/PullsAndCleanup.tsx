@@ -589,7 +589,7 @@ export function createPullsAndCleanupPanel(): PanelDefinition<
 > {
   return {
     ...pullsAndCleanupProcessor,
-    label: "Pulls & Cleanup",
+    label: "Pulls & Idle Time",
     icon: <Timer className="h-4 w-4" />,
     selfManagesAggregation: true,
     render: (props: PanelRenderProps<PullsAndCleanupResult>) => (

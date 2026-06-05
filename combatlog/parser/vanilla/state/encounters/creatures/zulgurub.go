@@ -16,7 +16,10 @@ const (
 )
 
 func NewHighPriestessJeklik(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-	return characters.NewAdsGoWithBoss(highPriestessJeklik, bloodSeekerBat)(id, all)
+	return characters.NewAdsGoWithBoss(highPriestessJeklik,
+		bloodSeekerBat,
+		14965, // bat riders
+	)(id, all)
 }
 
 const (

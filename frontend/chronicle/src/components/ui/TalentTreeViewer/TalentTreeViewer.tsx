@@ -336,7 +336,7 @@ function TalentButton({ talent, rank, locked, talents, ranks, onChange, readOnly
     tooltipPosition && talent.spellRanks.length > 0 && (rankSpellQueries.some((q) => q.isPending) || refQueries.some((q) => q.isPending))
   );
   const lockReasons = locked ? lockedTalentReasons(talent, talents, ranks) : [];
-  const title = locked ? `${talent.name} locked. ${lockReasons.join(" ")}` : `${talent.name} (${rank}/${talent.maxRank})`;
+
 
   const showTooltip = () => {
     const rect = buttonRef.current?.getBoundingClientRect();
@@ -659,29 +659,26 @@ export function TalentTreeViewer({
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-2", className)}>
       {/* Summary bar — hidden in readOnly mode with allocations */}
       {!(readOnly && allocations) && (
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-3xl font-bold text-white">{data.name} talents</h2>
-            {!readOnly && (
-              <p className="text-sm text-muted-foreground">Click to add a point. Right-click, shift-click, or command-click to remove one. Shareable builds are stored in the URL.</p>
-            )}
-          </div>
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm font-bold text-white">
-              Requires level {requiredLevel}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-sm font-bold text-white">
+              Level {requiredLevel}
             </div>
             {!readOnly && (
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <button type="button" className="rounded-lg border border-primary/50 bg-primary/15 px-3 py-2 text-sm font-bold text-white hover:bg-primary/25" onClick={() => void copyBuildLink()} title="Share your current talents">
-                  Copy build link
+              <>
+                <button type="button" className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25" onClick={() => void copyBuildLink()}>
+                  Copy link
                 </button>
-                <button type="button" className="rounded-lg border border-border/60 bg-black/40 px-3 py-2 text-sm text-muted-foreground hover:text-white" onClick={() => commitRanks({})}>Reset {total}/{maxPoints} points</button>
-              </div>
+                <button type="button" className="rounded-md border border-red-500/50 bg-red-500/15 px-2.5 py-1 text-sm font-medium text-red-400 hover:bg-red-500/25 hover:text-red-300" onClick={() => commitRanks({})}>Reset {total}/{maxPoints}</button>
+              </>
             )}
           </div>
+          {!readOnly && (
+            <p className="text-sm text-muted-foreground text-right">Click to add. Right-click or shift-click to remove. Builds are stored in the URL.</p>
+          )}
         </div>
       )}
       <div className={tabGridClassName}>

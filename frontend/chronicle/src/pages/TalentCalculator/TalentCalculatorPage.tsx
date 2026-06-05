@@ -11,6 +11,7 @@ const CLASS_INFO: { id: number; name: string; slug: string }[] = [
   { id: 3, name: "Hunter", slug: "hunter" },
   { id: 4, name: "Rogue", slug: "rogue" },
   { id: 5, name: "Priest", slug: "priest" },
+  { id: 6, name: "Death Knight", slug: "deathknight" },
   { id: 7, name: "Shaman", slug: "shaman" },
   { id: 8, name: "Mage", slug: "mage" },
   { id: 9, name: "Warlock", slug: "warlock" },
@@ -47,7 +48,7 @@ export function TalentCalculatorPage() {
   return (
     <div className="container mx-auto px-4 py-4 max-w-7xl">
       {/* Header */}
-      <div className="mb-4">
+      <div className="mb-3">
         <h1 className="text-2xl font-bold tracking-tight">Talent Calculator</h1>
         <p className="mt-1 text-sm text-zinc-400">
           Plan and share class talent builds.
@@ -55,7 +56,7 @@ export function TalentCalculatorPage() {
       </div>
 
       {/* Class selector */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {availableClasses.map((cls) => (
           <Link
             key={cls.id}

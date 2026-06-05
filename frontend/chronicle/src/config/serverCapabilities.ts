@@ -77,6 +77,13 @@ const CAPABILITIES: Record<string, ServerCapabilities> = {
     defaultLogType: "azerothcore-clientside",
     defaultFormat: "3.3.5a-cc-addon",
     defaultFlavor: ["wrath", "azerothcore"],
+    // TODO: talent calculator config (maxLevel, maxTalentPoints, classIds) should
+    // come from the tenant/server API instead of being hardcoded per build.
+    talentCalculator: {
+      maxTalentPoints: 71,
+      maxLevel: 80,
+      classIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 11],
+    },
   },
   // The values below must mirror the server-side derivation for each build
   // (LogType.Format() + ServerFlavor) so the frontend override is a no-op for

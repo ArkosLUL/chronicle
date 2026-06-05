@@ -182,10 +182,10 @@ function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: Talent
       preserveAspectRatio="none"
     >
       <defs>
-        <marker id="talent-prereq-arrow-active" viewBox="0 0 6 6" refX="4.8" refY="3" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+        <marker id="talent-prereq-arrow-active" viewBox="0 0 6 6" refX="4.8" refY="3" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
           <path d="M0.5 0.75 L5.5 3 L0.5 5.25 Z" className="fill-[#d8b35f] drop-shadow-[0_0_3px_rgba(216,179,95,0.45)]" />
         </marker>
-        <marker id="talent-prereq-arrow-inactive" viewBox="0 0 6 6" refX="4.8" refY="3" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+        <marker id="talent-prereq-arrow-inactive" viewBox="0 0 6 6" refX="4.8" refY="3" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
           <path d="M0.5 0.75 L5.5 3 L0.5 5.25 Z" className="fill-[#8b744f]/70" />
         </marker>
       </defs>
@@ -201,7 +201,7 @@ function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: Talent
             <path
               d={pathData}
               fill="none"
-              strokeWidth="3"
+              strokeWidth="5"
               strokeLinecap="round"
               strokeLinejoin="round"
               className="stroke-[#2b241a]/80"
@@ -209,7 +209,7 @@ function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: Talent
             <path
               d={pathData}
               fill="none"
-              strokeWidth="1.5"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
               markerEnd={marker}
@@ -407,7 +407,7 @@ function TalentButton({ talent, rank, locked, talents, ranks, onChange, readOnly
     <button
       ref={buttonRef}
       type="button"
-      title={title}
+      title=""
       aria-disabled={locked || readOnly}
       aria-describedby={tooltipId}
       data-talent-tooltip-trigger="true"

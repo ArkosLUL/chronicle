@@ -301,14 +301,14 @@ describe("TalentTreeViewer prerequisite arrows", () => {
     const source = talent({ id: 20, tierID: 2, columnIndex: 1 });
     const target = talent({ id: 21, tierID: 2, columnIndex: 2, prereqTalent: [20] });
 
-    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("116,170 130,170");
+    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("112,170 136,170");
   });
 
   it("keeps one-row vertical prerequisites compact instead of arrowhead dominated", () => {
     const source = talent({ id: 22, tierID: 0, columnIndex: 1 });
     const target = talent({ id: 23, tierID: 1, columnIndex: 1, prereqTalent: [22] });
 
-    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("90,48 90,68");
+    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("90,44 90,74");
   });
 
   it("routes one-column-right and two-row-down prerequisites side-exit horizontal-first then down", () => {
@@ -316,7 +316,7 @@ describe("TalentTreeViewer prerequisite arrows", () => {
     const target = talent({ id: 31, tierID: 2, columnIndex: 2, prereqTalent: [30] });
 
     // Exits right side of source, goes right to target column, then down to target.
-    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("116,22 158,22 158,142");
+    expect(prerequisiteArrowPolylinePoints(source, target)).toBe("112,22 158,22 158,148");
   });
 
   it("routes VanillaPlus Fire Mage prerequisite arrows side-exit horizontal-first past blocker", () => {
@@ -325,7 +325,7 @@ describe("TalentTreeViewer prerequisite arrows", () => {
     const target = talent({ id: 1766, tierID: 4, columnIndex: 2, tabIndex: 14, spellRanks: [34125], prereqTalent: [32], prereqRank: [0] });
 
     // Exits right side of source, goes right to target column, then down (avoids blocker below source).
-    expect(prerequisiteArrowPolylinePoints(source, target, [source, blocker, target])).toBe("116,170 158,170 158,290");
+    expect(prerequisiteArrowPolylinePoints(source, target, [source, blocker, target])).toBe("112,170 158,170 158,296");
   });
 
   it("softens kinked prerequisite paths so turns do not read like flowchart elbows", () => {

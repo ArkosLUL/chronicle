@@ -27,8 +27,9 @@ export function TalentCalculatorPage() {
   const maxLevel = tc?.maxLevel ?? 60;
 
   const availableClasses = useMemo(() => {
-    if (!tc?.classIds?.length) return CLASS_INFO;
-    return CLASS_INFO.filter((c) => tc.classIds.includes(c.id));
+    // Default to vanilla classes (no DK) when no talent calculator config exists.
+    const classIds = tc?.classIds ?? [1, 2, 3, 4, 5, 7, 8, 9, 11];
+    return CLASS_INFO.filter((c) => classIds.includes(c.id));
   }, [tc]);
 
   const selectedClass = availableClasses.find((c) => c.slug === classSlug);

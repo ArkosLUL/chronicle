@@ -1036,7 +1036,6 @@ func ScholomanceHostiles() map[uint32]Identity {
 		10498: "Spectral Tutor",
 		14520: "Aspect of Malice",
 		10472: "Scholomance Occultist",
-		1853:  "Darkmaster Gandling",
 		10476: "Scholomance Necrolyte",
 		10481: "Reanimated Corpse",
 		10488: "Risen Construct",
@@ -1058,6 +1057,7 @@ func ScholomanceHostiles() map[uint32]Identity {
 		10502: "Lady Illucia Barov",
 		10503: "Jandice Barov",
 		10504: "Lord Alexei Barov",
+		1853:  "Darkmaster Gandling",
 
 		// Paladin mount boss
 		14516: "Death Knight Darkreaver",

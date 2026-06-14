@@ -1142,6 +1142,7 @@ func BlackwingLairHostiles() map[uint32]Identity {
 	switch services.ServerName {
 	case services.ServerIdentityVanillaPlus:
 		delete(hostile, 13020) // "Vaelastrasz the Corrupt"
+		delete(hostile, 14401) // "Master Elemental Shaper Krixix"
 		hostile[25123] = Identity{
 			Affiliation:   types.AffiliationHostile,
 			Name:          "Vaelastrasz the Chained",
@@ -1153,6 +1154,13 @@ func BlackwingLairHostiles() map[uint32]Identity {
 			Name:          "Elementium Decapitator Mk III",
 			EncounterName: "",
 			Boss:          true,
+		}
+		hostile[14401] = Identity{
+			Affiliation:     types.AffiliationHostile,
+			Name:            "Master Elemental Shaper Krixix",
+			EncounterName:   "",
+			Boss:            true,
+			EncounterNameFn: nil,
 		}
 	}
 

@@ -1,0 +1,5952 @@
+[
+  {
+    "id": 136,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 605,
+    "name": "Mind Control",
+    "class": "Priest",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 688,
+    "name": "Summon Imp",
+    "class": "Warlock",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 691,
+    "name": "Summon Felhunter",
+    "class": "Warlock",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 697,
+    "name": "Summon Voidwalker",
+    "class": "Warlock",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 712,
+    "name": "Summon Succubus",
+    "class": "Warlock",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 755,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 883,
+    "name": "Call Pet",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ],
+    "omitReason": "Call Pet: UI/menu spell, not a combat interaction"
+  },
+  {
+    "id": 982,
+    "name": "Revive Pet",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ResurrectPet",
+      "Attr=ReqDeadPet"
+    ],
+    "omitReason": "Revive Pet: requires known ownership already"
+  },
+  {
+    "id": 1002,
+    "name": "Eyes of the Beast",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 1098,
+    "name": "Enslave Demon",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 1122,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 1515,
+    "name": "Tame Beast",
+    "reasons": [
+      "Attr=TameBeast"
+    ],
+    "omitReason": "Tame Beast: one-time taming, not useful for ongoing ownership"
+  },
+  {
+    "id": 1528,
+    "name": "Free Master",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 1539,
+    "name": "Feed Pet",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ],
+    "omitReason": "Feed Pet: pet happiness, not a combat link"
+  },
+  {
+    "id": 1747,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 1748,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 1749,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 1750,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 1751,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 1853,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 2641,
+    "name": "Dismiss Pet",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Effect[1]=DismissPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 2650,
+    "name": "Tame Pet (TEST)",
+    "reasons": [
+      "Effect[0]=TameCreature"
+    ]
+  },
+  {
+    "id": 2654,
+    "name": "Summon Tamed (TEST)",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 2817,
+    "name": "Teach Bark of Doom",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 2949,
+    "name": "Fire Shield",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 2975,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 2976,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 2977,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 2980,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 2981,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 2982,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 3111,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 3612,
+    "name": "Bloodscalp Pet",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 3661,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 3662,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 3666,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 3667,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 3698,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 3699,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 3700,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 4089,
+    "name": "Curse of Frailty",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 4090,
+    "name": "Life Tap",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 4091,
+    "name": "Mana Burn",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 4195,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4196,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4197,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4198,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4199,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4200,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4201,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4202,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4630,
+    "name": "Phase Shift",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 4741,
+    "name": "Open Wound",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4783,
+    "name": "Web",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4785,
+    "name": "Web",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 4806,
+    "name": "Distracting Spit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 5048,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 5049,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 5108,
+    "name": "Voidwalker",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 5161,
+    "name": "Revive Dig Rat",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 5172,
+    "name": "Bloodsail Companion",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 6027,
+    "name": "Web",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 6028,
+    "name": "Web",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 6084,
+    "name": "Summon Ghost Saber",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 6327,
+    "name": "Mana Feed",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 6357,
+    "name": "Spell Immunity",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 6359,
+    "name": "Seduction",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 6362,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 6479,
+    "name": "Razormane Wolf",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 6497,
+    "name": "Feed Sarilus Effect",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 6539,
+    "name": "Dig Trap",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 6598,
+    "name": "Savannah Cub",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 6677,
+    "name": "Silithid Swarm Call",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 6991,
+    "name": "Feed Pet",
+    "reasons": [
+      "Effect[0]=FeedPet"
+    ],
+    "omitReason": "Feed Pet: pet happiness, not a combat link"
+  },
+  {
+    "id": 7106,
+    "name": "Dark Restore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 7107,
+    "name": "Summon Wolfguard Worg",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 7370,
+    "name": "Charge",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 7389,
+    "name": "Attack",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 7812,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 7829,
+    "name": "Flameblade",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7855,
+    "name": "Summon Water Terror",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 7874,
+    "name": "Flameblade",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7875,
+    "name": "Flameblade",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7876,
+    "name": "Lash of Pain",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7877,
+    "name": "Lash of Pain",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7878,
+    "name": "Lash of Pain",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7879,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7880,
+    "name": "Lesser Invisibility",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7881,
+    "name": "Torment",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7882,
+    "name": "Torment",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7883,
+    "name": "Torment",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7884,
+    "name": "Torment",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 7885,
+    "name": "Sacrifice",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 8270,
+    "name": "Summon Earth Rumbler",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8271,
+    "name": "Summon Wind Howler",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8274,
+    "name": "Summon Tamed Battleboar",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8276,
+    "name": "Summon Tamed Hyena",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8318,
+    "name": "Fire Shield",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 8319,
+    "name": "Fire Shield",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 8372,
+    "name": "Summon Aqua Guardian",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8594,
+    "name": "Summon Moonstalker Runt",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8656,
+    "name": "Summon Crawler",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8722,
+    "name": "Summon Succubus",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 8809,
+    "name": "Slave Drain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 8853,
+    "name": "Summon Skeleton",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 8985,
+    "name": "Summon Fire Elemental",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 9653,
+    "name": "Summon Gelkis Rumbler",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 10369,
+    "name": "Scooby Snack Effect",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 10722,
+    "name": "Silithid Swarm",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 11693,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 11694,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 11695,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 11725,
+    "name": "Enslave Demon",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 11726,
+    "name": "Enslave Demon",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 11772,
+    "name": "Fire Shield",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11773,
+    "name": "Fire Shield",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11776,
+    "name": "Torment",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11777,
+    "name": "Torment",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11781,
+    "name": "Lash of Pain",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11782,
+    "name": "Lash of Pain",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11783,
+    "name": "Lash of Pain",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11786,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11787,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 11939,
+    "name": "Summon Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 12420,
+    "name": "Summon Skeletal Servant",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 12746,
+    "name": "Summon Voidwalker",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 13481,
+    "name": "Tame Beast",
+    "reasons": [
+      "Effect[0]=TameCreature"
+    ]
+  },
+  {
+    "id": 13542,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 13543,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 13544,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 14922,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 14923,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 14924,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 14925,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 14926,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 14927,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 16569,
+    "name": "Health Funnel",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 16598,
+    "name": "Will of Shahram",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 16698,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17164,
+    "name": "Summon Scarlet Hound",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 17254,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17262,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17263,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17264,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17265,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17266,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17267,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17268,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 17736,
+    "name": "Suffering",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17753,
+    "name": "Suffering",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17754,
+    "name": "Suffering",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17755,
+    "name": "Suffering",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17776,
+    "name": "Consume Shadows",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17855,
+    "name": "Consume Shadows",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17856,
+    "name": "Consume Shadows",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17857,
+    "name": "Consume Shadows",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17859,
+    "name": "Consume Shadows",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 17860,
+    "name": "Consume Shadows",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 18220,
+    "name": "Dark Pact",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18262,
+    "name": "Call Bloodshot",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 18386,
+    "name": "Heal Pet",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18540,
+    "name": "Ritual of Doom",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 18754,
+    "name": "Improved Succubus",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18755,
+    "name": "Improved Succubus",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18756,
+    "name": "Improved Succubus",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18788,
+    "name": "Demonic Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18801,
+    "name": "TESTT",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18937,
+    "name": "Dark Pact",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 18938,
+    "name": "Dark Pact",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 19028,
+    "name": "Soul Link",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 19438,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 19439,
+    "name": "Sacrifice",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19440,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 19441,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 19442,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 19443,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 19444,
+    "name": "Sacrifice",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19445,
+    "name": "Sacrifice",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19446,
+    "name": "Sacrifice",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19447,
+    "name": "Sacrifice",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19481,
+    "name": "Paranoia",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19548,
+    "name": "Tame Ice Claw Bear",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19574,
+    "name": "Bestial Wrath",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 19577,
+    "name": "Intimidation",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 19578,
+    "name": "Spirit Bond",
+    "reasons": [
+      "ImplicitTargetB[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 19579,
+    "name": "Spirit Bond",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 19648,
+    "name": "Spell Lock",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19650,
+    "name": "Spell Lock",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19661,
+    "name": "Tainted Blood",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19662,
+    "name": "Tainted Blood",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19663,
+    "name": "Tainted Blood",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19664,
+    "name": "Tainted Blood",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19674,
+    "name": "Tame Large Crag Boar",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19687,
+    "name": "Tame Snow Leopard",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19688,
+    "name": "Tame Adult Plainstrider",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19689,
+    "name": "Tame Prairie Stalker",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19692,
+    "name": "Tame Swoop",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19693,
+    "name": "Tame Webwood Lurker",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19694,
+    "name": "Tame Dire Mottled Boar",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19696,
+    "name": "Tame Surf Crawler",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19697,
+    "name": "Tame Armored Scorpid",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19699,
+    "name": "Tame Nightsaber Stalker",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19700,
+    "name": "Tame Strigid Screecher",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 19737,
+    "name": "Devour Magic",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19738,
+    "name": "Devour Magic",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19739,
+    "name": "Devour Magic",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 19952,
+    "name": "Heal Ragnaros",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 20270,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20312,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20313,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20314,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20315,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20316,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20317,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20322,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20323,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20324,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20326,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20327,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20329,
+    "name": "Phase Shift",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20377,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20378,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20379,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20380,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20381,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20382,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20383,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20384,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20385,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20386,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20387,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20388,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20389,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20390,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20391,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20392,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20393,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20394,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20395,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20396,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20398,
+    "name": "Lash of Pain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20399,
+    "name": "Lash of Pain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20400,
+    "name": "Lash of Pain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20401,
+    "name": "Lash of Pain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20402,
+    "name": "Lash of Pain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20403,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20404,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20405,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20406,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20407,
+    "name": "Seduction",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20408,
+    "name": "Lesser Invisibility",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20426,
+    "name": "Devour Magic",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20427,
+    "name": "Devour Magic",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20428,
+    "name": "Devour Magic",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20429,
+    "name": "Tainted Blood",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20430,
+    "name": "Tainted Blood",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20431,
+    "name": "Tainted Blood",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20432,
+    "name": "Tainted Blood",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20433,
+    "name": "Spell Lock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20434,
+    "name": "Spell Lock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20435,
+    "name": "Paranoia",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 20895,
+    "name": "Spirit Bond",
+    "reasons": [
+      "ImplicitTargetB[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 20988,
+    "name": "Nature's Ally",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 21544,
+    "name": "Create Shredder",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 21565,
+    "name": "Create Shredder",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 21740,
+    "name": "Demonic Ally",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 21921,
+    "name": "Demonic Ally",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 21925,
+    "name": "Nature's Ally",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 21927,
+    "name": "Nature's Ally",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 21929,
+    "name": "Giantstalker",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 21932,
+    "name": "Giantstalker",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 22865,
+    "name": "Summon Doomguard",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 23146,
+    "name": "Dive",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 23149,
+    "name": "Dive",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 23150,
+    "name": "Dive",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 23354,
+    "name": "Feed Pet (Quest Test)",
+    "reasons": [
+      "Effect[0]=FeedPet"
+    ]
+  },
+  {
+    "id": 23355,
+    "name": "Feed Pet Effect (Quest Test)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 23356,
+    "name": "Taming Lesson",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 23498,
+    "name": "Call Pet",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 23720,
+    "name": "Blessing of the Black Book",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 23759,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23760,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23761,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23762,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23784,
+    "name": "Master Demonologist",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 23826,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23827,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23828,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23829,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23830,
+    "name": "Master Demonologist",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 23831,
+    "name": "Master Demonologist",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 23832,
+    "name": "Master Demonologist",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 23833,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23834,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23835,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23836,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23837,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23838,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23839,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23840,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23841,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23842,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23843,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 23844,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 24353,
+    "name": "Primal Instinct",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24406,
+    "name": "Improved Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24424,
+    "name": "Demoralizing Screech",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24440,
+    "name": "Fire Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24441,
+    "name": "Fire Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24451,
+    "name": "Prowl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24454,
+    "name": "Prowl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24455,
+    "name": "Prowl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24463,
+    "name": "Fire Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24464,
+    "name": "Fire Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24475,
+    "name": "Frost Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24476,
+    "name": "Frost Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24477,
+    "name": "Frost Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24478,
+    "name": "Frost Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24490,
+    "name": "Shadow Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24494,
+    "name": "Nature Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24508,
+    "name": "Arcane Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24509,
+    "name": "Arcane Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24510,
+    "name": "Arcane Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24511,
+    "name": "Nature Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24512,
+    "name": "Nature Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24513,
+    "name": "Nature Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24514,
+    "name": "Shadow Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24515,
+    "name": "Shadow Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24516,
+    "name": "Shadow Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24529,
+    "name": "Spirit Bond",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 24547,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24556,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24557,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24558,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24559,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24560,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24561,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24562,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24580,
+    "name": "Demoralizing Screech",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24581,
+    "name": "Demoralizing Screech",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24582,
+    "name": "Demoralizing Screech",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24584,
+    "name": "Scorpid Poison",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24588,
+    "name": "Scorpid Poison",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24589,
+    "name": "Scorpid Poison",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24592,
+    "name": "Hunter Pet Buffs",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 24631,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24632,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24641,
+    "name": "Scorpid Poison",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24670,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 24826,
+    "name": "Infernal Fire",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetB[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 24845,
+    "name": "Lightning Breath",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 24937,
+    "name": "Using Control Console",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 25013,
+    "name": "Lightning Breath",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 25014,
+    "name": "Lightning Breath",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 25015,
+    "name": "Lightning Breath",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 25016,
+    "name": "Lightning Breath",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 25017,
+    "name": "Lightning Breath",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 25077,
+    "name": "Cobra Reflexes",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 25112,
+    "name": "Summon Voidwalker",
+    "class": "Warlock",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 25729,
+    "name": "Find the Ancient Hero: Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 26065,
+    "name": "Shell Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26094,
+    "name": "Thunderstomp",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26184,
+    "name": "Charge",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26185,
+    "name": "Charge",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26186,
+    "name": "Charge",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26189,
+    "name": "Thunderstomp",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26190,
+    "name": "Thunderstomp",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 26202,
+    "name": "Charge",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27039,
+    "name": "Increased Pet Health +3%",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27042,
+    "name": "Increased Pet Crit +2%",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27046,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27205,
+    "name": "Increased Pet Damage +3%",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27208,
+    "name": "Increased Pet Armor +10%",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27259,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 27265,
+    "name": "Dark Pact",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27273,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 27344,
+    "name": "Growl",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27346,
+    "name": "Cower",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27347,
+    "name": "Claw",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27348,
+    "name": "Bite",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27349,
+    "name": "Demoralizing Screech",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27350,
+    "name": "Arcane Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27351,
+    "name": "Fire Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27352,
+    "name": "Frost Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27353,
+    "name": "Shadow Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27354,
+    "name": "Nature Resistance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27361,
+    "name": "Scorpid Poison",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27362,
+    "name": "Natural Armor",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27364,
+    "name": "Great Stamina",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27366,
+    "name": "Thunderstomp",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27486,
+    "name": "Fire Shield",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 27487,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27489,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27490,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27491,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27492,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27493,
+    "name": "Lash of Pain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27494,
+    "name": "Soothing Kiss",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27495,
+    "name": "Devour Magic",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27496,
+    "name": "Devour Magic",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27497,
+    "name": "Tainted Blood",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 27500,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 28343,
+    "name": "Charge",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 28757,
+    "name": "Stalker's Ally",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 28758,
+    "name": "Stalker's Ally",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 28904,
+    "name": "Summon Ghostclaw Lynx",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 29066,
+    "name": "Summon Dreadbone Skeleton",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 29067,
+    "name": "Slave Drain",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 29233,
+    "name": "Beast of the Unseen Path",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 29992,
+    "name": "Gather Water",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 30009,
+    "name": "Summon Robot",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 30019,
+    "name": "Control Piece",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 30099,
+    "name": "Tame Crazed Dragonhawk",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 30102,
+    "name": "Tame Elder Springpaw",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 30105,
+    "name": "Tame Mistbat",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 30146,
+    "name": "Summon Felguard",
+    "class": "Warlock",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 30154,
+    "name": "Intercept",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 30199,
+    "name": "Intercept",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 30200,
+    "name": "Intercept",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 30214,
+    "name": "Cleave",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 30222,
+    "name": "Cleave",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 30224,
+    "name": "Cleave",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 30529,
+    "name": "Recently In Game",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 30646,
+    "name": "Tame Barbed Crawler",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 30653,
+    "name": "Tame Greater Timberstrider",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 30654,
+    "name": "Tame Nightstalker",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 30842,
+    "name": "Summon Felhunter",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 31558,
+    "name": "Summon Bombling",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 31687,
+    "name": "Summon Water Elemental",
+    "class": "Mage",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 32060,
+    "name": "Summon Sporebat",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 32234,
+    "name": "Avoidance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 32253,
+    "name": "Stone Healing",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 32553,
+    "name": "Life Tap",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 32554,
+    "name": "Mana Feed - Drain Mana",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 32730,
+    "name": "Summon Tamed Ravager",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 32787,
+    "name": "Stone Healing",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 32788,
+    "name": "Stone Healing",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 32790,
+    "name": "Stone Healing",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 32791,
+    "name": "Stone Healing",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 32792,
+    "name": "Stone Healing",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 32852,
+    "name": "Demonic Frenzy",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 33272,
+    "name": "Well Fed",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 33679,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 33703,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 33704,
+    "name": "Anguish",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 33705,
+    "name": "Anguish",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 33706,
+    "name": "Anguish",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 33847,
+    "name": "Summon RC Tonk",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 33849,
+    "name": "Using Steam Tonk Controller",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 33973,
+    "name": "Summon Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34136,
+    "name": "Summon RC Tank 2",
+    "reasons": [
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 34237,
+    "name": "Summon Imps",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34238,
+    "name": "Summon Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34249,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34251,
+    "name": "Summon Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34433,
+    "name": "Shadowfiend",
+    "class": "Priest",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34630,
+    "name": "Scrap Reaver X6000",
+    "class": "Priest",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 34632,
+    "name": "Hellfire - Quest - Summon Unyielding",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 34854,
+    "name": "Lashh'an Kaliri",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 34902,
+    "name": "Hunter Pet Scaling 01",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ],
+    "omitReason": "Pet scaling aura: passive, never in combat log"
+  },
+  {
+    "id": 34903,
+    "name": "Hunter Pet Scaling 02",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ],
+    "omitReason": "Pet scaling aura: passive, never in combat log"
+  },
+  {
+    "id": 34904,
+    "name": "Hunter Pet Scaling 03",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ],
+    "omitReason": "Pet scaling aura: passive, never in combat log"
+  },
+  {
+    "id": 34947,
+    "name": "Warlock Pet Scaling 01",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 34952,
+    "name": "Go for the Throat",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 34953,
+    "name": "Go for the Throat",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 34956,
+    "name": "Warlock Pet Scaling 02",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 34957,
+    "name": "Warlock Pet Scaling 03",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 34958,
+    "name": "Warlock Pet Scaling 04",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 35050,
+    "name": "Summon Kitty",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 35052,
+    "name": "Summon Kitty",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 35053,
+    "name": "Summon Kitty",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 35060,
+    "name": "Focused Fire",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35061,
+    "name": "Focused Fire",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35109,
+    "name": "Grishna Kaliri",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 35299,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35300,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35302,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35303,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35304,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35305,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35306,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35307,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35308,
+    "name": "Gore",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35348,
+    "name": "Warp",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35388,
+    "name": "Poison Spit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35390,
+    "name": "Poison Spit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35391,
+    "name": "Poison Spit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 35702,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35703,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35704,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35705,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35706,
+    "name": "Master Demonologist",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 35708,
+    "name": "Master Demonologist",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 36226,
+    "name": "Summon Fel Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 36562,
+    "name": "Dismiss Pet",
+    "reasons": [
+      "Effect[0]=DismissPet",
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 36690,
+    "name": "Summon Succubus",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 37382,
+    "name": "Health Link",
+    "class": "Priest",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 37520,
+    "name": "Skettis Kaliri",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 37547,
+    "name": "Wyrmcult BroodlingCall",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 37587,
+    "name": "Bestial Wrath",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 37588,
+    "name": "Dive",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 37625,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37648,
+    "name": "Enrage",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 37748,
+    "name": "Teron Gorefiend",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37867,
+    "name": "Arcano-Scorp Control",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37892,
+    "name": "Arcano-Scorp Control",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37893,
+    "name": "Arcano-Scorp Control",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37894,
+    "name": "Arcano-Scorp Control",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37895,
+    "name": "Arcano-Scorp Control",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 37907,
+    "name": "Kill Credit Greater Diemetradon",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 38022,
+    "name": "FRS Quest Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 38544,
+    "name": "Coax Marmot",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 38597,
+    "name": "Summon Felstorm Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 38601,
+    "name": "Summon Felstorm Hound",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 38604,
+    "name": "Summon Felstorm Temptress",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 38939,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 38980,
+    "name": "Summon Twilight Ridge Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 39219,
+    "name": "Death's Door Fel Cannon",
+    "class": "Priest",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 39244,
+    "name": "Gather Warp Chaser Blood",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 39272,
+    "name": "Summon Wrath Hound",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 39534,
+    "name": "Summon Storm Fury",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 39578,
+    "name": "Spirit Bond",
+    "reasons": [
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 39681,
+    "name": "Summon Goblin Tonk",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 39684,
+    "name": "Summon Gnomish Tonk",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 39941,
+    "name": "Inferno",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 39985,
+    "name": "Legion Ring - Charm - North 01 (Possess)",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 40000,
+    "name": "Bracers of Shackled Souls",
+    "reasons": [
+      "Effect[0]=LearnPetSpell"
+    ]
+  },
+  {
+    "id": 40268,
+    "name": "Spiritual Vengeance",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 40369,
+    "name": "Children's Week Force Master to Cast",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40382,
+    "name": "Legion Ring - Charm - North 02 (Possess)",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 40523,
+    "name": "Legion Ring - Charm - North 03 (Possess)",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 40658,
+    "name": "Absorb Life",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40659,
+    "name": "Dive-Bomb",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40660,
+    "name": "Crystal Charge Vacuum",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40661,
+    "name": "Charged Crystal Focus Check",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 40671,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 40741,
+    "name": "Chaos Strike",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40791,
+    "name": "Zoom Out",
+    "class": "Priest",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40792,
+    "name": "Zoom In",
+    "class": "Priest",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 40793,
+    "name": "Zoom In",
+    "class": "Priest",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 40798,
+    "name": "PvP Controller",
+    "reasons": [
+      "Attr=DismissPet",
+      "Attr=TameBeast"
+    ]
+  },
+  {
+    "id": 40884,
+    "name": " Health Funnel",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 40967,
+    "name": "Summon Tamed Proto-Whelp",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 41066,
+    "name": "Out of Icecrown!",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 41427,
+    "name": "Lucille Feed Credit Trigger",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 42185,
+    "name": "Brewfest Control Piece",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 42431,
+    "name": "Creature - Summon Netherwhelp",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 42618,
+    "name": "Summon Ice Elemental",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 42769,
+    "name": "Release Plaguehound",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 43392,
+    "name": "Assemble Abomination",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 43400,
+    "name": "Plagued Vrykul Explode Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 43542,
+    "name": "Summon Fangorn",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 43687,
+    "name": "Quest - Dismiss Plaguehound",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 43771,
+    "name": "Well Fed",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 43812,
+    "name": "Warning",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 43832,
+    "name": "Skorn: Skorn Guardian Aura",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 43869,
+    "name": "You're a Zombie!",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 43896,
+    "name": "Summon Voidwalker",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 43945,
+    "name": "You're a ...! (Effects1)",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 43980,
+    "name": "Switch View",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 43998,
+    "name": "Fiery Lance",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44091,
+    "name": "Vrykul Harpoon QC",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44092,
+    "name": "Vrykul Harpoon QC",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44124,
+    "name": "Alliance Domination",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44128,
+    "name": "Vrykul Harpoon QC",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44129,
+    "name": "Vrykul Harpoon QC",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44149,
+    "name": "Ride Harpoon",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44163,
+    "name": "Summon Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 44215,
+    "name": "Ride Harpoon",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44375,
+    "name": "Whelpling Influence",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 44419,
+    "name": "Hawk Hunting",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 44437,
+    "name": "Egg Collected",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44499,
+    "name": "Iron Rune Construct Credit 01",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44517,
+    "name": "Summon Sunblade Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 44551,
+    "name": "Collect Data Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44569,
+    "name": "Bluff Quest Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44611,
+    "name": "Collect Data Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44626,
+    "name": "Rocket Jump",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44643,
+    "name": "Reputation and Language",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44687,
+    "name": "Rocket Jump",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44737,
+    "name": "Rocket Jump Effect",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 44881,
+    "name": "Charm Ravager",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 44947,
+    "name": "Quest - Living Flare - Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45009,
+    "name": "Converted Sentry Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45257,
+    "name": "Using Steam Tonk Controller",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 45322,
+    "name": "Call Pet",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 45440,
+    "name": "Steam Tonk Controller",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 45506,
+    "name": "Nerub'ar Sinkhole Credit (SW)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45508,
+    "name": "Nerub'ar Sinkhole Credit (SE)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45510,
+    "name": "Nerub'ar Sinkhole Credit (NW)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45512,
+    "name": "Nerub'ar Sinkhole Credit (NE)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45522,
+    "name": "Dispel Freed Soldier Debuff",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45525,
+    "name": "Arcane Intellect",
+    "class": "Mage",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 45614,
+    "name": "Shroud of the Scourge",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 45839,
+    "name": "Vengeance of the Blue Flight",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 45877,
+    "name": "Deliver Kodo",
+    "reasons": [
+      "ImplicitTargetA[2]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46328,
+    "name": "Captured Totem (Aux2)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46358,
+    "name": "Give Jenny Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46377,
+    "name": "Totem Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46378,
+    "name": "Windsoul Credt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46445,
+    "name": "Weakness to Lightning: Kill Credit from Pet",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46467,
+    "name": "Health Funnel",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 46585,
+    "name": "Raise Dead",
+    "class": "DeathKnight",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 46649,
+    "name": "Maximize Pet's Loyalty and Happiness",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 46676,
+    "name": "Across Transborea Complete",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 46758,
+    "name": "Pet Boar",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 47038,
+    "name": "Aery Soul Captured",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47193,
+    "name": "Demonic Empowerment",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 47283,
+    "name": "Empowered Imp",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47454,
+    "name": "Field Medi-pack",
+    "reasons": [
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47797,
+    "name": "War Golem Charge Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47856,
+    "name": "Health Funnel",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet",
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 47910,
+    "name": "Summon Charged War Golem",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 47939,
+    "name": "Gather Lumber",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47965,
+    "name": "Firebolt",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 47967,
+    "name": "Soldier Rescued",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47985,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47986,
+    "name": "Sacrifice",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 47998,
+    "name": "Fire Shield",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48000,
+    "name": "Torment",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48001,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48002,
+    "name": "Sacrifice",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48003,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48004,
+    "name": "Consume Shadows",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48005,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48006,
+    "name": "Suffering",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48203,
+    "name": "Kodo Delivered",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48206,
+    "name": "Warning",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48297,
+    "name": "Hand Over Reins",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48320,
+    "name": "Summon Sunblade Imp",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 48366,
+    "name": "Warning",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48397,
+    "name": "Drop Off Villager",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48610,
+    "name": "Shredder Delivery",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48694,
+    "name": "Warning",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48744,
+    "name": "Upper Wintergarde Mine Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48745,
+    "name": "Lower Wintergarde Mine Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 48989,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 48990,
+    "name": "Mend Pet",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 49057,
+    "name": "Eject Master",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49081,
+    "name": "Drop Off Soldier",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49086,
+    "name": "Warning",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49122,
+    "name": "Plague Wagon Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49181,
+    "name": "Warhead Fuse",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49249,
+    "name": "Dismount",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49250,
+    "name": "Detonate",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49285,
+    "name": "Hand Over Reins",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49289,
+    "name": "Summon Crashin' Thrashin' Racer",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 49340,
+    "name": "Horde Kill Credit Torpedo",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49370,
+    "name": "Wyrmrest Defender: Destabilize Azure Dragonshrine Effect",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49444,
+    "name": "Racer Kill Counter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49510,
+    "name": "Alliance Kill Credit Torpedo",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49550,
+    "name": "Call Out Injured Soldier",
+    "reasons": [
+      "ImplicitTargetA[2]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49764,
+    "name": "BOTM - Woodland Brew - Squirrel Hate",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 49944,
+    "name": "Strip Master's Aura",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 50055,
+    "name": "Ethereal Pet Aura Remove",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 50063,
+    "name": "Ethereal Pet OnKill Give Token (Missile)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 50065,
+    "name": "Warning",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 50067,
+    "name": "Ethereal Pet OnKill Give Token",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 50341,
+    "name": "Touch the Nightmare",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 50344,
+    "name": "Dream Funnel",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 50708,
+    "name": "Primal Instinct",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 50736,
+    "name": "Summon Guerrero",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 51217,
+    "name": "Slave of Goregek",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51623,
+    "name": "Sholazar Guardian Heartbeat",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 51624,
+    "name": "Goregek's Slave",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51660,
+    "name": "Hand Over Mammoth",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51871,
+    "name": "Nass Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51887,
+    "name": "Recall Eye of Acherus",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 51906,
+    "name": "Death Knight Rune Weapon Scaling 02",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 51923,
+    "name": "Eye of Acherus Flight (Boost)",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51974,
+    "name": "Forge Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51977,
+    "name": "Town Hall Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51980,
+    "name": "Scarlet Hold Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51982,
+    "name": "Chapel Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 51996,
+    "name": "Death Knight Pet Scaling 02",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 52019,
+    "name": "Test Rename Pet",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 52119,
+    "name": "Jaloot's Intensity",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet",
+      "Effect[1]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 52150,
+    "name": "Raise Dead",
+    "class": "DeathKnight",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52189,
+    "name": "I Sense a Disturbance: Abandon Vehicle",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52191,
+    "name": "Scourge Disguise",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52193,
+    "name": "Force Cast Scourge Disguise",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52203,
+    "name": "Gargoyle Flight: Abandon Vehicle",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52220,
+    "name": "Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52244,
+    "name": "Charm Geist",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52248,
+    "name": "Kill Credit - Blighted Geist",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52252,
+    "name": "Charm Channel",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52264,
+    "name": "Deliver Stolen Horse",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52299,
+    "name": "DK 1",
+    "reasons": [
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52350,
+    "name": "Overtake",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52362,
+    "name": "Horseman's Call",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52376,
+    "name": "Death Coil",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52377,
+    "name": "Blood Strike",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52378,
+    "name": "Icy Touch",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52379,
+    "name": "Plague Strike",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52389,
+    "name": "Charm Channel",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52390,
+    "name": "Charm Drakuru Servant",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52409,
+    "name": "Destructive Ward Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52413,
+    "name": "Darmuk Kill Credit to Master",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52487,
+    "name": "Charm Channel",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52488,
+    "name": "Charm Bloated Abomination",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 52500,
+    "name": "Scarlet Ghoul Counter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52517,
+    "name": "Scarlet Ghoul Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52555,
+    "name": "Dispel Scarlet Ghoul Credit Counter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52559,
+    "name": "Force Master to Cast Summon",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52573,
+    "name": "Drostan On Spawn",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52588,
+    "name": "Skeletal Gryphon Escape",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52599,
+    "name": "Out of Bounds",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52734,
+    "name": "Dajik's Balance",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 52862,
+    "name": "Devour Wind",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 52864,
+    "name": "Devour Water",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 53102,
+    "name": "Charm Channel",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 53103,
+    "name": "Charm Blightblood Troll",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 53271,
+    "name": "Master's Call",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 53347,
+    "name": "Frenzyheart Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 53412,
+    "name": "Invigoration",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 53483,
+    "name": "Mobility",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 53485,
+    "name": "Mobility",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 53517,
+    "name": "Roar of Recovery",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 53554,
+    "name": "Mobility",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 53555,
+    "name": "Mobility",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 54114,
+    "name": "Heart of the Phoenix",
+    "class": "Hunter",
+    "reasons": [
+      "Effect[0]=ResurrectPet",
+      "Attr=DismissPet",
+      "Attr=ReqDeadPet"
+    ]
+  },
+  {
+    "id": 54136,
+    "name": "Blightblood Infusion",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 54176,
+    "name": "Zepik's Fervor",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 54178,
+    "name": "Goregek's Endurance",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 54181,
+    "name": "Fel Synergy",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 54420,
+    "name": "Deliver Gryphon",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 54566,
+    "name": "Death Knight Pet Scaling 01",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 54607,
+    "name": "Soul Leech Mana",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 54693,
+    "name": "Garm Attacker Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 54822,
+    "name": "Frost Giant Kill Credit 01",
+    "reasons": [
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 54840,
+    "name": "Metamorphosis",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 55036,
+    "name": "Frosthound Boss Emote 2",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55143,
+    "name": "ProtoDrakeKill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55278,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55328,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55329,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55330,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55332,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55333,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55335,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55417,
+    "name": "Flaming Arrow",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55477,
+    "name": "Frostbite Boss Emote 2",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55479,
+    "name": "Force Obedience",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 55589,
+    "name": "Brann: Force player to speak 1",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55590,
+    "name": "Brann: Force player to speak 2",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 55710,
+    "name": "Desecration",
+    "class": "DeathKnight",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 56409,
+    "name": "The Earthen Oath",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 56532,
+    "name": "Temple of Invention Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56533,
+    "name": "Temple of Winter Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56534,
+    "name": "Temple of Life Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56535,
+    "name": "Temple of Order Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56650,
+    "name": "Player Cast Veranus Summon",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56660,
+    "name": "Reveal Krolmir",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56684,
+    "name": "Drop Off Captured Crusader",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56690,
+    "name": "Thrust Spear",
+    "reasons": [
+      "ImplicitTargetA[2]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56703,
+    "name": "Wyrm Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56704,
+    "name": "Dodge Claws",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 56742,
+    "name": "Bronzebeard Reunion Complete",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 57404,
+    "name": "Out of Jotunheim!",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 57474,
+    "name": "To Icecrown - Frost Wyrm - Attack",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 57475,
+    "name": "Kindred Spirits",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 57482,
+    "name": "Kindred Spirits",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 57483,
+    "name": "Kindred Spirits",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 57484,
+    "name": "Kindred Spirits",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 57485,
+    "name": "Kindred Spirits",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 57611,
+    "name": "Out of Jotunheim!",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 57884,
+    "name": "Through the Eye: Kill Credit to Master",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 58190,
+    "name": "Geist Return Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 58589,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 58590,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 58591,
+    "name": "Stoneclaw Totem",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 58875,
+    "name": "Spirit Walk",
+    "class": "Shaman",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 58914,
+    "name": "Kill Command",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 59092,
+    "name": "Dark Pact",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 59118,
+    "name": "Soul Leech Mana",
+    "class": "Warlock",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 59121,
+    "name": "Scourge Fight Kill Credit Dummy",
+    "reasons": [
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 59129,
+    "name": "Scourge Fight Kill Credit For Real",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 59137,
+    "name": "Gargoyle Kill Credit For Real",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 59184,
+    "name": "Icecrown Bomber, Far Sight",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 59385,
+    "name": "Certificate of Ownership",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 59393,
+    "name": "Frostborn Guardian Heartbeat",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 59565,
+    "name": "Summon Reanimated Abomination",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 59876,
+    "name": "Kill Credit",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 59911,
+    "name": "Tenacity",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 60478,
+    "name": "Ritual of Doom Effect",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 60533,
+    "name": "Grab On",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 60586,
+    "name": "Mighty Spear Thrust",
+    "reasons": [
+      "ImplicitTargetA[2]=UnitMaster"
+    ]
+  },
+  {
+    "id": 60587,
+    "name": "Fatal Strike",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 60596,
+    "name": "Low Health Trigger",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 60776,
+    "name": "Claw Swipe",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 60829,
+    "name": "Health Funnel",
+    "reasons": [
+      "Attr=HealthFunnel"
+    ]
+  },
+  {
+    "id": 60864,
+    "name": "Jaws of Death",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 61013,
+    "name": "Warlock Pet Scaling 05",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 61017,
+    "name": "Hunter Pet Scaling 04",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 61191,
+    "name": "Enslave Demon",
+    "class": "Warlock",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 61430,
+    "name": "[DND] Dalaran - Pet Despawn",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  },
+  {
+    "id": 61438,
+    "name": "Nass Heartbeat",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 61544,
+    "name": "Summon Budd PET",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 61615,
+    "name": "Summon Tabitha",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 61616,
+    "name": "Summon Backbiter",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 61669,
+    "name": "Aspect of the Beast",
+    "class": "Hunter",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 61697,
+    "name": "Death Knight Pet Scaling 03",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 61753,
+    "name": "Jump Get Master's Loc",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 61783,
+    "name": "Feral Spirit Pet Scaling 04",
+    "reasons": [
+      "Attr=IsPetScaling"
+    ]
+  },
+  {
+    "id": 62218,
+    "name": "Frenzy",
+    "reasons": [
+      "ImplicitTargetB[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 62433,
+    "name": "Demolisher Engineering Guide",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 62552,
+    "name": "Defend",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 62610,
+    "name": "Durotar Scorpion Sting",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 63119,
+    "name": "Block!",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster",
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 63560,
+    "name": "Ghoul Frenzy",
+    "class": "DeathKnight",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet"
+    ]
+  },
+  {
+    "id": 63580,
+    "name": "Desecration",
+    "class": "DeathKnight",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 63581,
+    "name": "Desecration",
+    "class": "DeathKnight",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 63582,
+    "name": "Desecration",
+    "class": "DeathKnight",
+    "reasons": [
+      "Effect[0]=ApplyAreaAuraPet"
+    ]
+  },
+  {
+    "id": 65247,
+    "name": "Well Fed",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet",
+      "ImplicitTargetA[1]=UnitPet",
+      "ImplicitTargetA[2]=UnitPet"
+    ]
+  },
+  {
+    "id": 65451,
+    "name": "[PH] Using MiniZep Controller",
+    "reasons": [
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 66482,
+    "name": "Defend",
+    "reasons": [
+      "ImplicitTargetA[1]=UnitMaster"
+    ]
+  },
+  {
+    "id": 66924,
+    "name": "Venomhide Hatchling On Spawn",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 67430,
+    "name": "Leaping Hatchling Jump to Master",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitMaster"
+    ]
+  },
+  {
+    "id": 67514,
+    "name": "Summon Felhunter",
+    "reasons": [
+      "Effect[0]=SummonPet",
+      "Attr=DismissPet"
+    ]
+  },
+  {
+    "id": 67777,
+    "name": "Call Pet",
+    "reasons": [
+      "Effect[0]=SummonPet"
+    ]
+  },
+  {
+    "id": 68130,
+    "name": "Greatness",
+    "reasons": [
+      "ImplicitTargetA[0]=UnitPet"
+    ]
+  }
+]

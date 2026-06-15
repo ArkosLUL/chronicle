@@ -43,6 +43,7 @@ import {
   AuraDurationModifiersPage,
   ClassSpellsPage,
   TalentTreesPage,
+  PetTargetingAbilitiesPage,
 } from "./pages/Technical"
 import {
   AccountLayout,
@@ -151,6 +152,7 @@ function App() {
         <Route path="/technical/periodic-spells" element={<PeriodicSpellsPage />} />
         <Route path="/technical/aura-duration-modifiers" element={<AuraDurationModifiersPage />} />
         <Route path="/technical/class-spells" element={<ClassSpellsPage />} />
+        <Route path="/technical/pet-targeting-abilities" element={<PetTargetingAbilitiesPage />} />
         <Route path="/technical/talent-trees" element={<TalentTreesPage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />

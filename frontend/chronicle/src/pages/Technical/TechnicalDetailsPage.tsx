@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, BookOpen, Clock, FileCode, ShieldAlert, Sparkles, Swords } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, FileCode, PawPrint, ShieldAlert, Sparkles, Swords } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 
 interface TechnicalLink {
@@ -39,6 +39,12 @@ const TECHNICAL_LINKS: TechnicalLink[] = [
     description: "All spells grouped by player class (SpellClassSet from DBC)",
     href: "/technical/class-spells",
     icon: <BookOpen className="h-4 w-4" />,
+  },
+  {
+    title: "Pet Targeting Abilities",
+    description: "Spells with pet-targeting attributes from DBC (ImplicitTarget, Effect, Attrs)",
+    href: "/technical/pet-targeting-abilities",
+    icon: <PawPrint className="h-4 w-4" />,
   },
   {
     title: "Talent Trees",

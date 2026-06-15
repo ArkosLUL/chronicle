@@ -18,9 +18,10 @@ const (
 	// Player GUIDs (high bits 0x0000).
 	testPlayerGUID  = guid.GUID(0x0000000000001234)
 	testPlayer2GUID = guid.GUID(0x0000000000005678)
-	// Pet GUIDs (high bits 0xF140).
+	// Pet GUIDs (high bits 0xF140). All three share entry 0x367E6.
 	testPetGUID  = guid.GUID(0xF1400367E6000009)
 	testPet2GUID = guid.GUID(0xF1400367E600000E)
+	testPet3GUID = guid.GUID(0xF1400367E600001A)
 )
 
 var testTS = time.Date(2025, 6, 7, 13, 48, 0, 0, time.UTC)
@@ -32,6 +33,7 @@ func testNames() *mockNameResolver {
 			testPlayer2GUID: "Icewithtea",
 			testPetGUID:     "Flaaroon",
 			testPet2GUID:    "KUCING",
+			testPet3GUID:    "Flaaroon", // same name as testPetGUID for weak-inference tests
 		},
 	}
 }
@@ -266,3 +268,252 @@ func TestPetOwnership_SyntheticFlag(t *testing.T) {
 	uce := result[2].(*messages.UnitClassificationEvent)
 	assert.True(t, uce.Synthetic, "UnitClassificationEvent should be marked as synthetic")
 }
+// --- Weak inference tests ---
+
+func TestPetOwnership_WeakInference(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Batch 1: establish strong ownership for testPetGUID → testPlayerGUID.
+	batch1 := po.ProcessMessages([]messages.Message{
+		&messages.Heal{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayerGUID,
+			Target:      testPetGUID,
+			SpellData:   &chrondbc.Spell{ID: 48990}, // Mend Pet
+		},
+	})
+	require.Len(t, batch1, 3, "strong signal emits NewOwner + UnitClassificationEvent")
+
+	// Batch 2: testPet3GUID (same name "Flaaroon", same entry) deals damage.
+	batch2 := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPet3GUID),
+			Target:      guid.GUID(0x0000000000009999), // any enemy
+		},
+	})
+	require.Len(t, batch2, 3, "weak inference emits NewOwner + UnitClassificationEvent")
+
+	no := batch2[1].(*messages.NewOwner)
+	assert.Equal(t, testPet3GUID, no.Target)
+	assert.Equal(t, testPlayerGUID, no.NewOwner, "inferred owner from name+entry match")
+}
+
+func TestPetOwnership_WeakUniqueGuard(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Establish strong ownership for two different owners with same-name pets.
+	// testPetGUID (Flaaroon) → testPlayerGUID
+	// testPet2GUID (KUCING) → testPlayer2GUID
+	// We need a second pet named "Flaaroon" owned by a different player to
+	// trigger the unique guard. Manually set up the knownOwners.
+	po.ProcessMessages([]messages.Message{
+		&messages.Heal{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayerGUID,
+			Target:      testPetGUID, // Flaaroon → Laraheredari
+			SpellData:   &chrondbc.Spell{ID: 48990},
+		},
+	})
+
+	// Simulate a second strong owner for the same (name, entry) by directly
+	// adding to knownOwners — in practice this happens when a different player
+	// also has a pet named "Flaaroon" with the same creature entry.
+	entry, ok := testPetGUID.GetEntry()
+	require.True(t, ok)
+	key := petKey{name: "Flaaroon", entry: entry}
+	po.knownOwners[key][testPlayer2GUID] = struct{}{}
+
+	// Now testPet3GUID (Flaaroon, same entry) does damage — should NOT infer.
+	batch := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPet3GUID),
+			Target:      guid.GUID(0x0000000000009999),
+		},
+	})
+	require.Len(t, batch, 1, "unique guard: no inference when 2 owners share name+entry")
+}
+
+func TestPetOwnership_StrongOverridesWeak(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Establish strong ownership for testPetGUID → testPlayerGUID (Flaaroon).
+	po.ProcessMessages([]messages.Message{
+		&messages.Heal{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayerGUID,
+			Target:      testPetGUID,
+			SpellData:   &chrondbc.Spell{ID: 48990},
+		},
+	})
+
+	// Weak-infer testPet3GUID → testPlayerGUID (same name+entry).
+	batch := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPet3GUID),
+			Target:      guid.GUID(0x0000000000009999),
+		},
+	})
+	require.Len(t, batch, 3, "weak inference emits")
+	weakNO := batch[1].(*messages.NewOwner)
+	assert.Equal(t, testPlayerGUID, weakNO.NewOwner)
+
+	// Strong signal arrives: testPet3GUID actually belongs to testPlayer2GUID.
+	batch2 := po.ProcessMessages([]messages.Message{
+		&messages.Heal{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayer2GUID,
+			Target:      testPet3GUID,
+			SpellData:   &chrondbc.Spell{ID: 54181}, // Fel Synergy
+		},
+	})
+	require.Len(t, batch2, 3, "strong signal overrides weak — re-emits")
+	strongNO := batch2[1].(*messages.NewOwner)
+	assert.Equal(t, testPet3GUID, strongNO.Target)
+	assert.Equal(t, testPlayer2GUID, strongNO.NewOwner, "strong signal corrects weak inference")
+}
+
+func TestPetOwnership_StrongBlocksWeak(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Strong ownership for testPetGUID.
+	po.ProcessMessages([]messages.Message{
+		&messages.Heal{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayerGUID,
+			Target:      testPetGUID,
+			SpellData:   &chrondbc.Spell{ID: 48990},
+		},
+	})
+
+	// Same pet does damage — should NOT re-emit (already strong).
+	batch := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPetGUID),
+			Target:      guid.GUID(0x0000000000009999),
+		},
+	})
+	require.Len(t, batch, 1, "strong ownership blocks weak re-inference for same GUID")
+}
+
+func TestPetOwnership_WeakBlocksWeak(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Establish strong owner for testPetGUID to populate knownOwners.
+	po.ProcessMessages([]messages.Message{
+		&messages.Heal{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayerGUID,
+			Target:      testPetGUID,
+			SpellData:   &chrondbc.Spell{ID: 48990},
+		},
+	})
+
+	// Weak-infer testPet3GUID.
+	batch := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPet3GUID),
+			Target:      guid.GUID(0x0000000000009999),
+		},
+	})
+	require.Len(t, batch, 3, "first weak inference emits")
+
+	// Second damage from same pet — should NOT emit again.
+	batch2 := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPet3GUID),
+			Target:      guid.GUID(0x0000000000009999),
+		},
+	})
+	require.Len(t, batch2, 1, "duplicate weak inference is blocked")
+}
+
+func TestPetOwnership_NoDamageInferenceWithoutKnown(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// No prior strong ownership established — damage alone should not infer.
+	batch := po.ProcessMessages([]messages.Message{
+		&messages.Damage{
+			MessageBase: messages.Base(testTS),
+			Caster:      ptr.Ref(testPetGUID),
+			Target:      guid.GUID(0x0000000000009999),
+		},
+	})
+	require.Len(t, batch, 1, "no inference when no known owners exist for name+entry")
+}
+// --- Message-type bitmask tests ---
+
+func TestPetOwnership_AuraSoulLink(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Soul Link (25228) is aura-only. Pet applies aura on player.
+	msgs := []messages.Message{
+		&messages.Aura{
+			MessageBase: messages.Base(testTS),
+			IsBuff:      true,
+			Source:      ptr.Ref(testPetGUID),
+			Target:      testPlayerGUID,
+			SpellData:   &chrondbc.Spell{ID: 25228},
+		},
+	}
+
+	result := po.ProcessMessages(msgs)
+	require.Len(t, result, 3)
+	no := result[1].(*messages.NewOwner)
+	assert.Equal(t, testPetGUID, no.Target)
+	assert.Equal(t, testPlayerGUID, no.NewOwner)
+}
+
+func TestPetOwnership_AuraCastKillCommand(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Kill Command (34026) is auraCast-only. Player casts on pet.
+	msgs := []messages.Message{
+		&messages.AuraCast{
+			MessageBase: messages.Base(testTS),
+			Caster:      testPlayerGUID,
+			Target:      ptr.Ref(testPetGUID),
+			Spell:       &chrondbc.Spell{ID: 34026},
+		},
+	}
+
+	result := po.ProcessMessages(msgs)
+	require.Len(t, result, 3)
+	no := result[1].(*messages.NewOwner)
+	assert.Equal(t, testPetGUID, no.Target)
+	assert.Equal(t, testPlayerGUID, no.NewOwner)
+}
+
+func TestPetOwnership_WrongMessageType(t *testing.T) {
+	t.Parallel()
+	po := newPetOwnership(slog.Default(), testNames())
+
+	// Mend Pet (48990) is heal-only. It should NOT trigger on Aura messages.
+	msgs := []messages.Message{
+		&messages.Aura{
+			MessageBase: messages.Base(testTS),
+			IsBuff:      true,
+			Source:      ptr.Ref(testPlayerGUID),
+			Target:      testPetGUID,
+			SpellData:   &chrondbc.Spell{ID: 48990},
+		},
+	}
+
+	result := po.ProcessMessages(msgs)
+	require.Len(t, result, 1, "heal-only spell in Aura message should not trigger ownership")
+}
+
+

@@ -55,11 +55,11 @@ func TestFeed_MultiSlotMessage(t *testing.T) {
 	require.True(t, ok, "expected *messages.Combatant, got %T", msgs[0])
 	// Should have 19 gear slots with items at correct positions (1-indexed → 0-indexed).
 	require.Len(t, c.GearSetups, 19)
-	assert.Equal(t, 51396, c.GearSetups[0].ItemID)  // slot 1 = Head
-	assert.Equal(t, 50633, c.GearSetups[1].ItemID)  // slot 2 = Neck
-	assert.Equal(t, 0, c.GearSetups[2].ItemID)      // slot 3 = Shoulder (empty)
-	assert.Equal(t, 0, c.GearSetups[3].ItemID)      // slot 4 = Shirt (empty)
-	assert.Equal(t, 51398, c.GearSetups[4].ItemID)  // slot 5 = Chest
+	assert.Equal(t, 51396, c.GearSetups[0].ItemID) // slot 1 = Head
+	assert.Equal(t, 50633, c.GearSetups[1].ItemID) // slot 2 = Neck
+	assert.Equal(t, 0, c.GearSetups[2].ItemID)     // slot 3 = Shoulder (empty)
+	assert.Equal(t, 0, c.GearSetups[3].ItemID)     // slot 4 = Shirt (empty)
+	assert.Equal(t, 51398, c.GearSetups[4].ItemID) // slot 5 = Chest
 }
 
 func TestFeed_BinPackedMessages(t *testing.T) {
@@ -371,9 +371,9 @@ func TestParsePlayer_Pet(t *testing.T) {
 
 	msgs, err := p.Feed(testTS, `[9P0x060000000008DCCC;ESpot,0x060000000012ABCD]`)
 	require.NoError(t, err)
-	require.Len(t, msgs, 1)
+	require.Len(t, msgs, 2)
 
-	c := msgs[0].(*messages.Combatant)
+	c := msgs[1].(*messages.Combatant)
 	assert.Equal(t, "Spot", c.PetName)
 }
 

@@ -556,7 +556,7 @@ export function UploadView({
                     </a>
                   </li>
                   <li>
-                    <a href="https://gitea.com/avitasia/nampower" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                    <a href="https://github.com/Emyrk/nampower" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                       Nampower
                     </a>
                     <details className="mt-2 rounded-md border border-border/70 bg-muted/20">
@@ -587,7 +587,7 @@ export function UploadView({
                           <p className="font-medium text-foreground mb-1">2. Install Nampower</p>
                           <ol className="list-decimal list-inside space-y-1 ml-1">
                             <li>Go to the{" "}
-                              <a href="https://gitea.com/avitasia/nampower/releases" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+                              <a href="https://github.com/Emyrk/nampower/releases" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                                 Nampower releases page
                               </a>
                             </li>

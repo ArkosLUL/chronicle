@@ -272,6 +272,10 @@ func (p *Parser) parseGuild(ts time.Time, pd *PlayerData, data string) ([]messag
 
 // parsePet parses: E<name>,<guid>
 func (p *Parser) parsePet(ts time.Time, pd *PlayerData, data string) ([]messages.Message, error) {
+	if pd == nil {
+		return nil, fmt.Errorf("parsePet: nil PlayerData")
+	}
+
 	parts := strings.SplitN(data, ",", 2)
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("pet: expected name,guid, got %q", data)
@@ -283,7 +287,14 @@ func (p *Parser) parsePet(ts time.Time, pd *PlayerData, data string) ([]messages
 		return nil, fmt.Errorf("pet: invalid GUID %q: %w", parts[1], err)
 	}
 	pd.PetGUID = &petGUID
-	return []messages.Message{pd.toCombatantMessage(ts)}, nil
+	return []messages.Message{
+		&messages.NewOwner{
+			MessageBase: messages.Base(ts),
+			Target:      petGUID,
+			NewOwner:    pd.GUID,
+		},
+		pd.toCombatantMessage(ts),
+	}, nil
 }
 
 // mapGender converts addon gender values (1=unknown, 2=male, 3=female) to HeroGender.

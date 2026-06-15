@@ -47,8 +47,9 @@ const _Mechanic_name = "NoneCharmDisorientedDisarmDistractFleeGripRootSlowSilenc
 var _Mechanic_index = [...]uint8{0, 4, 9, 20, 26, 34, 38, 42, 46, 50, 57, 62, 67, 71, 77, 85, 90, 97, 106, 112, 118, 125, 130, 138, 142, 148, 160, 169, 173, 182, 194, 200, 207}
 
 func (i Mechanic) String() string {
-	if i < 0 || i >= Mechanic(len(_Mechanic_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_Mechanic_index)-1 {
 		return "Mechanic(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _Mechanic_name[_Mechanic_index[i]:_Mechanic_index[i+1]]
+	return _Mechanic_name[_Mechanic_index[idx]:_Mechanic_index[idx+1]]
 }

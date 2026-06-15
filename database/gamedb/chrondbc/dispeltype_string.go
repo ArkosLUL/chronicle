@@ -22,8 +22,9 @@ const _DispelType_name = "NoneMagicCurseDiseasePoisonStealthInvisibility"
 var _DispelType_index = [...]uint8{0, 4, 9, 14, 21, 27, 34, 46}
 
 func (i DispelType) String() string {
-	if i < 0 || i >= DispelType(len(_DispelType_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_DispelType_index)-1 {
 		return "DispelType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _DispelType_name[_DispelType_index[i]:_DispelType_index[i+1]]
+	return _DispelType_name[_DispelType_index[idx]:_DispelType_index[idx+1]]
 }

@@ -6,6 +6,7 @@ type CheckConstraint string
 
 // CheckConstraint enums.
 const (
+	CheckDatasetsSlugFormat             CheckConstraint = "datasets_slug_format"                // datasets
 	CheckTenantsSlugFormat              CheckConstraint = "tenants_slug_format"                 // tenants
 	CheckTenantsSlugReserved            CheckConstraint = "tenants_slug_reserved"               // tenants
 	CheckRetentionPoliciesScope         CheckConstraint = "retention_policies_scope"            // retention_policies

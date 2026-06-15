@@ -32,8 +32,9 @@ const _EquippedItemClass_name = "ItemClassConsumableItemClassContainerItemClassW
 var _EquippedItemClass_index = [...]uint16{0, 19, 37, 52, 64, 78, 94, 113, 132, 148, 163, 177, 192, 206, 218, 236, 258, 272}
 
 func (i EquippedItemClass) String() string {
-	if i < 0 || i >= EquippedItemClass(len(_EquippedItemClass_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_EquippedItemClass_index)-1 {
 		return "EquippedItemClass(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _EquippedItemClass_name[_EquippedItemClass_index[i]:_EquippedItemClass_index[i+1]]
+	return _EquippedItemClass_name[_EquippedItemClass_index[idx]:_EquippedItemClass_index[idx+1]]
 }

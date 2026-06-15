@@ -22,8 +22,9 @@ const _Power_name = "ManaRageFocusEnergyHappinessRunesRunicPower"
 var _Power_index = [...]uint8{0, 4, 8, 13, 19, 28, 33, 43}
 
 func (i Power) String() string {
-	if i < 0 || i >= Power(len(_Power_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_Power_index)-1 {
 		return "Power(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _Power_name[_Power_index[i]:_Power_index[i+1]]
+	return _Power_name[_Power_index[idx]:_Power_index[idx+1]]
 }

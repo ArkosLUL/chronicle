@@ -18,8 +18,9 @@ const _PreventionType_name = "NoneSilencePacify"
 var _PreventionType_index = [...]uint8{0, 4, 11, 17}
 
 func (i PreventionType) String() string {
-	if i < 0 || i >= PreventionType(len(_PreventionType_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_PreventionType_index)-1 {
 		return "PreventionType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _PreventionType_name[_PreventionType_index[i]:_PreventionType_index[i+1]]
+	return _PreventionType_name[_PreventionType_index[idx]:_PreventionType_index[idx+1]]
 }

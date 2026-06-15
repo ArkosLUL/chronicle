@@ -19,8 +19,9 @@ const _DefenseType_name = "NoneMagicMeleeRanged"
 var _DefenseType_index = [...]uint8{0, 4, 9, 14, 20}
 
 func (i DefenseType) String() string {
-	if i < 0 || i >= DefenseType(len(_DefenseType_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_DefenseType_index)-1 {
 		return "DefenseType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _DefenseType_name[_DefenseType_index[i]:_DefenseType_index[i+1]]
+	return _DefenseType_name[_DefenseType_index[idx]:_DefenseType_index[idx+1]]
 }

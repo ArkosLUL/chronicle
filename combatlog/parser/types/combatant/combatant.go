@@ -47,6 +47,10 @@ func (c *Combatant) SafeMergeExisting(existing Combatant) {
 	if c.Name == "" && existing.Name != "" {
 		c.Name = existing.Name
 	}
+	if c.Name == "Unknown" && existing.Name != "Unknown" && existing.Name != "" {
+		// Annoying, but another case to consider
+		c.Name = existing.Name
+	}
 	if c.Level == nil {
 		c.Level = existing.Level
 	}

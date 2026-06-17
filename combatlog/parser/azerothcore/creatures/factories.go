@@ -4,6 +4,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
+	"github.com/Emyrk/chronicle/database"
 )
 
 func AzerothServersideCoreCharacterFactories() []characters.CharacterFactory {
@@ -19,30 +20,33 @@ func AzerothServersideCoreCharacterFactories() []characters.CharacterFactory {
 	}
 }
 
-func NewAzerothCoreCharacterFactories() []characters.CharacterFactory {
-	cres := creatures.TurtleCharacterFactories()
+func NewAzerothCoreCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFactory {
+	cres := creatures.VanillaCharacterFactories(flavor)
+	if flavor.Has(database.FlavorWrath) {
+		cres = append([]characters.CharacterFactory{
+			// The Nexus
+			NewAzureEnforcer,
+			NewCrazedManaWraith,
+			NewMageHunterAscendant,
+			NewCrystallineFrayer,
 
-	cres = append([]characters.CharacterFactory{
-		// The Nexus
-		NewAzureEnforcer,
-		NewCrazedManaWraith,
-		NewMageHunterAscendant,
-		NewCrystallineFrayer,
+			// Hellfire Ramparts
+			NewOmarTheUnscarred,
 
-		// Hellfire Ramparts
-		NewOmarTheUnscarred,
+			// Gundrak
+			NewDrakkariFrenzy,
 
-		// Gundrak
-		NewDrakkariFrenzy,
+			// Underbog
+			NewClaw,
 
-		// TBC
+			// Obsidian Sanctum
+			NewSarthrion,
 
-		// Underbog
-		NewClaw,
-
-		// Obsidian Sanctum
-		NewSarthrion,
-	}, cres...)
+			// Eye of Eternity
+			NewMalygos,
+			NewPowerSpark,
+		}, cres...)
+	}
 
 	return cres
 }

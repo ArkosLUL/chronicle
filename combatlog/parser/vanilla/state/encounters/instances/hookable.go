@@ -22,7 +22,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parseerrors"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/armory"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/auras"
-	classiccreatures "github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/encounterevents"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/instancehook"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/state/encounters/instances/rankings"
@@ -99,25 +98,23 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	g := armory.New()
 
 	combatantStrategy := EmitAllActive
-	cres := classiccreatures.TurtleCharacterFactories()
 
 	// Read the resolved flavor + format from the parse context (stamped in
 	// logparse from the persisted columns). An unset context yields an empty
-	// flavor, which falls through to the default Turtle factories.
+	// flavor, which falls through to the default vanilla factories.
 	flavor, _ := parsectx.Flavor(ctx)
 	format, _ := parsectx.Format(ctx)
 
-	// AzerothCore flavor selects AzerothCore character factories over the
-	// default Turtle ones. The server-side mod and the client-side addon emit
-	// different data, so within the AzerothCore flavor the *format* picks the
-	// factory variant (server-side also emits all players, not just active).
-	if flavor.Has(database.FlavorAzerothcore) {
-		if format == database.LogFormatAzerothcoreMod {
-			cres = wotlkcreatures.AzerothServersideCoreCharacterFactories()
-			combatantStrategy = EmitAllPlayers
-		} else {
-			cres = wotlkcreatures.NewAzerothCoreCharacterFactories()
-		}
+	// Select character factories based on flavor + format.
+	var cres []characters.CharacterFactory
+	switch {
+	case flavor.Has(database.FlavorAzerothcore) && format == database.LogFormatAzerothcoreMod:
+		// Server-side mod: minimal factories, emit all players.
+		cres = wotlkcreatures.AzerothServersideCoreCharacterFactories()
+		combatantStrategy = EmitAllPlayers
+	default:
+		// Client-side addon all the way up to WoTLK
+		cres = wotlkcreatures.NewAzerothCoreCharacterFactories(flavor)
 	}
 
 	chrs := characters.NewCharacters(db, cres, ip.Idf)

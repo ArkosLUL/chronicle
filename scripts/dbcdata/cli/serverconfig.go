@@ -10,6 +10,8 @@ import (
 // Returns empty string if unknown (caller should require --dbc).
 func DefaultClientPath(server string) string {
 	switch server {
+	case "faebright":
+		return "/home/steven/Games/Faebright"
 	case "turtle":
 		return "/home/steven/Games/turtlewow/drive_c/Program Files (x86)/TurtleWoW"
 	case "epoch":

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/Gophercraft/core/format/mpq"
@@ -36,6 +37,11 @@ func newMPQFallback(clientPath string) (*mpqFallback, error) {
 	if len(paths) == 0 {
 		return nil, fmt.Errorf("no MPQ files in %s", dataDir)
 	}
+
+	// Sort in ascending priority, then reverse so the highest-priority archive
+	// is checked first (first-match-wins in ReadFile).
+	mpq.SortPatchArchives(paths)
+	slices.Reverse(paths)
 
 	fb := &mpqFallback{}
 	for _, p := range paths {

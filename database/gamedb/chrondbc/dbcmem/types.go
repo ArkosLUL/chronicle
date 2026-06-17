@@ -1,9 +1,9 @@
-// TODO: The global variables in this package (SpellCastTimes, SpellDurations,
-// SpellRanges, PeriodicSpells, VulnerabilitySpells, ExtraAttackSpells,
-// DurationModifiers, etc.) are populated once at init() from compiled-in
-// server-specific data. They need to be moved to per-dataset DB tables so
-// a multi-tenant deployment can serve different WoW versions. Until then,
-// these globals are only correct for the compiled-in server identity.
+// Package dbcmem holds compiled-in DBC lookup data populated by server-specific
+// sub-packages at init() time. Per-dataset DB tables now exist for all data
+// types (dbc_spell_cast_times, dbc_spell_durations, etc. — see migration 000130).
+// WoWDB resolvers load from DB first, falling back to these globals for datasets
+// without imported companion DBC files. Once all datasets are populated in prod,
+// these globals and the server-specific sub-packages can be removed.
 package dbcmem
 
 // This file defines the shared types, package-level variables, and getter

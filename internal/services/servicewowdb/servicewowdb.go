@@ -12,7 +12,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
-	"github.com/Emyrk/chronicle/database/gamedb/chrondbc/dbcmem"
 	"github.com/Emyrk/chronicle/database/gamedb/talents"
 	"github.com/Emyrk/chronicle/internal/lrucache"
 	"github.com/Emyrk/chronicle/internal/services/serviceauthz"
@@ -203,12 +202,19 @@ type PeriodicSpellEntry struct {
 	HasDirect bool   `json:"has_direct"` // true if spell also has direct damage/healing
 }
 
-// TODO: PeriodicSpells are served from the compiled-in dbcmem global tables.
-// Once dbcmem data is moved to per-dataset DB tables, this endpoint should
-// accept ?dataset_id= and query from the database.
 func (s *Service) handleGetPeriodicSpells(w http.ResponseWriter, r *http.Request) {
-	spells := make([]PeriodicSpellEntry, 0, len(dbcmem.PeriodicSpells))
-	for id, spell := range dbcmem.PeriodicSpells {
+	ctx := r.Context()
+
+	datasetID, err := resolveDatasetID(r)
+	if err != nil {
+		httpapi.Write(ctx, w, http.StatusBadRequest, chroniclesdk.Response{Message: "invalid dataset_id"})
+		return
+	}
+
+	scopedDB := s.db.ForDataset(datasetID)
+	periodicMap, _ := scopedDB.PeriodicSpells(ctx)
+	spells := make([]PeriodicSpellEntry, 0, len(periodicMap))
+	for id, spell := range periodicMap {
 		spells = append(spells, PeriodicSpellEntry{
 			ID:        id,
 			Name:      spell.Name,

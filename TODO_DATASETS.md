@@ -310,53 +310,43 @@ This is the lowest-risk next migration.
 - [ ] `DELETE /api/v1/datasets/{id}/dbc/{filename}` — remove a DBC file
 - [ ] Create `datasets` bucket in object storage on service startup
 
-### Future: dbcmem Lookup Tables (one per type, all FK → datasets)
+### ~~dbcmem Lookup Tables~~ ✅ DONE (PR #149)
 
-Each table stores one dbcmem map type. The `entry_id` is the original DBC ID
-(the map key in current Go code). All tables share the same pattern:
-`(dataset_id, entry_id) → fields`.
+All per-dataset lookup tables shipped in migration 000130+000131.
+Spell struct refactored: ID wrapper types replaced with resolved `dbcmem.*`
+structs. LEFT JOINs resolve metadata at query time. Upload handlers + CLI
+importers for all 8 companion DBC types. Derived tables auto-populate on
+spell import. Wipe-before-insert on re-import.
 
-- [ ] `dataset_spell_cast_times` — `entry_id INT, base INT, per_level INT, minimum INT`
-- [ ] `dataset_spell_icons` — `entry_id INT, texture_filename TEXT`
-- [ ] `dataset_spell_durations` — `entry_id INT, duration INT, duration_per_level INT, max_duration INT`
-- [ ] `dataset_spell_ranges` — `entry_id INT, range_min REAL, range_max REAL, flags INT, name TEXT`
-- [ ] `dataset_spell_categories` — `entry_id INT, flags INT, uses_per_week INT, name TEXT, max_charges INT, charge_recovery_time INT, type_mask INT`
-- [ ] `dataset_spell_radii` — `entry_id INT, radius REAL, radius_per_level REAL, radius_min REAL, radius_max REAL`
-- [ ] `dataset_spell_focus_objects` — `entry_id INT, name TEXT`
-- [ ] `dataset_periodic_spells` — `entry_id INT, name TEXT, has_direct BOOLEAN`
-- [ ] `dataset_vulnerability_spells` — `entry_id INT, name TEXT, school_bitmask INT, percent_affect INT, flat_affect INT` (nullable percent/flat)
-- [ ] `dataset_extra_attack_spells` — `entry_id INT, name TEXT, num_extra_attacks INT`
-- [ ] `dataset_duration_modifiers` — `entry_id INT, spell_id INT, name TEXT, percent INT, flat INT, deprecated BOOLEAN`
-- [ ] `dataset_duration_modifiers_by_class_bit` — `spell_class_set INT, family_mask_bit BIGINT, modifier_spell_id INT`
+- [x] `dbc_spell_cast_times`, `dbc_spell_icons`, `dbc_spell_durations`
+- [x] `dbc_spell_ranges`, `dbc_spell_categories`, `dbc_spell_radii`, `dbc_spell_focus_objects`
+- [x] `dbc_periodic_spells`, `dbc_extra_attack_spells`, `dbc_duration_modifiers` (derived)
+- [x] `dbc_spell_description_variables` (tooltip `$<name>` resolution)
+- [ ] `dbc_vulnerability_spells` — skipped (no consumer yet)
 
-All tables: `PRIMARY KEY (dataset_id, entry_id)` (except `_by_class_bit` which
-is `(dataset_id, spell_class_set, family_mask_bit, modifier_spell_id)`).
+### ~~DBCMemProvider Interface~~ ✅ DONE (PR #149)
 
-### Future: DBCMemProvider Interface
+Consumers decoupled from `dbcmem` globals via WoWDB resolvers:
 
-Decouple consumers from the `dbcmem` package-level globals so they can use
-dataset-specific data.
+- [x] `MaxAuraDuration` accepts `*chrondbc.DurationModifierSet` param
+- [x] `extrattack.go` uses `GameDB.ExtraAttackSpell()` resolver
+- [x] `GameDB` extended with `ExtraAttackSpell()`, `DurationModifiers()`, `PeriodicSpells()`
+- [x] Per-dataset LRU caches with DB→compiled-in fallback
 
-- [ ] `dbcmem.Provider` interface in `database/gamedb/chrondbc/dbcmem/types.go`
-- [ ] `GlobalProvider struct{}` wrapping existing package globals (backward-compat fallback)
-- [ ] Thread provider through consumers:
-  - `database/gamedb/chrondbc/durationcalc.go`
-  - `internal/services/servicewowdb/servicewowdb.go`
-  - `combatlog/parser/vanilla/synthetic/extrattack.go`
-- [ ] `GameDB` interface gains `DBCMem() dbcmem.Provider`
+### ~~Dataset-Aware WoWDB~~ ✅ DONE (PRs #138–#149)
 
-### Future: Dataset-Aware WoWDB
+- [x] `ForDataset(datasetID) → GameDB` returns `ScopedGameDB`
+- [x] Per-dataset LRU caches for all spell-related data
 
-- [ ] `DatasetGameDB` type implementing `SpellFetcher` + `DBCMem()`
-  (delegates `GearResolver` and `CreatureFetcher` to shared `WoWDB`)
-- [ ] `DatasetLoader` — LRU cache of loaded datasets
-- [ ] `servicewowdb.GameDBForDataset(ctx, datasetID)` — returns dataset-specific or fallback
+### ~~Parser Integration~~ ✅ DONE (PRs #142–#143)
 
-### Future: Parser Integration
+- [x] Pre-scan `scanRealmName()` + `resolveDataset()` + `ForDataset()` wiring
 
-- [ ] Resolve dataset in `WorkerLogParse.Work()`: log group → server → tenant → dataset
-- [ ] Pre-scan REALM_INFO (lightweight pass outside parser) for primary domain uploads
-- [ ] Log type validation at upload (`supported_log_types` on tenant)
+### Future: Frontend Technical Pages
+
+- [ ] DurationModifiers page — migrate from compiled TS constants to API endpoint
+- [x] ExtraAttackSpells page — migrated to `GET /wowdb/extra-attack-spells`
+- [ ] VulnerabilitySpells page — migrate when `dbc_vulnerability_spells` table is added
 
 ### Future: Dataset Population Tooling
 
@@ -454,19 +444,19 @@ WoWDB
    merge-readiness". One regression found & fixed: incomplete
    `serverCapabilities` lookup table in the frontend could mis-stamp
    unconfigured builds; guarded with a "defer to server" fallback.
-4. **class-spells** — direct sibling of talents (document-shaped/JSONB).
-5. dbcmem lookup tables (row-queryable types: spells, icons, cast times, …),
-   one type at a time via the recipe.
-6. DBCMemProvider interface + GlobalProvider refactor (decouple consumers from
-   `dbcmem` globals so dataset-specific data can be threaded through).
-7. DatasetLoader + DatasetGameDB + servicewowdb integration.
-8. Parser **consumes** dataset/flavor from `parsectx` (the field is already there
-   from step 3 — stop defaulting, honor the resolved values).
-9. DBC upload endpoints + object storage bucket (if raw-file storage is needed).
-10. Population tooling (export, seed from compiled).
-11. Frontend asset resolution (icons CDN dataset-aware).
-12. Prometheus metrics (drive caching strategy).
-13. Remove compiled-in data (delete `dbcmem` globals, build-tag wiring,
+4. ✅ **Dataset assignment** — PUT endpoints for server/tenant datasets (#138).
+5. ✅ **Per-dataset WoWDB** — instrumented LRU caches, ForDataset(), ScopedGameDB (#139).
+6. ✅ **Pre-scan + ForDataset wiring** (#140–#143).
+7. ✅ **Spells migrated to DB** (#144–#145).
+8. ✅ **Per-dataset icon CDN** (#146).
+9. ✅ **Flavor-aware registries** (#147).
+10. ✅ **Package moves** — vanilla/state → parser/common (#148).
+11. ✅ **dbcmem migration** — lookup tables, Spell struct refactor, WoWDB resolvers,
+    upload handlers, CLI importers, derived data, tooltip `$<name>` resolver (#149).
+12. **class-spells** — direct sibling of talents (document-shaped/JSONB).
+13. DurationModifiers + VulnerabilitySpells Technical page migrations.
+14. Prometheus metrics (drive caching strategy).
+15. Remove compiled-in data (delete `dbcmem` globals, build-tag wiring,
     `assets/{server}/`).
 
 ### Memory Budget

@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Emyrk/chronicle/database/gamedb/dbcdb"
 )
@@ -107,6 +108,13 @@ func extractFiles(wc *dbcdb.WoWClient, into map[DBCFile][]byte, needed []DBCFile
 		}
 		data, err := wc.ReadFile("DBFilesClient\\" + string(f))
 		if err != nil {
+			// Treat "not found" as non-fatal — some DBC files don't exist
+			// in every client version (e.g. SpellDescriptionVariables.dbc
+			// is absent in vanilla 1.12 clients).
+			if strings.Contains(err.Error(), "not found") {
+				fmt.Printf("warning: %s not found, skipping importers that need it\n", f)
+				continue
+			}
 			return fmt.Errorf("extract %s: %w", f, err)
 		}
 		into[f] = data
@@ -131,7 +139,8 @@ func (r *rawDBCImporter) RequiredFiles() []DBCFile { return []DBCFile{r.file} }
 func (r *rawDBCImporter) Produce(_ *dbcdb.WoWClient, files map[DBCFile][]byte) ([]Artifact, error) {
 	data, ok := files[r.file]
 	if !ok {
-		return nil, fmt.Errorf("missing required file %s", r.file)
+		// File was not available in this client — skip gracefully.
+		return nil, nil
 	}
 	return []Artifact{{
 		Filename:   string(r.file),

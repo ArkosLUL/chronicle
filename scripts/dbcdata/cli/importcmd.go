@@ -185,6 +185,10 @@ func ImportCmd() *serpent.Command {
 				if err != nil {
 					return fmt.Errorf("%s: %w", imp.Key(), err)
 				}
+				if len(arts) == 0 {
+					_, _ = fmt.Fprintf(inv.Stdout, "Skipped %s (no artifacts produced — file may be missing from this client)\n", imp.Name())
+					continue
+				}
 				all = append(all, produced{imp: imp, artifacts: arts})
 				_, _ = fmt.Fprintf(inv.Stdout, "Produced %s (%d artifact(s))\n", imp.Name(), len(arts))
 			}

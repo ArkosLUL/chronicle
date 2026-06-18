@@ -112,7 +112,6 @@ func demo() *serpent.Command {
 				return true
 			})
 
-			return nil
 			spdb, err := wc.LoadingScreens()
 			if err != nil {
 				return fmt.Errorf("read: %w", err)

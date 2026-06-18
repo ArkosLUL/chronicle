@@ -98,6 +98,6 @@ func (z Zone) HasDifficulty() bool {
 // DifficultyEquals returns true if z and b have identical difficulty settings.
 func (z Zone) DifficultyEquals(b Zone) bool {
 	return z.DifficultyIndex == b.DifficultyIndex &&
-		z.MaxPlayers == b.MaxPlayers &&
-		z.DynamicDifficulty == b.DynamicDifficulty
+		z.MaxPlayers == b.MaxPlayers
+	// TODO: What to do with dynamic difficulty?
 }

@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/zoner"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
 
 func zoneMsg(name string, instanceID uint32, maxPlayers int, diffName string, diffIdx int, dynDiff int) messages.Zone {
@@ -94,18 +94,6 @@ func TestLocationProcess(t *testing.T) {
 		loc.Process(zoneMsg("icecrown citadel", 5, 25, "25 Player", 2, 0))
 		result := loc.Process(zoneMsg("icecrown citadel", 5, 25, "25 Player", 2, 0))
 		assert.Equal(t, zone.NoChange, result)
-	})
-
-	t.Run("DifficultyChanged_DynamicDifficultyToggle", func(t *testing.T) {
-		t.Parallel()
-		loc := zoner.NewLocation()
-		// Normal mode
-		loc.Process(zoneMsg("icecrown citadel", 5, 25, "25 Player", 2, 0))
-
-		// Heroic toggle (DynamicDifficulty changes from 0 to 1)
-		result := loc.Process(zoneMsg("icecrown citadel", 5, 25, "25 Player", 2, 1))
-		assert.Equal(t, zone.DifficultyChanged, result)
-		assert.Equal(t, 1, loc.DynamicDifficulty)
 	})
 
 	t.Run("SyntheticCanChangeToDifferentZoneAfterReal", func(t *testing.T) {

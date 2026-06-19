@@ -17,6 +17,7 @@ import {
 import { InstructionsSuperwow } from "./InstructionsSuperwow";
 import { InstructionsWotlk } from "./InstructionsWotlk";
 import { InstructionsChronicleCompanion } from "./InstructionsChronicleCompanion";
+import { MultiUpload } from "./MultiUpload";
 
 /** Reusable file drop zone — supports click-to-browse and drag-and-drop. */
 function FileDropZone({
@@ -548,6 +549,7 @@ export function Upload() {
   const [error, setError] = useState<{ message: string; call_to_action?: string; detail?: string; link?: string; link_text?: string } | null>(null);
   const [success, setSuccess] = useState<{ message: string; logId: string } | null>(null);
   const [searchParams] = useSearchParams();
+  const isMultiple = searchParams.get("multiple") === "true";
   const showLegacy = searchParams.get("debug") === "true";
   const [useV2Upload, setUseV2Upload] = useState(true);
 
@@ -697,6 +699,10 @@ export function Upload() {
       });
     }
   }, [combatLog, rawCombatLog, useV2Upload, effectiveFormat, flavorOverride]);
+
+  if (isMultiple) {
+    return <MultiUpload format={effectiveFormat} />;
+  }
 
   if (uploadsDisabled) {
     return (

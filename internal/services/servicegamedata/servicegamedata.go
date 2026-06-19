@@ -11,8 +11,11 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 	"github.com/Emyrk/chronicle/internal/services/servicelogger"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
+	"github.com/google/uuid"
 
 	"github.com/coder/serpent"
 )
@@ -57,6 +60,17 @@ func (s *Service) Start(_ context.Context) error {
 	s.setupRoutes(zed)
 	logger.Info("InternalGameData service started")
 	return nil
+}
+
+// datasetIDFromContext resolves the dataset ID for game-data queries.
+// Resolution order:
+//  1. Tenant's default dataset (from tenant context / subdomain)
+//  2. Server's compiled-in default dataset
+func datasetIDFromContext(ctx context.Context) uuid.UUID {
+	if t := servicetenant.TenantFromContext(ctx); t != nil && t.DefaultDatasetID.Valid {
+		return t.DefaultDatasetID.UUID
+	}
+	return servicedataset.DefaultDatasetID
 }
 
 func (s *Service) setupRoutes(_ *authz.Authz) {

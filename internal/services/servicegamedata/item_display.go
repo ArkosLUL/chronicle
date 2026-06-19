@@ -12,7 +12,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 )
 
@@ -27,7 +26,9 @@ func (s *Service) handleItemDisplay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := db.GetItemTemplateByEntry(ctx, database.GetItemTemplateByEntryParams{DatasetID: servicedataset.DefaultDatasetID, Entry: int32(itemID)})
+	dsID := datasetIDFromContext(ctx)
+
+	item, err := db.GetItemTemplateByEntry(ctx, database.GetItemTemplateByEntryParams{DatasetID: dsID, Entry: int32(itemID)})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httpapi.Write(ctx, w, http.StatusNotFound, map[string]string{"error": "item not found"})
@@ -50,7 +51,7 @@ func (s *Service) handleItemDisplay(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve display info from DBC
 	if item.DisplayID != 0 {
-		ddi, err := db.GetDBCItemDisplayInfoByID(ctx, database.GetDBCItemDisplayInfoByIDParams{DatasetID: servicedataset.DefaultDatasetID, ID: item.DisplayID})
+		ddi, err := db.GetDBCItemDisplayInfoByID(ctx, database.GetDBCItemDisplayInfoByIDParams{DatasetID: dsID, ID: item.DisplayID})
 		if err == nil {
 			// Unmarshal JSONB arrays — errors are silently ignored;
 			// missing DBC data just means empty slices in the response.

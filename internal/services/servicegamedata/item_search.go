@@ -9,7 +9,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 )
 
@@ -57,7 +56,7 @@ func (s *Service) handleSearchItems(w http.ResponseWriter, r *http.Request) {
 	// "required_level_desc", "required_level_asc"
 	sortParam := r.URL.Query().Get("sort")
 	params := database.SearchItemTemplatesParams{
-		DatasetID:      servicedataset.DefaultDatasetID,
+		DatasetID:      datasetIDFromContext(ctx),
 		SearchTerm:     q,
 		Qualities:      qualities,
 		InventoryTypes: slots,

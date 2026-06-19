@@ -7,7 +7,6 @@ import (
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
 	"github.com/Emyrk/chronicle/api/httpapi"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/services/servicedbstore"
 )
 
@@ -21,7 +20,9 @@ func (s *Service) handleSearchItemSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.SearchItemSets(ctx, database.SearchItemSetsParams{DatasetID: servicedataset.DefaultDatasetID, SearchTerm: q})
+	dsID := datasetIDFromContext(ctx)
+
+	rows, err := db.SearchItemSets(ctx, database.SearchItemSetsParams{DatasetID: dsID, SearchTerm: q})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
@@ -60,19 +61,21 @@ func (s *Service) handleGetItemSetDetail(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	set, err := db.GetItemSetByID(ctx, database.GetItemSetByIDParams{DatasetID: servicedataset.DefaultDatasetID, ID: int32(id)})
+	dsID := datasetIDFromContext(ctx)
+
+	set, err := db.GetItemSetByID(ctx, database.GetItemSetByIDParams{DatasetID: dsID, ID: int32(id)})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	pieces, err := db.GetItemSetWithPieces(ctx, database.GetItemSetWithPiecesParams{DatasetID: servicedataset.DefaultDatasetID, SetID: int32(id)})
+	pieces, err := db.GetItemSetWithPieces(ctx, database.GetItemSetWithPiecesParams{DatasetID: dsID, SetID: int32(id)})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return
 	}
 
-	bonuses, err := db.GetItemSetBonuses(ctx, database.GetItemSetBonusesParams{DatasetID: servicedataset.DefaultDatasetID, SetID: int32(id)})
+	bonuses, err := db.GetItemSetBonuses(ctx, database.GetItemSetBonusesParams{DatasetID: dsID, SetID: int32(id)})
 	if err != nil {
 		httpapi.InternalServerError(w, err)
 		return

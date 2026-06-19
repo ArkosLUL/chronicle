@@ -352,6 +352,11 @@ function TenantSection() {
                   {tenant.include_in_all && <span>✓ Included in root</span>}
                   {tenant.disable_client_upload && <span>⊘ Uploads disabled</span>}
                 </div>
+                {tenant.default_format && (
+                  <span className="mt-1 inline-block rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-mono font-medium">
+                    {tenant.default_format}
+                  </span>
+                )}
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-xs text-muted-foreground">Dataset:</span>
                   <TenantDatasetSelect tenant={tenant} />

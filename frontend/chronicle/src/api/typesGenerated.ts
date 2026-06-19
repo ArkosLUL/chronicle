@@ -1685,6 +1685,12 @@ export interface SiteConfig {
      * domain. Empty means all formats are available.
      */
     readonly available_formats: readonly string[];
+    /**
+     * DatasetFlavor contains the default_flavor tags from the resolved
+     * dataset for this tenant. The frontend uses these to derive per-flavor
+     * settings such as the talent calculator's max level.
+     */
+    readonly dataset_flavor: readonly string[];
 }
 
 // From chroniclesdk/server_application.go

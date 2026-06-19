@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { serverCapabilities } from "@/config/serverCapabilities";
+import { useSiteConfig } from "@/api/queries";
 import { TalentTreeViewer } from "@/components/ui/TalentTreeViewer/TalentTreeViewer";
 import { useTalentTrees } from "@/components/ui/TalentTreeViewer/useTalentTrees";
 
@@ -18,18 +18,40 @@ const CLASS_INFO: { id: number; name: string; slug: string }[] = [
   { id: 11, name: "Druid", slug: "druid" },
 ];
 
+/**
+ * Derive talent calculator settings from the dataset flavor tags.
+ *   - wrath  → max level 80, 71 points, includes Death Knight
+ *   - tbc    → max level 70, 61 points, no Death Knight
+ *   - else   → max level 60, 51 points, no Death Knight (vanilla)
+ */
+function talentConfigFromFlavor(flavor: readonly string[]): {
+  maxLevel: number;
+  maxTalentPoints: number;
+  classIds: number[];
+} {
+  if (flavor.includes("wrath")) {
+    return { maxLevel: 80, maxTalentPoints: 71, classIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 11] };
+  }
+  if (flavor.includes("tbc")) {
+    return { maxLevel: 70, maxTalentPoints: 61, classIds: [1, 2, 3, 4, 5, 7, 8, 9, 11] };
+  }
+  return { maxLevel: 60, maxTalentPoints: 51, classIds: [1, 2, 3, 4, 5, 7, 8, 9, 11] };
+}
+
 export function TalentCalculatorPage() {
   const { classSlug } = useParams<{ classSlug?: string }>();
   const { data: talentData, isLoading, isError } = useTalentTrees();
+  const { data: siteConfig } = useSiteConfig();
 
-  const tc = serverCapabilities.talentCalculator;
-  const maxTalentPoints = tc?.maxTalentPoints ?? 51;
-  const maxLevel = tc?.maxLevel ?? 60;
+  const tc = useMemo(
+    () => talentConfigFromFlavor(siteConfig?.dataset_flavor ?? []),
+    [siteConfig?.dataset_flavor],
+  );
+  const maxTalentPoints = tc.maxTalentPoints;
+  const maxLevel = tc.maxLevel;
 
   const availableClasses = useMemo(() => {
-    // Default to vanilla classes (no DK) when no talent calculator config exists.
-    const classIds = tc?.classIds ?? [1, 2, 3, 4, 5, 7, 8, 9, 11];
-    return CLASS_INFO.filter((c) => classIds.includes(c.id));
+    return CLASS_INFO.filter((c) => tc.classIds.includes(c.id));
   }, [tc]);
 
   const selectedClass = availableClasses.find((c) => c.slug === classSlug);

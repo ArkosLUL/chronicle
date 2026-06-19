@@ -185,6 +185,10 @@ type SiteConfig struct {
 	// AvailableFormats restricts which log formats are valid on the primary
 	// domain. Empty means all formats are available.
 	AvailableFormats []string `json:"available_formats"`
+	// DatasetFlavor contains the default_flavor tags from the resolved
+	// dataset for this tenant. The frontend uses these to derive per-flavor
+	// settings such as the talent calculator's max level.
+	DatasetFlavor []string `json:"dataset_flavor"`
 }
 
 // UpdateSiteConfigRequest allows partial updates to site configuration.

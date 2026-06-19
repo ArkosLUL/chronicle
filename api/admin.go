@@ -723,6 +723,17 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 	if len(config.AvailableFormats) > 0 {
 		resp.AvailableFormats = config.AvailableFormats
 	}
+
+	// Resolve the tenant's default dataset flavor so the frontend can
+	// derive per-flavor settings (e.g. talent calculator max level).
+	if t := servicetenant.TenantFromContext(ctx); t != nil && t.DefaultDatasetID.Valid {
+		ds, err := a.Opts.Dataset.GetDataset(ctx, t.DefaultDatasetID.UUID)
+		if err == nil {
+			resp.DatasetFlavor = ds.DefaultFlavor
+		}
+	}
+
+	w.Header().Set("Cache-Control", "private, max-age=300") // 5 min; varies per tenant
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 

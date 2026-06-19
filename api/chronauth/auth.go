@@ -199,7 +199,7 @@ func (s *Service) CompleteUserAuth(res http.ResponseWriter, req *http.Request) (
 		return goth.User{}, err
 	}
 	//nolint:errcheck
-	defer s.Logout(res, req)
+	defer s.logoutOAuth(res, req)
 	sess, err := provider.UnmarshalSession(value)
 	if err != nil {
 		return goth.User{}, err
@@ -267,6 +267,22 @@ func (s *Service) Logout(res http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
+// logoutOAuth clears only the OAuth state cookie without touching the auth
+// session. Used in CompleteUserAuth so the primary domain's existing auth
+// cookie survives relay flows to tenant subdomains.
+func (s *Service) logoutOAuth(res http.ResponseWriter, req *http.Request) error {
+	session, err := s.Store.Get(req, OAuthSessionName)
+	if err != nil {
+		return nil
+	}
+	session.Options.MaxAge = -1
+	session.Values = make(map[interface{}]interface{})
+	if err := session.Save(req, res); err != nil {
+		return fmt.Errorf("could not delete OAuth session: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) BeginAuthHandler(w http.ResponseWriter, req *http.Request) {
 	u, err := s.GetAuthURL(w, req)
 	if err != nil {
@@ -306,7 +322,30 @@ func (s *Service) Handler() http.Handler {
 		mux.Get("/{provider}", func(w http.ResponseWriter, r *http.Request) {
 			cl, ok := AuthenticatedClaims(r.Context())
 			if ok && cl != nil {
-				return // Already authenticated
+				// Already authenticated. If "from" is a tenant URL,
+				// relay the existing session directly without re-doing OAuth.
+				from := r.URL.Query().Get("from")
+				if from != "" {
+					if relayTarget, redirectPath, tenant, relayOK := s.parseRelayTarget(from); relayOK {
+						session, err := s.Zed.GetUserAuthSessionByID(r.Context(), cl.SessionID)
+						if err == nil {
+							code := s.RelayStore.Generate(&RelayCode{
+								Session:      session,
+								Provider:     cl.Provider,
+								TenantSlug:   tenant.Slug,
+								TenantName:   tenant.Name,
+								RedirectPath: redirectPath,
+								ExpiresAt:    time.Now().Add(60 * time.Second),
+							})
+							http.Redirect(w, r, relayTarget+"/auth/relay?code="+code, http.StatusTemporaryRedirect)
+							return
+						}
+						s.logger.Warn("relay: session lookup failed for authenticated user, falling through to OAuth",
+							slog.String("error", err.Error()))
+						// Fall through to normal OAuth flow
+					}
+				}
+				return // Already authenticated, not a relay target
 			}
 
 			s.BeginAuthHandler(w, r)
@@ -363,6 +402,15 @@ func (s *Service) Handler() http.Handler {
 						RedirectPath: redirectPath,
 						ExpiresAt:    time.Now().Add(60 * time.Second),
 					})
+
+					// Also set the session cookie on the primary domain so
+					// the user stays logged in here too.
+					if err := s.SetSessionCookie(w, r, authProvider, authSession); err != nil {
+						s.logger.Error("relay: failed to set primary session cookie",
+							slog.String("error", err.Error()))
+						// Non-fatal: the relay will still work for the tenant.
+					}
+
 					http.Redirect(w, r, relayTarget+"/auth/relay?code="+code, http.StatusTemporaryRedirect)
 					return
 				}

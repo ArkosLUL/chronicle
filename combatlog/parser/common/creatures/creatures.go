@@ -8,15 +8,15 @@ import (
 	"log/slog"
 
 	"github.com/Emyrk/chronicle/combatlog/consumers"
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/critters"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/totems"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/traps"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/warlockdemon"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parseerrors"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/totems"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/traps"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/warlockdemon"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 

@@ -15,6 +15,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+	"github.com/Emyrk/chronicle/database"
 )
 
 // UnknownUnit represents a creature entry not found in the hostiles map.
@@ -48,8 +49,8 @@ type CommonFactory struct {
 	DerivedName *MultiInstanceZone
 	ZoneNames   []string
 	MapIDs      []uint32
-	Hostiles    func() *identifier.Identifier
-	Rankings    *rankings.Rankings
+	Hostiles    func(flavor database.WoWFlavor) *identifier.Identifier
+	FlavoredRankings func(flavor database.WoWFlavor) *rankings.Rankings
 }
 
 // MatchZone returns true if z matches any of the factory's zone names
@@ -69,8 +70,8 @@ func (f *CommonFactory) MatchZone(z zone.Zone) bool {
 }
 
 // New handles all the extra hooks
-func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
-	h := f.NewHookable(ctx, logger, db, z)
+func (f *CommonFactory) New(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone, flavor database.WoWFlavor) *Hookable {
+	h := f.NewHookable(ctx, logger, db, z, flavor)
 	if f.DerivedName != nil {
 		h.derivedName = f.DerivedName
 	}

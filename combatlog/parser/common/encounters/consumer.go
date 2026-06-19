@@ -79,7 +79,7 @@ func NewWithInstanceResolver(ctx context.Context, logger *slog.Logger, res Insta
 
 func New(ctx context.Context, logger *slog.Logger, reg *registry.Registry) *State {
 	return NewWithInstanceResolver(ctx, logger, func(verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
-		return reg.GetInstance(ctx, verbose, z, db)
+		return reg.GetInstance(ctx, verbose, z, db, reg.Flavor())
 	})
 }
 

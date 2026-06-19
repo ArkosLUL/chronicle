@@ -1,6 +1,9 @@
 package instances
 
-import "github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
+import (
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
+	"github.com/Emyrk/chronicle/database"
+)
 
 // Factory variables expose the *CommonFactory for each instance, allowing
 // access to metadata (zone names, hostile entries) without instantiating.
@@ -17,7 +20,9 @@ var (
 		Name:      "Deadmines",
 		ZoneNames: []string{"the deadmines", "deadmines", "死亡矿井"},
 		Hostiles:  FromMap(DeadminesHostiles()),
-		Rankings:  DeadminesSpeedrunRequirements(),
+		FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+			return DeadminesSpeedrunRequirements()
+		},
 	}
 
 	ShadowfangKeepFactory = &CommonFactory{
@@ -79,7 +84,7 @@ var (
 			"Scarlet Monastery Armory":    {3975},
 			"Gates of Scarlet Monastery":  {25221, 25222, 25243, 25245},
 		}),
-		Hostiles: FromMaps(SMGraveyardHostiles(), SMLibraryHostiles(), SMArmoryHostiles(), CathedralHostiles(), VanillaPlusSMRaidHostiles()),
+		Hostiles: AllScarletMonestery,
 	}
 
 	BlackrockSpireFactory = &CommonFactory{
@@ -99,11 +104,13 @@ var (
 			"黑石塔上层", // "upper"
 		},
 		Hostiles: FromMap(BlackrockSpireHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: BlackrockSpireSpeedrunRequirements(),
-				LevelRange:   Level60Cap(),
-			},
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: BlackrockSpireSpeedrunRequirements(),
+					LevelRange:   Level60Cap(fl),
+				},
+			}
 		},
 	}
 
@@ -112,11 +119,13 @@ var (
 		ZoneNames: []string{"molten core", "熔火之心"},
 		MapIDs:    []uint32{409},
 		Hostiles:  FromMap(MoltenCoreHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: MoltenCoreSpeedrunRequirements(),
-				LevelRange:   Level60Cap(),
-			},
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: MoltenCoreSpeedrunRequirements(fl),
+					LevelRange:   Level60Cap(fl),
+				},
+			}
 		},
 	}
 
@@ -132,11 +141,13 @@ var (
 		Name:      "Onyxia's Lair",
 		ZoneNames: []string{"onyxia's lair", "奥妮克希亚的巢穴"},
 		MapIDs:    []uint32{249},
-		Hostiles:  FromMap(OnyxiaHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: OnyxiasLairSpeedrunRequirements(),
-			},
+		Hostiles:  OnyxiaHostiles,
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: OnyxiasLairSpeedrunRequirements(fl),
+				},
+			}
 		},
 	}
 
@@ -144,18 +155,22 @@ var (
 		Name:      "Ragefire Chasm",
 		ZoneNames: []string{"ragefire chasm", "怒焰裂谷"},
 		Hostiles:  FromMap(RagefireChasmHostiles()),
-		Rankings:  RagefireChasmSpeedrunRequirements(),
+		FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+			return RagefireChasmSpeedrunRequirements()
+		},
 	}
 
 	ZulGurubFactory = &CommonFactory{
 		Name:      "Zul'Gurub",
 		ZoneNames: []string{"zul'gurub", "祖尔格拉布"},
 		MapIDs:    []uint32{309},
-		Hostiles:  FromMap(ZulGurubHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: ZulGurubSpeedrunRequirements(),
-			},
+		Hostiles:  ZulGurubHostiles,
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: ZulGurubSpeedrunRequirements(fl),
+				},
+			}
 		},
 	}
 
@@ -183,11 +198,13 @@ var (
 		ZoneNames: []string{"ahn'qiraj", "temple of ahn'qiraj", "ahn'qiraj temple", "安其拉神庙"},
 		MapIDs:    []uint32{531},
 		Hostiles:  FromMap(TempleOfAhnQirajHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: TempleOfAhnQirajSpeedrunRequirements(),
-				LevelRange:   Level60Cap(),
-			},
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: TempleOfAhnQirajSpeedrunRequirements(),
+					LevelRange:   Level60Cap(fl),
+				},
+			}
 		},
 	}
 
@@ -196,11 +213,13 @@ var (
 		ZoneNames: []string{"ruins of ahn'qiraj", "安其拉废墟"},
 		MapIDs:    []uint32{509},
 		Hostiles:  FromMap(RuinsOfAhnQirajHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: RuinsOfAhnQirajSpeedrunRequirements(),
-				LevelRange:   Level60Cap(),
-			},
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: RuinsOfAhnQirajSpeedrunRequirements(),
+					LevelRange:   Level60Cap(fl),
+				},
+			}
 		},
 	}
 
@@ -208,12 +227,14 @@ var (
 		Name:      "Blackwing Lair",
 		ZoneNames: []string{"blackwing lair", "黑翼之巢"},
 		MapIDs:    []uint32{469},
-		Hostiles:  FromMap(BlackwingLairHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: BlackwingLairSpeedrunRequirements(),
-				LevelRange:   Level60Cap(),
-			},
+		Hostiles:  BlackwingLairHostiles,
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: BlackwingLairSpeedrunRequirements(fl),
+					LevelRange:   Level60Cap(fl),
+				},
+			}
 		},
 	}
 
@@ -223,11 +244,13 @@ var (
 			"纳克萨玛斯", // Naxxramas
 		},
 		MapIDs:   []uint32{533},
-		Hostiles: FromMap(NaxxramasHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: NaxxramasSpeedrunRequirements(),
-			},
+		Hostiles: FromMapFunc(NaxxramasHostiles),
+		FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: NaxxramasSpeedrunRequirements(),
+				},
+			}
 		},
 	}
 
@@ -272,11 +295,13 @@ var (
 		Name:      "Timbermaw Hold",
 		ZoneNames: []string{"timbermaw hold"},
 		Hostiles:  FromMap(TimbermawHoldHostiles()),
-		Rankings: &rankings.Rankings{
-			Speedrun: &rankings.SpeedrunRules{
-				Requirements: TimbermawHoldSpeedrunRequirements(),
-				LevelRange:   Level60Cap(),
-			},
+		FlavoredRankings: func(fl database.WoWFlavor) *rankings.Rankings {
+			return &rankings.Rankings{
+				Speedrun: &rankings.SpeedrunRules{
+					Requirements: TimbermawHoldSpeedrunRequirements(),
+					LevelRange:   Level60Cap(fl),
+				},
+			}
 		},
 	}
 

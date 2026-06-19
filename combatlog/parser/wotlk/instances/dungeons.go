@@ -2,6 +2,8 @@ package instances
 
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
+	"github.com/Emyrk/chronicle/database"
 )
 
 // NexusHostiles returns creature entry IDs for The Nexus dungeon (map 576).
@@ -185,8 +187,10 @@ var UtgardeKeepFactory = &instances.CommonFactory{
 	Name:      "Utgarde Keep",
 	ZoneNames: []string{"utgarde keep"},
 	MapIDs:    []uint32{574},
-	Hostiles:  instances.FromMap(UtgardeKeepHostiles()),
-	Rankings:  UtgardeKeepSpeedrunRequirements(),
+	Hostiles: instances.FromMap(UtgardeKeepHostiles()),
+	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+		return UtgardeKeepSpeedrunRequirements()
+	},
 }
 
 // UtgardePinnacleHostiles returns creature entry IDs for Utgarde Pinnacle (map 575).
@@ -228,8 +232,10 @@ var UtgardePinnacleFactory = &instances.CommonFactory{
 	DerivedName: nil,
 	ZoneNames:   []string{"utgarde pinnacle"},
 	MapIDs:      []uint32{575},
-	Hostiles:    instances.FromMap(UtgardePinnacleHostiles()),
-	Rankings:    UtgardePinnacleSpeedrunRequirements(),
+	Hostiles: instances.FromMap(UtgardePinnacleHostiles()),
+	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+		return UtgardePinnacleSpeedrunRequirements()
+	},
 }
 
 // CullingOfStratholmeHostiles returns creature entry IDs for Culling of Stratholme (map 595).

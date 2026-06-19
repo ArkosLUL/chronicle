@@ -20,7 +20,8 @@ func AzerothServersideCoreCharacterFactories() []characters.CharacterFactory {
 	}
 }
 
-func NewAzerothCoreCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFactory {
+// TODO: Move this to common
+func NewCharacterFactories(flavor database.WoWFlavor) []characters.CharacterFactory {
 	cres := creatures.VanillaCharacterFactories(flavor)
 	if flavor.Has(database.FlavorWrath) {
 		cres = append([]characters.CharacterFactory{

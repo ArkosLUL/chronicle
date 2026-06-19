@@ -6,14 +6,16 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb"
-	"github.com/Emyrk/chronicle/internal/services"
 )
 
 // Synthetic processes the raw combat log events, and occasionally will insert
 // or mutate synthetic events to help downstream consumers.
 type Synthetic struct {
 	logger       *slog.Logger
+	flavor       database.WoWFlavor
 	slain        *SlainDetective
 	mitigation   *mitigator
 	extraAttack  *extraAttack
@@ -36,6 +38,7 @@ type Synthetic struct {
 }
 
 func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB) *Synthetic {
+	fl, _ := parsectx.Flavor(ctx)
 	return &Synthetic{
 		logger:       logger,
 		slain:        NewSlainDetective(),
@@ -48,6 +51,7 @@ func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB) *Synthet
 		knownArmor:   newKnownArmor(),
 		vanillaPlus:  newVanillaPlus(),
 		wowDB:        wowDB,
+		flavor:       fl,
 	}
 }
 
@@ -89,7 +93,7 @@ func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message
 	s.razuvious.ProcessMessages(msgs)
 	s.razuviousDur += time.Since(now)
 
-	if services.ServerName == services.ServerIdentityVanillaPlus {
+	if s.flavor.Has(database.FlavorVanillaPlus) {
 		now := time.Now()
 		s.knownArmor.ProcessMessages(msgs)
 		s.knownArmorDur += time.Since(now)

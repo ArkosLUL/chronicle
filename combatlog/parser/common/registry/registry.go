@@ -15,7 +15,7 @@ import (
 )
 
 // InstanceFactory creates a new instance
-type InstanceFactory func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable
+type InstanceFactory func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone, flavor database.WoWFlavor) *instances.Hookable
 
 // Entry holds metadata and a factory for a single registered instance.
 type Entry struct {
@@ -43,17 +43,18 @@ func (e Entry) WithComment(comment string) Entry {
 	return e
 }
 
-// FromCommonFactory builds an Entry from a CommonFactory, extracting
-// zone names, hostile entries, and the factory function.
-func FromCommonFactory(f *instances.CommonFactory) Entry {
+func FromFlavoredFactory(flavor database.WoWFlavor, f *instances.CommonFactory) Entry {
 	var hostiles map[uint32]instances.Identity
 	if f.Hostiles != nil {
-		hostiles = f.Hostiles().HostileEntries()
+		id := f.Hostiles(flavor)
+		hostiles = id.HostileEntries()
 	}
 
 	var speedrun *rankings.SpeedrunRules
-	if f.Rankings != nil {
-		speedrun = f.Rankings.Speedrun
+	if f.FlavoredRankings != nil {
+		if r := f.FlavoredRankings(flavor); r != nil {
+			speedrun = r.Speedrun
+		}
 	}
 
 	return Entry{
@@ -66,11 +67,17 @@ func FromCommonFactory(f *instances.CommonFactory) Entry {
 	}
 }
 
+// FromCommonFactory builds an Entry from a CommonFactory, extracting
+// zone names, hostile entries, and the factory function.
+func FromCommonFactory(f *instances.CommonFactory) Entry {
+	return FromFlavoredFactory(database.WoWFlavor{}, f)
+}
+
 // RegistryForFlavor returns an instance registry based on flavor tags.
 // This allows a single binary to serve multiple WoW versions by selecting
 // the right encounter definitions at parse time.
 func RegistryForFlavor(logger *slog.Logger, flavor database.WoWFlavor) *Registry {
-	r := NewRegistry(logger)
+	r := NewRegistry(logger, flavor)
 	RegisterClassicEncounters(r)
 
 	if flavor.Has(database.FlavorNightmareOfUrsol) {
@@ -92,14 +99,20 @@ type Registry struct {
 	entries  map[string]*Entry
 	logger   *slog.Logger
 	fallback *Registry
+	flavor   database.WoWFlavor
 }
 
 // NewRegistry creates a new instance registry
-func NewRegistry(logger *slog.Logger) *Registry {
+func NewRegistry(logger *slog.Logger, flavor database.WoWFlavor) *Registry {
 	return &Registry{
 		entries: make(map[string]*Entry),
 		logger:  logger,
+		flavor:  flavor,
 	}
+}
+
+func (r *Registry) Flavor() database.WoWFlavor {
+	return r.flavor
 }
 
 func (r *Registry) DeleteEntry(name string) {
@@ -123,7 +136,7 @@ func (r *Registry) RegisterEntry(e Entry) {
 
 func (r *Registry) RegisterWithComment(factory InstanceFactory, comment string) {
 	// temporary instance to get the name
-	tmp := factory(nil, nil, nil, zone.Zone{})
+	tmp := factory(nil, nil, nil, zone.Zone{}, database.WoWFlavor{})
 	name := tmp.Name()
 	if _, exists := r.entries[name]; exists {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
@@ -138,7 +151,7 @@ func (r *Registry) RegisterWithComment(factory InstanceFactory, comment string) 
 // Register adds an instance factory to the registry
 func (r *Registry) Register(factory InstanceFactory) {
 	// temporary instance to get the name
-	tmp := factory(nil, nil, nil, zone.Zone{})
+	tmp := factory(nil, nil, nil, zone.Zone{}, database.WoWFlavor{})
 	name := tmp.Name()
 	if _, exists := r.entries[name]; exists {
 		panic(fmt.Sprintf("instance factory named %s already exists", name))
@@ -150,10 +163,10 @@ func (r *Registry) Register(factory InstanceFactory) {
 }
 
 // GetInstance returns an instance for the given zone, or nil if none match
-func (r *Registry) GetInstance(ctx context.Context, verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
+func (r *Registry) GetInstance(ctx context.Context, verbose bool, z zone.Zone, db *unitdb.Units, flavor database.WoWFlavor) *instances.Hookable {
 	for _, entry := range r.entries {
 		// Create a temporary instance to check if it matches
-		inst := entry.Factory(parseoptions.WithVerbose(ctx, verbose), r.logger, db, z)
+		inst := entry.Factory(parseoptions.WithVerbose(ctx, verbose), r.logger, db, z, flavor)
 		if inst.MatchesZone(z) {
 			r.logger.Debug("matched instance",
 				slog.String("zone", z.Name),
@@ -163,7 +176,7 @@ func (r *Registry) GetInstance(ctx context.Context, verbose bool, z zone.Zone, d
 		}
 	}
 	if r.fallback != nil {
-		return r.fallback.GetInstance(ctx, verbose, z, db)
+		return r.fallback.GetInstance(ctx, verbose, z, db, flavor)
 	}
 	return nil
 }
@@ -283,8 +296,8 @@ func (r *Registry) AllInstanceDetails() []InstanceDetail {
 	return result
 }
 
-func wrap(do func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable) InstanceFactory {
-	return func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *instances.Hookable {
-		return do(ctx, logger, db, z)
+func wrap(do func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone, flavor database.WoWFlavor) *instances.Hookable) InstanceFactory {
+	return func(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone, flavor database.WoWFlavor) *instances.Hookable {
+		return do(ctx, logger, db, z, flavor)
 	}
 }

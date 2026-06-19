@@ -29,7 +29,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	wotlkcreatures "github.com/Emyrk/chronicle/combatlog/parser/wotlk/creatures"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/internal/services"
 	"github.com/Emyrk/chronicle/internal/timings"
 	"github.com/google/uuid"
 )
@@ -84,12 +83,16 @@ type InstanceParams struct {
 	ExtraHooks  []instancehook.Hook
 }
 
-func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone) *Hookable {
+func (f *CommonFactory) NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z zone.Zone, flavor database.WoWFlavor) *Hookable {
+	var r *rankings.Rankings
+	if f.FlavoredRankings != nil {
+		r = f.FlavoredRankings(flavor)
+	}
 	return NewHookable(ctx, logger, db, z, InstanceParams{
 		Name:        f.Name,
 		MatchesZone: f.MatchZone,
-		Idf:         f.Hostiles(),
-		Rankings:    f.Rankings,
+		Idf:         f.Hostiles(flavor),
+		Rankings:    r,
 	})
 }
 
@@ -114,7 +117,7 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		combatantStrategy = EmitAllPlayers
 	default:
 		// Client-side addon all the way up to WoTLK
-		cres = wotlkcreatures.NewAzerothCoreCharacterFactories(flavor)
+		cres = wotlkcreatures.NewCharacterFactories(flavor)
 	}
 
 	chrs := characters.NewCharacters(db, cres, ip.Idf)
@@ -167,10 +170,9 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		hooks = append(hooks, speedrunTracker)
 	}
 
-	switch services.ServerName {
-	// 1.12 does not record overheals in the logs
-	case services.ServerIdentityTurtle, services.ServerIdentityKronos,
-		services.ServerIdentityVanillaPlus, services.ServerIdentityOctoWoW:
+	switch format {
+	case database.LogFormat112aCcAddon, database.LogFormat112aSuperwowAddon:
+		// 1.12 does not record overheals in the logs
 		hooks = append(hooks, &Overhealing{
 			deficits: make(map[guid.GUID]int32),
 		})

@@ -126,12 +126,15 @@ func FlavorFromStrings(s []string) WoWFlavor {
 }
 
 // Has reports whether the flavor includes tag.
-func (f WoWFlavor) Has(tag FlavorTag) bool {
-	for _, t := range f {
-		if t == tag {
-			return true
+func (f WoWFlavor) Has(tags ...FlavorTag) bool {
+	for _, tag := range tags {
+		for _, t := range f {
+			if t == tag {
+				return true
+			}
 		}
 	}
+
 	return false
 }
 

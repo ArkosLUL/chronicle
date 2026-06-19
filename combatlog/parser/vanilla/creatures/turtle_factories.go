@@ -101,7 +101,7 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 	}
 
 	// ── Turtle WoW custom content ──────────────────────────────────
-	if flavor.Has(database.FlavorTurtle) || flavor.Has(database.FlavorOctoWoW) {
+	if flavor.Has(database.FlavorTurtle) || flavor.Has(database.FlavorOctoWoW) || flavor.Has(database.FlavorNightmareOfUrsol) {
 		cres = append(cres,
 			// Kara 40
 			NewKruul,

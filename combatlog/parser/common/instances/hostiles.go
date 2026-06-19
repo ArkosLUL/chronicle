@@ -4,7 +4,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/database"
 )
 
 type Identity = identifier.Identity
@@ -33,10 +33,32 @@ func FromMaps(m ...map[uint32]identifier.Identity) func() *identifier.Identifier
 	}
 }
 
-func FromMap(m map[uint32]identifier.Identity) func() *identifier.Identifier {
-	return func() *identifier.Identifier {
+func FromMapFunc(f func(fl database.WoWFlavor) map[uint32]Identity) func(fl database.WoWFlavor) *identifier.Identifier {
+	return func(fl database.WoWFlavor) *identifier.Identifier {
+		return identifier.NewIdentifier(f(fl))
+	}
+}
+
+func FromMap(m map[uint32]identifier.Identity) func(flavor database.WoWFlavor) *identifier.Identifier {
+	return func(flavor database.WoWFlavor) *identifier.Identifier {
 		return identifier.NewIdentifier(m)
 	}
+}
+
+func AllScarletMonestery(fl database.WoWFlavor) *identifier.Identifier {
+	all := []map[uint32]identifier.Identity{SMGraveyardHostiles(), SMLibraryHostiles(), SMArmoryHostiles(), CathedralHostiles()}
+	if fl.Has(database.FlavorVanillaPlus) {
+		all = append(all, VanillaPlusSMRaidHostiles())
+	}
+
+	merged := make(map[uint32]identifier.Identity)
+	for _, mm := range all {
+		for k, v := range mm {
+			merged[k] = v
+		}
+	}
+
+	return identifier.NewIdentifier(merged)
 }
 
 func CathedralHostiles() map[uint32]identifier.Identity {
@@ -435,7 +457,7 @@ func TowerOfKarazhanHostiles() map[uint32]Identity {
 	return hostile
 }
 
-func OnyxiaHostiles() map[uint32]Identity {
+func OnyxiaHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		12129: "Onyxian Warder",
@@ -452,8 +474,7 @@ func OnyxiaHostiles() map[uint32]Identity {
 		49018: "Broodcommander Axelus",
 	})
 
-	switch services.ServerName {
-	case services.ServerIdentityEpoch:
+	if fl.Has(database.FlavorEpoch) {
 		LoadAdds(hostile, map[uint32]string{
 			45237:  "Onyxian Flameweaver",
 			45238:  "Onyxian Honorguard",
@@ -474,7 +495,7 @@ func OnyxiaHostiles() map[uint32]Identity {
 		})
 	}
 
-	return hostile
+	return identifier.NewIdentifier(hostile)
 }
 
 func RagefireChasmHostiles() map[uint32]Identity {
@@ -498,7 +519,7 @@ func RagefireChasmHostiles() map[uint32]Identity {
 	return hostile
 }
 
-func ZulGurubHostiles() map[uint32]Identity {
+func ZulGurubHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		11352: "Gurubashi Berserker",
@@ -577,8 +598,7 @@ func ZulGurubHostiles() map[uint32]Identity {
 		15082: "Gri'lek",
 	})
 
-	switch services.ServerName {
-	case services.ServerIdentityVanillaPlus:
+	if fl.Has(database.FlavorVanillaPlus) {
 		LoadAdds(hostile, map[uint32]string{
 			15111: "Mad Servant",
 			15146: "Mad Voidwalker",
@@ -590,7 +610,7 @@ func ZulGurubHostiles() map[uint32]Identity {
 		})
 	}
 
-	return hostile
+	return identifier.NewIdentifier(hostile)
 }
 
 func RazorfenKraulHostiles() map[uint32]Identity {
@@ -1084,7 +1104,7 @@ func ScholomanceHostiles() map[uint32]Identity {
 	return hostile
 }
 
-func BlackwingLairHostiles() map[uint32]Identity {
+func BlackwingLairHostiles(fl database.WoWFlavor) *identifier.Identifier {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		12464: "Death Talon Seether",
@@ -1158,8 +1178,7 @@ func BlackwingLairHostiles() map[uint32]Identity {
 	hostile[14601] = Identity{Affiliation: types.AffiliationHostile, Name: "Ebonroc", Boss: true, EncounterNameFn: ebonrocAndFlamegor}
 	hostile[11981] = Identity{Affiliation: types.AffiliationHostile, Name: "Flamegor", Boss: true, EncounterNameFn: ebonrocAndFlamegor}
 
-	switch services.ServerName {
-	case services.ServerIdentityVanillaPlus:
+	if fl.Has(database.FlavorVanillaPlus) {
 		delete(hostile, 13020) // "Vaelastrasz the Corrupt"
 		delete(hostile, 14401) // "Master Elemental Shaper Krixix"
 		hostile[25123] = Identity{
@@ -1183,10 +1202,10 @@ func BlackwingLairHostiles() map[uint32]Identity {
 		}
 	}
 
-	return hostile
+	return identifier.NewIdentifier(hostile)
 }
 
-func NaxxramasHostiles() map[uint32]Identity {
+func NaxxramasHostiles(fl database.WoWFlavor) map[uint32]Identity {
 	hostile := make(map[uint32]Identity)
 	LoadAdds(hostile, map[uint32]string{
 		16154: "Risen Deathknight",

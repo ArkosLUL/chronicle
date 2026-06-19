@@ -1,9 +1,11 @@
 package instances
 
 import (
-	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/database"
 )
 
 // VoAHostiles returns creature entry IDs for Vault of Archavon (map 4603).
@@ -79,14 +81,14 @@ var ObsidianSanctumFactory = &instances.CommonFactory{
 // NaxxramasHostiles returns creature entry IDs for Naxxramas (WotLK).
 // Reuses the Vanilla Naxx hostile list, replacing Highlord Mograine with Baron Rivendare
 // for the Four Horsemen encounter.
-func NaxxramasHostiles() map[uint32]instances.Identity {
-	hostile := instances.NaxxramasHostiles()
+func NaxxramasHostiles(fl database.WoWFlavor) *identifier.Identifier {
+	hostile := instances.NaxxramasHostiles(fl)
 	// WotLK replaces Highlord Mograine with Baron Rivendare in the Four Horsemen
 	delete(hostile, 16062)
 	instances.LoadBosses(hostile, map[uint32]string{
 		30549: "Four Horsemen", // Baron Rivendare
 	})
-	return hostile
+	return identifier.NewIdentifier(hostile)
 }
 
 func NaxxramasSpeedrunRequirements() []rankings.SpeedrunRequirement {
@@ -104,11 +106,13 @@ var NaxxramasFactory = &instances.CommonFactory{
 	Name:      "Naxxramas",
 	ZoneNames: []string{"naxxramas", "the upper necropolis"},
 	MapIDs:    []uint32{533},
-	Hostiles:  instances.FromMap(NaxxramasHostiles()),
-	Rankings: &rankings.Rankings{
-		Speedrun: &rankings.SpeedrunRules{
-			Requirements: NaxxramasSpeedrunRequirements(),
-		},
+	Hostiles:  NaxxramasHostiles,
+	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
+		return &rankings.Rankings{
+			Speedrun: &rankings.SpeedrunRules{
+				Requirements: NaxxramasSpeedrunRequirements(),
+			},
+		}
 	},
 }
 

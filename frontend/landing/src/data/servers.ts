@@ -42,22 +42,6 @@ export const SERVERS: ServerEntry[] = [
     homepageUrl: "https://oldmanwarcraft.com",
   },
   {
-    id: "kronos",
-    name: "Kronos",
-    tagline: "Authentic Vanilla project",
-    description:
-      "Long-running Vanilla project under TwinStar focused on an authentic 1.12-style experience. Emphasizes high-quality scripting across raids, dungeons, and non-raid content.",
-    logo: "servers/kronos/logo.png",
-    banner: "servers/kronos/banner.jpg",
-    accentColor: "#fbbf24",
-    expansion: "vanilla",
-    client: "1.12.1",
-    logging: "client",
-    engine: "unknown",
-    chronicleUrl: "https://kronos.chronicleclassic.com",
-    homepageUrl: "https://www.kronos-wow.com",
-  },
-  {
     id: "vanillaplus",
     name: "Vanilla+",
     tagline: "Rebalanced Vanilla PvP",

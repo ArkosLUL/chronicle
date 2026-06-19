@@ -3,8 +3,8 @@ package instances
 import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/identifier"
-	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
 )
 
 // MagtheridonsLairHostiles returns creature entry IDs for Magtheridon's Lair (map 544).
@@ -336,7 +336,7 @@ func SlavePensHostiles() map[uint32]instances.Identity {
 
 var SlavePensFactory = &instances.CommonFactory{
 	Name:      "The Slave Pens",
-	ZoneNames: []string{"the slave pens"},
+	ZoneNames: []string{"coilfang: the slave pens", "the slave pens"},
 	MapIDs:    []uint32{547},
 	Hostiles:  instances.FromMap(SlavePensHostiles()),
 }
@@ -566,7 +566,7 @@ func AuchenaiCryptsHostiles() map[uint32]instances.Identity {
 
 var AuchenaiCryptsFactory = &instances.CommonFactory{
 	Name:      "Auchenai Crypts",
-	ZoneNames: []string{"auchenai crypts"},
+	ZoneNames: []string{"auchindoun: auchenai crypts", "auchenai crypts"},
 	MapIDs:    []uint32{558},
 	Hostiles:  instances.FromMap(AuchenaiCryptsHostiles()),
 }

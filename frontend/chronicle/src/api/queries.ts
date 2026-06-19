@@ -939,6 +939,19 @@ export function useDatasets() {
   });
 }
 
+// useFlavors returns all known flavor tags from the server.
+export function useFlavors() {
+  return useQuery({
+    queryKey: ["flavors"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/flavors");
+      if (!response.ok) throw new Error("Failed to fetch flavors");
+      return response.json() as Promise<string[]>;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** The well-known default dataset; it is the bottom of every resolution chain
  * and cannot be deleted. Mirrors servicedataset.DefaultDatasetID. */
 export interface DatasetImportSummary {

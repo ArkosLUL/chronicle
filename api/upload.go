@@ -387,9 +387,11 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 		logType = overrideType
 	}
 
-	// The frontend chooses format + flavor from its build tag (and later the
-	// tenant), since the realm is unknown until after parsing. Both are
-	// optional; empty values fall back to server-side derivation.
+	// Parse-axis resolution (both format and flavor):
+	//   query-param override > tenant default > logType/dataset derivation.
+	// The tenant fallback is free (already in context from the subdomain
+	// middleware). Anything still empty falls through to UploadLogs (format)
+	// or to the parser's dataset resolution (flavor).
 	var meta chronicle.UploadMeta
 	if f := r.URL.Query().Get("format"); f != "" {
 		format := database.LogFormat(f)
@@ -404,6 +406,13 @@ func (api *API) WoWLogUploadV2(w http.ResponseWriter, r *http.Request) {
 	}
 	if fl := r.URL.Query().Get("flavor"); fl != "" {
 		meta.Flavor = parseFlavorParam(fl)
+	}
+	// Fall back to the tenant's default format when no explicit param was sent.
+	// Flavor is not on the tenant — it's resolved post-parse from the dataset.
+	if meta.Format == "" {
+		if t := servicetenant.TenantFromContext(ctx); t != nil && t.DefaultFormat.Valid {
+			meta.Format = t.DefaultFormat.LogFormat
+		}
 	}
 
 	group, files, err := api.Chronicle.UploadLogs(ctx, []chronicle.UploadInput{input}, logType, uuid.Nil, meta)

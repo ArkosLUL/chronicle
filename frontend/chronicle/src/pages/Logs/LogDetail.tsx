@@ -42,11 +42,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu/DropdownMenu";
 import { useAuth } from "@/hooks/useAuth";
-import { LOG_FORMAT_OPTIONS, FLAVOR_PRESET_OPTIONS } from "@/config/serverCapabilities";
+import { LOG_FORMAT_OPTIONS } from "@/config/serverCapabilities";
 import { 
   useLogGroup,
   useLogGroupByFileHash,
-  useDeleteLogGroup, 
+  useDeleteLogGroup,
+  useFlavors,
   useReparseLogGroup,
   useDeleteLogFiles,
   useDeleteLogInstance,
@@ -257,6 +258,28 @@ function TimingSection({ report }: { report: LogParseReport }) {
               </div>
             )}
           </div>
+
+          {/* Parse Axes */}
+          {(report.format || report.flavor?.length) && (
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              {report.format && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Format</span>
+                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{report.format}</code>
+                </div>
+              )}
+              {report.flavor && report.flavor.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Flavor</span>
+                  <div className="flex gap-1">
+                    {report.flavor.map((tag) => (
+                      <code key={tag} className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{tag}</code>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Stage Breakdown */}
           <div>
@@ -908,6 +931,7 @@ export function LogDetailView({
   isRefreshing,
 }: LogDetailViewProps) {
   const location = useLocation();
+  const { data: allFlavorTags = [] } = useFlavors();
   const [showReparseAxis, setShowReparseAxis] = useState(false);
   const [reparseFormat, setReparseFormat] = useState("");
   const [reparseFlavor, setReparseFlavor] = useState("");
@@ -1105,16 +1129,38 @@ export function LogDetailView({
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Flavor</label>
-                  <select
-                    value={reparseFlavor}
-                    onChange={(e) => setReparseFlavor(e.target.value)}
-                    className="w-full rounded-md border bg-background px-2 py-1 text-sm"
-                  >
-                    <option value="">(keep current)</option>
-                    {FLAVOR_PRESET_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <div className="flex flex-wrap gap-1.5">
+                    {allFlavorTags.map((tag) => {
+                      const selected = reparseFlavor.split(",").filter(Boolean);
+                      const isChecked = selected.includes(tag);
+                      return (
+                        <label
+                          key={tag}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-mono cursor-pointer select-none transition-colors ${
+                            isChecked
+                              ? "bg-primary/10 border-primary text-primary"
+                              : "border-input text-muted-foreground hover:border-foreground/30"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={isChecked}
+                            onChange={() => {
+                              const next = isChecked
+                                ? selected.filter((t) => t !== tag)
+                                : [...selected, tag];
+                              setReparseFlavor(next.join(","));
+                            }}
+                          />
+                          {tag}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {!reparseFlavor && (
+                    <p className="text-[10px] text-muted-foreground">No tags selected — keeps current flavor.</p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">

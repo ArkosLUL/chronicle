@@ -4,6 +4,7 @@ import { Loader2, Check, X } from "lucide-react";
 import { Card } from "@/components/ui/Card/Card";
 import { Button } from "@/components/ui/button";
 import { ThemeEditor } from "@/components/ThemeEditor/ThemeEditor";
+import { LOG_FORMAT_OPTIONS } from "@/config/serverCapabilities";
 
 export function AdminSiteSettingsPage() {
   const { data: config, isLoading } = useSiteConfig();
@@ -20,8 +21,16 @@ export function AdminSiteSettingsPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [theme, setTheme] = useState<Record<string, string>>({});
 
+  // Parse defaults state
+  const [defaultFormat, setDefaultFormat] = useState("");
+  const [availableFormats, setAvailableFormats] = useState<string[]>([]);
+
+  // Sync all server-derived state when config loads.
   useEffect(() => {
-    if (config?.branding) {
+    if (!config) return;
+    setDefaultFormat(config.default_format ?? "");
+    setAvailableFormats([...(config.available_formats ?? [])]);
+    if (config.branding) {
       setSquareLogo(config.branding.square_logo ?? "");
       setLogoWide(config.branding.logo_wide ?? "");
       setFavicon(config.branding.favicon ?? "");
@@ -32,7 +41,7 @@ export function AdminSiteSettingsPage() {
       setTags(config.branding.tags ? [...config.branding.tags] : []);
       setTheme(config.branding.theme ?? {});
     }
-  }, [config?.branding]);
+  }, [config]);
 
   const saveBranding = () => {
     const hasTheme = Object.keys(theme).length > 0;
@@ -131,6 +140,71 @@ export function AdminSiteSettingsPage() {
             )}
           </Button>
         </div>
+      </Card>
+
+      <Card className="p-6 space-y-4">
+        <h2 className="text-lg font-semibold">Parse Defaults</h2>
+        <p className="text-sm text-muted-foreground">
+          Default log format and available formats for the primary domain. Tenant subdomains use their own settings.
+        </p>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">Default format</label>
+            <select
+              value={defaultFormat}
+              onChange={(e) => setDefaultFormat(e.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+            >
+              <option value="">None (server default)</option>
+              {LOG_FORMAT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">Available formats</label>
+            <div className="flex flex-wrap gap-1.5">
+              {LOG_FORMAT_OPTIONS.map((opt) => {
+                const checked = availableFormats.includes(opt.value);
+                return (
+                  <label
+                    key={opt.value}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md border text-xs font-mono cursor-pointer select-none transition-colors ${
+                      checked
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-input text-muted-foreground hover:border-foreground/30"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={checked}
+                      onChange={() =>
+                        setAvailableFormats(checked ? availableFormats.filter((f) => f !== opt.value) : [...availableFormats, opt.value])
+                      }
+                    />
+                    {opt.label}
+                  </label>
+                );
+              })}
+            </div>
+            {availableFormats.length === 0 && (
+              <p className="text-[10px] text-muted-foreground">None selected — all formats available.</p>
+            )}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          disabled={updateConfig.isPending}
+          onClick={() => {
+            updateConfig.mutate({
+              default_format: defaultFormat || undefined,
+              available_formats: availableFormats,
+            });
+          }}
+        >
+          {updateConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save Parse Defaults"}
+        </Button>
       </Card>
 
       <Card className="p-6 space-y-4">

@@ -154,6 +154,11 @@ type WoWParsedLogJobOutput struct {
 
 // LogParseReport contains detailed timing breakdown for a log parse job.
 type LogParseReport struct {
+	// Format is the log format used for parsing (e.g. "1.12a-cc-addon").
+	Format string `json:"format,omitempty"`
+	// Flavor is the resolved flavor tag set used for parsing.
+	Flavor []string `json:"flavor,omitempty"`
+
 	TotalDuration    Duration `json:"total_duration_ms"`
 	LoadFileDuration Duration `json:"load_file_duration_ms"`
 	ParseDuration    Duration `json:"parse_duration_ms"`

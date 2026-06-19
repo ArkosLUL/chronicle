@@ -14,14 +14,15 @@ import (
   "github.com/Emyrk/chronicle/combatlog/consumers"
   "github.com/Emyrk/chronicle/combatlog/parser/azerothcore"
   azencounters "github.com/Emyrk/chronicle/combatlog/parser/azerothcore/encounters"
-  "github.com/Emyrk/chronicle/combatlog/parser/logfile"
-  "github.com/Emyrk/chronicle/combatlog/parser/sorter"
-  "github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla"
-  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
   "github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
   "github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
   "github.com/Emyrk/chronicle/combatlog/parser/common/registry"
+  "github.com/Emyrk/chronicle/combatlog/parser/logfile"
+  "github.com/Emyrk/chronicle/combatlog/parser/sorter"
+  "github.com/Emyrk/chronicle/combatlog/parser/types/realm"
+  "github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla"
+  "github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
   "github.com/Emyrk/chronicle/combatlog/parser/wotlk"
   "github.com/Emyrk/chronicle/database"
   "github.com/Emyrk/chronicle/database/gamedb"
@@ -64,6 +65,7 @@ func (w *WorkerLogParse) parseCombatLog(
 	reg *registry.Registry,
 	identityMode bool,
 	preloadedFirst []byte,
+	preRealmName string,
 ) (*parseResult, error) {
 	logger := leveledlog.New(w.parent.logger, slog.LevelInfo)
 	logLogger := w.parent.logger
@@ -80,6 +82,12 @@ func (w *WorkerLogParse) parseCombatLog(
 		encountersState = azencounters.New(ctx, logLogger)
 	} else {
 		encountersState = encounters.New(ctx, logLogger, reg)
+	}
+
+	// Seed the realm from the pre-scan so instances created before the
+	// parser hits a REALM_INFO message already have realm context.
+	if preRealmName != "" {
+		encountersState.CurrentRealm = &realm.Info{RealmName: preRealmName}
 	}
 
 	var creaturesState *creatures.Creatures

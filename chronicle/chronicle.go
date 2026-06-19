@@ -84,9 +84,9 @@ type Options struct {
 	// PrimaryDomain is the root domain (e.g. "chronicleclassic.com") used to
 	// build tenant upload URLs in rejection messages.
 	PrimaryDomain string
-	// DefaultFlavor is the build-tag-derived flavor stamped on new log groups.
-	// Resolved from services.ServerName/ServerBuild by the constructing service
-	// (the chronicle package can't import services). Empty leaves flavor NULL.
+	// DefaultFlavor is the build-tag-derived flavor used for the server's
+	// default encounter registry. It is NOT stamped on new log groups;
+	// uploads defer to realm-based dataset resolution for flavor.
 	DefaultFlavor database.WoWFlavor
 	// ResolveDataset maps a realm ID to the dataset and its default flavor.
 	// The resolver follows the server > tenant > default chain.
@@ -360,7 +360,10 @@ func (c *Chronicle) UploadLogs(ctx context.Context, inputs []UploadInput, logTyp
 		if meta.Format != "" {
 			format = meta.Format
 		}
-		flavor := c.defaultFlavor
+		// Flavor is not pre-stamped; the parser resolves it from the
+		// dataset's default_flavor after realm detection. An explicit
+		// override (admin upload) is still honoured.
+		var flavor database.WoWFlavor
 		if meta.Flavor != nil {
 			flavor = meta.Flavor
 		}

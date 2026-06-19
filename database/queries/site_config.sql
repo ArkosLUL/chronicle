@@ -6,6 +6,8 @@ UPDATE site_config SET
     signups_enabled = COALESCE(sqlc.narg('signups_enabled'), signups_enabled),
     branding = COALESCE(sqlc.narg('branding'), branding),
     discoverable = COALESCE(sqlc.narg('discoverable'), discoverable),
+    default_format = COALESCE(sqlc.narg('default_format'), default_format),
+    available_formats = COALESCE(sqlc.narg('available_formats'), available_formats),
     updated_at = now()
 WHERE id = TRUE
 RETURNING *;

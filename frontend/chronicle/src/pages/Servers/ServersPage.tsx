@@ -16,6 +16,7 @@ import {
   useSetServerDataset,
   useSetTenantDataset,
 } from "@/api/queries";
+import { LOG_FORMAT_OPTIONS } from "@/config/serverCapabilities";
 import { Loader2, Trash2, Plus, ChevronDown, ChevronRight, ExternalLink, Building2, Pencil } from "lucide-react";
 import type { WoWServer, Tenant } from "@/api/typesGenerated";
 import { ThemeEditor } from "@/components/ThemeEditor/ThemeEditor";
@@ -125,6 +126,10 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
   const [disableUpload, setDisableUpload] = useState(tenant?.disable_client_upload ?? false);
   const [discoverable, setDiscoverable] = useState(tenant?.discoverable ?? false);
 
+  // Parse-axis defaults
+  const [defaultFormat, setDefaultFormat] = useState(tenant?.default_format ?? "");
+  const [availableFormats, setAvailableFormats] = useState<string[]>([...(tenant?.available_formats ?? [])]);
+
   // Branding fields
   const [squareLogo, setSquareLogo] = useState(tenant?.branding?.square_logo ?? "");
   const [logoWide, setLogoWide] = useState(tenant?.branding?.logo_wide ?? "");
@@ -161,6 +166,8 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
               theme: Object.keys(theme).length > 0 ? theme : undefined,
             }
           : null,
+        default_format: defaultFormat || null,
+        available_formats: availableFormats,
       },
       { onSuccess: onDone },
     );
@@ -189,6 +196,51 @@ function TenantForm({ tenant, onDone }: { tenant?: Tenant; onDone: () => void })
         <input type="checkbox" checked={discoverable} onChange={(e) => setDiscoverable(e.target.checked)} />
         Discoverable (appear on chronicleclassic.com)
       </label>
+      <div className="pt-2 border-t space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">Parse Defaults</p>
+        <div className="space-y-1.5">
+          <label className="block text-xs text-muted-foreground">Default format</label>
+          <select
+            value={defaultFormat}
+            onChange={(e) => setDefaultFormat(e.target.value)}
+            className="w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+          >
+            <option value="">None (server default)</option>
+            {LOG_FORMAT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-xs text-muted-foreground">Available formats</label>
+          <div className="flex flex-wrap gap-1.5">
+            {LOG_FORMAT_OPTIONS.map((opt) => {
+              const checked = availableFormats.includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-mono cursor-pointer select-none ${
+                    checked ? "bg-primary/10 border-primary text-primary" : "border-input text-muted-foreground hover:border-foreground/30"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={checked}
+                    onChange={() =>
+                      setAvailableFormats(checked ? availableFormats.filter((f) => f !== opt.value) : [...availableFormats, opt.value])
+                    }
+                  />
+                  {opt.label}
+                </label>
+              );
+            })}
+          </div>
+          {availableFormats.length === 0 && (
+            <p className="text-[10px] text-muted-foreground">None selected — all formats available.</p>
+          )}
+        </div>
+      </div>
       <div className="pt-2 border-t space-y-2">
         <p className="text-xs font-medium text-muted-foreground">Branding</p>
         <input className={inputClass} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />

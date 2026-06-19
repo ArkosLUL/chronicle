@@ -23,19 +23,6 @@ export const LOG_FORMAT_OPTIONS: readonly { value: LogFormat; label: string }[] 
   { value: "azerothcore-mod", label: "AzerothCore Mod" },
 ];
 
-/**
- * Selectable flavor presets (comma-joined tag sets) matching the server-side
- * ServerFlavor map. Admins pick a whole set; the parser checks tag membership.
- */
-export const FLAVOR_PRESET_OPTIONS: readonly { value: string; label: string }[] = [
-  { value: "vanilla,nightmare-of-ursol,turtle", label: "Turtle" },
-  { value: "vanilla,nightmare-of-ursol,octowow", label: "OctoWoW" },
-  { value: "vanilla,kronos", label: "Kronos" },
-  { value: "vanilla", label: "Vanilla" },
-  { value: "wrath,epoch", label: "Epoch" },
-  { value: "wrath,azerothcore", label: "AzerothCore" },
-  { value: "wrath", label: "Wrath" },
-];
 
 /** Features that may differ per server. */
 export interface ServerCapabilities {

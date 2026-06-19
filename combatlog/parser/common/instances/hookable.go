@@ -241,7 +241,13 @@ func (h *Hookable) Name() string {
 	}
 	return h.name
 }
-func (h *Hookable) SetRealm(r *realm.Info) { h.realm = r }
+func (h *Hookable) SetRealm(r *realm.Info) {
+	if r == nil {
+		return
+	}
+	h.realm = r
+}
+
 func (h *Hookable) SetVersions(versions map[string]string, player *guid.GUID) {
 	h.versions = versions
 	h.recorderGUID = player

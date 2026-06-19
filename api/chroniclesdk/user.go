@@ -179,14 +179,22 @@ type SiteConfig struct {
 	Branding *Branding `json:"branding"`
 	// Discoverable controls whether this deployment appears in /api/v1/discovery.
 	Discoverable bool `json:"discoverable"`
+	// DefaultFormat is the primary domain's preferred log parse format.
+	// Nil means no preference — fall back to the compiled-in server default.
+	DefaultFormat *string `json:"default_format"`
+	// AvailableFormats restricts which log formats are valid on the primary
+	// domain. Empty means all formats are available.
+	AvailableFormats []string `json:"available_formats"`
 }
 
 // UpdateSiteConfigRequest allows partial updates to site configuration.
 // Only non-nil fields will be updated.
 type UpdateSiteConfigRequest struct {
-	SignupsEnabled *bool     `json:"signups_enabled,omitempty"`
-	Branding      *Branding `json:"branding,omitempty"`
-	Discoverable  *bool     `json:"discoverable,omitempty"`
+	SignupsEnabled   *bool     `json:"signups_enabled,omitempty"`
+	Branding         *Branding `json:"branding,omitempty"`
+	Discoverable     *bool     `json:"discoverable,omitempty"`
+	DefaultFormat    *string   `json:"default_format,omitempty"`
+	AvailableFormats []string  `json:"available_formats,omitempty"`
 }
 
 // SetUserRolesRequest is the request body for setting a user's Chronicle roles.

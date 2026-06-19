@@ -1499,11 +1499,13 @@ type SharedView struct {
 }
 
 type SiteConfig struct {
-	ID             bool               `db:"id" json:"id"`
-	SignupsEnabled bool               `db:"signups_enabled" json:"signups_enabled"`
-	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	Branding       []byte             `db:"branding" json:"branding"`
-	Discoverable   bool               `db:"discoverable" json:"discoverable"`
+	ID               bool               `db:"id" json:"id"`
+	SignupsEnabled   bool               `db:"signups_enabled" json:"signups_enabled"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Branding         []byte             `db:"branding" json:"branding"`
+	Discoverable     bool               `db:"discoverable" json:"discoverable"`
+	DefaultFormat    NullLogFormat      `db:"default_format" json:"default_format"`
+	AvailableFormats []string           `db:"available_formats" json:"available_formats"`
 }
 
 type TalentBuild struct {
@@ -1527,6 +1529,8 @@ type Tenant struct {
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	Discoverable        bool               `db:"discoverable" json:"discoverable"`
 	DefaultDatasetID    uuid.NullUUID      `db:"default_dataset_id" json:"default_dataset_id"`
+	DefaultFormat       NullLogFormat      `db:"default_format" json:"default_format"`
+	AvailableFormats    []string           `db:"available_formats" json:"available_formats"`
 }
 
 type User struct {

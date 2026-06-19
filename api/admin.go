@@ -716,6 +716,13 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	resp.Branding = unmarshalBranding(config.Branding)
 	resp.Discoverable = config.Discoverable
+	if config.DefaultFormat.Valid {
+		s := string(config.DefaultFormat.LogFormat)
+		resp.DefaultFormat = &s
+	}
+	if len(config.AvailableFormats) > 0 {
+		resp.AvailableFormats = config.AvailableFormats
+	}
 	httpapi.Write(ctx, w, http.StatusOK, resp)
 }
 
@@ -736,6 +743,12 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Discoverable != nil {
 		params.Discoverable = pgtype.Bool{Bool: *req.Discoverable, Valid: true}
+	}
+	if req.DefaultFormat != nil {
+		params.DefaultFormat = database.NullLogFormat{LogFormat: database.LogFormat(*req.DefaultFormat), Valid: true}
+	}
+	if req.AvailableFormats != nil {
+		params.AvailableFormats = req.AvailableFormats
 	}
 
 	config, err := a.Opts.Zed.UpdateSiteConfig(ctx, params)

@@ -972,6 +972,14 @@ export interface ListUserPanelLayoutsResponse {
  * LogParseReport contains detailed timing breakdown for a log parse job.
  */
 export interface LogParseReport {
+    /**
+     * Format is the log format used for parsing (e.g. "1.12a-cc-addon").
+     */
+    readonly format?: string;
+    /**
+     * Flavor is the resolved flavor tag set used for parsing.
+     */
+    readonly flavor?: readonly string[];
     readonly total_duration_ms: Duration;
     readonly load_file_duration_ms: Duration;
     readonly parse_duration_ms: Duration;
@@ -1667,6 +1675,16 @@ export interface SiteConfig {
      * Discoverable controls whether this deployment appears in /api/v1/discovery.
      */
     readonly discoverable: boolean;
+    /**
+     * DefaultFormat is the primary domain's preferred log parse format.
+     * Nil means no preference — fall back to the compiled-in server default.
+     */
+    readonly default_format: string | null;
+    /**
+     * AvailableFormats restricts which log formats are valid on the primary
+     * domain. Empty means all formats are available.
+     */
+    readonly available_formats: readonly string[];
 }
 
 // From chroniclesdk/server_application.go
@@ -1872,6 +1890,17 @@ export interface Tenant {
     readonly discoverable: boolean;
     readonly branding: Branding | null;
     readonly default_dataset_id: string | null;
+    /**
+     * DefaultFormat is the tenant's preferred log parse format (e.g.
+     * "1.12a-cc-addon"). Nil means no preference — the frontend falls back
+     * to the compiled-in server default.
+     */
+    readonly default_format: string | null;
+    /**
+     * AvailableFormats restricts which log formats are valid for this tenant.
+     * Empty means all formats are available.
+     */
+    readonly available_formats: readonly string[];
     readonly created_at: string;
     readonly updated_at: string;
 }
@@ -1966,6 +1995,8 @@ export interface UpdateSiteConfigRequest {
     readonly signups_enabled?: boolean;
     readonly branding?: Branding;
     readonly discoverable?: boolean;
+    readonly default_format?: string;
+    readonly available_formats?: readonly string[];
 }
 
 // From chroniclesdk/guild_page.go
@@ -2060,6 +2091,8 @@ export interface UpsertTenantRequest {
     readonly include_in_all: boolean | null;
     readonly discoverable: boolean | null;
     readonly branding: Branding | null;
+    readonly default_format: string | null;
+    readonly available_formats: readonly string[];
 }
 
 // From chroniclesdk/user.go

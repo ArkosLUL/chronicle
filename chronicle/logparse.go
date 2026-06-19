@@ -17,18 +17,18 @@ import (
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounter"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/totems"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/warlockdemon"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/totems"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/warlockdemon"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/creatures"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/jsontransform"
@@ -169,6 +169,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	// skip the pre-scan entirely.
 	preRealmID := job.Args.RealmID
 	var preloadedFirst []byte
+	var preRealmName string
 	if preRealmID == uuid.Nil {
 		// Load and decompress the first file for the realm pre-scan.
 		// The bytes are kept and passed to parseCombatLog to avoid a
@@ -180,6 +181,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 			return fmt.Errorf("load file for realm scan: %w", scanErr)
 		}
 		realmName := scanRealmName(logFormat, preloadedFirst)
+		preRealmName = realmName
 		if realmName == "" {
 			jobResult = "cancelled"
 			msg := fmt.Sprintf("no realm info found in log (format %s)", logFormat)
@@ -220,7 +222,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 
 	// ── Parse ────────────────────────────────────────────────────────────
 	reg := w.parent.RegistryForFlavor(flavor)
-	parsed, err := w.parseCombatLog(ctx, logFormat, files, gameDB, reg, job.Args.IdentityMode, preloadedFirst)
+	parsed, err := w.parseCombatLog(ctx, logFormat, files, gameDB, reg, job.Args.IdentityMode, preloadedFirst, preRealmName)
 	if err != nil {
 		jobResult = "failure"
 		return err
@@ -229,6 +231,8 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 	logCapabilities := parsed.logCapabilities
 	encountersState := parsed.encountersState
 
+	report.Format = string(logFormat)
+	report.Flavor = flavor.Strings()
 	report.LoadFileDuration = chroniclesdk.DurationFrom(parsed.report.loadFileDuration)
 	report.ParseDuration = chroniclesdk.DurationFrom(parsed.report.parseDuration)
 	report.TotalLines = parsed.report.totalLines

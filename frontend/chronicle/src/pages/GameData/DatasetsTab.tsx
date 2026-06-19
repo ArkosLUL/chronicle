@@ -8,25 +8,11 @@ import {
   useUpsertDataset,
   useDeleteDataset,
   useDatasetImportSummary,
+  useFlavors,
   DEFAULT_DATASET_ID,
 } from "@/api/queries";
 import type { DatasetImportSummary } from "@/api/queries";
 import type { Dataset, UpsertDatasetRequest } from "@/api/typesGenerated";
-
-/** Known flavor tags. Mirrors FlavorTag constants in database/flavor.go.
- * Base flavors first, then server-specific, then content tags. */
-const KNOWN_FLAVOR_TAGS = [
-  { tag: "vanilla", label: "Vanilla", group: "base" },
-  { tag: "wrath", label: "Wrath", group: "base" },
-  { tag: "turtle", label: "Turtle", group: "server" },
-  { tag: "kronos", label: "Kronos", group: "server" },
-  { tag: "epoch", label: "Epoch", group: "server" },
-  { tag: "azerothcore", label: "AzerothCore", group: "server" },
-  { tag: "vanillaplus", label: "VanillaPlus", group: "server" },
-  { tag: "octowow", label: "OctoWoW", group: "server" },
-  { tag: "ascension", label: "Ascension", group: "server" },
-  { tag: "nightmare-of-ursol", label: "Nightmare of Ursol", group: "content" },
-] as const;
 
 /** Known icon CDN base URLs. Users can also type a custom URL. */
 const KNOWN_ICON_CDNS = [
@@ -103,7 +89,7 @@ function ImportStatusList({ datasetId }: { datasetId: string }) {
 }
 
 /** Inline create/edit form for a dataset. */
-function DatasetForm({ dataset, onDone }: { dataset?: Dataset; onDone: () => void }) {
+function DatasetForm({ dataset, onDone, allFlavors }: { dataset?: Dataset; onDone: () => void; allFlavors: string[] }) {
   const upsert = useUpsertDataset();
   const [name, setName] = useState(dataset?.name ?? "");
   const [slug, setSlug] = useState(dataset?.slug ?? "");
@@ -210,20 +196,20 @@ function DatasetForm({ dataset, onDone }: { dataset?: Dataset; onDone: () => voi
       <div className="space-y-1">
         <span className="text-xs text-muted-foreground">Flavor tags</span>
         <div className="flex flex-wrap gap-1.5">
-          {KNOWN_FLAVOR_TAGS.map(({ tag, label }) => {
+          {allFlavors.map((tag) => {
             const active = flavorTags.includes(tag);
             return (
               <button
                 key={tag}
                 type="button"
                 onClick={() => toggleFlavor(tag)}
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors ${
+                className={`rounded-full px-2.5 py-0.5 text-xs font-mono font-medium border transition-colors ${
                   active
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                 }`}
               >
-                {label}
+                {tag}
               </button>
             );
           })}
@@ -264,6 +250,7 @@ function DatasetForm({ dataset, onDone }: { dataset?: Dataset; onDone: () => voi
 
 export function DatasetsTab() {
   const { data: datasets, isLoading } = useDatasets();
+  const { data: allFlavors = [] } = useFlavors();
   const deleteDataset = useDeleteDataset();
   const [editing, setEditing] = useState<Dataset | null>(null);
   const [creating, setCreating] = useState(false);
@@ -295,8 +282,8 @@ export function DatasetsTab() {
         )}
       </div>
 
-      {creating && <DatasetForm onDone={() => setCreating(false)} />}
-      {editing && <DatasetForm dataset={editing} onDone={() => setEditing(null)} />}
+      {creating && <DatasetForm onDone={() => setCreating(false)} allFlavors={allFlavors} />}
+      {editing && <DatasetForm dataset={editing} onDone={() => setEditing(null)} allFlavors={allFlavors} />}
 
       {deleteError && (
         <Alert variant="destructive" className="max-w-lg">

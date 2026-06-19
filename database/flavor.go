@@ -47,6 +47,23 @@ const (
 	FlavorNightmareOfUrsol FlavorTag = "nightmare-of-ursol"
 )
 
+// AllFlavorTagValues returns every known FlavorTag. Keep in sync with the
+// constants above.
+func AllFlavorTagValues() []FlavorTag {
+	return []FlavorTag{
+		FlavorVanilla,
+		FlavorWrath,
+		FlavorTurtle,
+		FlavorKronos,
+		FlavorEpoch,
+		FlavorAzerothcore,
+		FlavorVanillaPlus,
+		FlavorOctoWoW,
+		FlavorAscension,
+		FlavorNightmareOfUrsol,
+	}
+}
+
 // serverFlavors holds explicit tag sets for servers whose flavor is more than
 // {base, serverTag} — e.g. servers that share custom content with another
 // server. Keyed by services.ServerName; string literals are used here because

@@ -19,8 +19,15 @@ type Tenant struct {
 	Discoverable        bool       `json:"discoverable"`
 	Branding            *Branding  `json:"branding"`
 	DefaultDatasetID    *uuid.UUID `json:"default_dataset_id"`
-	CreatedAt           time.Time  `json:"created_at"`
-	UpdatedAt           time.Time  `json:"updated_at"`
+	// DefaultFormat is the tenant's preferred log parse format (e.g.
+	// "1.12a-cc-addon"). Nil means no preference — the frontend falls back
+	// to the compiled-in server default.
+	DefaultFormat *string `json:"default_format"`
+	// AvailableFormats restricts which log formats are valid for this tenant.
+	// Empty means all formats are available.
+	AvailableFormats []string  `json:"available_formats"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 // Branding holds the visual identity for a tenant subdomain or the primary domain.
@@ -59,6 +66,13 @@ func TenantFromDB(t database.Tenant) Tenant {
 	if t.DefaultDatasetID.Valid {
 		out.DefaultDatasetID = &t.DefaultDatasetID.UUID
 	}
+	if t.DefaultFormat.Valid {
+		s := string(t.DefaultFormat.LogFormat)
+		out.DefaultFormat = &s
+	}
+	if len(t.AvailableFormats) > 0 {
+		out.AvailableFormats = t.AvailableFormats
+	}
 	return out
 }
 
@@ -87,6 +101,8 @@ type UpsertTenantRequest struct {
 	IncludeInAll        *bool         `json:"include_in_all"`
 	Discoverable        *bool         `json:"discoverable"`
 	Branding            *Branding     `json:"branding"`
+	DefaultFormat    *string  `json:"default_format"`
+	AvailableFormats []string `json:"available_formats"`
 }
 
 // IsCreate returns true when the request should insert a new tenant.
@@ -129,6 +145,11 @@ func (r UpsertTenantRequest) ToInsertParams() database.InsertTenantParams {
 		discoverable = *r.Discoverable
 	}
 
+	var defaultFormat database.NullLogFormat
+	if r.DefaultFormat != nil {
+		defaultFormat = database.NullLogFormat{LogFormat: database.LogFormat(*r.DefaultFormat), Valid: true}
+	}
+
 	return database.InsertTenantParams{
 		ID:                  id,
 		Slug:                slug,
@@ -137,6 +158,8 @@ func (r UpsertTenantRequest) ToInsertParams() database.InsertTenantParams {
 		IncludeInAll:        includeInAll,
 		Discoverable:        discoverable,
 		Branding:            r.marshalBranding(),
+		DefaultFormat:    defaultFormat,
+		AvailableFormats: r.AvailableFormats,
 	}
 }
 
@@ -168,6 +191,11 @@ func (r UpsertTenantRequest) ToUpdateParams() database.UpdateTenantParams {
 		discoverable = pgtype.Bool{Bool: *r.Discoverable, Valid: true}
 	}
 
+	var defaultFormat database.NullLogFormat
+	if r.DefaultFormat != nil {
+		defaultFormat = database.NullLogFormat{LogFormat: database.LogFormat(*r.DefaultFormat), Valid: true}
+	}
+
 	return database.UpdateTenantParams{
 		ID:                  r.ID.UUID,
 		Slug:                slug,
@@ -176,5 +204,7 @@ func (r UpsertTenantRequest) ToUpdateParams() database.UpdateTenantParams {
 		IncludeInAll:        includeInAll,
 		Discoverable:        discoverable,
 		Branding:            r.marshalBranding(),
+		DefaultFormat:    defaultFormat,
+		AvailableFormats: r.AvailableFormats,
 	}
 }

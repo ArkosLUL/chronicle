@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
@@ -225,7 +225,7 @@ func TestZulFarrakBossEncounterRegression(t *testing.T) {
 	t.Parallel()
 
 	ctx := parsectx.WithType(context.Background(), database.LogTypeAzerothcoreClientside)
-	reg := registry.AzerothcoreStaticRegistry(slog.Default())
+	reg := registry.RegisterWrath(registry.NewRegistry(slog.Default()))
 	bossGUID := creatureGUID(7272, 1)
 	logData := strings.Join([]string{
 		`1777340510851  CHRONICLE_HEADER,"","3.3.5a",12340`,

@@ -1,8 +1,6 @@
 package registry
 
 import (
-	"log/slog"
-
 	classic "github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/instances"
 )
@@ -38,11 +36,7 @@ func RegisterTBCEncounters(r *Registry) {
 	r.RegisterEntry(FromCommonFactory(instances.SunwellPlateauFactory))
 }
 
-func AzerothcoreStaticRegistry(logger *slog.Logger) *Registry {
-	r := NewRegistry(logger)
-
-	RegisterClassicEncounters(r)
-	RegisterTBCEncounters(r)
+func RegisterWrath(r *Registry) *Registry {
 	// These are changed to level 80
 	r.DeleteEntry(classic.OnyxiaFactory.Name)
 	r.DeleteEntry(classic.NaxxramasFactory.Name)

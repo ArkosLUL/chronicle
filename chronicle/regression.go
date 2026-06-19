@@ -15,9 +15,10 @@ import (
 	"github.com/Emyrk/chronicle/chronicle/regression"
 	"github.com/Emyrk/chronicle/chronicle/riverqueue"
 	"github.com/Emyrk/chronicle/combatlog/consumers"
-	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/parserv2"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/leveledlog"
 	"github.com/Emyrk/chronicle/internal/version"
@@ -114,7 +115,7 @@ func (w *WorkerRegressionSnapshot) Work(ctx context.Context, job *river.Job[Args
 	}
 
 	// 3. Parse the combat log
-	encountersState := encounters.New(ctx, logger, nil)
+	encountersState := encounters.New(ctx, logger, registry.RegistryForFlavor(logger, database.FlavorFromStrings(logGroup.WoWLogGroup.Flavor)))
 	c := consumers.New(logger, encountersState)
 
 	var consumeErr error

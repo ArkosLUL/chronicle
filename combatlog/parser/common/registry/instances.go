@@ -1,16 +1,10 @@
 package registry
 
 import (
-	"log/slog"
-
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 )
 
-func TurtleRegistry(logger *slog.Logger) *Registry {
-	r := NewRegistry(logger)
-
-	RegisterClassicEncounters(r)
-
+func RegisterNightmareOfUrsol(r *Registry) *Registry {
 	// 5 man
 	r.RegisterEntry(FromCommonFactory(instances.WindhornCanyonFactory))
 	r.RegisterEntry(FromCommonFactory(instances.BlackMorassFactory))
@@ -39,7 +33,7 @@ func RegisterClassicEncounters(r *Registry) {
 	r.RegisterEntry(FromCommonFactory(instances.ScarletMonasteryLibraryFactory))
 	r.RegisterEntry(FromCommonFactory(instances.ScarletMonasteryArmoryFactory))
 	r.RegisterEntry(FromCommonFactory(instances.ScarletMonasteryCathedralFactory))
-	r.RegisterEntry(FromCommonFactory(instances.AllScarletMonasteryFactory))
+	r.RegisterEntry(FromCommonFactory(instances.AllScarletMonasteryFactory)) // TODO: FIX FOR V+
 	r.RegisterEntry(FromCommonFactory(instances.BlackrockDepthsFactory).WithComment("Most bosses & mobs are not yet supported"))
 	r.RegisterEntry(FromCommonFactory(instances.ScholomanceFactory).WithComment("**new** not fully implemented"))
 	r.RegisterEntry(FromCommonFactory(instances.StratholmeFactory).WithComment("Only undead side, mechanics not implemented"))

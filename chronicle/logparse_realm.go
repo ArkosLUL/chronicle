@@ -7,9 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/realmclock"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/dbstatic"
@@ -193,7 +194,7 @@ func (w *WorkerLogParse) validateRealmTenant(
 	db *authz.Authz,
 	realm resolvedRealm,
 	tenantID uuid.UUID,
-	logType database.LogType,
+	format database.LogFormat,
 	logGroupID uuid.UUID,
 ) (bool, string) {
 	if tenantID == uuid.Nil {
@@ -203,12 +204,12 @@ func (w *WorkerLogParse) validateRealmTenant(
 	bypassCtx := servicetenant.AdminBypass(ctx)
 	realmRow, err := db.GetWoWServerRealm(bypassCtx, realm.ID)
 	if err != nil {
-		return false, w.realmRejectionMessage(bypassCtx, db, realm.Name, uuid.Nil, logType, logGroupID)
+		return false, w.realmRejectionMessage(bypassCtx, db, realm.Name, uuid.Nil, format, logGroupID)
 	}
 
 	server, sErr := db.GetWoWServer(bypassCtx, realmRow.ServerID)
 	if sErr != nil || !server.TenantID.Valid || server.TenantID.UUID != tenantID {
-		return false, w.realmRejectionMessage(bypassCtx, db, realmRow.Name, realmRow.ServerID, logType, logGroupID)
+		return false, w.realmRejectionMessage(bypassCtx, db, realmRow.Name, realmRow.ServerID, format, logGroupID)
 	}
 
 	return true, ""
@@ -225,7 +226,7 @@ type realmRejection struct {
 }
 
 // realmRejectionMessage builds a JSON-encoded rejection string for InstanceFailures.
-func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Authz, realmName string, serverID uuid.UUID, logType database.LogType, logGroupID uuid.UUID) string {
+func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Authz, realmName string, serverID uuid.UUID, format database.LogFormat, logGroupID uuid.UUID) string {
 	r := realmRejection{
 		Type:  "realm_rejection",
 		Realm: realmName,
@@ -256,11 +257,11 @@ func (w *WorkerLogParse) realmRejectionMessage(ctx context.Context, db *authz.Au
 		}
 	}
 
-	if logType == database.LogTypeAzerothcoreClientside || logType == database.LogTypeAzerothcore {
+	if format == database.LogFormat335aCcAddon || format == database.LogFormatAzerothcoreMod {
 		r.AddonURL = "https://github.com/Emyrk/ChronicleCompanionWoTLK"
 	}
 
-	if logType == database.LogTypeV2 {
+	if format == database.LogFormat112aCcAddon {
 		r.AddonURL = "https://github.com/Emyrk/ChronicleCompanion"
 	}
 

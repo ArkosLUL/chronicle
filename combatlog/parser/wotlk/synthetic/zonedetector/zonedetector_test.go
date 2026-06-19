@@ -1,20 +1,20 @@
 package zonedetector_test
 
 import (
-	"log/slog"
-	"testing"
-	"time"
+  "log/slog"
+  "testing"
+  "time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+  "github.com/stretchr/testify/assert"
+  "github.com/stretchr/testify/require"
 
-	"github.com/Emyrk/chronicle/internal/testutil"
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
-	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/synthetic/zonedetector"
+  "github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+  "github.com/Emyrk/chronicle/combatlog/parser/common/registry"
+  "github.com/Emyrk/chronicle/combatlog/parser/guid"
+  "github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
+  "github.com/Emyrk/chronicle/combatlog/parser/types/zone"
+  "github.com/Emyrk/chronicle/combatlog/parser/wotlk/synthetic/zonedetector"
+  "github.com/Emyrk/chronicle/internal/testutil"
 )
 
 // creatureGUID builds a GUID with the given creature entry ID.
@@ -32,7 +32,7 @@ func unitMsg(ts time.Time, g guid.GUID) messages.Message {
 func TestZoneDetector_EmitsZoneOnNexusCreature(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.AzerothcoreStaticRegistry(slog.Default())
+	reg := registry.RegisterWrath(slog.Default())
 	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -51,7 +51,7 @@ func TestZoneDetector_EmitsZoneOnNexusCreature(t *testing.T) {
 func TestZoneDetector_NoDuplicateZone(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.AzerothcoreStaticRegistry(slog.Default())
+	reg := registry.RegisterWrath(slog.Default())
 	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -69,7 +69,7 @@ func TestZoneDetector_NoDuplicateZone(t *testing.T) {
 func TestZoneDetector_IgnoresPlayerGUID(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.AzerothcoreStaticRegistry(slog.Default())
+	reg := registry.RegisterWrath(slog.Default())
 	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -82,7 +82,7 @@ func TestZoneDetector_IgnoresPlayerGUID(t *testing.T) {
 func TestZoneDetector_ContinuesAfterRealZone(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.AzerothcoreStaticRegistry(slog.Default())
+	reg := registry.RegisterWrath(slog.Default())
 	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -113,7 +113,7 @@ func TestZoneDetector_ContinuesAfterRealZone(t *testing.T) {
 func TestZoneDetector_NoEmitForSameZoneAsReal(t *testing.T) {
 	t.Parallel()
 
-	reg := registry.AzerothcoreStaticRegistry(slog.Default())
+	reg := registry.RegisterWrath(slog.Default())
 	zd := zonedetector.New(testutil.Logger(t), reg)
 
 	ts := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)

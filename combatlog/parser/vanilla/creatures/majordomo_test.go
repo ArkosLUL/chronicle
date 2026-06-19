@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/merge"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/encounters"
 	"github.com/Emyrk/chronicle/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +33,7 @@ func TestMajordomo(t *testing.T) {
 	require.NoError(t, err)
 
 	p := vanilla.NewFromScanner(context.Background(), logger, liner, scans, nil)
-	output := encounters.New(ctx, logger, nil)
+	output := encounters.New(ctx, logger, RegistryForTests(t))
 	for {
 		msgs, err := p.Advance(ctx)
 		if errors.Is(err, io.EOF) {

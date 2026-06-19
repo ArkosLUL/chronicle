@@ -25,6 +25,8 @@ type FlavorTag string
 const (
 	// FlavorVanilla is 1.12-era behavior (Turtle, Kronos, VanillaPlus, ...).
 	FlavorVanilla FlavorTag = "vanilla"
+	// FlavorTBC is (TBC)-era behavior.
+	FlavorTBC FlavorTag = "tbc"
 	// FlavorWrath is 3.3.5a (WotLK)-era behavior (Warmane, Epoch, AzerothCore).
 	FlavorWrath FlavorTag = "wrath"
 	// FlavorTurtle is Turtle WoW-specific behavior.

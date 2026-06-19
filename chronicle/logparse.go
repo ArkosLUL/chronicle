@@ -198,7 +198,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		// Early tenant validation.
 		if preRealmID != uuid.Nil && job.Args.TenantID != uuid.Nil {
 			preRealm := resolvedRealm{ID: preRealmID, Name: realmName}
-			if keep, failureMsg := w.validateRealmTenant(ctx, db, preRealm, job.Args.TenantID, lg.LogType, job.Args.LogID); !keep {
+			if keep, failureMsg := w.validateRealmTenant(ctx, db, preRealm, job.Args.TenantID, lg.Format.LogFormat, job.Args.LogID); !keep {
 				jobResult = "cancelled"
 				return river.JobCancel(fmt.Errorf("realm tenant mismatch: %s", failureMsg))
 			}
@@ -302,7 +302,7 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		realmID := realm.ID
 		realmName := realm.Name
 
-		keep, failureMsg := w.validateRealmTenant(ctx, db, realm, job.Args.TenantID, lg.LogType, job.Args.LogID)
+		keep, failureMsg := w.validateRealmTenant(ctx, db, realm, job.Args.TenantID, lg.Format.LogFormat, job.Args.LogID)
 		if !keep {
 			jobOut.InstanceFailures[fmt.Sprintf("%s_%d", inst.Name(), i)] = failureMsg
 			report.Instances = append(report.Instances, instReport)

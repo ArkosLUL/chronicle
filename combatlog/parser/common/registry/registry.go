@@ -7,12 +7,11 @@ import (
 	"sort"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/rankings"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/database"
-	"github.com/Emyrk/chronicle/internal/services"
 )
 
 // InstanceFactory creates a new instance
@@ -67,34 +66,25 @@ func FromCommonFactory(f *instances.CommonFactory) Entry {
 	}
 }
 
-// DefaultRegistry returns a registry with all known instances for the
-// compiled-in server identity. Prefer RegistryForFlavor when the flavor
-// is known from dataset resolution.
-func DefaultRegistry(logger *slog.Logger) *Registry {
-	switch services.ServerName {
-	case services.ServerIdentityTurtle, services.ServerIdentityOctoWoW:
-		return TurtleRegistry(logger)
-	case services.ServerIdentityAzerothcore:
-		return AzerothcoreStaticRegistry(logger)
-	case services.ServerIdentityEpoch:
-		return TurtleRegistry(logger)
-	default:
-		return TurtleRegistry(logger)
-	}
-}
-
 // RegistryForFlavor returns an instance registry based on flavor tags.
 // This allows a single binary to serve multiple WoW versions by selecting
 // the right encounter definitions at parse time.
 func RegistryForFlavor(logger *slog.Logger, flavor database.WoWFlavor) *Registry {
-	if flavor.Has(database.FlavorAzerothcore) {
-		return AzerothcoreStaticRegistry(logger)
+	r := NewRegistry(logger)
+	RegisterClassicEncounters(r)
+
+	if flavor.Has(database.FlavorNightmareOfUrsol) {
+		RegisterNightmareOfUrsol(r)
 	}
+
+	if flavor.Has(database.FlavorWrath) || flavor.Has(database.FlavorTBC) {
+		RegisterTBCEncounters(r)
+	}
+
 	if flavor.Has(database.FlavorWrath) {
-		return AzerothcoreStaticRegistry(logger)
+		RegisterWrath(r)
 	}
-	// Vanilla-family: turtle, kronos, epoch, octowow, vanillaplus, etc.
-	return TurtleRegistry(logger)
+	return r
 }
 
 // Registry manages available instances

@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parseoptions"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/zoner"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/realm"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
 
 type timingAccumulator struct {
@@ -78,13 +78,8 @@ func NewWithInstanceResolver(ctx context.Context, logger *slog.Logger, res Insta
 }
 
 func New(ctx context.Context, logger *slog.Logger, reg *registry.Registry) *State {
-	r := reg
-	if reg == nil {
-		r = registry.DefaultRegistry(logger)
-	}
-
 	return NewWithInstanceResolver(ctx, logger, func(verbose bool, z zone.Zone, db *unitdb.Units) *instances.Hookable {
-		return r.GetInstance(ctx, verbose, z, db)
+		return reg.GetInstance(ctx, verbose, z, db)
 	})
 }
 

@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [turtle, epoch, kronos, azerothcore, vanillaplus, octowow]
+        server: [turtle, epoch, azerothcore, vanillaplus, octowow]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -151,9 +151,6 @@ jobs:
 #          - server: epoch
 #            railway_service: chronicled
 #            railway_token_secret: RAILWAY_TOKEN_EPOCH
-          - server: kronos
-            railway_service: chronicled
-            railway_token_secret: RAILWAY_TOKEN_KRONOS
           - server: vanillaplus
             railway_service: chronicled
             railway_token_secret: RAILWAY_TOKEN_VANILLAPLUS

@@ -98,12 +98,20 @@ func (s *Service) ResolveDatasetForRealm(ctx context.Context, realmID uuid.UUID)
 }
 
 // ResolveDatasetWithFlavorForRealm resolves the dataset AND its default_flavor
-// for a realm. Falls back to DefaultDatasetID with empty flavor on any error.
+// for a realm. Falls back to the default dataset (querying its flavor from the
+// DB) on any error.
 func (s *Service) ResolveDatasetWithFlavorForRealm(ctx context.Context, realmID uuid.UUID) (uuid.UUID, database.WoWFlavor) {
 	ctx = servicetenant.AdminBypass(ctx)
 	row, err := s.db.ResolveDatasetWithFlavorByRealm(ctx, realmID)
 	if err != nil {
-		return DefaultDatasetID, nil
+		// The realm-based resolution failed (unknown realm, no
+		// default_dataset_id on server/tenant, etc.). Query the default
+		// dataset directly for its flavor.
+		ds, dsErr := s.db.GetDataset(ctx, DefaultDatasetID)
+		if dsErr != nil {
+			return DefaultDatasetID, nil
+		}
+		return DefaultDatasetID, database.FlavorFromStrings(ds.DefaultFlavor)
 	}
 	return row.DatasetID, database.FlavorFromStrings(row.DefaultFlavor)
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
+	"github.com/Emyrk/chronicle/database/dbstatic"
 	"github.com/Emyrk/chronicle/database/jsontransform"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/semverenc"
@@ -138,11 +139,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		logFormat = lg.Format.LogFormat
 	}
 	// Resolve flavor: prefer the persisted column on the log group, then
-	// fall back to legacy LogType derivation. After dataset resolution
-	// (below), the dataset's default_flavor may override this if the log
-	// group didn't have an explicit flavor.
+	// fall back to dataset resolution (below) which returns the dataset's
+	// default_flavor (seeded from the compiled-in server identity).
+	var flavor database.WoWFlavor
 	explicitFlavor := len(lg.Flavor) > 0
-	flavor := lg.LogType.Flavor()
 	if explicitFlavor {
 		flavor = database.FlavorFromStrings(lg.Flavor)
 	}
@@ -193,6 +193,10 @@ func (w *WorkerLogParse) Work(ctx context.Context, job *river.Job[ArgsLogParse])
 		bypassCtx := servicetenant.AdminBypass(ctx)
 		if r, lookupErr := db.GetWoWServerRealmByName(bypassCtx, realmName); lookupErr == nil {
 			preRealmID = r.ID
+		} else {
+			// Realm not yet in DB — use the well-known "Unknown" realm so
+			// dataset/flavor resolution can still look up the default dataset.
+			preRealmID = dbstatic.RealmUnknown()
 		}
 
 		// Early tenant validation.

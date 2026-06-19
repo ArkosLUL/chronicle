@@ -89,7 +89,8 @@ func (s *Service) Start(ctx context.Context) error {
 		PrimaryDomain:   tenantSvc.PrimaryDomain(),
 		// Stamp the build-tag flavor on new log groups. Backfilling old rows is
 		// handled separately by serviceflavorbackfill.
-		DefaultFlavor: BuildTagFlavor(),
+		DefaultFlavor:    BuildTagFlavor(),
+		DefaultDatasetID: servicedataset.DefaultDatasetID,
 		ResolveDataset: func(ctx context.Context, realmID uuid.UUID) chronicle.ResolvedDataset {
 			dsID, flavor := datasetSvc.ResolveDatasetWithFlavorForRealm(ctx, realmID)
 			return chronicle.ResolvedDataset{DatasetID: dsID, Flavor: flavor}

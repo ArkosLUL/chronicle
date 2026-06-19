@@ -67,8 +67,9 @@ type Chronicle struct {
 	registryMu         sync.Mutex
 	registryByFlavor   map[string]*registry.Registry
 	primaryDomain      string
-	defaultFlavor      database.WoWFlavor
-	resolveDataset     func(ctx context.Context, realmID uuid.UUID) ResolvedDataset
+	defaultFlavor    database.WoWFlavor
+	defaultDatasetID uuid.UUID
+	resolveDataset   func(ctx context.Context, realmID uuid.UUID) ResolvedDataset
 
 	mu                     sync.Mutex
 	insertParsedInstanceMu sync.Mutex
@@ -88,17 +89,22 @@ type Options struct {
 	// default encounter registry. It is NOT stamped on new log groups;
 	// uploads defer to realm-based dataset resolution for flavor.
 	DefaultFlavor database.WoWFlavor
+	// DefaultDatasetID is the well-known UUID of the default dataset, used
+	// when no realm-specific dataset can be resolved.
+	DefaultDatasetID uuid.UUID
 	// ResolveDataset maps a realm ID to the dataset and its default flavor.
 	// The resolver follows the server > tenant > default chain.
 	// If nil, the default dataset is always used.
 	ResolveDataset func(ctx context.Context, realmID uuid.UUID) ResolvedDataset
+
 }
 
 func New(ctx context.Context, logger *slog.Logger, opts Options) (*Chronicle, error) {
 	c := &Chronicle{
 		AppContext:         ctx,
 		primaryDomain:      opts.PrimaryDomain,
-		defaultFlavor:      opts.DefaultFlavor,
+		defaultFlavor:    opts.DefaultFlavor,
+		defaultDatasetID: opts.DefaultDatasetID,
 		Storage:            opts.Storage,
 		Zed:                opts.Zed,
 		ps:                 opts.Ps,
@@ -157,11 +163,11 @@ type ResolvedDataset struct {
 }
 
 // resolveForRealm resolves the dataset and flavor for a realm. When the
-// resolver is nil or the realm is unknown, returns the default dataset with
-// an empty flavor (caller should fall back to its own default).
+// resolver is nil (tests, CLI), returns the default dataset with the
+// build-tag-derived default flavor.
 func (c *Chronicle) resolveForRealm(ctx context.Context, realmID uuid.UUID) ResolvedDataset {
-	if c.resolveDataset == nil || realmID == uuid.Nil {
-		return ResolvedDataset{}
+	if c.resolveDataset == nil {
+		return ResolvedDataset{DatasetID: c.defaultDatasetID, Flavor: c.defaultFlavor}
 	}
 	return c.resolveDataset(ctx, realmID)
 }

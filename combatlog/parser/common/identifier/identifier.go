@@ -51,6 +51,11 @@ func (i *Identifier) IdentifyUnit(id guid.GUID) Identity {
 	if id.IsPlayer() {
 		return Identity{Affiliation: types.AffiliationUnknown}
 	}
+	if id.IsPet() {
+		// Pet entry IDs can collide with a regular unit ID.
+		// Since their entry ids are just like player IDs, they are random.
+		return Identity{Affiliation: types.AffiliationUnknown}
+	}
 
 	entryID, ok := id.GetEntry()
 	if !ok {

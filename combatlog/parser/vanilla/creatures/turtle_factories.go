@@ -81,6 +81,9 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 			NewVanillaPlusSMSoulHunter,
 			NewVanillaPlusBrotherMicheal,
 			NewVanillaPlusBloodaxeWorgPup,
+			NewVanillaPlusScarletCharger,
+			NewVanillaPlusScarletSharpshooter,
+			NewVanillaPlusScarletSorcerer,
 		)
 	}
 

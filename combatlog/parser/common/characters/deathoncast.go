@@ -57,6 +57,7 @@ func (c *DeathOnCast) SpellGo(m messages.Message, sp *chrondbc.Spell) {
 	}
 
 	if sp.ID == c.spellID {
+		//nolint:staticcheck
 		c.CharacterBase.Died("death_on_cast", m)
 	}
 }

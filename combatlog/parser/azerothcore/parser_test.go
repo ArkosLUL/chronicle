@@ -225,7 +225,7 @@ func TestZulFarrakBossEncounterRegression(t *testing.T) {
 	t.Parallel()
 
 	ctx := parsectx.WithType(context.Background(), database.LogTypeAzerothcoreClientside)
-	reg := registry.RegisterWrath(registry.NewRegistry(slog.Default(), database.WoWFlavor{database.FlavorWrath}))
+	reg := registry.RegistryForFlavor(slog.Default(), database.WoWFlavor{database.FlavorVanilla, database.FlavorWrath})
 	bossGUID := creatureGUID(7272, 1)
 	logData := strings.Join([]string{
 		`1777340510851  CHRONICLE_HEADER,"","3.3.5a",12340`,

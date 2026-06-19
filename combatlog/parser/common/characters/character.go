@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 )
 
 // Some common reasons
@@ -31,6 +31,7 @@ type Character interface {
 	Periods() []period.Period
 	RecentlySlain(m messages.Message) bool
 	IsActive() bool
+	LastEndState() period.EndState
 	CurrentPeriod() (period.Period, bool)
 	SetPeriodHook(hook period.Hook)
 }
@@ -91,6 +92,13 @@ func (c *Base[M]) CurrentPeriodIsPeriod() (period.IsPeriod, bool) {
 
 func (c *Base[_]) IsActive() bool {
 	return c.Activity.IsActive()
+}
+func (c *Base[_]) LastEndState() period.EndState {
+	n := len(c.Activity.History)
+	if n == 0 {
+		return period.EndStateNone
+	}
+	return c.Activity.History[n-1].Get().EndState
 }
 
 func (c *Base[_]) NumberOfPeriods() int {

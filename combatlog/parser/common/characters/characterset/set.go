@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/go-playground/locales/om"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -11,12 +12,17 @@ import (
 
 const (
 	Dormancy = time.Minute * 20
+	// SlainDormancy is a shorter dormancy for characters that died.
+	// Dead characters rarely become active again (boss phase transitions
+	// are the main exception, handled by re-adding via Touch).
+	SlainDormancy = time.Minute * 5
 )
 
 var _ = om.New()
 
 type IsActive interface {
 	IsActive() bool
+	LastEndState() period.EndState
 	ID() guid.GUID
 }
 
@@ -63,9 +69,14 @@ func (s *Set[T]) ForEachAwake(now time.Time, f func(T) error) error {
 		if char.IsActive() {
 			// Keep awake time updated for active characters
 			s.awake.Set(pair.Key, now)
-		} else if now.Sub(pair.Value) > Dormancy {
-			// Remove dormant characters
-			remove = append(remove, pair.Key)
+		} else {
+			dormancy := Dormancy
+			if char.LastEndState() == period.EndStateSlain {
+				dormancy = SlainDormancy
+			}
+			if now.Sub(pair.Value) > dormancy {
+				remove = append(remove, pair.Key)
+			}
 		}
 	}
 

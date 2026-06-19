@@ -40,3 +40,7 @@ func (c NeverActive) RecentlySlain(m messages.Message) bool {
 func (c NeverActive) IsActive() bool {
 	return false
 }
+func (c NeverActive) LastEndState() period.EndState {
+	return period.EndStateNone
+}
+

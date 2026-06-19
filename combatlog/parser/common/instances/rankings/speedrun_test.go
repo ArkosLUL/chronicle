@@ -40,6 +40,7 @@ func (s *stubChar) Died(string, messages.Message)       {}
 func (s *stubChar) Process(messages.Message) error      { return nil }
 func (s *stubChar) Periods() []period.Period            { return nil }
 func (s *stubChar) RecentlySlain(messages.Message) bool { return false }
+func (s *stubChar) LastEndState() period.EndState        { return period.EndStateNone }
 func (s *stubChar) SetPeriodHook(period.Hook)           {}
 func (s *stubChar) CurrentPeriod() (period.Period, bool) {
 	if !s.hasPeriod {

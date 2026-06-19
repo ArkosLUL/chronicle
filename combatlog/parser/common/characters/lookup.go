@@ -39,6 +39,7 @@ type Characters struct {
 	// TODO: unroll hooks?
 	hooks           []SetHook
 	activityChanged map[Character]struct{}
+
 }
 
 func NewCharacters(db *unitdb.Units, factories []CharacterFactory, id *identifier.Identifier) *Characters {

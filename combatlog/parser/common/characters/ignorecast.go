@@ -14,6 +14,20 @@ type IgnoreCast struct {
 	ignoreSpells map[chrondbc.SpellID]struct{}
 }
 
+func NewIgnoreCastCharacter(c CharacterBase, spells ...chrondbc.SpellID) *IgnoreCast {
+	ignore := make(map[chrondbc.SpellID]struct{})
+	for _, sp := range spells {
+		ignore[sp] = struct{}{}
+	}
+
+	return &IgnoreCast{
+		CharacterBase: c,
+		ignoreTarget:  false,
+		ignoreSource:  false,
+		ignoreSpells:  ignore,
+	}
+}
+
 func NewIgnoreCast(match uint32, spells ...chrondbc.SpellID) func(id guid.GUID, all *Characters) (*IgnoreCast, bool) {
 	return func(id guid.GUID, all *Characters) (*IgnoreCast, bool) {
 		entry, ok := id.GetEntry()
@@ -25,17 +39,8 @@ func NewIgnoreCast(match uint32, spells ...chrondbc.SpellID) func(id guid.GUID, 
 			return nil, false
 		}
 
-		ignore := make(map[chrondbc.SpellID]struct{})
-		for _, sp := range spells {
-			ignore[sp] = struct{}{}
-		}
-
-		return &IgnoreCast{
-			CharacterBase: NewCommonCharacter(id, all),
-			ignoreTarget:  false,
-			ignoreSource:  false,
-			ignoreSpells:  ignore,
-		}, true
+		c := NewCommonCharacter(id, all)
+		return NewIgnoreCastCharacter(c, spells...), true
 	}
 }
 

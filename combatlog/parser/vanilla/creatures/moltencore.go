@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
+	"github.com/Emyrk/chronicle/database"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
@@ -57,11 +58,24 @@ func NewIncindisCharacter(id guid.GUID, all *characters.Characters) (characters.
 	return characters.NewAdsGoWithBoss(incindis, spawnOfIncindis, flameskinIncindis, eggIncindis)(id, all)
 }
 
-func NewGolemaggCharacter(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-	return characters.NewAdsGoWithBoss(11988,
-		// The Core Rager does have a death log in most cases, however apparently not in
-		// every case. Their life is tied to Golemagg, so this patch, althought not
-		// necessary, is going to be added.
-		11672, // Core Rager
-	)(id, all)
+func NewGolemaggCharacter(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+		c, ok := characters.NewAdsGoWithBoss(11988,
+			// The Core Rager does have a death log in most cases, however apparently not in
+			// every case. Their life is tied to Golemagg, so this patch, althought not
+			// necessary, is going to be added.
+			11672, // Core Rager
+		)(id, all)
+		if !ok {
+			return nil, false
+		}
+
+		if flavor.Has(database.FlavorVanillaPlus) {
+			// This spell sometimes affects after death.
+			return characters.NewIgnoreCastCharacter(c, 34481), true
+		}
+
+		return c, true
+	}
+
 }

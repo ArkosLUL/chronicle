@@ -1614,7 +1614,6 @@ func SunkenTempleHostiles() map[uint32]Identity {
 		5708:  "Spawn of Hakkar",
 		5711:  "Ogom the Wretched",
 		15593: "Elder Starsong",
-		510:   "Water Elemental",
 		8324:  "Atal'ai Skeleton",
 		8656:  "Hukku's Voidwalker",
 		8657:  "Hukku's Succubus",

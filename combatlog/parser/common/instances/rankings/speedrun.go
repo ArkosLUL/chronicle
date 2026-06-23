@@ -9,10 +9,10 @@ import (
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/instances/instancehook"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/unitdb"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
 var (
@@ -38,8 +38,8 @@ type SpeedrunTracker struct {
 	remaining   int // unsatisfied requirements remaining
 	seenGUIDs   map[guid.GUID]struct{}
 
-	units      *unitdb.Units        // may be nil in tests
-	engagement *EngagementTracker   // may be nil in tests
+	units      *unitdb.Units      // may be nil in tests
+	engagement *EngagementTracker // may be nil in tests
 
 	startTime      time.Time
 	completionTime time.Time
@@ -179,7 +179,7 @@ func (t *SpeedrunTracker) Result() *SpeedrunResult {
 		engagedPlayers := t.engagement.AllEngagedPlayers()
 		for gid := range engagedPlayers {
 			info, ok := t.units.Get(gid)
-			if !ok || !info.IsPlayer {
+			if !ok || !info.Guid.IsPlayer() {
 				continue
 			}
 			if info.Level == 0 || info.Level < t.rules.LevelRange.MinLevel || info.Level > t.rules.LevelRange.MaxLevel {

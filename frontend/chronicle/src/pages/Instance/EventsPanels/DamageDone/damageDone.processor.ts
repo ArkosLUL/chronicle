@@ -325,20 +325,31 @@ export function createDamageDoneProcessor(
       // Breakouts (target entity filtering now handled by defaultFilters)
       if (context.selectedEncounterIds.has(encounterID)) {
         let abilityName = event.sourceName || "Auto Attack";
-        // When pet damage is merged into the owner row, label abilities as "<PetName> (Pet)"
+        // When pet damage is merged into the owner row, label abilities as "<Ability> (by pet <PetName>)"
         const casterHasOwner = !!(context.unitState?.getOwner(event.caster) ?? context.units?.[event.caster]?.owner);
         if (casterHasOwner && (grouping === "merged")) {
           const petName = context.units?.[event.caster]?.name || event.caster.toString();
-          abilityName = `${petName} (Pet)`;
+          abilityName = `${abilityName} (by pet ${petName})`;
         }
         if (hasHitType(event.hitType, HitTypePeriodic)) {
           abilityName = abilityName + " (DoT)";
         }
 
         accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, effectiveAmount, event.hitType, event.amount);
-        // Only track by spell ID if we have one (not for melee/environmental damage)
-        if (event.spellId != null) {
+        // Only track by spell ID if we have one (not for melee/environmental damage).
+        // Skip pet abilities in merged mode — different pets share the same spell ID
+        // (e.g. Auto Attack = 6603) which would incorrectly merge them. Pet abilities
+        // are instead shown from ByAbility which keys by name (unique per pet).
+        const isPetMerged = casterHasOwner && grouping === "merged";
+        if (event.spellId != null && !isPetMerged) {
           accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageOwner, event.spellId, abilityName, effectiveAmount, event.hitType, event.amount);
+        }
+        // Store spellId on the ByAbility entry for pet abilities so the breakout
+        // can still show spell icons when pulling pet rows from ByAbility.
+        if (isPetMerged && event.spellId != null) {
+          const unitAbilities = state.ByAbility.get(damageOwner);
+          const entry = unitAbilities?.get(abilityName);
+          if (entry) entry.spellId = event.spellId;
         }
 
         accumulateOwnerTargetValue(state.ByTarget, damageOwner, event.target, effectiveAmount);

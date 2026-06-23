@@ -46,6 +46,10 @@ export interface DamageAbilityBreakout {
   CritStats?: HitTypeStats;     // Critical hits
   GlancingStats?: HitTypeStats; // Glancing blows
   CrushingStats?: HitTypeStats; // Crushing blows
+
+  /** Optional spell ID — set for pet abilities in merged mode so the breakout
+   *  can still show spell icons even though they're excluded from ByAbilityBySpellId. */
+  spellId?: number;
 }
 
 export function createEmptyAbilityBreakout(): DamageAbilityBreakout {

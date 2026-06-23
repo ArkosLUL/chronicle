@@ -223,6 +223,16 @@ export function useDamageDoneBreakout({
             subtitle: rank || undefined,
           };
         });
+        // Pet abilities in merged mode are excluded from ByAbilityBySpellId (different
+        // pets share spell IDs, e.g. Auto Attack=6603). Pull them from ByAbility instead.
+        const byAbility = result.ByAbility.get(playerID);
+        if (byAbility) {
+          for (const [name, data] of byAbility) {
+            if (name.includes("(by pet")) {
+              abilities.push({ ...data, name, value: data.Total, spellId: data.spellId });
+            }
+          }
+        }
       } else {
         abilities = getAbilitiesForUnit(result, playerID);
       }

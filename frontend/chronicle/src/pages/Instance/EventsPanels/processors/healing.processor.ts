@@ -416,11 +416,11 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         abilityName = abilityName + " (HoT)";
       }
 
-      // When pet healing is merged into the owner row, label abilities as "<PetName> (Pet)"
+      // When pet healing is merged into the owner row, label abilities as "<Ability> (by pet <PetName>)"
       const casterHasOwner = !!(context.unitState?.getOwner(casterGuid) ?? context.units?.[casterGuid]?.owner);
       if (casterHasOwner && grouping === "merged") {
         const petName = context.units?.[casterGuid]?.name || casterGuid.toString();
-        abilityName = `${petName} (Pet)`;
+        abilityName = `${abilityName} (by pet ${petName})`;
       }
 
       // --- Healer breakouts (ability + target breakdown) ---
@@ -439,7 +439,10 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       const spellId = isAbsorbed
         ? (event as AbsorbedProcessorEvent).absorbSpellId
         : !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
-      if (spellId != null) {
+      // Skip pet abilities in merged mode — different pets share spell IDs which
+      // would incorrectly merge them. Pet abilities are shown from ByAbility instead.
+      const isPetMerged = casterHasOwner && grouping === "merged";
+      if (spellId != null && !isPetMerged) {
         if (effectiveHeal > 0) {
           accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, spellId, abilityName, effectiveHeal, hitType);
         }
@@ -447,6 +450,14 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
           accumulateAbilityBreakoutBySpellId(state.HealerByAbilityOverhealBySpellId, healerID, spellId, abilityName, overheal, hitType);
         }
         accumulateAbilityBreakoutBySpellId(state.HealerByAbilityTotalBySpellId, healerID, spellId, abilityName, healAmount, hitType);
+      }
+      // Store spellId on the ByAbility entries for pet abilities so the breakout
+      // can still show spell icons when pulling pet rows from ByAbility.
+      if (isPetMerged && spellId != null) {
+        for (const byAbilityMap of [state.HealerByAbility, state.HealerByAbilityOverheal, state.HealerByAbilityTotal]) {
+          const entry = byAbilityMap.get(healerID)?.get(abilityName);
+          if (entry) entry.spellId = spellId;
+        }
       }
 
       // Healer target breakdown

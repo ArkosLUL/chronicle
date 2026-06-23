@@ -100,7 +100,7 @@ describe('healingProcessor pet/object caster support', () => {
     expect(healer.effectiveTotal).toBe(200);
   });
 
-  it('labels pet abilities as "<PetName> (Pet)" in merged mode breakouts', () => {
+  it('labels pet abilities as "<Ability> (by pet <PetName>)" in merged mode breakouts', () => {
     const context = createContext({ panelOption: 'g:merged,p:owner' });
     const event = createHealEvent({
       caster: '0xF140000CE0000002',
@@ -112,7 +112,7 @@ describe('healingProcessor pet/object caster support', () => {
     const state = processEvents([event], context);
     const abilities = state.HealerByAbility.get('0x0000000000001234')!;
 
-    expect(abilities.has('Healing Stream Totem (Pet)')).toBe(true);
+    expect(abilities.has('Healing Stream (by pet Healing Stream Totem)')).toBe(true);
   });
 
   it('allows enemy casters through (filters handle exclusion)', () => {

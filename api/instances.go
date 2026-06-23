@@ -271,7 +271,11 @@ func (api *API) GetInstanceLoot(w http.ResponseWriter, r *http.Request) {
 	inst := httpmw.Instance(ctx)
 	db := api.Opts.Zed
 
-	loot, err := db.GetInstanceLoot(ctx, inst.ID)
+	datasetID := api.Opts.Dataset.ResolveDatasetForRealm(ctx, inst.RealmID)
+	loot, err := db.GetInstanceLoot(ctx, database.GetInstanceLootParams{
+		DatasetID:  datasetID,
+		InstanceID: inst.ID,
+	})
 	if err != nil {
 		httpapi.HandleResponseError(ctx, w, err, httpapi.APIError{
 			Response: chroniclesdk.Response{

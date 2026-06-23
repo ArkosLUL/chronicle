@@ -3052,12 +3052,17 @@ SELECT
   COALESCE(wit.quality, 0)::INT as quality,
   COALESCE(NULLIF(wdi.icon, ''), dbi.inventory_icon ->> 0, '')::TEXT as icon
 FROM instance_loot il
-  LEFT JOIN world_item_template wit ON wit.entry = il.item_id
-  LEFT JOIN world_display_info wdi ON wdi.id = wit.display_id
-  LEFT JOIN dbc_item_display_info dbi ON wit.display_id = dbi.id
-WHERE il.instance_id = $1
+  LEFT JOIN world_item_template wit ON wit.dataset_id = $1 AND wit.entry = il.item_id
+  LEFT JOIN world_display_info wdi ON wdi.dataset_id = $1 AND wdi.id = wit.display_id
+  LEFT JOIN dbc_item_display_info dbi ON dbi.dataset_id = $1 AND dbi.id = wit.display_id
+WHERE il.instance_id = $2
 ORDER BY il.source_ts
 `
+
+type GetInstanceLootParams struct {
+	DatasetID  uuid.UUID `db:"dataset_id" json:"dataset_id"`
+	InstanceID uuid.UUID `db:"instance_id" json:"instance_id"`
+}
 
 type GetInstanceLootRow struct {
 	ID           uuid.UUID          `db:"id" json:"id"`
@@ -3075,8 +3080,8 @@ type GetInstanceLootRow struct {
 	Icon         string             `db:"icon" json:"icon"`
 }
 
-func (q *sqlQuerier) GetInstanceLoot(ctx context.Context, instanceID uuid.UUID) ([]GetInstanceLootRow, error) {
-	rows, err := q.db.Query(ctx, getInstanceLoot, instanceID)
+func (q *sqlQuerier) GetInstanceLoot(ctx context.Context, arg GetInstanceLootParams) ([]GetInstanceLootRow, error) {
+	rows, err := q.db.Query(ctx, getInstanceLoot, arg.DatasetID, arg.InstanceID)
 	if err != nil {
 		return nil, err
 	}

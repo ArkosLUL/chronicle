@@ -9,6 +9,7 @@ TARGETS=(
   "kronos|https://legacy.chronicleclassic.com/|0da7611b-a3a1-47d8-82a5-f383c43cd69d"
   "turtle|https://legacy.chronicleclassic.com/|a0404e03-e743-49e5-9876-7d5fa2931159"
   "vanillaplus|https://legacy.chronicleclassic.com/|d77b88b5-97e9-4f6b-acc9-c291f546e475"
+  "lunatic|https://legacy.chronicleclassic.com/|53f9c96d-2b9a-43d9-8244-ffc6c0bf4ce6"
 )
 
 source "$SCRIPT_DIR/run.sh"

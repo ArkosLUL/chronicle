@@ -67,7 +67,6 @@ func OculusHostiles() map[uint32]instances.Identity {
 		28183: "Centrifuge Core",
 		27635: "Azure Spellbinder",
 		27640: "Ring-Lord Conjurer",
-		32261: "Crystal Spider",
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		27447: "Varos Cloudstrider",
@@ -187,7 +186,7 @@ var UtgardeKeepFactory = &instances.CommonFactory{
 	Name:      "Utgarde Keep",
 	ZoneNames: []string{"utgarde keep"},
 	MapIDs:    []uint32{574},
-	Hostiles: instances.FromMap(UtgardeKeepHostiles()),
+	Hostiles:  instances.FromMap(UtgardeKeepHostiles()),
 	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
 		return UtgardeKeepSpeedrunRequirements()
 	},
@@ -232,7 +231,7 @@ var UtgardePinnacleFactory = &instances.CommonFactory{
 	DerivedName: nil,
 	ZoneNames:   []string{"utgarde pinnacle"},
 	MapIDs:      []uint32{575},
-	Hostiles: instances.FromMap(UtgardePinnacleHostiles()),
+	Hostiles:    instances.FromMap(UtgardePinnacleHostiles()),
 	FlavoredRankings: func(database.WoWFlavor) *rankings.Rankings {
 		return UtgardePinnacleSpeedrunRequirements()
 	},

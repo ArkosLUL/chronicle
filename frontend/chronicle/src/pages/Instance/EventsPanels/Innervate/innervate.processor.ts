@@ -31,6 +31,8 @@ export interface InnervateCast {
 export interface InnervateResult {
   /** All Innervate casts, in chronological order */
   casts: InnervateCast[];
+  /** Last Innervate offsetMilli per caster GUID — used for dedup, not serialized */
+  lastCastByDruid: Map<string, number>;
 }
 
 /**
@@ -42,6 +44,7 @@ export const innervateProcessor: PanelProcessor<InnervateResult, AuraCastProcess
   
   createState: (): InnervateResult => ({
     casts: [],
+    lastCastByDruid: new Map(),
   }),
   
   processEvent: (
@@ -56,9 +59,14 @@ export const innervateProcessor: PanelProcessor<InnervateResult, AuraCastProcess
     if (event.type !== "aura_cast") return;
     if (event.spell.id !== INNERVATE_SPELL_ID) return;
     if (!context.selectedEncounterIds.has(encounterID)) return;
-    console.log(event)
-    // 2 effects are applied, just listen to 1 of them
-    if (event.effectAuraName !== 110) return; 
+
+    // Vanilla emits 2 aura_cast events per Innervate (one per spell effect),
+    // and WOTLK doesn't populate effectAuraName at all. Dedup by caster with
+    // a 30s window — well under the 6-minute cooldown, so no false positives.
+    const DEDUP_WINDOW_MS = 30_000;
+    const lastMs = state.lastCastByDruid.get(event.caster);
+    if (lastMs !== undefined && (event.offsetMilli - lastMs) < DEDUP_WINDOW_MS) return;
+    state.lastCastByDruid.set(event.caster, event.offsetMilli);
     
     // Get player names from context
     const casterPlayer = context.players[event.caster];

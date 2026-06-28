@@ -17,7 +17,7 @@
 
 import type { AbsorbedProcessorEvent, DamageProcessorEvent, HealProcessorEvent, PanelProcessor, ProcessorContext, ResourceChangeProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
-import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "./abilityBreakout";
+import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, PERIODIC_SPELL_ID_OFFSET, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "./abilityBreakout";
 import { isResourceChangeEvent, isDamageEvent } from "./events";
 import { createGuidCache, getCachedGuid, isPlayerGuidFast, isPetGuidFast, type GuidCache } from "./guidCache";
 import { resolveEntity, extractGroupingFromPanelOption, extractPetModeFromPanelOption } from "./resolveEntity";
@@ -439,17 +439,22 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       const spellId = isAbsorbed
         ? (event as AbsorbedProcessorEvent).absorbSpellId
         : !isResourceChangeEvent(event, streamType) ? (event as HealProcessorEvent).spellId : null;
+      // Use a composite key so periodic (HoT) events with the same spell ID as
+      // direct heals (e.g. Regrowth) get their own breakout row.
+      const isPeriodic = hasHitType(hitType, HitTypePeriodic);
+      const breakoutSpellId = spellId != null && isPeriodic
+        ? spellId + PERIODIC_SPELL_ID_OFFSET : spellId;
       // Skip pet abilities in merged mode — different pets share spell IDs which
       // would incorrectly merge them. Pet abilities are shown from ByAbility instead.
       const isPetMerged = casterHasOwner && grouping === "merged";
-      if (spellId != null && !isPetMerged) {
+      if (breakoutSpellId != null && !isPetMerged) {
         if (effectiveHeal > 0) {
-          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, spellId, abilityName, effectiveHeal, hitType);
+          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityBySpellId, healerID, breakoutSpellId, abilityName, effectiveHeal, hitType);
         }
         if (overheal > 0) {
-          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityOverhealBySpellId, healerID, spellId, abilityName, overheal, hitType);
+          accumulateAbilityBreakoutBySpellId(state.HealerByAbilityOverhealBySpellId, healerID, breakoutSpellId, abilityName, overheal, hitType);
         }
-        accumulateAbilityBreakoutBySpellId(state.HealerByAbilityTotalBySpellId, healerID, spellId, abilityName, healAmount, hitType);
+        accumulateAbilityBreakoutBySpellId(state.HealerByAbilityTotalBySpellId, healerID, breakoutSpellId, abilityName, healAmount, hitType);
       }
       // Store spellId on the ByAbility entries for pet abilities so the breakout
       // can still show spell icons when pulling pet rows from ByAbility.
@@ -486,14 +491,14 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
       accumulateAbilityBreakout(state.TargetByAbilityTotal, aggregateTargetID, abilityName, healAmount, hitType);
 
       // Target spell ID keyed breakdown (for "Show ranks" mode)
-      if (spellId != null) {
+      if (breakoutSpellId != null) {
         if (effectiveHeal > 0) {
-          accumulateAbilityBreakoutBySpellId(state.TargetByAbilityBySpellId, aggregateTargetID, spellId, abilityName, effectiveHeal, hitType);
+          accumulateAbilityBreakoutBySpellId(state.TargetByAbilityBySpellId, aggregateTargetID, breakoutSpellId, abilityName, effectiveHeal, hitType);
         }
         if (overheal > 0) {
-          accumulateAbilityBreakoutBySpellId(state.TargetByAbilityOverhealBySpellId, aggregateTargetID, spellId, abilityName, overheal, hitType);
+          accumulateAbilityBreakoutBySpellId(state.TargetByAbilityOverhealBySpellId, aggregateTargetID, breakoutSpellId, abilityName, overheal, hitType);
         }
-        accumulateAbilityBreakoutBySpellId(state.TargetByAbilityTotalBySpellId, aggregateTargetID, spellId, abilityName, healAmount, hitType);
+        accumulateAbilityBreakoutBySpellId(state.TargetByAbilityTotalBySpellId, aggregateTargetID, breakoutSpellId, abilityName, healAmount, hitType);
       }
 
       // Absorbed tracking: heal events' absorbed field (healing eaten by a shield on
@@ -511,13 +516,13 @@ export function createUnifiedHealingProcessor(): PanelProcessor<UnifiedHealingRe
         state.TargetByAbilityAbsorbed.set(aggregateTargetID, targetAbsorbs);
 
         // Spell-ID-keyed absorbed (for "Show ranks" mode)
-        if (spellId != null) {
+        if (breakoutSpellId != null) {
           const healerAbsorbsBySpellId = state.HealerByAbilityAbsorbedBySpellId.get(healerID) || new Map();
-          healerAbsorbsBySpellId.set(spellId, (healerAbsorbsBySpellId.get(spellId) || 0) + absorbed);
+          healerAbsorbsBySpellId.set(breakoutSpellId, (healerAbsorbsBySpellId.get(breakoutSpellId) || 0) + absorbed);
           state.HealerByAbilityAbsorbedBySpellId.set(healerID, healerAbsorbsBySpellId);
 
           const targetAbsorbsBySpellId = state.TargetByAbilityAbsorbedBySpellId.get(aggregateTargetID) || new Map();
-          targetAbsorbsBySpellId.set(spellId, (targetAbsorbsBySpellId.get(spellId) || 0) + absorbed);
+          targetAbsorbsBySpellId.set(breakoutSpellId, (targetAbsorbsBySpellId.get(breakoutSpellId) || 0) + absorbed);
           state.TargetByAbilityAbsorbedBySpellId.set(aggregateTargetID, targetAbsorbsBySpellId);
         }
       }

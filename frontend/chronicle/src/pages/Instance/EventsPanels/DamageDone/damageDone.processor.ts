@@ -4,7 +4,7 @@
 
 import type { AuraProcessorEvent, DamageProcessorEvent, PanelProcessor, ProcessorContext, SlainProcessorEvent } from "../processorTypes";
 import { hasHitType, HitTypePeriodic } from "@/lib/hittype/hittype";
-import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
+import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, PERIODIC_SPELL_ID_OFFSET, type DamageAbilityBreakout, type SpellIdAbilityBreakout } from "../processors/abilityBreakout";
 import { createGuidCache, type GuidCache } from "../processors/guidCache";
 import { extractGroupingFromPanelOption, extractPetModeFromPanelOption, resolveEntity } from "../processors/resolveEntity";
 import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraProcessorState } from "../processors/auraProcessor";
@@ -336,13 +336,18 @@ export function createDamageDoneProcessor(
         }
 
         accumulateAbilityBreakout(state.ByAbility, damageOwner, abilityName, effectiveAmount, event.hitType, event.amount);
+        // Use a composite key so periodic (DoT) events with the same spell ID as
+        // direct damage (e.g. Immolate) get their own breakout row.
+        const isPeriodicDmg = hasHitType(event.hitType, HitTypePeriodic);
+        const breakoutSpellId = event.spellId != null && isPeriodicDmg
+          ? event.spellId + PERIODIC_SPELL_ID_OFFSET : event.spellId;
         // Only track by spell ID if we have one (not for melee/environmental damage).
         // Skip pet abilities in merged mode — different pets share the same spell ID
         // (e.g. Auto Attack = 6603) which would incorrectly merge them. Pet abilities
         // are instead shown from ByAbility which keys by name (unique per pet).
         const isPetMerged = casterHasOwner && grouping === "merged";
-        if (event.spellId != null && !isPetMerged) {
-          accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageOwner, event.spellId, abilityName, effectiveAmount, event.hitType, event.amount);
+        if (breakoutSpellId != null && !isPetMerged) {
+          accumulateAbilityBreakoutBySpellId(state.ByAbilityBySpellId, damageOwner, breakoutSpellId, abilityName, effectiveAmount, event.hitType, event.amount);
         }
         // Store spellId on the ByAbility entry for pet abilities so the breakout
         // can still show spell icons when pulling pet rows from ByAbility.
@@ -359,11 +364,11 @@ export function createDamageDoneProcessor(
           accumulateAbilityBreakout(state.VulnerabilityByAbilityBonus, damageOwner, abilityName, bonusAmount, event.hitType);
           accumulateAbilityBreakout(state.VulnerabilityByAbilityBase, damageOwner, abilityName, baseAmount, event.hitType);
 
-          if (event.spellId != null) {
+          if (breakoutSpellId != null) {
             accumulateAbilityBreakoutBySpellId(
               state.VulnerabilityByAbilityBySpellIdBonus,
               damageOwner,
-              event.spellId,
+              breakoutSpellId,
               abilityName,
               bonusAmount,
               event.hitType,
@@ -371,7 +376,7 @@ export function createDamageDoneProcessor(
             accumulateAbilityBreakoutBySpellId(
               state.VulnerabilityByAbilityBySpellIdBase,
               damageOwner,
-              event.spellId,
+              breakoutSpellId,
               abilityName,
               baseAmount,
               event.hitType,

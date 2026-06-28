@@ -1031,6 +1031,9 @@ func insertDPSRankings(
 					Spec:          spec,
 				})
 				if err != nil {
+					if database.IsRLSViolation(err) {
+						err = fmt.Errorf("server realm %q is not included in the root domain tenant — talent build cannot be saved", realmName)
+					}
 					slog.WarnContext(ctx, "upsert talent build", slog.String("err", err.Error()))
 				} else {
 					talentBuildID = uuid.NullUUID{UUID: tbID, Valid: true}
@@ -1074,6 +1077,9 @@ func insertDPSRankings(
 				KilledAt:       database.Timestamptz(enc.Combat.End),
 			})
 			if err != nil {
+				if database.IsRLSViolation(err) {
+					err = fmt.Errorf("server realm %q is not included in the root domain tenant — rankings cannot be inserted (configure the server's tenant to set include_in_all = true, or upload from the correct subdomain)", realmName)
+				}
 				slog.WarnContext(ctx, "insert dps ranking",
 					slog.String("encounter", enc.Name),
 					slog.String("player", player.Name),
@@ -1223,6 +1229,9 @@ func insertTrashRankings(
 				Spec:          key.Spec,
 			})
 			if err != nil {
+				if database.IsRLSViolation(err) {
+					err = fmt.Errorf("server realm %q is not included in the root domain tenant — talent build cannot be saved", realmName)
+				}
 				slog.WarnContext(ctx, "upsert talent build (trash)", slog.String("err", err.Error()))
 			} else {
 				talentBuildID = uuid.NullUUID{UUID: tbID, Valid: true}
@@ -1262,6 +1271,9 @@ func insertTrashRankings(
 			KilledAt:       database.Timestamptz(a.LastKilledAt),
 		})
 		if err != nil {
+			if database.IsRLSViolation(err) {
+				err = fmt.Errorf("server realm %q is not included in the root domain tenant — rankings cannot be inserted (configure the server's tenant to set include_in_all = true, or upload from the correct subdomain)", realmName)
+			}
 			slog.WarnContext(ctx, "insert trash ranking",
 				slog.String("player", player.Name),
 				slog.String("spec", key.Spec),

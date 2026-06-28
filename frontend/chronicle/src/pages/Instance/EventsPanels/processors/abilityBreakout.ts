@@ -4,6 +4,26 @@
 
 import { hasHitType, HitTypeCrit, HitTypeCrushing, HitTypeDodge, HitTypeFullBlock, HitTypeFullResist, HitTypeGlancing, HitTypeHit, HitTypeImmune, HitTypeMiss, HitTypeParry, HitTypeReflect } from "@/lib/hittype/hittype";
 
+/**
+ * Offset added to spell IDs for periodic (DoT/HoT) events to create unique
+ * composite keys in the BySpellId breakout maps. This prevents direct and
+ * periodic events from the same spell (e.g. Regrowth direct heal + HoT tick)
+ * from colliding under one map entry.
+ *
+ * Use {@link realSpellId} to extract the original spell ID from a composite key.
+ */
+export const PERIODIC_SPELL_ID_OFFSET = 1_000_000;
+
+/**
+ * Extract the real spell ID from a composite breakout key.
+ * Composite keys for periodic events have {@link PERIODIC_SPELL_ID_OFFSET} added.
+ */
+export function realSpellId(compositeKey: number): number {
+  return compositeKey >= PERIODIC_SPELL_ID_OFFSET
+    ? compositeKey - PERIODIC_SPELL_ID_OFFSET
+    : compositeKey;
+}
+
 /** Stats for a specific hit type (min/max/total for avg calculation) */
 export interface HitTypeStats {
   count: number;

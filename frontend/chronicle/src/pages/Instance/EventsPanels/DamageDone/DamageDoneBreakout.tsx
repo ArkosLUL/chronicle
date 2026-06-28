@@ -4,6 +4,7 @@ import { AbilityBreakout, type AbilityData, type TargetData, type BreakoutTab } 
 import type { DamageDoneResult } from "./damageDone.processor";
 import type { PanelContext } from "../types";
 import type { WoWSpell } from "@/api/wowdb";
+import { realSpellId } from "../processors/abilityBreakout";
 
 /**
  * Convert the ByAbility map for a specific unit into AbilityData[] for the breakout.
@@ -48,12 +49,12 @@ function getAbilitiesBySpellIdForUnit(
   if (!unitAbilities) return [];
 
   const abilities: AbilityDataWithSpellId[] = [];
-  for (const [spellId, data] of unitAbilities) {
+  for (const [compositeId, data] of unitAbilities) {
     abilities.push({
       ...data,
       name: data.spellName,
       value: data.Total,
-      spellId,
+      spellId: realSpellId(compositeId),
     });
   }
 
@@ -69,7 +70,7 @@ function getAllSpellIds(result: DamageDoneResult | undefined): number[] {
   const spellIds = new Set<number>();
   
   for (const unitMap of result.ByAbilityBySpellId.values()) {
-    for (const id of unitMap.keys()) spellIds.add(id);
+    for (const id of unitMap.keys()) spellIds.add(realSpellId(id));
   }
   
   return Array.from(spellIds);
@@ -218,7 +219,7 @@ export function useDamageDoneBreakout({
           const rank = spellData?.subtext?.["0"]; // enUS locale (e.g., "Rank 7")
           return { 
             ...a, 
-            key: `spell-${a.spellId}`,  // Unique key to force remount when toggling modes
+            key: `spell-${a.spellId}-${a.name}`,  // Unique key (name includes HoT/DoT suffix)
             spellId: a.spellId,  // Pass spellId for icon/tooltip
             subtitle: rank || undefined,
           };

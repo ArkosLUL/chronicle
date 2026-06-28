@@ -92,3 +92,12 @@ func IsQueryCanceledError(err error) bool {
 
 	return false
 }
+// IsRLSViolation checks if the error is due to a row-level security policy violation.
+func IsRLSViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "42501" // insufficient_privilege (RLS)
+	}
+	return false
+}
+

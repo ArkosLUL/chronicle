@@ -5,6 +5,7 @@ import type { UnifiedHealingResult } from "../processors";
 import type { PanelContext } from "../types";
 import type { HealingViewMode } from "./HealingDoneContent";
 import type { WoWSpell } from "@/api/wowdb";
+import { realSpellId } from "../processors/abilityBreakout";
 
 /**
  * Resolve a unit name from context, formatting pets as "{Owner}'s Pet {PetName}".
@@ -134,12 +135,12 @@ function getAbilitiesBySpellIdForUnit(
     // Only show overhealing
     if (!overhealAbilities) return [];
     const abilities: AbilityDataWithSpellId[] = [];
-    for (const [spellId, data] of overhealAbilities) {
+    for (const [compositeId, data] of overhealAbilities) {
       abilities.push({
         ...data,
         name: data.spellName,
         value: data.Total,
-        spellId,
+        spellId: realSpellId(compositeId),
       });
     }
     return abilities.sort((a, b) => b.value - a.value);
@@ -151,13 +152,13 @@ function getAbilitiesBySpellIdForUnit(
     if (!totalAbilities) return [];
     
     const abilities: AbilityDataWithSpellId[] = [];
-    for (const [spellId, data] of totalAbilities) {
+    for (const [compositeId, data] of totalAbilities) {
       abilities.push({
         ...data,
         name: data.spellName,
         value: data.Total,
-        absorbed: absorbedAbilities?.get(spellId),
-        spellId,
+        absorbed: absorbedAbilities?.get(compositeId),
+        spellId: realSpellId(compositeId),
       });
     }
     return abilities.sort((a, b) => b.value - a.value);
@@ -166,29 +167,29 @@ function getAbilitiesBySpellIdForUnit(
   // Default: effective - include overheal as separate column
   if (!effectiveAbilities) return [];
   const abilities: AbilityDataWithSpellId[] = [];
-  for (const [spellId, data] of effectiveAbilities) {
-    // Get overheal for this spell ID if it exists
-    const overhealData = overhealAbilities?.get(spellId);
+  for (const [compositeId, data] of effectiveAbilities) {
+    // Get overheal for this composite key if it exists
+    const overhealData = overhealAbilities?.get(compositeId);
     abilities.push({
       ...data,
       name: data.spellName,
       value: data.Total,
       overheal: overhealData?.Total,
-      absorbed: absorbedAbilities?.get(spellId),
-      spellId,
+      absorbed: absorbedAbilities?.get(compositeId),
+      spellId: realSpellId(compositeId),
     });
   }
   
   // Also add abilities that only have overheal (no effective healing)
   if (overhealAbilities) {
-    for (const [spellId, data] of overhealAbilities) {
-      if (!effectiveAbilities?.has(spellId)) {
+    for (const [compositeId, data] of overhealAbilities) {
+      if (!effectiveAbilities?.has(compositeId)) {
         abilities.push({
           ...data,
           name: data.spellName,
           value: 0,
           overheal: data.Total,
-          spellId,
+          spellId: realSpellId(compositeId),
         });
       }
     }
@@ -303,13 +304,13 @@ function getAllSpellIds(result: UnifiedHealingResult | undefined): number[] {
   const spellIds = new Set<number>();
   
   for (const healerMap of result.HealerByAbilityBySpellId.values()) {
-    for (const id of healerMap.keys()) spellIds.add(id);
+    for (const id of healerMap.keys()) spellIds.add(realSpellId(id));
   }
   for (const healerMap of result.HealerByAbilityOverhealBySpellId.values()) {
-    for (const id of healerMap.keys()) spellIds.add(id);
+    for (const id of healerMap.keys()) spellIds.add(realSpellId(id));
   }
   for (const healerMap of result.HealerByAbilityTotalBySpellId.values()) {
-    for (const id of healerMap.keys()) spellIds.add(id);
+    for (const id of healerMap.keys()) spellIds.add(realSpellId(id));
   }
   
   return Array.from(spellIds);
@@ -395,7 +396,7 @@ export function useHealingDoneBreakout({
           const rank = spellData?.subtext?.["0"]; // enUS locale (e.g., "Rank 7")
           return { 
             ...a, 
-            key: `spell-${a.spellId}`,  // Unique key to force remount when toggling modes
+            key: `spell-${a.spellId}-${a.name}`,  // Unique key (name includes HoT/DoT suffix)
             spellId: a.spellId,  // Pass spellId for icon/tooltip
             subtitle: rank || undefined,
           };

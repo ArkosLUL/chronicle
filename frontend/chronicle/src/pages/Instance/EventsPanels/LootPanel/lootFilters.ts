@@ -51,6 +51,17 @@ const GLOBAL_FILTERS: InstanceLootFilter[] = [
       20725, // Nexus Crystal
     ]),
   },
+  {
+    label: "Currency",
+    itemIds: new Set([
+      // Wrath Emblems
+      40752, // Emblem of Heroism
+      40753, // Emblem of Valor
+      45624, // Emblem of Conquest
+      47241, // Emblem of Triumph
+      49426, // Emblem of Frost
+    ]),
+  },
 ];
 
 /**
@@ -111,7 +122,19 @@ const INSTANCE_LOOT_FILTERS: Record<string, InstanceLootFilter[]> = {
  * Returns global filters followed by any instance-specific ones.
  */
 export function getInstanceLootFilters(instanceName: string): InstanceLootFilter[] {
-  return [...GLOBAL_FILTERS, ...(INSTANCE_LOOT_FILTERS[instanceName] ?? [])];
+  const all = [...GLOBAL_FILTERS, ...(INSTANCE_LOOT_FILTERS[instanceName] ?? [])];
+  const merged = new Map<string, Set<number>>();
+  const order: string[] = [];
+  for (const f of all) {
+    const existing = merged.get(f.label);
+    if (existing) {
+      for (const id of f.itemIds) existing.add(id);
+    } else {
+      order.push(f.label);
+      merged.set(f.label, new Set(f.itemIds));
+    }
+  }
+  return order.map((label) => ({ label, itemIds: merged.get(label)! }));
 }
 
 // ── Turnin / Currency items ─────────────────────────────────────────────────

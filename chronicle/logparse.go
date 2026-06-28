@@ -992,7 +992,7 @@ func insertDPSRankings(
 			}
 			var class, spec string
 			if player, ok := finalized.Guilds.Players[unitGUID]; ok {
-				class = string(player.HeroClass)
+				class = string(db2sdk.HeroClassToDB(player.HeroClass))
 			}
 			if stats.Talents != nil && class != "" {
 				spec = wowspec.InferSpec(class, stats.Talents.Summary)
@@ -1016,7 +1016,7 @@ func insertDPSRankings(
 				continue
 			}
 
-			className := string(player.HeroClass)
+			className := string(db2sdk.HeroClassToDB(player.HeroClass))
 			// Use the per-encounter talent snapshot from the DPS tracker,
 			// not the armory tracker's final state, so mid-raid respecs
 			// and respec invalidation are correctly captured.
@@ -1159,7 +1159,7 @@ func insertTrashRankings(
 			if !stats.IsPlayer {
 				continue
 			}
-			className := string(finalized.Guilds.Players[unitGUID].HeroClass)
+			className := string(db2sdk.HeroClassToDB(finalized.Guilds.Players[unitGUID].HeroClass))
 			spec, talentLayout, talentSummary := extractTalentInfoFromSnapshot(className, stats.Talents)
 
 			key := trashPlayerKey{GUID: unitGUID, Spec: spec}
@@ -1191,7 +1191,7 @@ func insertTrashRankings(
 	for key, a := range accum {
 		var class string
 		if player, ok := finalized.Guilds.Players[key.GUID]; ok {
-			class = string(player.HeroClass)
+			class = string(db2sdk.HeroClassToDB(player.HeroClass))
 		}
 		playerMetrics[key] = wowspec.PlayerMetrics{
 			DamageDone:  a.DamageDone,
@@ -1212,7 +1212,7 @@ func insertTrashRankings(
 			continue
 		}
 
-		className := string(player.HeroClass)
+		className := string(db2sdk.HeroClassToDB(player.HeroClass))
 
 		var talentBuildID uuid.NullUUID
 		if a.TalentLayout != "" {

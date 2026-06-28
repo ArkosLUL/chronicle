@@ -78,8 +78,8 @@ func OculusHostiles() map[uint32]instances.Identity {
 }
 
 var OculusFactory = &instances.CommonFactory{
-	Name:      "The Oculus",
 	ZoneNames: []string{"the oculus", "oculus"},
+	Name:      "The Oculus",
 	MapIDs:    []uint32{578},
 	Hostiles:  instances.FromMap(OculusHostiles()),
 }

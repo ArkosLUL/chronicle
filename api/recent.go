@@ -56,15 +56,6 @@ func (api *API) RecentInstances(w http.ResponseWriter, r *http.Request) {
 func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cacheKey := r.Host + ":range:" + r.URL.RawQuery
-	if api.recentCache != nil {
-		if cached, ok := api.recentCache.Get(cacheKey); ok {
-			w.Header().Set("X-CHRONICLE-CACHE", "HIT")
-			httpapi.Write(ctx, w, http.StatusOK, cached)
-			return
-		}
-	}
-
 	q := r.URL.Query()
 
 	startTime, err := time.Parse(time.RFC3339, q.Get("start"))
@@ -212,9 +203,5 @@ func (api *API) InstancesByTimeRange(w http.ResponseWriter, r *http.Request) {
 		Instances: instances,
 		HasMore:   false,
 	}
-	if api.recentCache != nil {
-		api.recentCache.Set(cacheKey, response)
-	}
-
 	httpapi.Write(ctx, w, http.StatusOK, response)
 }

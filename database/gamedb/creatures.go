@@ -5,6 +5,7 @@ import (
 
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/lrucache"
+	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/google/uuid"
 )
 
@@ -25,11 +26,11 @@ type creatureFetcher struct {
 	cache *lrucache.Cache[creatureKey, *database.WorldCreatureTemplate] // nil value = negative cache
 }
 
-func newCreatureFetcher(ctx context.Context, db CreatureQuerier, cacheSize int, metrics *lrucache.Metrics) *creatureFetcher {
-	c, _ := lrucache.New(lrucache.Opts[creatureKey, *database.WorldCreatureTemplate]{
+func newCreatureFetcher(ctx context.Context, db CreatureQuerier, cacheSvc *servicecache.Service, cacheSize int) *creatureFetcher {
+	c, _ := servicecache.NewCache(cacheSvc, lrucache.Opts[creatureKey, *database.WorldCreatureTemplate]{
 		Name:      "creatures",
 		Capacity:  cacheSize,
-		Metrics:   metrics,
+		TTL:       servicecache.TTLCreatures,
 		DatasetOf: func(k creatureKey) string { return k.DatasetID.String() },
 	})
 	return &creatureFetcher{

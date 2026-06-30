@@ -17,6 +17,7 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/database/spelldb"
 	"github.com/Emyrk/chronicle/internal/lrucache"
+	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -54,17 +55,17 @@ type Fetcher struct {
 // NewFetcher creates a Fetcher backed by the database and a compiled-in DBC
 // fallback. pool may be nil to disable DB lookups (for tests or CLI tools).
 // Spell name index is loaded in a background goroutine from the DBC file.
-func NewFetcher(ctx context.Context, pool *pgxpool.Pool, dbc *chrondbc.SpellsDBC, custom map[chrondbc.SpellID]chrondbc.Spell, cacheSize int, metrics *lrucache.Metrics) *Fetcher {
-	cache, _ := lrucache.New(lrucache.Opts[spellKey, entry]{
+func NewFetcher(ctx context.Context, pool *pgxpool.Pool, dbc *chrondbc.SpellsDBC, custom map[chrondbc.SpellID]chrondbc.Spell, cacheSvc *servicecache.Service, cacheSize int) *Fetcher {
+	cache, _ := servicecache.NewCache(cacheSvc, lrucache.Opts[spellKey, entry]{
 		Name:      "spells",
 		Capacity:  cacheSize,
-		Metrics:   metrics,
+		TTL:       servicecache.TTLSpells,
 		DatasetOf: func(k spellKey) string { return k.DatasetID.String() },
 	})
-	hasDB, _ := lrucache.New(lrucache.Opts[uuid.UUID, bool]{
+	hasDB, _ := servicecache.NewCache(cacheSvc, lrucache.Opts[uuid.UUID, bool]{
 		Name:     "spells_has_db",
 		Capacity: 64,
-		Metrics:  metrics,
+		TTL:      servicecache.TTLSpellsHasDB,
 	})
 	f := &Fetcher{
 		pool:        pool,

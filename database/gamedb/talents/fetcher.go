@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Emyrk/chronicle/internal/lrucache"
+	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -34,11 +35,11 @@ type fetcher struct {
 }
 
 // NewFetcher creates a TalentFetcher backed by the given DB and an LRU cache.
-func NewFetcher(db TalentQuerier, cacheSize int, metrics *lrucache.Metrics) TalentFetcher {
-	cache, _ := lrucache.New(lrucache.Opts[uuid.UUID, *TalentTreeData]{
+func NewFetcher(db TalentQuerier, cacheSvc *servicecache.Service, cacheSize int) TalentFetcher {
+	cache, _ := servicecache.NewCache(cacheSvc, lrucache.Opts[uuid.UUID, *TalentTreeData]{
 		Name:      "talents",
 		Capacity:  cacheSize,
-		Metrics:   metrics,
+		TTL:       servicecache.TTLTalents,
 		DatasetOf: func(k uuid.UUID) string { return k.String() },
 	})
 	return &fetcher{db: db, cache: cache}

@@ -18,6 +18,7 @@ import {
   X,
   Loader2,
   ClipboardList,
+  Database,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -37,6 +38,7 @@ const tabs: Tab[] = [
   { path: "/admin/regression", label: "Regression", icon: FlaskConical },
   { path: "/admin/outdated-instances", label: "Outdated Instances", icon: RefreshCw },
   { path: "/admin/applications", label: "Applications", icon: ClipboardList },
+  { path: "/admin/cache-stats", label: "Cache Stats", icon: Database },
 ];
 
 export function AdminLayout() {

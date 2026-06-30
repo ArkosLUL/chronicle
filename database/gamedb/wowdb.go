@@ -14,6 +14,7 @@ import (
 	"github.com/Emyrk/chronicle/database/gamedb/talents"
 	"github.com/Emyrk/chronicle/internal/lrucache"
 	"github.com/Emyrk/chronicle/internal/services"
+	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/Gophercraft/core/format/dbc"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -71,7 +72,7 @@ type Options struct {
 	Pool          *pgxpool.Pool // For DB-backed spell lookups; nil = DBC-only.
 	DatasetID     uuid.UUID     // Default dataset for item/creature lookups.
 	Talents       talents.TalentFetcher
-	Metrics       *lrucache.Metrics // nil disables cache instrumentation.
+	CacheSvc      *servicecache.Service // Centralized cache service; all caches register here.
 }
 
 // WoWDB holds all game data sources used during parsing and API serving.
@@ -113,16 +114,16 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 	}
 
 	spDBC := chrondbc.NewSpells(v)
-	spellFetcher := spells.NewFetcher(ctx, opts.Pool, spDBC, customSpells, 1000, opts.Metrics)
+	spellFetcher := spells.NewFetcher(ctx, opts.Pool, spDBC, customSpells, opts.CacheSvc, 1000)
 
-	eaCache, _ := lrucache.New(lrucache.Opts[uuid.UUID, map[int32]dbcmem.ExtraAttackSpell]{
-		Capacity: 64, Metrics: opts.Metrics, Name: "extra_attacks",
+	eaCache, _ := servicecache.NewCache(opts.CacheSvc, lrucache.Opts[uuid.UUID, map[int32]dbcmem.ExtraAttackSpell]{
+		Capacity: 64, Name: "extra_attacks", TTL: servicecache.TTLExtraAttacks,
 	})
-	dmCache, _ := lrucache.New(lrucache.Opts[uuid.UUID, *chrondbc.DurationModifierSet]{
-		Capacity: 64, Metrics: opts.Metrics, Name: "duration_mods",
+	dmCache, _ := servicecache.NewCache(opts.CacheSvc, lrucache.Opts[uuid.UUID, *chrondbc.DurationModifierSet]{
+		Capacity: 64, Name: "duration_mods", TTL: servicecache.TTLDurationMods,
 	})
-	psCache, _ := lrucache.New(lrucache.Opts[uuid.UUID, map[int32]dbcmem.PeriodicSpell]{
-		Capacity: 64, Metrics: opts.Metrics, Name: "periodic_spells",
+	psCache, _ := servicecache.NewCache(opts.CacheSvc, lrucache.Opts[uuid.UUID, map[int32]dbcmem.PeriodicSpell]{
+		Capacity: 64, Name: "periodic_spells", TTL: servicecache.TTLPeriodicSpells,
 	})
 
 	return &WoWDB{
@@ -131,8 +132,8 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 		datasetID:       opts.DatasetID,
 		pool:            opts.Pool,
 		spells:          spellFetcher,
-		itemFetcher:     newItemFetcher(ctx, opts.DB, 400, opts.Metrics),
-		creatureFetcher: newCreatureFetcher(ctx, opts.DB, 500, opts.Metrics),
+		itemFetcher:     newItemFetcher(ctx, opts.DB, opts.CacheSvc, 400),
+		creatureFetcher: newCreatureFetcher(ctx, opts.DB, opts.CacheSvc, 500),
 		talents:         opts.Talents,
 		extraAttacks:    eaCache,
 		durationMods:    dmCache,

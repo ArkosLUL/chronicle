@@ -69,6 +69,25 @@ export interface AdminBulkSelectedReparseResponse {
     readonly failed: readonly AdminBulkLogFailure[];
 }
 
+// From chroniclesdk/cache.go
+/**
+ * AdminCacheStat describes a single LRU cache's current state.
+ */
+export interface AdminCacheStat {
+    readonly name: string;
+    readonly entries: number;
+    readonly capacity: number;
+    readonly ttl: string; // Go duration string, "" if no TTL
+}
+
+// From chroniclesdk/cache.go
+/**
+ * AdminCacheStatsResponse is the response from GET /api/v1/admin/cache-stats.
+ */
+export interface AdminCacheStatsResponse {
+    readonly caches: readonly AdminCacheStat[];
+}
+
 // From chroniclesdk/user.go
 export interface AdminLog {
     readonly id: string;

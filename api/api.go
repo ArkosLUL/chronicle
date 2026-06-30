@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/Emyrk/chronicle/api/chronauth"
 	"github.com/Emyrk/chronicle/api/chroniclesdk"
@@ -31,6 +30,7 @@ import (
 	"github.com/Emyrk/chronicle/database/storage"
 	"github.com/Emyrk/chronicle/frontend"
 	"github.com/Emyrk/chronicle/internal/services/serviceapplication"
+	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/Emyrk/chronicle/internal/services/servicedataset"
 	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/authzed/gochugaru/rel"
@@ -80,6 +80,9 @@ type Options struct {
 
 	// Dataset is the dataset CRUD service for managing game-data payloads.
 	Dataset *servicedataset.Service
+
+	// CacheSvc is the centralized cache service for admin introspection.
+	CacheSvc *servicecache.Service
 }
 
 type API struct {
@@ -89,7 +92,6 @@ type API struct {
 	Chronicle      *chronicle.Chronicle
 	Queues         *riverqueue.Queues
 	Zed            *authz.Authz
-	recentCache    *recentRaidsCache
 	discoveryStats discoveryStatsCache
 }
 
@@ -139,7 +141,7 @@ func New(ctx context.Context, opts Options) (*API, error) {
 		Chronicle:   opts.Chronicle,
 		Queues:      opts.RiverQueue,
 		Zed:         opts.Zed,
-		recentCache: newRecentRaidsCache(5 * time.Minute),
+
 	}, nil
 }
 
@@ -270,6 +272,9 @@ func (api *API) Routes() chi.Router {
 					r.Post("/outdated-instances/reparse", api.AdminBulkReparseOutdatedInstances)
 					r.Get("/site-config", api.AdminGetSiteConfig)
 					r.Put("/site-config", api.AdminUpdateSiteConfig)
+					r.Get("/cache-stats", api.AdminGetCacheStats)
+					r.Post("/cache-stats/purge", api.AdminPurgeCache)
+					r.Post("/cache-stats/purge/{name}", api.AdminPurgeCache)
 
 					r.Mount("/retention", retentionapi.New(api.Zed, api.Queues).Routes())
 				})

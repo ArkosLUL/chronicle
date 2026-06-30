@@ -6,6 +6,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/internal/lrucache"
+	"github.com/Emyrk/chronicle/internal/services/servicecache"
 	"github.com/google/uuid"
 )
 
@@ -38,17 +39,17 @@ type itemFetcher struct {
 	nameCache *lrucache.Cache[itemNameKey, int]
 }
 
-func newItemFetcher(ctx context.Context, db ItemMetadataQuerier, cacheSize int, metrics *lrucache.Metrics) *itemFetcher {
-	idC, _ := lrucache.New(lrucache.Opts[itemIDKey, int]{
+func newItemFetcher(ctx context.Context, db ItemMetadataQuerier, cacheSvc *servicecache.Service, cacheSize int) *itemFetcher {
+	idC, _ := servicecache.NewCache(cacheSvc, lrucache.Opts[itemIDKey, int]{
 		Name:      "items_id",
 		Capacity:  cacheSize,
-		Metrics:   metrics,
+		TTL:       servicecache.TTLItems,
 		DatasetOf: func(k itemIDKey) string { return k.DatasetID.String() },
 	})
-	nameC, _ := lrucache.New(lrucache.Opts[itemNameKey, int]{
+	nameC, _ := servicecache.NewCache(cacheSvc, lrucache.Opts[itemNameKey, int]{
 		Name:      "items_name",
 		Capacity:  cacheSize,
-		Metrics:   metrics,
+		TTL:       servicecache.TTLItems,
 		DatasetOf: func(k itemNameKey) string { return k.DatasetID.String() },
 	})
 	return &itemFetcher{

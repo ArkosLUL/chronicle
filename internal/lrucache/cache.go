@@ -1,15 +1,42 @@
 // Package lrucache provides a generic, thread-safe LRU cache with optional
 // Prometheus instrumentation for hits, misses, entry count, and capacity —
 // optionally broken down by dataset.
+//
+// When TTL > 0 in [Opts], the cache uses hashicorp/golang-lru/v2/expirable
+// which starts a background goroutine to purge expired entries. The TTL is
+// fixed from last write (Add), NOT sliding — Get does not reset the timer.
 package lrucache
 
 import (
 	"sync"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
+
+// CacheInfo is a type-erased, read-only view of a cache for admin introspection.
+type CacheInfo interface {
+	Name() string
+	Len() int
+	Cap() int
+	TTL() time.Duration
+	Purge()
+}
+
+// lruBackend abstracts over lru.Cache (no TTL) and expirable.LRU (with TTL).
+// Both hashicorp implementations satisfy this interface.
+type lruBackend[K comparable, V any] interface {
+	Get(key K) (V, bool)
+	Add(key K, value V) bool
+	Remove(key K) bool
+	Contains(key K) bool
+	Len() int
+	Keys() []K
+	Purge()
+}
 
 // Metrics holds shared Prometheus collectors for all LRU caches in a process.
 // Create once (e.g. at service start) and pass to every [Cache].
@@ -66,38 +93,55 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 type Opts[K comparable, V any] struct {
 	Name      string
 	Capacity  int
+	TTL       time.Duration  // 0 = no expiry (pure LRU). Fixed from last write; Get does not reset.
 	Metrics   *Metrics       // nil disables instrumentation.
 	DatasetOf func(K) string // Extracts a dataset label from a key; nil = no per-dataset breakdown.
 }
 
 // Cache is a thread-safe, optionally Prometheus-instrumented LRU cache.
+// It implements [CacheInfo] for admin introspection.
 type Cache[K comparable, V any] struct {
 	mu        sync.Mutex
-	inner     *lru.Cache[K, V]
+	inner     lruBackend[K, V]
 	name      string
+	cap       int
+	ttl       time.Duration
 	metrics   *Metrics
 	datasetOf func(K) string
 }
 
+// Compile-time check that Cache implements CacheInfo.
+var _ CacheInfo = (*Cache[string, int])(nil)
+
 // New creates a new Cache. Returns an error only if Capacity < 1.
+// When TTL > 0 the cache uses expirable.LRU which spawns a background
+// cleanup goroutine; the goroutine stops when the LRU is garbage-collected.
 func New[K comparable, V any](opts Opts[K, V]) (*Cache[K, V], error) {
 	c := &Cache[K, V]{
 		name:      opts.Name,
+		cap:       opts.Capacity,
+		ttl:       opts.TTL,
 		metrics:   opts.Metrics,
 		datasetOf: opts.DatasetOf,
 	}
 
-	inner, err := lru.NewWithEvict[K, V](opts.Capacity, func(key K, _ V) {
+	evictCB := func(key K, _ V) {
 		// Called inside c.mu — do NOT re-lock.
 		// Prometheus operations are goroutine-safe.
 		if c.metrics != nil && c.datasetOf != nil {
 			c.metrics.datasetEntries.WithLabelValues(c.name, c.datasetOf(key)).Dec()
 		}
-	})
-	if err != nil {
-		return nil, err
 	}
-	c.inner = inner
+
+	if opts.TTL > 0 {
+		c.inner = expirable.NewLRU[K, V](opts.Capacity, evictCB, opts.TTL)
+	} else {
+		inner, err := lru.NewWithEvict[K, V](opts.Capacity, evictCB)
+		if err != nil {
+			return nil, err
+		}
+		c.inner = inner
+	}
 
 	if c.metrics != nil {
 		c.metrics.capacity.WithLabelValues(c.name).Set(float64(opts.Capacity))
@@ -113,6 +157,15 @@ func (c *Cache[K, V]) dataset(key K) string {
 	}
 	return ""
 }
+
+// Name returns the cache name for admin introspection.
+func (c *Cache[K, V]) Name() string { return c.name }
+
+// Cap returns the maximum capacity of the cache.
+func (c *Cache[K, V]) Cap() int { return c.cap }
+
+// TTL returns the time-to-live for cache entries (0 = no expiry).
+func (c *Cache[K, V]) TTL() time.Duration { return c.ttl }
 
 // Get returns the value for key, promoting it in the LRU.
 func (c *Cache[K, V]) Get(key K) (V, bool) {
@@ -191,4 +244,15 @@ func (c *Cache[K, V]) Len() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.inner.Len()
+}
+
+// Purge removes all entries from the cache.
+func (c *Cache[K, V]) Purge() {
+	c.mu.Lock()
+	c.inner.Purge()
+	c.mu.Unlock()
+
+	if c.metrics != nil {
+		c.metrics.entries.WithLabelValues(c.name).Set(0)
+	}
 }

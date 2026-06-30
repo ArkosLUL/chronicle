@@ -25,6 +25,7 @@ import { AdminUsersPage } from "./pages/Admin/AdminUsersPage"
 import { RegressionPage } from "./pages/Admin/RegressionPage"
 import { AdminOutdatedInstancesPage } from "./pages/Admin/AdminOutdatedInstancesPage"
 import { AdminApplicationsListPage } from "./pages/Admin/AdminApplicationsListPage"
+import { AdminCacheStatsPage } from "./pages/Admin/AdminCacheStatsPage"
 import { ServersLayout, ServersPage, UploadKeysPage, RetentionPage } from "./pages/Servers"
 import { SpellPage } from "./pages/WoWDB/SpellPage"
 import { SpellByNamePage } from "./pages/WoWDB/SpellByNamePage"
@@ -127,6 +128,7 @@ function App() {
           <Route path="regression" element={<RegressionPage />} />
           <Route path="outdated-instances" element={<AdminOutdatedInstancesPage />} />
           <Route path="applications" element={<AdminApplicationsListPage />} />
+          <Route path="cache-stats" element={<AdminCacheStatsPage />} />
         </Route>
         <Route path="/servers" element={<ServersLayout />}>
           <Route index element={<ServersPage />} />

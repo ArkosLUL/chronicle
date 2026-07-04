@@ -44,7 +44,8 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 		NewNefarian,
 		NewVaelChained,
 		// Onyxia
-		NewOnyxiaCharacter,
+		NewOnyxiaCharacter(flavor),
+		NewBroodcommanderAxelusCharacter(flavor),
 		// Zul'Gurub
 		NewHighPriestArlokk,
 		NewHighPriestMarli,

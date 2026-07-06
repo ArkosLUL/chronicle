@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
 func NewNefarian(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
@@ -18,7 +18,13 @@ func NewNefarian(id guid.GUID, all *characters.Characters) (characters.Character
 		return nil, false
 	}
 
-	return characters.NewRoomMechanic(id, 11583, all)
+	c, ok := characters.NewRoomMechanic(id, 11583, all)
+	if !ok {
+		return nil, false
+	}
+	return characters.NewAdsGoWithBossCustomCharacter(c, all, 11583,
+		14668, // Corrupted Infernals
+	), true
 }
 
 func isNefarianEntry(entry uint32) bool {

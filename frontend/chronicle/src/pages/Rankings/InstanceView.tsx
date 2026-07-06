@@ -31,13 +31,13 @@ import {
   useRankingsKillTimeLeaderboard,
   useRankingsSuccessRates,
 } from "@/api/rankingsQueries"
-import { CLASS_DISPLAY } from "./classDisplay"
 import type { RankedEntry } from "./RankingsTable"
 import type { RankedKillTimeEntry } from "./KillTimeTable"
 import type { TimePeriod } from "./timePeriod"
 import { BoxPlotChart } from "./BoxPlotChart"
 import { RankingsTable } from "./RankingsTable"
 import { KillTimeTable } from "./KillTimeTable"
+import { ClassSpecFilter } from "./ClassSpecFilter"
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -269,15 +269,32 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
     [setParams],
   )
 
-  const handleClearClassFilter = useCallback(() => {
-    setParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.delete("class")
-      next.delete("spec")
-      next.delete("page")
-      return next
-    })
-  }, [setParams])
+  const handleClassSelect = useCallback(
+    (cls: string | null) => {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (cls) next.set("class", cls)
+        else next.delete("class")
+        next.delete("spec")
+        next.delete("page")
+        return next
+      })
+    },
+    [setParams],
+  )
+
+  const handleSpecSelect = useCallback(
+    (spec: string | null) => {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (spec) next.set("spec", spec)
+        else next.delete("spec")
+        next.delete("page")
+        return next
+      })
+    },
+    [setParams],
+  )
 
   const handleEncounterClick = useCallback(
     (name: string, ctrlKey: boolean) => {
@@ -761,23 +778,12 @@ export function InstanceView({ instanceName }: InstanceViewProps) {
             />
           ) : (
             <>
-              {/* Active class/spec filter badge */}
-              {filterClass && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Filtered:</span>
-                  <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 font-medium">
-                    {CLASS_DISPLAY[filterClass] ?? filterClass}
-                    {filterSpec ? ` – ${filterSpec}` : ""}
-                  </span>
-                  <button
-                    onClick={handleClearClassFilter}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    title="Clear filter"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+              <ClassSpecFilter
+                selectedClass={filterClass ?? null}
+                selectedSpec={filterSpec ?? null}
+                onClassSelect={handleClassSelect}
+                onSpecSelect={handleSpecSelect}
+              />
               <RankingsTable entries={leaderboardEntries} />
               {/* Pagination */}
               {totalPages > 1 && (

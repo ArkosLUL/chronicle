@@ -1,0 +1,87 @@
+import { cn } from "@/lib/utils"
+import { ALL_DPS_CLASSES, CLASS_CSS_VAR, CLASS_DISPLAY, SPEC_BY_CLASS } from "./classDisplay"
+
+interface ClassSpecFilterProps {
+  selectedClass: string | null
+  selectedSpec: string | null
+  onClassSelect: (cls: string | null) => void
+  onSpecSelect: (spec: string | null) => void
+}
+
+export function ClassSpecFilter({
+  selectedClass,
+  selectedSpec,
+  onClassSelect,
+  onSpecSelect,
+}: ClassSpecFilterProps) {
+  const specs = selectedClass ? SPEC_BY_CLASS[selectedClass] : undefined
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* Class buttons */}
+      <div className="flex flex-wrap items-center gap-1">
+        {ALL_DPS_CLASSES.map((cls) => {
+          const active = selectedClass === cls
+          const color = CLASS_CSS_VAR[cls]
+          return (
+            <button
+              key={cls}
+              onClick={() => onClassSelect(active ? null : cls)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-all",
+                active
+                  ? "border-white/25 bg-white/10 text-foreground"
+                  : selectedClass
+                    ? "border-transparent opacity-35 hover:opacity-60"
+                    : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5",
+              )}
+              style={active ? { borderColor: color } : undefined}
+            >
+              <img
+                src={`/c/icons/class_${cls.toLowerCase()}.png`}
+                alt={CLASS_DISPLAY[cls]}
+                className="h-4 w-4"
+                onError={(e) => { e.currentTarget.src = "/c/icons/class_unknown.png" }}
+              />
+              <span>{CLASS_DISPLAY[cls]}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Spec sub-buttons (shown when a class is selected) */}
+      {selectedClass && specs && (
+        <div className="flex flex-wrap items-center gap-1 pl-1">
+          <button
+            onClick={() => onSpecSelect(null)}
+            className={cn(
+              "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+              !selectedSpec
+                ? "border-[#5F8FA6] bg-[#5F8FA6]/20 text-foreground"
+                : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5",
+            )}
+          >
+            All Specs
+          </button>
+          {specs.map((spec) => {
+            const active = selectedSpec === spec
+            return (
+              <button
+                key={spec}
+                onClick={() => onSpecSelect(active ? null : spec)}
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  active
+                    ? "border-[#5F8FA6] bg-[#5F8FA6]/20 text-foreground"
+                    : "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                )}
+              >
+                {spec}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}

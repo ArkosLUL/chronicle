@@ -13,6 +13,7 @@ import (
 	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/authz"
 	"github.com/Emyrk/chronicle/database/authz/policy"
+	"github.com/Emyrk/chronicle/internal/services/servicetenant"
 	"github.com/Emyrk/chronicle/internal/slice"
 	"github.com/authzed/gochugaru/rel"
 	"github.com/go-chi/chi/v5"
@@ -22,7 +23,17 @@ import (
 func (api *API) SupportedInstances(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// Resolve per-tenant registry when a tenant is present and has a dataset.
 	reg := api.Chronicle.Registry()
+	if tenant := servicetenant.TenantFromContext(ctx); tenant != nil && tenant.DefaultDatasetID.Valid {
+		if ds, err := api.Opts.Dataset.GetDataset(ctx, tenant.DefaultDatasetID.UUID); err == nil {
+			flavor := database.FlavorFromStrings(ds.DefaultFlavor)
+			if len(flavor) > 0 {
+				reg = api.Chronicle.RegistryForFlavor(flavor)
+			}
+		}
+	}
+
 	details := reg.AllInstanceDetails()
 
 	result := make([]chroniclesdk.SupportedInstance, len(details))

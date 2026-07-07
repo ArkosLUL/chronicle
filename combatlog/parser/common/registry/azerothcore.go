@@ -38,7 +38,7 @@ func RegisterTBCEncounters(r *Registry) {
 
 func RegisterWrath(r *Registry) *Registry {
 	// These are changed to level 80
-	r.DeleteEntry(classic.OnyxiaFactory.Name)
+	//r.DeleteEntry(classic.OnyxiaFactory.Name)
 	r.DeleteEntry(classic.NaxxramasFactory.Name)
 
 	// Dungeons

@@ -1,8 +1,8 @@
 package synthetic
 
 import (
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 )
 
 type vanillaplus struct {
@@ -19,7 +19,8 @@ func newVanillaPlus() *vanillaplus {
 		shadowed(11502, "Ragnaros", 40004).
 		shadowed(11982, "Magmadar", 20006).
 		shadowed(11983, "Firemaw", 25122).
-		shadowed(14401, "Master Elemental Shaper Krixix", 25118)
+		shadowed(14401, "Master Elemental Shaper Krixix", 25118).
+		shadowed(25227, "Renault Mograine", 25253)
 }
 
 func (v *vanillaplus) shadowed(boss uint32, name string, shadow uint32) *vanillaplus {

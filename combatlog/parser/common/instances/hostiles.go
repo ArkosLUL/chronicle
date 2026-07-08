@@ -143,7 +143,6 @@ func VanillaPlusSMRaidHostiles() map[uint32]Identity {
 		25245: "Soul Hunter",
 		25246: "Soul",
 		// TODO: Are these critters or a mechanic?
-		25254: "Cockroach",
 		25255: "Cockroach",
 
 		//25200: "Fire Elemental",
@@ -185,6 +184,8 @@ func VanillaPlusSMRaidHostiles() map[uint32]Identity {
 		25224: "Vishas",
 		25225: "Loksey",
 		25226: "Herod",
+		25228: "Sally Whitemane",
+		25227: "Renault Mograine",
 	})
 
 	return hostile

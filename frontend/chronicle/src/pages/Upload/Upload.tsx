@@ -711,7 +711,7 @@ export function Upload() {
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Uploads Disabled</h2>
           <p className="text-muted-foreground">
-            This server uses server-side logging. Client-side uploads are not available.
+            Client-side uploads are not available.
           </p>
         </Card>
       </div>

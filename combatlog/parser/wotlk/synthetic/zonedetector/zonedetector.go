@@ -3,9 +3,9 @@ package zonedetector
 import (
 	"log/slog"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 )
 
 // ZoneDetector infers the current zone from creature entry IDs seen in combat.
@@ -23,6 +23,7 @@ type ZoneDetector struct {
 func New(logger *slog.Logger, reg *registry.Registry) *ZoneDetector {
 	lookup := make(map[uint32]string)
 	notUnique := make(map[uint32]struct{})
+	ignoreList := ignore()
 
 	for _, entry := range reg.Entries() {
 		if entry.MultiZone {
@@ -42,6 +43,10 @@ func New(logger *slog.Logger, reg *registry.Registry) *ZoneDetector {
 					continue
 				}
 
+				if _, exists := ignoreList[entryID]; exists {
+					continue
+				}
+
 				lookup[entryID] = zn
 				break // one zone name per entry is sufficient
 			}
@@ -50,6 +55,23 @@ func New(logger *slog.Logger, reg *registry.Registry) *ZoneDetector {
 	return &ZoneDetector{
 		entryToZone: lookup,
 		logger:      logger,
+	}
+}
+
+// ignore are some entry ids that should not be used for zone detection.
+func ignore() map[uint32]struct{} {
+	return map[uint32]struct{}{
+		// Trial of the Crusader
+		35314: {}, // Orgrimmar Champion
+		35323: {}, // Sen'jin Champion
+		35325: {}, // Thunder Bluff Champion
+		35326: {}, // Silvermoon Champion
+		35327: {}, // Undercity Champion
+		35328: {}, // Stormwind Champion
+		35329: {}, // Ironforge Champion
+		35330: {}, // Exodar Champion
+		35331: {}, // Gnomeregan Champion
+		35332: {}, // Darnassus Champion
 	}
 }
 

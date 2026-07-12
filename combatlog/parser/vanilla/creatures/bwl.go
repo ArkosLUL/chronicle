@@ -6,6 +6,7 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/database"
 )
 
 func NewNefarian(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
@@ -47,39 +48,77 @@ func NewBroodlordLashlayer(id guid.GUID, all *characters.Characters) (characters
 	)(id, all)
 }
 
-func NewRazorgore(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-	if entry, ok := id.GetEntry(); !ok || entry != 12435 {
-		return nil, false
-	}
+func NewRazorgore(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	eggMechanic := flavor.Has(database.FlavorVanillaPlus)
+	return func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+		if entry, ok := id.GetEntry(); !ok || entry != 12435 {
+			return nil, false
+		}
 
-	base := characters.NewCommonCharacter(id, all)
-	base.SetRecentlySlainDuration(time.Second * 30)
-	c := &razorgore{Common: base}
-	return characters.NewAdsGoWithBossCustomCharacter(c, all, 12435,
-		12420,
-		12416,
-		12422,
-		50142,
-		52153,
-	), true
+		base := characters.NewCommonCharacter(id, all)
+		base.SetRecentlySlainDuration(time.Second * 30)
+		c := &razorgore{Common: base, all: all, eggMechanic: eggMechanic}
+		return characters.NewAdsGoWithBossCustomCharacter(c, all, 12435,
+			12420,
+			12416,
+			12422,
+			50142,
+			52153,
+		), true
+	}
 }
 
 type razorgore struct {
 	*characters.Common
+	all         *characters.Characters
+	eggMechanic bool
+	eggCount    int
+	adsGone     bool
 }
 
 func (c *razorgore) Process(m messages.Message) error {
-	switch ty := m.(type) {
-	case *messages.SpellGo:
-		entry, _ := c.ID().GetEntry()
-		var _ = entry
+	wasActive := c.IsActive()
+
+	if ty, ok := m.(*messages.SpellGo); ok && ty.Caster == c.ID() && ty.SpellData != nil {
 		// Razorgore is MC'd and destroys eggs around the room. Count this as activity.
-		if ty.Caster == c.ID() && ty.SpellData != nil &&
-			(ty.SpellData.ID == 19873 || ty.SpellData.ID == 22425) {
+		if ty.SpellData.ID == 19873 || ty.SpellData.ID == 22425 {
 			ty.MarkActivityStart("Razorgore destroying eggs", c.ID())
 		}
+		// V+: after 30 "Destroy Egg" (19873) casts the phase-1 adds run away, so
+		// count them as killed.
+		if c.eggMechanic && !c.adsGone && ty.SpellData.ID == 19873 {
+			c.eggCount++
+			if c.eggCount >= 30 {
+				c.killEggAds(m)
+				c.adsGone = true
+			}
+		}
 	}
-	return c.Common.Process(m)
+
+	err := c.Common.Process(m)
+
+	// Reset the egg count when the boss resets / the fight ends.
+	if wasActive && !c.IsActive() {
+		c.eggCount = 0
+		c.adsGone = false
+	}
+	return err
+}
+
+// killEggAds marks the phase-1 adds as killed. In the real fight they run away
+// once 30 eggs are destroyed; we model that as a death.
+func (c *razorgore) killEggAds(m messages.Message) {
+	for _, entry := range []uint32{
+		12416, // Blackwing Legionnaire
+		12420, // Blackwing Mage
+		12422, // Death Talon Dragonspawn
+	} {
+		for _, add := range c.all.ByEntry[entry] {
+			if canDie, ok := add.(characters.CanDie); ok {
+				canDie.Died("razorgore_eggs_destroyed", m)
+			}
+		}
+	}
 }
 
 func NewShadowflameSpark(id guid.GUID, all *characters.Characters) (characters.Character, bool) {

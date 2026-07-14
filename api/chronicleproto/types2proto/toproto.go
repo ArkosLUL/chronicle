@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/api/chronicleproto"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
 	"github.com/Emyrk/chronicle/internal/slice"
@@ -47,7 +47,7 @@ func Damage(from time.Time, idx int32, dmg *messages.Damage) *chronicleproto.Dam
 		Target:     dmg.Target.String(),
 		HitType:    HitType(dmg.HitType),
 		Amount:     dmg.Amount,
-		School:     School(dmg.School),
+		School:     schoolWithFallback(dmg.School, dmg.SpellData),
 		Tailers:    slice.List(dmg.Trailer, TrailerEntry),
 		SpellData:  SpellData(dmg.SpellData),
 		Overkill:   dmg.Overkill,
@@ -63,7 +63,7 @@ func Heal(from time.Time, idx int32, heal *messages.Heal) *chronicleproto.Heal {
 		Amount:     heal.Amount,
 		HitType:    HitType(heal.HitType),
 		SpellData:  SpellData(heal.SpellData),
-		School:     School(heal.School),
+		School:     schoolWithFallback(heal.School, heal.SpellData),
 		Overheal:   heal.Overheal,
 		Absorbed:   heal.Absorbed,
 	}
@@ -376,6 +376,20 @@ func School(school types.School) chronicleproto.School {
 	}
 }
 
+// schoolWithFallback keeps the combat log's parsed school as authoritative, but
+// backfills from the resolved DBC spell when the log omitted the school
+// (types.NoneSchool). Some log formats (e.g. certain Turtle SPELL_DMG lines)
+// leave the school field empty; without this, downstream consumers such as
+// vulnerability-effect filtering and resist analysis would see the wrong school.
+// spell may be nil (melee, or parsers that don't attach spell data), in which
+// case the parsed value is used as-is.
+func schoolWithFallback(parsed types.School, spell *chrondbc.Spell) chronicleproto.School {
+	if parsed == types.NoneSchool && spell != nil {
+		parsed = spell.School.ToType()
+	}
+	return School(parsed)
+}
+
 func Dispel(from time.Time, idx int32, d *messages.Dispel) *chronicleproto.Dispel {
 	var dt chronicleproto.DispelType
 	if d.Spell != nil {
@@ -397,7 +411,7 @@ func Interrupt(from time.Time, idx int32, i *messages.Interrupt) *chronicleproto
 		Target:       i.Target.String(),
 		SpellName:    i.SpellName,
 		ExtraSpellId: i.ExtraSpellID,
-		ExtraSchool:  School(i.ExtraSchool),
+		ExtraSchool:  schoolWithFallback(i.ExtraSchool, i.InterruptedSpell),
 	}
 }
 func Absorbed(from time.Time, idx int32, a *messages.Absorbed) *chronicleproto.Absorbed {
@@ -408,15 +422,15 @@ func Absorbed(from time.Time, idx int32, a *messages.Absorbed) *chronicleproto.A
 		DamageSpellData: SpellData(a.DamageSpell),
 		Caster:          a.Caster.String(),
 		AbsorbSpellData: SpellData(a.AbsorbSpell),
-		AbsorbSchool:    School(a.AbsorbSchool),
+		AbsorbSchool:    schoolWithFallback(a.AbsorbSchool, a.AbsorbSpell),
 		Amount:          a.Amount,
 	}
 }
 
-
 func DispelTypeConv(dt chrondbc.DispelType) chronicleproto.DispelType {
 	return chronicleproto.DispelType(dt)
 }
+
 // CompanionStats converts a CompanionStats parser message to its proto representation.
 func CompanionStats(from time.Time, idx int32, msg *messages.CompanionStats) *chronicleproto.CompanionStats {
 	buckets := make([]int32, len(msg.Buckets))
@@ -430,5 +444,3 @@ func CompanionStats(from time.Time, idx int32, msg *messages.CompanionStats) *ch
 		Buckets: buckets,
 	}
 }
-
-

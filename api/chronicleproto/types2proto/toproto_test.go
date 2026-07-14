@@ -1,0 +1,100 @@
+package types2proto
+
+import (
+	"testing"
+	"time"
+
+	"github.com/Emyrk/chronicle/api/chronicleproto"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/combatlog/parser/types"
+	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
+	"github.com/stretchr/testify/require"
+)
+
+// arcaneSpell is a minimal DBC spell whose magic school is Arcane.
+func arcaneSpell() *chrondbc.Spell {
+	return &chrondbc.Spell{School: chrondbc.SchoolArcane}
+}
+
+func TestDamageSchoolBackfill(t *testing.T) {
+	t.Parallel()
+
+	ts := time.UnixMilli(1000)
+
+	t.Run("MissingSchoolBackfilledFromSpell", func(t *testing.T) {
+		t.Parallel()
+		got := Damage(ts, 0, &messages.Damage{
+			MessageBase: messages.Base(ts),
+			Target:      guid.GUID(1),
+			School:      types.NoneSchool, // log omitted the school
+			SpellData:   arcaneSpell(),
+		})
+		require.Equal(t, chronicleproto.School_Arcane, got.School)
+	})
+
+	t.Run("PresentSchoolKept", func(t *testing.T) {
+		t.Parallel()
+		got := Damage(ts, 0, &messages.Damage{
+			MessageBase: messages.Base(ts),
+			Target:      guid.GUID(1),
+			School:      types.FireSchool, // must not be overwritten by Arcane spell
+			SpellData:   arcaneSpell(),
+		})
+		require.Equal(t, chronicleproto.School_Fire, got.School)
+	})
+
+	t.Run("MissingSchoolNoSpellStaysNone", func(t *testing.T) {
+		t.Parallel()
+		got := Damage(ts, 0, &messages.Damage{
+			MessageBase: messages.Base(ts),
+			Target:      guid.GUID(1),
+			School:      types.NoneSchool,
+			SpellData:   nil, // e.g. melee / no spell data
+		})
+		require.Equal(t, chronicleproto.School_None, got.School)
+	})
+}
+
+func TestHealSchoolBackfill(t *testing.T) {
+	t.Parallel()
+	ts := time.UnixMilli(1000)
+
+	got := Heal(ts, 0, &messages.Heal{
+		MessageBase: messages.Base(ts),
+		Caster:      guid.GUID(1),
+		Target:      guid.GUID(2),
+		School:      types.NoneSchool,
+		SpellData:   arcaneSpell(),
+	})
+	require.Equal(t, chronicleproto.School_Arcane, got.School)
+}
+
+func TestInterruptExtraSchoolBackfill(t *testing.T) {
+	t.Parallel()
+	ts := time.UnixMilli(1000)
+
+	got := Interrupt(ts, 0, &messages.Interrupt{
+		MessageBase:      messages.Base(ts),
+		Caster:           guid.GUID(1),
+		Target:           guid.GUID(2),
+		ExtraSchool:      types.NoneSchool,
+		InterruptedSpell: arcaneSpell(),
+	})
+	require.Equal(t, chronicleproto.School_Arcane, got.ExtraSchool)
+}
+
+func TestAbsorbedSchoolBackfill(t *testing.T) {
+	t.Parallel()
+	ts := time.UnixMilli(1000)
+
+	got := Absorbed(ts, 0, &messages.Absorbed{
+		MessageBase:  messages.Base(ts),
+		Attacker:     guid.GUID(1),
+		Target:       guid.GUID(2),
+		Caster:       guid.GUID(3),
+		AbsorbSchool: types.NoneSchool,
+		AbsorbSpell:  arcaneSpell(),
+	})
+	require.Equal(t, chronicleproto.School_Arcane, got.AbsorbSchool)
+}

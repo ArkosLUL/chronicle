@@ -1,7 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { createDamageDoneProcessor } from '../DamageDone/damageDone.processor';
-import { VulnerabilitySpells } from '@/constants/dbmem/VulnerabilitySpells';
+import { resolveSelectedVulnerability } from '../VulnerabilityEffect/vulnerabilityConfig';
+import type { VulnerabilitySpell } from '../VulnerabilityEffect/vulnerabilityDerive';
 import { AuraApplication, AuraState, type AuraProcessorEvent, type DamageProcessorEvent, type ProcessorContext, type SlainProcessorEvent } from '../processorTypes';
+
+// Vulnerability effects are derived per-dataset from the spell lookup at runtime;
+// tests use a fixed config map that mirrors the Turtle-derived values, and inject
+// the resolved config into panelContext exactly like VulnerabilityEffectContent does.
+const TEST_VULN_CONFIG: Record<number, VulnerabilitySpell> = {
+  23605: { name: 'Spell Vulnerability', schoolBitmask: 126, percentAffect: 10, flatAffect: null },
+  11374: { name: 'Gift of Arthas', schoolBitmask: 1, percentAffect: null, flatAffect: 8 },
+  1490: { name: 'Curse of the Elements', schoolBitmask: 20, percentAffect: 6, flatAffect: null },
+  11721: { name: 'Curse of the Elements', schoolBitmask: 20, percentAffect: 8, flatAffect: null },
+  11722: { name: 'Curse of the Elements', schoolBitmask: 20, percentAffect: 10, flatAffect: null },
+  17862: { name: 'Curse of Shadow', schoolBitmask: 96, percentAffect: 8, flatAffect: null },
+  17937: { name: 'Curse of Shadow', schoolBitmask: 96, percentAffect: 10, flatAffect: null },
+};
+
+// Stand-in for the compiled-in constant the tests used to read directly.
+const VulnerabilitySpells = TEST_VULN_CONFIG;
 
 describe('damageDoneProcessor', () => {
   const processor = createDamageDoneProcessor('players');
@@ -212,6 +229,19 @@ describe('vulnerabilityEffectProcessor', () => {
   const curseOfShadowRank2Id = 17937;
 
   function createContext(overrides: Partial<ProcessorContext> = {}): ProcessorContext {
+    // The panel selects a vulnerability by spell id; the worker consumes the
+    // resolved config injected via panelContext.selectedVulnerability. Translate
+    // the (default or overridden) panelOption into that injected config here.
+    const panelOption = overrides.panelOption !== undefined
+      ? overrides.panelOption
+      : spellVulnerabilityId.toString();
+    const selectedSpellId = panelOption == null ? null : Number.parseInt(panelOption, 10);
+    const selectedVulnerability = resolveSelectedVulnerability(
+      selectedSpellId != null && Number.isFinite(selectedSpellId) ? selectedSpellId : null,
+      TEST_VULN_CONFIG,
+    );
+    const existingPanelContext = (overrides.panelContext as Record<string, unknown> | undefined) ?? {};
+
     return {
       players: {
         '0x0000000000001234': { name: 'TestPlayer', class: 'MAGE' },
@@ -224,8 +254,14 @@ describe('vulnerabilityEffectProcessor', () => {
         enemyIds: new Set(),
         playerIds: new Set(),
       },
-      panelOption: spellVulnerabilityId.toString(),
       ...overrides,
+      panelOption,
+      panelContext: {
+        // Default-derived config first; an explicit panelContext (e.g. schoolMask,
+        // or a bespoke selectedVulnerability) provided by the caller wins.
+        ...(selectedVulnerability ? { selectedVulnerability } : {}),
+        ...existingPanelContext,
+      },
     };
   }
 
@@ -330,6 +366,43 @@ describe('vulnerabilityEffectProcessor', () => {
 
     expect(base).toBeCloseTo(expectedBase);
     expect(bonus).toBeCloseTo(expectedBonus);
+  });
+
+  it('does not apply Curse of the Elements bonus to Arcane damage (Fire+Frost only)', () => {
+    // Regression: Turtle CoE (schoolBitmask 20 = Fire+Frost) must not amplify
+    // Arcane Missiles. Arcane damage arrives as chronicleproto.School enum 8.
+    const state = processor.createState();
+    const context = createContext({ panelOption: curseOfElementsRank3Id.toString() });
+
+    processor.processEvent(state, createVulnerabilityAuraEvent(curseOfElementsRank3Id), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createDamageEvent({ amount: 1000, school: 8, sourceName: 'Arcane Missiles' }), 'enc1', new Date(), 'damage', context);
+
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    expect(bonus).toBe(0);
+    expect(base).toBe(1000);
+  });
+
+  it('applies Curse of the Elements bonus to Arcane damage when the effect covers all magic (WotLK)', () => {
+    // On WotLK/AzerothCore, CoE amplifies all magic schools (schoolBitmask 126).
+    // Same processor, different derived config → Arcane now gets the bonus.
+    const state = processor.createState();
+    const wotlkConfig: Record<number, VulnerabilitySpell> = {
+      11722: { name: 'Curse of the Elements', schoolBitmask: 126, percentAffect: 10, flatAffect: null },
+    };
+    const selectedVulnerability = resolveSelectedVulnerability(curseOfElementsRank3Id, wotlkConfig);
+    const context = createContext({ panelContext: { selectedVulnerability } });
+
+    processor.processEvent(state, createVulnerabilityAuraEvent(curseOfElementsRank3Id), 'enc1', new Date(), 'aura', context);
+    processor.processEvent(state, createDamageEvent({ amount: 1100, school: 8, sourceName: 'Arcane Missiles' }), 'enc1', new Date(), 'damage', context);
+
+    const expectedBase = 1100 / (1 + 10 / 100);
+    const bonus = state.EncounterVulnerabilityBonus.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+    const base = state.EncounterVulnerabilityBase.get('enc1')?.get('0x0000000000001234')?.get('0xF130000CE0000001') ?? 0;
+
+    expect(base).toBeCloseTo(expectedBase);
+    expect(bonus).toBeCloseTo(1100 - expectedBase);
   });
 
   it('uses rank 1 Curse of Shadow modifier when rank 1 aura is active', () => {

@@ -61,7 +61,7 @@ func DerivedStaticsCmd() *serpent.Command {
 			if err := generateDerivedPeriodicSpells(wc, goDir, server); err != nil {
 				return fmt.Errorf("generate periodic spells: %w", err)
 			}
-			if err := generateDerivedVulnerabilitySpells(wc, goDir, tsDir, server); err != nil {
+			if err := generateDerivedVulnerabilitySpells(wc, goDir, server); err != nil {
 				return fmt.Errorf("generate vulnerability spells: %w", err)
 			}
 			if err := generateDerivedExtraAttacks(wc, goDir, tsDir, server); err != nil {
@@ -94,17 +94,17 @@ func generateDerivedPeriodicSpells(wc *dbcdb.WoWClient, goDir string, server str
 	return writeTemplate(filepath.Join(goDir, "periodicspells.go"), periodicSpellsGoTemplate, serverData{Server: server, Entries: entries}, server)
 }
 
-func generateDerivedVulnerabilitySpells(wc *dbcdb.WoWClient, goDir, tsDir string, server string) error {
+// generateDerivedVulnerabilitySpells writes the compiled-in Go fallback map. The
+// frontend no longer consumes a generated VulnerabilitySpells.ts constant; the
+// Vulnerability Effect panel derives this data per-dataset from the live spell
+// lookup (see vulnerabilityDerive.ts).
+func generateDerivedVulnerabilitySpells(wc *dbcdb.WoWClient, goDir, server string) error {
 	entries, err := collectVulnerabilitySpells(wc)
 	if err != nil {
 		return err
 	}
 
-	if err := writeTemplate(filepath.Join(goDir, "vulnerabilityspells.go"), vulnerabilitySpellsGoTemplate, serverData{Server: server, Entries: entries}, server); err != nil {
-		return err
-	}
-
-	return writeTemplate(filepath.Join(tsDir, "VulnerabilitySpells.ts"), vulnerabilitySpellsTSTemplate, entries, server)
+	return writeTemplate(filepath.Join(goDir, "vulnerabilityspells.go"), vulnerabilitySpellsGoTemplate, serverData{Server: server, Entries: entries}, server)
 }
 
 func generateDerivedExtraAttacks(wc *dbcdb.WoWClient, goDir, tsDir string, server string) error {

@@ -8,7 +8,7 @@ import { accumulateAbilityBreakout, accumulateAbilityBreakoutBySpellId, PERIODIC
 import { createGuidCache, type GuidCache } from "../processors/guidCache";
 import { extractGroupingFromPanelOption, extractPetModeFromPanelOption, resolveEntity } from "../processors/resolveEntity";
 import { applyAuraEvent, createAuraProcessorState, hasAura, type AuraProcessorState } from "../processors/auraProcessor";
-import { resolveSelectedVulnerability } from "../VulnerabilityEffect/vulnerabilityConfig";
+import type { SelectedVulnerability } from "../VulnerabilityEffect/vulnerabilityConfig";
 
 // Re-export the shared type for backwards compatibility
 export type { DamageAbilityBreakout, HitTypeStats } from "../processors/abilityBreakout";
@@ -209,8 +209,11 @@ export function createDamageDoneProcessor(
       _streamType: string,
       context: ProcessorContext,
     ) => {
+      // The resolved vulnerability config is derived React-side (from the
+      // dataset-aware spell lookup) and injected via panelContext, because the
+      // worker cannot fetch spell data.
       const selectedVulnerability = vulnerabilityMode
-        ? resolveSelectedVulnerability(context.panelOption)
+        ? ((context.panelContext as { selectedVulnerability?: SelectedVulnerability } | null)?.selectedVulnerability ?? null)
         : null;
 
       // Keep aura bookkeeping disabled unless vulnerability tracking is explicitly selected.

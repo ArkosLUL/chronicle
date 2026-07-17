@@ -1388,7 +1388,6 @@ func StratholmeHostiles() map[uint32]Identity {
 		10424: "Crimson Gallant",
 		10425: "Crimson Battle Mage",
 		10426: "Crimson Inquisitor",
-		10812: "Grand Crusader Dathrohan",
 		10917: "Aurius",
 		11043: "Crimson Monk",
 		11082: "Stratholme Courier",
@@ -1412,6 +1411,7 @@ func StratholmeHostiles() map[uint32]Identity {
 		10811: "Archivist Galford",
 		10997: "Cannon Master Willey",
 		11032: "Malor the Zealous",
+		10812: "Grand Crusader Dathrohan",
 	})
 
 	return hostile

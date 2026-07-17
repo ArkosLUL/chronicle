@@ -1394,8 +1394,9 @@ func StratholmeHostiles() map[uint32]Identity {
 		14646: "Stratholme Trigger",
 		15607: "Elder Farwhisper",
 		16031: "Ysida Harmon",
-		16046: "Jarien and Sothos Trigger",
-		16100: "Ysida's Trigger",
+		16102: "Sothos",
+		16101: "Jarien",
+		11058: "Fras Siabi",
 	})
 	LoadBosses(hostile, map[uint32]string{
 		10438: "Maleki the Pallid",

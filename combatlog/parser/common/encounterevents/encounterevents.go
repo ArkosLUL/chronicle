@@ -21,10 +21,11 @@ type EncounterEvents struct {
 	ExtraAttack    *Builder[*messages.ExtraAttack, *chronicleproto.ExtraAttack]
 	Slain          *Builder[*messages.Slain, *chronicleproto.Slain]
 	// Casts is deprecated to SpellStart/SpellGo/SpellFail, but we still want to support it for older logs.
-	Casts      *Builder[*messages.Cast, *chronicleproto.Cast]
-	Aura       *Builder[*messages.Aura, *chronicleproto.Aura]
-	AuraCast   *Builder[*messages.AuraCast, *chronicleproto.AuraCast]
-	SpellGo    *Builder[*messages.SpellGo, *chronicleproto.SpellGo]
+	//nolint: staticcheck
+	Casts              *Builder[*messages.Cast, *chronicleproto.Cast]
+	Aura               *Builder[*messages.Aura, *chronicleproto.Aura]
+	AuraCast           *Builder[*messages.AuraCast, *chronicleproto.AuraCast]
+	SpellGo            *Builder[*messages.SpellGo, *chronicleproto.SpellGo]
 	SpellStart         *Builder[*messages.SpellStart, *chronicleproto.SpellStart]
 	SpellFail          *Builder[*messages.SpellFail, *chronicleproto.SpellFail]
 	UnitClassification *Builder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification]
@@ -44,11 +45,12 @@ func New(verbose bool) *EncounterEventsInProgress {
 		ResourceChange: NewBuilder[*messages.ResourceChange, *chronicleproto.ResourceChange](),
 		ExtraAttack:    NewBuilder[*messages.ExtraAttack, *chronicleproto.ExtraAttack](),
 		Slain:          NewBuilder[*messages.Slain, *chronicleproto.Slain](),
-		Casts:          NewBuilder[*messages.Cast, *chronicleproto.Cast](),
-		Aura:           NewBuilder[*messages.Aura, *chronicleproto.Aura](),
-		AuraCast:       NewBuilder[*messages.AuraCast, *chronicleproto.AuraCast](),
-		SpellGo:        NewBuilder[*messages.SpellGo, *chronicleproto.SpellGo](),
-		SpellStart:     NewBuilder[*messages.SpellStart, *chronicleproto.SpellStart](),
+		//nolint: staticcheck
+		Casts:              NewBuilder[*messages.Cast, *chronicleproto.Cast](),
+		Aura:               NewBuilder[*messages.Aura, *chronicleproto.Aura](),
+		AuraCast:           NewBuilder[*messages.AuraCast, *chronicleproto.AuraCast](),
+		SpellGo:            NewBuilder[*messages.SpellGo, *chronicleproto.SpellGo](),
+		SpellStart:         NewBuilder[*messages.SpellStart, *chronicleproto.SpellStart](),
 		SpellFail:          NewBuilder[*messages.SpellFail, *chronicleproto.SpellFail](),
 		UnitClassification: NewBuilder[*messages.UnitClassificationEvent, *chronicleproto.UnitClassification](),
 		CombatantInfo:      NewBuilder[*messages.Combatant, *chronicleproto.CombatantInfo](),
@@ -166,6 +168,7 @@ func (e *EncounterEventsInProgress) Finalize(merge *Events, encounterID uuid.UUI
 	return nil
 }
 
+// nolint: staticcheck
 func (e *EncounterEventsInProgress) Process(m messages.Message) error {
 	e.setFirsts(m.Date())
 	if !e.verbose {

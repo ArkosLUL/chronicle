@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/database"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
@@ -56,6 +57,37 @@ const (
 
 func NewIncindisCharacter(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	return characters.NewAdsGoWithBoss(incindis, spawnOfIncindis, flameskinIncindis, eggIncindis)(id, all)
+}
+
+type coreRager struct {
+	*characters.Common
+}
+
+func (c *coreRager) Process(m messages.Message) error {
+	if ty, ok := m.(*messages.AuraCast); ok {
+		// Spell is called 'Golemagg's Trust'. It is periodically called
+		if ty.Spell != nil && ty.Spell.ID == 20553 {
+			if (ty.Target != nil && *ty.Target == c.ID()) ||
+				ty.Caster == c.ID() {
+				ty.MarkActivityStart("trust spell with golemagg", c.ID())
+			}
+		}
+	}
+
+	err := c.Common.Process(m)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewCoreRager(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 11672 {
+		return nil, false
+	}
+
+	c := characters.NewCommonCharacter(id, all)
+	return &coreRager{c}, true
 }
 
 func NewGolemaggCharacter(flavor database.WoWFlavor) func(id guid.GUID, all *characters.Characters) (characters.Character, bool) {

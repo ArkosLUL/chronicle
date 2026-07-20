@@ -36,6 +36,7 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 		NewSmoldarisBasaltharCharacter,
 		NewSorcererThaneCharacter,
 		NewRagnarosCharacter,
+		NewCoreRager,
 		NewGolemaggCharacter(flavor),
 		// Blackwing Lair
 		NewBroodlordLashlayer,

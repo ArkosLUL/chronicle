@@ -83,6 +83,7 @@ func New(ctx context.Context, logger *slog.Logger, reg *registry.Registry) *Stat
 	})
 }
 
+// nolint: staticcheck
 func (s *State) Process(m messages.Message) error {
 	totalStart := time.Now()
 	defer func() {

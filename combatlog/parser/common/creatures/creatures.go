@@ -100,6 +100,7 @@ func (s *Creatures) UnitCastedSpell(id guid.GUID, spell *chrondbc.Spell) {
 	s.UnitSpells[entry][spell.Name()] = struct{}{}
 }
 
+// nolint: staticcheck
 func (s *Creatures) Process(m messages.Message) error {
 	switch typed := m.(type) {
 	case *messages.Zone:

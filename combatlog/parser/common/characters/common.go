@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters/period"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
@@ -79,6 +79,7 @@ func isImmobilizeCC(spellName string) bool {
 }
 
 // ProcessCommonActivity handles the basics of activity processing for a character.
+// nolint: staticcheck
 func ProcessCommonActivity(c CharacterBase, m messages.Message) error {
 	if m.MarksExist() {
 		if reason, ok := m.MarkHas(messages.MarkTypeStart, c.ID()); ok {

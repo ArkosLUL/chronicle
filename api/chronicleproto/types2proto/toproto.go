@@ -163,6 +163,7 @@ func SpellFail(from time.Time, idx int32, ca *messages.SpellFail) *chronicleprot
 	}
 }
 
+// nolint: staticcheck
 func Cast(from time.Time, idx int32, ca *messages.Cast) *chronicleproto.Cast {
 	var target *string
 	if ca.Target != nil {

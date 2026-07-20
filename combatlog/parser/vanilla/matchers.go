@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/logfile"
 	"github.com/Emyrk/chronicle/combatlog/parser/playerposition"
 	"github.com/Emyrk/chronicle/combatlog/parser/regexs"
@@ -21,7 +22,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitdied"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/internal/ptr"
 )
 
@@ -39,6 +39,7 @@ func (p *Parser) fV2Casts(ts time.Time, content string) ([]messages.Message, err
 		return messages.Skip(ts, "castv2: not using guids"), nil
 	}
 
+	//nolint: staticcheck
 	return set(&messages.Cast{
 		CastV2:      c,
 		MessageBase: messages.Base(ts),
@@ -1409,7 +1410,7 @@ func OnlyRaw(do func(ts time.Time, content string) ([]messages.Message, error)) 
 }
 
 func Either(do func(ts time.Time, content string) ([]messages.Message, error)) parseLine {
-  return func(lCtx *logfile.Context, ts time.Time, content string) ([]messages.Message, error) {
-    return do(ts, content)
-  }
+	return func(lCtx *logfile.Context, ts time.Time, content string) ([]messages.Message, error) {
+		return do(ts, content)
+	}
 }

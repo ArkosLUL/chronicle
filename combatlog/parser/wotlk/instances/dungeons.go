@@ -215,6 +215,9 @@ func UtgardePinnacleHostiles() map[uint32]instances.Identity {
 		28368: "Ymirjar Necromancer",
 		30538: "Elder Chogan'gada",
 		30871: "Brigg Smallshanks",
+		26690: "Ymirjar Warrior",
+		26692: "Ymirjar Harpooner",
+		26691: "Ymirjar Witch Doctor",
 	})
 	instances.LoadBosses(hostile, map[uint32]string{
 		26687: "Gortok Palehoof",

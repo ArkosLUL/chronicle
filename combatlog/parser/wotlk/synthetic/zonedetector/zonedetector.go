@@ -72,6 +72,9 @@ func ignore() map[uint32]struct{} {
 		35330: {}, // Exodar Champion
 		35331: {}, // Gnomeregan Champion
 		35332: {}, // Darnassus Champion
+		26690: {}, // "Ymirjar Warrior",
+		26692: {}, // "Ymirjar Harpooner",
+		26691: {}, // "Ymirjar Witch Doctor",
 	}
 }
 

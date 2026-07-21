@@ -1763,6 +1763,17 @@ export interface SpeedrunDataSourceStatus {
 
 // From chroniclesdk/log.go
 /**
+ * SpeedrunInstanceBoard identifies one leaderboard: each (instance,
+ * difficulty) combination has its own board. DifficultyName may be empty for
+ * runs whose logs recorded no difficulty.
+ */
+export interface SpeedrunInstanceBoard {
+    readonly instance_name: string;
+    readonly difficulty_name: string;
+}
+
+// From chroniclesdk/log.go
+/**
  * SpeedrunKillRecord captures a single kill contributing to a requirement.
  */
 export interface SpeedrunKillRecord {
@@ -1778,6 +1789,7 @@ export interface SpeedrunKillRecord {
 export interface SpeedrunLeaderboardEntry {
     readonly instance_id: string;
     readonly slug: string;
+    readonly difficulty_name: string;
     readonly duration_ms: number;
     readonly guild_name: string;
     readonly realm_name: string;

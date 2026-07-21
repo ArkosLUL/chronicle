@@ -3,19 +3,27 @@ import { useQuery } from "@tanstack/react-query"
 import { Loader2, SlidersHorizontal, Check, Users, Globe, X, ChevronDown, Info, ArrowLeft, Trophy } from "lucide-react"
 import { getInstanceConfig, getInstanceCategory, getInstanceBackground } from "../Logs/utils/instanceImages"
 import { useState, useEffect, useCallback, useRef } from "react"
-import type { SpeedrunLeaderboardEntry, SpeedrunRulesResponse } from "../../api/typesGenerated"
+import type { SpeedrunInstanceBoard, SpeedrunLeaderboardEntry, SpeedrunRulesResponse } from "../../api/typesGenerated"
 import { Podium } from "./Podium"
 import { LeaderboardTable } from "./LeaderboardTable"
 
 const SPEEDRUN_STALE_TIME = 5 * 60 * 1000 // 5 minutes
 
-function useSpeedrunInstances() {
-  return useQuery<string[]>({
+// Each (instance, difficulty) combination is its own board.
+function useSpeedrunBoards() {
+  return useQuery<SpeedrunInstanceBoard[]>({
     queryKey: ["leaderboard", "speedrun", "instances"],
     queryFn: async () => {
       const res = await fetch("/api/v1/rankings/speedrun/instances")
       if (!res.ok) throw new Error("Failed to fetch instances")
-      return res.json()
+      const data: (SpeedrunInstanceBoard | string)[] = await res.json()
+      // Older backends returned plain instance-name strings. Normalize so a
+      // stale API doesn't crash the page.
+      return data.map((item) =>
+        typeof item === "string"
+          ? { instance_name: item, difficulty_name: "" }
+          : item
+      )
     },
     staleTime: SPEEDRUN_STALE_TIME,
   })
@@ -33,15 +41,18 @@ function useSpeedrunRealms() {
   })
 }
 
+// Each difficulty has its own board. `difficulty` may be an empty string
+// (runs with no recorded difficulty); pass null to skip filtering entirely.
 function useSpeedrunLeaderboard(
   instanceName: string,
   realmNames: string[],
   minPlayers: string,
   maxPlayers: string,
-  sinceDays: string
+  sinceDays: string,
+  difficulty: string | null
 ) {
   return useQuery<SpeedrunLeaderboardEntry[]>({
-    queryKey: ["leaderboard", "speedrun", instanceName, realmNames, minPlayers, maxPlayers, sinceDays],
+    queryKey: ["leaderboard", "speedrun", instanceName, realmNames, minPlayers, maxPlayers, sinceDays, difficulty],
     queryFn: async () => {
       const params = new URLSearchParams()
       params.set("instance_name", instanceName)
@@ -51,6 +62,7 @@ function useSpeedrunLeaderboard(
       if (minPlayers) params.set("min_players", minPlayers)
       if (maxPlayers) params.set("max_players", maxPlayers)
       if (sinceDays) params.set("since_days", sinceDays)
+      if (difficulty !== null) params.set("difficulty_name", difficulty)
       const res = await fetch(`/api/v1/rankings/speedrun?${params.toString()}`)
       if (!res.ok) throw new Error("Failed to fetch leaderboard")
       return res.json()
@@ -58,6 +70,30 @@ function useSpeedrunLeaderboard(
     enabled: !!instanceName,
     staleTime: SPEEDRUN_STALE_TIME,
   })
+}
+
+function useSpeedrunDifficulties(instanceName: string) {
+  return useQuery<string[]>({
+    queryKey: ["leaderboard", "speedrun", "difficulties", instanceName],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/rankings/speedrun/difficulties?instance_name=${encodeURIComponent(instanceName)}`)
+      if (!res.ok) throw new Error("Failed to fetch difficulties")
+      return res.json()
+    },
+    enabled: !!instanceName,
+    staleTime: SPEEDRUN_STALE_TIME,
+  })
+}
+
+// Empty difficulty_name means the log did not record one (older logs / default).
+function difficultyLabel(difficulty: string): string {
+  return difficulty === "" ? "Normal" : difficulty
+}
+
+// "Naxxramas" + "25 Player" → "Naxxramas (25 Player)". Boards without a
+// recorded difficulty keep the bare instance name.
+function boardTitle(instanceName: string, difficulty: string): string {
+  return difficulty === "" ? instanceName : `${instanceName} (${difficulty})`
 }
 
 function useSpeedrunRules(instanceName: string) {
@@ -412,15 +448,16 @@ function formatDuration(ms: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`
 }
 
-function InstanceCard({ name, onSelect }: { name: string; onSelect: (name: string) => void }) {
+function InstanceCard({ board, onSelect }: { board: SpeedrunInstanceBoard; onSelect: (board: SpeedrunInstanceBoard) => void }) {
+  const name = board.instance_name
   const bg = getInstanceBackground(name)
-  const { data: entries } = useSpeedrunLeaderboard(name, [], "", "", "")
+  const { data: entries } = useSpeedrunLeaderboard(name, [], "", "", "", board.difficulty_name)
   const top3 = entries?.slice(0, 3) ?? []
 
   return (
     <button
       type="button"
-      onClick={() => onSelect(name)}
+      onClick={() => onSelect(board)}
       className="group relative overflow-hidden rounded-xl border bg-card text-left transition-all hover:border-white/20 hover:shadow-lg aspect-[16/7] w-full"
     >
       <img
@@ -434,7 +471,7 @@ function InstanceCard({ name, onSelect }: { name: string; onSelect: (name: strin
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {getInstanceConfig(name)?.abbrev ?? ""}
           </span>
-          <h3 className="text-lg font-bold leading-tight text-white">{name}</h3>
+          <h3 className="text-lg font-bold leading-tight text-white">{boardTitle(name, board.difficulty_name)}</h3>
         </div>
 
         {top3.length > 0 && (
@@ -458,11 +495,11 @@ function InstanceCard({ name, onSelect }: { name: string; onSelect: (name: strin
   )
 }
 
-function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelect: (name: string) => void }) {
-  const raids = instances.filter((name) => getInstanceCategory(name) === "raid")
-  const dungeons = instances.filter((name) => getInstanceCategory(name) !== "raid")
+function InstanceBrowser({ boards, onSelect }: { boards: SpeedrunInstanceBoard[]; onSelect: (board: SpeedrunInstanceBoard) => void }) {
+  const raids = boards.filter((b) => getInstanceCategory(b.instance_name) === "raid")
+  const dungeons = boards.filter((b) => getInstanceCategory(b.instance_name) !== "raid")
 
-  if (instances.length === 0) {
+  if (boards.length === 0) {
     return (
       <div className="text-center py-20 text-muted-foreground">
         No speedrun data yet.
@@ -479,8 +516,8 @@ function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelec
             <span className="text-sm text-muted-foreground/60">Chronicle of fastest guild clears</span>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {raids.map((name) => (
-              <InstanceCard key={name} name={name} onSelect={onSelect} />
+            {raids.map((board) => (
+              <InstanceCard key={`${board.instance_name}-${board.difficulty_name}`} board={board} onSelect={onSelect} />
             ))}
           </div>
         </section>
@@ -489,8 +526,8 @@ function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelec
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-muted-foreground">Dungeons</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {dungeons.map((name) => (
-              <InstanceCard key={name} name={name} onSelect={onSelect} />
+            {dungeons.map((board) => (
+              <InstanceCard key={`${board.instance_name}-${board.difficulty_name}`} board={board} onSelect={onSelect} />
             ))}
           </div>
         </section>
@@ -501,7 +538,7 @@ function InstanceBrowser({ instances, onSelect }: { instances: string[]; onSelec
 
 export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: string } = {}) {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { data: instances, isLoading: instancesLoading } = useSpeedrunInstances()
+  const { data: boards, isLoading: instancesLoading } = useSpeedrunBoards()
   const { data: realms } = useSpeedrunRealms()
   const [criteriaOpen, setCriteriaOpen] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
@@ -513,13 +550,28 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
   const maxPlayers = searchParams.get("max_players") || ""
   const sinceDays = searchParams.get("since_days") || ""
 
+  // Each difficulty has its own board. Default to the first available
+  // difficulty; note the URL value may legitimately be "" (no recorded
+  // difficulty), so check presence rather than truthiness.
+  const { data: difficulties } = useSpeedrunDifficulties(selectedInstance)
+  const selectedDifficulty = searchParams.has("difficulty")
+    ? (searchParams.get("difficulty") ?? "")
+    : (difficulties?.[0] ?? null)
+
   const { data: entries, isLoading: entriesLoading } = useSpeedrunLeaderboard(
     selectedInstance,
     selectedRealms,
     minPlayers,
     maxPlayers,
-    sinceDays
+    sinceDays,
+    selectedDifficulty
   )
+
+  const setDifficulty = (difficulty: string) => {
+    const next = new URLSearchParams(searchParams)
+    next.set("difficulty", difficulty)
+    setSearchParams(next)
+  }
 
   const activeFilterCount =
     (selectedRealms.length > 0 ? 1 : 0) +
@@ -543,8 +595,16 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
     if (state.minPlayers) next.set("min_players", state.minPlayers)
     if (state.maxPlayers) next.set("max_players", state.maxPlayers)
     if (sinceDays) next.set("since_days", sinceDays)
+    // Preserve the difficulty board only when staying on the same instance;
+    // difficulties differ per instance.
+    if (state.instance === selectedInstance && searchParams.has("difficulty")) {
+      next.set("difficulty", searchParams.get("difficulty") ?? "")
+    }
     setSearchParams(next)
   }
+
+  // Distinct instance names for the criteria modal (boards are per-difficulty).
+  const instanceNames = [...new Set((boards ?? []).map((b) => b.instance_name))]
 
   const top3 = entries?.slice(0, 3) ?? []
   const rest = entries?.slice(3) ?? []
@@ -556,10 +616,11 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
     return (
       <div className="w-full">
         <InstanceBrowser
-          instances={instances ?? []}
-          onSelect={(name) => setSearchParams((prev) => {
+          boards={boards ?? []}
+          onSelect={(board) => setSearchParams((prev) => {
             const next = new URLSearchParams(prev)
-            next.set("instance", name)
+            next.set("instance", board.instance_name)
+            next.set("difficulty", board.difficulty_name)
             return next
           })}
         />
@@ -592,6 +653,7 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
             onClick={() => {
               const next = new URLSearchParams(searchParams)
               next.delete("instance")
+              next.delete("difficulty")
               setSearchParams(next)
             }}
             className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4 transition-colors"
@@ -613,6 +675,9 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
               ) : selectedInstance ? (
                 <span className="flex items-center gap-2 text-xl md:text-3xl font-bold truncate">
                   {selectedInstance}
+                  {selectedDifficulty && (
+                    <span className="text-base md:text-xl font-normal text-muted-foreground">{selectedDifficulty}</span>
+                  )}
                   {rulesData && (
                     <button
                       onClick={() => setRulesOpen(true)}
@@ -664,6 +729,25 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
             </button>
           </div>
 
+          {/* Difficulty Boards — each difficulty has its own leaderboard */}
+          {difficulties && difficulties.length > 1 && (
+            <div className="flex rounded-lg border border-white/10 overflow-hidden w-fit mb-6">
+              {difficulties.map((difficulty) => (
+                <button
+                  key={difficulty}
+                  onClick={() => setDifficulty(difficulty)}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    selectedDifficulty === difficulty
+                      ? "bg-[#5F8FA6] text-white"
+                      : "bg-black/30 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {difficultyLabel(difficulty)}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Desktop Podium */}
           {!entriesLoading && entries && entries.length > 0 && (
             <div className="hidden md:block">
@@ -682,7 +766,7 @@ export function SpeedrunLeaderboard({ overrideInstance }: { overrideInstance?: s
       <CriteriaModal
         open={criteriaOpen}
         onClose={() => setCriteriaOpen(false)}
-        availableInstances={instances ?? []}
+        availableInstances={instanceNames}
         availableRealms={realms ?? []}
         initial={{ instance: selectedInstance, realms: selectedRealms, minPlayers, maxPlayers }}
         onApply={applyCriteria}

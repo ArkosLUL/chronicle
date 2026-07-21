@@ -348,10 +348,19 @@ type SpeedrunVersionStatus struct {
 	AddonQualified   bool   `json:"addon_qualified"`
 }
 
+// SpeedrunInstanceBoard identifies one leaderboard: each (instance,
+// difficulty) combination has its own board. DifficultyName may be empty for
+// runs whose logs recorded no difficulty.
+type SpeedrunInstanceBoard struct {
+	InstanceName   string `json:"instance_name"`
+	DifficultyName string `json:"difficulty_name"`
+}
+
 // SpeedrunLeaderboardEntry is one row in the leaderboard.
 type SpeedrunLeaderboardEntry struct {
 	InstanceID       uuid.UUID  `json:"instance_id"`
 	Slug             string     `json:"slug"`
+	DifficultyName   string     `json:"difficulty_name"`
 	DurationMs       int64      `json:"duration_ms"`
 	GuildName        string     `json:"guild_name"`
 	RealmName        string     `json:"realm_name"`

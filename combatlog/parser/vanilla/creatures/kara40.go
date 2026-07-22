@@ -1,6 +1,8 @@
 package creatures
 
 import (
+	"time"
+
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 
 	"github.com/Emyrk/chronicle/combatlog/parser/common/characters"
@@ -28,7 +30,14 @@ func NewLivingStone(id guid.GUID, all *characters.Characters) (characters.Charac
 }
 
 func NewMephistroth(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-	return characters.NewAdsGoWithBoss(93333,
+	if entry, ok := id.GetEntry(); !ok || entry != 93333 {
+		return nil, false
+	}
+
+	common := characters.NewCommonCharacter(id, all)
+	common.SetRecentlySlainDuration(time.Minute)
+
+	adc := characters.NewAdsGoWithBossCustomCharacter(common, all, 93333,
 		93335, // Nightmare Crawler
 		93336, // Hellfire Doomguard
 		93337, // Hellfire Imp
@@ -36,7 +45,8 @@ func NewMephistroth(id guid.GUID, all *characters.Characters) (characters.Charac
 		93332, // Desolate Doomguard
 		93334, // Demonic Eye
 		93335, // Nightmare Crawler
-	)(id, all)
+	)
+	return adc, true
 }
 
 func NewEchoOfMedivh(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
@@ -76,13 +86,20 @@ func NewKing(id guid.GUID, all *characters.Characters) (characters.Character, bo
 }
 
 func NewSanvTasDal(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
-	return characters.NewAdsGoWithBoss(59981,
+	if entry, ok := id.GetEntry(); !ok || entry != 59981 {
+		return nil, false
+	}
+
+	common := characters.NewCommonCharacter(id, all)
+	common.SetRecentlySlainDuration(time.Minute)
+
+	return characters.NewAdsGoWithBossCustomCharacter(common, all, 59981,
 		59978, // "Draenei Netherwalker",
 		59975, // "Rift-Lost Draenei",
 		59980, // "Draenei Truthseeker",
 		59977, // "Draenei Riftwalker",
 		59976, // "Draenei Riftstalker",
-	)(id, all)
+	), true
 }
 
 func NewKeeperGnarlmoon(id guid.GUID, all *characters.Characters) (characters.Character, bool) {

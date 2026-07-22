@@ -109,6 +109,7 @@ func VanillaCharacterFactories(flavor database.WoWFlavor) []characters.Character
 	if flavor.Has(database.FlavorTurtle) || flavor.Has(database.FlavorOctoWoW) || flavor.Has(database.FlavorNightmareOfUrsol) {
 		cres = append(cres,
 			// Kara 40
+			NewNetherInfernal,
 			NewKruul,
 			NewKing,
 			NewMephistroth,

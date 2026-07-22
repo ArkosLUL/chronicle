@@ -22,6 +22,17 @@ func NewKruul(id guid.GUID, all *characters.Characters) (characters.Character, b
 	return characters.NewAdsGoWithBoss(59991, 59990)(id, all)
 }
 
+func NewNetherInfernal(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
+	if entry, ok := id.GetEntry(); !ok || entry != 59990 {
+		return nil, false
+	}
+
+	c := characters.NewCommonCharacter(id, all)
+	c.WithTimeoutAsDeath()
+
+	return c, true
+}
+
 func NewLivingStone(id guid.GUID, all *characters.Characters) (characters.Character, bool) {
 	if entry, ok := id.GetEntry(); !ok || entry != 59959 {
 		return nil, false

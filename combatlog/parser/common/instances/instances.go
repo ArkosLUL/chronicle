@@ -123,8 +123,10 @@ var (
 
 	TowerOfKarazhanFactory = &CommonFactory{
 		Name: "Tower of Karazhan",
-		ZoneNames: []string{"tower of karazhan", "the rock of desolation",
+		ZoneNames: []string{
+			"tower of karazhan", "the rock of desolation",
 			"卡拉赞之塔", // Tower of Karazhan
+			"荒芜巨岩",  // "Desolate Giant Rock"
 		},
 		Hostiles: FromMap(TowerOfKarazhanHostiles()),
 	}

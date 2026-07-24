@@ -5612,6 +5612,7 @@ WITH deduped AS (
         edr.encounter_name,
         edr.player_class,
         edr.player_spec,
+        edr.realm_id,
         edr.damage_done,
         edr.healing_done,
         edr.absorbed_done,
@@ -5629,7 +5630,7 @@ WITH deduped AS (
         ELSE true
     END
     AND CASE
-        WHEN $4 :: text != '' THEN edr.realm_id = $4 :: uuid
+        WHEN cardinality($4 :: text[]) > 0 THEN edr.realm_name = ANY($4 :: text[])
         ELSE true
     END
     AND CASE
@@ -5647,8 +5648,10 @@ WITH deduped AS (
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id),
         (CASE WHEN $8 :: text = 'hps' THEN edr.hps ELSE edr.dps END) DESC
 ),
-total_encounters AS (
-    SELECT COUNT(DISTINCT d.encounter_name) AS cnt FROM deduped d
+realm_encounter_counts AS (
+    SELECT d.realm_id, COUNT(DISTINCT d.encounter_name) AS encounter_count
+    FROM deduped d
+    GROUP BY d.realm_id
 ),
 per_run AS (
     SELECT
@@ -5659,8 +5662,9 @@ per_run AS (
             ELSE SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0)
         END)::double precision AS metric_value
     FROM deduped d
-    GROUP BY d.player_guid, d.run_id, d.player_class, d.player_spec
-    HAVING COUNT(DISTINCT d.encounter_name) = (SELECT cnt FROM total_encounters)
+    JOIN realm_encounter_counts rec ON rec.realm_id = d.realm_id
+    GROUP BY d.player_guid, d.run_id, d.player_class, d.player_spec, rec.encounter_count
+    HAVING COUNT(DISTINCT d.encounter_name) = rec.encounter_count
 )
 SELECT
     s.player_class,
@@ -5697,7 +5701,7 @@ type RankingsBoxPlotStatsParams struct {
 	GroupByClass    bool     `db:"group_by_class" json:"group_by_class"`
 	InstanceNames   []string `db:"instance_names" json:"instance_names"`
 	EncounterNames  []string `db:"encounter_names" json:"encounter_names"`
-	RealmID         string   `db:"realm_id" json:"realm_id"`
+	RealmNames      []string `db:"realm_names" json:"realm_names"`
 	Role            string   `db:"role" json:"role"`
 	SinceDays       int64    `db:"since_days" json:"since_days"`
 	DifficultyNames []string `db:"difficulty_names" json:"difficulty_names"`
@@ -5718,6 +5722,9 @@ type RankingsBoxPlotStatsRow struct {
 // Returns box plot statistics (min, q1, median, q3, max, count) per class/spec.
 // DPS is aggregated per run (sum damage / sum duration across encounters in one
 // instance run), so each run is one data point. Matches leaderboard aggregation.
+// Encounter counts are computed per realm: different realms (servers) can
+// record different encounter names for the same instance, so requiring the
+// union across realms would exclude every run when multiple realms are shown.
 // Aggregate per player per run: sum damage/duration across encounters in one run.
 // Each run becomes one data point for percentile computation.
 // Only include runs where the player completed ALL encounters as the same spec.
@@ -5726,7 +5733,7 @@ func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPl
 		arg.GroupByClass,
 		arg.InstanceNames,
 		arg.EncounterNames,
-		arg.RealmID,
+		arg.RealmNames,
 		arg.Role,
 		arg.SinceDays,
 		arg.DifficultyNames,
@@ -6113,7 +6120,7 @@ WITH deduped AS (
         ELSE true
     END
     AND CASE
-        WHEN $6 :: text != '' THEN edr.realm_id = $6 :: uuid
+        WHEN cardinality($6 :: text[]) > 0 THEN edr.realm_name = ANY($6 :: text[])
         ELSE true
     END
     AND CASE
@@ -6144,6 +6151,11 @@ WITH deduped AS (
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id),
         (CASE WHEN $1 :: text = 'hps' THEN edr.hps ELSE edr.dps END) DESC
 ),
+realm_encounter_counts AS (
+    SELECT d.realm_id, COUNT(DISTINCT d.encounter_name) AS encounter_count
+    FROM deduped d
+    GROUP BY d.realm_id
+),
 per_run AS (
     SELECT
         d.player_guid,
@@ -6171,11 +6183,10 @@ per_run AS (
         MAX(d.killed_at)::timestamptz AS killed_at,
         COALESCE((array_agg(d.talent_sub_spec ORDER BY d.damage_done DESC))[1], '')::text AS talent_sub_spec
     FROM deduped d
-    GROUP BY d.player_guid, d.run_id
-    -- Only include runs where player has data for ALL encounters.
-    HAVING COUNT(DISTINCT d.encounter_name) = (
-        SELECT COUNT(DISTINCT d2.encounter_name) FROM deduped d2
-    )
+    JOIN realm_encounter_counts rec ON rec.realm_id = d.realm_id
+    GROUP BY d.player_guid, d.run_id, rec.encounter_count
+    -- Only include runs where player has data for ALL encounters on their realm.
+    HAVING COUNT(DISTINCT d.encounter_name) = rec.encounter_count
 ),
 aggregated AS (
     SELECT DISTINCT ON (pr.player_guid)
@@ -6221,7 +6232,7 @@ type RankingsLeaderboardParams struct {
 	QueryLimit      int64    `db:"query_limit" json:"query_limit"`
 	InstanceNames   []string `db:"instance_names" json:"instance_names"`
 	EncounterNames  []string `db:"encounter_names" json:"encounter_names"`
-	RealmID         string   `db:"realm_id" json:"realm_id"`
+	RealmNames      []string `db:"realm_names" json:"realm_names"`
 	Class           string   `db:"class" json:"class"`
 	Spec            string   `db:"spec" json:"spec"`
 	Role            string   `db:"role" json:"role"`
@@ -6262,6 +6273,9 @@ type RankingsLeaderboardRow struct {
 // Within a run, damage and duration are summed across encounters to get run DPS.
 // Each player appears once with their highest-DPS run.
 // Deduplicates by (player, encounter, duplicate_group) before aggregating.
+// Encounter counts are computed per realm: different realms (servers) can
+// record different encounter names for the same instance, so requiring the
+// union across realms would exclude every run when multiple realms are shown.
 // Step 1: aggregate per player per run (sum encounters within a single instance run).
 // Step 2: pick each player's best run.
 func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeaderboardParams) ([]RankingsLeaderboardRow, error) {
@@ -6271,7 +6285,7 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 		arg.QueryLimit,
 		arg.InstanceNames,
 		arg.EncounterNames,
-		arg.RealmID,
+		arg.RealmNames,
 		arg.Class,
 		arg.Spec,
 		arg.Role,
@@ -6315,6 +6329,37 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const rankingsRealmNames = `-- name: RankingsRealmNames :many
+SELECT DISTINCT edr.realm_name
+FROM encounter_dps_rankings edr
+JOIN wow_server_realms wsr ON wsr.id = edr.realm_id
+WHERE edr.realm_name <> ''
+ORDER BY edr.realm_name
+`
+
+// Distinct realm names that have DPS ranking data, for the realm filter dropdown.
+// Rows with an empty realm name are excluded: they cannot be filtered on, and
+// selecting "all realms" must collapse to no filter so those rows still appear.
+func (q *sqlQuerier) RankingsRealmNames(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, rankingsRealmNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var realm_name string
+		if err := rows.Scan(&realm_name); err != nil {
+			return nil, err
+		}
+		items = append(items, realm_name)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -177,11 +177,6 @@ func (w *WorkerRefreshRankingsSummaryTenant) Work(ctx context.Context, job *rive
 		return err
 	}
 
-	w.Logger.Info("refreshing rankings instance summaries",
-		slog.String("tenant_id", tid.String()),
-		slog.Int("combos", len(combos)),
-	)
-
 	for _, c := range combos {
 		if err := w.Store.UpsertRankingsInstanceSummary(ctx, database.UpsertRankingsInstanceSummaryParams{
 			InstanceName:   c.InstanceName,
@@ -202,9 +197,5 @@ func (w *WorkerRefreshRankingsSummaryTenant) Work(ctx context.Context, job *rive
 		}
 	}
 
-	w.Logger.Info("rankings instance summaries refreshed",
-		slog.String("tenant_id", tid.String()),
-		slog.Int("combos", len(combos)),
-	)
 	return nil
 }

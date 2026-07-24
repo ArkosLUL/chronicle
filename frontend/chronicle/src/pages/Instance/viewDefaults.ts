@@ -35,8 +35,8 @@ export const DEFAULT_INSTANCE_PANEL_FILTERS: Record<string, PanelFilter[]> = {
     { type: "target_type", value: "selected_enemies", applyTo: ["damage"] },
   ],
   "panel-3": [
-    { type: "time_range", value: "controller", applyTo: ["heal"] },
-    { type: "target_type", value: "selected_players", applyTo: ["heal"] },
+    { type: "time_range", value: "controller", applyTo: ["heal", "absorbed"] },
+    { type: "target_type", value: "selected_players", applyTo: ["heal", "absorbed"] },
   ],
   "panel-4": [
     { type: "time_range", value: "controller", applyTo: ["damage"] },

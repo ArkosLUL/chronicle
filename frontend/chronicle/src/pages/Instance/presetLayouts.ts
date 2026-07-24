@@ -26,7 +26,7 @@ export interface PresetLayout {
 const TIMELINE_SERIES = {
   series: [
     { id: "s0", name: "Damage Done", stream: "damage", aggregation: "rolling_avg", color: "#117ae4", filters: [{ type: "source_type", value: ["pet", "player"], applyTo: ["damage"] }, { type: "target_type", value: ["enemy_pet", "enemy"], combinator: "and", applyTo: ["damage"] }] },
-    { id: "s1", name: "Healing", stream: "heal", aggregation: "rolling_avg", color: "#c1e194", filters: [{ type: "source_type", value: ["pet", "player"], applyTo: ["heal"] }, { type: "target_type", value: ["player", "pet"], combinator: "and", applyTo: ["heal"] }] },
+    { id: "s1", name: "Healing", stream: "heal", aggregation: "rolling_avg", color: "#c1e194", filters: [{ type: "source_type", value: ["pet", "player"], applyTo: ["heal", "absorbed"] }, { type: "target_type", value: ["player", "pet"], combinator: "and", applyTo: ["heal", "absorbed"] }] },
     { id: "s2", name: "Damage Taken", stream: "damage", aggregation: "rolling_avg", color: "#ec1337", filters: [{ type: "source_type", value: ["enemy", "enemy_pet"] }, { type: "target_type", value: ["player", "pet"], combinator: "and" }] },
     { id: "s3", name: "Effective Healing", stream: "effective_heal", aggregation: "rolling_avg", color: "#85e203", filters: [{ type: "source_type", value: ["player", "pet"] }, { type: "target_type", value: ["pet", "player"], combinator: "and" }] },
     { id: "s4", name: "Friendly Fire", stream: "damage", aggregation: "sum", color: "#FF7D0A", filters: [{ type: "source_type", value: ["player", "pet"] }, { type: "target_type", value: ["player", "pet"], combinator: "and" }] },
@@ -72,8 +72,8 @@ const THREE_PANEL_GRID: GridEditorItem[] = [
 const DAMAGE_TIME_RANGE_FILTER: PanelFilter = { type: "time_range", value: "controller", applyTo: ["damage"] };
 const DAMAGE_TARGET_ENEMIES_FILTER: PanelFilter = { type: "target_type", value: "selected_enemies", applyTo: ["damage"] };
 const DAMAGE_SOURCE_ENEMIES_FILTER: PanelFilter = { type: "source_type", value: "selected_enemies", applyTo: ["damage"] };
-const HEAL_TIME_RANGE_FILTER: PanelFilter = { type: "time_range", value: "controller", applyTo: ["heal"] };
-const HEAL_TARGET_PLAYERS_FILTER: PanelFilter = { type: "target_type", value: "selected_players", applyTo: ["heal"] };
+const HEAL_TIME_RANGE_FILTER: PanelFilter = { type: "time_range", value: "controller", applyTo: ["heal", "absorbed"] };
+const HEAL_TARGET_PLAYERS_FILTER: PanelFilter = { type: "target_type", value: "selected_players", applyTo: ["heal", "absorbed"] };
 
 // ── Preset Definitions ──────────────────────────────────────────────────────
 

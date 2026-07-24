@@ -43,6 +43,7 @@ import { InstanceActionBar } from "@/components/InstanceActionBar/InstanceAction
 import { InstanceHelpSheet } from "@/components/HelpSheet";
 import { ENCOUNTER_TIPS, ENTITY_TIPS, CLASS_TOGGLE_TIPS } from "@/constants/tips";
 import { InstanceMenu } from "./InstanceMenu";
+
 import { HeroicBadge } from "@/components/HeroicBadge";
 import { isHeroic } from "@/lib/wowUtils";
 import { DuplicatesBadge } from "./DuplicatesBadge";

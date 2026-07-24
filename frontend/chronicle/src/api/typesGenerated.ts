@@ -144,6 +144,54 @@ export interface AdminSetUserRetentionRequest {
     readonly raw_log_retention_hours: number;
 }
 
+// From chroniclesdk/rankings.go
+/**
+ * AdminSnapshotSummary is a snapshot listed in the admin parsing tab.
+ */
+export interface AdminSnapshotSummary {
+    readonly id: string;
+    readonly tenant_id: string;
+    readonly cutoff: string;
+    readonly lookback_days: number;
+    readonly cohort_mode: string;
+    readonly policy_version: number;
+    readonly query_version: number;
+    readonly member_count: number;
+    readonly status: string;
+    readonly published_at: string | null;
+    readonly created_at: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * AdminTriggerSnapshotRequest is the request body for the admin parse snapshot trigger.
+ */
+export interface AdminTriggerSnapshotRequest {
+    /**
+     * TenantID scopes the snapshot to a specific tenant. Empty = root/all-time scope.
+     */
+    readonly tenant_id: string;
+    /**
+     * LookbackDays overrides the default lookback window. 0 = all-time.
+     */
+    readonly lookback_days: number;
+    /**
+     * Day is the snapshot cutoff date as YYYY-MM-DD. Empty = today.
+     * The snapshot window is [cutoff - lookback, cutoff), so a backfilled
+     * July 1 snapshot contains only pre-July-1 kills even if run today.
+     */
+    readonly day: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * AdminTriggerSnapshotResponse is returned when a snapshot publication job is enqueued.
+ */
+export interface AdminTriggerSnapshotResponse {
+    readonly job_id: number;
+    readonly job_state: string;
+}
+
 // From chroniclesdk/user.go
 export interface AdminUsersResponse {
     readonly users: readonly User[];
@@ -272,6 +320,51 @@ export interface ChronicleEncounterEvents {
     readonly type: string;
     readonly payload: string;
     readonly start_time: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * CohortBucket describes one available (encounter, class, spec, difficulty, max_players) combination.
+ */
+export interface CohortBucket {
+    readonly encounter_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly difficulty_name: string;
+    readonly max_players: number;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * CohortDebugEntry is a single datapoint in the cohort debug view.
+ */
+export interface CohortDebugEntry {
+    readonly rank: number;
+    readonly player_name: string;
+    readonly player_guid: string;
+    readonly metric_value: number;
+    readonly display_score: number;
+    readonly precise_score: number;
+    readonly killed_at: string;
+    readonly log_hashed_slug: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * CohortDebugResponse is the response for the cohort debug endpoint.
+ */
+export interface CohortDebugResponse {
+    readonly snapshot_id: string;
+    readonly encounter_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly metric: string;
+    readonly total_kills: number;
+    readonly min_value: number;
+    readonly max_value: number;
+    readonly median_value: number;
+    readonly entries: readonly CohortDebugEntry[];
+    readonly buckets: readonly CohortBucket[];
 }
 
 // From chroniclesdk/server_application.go
@@ -709,6 +802,100 @@ export interface InstanceLoot {
     readonly icon: string;
 }
 
+// From chroniclesdk/rankings.go
+/**
+ * InstanceParseAverage is the average parse across multiple bosses.
+ */
+export interface InstanceParseAverage {
+    readonly precise_score: number;
+    readonly display_score: number;
+    readonly killed: number;
+    readonly selected: number;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * InstanceParseBoss is a player's parse result for a single boss encounter.
+ */
+export interface InstanceParseBoss {
+    readonly encounter_name: string;
+    readonly metric_value: number;
+    readonly precise_score: number;
+    readonly display_score: number;
+    readonly rank: number;
+    readonly sample_size: number;
+    /**
+     * Status: "ok", "low_confidence", "sample_too_small".
+     */
+    readonly status: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * InstanceParsePlayer is a player's parse data across selected encounters.
+ */
+export interface InstanceParsePlayer {
+    readonly player_guid: string;
+    readonly player_name: string;
+    readonly player_class: string;
+    readonly player_spec: string;
+    readonly player_role: string;
+    /**
+     * Bosses contains per-encounter parse results for bosses this player killed.
+     */
+    readonly bosses: readonly InstanceParseBoss[];
+    /**
+     * AverageParse is the mean of per-boss parse scores across killed selected bosses.
+     * Nil when the player has no scored bosses.
+     */
+    readonly average_parse: InstanceParseAverage | null;
+    /**
+     * Status is empty string for normal, "unknown_spec" when spec mode can't score,
+     * or "sample_too_small" when all bosses have too-small cohorts.
+     */
+    readonly status?: string;
+    /**
+     * Reason provides a human-readable explanation for the status.
+     */
+    readonly reason?: string;
+}
+
+// From chroniclesdk/rankings.go
+/**
+ * InstanceParsesResponse is the top-level response for the instance parses endpoint.
+ */
+export interface InstanceParsesResponse {
+    /**
+     * Available is false when no published snapshot exists yet or parses
+     * are disabled for this tenant.
+     */
+    readonly available: boolean;
+    /**
+     * Reason explains why parses are unavailable (e.g. "disabled", "no_snapshot").
+     * Empty when Available is true.
+     */
+    readonly reason?: string;
+    /**
+     * Snapshot metadata (zero values when Available=false).
+     */
+    readonly snapshot_id: string;
+    readonly cutoff: string;
+    readonly lookback_days: number;
+    readonly cohort_mode: string;
+    /**
+     * SelectedEncounters lists the encounter names that were requested.
+     */
+    readonly selected_encounters: readonly string[];
+    /**
+     * Metric is "dps" or "hps".
+     */
+    readonly metric: string;
+    /**
+     * Players contains one entry per unique player GUID in the instance.
+     */
+    readonly players: readonly InstanceParsePlayer[];
+}
+
 // From chroniclesdk/log.go
 export interface InstancePlayer {
     readonly name: string;
@@ -1100,6 +1287,35 @@ export interface ModificationRequest {
  */
 export interface ModifyApplicationAdminRequest {
     readonly user_id: string;
+}
+
+// From chroniclesdk/tenant.go
+/**
+ * ParseConfig holds tenant-level parse scoring settings, stored as JSONB.
+ */
+export interface ParseConfig {
+    /**
+     * CohortMode controls the parse scoring mode: "spec" (default), "class",
+     * or "disabled". When disabled, no snapshots are created and the instance
+     * parses endpoint returns available=false.
+     */
+    readonly cohort_mode?: string;
+    /**
+     * DefaultLookbackDays is the default lookback window (60 = last 60 days; 0 = all-time).
+     */
+    readonly default_lookback_days?: number;
+    /**
+     * AllowedLookbackDays lists the selectable lookback windows.
+     */
+    readonly allowed_lookback_days?: readonly number[];
+    /**
+     * EnabledMetrics lists active metric names (e.g. "dps", "hps").
+     */
+    readonly enabled_metrics?: readonly string[];
+    /**
+     * SnapshotCadence is the publication interval description (e.g. "6h", "daily").
+     */
+    readonly snapshot_cadence?: string;
 }
 
 // From chroniclesdk/log.go
@@ -1743,6 +1959,20 @@ export interface SlugPayload {
     readonly slug: string;
 }
 
+// From chroniclesdk/rankings.go
+/**
+ * SnapshotSummary is a published snapshot listed for the cohort viewer.
+ */
+export interface SnapshotSummary {
+    readonly id: string;
+    readonly cutoff: string;
+    readonly lookback_days: number;
+    readonly cohort_mode: string;
+    readonly policy_version: number;
+    readonly member_count: number;
+    readonly published_at: string;
+}
+
 // From chroniclesdk/constants.go
 export type SocialPlatform = "discord" | "twitch" | "twitter" | "website" | "youtube";
 
@@ -1952,6 +2182,7 @@ export interface Tenant {
     readonly include_in_all: boolean;
     readonly discoverable: boolean;
     readonly branding: Branding | null;
+    readonly parse_config: ParseConfig | null;
     readonly default_dataset_id: string | null;
     /**
      * DefaultFormat is the tenant's preferred log parse format (e.g.
@@ -2155,6 +2386,7 @@ export interface UpsertTenantRequest {
     readonly include_in_all: boolean | null;
     readonly discoverable: boolean | null;
     readonly branding: Branding | null;
+    readonly parse_config: ParseConfig | null;
     readonly default_format: string | null;
     readonly available_formats: readonly string[];
 }

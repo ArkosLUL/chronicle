@@ -7,6 +7,9 @@ import type {
   RankingsKillTimeStats,
   RankingsSuccessRate,
   KillTimeLeaderboardResponse,
+  InstanceParsesResponse,
+  SnapshotSummary,
+  CohortDebugResponse,
 } from "./typesGenerated";
 
 const RANKINGS_STALE_TIME = 5 * 60 * 1000; // 5 minutes
@@ -152,6 +155,88 @@ export function useRankingsKillTimeLeaderboard(params: {
       ),
     staleTime: RANKINGS_STALE_TIME,
     enabled: !!params.instance_name,
+  });
+}
+
+export function useSnapshotsList() {
+  return useQuery({
+    queryKey: ["rankings", "snapshots"],
+    queryFn: () => fetchJSON<SnapshotSummary[]>("/api/v1/rankings/snapshots"),
+    staleTime: RANKINGS_STALE_TIME,
+  });
+}
+
+export function useSnapshotCohort(params: {
+  snapshotId: string;
+  encounter_name?: string;
+  class?: string;
+  spec?: string;
+  difficulty?: string;
+  max_players?: number;
+  metric?: "dps" | "hps";
+}) {
+  const searchParams = new URLSearchParams();
+  if (params.encounter_name) searchParams.set("encounter_name", params.encounter_name);
+  if (params.class) searchParams.set("class", params.class);
+  if (params.spec) searchParams.set("spec", params.spec);
+  if (params.difficulty !== undefined) searchParams.set("difficulty", params.difficulty);
+  if (params.max_players !== undefined) searchParams.set("max_players", String(params.max_players));
+  if (params.metric && params.metric !== "dps") searchParams.set("metric", params.metric);
+  const qs = searchParams.toString();
+
+  return useQuery({
+    queryKey: ["rankings", "snapshot-cohort", params],
+    queryFn: () =>
+      fetchJSON<CohortDebugResponse>(
+        `/api/v1/rankings/snapshots/${params.snapshotId}/cohort${qs ? `?${qs}` : ""}`,
+      ),
+    staleTime: RANKINGS_STALE_TIME,
+    // With no encounter/class selected the endpoint returns a buckets-only
+    // response, which the cohort viewer uses to populate its dropdowns.
+    enabled: !!params.snapshotId,
+  });
+}
+
+export function useInstanceParses(params: {
+  instanceId: string;
+  encounterNames?: string[];
+  metric?: "dps" | "hps";
+  period?: string;
+  timeframe?: "historical" | "current";
+  /** Skip fetching entirely when the caller knows parses won't be shown. */
+  enabled?: boolean;
+}) {
+  const searchParams = new URLSearchParams();
+  // Sort encounter names for stable query key.
+  const sortedEncounters = params.encounterNames
+    ? [...params.encounterNames].sort()
+    : undefined;
+  if (sortedEncounters?.length) {
+    searchParams.set("encounter_names", sortedEncounters.join(","));
+  }
+  if (params.metric && params.metric !== "dps") searchParams.set("metric", params.metric);
+  if (params.period) searchParams.set("period", params.period);
+  if (params.timeframe && params.timeframe !== "historical") {
+    searchParams.set("timeframe", params.timeframe);
+  }
+  const qs = searchParams.toString();
+
+  return useQuery({
+    queryKey: [
+      "rankings",
+      "instance-parses",
+      params.instanceId,
+      sortedEncounters,
+      params.metric ?? "dps",
+      params.period ?? "all",
+      params.timeframe ?? "historical",
+    ],
+    queryFn: () =>
+      fetchJSON<InstanceParsesResponse>(
+        `/api/v1/rankings/instances/${params.instanceId}/parses${qs ? `?${qs}` : ""}`,
+      ),
+    staleTime: RANKINGS_STALE_TIME,
+    enabled: !!params.instanceId && (params.enabled ?? true),
   });
 }
 

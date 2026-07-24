@@ -12,6 +12,7 @@ import { formatNumber } from "@/lib/format";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip/tooltip";
 import { ChevronLeft, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useParsePills } from "../parsePills";
 
 // ── Panel option encoding ──
 // panelOption is a comma-separated string of tokens stored in the URL.
@@ -164,6 +165,14 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
     loading: props.loading,
     processing: props.processing,
     showRanks,
+  });
+
+  // ── Parse pills ──
+  const parsePills = useParsePills({
+    metric: "dps",
+    props,
+    isPlayerSource: sourceType === "players",
+    isFocused: !!focusedPlayerId,
   });
 
   // ── Focus feature: Ctrl+click a player row to show per-ability view ──
@@ -419,6 +428,7 @@ export const DamageDoneContent = (props: DamageDoneContentProps) => {
           breakout={breakout}
           onRowCtrlClick={handleRowCtrlClick}
           disableInteractions={props.context.renderMode === "layout_lab"}
+          parsePills={parsePills}
         />
       )}
 

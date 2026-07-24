@@ -131,3 +131,155 @@ func TopPlayersFromJSON(data json.RawMessage) []RankingsInstanceTopPlayer {
 	}
 	return players
 }
+// ── Instance Parses ──────────────────────────────────────────────────────
+
+// InstanceParsesResponse is the top-level response for the instance parses endpoint.
+type InstanceParsesResponse struct {
+	// Available is false when no published snapshot exists yet or parses
+	// are disabled for this tenant.
+	Available bool `json:"available"`
+
+	// Reason explains why parses are unavailable (e.g. "disabled", "no_snapshot").
+	// Empty when Available is true.
+	Reason string `json:"reason,omitempty"`
+
+	// Snapshot metadata (zero values when Available=false).
+	SnapshotID   uuid.UUID `json:"snapshot_id"`
+	Cutoff       time.Time `json:"cutoff"`
+	LookbackDays int32     `json:"lookback_days"`
+	CohortMode   string    `json:"cohort_mode"`
+
+	// SelectedEncounters lists the encounter names that were requested.
+	SelectedEncounters []string `json:"selected_encounters"`
+
+	// Metric is "dps" or "hps".
+	Metric string `json:"metric"`
+
+	// Players contains one entry per unique player GUID in the instance.
+	Players []InstanceParsePlayer `json:"players"`
+}
+
+// InstanceParsePlayer is a player's parse data across selected encounters.
+type InstanceParsePlayer struct {
+	PlayerGUID  string `json:"player_guid"`
+	PlayerName  string `json:"player_name"`
+	PlayerClass string `json:"player_class"`
+	PlayerSpec  string `json:"player_spec"`
+	PlayerRole  string `json:"player_role"`
+
+	// Bosses contains per-encounter parse results for bosses this player killed.
+	Bosses []InstanceParseBoss `json:"bosses"`
+
+	// AverageParse is the mean of per-boss parse scores across killed selected bosses.
+	// Nil when the player has no scored bosses.
+	AverageParse *InstanceParseAverage `json:"average_parse"`
+
+	// Status is empty string for normal, "unknown_spec" when spec mode can't score,
+	// or "sample_too_small" when all bosses have too-small cohorts.
+	Status string `json:"status,omitempty"`
+	// Reason provides a human-readable explanation for the status.
+	Reason string `json:"reason,omitempty"`
+}
+
+// InstanceParseBoss is a player's parse result for a single boss encounter.
+type InstanceParseBoss struct {
+	EncounterName string  `json:"encounter_name"`
+	MetricValue   float64 `json:"metric_value"`
+	PreciseScore  float64 `json:"precise_score"`
+	DisplayScore  int     `json:"display_score"`
+	Rank          int     `json:"rank"`
+	SampleSize    int     `json:"sample_size"`
+	// Status: "ok", "low_confidence", "sample_too_small".
+	Status string `json:"status"`
+}
+
+// InstanceParseAverage is the average parse across multiple bosses.
+type InstanceParseAverage struct {
+	PreciseScore float64 `json:"precise_score"`
+	DisplayScore int     `json:"display_score"`
+	Killed       int     `json:"killed"`
+	Selected     int     `json:"selected"`
+}
+
+
+// AdminTriggerSnapshotRequest is the request body for the admin parse snapshot trigger.
+type AdminTriggerSnapshotRequest struct {
+	// TenantID scopes the snapshot to a specific tenant. Empty = root/all-time scope.
+	TenantID string `json:"tenant_id"`
+	// LookbackDays overrides the default lookback window. 0 = all-time.
+	LookbackDays int32 `json:"lookback_days"`
+	// Day is the snapshot cutoff date as YYYY-MM-DD. Empty = today.
+	// The snapshot window is [cutoff - lookback, cutoff), so a backfilled
+	// July 1 snapshot contains only pre-July-1 kills even if run today.
+	Day string `json:"day"`
+}
+
+// AdminTriggerSnapshotResponse is returned when a snapshot publication job is enqueued.
+type AdminTriggerSnapshotResponse struct {
+	JobID    int64  `json:"job_id"`
+	JobState string `json:"job_state"`
+}
+// AdminSnapshotSummary is a snapshot listed in the admin parsing tab.
+type AdminSnapshotSummary struct {
+	ID            uuid.UUID  `json:"id"`
+	TenantID      uuid.UUID  `json:"tenant_id"`
+	Cutoff        time.Time  `json:"cutoff"`
+	LookbackDays  int32      `json:"lookback_days"`
+	CohortMode    string     `json:"cohort_mode"`
+	PolicyVersion int16      `json:"policy_version"`
+	QueryVersion  int16      `json:"query_version"`
+	MemberCount   int64      `json:"member_count"`
+	Status        string     `json:"status"`
+	PublishedAt   *time.Time `json:"published_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+}
+
+// ── Cohort Viewer (debugging) ────────────────────────────────────────────
+
+// SnapshotSummary is a published snapshot listed for the cohort viewer.
+type SnapshotSummary struct {
+	ID             uuid.UUID `json:"id"`
+	Cutoff         time.Time `json:"cutoff"`
+	LookbackDays   int32     `json:"lookback_days"`
+	CohortMode     string    `json:"cohort_mode"`
+	PolicyVersion  int16     `json:"policy_version"`
+	MemberCount    int64     `json:"member_count"`
+	PublishedAt    time.Time `json:"published_at"`
+}
+
+// CohortBucket describes one available (encounter, class, spec, difficulty, max_players) combination.
+type CohortBucket struct {
+	EncounterName  string `json:"encounter_name"`
+	PlayerClass    string `json:"player_class"`
+	PlayerSpec     string `json:"player_spec"`
+	DifficultyName string `json:"difficulty_name"`
+	MaxPlayers     int16  `json:"max_players"`
+}
+
+// CohortDebugEntry is a single datapoint in the cohort debug view.
+type CohortDebugEntry struct {
+	Rank          int       `json:"rank"`
+	PlayerName    string    `json:"player_name"`
+	PlayerGUID    string    `json:"player_guid"`
+	MetricValue   float64   `json:"metric_value"`
+	DisplayScore  int       `json:"display_score"`
+	PreciseScore  float64   `json:"precise_score"`
+	KilledAt      time.Time `json:"killed_at"`
+	LogHashedSlug string    `json:"log_hashed_slug"`
+}
+
+// CohortDebugResponse is the response for the cohort debug endpoint.
+type CohortDebugResponse struct {
+	SnapshotID    uuid.UUID          `json:"snapshot_id"`
+	EncounterName string             `json:"encounter_name"`
+	PlayerClass   string             `json:"player_class"`
+	PlayerSpec    string             `json:"player_spec"`
+	Metric        string             `json:"metric"`
+	TotalKills    int                `json:"total_kills"`
+	MinValue      float64            `json:"min_value"`
+	MaxValue      float64            `json:"max_value"`
+	MedianValue   float64            `json:"median_value"`
+	Entries       []CohortDebugEntry `json:"entries"`
+	Buckets       []CohortBucket     `json:"buckets"`
+}
+

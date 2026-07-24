@@ -49,6 +49,11 @@ type Service struct {
 	SummaryDispatchWorker *WorkerRefreshRankingsSummaries
 	// SummaryTenantWorker refreshes summaries for a single tenant.
 	SummaryTenantWorker *WorkerRefreshRankingsSummaryTenant
+
+	// SnapshotDispatchWorker fans out per-tenant snapshot publication jobs.
+	SnapshotDispatchWorker *WorkerPublishParseSnapshots
+	// SnapshotTenantWorker publishes a snapshot for a single tenant+lookback.
+	SnapshotTenantWorker *WorkerPublishParseSnapshotTenant
 }
 
 func New(broker *services.Services) *Service {
@@ -91,6 +96,15 @@ func (s *Service) Start(_ context.Context) error {
 		Store:  store,
 		Logger: namedLogger,
 	}
+	s.SnapshotDispatchWorker = &WorkerPublishParseSnapshots{
+		Store:  store,
+		Logger: namedLogger,
+		// Queue is set by serviceriver after queue creation.
+	}
+	s.SnapshotTenantWorker = &WorkerPublishParseSnapshotTenant{
+		Store:  store,
+		Logger: namedLogger,
+	}
 
 	s.router = chi.NewRouter()
 	s.setupRoutes()
@@ -127,6 +141,13 @@ func (s *Service) setupRoutes() {
 	s.router.Get("/kill-times", s.handleKillTimes)
 	s.router.Get("/kill-time-leaderboard", s.handleKillTimeLeaderboard)
 	s.router.Get("/success-rates", s.handleSuccessRates)
+
+	// Instance parses
+	s.router.Get("/instances/{instanceID}/parses", s.handleInstanceParses)
+
+	// Cohort viewer (debugging/transparency)
+	s.router.Get("/snapshots", s.handleListSnapshots)
+	s.router.Get("/snapshots/{snapshotID}/cohort", s.handleSnapshotCohort)
 
 	// Speedrun leaderboard
 	s.router.Get("/speedrun", s.handleSpeedrunLeaderboard)

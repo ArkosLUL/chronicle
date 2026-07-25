@@ -140,8 +140,15 @@ func ProcessCommonActivity(c CharacterBase, m messages.Message) error {
 		// Pets are tied to their owners.
 		owner, ok := c.Owner()
 		if ok && owner == data.Victim {
-			c.Died(ReasonOwnerSlain, m)
-			return nil
+			// A temporarily possessed unit (e.g. Mind Control, Orb of Dominion)
+			// can report its controller as an owner, but it does not die when
+			// the controller dies — the possession just ends. Death of the
+			// permanent owner still kills the pet, possessed or not.
+			ps, possessed := c.Lookup().DB().GetPossession(c.ID())
+			if !possessed || ps.Controller != data.Victim {
+				c.Died(ReasonOwnerSlain, m)
+				return nil
+			}
 		}
 
 		// Being the killer does not indicate activity.

@@ -5645,8 +5645,12 @@ WITH deduped AS (
         WHEN cardinality($7 :: text[]) > 0 THEN edr.difficulty_name = ANY($7 :: text[])
         ELSE true
     END
+    AND CASE
+        WHEN $8 :: smallint > 0 THEN edr.max_players = $8
+        ELSE true
+    END
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id),
-        (CASE WHEN $8 :: text = 'hps' THEN edr.hps ELSE edr.dps END) DESC
+        (CASE WHEN $9 :: text = 'hps' THEN edr.hps ELSE edr.dps END) DESC
 ),
 realm_encounter_counts AS (
     SELECT d.realm_id, COUNT(DISTINCT d.encounter_name) AS encounter_count
@@ -5657,7 +5661,7 @@ per_run AS (
     SELECT
         d.player_class,
         d.player_spec,
-        (CASE WHEN $8 :: text = 'hps'
+        (CASE WHEN $9 :: text = 'hps'
             THEN SUM(d.healing_done + d.absorbed_done)::double precision / NULLIF(SUM(d.duration_secs), 0)
             ELSE SUM(d.damage_done)::double precision / NULLIF(SUM(d.duration_secs), 0)
         END)::double precision AS metric_value
@@ -5698,14 +5702,15 @@ ORDER BY s.median_dps DESC
 `
 
 type RankingsBoxPlotStatsParams struct {
-	GroupByClass    bool     `db:"group_by_class" json:"group_by_class"`
-	InstanceNames   []string `db:"instance_names" json:"instance_names"`
-	EncounterNames  []string `db:"encounter_names" json:"encounter_names"`
-	RealmNames      []string `db:"realm_names" json:"realm_names"`
-	Role            string   `db:"role" json:"role"`
-	SinceDays       int64    `db:"since_days" json:"since_days"`
-	DifficultyNames []string `db:"difficulty_names" json:"difficulty_names"`
-	Metric          string   `db:"metric" json:"metric"`
+	GroupByClass     bool     `db:"group_by_class" json:"group_by_class"`
+	InstanceNames    []string `db:"instance_names" json:"instance_names"`
+	EncounterNames   []string `db:"encounter_names" json:"encounter_names"`
+	RealmNames       []string `db:"realm_names" json:"realm_names"`
+	Role             string   `db:"role" json:"role"`
+	SinceDays        int64    `db:"since_days" json:"since_days"`
+	DifficultyNames  []string `db:"difficulty_names" json:"difficulty_names"`
+	FilterMaxPlayers int16    `db:"filter_max_players" json:"filter_max_players"`
+	Metric           string   `db:"metric" json:"metric"`
 }
 
 type RankingsBoxPlotStatsRow struct {
@@ -5737,6 +5742,7 @@ func (q *sqlQuerier) RankingsBoxPlotStats(ctx context.Context, arg RankingsBoxPl
 		arg.Role,
 		arg.SinceDays,
 		arg.DifficultyNames,
+		arg.FilterMaxPlayers,
 		arg.Metric,
 	)
 	if err != nil {
@@ -6147,6 +6153,10 @@ WITH deduped AS (
         WHEN cardinality($12 :: text[]) > 0 THEN edr.difficulty_name = ANY($12 :: text[])
         ELSE true
     END
+    AND CASE
+        WHEN $13 :: smallint > 0 THEN edr.max_players = $13
+        ELSE true
+    END
     AND (CASE WHEN $1 :: text = 'hps' THEN edr.hps ELSE edr.dps END) > 0
     ORDER BY edr.player_guid, edr.encounter_name, COALESCE(li.duplicate_group_id, li.id),
         (CASE WHEN $1 :: text = 'hps' THEN edr.hps ELSE edr.dps END) DESC
@@ -6227,18 +6237,19 @@ OFFSET $2::bigint
 `
 
 type RankingsLeaderboardParams struct {
-	Metric          string   `db:"metric" json:"metric"`
-	QueryOffset     int64    `db:"query_offset" json:"query_offset"`
-	QueryLimit      int64    `db:"query_limit" json:"query_limit"`
-	InstanceNames   []string `db:"instance_names" json:"instance_names"`
-	EncounterNames  []string `db:"encounter_names" json:"encounter_names"`
-	RealmNames      []string `db:"realm_names" json:"realm_names"`
-	Class           string   `db:"class" json:"class"`
-	Spec            string   `db:"spec" json:"spec"`
-	Role            string   `db:"role" json:"role"`
-	SinceDays       int64    `db:"since_days" json:"since_days"`
-	HideUnknowns    bool     `db:"hide_unknowns" json:"hide_unknowns"`
-	DifficultyNames []string `db:"difficulty_names" json:"difficulty_names"`
+	Metric           string   `db:"metric" json:"metric"`
+	QueryOffset      int64    `db:"query_offset" json:"query_offset"`
+	QueryLimit       int64    `db:"query_limit" json:"query_limit"`
+	InstanceNames    []string `db:"instance_names" json:"instance_names"`
+	EncounterNames   []string `db:"encounter_names" json:"encounter_names"`
+	RealmNames       []string `db:"realm_names" json:"realm_names"`
+	Class            string   `db:"class" json:"class"`
+	Spec             string   `db:"spec" json:"spec"`
+	Role             string   `db:"role" json:"role"`
+	SinceDays        int64    `db:"since_days" json:"since_days"`
+	HideUnknowns     bool     `db:"hide_unknowns" json:"hide_unknowns"`
+	DifficultyNames  []string `db:"difficulty_names" json:"difficulty_names"`
+	FilterMaxPlayers int16    `db:"filter_max_players" json:"filter_max_players"`
 }
 
 type RankingsLeaderboardRow struct {
@@ -6292,6 +6303,7 @@ func (q *sqlQuerier) RankingsLeaderboard(ctx context.Context, arg RankingsLeader
 		arg.SinceDays,
 		arg.HideUnknowns,
 		arg.DifficultyNames,
+		arg.FilterMaxPlayers,
 	)
 	if err != nil {
 		return nil, err
@@ -8020,6 +8032,46 @@ func (q *sqlQuerier) UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigP
 	return i, err
 }
 
+const siteStats = `-- name: SiteStats :one
+SELECT
+    (SELECT COUNT(*)
+       FROM log_instances li
+       JOIN wow_server_realms wsr ON wsr.id = li.realm_id)::bigint AS logs_parsed,
+    (SELECT COUNT(*)
+       FROM game_players gp
+       JOIN wow_server_realms wsr ON wsr.id = gp.realm_id)::bigint AS players_tracked,
+    (SELECT COUNT(*)
+       FROM guilds g
+       JOIN wow_server_realms wsr ON wsr.id = g.realm_id)::bigint AS guild_count,
+    (SELECT COUNT(*)
+       FROM log_instance_encounters lie
+       JOIN log_instances li ON li.id = lie.instance_id
+       JOIN wow_server_realms wsr ON wsr.id = li.realm_id
+      WHERE lie.boss = true
+        AND lie.kill_type IN ('clean', 'partial'))::bigint AS boss_kills
+`
+
+type SiteStatsRow struct {
+	LogsParsed     int64 `db:"logs_parsed" json:"logs_parsed"`
+	PlayersTracked int64 `db:"players_tracked" json:"players_tracked"`
+	GuildCount     int64 `db:"guild_count" json:"guild_count"`
+	BossKills      int64 `db:"boss_kills" json:"boss_kills"`
+}
+
+// Aggregate public site statistics for the homepage.
+// Each subquery JOINs wow_server_realms so RLS tenant filtering cascades.
+func (q *sqlQuerier) SiteStats(ctx context.Context) (SiteStatsRow, error) {
+	row := q.db.QueryRow(ctx, siteStats)
+	var i SiteStatsRow
+	err := row.Scan(
+		&i.LogsParsed,
+		&i.PlayersTracked,
+		&i.GuildCount,
+		&i.BossKills,
+	)
+	return i, err
+}
+
 const getInstanceSpeedrun = `-- name: GetInstanceSpeedrun :one
 SELECT sr.instance_id, sr.instance_name, sr.realm_id, sr.guild_id, sr.qualified, sr.start_time, sr.completion_time, sr.duration_ms, sr.proof, sr.created_at, sr.addon_version, sr.parser_version_num, sr.addon_version_num, li.capabilities
 FROM instance_speedruns sr
@@ -8208,6 +8260,77 @@ func (q *sqlQuerier) SpeedrunDifficulties(ctx context.Context, instanceName stri
 			return nil, err
 		}
 		items = append(items, difficulty_name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const speedrunGuildClears = `-- name: SpeedrunGuildClears :many
+SELECT
+    sr.guild_id::uuid AS guild_id,
+    g.name AS guild_name,
+    COALESCE(gp.theme->>'logo_url', '')::text AS guild_logo_url,
+    COUNT(DISTINCT COALESCE(li.duplicate_group_id, li.id))::bigint AS clears
+FROM instance_speedruns sr
+JOIN log_instances li ON li.id = sr.instance_id
+JOIN guilds g ON g.id = sr.guild_id
+LEFT JOIN guild_pages gp ON gp.guild_id = sr.guild_id
+JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
+WHERE sr.instance_name = $1
+  AND sr.qualified = true
+  AND sr.guild_id IS NOT NULL
+  AND CASE
+      WHEN $2 :: boolean THEN li.difficulty_name = $3 :: text
+      ELSE true
+  END
+GROUP BY sr.guild_id, g.name, gp.theme
+ORDER BY clears DESC, g.name ASC
+LIMIT NULLIF($4 :: bigint, 0)
+`
+
+type SpeedrunGuildClearsParams struct {
+	InstanceName     string `db:"instance_name" json:"instance_name"`
+	FilterDifficulty bool   `db:"filter_difficulty" json:"filter_difficulty"`
+	DifficultyName   string `db:"difficulty_name" json:"difficulty_name"`
+	ResultLimit      int64  `db:"result_limit" json:"result_limit"`
+}
+
+type SpeedrunGuildClearsRow struct {
+	GuildID      uuid.UUID `db:"guild_id" json:"guild_id"`
+	GuildName    string    `db:"guild_name" json:"guild_name"`
+	GuildLogoUrl string    `db:"guild_logo_url" json:"guild_logo_url"`
+	Clears       int64     `db:"clears" json:"clears"`
+}
+
+// Returns guilds ranked by number of qualified full clears of the given
+// instance. Deduplicates runs by duplicate group so re-uploads of the same
+// raid only count once. JOINs wow_server_realms so RLS tenant filtering
+// cascades.
+func (q *sqlQuerier) SpeedrunGuildClears(ctx context.Context, arg SpeedrunGuildClearsParams) ([]SpeedrunGuildClearsRow, error) {
+	rows, err := q.db.Query(ctx, speedrunGuildClears,
+		arg.InstanceName,
+		arg.FilterDifficulty,
+		arg.DifficultyName,
+		arg.ResultLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SpeedrunGuildClearsRow
+	for rows.Next() {
+		var i SpeedrunGuildClearsRow
+		if err := rows.Scan(
+			&i.GuildID,
+			&i.GuildName,
+			&i.GuildLogoUrl,
+			&i.Clears,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

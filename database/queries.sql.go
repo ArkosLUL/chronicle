@@ -8066,6 +8066,81 @@ func (q *sqlQuerier) GetInstanceSpeedrun(ctx context.Context, instanceID uuid.UU
 	return i, err
 }
 
+const guildRaidClears = `-- name: GuildRaidClears :many
+WITH deduped AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        sr.instance_name,
+        sr.duration_ms,
+        sr.completion_time
+    FROM instance_speedruns sr
+    JOIN log_instances li ON li.id = sr.instance_id
+    JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
+    WHERE sr.guild_id = $1 :: uuid
+      AND sr.duration_ms > 0
+      AND CASE
+          WHEN $2 :: bigint > 0 THEN sr.completion_time >= now() - make_interval(days => $2::int)
+          ELSE true
+      END
+    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+)
+SELECT
+    instance_name,
+    COUNT(*) :: bigint AS clear_count,
+    MIN(duration_ms) :: bigint AS best_duration_ms,
+    AVG(duration_ms) :: bigint AS avg_duration_ms,
+    MAX(completion_time) :: timestamptz AS last_cleared_at
+FROM deduped
+GROUP BY instance_name
+ORDER BY clear_count DESC, instance_name
+`
+
+type GuildRaidClearsParams struct {
+	GuildID   uuid.UUID `db:"guild_id" json:"guild_id"`
+	SinceDays int64     `db:"since_days" json:"since_days"`
+}
+
+type GuildRaidClearsRow struct {
+	InstanceName   string             `db:"instance_name" json:"instance_name"`
+	ClearCount     int64              `db:"clear_count" json:"clear_count"`
+	BestDurationMs int64              `db:"best_duration_ms" json:"best_duration_ms"`
+	AvgDurationMs  int64              `db:"avg_duration_ms" json:"avg_duration_ms"`
+	LastClearedAt  pgtype.Timestamptz `db:"last_cleared_at" json:"last_cleared_at"`
+}
+
+// Returns per-instance clear counts and duration aggregates for a guild,
+// used by the guild page "Raid Clears" panel.
+// Deduplicates by duplicate_group so re-uploaded logs of the same raid count
+// once (best duration per group). Includes unqualified runs: a clear is a
+// clear, qualification only affects the public leaderboard. Requires
+// duration_ms > 0 because incomplete runs are inserted with a zero
+// completion_time and a negative sentinel duration (see chronicle/logparse.go).
+// JOINs wow_server_realms so RLS tenant filtering cascades.
+func (q *sqlQuerier) GuildRaidClears(ctx context.Context, arg GuildRaidClearsParams) ([]GuildRaidClearsRow, error) {
+	rows, err := q.db.Query(ctx, guildRaidClears, arg.GuildID, arg.SinceDays)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GuildRaidClearsRow
+	for rows.Next() {
+		var i GuildRaidClearsRow
+		if err := rows.Scan(
+			&i.InstanceName,
+			&i.ClearCount,
+			&i.BestDurationMs,
+			&i.AvgDurationMs,
+			&i.LastClearedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertInstanceSpeedrun = `-- name: InsertInstanceSpeedrun :exec
 INSERT INTO instance_speedruns (
     instance_id, instance_name, realm_id, guild_id,

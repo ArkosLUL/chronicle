@@ -112,3 +112,38 @@ FROM instance_speedruns sr
 JOIN wow_server_realms wsr ON sr.realm_id = wsr.id
 WHERE sr.qualified = true
 ORDER BY realm_name;
+
+-- name: GuildRaidClears :many
+-- Returns per-instance clear counts and duration aggregates for a guild,
+-- used by the guild page "Raid Clears" panel.
+-- Deduplicates by duplicate_group so re-uploaded logs of the same raid count
+-- once (best duration per group). Includes unqualified runs: a clear is a
+-- clear, qualification only affects the public leaderboard. Requires
+-- duration_ms > 0 because incomplete runs are inserted with a zero
+-- completion_time and a negative sentinel duration (see chronicle/logparse.go).
+-- JOINs wow_server_realms so RLS tenant filtering cascades.
+WITH deduped AS (
+    SELECT DISTINCT ON (COALESCE(li.duplicate_group_id, li.id))
+        sr.instance_name,
+        sr.duration_ms,
+        sr.completion_time
+    FROM instance_speedruns sr
+    JOIN log_instances li ON li.id = sr.instance_id
+    JOIN wow_server_realms wsr ON wsr.id = sr.realm_id
+    WHERE sr.guild_id = @guild_id :: uuid
+      AND sr.duration_ms > 0
+      AND CASE
+          WHEN @since_days :: bigint > 0 THEN sr.completion_time >= now() - make_interval(days => @since_days::int)
+          ELSE true
+      END
+    ORDER BY COALESCE(li.duplicate_group_id, li.id), sr.duration_ms ASC
+)
+SELECT
+    instance_name,
+    COUNT(*) :: bigint AS clear_count,
+    MIN(duration_ms) :: bigint AS best_duration_ms,
+    AVG(duration_ms) :: bigint AS avg_duration_ms,
+    MAX(completion_time) :: timestamptz AS last_cleared_at
+FROM deduped
+GROUP BY instance_name
+ORDER BY clear_count DESC, instance_name;

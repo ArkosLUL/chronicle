@@ -754,6 +754,23 @@ export interface GuildPanelPosition {
 }
 
 // From chroniclesdk/guild_page.go
+/**
+ * GuildRaidClear is a per-instance clear summary for a guild.
+ */
+export interface GuildRaidClear {
+    readonly instance_name: string;
+    readonly clear_count: number;
+    readonly best_duration_ms: number;
+    readonly avg_duration_ms: number;
+    readonly last_cleared_at: string;
+}
+
+// From chroniclesdk/guild_page.go
+export interface GuildRaidClearsResponse {
+    readonly clears: readonly GuildRaidClear[];
+}
+
+// From chroniclesdk/guild_page.go
 export interface GuildRosterMember {
     readonly user_id: string;
     readonly username: string;

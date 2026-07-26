@@ -226,6 +226,15 @@ type sqlcQuerier interface {
 	GetWorld(ctx context.Context, id uuid.UUID) (World, error)
 	GetWorldByName(ctx context.Context, name string) (World, error)
 	GetWorldsByServer(ctx context.Context, serverID uuid.UUID) ([]World, error)
+	// Returns per-instance clear counts and duration aggregates for a guild,
+	// used by the guild page "Raid Clears" panel.
+	// Deduplicates by duplicate_group so re-uploaded logs of the same raid count
+	// once (best duration per group). Includes unqualified runs: a clear is a
+	// clear, qualification only affects the public leaderboard. Requires
+	// duration_ms > 0 because incomplete runs are inserted with a zero
+	// completion_time and a negative sentinel duration (see chronicle/logparse.go).
+	// JOINs wow_server_realms so RLS tenant filtering cascades.
+	GuildRaidClears(ctx context.Context, arg GuildRaidClearsParams) ([]GuildRaidClearsRow, error)
 	HasInstanceDpsRankings(ctx context.Context, instanceID uuid.UUID) (bool, error)
 	InsertDataset(ctx context.Context, arg InsertDatasetParams) (Dataset, error)
 	InsertEncounter(ctx context.Context, arg InsertEncounterParams) (LogInstanceEncounter, error)

@@ -20,7 +20,7 @@ type Synthetic struct {
 	mitigation   *mitigator
 	extraAttack  *extraAttack
 	demons       *enslaveDemon
-	possession   *possession
+	possession   *Possession
 	knownObjects *knownObjects
 	razuvious    *razuviousOverkill
 	wowDB        gamedb.GameDB
@@ -47,7 +47,7 @@ func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB) *Synthet
 		mitigation:   newMitigator(logger, wowDB),
 		extraAttack:  newExtraAttack(ctx, logger, wowDB),
 		demons:       newEnslaveDemon(logger),
-		possession:   newPossession(logger),
+		possession:   NewPossession(ctx, logger),
 		knownObjects: newKnownObjects(),
 		razuvious:    newRazuviousOverkill(),
 		knownArmor:   newKnownArmor(),

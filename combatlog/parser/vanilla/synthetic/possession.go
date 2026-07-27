@@ -1,25 +1,31 @@
 package synthetic
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/common/warlockdemon"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/warlockdemon"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 )
 
-type possession struct {
+type Possession struct {
 	logger *slog.Logger
+	format database.LogFormat
 }
 
-func newPossession(logger *slog.Logger) *possession {
-	return &possession{
+func NewPossession(ctx context.Context, logger *slog.Logger) *Possession {
+	format, _ := parsectx.Format(ctx)
+	return &Possession{
 		logger: logger,
+		format: format,
 	}
 }
 
-func (s *possession) ProcessMessages(msgs []messages.Message) []messages.Message {
+func (s *Possession) ProcessMessages(msgs []messages.Message) []messages.Message {
 	var add []messages.Message
 	for _, msg := range msgs {
 		switch m := msg.(type) {
@@ -28,10 +34,15 @@ func (s *possession) ProcessMessages(msgs []messages.Message) []messages.Message
 				continue
 			}
 
-			if !isControlSpell(m.Spell) ||
-				// When casting MC, the caster also gets an aura of effect 4 (AuraEffectDummy)
-				(m.EffectAuraName != chrondbc.AuraEffectModPossess && m.EffectAuraName != chrondbc.AuraEffectModCharm) {
+			if !isControlSpell(m.Spell) {
 				continue
+			}
+
+			if s.format == database.LogFormat112aCcAddon {
+				// When casting MC, the caster also gets an aura of effect 4 (AuraEffectDummy)
+				if m.EffectAuraName != chrondbc.AuraEffectModPossess && m.EffectAuraName != chrondbc.AuraEffectModCharm {
+					continue
+				}
 			}
 
 			if *m.Target == m.Caster {
@@ -45,13 +56,18 @@ func (s *possession) ProcessMessages(msgs []messages.Message) []messages.Message
 				continue
 			}
 
+			duration := time.Duration(m.Spell.Duration.MaxDuration) * time.Millisecond
+			if s.format == database.LogFormat112aCcAddon {
+				duration = time.Duration(m.DurationMS) * time.Millisecond
+			}
+
 			add = append(add, &messages.PossessionChange{
 				MessageBase: messages.Base(m.Date()),
 				Target:      *m.Target,
 				Controller:  m.Caster,
 				Spell:       m.Spell,
 				Gained:      true,
-				Duration:    time.Duration(m.DurationMS) * time.Millisecond,
+				Duration:    duration,
 			})
 		case *messages.Aura:
 			if m.SpellData == nil {

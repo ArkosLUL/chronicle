@@ -5,13 +5,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/parsectx"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
+	"github.com/Emyrk/chronicle/database"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Gophercraft/core/i18n"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/context"
 )
+
+func ctx112(ctx context.Context) context.Context {
+	return parsectx.With(ctx, parsectx.Context{
+		Format: database.LogFormat112aCcAddon,
+	})
+}
 
 func mustGUID(s string) guid.GUID {
 	g, err := guid.FromString(s)
@@ -24,7 +33,7 @@ func mustGUID(s string) guid.GUID {
 func TestPossession_AuraCastGeneratesPossessionChange(t *testing.T) {
 	t.Parallel()
 
-	p := newPossession(slog.Default())
+	p := NewPossession(ctx112(t.Context()), slog.Default())
 	now := time.Now()
 
 	casterGUID := mustGUID("0x0000000000000001")
@@ -56,7 +65,7 @@ func TestPossession_AuraCastGeneratesPossessionChange(t *testing.T) {
 func TestPossession_AuraCastPassesDuration(t *testing.T) {
 	t.Parallel()
 
-	p := newPossession(slog.Default())
+	p := NewPossession(ctx112(t.Context()), slog.Default())
 	now := time.Now()
 
 	casterGUID := mustGUID("0x0000000000000001")
@@ -83,7 +92,7 @@ func TestPossession_AuraCastPassesDuration(t *testing.T) {
 func TestPossession_AuraRemovalGeneratesRelease(t *testing.T) {
 	t.Parallel()
 
-	p := newPossession(slog.Default())
+	p := NewPossession(ctx112(t.Context()), slog.Default())
 	now := time.Now()
 
 	targetGUID := mustGUID("0x0030000000000002")
@@ -111,7 +120,7 @@ func TestPossession_AuraRemovalGeneratesRelease(t *testing.T) {
 func TestPossession_IgnoresNonPossessionSpells(t *testing.T) {
 	t.Parallel()
 
-	p := newPossession(slog.Default())
+	p := NewPossession(ctx112(t.Context()), slog.Default())
 	now := time.Now()
 
 	casterGUID := mustGUID("0x0000000000000001")

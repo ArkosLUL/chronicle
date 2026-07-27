@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/common/registry"
+	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/vanilla/synthetic"
 	"github.com/Emyrk/chronicle/combatlog/parser/wotlk/synthetic/zonedetector"
 	"github.com/Emyrk/chronicle/database/gamedb"
@@ -29,6 +29,7 @@ type Synthetic struct {
 	zoneDetector *zonedetector.ZoneDetector
 	slain        *synthetic.SlainDetective
 	absorption   *synthetic.Absorption
+	possession   *synthetic.Possession
 
 	wowDB gamedb.GameDB
 
@@ -51,6 +52,7 @@ func New(ctx context.Context, logger *slog.Logger, wowDB gamedb.GameDB, reg *reg
 		wowDB:        wowDB,
 		unitInfo:     newUnitInfo(ctx, logger, wowDB, names, wowDB),
 		petOwnership: newPetOwnership(logger, names),
+		possession:   synthetic.NewPossession(ctx, logger),
 		zoneDetector: zd,
 	}
 }
@@ -80,6 +82,7 @@ func (s *Synthetic) ProcessMessages(msgs []messages.Message) ([]messages.Message
 	}
 
 	s.slain.ProcessMessages(msgs)
+	msgs = s.possession.ProcessMessages(msgs)
 
 	now = time.Now()
 	msgs = s.absorption.ProcessMessages(msgs)

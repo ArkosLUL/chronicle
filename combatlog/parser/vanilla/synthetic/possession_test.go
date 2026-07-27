@@ -1,6 +1,7 @@
 package synthetic
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/Gophercraft/core/i18n"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 )
 
 func ctx112(ctx context.Context) context.Context {

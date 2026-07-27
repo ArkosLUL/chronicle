@@ -81,14 +81,14 @@ func MoltenCoreSpeedrunRequirements(fl database.WoWFlavor) []rankings.SpeedrunRe
 
 		// Trash Requirements
 		{Name: "Firesworn", EntryIDs: []uint32{12099}, Count: 8, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Molten Destroyer/Giants", EntryIDs: []uint32{11659, 11658}, Count: 10, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Firelords/Lava Annihilators", EntryIDs: []uint32{11668, 11665}, Count: 21, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Ancient Core Hounds", EntryIDs: []uint32{11673}, Count: 13, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Lava Surgers", EntryIDs: []uint32{12101}, Count: 11, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Lava Elementals", EntryIDs: []uint32{12076}, Count: 8, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Flame Guards", EntryIDs: []uint32{11667}, Count: 7, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Firewalkers", EntryIDs: []uint32{11666}, Count: 7, Category: rankings.SpeedrunCategoryTrash},
-		//{Name: "Lava Reavers", EntryIDs: []uint32{12100}, Count: 3, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Molten Destroyer/Giants", EntryIDs: []uint32{11659, 11658}, Count: 10, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Firelords/Lava Annihilators", EntryIDs: []uint32{11668, 11665}, Count: 21, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Ancient Core Hounds", EntryIDs: []uint32{11673}, Count: 13, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Lava Surgers", EntryIDs: []uint32{12101}, Count: 11, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Lava Elementals", EntryIDs: []uint32{12076}, Count: 8, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Flame Guards", EntryIDs: []uint32{11667}, Count: 7, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Firewalkers", EntryIDs: []uint32{11666}, Count: 7, Category: rankings.SpeedrunCategoryTrash},
+		// {Name: "Lava Reavers", EntryIDs: []uint32{12100}, Count: 3, Category: rankings.SpeedrunCategoryTrash},
 	}
 
 	if fl.Has(database.FlavorTurtle, database.FlavorNightmareOfUrsol, database.FlavorOctoWoW) {

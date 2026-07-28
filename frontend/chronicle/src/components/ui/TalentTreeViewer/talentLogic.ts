@@ -68,6 +68,7 @@ export const TALENT_CELL_HEIGHT = 58;
 export const TALENT_GRID_GAP = 16;
 export const TALENT_ROW_STRIDE = TALENT_CELL_HEIGHT + TALENT_GRID_GAP;
 export const TALENT_BUILD_PARAM = "build";
+export const TALENT_LOCK_PARAM = "lock";
 export const TALENT_ARROW_SOURCE_CLEARANCE = 0;
 export const TALENT_ARROW_TARGET_CLEARANCE = 0;
 export const TALENT_ARROW_ELBOW_CLEARANCE = 14;
@@ -160,12 +161,17 @@ export function updateTalentRank(
   options: { maxPoints?: number } = {},
 ): TalentRanks {
   const currentRank = ranks[talent.id] ?? 0;
-  const nextRank = Math.max(0, Math.min(talent.maxRank, requestedRank));
+  let nextRank = Math.max(0, Math.min(talent.maxRank, requestedRank));
+  // Clamp increases to the remaining point budget so a "dump points" request
+  // (e.g. ctrl-click asking for maxRank) spends as many points as possible.
+  if (nextRank > currentRank && options.maxPoints !== undefined) {
+    const remaining = Math.max(0, options.maxPoints - totalTalentPoints(ranks));
+    nextRank = Math.min(nextRank, currentRank + remaining);
+  }
   if (nextRank === currentRank) return ranks;
   if (nextRank > currentRank && !canUseTalent(talent, talents, ranks)) return ranks;
 
   const nextRanks = { ...ranks, [talent.id]: nextRank };
-  if (options.maxPoints !== undefined && totalTalentPoints(nextRanks) > options.maxPoints) return ranks;
   if (nextRank < currentRank && !spentTalentsStillValid(talents, nextRanks)) return ranks;
   return nextRanks;
 }
@@ -267,6 +273,17 @@ export function searchParamsWithTalentBuild(params: URLSearchParams, ranks: Tale
   return next;
 }
 
+export function searchParamsWithTalentLock(params: URLSearchParams, locked: boolean) {
+  const next = new URLSearchParams(params);
+  if (locked) next.set(TALENT_LOCK_PARAM, "1");
+  else next.delete(TALENT_LOCK_PARAM);
+  return next;
+}
+
+export function isTalentBuildLocked(params: URLSearchParams) {
+  return params.get(TALENT_LOCK_PARAM) === "1";
+}
+
 export function canonicalTalentBuildUrl(href: string, ranks: TalentRanks, tabs: TalentEntry[][]) {
   const url = new URL(href);
   url.search = searchParamsWithTalentBuild(url.searchParams, ranks, tabs).toString();
@@ -278,6 +295,22 @@ type BuildUrlClipboard = Pick<Clipboard, "writeText">;
 export async function copyTalentBuildUrl(clipboard: BuildUrlClipboard | undefined, href: string, ranks: TalentRanks, tabs: TalentEntry[][]) {
   if (!clipboard) return;
   await clipboard.writeText(canonicalTalentBuildUrl(href, ranks, tabs));
+}
+
+// ─── Export filename ──────────────────────────────────────────────
+
+/**
+ * Filename for an exported build image: `<Spec>_<pts1>.<pts2>.<pts3>`,
+ * e.g. "Retribution_0.34.17". Spec is the tab with the most points
+ * (first tab wins ties); falls back to the given class name when no
+ * points are spent.
+ */
+export function talentBuildExportName(tabs: TalentTabData[], ranks: TalentRanks, fallbackName: string) {
+  const pointsPerTab = tabs.map((tab) => tab.talents.reduce((sum, talent) => sum + (ranks[talent.id] ?? 0), 0));
+  const maxPoints = Math.max(...pointsPerTab, 0);
+  const specTab = maxPoints > 0 ? tabs[pointsPerTab.indexOf(maxPoints)] : undefined;
+  const spec = (specTab?.name || fallbackName).replace(/\s+/g, "-");
+  return `${spec}_${pointsPerTab.join(".")}`;
 }
 
 // ─── Arrow path geometry ──────────────────────────────────────────
@@ -520,8 +553,11 @@ export function isTalentBackgroundVisible(backgroundUrl: string | null, failedBa
 
 // ─── Lock reasons (for tooltip) ───────────────────────────────────
 
-export function lockedTalentReasons(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks) {
+export function lockedTalentReasons(talent: TalentEntry, talents: TalentEntry[], ranks: TalentRanks, pointsExhausted = false) {
   const reasons: string[] = [];
+  if (pointsExhausted) {
+    reasons.push("No talent points remaining.");
+  }
   const requiredPoints = rowPointRequirement(talent);
   if (pointsSpentBeforeRow(talents, ranks, talent.tierID) < requiredPoints) {
     reasons.push(`Spend ${requiredPoints} points in this tree to unlock this row.`);

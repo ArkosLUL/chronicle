@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { ImageDown, Lock, LockOpen } from "lucide-react";
+import { toCanvas } from "html-to-image";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { iconUrl, talentBackgroundUrl } from "@/config/iconUrl";
 import { useIconBaseUrl } from "@/hooks/useDatasetId";
@@ -28,6 +31,7 @@ import {
   copyTalentBuildUrl,
   decodeTalentBuild,
   isTalentBackgroundVisible,
+  isTalentBuildLocked,
   lockedTalentReasons,
   mergeTalentRankDescriptions,
   normalizeTalentRanks,
@@ -37,6 +41,8 @@ import {
   rankDescriptionsForTooltip,
   resetTalentTabRanks,
   searchParamsWithTalentBuild,
+  searchParamsWithTalentLock,
+  talentBuildExportName,
   talentDescription,
   talentGridHeight,
   talentGridRows,
@@ -227,10 +233,12 @@ function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: Talent
 
 // ─── Talent button ────────────────────────────────────────────────
 
-function TalentButton({ talent, rank, locked, talents, ranks, onChange, readOnly, debug }: {
+function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, onChange, readOnly, debug }: {
   talent: TalentEntry;
   rank: number;
   locked: boolean;
+  /** True when no more points can be spent (max reached or build locked). */
+  pointsExhausted?: boolean;
   talents: TalentEntry[];
   ranks: TalentRanks;
   onChange: (rank: number) => void;
@@ -339,7 +347,7 @@ function TalentButton({ talent, rank, locked, talents, ranks, onChange, readOnly
   const loadingSpellDetails = Boolean(
     tooltipPosition && talent.spellRanks.length > 0 && (rankSpellQueries.some((q) => q.isPending) || refQueries.some((q) => q.isPending))
   );
-  const lockReasons = locked ? lockedTalentReasons(talent, talents, ranks) : [];
+  const lockReasons = locked ? lockedTalentReasons(talent, talents, ranks, pointsExhausted) : [];
 
 
   const showTooltip = () => {
@@ -425,6 +433,7 @@ function TalentButton({ talent, rank, locked, talents, ranks, onChange, readOnly
         if (readOnly) return;
         showTooltip();
         if (event.shiftKey || event.metaKey) onChange(Math.max(0, rank - 1));
+        else if (event.ctrlKey) onChange(talent.maxRank);
         else onChange(Math.min(talent.maxRank, rank + 1));
       }}
       onContextMenu={(event) => {
@@ -488,6 +497,8 @@ function TalentTab({
   onReset,
   debug,
   compact,
+  pointsExhausted,
+  buildLocked,
 }: {
   tab: TalentTabData;
   ranks: TalentRanks;
@@ -496,6 +507,10 @@ function TalentTab({
   onReset: () => void;
   debug?: boolean;
   compact?: boolean;
+  /** True when no more points can be spent (max reached or build locked). */
+  pointsExhausted?: boolean;
+  /** True when the build is manually locked — all changes (add/remove) are blocked. */
+  buildLocked?: boolean;
 }) {
   const iconBaseUrl = useIconBaseUrl();
   const points = useMemo(() => tab.talents.reduce((sum, talent) => sum + (ranks[talent.id] ?? 0), 0), [tab.talents, ranks]);
@@ -558,7 +573,7 @@ function TalentTab({
             type="button"
             aria-label={`Reset ${tab.name} tree`}
             className="shrink-0 rounded-md border border-amber-300/30 bg-zinc-950/60 px-2.5 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-amber-100/80 transition hover:border-amber-200/60 hover:bg-amber-300/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={points === 0}
+            disabled={points === 0 || buildLocked}
             onClick={onReset}
           >
             Reset tree
@@ -607,7 +622,8 @@ function TalentTab({
                         <TalentButton
                           talent={t}
                           rank={ranks[t.id] ?? 0}
-                          locked={(ranks[t.id] ?? 0) === 0 && !canUseTalent(t, tab.talents, ranks)}
+                          locked={(ranks[t.id] ?? 0) === 0 && (Boolean(pointsExhausted) || !canUseTalent(t, tab.talents, ranks))}
+                          pointsExhausted={pointsExhausted}
                           talents={tab.talents}
                           ranks={ranks}
                           readOnly={readOnly}
@@ -651,6 +667,31 @@ function allocationsToRanks(tabs: TalentTabData[], allocations: TalentAllocation
   return ranks;
 }
 
+// ─── PNG export watermark ─────────────────────────────────────────
+
+const EXPORT_LOGO_URL = "/c/chronicle/ChronicleLogoCenter.svg";
+const EXPORT_LOGO_HEIGHT = 32; // CSS pixels, scaled by pixelRatio
+const EXPORT_LOGO_MARGIN = 12;
+
+/** Draws the Chronicle logo in the bottom-right corner of the export canvas. */
+async function drawExportWatermark(canvas: HTMLCanvasElement, pixelRatio: number) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const logo = new Image();
+  logo.src = EXPORT_LOGO_URL;
+  try {
+    await logo.decode();
+  } catch {
+    return; // Logo failed to load — export without the watermark.
+  }
+  const height = EXPORT_LOGO_HEIGHT * pixelRatio;
+  const width = (logo.naturalWidth / logo.naturalHeight) * height;
+  const margin = EXPORT_LOGO_MARGIN * pixelRatio;
+  ctx.globalAlpha = 0.9;
+  ctx.drawImage(logo, canvas.width - width - margin, canvas.height - height - margin, width, height);
+  ctx.globalAlpha = 1;
+}
+
 // ─── Main component ───────────────────────────────────────────────
 
 export function TalentTreeViewer({
@@ -686,6 +727,12 @@ export function TalentTreeViewer({
   const total = useMemo(() => totalTalentPoints(ranks), [ranks]);
   const requiredLevel = useMemo(() => calculateRequiredPlayerLevel(total, flavor), [flavor, total]);
 
+  // Manual lock (stored in the URL): blacks out unspent talents early, e.g.
+  // to plan a level-20 build. Only meaningful in interactive mode.
+  const manuallyLocked = !readOnly && !allocations && isTalentBuildLocked(searchParams);
+  // Points are exhausted when the build is manually locked or all points are spent.
+  const pointsExhausted = !readOnly && !allocations && (manuallyLocked || total >= maxPoints);
+
   // Sync ranks when external inputs (data, URL params, allocations) change.
   // This is a legitimate prop→state synchronization — ranks are also updated
   // by user clicks via commitRanks(), so we can't simply derive them.
@@ -706,9 +753,62 @@ export function TalentTreeViewer({
     }
   }
 
+  function toggleLock() {
+    setSearchParams(searchParamsWithTalentLock(searchParams, !manuallyLocked), { replace: true });
+  }
+
+  function notifyBuildLocked() {
+    toast.warning("Talent build is locked", {
+      // Stable id so rapid clicking re-uses one toast instead of stacking.
+      id: "talent-build-locked",
+      description: "Unlock the build to add or remove talent points.",
+      action: {
+        label: "Unlock",
+        onClick: () => setSearchParams(searchParamsWithTalentLock(searchParams, false), { replace: true }),
+      },
+    });
+  }
+
   async function copyBuildLink() {
     if (typeof window === "undefined") return;
     await copyTalentBuildUrl(navigator.clipboard, window.location.href, ranks, tabTalentLists);
+  }
+
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  async function exportAsPng() {
+    const node = exportRef.current;
+    if (!node || exporting) return;
+    setExporting(true);
+    try {
+      const pixelRatio = 2;
+      // Icons and backgrounds come from the icon CDN, which serves CORS
+      // headers, so html-to-image can inline them as data URLs.
+      // cache: "no-cache" forces revalidation — the browser may have cached
+      // these images from plain <img> loads (no Origin header), and reusing
+      // that cached response for a CORS fetch fails ("cache poisoning").
+      const canvas = await toCanvas(node, {
+        pixelRatio,
+        backgroundColor: "#09090b",
+        fetchRequestInit: { cache: "no-cache" },
+        // Transparent 1x1 pixel so a single unloadable icon doesn't abort
+        // the whole export.
+        imagePlaceholder:
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      });
+      await drawExportWatermark(canvas, pixelRatio);
+      // data.name may be missing from the talent JSON; fall back to the
+      // class-id lookup, then a generic label.
+      const className = data.name ?? CLASS_NAMES[data.id] ?? "class";
+      const link = document.createElement("a");
+      link.download = `${talentBuildExportName(data.tabs, ranks, className)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (error) {
+      console.error("Talent tree PNG export failed", error);
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -725,16 +825,50 @@ export function TalentTreeViewer({
                 <button type="button" className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25" onClick={() => void copyBuildLink()}>
                   Copy link
                 </button>
-                <button type="button" className="rounded-md border border-red-500/50 bg-red-500/15 px-2.5 py-1 text-sm font-medium text-red-400 hover:bg-red-500/25 hover:text-red-300" onClick={() => commitRanks({})}>Reset {total}/{maxPoints}</button>
+                <button
+                  type="button"
+                  disabled={exporting}
+                  title="Download the talent trees as a PNG image"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25 disabled:cursor-wait disabled:opacity-60"
+                  onClick={() => void exportAsPng()}
+                >
+                  <ImageDown className="h-3.5 w-3.5" />
+                  {exporting ? "Exporting…" : "Export PNG"}
+                </button>
+                <button
+                  type="button"
+                  disabled={manuallyLocked}
+                  title={manuallyLocked ? "Unlock the build to reset" : undefined}
+                  className="rounded-md border border-red-500/50 bg-red-500/15 px-2.5 py-1 text-sm font-medium text-red-400 hover:bg-red-500/25 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-red-500/15 disabled:hover:text-red-400"
+                  onClick={() => commitRanks({})}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={manuallyLocked}
+                  aria-label={manuallyLocked ? "Unlock build" : "Lock build"}
+                  title={manuallyLocked ? "Unlock build to spend more points" : "Lock build at the current points"}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-bold transition",
+                    manuallyLocked
+                      ? "border-amber-300/70 bg-amber-400/20 text-amber-100 hover:bg-amber-400/30"
+                      : "border-zinc-600/70 bg-zinc-900/50 text-zinc-300 hover:border-zinc-400 hover:text-white",
+                  )}
+                  onClick={toggleLock}
+                >
+                  {total}/{maxPoints}
+                  {manuallyLocked ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
+                </button>
               </>
             )}
           </div>
           {!readOnly && (
-            <p className="text-sm text-muted-foreground text-right">Click to add. Right-click or shift-click to remove. Builds are stored in the URL.</p>
+            <p className="text-sm text-muted-foreground text-right">Click to add. Right-click or shift-click to remove. Ctrl-click to spend remaining points into a talent. Builds are stored in the URL.</p>
           )}
         </div>
       )}
-      <div className={tabGridClassName}>
+      <div ref={exportRef} className={tabGridClassName}>
         {data.tabs.map((tab) => (
           <TalentTab
             key={tab.id}
@@ -743,8 +877,23 @@ export function TalentTreeViewer({
             readOnly={readOnly}
             compact={compact}
             debug={searchParams.get("debug") === "true"}
-            onRankChange={(talent, rank) => commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints }))}
-            onReset={() => commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints))}
+            pointsExhausted={pointsExhausted}
+            buildLocked={manuallyLocked}
+            // A locked build is frozen: no points may be added or removed.
+            onRankChange={(talent, rank) => {
+              if (manuallyLocked) {
+                notifyBuildLocked();
+                return;
+              }
+              commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints }));
+            }}
+            onReset={() => {
+              if (manuallyLocked) {
+                notifyBuildLocked();
+                return;
+              }
+              commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints));
+            }}
           />
         ))}
       </div>

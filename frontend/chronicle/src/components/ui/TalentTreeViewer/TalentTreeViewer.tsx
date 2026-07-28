@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { useSearchParams } from "react-router-dom";
-import { ImageDown, Lock, LockOpen } from "lucide-react";
+import { ImageDown, Lock, LockOpen, Share2 } from "lucide-react";
 import { toCanvas } from "html-to-image";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { iconUrl, talentBackgroundUrl } from "@/config/iconUrl";
 import { useIconBaseUrl } from "@/hooks/useDatasetId";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import type { WoWSpell } from "@emyrk/wow-tooltip-renderer";
 import { resolveSpellDescription, getEnglishText, extractReferencedSpellIds } from "@emyrk/wow-tooltip-renderer";
@@ -78,6 +79,10 @@ export interface TalentTreeViewerProps {
   readOnly?: boolean;
   /** When true, renders a more compact layout suitable for panels with limited space. */
   compact?: boolean;
+  /** Extra controls pinned to the right of the summary bar (e.g. "My Builds"). */
+  extraActions?: React.ReactNode;
+  /** Mobile: page header content (title/back) composed into the summary card. */
+  mobileHeader?: React.ReactNode;
   className?: string;
 }
 
@@ -233,7 +238,7 @@ function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: Talent
 
 // ─── Talent button ────────────────────────────────────────────────
 
-function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, onChange, readOnly, debug }: {
+function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, onChange, readOnly, debug, mobile, quickActive, onActivate }: {
   talent: TalentEntry;
   rank: number;
   locked: boolean;
@@ -244,12 +249,19 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
   onChange: (rank: number) => void;
   readOnly: boolean;
   debug?: boolean;
+  /** Touch layout: show -/+ quick buttons while the talent is active. */
+  mobile?: boolean;
+  /** Mobile: this talent is the last one tapped — keep its -/+ visible. */
+  quickActive?: boolean;
+  /** Mobile: mark this talent as the active one. */
+  onActivate?: () => void;
 }) {
   const iconBaseUrl = useIconBaseUrl();
   const maxed = rank >= talent.maxRank;
   const visualState = talentVisualState(rank, talent.maxRank, locked);
   const tooltipId = `talent-tooltip-${talent.id}`;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [tooltipPosition, setTooltipPosition] = useState<TalentTooltipPosition | undefined>();
   const rankTexts = talentRankTexts(talent);
 
@@ -384,6 +396,9 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (buttonRef.current?.contains(target)) return;
+      // On mobile the -/+ quick buttons live in the wrapper next to the
+      // talent; taps on them must not dismiss the active state.
+      if (wrapperRef.current?.contains(target)) return;
       unpinAndHide();
     };
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -415,7 +430,19 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
     />
   );
 
-  return (
+  // Mobile quick actions: pinned to the last talent tapped (not tied to the
+  // tooltip, which comes and goes with focus/blur and would flicker).
+  const showQuickButtons = Boolean(mobile && !readOnly && quickActive);
+  const quickButtonClass = "pointer-events-auto flex h-6 w-9 items-center justify-center text-sm font-bold transition disabled:opacity-35";
+  // The tooltip prefers to open below the talent — the pill's default spot.
+  // When it does, flip the pill above the talent so it stays visible.
+  const tooltipIsBelow = Boolean(
+    tooltipPosition &&
+    buttonRef.current &&
+    tooltipPosition.top >= buttonRef.current.getBoundingClientRect().bottom,
+  );
+
+  const talentButton = (
     <button
       ref={buttonRef}
       type="button"
@@ -428,10 +455,15 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
-      onBlur={hideTooltip}
+      onBlur={(event) => {
+        // Keep the tooltip open when focus moves to the -/+ quick buttons.
+        if (event.relatedTarget instanceof Node && wrapperRef.current?.contains(event.relatedTarget)) return;
+        hideTooltip();
+      }}
       onClick={(event) => {
         if (readOnly) return;
         showTooltip();
+        onActivate?.();
         if (event.shiftKey || event.metaKey) onChange(Math.max(0, rank - 1));
         else if (event.ctrlKey) onChange(talent.maxRank);
         else onChange(Math.min(talent.maxRank, rank + 1));
@@ -439,7 +471,9 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
       onContextMenu={(event) => {
         if (readOnly) return;
         event.preventDefault();
-        onChange(Math.max(0, rank - 1));
+        // Ctrl+right-click removes all points from the talent.
+        if (event.ctrlKey) onChange(0);
+        else onChange(Math.max(0, rank - 1));
       }}
       onAuxClick={(event) => {
         if (!debug || event.button !== 1) return;
@@ -485,6 +519,47 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
       ) : tooltipPosition ? createPortal(tooltip, document.body) : null}
     </button>
   );
+
+  if (!mobile) return talentButton;
+
+  return (
+    <div ref={wrapperRef} data-talent-quick-zone="true" className="relative">
+      {talentButton}
+      {showQuickButtons && (
+        <div className={cn(
+          "absolute left-1/2 z-20 flex -translate-x-1/2 divide-x divide-zinc-700 overflow-hidden rounded-md border border-zinc-600 bg-zinc-950/95 shadow-lg",
+          tooltipIsBelow ? "-top-7" : "-bottom-7",
+        )}>
+          <button
+            type="button"
+            aria-label={`Remove point from ${talent.name}`}
+            disabled={rank === 0}
+            className={cn(quickButtonClass, "text-red-300 active:bg-red-400/20")}
+            onClick={(event) => {
+              event.stopPropagation();
+              showTooltip();
+              onChange(Math.max(0, rank - 1));
+            }}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            aria-label={`Add point to ${talent.name}`}
+            disabled={maxed || locked}
+            className={cn(quickButtonClass, "text-emerald-300 active:bg-emerald-400/20")}
+            onClick={(event) => {
+              event.stopPropagation();
+              showTooltip();
+              onChange(Math.min(talent.maxRank, rank + 1));
+            }}
+          >
+            +
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Talent tab (single tree) ─────────────────────────────────────
@@ -499,6 +574,9 @@ function TalentTab({
   compact,
   pointsExhausted,
   buildLocked,
+  mobile,
+  quickActiveTalentId,
+  onQuickActivate,
 }: {
   tab: TalentTabData;
   ranks: TalentRanks;
@@ -511,6 +589,12 @@ function TalentTab({
   pointsExhausted?: boolean;
   /** True when the build is manually locked — all changes (add/remove) are blocked. */
   buildLocked?: boolean;
+  /** Touch layout: full-bleed card with an upscaled grid. */
+  mobile?: boolean;
+  /** Mobile: id of the last talent tapped anywhere in the viewer. */
+  quickActiveTalentId?: number | null;
+  /** Mobile: mark a talent as the active one. */
+  onQuickActivate?: (talentId: number) => void;
 }) {
   const iconBaseUrl = useIconBaseUrl();
   const points = useMemo(() => tab.talents.reduce((sum, talent) => sum + (ranks[talent.id] ?? 0), 0), [tab.talents, ranks]);
@@ -532,10 +616,28 @@ function TalentTab({
     ? (height + TALENT_GRID_GAP * 2) * compactScale
     : undefined;
 
+  // On mobile, upscale the grid to fill the viewport width (same transform
+  // trick as compact, but scaling up). Track the viewport for rotations.
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 0 : window.innerWidth,
+  );
+  useEffect(() => {
+    if (!mobile || typeof window === "undefined") return undefined;
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [mobile]);
+  // Side gutters keep the edge-column -/+ quick buttons from being cut off
+  // at the screen edges; cap the upscale so tablets don't get comical.
+  const mobileGutter = 16;
+  const mobileScale = mobile
+    ? Math.min(1.6, Math.max(1, (viewportWidth - mobileGutter * 2 - 8) / TALENT_GRID_WIDTH))
+    : undefined;
+
   return (
-    <section className={cn(
+    <section id={mobile ? `talent-tree-${tab.id}` : undefined} className={cn(
       "talent-tree-card relative max-w-full self-start overflow-hidden rounded-lg border border-amber-400/20 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.14),transparent_32%),linear-gradient(180deg,rgba(120,83,38,0.16),rgba(9,9,11,0.58))] shadow-2xl shadow-black/30",
-      compact ? "p-2" : "p-4",
+      compact ? "p-2" : mobile ? "scroll-mt-12 rounded-none border-x-0 px-0 py-3" : "p-4",
     )} aria-label={`${tab.name} talent tree`}>
       {showBackground && backgroundUrl && (
         <img
@@ -552,7 +654,7 @@ function TalentTab({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" aria-hidden="true" />
       <div className={cn(
         "flex items-center justify-between rounded-lg border border-white/10 bg-black/30 shadow-inner shadow-black/30",
-        compact ? "mb-1.5 gap-2 p-1.5" : "mb-4 gap-3 p-2",
+        compact ? "mb-1.5 gap-2 p-1.5" : mobile ? "mx-2 mb-3 gap-3 p-2" : "mb-4 gap-3 p-2",
       )}>
         <div className={cn("flex min-w-0 items-center", compact ? "gap-2" : "gap-3")}>
           {!compact && (
@@ -582,13 +684,25 @@ function TalentTab({
       </div>
       <div className={cn(
         "overscroll-x-contain touch-manipulation sm:mx-0 sm:px-0",
-        compact ? "pb-1" : "-mx-4 overflow-x-auto px-4 pb-3",
+        compact ? "pb-1" : mobile ? "pb-2" : "-mx-4 overflow-x-auto px-4 pb-3",
       )} aria-label="Scrollable talent tree grid">
         <div
-          className={cn("relative mx-auto overflow-hidden", compact ? "rounded border border-white/5 bg-black/25" : "rounded-lg border border-white/5 bg-black/25 p-3")}
+          className={cn(
+            "relative mx-auto",
+            // Mobile stays overflow-visible so the -/+ quick buttons are not
+            // clipped at the grid edges.
+            compact ? "overflow-hidden rounded border border-white/5 bg-black/25" : mobile ? "bg-black/25 py-2" : "overflow-hidden rounded-lg border border-white/5 bg-black/25 p-3",
+          )}
           style={compact
             ? { width: `${scaledGridWidth}px`, height: `${scaledGridHeight}px` }
-            : { width: `${TALENT_GRID_WIDTH + TALENT_GRID_GAP * 2}px`, maxWidth: "100%" }
+            : mobile && mobileScale
+              ? {
+                  width: `${TALENT_GRID_WIDTH * mobileScale + mobileGutter * 2}px`,
+                  height: `${height * mobileScale + 16}px`,
+                  paddingLeft: `${mobileGutter}px`,
+                  paddingRight: `${mobileGutter}px`,
+                }
+              : { width: `${TALENT_GRID_WIDTH + TALENT_GRID_GAP * 2}px`, maxWidth: "100%" }
           }
         >
           <div
@@ -600,7 +714,14 @@ function TalentTab({
                   transform: `scale(${compactScale})`,
                   transformOrigin: "top left",
                 }
-              : { width: `${TALENT_GRID_WIDTH}px`, height: `${height}px` }
+              : mobile && mobileScale
+                ? {
+                    width: `${TALENT_GRID_WIDTH}px`,
+                    height: `${height}px`,
+                    transform: `scale(${mobileScale})`,
+                    transformOrigin: "top left",
+                  }
+                : { width: `${TALENT_GRID_WIDTH}px`, height: `${height}px` }
             }
           >
             <TalentPrereqArrows arrows={arrows} ranks={ranks} height={height} talents={tab.talents} />
@@ -628,6 +749,9 @@ function TalentTab({
                           ranks={ranks}
                           readOnly={readOnly}
                           debug={debug}
+                          mobile={mobile}
+                          quickActive={quickActiveTalentId === t.id}
+                          onActivate={mobile && onQuickActivate ? () => onQuickActivate(t.id) : undefined}
                           onChange={(rank) => onRankChange(t, rank)}
                         />
                       )}
@@ -640,6 +764,43 @@ function TalentTab({
         </div>
       </div>
     </section>
+  );
+}
+
+// ─── Mobile sticky tree tabs ──────────────────────────────────────
+
+/** Sticky chip bar on mobile: jump-scroll between the stacked trees. */
+function MobileTreeTabs({ tabs, ranks, visibleTabId, onJump }: {
+  tabs: TalentTabData[];
+  ranks: TalentRanks;
+  visibleTabId: number | null;
+  onJump: (tabId: number) => void;
+}) {
+  const iconBaseUrl = useIconBaseUrl();
+  return (
+    <div className="sticky top-0 z-40 -mx-4 flex gap-1 border-b border-amber-400/20 bg-zinc-950/95 px-2 py-1.5 backdrop-blur">
+      {tabs.map((tab) => {
+        const points = tab.talents.reduce((sum, talent) => sum + (ranks[talent.id] ?? 0), 0);
+        const active = tab.id === visibleTabId;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onJump(tab.id)}
+            className={cn(
+              "flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-bold transition",
+              active
+                ? "border-amber-300/60 bg-amber-400/15 text-amber-100"
+                : "border-transparent bg-zinc-900/60 text-zinc-400",
+            )}
+          >
+            <img src={iconUrl(tab.iconTexture, iconBaseUrl)} alt="" className="h-4 w-4 shrink-0 rounded" />
+            <span className="truncate">{tab.name}</span>
+            <span className={cn("shrink-0 tabular-nums", active ? "text-amber-200/90" : "text-zinc-500")}>{points}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -701,14 +862,22 @@ export function TalentTreeViewer({
   maxLevel = 60,
   readOnly = false,
   compact = false,
+  extraActions,
+  mobileHeader,
   className,
 }: TalentTreeViewerProps) {
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabTalentLists = useMemo(() => data.tabs.map((tab) => tab.talents), [data.tabs]);
   const deepestTabRows = useMemo(() => Math.max(...data.tabs.map((tab) => talentGridRows(tab.talents)), 0), [data.tabs]);
+  // Interactive mobile layout breaks out of the page's px-4 gutter (-mx-4)
+  // so each tree card can use the whole screen width.
+  const mobileLayout = isMobile && !compact && !readOnly;
   const tabGridClassName = compact
     ? "grid min-w-0 gap-2 grid-cols-3"
-    : deepestTabRows > 7 ? "grid min-w-0 gap-4 xl:grid-cols-2 2xl:grid-cols-3" : "grid min-w-0 gap-4 xl:grid-cols-3";
+    : mobileLayout
+      ? "-mx-4 grid min-w-0 gap-3"
+      : deepestTabRows > 7 ? "grid min-w-0 gap-4 xl:grid-cols-2 2xl:grid-cols-3" : "grid min-w-0 gap-4 xl:grid-cols-3";
   const maxPoints = maxTalentPoints;
   const flavor = useMemo(() => ({ maxLevel, maxTalentPoints }), [maxLevel, maxTalentPoints]);
 
@@ -724,6 +893,50 @@ export function TalentTreeViewer({
   }, [allocations, data.tabs, maxPoints, searchParams, tabTalentLists]);
 
   const [ranks, setRanks] = useState<TalentRanks>(initialRanks);
+  // Mobile: last talent tapped anywhere; its -/+ quick buttons stay visible
+  // until a different talent is tapped or the user taps elsewhere.
+  const [quickActiveTalentId, setQuickActiveTalentId] = useState<number | null>(null);
+
+  // Mobile: which tree is currently on screen, for the sticky mini-tabs.
+  const [visibleTabId, setVisibleTabId] = useState<number | null>(null);
+  useEffect(() => {
+    if (!mobileLayout || typeof document === "undefined") return undefined;
+    const sections = data.tabs
+      .map((tab) => document.getElementById(`talent-tree-${tab.id}`))
+      .filter((el): el is HTMLElement => el !== null);
+    if (sections.length === 0) return undefined;
+    // Highlight the tree crossing the upper-middle band of the viewport.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const id = Number(entry.target.id.replace("talent-tree-", ""));
+          if (!Number.isNaN(id)) setVisibleTabId(id);
+        }
+      },
+      { rootMargin: "-15% 0px -65% 0px" },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [data.tabs, mobileLayout]);
+
+  function jumpToTree(tabId: number) {
+    document.getElementById(`talent-tree-${tabId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Clear the quick buttons when tapping outside any talent ("clear the context").
+  useEffect(() => {
+    if (quickActiveTalentId === null || typeof document === "undefined") return undefined;
+    const clearOnOutsideTap = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      // Taps on a talent (or its -/+ buttons) are handled by the talent itself.
+      if (target.closest("[data-talent-quick-zone]")) return;
+      setQuickActiveTalentId(null);
+    };
+    document.addEventListener("pointerdown", clearOnOutsideTap);
+    return () => document.removeEventListener("pointerdown", clearOnOutsideTap);
+  }, [quickActiveTalentId]);
   const total = useMemo(() => totalTalentPoints(ranks), [ranks]);
   const requiredLevel = useMemo(() => calculateRequiredPlayerLevel(total, flavor), [flavor, total]);
 
@@ -775,6 +988,7 @@ export function TalentTreeViewer({
   async function copyBuildLink() {
     if (typeof window === "undefined") return;
     await copyTalentBuildUrl(navigator.clipboard, window.location.href, ranks, tabTalentLists);
+    toast.success("Link copied to clipboard", { id: "talent-build-link-copied" });
   }
 
   const exportRef = useRef<HTMLDivElement>(null);
@@ -818,6 +1032,92 @@ export function TalentTreeViewer({
     }
   }
 
+  // Mobile interactive layout: one calm card — page header on top, labeled
+  // stats + actions below (see design discussion in PR).
+  if (mobileLayout) {
+    return (
+      <div className={cn("space-y-0", className)}>
+        {/* Header card shares the tree cards' full-bleed footprint and warm
+            gradient so the page reads as one continuous column. */}
+        <div className="relative -mx-4 overflow-hidden border-y border-amber-400/20 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.14),transparent_32%),linear-gradient(180deg,rgba(120,83,38,0.16),rgba(9,9,11,0.58))]">
+          <div className="pointer-events-none absolute inset-0 bg-black/45" aria-hidden="true" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" aria-hidden="true" />
+          <div className="relative">
+            {mobileHeader && <div className="border-b border-white/10 p-4">{mobileHeader}</div>}
+            <div className="flex items-center gap-4 px-4 py-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/60">Level</p>
+                <p className="text-lg font-bold leading-tight text-white">{requiredLevel}</p>
+              </div>
+              <div className="h-8 w-px bg-amber-200/15" />
+              {/* Points doubles as the lock toggle, like the desktop chip. */}
+              <button type="button" aria-pressed={manuallyLocked} onClick={toggleLock} className="text-left">
+                <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/60">
+                  Points
+                  {manuallyLocked ? <Lock className="h-3 w-3 text-amber-300" /> : <LockOpen className="h-3 w-3" />}
+                </p>
+                <p className="text-lg font-bold leading-tight">
+                  <span className="text-amber-300">{total}</span>
+                  <span className="text-zinc-500">/{maxPoints}</span>
+                </p>
+              </button>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-300/30 bg-zinc-950/60 px-3 py-1.5 text-sm font-semibold text-amber-100/90 transition hover:border-amber-200/60 hover:bg-amber-300/10 hover:text-white"
+                  onClick={() => void copyBuildLink()}
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  Share
+                </button>
+                <button
+                  type="button"
+                  disabled={manuallyLocked}
+                  className="rounded-md border border-white/10 bg-zinc-950/40 px-3 py-1.5 text-sm font-semibold text-zinc-400 transition hover:border-red-400/60 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-45"
+                  onClick={() => commitRanks({})}
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <MobileTreeTabs tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />
+        <div ref={exportRef} className={tabGridClassName}>
+          {data.tabs.map((tab) => (
+            <TalentTab
+              key={tab.id}
+              tab={tab}
+              ranks={ranks}
+              readOnly={readOnly}
+              compact={compact}
+              debug={searchParams.get("debug") === "true"}
+              pointsExhausted={pointsExhausted}
+              buildLocked={manuallyLocked}
+              mobile={mobileLayout}
+              quickActiveTalentId={quickActiveTalentId}
+              onQuickActivate={setQuickActiveTalentId}
+              onRankChange={(talent, rank) => {
+                if (manuallyLocked) {
+                  notifyBuildLocked();
+                  return;
+                }
+                commitRanks(updateTalentRank(talent, rank, tab.talents, ranks, { maxPoints }));
+              }}
+              onReset={() => {
+                if (manuallyLocked) {
+                  notifyBuildLocked();
+                  return;
+                }
+                commitRanks(resetTalentTabRanks(tabTalentLists, ranks, tab.talents, maxPoints));
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-2", className)}>
       {/* Summary bar — hidden in readOnly mode with allocations */}
@@ -829,19 +1129,33 @@ export function TalentTreeViewer({
             </div>
             {!readOnly && (
               <>
-                <button type="button" className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25" onClick={() => void copyBuildLink()}>
-                  Copy link
-                </button>
-                <button
-                  type="button"
-                  disabled={exporting}
-                  title="Download the talent trees as a PNG image"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25 disabled:cursor-wait disabled:opacity-60"
-                  onClick={() => void exportAsPng()}
-                >
-                  <ImageDown className="h-3.5 w-3.5" />
-                  {exporting ? "Exporting…" : "Export PNG"}
-                </button>
+                {isMobile ? (
+                  /* Mobile (readOnly-less non-mobileLayout fallback): icon-only share. */
+                  <button
+                    type="button"
+                    aria-label="Copy build link"
+                    className="rounded-md border border-primary/50 bg-primary/15 p-1.5 text-white hover:bg-primary/25"
+                    onClick={() => void copyBuildLink()}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25" onClick={() => void copyBuildLink()}>
+                      Copy link
+                    </button>
+                    <button
+                      type="button"
+                      disabled={exporting}
+                      title="Download the talent trees as a PNG image"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25 disabled:cursor-wait disabled:opacity-60"
+                      onClick={() => void exportAsPng()}
+                    >
+                      <ImageDown className="h-3.5 w-3.5" />
+                      {exporting ? "Exporting…" : "Export PNG"}
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   disabled={manuallyLocked}
@@ -870,11 +1184,18 @@ export function TalentTreeViewer({
               </>
             )}
           </div>
-          {!readOnly && (
-            <p className="text-sm text-muted-foreground text-right">Click to add. Right-click or shift-click to remove. Ctrl-click to spend remaining points into a talent. Builds are stored in the URL.</p>
+          {extraActions && !readOnly && (
+            <div className="flex items-center gap-2">{extraActions}</div>
           )}
         </div>
       )}
+      {!(readOnly && allocations) && !readOnly && !isMobile && (
+        <p className="text-sm text-muted-foreground">
+          Click to add. Right-click or shift-click to remove. Ctrl-click to fill a talent, ctrl-right-click to empty it. Builds are stored in the URL.
+        </p>
+      )}
+      {/* Mobile: sticky mini-tabs to jump between the stacked trees */}
+      {mobileLayout && <MobileTreeTabs tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />}
       <div ref={exportRef} className={tabGridClassName}>
         {data.tabs.map((tab) => (
           <TalentTab
@@ -886,6 +1207,9 @@ export function TalentTreeViewer({
             debug={searchParams.get("debug") === "true"}
             pointsExhausted={pointsExhausted}
             buildLocked={manuallyLocked}
+            mobile={mobileLayout}
+            quickActiveTalentId={quickActiveTalentId}
+            onQuickActivate={setQuickActiveTalentId}
             // A locked build is frozen: no points may be added or removed.
             onRankChange={(talent, rank) => {
               if (manuallyLocked) {

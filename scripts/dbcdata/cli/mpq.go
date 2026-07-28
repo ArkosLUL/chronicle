@@ -67,6 +67,10 @@ func (f *mpqFallback) ReadFile(name string) ([]byte, error) {
 	for _, m := range f.archives {
 		file, err := m.OpenFile(name)
 		if err != nil {
+			// The pinned core MPQ implementation locks GuardFile before querying,
+			// but does not unlock it when OpenFile returns an error. Release it so
+			// a missing file does not deadlock the next lookup in this archive.
+			m.GuardFile.Unlock()
 			continue
 		}
 

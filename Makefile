@@ -149,8 +149,12 @@ define run-imagecache
 	fi
 endef
 
+.PHONY: icons/extract
+icons/extract:
+	go run ./scripts/dbcdata extract-icons --server=$(SERVER) --out=frontend/imagecache/$(SERVER)/blp
+
 .PHONY: icons/convert
-icons/convert:
+icons/convert: icons/extract
 	$(call run-imagecache,./convert-blp.sh)
 
 .PHONY: icons/manifest
@@ -158,13 +162,13 @@ icons/manifest: icons/convert
 	go run ./scripts/dbstaticgen --icons-dir=frontend/imagecache/$(SERVER)/icons --out=frontend/imagecache/$(SERVER)/icon-list.json
 
 .PHONY: icons/upload
-icons/upload:
+icons/upload: icons/manifest
 	$(call run-imagecache,./upload-r2.sh)
 	$(call run-imagecache,./upload-icon-list-r2.sh)
 
-# Full pipeline: convert → manifest → upload
+# Full pipeline: extract → convert → manifest → upload
 .PHONY: icons
-icons: icons/convert icons/manifest icons/upload
+icons: icons/upload
 .PHONY: icons/talents-extract
 icons/talents-extract:
 	go run ./scripts/dbcdata extract-talent-backgrounds --server=$(SERVER) --out=frontend/imagecache/$(SERVER)/talent-backgrounds

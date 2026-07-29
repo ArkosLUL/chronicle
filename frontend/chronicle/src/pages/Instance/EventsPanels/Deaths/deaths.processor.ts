@@ -22,6 +22,7 @@ export interface DeathAttribution {
  */
 export interface DeathRecapEntry {
   offsetMilli: number;       // encounter-relative timestamp
+  eventIndex: number;        // stable combat-log ordering for equal timestamps
   sourceName: string;        // ability name
   casterName: string;        // who did it
   casterID: string;
@@ -106,8 +107,8 @@ export type DeathsResult = {
   _outgoingBuffer: Map<string, Map<string, DeathRecapEntry[]>>;
 }
 
-/** RECAP_WINDOW_MS is the lookback window for death recap entries (10 seconds) */
-const RECAP_WINDOW_MS = 10_000;
+/** Retain enough history for configurable floating breakouts (up to 120 seconds). */
+const RECAP_WINDOW_MS = 120_000;
 
 /** Helper to resolve a caster's class (returns class name for players, null for hostiles) */
 function resolveCasterClass(guid: string, context: ProcessorContext, guidCache: GuidCache): string | null {
@@ -226,6 +227,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
 
         pushBuffer(state, encounterID, dmg.target, dmg.caster, {
           offsetMilli: dmg.offsetMilli,
+          eventIndex: dmg.index,
           sourceName: dmg.sourceName,
           casterName: resolveUnitName(dmg.caster, context, guidCache),
           casterID: dmg.caster,
@@ -252,6 +254,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         if (!heal.target) return;
         pushBuffer(state, encounterID, heal.target, heal.caster, {
           offsetMilli: heal.offsetMilli,
+          eventIndex: heal.index,
           sourceName: heal.sourceName,
           casterName: resolveUnitName(heal.caster, context, guidCache),
           casterID: heal.caster,
@@ -275,6 +278,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         if (!abs.target) return;
         pushBuffer(state, encounterID, abs.target, abs.caster, {
           offsetMilli: abs.offsetMilli,
+          eventIndex: abs.index,
           sourceName: abs.damageSpellName || "Melee",
           casterName: resolveUnitName(abs.caster, context, guidCache),
           casterID: abs.caster,
@@ -300,6 +304,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         if (rc.amount === 0) return;
         pushBuffer(state, encounterID, rc.target, rc.caster, {
           offsetMilli: rc.offsetMilli,
+          eventIndex: rc.index,
           sourceName: rc.sourceName,
           casterName: resolveUnitName(rc.caster, context, guidCache),
           casterID: rc.caster,
@@ -324,6 +329,7 @@ export function createDeathsProcessor(): PanelProcessor<DeathsResult, ProcessorE
         if (targetGuid !== ac.caster) return;
         const entry: DeathRecapEntry = {
           offsetMilli: ac.offsetMilli,
+          eventIndex: ac.index,
           sourceName: ac.spell.name,
           casterName: resolveUnitName(ac.caster, context, guidCache),
           casterID: ac.caster,

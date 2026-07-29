@@ -2,15 +2,25 @@
  * DeathLogContent - Chronological list of player and enemy deaths with timestamps
  */
 
-import React, { useMemo, useCallback, useState } from "react";
-import { User, Skull, ChevronRight, ChevronDown } from "lucide-react";
+import React, { useMemo, useCallback, useRef, useState } from "react";
+import { User, Skull, ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { GenericPanel } from "../GenericPanel";
 import { ScrollArea } from "@/components/ui/ScrollArea/ScrollArea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip/tooltip";
 import type { PanelRenderProps } from "../types";
 import type { DeathsResult, DeathEvent } from "./deaths.processor";
 import { DeathRecap } from "./DeathRecap";
+import { IncomingEventsBreakout } from "../IncomingEvents/IncomingEventsBreakout";
+import { FloatingIncomingEventsBreakout } from "../IncomingEvents/FloatingIncomingEventsBreakout";
 import { useCachedValue } from "@/hooks/useCachedValue";
+import { useSyncModeContextOptional } from "../../SyncModeContext";
+import {
+  deathLogDataContextKey,
+  hasDeathLogEvents,
+  isDeathAheadOfSyncCursor,
+  selectDeathLogDisplayResult,
+  type DeathLogSnapshot,
+} from "./deathLogSync";
 import { cn } from "@/lib/utils";
 import { hitTypeNames, HitTypeCrit } from "@/lib/hittype/hittype";
 
@@ -88,10 +98,28 @@ function extractDeathMode(panelOption: string | null | undefined): DeathMode {
   return val === "enemies" ? "enemies" : "players";
 }
 
+function extractWindowSeconds(panelOption: string | null | undefined): number {
+  const token = panelOption?.split(",").find((value) => value.trim().startsWith("w:"));
+  const parsed = Number(token?.slice(2));
+  return Number.isFinite(parsed) ? Math.max(5, Math.min(120, Math.round(parsed))) : 30;
+}
+
+interface FloatingDeathRecap {
+  death: DeathEvent;
+  initialPosition: { x: number; y: number };
+}
+
 export const DeathLogContent = (props: DeathLogContentProps) => {
   const { result, context, loading, processing, checkboxChecked, panelOption, setPanelOption } = props;
+  const syncMode = useSyncModeContextOptional();
+  const panelContextVersion = String(props.panelContextVersion ?? "");
+  const dataContextKey = deathLogDataContextKey(panelContextVersion, panelOption);
+  const completeSnapshotRef = useRef<DeathLogSnapshot | null>(null);
   const [mode, setModeLocal] = useState<DeathMode>(() => extractDeathMode(panelOption));
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [floatingRecaps, setFloatingRecaps] = useState<Map<string, FloatingDeathRecap>>(() => new Map());
+  const [sharedFightOffsetMilli, setSharedFightOffsetMilli] = useState<number | null>(null);
+  const [windowSeconds, setWindowSecondsLocal] = useState(() => extractWindowSeconds(panelOption));
 
   const setMode = useCallback((next: DeathMode) => {
     setModeLocal(next);
@@ -102,6 +130,37 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
       setPanelOption(existing.join(","));
     }
   }, [panelOption, setPanelOption]);
+
+  const setWindowSeconds = useCallback((value: number) => {
+    const next = Math.max(5, Math.min(120, Math.round(value || 30)));
+    setWindowSecondsLocal(next);
+    if (setPanelOption) {
+      const existing = (panelOption ?? "")
+        .split(",")
+        .filter((token) => token.trim() && !token.trim().startsWith("w:"));
+      existing.push(`w:${next}`);
+      setPanelOption(existing.join(","));
+    }
+  }, [panelOption, setPanelOption]);
+
+  const openFloatingRecap = useCallback((key: string, death: DeathEvent, target: HTMLElement) => {
+    const rect = target.getBoundingClientRect();
+    const x = Math.max(8, Math.min(rect.right + 8, window.innerWidth - 640));
+    const y = Math.max(8, Math.min(rect.top, window.innerHeight - 520));
+    setFloatingRecaps((current) => {
+      const next = new Map(current);
+      next.set(key, { death, initialPosition: { x, y } });
+      return next;
+    });
+  }, []);
+
+  const closeFloatingRecap = useCallback((key: string) => {
+    setFloatingRecaps((current) => {
+      const next = new Map(current);
+      next.delete(key);
+      return next;
+    });
+  }, []);
 
   // Build encounter name lookup
   const encounterNames = useMemo(() => {
@@ -119,23 +178,42 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
 
   const { cachedValue: cachedResult, hasCache: hasData } = useCachedValue(
     result,
-    (r) => r.DeathEvents.length > 0 || r.EnemyDeathEvents.length > 0,
+    hasDeathLogEvents,
     [props.panelContextVersion]
   );
 
-  const sortedDeaths = useMemo(() => {
-    if (!cachedResult) return [];
-    return getSortedDeathEvents(context.selectedEncounterIds, cachedResult, mode);
-  }, [context.selectedEncounterIds, cachedResult, mode]);
+  // Sync processing incrementally rebuilds processor state. Death Log is different:
+  // its rows describe the whole encounter, so retain the last complete worker result
+  // and let only cursors/row emphasis react to the Sync timestamp.
+  /* eslint-disable react-hooks/refs */
+  if (!syncMode?.enabled && hasData) {
+    completeSnapshotRef.current = {
+      dataContextKey,
+      result: cachedResult,
+    };
+  }
+  const displayResult = selectDeathLogDisplayResult(
+    cachedResult,
+    completeSnapshotRef.current,
+    dataContextKey,
+  );
+  /* eslint-enable react-hooks/refs */
+  const hasDisplayData = hasDeathLogEvents(displayResult);
 
-  // Once we have cached data, never show loading/processing states
+  const sortedDeaths = useMemo(
+    () => getSortedDeathEvents(context.selectedEncounterIds, displayResult, mode),
+    [context.selectedEncounterIds, displayResult, mode],
+  );
+
+  // Once we have a complete display result, never flash loading/empty Sync states.
   const effectiveProps = {
     ...props,
-    loading: hasData ? false : props.loading,
-    processing: hasData ? false : props.processing,
+    loading: hasDisplayData ? false : props.loading,
+    processing: hasDisplayData ? false : props.processing,
   };
 
   return (
+    <>
     <GenericPanel {...effectiveProps}>
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs text-muted-foreground">
@@ -203,16 +281,23 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                 const prevDeath = index > 0 ? sortedDeaths[index - 1] : null;
                 const isNewEncounter = prevDeath && prevDeath.encounterID !== death.encounterID;
                 const isExpanded = expandedIndex === index;
-                const rowKey = `${death.playerID}-${death.offsetMilli}-${index}`;
+                const isPendingSyncDeath = isDeathAheadOfSyncCursor(
+                  death,
+                  syncMode?.enabled === true,
+                  syncMode?.currentTimestamp ?? null,
+                );
+                const rowKey = `${death.encounterID}:${death.playerID}:${death.offsetMilli}:${index}`;
                 return (
                   <React.Fragment key={rowKey}>
                     <tr
                       className={cn(
                         "border-b border-border/10 hover:bg-muted/50 cursor-pointer",
                         isNewEncounter && "border-t-2 border-t-border",
-                        isExpanded && "bg-muted/30 border-b-0"
+                        isExpanded && "bg-muted/30 border-b-0",
+                        isPendingSyncDeath && "opacity-35 saturate-50"
                       )}
                       data-death-row={index === 0 ? true : undefined}
+                      data-sync-pending={isPendingSyncDeath || undefined}
                       onClick={() => setExpandedIndex(isExpanded ? null : index)}
                     >
                       <td className="py-1 px-1 text-muted-foreground w-5">
@@ -281,18 +366,36 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
                         )}
                       </td>
                       <td className="py-1 px-2">
-                        <span
-                          className="font-medium"
-                          style={{ color: `var(--color-class-${death.className.toLowerCase()})` }}
-                        >
-                          {death.playerName}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="min-w-0 flex-1 truncate font-medium"
+                            style={{ color: `var(--color-class-${death.className.toLowerCase()})` }}
+                          >
+                            {death.playerName}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openFloatingRecap(rowKey, death, event.currentTarget);
+                            }}
+                            className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            title="Open floating death recap"
+                            aria-label={`Open floating death recap for ${death.playerName}`}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="border-b border-border/10">
+                      <tr className={cn("border-b border-border/10", isPendingSyncDeath && "opacity-35 saturate-50")}>
                         <td colSpan={5} className="p-0 pb-1">
-                          <DeathRecap recap={death.recap} outgoingRecap={death.outgoingRecap} deathOffsetMilli={death.offsetMilli} />
+                          <DeathRecap
+                            recap={death.recap.filter((entry) => entry.offsetMilli >= death.offsetMilli - 10_000)}
+                            outgoingRecap={death.outgoingRecap.filter((entry) => entry.offsetMilli >= death.offsetMilli - 10_000)}
+                            deathOffsetMilli={death.offsetMilli}
+                          />
                         </td>
                       </tr>
                     )}
@@ -304,5 +407,26 @@ export const DeathLogContent = (props: DeathLogContentProps) => {
         </ScrollArea>
       )}
     </GenericPanel>
+    {Array.from(floatingRecaps.entries()).map(([key, { death, initialPosition }]) => (
+      <FloatingIncomingEventsBreakout
+        key={key}
+        initialPosition={initialPosition}
+        onClose={() => closeFloatingRecap(key)}
+      >
+        <IncomingEventsBreakout
+          unitName={death.playerName}
+          className={death.className}
+          anchorOffsetMilli={death.offsetMilli}
+          anchorAbsoluteMilli={death.dateMilli}
+          events={death.recap}
+          windowSeconds={windowSeconds}
+          onWindowSecondsChange={setWindowSeconds}
+          sharedFightOffsetMilli={sharedFightOffsetMilli}
+          onSharedFightOffsetChange={setSharedFightOffsetMilli}
+          onClose={() => closeFloatingRecap(key)}
+        />
+      </FloatingIncomingEventsBreakout>
+    ))}
+    </>
   );
 };

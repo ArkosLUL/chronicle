@@ -184,8 +184,8 @@ func VanillaPlusSMRaidHostiles() map[uint32]Identity {
 		25224: "Vishas",
 		25225: "Loksey",
 		25226: "Herod",
-		25228: "Sally Whitemane",
-		25227: "Renault Mograine",
+		25228: "Mograine & Whitemane", // "Sally Whitemane",
+		25227: "Mograine & Whitemane", // "Renault Mograine",
 	})
 
 	return hostile

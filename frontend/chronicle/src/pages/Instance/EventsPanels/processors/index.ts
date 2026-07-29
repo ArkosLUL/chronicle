@@ -24,6 +24,7 @@ import { auraUptimeProcessor } from "../AuraUptime/auraUptime.processor";
 import { comparisonProcessor } from "../ComparisonPanel/comparison.processor";
 import { timelineProcessor } from "../Timeline/timeline.processor";
 import { rotationsProcessor } from "../Rotations/rotations.processor";
+import { statusProcessor } from "../Status/status.processor";
 import { possessionProcessor } from "../PossessionPanel/possession.processor";
 import { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 import { dispelProcessor } from "../Dispel/dispel.processor";
@@ -34,6 +35,7 @@ import { absorbedDamageProcessor } from "../AbsorbedDamage/absorbedDamage.proces
 import { resistsProcessor } from "../ResistsPanel/resists.processor";
 import { guildsProcessor } from "../Guilds/guilds.processor";
 import { companionStatsProcessor } from "../CompanionStats/companionStats.processor";
+import { playerLifeStateProcessor } from "./playerLifeState.processor";
 import { pullsAndCleanupProcessor } from "../PullsAndCleanup/pullsAndCleanup.processor";
 
 // Export individual processors
@@ -58,6 +60,7 @@ export { auraUptimeProcessor } from "../AuraUptime/auraUptime.processor";
 export { comparisonProcessor } from "../ComparisonPanel/comparison.processor";
 export { timelineProcessor } from "../Timeline/timeline.processor";
 export { rotationsProcessor } from "../Rotations/rotations.processor";
+export { statusProcessor } from "../Status/status.processor";
 export { possessionProcessor } from "../PossessionPanel/possession.processor";
 export { unitLookupProcessor } from "../UnitLookup/unitLookup.processor";
 export { dispelProcessor } from "../Dispel/dispel.processor";
@@ -88,6 +91,7 @@ export type { AuraUptimeResult, AuraData, TargetUptimeData, UptimeSegment } from
 export type { TimelineResult, TimelineSeriesMeta } from "../Timeline/timeline.processor";
 export type { TimelineSeriesConfig, AggregationType, TimelineSettings } from "../Timeline/timelineTypes";
 export type { RotationsResult, CastEntry, AuraSegment } from "../Rotations/rotations.processor";
+export type { StatusResult, StatusEncounter, StatusUnitTimeline, StatusTimelineEvent } from "../Status/status.processor";
 export type { DispelResult, DispelEntityData, DispelSpellData, DispelCategory, DispelLogEvent } from "../Dispel/dispel.processor";
 export type { InterruptResult, InterruptEntityData, InterruptSpellData, InterruptLogEvent } from "../Interrupt/interrupt.processor";
 export type { EquipmentResult, PlayerSnapshot } from "../Equipment/equipment.processor";
@@ -104,6 +108,13 @@ export { inferRoles, getRoleSummary } from "../Roles/roles.processor";
 export { accumulateAbilityBreakout, createEmptyAbilityBreakout, updateAbilityBreakout, type DamageAbilityBreakout } from "./abilityBreakout";
 export { createAuraProcessorState, applyAuraEvent, applySlainEvent, hasAura, getAuraStacks, type AuraProcessorState, type AuraRef } from "./auraProcessor";
 
+export {
+  playerLifeStateProcessor,
+  PlayerLifeStateIndex,
+  type PlayerLifeStateResult,
+  type PlayerLifeTransition,
+} from "./playerLifeState.processor";
+
 export { isResourceChangeEvent, isHealingEvent, isDamageEvent } from "./events";
 
 /**
@@ -111,6 +122,7 @@ export { isResourceChangeEvent, isHealingEvent, isDamageEvent } from "./events";
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
+  player_life_state: playerLifeStateProcessor,
   damage_done: damageDoneProcessor,
   vulnerability_effect: vulnerabilityEffectProcessor,
   damage_done_enemies: enemyDamageDoneProcessor,
@@ -147,6 +159,8 @@ export const processorRegistry: Record<string, PanelProcessor<any, any>> = {
   comparison: comparisonProcessor,
   // Charts
   timeline: timelineProcessor,
+  // Replay
+  status: statusProcessor,
   // Rotations
   rotations: rotationsProcessor,
   // Possession timeline

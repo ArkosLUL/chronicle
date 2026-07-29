@@ -22,6 +22,28 @@ describe("RelativeHealthBar", () => {
     expect(markup).toContain("deficit −10");
   });
 
+  it("uses supplied encounter bounds for static extrema markers", () => {
+    const markup = renderToStaticMarkup(
+      <RelativeHealthBar
+        messages={[messages[0]]}
+        bounds={{ minimum: -1_000, maximum: 500 }}
+      />,
+    );
+
+    expect(markup).toContain('title="Minimum −1,000"');
+    expect(markup).toContain('title="Maximum +500"');
+    expect(markup).toContain("min −1,000");
+    expect(markup).toContain("max +500");
+  });
+
+  it("supports shifting the zero baseline to favor deficit space", () => {
+    const markup = renderToStaticMarkup(
+      <RelativeHealthBar messages={[messages[0]]} zeroPercent={68} />,
+    );
+
+    expect(markup).toContain('style="left:68%"');
+  });
+
   it("renders prevented damage as an avoided leftward range", () => {
     const markup = renderToStaticMarkup(
       <RelativeHealthBar messages={[messages[0]]} />,

@@ -1,11 +1,11 @@
 package synthetic
 
 import (
-  "context"
-  "log/slog"
+	"context"
+	"log/slog"
 
-  "github.com/Emyrk/chronicle/combatlog/parser/common/messages"
-  "github.com/Emyrk/chronicle/database/gamedb"
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
+	"github.com/Emyrk/chronicle/database/gamedb"
 )
 
 // Synthetic processes the raw combat log events, and occasionally will insert

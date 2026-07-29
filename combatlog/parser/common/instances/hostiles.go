@@ -175,7 +175,7 @@ func VanillaPlusSMRaidHostiles() map[uint32]Identity {
 		25257: "Scarlet Trainee",
 	})
 	LoadBosses(hostile, map[uint32]string{
-		25259: "Loksey",
+		//25259: "Loksey", // TODO: Where did this unit entry come from?
 		25221: "Brother Michael",
 		25229: "Brigitte Abbendis",
 		25222: "Fairbanks",

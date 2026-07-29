@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/combatlog/parser/guid"
 	"github.com/Emyrk/chronicle/combatlog/parser/types"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/combatant"
@@ -16,7 +17,6 @@ import (
 	"github.com/Emyrk/chronicle/combatlog/parser/types/unitinfo"
 	"github.com/Emyrk/chronicle/combatlog/parser/types/zone"
 	"github.com/Emyrk/chronicle/combatlog/parser/unitname"
-	"github.com/Emyrk/chronicle/combatlog/parser/common/messages"
 	"github.com/Emyrk/chronicle/database/gamedb"
 	"github.com/Emyrk/chronicle/database/gamedb/chrondbc"
 	"github.com/Emyrk/chronicle/internal/ptr"
@@ -726,7 +726,7 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 	caster := m.Guid()
 	spell := m.DBCSpellByID(p.ctx, p)
 	amount := int32(m.Int64())
-	mitigated := m.Int32s() // 3 values: blocked, absorbed, resisted
+	mitigated := m.Int32s() // 3 values: absorbed, blocked, resisted
 	hitInfo := m.Int64()
 	school := m.School()
 	effects := m.Int32s() // effect1, effect2, effect3, auraType
@@ -776,13 +776,13 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		if mitigated[0] > 0 {
 			trailer = append(trailer, types.TrailerEntry{
 				Amount:  ptr.Ref(uint32(mitigated[0])),
-				HitType: types.HitTypePartialBlock,
+				HitType: types.HitTypePartialAbsorb,
 			})
 		}
 		if mitigated[1] > 0 {
 			trailer = append(trailer, types.TrailerEntry{
 				Amount:  ptr.Ref(uint32(mitigated[1])),
-				HitType: types.HitTypePartialAbsorb,
+				HitType: types.HitTypePartialBlock,
 			})
 		}
 		if mitigated[2] > 0 {

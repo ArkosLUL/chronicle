@@ -5,6 +5,14 @@ import { ImageDown, Lock, LockOpen, Share2 } from "lucide-react";
 import { toCanvas } from "html-to-image";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/Checkbox/Checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu/DropdownMenu";
 import { iconUrl, talentBackgroundUrl } from "@/config/iconUrl";
 import { useIconBaseUrl } from "@/hooks/useDatasetId";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -42,6 +50,7 @@ import {
   prerequisiteArrowPathData,
   prerequisiteArrowPolylinePoints,
   prerequisiteArrows,
+  populatedTalentTabs,
   rankDescriptionsForTooltip,
   resetTalentTabRanks,
   searchParamsWithTalentBuild,
@@ -51,6 +60,7 @@ import {
   talentGridHeight,
   talentGridRows,
   talentRankTexts,
+  talentTabPoints,
   talentTooltipPosition,
   talentVisualState,
   totalTalentPoints,
@@ -204,7 +214,7 @@ function TalentTooltipCard({
 
 // ─── Prerequisite arrows SVG ──────────────────────────────────────
 
-function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: TalentPrereqArrow[]; ranks: TalentRanks; height: number; talents: TalentEntry[] }) {
+function TalentPrereqArrows({ arrows, ranks, height, talents, buttonSize }: { arrows: TalentPrereqArrow[]; ranks: TalentRanks; height: number; talents: TalentEntry[]; buttonSize: number }) {
   if (arrows.length === 0) return null;
 
   return (
@@ -228,7 +238,7 @@ function TalentPrereqArrows({ arrows, ranks, height, talents }: { arrows: Talent
         const active = (ranks[from.id] ?? 0) >= requiredRank;
         const strokeClass = active ? "stroke-[#d8b35f]/85 drop-shadow-[0_0_4px_rgba(216,179,95,0.35)]" : "stroke-[#6d5a3f]/45";
         const marker = active ? "url(#talent-prereq-arrow-active)" : "url(#talent-prereq-arrow-inactive)";
-        const points = prerequisiteArrowPolylinePoints(from, to, talents);
+        const points = prerequisiteArrowPolylinePoints(from, to, talents, buttonSize);
         const pathData = prerequisiteArrowPathData(points);
 
         return (
@@ -511,7 +521,8 @@ function TalentButton({ talent, rank, locked, pointsExhausted, talents, ranks, o
         if (spellId != null) void navigator.clipboard.writeText(String(spellId));
       }}
       className={cn(
-        "group relative h-11 w-11 rounded-sm border bg-zinc-950 shadow-lg transition before:absolute before:-inset-0.5 before:rounded-sm before:content-['']",
+        "group relative rounded-sm border bg-zinc-950 shadow-lg transition before:absolute before:-inset-0.5 before:rounded-sm before:content-['']",
+        mobile ? "h-11 w-11" : "h-12 w-12",
         visualState === "locked" && "talent-state-locked cursor-not-allowed border-zinc-700 opacity-75 before:bg-black/10",
         visualState === "available" && "talent-state-available border-primary/70 shadow-primary/20 before:border before:border-primary/35 hover:scale-105 hover:border-primary hover:shadow-primary/30",
         visualState === "selected" && "talent-state-selected border-emerald-300/80 shadow-emerald-500/20 ring-1 ring-emerald-300/45 before:border before:border-emerald-300/35 hover:scale-105 hover:border-emerald-200",
@@ -677,7 +688,7 @@ function TalentTab({
   diff?: Record<number, TalentDiff> | null;
 }) {
   const iconBaseUrl = useIconBaseUrl();
-  const points = useMemo(() => tab.talents.reduce((sum, talent) => sum + (ranks[talent.id] ?? 0), 0), [tab.talents, ranks]);
+  const points = useMemo(() => talentTabPoints(tab, ranks), [tab, ranks]);
   const arrows = useMemo(() => prerequisiteArrows(tab.talents), [tab.talents]);
   const rows = useMemo(() => talentGridRows(tab.talents), [tab.talents]);
   const height = talentGridHeight(rows);
@@ -804,7 +815,7 @@ function TalentTab({
                 : { width: `${TALENT_GRID_WIDTH}px`, height: `${height}px` }
             }
           >
-            <TalentPrereqArrows arrows={arrows} ranks={ranks} height={height} talents={tab.talents} />
+            <TalentPrereqArrows arrows={arrows} ranks={ranks} height={height} talents={tab.talents} buttonSize={mobile ? 44 : 48} />
             <div
               className="relative z-10 grid justify-items-center"
               style={{
@@ -1039,7 +1050,6 @@ export function TalentTreeViewer({
   useEffect(() => {
     if (allocations && allocations.length > 0) {
       // Backend-provided allocations are not capped at maxPoints (see initialRanks).
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate prop→state sync; ranks are also mutated by user clicks
       setRanks(normalizeTalentRanks(tabTalentLists, allocationsToRanks(data.tabs, allocations)));
     } else {
       setRanks(normalizeTalentRanks(tabTalentLists, decodeTalentBuild(searchParams.get(TALENT_BUILD_PARAM), tabTalentLists), maxPoints));
@@ -1077,6 +1087,15 @@ export function TalentTreeViewer({
 
   const exportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [hideEmptyTrees, setHideEmptyTrees] = useState(false);
+  const exportedTabs = exporting && hideEmptyTrees ? populatedTalentTabs(data.tabs, ranks) : data.tabs;
+  const exportGridStyle = exporting && hideEmptyTrees
+    ? {
+        gridTemplateColumns: `repeat(${exportedTabs.length}, minmax(0, 1fr))`,
+        width: "max-content",
+        maxWidth: "none",
+      }
+    : undefined;
   async function exportAsPng() {
     const node = exportRef.current;
     if (!node || exporting) return;
@@ -1167,8 +1186,8 @@ export function TalentTreeViewer({
           </div>
         </div>
         <MobileTreeTabs tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />
-        <div ref={exportRef} className={tabGridClassName}>
-          {data.tabs.map((tab) => (
+        <div ref={exportRef} className={tabGridClassName} style={exportGridStyle}>
+          {exportedTabs.map((tab) => (
             <TalentTab
               key={tab.id}
               tab={tab}
@@ -1230,16 +1249,36 @@ export function TalentTreeViewer({
                     <button type="button" className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25" onClick={() => void copyBuildLink()}>
                       Copy link
                     </button>
-                    <button
-                      type="button"
-                      disabled={exporting}
-                      title="Download the talent trees as a PNG image"
-                      className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25 disabled:cursor-wait disabled:opacity-60"
-                      onClick={() => void exportAsPng()}
-                    >
-                      <ImageDown className="h-3.5 w-3.5" />
-                      {exporting ? "Exporting…" : "Export PNG"}
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={exporting}
+                          title="Export the talent trees as a PNG image"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/15 px-2.5 py-1 text-sm font-bold text-white hover:bg-primary/25 disabled:cursor-wait disabled:opacity-60"
+                        >
+                          <ImageDown className="h-3.5 w-3.5" />
+                          {exporting ? "Exporting…" : "Export PNG"}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuItem
+                          disabled={total === 0}
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            setHideEmptyTrees((checked) => !checked);
+                          }}
+                        >
+                          <Checkbox checked={hideEmptyTrees} className="pointer-events-none" />
+                          Hide empty trees
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => void exportAsPng()}>
+                          <ImageDown className="h-4 w-4" />
+                          Download PNG
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </>
                 )}
                 <button
@@ -1282,8 +1321,8 @@ export function TalentTreeViewer({
       )}
       {/* Mobile: sticky mini-tabs to jump between the stacked trees */}
       {mobileLayout && <MobileTreeTabs tabs={data.tabs} ranks={ranks} visibleTabId={visibleTabId} onJump={jumpToTree} />}
-      <div ref={exportRef} className={tabGridClassName}>
-        {data.tabs.map((tab) => (
+      <div ref={exportRef} className={tabGridClassName} style={exportGridStyle}>
+        {exportedTabs.map((tab) => (
           <TalentTab
             key={tab.id}
             tab={tab}

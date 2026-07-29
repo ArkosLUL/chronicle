@@ -1586,6 +1586,8 @@ export interface InstancePageViewProps {
   canAdminLogs?: boolean;
   /** Duplicate group ID if this instance is part of a group */
   duplicateGroupId?: string;
+  /** Hide the action bar (spellbook) - e.g. while the replay overlay occupies the same space */
+  suppressActionBar?: boolean;
 }
 
 export function InstancePageView({
@@ -1597,6 +1599,7 @@ export function InstancePageView({
   onOpenTimeRange,
   canAdminLogs,
   duplicateGroupId,
+  suppressActionBar,
 }: InstancePageViewProps) {
   const timeRange = useTimeRangeContextOptional();
 
@@ -2480,7 +2483,11 @@ export function InstancePageView({
         return;
       }
 
-      setActionBarOpen(true);
+      // Still allow casting layouts while the action bar is suppressed
+      // (replay overlay occupies the same space), just don't pop it up.
+      if (!suppressActionBar) {
+        setActionBarOpen(true);
+      }
       const layoutID = actionBarSlots[event.key as keyof LayoutActionBarSlots];
       if (!layoutID) {
         return;
@@ -2499,7 +2506,7 @@ export function InstancePageView({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [actionBarLayoutsByID, actionBarSlots, castLayout]);
+  }, [actionBarLayoutsByID, actionBarSlots, castLayout, suppressActionBar]);
 
 
   useEffect(() => {
@@ -2842,7 +2849,7 @@ export function InstancePageView({
         </div>
       )}
 
-      {actionBarOpen && (
+      {actionBarOpen && !suppressActionBar && (
         <div className="fixed bottom-5 left-0 right-0 z-[80] flex justify-center px-2 sm:left-1/2 sm:right-auto sm:w-auto sm:-translate-x-1/2 sm:px-0">
           <div className="inline-flex max-w-full flex-col items-center gap-2">
             {!isMobile && (

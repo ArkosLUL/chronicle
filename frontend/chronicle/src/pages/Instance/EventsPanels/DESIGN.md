@@ -186,6 +186,48 @@ interface EventMeta {
    - Hook deserializes result (Map reconstruction)
 3. **panel.render()** displays the result on main thread
 
+## Panel Pop-Out Windows
+
+Any `EventsPanel` can be moved into a separate browser window from the panel menu. The panel is rendered into the popup with a React portal rather than mounting a second application. This keeps the popup in the original React tree, so panel state, filters, encounter selection, Sync Mode, data caches, and worker results remain shared with the main window.
+
+`panelPopup.ts` owns popup creation and copies the current document styles and theme into the new document. `EventsPanel.tsx` owns the popup lifecycle:
+
+- The original grid slot becomes a placeholder with focus and dock controls.
+- Closing the native popup window docks the panel back into its original slot.
+- Removing the panel or leaving the owning view closes its popup.
+- Browsers may retain security-controlled window chrome such as the address bar; application code cannot reliably remove it.
+
+### Overlay Portal Targets
+
+Components rendered inside a popped-out panel must not portal directly to the global `document.body`. Doing so places tooltips, menus, and breakout boxes back in the main window.
+
+Use `usePortalContainer()` for custom portals, or a shared UI primitive that already consumes it:
+
+```tsx
+const portalContainer = usePortalContainer();
+
+return portalContainer
+  ? createPortal(<PanelOverlay />, portalContainer)
+  : null;
+```
+
+`PortalContainerProvider` is scoped around each `EventsPanel`. It targets the popup container while the panel is popped out and the main document body otherwise. Pointer listeners for draggable or resizable overlays must similarly use `portalContainer.ownerDocument`, and viewport calculations should use `portalContainer.ownerDocument.defaultView`.
+
+### Full-Layout Pop-Out
+
+The instance hamburger menu includes **Pop out layout** beside the import and export actions. It creates a second, independent layout initialized from the active preset or custom grid. The main page keeps its original layout, allowing a two-screen workflow such as Damage in the popup and Healing in the primary window.
+
+The popup and primary layout share analysis controls but own their panel configuration independently:
+
+- Encounter, player, enemy, Sync Mode, and time-range changes update both windows.
+- Each window has its own preset tabs and can switch among Summary, Damage, Healing, and the other presets without changing the other window.
+- Saved layouts can be cast with their numeric action-bar hotkeys while the popup has focus; the visual action bar remains in the primary window.
+- Panel type, option, and filter changes remain local to the window where they were made.
+- Closing the popup with the native window close button removes only the secondary layout.
+- Selecting **Pop out layout** again while it is open focuses the existing popup.
+- The popup grid is wrapped with `PortalContainerProvider`, so panel breakouts, menus, and hover overlays stay in the correct window.
+- Individual panels may still be popped into another window from either layout.
+
 ## Adding a New Panel
 
 Panels are split into two files: a **processor** (worker-safe) and a **React wrapper**.

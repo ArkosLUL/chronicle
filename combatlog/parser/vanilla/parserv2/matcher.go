@@ -793,7 +793,7 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		}
 	}
 
-	return set(&messages.Damage{
+	msgs, err := set(&messages.Damage{
 		MessageBase:     messages.Base(ts),
 		SpellName:       ptr.Ref(spell.Name()),
 		SpellData:       spell,
@@ -805,6 +805,95 @@ func (p *Parser) spell_dmg(ctx context.Context, ts time.Time, m *Matched) ([]mes
 		Trailer:         trailer,
 		EnvironmentType: nil,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Power burn spells (e.g. Mana Burn) drain the target's power and deal
+	// damage proportional to the amount drained. The server never emits an
+	// ENERGIZE line for the drained power — the SPELL_DMG line only carries
+	// the damage component. Synthesize a ResourceChange so the drain is
+	// visible in resource tracking.
+	if rc := powerBurnResourceChange(ts, spell, caster, target, amount, mitigated, effects, hit.Has(types.HitTypeCrit)); rc != nil {
+		msgs = append(msgs, rc)
+	}
+
+	return msgs, nil
+}
+
+// powerBurnResourceChange synthesizes a ResourceChange for SPELL_DMG lines
+// produced by SPELL_EFFECT_POWER_BURN (62) or SPELL_AURA_POWER_BURN_MANA (162).
+//
+// Each point of power burned deals damage multiplied by the effect's damage
+// multiplier (EffectAmplitude, e.g. 0.5 for Mana Burn rank 5: "for each mana
+// drained in this way, the target takes 0.5 Shadow damage"), so the power
+// drained is recovered from the pre-mitigation damage:
+// (amount + absorbed + blocked + resisted) / multiplier.
+// The damage component can crit (1.5x for spells) but the drain does not, so
+// crits are divided back out.
+// Example line (Mana Burn rank 5 fully absorbed by a shield, 916 mana burned):
+//
+//	1784050453916|SPELL_DMG|0xF130006287017F8B|0x000000000001D795|10876|0|458,0,0|0|5|62,0,0,0
+//
+// Returns nil when the event is not a power burn or no power was drained.
+func powerBurnResourceChange(
+	ts time.Time,
+	spell *chrondbc.Spell,
+	caster guid.GUID,
+	target guid.GUID,
+	amount int32,
+	mitigated []int32,
+	effects []int32,
+	crit bool,
+) messages.Message {
+	// The logged effect order does not always match the DBC effect order, so
+	// detect the power burn from the log, then look up the DBC effect index
+	// for the misc value (power type) and damage multiplier.
+	isBurn := AuraEffect(effects[3]) == SPELL_AURA_POWER_BURN_MANA
+	for _, eff := range effects[:3] {
+		if chrondbc.Effect(eff) == chrondbc.EffectPowerBurn {
+			isBurn = true
+		}
+	}
+	if !isBurn {
+		return nil
+	}
+
+	effIdx := -1
+	for i := range spell.Effect {
+		if spell.Effect[i] == chrondbc.EffectPowerBurn || spell.EffectAura[i] == chrondbc.AuraEffectPowerBurn {
+			effIdx = i
+			break
+		}
+	}
+	if effIdx == -1 {
+		return nil
+	}
+
+	multiplier := float64(spell.EffectAmplitude[effIdx])
+	if multiplier <= 0 {
+		multiplier = 1
+	}
+	if crit {
+		multiplier *= 1.5
+	}
+
+	preMitigation := amount + mitigated[0] + mitigated[1] + mitigated[2]
+	burned := int32(float64(preMitigation)/multiplier + 0.5)
+	if burned <= 0 {
+		return nil
+	}
+
+	return &messages.ResourceChange{
+		MessageBase: messages.Base(ts, messages.WithSynthetic()),
+		Target:      target,
+		Amount:      burned,
+		Resource:    PowerTypeResource(spell.EffectMiscValue[effIdx]),
+		Caster:      ptr.Ref(caster),
+		SpellName:   ptr.Ref(spell.Name()),
+		SpellData:   spell,
+		Direction:   types.ChangeDirectionLoss,
+	}
 }
 
 //func (p *Parser) spellStart(_ context.Context, ts time.Time, m *Matched) ([]messages.Message, error) {

@@ -26,6 +26,7 @@ import type {
   SetPrimaryCharacterRequest as SetPrimaryCharacterRequestGenerated,
   CharacterLinkInfo as CharacterLinkInfoGenerated,
   LinkCharacterRequest as LinkCharacterRequestGenerated,
+  ExternalSyncResponse as ExternalSyncResponseGenerated,
   DataGrant as DataGrantGenerated,
   UpsertDataGrantRequest as UpsertDataGrantRequestGenerated,
   ListUserPanelLayoutsResponse as ListUserPanelLayoutsResponseGenerated,
@@ -96,6 +97,7 @@ export type LinkedCharacter = LinkedCharacterGenerated;
 export type SetPrimaryCharacterRequest = SetPrimaryCharacterRequestGenerated;
 export type CharacterLinkInfo = CharacterLinkInfoGenerated;
 export type LinkCharacterRequest = LinkCharacterRequestGenerated;
+export type ExternalSyncResponse = ExternalSyncResponseGenerated;
 export type DataGrant = DataGrantGenerated;
 export type UpsertDataGrantRequest = UpsertDataGrantRequestGenerated;
 export type ListUserPanelLayoutsResponse = ListUserPanelLayoutsResponseGenerated;
@@ -505,6 +507,44 @@ export function useSetPrimaryCharacter() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-characters"] });
     },
+  });
+}
+
+export function useExternalCharacterSync() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/v1/linked/me/external-sync", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw buildAPIError("Failed to sync characters", error);
+      }
+      return response.json() as Promise<ExternalSyncResponse>;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["my-characters"] });
+      queryClient.setQueryData(["external-sync-status"], result);
+    },
+  });
+}
+
+export function useExternalSyncStatus(options?: Omit<UseQueryOptions<ExternalSyncResponse | null>, "queryKey" | "queryFn">) {
+  return useQuery({
+    queryKey: ["external-sync-status"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/linked/me/external-sync", { credentials: "include" });
+      // 204: never synced; 404: provider disabled.
+      if (response.status === 204 || response.status === 404) return null;
+      if (!response.ok) {
+        throw new Error("Failed to fetch sync status");
+      }
+      return response.json() as Promise<ExternalSyncResponse>;
+    },
+    ...options,
   });
 }
 

@@ -11,6 +11,8 @@ import {
   useSession,
   useSetPrimaryCharacter,
   useUnlinkMyCharacter,
+  useExternalCharacterSync,
+  useExternalSyncStatus,
   type LinkedCharacter,
   useUserPanelLayouts,
   useCreatePanelLayout,
@@ -358,6 +360,132 @@ export function ProfileSettings() {
   );
 }
 
+const EXTERNAL_SYNC_THROTTLE_KEY = "characters.external-sync.last";
+const EXTERNAL_SYNC_THROTTLE_MS = 5 * 60 * 1000;
+
+function ExternalVerificationCard() {
+  const { data: session } = useSession();
+  const { data: siteConfig } = useSiteConfig();
+  const syncMutation = useExternalCharacterSync();
+  const { data: lastSync } = useExternalSyncStatus({ enabled: !!siteConfig?.external_verification });
+  // Client-side throttle: checked in the click handler (localStorage), with
+  // component state only to disable the button. The server enforces the
+  // real rate limit.
+  const [throttled, setThrottled] = useState(false);
+
+  const provider = siteConfig?.external_verification;
+  if (!provider) return null;
+
+  const isDiscord = session?.auth_provider === "discord";
+
+  const handleSync = () => {
+    const at = Date.now();
+    const last = Number(window.localStorage.getItem(EXTERNAL_SYNC_THROTTLE_KEY) ?? 0);
+    const remaining = last + EXTERNAL_SYNC_THROTTLE_MS - at;
+    if (remaining > 0) {
+      setThrottled(true);
+      window.setTimeout(() => setThrottled(false), remaining);
+      toast.info("Synced recently — try again in a few minutes.");
+      return;
+    }
+    window.localStorage.setItem(EXTERNAL_SYNC_THROTTLE_KEY, String(at));
+    setThrottled(true);
+    window.setTimeout(() => setThrottled(false), EXTERNAL_SYNC_THROTTLE_MS);
+    syncMutation.mutate(undefined, {
+      onSuccess: (result) => {
+        if (!result.verified) {
+          toast.info("You are not verified yet.", {
+            description: provider.instructions_url
+              ? "Follow the instructions link to get verified, then try again."
+              : "Get verified with your community, then try again.",
+          });
+          return;
+        }
+        if (result.linked.length > 0) {
+          toast.success(`Linked ${result.linked.length} character${result.linked.length === 1 ? "" : "s"}: ${result.linked.map((c) => c.name).join(", ")}`);
+        } else if (result.conflicts.length === 0 && result.unmatched.length === 0) {
+          toast.info("No characters to link.");
+        }
+        for (const name of result.conflicts) {
+          toast.error(`${name} is already linked to another account. Ask for support in Discord.`);
+        }
+        if (result.unmatched.length > 0) {
+          toast.warning(`Not seen in any logs yet: ${result.unmatched.join(", ")}`, {
+            description: "These characters can be linked once they appear in an uploaded log.",
+          });
+        }
+      },
+      onError: (error) => showRequestErrorToast("Failed to sync characters", error),
+    });
+  };
+
+  const providerName = provider.type === "zug-zug" ? 'the Guild "Zug Zug"' : null;
+
+  return (
+    <div className="rounded-lg border p-4 space-y-3">
+      <h3 className="text-sm font-medium">
+        {providerName ? `Link characters via ${providerName}` : "Link characters"}
+      </h3>
+      {providerName && (
+        <p className="text-sm text-muted-foreground">Character linking is provided by {providerName}.</p>
+      )}
+      {provider.callout && (
+        <p className="text-sm rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-yellow-500">
+          {provider.callout}
+        </p>
+      )}
+      <p className="text-sm text-muted-foreground">
+        Verified members can automatically link their characters using their Discord identity.
+        {provider.instructions_url && (
+          <>
+            {" "}
+            <a
+              href={provider.instructions_url}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-foreground"
+            >
+              How do I get verified?
+            </a>
+          </>
+        )}
+      </p>
+      {!isDiscord ? (
+        <p className="text-sm text-yellow-500">Must be authenticated with Discord to link characters.</p>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={syncMutation.isPending || throttled}
+          onClick={handleSync}
+        >
+          {syncMutation.isPending ? "Syncing..." : throttled ? "Synced recently — try again in a few minutes" : "Sync my characters"}
+        </Button>
+      )}
+
+      {lastSync && (
+        <div className="space-y-1.5 border-t pt-3">
+          <p className="text-xs text-muted-foreground">
+            Last sync {new Date(lastSync.synced_at).toLocaleString()}
+            {!lastSync.verified && " — not verified with the provider"}
+          </p>
+          {lastSync.unmatched.length > 0 && (
+            <p className="text-xs text-yellow-500">
+              Characters failed to link as they do not exist in Chronicle yet:{" "}
+              {lastSync.unmatched.join(", ")}. They can be linked once they appear in an uploaded log.
+            </p>
+          )}
+          {lastSync.conflicts.length > 0 && (
+            <p className="text-xs text-destructive">
+              Already linked to another account: {lastSync.conflicts.join(", ")}. Ask for support in Discord.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CharacterSettings() {
   const { data: characters, isLoading } = useMyCharacters();
   const setPrimary = useSetPrimaryCharacter();
@@ -390,6 +518,8 @@ export function CharacterSettings() {
         <h2 className="text-xl font-semibold">Characters</h2>
         <p className="text-muted-foreground">In-game characters linked to your account.</p>
       </div>
+
+      <ExternalVerificationCard />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading characters...</p>

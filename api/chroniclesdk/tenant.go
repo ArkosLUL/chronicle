@@ -11,12 +11,12 @@ import (
 
 // Tenant is the SDK type exposed to the frontend.
 type Tenant struct {
-	ID                  uuid.UUID  `json:"id"`
-	Slug                *string    `json:"slug"`
-	Name                string     `json:"name"`
-	DisableClientUpload bool       `json:"disable_client_upload"`
-	IncludeInAll        bool       `json:"include_in_all"`
-	Discoverable        bool       `json:"discoverable"`
+	ID                  uuid.UUID    `json:"id"`
+	Slug                *string      `json:"slug"`
+	Name                string       `json:"name"`
+	DisableClientUpload bool         `json:"disable_client_upload"`
+	IncludeInAll        bool         `json:"include_in_all"`
+	Discoverable        bool         `json:"discoverable"`
 	Branding            *Branding    `json:"branding"`
 	ParseConfig         *ParseConfig `json:"parse_config"`
 	DefaultDatasetID    *uuid.UUID   `json:"default_dataset_id"`
@@ -26,9 +26,11 @@ type Tenant struct {
 	DefaultFormat *string `json:"default_format"`
 	// AvailableFormats restricts which log formats are valid for this tenant.
 	// Empty means all formats are available.
-	AvailableFormats []string  `json:"available_formats"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	AvailableFormats []string `json:"available_formats"`
+	// ExternalLinking is the tenant's external character linking visibility.
+	ExternalLinking *ExternalLinking `json:"external_linking,omitempty"`
+	CreatedAt       time.Time        `json:"created_at"`
+	UpdatedAt       time.Time        `json:"updated_at"`
 }
 
 // ParseConfig holds tenant-level parse scoring settings, stored as JSONB.
@@ -49,15 +51,15 @@ type ParseConfig struct {
 
 // Branding holds the visual identity for a tenant subdomain or the primary domain.
 type Branding struct {
-	SquareLogo       string   `json:"square_logo,omitempty"`
-	LogoWide         string   `json:"logo_wide,omitempty"`
-	Favicon          string   `json:"favicon,omitempty"`
-	DisplayName      string   `json:"display_name,omitempty"`
-	Tagline          string   `json:"tagline,omitempty"`
-	Description      string   `json:"description,omitempty"`
-	BackgroundBanner string   `json:"background_banner,omitempty"`
-	Tags  []string          `json:"tags,omitempty"`
-	Theme map[string]string `json:"theme,omitempty"` // CSS color overrides keyed by knob name (hex "#RRGGBB")
+	SquareLogo       string            `json:"square_logo,omitempty"`
+	LogoWide         string            `json:"logo_wide,omitempty"`
+	Favicon          string            `json:"favicon,omitempty"`
+	DisplayName      string            `json:"display_name,omitempty"`
+	Tagline          string            `json:"tagline,omitempty"`
+	Description      string            `json:"description,omitempty"`
+	BackgroundBanner string            `json:"background_banner,omitempty"`
+	Tags             []string          `json:"tags,omitempty"`
+	Theme            map[string]string `json:"theme,omitempty"` // CSS color overrides keyed by knob name (hex "#RRGGBB")
 }
 
 // TenantFromDB converts a database.Tenant to the SDK type.
@@ -86,6 +88,8 @@ func TenantFromDB(t database.Tenant) Tenant {
 			out.ParseConfig = &pc
 		}
 	}
+	out.ExternalLinking = ParseExternalLinking(t.ExternalLinking)
+
 	if t.DefaultDatasetID.Valid {
 		out.DefaultDatasetID = &t.DefaultDatasetID.UUID
 	}
@@ -97,6 +101,66 @@ func TenantFromDB(t database.Tenant) Tenant {
 		out.AvailableFormats = t.AvailableFormats
 	}
 	return out
+}
+
+// ExternalLinking is a tenant's visibility settings for external character
+// linking. The provider itself is deployment-level (env vars); tenants opt
+// in to showing the linking UI.
+type ExternalLinking struct {
+	// Show enables the external linking card on the account characters page.
+	Show bool `json:"show"`
+	// Callout is an optional message shown alongside the linking card, e.g.
+	// "Linking is only supported for members of the guild Zug Zug".
+	Callout string `json:"callout,omitempty"`
+}
+
+// ParseExternalLinking unmarshals a tenant's raw external_linking JSONB
+// column. Returns nil when unset, null, or invalid.
+func ParseExternalLinking(data []byte) *ExternalLinking {
+	if len(data) == 0 {
+		return nil
+	}
+	var el ExternalLinking
+	if err := json.Unmarshal(data, &el); err != nil {
+		return nil
+	}
+	return &el
+}
+
+// ExternalVerification configures the deployment's external verification
+// provider (from environment variables, never stored or exposed). Providers
+// verify players out-of-band (e.g. via Discord) and expose an API Chronicle
+// can use to link characters to accounts.
+type ExternalVerification struct {
+	// Type of provider. Currently only "zug-zug".
+	Type string `json:"-"`
+	// URL is the provider's base URL, e.g. "https://ambershire.com".
+	URL string `json:"-"`
+	// Secret is the bearer token for the provider API.
+	Secret string `json:"-"`
+	// InstructionsURL optionally points players at how to get verified.
+	InstructionsURL string `json:"-"`
+}
+
+// Public returns the provider info safe to expose to any visitor.
+func (e *ExternalVerification) Public() *ExternalVerificationPublic {
+	if e == nil {
+		return nil
+	}
+	return &ExternalVerificationPublic{
+		Type:            e.Type,
+		InstructionsURL: e.InstructionsURL,
+	}
+}
+
+// ExternalVerificationPublic is the subset of ExternalVerification exposed
+// in the site config, combined with the tenant's visibility settings.
+type ExternalVerificationPublic struct {
+	Type            string `json:"type"`
+	InstructionsURL string `json:"instructions_url,omitempty"`
+	// Callout is the tenant's optional message shown alongside the linking
+	// card, e.g. "Linking is only supported for members of the guild Zug Zug".
+	Callout string `json:"callout,omitempty"`
 }
 
 // SetServerTenantRequest assigns or removes a tenant from a server.
@@ -125,8 +189,11 @@ type UpsertTenantRequest struct {
 	Discoverable        *bool         `json:"discoverable"`
 	Branding            *Branding     `json:"branding"`
 	ParseConfig         *ParseConfig  `json:"parse_config"`
-	DefaultFormat    *string  `json:"default_format"`
-	AvailableFormats []string `json:"available_formats"`
+	DefaultFormat       *string       `json:"default_format"`
+	AvailableFormats    []string      `json:"available_formats"`
+	// ExternalLinking updates the tenant's external character linking
+	// visibility. Omit to keep the existing value.
+	ExternalLinking *ExternalLinking `json:"external_linking,omitempty"`
 }
 
 // IsCreate returns true when the request should insert a new tenant.
@@ -147,6 +214,14 @@ func (r UpsertTenantRequest) marshalParseConfig() []byte {
 		return nil
 	}
 	b, _ := json.Marshal(r.ParseConfig)
+	return b
+}
+
+func (r UpsertTenantRequest) marshalExternalLinking() []byte {
+	if r.ExternalLinking == nil {
+		return nil
+	}
+	b, _ := json.Marshal(r.ExternalLinking)
 	return b
 }
 
@@ -191,8 +266,9 @@ func (r UpsertTenantRequest) ToInsertParams() database.InsertTenantParams {
 		Discoverable:        discoverable,
 		Branding:            r.marshalBranding(),
 		ParseConfig:         r.marshalParseConfig(),
-		DefaultFormat:    defaultFormat,
-		AvailableFormats: r.AvailableFormats,
+		ExternalLinking:     r.marshalExternalLinking(),
+		DefaultFormat:       defaultFormat,
+		AvailableFormats:    r.AvailableFormats,
 	}
 }
 
@@ -238,7 +314,8 @@ func (r UpsertTenantRequest) ToUpdateParams() database.UpdateTenantParams {
 		Discoverable:        discoverable,
 		Branding:            r.marshalBranding(),
 		ParseConfig:         r.marshalParseConfig(),
-		DefaultFormat:    defaultFormat,
-		AvailableFormats: r.AvailableFormats,
+		ExternalLinking:     r.marshalExternalLinking(),
+		DefaultFormat:       defaultFormat,
+		AvailableFormats:    r.AvailableFormats,
 	}
 }

@@ -710,6 +710,81 @@ export type EndState = "reset" | "slain" | "timeout";
 
 export const EndStates: EndState[] = ["reset", "slain", "timeout"];
 
+// From chroniclesdk/tenant.go
+/**
+ * ExternalLinking is a tenant's visibility settings for external character
+ * linking. The provider itself is deployment-level (env vars); tenants opt
+ * in to showing the linking UI.
+ */
+export interface ExternalLinking {
+    /**
+     * Show enables the external linking card on the account characters page.
+     */
+    readonly show: boolean;
+    /**
+     * Callout is an optional message shown alongside the linking card, e.g.
+     * "Linking is only supported for members of the guild Zug Zug".
+     */
+    readonly callout?: string;
+}
+
+// From chroniclesdk/characters.go
+/**
+ * ExternalSyncResponse reports the outcome of syncing character links from
+ * an external verification provider. The most recent response is cached
+ * per user so the UI can keep showing why characters failed to link.
+ */
+export interface ExternalSyncResponse {
+    /**
+     * SyncedAt is when this sync ran.
+     */
+    readonly synced_at: string;
+    /**
+     * Verified is false when the provider does not recognize the user's
+     * Discord identity as verified.
+     */
+    readonly verified: boolean;
+    /**
+     * Linked are the character links created by this sync.
+     */
+    readonly linked: readonly LinkedCharacter[];
+    /**
+     * Conflicts are character names that are already linked to a different
+     * account and require support intervention.
+     */
+    readonly conflicts: readonly string[];
+    /**
+     * Unmatched are character names the provider returned that Chronicle has
+     * never seen in a combat log, so they cannot be linked yet.
+     */
+    readonly unmatched: readonly string[];
+}
+
+// From chroniclesdk/tenant.go
+/**
+ * ExternalVerification configures the deployment's external verification
+ * provider (from environment variables, never stored or exposed). Providers
+ * verify players out-of-band (e.g. via Discord) and expose an API Chronicle
+ * can use to link characters to accounts.
+ */
+export interface ExternalVerification {
+}
+
+// From chroniclesdk/tenant.go
+/**
+ * ExternalVerificationPublic is the subset of ExternalVerification exposed
+ * in the site config, combined with the tenant's visibility settings.
+ */
+export interface ExternalVerificationPublic {
+    readonly type: string;
+    readonly instructions_url?: string;
+    /**
+     * Callout is the tenant's optional message shown alongside the linking
+     * card, e.g. "Linking is only supported for members of the guild Zug Zug".
+     */
+    readonly callout?: string;
+}
+
 // From chroniclesdk/log.go
 export type GUIDString = string;
 
@@ -1307,6 +1382,11 @@ export interface LinkedCharacter {
     readonly level: number;
     readonly guild_name?: string;
     readonly is_primary: boolean;
+    /**
+     * LinkSource is where the link came from: "manual" or an external
+     * provider source such as "zug-zug/<url>".
+     */
+    readonly link_source: string;
     readonly linked_at: string;
 }
 
@@ -2105,6 +2185,11 @@ export interface SiteConfig {
      * settings such as the talent calculator's max level.
      */
     readonly dataset_flavor: readonly string[];
+    /**
+     * ExternalVerification advertises the tenant's external character
+     * verification provider (never includes the URL or secret).
+     */
+    readonly external_verification?: ExternalVerificationPublic;
 }
 
 // From chroniclesdk/stats.go
@@ -2371,6 +2456,10 @@ export interface Tenant {
      * Empty means all formats are available.
      */
     readonly available_formats: readonly string[];
+    /**
+     * ExternalLinking is the tenant's external character linking visibility.
+     */
+    readonly external_linking?: ExternalLinking;
     readonly created_at: string;
     readonly updated_at: string;
 }
@@ -2572,6 +2661,11 @@ export interface UpsertTenantRequest {
     readonly parse_config: ParseConfig | null;
     readonly default_format: string | null;
     readonly available_formats: readonly string[];
+    /**
+     * ExternalLinking updates the tenant's external character linking
+     * visibility. Omit to keep the existing value.
+     */
+    readonly external_linking?: ExternalLinking;
 }
 
 // From chroniclesdk/user.go

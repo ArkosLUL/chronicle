@@ -725,6 +725,17 @@ func (a *API) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
 		resp.AvailableFormats = config.AvailableFormats
 	}
 
+	// External linking is advertised only when the deployment has a provider
+	// AND the tenant opted in to showing it.
+	if t != nil {
+		if el := chroniclesdk.ParseExternalLinking(t.ExternalLinking); el != nil && el.Show {
+			if pub := a.Opts.ExternalVerification.Public(); pub != nil {
+				pub.Callout = el.Callout
+				resp.ExternalVerification = pub
+			}
+		}
+	}
+
 	// Resolve the tenant's default dataset flavor so the frontend can
 	// derive per-flavor settings (e.g. talent calculator max level).
 	if t != nil && t.DefaultDatasetID.Valid {
@@ -765,7 +776,6 @@ func (a *API) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
 	if req.DisableClientUpload != nil {
 		params.ClientUploadsDisabled = pgtype.Bool{Bool: *req.DisableClientUpload, Valid: true}
 	}
-
 	t := servicetenant.TenantFromContext(ctx)
 
 	config, err := a.Opts.Zed.UpdateSiteConfig(ctx, params)

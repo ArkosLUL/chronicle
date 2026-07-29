@@ -1,7 +1,28 @@
 -- name: InsertUserCharacterLink :one
-INSERT INTO user_character_links (user_id, character_guid, realm_id, linked_by)
-VALUES ($1, $2, $3, $4)
+INSERT INTO user_character_links (user_id, character_guid, realm_id, linked_by, link_source)
+VALUES ($1, $2, $3, $4, COALESCE(NULLIF(@link_source::text, ''), 'manual'))
 RETURNING *;
+
+-- name: DeleteUserCharacterLinksByUserAndSource :many
+DELETE FROM user_character_links
+WHERE user_id = $1 AND link_source = $2
+RETURNING *;
+
+-- name: GetExternalCharacterLinkSync :one
+SELECT * FROM external_character_link_syncs
+WHERE user_id = $1 AND source = $2;
+
+-- name: UpsertExternalCharacterLinkSync :exec
+-- Refreshes the rate-limit timestamp. Clears the cached response: it is
+-- stale once a new sync starts, and stays NULL if the sync fails.
+INSERT INTO external_character_link_syncs (user_id, source, last_synced_at, last_response)
+VALUES ($1, $2, now(), NULL)
+ON CONFLICT (user_id, source) DO UPDATE SET last_synced_at = now(), last_response = NULL;
+
+-- name: UpdateExternalCharacterLinkSyncResponse :exec
+UPDATE external_character_link_syncs
+SET last_response = $3
+WHERE user_id = $1 AND source = $2;
 
 -- name: DeleteUserCharacterLink :one
 DELETE FROM user_character_links
@@ -17,6 +38,7 @@ SELECT
   ucl.id AS link_id,
   ucl.user_id,
   ucl.is_primary,
+  ucl.link_source,
   ucl.created_at AS linked_at,
   gp.id AS character_guid,
   gp.realm_id,

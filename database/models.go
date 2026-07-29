@@ -1144,6 +1144,13 @@ type EncounterDpsRanking struct {
 	Hps            float64            `db:"hps" json:"hps"`
 }
 
+type ExternalCharacterLinkSync struct {
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	Source       string             `db:"source" json:"source"`
+	LastSyncedAt pgtype.Timestamptz `db:"last_synced_at" json:"last_synced_at"`
+	LastResponse []byte             `db:"last_response" json:"last_response"`
+}
+
 type GamePlayer struct {
 	ID                  guid.GUID          `db:"id" json:"id"`
 	RealmID             uuid.UUID          `db:"realm_id" json:"realm_id"`
@@ -1614,6 +1621,7 @@ type Tenant struct {
 	DefaultFormat       NullLogFormat      `db:"default_format" json:"default_format"`
 	AvailableFormats    []string           `db:"available_formats" json:"available_formats"`
 	ParseConfig         []byte             `db:"parse_config" json:"parse_config"`
+	ExternalLinking     []byte             `db:"external_linking" json:"external_linking"`
 }
 
 type User struct {
@@ -1671,6 +1679,7 @@ type UserCharacterLink struct {
 	IsPrimary     bool               `db:"is_primary" json:"is_primary"`
 	LinkedBy      uuid.NullUUID      `db:"linked_by" json:"linked_by"`
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LinkSource    string             `db:"link_source" json:"link_source"`
 }
 
 type UserPanelLayout struct {

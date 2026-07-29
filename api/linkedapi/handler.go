@@ -25,10 +25,13 @@ import (
 type Handler struct {
 	zed  *authz.Authz
 	auth *chronauth.Service
+	// externalVerification is the deployment's external verification
+	// provider config (nil when disabled).
+	externalVerification *chroniclesdk.ExternalVerification
 }
 
-func New(zed *authz.Authz, auth *chronauth.Service) *Handler {
-	return &Handler{zed: zed, auth: auth}
+func New(zed *authz.Authz, auth *chronauth.Service, externalVerification *chroniclesdk.ExternalVerification) *Handler {
+	return &Handler{zed: zed, auth: auth, externalVerification: externalVerification}
 }
 
 // Routes returns the router for the linked service, mounted at /linked.
@@ -49,6 +52,10 @@ func (h *Handler) Routes() http.Handler {
 		r.Route("/me", func(r chi.Router) {
 			r.Get("/", h.ListMyCharacters)
 			r.Put("/primary", h.SetMyPrimaryCharacter)
+			// Sync links from the deployment's external verification
+			// provider, and fetch the cached result of the last sync.
+			r.Post("/external-sync", h.SyncExternal)
+			r.Get("/external-sync", h.GetExternalSyncStatus)
 			// Authorization is the manage_link permission (owner or user
 			// admin), checked in the handler.
 			r.Delete("/{realmID}/{characterGUID}", h.UnlinkMyCharacter)

@@ -156,9 +156,6 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		}
 	}
 
-	//auraTracking := auras.New(nil)
-	//chrs.RegisterHook(auraTracking)
-
 	lootTracking := loot.New(db)
 
 	hooks := append(ip.ExtraHooks, []instancehook.Hook{
@@ -167,7 +164,6 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		cie,
 		lootTracking,
 		engagementTracker,
-		//auraTracking,
 	}...)
 	switch format {
 	case database.LogFormat112aCcAddon, database.LogFormat112aSuperwowAddon:
@@ -190,12 +186,11 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 	}
 
 	c := &Hookable{
-		name:         ip.Name,
-		logger:       logger,
-		units:        db,
-		CurrentZone:  z,
-		MatchesZoneF: ip.MatchesZone,
-		//Auras:           auraTracking,
+		name:              ip.Name,
+		logger:            logger,
+		units:             db,
+		CurrentZone:       z,
+		MatchesZoneF:      ip.MatchesZone,
 		Characters:        chrs,
 		Identifier:        ip.Idf,
 		events:            encounterevents.NewEvents(),
@@ -221,15 +216,6 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 		}
 	}
 
-	//auraTracking.SetEmit(func(evt *messages.Aura) {
-	//	if c.currentFight != nil && c.currentFight.active() {
-	//		err := c.currentFight.Events.Process(evt)
-	//		if err != nil {
-	//			logger.Error("processing synthetic aura event in ongoing fight", slog.String("error", err.Error()))
-	//		}
-	//	}
-	//})
-
 	ce.emit = func(evt *messages.UnitClassificationEvent) {
 		if c.currentFight != nil && c.currentFight.active() {
 			err := c.currentFight.Events.Process(evt)
@@ -244,6 +230,26 @@ func NewHookable(ctx context.Context, logger *slog.Logger, db *unitdb.Units, z z
 
 func (h *Hookable) AddHook(hook instancehook.Hook) {
 	h.hooks = append(h.hooks, hook)
+}
+
+// AttachAuraProjection creates and registers an aura projection adapter that
+// references the shared parse-wide tracker. The adapter projects active auras
+// into encounter event streams on the first real message after FightStarted,
+// manages synthetic expiry, and forwards death notifications.
+func (h *Hookable) AttachAuraProjection(tracker *auras.Tracking) {
+	proj := auras.NewProjection(tracker)
+	proj.SetEmit(func(evt *messages.Aura) {
+		if h.currentFight != nil && h.currentFight.active() {
+			err := h.currentFight.Events.Process(evt)
+			if err != nil {
+				h.logger.Error("processing synthetic aura event in ongoing fight", slog.String("error", err.Error()))
+			}
+		}
+	})
+	h.Characters.RegisterHook(proj)
+	h.Auras = tracker
+	// Prepend so projection events are emitted before hooks that might read them.
+	h.hooks = append([]instancehook.Hook{proj}, h.hooks...)
 }
 
 // initDerivedRankings creates a SpeedrunTracker for each sub-instance defined

@@ -83,6 +83,7 @@ type WoWDB struct {
 	spellFile *os.File
 	datasetID uuid.UUID
 	pool      *pgxpool.Pool // For DB-backed derived data queries; nil = fallback to compiled-in globals.
+	store     database.Store
 
 	spells          *spells.Fetcher
 	itemFetcher     *itemFetcher
@@ -126,11 +127,17 @@ func New(ctx context.Context, opts Options) (*WoWDB, error) {
 		Capacity: 64, Name: "periodic_spells", TTL: servicecache.TTLPeriodicSpells,
 	})
 
+	var store database.Store
+	if opts.Pool != nil {
+		store = database.New(opts.Pool)
+	}
+
 	return &WoWDB{
 		ctx:             ctx,
 		spellFile:       sf,
 		datasetID:       opts.DatasetID,
 		pool:            opts.Pool,
+		store:           store,
 		spells:          spellFetcher,
 		itemFetcher:     newItemFetcher(ctx, opts.DB, opts.CacheSvc, 400),
 		creatureFetcher: newCreatureFetcher(ctx, opts.DB, opts.CacheSvc, 500),
@@ -201,6 +208,10 @@ func (w *WoWDB) DurationModifiers(ctx context.Context) (*chrondbc.DurationModifi
 	return w.durationModifiers(ctx, w.datasetID)
 }
 
+func (w *WoWDB) Consumables(ctx context.Context) (*chrondbc.ConsumableCatalog, error) {
+	return w.consumables(ctx, w.datasetID)
+}
+
 func (w *WoWDB) PeriodicSpells(ctx context.Context) (map[int32]dbcmem.PeriodicSpell, error) {
 	return w.periodicSpells_(ctx, w.datasetID)
 }
@@ -224,6 +235,33 @@ func (w *WoWDB) durationModifiers(ctx context.Context, datasetID uuid.UUID) (*ch
 	ms := w.loadDurationModifiers(ctx, datasetID)
 	w.durationMods.Add(datasetID, ms)
 	return ms, nil
+}
+
+func (w *WoWDB) consumables(ctx context.Context, datasetID uuid.UUID) (*chrondbc.ConsumableCatalog, error) {
+	if w.store == nil {
+		return nil, nil
+	}
+
+	rows, err := w.store.ListConsumablesByDataset(ctx, datasetID)
+	if err != nil {
+		return nil, fmt.Errorf("list consumable catalog: %w", err)
+	}
+
+	itemSet := make(map[int32]struct{})
+	itemsBySpell := make(map[chrondbc.SpellID][]int32)
+	for _, row := range rows {
+		itemSet[row.ItemID] = struct{}{}
+		if row.BuffSpellID.Valid {
+			spellID := chrondbc.SpellID(row.BuffSpellID.Int32)
+			itemsBySpell[spellID] = append(itemsBySpell[spellID], row.ItemID)
+		}
+	}
+
+	itemIDs := make([]int32, 0, len(itemSet))
+	for itemID := range itemSet {
+		itemIDs = append(itemIDs, itemID)
+	}
+	return chrondbc.NewConsumableCatalog(itemIDs, itemsBySpell), nil
 }
 
 func (w *WoWDB) periodicSpells_(ctx context.Context, datasetID uuid.UUID) (map[int32]dbcmem.PeriodicSpell, error) {
@@ -385,6 +423,10 @@ func (s *ScopedGameDB) ExtraAttackSpell(ctx context.Context, spellID int32) (dbc
 
 func (s *ScopedGameDB) DurationModifiers(ctx context.Context) (*chrondbc.DurationModifierSet, error) {
 	return s.w.durationModifiers(ctx, s.datasetID)
+}
+
+func (s *ScopedGameDB) Consumables(ctx context.Context) (*chrondbc.ConsumableCatalog, error) {
+	return s.w.consumables(ctx, s.datasetID)
 }
 
 func (s *ScopedGameDB) PeriodicSpells(ctx context.Context) (map[int32]dbcmem.PeriodicSpell, error) {
